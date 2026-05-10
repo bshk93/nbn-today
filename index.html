@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBN — Nothing But Net</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: #9ca3af;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      max-width: 660px;
+      width: 100%;
+    }
+
+    .card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 1.75rem;
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .card:hover {
+      background: #263244;
+      border-color: #4b6a9b;
+      transform: translateY(-2px);
+    }
+
+    .card-icon { font-size: 1.75rem; }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      line-height: 1.5;
+    }
+
+    .card--wide { grid-column: 1 / -1; }
+
+    footer {
+      margin-top: 3rem;
+      max-width: 660px;
+      width: 100%;
+    }
+
+    .faq {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .faq-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .faq-q {
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    .faq-item p:not(.faq-q) {
+      color: #9ca3af;
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 480px) {
+      .grid { grid-template-columns: 1fr; }
+      .card--wide { grid-column: auto; }
+      header h1 { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Nothing But Net</h1>
+    <p>Basketball Simulation GM League</p>
+  </header>
+
+  <main class="grid">
+    <a class="card" href="https://stats.nbn.today">
+      <span class="card-icon">📊</span>
+      <span class="card-title">Stats Dashboard</span>
+      <p class="card-desc">Season stats, player profiles, standings, and more.</p>
+    </a>
+
+    <a class="card" href="https://docs.google.com/spreadsheets/d/14Pwrjk4S9cgB1f2Q16S3YgfoHre8gUxjjXde8k5Nn_0/edit?gid=167248319#gid=167248319">
+      <span class="card-icon">🏀</span>
+      <span class="card-title">Rosters</span>
+      <p class="card-desc">Current league rosters spreadsheet.</p>
+    </a>
+
+    <a class="card" href="https://docs.google.com/spreadsheets/d/1SDheJUhHfFmB7UGu9sds8t8Z8YyrYqB0JC3d7MEd7BU/edit?gid=1455096121#gid=1455096121">
+      <span class="card-icon">👥</span>
+      <span class="card-title">Members</span>
+      <p class="card-desc">League member directory.</p>
+    </a>
+
+    <a class="card" href="https://news.nbn.today">
+      <span class="card-icon">📰</span>
+      <span class="card-title">News</span>
+      <p class="card-desc">League news and updates.</p>
+    </a>
+
+    <a class="card" href="https://stats.nbn.today/files/">
+      <span class="card-icon">📁</span>
+      <span class="card-title">Data Files</span>
+      <p class="card-desc">Raw CSV exports of all historical season data.</p>
+    </a>
+
+    <a class="card" href="/owners">
+      <span class="card-icon">🏛️</span>
+      <span class="card-title">Owners</span>
+      <p class="card-desc">All-time records and stats for every owner in league history.</p>
+    </a>
+
+    <a class="card" href="https://discord.gg/t4FB6XbryN">
+      <span class="card-icon">💬</span>
+      <span class="card-title">Discord</span>
+      <p class="card-desc">Join the league's Discord server.</p>
+    </a>
+  </main>
+
+  <footer>
+    <div class="faq">
+      <div class="faq-item">
+        <p class="faq-q">What is the Nothing But Net fantasy GM league?</p>
+        <p>We are a close group of basketball enthusiasts who together run a fantasy NBA league. Each member of NBN assumes a position within a team among the 30 teams in the league: typically either the Owner, the GM, or the Coach. We all hang out in a Discord server, chat about basketball and the league, and watch simulations of games between our teams through the video game NBA 2K. As a member of a team's front office, you would be working with other FO members to control everything about the team and its future, including setting rotations, gameplanning, scouting and making draft picks, trades, free agency, and much more.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">What is the pace of the league?</p>
+        <p>The NBN runs at the same pace as the NBA. This means that if the NBA Spurs have a regular season game today, so will the NBN Spurs. This is not one of those leagues that simulate hundreds of seasons.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">What kind of interests would make me a good fit for the NBN?</p>
+        <p>The common denominator is, of course, a love for basketball. But the NBN has things that appeal to all sorts of basketball fans. Some people are big 2K fans and like the idea of basically playing a MyLeague mode that's more realistic and with a vibrant community. Others are drawn in by the GMing and team-building aspect, and the idea of taking over the future of their favorite team. We have stats heads who like analyzing performances of players in our league, NBA draft enthusiasts who help their team scout and build youth, and people who just like to chat about basketball stuff.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">What kind of time commitment can I expect?</p>
+        <p>The NBN is 100% what you make of it. There's no minimum contribution level, but a lot of us do get really into this league and contribute to it via being members of various committees that help the league run. We ask Owners to be somewhat active, but that's it.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner History — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      max-width: 1060px;
+      margin: 0 auto;
+    }
+
+    .nav {
+      margin-bottom: 1.75rem;
+      font-size: 0.875rem;
+      color: #9ca3af;
+    }
+
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header {
+      margin-bottom: 1.75rem;
+    }
+
+    header h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: #9ca3af;
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .table-wrap {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+
+    thead th {
+      padding: 0.7rem 1rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+
+    thead th:hover { color: #d1d5db; }
+
+    thead th[data-active="true"] { color: #93c5fd; }
+
+    thead th .sort-arrow {
+      margin-left: 4px;
+      opacity: 0;
+      font-size: 0.65rem;
+    }
+
+    thead th[data-active="true"] .sort-arrow { opacity: 1; }
+
+    thead th.right { text-align: right; }
+
+    tbody tr {
+      border-bottom: 1px solid #283141;
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody tr:hover { background: #263244; }
+
+    td {
+      padding: 0.65rem 1rem;
+      color: #d1d5db;
+    }
+
+    td.owner-name {
+      font-weight: 600;
+      color: #f3f4f6;
+    }
+
+    td.team-name {
+      color: #9ca3af;
+      font-size: 0.8rem;
+    }
+
+    td.right {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.muted { color: #6b7280; }
+
+    td.center { text-align: center; }
+
+    .trophy {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0 0.3rem;
+    }
+
+    .trophy-gold { background: #78350f; color: #fbbf24; }
+    .trophy-silver { background: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+
+    #status {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Nothing But Net</a></nav>
+
+    <header>
+      <h1>Owner History</h1>
+      <p>All-time records by owner. Click any column header to sort.</p>
+    </header>
+
+    <div class="table-wrap" id="table-wrap">
+      <div id="status">Loading…</div>
+    </div>
+  </div>
+
+  <script>
+    const COLS = [
+      { key: 'owner',            label: 'Owner',        cls: 'owner-name',  sortField: 'owner',            numeric: false, defaultDir:  1 },
+      { key: 'teams',            label: 'Team(s)',       cls: 'team-name',   sortField: 'teams',            numeric: false, defaultDir:  1,
+        display: r => r.teams || '—' },
+      { key: 'seasons',          label: 'Szns',          cls: 'right',       sortField: 'seasons',          numeric: true,  defaultDir: -1 },
+      { key: 'best_reg_season',  label: 'Best Szn',      cls: 'right',       sortField: 'best_reg_pct',     numeric: true,  defaultDir: -1,
+        display: r => r.best_reg_season || '—' },
+      { key: 'worst_reg_season', label: 'Worst Szn',     cls: 'right',       sortField: 'worst_reg_pct',    numeric: true,  defaultDir:  1,
+        display: r => r.worst_reg_season || '—' },
+      { key: 'total_wl',         label: 'W–L',           cls: 'right',       sortField: 'total_pct',        numeric: true,  defaultDir: -1,
+        display: r => (parseInt(r.total_w) + parseInt(r.total_l) === 0) ? '—' : `${r.total_w}–${r.total_l}` },
+      { key: 'total_pct',        label: 'W%',            cls: 'right muted', sortField: 'total_pct',        numeric: true,  defaultDir: -1,
+        display: r => fmtPct(r.total_pct) },
+      { key: 'reg_wl',           label: 'Reg W–L',       cls: 'right',       sortField: 'reg_pct',          numeric: true,  defaultDir: -1,
+        display: r => (parseInt(r.reg_w) + parseInt(r.reg_l) === 0) ? '—' : `${r.reg_w}–${r.reg_l}` },
+      { key: 'reg_pct',          label: 'Reg W%',        cls: 'right muted', sortField: 'reg_pct',          numeric: true,  defaultDir: -1,
+        display: r => fmtPct(r.reg_pct) },
+      { key: 'po_wl',            label: 'Playoff W–L',   cls: 'right',       sortField: 'playoff_pct',      numeric: true,  defaultDir: -1,
+        display: r => r.playoff_appearances === '0' ? '—' : `${r.playoff_w}–${r.playoff_l}` },
+      { key: 'po_pct',           label: 'Playoff W%',    cls: 'right muted', sortField: 'playoff_pct',      numeric: true,  defaultDir: -1,
+        display: r => fmtPct(r.playoff_pct) },
+      { key: 'playoff_appearances', label: 'PO App',     cls: 'center',      sortField: 'playoff_appearances', numeric: true, defaultDir: -1,
+        display: r => parseInt(r.playoff_appearances) > 0 ? r.playoff_appearances : '—' },
+      { key: 'po_r2',            label: 'R2',            cls: 'center',      sortField: 'po_r2',            numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.po_r2) > 0 ? r.po_r2 : '—' },
+      { key: 'po_conf_finals',   label: 'Conf Finals',   cls: 'center',      sortField: 'po_conf_finals',   numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.po_conf_finals) > 0 ? r.po_conf_finals : '—' },
+      { key: 'po_finals',        label: 'Finals',        cls: 'center',      sortField: 'po_finals',        numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.po_finals) > 0 ? r.po_finals : '—' },
+      { key: 'championships',    label: '🏆',            cls: 'center',      sortField: 'championships',    numeric: true,  defaultDir: -1 },
+      { key: 'off_rtg',          label: 'Off Rtg',       cls: 'right',       sortField: 'off_rtg',          numeric: true,  defaultDir: -1,
+        display: r => fmtRtg(r.off_rtg) },
+      { key: 'def_rtg',          label: 'Def Rtg',       cls: 'right',       sortField: 'def_rtg',          numeric: true,  defaultDir: -1,
+        display: r => fmtRtg(r.def_rtg) },
+    ];
+
+    const RTG_COLS = new Set(['off_rtg', 'def_rtg']);
+    let colRanges = {};
+
+    let sortField = 'total_pct';
+    let sortDir = -1;
+
+    function fmtPct(val) {
+      if (!val || val === 'NA') return '—';
+      const n = parseFloat(val);
+      return isNaN(n) ? '—' : n.toFixed(3);
+    }
+
+    function fmtRtg(val) {
+      if (!val || val === 'NA') return '—';
+      const n = parseFloat(val);
+      if (isNaN(n)) return '—';
+      return (n >= 0 ? '+' : '') + n.toFixed(2);
+    }
+
+    function sortVal(row, field) {
+      const v = row[field];
+      if (!v || v === 'NA') return -Infinity;
+      const n = parseFloat(v);
+      return isNaN(n) ? v : n;
+    }
+
+    function sortRows(rows) {
+      return [...rows].sort((a, b) => {
+        const va = sortVal(a, sortField);
+        const vb = sortVal(b, sortField);
+        if (va < vb) return -sortDir;
+        if (va > vb) return sortDir;
+        return 0;
+      });
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = parseLine(lines[0]);
+      return lines.slice(1).map(line => {
+        const vals = parseLine(line);
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = vals[i] ?? ''; });
+        return obj;
+      });
+    }
+
+    function parseLine(line) {
+      const out = [];
+      let cur = '', quoted = false;
+      for (const ch of line) {
+        if (ch === '"') { quoted = !quoted; }
+        else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+      out.push(cur);
+      return out;
+    }
+
+    function buildTable(rows) {
+      const table = document.createElement('table');
+
+      const thead = table.createTHead();
+      const hr = thead.insertRow();
+      COLS.forEach(col => {
+        const th = document.createElement('th');
+        const isActive = col.sortField === sortField;
+        const arrow = document.createElement('span');
+        arrow.className = 'sort-arrow';
+        arrow.textContent = sortDir === -1 ? '↓' : '↑';
+        th.appendChild(document.createTextNode(col.label));
+        th.appendChild(arrow);
+        th.dataset.active = isActive;
+        if (col.cls && col.cls.includes('right')) th.classList.add('right');
+        if (col.cls && col.cls.includes('center')) th.classList.add('right');
+        th.addEventListener('click', () => {
+          if (sortField === col.sortField) {
+            sortDir *= -1;
+          } else {
+            sortField = col.sortField;
+            sortDir = col.defaultDir;
+          }
+          rebuildBody(rows, tbody);
+          thead.querySelectorAll('th').forEach(t => {
+            t.dataset.active = false;
+            t.querySelector('.sort-arrow').textContent = '↓';
+          });
+          th.dataset.active = true;
+          th.querySelector('.sort-arrow').textContent = sortDir === -1 ? '↓' : '↑';
+        });
+        hr.appendChild(th);
+      });
+
+      const tbody = table.createTBody();
+      rebuildBody(rows, tbody);
+      return table;
+    }
+
+    function rebuildBody(rows, tbody) {
+      tbody.innerHTML = '';
+      sortRows(rows).forEach(row => {
+        const tr = tbody.insertRow();
+        COLS.forEach(col => {
+          const td = tr.insertCell();
+          col.cls.split(' ').forEach(c => c && td.classList.add(c));
+
+          if (col.key === 'championships') {
+            if (parseInt(row.championships) > 0) {
+              const b = document.createElement('span');
+              b.className = 'trophy trophy-gold';
+              b.textContent = row.championships;
+              td.appendChild(b);
+            }
+          } else if (col.display) {
+            td.textContent = col.display(row);
+          } else {
+            td.textContent = row[col.key] ?? '';
+          }
+
+          if (RTG_COLS.has(col.key) && colRanges[col.key]) {
+            const n = parseFloat(row[col.key]);
+            if (!isNaN(n)) {
+              const { min, max } = colRanges[col.key];
+              const t = max === min ? 0.5 : (n - min) / (max - min);
+              const hue = Math.round(t * 120);
+              td.style.background = `hsl(${hue}, 55%, 18%)`;
+              td.style.color = `hsl(${hue}, 80%, 72%)`;
+            }
+          }
+        });
+      });
+    }
+
+    (async () => {
+      const status = document.getElementById('status');
+      const wrap = document.getElementById('table-wrap');
+      try {
+        const res = await fetch('/owner_stats.csv');
+        if (!res.ok) throw new Error(res.statusText);
+        const text = await res.text();
+        const rows = parseCSV(text);
+        RTG_COLS.forEach(key => {
+          const vals = rows.map(r => parseFloat(r[key])).filter(v => !isNaN(v));
+          if (vals.length) colRanges[key] = { min: Math.min(...vals), max: Math.max(...vals) };
+        });
+        status.remove();
+        wrap.appendChild(buildTable(rows));
+      } catch (e) {
+        status.textContent = 'Failed to load owner stats.';
+      }
+    })();
+  </script>
+</body>
+</html>
