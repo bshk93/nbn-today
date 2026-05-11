@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teams — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .nav {
+      margin-bottom: 1.75rem;
+      font-size: 0.875rem;
+    }
+
+    .nav a { color: #9ca3af; text-decoration: none; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header {
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+    }
+
+    .team-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 1.25rem 0.75rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+
+    .team-card:hover {
+      background: #263244;
+      border-color: #4b6a9b;
+      transform: translateY(-2px);
+    }
+
+    .team-card img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+
+    .team-card .abbr {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #d1d5db;
+    }
+
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    @media (max-width: 480px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← NBN</a></nav>
+    <header>
+      <h1>Teams</h1>
+    </header>
+    <div class="grid">
+      <a class="team-card" href="/teams/ATL/"><img src="/logos/logo-atl.png" alt="ATL"><span class="abbr">ATL</span></a>
+      <a class="team-card" href="/teams/BKN/"><img src="/logos/logo-bkn.png" alt="BKN"><span class="abbr">BKN</span></a>
+      <a class="team-card" href="/teams/BOS/"><img src="/logos/logo-bos.png" alt="BOS"><span class="abbr">BOS</span></a>
+      <a class="team-card" href="/teams/CHA/"><img src="/logos/logo-cha.png" alt="CHA"><span class="abbr">CHA</span></a>
+      <a class="team-card" href="/teams/CHI/"><img src="/logos/logo-chi.png" alt="CHI"><span class="abbr">CHI</span></a>
+      <a class="team-card" href="/teams/CLE/"><img src="/logos/logo-cle.png" alt="CLE"><span class="abbr">CLE</span></a>
+      <a class="team-card" href="/teams/DAL/"><img src="/logos/logo-dal.png" alt="DAL"><span class="abbr">DAL</span></a>
+      <a class="team-card" href="/teams/DEN/"><img src="/logos/logo-den.png" alt="DEN"><span class="abbr">DEN</span></a>
+      <a class="team-card" href="/teams/DET/"><img src="/logos/logo-det.png" alt="DET"><span class="abbr">DET</span></a>
+      <a class="team-card" href="/teams/GSW/"><img src="/logos/logo-gsw.png" alt="GSW"><span class="abbr">GSW</span></a>
+      <a class="team-card" href="/teams/HOU/"><img src="/logos/logo-hou.png" alt="HOU"><span class="abbr">HOU</span></a>
+      <a class="team-card" href="/teams/IND/"><img src="/logos/logo-ind.png" alt="IND"><span class="abbr">IND</span></a>
+      <a class="team-card" href="/teams/LAC/"><img src="/logos/logo-lac.png" alt="LAC"><span class="abbr">LAC</span></a>
+      <a class="team-card" href="/teams/LAL/"><img src="/logos/logo-lal.png" alt="LAL"><span class="abbr">LAL</span></a>
+      <a class="team-card" href="/teams/MEM/"><img src="/logos/logo-mem.png" alt="MEM"><span class="abbr">MEM</span></a>
+      <a class="team-card" href="/teams/MIA/"><img src="/logos/logo-mia.png" alt="MIA"><span class="abbr">MIA</span></a>
+      <a class="team-card" href="/teams/MIL/"><img src="/logos/logo-mil.png" alt="MIL"><span class="abbr">MIL</span></a>
+      <a class="team-card" href="/teams/MIN/"><img src="/logos/logo-min.png" alt="MIN"><span class="abbr">MIN</span></a>
+      <a class="team-card" href="/teams/NOP/"><img src="/logos/logo-nop.png" alt="NOP"><span class="abbr">NOP</span></a>
+      <a class="team-card" href="/teams/NYK/"><img src="/logos/logo-nyk.png" alt="NYK"><span class="abbr">NYK</span></a>
+      <a class="team-card" href="/teams/OKC/"><img src="/logos/logo-okc.png" alt="OKC"><span class="abbr">OKC</span></a>
+      <a class="team-card" href="/teams/ORL/"><img src="/logos/logo-orl.png" alt="ORL"><span class="abbr">ORL</span></a>
+      <a class="team-card" href="/teams/PHI/"><img src="/logos/logo-phi.png" alt="PHI"><span class="abbr">PHI</span></a>
+      <a class="team-card" href="/teams/PHX/"><img src="/logos/logo-phx.png" alt="PHX"><span class="abbr">PHX</span></a>
+      <a class="team-card" href="/teams/POR/"><img src="/logos/logo-por.png" alt="POR"><span class="abbr">POR</span></a>
+      <a class="team-card" href="/teams/SAC/"><img src="/logos/logo-sac.png" alt="SAC"><span class="abbr">SAC</span></a>
+      <a class="team-card" href="/teams/SAS/"><img src="/logos/logo-sas.png" alt="SAS"><span class="abbr">SAS</span></a>
+      <a class="team-card" href="/teams/TOR/"><img src="/logos/logo-tor.png" alt="TOR"><span class="abbr">TOR</span></a>
+      <a class="team-card" href="/teams/UTA/"><img src="/logos/logo-uta.png" alt="UTA"><span class="abbr">UTA</span></a>
+      <a class="team-card" href="/teams/WAS/"><img src="/logos/logo-was.png" alt="WAS"><span class="abbr">WAS</span></a>
+    </div>
+  </div>
+</body>
+</html>

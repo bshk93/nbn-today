@@ -138,6 +138,40 @@
     .trophy-gold { background: #78350f; color: #fbbf24; }
     .trophy-silver { background: #1f2937; color: #9ca3af; border: 1px solid #374151; }
 
+    .achievement {
+      display: inline-block;
+      margin-left: 0.35rem;
+      font-size: 0.85rem;
+      cursor: default;
+      position: relative;
+      vertical-align: middle;
+    }
+
+    .achievement--lg {
+      font-size: 1.15rem;
+    }
+
+    .achievement::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 5px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #d1d5db;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s;
+      z-index: 10;
+    }
+
+    .achievement:hover::after { opacity: 1; }
+
     #status {
       text-align: center;
       padding: 3rem;
@@ -199,6 +233,48 @@
 
     const RTG_COLS = new Set(['off_rtg', 'def_rtg']);
     let colRanges = {};
+    let ownerAchievements = new Map();
+
+    function parseBestWins(s) {
+      if (!s || s === 'NA') return 0;
+      return parseInt(s.split('-')[0]) || 0;
+    }
+
+    const ACHIEVEMENTS = [
+      {
+        id: 'champion',
+        icon: '🏆',
+        test: r => parseInt(r.championships) >= 1,
+        label: r => parseInt(r.championships) > 1 ? `${r.championships}× Champion` : 'Champion',
+      },
+      {
+        id: 'finalist',
+        icon: '🥈',
+        test: r => parseInt(r.po_finals) >= 1 && parseInt(r.championships) === 0,
+        label: r => parseInt(r.po_finals) > 1 ? `${r.po_finals}× Finals Appearance` : 'Finals Appearance',
+      },
+      {
+        id: 'season_70',
+        icon: '🔥',
+        large: true,
+        test: r => parseBestWins(r.best_reg_season) >= 70,
+        label: r => `70-Win Season (${r.best_reg_season})`,
+      },
+      {
+        id: 'season_60',
+        icon: '🔥',
+        test: r => parseBestWins(r.best_reg_season) >= 60 && parseBestWins(r.best_reg_season) < 70,
+        label: r => `60-Win Season (${r.best_reg_season})`,
+      },
+    ];
+
+    function buildAchievements(rows) {
+      const map = new Map();
+      rows.forEach(r => {
+        map.set(r.owner, ACHIEVEMENTS.filter(a => a.test(r)).map(a => ({ icon: a.icon, label: a.label(r), large: !!a.large })));
+      });
+      return map;
+    }
 
     let sortField = 'total_pct';
     let sortDir = -1;
@@ -303,7 +379,16 @@
           const td = tr.insertCell();
           col.cls.split(' ').forEach(c => c && td.classList.add(c));
 
-          if (col.key === 'championships') {
+          if (col.key === 'owner') {
+            td.appendChild(document.createTextNode(row.owner ?? ''));
+            (ownerAchievements.get(row.owner) ?? []).forEach(a => {
+              const span = document.createElement('span');
+              span.className = a.large ? 'achievement achievement--lg' : 'achievement';
+              span.dataset.tip = a.label;
+              span.textContent = a.icon;
+              td.appendChild(span);
+            });
+          } else if (col.key === 'championships') {
             if (parseInt(row.championships) > 0) {
               const b = document.createElement('span');
               b.className = 'trophy trophy-gold';
@@ -338,6 +423,7 @@
         if (!res.ok) throw new Error(res.statusText);
         const text = await res.text();
         const rows = parseCSV(text);
+        ownerAchievements = buildAchievements(rows);
         RTG_COLS.forEach(key => {
           const vals = rows.map(r => parseFloat(r[key])).filter(v => !isNaN(v));
           if (vals.length) colRanges[key] = { min: Math.min(...vals), max: Math.max(...vals) };
