@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Head to Head — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .nav {
+      margin-bottom: 1.75rem;
+      font-size: 0.875rem;
+      color: #9ca3af;
+    }
+
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header {
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: #9ca3af;
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .section {
+      margin-bottom: 2.5rem;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #d1d5db;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.01em;
+    }
+
+    .table-scroll {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow: auto;
+      max-height: 72vh;
+    }
+
+    table {
+      border-collapse: collapse;
+      white-space: nowrap;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #1f2937;
+      padding: 0.45rem 0.3rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+      text-align: center;
+      min-width: 54px;
+    }
+
+    thead th:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      background: #1f2937;
+      min-width: 40px;
+      text-align: left;
+      padding-left: 0.6rem;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #1e2a3b;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody tr:hover td { background: #263244; }
+    tbody tr:hover td:first-child { background: #263244; }
+
+    td {
+      padding: 0.28rem 0.3rem;
+      text-align: center;
+      min-width: 54px;
+      vertical-align: middle;
+    }
+
+    td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: #1f2937;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #d1d5db;
+      text-align: left;
+      padding-left: 0.6rem;
+      border-right: 1px solid #374151;
+      min-width: 40px;
+    }
+
+    thead th:first-child {
+      border-right: 1px solid #374151;
+    }
+
+    .cell-record {
+      font-size: 0.7rem;
+      font-weight: 500;
+      line-height: 1.25;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cell-pct {
+      font-size: 0.6rem;
+      line-height: 1.2;
+      opacity: 0.8;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cell-dash {
+      font-size: 0.75rem;
+      color: #4b5563;
+    }
+
+    #status {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    .owner-table td:first-child,
+    .owner-table thead th:first-child {
+      min-width: 130px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Nothing But Net</a></nav>
+
+    <header>
+      <h1>Head to Head</h1>
+      <p>Row team's record against column team. Scroll to explore all 30 teams.</p>
+    </header>
+
+    <div class="section">
+      <h2 class="section-title">All-Time (Regular Season + Playoffs)</h2>
+      <div class="table-scroll" id="alltime-wrap">
+        <div id="alltime-status">Loading…</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Playoffs Only</h2>
+      <div class="table-scroll" id="playoffs-wrap">
+        <div id="playoffs-status">Loading…</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">By Owner (All-Time)</h2>
+      <div class="table-scroll" id="owners-wrap">
+        <div id="owners-status">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = parseLine(lines[0]);
+      return lines.slice(1).map(line => {
+        const vals = parseLine(line);
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = vals[i] ?? ''; });
+        return obj;
+      });
+    }
+
+    function parseLine(line) {
+      const out = [];
+      let cur = '', quoted = false;
+      for (const ch of line) {
+        if (ch === '"') { quoted = !quoted; }
+        else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+      out.push(cur);
+      return out;
+    }
+
+    function buildH2HTable(rows) {
+      if (!rows.length) return null;
+      const teams = Object.keys(rows[0]).filter(k => k !== 'TEAM').sort();
+
+      const table = document.createElement('table');
+
+      // Header row
+      const thead = table.createTHead();
+      const hr = thead.insertRow();
+      const corner = document.createElement('th');
+      hr.appendChild(corner);
+      teams.forEach(t => {
+        const th = document.createElement('th');
+        th.textContent = t;
+        hr.appendChild(th);
+      });
+
+      // Body rows
+      const tbody = table.createTBody();
+      rows.forEach(row => {
+        const tr = tbody.insertRow();
+
+        // Row label
+        const label = tr.insertCell();
+        label.textContent = row.TEAM;
+
+        teams.forEach(colTeam => {
+          const td = tr.insertCell();
+          const record = row[colTeam] ?? '';
+
+          if (!record || record === '0-0' || colTeam === row.TEAM) {
+            if (colTeam === row.TEAM || !record) {
+              td.innerHTML = '<span class="cell-dash">—</span>';
+              return;
+            }
+          }
+
+          const parts = record.split('-');
+          const w = parseInt(parts[0], 10);
+          const l = parseInt(parts[1], 10);
+
+          if (isNaN(w) || isNaN(l) || w + l === 0) {
+            td.innerHTML = '<span class="cell-dash">—</span>';
+            return;
+          }
+
+          const pct = w / (w + l);
+          const hue = Math.round(pct * 120);
+          td.style.background = `hsl(${hue}, 55%, 18%)`;
+          td.style.color = `hsl(${hue}, 80%, 72%)`;
+
+          const recDiv = document.createElement('div');
+          recDiv.className = 'cell-record';
+          recDiv.textContent = record;
+
+          const pctDiv = document.createElement('div');
+          pctDiv.className = 'cell-pct';
+          pctDiv.textContent = (pct * 100).toFixed(1) + '%';
+
+          td.appendChild(recDiv);
+          td.appendChild(pctDiv);
+        });
+      });
+
+      return table;
+    }
+
+    function buildOwnerTable(rows) {
+      if (!rows.length) return null;
+      const teams = Object.keys(rows[0]).filter(k => k !== 'OWNER').sort();
+
+      const table = document.createElement('table');
+      table.classList.add('owner-table');
+
+      const thead = table.createTHead();
+      const hr = thead.insertRow();
+      const corner = document.createElement('th');
+      hr.appendChild(corner);
+      teams.forEach(t => {
+        const th = document.createElement('th');
+        th.textContent = t;
+        hr.appendChild(th);
+      });
+
+      const tbody = table.createTBody();
+      rows.forEach(row => {
+        const tr = tbody.insertRow();
+        const label = tr.insertCell();
+        label.textContent = row.OWNER;
+
+        teams.forEach(colTeam => {
+          const td = tr.insertCell();
+          const record = row[colTeam] ?? '';
+
+          if (!record || record === '0-0') {
+            td.innerHTML = '<span class="cell-dash">—</span>';
+            return;
+          }
+
+          const parts = record.split('-');
+          const w = parseInt(parts[0], 10);
+          const l = parseInt(parts[1], 10);
+
+          if (isNaN(w) || isNaN(l) || w + l === 0) {
+            td.innerHTML = '<span class="cell-dash">—</span>';
+            return;
+          }
+
+          const pct = w / (w + l);
+          const hue = Math.round(pct * 120);
+          td.style.background = `hsl(${hue}, 55%, 18%)`;
+          td.style.color = `hsl(${hue}, 80%, 72%)`;
+
+          const recDiv = document.createElement('div');
+          recDiv.className = 'cell-record';
+          recDiv.textContent = record;
+
+          const pctDiv = document.createElement('div');
+          pctDiv.className = 'cell-pct';
+          pctDiv.textContent = (pct * 100).toFixed(1) + '%';
+
+          td.appendChild(recDiv);
+          td.appendChild(pctDiv);
+        });
+      });
+
+      return table;
+    }
+
+    (async () => {
+      const alltimeStatus = document.getElementById('alltime-status');
+      const alltimeWrap = document.getElementById('alltime-wrap');
+      const playoffsStatus = document.getElementById('playoffs-status');
+      const playoffsWrap = document.getElementById('playoffs-wrap');
+      const ownersStatus = document.getElementById('owners-status');
+      const ownersWrap = document.getElementById('owners-wrap');
+
+      try {
+        const [r1, r2, r3] = await Promise.all([
+          fetch('/h2h-alltime.csv'),
+          fetch('/h2h-playoffs.csv'),
+          fetch('/h2h-owners.csv'),
+        ]);
+        if (!r1.ok) throw new Error('alltime: ' + r1.statusText);
+        if (!r2.ok) throw new Error('playoffs: ' + r2.statusText);
+
+        const [t1, t2] = await Promise.all([r1.text(), r2.text()]);
+
+        alltimeStatus.remove();
+        const alltimeTable = buildH2HTable(parseCSV(t1));
+        if (alltimeTable) alltimeWrap.appendChild(alltimeTable);
+
+        playoffsStatus.remove();
+        const playoffsTable = buildH2HTable(parseCSV(t2));
+        if (playoffsTable) playoffsWrap.appendChild(playoffsTable);
+
+        if (r3.ok) {
+          const t3 = await r3.text();
+          ownersStatus.remove();
+          const ownersTable = buildOwnerTable(parseCSV(t3));
+          if (ownersTable) ownersWrap.appendChild(ownersTable);
+        } else {
+          ownersStatus.textContent = 'Owner data not yet available.';
+        }
+
+      } catch (e) {
+        alltimeStatus.textContent = 'Failed to load data: ' + e.message;
+        playoffsStatus.textContent = 'Failed to load data: ' + e.message;
+        ownersStatus.textContent = 'Failed to load data: ' + e.message;
+      }
+    })();
+  </script>
+</body>
+</html>
