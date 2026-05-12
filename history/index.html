@@ -157,7 +157,7 @@
     }
 
     function fmtPlayer(s) {
-      if (!s) return '—';
+      if (!s || s === 'NA') return '—';
       const [last, first] = s.split(', ');
       if (!first) return s;
       const cap = w => w.split('-').map(p => p[0].toUpperCase() + p.slice(1).toLowerCase()).join('-');
@@ -171,7 +171,7 @@
       return fmtPlayer(m[1]) + ' (' + Number(m[2]).toLocaleString() + ')';
     }
 
-    function val(s) { return s || '—'; }
+    function val(s) { return (!s || s === 'NA') ? '—' : s; }
 
     function th(text, cls = '') {
       const el = document.createElement('th');
