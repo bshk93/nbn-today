@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hall of Fame — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .nav {
+      margin-bottom: 1.75rem;
+      font-size: 0.875rem;
+      color: #9ca3af;
+    }
+
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header { margin-bottom: 1.75rem; }
+
+    header h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: #9ca3af;
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .table-wrap {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+
+    .col-group-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #4b5563;
+      text-align: center;
+      padding: 0.35rem 1rem 0;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    .col-group-label.bordered {
+      border-left: 1px solid #283141;
+    }
+
+    thead th {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { color: #d1d5db; }
+    thead th[data-active="true"] { color: #93c5fd; }
+
+    thead th .sort-arrow {
+      margin-left: 4px;
+      font-size: 0.65rem;
+    }
+
+    thead th.right { text-align: right; }
+    thead th.center { text-align: center; }
+
+    tbody tr {
+      border-bottom: 1px solid #283141;
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #263244; }
+
+    td {
+      padding: 0.55rem 0.75rem;
+      color: #d1d5db;
+    }
+
+    td.player-name {
+      font-weight: 600;
+      color: #f3f4f6;
+    }
+
+    td.teams {
+      color: #9ca3af;
+      font-size: 0.8rem;
+    }
+
+    td.right {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.center {
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.muted { color: #6b7280; }
+
+    td.score {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      color: #93c5fd;
+    }
+
+    .active-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #34d399;
+      border-radius: 50%;
+      margin-left: 6px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    .border-left { border-left: 1px solid #283141; }
+
+    #status {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Nothing But Net</a></nav>
+
+    <header>
+      <h1>Hall of Fame</h1>
+      <p>Career scores, accolades, and statistics for every player in NBN history. Click any column to sort.</p>
+    </header>
+
+    <div class="table-wrap" id="table-wrap">
+      <div id="status">Loading…</div>
+    </div>
+  </div>
+
+  <script>
+    const COLS = [
+      { key: 'PLAYER',       label: 'Player',    cls: 'player-name',          sortField: 'PLAYER',       numeric: false, defaultDir:  1 },
+      { key: 'TEAMS',        label: 'Teams',     cls: 'teams',                sortField: 'TEAMS',        numeric: false, defaultDir:  1,
+        display: r => r.TEAMS ? r.TEAMS.replace(/,/g, ', ') : '—' },
+      { key: 'HOF_POINTS',   label: 'Score',     cls: 'score',                sortField: 'HOF_POINTS',   numeric: true,  defaultDir: -1,
+        display: r => { const n = parseFloat(r.HOF_POINTS); return (isNaN(n) || n <= 0) ? '—' : n.toFixed(1); } },
+      { key: 'RINGS',        label: '🏆',        cls: 'center border-left',   sortField: 'RINGS',        numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.RINGS) > 0 ? r.RINGS : '—' },
+      { key: 'PLAYOFF_APPS', label: 'PO',        cls: 'center',               sortField: 'PLAYOFF_APPS', numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.PLAYOFF_APPS) > 0 ? r.PLAYOFF_APPS : '—' },
+      { key: 'ALLSTARS',     label: 'AS',        cls: 'center',               sortField: 'ALLSTARS',     numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.ALLSTARS) > 0 ? r.ALLSTARS : '—' },
+      { key: 'ALL_NBN_1',    label: '1st',       cls: 'center',               sortField: 'ALL_NBN_1',    numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.ALL_NBN_1) > 0 ? r.ALL_NBN_1 : '—' },
+      { key: 'ALL_NBN_2',    label: '2nd',       cls: 'center',               sortField: 'ALL_NBN_2',    numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.ALL_NBN_2) > 0 ? r.ALL_NBN_2 : '—' },
+      { key: 'ALL_NBN_3',    label: '3rd',       cls: 'center',               sortField: 'ALL_NBN_3',    numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.ALL_NBN_3) > 0 ? r.ALL_NBN_3 : '—' },
+      { key: 'G',            label: 'G',         cls: 'right border-left',    sortField: 'G',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.G) },
+      { key: 'P',            label: 'PTS',       cls: 'right',                sortField: 'P',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.P) },
+      { key: 'R',            label: 'REB',       cls: 'right',                sortField: 'R',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.R) },
+      { key: 'A',            label: 'AST',       cls: 'right',                sortField: 'A',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.A) },
+      { key: 'S',            label: 'STL',       cls: 'right',                sortField: 'S',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.S) },
+      { key: 'B',            label: 'BLK',       cls: 'right',                sortField: 'B',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.B) },
+    ];
+
+    let sortField = 'HOF_POINTS';
+    let sortDir = -1;
+
+    function fmtInt(val) {
+      if (!val || val === 'NA') return '—';
+      const n = parseInt(val);
+      return isNaN(n) || n === 0 ? '—' : n.toLocaleString();
+    }
+
+    function sortVal(row, field) {
+      const v = row[field];
+      if (v === undefined || v === '' || v === 'NA') return -Infinity;
+      const n = parseFloat(v);
+      return isNaN(n) ? v.toLowerCase() : n;
+    }
+
+    function sortRows(rows) {
+      return [...rows].sort((a, b) => {
+        const va = sortVal(a, sortField);
+        const vb = sortVal(b, sortField);
+        if (va < vb) return -sortDir;
+        if (va > vb) return sortDir;
+        return 0;
+      });
+    }
+
+    function parseLine(line) {
+      const out = [];
+      let cur = '', quoted = false;
+      for (const ch of line) {
+        if (ch === '"') { quoted = !quoted; }
+        else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+      out.push(cur);
+      return out;
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = parseLine(lines[0]).map(h => h.trim());
+      return lines.slice(1).map(line => {
+        const vals = parseLine(line);
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = (vals[i] ?? '').trim(); });
+        return obj;
+      });
+    }
+
+    let allRows = [];
+    let tbody;
+    let thEls = [];
+
+    function updateHeaders() {
+      thEls.forEach((th, i) => {
+        const active = COLS[i].sortField === sortField;
+        th.dataset.active = active;
+        const arrow = th.querySelector('.sort-arrow');
+        if (arrow) arrow.textContent = active ? (sortDir === -1 ? '↓' : '↑') : '';
+      });
+    }
+
+    function rebuildBody() {
+      const sorted = sortRows(allRows);
+      tbody.innerHTML = '';
+      sorted.forEach(row => {
+        const tr = tbody.insertRow();
+        COLS.forEach(col => {
+          const td = tr.insertCell();
+          td.className = col.cls;
+
+          if (col.key === 'PLAYER') {
+            td.textContent = row.PLAYER;
+            if (row.ACTIVE === '1') {
+              const dot = document.createElement('span');
+              dot.className = 'active-dot';
+              dot.title = 'Active';
+              td.appendChild(dot);
+            }
+          } else {
+            td.textContent = col.display ? col.display(row) : (row[col.key] ?? '');
+          }
+        });
+      });
+    }
+
+    function buildTable(rows) {
+      allRows = rows;
+      const wrap = document.getElementById('table-wrap');
+      const table = document.createElement('table');
+
+      // Two-row header: group labels + column headers
+      const thead = table.createTHead();
+
+      const groupRow = thead.insertRow();
+      const groups = [
+        { label: '',          span: 3, bordered: false },
+        { label: 'Accolades', span: 6, bordered: true  },
+        { label: 'Career',    span: 6, bordered: true  },
+      ];
+      groups.forEach(g => {
+        const th = document.createElement('th');
+        th.colSpan = g.span;
+        th.className = 'col-group-label' + (g.bordered ? ' bordered' : '');
+        th.textContent = g.label;
+        th.style.cursor = 'default';
+        groupRow.appendChild(th);
+      });
+
+      const hr = thead.insertRow();
+      COLS.forEach((col, i) => {
+        const th = document.createElement('th');
+        if (col.cls.includes('right') || col.cls.includes('score')) th.classList.add('right');
+        if (col.cls.includes('center')) th.classList.add('center');
+        const arrow = document.createElement('span');
+        arrow.className = 'sort-arrow';
+        th.appendChild(document.createTextNode(col.label));
+        th.appendChild(arrow);
+        th.dataset.active = col.sortField === sortField;
+        th.addEventListener('click', () => {
+          if (sortField === col.sortField) {
+            sortDir *= -1;
+          } else {
+            sortField = col.sortField;
+            sortDir = col.defaultDir;
+          }
+          updateHeaders();
+          rebuildBody();
+        });
+        thEls.push(th);
+        hr.appendChild(th);
+      });
+
+      tbody = table.createTBody();
+      wrap.innerHTML = '';
+      wrap.appendChild(table);
+      updateHeaders();
+      rebuildBody();
+    }
+
+    fetch('/hof.csv')
+      .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+      .then(text => buildTable(parseCSV(text)))
+      .catch(() => {
+        document.getElementById('table-wrap').innerHTML = '<div id="status">Failed to load data.</div>';
+      });
+  </script>
+</body>
+</html>

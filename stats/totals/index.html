@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Totals Leaderboards — NBN Stats</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem; }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 660px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .card { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 1.5rem; text-decoration: none; color: inherit; transition: background 0.15s, border-color 0.15s, transform 0.15s; display: flex; flex-direction: column; gap: 0.4rem; }
+    .card:hover { background: #263244; border-color: #4b6a9b; transform: translateY(-2px); }
+    .card-stat { font-size: 1.5rem; font-weight: 700; color: #93c5fd; }
+    .card-title { font-size: 0.95rem; font-weight: 600; }
+    @media (max-width: 480px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/stats">← Stats</a></nav>
+    <header>
+      <h1>Totals Leaderboards</h1>
+      <p>All-time career totals, ranked across all NBN seasons.</p>
+    </header>
+    <div class="grid">
+      <a class="card" href="/stats/totals/p">
+        <span class="card-stat">PTS</span>
+        <span class="card-title">Points</span>
+      </a>
+      <a class="card" href="/stats/totals/r">
+        <span class="card-stat">REB</span>
+        <span class="card-title">Rebounds</span>
+      </a>
+      <a class="card" href="/stats/totals/a">
+        <span class="card-stat">AST</span>
+        <span class="card-title">Assists</span>
+      </a>
+      <a class="card" href="/stats/totals/b">
+        <span class="card-stat">BLK</span>
+        <span class="card-title">Blocks</span>
+      </a>
+      <a class="card" href="/stats/totals/s">
+        <span class="card-stat">STL</span>
+        <span class="card-title">Steals</span>
+      </a>
+      <a class="card" href="/stats/totals/3pm">
+        <span class="card-stat">3PM</span>
+        <span class="card-title">3-Pointers Made</span>
+      </a>
+    </div>
+  </div>
+</body>
+</html>
