@@ -15,8 +15,47 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 2rem 1rem;
+      padding: 5rem 1rem 4rem;
+    }
+
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #1f2937;
+      border-bottom: 1px solid #374151;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.25rem;
+      padding: 0 1.5rem;
+      height: 2.75rem;
+      font-size: 0.8rem;
+      z-index: 10;
+    }
+
+    .topbar-label {
+      color: #6b7280;
+      margin-right: 0.5rem;
+    }
+
+    .topbar a {
+      color: #9ca3af;
+      text-decoration: none;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      transition: color 0.1s, background 0.1s;
+    }
+
+    .topbar a:hover {
+      color: #f3f4f6;
+      background: #374151;
+    }
+
+    .topbar-sep {
+      color: #374151;
+      user-select: none;
     }
 
     header {
@@ -111,46 +150,26 @@
       .grid { grid-template-columns: 1fr; }
       .card--wide { grid-column: auto; }
       header h1 { font-size: 2rem; }
+      .topbar-label { display: none; }
     }
   </style>
 </head>
 <body>
+  <nav class="topbar">
+    <span class="topbar-label">Helpful Links</span>
+    <a href="https://docs.google.com/spreadsheets/d/14Pwrjk4S9cgB1f2Q16S3YgfoHre8gUxjjXde8k5Nn_0/edit?gid=167248319#gid=167248319">Rosters</a>
+    <span class="topbar-sep">·</span>
+    <a href="https://docs.google.com/spreadsheets/d/1SDheJUhHfFmB7UGu9sds8t8Z8YyrYqB0JC3d7MEd7BU/edit?gid=1455096121#gid=1455096121">Members</a>
+    <span class="topbar-sep">·</span>
+    <a href="https://discord.gg/t4FB6XbryN">Discord</a>
+  </nav>
+
   <header>
     <h1>Nothing But Net</h1>
     <p>Basketball Simulation GM League</p>
   </header>
 
   <main class="grid">
-    <a class="card" href="https://stats.nbn.today">
-      <span class="card-icon">📊</span>
-      <span class="card-title">Stats Dashboard</span>
-      <p class="card-desc">Season stats, player profiles, standings, and more.</p>
-    </a>
-
-    <a class="card" href="https://docs.google.com/spreadsheets/d/14Pwrjk4S9cgB1f2Q16S3YgfoHre8gUxjjXde8k5Nn_0/edit?gid=167248319#gid=167248319">
-      <span class="card-icon">🏀</span>
-      <span class="card-title">Rosters</span>
-      <p class="card-desc">Current league rosters spreadsheet.</p>
-    </a>
-
-    <a class="card" href="https://docs.google.com/spreadsheets/d/1SDheJUhHfFmB7UGu9sds8t8Z8YyrYqB0JC3d7MEd7BU/edit?gid=1455096121#gid=1455096121">
-      <span class="card-icon">👥</span>
-      <span class="card-title">Members</span>
-      <p class="card-desc">League member directory.</p>
-    </a>
-
-    <a class="card" href="https://news.nbn.today">
-      <span class="card-icon">📰</span>
-      <span class="card-title">News</span>
-      <p class="card-desc">League news and updates.</p>
-    </a>
-
-    <a class="card" href="https://stats.nbn.today/files/">
-      <span class="card-icon">📁</span>
-      <span class="card-title">Data Files</span>
-      <p class="card-desc">Raw CSV exports of all historical season data.</p>
-    </a>
-
     <a class="card" href="/owners">
       <span class="card-icon">🏛️</span>
       <span class="card-title">Owners</span>
@@ -163,10 +182,34 @@
       <p class="card-desc">Franchise pages for all 30 NBN teams.</p>
     </a>
 
-    <a class="card" href="https://discord.gg/t4FB6XbryN">
-      <span class="card-icon">💬</span>
-      <span class="card-title">Discord</span>
-      <p class="card-desc">Join the league's Discord server.</p>
+    <a class="card" href="/stats">
+      <span class="card-icon">📊</span>
+      <span class="card-title">Stats</span>
+      <p class="card-desc">Leaderboards, season stats, player profiles, standings, and more.</p>
+    </a>
+
+    <a class="card" href="/hof">
+      <span class="card-icon">⭐</span>
+      <span class="card-title">Hall of Fame</span>
+      <p class="card-desc">Career scores, accolades, and statistics for every player in NBN history.</p>
+    </a>
+
+    <a class="card" href="/history">
+      <span class="card-icon">📜</span>
+      <span class="card-title">League History</span>
+      <p class="card-desc">Season-by-season champions, award winners, stat leaders, and top-rated teams.</p>
+    </a>
+
+    <a class="card" href="https://news.nbn.today">
+      <span class="card-icon">📰</span>
+      <span class="card-title">News</span>
+      <p class="card-desc">League news and updates.</p>
+    </a>
+
+    <a class="card" href="https://stats.nbn.today/files/">
+      <span class="card-icon">📁</span>
+      <span class="card-title">Data Files</span>
+      <p class="card-desc">Raw CSV exports of all historical season data.</p>
     </a>
   </main>
 

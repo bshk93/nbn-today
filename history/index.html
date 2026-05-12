@@ -16,7 +16,7 @@
     }
 
     .page {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
@@ -56,48 +56,41 @@
       white-space: nowrap;
     }
 
+    /* Superheader row */
     thead tr:first-child th {
-      padding: 0.6rem 1rem 0.5rem;
+      padding: 0.6rem 1rem 0.45rem;
       font-size: 0.65rem;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #6b7280;
       text-align: center;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid #283141;
     }
 
     thead tr:first-child th:first-child {
       text-align: left;
-      border-right: 1px solid #374151;
     }
 
-    th.superheader-post {
-      border-right: 1px solid #374151;
-      color: #f59e0b;
-    }
+    .sh-season   { color: #9ca3af; }
+    .sh-post     { color: #f59e0b; border-right: 1px solid #374151; border-left: 1px solid #374151; }
+    .sh-awards   { color: #60a5fa; border-right: 1px solid #374151; }
+    .sh-stats    { color: #34d399; border-right: 1px solid #374151; }
+    .sh-ratings  { color: #a78bfa; }
 
-    th.superheader-awards {
-      color: #60a5fa;
-    }
-
+    /* Column header row */
     thead tr:last-child th {
-      padding: 0.5rem 1rem 0.7rem;
-      font-size: 0.7rem;
+      padding: 0.45rem 1rem 0.65rem;
+      font-size: 0.68rem;
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
       color: #6b7280;
       border-bottom: 1px solid #374151;
-      text-align: left;
     }
 
-    thead tr:last-child th.right { text-align: right; }
-
-    th.col-season { border-right: 1px solid #374151; }
-    th.col-west-ru { border-right: 1px solid #374151; }
-    td.col-season { border-right: 1px solid #374151; }
-    td.col-west-ru { border-right: 1px solid #374151; }
+    /* Dividers between groups */
+    .div-left  { border-left:  1px solid #374151; }
+    .div-right { border-right: 1px solid #374151; }
 
     tbody tr {
       border-bottom: 1px solid #283141;
@@ -108,13 +101,14 @@
     tbody tr:hover { background: #263244; }
 
     td {
-      padding: 0.65rem 1rem;
+      padding: 0.6rem 1rem;
       color: #d1d5db;
+      vertical-align: middle;
     }
 
-    td.season { font-weight: 700; color: #f3f4f6; }
+    td.season   { font-weight: 700; color: #f3f4f6; }
     td.champion { font-weight: 600; color: #fbbf24; }
-    td.muted { color: #6b7280; }
+    td.muted    { color: #6b7280; }
 
     .status {
       text-align: center;
@@ -130,7 +124,7 @@
 
     <header>
       <h1>League History</h1>
-      <p>Season-by-season champions and award winners.</p>
+      <p>Season-by-season champions, award winners, statistical leaders, and top-rated teams.</p>
     </header>
 
     <div class="table-wrap" id="table-wrap">
@@ -170,83 +164,105 @@
       return cap(first) + ' ' + cap(last);
     }
 
+    function fmtLeader(s) {
+      if (!s) return '—';
+      const m = s.match(/^(.+) \((\d+)\)$/);
+      if (!m) return s;
+      return fmtPlayer(m[1]) + ' (' + Number(m[2]).toLocaleString() + ')';
+    }
+
     function val(s) { return s || '—'; }
+
+    function th(text, cls = '') {
+      const el = document.createElement('th');
+      el.textContent = text;
+      if (cls) cls.split(' ').forEach(c => c && el.classList.add(c));
+      return el;
+    }
 
     function buildTable(rows) {
       const table = document.createElement('table');
       const thead = table.createTHead();
 
-      // Superheader row
+      // ── Superheader row ──────────────────────────────────────────────
       const sup = thead.insertRow();
-      const thSeason = document.createElement('th');
-      thSeason.textContent = 'Season';
-      thSeason.rowSpan = 2;
-      thSeason.classList.add('col-season');
-      sup.appendChild(thSeason);
 
-      const thPost = document.createElement('th');
-      thPost.textContent = 'Postseason Results';
-      thPost.colSpan = 4;
-      thPost.classList.add('superheader-post');
-      sup.appendChild(thPost);
+      const shSeason = th('Season', 'sh-season');
+      shSeason.rowSpan = 2;
+      sup.appendChild(shSeason);
 
-      const thAwards = document.createElement('th');
-      thAwards.textContent = 'Season Awards';
-      thAwards.colSpan = 6;
-      thAwards.classList.add('superheader-awards');
-      sup.appendChild(thAwards);
+      const shPost = th('Postseason Results', 'sh-post');
+      shPost.colSpan = 4;
+      sup.appendChild(shPost);
 
-      // Column header row
+      const shAwards = th('Season Awards', 'sh-awards');
+      shAwards.colSpan = 6;
+      sup.appendChild(shAwards);
+
+      const shStats = th('Statistical Leaders', 'sh-stats');
+      shStats.colSpan = 6;
+      sup.appendChild(shStats);
+
+      const shRatings = th('Team Ratings', 'sh-ratings');
+      shRatings.colSpan = 3;
+      sup.appendChild(shRatings);
+
+      // ── Column header row ─────────────────────────────────────────────
       const sub = thead.insertRow();
       [
-        ['Champion',    ''],
+        ['Champion',    'div-left'],
         ['Runner-Up',   ''],
         ['East RU',     ''],
-        ['West RU',     'col-west-ru'],
+        ['West RU',     'div-right'],
         ['MVP',         ''],
         ['DPOY',        ''],
         ['ROTY',        ''],
         ['MIP',         ''],
         ['FOTY',        ''],
-        ['COTY',        ''],
-      ].forEach(([label, cls]) => {
-        const th = document.createElement('th');
-        th.textContent = label;
-        if (cls) th.classList.add(cls);
-        sub.appendChild(th);
-      });
+        ['COTY',        'div-right'],
+        ['PTS',         ''],
+        ['REB',         ''],
+        ['AST',         ''],
+        ['STL',         ''],
+        ['BLK',         ''],
+        ['3PM',         'div-right'],
+        ['Best Offense',''],
+        ['Best Defense',''],
+        ['Best Overall',''],
+      ].forEach(([label, cls]) => sub.appendChild(th(label, cls)));
 
+      // ── Body ──────────────────────────────────────────────────────────
       const tbody = table.createTBody();
       [...rows].reverse().forEach(row => {
         const tr = tbody.insertRow();
 
-        const tdSeason = tr.insertCell();
-        tdSeason.textContent = row.SEASON;
-        tdSeason.classList.add('season', 'col-season');
-
-        const tdChamp = tr.insertCell();
-        tdChamp.textContent = val(row.CHAMPION);
-        tdChamp.classList.add('champion');
-
-        [row.RUNNER_UP, row.EAST_RUNNER_UP].forEach(v => {
+        function cell(text, ...cls) {
           const td = tr.insertCell();
-          td.textContent = val(v);
-        });
+          td.textContent = text;
+          cls.forEach(c => c && td.classList.add(c));
+          return td;
+        }
 
-        const tdWestRU = tr.insertCell();
-        tdWestRU.textContent = val(row.WEST_RUNNER_UP);
-        tdWestRU.classList.add('col-west-ru');
-
-        [row.MVP, row.DPOY, row.ROTY, row.MIP].forEach(v => {
-          const td = tr.insertCell();
-          td.textContent = fmtPlayer(v);
-        });
-
-        [row.FOTY, row.COTY].forEach(v => {
-          const td = tr.insertCell();
-          td.textContent = val(v);
-          td.classList.add('muted');
-        });
+        cell(row.SEASON, 'season');
+        cell(val(row.CHAMPION),      'champion', 'div-left');
+        cell(val(row.RUNNER_UP));
+        cell(val(row.EAST_RUNNER_UP));
+        cell(val(row.WEST_RUNNER_UP), 'div-right');
+        cell(fmtPlayer(row.MVP));
+        cell(fmtPlayer(row.DPOY));
+        cell(fmtPlayer(row.ROTY));
+        cell(fmtPlayer(row.MIP));
+        cell(val(row.FOTY),          'muted');
+        cell(val(row.COTY),          'muted', 'div-right');
+        cell(fmtLeader(row.PTS_LEADER));
+        cell(fmtLeader(row.REB_LEADER));
+        cell(fmtLeader(row.AST_LEADER));
+        cell(fmtLeader(row.STL_LEADER));
+        cell(fmtLeader(row.BLK_LEADER));
+        cell(fmtLeader(row.TPM_LEADER), 'div-right');
+        cell(val(row.BEST_OFF));
+        cell(val(row.BEST_DEF));
+        cell(val(row.BEST_OVERALL));
       });
 
       return table;
@@ -257,9 +273,8 @@
       try {
         const res = await fetch('/league-history.csv');
         if (!res.ok) throw new Error(res.statusText);
-        const rows = parseCSV(await res.text());
         wrap.innerHTML = '';
-        wrap.appendChild(buildTable(rows));
+        wrap.appendChild(buildTable(parseCSV(await res.text())));
       } catch (e) {
         wrap.innerHTML = '<div class="status">Failed to load league history.</div>';
       }
