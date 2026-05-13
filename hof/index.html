@@ -282,6 +282,12 @@
         display: r => parseInt(r.DPOY) > 0 ? r.DPOY : '—' },
       { key: 'ALL_DEF',      label: 'DEF',       cls: 'center',               sortField: 'ALL_DEF',      numeric: true,  defaultDir: -1,
         display: r => parseInt(r.ALL_DEF) > 0 ? r.ALL_DEF : '—' },
+      { key: 'SIX_MOY',      label: '6MOY',      cls: 'center',               sortField: 'SIX_MOY',      numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.SIX_MOY) > 0 ? r.SIX_MOY : '—' },
+      { key: 'ROY',          label: 'ROY',       cls: 'center',               sortField: 'ROY',          numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.ROY) > 0 ? r.ROY : '—' },
+      { key: 'MIP',          label: 'MIP',       cls: 'center',               sortField: 'MIP',          numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.MIP) > 0 ? r.MIP : '—' },
       { key: 'G',            label: 'G',         cls: 'right border-left',    sortField: 'G',            numeric: true,  defaultDir: -1,
         display: r => fmtInt(r.G) },
       { key: 'P',            label: 'PTS',       cls: 'right',                sortField: 'P',            numeric: true,  defaultDir: -1,
@@ -393,7 +399,7 @@
       const groupRow = thead.insertRow();
       const groups = [
         { label: '',          span: 3, bordered: false },
-        { label: 'Accolades', span: 9, bordered: true  },
+        { label: 'Accolades', span: 12, bordered: true  },
         { label: 'Career',    span: 6, bordered: true  },
       ];
       groups.forEach(g => {
