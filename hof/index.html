@@ -152,6 +152,66 @@
       flex-shrink: 0;
     }
 
+    .formula-note {
+      margin-bottom: 1.75rem;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background: #1f2937;
+      padding: 0.75rem 1rem;
+      font-size: 0.825rem;
+      color: #9ca3af;
+    }
+
+    .formula-note summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #6b7280;
+      letter-spacing: 0.03em;
+      list-style: none;
+      user-select: none;
+    }
+
+    .formula-note summary::-webkit-details-marker { display: none; }
+
+    .formula-note summary::before {
+      content: '▶ ';
+      font-size: 0.6rem;
+      vertical-align: middle;
+    }
+
+    .formula-note[open] summary::before { content: '▼ '; }
+
+    .formula-note summary:hover { color: #d1d5db; }
+
+    .formula-body {
+      margin-top: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      line-height: 1.55;
+    }
+
+    .formula-body strong { color: #d1d5db; }
+
+    .formula-body ul {
+      margin: 0.1rem 0 0 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .formula-mono {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.78rem;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 5px;
+      padding: 0.4rem 0.65rem;
+      color: #a5b4fc;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
     .border-left { border-left: 1px solid #283141; }
 
     #status {
@@ -170,6 +230,27 @@
       <h1>Hall of Fame</h1>
       <p>Career scores, accolades, and statistics for every player in NBN history. Click any column to sort.</p>
     </header>
+
+    <details class="formula-note">
+      <summary>How Score is calculated</summary>
+      <div class="formula-body">
+        <p>Score sums every career game's <strong>Game Score (GMSC)</strong>, applies per-game weights, divides by 100, then adds accolade bonuses.</p>
+        <p class="formula-mono">GMSC = PTS + 0.4·FGM − 0.7·FGA − 0.4·(FTA−FTM) + 0.7·ORB + 0.3·DRB + STL + 0.7·AST + 0.7·BLK − 0.4·PF − TO</p>
+        <p><strong>Per-game multipliers</strong> (applied together):</p>
+        <ul>
+          <li><strong>Win/Loss:</strong> ×1.25 for wins · ×0.75 for losses</li>
+          <li><strong>Playoff round:</strong> ×1 reg season · ×2 R1 · ×4 R2 · ×8 Conf Finals · ×16 Finals</li>
+          <li><strong>Series normalizer:</strong> 5.5 ÷ games in series — keeps each series' total weight constant regardless of length</li>
+        </ul>
+        <p><strong>Accolade bonuses</strong> (added on top):</p>
+        <ul>
+          <li>🏆 Championship ring: <strong>+10</strong> · Playoff appearance: <strong>+1</strong></li>
+          <li>MVP: <strong>+8</strong> · DPOY: <strong>+5</strong> · 6MOY / ROY: <strong>+3</strong> · MIP: <strong>+2</strong></li>
+          <li>All-Star: <strong>+3</strong> · All-NBN 1st: <strong>+4</strong> · 2nd: <strong>+3</strong> · 3rd: <strong>+2</strong> · All-Defense: <strong>+2</strong></li>
+        </ul>
+        <p class="formula-mono">Score = Σ (GMSC × W/L × round × normalizer) ÷ 100  +  Σ (accolade × bonus)</p>
+      </div>
+    </details>
 
     <div class="table-wrap" id="table-wrap">
       <div id="status">Loading…</div>
@@ -195,6 +276,12 @@
         display: r => parseInt(r.ALL_NBN_2) > 0 ? r.ALL_NBN_2 : '—' },
       { key: 'ALL_NBN_3',    label: '3rd',       cls: 'center',               sortField: 'ALL_NBN_3',    numeric: true,  defaultDir: -1,
         display: r => parseInt(r.ALL_NBN_3) > 0 ? r.ALL_NBN_3 : '—' },
+      { key: 'MVP',          label: 'MVP',       cls: 'center',               sortField: 'MVP',          numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.MVP) > 0 ? r.MVP : '—' },
+      { key: 'DPOY',         label: 'DPOY',      cls: 'center',               sortField: 'DPOY',         numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.DPOY) > 0 ? r.DPOY : '—' },
+      { key: 'ALL_DEF',      label: 'DEF',       cls: 'center',               sortField: 'ALL_DEF',      numeric: true,  defaultDir: -1,
+        display: r => parseInt(r.ALL_DEF) > 0 ? r.ALL_DEF : '—' },
       { key: 'G',            label: 'G',         cls: 'right border-left',    sortField: 'G',            numeric: true,  defaultDir: -1,
         display: r => fmtInt(r.G) },
       { key: 'P',            label: 'PTS',       cls: 'right',                sortField: 'P',            numeric: true,  defaultDir: -1,
@@ -306,7 +393,7 @@
       const groupRow = thead.insertRow();
       const groups = [
         { label: '',          span: 3, bordered: false },
-        { label: 'Accolades', span: 6, bordered: true  },
+        { label: 'Accolades', span: 9, bordered: true  },
         { label: 'Career',    span: 6, bordered: true  },
       ];
       groups.forEach(g => {
