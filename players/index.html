@@ -380,8 +380,8 @@
         if (tiebreakerField) {
           const ta = sortVal(a, tiebreakerField);
           const tb = sortVal(b, tiebreakerField);
-          if (ta < tb) return 1;
-          if (ta > tb) return -1;
+          if (ta < tb) return -1;
+          if (ta > tb) return 1;
         }
         return 0;
       });
