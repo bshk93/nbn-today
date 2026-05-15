@@ -24,7 +24,7 @@
     .nav a { color: #9ca3af; }
     .nav a:hover { color: #f3f4f6; }
 
-    header { margin-bottom: 1.75rem; }
+    header { margin-bottom: 1.25rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
 
@@ -50,20 +50,39 @@
       display: block;
     }
 
-    .player-card:hover {
-      background: #263244;
-      border-color: #4b6a9b;
-      text-decoration: none;
+    .player-card:hover { background: #263244; border-color: #4b6a9b; text-decoration: none; }
+
+    /* toggle */
+    .toggle-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
     }
+
+    .toggle-btn {
+      padding: 0.35rem 0.9rem;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .toggle-btn:hover { background: #263244; color: #d1d5db; }
+    .toggle-btn.active { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
 
     /* section headings */
     .section-heading {
-      font-size: 1rem;
+      font-size: 0.8rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #9ca3af;
-      margin: 2rem 0 0.75rem;
+      color: #6b7280;
+      margin: 1.75rem 0 0.6rem;
     }
 
     /* table wrapper */
@@ -72,7 +91,7 @@
       border: 1px solid #374151;
       border-radius: 12px;
       overflow-x: auto;
-      margin-bottom: 2rem;
+      margin-bottom: 0.5rem;
     }
 
     table {
@@ -83,7 +102,7 @@
     }
 
     thead th {
-      padding: 0.7rem 0.9rem;
+      padding: 0.65rem 0.9rem;
       text-align: left;
       font-size: 0.7rem;
       font-weight: 600;
@@ -98,12 +117,7 @@
     thead th:hover { color: #d1d5db; }
     thead th[data-active="true"] { color: #93c5fd; }
 
-    thead th .sort-arrow {
-      margin-left: 4px;
-      opacity: 0;
-      font-size: 0.65rem;
-    }
-
+    thead th .sort-arrow { margin-left: 4px; opacity: 0; font-size: 0.65rem; }
     thead th[data-active="true"] .sort-arrow { opacity: 1; }
     thead th.right { text-align: right; }
 
@@ -120,13 +134,11 @@
       color: #d1d5db;
     }
 
-    td.right {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
+    td.right { text-align: right; font-variant-numeric: tabular-nums; }
+    td.muted  { color: #9ca3af; }
 
-    td.muted { color: #9ca3af; }
-    td.bold  { font-weight: 600; color: #f3f4f6; }
+    .career-row { border-top: 2px solid #374151 !important; }
+    .career-row td { font-weight: 600; color: #f3f4f6; }
   </style>
 </head>
 <body>
@@ -143,7 +155,7 @@
 (function () {
   const slug = new URLSearchParams(location.search).get('p');
 
-  // ── CSV helpers ─────────────────────────────────────────────────────────────
+  // ── CSV helpers ──────────────────────────────────────────────────────────────
 
   function parseLine(line) {
     const out = [];
@@ -168,7 +180,7 @@
     });
   }
 
-  // ── Sort helpers ─────────────────────────────────────────────────────────────
+  // ── Sort helper ──────────────────────────────────────────────────────────────
 
   function sortVal(row, field) {
     const v = row[field];
@@ -177,22 +189,108 @@
     return isNaN(n) ? v.toLowerCase() : n;
   }
 
+  // ── Season aggregation (toggle) ──────────────────────────────────────────────
+
+  const SUM_FIELDS  = ['G','MIN','PTS','REB','AST','STL','BLK','TOV','PF','FGM','FGA','3PM','3PA','FTM','FTA','GMSC'];
+  const HIGH_FIELDS = ['HIGH_P','HIGH_R','HIGH_A','HIGH_S','HIGH_B','HIGH_3PM','HIGH_GMSC'];
+
+  function aggregateBySeasonRows(rows) {
+    const map = new Map();
+    rows.forEach(r => {
+      if (!map.has(r.SEASON)) {
+        map.set(r.SEASON, { ...r, _teams: [r.TEAM] });
+      } else {
+        const s = map.get(r.SEASON);
+        s._teams.push(r.TEAM);
+        SUM_FIELDS.forEach(f  => { s[f] = String(+s[f] + +r[f]); });
+        HIGH_FIELDS.forEach(f => { s[f] = String(Math.max(+s[f], +r[f])); });
+        if (r.LAST_DATE > s.LAST_DATE) s.LAST_DATE = r.LAST_DATE;
+      }
+    });
+    return Array.from(map.values()).map(r => ({
+      ...r,
+      TEAM: r._teams.length > 1 ? `${r._teams.length}TM` : r._teams[0],
+    }));
+  }
+
+  // ── Career summary rows ──────────────────────────────────────────────────────
+
+  function careerStatsRow(rows) {
+    const r = { SEASON: 'Career', TEAM: '—', LAST_DATE: '' };
+    SUM_FIELDS.forEach(f => { r[f] = String(rows.reduce((a, row) => a + +row[f], 0)); });
+    return r;
+  }
+
+  function careerHighsRow(rows) {
+    const r = { SEASON: 'Career', TEAM: '—', LAST_DATE: '', G: String(rows.reduce((a, row) => a + +row.G, 0)) };
+    HIGH_FIELDS.forEach(f => { r[f] = String(rows.reduce((a, row) => Math.max(a, +row[f]), 0)); });
+    return r;
+  }
+
+  // ── Column definitions ───────────────────────────────────────────────────────
+
+  const pg  = (f, d = 1) => r => (+r[f] && +r.G) ? (+r[f] / +r.G).toFixed(d) : '0';
+  const pct = (m, a)     => r => +r[a] ? (+r[m] / +r[a] * 100).toFixed(1) + '%' : '—';
+  const ts  = r => {
+    const denom = 2 * (+r.FGA + 0.44 * +r.FTA);
+    return denom ? (+r.PTS / denom * 100).toFixed(1) + '%' : '—';
+  };
+  const R = 'right';
+
+  const SEASON_COLS = [
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1 },
+    { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
+    { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
+    { key: 'MPG',    label: 'MPG',    sortField: 'MIN',     defaultDir: -1, cls: R, display: pg('MIN') },
+    { key: 'PPG',    label: 'PPG',    sortField: 'PTS',     defaultDir: -1, cls: R, display: pg('PTS') },
+    { key: 'RPG',    label: 'RPG',    sortField: 'REB',     defaultDir: -1, cls: R, display: pg('REB') },
+    { key: 'APG',    label: 'APG',    sortField: 'AST',     defaultDir: -1, cls: R, display: pg('AST') },
+    { key: 'SPG',    label: 'SPG',    sortField: 'STL',     defaultDir: -1, cls: R, display: pg('STL') },
+    { key: 'BPG',    label: 'BPG',    sortField: 'BLK',     defaultDir: -1, cls: R, display: pg('BLK') },
+    { key: 'TOPG',   label: 'TOPG',   sortField: 'TOV',     defaultDir:  1, cls: R, display: pg('TOV') },
+    { key: 'PFPG',   label: 'PFPG',   sortField: 'PF',      defaultDir:  1, cls: R, display: pg('PF')  },
+    { key: 'FG',     label: 'FG%',    sortField: 'FGM',     defaultDir: -1, cls: R, display: pct('FGM','FGA') },
+    { key: '3P',     label: '3P%',    sortField: '3PM',     defaultDir: -1, cls: R, display: pct('3PM','3PA') },
+    { key: 'FT',     label: 'FT%',    sortField: 'FTM',     defaultDir: -1, cls: R, display: pct('FTM','FTA') },
+    { key: 'TS',     label: 'TS%',    sortField: 'PTS',     defaultDir: -1, cls: R, display: ts },
+    { key: 'GMSC',   label: 'GMSC',   sortField: 'GMSC',    defaultDir: -1, cls: R, display: pg('GMSC') },
+    { key: 'FGMPG',  label: 'FGM',    sortField: 'FGM',     defaultDir: -1, cls: R, display: pg('FGM') },
+    { key: 'FGAPG',  label: 'FGA',    sortField: 'FGA',     defaultDir: -1, cls: R, display: pg('FGA') },
+    { key: '3PMPG',  label: '3PM',    sortField: '3PM',     defaultDir: -1, cls: R, display: pg('3PM') },
+    { key: '3PAPG',  label: '3PA',    sortField: '3PA',     defaultDir: -1, cls: R, display: pg('3PA') },
+    { key: 'FTMPG',  label: 'FTM',    sortField: 'FTM',     defaultDir: -1, cls: R, display: pg('FTM') },
+    { key: 'FTAPG',  label: 'FTA',    sortField: 'FTA',     defaultDir: -1, cls: R, display: pg('FTA') },
+  ];
+
+  const HIGHS_COLS = [
+    { key: 'SEASON',    label: 'Season', sortField: 'SEASON',    defaultDir: -1 },
+    { key: 'TEAM',      label: 'Team',   sortField: 'TEAM',      defaultDir:  1, cls: 'muted' },
+    { key: 'G',         label: 'G',      sortField: 'G',         defaultDir: -1, cls: R },
+    { key: 'HIGH_P',    label: 'PTS',    sortField: 'HIGH_P',    defaultDir: -1, cls: R },
+    { key: 'HIGH_R',    label: 'REB',    sortField: 'HIGH_R',    defaultDir: -1, cls: R },
+    { key: 'HIGH_A',    label: 'AST',    sortField: 'HIGH_A',    defaultDir: -1, cls: R },
+    { key: 'HIGH_S',    label: 'STL',    sortField: 'HIGH_S',    defaultDir: -1, cls: R },
+    { key: 'HIGH_B',    label: 'BLK',    sortField: 'HIGH_B',    defaultDir: -1, cls: R },
+    { key: 'HIGH_3PM',  label: '3PM',    sortField: 'HIGH_3PM',  defaultDir: -1, cls: R },
+    { key: 'HIGH_GMSC', label: 'GMSC',   sortField: 'HIGH_GMSC', defaultDir: -1, cls: R,
+      display: r => (+r.HIGH_GMSC).toFixed(1) },
+  ];
+
   // ── Table builder ────────────────────────────────────────────────────────────
-  // cols: [{ key, label, cls, sortField, defaultDir, display }]
+  // careerRow is appended after sorting and never sorted itself.
+  // tiebreakerField is used as a secondary DESC sort when primary values are equal.
 
-  function buildSection(title, rows, cols, defaultSortKey) {
-    const content = document.getElementById('content');
-
+  function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow) {
     const h2 = document.createElement('h2');
     h2.className = 'section-heading';
     h2.textContent = title;
-    content.appendChild(h2);
+    container.appendChild(h2);
 
     const wrap = document.createElement('div');
     wrap.className = 'table-wrap';
-    content.appendChild(wrap);
+    container.appendChild(wrap);
 
-    let sortField = defaultSortKey || cols[0].sortField;
+    let sortField = defaultSortField || cols[0].sortField;
     let sortDir = (cols.find(c => c.sortField === sortField) || cols[0]).defaultDir ?? -1;
 
     const table = document.createElement('table');
@@ -207,7 +305,6 @@
       arrow.className = 'sort-arrow';
       th.appendChild(document.createTextNode(col.label ?? col.key));
       th.appendChild(arrow);
-      th.dataset.active = col.sortField === sortField;
       th.addEventListener('click', () => {
         if (sortField === col.sortField) {
           sortDir *= -1;
@@ -233,77 +330,42 @@
       });
     }
 
+    function renderRow(tr, row) {
+      cols.forEach(col => {
+        const td = tr.insertCell();
+        if (col.cls) td.className = col.cls;
+        td.textContent = col.display ? col.display(row) : (row[col.key] ?? '');
+      });
+    }
+
     function rebuildBody() {
       const sorted = [...rows].sort((a, b) => {
         const va = sortVal(a, sortField);
         const vb = sortVal(b, sortField);
         if (va < vb) return sortDir === 1 ? -1 : 1;
         if (va > vb) return sortDir === 1 ? 1 : -1;
+        if (tiebreakerField) {
+          const ta = sortVal(a, tiebreakerField);
+          const tb = sortVal(b, tiebreakerField);
+          if (ta < tb) return 1;
+          if (ta > tb) return -1;
+        }
         return 0;
       });
+
       tbody.innerHTML = '';
-      sorted.forEach(row => {
+      sorted.forEach(row => renderRow(tbody.insertRow(), row));
+
+      if (careerRow) {
         const tr = tbody.insertRow();
-        cols.forEach(col => {
-          const td = tr.insertCell();
-          if (col.cls) td.className = col.cls;
-          td.textContent = col.display ? col.display(row) : (row[col.key] ?? '');
-        });
-      });
+        tr.className = 'career-row';
+        renderRow(tr, careerRow);
+      }
     }
 
     updateHeaders();
     rebuildBody();
   }
-
-  // ── Column definitions ───────────────────────────────────────────────────────
-
-  const pg  = (f, d = 1) => r => (+r[f] && +r.G) ? (+r[f] / +r.G).toFixed(d) : '0';
-  const pct = (m, a)     => r => +r[a] ? (+r[m] / +r[a] * 100).toFixed(1) + '%' : '—';
-  const ts  = r => {
-    const denom = 2 * (+r.FGA + 0.44 * +r.FTA);
-    return denom ? (+r.PTS / denom * 100).toFixed(1) + '%' : '—';
-  };
-  const R = 'right';
-
-  const SEASON_COLS = [
-    { key: 'SEASON', label: 'Season', sortField: 'SEASON', defaultDir: -1 },
-    { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',   defaultDir:  1, cls: 'muted' },
-    { key: 'G',      label: 'G',      sortField: 'G',      defaultDir: -1, cls: R },
-    { key: 'MPG',    label: 'MPG',    sortField: 'MIN',    defaultDir: -1, cls: R, display: pg('MIN') },
-    { key: 'PPG',    label: 'PPG',    sortField: 'PTS',    defaultDir: -1, cls: R, display: pg('PTS') },
-    { key: 'RPG',    label: 'RPG',    sortField: 'REB',    defaultDir: -1, cls: R, display: pg('REB') },
-    { key: 'APG',    label: 'APG',    sortField: 'AST',    defaultDir: -1, cls: R, display: pg('AST') },
-    { key: 'SPG',    label: 'SPG',    sortField: 'STL',    defaultDir: -1, cls: R, display: pg('STL') },
-    { key: 'BPG',    label: 'BPG',    sortField: 'BLK',    defaultDir: -1, cls: R, display: pg('BLK') },
-    { key: 'TOPG',   label: 'TOPG',   sortField: 'TOV',    defaultDir:  1, cls: R, display: pg('TOV') },
-    { key: 'PFPG',   label: 'PFPG',   sortField: 'PF',     defaultDir:  1, cls: R, display: pg('PF')  },
-    { key: 'FG',     label: 'FG%',    sortField: 'FGM',    defaultDir: -1, cls: R, display: pct('FGM', 'FGA') },
-    { key: '3P',     label: '3P%',    sortField: '3PM',    defaultDir: -1, cls: R, display: pct('3PM', '3PA') },
-    { key: 'FT',     label: 'FT%',    sortField: 'FTM',    defaultDir: -1, cls: R, display: pct('FTM', 'FTA') },
-    { key: 'TS',     label: 'TS%',    sortField: 'PTS',    defaultDir: -1, cls: R, display: ts },
-    { key: 'GMSC',   label: 'GMSC',   sortField: 'GMSC',   defaultDir: -1, cls: R, display: pg('GMSC') },
-    { key: 'FGMPG',  label: 'FGM',    sortField: 'FGM',    defaultDir: -1, cls: R, display: pg('FGM') },
-    { key: 'FGAPG',  label: 'FGA',    sortField: 'FGA',    defaultDir: -1, cls: R, display: pg('FGA') },
-    { key: '3PMPG',  label: '3PM',    sortField: '3PM',    defaultDir: -1, cls: R, display: pg('3PM') },
-    { key: '3PAPG',  label: '3PA',    sortField: '3PA',    defaultDir: -1, cls: R, display: pg('3PA') },
-    { key: 'FTMPG',  label: 'FTM',    sortField: 'FTM',    defaultDir: -1, cls: R, display: pg('FTM') },
-    { key: 'FTAPG',  label: 'FTA',    sortField: 'FTA',    defaultDir: -1, cls: R, display: pg('FTA') },
-  ];
-
-  const HIGHS_COLS = [
-    { key: 'SEASON',   label: 'Season', sortField: 'SEASON',    defaultDir: -1 },
-    { key: 'TEAM',     label: 'Team',   sortField: 'TEAM',      defaultDir:  1, cls: 'muted' },
-    { key: 'G',        label: 'G',      sortField: 'G',         defaultDir: -1, cls: R },
-    { key: 'HIGH_P',   label: 'PTS',    sortField: 'HIGH_P',    defaultDir: -1, cls: R },
-    { key: 'HIGH_R',   label: 'REB',    sortField: 'HIGH_R',    defaultDir: -1, cls: R },
-    { key: 'HIGH_A',   label: 'AST',    sortField: 'HIGH_A',    defaultDir: -1, cls: R },
-    { key: 'HIGH_S',   label: 'STL',    sortField: 'HIGH_S',    defaultDir: -1, cls: R },
-    { key: 'HIGH_B',   label: 'BLK',    sortField: 'HIGH_B',    defaultDir: -1, cls: R },
-    { key: 'HIGH_3PM', label: '3PM',    sortField: 'HIGH_3PM',  defaultDir: -1, cls: R },
-    { key: 'HIGH_GMSC',label: 'GMSC',   sortField: 'HIGH_GMSC', defaultDir: -1, cls: R,
-      display: r => (+r.HIGH_GMSC).toFixed(1) },
-  ];
 
   // ── Error helper ─────────────────────────────────────────────────────────────
 
@@ -319,7 +381,8 @@
     document.getElementById('page-sub').textContent = 'Browse all players in NBN history.';
 
     const seen = new Set();
-    const players = rows.filter(r => r.SLUG && !seen.has(r.SLUG) && seen.add(r.SLUG))
+    const players = rows
+      .filter(r => r.SLUG && !seen.has(r.SLUG) && seen.add(r.SLUG))
       .sort((a, b) => a.PLAYER.localeCompare(b.PLAYER));
 
     const content = document.getElementById('content');
@@ -344,18 +407,63 @@
     document.getElementById('nav').innerHTML =
       '<a href="/">Home</a> / <a href="/players/">Players</a> / ' + playerName;
     document.getElementById('page-title').textContent = playerName;
-    document.getElementById('page-sub').textContent = `${rows.length} season${rows.length !== 1 ? 's' : ''} in NBN`;
+    document.getElementById('page-sub').textContent =
+      `${rows.length} season${rows.length !== 1 ? 's' : ''} in NBN`;
 
-    document.getElementById('content').innerHTML = '';
+    const content = document.getElementById('content');
+    content.innerHTML = '';
 
-    buildSection('Season Stats', rows, SEASON_COLS, 'SEASON');
-    buildSection('Season Highs', rows, HIGHS_COLS, 'SEASON');
+    // toggle
+    const toggleBar = document.createElement('div');
+    toggleBar.className = 'toggle-bar';
+    const btnTeam   = document.createElement('button');
+    const btnSeason = document.createElement('button');
+    btnTeam.className   = 'toggle-btn active';
+    btnSeason.className = 'toggle-btn';
+    btnTeam.textContent   = 'By Team';
+    btnSeason.textContent = 'By Season';
+    toggleBar.appendChild(btnTeam);
+    toggleBar.appendChild(btnSeason);
+    content.appendChild(toggleBar);
+
+    // sections container
+    const sections = document.createElement('div');
+    content.appendChild(sections);
+
+    let bySeasonMode = false;
+
+    function rebuildSections() {
+      const displayRows = bySeasonMode ? aggregateBySeasonRows(rows) : rows;
+      sections.innerHTML = '';
+      buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerStatsRow(displayRows));
+      buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerHighsRow(displayRows));
+    }
+
+    btnTeam.addEventListener('click', () => {
+      if (bySeasonMode) {
+        bySeasonMode = false;
+        btnTeam.classList.add('active');
+        btnSeason.classList.remove('active');
+        rebuildSections();
+      }
+    });
+
+    btnSeason.addEventListener('click', () => {
+      if (!bySeasonMode) {
+        bySeasonMode = true;
+        btnSeason.classList.add('active');
+        btnTeam.classList.remove('active');
+        rebuildSections();
+      }
+    });
+
+    rebuildSections();
   }
 
   // ── Main ─────────────────────────────────────────────────────────────────────
 
   fetch('/players/player_seasons.csv')
-    .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.text(); })
+    .then(r => { if (!r.ok) throw new Error(); return r.text(); })
     .then(text => {
       const rows = parseCSV(text);
 
