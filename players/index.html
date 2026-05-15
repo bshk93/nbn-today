@@ -459,6 +459,15 @@
   // ── Render: player profile ────────────────────────────────────────────────────
 
   function renderPlayer(playerName, rows) {
+    rows = [...rows].sort((a, b) => {
+      const sa = parseFloat(a.SEASON) || 0;
+      const sb = parseFloat(b.SEASON) || 0;
+      if (sa !== sb) return sb - sa;
+      const ta = a.LAST_DATE ?? '';
+      const tb = b.LAST_DATE ?? '';
+      return ta < tb ? -1 : ta > tb ? 1 : 0;
+    });
+
     document.title = `${playerName} — NBN`;
     document.getElementById('nav').innerHTML =
       '<a href="/">Home</a> / <a href="/players/">Players</a> / ' + playerName;
