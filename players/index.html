@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Players — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page { max-width: 1200px; margin: 0 auto; }
+
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header { margin-bottom: 1.75rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    #status { color: #9ca3af; font-size: 0.9rem; padding: 2rem 0; }
+
+    /* index grid */
+    .player-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .player-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      text-decoration: none;
+      color: #f3f4f6;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background 0.15s, border-color 0.15s;
+      display: block;
+    }
+
+    .player-card:hover {
+      background: #263244;
+      border-color: #4b6a9b;
+      text-decoration: none;
+    }
+
+    /* section headings */
+    .section-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #9ca3af;
+      margin: 2rem 0 0.75rem;
+    }
+
+    /* table wrapper */
+    .table-wrap {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin-bottom: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+
+    thead th {
+      padding: 0.7rem 0.9rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { color: #d1d5db; }
+    thead th[data-active="true"] { color: #93c5fd; }
+
+    thead th .sort-arrow {
+      margin-left: 4px;
+      opacity: 0;
+      font-size: 0.65rem;
+    }
+
+    thead th[data-active="true"] .sort-arrow { opacity: 1; }
+    thead th.right { text-align: right; }
+
+    tbody tr {
+      border-bottom: 1px solid #283141;
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #263244; }
+
+    td {
+      padding: 0.6rem 0.9rem;
+      color: #d1d5db;
+    }
+
+    td.right {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.muted { color: #9ca3af; }
+    td.bold  { font-weight: 600; color: #f3f4f6; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav" id="nav"></nav>
+  <header>
+    <h1 id="page-title">Players</h1>
+    <p id="page-sub"></p>
+  </header>
+  <div id="content"><div id="status">Loading...</div></div>
+</div>
+
+<script>
+(function () {
+  const slug = new URLSearchParams(location.search).get('p');
+
+  // ── CSV helpers ─────────────────────────────────────────────────────────────
+
+  function parseLine(line) {
+    const out = [];
+    let cur = '', quoted = false;
+    for (const ch of line) {
+      if (ch === '"') { quoted = !quoted; }
+      else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    out.push(cur);
+    return out;
+  }
+
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = parseLine(lines[0]).map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const vals = parseLine(line);
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = (vals[i] ?? '').trim(); });
+      return obj;
+    });
+  }
+
+  // ── Sort helpers ─────────────────────────────────────────────────────────────
+
+  function sortVal(row, field) {
+    const v = row[field];
+    if (v === undefined || v === '' || v === 'NA') return -Infinity;
+    const n = parseFloat(v);
+    return isNaN(n) ? v.toLowerCase() : n;
+  }
+
+  // ── Table builder ────────────────────────────────────────────────────────────
+  // cols: [{ key, label, cls, sortField, defaultDir, display }]
+
+  function buildSection(title, rows, cols, defaultSortKey) {
+    const content = document.getElementById('content');
+
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = title;
+    content.appendChild(h2);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    content.appendChild(wrap);
+
+    let sortField = defaultSortKey || cols[0].sortField;
+    let sortDir = (cols.find(c => c.sortField === sortField) || cols[0]).defaultDir ?? -1;
+
+    const table = document.createElement('table');
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    const thEls = [];
+
+    cols.forEach(col => {
+      const th = document.createElement('th');
+      if (col.cls && col.cls.includes('right')) th.classList.add('right');
+      const arrow = document.createElement('span');
+      arrow.className = 'sort-arrow';
+      th.appendChild(document.createTextNode(col.label ?? col.key));
+      th.appendChild(arrow);
+      th.dataset.active = col.sortField === sortField;
+      th.addEventListener('click', () => {
+        if (sortField === col.sortField) {
+          sortDir *= -1;
+        } else {
+          sortField = col.sortField;
+          sortDir = col.defaultDir ?? -1;
+        }
+        updateHeaders();
+        rebuildBody();
+      });
+      thEls.push(th);
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    wrap.appendChild(table);
+
+    function updateHeaders() {
+      thEls.forEach((th, i) => {
+        const active = cols[i].sortField === sortField;
+        th.dataset.active = active;
+        th.querySelector('.sort-arrow').textContent = active ? (sortDir === -1 ? '↓' : '↑') : '';
+      });
+    }
+
+    function rebuildBody() {
+      const sorted = [...rows].sort((a, b) => {
+        const va = sortVal(a, sortField);
+        const vb = sortVal(b, sortField);
+        if (va < vb) return sortDir === 1 ? -1 : 1;
+        if (va > vb) return sortDir === 1 ? 1 : -1;
+        return 0;
+      });
+      tbody.innerHTML = '';
+      sorted.forEach(row => {
+        const tr = tbody.insertRow();
+        cols.forEach(col => {
+          const td = tr.insertCell();
+          if (col.cls) td.className = col.cls;
+          td.textContent = col.display ? col.display(row) : (row[col.key] ?? '');
+        });
+      });
+    }
+
+    updateHeaders();
+    rebuildBody();
+  }
+
+  // ── Column definitions ───────────────────────────────────────────────────────
+
+  const pg  = (f, d = 1) => r => (+r[f] && +r.G) ? (+r[f] / +r.G).toFixed(d) : '0';
+  const pct = (m, a)     => r => +r[a] ? (+r[m] / +r[a] * 100).toFixed(1) + '%' : '—';
+  const ts  = r => {
+    const denom = 2 * (+r.FGA + 0.44 * +r.FTA);
+    return denom ? (+r.PTS / denom * 100).toFixed(1) + '%' : '—';
+  };
+  const R = 'right';
+
+  const SEASON_COLS = [
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON', defaultDir: -1 },
+    { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',   defaultDir:  1, cls: 'muted' },
+    { key: 'G',      label: 'G',      sortField: 'G',      defaultDir: -1, cls: R },
+    { key: 'MPG',    label: 'MPG',    sortField: 'MIN',    defaultDir: -1, cls: R, display: pg('MIN') },
+    { key: 'PPG',    label: 'PPG',    sortField: 'PTS',    defaultDir: -1, cls: R, display: pg('PTS') },
+    { key: 'RPG',    label: 'RPG',    sortField: 'REB',    defaultDir: -1, cls: R, display: pg('REB') },
+    { key: 'APG',    label: 'APG',    sortField: 'AST',    defaultDir: -1, cls: R, display: pg('AST') },
+    { key: 'SPG',    label: 'SPG',    sortField: 'STL',    defaultDir: -1, cls: R, display: pg('STL') },
+    { key: 'BPG',    label: 'BPG',    sortField: 'BLK',    defaultDir: -1, cls: R, display: pg('BLK') },
+    { key: 'TOPG',   label: 'TOPG',   sortField: 'TOV',    defaultDir:  1, cls: R, display: pg('TOV') },
+    { key: 'PFPG',   label: 'PFPG',   sortField: 'PF',     defaultDir:  1, cls: R, display: pg('PF')  },
+    { key: 'FG',     label: 'FG%',    sortField: 'FGM',    defaultDir: -1, cls: R, display: pct('FGM', 'FGA') },
+    { key: '3P',     label: '3P%',    sortField: '3PM',    defaultDir: -1, cls: R, display: pct('3PM', '3PA') },
+    { key: 'FT',     label: 'FT%',    sortField: 'FTM',    defaultDir: -1, cls: R, display: pct('FTM', 'FTA') },
+    { key: 'TS',     label: 'TS%',    sortField: 'PTS',    defaultDir: -1, cls: R, display: ts },
+    { key: 'GMSC',   label: 'GMSC',   sortField: 'GMSC',   defaultDir: -1, cls: R, display: pg('GMSC') },
+    { key: 'FGMPG',  label: 'FGM',    sortField: 'FGM',    defaultDir: -1, cls: R, display: pg('FGM') },
+    { key: 'FGAPG',  label: 'FGA',    sortField: 'FGA',    defaultDir: -1, cls: R, display: pg('FGA') },
+    { key: '3PMPG',  label: '3PM',    sortField: '3PM',    defaultDir: -1, cls: R, display: pg('3PM') },
+    { key: '3PAPG',  label: '3PA',    sortField: '3PA',    defaultDir: -1, cls: R, display: pg('3PA') },
+    { key: 'FTMPG',  label: 'FTM',    sortField: 'FTM',    defaultDir: -1, cls: R, display: pg('FTM') },
+    { key: 'FTAPG',  label: 'FTA',    sortField: 'FTA',    defaultDir: -1, cls: R, display: pg('FTA') },
+  ];
+
+  const HIGHS_COLS = [
+    { key: 'SEASON',   label: 'Season', sortField: 'SEASON',    defaultDir: -1 },
+    { key: 'TEAM',     label: 'Team',   sortField: 'TEAM',      defaultDir:  1, cls: 'muted' },
+    { key: 'G',        label: 'G',      sortField: 'G',         defaultDir: -1, cls: R },
+    { key: 'HIGH_P',   label: 'PTS',    sortField: 'HIGH_P',    defaultDir: -1, cls: R },
+    { key: 'HIGH_R',   label: 'REB',    sortField: 'HIGH_R',    defaultDir: -1, cls: R },
+    { key: 'HIGH_A',   label: 'AST',    sortField: 'HIGH_A',    defaultDir: -1, cls: R },
+    { key: 'HIGH_S',   label: 'STL',    sortField: 'HIGH_S',    defaultDir: -1, cls: R },
+    { key: 'HIGH_B',   label: 'BLK',    sortField: 'HIGH_B',    defaultDir: -1, cls: R },
+    { key: 'HIGH_3PM', label: '3PM',    sortField: 'HIGH_3PM',  defaultDir: -1, cls: R },
+    { key: 'HIGH_GMSC',label: 'GMSC',   sortField: 'HIGH_GMSC', defaultDir: -1, cls: R,
+      display: r => (+r.HIGH_GMSC).toFixed(1) },
+  ];
+
+  // ── Error helper ─────────────────────────────────────────────────────────────
+
+  function showError(msg) {
+    document.getElementById('content').innerHTML = `<div id="status">${msg}</div>`;
+  }
+
+  // ── Render: index (player directory) ─────────────────────────────────────────
+
+  function renderIndex(rows) {
+    document.title = 'Players — NBN';
+    document.getElementById('nav').innerHTML = '<a href="/">← Home</a>';
+    document.getElementById('page-sub').textContent = 'Browse all players in NBN history.';
+
+    const seen = new Set();
+    const players = rows.filter(r => r.SLUG && !seen.has(r.SLUG) && seen.add(r.SLUG))
+      .sort((a, b) => a.PLAYER.localeCompare(b.PLAYER));
+
+    const content = document.getElementById('content');
+    content.innerHTML = '';
+
+    const grid = document.createElement('div');
+    grid.className = 'player-grid';
+    players.forEach(p => {
+      const a = document.createElement('a');
+      a.className = 'player-card';
+      a.href = `/players/?p=${p.SLUG}`;
+      a.textContent = p.PLAYER;
+      grid.appendChild(a);
+    });
+    content.appendChild(grid);
+  }
+
+  // ── Render: player profile ────────────────────────────────────────────────────
+
+  function renderPlayer(playerName, rows) {
+    document.title = `${playerName} — NBN`;
+    document.getElementById('nav').innerHTML =
+      '<a href="/">Home</a> / <a href="/players/">Players</a> / ' + playerName;
+    document.getElementById('page-title').textContent = playerName;
+    document.getElementById('page-sub').textContent = `${rows.length} season${rows.length !== 1 ? 's' : ''} in NBN`;
+
+    document.getElementById('content').innerHTML = '';
+
+    buildSection('Season Stats', rows, SEASON_COLS, 'SEASON');
+    buildSection('Season Highs', rows, HIGHS_COLS, 'SEASON');
+  }
+
+  // ── Main ─────────────────────────────────────────────────────────────────────
+
+  fetch('/players/player_seasons.csv')
+    .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.text(); })
+    .then(text => {
+      const rows = parseCSV(text);
+
+      if (!slug) {
+        renderIndex(rows);
+        return;
+      }
+
+      const playerRows = rows.filter(r => r.SLUG === slug);
+      if (!playerRows.length) {
+        showError(`Player not found: <strong>${slug}</strong>`);
+        return;
+      }
+
+      renderPlayer(playerRows[0].PLAYER, playerRows);
+    })
+    .catch(() => showError('Failed to load data.'));
+})();
+</script>
+</body>
+</html>
