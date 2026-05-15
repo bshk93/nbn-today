@@ -95,6 +95,8 @@ document.title = `${abbr} — NBN`;
   td.right { text-align: right; font-variant-numeric: tabular-nums; }
   td.muted { color: #6b7280; }
   td.bold { font-weight: 600; color: #f3f4f6; }
+  td a { color: #60a5fa; text-decoration: none; }
+  td a:hover { text-decoration: underline; }
   .badge {
     display: inline-block;
     margin-left: 0.35rem;
@@ -576,8 +578,19 @@ function makeSeasonRenderCell(rows) {
   };
 }
 
+function playerSlug(name) {
+  return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
 function renderPlayerCell(td, col, row) {
-  td.textContent = col.display ? col.display(row) : (row[col.key] ?? '—');
+  if (col.key === 'PLAYER') {
+    const a = document.createElement('a');
+    a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
+    a.textContent = row.PLAYER;
+    td.appendChild(a);
+  } else {
+    td.textContent = col.display ? col.display(row) : (row[col.key] ?? '—');
+  }
 }
 
 (async () => {

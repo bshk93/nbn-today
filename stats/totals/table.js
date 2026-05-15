@@ -33,6 +33,10 @@
     });
   }
 
+  function playerSlug(name) {
+    return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+  }
+
   function sortVal(row, field) {
     const v = row[field];
     if (v === undefined || v === '' || v === 'NA') return field === 'PLAYER' ? '' : -Infinity;
@@ -73,6 +77,11 @@
         if (col.key === statKey) {
           const n = parseInt(row[col.key]);
           td.textContent = isNaN(n) ? (row[col.key] ?? '') : n.toLocaleString();
+        } else if (col.key === 'PLAYER') {
+          const a = document.createElement('a');
+          a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
+          a.textContent = row.PLAYER;
+          td.appendChild(a);
         } else {
           td.textContent = row[col.key] ?? '';
         }

@@ -31,6 +31,10 @@
     })),
   ];
 
+  function playerSlug(name) {
+    return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+  }
+
   function parseLine(line) {
     const out = [];
     let cur = '', quoted = false;
@@ -93,7 +97,14 @@
       COLS.forEach(col => {
         const td = tr.insertCell();
         td.className = col.cls;
-        td.textContent = row[col.key] ?? '';
+        if (col.key === 'PLAYER') {
+          const a = document.createElement('a');
+          a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
+          a.textContent = row.PLAYER;
+          td.appendChild(a);
+        } else {
+          td.textContent = row[col.key] ?? '';
+        }
       });
     });
   }

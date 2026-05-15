@@ -311,6 +311,10 @@
       return isNaN(n) || n === 0 ? '—' : n.toLocaleString();
     }
 
+    function playerSlug(name) {
+      return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+    }
+
     function sortVal(row, field) {
       const v = row[field];
       if (v === undefined || v === '' || v === 'NA') return -Infinity;
@@ -374,7 +378,10 @@
           td.className = col.cls;
 
           if (col.key === 'PLAYER') {
-            td.textContent = row.PLAYER;
+            const a = document.createElement('a');
+            a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
+            a.textContent = row.PLAYER;
+            td.appendChild(a);
             if (row.ACTIVE === '1') {
               const dot = document.createElement('span');
               dot.className = 'active-dot';

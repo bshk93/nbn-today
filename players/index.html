@@ -450,8 +450,9 @@
     document.getElementById('nav').innerHTML =
       '<a href="/">Home</a> / <a href="/players/">Players</a> / ' + playerName;
     document.getElementById('page-title').textContent = playerName;
+    const seasonCount = new Set(rows.map(r => r.SEASON)).size;
     document.getElementById('page-sub').textContent =
-      `${rows.length} season${rows.length !== 1 ? 's' : ''} in NBN`;
+      `${seasonCount} season${seasonCount !== 1 ? 's' : ''} in NBN`;
 
     const content = document.getElementById('content');
     content.innerHTML = '';
