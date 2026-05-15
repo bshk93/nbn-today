@@ -24,9 +24,20 @@
     .nav a { color: #9ca3af; }
     .nav a:hover { color: #f3f4f6; }
 
-    header { margin-bottom: 1.25rem; }
+    header { margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1.25rem; }
+    .header-text { display: flex; flex-direction: column; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .profile-photo {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      background: #374151;
+      flex-shrink: 0;
+    }
 
     #status { color: #9ca3af; font-size: 0.9rem; padding: 2rem 0; }
 
@@ -165,8 +176,10 @@
 <div class="page">
   <nav class="nav" id="nav"></nav>
   <header>
-    <h1 id="page-title">Players</h1>
-    <p id="page-sub"></p>
+    <div class="header-text">
+      <h1 id="page-title">Players</h1>
+      <p id="page-sub"></p>
+    </div>
   </header>
   <div id="content"><div id="status">Loading...</div></div>
 </div>
@@ -453,6 +466,18 @@
     const seasonCount = new Set(rows.map(r => r.SEASON)).size;
     document.getElementById('page-sub').textContent =
       `${seasonCount} season${seasonCount !== 1 ? 's' : ''} in NBN`;
+
+    const photoUrl = rows[0].PHOTO_URL;
+    const header = document.querySelector('header');
+    header.querySelectorAll('.profile-photo').forEach(el => el.remove());
+    if (photoUrl) {
+      const img = document.createElement('img');
+      img.className = 'profile-photo';
+      img.src = photoUrl;
+      img.alt = '';
+      img.onerror = function() { this.remove(); };
+      header.appendChild(img);
+    }
 
     const content = document.getElementById('content');
     content.innerHTML = '';
