@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>25-26 Awards — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      max-width: 1060px;
+      margin: 0 auto;
+    }
+
+    .nav {
+      margin-bottom: 1.75rem;
+      font-size: 0.875rem;
+      color: #9ca3af;
+    }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header {
+      margin-bottom: 1.75rem;
+    }
+    header h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      color: #9ca3af;
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .awards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .award-section-full {
+      margin-bottom: 1.5rem;
+    }
+
+    .award-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9ca3af;
+      margin-bottom: 0.5rem;
+    }
+
+    .table-wrap {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+
+    thead th {
+      padding: 0.65rem 1rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+    }
+    thead th.right { text-align: right; }
+
+    tbody tr {
+      border-bottom: 1px solid #283141;
+      transition: background 0.1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #263244; }
+
+    td {
+      padding: 0.65rem 1rem;
+      color: #d1d5db;
+    }
+    td.player-name {
+      font-weight: 600;
+      color: #f3f4f6;
+    }
+    td.right {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    td.muted { color: #6b7280; }
+    td.pts {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: #f3f4f6;
+    }
+
+    .no-data {
+      padding: 2rem;
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+
+    #status {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Nothing But Net</a></nav>
+    <header>
+      <h1>25-26 Season Awards</h1>
+      <p>Live voting results — updates automatically.</p>
+    </header>
+    <div id="awards-container">
+      <div id="status">Loading…</div>
+    </div>
+  </div>
+
+  <script>
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSs768u1p7CqHAZLh5XlURdGet0MfKAvEWFRB7cod-CsVnpPeD2XDdzjN97QC-0UkbSRzFaNa_jXy0z/pub?gid=0&single=true&output=csv';
+    const PLACEHOLDER = 'PERIM, SWISHY';
+
+    const AWARDS = [
+      { key: 'MVP',         label: 'MVP',         maxRank: 3, scoring: [5,3,1], playerCol: 'Player'    },
+      { key: 'DPOY',        label: 'DPOY',        maxRank: 3, scoring: [5,3,1], playerCol: 'Player'    },
+      { key: 'ROTY',        label: 'ROTY',        maxRank: 3, scoring: [5,3,1], playerCol: 'Player'    },
+      { key: '6MOY',        label: '6MOY',        maxRank: 3, scoring: [5,3,1], playerCol: 'Player'    },
+      { key: 'MIP',         label: 'MIP',         maxRank: 3, scoring: [5,3,1], playerCol: 'Player'    },
+      { key: 'FOTY',        label: 'FOTY',        maxRank: 3, scoring: [5,3,1], playerCol: 'Franchise' },
+      { key: 'COTY',        label: 'COTY',        maxRank: 3, scoring: [5,3,1], playerCol: 'Franchise' },
+      { key: 'All-NBN',     label: 'All-NBN',     maxRank: 3, scoring: [5,3,1], playerCol: 'Player', teamVote: true },
+      { key: 'All-Defense', label: 'All-Defense', maxRank: 2, scoring: [5,3],   playerCol: 'Player', teamVote: true },
+      { key: 'All-Rookie',  label: 'All-Rookie',  maxRank: 2, scoring: [5,3],   playerCol: 'Player', teamVote: true },
+    ];
+
+    function parseLine(line) {
+      const out = [];
+      let cur = '', quoted = false;
+      for (const ch of line) {
+        if (ch === '"') { quoted = !quoted; }
+        else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+      out.push(cur);
+      return out;
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      const headers = parseLine(lines[0]);
+      return lines.slice(1).map(line => {
+        const vals = parseLine(line);
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = vals[i] ?? ''; });
+        return obj;
+      });
+    }
+
+    function aggregateAward(rows, award) {
+      const map = new Map();
+      rows
+        .filter(r => r.Award === award.key && r.Player !== PLACEHOLDER)
+        .forEach(r => {
+          const rank = parseInt(r.Rank);
+          if (rank < 1 || rank > award.maxRank) return;
+          if (!map.has(r.Player)) map.set(r.Player, new Array(award.maxRank).fill(0));
+          map.get(r.Player)[rank - 1]++;
+        });
+      return [...map.entries()]
+        .map(([player, counts]) => ({
+          player,
+          counts,
+          pts: counts.reduce((sum, c, i) => sum + c * (award.scoring[i] || 0), 0),
+        }))
+        .sort((a, b) => b.pts !== a.pts ? b.pts - a.pts : (b.counts[0] || 0) - (a.counts[0] || 0));
+    }
+
+    function rankLabel(i, teamVote) {
+      return ['1st', '2nd', '3rd'][i] + (teamVote ? ' Team' : '');
+    }
+
+    function buildTable(award, data) {
+      const table = document.createElement('table');
+      const hr = table.createTHead().insertRow();
+
+      const thP = document.createElement('th');
+      thP.textContent = award.playerCol;
+      hr.appendChild(thP);
+
+      for (let i = 0; i < award.maxRank; i++) {
+        const th = document.createElement('th');
+        th.className = 'right';
+        th.textContent = rankLabel(i, award.teamVote);
+        hr.appendChild(th);
+      }
+
+      const thPts = document.createElement('th');
+      thPts.className = 'right';
+      thPts.textContent = 'Pts';
+      hr.appendChild(thPts);
+
+      const tbody = table.createTBody();
+      data.forEach(({ player, counts, pts }) => {
+        const tr = tbody.insertRow();
+
+        const tdP = tr.insertCell();
+        tdP.className = 'player-name';
+        tdP.textContent = player;
+
+        counts.forEach(c => {
+          const td = tr.insertCell();
+          td.className = 'right muted';
+          td.textContent = c > 0 ? c : '—';
+        });
+
+        const tdPts = tr.insertCell();
+        tdPts.className = 'pts';
+        tdPts.textContent = pts;
+      });
+
+      return table;
+    }
+
+    function buildSection(award, data) {
+      const section = document.createElement('div');
+
+      const h2 = document.createElement('h2');
+      h2.className = 'award-heading';
+      h2.textContent = award.label;
+      section.appendChild(h2);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+      if (data.length === 0) {
+        const msg = document.createElement('div');
+        msg.className = 'no-data';
+        msg.textContent = 'No votes recorded yet.';
+        wrap.appendChild(msg);
+      } else {
+        wrap.appendChild(buildTable(award, data));
+      }
+      section.appendChild(wrap);
+      return section;
+    }
+
+    function render(rows) {
+      const container = document.getElementById('awards-container');
+      container.innerHTML = '';
+
+      const grid = document.createElement('div');
+      grid.className = 'awards-grid';
+      AWARDS.slice(0, 7).forEach(aw => {
+        grid.appendChild(buildSection(aw, aggregateAward(rows, aw)));
+      });
+      container.appendChild(grid);
+
+      AWARDS.slice(7).forEach(aw => {
+        const section = buildSection(aw, aggregateAward(rows, aw));
+        section.className = 'award-section-full';
+        container.appendChild(section);
+      });
+    }
+
+    let hasData = false;
+
+    async function fetchAndRender() {
+      try {
+        const res = await fetch(CSV_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error(res.statusText);
+        render(parseCSV(await res.text()));
+        hasData = true;
+      } catch {
+        if (!hasData) {
+          const c = document.getElementById('awards-container');
+          if (c) c.innerHTML = '<div id="status">Failed to load voting data.</div>';
+        }
+      }
+    }
+
+    fetchAndRender();
+    setInterval(fetchAndRender, 60_000);
+  </script>
+</body>
+</html>
