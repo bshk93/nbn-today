@@ -41,16 +41,36 @@
       background: #1f2937;
       border: 1px solid #374151;
       border-radius: 10px;
-      padding: 0.85rem 1rem;
+      padding: 0.75rem 1rem;
       text-decoration: none;
       color: #f3f4f6;
       font-size: 0.9rem;
       font-weight: 500;
       transition: background 0.15s, border-color 0.15s;
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
 
     .player-card:hover { background: #263244; border-color: #4b6a9b; text-decoration: none; }
+
+    .player-photo {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      background: #374151;
+      flex-shrink: 0;
+    }
+
+    .player-photo-placeholder {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #374151;
+      flex-shrink: 0;
+    }
 
     /* toggle */
     .toggle-bar {
@@ -373,6 +393,14 @@
     document.getElementById('content').innerHTML = `<div id="status">${msg}</div>`;
   }
 
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  function makePlaceholder() {
+    const div = document.createElement('div');
+    div.className = 'player-photo-placeholder';
+    return div;
+  }
+
   // ── Render: index (player directory) ─────────────────────────────────────────
 
   function renderIndex(rows) {
@@ -394,7 +422,22 @@
       const a = document.createElement('a');
       a.className = 'player-card';
       a.href = `/players/?p=${p.SLUG}`;
-      a.textContent = p.PLAYER;
+
+      if (p.PHOTO_URL) {
+        const img = document.createElement('img');
+        img.className = 'player-photo';
+        img.src = p.PHOTO_URL;
+        img.alt = '';
+        img.onerror = function() { this.replaceWith(makePlaceholder()); };
+        a.appendChild(img);
+      } else {
+        a.appendChild(makePlaceholder());
+      }
+
+      const name = document.createElement('span');
+      name.textContent = p.PLAYER;
+      a.appendChild(name);
+
       grid.appendChild(a);
     });
     content.appendChild(grid);
