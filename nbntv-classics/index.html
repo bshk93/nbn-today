@@ -138,7 +138,7 @@
       transition: max-height 0.25s ease;
     }
 
-    .classic-entry.open .classic-blurb-wrap { max-height: 300px; }
+    .classic-entry.open .classic-blurb-wrap { max-height: none; }
 
     .classic-blurb {
       padding: 1rem 1.25rem 1.25rem;
@@ -312,7 +312,8 @@
 
       // ── toggle ───────────────────────────────────────────────────
       header.addEventListener('click', () => {
-        entry.classList.toggle('open');
+        const isOpen = entry.classList.toggle('open');
+        blurbWrap.style.maxHeight = isOpen ? blurbWrap.scrollHeight + 'px' : '0';
       });
 
       entry.appendChild(header);
