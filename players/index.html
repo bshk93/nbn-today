@@ -24,7 +24,7 @@
     .nav a { color: #9ca3af; }
     .nav a:hover { color: #f3f4f6; }
 
-    header { margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1.25rem; }
+    header { margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1.25rem; }
     .header-text { display: flex; flex-direction: column; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
@@ -83,6 +83,35 @@
       border-radius: 50%;
       background: #374151;
       flex-shrink: 0;
+    }
+
+    /* bio line */
+    .bio-line {
+      color: #9ca3af;
+      font-size: 0.82rem;
+      margin-bottom: 0.9rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 0.5rem;
+      align-items: center;
+    }
+    .bio-sep { color: #4b5563; }
+
+    /* accolades */
+    .accolades {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .badge {
+      padding: 0.18rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: default;
     }
 
     /* toggle */
@@ -170,6 +199,13 @@
     td.right { text-align: right; font-variant-numeric: tabular-nums; }
     td.muted  { color: #9ca3af; }
 
+    td.league-leader {
+      font-weight: 700;
+      color: #fcd34d;
+    }
+
+    .row-icon { font-size: 0.78em; margin-left: 4px; vertical-align: middle; }
+
     .career-row { border-top: 2px solid #374151 !important; }
     .career-row td { font-weight: 600; color: #f3f4f6; }
 
@@ -202,6 +238,35 @@
     .filter-count { color: #6b7280; font-size: 0.85rem; align-self: center; white-space: nowrap; }
 
     .no-results { color: #6b7280; font-size: 0.9rem; padding: 1.5rem 0; }
+
+    /* player index table */
+    .player-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .player-photo-sm {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      background: #374151;
+      flex-shrink: 0;
+    }
+
+    .player-placeholder-sm {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #374151;
+      flex-shrink: 0;
+    }
+
+    .champion-name { color: #f59e0b; }
+
+    tbody tr.clickable-row { cursor: pointer; }
   </style>
 </head>
 <body>
@@ -258,6 +323,21 @@
     return isNaN(n) ? v.toLowerCase() : n;
   }
 
+  // ── Age helper ───────────────────────────────────────────────────────────────
+
+  function ageAtSeason(dob, season) {
+    if (!dob || dob === 'NA') return '';
+    const m = season && season.match(/\d{2}-(\d{2})/);
+    if (!m) return '';
+    const ref = new Date(2000 + parseInt(m[1], 10), 0, 1); // Jan 1 of end year
+    const d = new Date(dob);
+    if (isNaN(d)) return '';
+    let age = ref.getFullYear() - d.getFullYear();
+    const mo = ref.getMonth() - d.getMonth();
+    if (mo < 0 || (mo === 0 && ref.getDate() < d.getDate())) age--;
+    return String(age);
+  }
+
   // ── Season aggregation (toggle) ──────────────────────────────────────────────
 
   const SUM_FIELDS  = ['G','MIN','PTS','REB','AST','STL','BLK','TOV','PF','FGM','FGA','3PM','3PA','FTM','FTA','GMSC'];
@@ -296,6 +376,35 @@
     return r;
   }
 
+  // ── Season leaders ───────────────────────────────────────────────────────────
+
+  const LEADER_STATS = ['PTS', 'REB', 'AST', 'STL', 'BLK', '3PM', 'GMSC'];
+
+  function buildSeasonLeaders(allRows) {
+    const bySlugSeason = new Map();
+    allRows.forEach(r => {
+      if (!r.SLUG || !r.SEASON || r.SEASON.includes('Playoffs')) return;
+      const key = r.SLUG + '|' + r.SEASON;
+      if (!bySlugSeason.has(key)) {
+        bySlugSeason.set(key, { SLUG: r.SLUG, SEASON: r.SEASON, PTS: 0, REB: 0, AST: 0, STL: 0, BLK: 0, '3PM': 0, GMSC: 0 });
+      }
+      const s = bySlugSeason.get(key);
+      LEADER_STATS.forEach(f => { s[f] += +r[f] || 0; });
+    });
+    const leaders = {};
+    for (const row of bySlugSeason.values()) {
+      const season = row.SEASON;
+      if (!leaders[season]) leaders[season] = {};
+      LEADER_STATS.forEach(f => {
+        const v = row[f];
+        if (!leaders[season][f] || v > leaders[season][f].val) {
+          leaders[season][f] = { slug: row.SLUG, val: v };
+        }
+      });
+    }
+    return leaders;
+  }
+
   // ── Column definitions ───────────────────────────────────────────────────────
 
   const pg  = (f, d = 1) => r => (+r[f] && +r.G) ? (+r[f] / +r.G).toFixed(d) : '0';
@@ -307,7 +416,8 @@
   const R = 'right';
 
   const SEASON_COLS = [
-    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1 },
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
+    { key: 'AGE',    label: 'Age',    sortField: 'AGE',     defaultDir: -1, cls: R },
     { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
     { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
     { key: 'MPG',    label: 'MPG',    sortField: 'MIN',     defaultDir: -1, cls: R, display: pg('MIN') },
@@ -332,7 +442,7 @@
   ];
 
   const HIGHS_COLS = [
-    { key: 'SEASON',    label: 'Season', sortField: 'SEASON',    defaultDir: -1 },
+    { key: 'SEASON',    label: 'Season', sortField: 'SEASON',    defaultDir: -1, iconSlot: true },
     { key: 'TEAM',      label: 'Team',   sortField: 'TEAM',      defaultDir:  1, cls: 'muted' },
     { key: 'G',         label: 'G',      sortField: 'G',         defaultDir: -1, cls: R },
     { key: 'HIGH_P',    label: 'PTS',    sortField: 'HIGH_P',    defaultDir: -1, cls: R },
@@ -346,10 +456,8 @@
   ];
 
   // ── Table builder ────────────────────────────────────────────────────────────
-  // careerRow is appended after sorting and never sorted itself.
-  // tiebreakerField is used as a secondary DESC sort when primary values are equal.
 
-  function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow) {
+  function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow, leaderCheck, iconFn) {
     const h2 = document.createElement('h2');
     h2.className = 'section-heading';
     h2.textContent = title;
@@ -399,11 +507,22 @@
       });
     }
 
-    function renderRow(tr, row) {
+    function renderRow(tr, row, isCareer) {
       cols.forEach(col => {
         const td = tr.insertCell();
         if (col.cls) td.className = col.cls;
         td.textContent = col.display ? col.display(row) : (row[col.key] ?? '');
+        if (!isCareer && leaderCheck && leaderCheck(row, col)) {
+          td.classList.add('league-leader');
+        }
+        if (!isCareer && col.iconSlot && iconFn) {
+          iconFn(row).forEach(icon => {
+            const span = document.createElement('span');
+            span.className = 'row-icon';
+            span.textContent = icon;
+            td.appendChild(span);
+          });
+        }
       });
     }
 
@@ -423,12 +542,12 @@
       });
 
       tbody.innerHTML = '';
-      sorted.forEach(row => renderRow(tbody.insertRow(), row));
+      sorted.forEach(row => renderRow(tbody.insertRow(), row, false));
 
       if (careerRow) {
         const tr = tbody.insertRow();
         tr.className = 'career-row';
-        renderRow(tr, careerRow);
+        renderRow(tr, careerRow, true);
       }
     }
 
@@ -450,6 +569,187 @@
     return div;
   }
 
+  function bioVal(v) {
+    return (!v || v === 'NA' || v === 'None' || v === 'N/A') ? null : v;
+  }
+
+  // ── Bio section ──────────────────────────────────────────────────────────────
+
+  function renderBioLine(container, row) {
+    const parts = [];
+
+    // DOB + age
+    const dob = bioVal(row.DOB);
+    if (dob) {
+      const d = new Date(dob);
+      if (!isNaN(d)) {
+        const now = new Date();
+        let age = now.getFullYear() - d.getFullYear();
+        const m = now.getMonth() - d.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+        const mon = d.toLocaleString('en-US', { month: 'short' });
+        const day = d.getDate();
+        const yr  = d.getFullYear();
+        parts.push(`${mon} ${day}, ${yr} (age ${age})`);
+      }
+    }
+
+    // College
+    const college = bioVal(row.COLLEGE);
+    if (college) parts.push(college);
+
+    // Country
+    const country = bioVal(row.COUNTRY);
+    if (country) parts.push(country);
+
+    // NBN Draft
+    const dftYr = bioVal(row.NBN_DFT_YR);
+    if (dftYr) {
+      const dftR = bioVal(row.NBN_DFT_R);
+      const dftP = bioVal(row.NBN_DFT_P);
+      let draftStr = dftYr + ' Draft';
+      if (dftR) draftStr += ' · ' + dftR;
+      if (dftP) draftStr += ' · ' + dftP;
+      parts.push(draftStr);
+    }
+
+    if (!parts.length) return;
+
+    const p = document.createElement('p');
+    p.className = 'bio-line';
+    parts.forEach((text, i) => {
+      if (i > 0) {
+        const sep = document.createElement('span');
+        sep.className = 'bio-sep';
+        sep.textContent = '·';
+        p.appendChild(sep);
+      }
+      const span = document.createElement('span');
+      span.textContent = text;
+      p.appendChild(span);
+    });
+    container.appendChild(p);
+  }
+
+  // ── Accolades strip ──────────────────────────────────────────────────────────
+
+  const BADGE_DEFS = [
+    { label: 'Ring',        award: null,                                  color: '#f59e0b', rings: true },
+    { label: 'MVP',         award: 'Most Valuable Player',                color: '#a855f7' },
+    { label: 'DPOY',        award: 'Defensive Player of the Year',        color: '#14b8a6' },
+    { label: 'ROY',         award: 'Rookie of the Year',                  color: '#22c55e' },
+    { label: 'MIP',         award: 'Most Improved Player',                color: '#3b82f6' },
+    { label: '6MOY',        award: 'Sixth Man of the Year',               color: '#f97316' },
+    { label: 'All-Star',    award: 'All-Star',                            color: '#38bdf8' },
+    { label: 'All-NBN 1st', award: 'All-NBN First Team',                  color: '#f59e0b' },
+    { label: 'All-NBN 2nd', award: 'All-NBN Second Team',                 color: '#9ca3af' },
+    { label: 'All-NBN 3rd', award: 'All-NBN Third Team',                  color: '#b45309' },
+    { label: 'All-Defense', award: 'All-Defense',                         color: '#ef4444' },
+    { label: 'All-Rookie',  award: 'All-Rookie',                          color: '#84cc16' },
+  ];
+
+  const LEADER_BADGE_DEFS = [
+    { label: 'Pts Ldr',  stat: 'PTS',  color: '#f59e0b' },
+    { label: 'Reb Ldr',  stat: 'REB',  color: '#22c55e' },
+    { label: 'Ast Ldr',  stat: 'AST',  color: '#38bdf8' },
+    { label: 'Stl Ldr',  stat: 'STL',  color: '#a855f7' },
+    { label: 'Blk Ldr',  stat: 'BLK',  color: '#ef4444' },
+    { label: '3PM Ldr',  stat: '3PM',  color: '#f97316' },
+    { label: 'GMSC Ldr', stat: 'GMSC', color: '#14b8a6' },
+  ];
+
+  function renderAccolades(container, playerSlug, rings, playerAwards, seasonLeaders) {
+    const awardsForPlayer = playerAwards[playerSlug] || [];
+    const awardCountByType = {};
+    awardsForPlayer.forEach(a => {
+      awardCountByType[a.AWARD] = (awardCountByType[a.AWARD] || 0) + 1;
+    });
+
+    const badges = [];
+
+    // Award badges
+    BADGE_DEFS.forEach(def => {
+      let count = 0;
+      if (def.rings) {
+        count = +rings || 0;
+      } else {
+        count = awardCountByType[def.award] || 0;
+      }
+      if (count > 0) {
+        const plural = def.rings && count > 1 ? 'Rings' : def.label;
+        badges.push({ label: count === 1 ? plural : `${count}× ${plural}`, color: def.color });
+      }
+    });
+
+    // League-leader badges
+    LEADER_BADGE_DEFS.forEach(def => {
+      let count = 0;
+      Object.entries(seasonLeaders).forEach(([, statMap]) => {
+        if (statMap[def.stat] && statMap[def.stat].slug === playerSlug) count++;
+      });
+      if (count > 0) {
+        badges.push({ label: count === 1 ? def.label : `${count}× ${def.label}`, color: def.color });
+      }
+    });
+
+    if (!badges.length) return;
+
+    const div = document.createElement('div');
+    div.className = 'accolades';
+    badges.forEach(b => {
+      const span = document.createElement('span');
+      span.className = 'badge';
+      span.textContent = b.label;
+      span.style.background = b.color + '22';
+      span.style.color = b.color;
+      span.style.border = `1px solid ${b.color}55`;
+      div.appendChild(span);
+    });
+    container.appendChild(div);
+  }
+
+  // ── Row icon helper ──────────────────────────────────────────────────────────
+
+  const AWARD_ICONS = { 'Champion': '💍', 'Most Valuable Player': '👑', 'All-Star': '⭐' };
+  const ICON_ORDER  = ['💍', '👑', '⭐'];
+
+  function makeIconFn(regRows, poRows, playerAwards, slug, bySeasonMode) {
+    const awards = playerAwards[slug] || [];
+
+    // last team per season (rows already sorted by SEASON desc, LAST_DATE desc —
+    // so first entry per season is the chronologically latest team)
+    const regLastTeam = new Map();
+    regRows.forEach(r => { if (!regLastTeam.has(r.SEASON)) regLastTeam.set(r.SEASON, r.TEAM); });
+    const poLastTeam = new Map();
+    if (poRows) poRows.forEach(r => { if (!poLastTeam.has(r.SEASON)) poLastTeam.set(r.SEASON, r.TEAM); });
+
+    // teamIcons[season|team] and seasonIcons[season] — both keyed by SEASON string
+    const teamIcons = new Map();
+    const seasonIcons = new Map();
+
+    awards.forEach(a => {
+      const icon = AWARD_ICONS[a.AWARD];
+      if (!icon) return;
+      const isPlayoff = a.SEASON.includes('Playoffs');
+      const lastTeam = isPlayoff ? poLastTeam.get(a.SEASON) : regLastTeam.get(a.SEASON);
+      if (!lastTeam) return;
+
+      const teamKey = a.SEASON + '|' + lastTeam;
+      if (!teamIcons.has(teamKey)) teamIcons.set(teamKey, new Set());
+      teamIcons.get(teamKey).add(icon);
+
+      if (!seasonIcons.has(a.SEASON)) seasonIcons.set(a.SEASON, new Set());
+      seasonIcons.get(a.SEASON).add(icon);
+    });
+
+    const sorted = icons => ICON_ORDER.filter(i => icons.has(i));
+
+    return row => {
+      if (bySeasonMode) return sorted(seasonIcons.get(row.SEASON) ?? new Set());
+      return sorted(teamIcons.get(row.SEASON + '|' + row.TEAM) ?? new Set());
+    };
+  }
+
   // ── Render: index (player directory) ─────────────────────────────────────────
 
   function renderIndex(rows) {
@@ -457,23 +757,72 @@
     document.getElementById('nav').innerHTML = '<a href="/">← Home</a>';
     document.getElementById('page-sub').textContent = 'Browse all players in NBN history.';
 
-    const playerMap = new Map();
-    const playerTeams = new Map();
-    rows.forEach(r => {
+    // Collect teams per player in chronological order
+    const playerFirstRow = new Map();
+    const playerTeamsList = new Map(); // slug -> ordered unique teams
+    const chronoRows = [...rows].sort((a, b) => {
+      const sa = parseFloat(a.SEASON) || 0, sb = parseFloat(b.SEASON) || 0;
+      if (sa !== sb) return sa - sb;
+      return (a.LAST_DATE || '') < (b.LAST_DATE || '') ? -1 : 1;
+    });
+    chronoRows.forEach(r => {
       if (!r.SLUG) return;
-      if (!playerMap.has(r.SLUG)) playerMap.set(r.SLUG, r);
-      if (r.TEAM) {
-        if (!playerTeams.has(r.SLUG)) playerTeams.set(r.SLUG, new Set());
-        playerTeams.get(r.SLUG).add(r.TEAM);
-      }
+      if (!playerFirstRow.has(r.SLUG)) playerFirstRow.set(r.SLUG, r);
+      if (!playerTeamsList.has(r.SLUG)) playerTeamsList.set(r.SLUG, []);
+      const tl = playerTeamsList.get(r.SLUG);
+      if (r.TEAM && !tl.includes(r.TEAM)) tl.push(r.TEAM);
     });
 
-    const players = [...playerMap.values()].sort((a, b) => a.PLAYER.localeCompare(b.PLAYER));
+    function fmtDOB(dob) {
+      const v = bioVal(dob);
+      if (!v) return null;
+      const d = new Date(v);
+      return isNaN(d) ? null : d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function fmtDraft(yr, rnd, pick) {
+      const y = bioVal(yr);
+      if (!y) return null;
+      let s = y;
+      const rn = bioVal(rnd); if (rn) { const m = rn.match(/\d+/); if (m) s += ' · R' + m[0]; }
+      const pn = bioVal(pick); if (pn) { const m = pn.match(/\d+/); if (m) s += ' · P' + m[0]; }
+      return s;
+    }
+
+    // Build one display-object per player
+    const players = [...playerFirstRow.values()].map(r => {
+      const dobRaw = bioVal(r.DOB);
+      const d = dobRaw ? new Date(dobRaw) : null;
+      const dobOk = d && !isNaN(d);
+      let age = null;
+      if (dobOk) {
+        const now = new Date();
+        age = now.getFullYear() - d.getFullYear();
+        const mo = now.getMonth() - d.getMonth();
+        if (mo < 0 || (mo === 0 && now.getDate() < d.getDate())) age--;
+      }
+      return {
+        SLUG:      r.SLUG,
+        PLAYER:    r.PLAYER,
+        PHOTO_URL: r.PHOTO_URL,
+        RINGS:     r.RINGS,
+        AGE:       age,                            // number | null
+        DOB_FMT:   fmtDOB(r.DOB),                 // "Sep 19, 1999" | null
+        DOB_SORT:  dobOk ? d.getTime() : null,
+        COUNTRY:   bioVal(r.COUNTRY),
+        COLLEGE:   bioVal(r.COLLEGE),
+        DRAFT_FMT: fmtDraft(r.NBN_DFT_YR, r.NBN_DFT_R, r.NBN_DFT_P),
+        DRAFT_SORT: bioVal(r.NBN_DFT_YR) ? parseInt(r.NBN_DFT_YR, 10) : null,
+        TEAMS:     playerTeamsList.get(r.SLUG) || [],
+      };
+    });
+
     const allTeams = [...new Set(rows.map(r => r.TEAM).filter(Boolean))].sort();
 
     const content = document.getElementById('content');
     content.innerHTML = '';
 
+    // Filter bar
     const filterBar = document.createElement('div');
     filterBar.className = 'filter-bar';
 
@@ -486,14 +835,9 @@
 
     const teamSelect = document.createElement('select');
     teamSelect.className = 'filter-team';
-    const defaultOpt = document.createElement('option');
-    defaultOpt.value = '';
-    defaultOpt.textContent = 'All teams';
-    teamSelect.appendChild(defaultOpt);
-    allTeams.forEach(t => {
+    [['', 'All teams'], ...allTeams.map(t => [t, t])].forEach(([v, l]) => {
       const opt = document.createElement('option');
-      opt.value = t;
-      opt.textContent = t;
+      opt.value = v; opt.textContent = l;
       teamSelect.appendChild(opt);
     });
     filterBar.appendChild(teamSelect);
@@ -503,33 +847,59 @@
     filterBar.appendChild(resultCount);
     content.appendChild(filterBar);
 
-    const grid = document.createElement('div');
-    grid.className = 'player-grid';
-    players.forEach(p => {
-      const a = document.createElement('a');
-      a.className = 'player-card' + (+p.RINGS > 0 ? ' champion' : '');
-      a.href = `/players/?p=${p.SLUG}`;
-      a.dataset.name = p.PLAYER.toLowerCase();
-      a.dataset.teams = [...(playerTeams.get(p.SLUG) || [])].join('|');
+    // Table
+    const IDX_COLS = [
+      { label: 'Player',  field: 'PLAYER',     defaultDir:  1 },
+      { label: 'Age',     field: 'AGE',         defaultDir: -1, cls: 'right' },
+      { label: 'Born',    field: 'DOB_SORT',    defaultDir: -1, cls: 'right', display: p => p.DOB_FMT || '—' },
+      { label: 'Country', field: 'COUNTRY',     defaultDir:  1, display: p => p.COUNTRY || '—' },
+      { label: 'College', field: 'COLLEGE',     defaultDir:  1, display: p => p.COLLEGE || '—' },
+      { label: 'Draft',   field: 'DRAFT_SORT',  defaultDir:  1, display: p => p.DRAFT_FMT || '—' },
+      { label: 'Teams',   field: null,                           display: p => p.TEAMS.join(', ') },
+    ];
 
-      if (p.PHOTO_URL) {
-        const img = document.createElement('img');
-        img.className = 'player-photo';
-        img.src = p.PHOTO_URL;
-        img.alt = '';
-        img.onerror = function() { this.replaceWith(makePlaceholder()); };
-        a.appendChild(img);
+    let sortField = 'PLAYER', sortDir = 1;
+
+    function idxSortVal(p, field) {
+      const v = p[field];
+      if (v == null) return Infinity;
+      if (typeof v === 'number') return v;
+      const n = parseFloat(v);
+      return isNaN(n) ? String(v).toLowerCase() : n;
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    content.appendChild(wrap);
+
+    const table = document.createElement('table');
+    const thead = table.createTHead();
+    const headerRow = thead.insertRow();
+    const thEls = [];
+
+    IDX_COLS.forEach(col => {
+      const th = document.createElement('th');
+      if (col.cls) th.classList.add(...col.cls.split(' '));
+      const arrow = document.createElement('span');
+      arrow.className = 'sort-arrow';
+      th.appendChild(document.createTextNode(col.label));
+      th.appendChild(arrow);
+      if (col.field) {
+        th.addEventListener('click', () => {
+          if (sortField === col.field) sortDir *= -1;
+          else { sortField = col.field; sortDir = col.defaultDir ?? 1; }
+          updateHeaders();
+          rebuildBody();
+        });
       } else {
-        a.appendChild(makePlaceholder());
+        th.style.cursor = 'default';
       }
-
-      const name = document.createElement('span');
-      name.textContent = p.PLAYER;
-      a.appendChild(name);
-
-      grid.appendChild(a);
+      thEls.push(th);
+      headerRow.appendChild(th);
     });
-    content.appendChild(grid);
+
+    const tbody = table.createTBody();
+    wrap.appendChild(table);
 
     const noResults = document.createElement('p');
     noResults.className = 'no-results';
@@ -537,30 +907,114 @@
     noResults.style.display = 'none';
     content.appendChild(noResults);
 
-    function applyFilters() {
-      const q = searchInput.value.trim().toLowerCase();
-      const team = teamSelect.value;
-      let visible = 0;
-      grid.querySelectorAll('.player-card').forEach(card => {
-        const nameMatch = !q || card.dataset.name.includes(q);
-        const teamMatch = !team || card.dataset.teams.split('|').includes(team);
-        const show = nameMatch && teamMatch;
-        card.style.display = show ? '' : 'none';
-        if (show) visible++;
+    function updateHeaders() {
+      thEls.forEach((th, i) => {
+        const active = IDX_COLS[i].field === sortField;
+        th.dataset.active = active;
+        th.querySelector('.sort-arrow').textContent = active ? (sortDir === -1 ? '↓' : '↑') : '';
       });
-      const total = players.length;
-      resultCount.textContent = visible === total ? `${total} players` : `${visible} of ${total}`;
-      noResults.style.display = visible === 0 ? '' : 'none';
     }
 
-    applyFilters();
+    function buildRow(p) {
+      const tr = document.createElement('tr');
+      tr.className = 'clickable-row';
+      tr.dataset.name = p.PLAYER.toLowerCase();
+      tr.dataset.teams = p.TEAMS.join('|');
+      tr.addEventListener('click', () => { location.href = `/players/?p=${p.SLUG}`; });
+
+      // Player cell: photo + name
+      const tdP = tr.insertCell();
+      const cell = document.createElement('div');
+      cell.className = 'player-name-cell';
+      if (p.PHOTO_URL) {
+        const img = document.createElement('img');
+        img.className = 'player-photo-sm';
+        img.src = p.PHOTO_URL;
+        img.alt = '';
+        img.onerror = function() {
+          const ph = document.createElement('div');
+          ph.className = 'player-placeholder-sm';
+          this.replaceWith(ph);
+        };
+        cell.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'player-placeholder-sm';
+        cell.appendChild(ph);
+      }
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = p.PLAYER;
+      if (+p.RINGS > 0) nameSpan.classList.add('champion-name');
+      cell.appendChild(nameSpan);
+      tdP.appendChild(cell);
+
+      // Remaining cells
+      IDX_COLS.slice(1).forEach(col => {
+        const td = tr.insertCell();
+        if (col.cls) td.className = col.cls;
+        const val = col.display ? col.display(p) : (p[col.field] ?? '—');
+        td.textContent = val == null ? '—' : val;
+      });
+
+      return tr;
+    }
+
+    let filterQ = '', filterTeam = '';
+
+    function visible(p) {
+      return (!filterQ || p.PLAYER.toLowerCase().includes(filterQ)) &&
+             (!filterTeam || p.TEAMS.includes(filterTeam));
+    }
+
+    function rebuildBody() {
+      const sorted = [...players].sort((a, b) => {
+        const va = idxSortVal(a, sortField), vb = idxSortVal(b, sortField);
+        if (va === Infinity && vb === Infinity) return a.PLAYER.localeCompare(b.PLAYER);
+        if (va === Infinity) return 1;
+        if (vb === Infinity) return -1;
+        if (va < vb) return sortDir === 1 ? -1 : 1;
+        if (va > vb) return sortDir === 1 ? 1 : -1;
+        return a.PLAYER.localeCompare(b.PLAYER);
+      });
+      tbody.innerHTML = '';
+      let count = 0;
+      sorted.forEach(p => {
+        const show = visible(p);
+        const tr = buildRow(p);
+        if (!show) tr.style.display = 'none';
+        else count++;
+        tbody.appendChild(tr);
+      });
+      const total = players.length;
+      resultCount.textContent = count === total ? `${total} players` : `${count} of ${total}`;
+      noResults.style.display = count === 0 ? '' : 'none';
+    }
+
+    function applyFilters() {
+      filterQ = searchInput.value.trim().toLowerCase();
+      filterTeam = teamSelect.value;
+      let count = 0;
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const nameOk = !filterQ || tr.dataset.name.includes(filterQ);
+        const teamOk = !filterTeam || tr.dataset.teams.split('|').includes(filterTeam);
+        const show = nameOk && teamOk;
+        tr.style.display = show ? '' : 'none';
+        if (show) count++;
+      });
+      const total = players.length;
+      resultCount.textContent = count === total ? `${total} players` : `${count} of ${total}`;
+      noResults.style.display = count === 0 ? '' : 'none';
+    }
+
     searchInput.addEventListener('input', applyFilters);
     teamSelect.addEventListener('change', applyFilters);
+    updateHeaders();
+    rebuildBody();
   }
 
   // ── Render: player profile ────────────────────────────────────────────────────
 
-  function renderPlayer(playerName, rows) {
+  function renderPlayer(playerName, rows, playerAwards, seasonLeaders) {
     rows = [...rows].sort((a, b) => {
       const sa = parseFloat(a.SEASON) || 0;
       const sb = parseFloat(b.SEASON) || 0;
@@ -593,6 +1047,12 @@
     const content = document.getElementById('content');
     content.innerHTML = '';
 
+    // bio line
+    renderBioLine(content, rows[0]);
+
+    // accolades
+    renderAccolades(content, slug, rows[0].RINGS, playerAwards, seasonLeaders);
+
     // toggle
     const toggleBar = document.createElement('div');
     toggleBar.className = 'toggle-bar';
@@ -620,16 +1080,29 @@
 
     function getDisplayRows() {
       const reg = bySeasonMode ? aggregateBySeasonRows(rows) : rows;
-      if (!showPlayoffs || !poRows || !poRows.length) return reg;
-      const po = bySeasonMode ? aggregateBySeasonRows(poRows) : poRows;
-      return [...reg, ...po];
+      const all = (!showPlayoffs || !poRows || !poRows.length)
+        ? reg
+        : [...reg, ...(bySeasonMode ? aggregateBySeasonRows(poRows) : poRows)];
+      const dob = rows[0].DOB;
+      return all.map(r => ({ ...r, AGE: ageAtSeason(dob, r.SEASON) }));
+    }
+
+    function makeLeaderCheck() {
+      return (row, col) => {
+        if (!col.sortField || !LEADER_STATS.includes(col.sortField)) return false;
+        if (!row.SEASON || row.SEASON.includes('Playoffs')) return false;
+        const leaders = seasonLeaders[row.SEASON];
+        if (!leaders || !leaders[col.sortField]) return false;
+        return leaders[col.sortField].slug === slug;
+      };
     }
 
     function rebuildSections() {
       const displayRows = getDisplayRows();
       sections.innerHTML = '';
-      buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerStatsRow(displayRows));
-      buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerHighsRow(displayRows));
+      const iconFn = makeIconFn(rows, poRows, playerAwards, slug, bySeasonMode);
+      buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerStatsRow(displayRows), makeLeaderCheck(), iconFn);
+      buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerHighsRow(displayRows), null, iconFn);
     }
 
     btnTeam.addEventListener('click', () => {
@@ -679,10 +1152,21 @@
 
   // ── Main ─────────────────────────────────────────────────────────────────────
 
-  fetch('/players/player_seasons.csv')
-    .then(r => { if (!r.ok) throw new Error(); return r.text(); })
-    .then(text => {
-      const rows = parseCSV(text);
+  Promise.all([
+    fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw new Error(); return r.text(); }),
+    fetch('/players/player_awards.csv').then(r => r.text()).catch(() => '')
+  ])
+    .then(([seasonsText, awardsText]) => {
+      const rows = parseCSV(seasonsText);
+      const awards = awardsText ? parseCSV(awardsText) : [];
+
+      const playerAwards = {};
+      awards.forEach(a => {
+        if (!playerAwards[a.SLUG]) playerAwards[a.SLUG] = [];
+        playerAwards[a.SLUG].push(a);
+      });
+
+      const seasonLeaders = buildSeasonLeaders(rows);
 
       if (!slug) {
         renderIndex(rows);
@@ -695,7 +1179,7 @@
         return;
       }
 
-      renderPlayer(playerRows[0].PLAYER, playerRows);
+      renderPlayer(playerRows[0].PLAYER, playerRows, playerAwards, seasonLeaders);
     })
     .catch(() => showError('Failed to load data.'));
 })();
