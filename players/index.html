@@ -170,6 +170,36 @@
 
     .career-row { border-top: 2px solid #374151 !important; }
     .career-row td { font-weight: 600; color: #f3f4f6; }
+
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-search,
+    .filter-team {
+      padding: 0.5rem 0.75rem;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      color: #f3f4f6;
+      font-size: 0.875rem;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .filter-search { flex: 1; min-width: 180px; }
+    .filter-search::placeholder { color: #6b7280; }
+    .filter-search:focus,
+    .filter-team:focus { border-color: #3b82f6; }
+
+    .filter-team { cursor: pointer; min-width: 140px; }
+
+    .filter-count { color: #6b7280; font-size: 0.85rem; align-self: center; white-space: nowrap; }
+
+    .no-results { color: #6b7280; font-size: 0.9rem; padding: 1.5rem 0; }
   </style>
 </head>
 <body>
@@ -218,6 +248,10 @@
   function sortVal(row, field) {
     const v = row[field];
     if (v === undefined || v === '' || v === 'NA') return -Infinity;
+    if (field === 'SEASON') {
+      const n = parseFloat(v);
+      if (!isNaN(n)) return v.includes(' ') ? n + 0.5 : n;
+    }
     const n = parseFloat(v);
     return isNaN(n) ? v.toLowerCase() : n;
   }
@@ -421,13 +455,51 @@
     document.getElementById('nav').innerHTML = '<a href="/">← Home</a>';
     document.getElementById('page-sub').textContent = 'Browse all players in NBN history.';
 
-    const seen = new Set();
-    const players = rows
-      .filter(r => r.SLUG && !seen.has(r.SLUG) && seen.add(r.SLUG))
-      .sort((a, b) => a.PLAYER.localeCompare(b.PLAYER));
+    const playerMap = new Map();
+    const playerTeams = new Map();
+    rows.forEach(r => {
+      if (!r.SLUG) return;
+      if (!playerMap.has(r.SLUG)) playerMap.set(r.SLUG, r);
+      if (r.TEAM) {
+        if (!playerTeams.has(r.SLUG)) playerTeams.set(r.SLUG, new Set());
+        playerTeams.get(r.SLUG).add(r.TEAM);
+      }
+    });
+
+    const players = [...playerMap.values()].sort((a, b) => a.PLAYER.localeCompare(b.PLAYER));
+    const allTeams = [...new Set(rows.map(r => r.TEAM).filter(Boolean))].sort();
 
     const content = document.getElementById('content');
     content.innerHTML = '';
+
+    const filterBar = document.createElement('div');
+    filterBar.className = 'filter-bar';
+
+    const searchInput = document.createElement('input');
+    searchInput.type = 'search';
+    searchInput.placeholder = 'Search players…';
+    searchInput.className = 'filter-search';
+    searchInput.setAttribute('autocomplete', 'off');
+    filterBar.appendChild(searchInput);
+
+    const teamSelect = document.createElement('select');
+    teamSelect.className = 'filter-team';
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = 'All teams';
+    teamSelect.appendChild(defaultOpt);
+    allTeams.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t;
+      opt.textContent = t;
+      teamSelect.appendChild(opt);
+    });
+    filterBar.appendChild(teamSelect);
+
+    const resultCount = document.createElement('span');
+    resultCount.className = 'filter-count';
+    filterBar.appendChild(resultCount);
+    content.appendChild(filterBar);
 
     const grid = document.createElement('div');
     grid.className = 'player-grid';
@@ -435,6 +507,8 @@
       const a = document.createElement('a');
       a.className = 'player-card';
       a.href = `/players/?p=${p.SLUG}`;
+      a.dataset.name = p.PLAYER.toLowerCase();
+      a.dataset.teams = [...(playerTeams.get(p.SLUG) || [])].join('|');
 
       if (p.PHOTO_URL) {
         const img = document.createElement('img');
@@ -454,6 +528,32 @@
       grid.appendChild(a);
     });
     content.appendChild(grid);
+
+    const noResults = document.createElement('p');
+    noResults.className = 'no-results';
+    noResults.textContent = 'No players match your search.';
+    noResults.style.display = 'none';
+    content.appendChild(noResults);
+
+    function applyFilters() {
+      const q = searchInput.value.trim().toLowerCase();
+      const team = teamSelect.value;
+      let visible = 0;
+      grid.querySelectorAll('.player-card').forEach(card => {
+        const nameMatch = !q || card.dataset.name.includes(q);
+        const teamMatch = !team || card.dataset.teams.split('|').includes(team);
+        const show = nameMatch && teamMatch;
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      const total = players.length;
+      resultCount.textContent = visible === total ? `${total} players` : `${visible} of ${total}`;
+      noResults.style.display = visible === 0 ? '' : 'none';
+    }
+
+    applyFilters();
+    searchInput.addEventListener('input', applyFilters);
+    teamSelect.addEventListener('change', applyFilters);
   }
 
   // ── Render: player profile ────────────────────────────────────────────────────
@@ -494,14 +594,18 @@
     // toggle
     const toggleBar = document.createElement('div');
     toggleBar.className = 'toggle-bar';
-    const btnTeam   = document.createElement('button');
-    const btnSeason = document.createElement('button');
-    btnTeam.className   = 'toggle-btn active';
-    btnSeason.className = 'toggle-btn';
-    btnTeam.textContent   = 'By Team';
-    btnSeason.textContent = 'By Season';
+    const btnTeam     = document.createElement('button');
+    const btnSeason   = document.createElement('button');
+    const btnPlayoffs = document.createElement('button');
+    btnTeam.className     = 'toggle-btn active';
+    btnSeason.className   = 'toggle-btn';
+    btnPlayoffs.className = 'toggle-btn';
+    btnTeam.textContent     = 'By Team';
+    btnSeason.textContent   = 'By Season';
+    btnPlayoffs.textContent = 'Playoffs';
     toggleBar.appendChild(btnTeam);
     toggleBar.appendChild(btnSeason);
+    toggleBar.appendChild(btnPlayoffs);
     content.appendChild(toggleBar);
 
     // sections container
@@ -509,9 +613,18 @@
     content.appendChild(sections);
 
     let bySeasonMode = false;
+    let showPlayoffs = false;
+    let poRows = null;
+
+    function getDisplayRows() {
+      const reg = bySeasonMode ? aggregateBySeasonRows(rows) : rows;
+      if (!showPlayoffs || !poRows || !poRows.length) return reg;
+      const po = bySeasonMode ? aggregateBySeasonRows(poRows) : poRows;
+      return [...reg, ...po];
+    }
 
     function rebuildSections() {
-      const displayRows = bySeasonMode ? aggregateBySeasonRows(rows) : rows;
+      const displayRows = getDisplayRows();
       sections.innerHTML = '';
       buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerStatsRow(displayRows));
       buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerHighsRow(displayRows));
@@ -532,6 +645,30 @@
         btnSeason.classList.add('active');
         btnTeam.classList.remove('active');
         rebuildSections();
+      }
+    });
+
+    btnPlayoffs.addEventListener('click', () => {
+      if (showPlayoffs) {
+        showPlayoffs = false;
+        btnPlayoffs.classList.remove('active');
+        rebuildSections();
+      } else if (poRows !== null) {
+        showPlayoffs = true;
+        btnPlayoffs.classList.add('active');
+        rebuildSections();
+      } else {
+        fetch('/players/player_seasons_playoffs.csv')
+          .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+          .then(text => {
+            poRows = parseCSV(text).filter(r => r.SLUG === slug);
+            showPlayoffs = true;
+            btnPlayoffs.classList.add('active');
+            rebuildSections();
+          })
+          .catch(() => {
+            poRows = [];
+          });
       }
     });
 
