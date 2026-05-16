@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBNTV Classics — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page { max-width: 760px; margin: 0 auto; }
+
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header { margin-bottom: 0.5rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .subtitle {
+      color: #6b7280;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 1.75rem 0 0.75rem;
+    }
+
+    #status { color: #9ca3af; font-size: 0.9rem; padding: 2rem 0; }
+
+    /* Classic entries */
+    .classic-list { display: flex; flex-direction: column; gap: 0.625rem; }
+
+    .classic-entry {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .classic-header {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.12s;
+    }
+
+    .classic-header:hover { background: #263244; }
+    .classic-entry.open .classic-header { background: #1e3a5f; border-bottom: 1px solid #374151; }
+
+    .classic-rank {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #4b5563;
+      min-width: 2.25rem;
+      text-align: center;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .classic-body { flex: 1; min-width: 0; }
+
+    .classic-player {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #f3f4f6;
+    }
+
+    .classic-team {
+      color: #60a5fa;
+      font-weight: 500;
+      margin-left: 0.4rem;
+    }
+
+    .classic-statline {
+      font-size: 0.825rem;
+      color: #d1d5db;
+      margin-top: 0.2rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .classic-context {
+      font-size: 0.775rem;
+      color: #9ca3af;
+      margin-top: 0.15rem;
+    }
+
+    .classic-gmsc {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #6b7280;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 0.3rem 0.6rem;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    .classic-gmsc span {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #93c5fd;
+      letter-spacing: 0;
+    }
+
+    .chevron {
+      color: #6b7280;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+
+    .classic-entry.open .chevron { transform: rotate(180deg); }
+
+    /* Blurb expand area */
+    .classic-blurb-wrap {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+    }
+
+    .classic-entry.open .classic-blurb-wrap { max-height: 300px; }
+
+    .classic-blurb {
+      padding: 1rem 1.25rem 1.25rem;
+      color: #9ca3af;
+      font-size: 0.875rem;
+      line-height: 1.7;
+    }
+
+    .classic-blurb-empty {
+      font-style: italic;
+      color: #4b5563;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav"><a href="/">← Home</a></nav>
+  <header>
+    <h1>NBNTV Classics</h1>
+    <p>The greatest individual performances in NBN playoff history.</p>
+  </header>
+  <div id="content"><div id="status">Loading...</div></div>
+</div>
+
+<script>
+(function () {
+
+  // Blurbs keyed by rank (1–10). Fill these in editorially.
+  const BLURBS = {
+    1:  '',
+    2:  '',
+    3:  '',
+    4:  '',
+    5:  '',
+    6:  '',
+    7:  '',
+    8:  '',
+    9:  '',
+    10: '',
+  };
+
+  // ── CSV parser ───────────────────────────────────────────────────────────────
+
+  function parseLine(line) {
+    const out = [];
+    let cur = '', quoted = false;
+    for (const ch of line) {
+      if (ch === '"') { quoted = !quoted; }
+      else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    out.push(cur);
+    return out;
+  }
+
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = parseLine(lines[0]).map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const vals = parseLine(line);
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = (vals[i] ?? '').trim(); });
+      return obj;
+    });
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  function fmtDate(d) {
+    const dt = new Date(d + 'T00:00:00');
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function roundLabel(round, game) {
+    const roundNames = { '1': 'R1', '2': 'R2', '3': 'Conf Finals', '4': 'Finals' };
+    const r = roundNames[round] || `R${round}`;
+    return `${r} · G${game}`;
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+
+  function renderList(rows) {
+    const content = document.getElementById('content');
+    content.innerHTML = '';
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'subtitle';
+    subtitle.textContent = 'Top 10 Performances · Playoff Wins · Ranked by GMSC';
+    content.appendChild(subtitle);
+
+    const list = document.createElement('div');
+    list.className = 'classic-list';
+
+    rows.forEach(row => {
+      const rank = +row.RANK;
+      const gmsc = (+row.GMSC).toFixed(1);
+      const fg = `${row.FGM}-${row.FGA}`;
+      const blurbText = BLURBS[rank] || '';
+
+      const entry = document.createElement('div');
+      entry.className = 'classic-entry';
+
+      // ── header row ──────────────────────────────────────────────
+      const header = document.createElement('div');
+      header.className = 'classic-header';
+
+      const rankEl = document.createElement('div');
+      rankEl.className = 'classic-rank';
+      rankEl.textContent = rank;
+
+      const body = document.createElement('div');
+      body.className = 'classic-body';
+
+      const playerLine = document.createElement('div');
+      playerLine.className = 'classic-player';
+      playerLine.textContent = row.PLAYER;
+      const teamSpan = document.createElement('span');
+      teamSpan.className = 'classic-team';
+      teamSpan.textContent = '· ' + row.TEAM;
+      playerLine.appendChild(teamSpan);
+
+      const statline = document.createElement('div');
+      statline.className = 'classic-statline';
+      const parts = [
+        `${row.P} PTS`,
+        `${row.R} REB`,
+        `${row.A} AST`,
+      ];
+      if (+row.S > 0) parts.push(`${row.S} STL`);
+      if (+row.B > 0) parts.push(`${row.B} BLK`);
+      if (+row['3PM'] > 0) parts.push(`${row['3PM']} 3PM`);
+      parts.push(`${fg} FG`);
+      statline.textContent = parts.join('  ·  ');
+
+      const context = document.createElement('div');
+      context.className = 'classic-context';
+      context.textContent = `vs ${row.OPP}  ·  ${fmtDate(row.DATE)}  ·  ${row.SEASON}  ·  ${roundLabel(row.ROUND, row.GAME)}`;
+
+      body.appendChild(playerLine);
+      body.appendChild(statline);
+      body.appendChild(context);
+
+      const gmscEl = document.createElement('div');
+      gmscEl.className = 'classic-gmsc';
+      gmscEl.innerHTML = `GMSC<span>${gmsc}</span>`;
+
+      const chevron = document.createElement('span');
+      chevron.className = 'chevron';
+      chevron.textContent = '▼';
+
+      header.appendChild(rankEl);
+      header.appendChild(body);
+      header.appendChild(gmscEl);
+      header.appendChild(chevron);
+
+      // ── blurb section ────────────────────────────────────────────
+      const blurbWrap = document.createElement('div');
+      blurbWrap.className = 'classic-blurb-wrap';
+
+      const blurb = document.createElement('div');
+      blurb.className = 'classic-blurb';
+      if (blurbText) {
+        blurb.textContent = blurbText;
+      } else {
+        blurb.innerHTML = '<span class="classic-blurb-empty">No write-up yet.</span>';
+      }
+      blurbWrap.appendChild(blurb);
+
+      // ── toggle ───────────────────────────────────────────────────
+      header.addEventListener('click', () => {
+        entry.classList.toggle('open');
+      });
+
+      entry.appendChild(header);
+      entry.appendChild(blurbWrap);
+      list.appendChild(entry);
+    });
+
+    content.appendChild(list);
+  }
+
+  // ── Main ─────────────────────────────────────────────────────────────────────
+
+  fetch('/nbntv-classics/playoff-classics.csv')
+    .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+    .then(text => renderList(parseCSV(text)))
+    .catch(() => {
+      document.getElementById('content').innerHTML =
+        '<div id="status">Failed to load data.</div>';
+    });
+
+})();
+</script>
+</body>
+</html>
