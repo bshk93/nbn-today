@@ -166,18 +166,20 @@
 <script>
 (function () {
 
-  // Blurbs keyed by rank (1–10). Fill these in editorially.
+  // Blurbs keyed by "<DATE>_<player-slug>" so they survive rank changes.
+  // Key = row.DATE + '_' + player name lowercased with non-alphanumeric runs → '-'.
+  // Example: '2021-06-20_curry-stephen'
   const BLURBS = {
-    1:  '',
-    2:  '',
-    3:  '',
-    4:  '',
-    5:  '',
-    6:  '',
-    7:  '',
-    8:  '',
-    9:  '',
-    10: '',
+    '2021-06-20_curry-stephen':           '',
+    '2026-05-11_durant-kevin':            '',
+    '2026-04-24_durant-kevin':            '',
+    '2021-07-23_george-paul':             '',
+    '2026-04-18_haliburton-tyrese':       '',
+    '2025-05-21_antetokounmpo-giannis':   '',
+    '2026-05-14_murray-jamal':            '',
+    '2021-06-21_antetokounmpo-giannis':   '',
+    '2021-06-05_davis-anthony':           '',
+    '2026-04-21_tatum-jayson':            '',
   };
 
   // ── CSV parser ───────────────────────────────────────────────────────────────
@@ -236,7 +238,8 @@
       const rank = +row.RANK;
       const gmsc = (+row.GMSC).toFixed(1);
       const fg = `${row.FGM}-${row.FGA}`;
-      const blurbText = BLURBS[rank] || '';
+      const key = row.DATE + '_' + row.PLAYER.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '');
+      const blurbText = BLURBS[key] || '';
 
       const entry = document.createElement('div');
       entry.className = 'classic-entry';
