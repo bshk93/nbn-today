@@ -64,6 +64,8 @@
     }
 
     .player-card:hover { background: #263244; border-color: #4b6a9b; text-decoration: none; }
+    .player-card.champion { border-color: #f59e0b; }
+    .player-card.champion:hover { border-color: #fbbf24; }
 
     .player-photo {
       width: 44px;
@@ -505,7 +507,7 @@
     grid.className = 'player-grid';
     players.forEach(p => {
       const a = document.createElement('a');
-      a.className = 'player-card';
+      a.className = 'player-card' + (+p.RINGS > 0 ? ' champion' : '');
       a.href = `/players/?p=${p.SLUG}`;
       a.dataset.name = p.PLAYER.toLowerCase();
       a.dataset.teams = [...(playerTeams.get(p.SLUG) || [])].join('|');
