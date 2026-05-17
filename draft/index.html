@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Draft History — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page { max-width: 900px; margin: 0 auto; }
+
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header { margin-bottom: 1.5rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .controls label { font-size: 0.85rem; color: #9ca3af; }
+
+    select {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #f3f4f6;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    select:focus { outline: none; border-color: #60a5fa; }
+
+    .round-block { margin-bottom: 1.25rem; }
+
+    .round-block h2 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 0.6rem;
+    }
+
+    .table-wrap {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    thead th {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+    }
+
+    thead th.right { text-align: right; }
+
+    tbody tr { border-bottom: 1px solid #283141; transition: background 0.1s; cursor: pointer; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #263244; }
+
+    td { padding: 0.55rem 0.75rem; color: #d1d5db; }
+    td.pick { color: #6b7280; font-size: 0.78rem; width: 2.5rem; font-variant-numeric: tabular-nums; }
+    td.right { text-align: right; font-variant-numeric: tabular-nums; }
+    td.muted { color: #9ca3af; }
+    td.from  { color: #9ca3af; font-size: 0.8rem; }
+
+    .player-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .player-photo-sm {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      background: #374151;
+      flex-shrink: 0;
+    }
+
+    .player-placeholder-sm {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #374151;
+      flex-shrink: 0;
+    }
+
+    .player-name { font-weight: 600; color: #f3f4f6; }
+
+    #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Nothing But Net</a></nav>
+
+    <header>
+      <h1>Draft History</h1>
+      <p>NBN draft classes, pick by pick.</p>
+    </header>
+
+    <div class="controls">
+      <label for="year-select">Draft Class</label>
+      <select id="year-select"></select>
+    </div>
+
+    <div id="content"><div id="status">Loading…</div></div>
+  </div>
+
+  <script>
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+      return lines.slice(1).map(line => {
+        const vals = [];
+        let cur = '', inQ = false;
+        for (const ch of line) {
+          if (ch === '"') { inQ = !inQ; }
+          else if (ch === ',' && !inQ) { vals.push(cur); cur = ''; }
+          else { cur += ch; }
+        }
+        vals.push(cur);
+        const row = {};
+        headers.forEach((h, i) => row[h] = (vals[i] ?? '').trim());
+        return row;
+      });
+    }
+
+    const COUNTRY_ISO = {
+      'Antigua and Barbuda': 'AG', 'Argentina': 'AR', 'Australia': 'AU', 'Austria': 'AT',
+      'Bahamas': 'BS', 'Belgium': 'BE', 'Bosnia and Herzegovina': 'BA', 'Brazil': 'BR',
+      'Cameroon': 'CM', 'Canada': 'CA', 'China': 'CN', 'Croatia': 'HR',
+      'Czech Republic': 'CZ', 'Democratic Republic of the Congo': 'CD', 'Denmark': 'DK',
+      'Dominican Republic': 'DO', 'Egypt': 'EG', 'Finland': 'FI', 'France': 'FR',
+      'Gabon': 'GA', 'Georgia': 'GE', 'Germany': 'DE', 'Greece': 'GR', 'Guinea': 'GN',
+      'Haiti': 'HT', 'Israel': 'IL', 'Italy': 'IT', 'Jamaica': 'JM', 'Japan': 'JP',
+      'Latvia': 'LV', 'Lithuania': 'LT', 'Montenegro': 'ME', 'New Zealand': 'NZ',
+      'Nigeria': 'NG', 'Poland': 'PL', 'Portugal': 'PT', 'Puerto Rico': 'PR',
+      'Russia': 'RU', 'Senegal': 'SN', 'Serbia': 'RS', 'Slovenia': 'SI',
+      'South Sudan': 'SS', 'Spain': 'ES', 'Sudan': 'SD', 'Sweden': 'SE',
+      'Switzerland': 'CH', 'Turkey': 'TR', 'USA': 'US', 'Ukraine': 'UA',
+      'United Kingdom': 'GB',
+    };
+
+    function flagImg(country) {
+      const iso = COUNTRY_ISO[country];
+      if (!iso) return null;
+      const img = document.createElement('img');
+      img.src = `https://flagcdn.com/16x12/${iso.toLowerCase()}.png`;
+      img.alt = country;
+      img.title = country;
+      img.style.cssText = 'vertical-align:middle;border-radius:1px';
+      return img;
+    }
+
+    function parsePick(pickStr) {
+      const m = pickStr.match(/Pick (\d+)(?:\s*\((\w+)\))?/);
+      return m ? { num: +m[1], from: m[2] || '' } : { num: 999, from: '' };
+    }
+
+    function pg(val, g) {
+      const n = +val, games = +g;
+      if (!games || isNaN(n)) return '—';
+      return (n / games).toFixed(1);
+    }
+
+    function renderRound(picks, roundLabel) {
+      const block = document.createElement('div');
+      block.className = 'round-block';
+      const h2 = document.createElement('h2');
+      h2.textContent = roundLabel;
+      block.appendChild(h2);
+      const wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+      const tbl = document.createElement('table');
+      tbl.innerHTML = `<thead><tr>
+        <th>Pick</th>
+        <th>Player</th>
+        <th class="muted">From</th>
+        <th>College</th>
+        <th>Country</th>
+        <th class="right">G</th>
+        <th class="right">PPG</th>
+        <th class="right">RPG</th>
+        <th class="right">APG</th>
+      </tr></thead>`;
+      const tbody = document.createElement('tbody');
+      picks.forEach(({ pick, player }) => {
+        const tr = document.createElement('tr');
+        tr.addEventListener('click', () => { location.href = `/players/?p=${player.SLUG}`; });
+
+        // Photo
+        const cell = document.createElement('div');
+        cell.className = 'player-cell';
+        if (player.PHOTO_URL) {
+          const img = document.createElement('img');
+          img.className = 'player-photo-sm';
+          img.src = player.PHOTO_URL;
+          img.alt = '';
+          img.onerror = function() {
+            const ph = document.createElement('div');
+            ph.className = 'player-placeholder-sm';
+            this.replaceWith(ph);
+          };
+          cell.appendChild(img);
+        } else {
+          const ph = document.createElement('div');
+          ph.className = 'player-placeholder-sm';
+          cell.appendChild(ph);
+        }
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'player-name';
+        nameSpan.textContent = player.PLAYER;
+        cell.appendChild(nameSpan);
+
+        // Country flag
+        const flagTd = document.createElement('td');
+        const flag = player.COUNTRY && player.COUNTRY !== 'NA' ? flagImg(player.COUNTRY) : null;
+        if (flag) flagTd.appendChild(flag);
+        else flagTd.textContent = player.COUNTRY && player.COUNTRY !== 'NA' ? player.COUNTRY : '—';
+
+        const college = player.COLLEGE && player.COLLEGE !== 'NA' ? player.COLLEGE : '—';
+        const G = player._career_G;
+
+        const tdPick = document.createElement('td');
+        tdPick.className = 'pick';
+        tdPick.textContent = pick.num;
+        tr.appendChild(tdPick);
+
+        const tdPlayer = document.createElement('td');
+        tdPlayer.appendChild(cell);
+        tr.appendChild(tdPlayer);
+
+        const tdFrom = document.createElement('td');
+        tdFrom.className = 'from';
+        tdFrom.textContent = pick.from || '—';
+        tr.appendChild(tdFrom);
+
+        const tdCollege = document.createElement('td');
+        tdCollege.className = 'muted';
+        tdCollege.textContent = college;
+        tr.appendChild(tdCollege);
+
+        tr.appendChild(flagTd);
+
+        [G, pg(player._career_PTS, G), pg(player._career_REB, G), pg(player._career_AST, G)].forEach(v => {
+          const td = document.createElement('td');
+          td.className = 'right';
+          td.textContent = typeof v === 'number' ? v : v;
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+      tbl.appendChild(tbody);
+      wrap.appendChild(tbl);
+      block.appendChild(wrap);
+      return block;
+    }
+
+    function render(players, year) {
+      const content = document.getElementById('content');
+      content.innerHTML = '';
+
+      const classPlayers = Object.values(players).filter(p => p.NBN_DFT_YR === year);
+
+      const byRound = {};
+      classPlayers.forEach(p => {
+        const round = p.NBN_DFT_R || 'Unknown';
+        if (!byRound[round]) byRound[round] = [];
+        const pick = parsePick(p.NBN_DFT_P || '');
+        byRound[round].push({ pick, player: p });
+      });
+
+      const roundOrder = ['Round 1', 'Round 2'];
+      const allRounds = [...new Set([...roundOrder, ...Object.keys(byRound)])].filter(r => byRound[r]);
+
+      if (!allRounds.length) {
+        content.innerHTML = '<div id="status">No draft data for this year.</div>';
+        return;
+      }
+
+      allRounds.forEach(round => {
+        const picks = byRound[round].sort((a, b) => a.pick.num - b.pick.num);
+        content.appendChild(renderRound(picks, round));
+      });
+    }
+
+    async function init() {
+      const res = await fetch('/players/player_seasons.csv');
+      if (!res.ok) { document.getElementById('status').textContent = 'Failed to load data.'; return; }
+      const rows = parseCSV(await res.text());
+
+      // Aggregate career totals and deduplicate by slug
+      const players = {};
+      rows.forEach(r => {
+        if (!r.SLUG) return;
+        if (!players[r.SLUG]) {
+          players[r.SLUG] = { ...r, _career_G: 0, _career_PTS: 0, _career_REB: 0, _career_AST: 0 };
+        }
+        players[r.SLUG]._career_G   += +r.G   || 0;
+        players[r.SLUG]._career_PTS += +r.PTS  || 0;
+        players[r.SLUG]._career_REB += +r.REB  || 0;
+        players[r.SLUG]._career_AST += +r.AST  || 0;
+        // Keep most recent bio data
+        if (r.PHOTO_URL) players[r.SLUG].PHOTO_URL = r.PHOTO_URL;
+        if (r.COUNTRY && r.COUNTRY !== 'NA') players[r.SLUG].COUNTRY = r.COUNTRY;
+        if (r.COLLEGE && r.COLLEGE !== 'NA') players[r.SLUG].COLLEGE = r.COLLEGE;
+      });
+
+      // Filter to drafted players
+      const drafted = Object.fromEntries(
+        Object.entries(players).filter(([, p]) => p.NBN_DFT_YR && p.NBN_DFT_YR !== 'NA')
+      );
+
+      const years = [...new Set(Object.values(drafted).map(p => p.NBN_DFT_YR))].sort().reverse();
+
+      const sel = document.getElementById('year-select');
+      years.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y; opt.textContent = y + ' Draft';
+        sel.appendChild(opt);
+      });
+
+      render(drafted, years[0]);
+      sel.addEventListener('change', () => render(drafted, sel.value));
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -130,6 +130,36 @@ document.title = `${abbr} — NBN`;
   .po-other      { color: #6b7280; }
   .po-missed     { color: #4b5563; }
   td.center      { text-align: center; }
+  .timeline {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    padding: 0.5rem 0 0.75rem;
+    margin-bottom: 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: #374151 transparent;
+  }
+  .tl-card {
+    flex-shrink: 0;
+    width: 58px;
+    background: #1f2937;
+    border: 2px solid #283141;
+    border-radius: 8px;
+    padding: 0.45rem 0.25rem;
+    text-align: center;
+    cursor: default;
+    transition: filter 0.1s;
+  }
+  .tl-card:hover { filter: brightness(1.15); }
+  .tl-season { display: block; font-size: 0.6rem; color: #6b7280; letter-spacing: 0.03em; }
+  .tl-wins   { display: block; font-size: 1.25rem; font-weight: 700; color: #f3f4f6; line-height: 1; margin: 0.2rem 0 0.15rem; }
+  .tl-seed   { display: block; font-size: 0.62rem; color: #9ca3af; }
+  .tl-champion   { border-color: #d97706; background: #1a1305; }
+  .tl-champion .tl-wins { color: #fbbf24; }
+  .tl-runnerup   { border-color: #6b7280; }
+  .tl-conffinals { border-color: #1d4ed8; }
+  .tl-second     { border-color: #374151; }
+  .tl-missed     { opacity: 0.55; }
   td.div-left    { border-left: 1px solid #374151; }
   .subheader td  {
     background: #161f2e;
@@ -186,6 +216,7 @@ document.body.innerHTML = `
     </section>
     <section>
       <h2 class="section-title">Season History</h2>
+      <div class="timeline" id="timeline-wrap"></div>
       <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
     </section>
     <section>
@@ -578,6 +609,32 @@ function makeSeasonRenderCell(rows) {
   };
 }
 
+function buildTimeline(rows) {
+  const wrap = document.getElementById('timeline-wrap');
+  if (!wrap) return;
+  const TL_CLASS = {
+    'Champion':     'tl-champion',
+    'Runner-Up':    'tl-runnerup',
+    'Conf Finals':  'tl-conffinals',
+    'Second Round': 'tl-second',
+    'First Round':  'tl-second',
+    'Missed':       'tl-missed',
+  };
+  const sorted = [...rows].sort((a, b) => (a.SEASON > b.SEASON ? 1 : -1));
+  sorted.forEach(row => {
+    const card = document.createElement('div');
+    card.className = 'tl-card ' + (TL_CLASS[row.PLAYOFF_RESULT] || '');
+    const tip = `${row.SEASON}: ${row.W}–${row.L} · ${row.SEED || '—'} · ${row.PLAYOFF_RESULT || '—'}`;
+    card.title = tip;
+    card.innerHTML = `
+      <span class="tl-season">${row.SEASON}</span>
+      <span class="tl-wins">${row.W}</span>
+      <span class="tl-seed">${(row.SEED || '').replace('East-', 'E').replace('West-', 'W')}</span>
+    `;
+    wrap.appendChild(card);
+  });
+}
+
 function playerSlug(name) {
   return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
 }
@@ -609,6 +666,7 @@ function renderPlayerCell(td, col, row) {
   if (sr.status === 'fulfilled') {
     seasonsWrap.innerHTML = '';
     const seasonRows = parseCSV(sr.value);
+    buildTimeline(seasonRows);
     seasonsWrap.appendChild(buildTable(SEASON_COLS, seasonRows, 'SEASON', 1, makeSeasonRenderCell(seasonRows)));
   } else {
     seasonsWrap.innerHTML = '<div class="status">Failed to load season data.</div>';

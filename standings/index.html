@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standings — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page { max-width: 900px; margin: 0 auto; }
+
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header { margin-bottom: 1.5rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .controls label { font-size: 0.85rem; color: #9ca3af; }
+
+    select {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #f3f4f6;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    select:focus { outline: none; border-color: #60a5fa; }
+
+    .conferences {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 680px) { .conferences { grid-template-columns: 1fr; } }
+
+    .conf-block h2 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 0.6rem;
+    }
+
+    .table-wrap {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    thead th {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+    }
+
+    thead th.right { text-align: right; }
+
+    tbody tr { border-bottom: 1px solid #283141; transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #263244; }
+
+    td { padding: 0.55rem 0.75rem; color: #d1d5db; }
+    td.seed { color: #6b7280; font-size: 0.78rem; width: 2rem; }
+    td.team { font-weight: 600; color: #f3f4f6; }
+    td.right { text-align: right; font-variant-numeric: tabular-nums; }
+    td.muted { color: #9ca3af; }
+    td.result { padding-right: 0.75rem; }
+
+    .result-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      letter-spacing: 0.03em;
+    }
+
+    .result-champion   { background: #78350f; color: #fbbf24; }
+    .result-runnerup   { background: #1c2533; color: #9ca3af; border: 1px solid #374151; }
+    .result-conffinals { background: #1c2d24; color: #6ee7b7; }
+    .result-second     { background: #1e2d3d; color: #93c5fd; }
+    .result-first      { background: #27212b; color: #c4b5fd; }
+
+    #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Nothing But Net</a></nav>
+
+    <header>
+      <h1>Standings</h1>
+      <p>Final regular season standings by season.</p>
+    </header>
+
+    <div class="controls">
+      <label for="season-select">Season</label>
+      <select id="season-select"></select>
+    </div>
+
+    <div id="content"><div id="status">Loading…</div></div>
+  </div>
+
+  <script>
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+      return lines.slice(1).map(line => {
+        const vals = [];
+        let cur = '', inQ = false;
+        for (const ch of line) {
+          if (ch === '"') { inQ = !inQ; }
+          else if (ch === ',' && !inQ) { vals.push(cur); cur = ''; }
+          else { cur += ch; }
+        }
+        vals.push(cur);
+        const row = {};
+        headers.forEach((h, i) => row[h] = (vals[i] ?? '').trim());
+        return row;
+      });
+    }
+
+    const RESULT_ORDER = ['Champion', 'Runner-Up', 'Conf Finals', 'Second Round', 'First Round', 'Missed'];
+
+    function resultBadge(result) {
+      if (!result || result === 'Missed') return '';
+      const cls = {
+        'Champion':    'result-champion',
+        'Runner-Up':   'result-runnerup',
+        'Conf Finals': 'result-conffinals',
+        'Second Round':'result-second',
+        'First Round': 'result-first',
+      }[result] || '';
+      const label = {
+        'Champion':    '🏆 Champion',
+        'Runner-Up':   'Runner-Up',
+        'Conf Finals': 'Conf Finals',
+        'Second Round':'2nd Round',
+        'First Round': '1st Round',
+      }[result] || result;
+      return `<span class="result-badge ${cls}">${label}</span>`;
+    }
+
+    function gb(leaderW, leaderL, w, l) {
+      const diff = ((leaderW - w) + (l - leaderL)) / 2;
+      return diff === 0 ? '—' : diff.toFixed(1);
+    }
+
+    function renderConference(rows, confName) {
+      const leaderW = +rows[0].W, leaderL = +rows[0].L;
+      const wrap = document.createElement('div');
+      wrap.className = 'conf-block';
+      const h2 = document.createElement('h2');
+      h2.textContent = confName;
+      wrap.appendChild(h2);
+      const tableWrap = document.createElement('div');
+      tableWrap.className = 'table-wrap';
+      const tbl = document.createElement('table');
+      tbl.innerHTML = `<thead><tr>
+        <th></th>
+        <th>Team</th>
+        <th class="right">W</th>
+        <th class="right">L</th>
+        <th class="right">PCT</th>
+        <th class="right">GB</th>
+        <th class="right">PPG</th>
+        <th class="right">OPPG</th>
+        <th class="right">+/−</th>
+        <th></th>
+      </tr></thead>`;
+      const tbody = document.createElement('tbody');
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+        const seedNum = row.SEED_NUM || row.SEED.replace(/\D/g, '');
+        const pct = (+row.PCT).toFixed(3).replace(/^0/, '');
+        tr.innerHTML = `
+          <td class="seed">${seedNum}</td>
+          <td class="team">${row.TEAM}</td>
+          <td class="right">${row.W}</td>
+          <td class="right">${row.L}</td>
+          <td class="right">${pct}</td>
+          <td class="right muted">${gb(leaderW, leaderL, +row.W, +row.L)}</td>
+          <td class="right">${(+row.PPG).toFixed(1)}</td>
+          <td class="right">${(+row.OPPG).toFixed(1)}</td>
+          <td class="right">${(+row.DIFF) >= 0 ? '+' : ''}${(+row.DIFF).toFixed(1)}</td>
+          <td class="result">${resultBadge(row.PLAYOFF_RESULT)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      tbl.appendChild(tbody);
+      tableWrap.appendChild(tbl);
+      wrap.appendChild(tableWrap);
+      return wrap;
+    }
+
+    function render(rows, season) {
+      const seasonRows = rows.filter(r => r.SEASON === season);
+      const east = seasonRows.filter(r => r.SEED.startsWith('East')).sort((a, b) => +a.SEED_NUM - +b.SEED_NUM);
+      const west = seasonRows.filter(r => r.SEED.startsWith('West')).sort((a, b) => +a.SEED_NUM - +b.SEED_NUM);
+      const content = document.getElementById('content');
+      content.innerHTML = '';
+      const grid = document.createElement('div');
+      grid.className = 'conferences';
+      grid.appendChild(renderConference(east, 'Eastern Conference'));
+      grid.appendChild(renderConference(west, 'Western Conference'));
+      content.appendChild(grid);
+    }
+
+    async function init() {
+      const res = await fetch('/standings/standings-history.csv');
+      if (!res.ok) { document.getElementById('status').textContent = 'Failed to load standings.'; return; }
+      const rows = parseCSV(await res.text());
+      const seasons = [...new Set(rows.map(r => r.SEASON))].sort().reverse();
+      const sel = document.getElementById('season-select');
+      seasons.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        sel.appendChild(opt);
+      });
+      render(rows, seasons[0]);
+      sel.addEventListener('change', () => render(rows, sel.value));
+    }
+
+    init();
+  </script>
+</body>
+</html>
