@@ -573,6 +573,70 @@
     return (!v || v === 'NA' || v === 'None' || v === 'N/A') ? null : v;
   }
 
+  const COUNTRY_ISO = {
+    'Antigua and Barbuda':              'AG',
+    'Argentina':                        'AR',
+    'Australia':                        'AU',
+    'Austria':                          'AT',
+    'Bahamas':                          'BS',
+    'Belgium':                          'BE',
+    'Bosnia and Herzegovina':           'BA',
+    'Brazil':                           'BR',
+    'Cameroon':                         'CM',
+    'Canada':                           'CA',
+    'China':                            'CN',
+    'Croatia':                          'HR',
+    'Czech Republic':                   'CZ',
+    'Democratic Republic of the Congo': 'CD',
+    'Denmark':                          'DK',
+    'Dominican Republic':               'DO',
+    'Egypt':                            'EG',
+    'Finland':                          'FI',
+    'France':                           'FR',
+    'Gabon':                            'GA',
+    'Georgia':                          'GE',
+    'Germany':                          'DE',
+    'Greece':                           'GR',
+    'Guinea':                           'GN',
+    'Haiti':                            'HT',
+    'Israel':                           'IL',
+    'Italy':                            'IT',
+    'Jamaica':                          'JM',
+    'Japan':                            'JP',
+    'Latvia':                           'LV',
+    'Lithuania':                        'LT',
+    'Montenegro':                       'ME',
+    'New Zealand':                      'NZ',
+    'Nigeria':                          'NG',
+    'Poland':                           'PL',
+    'Portugal':                         'PT',
+    'Puerto Rico':                      'PR',
+    'Russia':                           'RU',
+    'Senegal':                          'SN',
+    'Serbia':                           'RS',
+    'Slovenia':                         'SI',
+    'South Sudan':                      'SS',
+    'Spain':                            'ES',
+    'Sudan':                            'SD',
+    'Sweden':                           'SE',
+    'Switzerland':                      'CH',
+    'Turkey':                           'TR',
+    'USA':                              'US',
+    'Ukraine':                          'UA',
+    'United Kingdom':                   'GB',
+  };
+
+  function countryFlag(name) {
+    const iso = COUNTRY_ISO[name];
+    if (!iso) return null;
+    const img = document.createElement('img');
+    img.src = `https://flagcdn.com/16x12/${iso.toLowerCase()}.png`;
+    img.alt = name;
+    img.title = name;
+    img.style.cssText = 'vertical-align:middle;border-radius:1px';
+    return img;
+  }
+
   // ── Bio section ──────────────────────────────────────────────────────────────
 
   function renderBioLine(container, row) {
@@ -600,7 +664,10 @@
 
     // Country
     const country = bioVal(row.COUNTRY);
-    if (country) parts.push(country);
+    if (country) {
+      const flag = countryFlag(country);
+      parts.push(flag || country);
+    }
 
     // NBN Draft
     const dftYr = bioVal(row.NBN_DFT_YR);
@@ -617,16 +684,20 @@
 
     const p = document.createElement('p');
     p.className = 'bio-line';
-    parts.forEach((text, i) => {
+    parts.forEach((item, i) => {
       if (i > 0) {
         const sep = document.createElement('span');
         sep.className = 'bio-sep';
         sep.textContent = '·';
         p.appendChild(sep);
       }
-      const span = document.createElement('span');
-      span.textContent = text;
-      p.appendChild(span);
+      if (item instanceof Node) {
+        p.appendChild(item);
+      } else {
+        const span = document.createElement('span');
+        span.textContent = item;
+        p.appendChild(span);
+      }
     });
     container.appendChild(p);
   }
@@ -852,7 +923,12 @@
       { label: 'Player',  field: 'PLAYER',     defaultDir:  1 },
       { label: 'Age',     field: 'AGE',         defaultDir: -1, cls: 'right' },
       { label: 'Born',    field: 'DOB_SORT',    defaultDir: -1, cls: 'right', display: p => p.DOB_FMT || '—' },
-      { label: 'Country', field: 'COUNTRY',     defaultDir:  1, display: p => p.COUNTRY || '—' },
+      { label: 'Country', field: 'COUNTRY',     defaultDir:  1, display: p => {
+          if (!p.COUNTRY) return '—';
+          const flag = countryFlag(p.COUNTRY);
+          return flag || p.COUNTRY;
+        }
+      },
       { label: 'College', field: 'COLLEGE',     defaultDir:  1, display: p => p.COLLEGE || '—' },
       { label: 'Draft',   field: 'DRAFT_SORT',  defaultDir:  1, display: p => p.DRAFT_FMT || '—' },
       { label: 'Teams',   field: null,                           display: p => p.TEAMS.join(', ') },
@@ -953,7 +1029,8 @@
         const td = tr.insertCell();
         if (col.cls) td.className = col.cls;
         const val = col.display ? col.display(p) : (p[col.field] ?? '—');
-        td.textContent = val == null ? '—' : val;
+        if (val instanceof Node) td.appendChild(val);
+        else td.textContent = val == null ? '—' : val;
       });
 
       return tr;
