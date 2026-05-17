@@ -31,6 +31,12 @@ const TEAMS = {
   WAS: "Washington Wizards",
 };
 
+const RETIRED_JERSEYS = {
+  HOU: [{ no: 13, player: 'James Harden',        date: '2024-02-09' }],
+  LAC: [{ no: 15, player: 'Cam Payne',            date: '2024-02-08' }],
+  SAC: [{ no: 17, player: 'Aleksej Pokusevski',   date: '2024-02-10' }],
+};
+
 const abbr = location.pathname.replace(/\/$/, "").split("/").pop().toUpperCase();
 const name = TEAMS[abbr] || "Unknown Team";
 const slug = abbr.toLowerCase();
@@ -156,7 +162,8 @@ document.title = `${abbr} — NBN`;
   .tl-seed   { display: block; font-size: 0.62rem; color: #9ca3af; }
   .tl-champion   { border-color: #d97706; background: #1a1305; }
   .tl-champion .tl-wins { color: #fbbf24; }
-  .tl-runnerup   { border-color: #6b7280; }
+  .tl-runnerup   { border-color: #cbd5e1; background: #141c26; }
+  .tl-runnerup .tl-wins { color: #e2e8f0; }
   .tl-conffinals { border-color: #1d4ed8; }
   .tl-second     { border-color: #374151; }
   .tl-missed     { opacity: 0.55; }
@@ -174,6 +181,27 @@ document.title = `${abbr} — NBN`;
   .row-twoway td { opacity: 0.6; }
   .row-dead td   { opacity: 0.45; font-style: italic; }
   .picks-acquired td.type-badge { color: #60a5fa; }
+  .retired-banners {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .retired-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 90px;
+    padding: 0.85rem 0.5rem 0.7rem;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-top: 3px solid #9ca3af;
+    border-radius: 8px;
+    gap: 0.2rem;
+  }
+  .retired-no   { font-size: 2rem; font-weight: 800; color: #f3f4f6; line-height: 1; letter-spacing: -0.03em; }
+  .retired-name { font-size: 0.62rem; color: #9ca3af; text-align: center; line-height: 1.3; }
+  .retired-date { font-size: 0.58rem; color: #4b5563; margin-top: 0.15rem; }
   .picks-own-traded td { opacity: 0.5; }
   td.cap-ufa        { background: hsl(45,  60%, 20%); color: hsl(45,  90%, 72%); }
   td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
@@ -207,17 +235,21 @@ document.body.innerHTML = `
       <span class="abbr">${abbr}</span>
     </div>
     <section>
+      <h2 class="section-title">Season History</h2>
+      <div class="timeline" id="timeline-wrap"></div>
+      <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
+    </section>
+    <section id="retired-section" style="display:none">
+      <h2 class="section-title">Retired Numbers</h2>
+      <div class="retired-banners" id="retired-banners"></div>
+    </section>
+    <section>
       <h2 class="section-title">Roster</h2>
       <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
     </section>
     <section>
       <h2 class="section-title">Draft Picks</h2>
       <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
-    </section>
-    <section>
-      <h2 class="section-title">Season History</h2>
-      <div class="timeline" id="timeline-wrap"></div>
-      <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
     </section>
     <section>
       <h2 class="section-title">All-Time Top Players</h2>
@@ -695,5 +727,22 @@ function renderPlayerCell(td, col, row) {
     else picksWrap.innerHTML = '<div class="status">No picks data.</div>';
   } else {
     picksWrap.innerHTML = '<div class="status">Failed to load picks data.</div>';
+  }
+
+  const retired = RETIRED_JERSEYS[abbr];
+  if (retired?.length) {
+    document.getElementById('retired-section').style.display = '';
+    const bannersEl = document.getElementById('retired-banners');
+    retired.forEach(({ no, player, date }) => {
+      const banner = document.createElement('div');
+      banner.className = 'retired-banner';
+      const [y, m, d] = date.split('-');
+      banner.innerHTML = `
+        <span class="retired-no">${no}</span>
+        <span class="retired-name">${player}</span>
+        <span class="retired-date">Ret. ${y}</span>
+      `;
+      bannersEl.appendChild(banner);
+    });
   }
 })();

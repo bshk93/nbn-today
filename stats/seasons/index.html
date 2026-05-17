@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Season Stats — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem; }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 1400px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+    header { margin-bottom: 1.5rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .filter-btn {
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s, color 0.1s;
+    }
+    .filter-btn:hover { border-color: #4b6a9b; color: #f3f4f6; }
+    .filter-btn.active { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+    .table-wrap { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; white-space: nowrap; }
+    thead th {
+      padding: 0.65rem 0.75rem;
+      text-align: left;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th:hover { color: #d1d5db; }
+    thead th[data-active="true"] { color: #93c5fd; }
+    thead th .sort-arrow { margin-left: 3px; font-size: 0.6rem; }
+    thead th.right { text-align: right; }
+    thead th.group-start { border-left: 1px solid #374151; }
+    tbody tr { border-bottom: 1px solid #283141; transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #263244; }
+    td { padding: 0.6rem 0.75rem; color: #d1d5db; }
+    td.player-name { font-weight: 600; color: #f3f4f6; }
+    td.right { text-align: right; font-variant-numeric: tabular-nums; }
+    td.muted { color: #6b7280; }
+    td.pct { color: #9ca3af; }
+    td.group-start { border-left: 1px solid #283141; }
+    #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/stats">← Stats</a></nav>
+    <header>
+      <h1>Season Stats</h1>
+      <p>Every player-season. Click any column to sort.</p>
+    </header>
+    <div class="filters" id="filters"></div>
+    <div class="table-wrap" id="table-wrap">
+      <div id="status">Loading…</div>
+    </div>
+  </div>
+  <script>
+  (function () {
+    const SEASONS_ORDER = ['20-21','21-22','22-23','23-24','24-25','25-26'];
+    const DEFAULT_SEASON = '25-26';
+
+    let sortField = '_GMSC';
+    let sortDir = -1;
+    let activeSeason = DEFAULT_SEASON;
+    let splitByTeam = false;
+    let allRows = [];
+    let tbody, thEls = [];
+
+    // group-start marks a visual left border to separate stat groups
+    const COLS = [
+      { key: 'PLAYER', label: 'Player', cls: 'player-name',        defaultDir:  1 },
+      { key: 'SEASON', label: 'Season', cls: 'muted',               defaultDir:  1 },
+      { key: 'TEAM',   label: 'Team',   cls: 'muted',               defaultDir:  1 },
+      { key: '_G',     label: 'G',      cls: 'right group-start',   defaultDir: -1 },
+      { key: '_MPG',   label: 'MPG',    cls: 'right',               defaultDir: -1 },
+      { key: '_FGM',   label: 'FGM',   cls: 'right group-start',   defaultDir: -1 },
+      { key: '_FGA',   label: 'FGA',   cls: 'right',               defaultDir: -1 },
+      { key: '_FGP',   label: 'FG%',   cls: 'right pct',           defaultDir: -1 },
+      { key: '_3PM',   label: '3PM',   cls: 'right group-start',   defaultDir: -1 },
+      { key: '_3PA',   label: '3PA',   cls: 'right',               defaultDir: -1 },
+      { key: '_3PP',   label: '3P%',   cls: 'right pct',           defaultDir: -1 },
+      { key: '_FTM',   label: 'FTM',   cls: 'right group-start',   defaultDir: -1 },
+      { key: '_FTA',   label: 'FTA',   cls: 'right',               defaultDir: -1 },
+      { key: '_FTP',   label: 'FT%',   cls: 'right pct',           defaultDir: -1 },
+      { key: '_PPG',   label: 'PPG',   cls: 'right group-start',   defaultDir: -1 },
+      { key: '_PTS',   label: 'PTS',   cls: 'right',               defaultDir: -1 },
+      { key: '_RPG',   label: 'RPG',   cls: 'right group-start',   defaultDir: -1 },
+      { key: '_REB',   label: 'REB',   cls: 'right',               defaultDir: -1 },
+      { key: '_APG',   label: 'APG',   cls: 'right group-start',   defaultDir: -1 },
+      { key: '_AST',   label: 'AST',   cls: 'right',               defaultDir: -1 },
+      { key: '_SPG',   label: 'SPG',   cls: 'right group-start',   defaultDir: -1 },
+      { key: '_STL',   label: 'STL',   cls: 'right',               defaultDir: -1 },
+      { key: '_BPG',   label: 'BPG',   cls: 'right group-start',   defaultDir: -1 },
+      { key: '_BLK',   label: 'BLK',   cls: 'right',               defaultDir: -1 },
+      { key: '_TPG',   label: 'TPG',   cls: 'right group-start',   defaultDir: -1 },
+      { key: '_TOV',   label: 'TOV',   cls: 'right',               defaultDir: -1 },
+      { key: '_GMSC',  label: 'GMSC',  cls: 'right group-start',   defaultDir: -1 },
+    ];
+
+    function parseLine(line) {
+      const out = [];
+      let cur = '', quoted = false;
+      for (const ch of line) {
+        if (ch === '"') { quoted = !quoted; }
+        else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+      out.push(cur);
+      return out;
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = parseLine(lines[0]).map(h => h.trim());
+      return lines.slice(1).map(line => {
+        const vals = parseLine(line);
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = (vals[i] ?? '').trim(); });
+        return obj;
+      });
+    }
+
+    function pct(made, att) {
+      const m = +made, a = +att;
+      return (a > 0) ? m / a : null;
+    }
+
+    function processRow(row) {
+      const g   = +row.G    || 0;
+      const min = +row.MIN  || 0;
+      const fgm = +row.FGM  || 0;
+      const fga = +row.FGA  || 0;
+      const tpm = +row['3PM'] || 0;
+      const tpa = +row['3PA'] || 0;
+      const ftm = +row.FTM  || 0;
+      const fta = +row.FTA  || 0;
+      row._G        = g;
+      row._MIN      = min;
+      row._GMSC_TOT = +row.GMSC || 0;
+      row._MPG  = g ? min / g : 0;
+      row._FGM  = fgm;
+      row._FGA  = fga;
+      row._FGP  = pct(fgm, fga);
+      row._3PM  = tpm;
+      row._3PA  = tpa;
+      row._3PP  = pct(tpm, tpa);
+      row._FTM  = ftm;
+      row._FTA  = fta;
+      row._FTP  = pct(ftm, fta);
+      row._PTS  = +row.PTS  || 0;
+      row._PPG  = g ? +row.PTS  / g : 0;
+      row._REB  = +row.REB  || 0;
+      row._RPG  = g ? +row.REB  / g : 0;
+      row._AST  = +row.AST  || 0;
+      row._APG  = g ? +row.AST  / g : 0;
+      row._STL  = +row.STL  || 0;
+      row._SPG  = g ? +row.STL  / g : 0;
+      row._BLK  = +row.BLK  || 0;
+      row._BPG  = g ? +row.BLK  / g : 0;
+      row._TOV  = +row.TOV  || 0;
+      row._TPG  = g ? +row.TOV  / g : 0;
+      row._GMSC = g ? +row.GMSC / g : 0;
+      return row;
+    }
+
+    function recomputeRates(row) {
+      const g = row._G;
+      row._MPG  = g ? row._MIN      / g : 0;
+      row._FGP  = pct(row._FGM, row._FGA);
+      row._3PP  = pct(row._3PM, row._3PA);
+      row._FTP  = pct(row._FTM, row._FTA);
+      row._PPG  = g ? row._PTS      / g : 0;
+      row._RPG  = g ? row._REB      / g : 0;
+      row._APG  = g ? row._AST      / g : 0;
+      row._SPG  = g ? row._STL      / g : 0;
+      row._BPG  = g ? row._BLK      / g : 0;
+      row._TPG  = g ? row._TOV      / g : 0;
+      row._GMSC = g ? row._GMSC_TOT / g : 0;
+      return row;
+    }
+
+    function aggregateByPlayerSeason(rows) {
+      const map = new Map();
+      rows.forEach(row => {
+        const key = row.PLAYER + '|' + row.SEASON;
+        if (!map.has(key)) {
+          map.set(key, { ...row, _teams: [row.TEAM] });
+        } else {
+          const agg = map.get(key);
+          agg._teams.push(row.TEAM);
+          agg._G        += row._G;
+          agg._MIN      += row._MIN;
+          agg._FGM      += row._FGM;
+          agg._FGA      += row._FGA;
+          agg._3PM      += row._3PM;
+          agg._3PA      += row._3PA;
+          agg._FTM      += row._FTM;
+          agg._FTA      += row._FTA;
+          agg._PTS      += row._PTS;
+          agg._REB      += row._REB;
+          agg._AST      += row._AST;
+          agg._STL      += row._STL;
+          agg._BLK      += row._BLK;
+          agg._TOV      += row._TOV;
+          agg._GMSC_TOT += row._GMSC_TOT;
+        }
+      });
+      return Array.from(map.values()).map(row => {
+        row.TEAM = row._teams.length > 1 ? row._teams.length + ' TMs' : row._teams[0];
+        return recomputeRates(row);
+      });
+    }
+
+    function playerSlug(name) {
+      return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+    }
+
+    function fmt1(n)  { return n.toFixed(1); }
+    function fmtPct(n) { return n === null ? '—' : (n * 100).toFixed(1) + '%'; }
+
+    function cellText(col, row) {
+      switch (col.key) {
+        case '_G':   return row._G.toString();
+        case '_MPG': return fmt1(row._MPG);
+        case '_FGM': return row._FGM.toString();
+        case '_FGA': return row._FGA.toString();
+        case '_FGP': return fmtPct(row._FGP);
+        case '_3PM': return row._3PM.toString();
+        case '_3PA': return row._3PA.toString();
+        case '_3PP': return fmtPct(row._3PP);
+        case '_FTM': return row._FTM.toString();
+        case '_FTA': return row._FTA.toString();
+        case '_FTP': return fmtPct(row._FTP);
+        case '_PPG': return fmt1(row._PPG);
+        case '_PTS': return row._PTS.toString();
+        case '_RPG': return fmt1(row._RPG);
+        case '_REB': return row._REB.toString();
+        case '_APG': return fmt1(row._APG);
+        case '_AST': return row._AST.toString();
+        case '_SPG': return fmt1(row._SPG);
+        case '_STL': return row._STL.toString();
+        case '_BPG': return fmt1(row._BPG);
+        case '_BLK': return row._BLK.toString();
+        case '_TPG': return fmt1(row._TPG);
+        case '_TOV': return row._TOV.toString();
+        case '_GMSC': return fmt1(row._GMSC);
+        default:     return row[col.key] ?? '';
+      }
+    }
+
+    function sortVal(row, field) {
+      const v = row[field];
+      if (v === undefined || v === null || v === '') {
+        const textFields = ['PLAYER', 'SEASON', 'TEAM'];
+        return textFields.includes(field) ? '' : -Infinity;
+      }
+      const n = parseFloat(v);
+      return isNaN(n) ? v.toLowerCase() : n;
+    }
+
+    function visibleRows() {
+      const filtered = activeSeason === 'all'
+        ? allRows
+        : allRows.filter(r => r.SEASON === activeSeason);
+      return splitByTeam ? filtered : aggregateByPlayerSeason(filtered);
+    }
+
+    function sortRows(rows) {
+      return [...rows].sort((a, b) => {
+        const va = sortVal(a, sortField);
+        const vb = sortVal(b, sortField);
+        if (va < vb) return sortDir === 1 ? -1 : 1;
+        if (va > vb) return sortDir === 1 ? 1 : -1;
+        return 0;
+      });
+    }
+
+    function updateHeaders() {
+      thEls.forEach((th, i) => {
+        const active = COLS[i].key === sortField;
+        th.dataset.active = active;
+        th.querySelector('.sort-arrow').textContent = active ? (sortDir === -1 ? '↓' : '↑') : '';
+      });
+    }
+
+    function rebuildBody() {
+      const sorted = sortRows(visibleRows());
+      tbody.innerHTML = '';
+      sorted.forEach(row => {
+        const tr = tbody.insertRow();
+        COLS.forEach(col => {
+          const td = tr.insertCell();
+          td.className = col.cls;
+          if (col.key === 'PLAYER') {
+            const a = document.createElement('a');
+            a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
+            a.textContent = row.PLAYER;
+            td.appendChild(a);
+          } else {
+            td.textContent = cellText(col, row);
+          }
+        });
+      });
+    }
+
+    function buildFilters(seasons) {
+      const wrap = document.getElementById('filters');
+      const all = [{ value: 'all', label: 'All Seasons' }].concat(
+        seasons.map(s => ({ value: s, label: s }))
+      );
+      all.forEach(({ value, label }) => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn' + (value === activeSeason ? ' active' : '');
+        btn.textContent = label;
+        btn.addEventListener('click', () => {
+          activeSeason = value;
+          wrap.querySelectorAll('.filter-btn:not(.toggle-btn)').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          rebuildBody();
+        });
+        wrap.appendChild(btn);
+      });
+
+      const sep = document.createElement('span');
+      sep.style.cssText = 'flex:1';
+      wrap.appendChild(sep);
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'filter-btn toggle-btn';
+      toggleBtn.textContent = 'Split by team';
+      toggleBtn.addEventListener('click', () => {
+        splitByTeam = !splitByTeam;
+        toggleBtn.classList.toggle('active', splitByTeam);
+        rebuildBody();
+      });
+      wrap.appendChild(toggleBtn);
+    }
+
+    function buildTable(rows) {
+      allRows = rows.filter(r => SEASONS_ORDER.includes(r.SEASON)).map(processRow);
+
+      const seasons = SEASONS_ORDER.filter(s => allRows.some(r => r.SEASON === s));
+      buildFilters(seasons);
+
+      const wrap = document.getElementById('table-wrap');
+      const table = document.createElement('table');
+
+      const thead = table.createTHead();
+      const hr = thead.insertRow();
+      COLS.forEach(col => {
+        const th = document.createElement('th');
+        col.cls.split(' ').forEach(c => { if (c) th.classList.add(c); });
+        const arrow = document.createElement('span');
+        arrow.className = 'sort-arrow';
+        th.appendChild(document.createTextNode(col.label));
+        th.appendChild(arrow);
+        th.dataset.active = col.key === sortField;
+        th.addEventListener('click', () => {
+          if (sortField === col.key) { sortDir *= -1; }
+          else { sortField = col.key; sortDir = col.defaultDir; }
+          updateHeaders();
+          rebuildBody();
+        });
+        thEls.push(th);
+        hr.appendChild(th);
+      });
+
+      tbody = table.createTBody();
+      wrap.innerHTML = '';
+      wrap.appendChild(table);
+      updateHeaders();
+      rebuildBody();
+    }
+
+    fetch('/players/player_seasons.csv')
+      .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+      .then(text => buildTable(parseCSV(text)))
+      .catch(() => {
+        document.getElementById('table-wrap').innerHTML = '<div id="status">Failed to load data.</div>';
+      });
+  })();
+  </script>
+</body>
+</html>
