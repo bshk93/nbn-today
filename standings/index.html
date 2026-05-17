@@ -24,15 +24,42 @@
     .nav a { color: #9ca3af; }
     .nav a:hover { color: #f3f4f6; }
 
-    header { margin-bottom: 1.5rem; }
+    header { margin-bottom: 1.25rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
 
+    /* Tabs */
+    .tab-row {
+      display: flex;
+      gap: 0.25rem;
+      border-bottom: 1px solid #374151;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+      padding: 0.5rem 1.1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #6b7280;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      cursor: pointer;
+      transition: color 0.1s;
+    }
+
+    .tab-btn:hover { color: #d1d5db; }
+    .tab-btn.active { color: #f3f4f6; border-bottom-color: #60a5fa; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Controls */
     .controls {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
     .controls label { font-size: 0.85rem; color: #9ca3af; }
@@ -49,6 +76,7 @@
 
     select:focus { outline: none; border-color: #60a5fa; }
 
+    /* Standings tables */
     .conferences {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -119,6 +147,98 @@
     .result-second     { background: #1e2d3d; color: #93c5fd; }
     .result-first      { background: #27212b; color: #c4b5fd; }
 
+    /* Bracket */
+    .bracket-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      align-items: start;
+    }
+
+    @media (max-width: 700px) {
+      .bracket-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .bracket-round { }
+
+    .round-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 0.6rem;
+      text-align: center;
+    }
+
+    .series-group { margin-bottom: 0.75rem; }
+
+    .conf-divider {
+      height: 1px;
+      background: #283141;
+      margin: 0.75rem 0;
+    }
+
+    .series-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .series-card:last-child { margin-bottom: 0; }
+
+    .series-team {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.65rem;
+      font-size: 0.82rem;
+      color: #9ca3af;
+      border-bottom: 1px solid #283141;
+    }
+
+    .series-team:last-child { border-bottom: none; }
+
+    .series-team.winner {
+      color: #f3f4f6;
+      font-weight: 600;
+      background: #263244;
+    }
+
+    .series-team.champion { background: #1c1305; color: #fbbf24; font-weight: 700; }
+
+    .series-team .team-name { flex: 1; }
+
+    .series-team .seed-badge {
+      font-size: 0.68rem;
+      color: #4b5563;
+      margin-right: 0.4rem;
+    }
+
+    .series-team.winner .seed-badge { color: #6b7280; }
+
+    .series-team .wins {
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+      color: #4b5563;
+      min-width: 1.2rem;
+      text-align: right;
+    }
+
+    .series-team.winner .wins { color: #60a5fa; }
+
+    .finals-card { border-color: #4b5563; }
+    .finals-card .series-team.champion .wins { color: #fbbf24; }
+
+    .bracket-placeholder {
+      text-align: center;
+      color: #4b5563;
+      font-size: 0.8rem;
+      padding: 1rem 0.5rem;
+    }
+
     #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
   </style>
 </head>
@@ -127,19 +247,43 @@
     <nav class="nav"><a href="/">← Nothing But Net</a></nav>
 
     <header>
-      <h1>Standings</h1>
-      <p>Final regular season standings by season.</p>
+      <h1>Standings &amp; Playoffs</h1>
     </header>
 
-    <div class="controls">
-      <label for="season-select">Season</label>
-      <select id="season-select"></select>
+    <div class="tab-row">
+      <button class="tab-btn active" data-tab="standings">Standings</button>
+      <button class="tab-btn" data-tab="playoffs">Playoffs</button>
     </div>
 
-    <div id="content"><div id="status">Loading…</div></div>
+    <div class="tab-panel active" id="tab-standings">
+      <div class="controls">
+        <label for="season-select">Season</label>
+        <select id="season-select"></select>
+      </div>
+      <div id="standings-content"><div id="status">Loading…</div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-playoffs">
+      <div class="controls">
+        <label for="bracket-season-select">Season</label>
+        <select id="bracket-season-select"></select>
+      </div>
+      <div id="bracket-content"><div id="status">Loading…</div></div>
+    </div>
   </div>
 
   <script>
+    // ── Tab logic ─────────────────────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ── CSV parser ────────────────────────────────────────────────────────────
     function parseCSV(text) {
       const lines = text.trim().split('\n');
       const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
@@ -158,6 +302,7 @@
       });
     }
 
+    // ── Standings tab ─────────────────────────────────────────────────────────
     const RESULT_ORDER = ['Champion', 'Runner-Up', 'Conf Finals', 'Second Round', 'First Round', 'Missed'];
 
     function resultBadge(result) {
@@ -195,16 +340,11 @@
       tableWrap.className = 'table-wrap';
       const tbl = document.createElement('table');
       tbl.innerHTML = `<thead><tr>
-        <th></th>
-        <th>Team</th>
-        <th class="right">W</th>
-        <th class="right">L</th>
-        <th class="right">PCT</th>
-        <th class="right">GB</th>
-        <th class="right">PPG</th>
-        <th class="right">OPPG</th>
-        <th class="right">+/−</th>
-        <th></th>
+        <th></th><th>Team</th>
+        <th class="right">W</th><th class="right">L</th>
+        <th class="right">PCT</th><th class="right">GB</th>
+        <th class="right">PPG</th><th class="right">OPPG</th>
+        <th class="right">+/−</th><th></th>
       </tr></thead>`;
       const tbody = document.createElement('tbody');
       rows.forEach(row => {
@@ -221,8 +361,7 @@
           <td class="right">${(+row.PPG).toFixed(1)}</td>
           <td class="right">${(+row.OPPG).toFixed(1)}</td>
           <td class="right">${(+row.DIFF) >= 0 ? '+' : ''}${(+row.DIFF).toFixed(1)}</td>
-          <td class="result">${resultBadge(row.PLAYOFF_RESULT)}</td>
-        `;
+          <td class="result">${resultBadge(row.PLAYOFF_RESULT)}</td>`;
         tbody.appendChild(tr);
       });
       tbl.appendChild(tbody);
@@ -231,11 +370,11 @@
       return wrap;
     }
 
-    function render(rows, season) {
+    function renderStandings(rows, season) {
       const seasonRows = rows.filter(r => r.SEASON === season);
       const east = seasonRows.filter(r => r.SEED.startsWith('East')).sort((a, b) => +a.SEED_NUM - +b.SEED_NUM);
       const west = seasonRows.filter(r => r.SEED.startsWith('West')).sort((a, b) => +a.SEED_NUM - +b.SEED_NUM);
-      const content = document.getElementById('content');
+      const content = document.getElementById('standings-content');
       content.innerHTML = '';
       const grid = document.createElement('div');
       grid.className = 'conferences';
@@ -244,19 +383,142 @@
       content.appendChild(grid);
     }
 
+    // ── Bracket tab ───────────────────────────────────────────────────────────
+    const ROUND_LABELS = { '1': 'First Round', '2': 'Conference Semifinals', '3': 'Conference Finals', '4': 'Finals' };
+
+    function seedConf(seed) {
+      if (!seed) return '';
+      return seed.startsWith('East') ? 'E' : 'W';
+    }
+
+    function seedNum(seed) {
+      return seed ? seed.replace(/\D/g, '') : '';
+    }
+
+    function seriesCard(series, isChampSeries) {
+      const card = document.createElement('div');
+      card.className = 'series-card' + (isChampSeries ? ' finals-card' : '');
+
+      [
+        { team: series.T1, seed: series.T1_SEED, wins: +series.T1_W },
+        { team: series.T2, seed: series.T2_SEED, wins: +series.T2_W },
+      ].forEach(({ team, seed, wins }) => {
+        const isWinner = team === series.WINNER;
+        const isChamp = isChampSeries && isWinner;
+        const row = document.createElement('div');
+        row.className = 'series-team' + (isWinner ? (isChamp ? ' champion' : ' winner') : '');
+
+        const seedSpan = document.createElement('span');
+        seedSpan.className = 'seed-badge';
+        seedSpan.textContent = seedConf(seed) + seedNum(seed);
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'team-name';
+        nameSpan.textContent = team;
+
+        const winsSpan = document.createElement('span');
+        winsSpan.className = 'wins';
+        winsSpan.textContent = wins;
+
+        row.appendChild(seedSpan);
+        row.appendChild(nameSpan);
+        row.appendChild(winsSpan);
+        card.appendChild(row);
+      });
+
+      return card;
+    }
+
+    function renderBracket(rows, season) {
+      const content = document.getElementById('bracket-content');
+      content.innerHTML = '';
+
+      const seasonRows = rows.filter(r => r.SEASON === season);
+      if (!seasonRows.length) {
+        content.innerHTML = '<div id="status">No playoff data for this season.</div>';
+        return;
+      }
+
+      const roundNums = [...new Set(seasonRows.map(r => r.ROUND))].sort();
+      const isChampRound = r => r === roundNums[roundNums.length - 1];
+
+      const grid = document.createElement('div');
+      grid.className = 'bracket-grid';
+
+      roundNums.forEach(rnd => {
+        const col = document.createElement('div');
+        col.className = 'bracket-round';
+
+        const label = document.createElement('div');
+        label.className = 'round-label';
+        label.textContent = ROUND_LABELS[rnd] || `Round ${rnd}`;
+        col.appendChild(label);
+
+        const roundSeries = seasonRows.filter(r => r.ROUND === rnd);
+        const isChamp = isChampRound(rnd);
+
+        // Split East/West (by T1_SEED prefix), Finals has both confs
+        const east = roundSeries.filter(s => s.T1_SEED?.startsWith('East') || s.T2_SEED?.startsWith('East'));
+        const west = roundSeries.filter(s => s.T1_SEED?.startsWith('West') || s.T2_SEED?.startsWith('West'));
+        const finals = roundSeries.filter(s => !east.includes(s) && !west.includes(s));
+
+        const allGroups = isChamp ? [roundSeries] : [east, west].filter(g => g.length);
+
+        allGroups.forEach((group, gi) => {
+          if (gi > 0) {
+            const divider = document.createElement('div');
+            divider.className = 'conf-divider';
+            col.appendChild(divider);
+          }
+          group
+            .sort((a, b) => (+a.T1_SEED_NUM || 99) - (+b.T1_SEED_NUM || 99))
+            .forEach(s => col.appendChild(seriesCard(s, isChamp)));
+        });
+
+        grid.appendChild(col);
+      });
+
+      content.appendChild(grid);
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
     async function init() {
-      const res = await fetch('/standings/standings-history.csv');
-      if (!res.ok) { document.getElementById('status').textContent = 'Failed to load standings.'; return; }
-      const rows = parseCSV(await res.text());
-      const seasons = [...new Set(rows.map(r => r.SEASON))].sort().reverse();
+      const [standRes, bracketRes] = await Promise.all([
+        fetch('/standings/standings-history.csv'),
+        fetch('/standings/playoff-brackets.csv'),
+      ]);
+
+      if (!standRes.ok || !bracketRes.ok) {
+        document.getElementById('status').textContent = 'Failed to load data.';
+        return;
+      }
+
+      const standRows   = parseCSV(await standRes.text());
+      const bracketRows = parseCSV(await bracketRes.text());
+
+      // Populate standings season selector
+      const seasons = [...new Set(standRows.map(r => r.SEASON))].sort().reverse();
       const sel = document.getElementById('season-select');
       seasons.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s; opt.textContent = s;
         sel.appendChild(opt);
       });
-      render(rows, seasons[0]);
-      sel.addEventListener('change', () => render(rows, sel.value));
+
+      // Populate bracket season selector (only seasons with bracket data)
+      const bracketSeasons = [...new Set(bracketRows.map(r => r.SEASON))].sort().reverse();
+      const bsel = document.getElementById('bracket-season-select');
+      bracketSeasons.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        bsel.appendChild(opt);
+      });
+
+      renderStandings(standRows, seasons[0]);
+      if (bracketSeasons.length) renderBracket(bracketRows, bracketSeasons[0]);
+
+      sel.addEventListener('change', () => renderStandings(standRows, sel.value));
+      bsel.addEventListener('change', () => renderBracket(bracketRows, bsel.value));
     }
 
     init();
