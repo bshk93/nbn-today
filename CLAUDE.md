@@ -32,6 +32,7 @@ All CSVs live at the project root or in subdirectories and are fetched at runtim
 | `hof.csv` | `hof/index.html` |
 | `league-history.csv` | `history/index.html` |
 | `nbntv-classics/playoff-classics.csv`, `nbntv-classics/playoff-series-margins.csv` | `nbntv-classics/index.html` |
+| `/api/trading-block` (JSON via API, not a static file) | `trading-block/index.html` |
 
 `owner_stats.csv` headers: `owner, teams, seasons, best_reg_season, best_reg_pct, worst_reg_season, worst_reg_pct, reg_w, reg_l, reg_pct, playoff_w, playoff_l, playoff_pct, total_w, total_l, total_pct, playoff_appearances, po_r2, po_conf_finals, po_finals, championships, off_rtg, def_rtg`
 
@@ -92,11 +93,20 @@ FastAPI app running as a systemd service on port 8001, proxied through nginx. So
 |---|---|
 | `rosters` | `PUT /api/roster/{team}`, `PUT /api/picks/{team}` |
 | `admin` | Everything `rosters` can do + token management (`GET/POST/DELETE /api/tokens`) |
-| `atl`, `bkn`, `bos`, `cha`, `chi`, `cle`, `dal`, `den`, `det`, `gsw`, `hou`, `ind`, `lac`, `lal`, `mem`, `mia`, `mil`, `min`, `nop`, `nyk`, `okc`, `orl`, `phi`, `phx`, `por`, `sac`, `sas`, `tor`, `uta`, `was` | No special permissions yet — roles are validated and assignable but not enforced |
+| `atl`, `bkn`, `bos`, `cha`, `chi`, `cle`, `dal`, `den`, `det`, `gsw`, `hou`, `ind`, `lac`, `lal`, `mem`, `mia`, `mil`, `min`, `nop`, `nyk`, `okc`, `orl`, `phi`, `phx`, `por`, `sac`, `sas`, `tor`, `uta`, `was` | `PUT /api/trading-block/{team}` for their own team only |
 
 `admin` implicitly satisfies any role check. There is one admin token (yours). Everyone else gets a `rosters` token (or a per-team role once permissions are wired up).
 
 Valid roles are enforced at token creation time — `POST /api/tokens` rejects any unrecognized role name.
+
+### Trading Block endpoints
+
+| Endpoint | Auth | Description |
+|---|---|---|
+| `GET /api/trading-block` | Public | Returns `{ "ATL": [{player, notes}], … }` for all 30 teams |
+| `PUT /api/trading-block/{team}` | Team role or admin | Replaces that team's list; body is `[{player, notes}]` |
+
+Data stored in `/var/lib/nothing-but-stats/trading-block.json`. The page at `trading-block/index.html` fetches this API plus the relevant teams' roster CSVs to join player metadata (POS, OVR, AGE, salary columns).
 
 ### Token management
 
