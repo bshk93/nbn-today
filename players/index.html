@@ -344,6 +344,10 @@
       padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
       border: 1px solid #3b82f6; background: #1e3a5f; color: #93c5fd;
     }
+    .pos-tag-dim {
+      padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
+      border: 1px solid #2d3748; background: transparent; color: #374151;
+    }
   </style>
 </head>
 <body>
@@ -1098,17 +1102,16 @@
       NBN_DFT_P:  bio.draft_pick  ? String(bio.draft_pick)  : '',
     });
 
-    if (bio.pos && bio.pos.length) {
-      const posDiv = document.createElement('div');
-      posDiv.className = 'pos-display';
-      bio.pos.forEach(p => {
-        const tag = document.createElement('span');
-        tag.className = 'pos-tag';
-        tag.textContent = p;
-        posDiv.appendChild(tag);
-      });
-      content.appendChild(posDiv);
-    }
+    const bioOnlyPosDiv = document.createElement('div');
+    bioOnlyPosDiv.className = 'pos-display';
+    const eligibleBioPos = new Set(Array.isArray(bio.pos) ? bio.pos : []);
+    ['PG', 'SG', 'SF', 'PF', 'C'].forEach(p => {
+      const tag = document.createElement('span');
+      tag.className = eligibleBioPos.has(p) ? 'pos-tag' : 'pos-tag-dim';
+      tag.textContent = p;
+      bioOnlyPosDiv.appendChild(tag);
+    });
+    content.appendChild(bioOnlyPosDiv);
 
     const editBioBtn = document.createElement('button');
     editBioBtn.className = 'btn-edit-bio';
@@ -1482,17 +1485,16 @@
     renderBioLine(content, mergedRow);
 
     // position tags
-    if (bio.pos && bio.pos.length) {
-      const posDiv = document.createElement('div');
-      posDiv.className = 'pos-display';
-      bio.pos.forEach(p => {
-        const tag = document.createElement('span');
-        tag.className = 'pos-tag';
-        tag.textContent = p;
-        posDiv.appendChild(tag);
-      });
-      content.appendChild(posDiv);
-    }
+    const posDiv = document.createElement('div');
+    posDiv.className = 'pos-display';
+    const eligiblePos = new Set(Array.isArray(bio.pos) ? bio.pos : []);
+    ['PG', 'SG', 'SF', 'PF', 'C'].forEach(p => {
+      const tag = document.createElement('span');
+      tag.className = eligiblePos.has(p) ? 'pos-tag' : 'pos-tag-dim';
+      tag.textContent = p;
+      posDiv.appendChild(tag);
+    });
+    content.appendChild(posDiv);
 
     // edit bio button
     const editBioBtn = document.createElement('button');
