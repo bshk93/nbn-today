@@ -28,6 +28,29 @@
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
 
+    /* Position filter chips */
+    .pos-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+    .pos-chip {
+      background: transparent;
+      border: 1px solid #374151;
+      border-radius: 20px;
+      color: #9ca3af;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.7rem;
+      letter-spacing: 0.04em;
+      transition: none;
+    }
+    .pos-chip:hover { border-color: #6b7280; color: #d1d5db; }
+    .pos-chip.active { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+
     .table-wrap {
       background: #1f2937;
       border: 1px solid #374151;
@@ -95,15 +118,30 @@
       padding: 1.25rem 1.5rem;
       margin-bottom: 1.5rem;
     }
-    .edit-panel h2 {
+    .edit-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 0;
+    }
+    .edit-panel-header h2 {
       font-size: 0.9rem;
       font-weight: 700;
       color: #f3f4f6;
-      margin-bottom: 1rem;
+      flex: 1;
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
+    .panel-toggle {
+      color: #6b7280;
+      font-size: 0.75rem;
+      transition: transform 0.15s;
+    }
+    .edit-panel-body { margin-top: 1rem; }
+    .edit-panel-body.collapsed { display: none; }
     .team-badge {
       background: #3b82f6;
       color: #fff;
@@ -237,6 +275,8 @@
       Team member? <button id="signin-btn">Enter your token</button> to manage your trading block.
     </div>
 
+    <div id="pos-filter" class="pos-filter" style="display:none"></div>
+
     <div class="table-wrap" id="table-wrap">
       <div id="status">Loading…</div>
     </div>
@@ -253,6 +293,8 @@
 
     const getToken = () => localStorage.getItem(TOKEN_KEY);
     const setToken = t => localStorage.setItem(TOKEN_KEY, t);
+
+    // ── Cap hold styling ──────────────────────────────────────────────────────
 
     const CAP_HOLD_CSS = {
       UFA: 'cap-ufa', RFA: 'cap-rfa',
@@ -277,6 +319,80 @@
       return map;
     }
 
+    // ── Player slug lookup (via player_seasons.csv) ───────────────────────────
+
+    const slugMap = new Map(); // "last first" → slug
+
+    function buildSlugMap(rows) {
+      rows.forEach(r => {
+        if (!r.SLUG || !r.PLAYER) return;
+        // PLAYER is "Last, First" — strip suffix, remove comma, lowercase
+        const key = r.PLAYER
+          .replace(/,?\s+(jr\.|sr\.|ii|iii|iv)\.?\s*$/i, '')
+          .replace(',', '')
+          .toLowerCase()
+          .trim();
+        slugMap.set(key, r.SLUG);
+      });
+    }
+
+    function rosterNameToSlug(name) {
+      // name is "First Last" or "First Last Jr." etc.
+      const stripped = name.replace(/\s+(jr\.|sr\.|ii|iii|iv)\.?\s*$/i, '').trim();
+      const lastSpace = stripped.lastIndexOf(' ');
+      if (lastSpace === -1) return slugMap.get(stripped.toLowerCase()) || null;
+      const first = stripped.slice(0, lastSpace);
+      const last  = stripped.slice(lastSpace + 1);
+      return slugMap.get(`${last.toLowerCase()} ${first.toLowerCase()}`) || null;
+    }
+
+    // ── Position filter ───────────────────────────────────────────────────────
+
+    const FILTER_DEFS = [
+      { id: 'PG', label: 'PG', pos: ['PG'] },
+      { id: 'SG', label: 'SG', pos: ['SG'] },
+      { id: 'SF', label: 'SF', pos: ['SF'] },
+      { id: 'PF', label: 'PF', pos: ['PF'] },
+      { id: 'C',  label: 'C',  pos: ['C']  },
+      { id: 'G',  label: 'G',  pos: ['PG', 'SG'] },
+      { id: 'W',  label: 'W',  pos: ['SG', 'SF'] },
+      { id: 'F',  label: 'F',  pos: ['SF', 'PF'] },
+    ];
+
+    const activeFilters = new Set();
+
+    function rowMatchesFilter(row) {
+      if (activeFilters.size === 0) return true;
+      const playerPos = new Set(
+        (row.pos === '—' ? [] : row.pos.split('/').map(p => p.trim()))
+      );
+      for (const id of activeFilters) {
+        const def = FILTER_DEFS.find(d => d.id === id);
+        if (def && def.pos.some(p => playerPos.has(p))) return true;
+      }
+      return false;
+    }
+
+    function buildFilterChips() {
+      const container = document.getElementById('pos-filter');
+      container.innerHTML = '';
+      FILTER_DEFS.forEach(def => {
+        const btn = document.createElement('button');
+        btn.className = 'pos-chip' + (activeFilters.has(def.id) ? ' active' : '');
+        btn.textContent = def.label;
+        btn.addEventListener('click', () => {
+          if (activeFilters.has(def.id)) activeFilters.delete(def.id);
+          else activeFilters.add(def.id);
+          btn.classList.toggle('active');
+          if (currentTbody) rebuildBody(currentTbody);
+        });
+        container.appendChild(btn);
+      });
+      container.style.display = '';
+    }
+
+    // ── Table state ───────────────────────────────────────────────────────────
+
     let sortField = 'ovr';
     let sortDir = -1;
     let COLS = [];
@@ -285,6 +401,7 @@
     let myTeam = null;
     let myRoster = [];
     let pendingEntries = [];
+    let panelCollapsed = false;
     let ovrRange = { min: 0, max: 100 };
     let tbData = {};
 
@@ -380,18 +497,20 @@
 
     function rebuildBody(tbody) {
       tbody.innerHTML = '';
+      const visible = sortRows(tableRows.filter(rowMatchesFilter));
 
-      if (tableRows.length === 0) {
+      if (visible.length === 0) {
         const tr = tbody.insertRow();
         const td = tr.insertCell();
         td.colSpan = COLS.length;
-        td.id = 'status';
         td.style.cssText = 'text-align:center;padding:3rem;color:#6b7280;font-size:0.9rem;';
-        td.textContent = 'No players on the trading block yet.';
+        td.textContent = tableRows.length === 0
+          ? 'No players on the trading block yet.'
+          : 'No players match the selected position filter.';
         return;
       }
 
-      sortRows(tableRows).forEach(row => {
+      visible.forEach(row => {
         const tr = tbody.insertRow();
         COLS.forEach(col => {
           const td = tr.insertCell();
@@ -402,6 +521,16 @@
             a.href = `/teams/${row.team}/`;
             a.textContent = row.team;
             td.appendChild(a);
+          } else if (col.key === 'player') {
+            const slug = rosterNameToSlug(row.player);
+            if (slug) {
+              const a = document.createElement('a');
+              a.href = `/players/?p=${slug}`;
+              a.textContent = row.player;
+              td.appendChild(a);
+            } else {
+              td.textContent = row.player;
+            }
           } else if (col.key === 'ovr') {
             td.textContent = row.ovr || '—';
             if (row.ovr && ovrRange.max > ovrRange.min) {
@@ -431,9 +560,29 @@
       panel.style.display = '';
       panel.className = 'edit-panel';
 
+      // Collapsible header
+      const header = document.createElement('div');
+      header.className = 'edit-panel-header';
+
       const h2 = document.createElement('h2');
       h2.innerHTML = `Managing Trading Block <span class="team-badge">${myTeam}</span>`;
-      panel.appendChild(h2);
+
+      const toggle = document.createElement('span');
+      toggle.className = 'panel-toggle';
+      toggle.textContent = panelCollapsed ? '▶' : '▼';
+
+      header.appendChild(h2);
+      header.appendChild(toggle);
+      header.addEventListener('click', () => {
+        panelCollapsed = !panelCollapsed;
+        toggle.textContent = panelCollapsed ? '▶' : '▼';
+        body.classList.toggle('collapsed', panelCollapsed);
+      });
+      panel.appendChild(header);
+
+      // Collapsible body
+      const body = document.createElement('div');
+      body.className = 'edit-panel-body' + (panelCollapsed ? ' collapsed' : '');
 
       // Current entries
       const entryList = document.createElement('div');
@@ -475,7 +624,7 @@
           entryList.appendChild(row);
         });
       }
-      panel.appendChild(entryList);
+      body.appendChild(entryList);
 
       // Add row
       const addRow = document.createElement('div');
@@ -515,7 +664,7 @@
       addRow.appendChild(sel);
       addRow.appendChild(notesInput);
       addRow.appendChild(addBtn);
-      panel.appendChild(addRow);
+      body.appendChild(addRow);
 
       // Save
       const actions = document.createElement('div');
@@ -556,7 +705,8 @@
 
       actions.appendChild(saveBtn);
       actions.appendChild(saveStatus);
-      panel.appendChild(actions);
+      body.appendChild(actions);
+      panel.appendChild(body);
     }
 
     // ── Token modal ───────────────────────────────────────────────────────────
@@ -620,11 +770,14 @@
       const signinPrompt = document.getElementById('signin-prompt');
 
       try {
-        const [tb, userInfo] = await Promise.all([
+        const [tb, userInfo, playerSeasonsTxt] = await Promise.all([
           fetch('/api/trading-block').then(r => { if (!r.ok) throw r; return r.json(); }),
           checkAuth(),
+          fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : null),
         ]);
         tbData = tb;
+
+        if (playerSeasonsTxt) buildSlugMap(parseCSV(playerSeasonsTxt));
 
         const teamRole = userInfo && userInfo.roles.find(r => VALID_TEAMS_LC.has(r));
         if (teamRole) myTeam = teamRole.toUpperCase();
@@ -657,7 +810,7 @@
         });
         salaryYears = [...salaryYearSet].sort();
 
-        // Build flat table rows by joining trading block entries with roster data
+        // Build flat table rows
         tableRows = [];
         Object.entries(tb).forEach(([team, entries]) => {
           entries.forEach(({ player, notes }) => {
@@ -673,6 +826,7 @@
         if (ovrVals.length > 1) ovrRange = { min: Math.min(...ovrVals), max: Math.max(...ovrVals) };
 
         buildCols();
+        buildFilterChips();
 
         // Set up edit panel or sign-in prompt
         if (myTeam) {
