@@ -401,7 +401,7 @@
     let myTeam = null;
     let myRoster = [];
     let pendingEntries = [];
-    let panelCollapsed = false;
+    let panelCollapsed = true;
     let ovrRange = { min: 0, max: 100 };
     let tbData = {};
 
@@ -565,7 +565,7 @@
       header.className = 'edit-panel-header';
 
       const h2 = document.createElement('h2');
-      h2.innerHTML = `Managing Trading Block <span class="team-badge">${myTeam}</span>`;
+      h2.innerHTML = `Manage Trading Block <span class="team-badge">${myTeam}</span>`;
 
       const toggle = document.createElement('span');
       toggle.className = 'panel-toggle';
