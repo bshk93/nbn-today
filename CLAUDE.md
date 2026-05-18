@@ -81,3 +81,73 @@ RTG/DIFF columns get heat-map coloring via inline `td.style` (hue 0–120 mapped
 ### Edit mode (team pages)
 
 The "Edit" button on Roster and Draft Picks sections in team pages calls `setupEditable`, which uses `buildEditableGrid` for in-browser table editing. Saves go to the API backend (`/api/roster/{ABB}` and `/api/picks/{ABB}`) with a `Bearer` token. Token is prompted via a modal and persisted in `localStorage`. A 403 response clears the stored token.
+
+## API backend (`/home/skim/projects/nbn-api/`)
+
+FastAPI app running as a systemd service on port 8001, proxied through nginx. Source: `/home/skim/projects/nbn-api/main.py`. Reads/writes CSVs in `/var/lib/nothing-but-stats/`.
+
+### Roles
+
+| Role | Permissions |
+|---|---|
+| `rosters` | `PUT /api/roster/{team}`, `PUT /api/picks/{team}` |
+| `admin` | Everything `rosters` can do + token management (`GET/POST/DELETE /api/tokens`) |
+
+`admin` implicitly satisfies any role check. There is one admin token (yours). Everyone else gets a `rosters` token.
+
+### Token management
+
+Tokens are stored in `/var/lib/nothing-but-stats/tokens.json` as `{ "<hex-token>": { "name": "...", "roles": [...] } }`.
+
+**Create a token** (send to new rosters member over Discord DM):
+```bash
+curl -X POST https://nbn.today/api/tokens \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Their Name", "roles": ["rosters"]}'
+```
+
+**List all tokens:**
+```bash
+curl https://nbn.today/api/tokens -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+**Revoke a token:**
+```bash
+curl -X DELETE https://nbn.today/api/tokens/TOKEN_TO_REVOKE \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+Revocation is instant — the next save attempt returns 403 and the browser clears the stored token automatically.
+
+### Service management
+
+```bash
+systemctl status nbn-api          # check status
+sudo systemctl restart nbn-api    # restart
+journalctl -u nbn-api -f          # live logs
+journalctl -u nbn-api -n 50       # last 50 log lines
+```
+
+### Roster CSV columns
+
+| Column | Description | Example |
+|---|---|---|
+| `PLAYER` | Full name | `Scottie Barnes` |
+| `POS` | Position(s) | `SF/PF` |
+| `AGE` | Age (integer) | `24` |
+| `OVR` | Overall rating | `86` |
+| `TYPE` | Contract type | `player`, `two-way`, or `dead` |
+| `CAP_HOLDS` | Option/hold flags | `29-30:PLAYER_OPT,30-31:UFA` |
+| `25-26`, `26-27`, … | Salary by season | `$38,661,750` |
+
+`CAP_HOLDS` is comma-separated `YEAR:TYPE` pairs. Valid types: `UFA`, `RFA`, `PLAYER_OPT`, `TEAM_OPT`, `NON_GTD`.
+
+### Picks CSV columns
+
+| Column | Description | Example |
+|---|---|---|
+| `YEAR` | Draft year | `2026` |
+| `ROUND` | Round | `1st` or `2nd` |
+| `TEAM` | Origin or destination | `Own`, `from NYK` |
+| `TYPE` | Direction | `own` or `acquired` |
