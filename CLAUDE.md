@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-**NBN (Nothing But Net)** is a static website for a fantasy basketball simulation GM league. It serves as the public-facing hub linking out to stats, rosters, news, and Discord, and hosts an owner history stats page.
+**NBN (Nothing But Net)** is a static website for a fantasy basketball simulation GM league. It hosts owner history stats, team pages, player profiles, standings, draft history, stats leaderboards, and NBNTV Classics (curated playoff highlights).
 
 ## Running locally
 
@@ -14,20 +14,42 @@ No build step. Serve with any static file server from the project root:
 python3 -m http.server 8080
 ```
 
-The owners page fetches `/owner_stats.csv` at runtime, so the server must be rooted at the project root (not inside `owners/`).
+All pages fetch CSVs at runtime relative to the site root, so the server must always be rooted at the project root.
 
-## Data source
+## Data files
 
-`owner_stats.csv` is a symlink to `/var/lib/nothing-but-stats/owner_stats.csv`. This file is updated externally by a separate system — do not replace or rewrite it. The CSV headers are:
+All CSVs live at the project root or in subdirectories and are fetched at runtime. They are generated externally — do not rewrite them.
 
-`owner, teams, seasons, best_reg_season, best_reg_pct, worst_reg_season, worst_reg_pct, reg_w, reg_l, reg_pct, playoff_w, playoff_l, playoff_pct, total_w, total_l, total_pct, playoff_appearances, po_r2, po_conf_finals, po_finals, championships, off_rtg, def_rtg`
+| Pattern | Used by |
+|---|---|
+| `owner_stats.csv` (symlink to `/var/lib/nothing-but-stats/owner_stats.csv`) | `owners/index.html` |
+| `{abbr}-seasons.csv`, `{abbr}-roster.csv`, `{abbr}-picks.csv`, `{abbr}-players.csv` | `teams/{ABB}/index.html` via `teams/team.js` |
+| `standings/standings-history.csv`, `standings/playoff-brackets.csv` | `standings/index.html` |
+| `game-highs-{p,r,a,s,b,3pm}.csv` | `stats/highs/{stat}/index.html` via `stats/highs/table.js` |
+| `totals-{p,r,a,s,b,3pm}.csv` | `stats/totals/{stat}/index.html` via `stats/totals/table.js` |
+| `players/player_seasons.csv`, `players/player_seasons_playoffs.csv`, `players/player_awards.csv` | `players/index.html` |
+| `h2h-alltime.csv`, `h2h-owners.csv`, `h2h-playoffs.csv` | `h2h/index.html` |
+| `hof.csv` | `hof/index.html` |
+| `league-history.csv` | `history/index.html` |
+| `nbntv-classics/playoff-classics.csv`, `nbntv-classics/playoff-series-margins.csv` | `nbntv-classics/index.html` |
+
+`owner_stats.csv` headers: `owner, teams, seasons, best_reg_season, best_reg_pct, worst_reg_season, worst_reg_pct, reg_w, reg_l, reg_pct, playoff_w, playoff_l, playoff_pct, total_w, total_l, total_pct, playoff_appearances, po_r2, po_conf_finals, po_finals, championships, off_rtg, def_rtg`
 
 ## Architecture
 
-Two self-contained HTML files, no framework or dependencies:
+No framework or build step. Every page is a self-contained HTML file with inline `<style>` and `<script>`. Two shared JS files break the pattern as described below.
 
-- `index.html` — landing page with nav cards linking out to external tools (stats.nbn.today, news.nbn.today, Discord, etc.)
-- `owners/index.html` — data table page, all logic is inline `<script>`
+### Shared scripts
+
+**`teams/team.js`** — loaded by every team page (`teams/{ABB}/index.html`). It:
+- Defines `TEAMS` (abbr → full name) and `RETIRED_JERSEYS` (per-team retired number data)
+- Infers the team abbreviation from `location.pathname`
+- Injects all CSS and HTML into `document.body`
+- Fetches the four per-team CSVs in parallel (`Promise.allSettled`)
+- Exports reusable helpers: `buildTable(cols, rows, sortField, sortDir, renderCell)`, `buildRosterTable`, `buildPicksTable`, `buildEditableGrid`, `setupEditable`
+- Handles **edit mode**: committee members can click an "Edit" button on roster/picks sections, enter a bearer token (stored in `localStorage` as `nbn_token`), and save changes via `PUT /api/roster/{ABB}` or `PUT /api/picks/{ABB}` against a backend API running at port 8001.
+
+**`stats/highs/table.js`** and **`stats/totals/table.js`** — loaded by each stat-category page. The page sets `window.PAGE_CONFIG = { statKey, csvPath }` before the script tag, and the script reads that config to know which CSV to fetch and which column to highlight as primary.
 
 ### owners/index.html data flow
 
@@ -35,7 +57,7 @@ Two self-contained HTML files, no framework or dependencies:
 2. `buildTable(rows)` creates the `<table>`, renders `<thead>` from the `COLS` array, attaches sort click handlers, calls `rebuildBody`
 3. `rebuildBody(rows, tbody)` sorts rows and re-renders all `<td>` cells on every sort change
 
-### COLS array
+### COLS array (owners/index.html)
 
 Each entry in `COLS` (`owners/index.html:164`) defines a column:
 - `key` — CSV field name (used as fallback cell text)
@@ -44,8 +66,18 @@ Each entry in `COLS` (`owners/index.html:164`) defines a column:
 - `display(row)` — optional function returning the cell's display string; omit to use `row[key]` directly
 - `defaultDir` — sort direction when first clicking this column (`-1` = descending, `1` = ascending)
 
-### Special cell rendering (rebuildBody)
+The `buildTable` function in `teams/team.js` uses the same shape for team-page tables.
 
-Custom rendering is done inside the `COLS.forEach` block in `rebuildBody` (`owners/index.html:302`). The `championships` column is the existing example: it creates a `.trophy.trophy-gold` `<span>` instead of plain text. Follow this pattern for any column needing non-text content (icons, badges, etc.).
+### Special cell rendering
 
-RTG columns (`off_rtg`, `def_rtg`) get heat-map coloring via inline `td.style` after the cell is populated.
+Custom rendering is done inside `COLS.forEach` / `renderCell` callbacks. The `championships` column in `owners/index.html` is the canonical example: it creates a `.trophy.trophy-gold` `<span>` instead of plain text. In `teams/team.js`, `makeSeasonRenderCell` handles FOTY/COTY badges and playoff result coloring.
+
+RTG/DIFF columns get heat-map coloring via inline `td.style` (hue 0–120 mapped to min–max of the column).
+
+### NBNTV Classics blurbs
+
+`nbntv-classics/index.html` stores blurbs as a plain JS object (`BLURBS`) keyed by `"{DATE}_{player-slug}"` (e.g. `"2021-06-20_curry-stephen"`). This key is stable across rank changes. Empty string means the blurb hasn't been written yet.
+
+### Edit mode (team pages)
+
+The "Edit" button on Roster and Draft Picks sections in team pages calls `setupEditable`, which uses `buildEditableGrid` for in-browser table editing. Saves go to the API backend (`/api/roster/{ABB}` and `/api/picks/{ABB}`) with a `Bearer` token. Token is prompted via a modal and persisted in `localStorage`. A 403 response clears the stored token.

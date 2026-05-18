@@ -151,6 +151,63 @@
       font-style: italic;
       color: #4b5563;
     }
+
+    /* Tabs */
+    .tab-row {
+      display: flex;
+      gap: 0.25rem;
+      border-bottom: 1px solid #374151;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+      padding: 0.5rem 1.1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #6b7280;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      cursor: pointer;
+      transition: color 0.1s;
+    }
+
+    .tab-btn:hover { color: #d1d5db; }
+    .tab-btn.active { color: #f3f4f6; border-bottom-color: #60a5fa; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Series tab */
+    .seed-chip {
+      font-size: 0.68rem;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    .classic-mov {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #6b7280;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 0.3rem 0.6rem;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    .classic-mov span {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #6ee7b7;
+      letter-spacing: 0;
+    }
   </style>
 </head>
 <body>
@@ -158,13 +215,28 @@
   <nav class="nav"><a href="/">← Home</a></nav>
   <header>
     <h1>NBNTV Classics</h1>
-    <p>The greatest individual performances in NBN playoff history.</p>
+    <p>The greatest moments in NBN playoff history.</p>
   </header>
-  <div id="content"><div id="status">Loading...</div></div>
+  <div class="tab-row">
+    <button class="tab-btn active" data-tab="performances">Performances</button>
+    <button class="tab-btn" data-tab="series">Series</button>
+  </div>
+  <div class="tab-panel active" id="tab-performances"><div id="status">Loading…</div></div>
+  <div class="tab-panel" id="tab-series"></div>
 </div>
 
 <script>
 (function () {
+
+  // ── Tab logic ────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
 
   // Blurbs keyed by "<DATE>_<player-slug>" so they survive rank changes.
   // Key = row.DATE + '_' + player name lowercased with non-alphanumeric runs → '-'.
@@ -222,8 +294,8 @@
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
-  function renderList(rows) {
-    const content = document.getElementById('content');
+  function renderPerformances(rows) {
+    const content = document.getElementById('tab-performances');
     content.innerHTML = '';
 
     const subtitle = document.createElement('p');
@@ -324,15 +396,96 @@
     content.appendChild(list);
   }
 
+  // ── Series tab ───────────────────────────────────────────────────────────────
+
+  const SERIES_ROUND_NAMES = { '1': 'First Round', '2': 'Conf Semis', '3': 'Conf Finals', '4': 'Finals' };
+
+  function seedStr(seed, num) {
+    if (!seed) return '';
+    return (seed.startsWith('East') ? 'E' : 'W') + num;
+  }
+
+  function renderSeries(rows) {
+    const panel = document.getElementById('tab-series');
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'subtitle';
+    subtitle.textContent = 'Top 10 Series · Ranked by Avg Margin of Victory';
+    panel.appendChild(subtitle);
+
+    const list = document.createElement('div');
+    list.className = 'classic-list';
+
+    const top10 = rows
+      .filter(r => Math.max(+r.T1_W, +r.T2_W) >= 4)
+      .sort((a, b) => +a.AVG_MARGIN - +b.AVG_MARGIN)
+      .slice(0, 10);
+
+    top10.forEach((row, idx) => {
+      const winnerWins = Math.max(+row.T1_W, +row.T2_W);
+      const loserWins  = Math.min(+row.T1_W, +row.T2_W);
+      const t1seed = seedStr(row.T1_SEED, row.T1_SEED_NUM);
+      const t2seed = seedStr(row.T2_SEED, row.T2_SEED_NUM);
+
+      const entry = document.createElement('div');
+      entry.className = 'classic-entry';
+
+      const header = document.createElement('div');
+      header.className = 'classic-header';
+      header.style.cursor = 'default';
+
+      const rankEl = document.createElement('div');
+      rankEl.className = 'classic-rank';
+      rankEl.textContent = idx + 1;
+
+      const body = document.createElement('div');
+      body.className = 'classic-body';
+
+      const matchup = document.createElement('div');
+      matchup.className = 'classic-player';
+      matchup.innerHTML =
+        `<span class="seed-chip">${t1seed}</span> ${row.T1}` +
+        ` <span style="color:#6b7280;font-weight:400">vs</span> ` +
+        `<span class="seed-chip">${t2seed}</span> ${row.T2}`;
+
+      const result = document.createElement('div');
+      result.className = 'classic-statline';
+      result.textContent = `${row.WINNER} wins ${winnerWins}-${loserWins}  ·  ${row.GAMES} games`;
+
+      const context = document.createElement('div');
+      context.className = 'classic-context';
+      context.textContent = `${row.SEASON}  ·  ${SERIES_ROUND_NAMES[row.ROUND] || 'Round ' + row.ROUND}`;
+
+      body.appendChild(matchup);
+      body.appendChild(result);
+      body.appendChild(context);
+
+      const movEl = document.createElement('div');
+      movEl.className = 'classic-mov';
+      movEl.innerHTML = `AVG MOV<span>${(+row.AVG_MARGIN).toFixed(1)}</span>`;
+
+      header.appendChild(rankEl);
+      header.appendChild(body);
+      header.appendChild(movEl);
+      entry.appendChild(header);
+      list.appendChild(entry);
+    });
+
+    panel.appendChild(list);
+  }
+
   // ── Main ─────────────────────────────────────────────────────────────────────
 
-  fetch('/nbntv-classics/playoff-classics.csv')
-    .then(r => { if (!r.ok) throw new Error(); return r.text(); })
-    .then(text => renderList(parseCSV(text)))
-    .catch(() => {
-      document.getElementById('content').innerHTML =
-        '<div id="status">Failed to load data.</div>';
-    });
+  Promise.all([
+    fetch('/nbntv-classics/playoff-classics.csv').then(r => { if (!r.ok) throw new Error(); return r.text(); }),
+    fetch('/nbntv-classics/playoff-series-margins.csv').then(r => { if (!r.ok) throw new Error(); return r.text(); }),
+  ]).then(([perfText, seriesText]) => {
+    renderPerformances(parseCSV(perfText));
+    renderSeries(parseCSV(seriesText));
+  }).catch(() => {
+    document.getElementById('tab-performances').innerHTML = '<div id="status">Failed to load data.</div>';
+    document.getElementById('tab-series').innerHTML = '<div id="status">Failed to load data.</div>';
+  });
 
 })();
 </script>

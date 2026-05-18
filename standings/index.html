@@ -148,35 +148,38 @@
     .result-first      { background: #27212b; color: #c4b5fd; }
 
     /* Bracket */
-    .bracket-grid {
+    #bracket-content { overflow-x: auto; }
+
+    .bracket-container {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.75rem;
-      align-items: start;
+      grid-template-rows: auto 1fr 1fr;
+      min-width: 560px;
     }
 
-    @media (max-width: 700px) {
-      .bracket-grid { grid-template-columns: 1fr 1fr; }
-    }
-
-    .bracket-round { }
-
-    .round-label {
+    .bracket-round-label {
       font-size: 0.68rem;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: #6b7280;
-      margin-bottom: 0.6rem;
       text-align: center;
+      padding-bottom: 0.5rem;
     }
 
-    .series-group { margin-bottom: 0.75rem; }
+    .bracket-round-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
 
-    .conf-divider {
-      height: 1px;
-      background: #283141;
-      margin: 0.75rem 0;
+    .bracket-round-cell .series-card { width: 100%; }
+
+    .bracket-connector { overflow: visible; }
+
+    .bracket-finals-cell {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .series-card {
@@ -184,10 +187,13 @@
       border: 1px solid #374151;
       border-radius: 8px;
       overflow: hidden;
-      margin-bottom: 0.5rem;
     }
 
-    .series-card:last-child { margin-bottom: 0; }
+    .series-card-pending {
+      border-color: #1f2937;
+      border-style: dashed;
+      min-height: 52px;
+    }
 
     .series-team {
       display: flex;
@@ -231,13 +237,6 @@
 
     .finals-card { border-color: #4b5563; }
     .finals-card .series-team.champion .wins { color: #fbbf24; }
-
-    .bracket-placeholder {
-      text-align: center;
-      color: #4b5563;
-      font-size: 0.8rem;
-      padding: 1rem 0.5rem;
-    }
 
     #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
   </style>
@@ -429,6 +428,52 @@
       return card;
     }
 
+    function makeConnectorSVG(nLeft, nRight) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 100 100');
+      svg.setAttribute('preserveAspectRatio', 'none');
+      svg.style.cssText = 'width:100%;height:100%;display:block';
+      for (let i = 0; i < nRight; i++) {
+        const topY = (2 * i + 0.5) / nLeft * 100;
+        const botY = (2 * i + 1.5) / nLeft * 100;
+        const midY = (i + 0.5) / nRight * 100;
+        const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p.setAttribute('d', `M0,${topY}L50,${topY}L50,${botY}L0,${botY}M50,${midY}L100,${midY}`);
+        p.setAttribute('stroke', '#374151');
+        p.setAttribute('stroke-width', '1.5');
+        p.setAttribute('fill', 'none');
+        p.setAttribute('vector-effect', 'non-scaling-stroke');
+        svg.appendChild(p);
+      }
+      return svg;
+    }
+
+    function makeRoundCell(series, isChamp) {
+      const cell = document.createElement('div');
+      cell.className = 'bracket-round-cell';
+      series.forEach(s => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'flex:1;display:flex;align-items:center';
+        wrap.appendChild(seriesCard(s, isChamp));
+        cell.appendChild(wrap);
+      });
+      return cell;
+    }
+
+    function makePlaceholderCell(count) {
+      const cell = document.createElement('div');
+      cell.className = 'bracket-round-cell';
+      for (let i = 0; i < count; i++) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'flex:1;display:flex;align-items:center';
+        const card = document.createElement('div');
+        card.className = 'series-card series-card-pending';
+        wrap.appendChild(card);
+        cell.appendChild(wrap);
+      }
+      return cell;
+    }
+
     function renderBracket(rows, season) {
       const content = document.getElementById('bracket-content');
       content.innerHTML = '';
@@ -439,46 +484,103 @@
         return;
       }
 
-      const roundNums = [...new Set(seasonRows.map(r => r.ROUND))].sort();
-      const isChampRound = r => r === roundNums[roundNums.length - 1];
+      // Total rounds comes from ROUND_LABELS so in-progress seasons don't
+      // misidentify the last available round as the Finals.
+      const totalRounds = Math.max(...Object.keys(ROUND_LABELS).map(Number));
+      const champRoundKey = String(totalRounds);
+      const nonChampRoundKeys = Array.from({length: totalRounds - 1}, (_, i) => String(i + 1));
+      const finalsCol = nonChampRoundKeys.length * 2 + 1;
 
-      const grid = document.createElement('div');
-      grid.className = 'bracket-grid';
+      const container = document.createElement('div');
+      container.className = 'bracket-container';
+      container.style.gridTemplateColumns = Array.from(
+        {length: finalsCol}, (_, i) => i % 2 === 0 ? '1fr' : '28px'
+      ).join(' ');
 
-      roundNums.forEach(rnd => {
-        const col = document.createElement('div');
-        col.className = 'bracket-round';
+      const sortBySeed = (a, b) => (+a.T1_SEED_NUM || 99) - (+b.T1_SEED_NUM || 99);
+      const isEast = s => s.T1_SEED?.startsWith('East') || s.T2_SEED?.startsWith('East');
+      const isWest = s => s.T1_SEED?.startsWith('West') || s.T2_SEED?.startsWith('West');
+
+      // Infer expected series count for a round from the nearest earlier round with data.
+      function inferCount(roundKey, isConfFn) {
+        for (let r = +roundKey; r >= 1; r--) {
+          const n = seasonRows.filter(row => row.ROUND === String(r)).filter(isConfFn).length;
+          if (n) return Math.max(1, Math.round(n / Math.pow(2, +roundKey - r)));
+        }
+        return 1;
+      }
+
+      nonChampRoundKeys.forEach((rnd, i) => {
+        const col = i * 2 + 1;
+        const roundSeries = seasonRows.filter(r => r.ROUND === rnd);
+        const east = roundSeries.filter(isEast).sort(sortBySeed);
+        const west = roundSeries.filter(isWest).sort(sortBySeed);
 
         const label = document.createElement('div');
-        label.className = 'round-label';
+        label.className = 'bracket-round-label';
         label.textContent = ROUND_LABELS[rnd] || `Round ${rnd}`;
-        col.appendChild(label);
+        label.style.cssText = `grid-column:${col};grid-row:1`;
+        container.appendChild(label);
 
-        const roundSeries = seasonRows.filter(r => r.ROUND === rnd);
-        const isChamp = isChampRound(rnd);
+        const eastCell = east.length ? makeRoundCell(east, false) : makePlaceholderCell(inferCount(rnd, isEast));
+        eastCell.style.cssText = `grid-column:${col};grid-row:2`;
+        container.appendChild(eastCell);
 
-        // Split East/West (by T1_SEED prefix), Finals has both confs
-        const east = roundSeries.filter(s => s.T1_SEED?.startsWith('East') || s.T2_SEED?.startsWith('East'));
-        const west = roundSeries.filter(s => s.T1_SEED?.startsWith('West') || s.T2_SEED?.startsWith('West'));
-        const finals = roundSeries.filter(s => !east.includes(s) && !west.includes(s));
+        const westCell = west.length ? makeRoundCell(west, false) : makePlaceholderCell(inferCount(rnd, isWest));
+        westCell.style.cssText = `grid-column:${col};grid-row:3`;
+        container.appendChild(westCell);
 
-        const allGroups = isChamp ? [roundSeries] : [east, west].filter(g => g.length);
+        const connCol = col + 1;
+        const isLastNonChamp = i === nonChampRoundKeys.length - 1;
 
-        allGroups.forEach((group, gi) => {
-          if (gi > 0) {
-            const divider = document.createElement('div');
-            divider.className = 'conf-divider';
-            col.appendChild(divider);
-          }
-          group
-            .sort((a, b) => (+a.T1_SEED_NUM || 99) - (+b.T1_SEED_NUM || 99))
-            .forEach(s => col.appendChild(seriesCard(s, isChamp)));
-        });
+        if (!isLastNonChamp) {
+          const nextRnd = nonChampRoundKeys[i + 1];
+          const curEast = east.length || inferCount(rnd, isEast);
+          const curWest = west.length || inferCount(rnd, isWest);
+          const nextEast = inferCount(nextRnd, isEast);
+          const nextWest = inferCount(nextRnd, isWest);
 
-        grid.appendChild(col);
+          const ec = document.createElement('div');
+          ec.className = 'bracket-connector';
+          ec.style.cssText = `grid-column:${connCol};grid-row:2`;
+          ec.appendChild(makeConnectorSVG(curEast, nextEast));
+          container.appendChild(ec);
+
+          const wc = document.createElement('div');
+          wc.className = 'bracket-connector';
+          wc.style.cssText = `grid-column:${connCol};grid-row:3`;
+          wc.appendChild(makeConnectorSVG(curWest, nextWest));
+          container.appendChild(wc);
+        } else {
+          const fc = document.createElement('div');
+          fc.className = 'bracket-connector';
+          fc.style.cssText = `grid-column:${connCol};grid-row:2/4`;
+          fc.appendChild(makeConnectorSVG(2, 1));
+          container.appendChild(fc);
+        }
       });
 
-      content.appendChild(grid);
+      const finalsLabel = document.createElement('div');
+      finalsLabel.className = 'bracket-round-label';
+      finalsLabel.textContent = ROUND_LABELS[champRoundKey] || 'Finals';
+      finalsLabel.style.cssText = `grid-column:${finalsCol};grid-row:1`;
+      container.appendChild(finalsLabel);
+
+      const champSeries = seasonRows.filter(r => r.ROUND === champRoundKey);
+      const finalsCell = document.createElement('div');
+      finalsCell.className = 'bracket-finals-cell';
+      finalsCell.style.cssText = `grid-column:${finalsCol};grid-row:2/4`;
+      if (champSeries.length) {
+        champSeries.forEach(s => finalsCell.appendChild(seriesCard(s, true)));
+      } else {
+        const card = document.createElement('div');
+        card.className = 'series-card series-card-pending';
+        card.style.width = '100%';
+        finalsCell.appendChild(card);
+      }
+      container.appendChild(finalsCell);
+
+      content.appendChild(container);
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────

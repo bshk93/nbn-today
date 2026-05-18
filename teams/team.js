@@ -224,6 +224,39 @@ document.title = `${abbr} — NBN`;
     border-radius: 2px;
     flex-shrink: 0;
   }
+  .token-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .token-modal {
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 360px;
+    max-width: 90vw;
+  }
+  .token-modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .token-modal p  { font-size: 0.8rem; color: #9ca3af; margin-bottom: 1rem; }
+  .token-modal input {
+    width: 100%;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    color: #f3f4f6;
+    font-size: 0.875rem;
+    font-family: monospace;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    box-sizing: border-box;
+  }
+  .token-modal input:focus { outline: none; border-color: #3b82f6; }
+  .token-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 `; document.head.appendChild(_s); }
 
 document.body.innerHTML = `
@@ -244,11 +277,11 @@ document.body.innerHTML = `
       <div class="retired-banners" id="retired-banners"></div>
     </section>
     <section>
-      <h2 class="section-title">Roster</h2>
+      <h2 class="section-title" id="roster-title">Roster</h2>
       <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
     </section>
     <section>
-      <h2 class="section-title">Draft Picks</h2>
+      <h2 class="section-title" id="picks-title">Draft Picks</h2>
       <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
     </section>
     <section>
@@ -383,9 +416,19 @@ function parseCapHolds(str) {
   return map;
 }
 
+function currentSeasonYr() {
+  const now = new Date();
+  const y = now.getFullYear() % 100;
+  const m = now.getMonth() + 1;
+  return m < 7
+    ? `${String(y - 1).padStart(2, '0')}-${String(y).padStart(2, '0')}`
+    : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
+}
+
 function buildRosterTable(rows) {
   if (!rows.length) return null;
-  const salaryKeys = Object.keys(rows[0]).filter(k => /^\d{2}-\d{2}$/.test(k));
+  const curYr = currentSeasonYr();
+  const salaryKeys = Object.keys(rows[0]).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= curYr);
   const ovrVals = rows.map(r => parseFloat(r.OVR)).filter(v => !isNaN(v));
   const ovrMin = Math.min(...ovrVals), ovrMax = Math.max(...ovrVals);
 
@@ -682,6 +725,452 @@ function renderPlayerCell(td, col, row) {
   }
 }
 
+// ── Edit mode ────────────────────────────────────────────────────────────────
+
+const TOKEN_KEY = 'nbn_token';
+const getToken = () => localStorage.getItem(TOKEN_KEY);
+const setToken = t => localStorage.setItem(TOKEN_KEY, t);
+
+const SEL_STYLE = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;cursor:pointer;outline:none';
+
+const CAP_OPTIONS = [
+  { value: '',           label: '—'          },
+  { value: 'UFA',        label: 'UFA'        },
+  { value: 'RFA',        label: 'RFA'        },
+  { value: 'PLAYER_OPT', label: 'Player Opt' },
+  { value: 'TEAM_OPT',   label: 'Team Opt'   },
+  { value: 'NON_GTD',    label: 'Non-Gtd'    },
+];
+
+const CAP_HOLD_COLORS = {
+  UFA:        { bg: 'hsl(45,60%,20%)',  color: 'hsl(45,90%,72%)'  },
+  RFA:        { bg: 'hsl(25,60%,20%)',  color: 'hsl(25,90%,72%)'  },
+  PLAYER_OPT: { bg: 'hsl(120,50%,17%)', color: 'hsl(120,75%,68%)' },
+  TEAM_OPT:   { bg: 'hsl(210,55%,20%)', color: 'hsl(210,75%,70%)' },
+  NON_GTD:    { bg: '#111827',           color: '#4b5563'          },
+};
+
+function applyCapHoldColor(sel) {
+  const c = CAP_HOLD_COLORS[sel.value];
+  sel.style.background = c ? c.bg : '#111827';
+  sel.style.color = c ? c.color : '#d1d5db';
+  sel.style.borderColor = c ? c.color.replace(/(\d+)%\)$/, m => m.replace(/\d+/, n => Math.round(n * 0.55))) : '#374151';
+}
+
+function promptToken(onSuccess) {
+  const overlay = document.createElement('div');
+  overlay.className = 'token-overlay';
+  overlay.innerHTML = `
+    <div class="token-modal">
+      <h3>Access token required</h3>
+      <p>Enter your committee token. It will be saved in this browser.</p>
+      <input type="password" id="token-input" placeholder="Paste token…" autocomplete="off" />
+      <div class="token-modal-actions">
+        <button style="padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit" id="tok-cancel">Cancel</button>
+        <button style="padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit" id="tok-submit">Continue</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const input = overlay.querySelector('#token-input');
+  input.focus();
+  overlay.querySelector('#tok-cancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#tok-submit').addEventListener('click', () => {
+    const val = input.value.trim();
+    if (!val) return;
+    setToken(val);
+    overlay.remove();
+    onSuccess(val);
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') overlay.querySelector('#tok-submit').click();
+    if (e.key === 'Escape') overlay.remove();
+  });
+}
+
+function withToken(fn) {
+  const t = getToken();
+  if (t) { fn(t); return; }
+  promptToken(fn);
+}
+
+function makeSelect(options, selectedValue) {
+  const sel = document.createElement('select');
+  sel.style.cssText = SEL_STYLE;
+  options.forEach(opt => {
+    const o = document.createElement('option');
+    const v = typeof opt === 'string' ? opt : opt.value;
+    const l = typeof opt === 'string' ? opt : opt.label;
+    o.value = v;
+    o.textContent = l;
+    if (v === selectedValue) o.selected = true;
+    sel.appendChild(o);
+  });
+  return sel;
+}
+
+function nextSalaryYear(yr) {
+  const b = parseInt(yr.split('-')[1], 10);
+  return `${String(b).padStart(2,'0')}-${String((b + 1) % 100).padStart(2,'0')}`;
+}
+
+function prevSalaryYear(yr) {
+  const a = parseInt(yr.split('-')[0], 10);
+  return `${String((a - 1 + 100) % 100).padStart(2,'0')}-${String(a).padStart(2,'0')}`;
+}
+
+function makeEditCell(header, value, config) {
+  const td = document.createElement('td');
+  let getValue;
+  let capHoldRef = null;
+
+  if (config?.type === 'select') {
+    const sel = makeSelect(config.options, value);
+    td.style.cssText = 'padding:0.4rem 0.5rem;vertical-align:middle';
+    td.appendChild(sel);
+    getValue = () => sel.value;
+
+  } else if (config?.type === 'cap-holds') {
+    const holdMap = {};
+    (value || '').split(',').forEach(pair => {
+      const [yr, type] = pair.split(':');
+      if (yr && type) holdMap[yr.trim()] = type.trim();
+    });
+    td.style.cssText = 'padding:0.4rem 0.5rem;vertical-align:middle';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2rem 0.5rem;align-items:center';
+    const selects = {};
+    config.years.forEach(yr => {
+      const lbl = document.createElement('span');
+      lbl.textContent = yr;
+      lbl.style.cssText = 'font-size:0.65rem;color:#6b7280;white-space:nowrap';
+      const sel = makeSelect(CAP_OPTIONS, holdMap[yr] || '');
+      applyCapHoldColor(sel);
+      sel.addEventListener('change', () => applyCapHoldColor(sel));
+      selects[yr] = sel;
+      wrap.appendChild(lbl);
+      wrap.appendChild(sel);
+    });
+    td.appendChild(wrap);
+    capHoldRef = { wrap, selects };
+    getValue = () => config.years
+      .filter(yr => selects[yr].value !== '')
+      .map(yr => `${yr}:${selects[yr].value}`)
+      .join(',');
+
+  } else if (config?.type === 'salary') {
+    td.contentEditable = 'true';
+    td.textContent = value;
+    td.style.outline = 'none';
+    td.addEventListener('focus', () => {
+      td.style.background = '#263244';
+      td.style.boxShadow = 'inset 0 0 0 1px #3b82f6';
+    });
+    td.addEventListener('blur', () => {
+      td.style.background = '';
+      td.style.boxShadow = '';
+      const raw = td.textContent.replace(/[$,\s]/g, '');
+      const n = parseInt(raw, 10);
+      if (!isNaN(n) && n > 0) td.textContent = '$' + n.toLocaleString('en-US');
+      else if (raw === '') td.textContent = '';
+    });
+    getValue = () => td.textContent.trim();
+
+  } else {
+    td.contentEditable = 'true';
+    td.textContent = value;
+    td.style.outline = 'none';
+    td.addEventListener('focus', () => {
+      td.style.background = '#263244';
+      td.style.boxShadow = 'inset 0 0 0 1px #3b82f6';
+    });
+    td.addEventListener('blur', () => {
+      td.style.background = '';
+      td.style.boxShadow = '';
+    });
+    getValue = () => td.textContent.trim();
+  }
+
+  return { td, getValue, capHoldRef };
+}
+
+function buildEditableGrid(headers, rows, cellConfig = {}) {
+  const mutableHeaders = [...headers];
+  const capHoldCells = [];
+
+  const table = document.createElement('table');
+  const thead = table.createTHead();
+  const headerRow = thead.insertRow();
+  const emptyTh = document.createElement('th');
+  emptyTh.style.cssText = 'width:28px;padding:0 0.4rem';
+  headerRow.appendChild(emptyTh);
+  mutableHeaders.forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    headerRow.appendChild(th);
+  });
+
+  const tbody = table.createTBody();
+
+  function makeRow(data = {}) {
+    const tr = document.createElement('tr');
+    const getters = [];
+
+    const delTd = document.createElement('td');
+    delTd.style.cssText = 'width:28px;padding:0 0.4rem;text-align:center;vertical-align:middle';
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '×';
+    delBtn.style.cssText = 'background:none;border:none;color:#4b5563;cursor:pointer;font-size:1.1rem;line-height:1;padding:0;font-family:inherit';
+    delBtn.onmouseenter = () => { delBtn.style.color = '#f87171'; };
+    delBtn.onmouseleave = () => { delBtn.style.color = '#4b5563'; };
+    delBtn.addEventListener('click', () => tr.remove());
+    delTd.appendChild(delBtn);
+    tr.appendChild(delTd);
+
+    mutableHeaders.forEach(h => {
+      const { td, getValue, capHoldRef } = makeEditCell(h, data[h] ?? '', cellConfig[h]);
+      getters.push(getValue);
+      if (capHoldRef) capHoldCells.push(capHoldRef);
+      tr.appendChild(td);
+    });
+
+    tr._getters = getters;
+    return tr;
+  }
+
+  rows.forEach(row => tbody.appendChild(makeRow(row)));
+
+  const addTr = document.createElement('tr');
+  const addTd = document.createElement('td');
+  addTd.colSpan = mutableHeaders.length + 1;
+  addTd.style.cssText = 'padding:0.5rem 1rem;border-top:1px solid #374151';
+  const addBtn = document.createElement('button');
+  addBtn.textContent = '+ Add row';
+  addBtn.style.cssText = 'background:none;border:1px dashed #374151;border-radius:4px;color:#6b7280;cursor:pointer;font-size:0.8rem;padding:0.25rem 0.75rem;font-family:inherit';
+  addBtn.onmouseenter = () => { addBtn.style.color = '#d1d5db'; addBtn.style.borderColor = '#9ca3af'; };
+  addBtn.onmouseleave = () => { addBtn.style.color = '#6b7280'; addBtn.style.borderColor = '#374151'; };
+  addBtn.addEventListener('click', () => tbody.insertBefore(makeRow({}), addTr));
+  addTd.appendChild(addBtn);
+  addTr.appendChild(addTd);
+  tbody.appendChild(addTr);
+
+  function addYearColumn(yr) {
+    // Insert at the correct sorted position among salary year columns
+    const rawIdx = mutableHeaders.findIndex(h => /^\d{2}-\d{2}$/.test(h) && h > yr);
+    const insertAt = rawIdx === -1 ? mutableHeaders.length : rawIdx;
+
+    mutableHeaders.splice(insertAt, 0, yr);
+    cellConfig[yr] = { type: 'salary' };
+    addTd.colSpan = mutableHeaders.length + 1;
+
+    // Insert in CAP_HOLDS years list in sorted order
+    if (cellConfig.CAP_HOLDS?.years) {
+      const capYrs = cellConfig.CAP_HOLDS.years;
+      const capIdx = capYrs.findIndex(y => y > yr);
+      if (capIdx === -1) capYrs.push(yr);
+      else capYrs.splice(capIdx, 0, yr);
+    }
+
+    // Add th at correct position (children[0] = emptyTh, so headers index i → children[i+1])
+    const thRef = headerRow.children[insertAt + 1] || null;
+    const th = document.createElement('th');
+    th.textContent = yr;
+    headerRow.insertBefore(th, thRef);
+
+    // Add td to each existing data row at correct position
+    [...tbody.rows].filter(tr => tr !== addTr).forEach(tr => {
+      const { td, getValue } = makeEditCell(yr, '', { type: 'salary' });
+      tr.insertBefore(td, tr.children[insertAt + 1] || null);
+      tr._getters.splice(insertAt, 0, getValue);
+    });
+
+    // Add year select to each CAP_HOLDS cell in sorted order
+    capHoldCells.forEach(({ wrap, selects }) => {
+      const lbl = document.createElement('span');
+      lbl.textContent = yr;
+      lbl.style.cssText = 'font-size:0.65rem;color:#6b7280;white-space:nowrap';
+      const sel = makeSelect(CAP_OPTIONS, '');
+      applyCapHoldColor(sel);
+      sel.addEventListener('change', () => applyCapHoldColor(sel));
+      selects[yr] = sel;
+      const posInNewYears = cellConfig.CAP_HOLDS.years.indexOf(yr);
+      const wrapRef = wrap.children[posInNewYears * 2] || null;
+      wrap.insertBefore(lbl, wrapRef);
+      wrap.insertBefore(sel, wrapRef);
+    });
+  }
+
+  function getRows() {
+    return [...tbody.rows]
+      .filter(tr => tr !== addTr)
+      .map(tr => {
+        const obj = {};
+        tr._getters.forEach((get, i) => { obj[mutableHeaders[i]] = get(); });
+        return obj;
+      });
+  }
+
+  function getHeaders() { return [...mutableHeaders]; }
+
+  return { table, getRows, getHeaders, addYearColumn };
+}
+
+function rosterCellConfig(headers) {
+  const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
+  const config = {
+    TYPE: { type: 'select', options: [
+      { value: 'player',   label: 'Player'   },
+      { value: 'two-way',  label: 'Two-Way'  },
+      { value: 'dead',     label: 'Dead Cap' },
+    ]},
+    CAP_HOLDS: { type: 'cap-holds', years: salaryYears },
+  };
+  salaryYears.forEach(yr => { config[yr] = { type: 'salary' }; });
+  return config;
+}
+
+function picksCellConfig() {
+  return {
+    ROUND: { type: 'select', options: ['1st', '2nd'] },
+    TYPE:  { type: 'select', options: ['own', 'acquired'] },
+  };
+}
+
+function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = {}) {
+  const { table, getRows, getHeaders, addYearColumn } = buildEditableGrid(headers, rows, cellConfig);
+
+  const toolbar = document.createElement('div');
+  toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Save';
+  saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit';
+
+  const statusEl = document.createElement('span');
+  statusEl.style.cssText = 'font-size:0.75rem;color:#6b7280;margin-left:auto';
+
+  toolbar.appendChild(saveBtn);
+  toolbar.appendChild(cancelBtn);
+
+  const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
+  if (salaryYears.length && cellConfig.CAP_HOLDS) {
+    const YR_BTN = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:500;cursor:pointer;background:transparent;color:#9ca3af;font-family:inherit';
+    const onYrEnter = e => { e.target.style.color = '#d1d5db'; e.target.style.borderColor = '#6b7280'; };
+    const onYrLeave = e => { e.target.style.color = '#9ca3af'; e.target.style.borderColor = '#374151'; };
+
+    let pendingPrevYr = prevSalaryYear(salaryYears[0]);
+    const addPrevBtn = document.createElement('button');
+    addPrevBtn.style.cssText = YR_BTN;
+    addPrevBtn.onmouseenter = onYrEnter;
+    addPrevBtn.onmouseleave = onYrLeave;
+    const updatePrevLabel = () => { addPrevBtn.textContent = `+ ${pendingPrevYr}`; };
+    updatePrevLabel();
+    addPrevBtn.addEventListener('click', () => {
+      addYearColumn(pendingPrevYr);
+      pendingPrevYr = prevSalaryYear(pendingPrevYr);
+      updatePrevLabel();
+    });
+    toolbar.appendChild(addPrevBtn);
+
+    let pendingNextYr = nextSalaryYear(salaryYears[salaryYears.length - 1]);
+    const addNextBtn = document.createElement('button');
+    addNextBtn.style.cssText = YR_BTN;
+    addNextBtn.onmouseenter = onYrEnter;
+    addNextBtn.onmouseleave = onYrLeave;
+    const updateNextLabel = () => { addNextBtn.textContent = `+ ${pendingNextYr}`; };
+    updateNextLabel();
+    addNextBtn.addEventListener('click', () => {
+      addYearColumn(pendingNextYr);
+      pendingNextYr = nextSalaryYear(pendingNextYr);
+      updateNextLabel();
+    });
+    toolbar.appendChild(addNextBtn);
+  }
+
+  toolbar.appendChild(statusEl);
+
+  const gridWrap = document.createElement('div');
+  gridWrap.className = 'table-wrap';
+  gridWrap.style.overflowX = 'auto';
+  gridWrap.appendChild(table);
+
+  wrapEl.innerHTML = '';
+  wrapEl.appendChild(toolbar);
+  wrapEl.appendChild(gridWrap);
+
+  cancelBtn.addEventListener('click', () => renderView(rows));
+
+  saveBtn.addEventListener('click', async () => {
+    const updatedRows = getRows();
+    saveBtn.disabled = true;
+    cancelBtn.disabled = true;
+    statusEl.textContent = 'Saving…';
+    try {
+      const res = await fetch(`/api${apiPath}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ headers: getHeaders(), rows: updatedRows }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (res.status === 403) {
+          localStorage.removeItem(TOKEN_KEY);
+          statusEl.textContent = 'Invalid token — cleared. Try again.';
+        } else {
+          statusEl.textContent = `Error: ${err.detail || res.status}`;
+        }
+        saveBtn.disabled = false;
+        cancelBtn.disabled = false;
+        return;
+      }
+      statusEl.textContent = 'Saved!';
+      setTimeout(() => renderView(updatedRows), 700);
+    } catch {
+      statusEl.textContent = 'Network error';
+      saveBtn.disabled = false;
+      cancelBtn.disabled = false;
+    }
+  });
+}
+
+function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellConfig = {}) {
+  function renderView(currentRows) {
+    const wrapEl = document.getElementById(wrapId);
+    wrapEl.innerHTML = '';
+    const t = buildView(currentRows);
+    if (t) wrapEl.appendChild(t);
+    else wrapEl.innerHTML = '<div class="status">No data.</div>';
+    attachEditBtn(currentRows);
+  }
+
+  function attachEditBtn(currentRows) {
+    const titleEl = document.getElementById(titleId);
+    titleEl.querySelector('.section-edit-btn')?.remove();
+    const btn = document.createElement('button');
+    btn.className = 'section-edit-btn';
+    btn.textContent = 'Edit';
+    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #374151;border-radius:4px;background:transparent;color:#6b7280;cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+    btn.onmouseenter = () => { btn.style.color = '#d1d5db'; btn.style.borderColor = '#6b7280'; };
+    btn.onmouseleave = () => { btn.style.color = '#6b7280'; btn.style.borderColor = '#374151'; };
+    btn.addEventListener('click', () => {
+      withToken(() => {
+        const wrapEl = document.getElementById(wrapId);
+        enterEditMode(wrapEl, headers, currentRows, apiPath, renderView, cellConfig);
+      });
+    });
+    titleEl.appendChild(btn);
+  }
+
+  attachEditBtn(rows);
+}
+
 (async () => {
   const seasonsWrap = document.getElementById('seasons-wrap');
   const playersWrap = document.getElementById('players-wrap');
@@ -713,18 +1202,24 @@ function renderPlayerCell(td, col, row) {
 
   if (rr.status === 'fulfilled') {
     rosterWrap.innerHTML = '';
-    const t = buildRosterTable(parseCSV(rr.value));
+    const rosterRows = parseCSV(rr.value);
+    const rosterHeaders = parseLine(rr.value.trim().split('\n')[0]);
+    const t = buildRosterTable(rosterRows);
     if (t) rosterWrap.appendChild(t);
     else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
+    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, buildRosterTable, rosterCellConfig(rosterHeaders));
   } else {
     rosterWrap.innerHTML = '<div class="status">Failed to load roster data.</div>';
   }
 
   if (pkr.status === 'fulfilled') {
     picksWrap.innerHTML = '';
-    const t = buildPicksTable(parseCSV(pkr.value));
+    const picksRows = parseCSV(pkr.value);
+    const picksHeaders = parseLine(pkr.value.trim().split('\n')[0]);
+    const t = buildPicksTable(picksRows);
     if (t) picksWrap.appendChild(t);
     else picksWrap.innerHTML = '<div class="status">No picks data.</div>';
+    setupEditable('picks-title', 'picks-wrap', picksHeaders, picksRows, `/picks/${abbr}`, buildPicksTable, picksCellConfig());
   } else {
     picksWrap.innerHTML = '<div class="status">Failed to load picks data.</div>';
   }
