@@ -267,6 +267,70 @@
     .champion-name { color: #f59e0b; }
 
     tbody tr.clickable-row { cursor: pointer; }
+
+    /* bio edit form */
+    .bio-edit-form {
+      background: #111827; border: 1px solid #374151; border-radius: 10px;
+      padding: 0.9rem 1.1rem; margin-top: 0.5rem; margin-bottom: 0.75rem;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 1rem;
+    }
+    @media (max-width: 500px) { .bio-edit-form { grid-template-columns: 1fr; } }
+    .bio-edit-form label {
+      display: flex; flex-direction: column; gap: 0.2rem;
+      font-size: 0.7rem; color: #6b7280; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .bio-edit-form input {
+      background: #1f2937; border: 1px solid #374151; border-radius: 6px;
+      color: #f3f4f6; font-size: 0.85rem; font-family: inherit;
+      padding: 0.32rem 0.55rem; outline: none;
+    }
+    .bio-edit-form input:focus { border-color: #3b82f6; }
+    .bio-edit-form .full-col { grid-column: 1 / -1; }
+    .bio-edit-actions {
+      grid-column: 1 / -1; display: flex; gap: 0.5rem; align-items: center; padding-top: 0.1rem;
+    }
+    .edit-btn {
+      padding: 0.28rem 0.7rem; border-radius: 6px; font-size: 0.78rem;
+      font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid;
+    }
+    .edit-btn-primary { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
+    .edit-btn-primary:hover { background: #223f70; }
+    .edit-btn-secondary { background: transparent; border-color: #374151; color: #9ca3af; }
+    .edit-btn-secondary:hover { color: #d1d5db; border-color: #6b7280; }
+    .edit-status { font-size: 0.75rem; color: #ef4444; }
+    .btn-edit-bio {
+      padding: 0.15rem 0.45rem; border-radius: 4px; background: transparent;
+      border: 1px solid #374151; color: #6b7280; font-size: 0.7rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; margin-left: 0.6rem; vertical-align: middle;
+    }
+    .btn-edit-bio:hover { color: #d1d5db; border-color: #6b7280; }
+    .btn-add-player {
+      padding: 0.35rem 0.75rem; background: #1e3a5f; border: 1px solid #3b82f6;
+      border-radius: 6px; color: #93c5fd; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .btn-add-player:hover { background: #223f70; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center; z-index: 100;
+    }
+    .modal-card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 12px;
+      padding: 1.5rem; width: min(540px, 92vw); max-height: 88vh; overflow-y: auto;
+    }
+    .modal-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+    .slug-field {
+      display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 0.75rem;
+      font-size: 0.7rem; color: #6b7280; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .slug-field input {
+      background: #111827; border: 1px solid #374151; border-radius: 6px;
+      color: #f3f4f6; font-size: 0.85rem; font-family: inherit;
+      padding: 0.32rem 0.55rem; outline: none;
+    }
+    .slug-field input:focus { border-color: #3b82f6; }
   </style>
 </head>
 <body>
@@ -284,6 +348,34 @@
 <script>
 (function () {
   const slug = new URLSearchParams(location.search).get('p');
+
+  let biosData = {};
+
+  // ── Bio name helpers ─────────────────────────────────────────────────────────
+
+  function displayName(canonical) {
+    const i = canonical.indexOf(', ');
+    return i > 0 ? canonical.slice(i + 2) + ' ' + canonical.slice(0, i) : canonical;
+  }
+
+  function slugFromName(canonical) {
+    return displayName(canonical).toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  // ── Token helpers ────────────────────────────────────────────────────────────
+
+  function getToken() {
+    let t = localStorage.getItem('nbn_token');
+    if (!t) {
+      t = (prompt('Enter your NBN token:') || '').trim();
+      if (t) localStorage.setItem('nbn_token', t);
+    }
+    return t || null;
+  }
+
+  function clearToken() { localStorage.removeItem('nbn_token'); }
 
   // ── CSV helpers ──────────────────────────────────────────────────────────────
 
@@ -637,6 +729,128 @@
     return img;
   }
 
+  // ── Bio edit form ────────────────────────────────────────────────────────────
+
+  function renderBioForm(initial, onSave, onCancel, onNameChange) {
+    const form = document.createElement('div');
+    form.className = 'bio-edit-form';
+
+    function field(labelText, key, type, cls) {
+      const lbl = document.createElement('label');
+      if (cls) lbl.className = cls;
+      lbl.textContent = labelText;
+      const inp = document.createElement('input');
+      inp.type = type || 'text';
+      inp.value = initial[key] != null ? String(initial[key]) : '';
+      lbl.appendChild(inp);
+      form.appendChild(lbl);
+      return inp;
+    }
+
+    const fName    = field('Name (Last, First)', 'name',        'text');
+    const fPos     = field('Position',           'pos',         'text');
+    const fDob     = field('Date of Birth',      'dob',         'date');
+    const fCollege = field('College',            'college',     'text');
+    const fCountry = field('Country',            'country',     'text');
+    const fDftYr   = field('Draft Year',         'draft_year',  'number');
+    const fDftR    = field('Draft Round (1/2)',  'draft_round', 'number');
+    const fDftP    = field('Draft Pick #',       'draft_pick',  'number');
+                     field('Photo URL',          'photo_url',   'text', 'full-col');
+
+    if (onNameChange) fName.addEventListener('input', () => onNameChange(fName.value));
+
+    const actions = document.createElement('div');
+    actions.className = 'bio-edit-actions';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'edit-btn edit-btn-primary';
+    saveBtn.textContent = 'Save';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'edit-btn edit-btn-secondary';
+    cancelBtn.textContent = 'Cancel';
+    const status = document.createElement('span');
+    status.className = 'edit-status';
+    actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
+    actions.appendChild(status);
+    form.appendChild(actions);
+
+    cancelBtn.addEventListener('click', onCancel);
+    saveBtn.addEventListener('click', async () => {
+      const token = getToken();
+      if (!token) return;
+      const payload = {
+        name:        fName.value.trim(),
+        pos:         fPos.value.trim(),
+        dob:         fDob.value.trim(),
+        college:     fCollege.value.trim(),
+        country:     fCountry.value.trim(),
+        draft_year:  fDftYr.value  ? +fDftYr.value  : null,
+        draft_round: fDftR.value   ? +fDftR.value   : null,
+        draft_pick:  fDftP.value   ? +fDftP.value   : null,
+        photo_url:   form.querySelectorAll('input')[8].value.trim(),
+      };
+      if (!payload.name) { status.textContent = 'Name is required.'; return; }
+      saveBtn.disabled = true;
+      status.textContent = 'Saving…';
+      try {
+        await onSave(token, payload);
+      } catch (e) {
+        status.textContent = e.message || 'Save failed.';
+        saveBtn.disabled = false;
+      }
+    });
+
+    return form;
+  }
+
+  // ── Add player modal ──────────────────────────────────────────────────────────
+
+  function showAddPlayerModal() {
+    const token = getToken();
+    if (!token) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const card = document.createElement('div');
+    card.className = 'modal-card';
+
+    const h3 = document.createElement('h3');
+    h3.textContent = 'Add Player';
+    card.appendChild(h3);
+
+    const slugLabel = document.createElement('label');
+    slugLabel.className = 'slug-field';
+    slugLabel.textContent = 'Slug (auto-derived, editable)';
+    const slugInput = document.createElement('input');
+    slugInput.type = 'text';
+    slugLabel.appendChild(slugInput);
+    card.appendChild(slugLabel);
+
+    const form = renderBioForm(
+      { name: '', pos: '', dob: '', college: '', country: '', draft_year: null, draft_round: null, draft_pick: null, photo_url: '' },
+      async (token, payload) => {
+        const sl = slugInput.value.trim();
+        if (!sl) throw new Error('Slug is required.');
+        const resp = await fetch('/api/players', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, slug: sl }),
+        });
+        if (resp.status === 403) { clearToken(); throw new Error('Token rejected.'); }
+        if (resp.status === 409) throw new Error('A player with this slug already exists.');
+        if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
+        location.reload();
+      },
+      () => overlay.remove(),
+      (nameVal) => { slugInput.value = slugFromName(nameVal); }
+    );
+
+    card.appendChild(form);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  }
+
   // ── Bio section ──────────────────────────────────────────────────────────────
 
   function renderBioLine(container, row) {
@@ -821,6 +1035,63 @@
     };
   }
 
+  // ── Render: bio-only player (no stats yet) ───────────────────────────────────
+
+  function renderBioOnlyPlayer(bioSlug, bio) {
+    const name = bio.name ? displayName(bio.name) : bioSlug;
+    document.title = `${name} — NBN`;
+    document.getElementById('nav').innerHTML =
+      '<a href="/">Home</a> / <a href="/players/">Players</a> / ' + name;
+    document.getElementById('page-title').textContent = name;
+    document.getElementById('page-sub').textContent = 'No NBN stats yet.';
+
+    if (bio.photo_url) {
+      const img = document.createElement('img');
+      img.className = 'profile-photo';
+      img.src = bio.photo_url;
+      img.alt = '';
+      img.onerror = function() { this.remove(); };
+      document.querySelector('header').appendChild(img);
+    }
+
+    const content = document.getElementById('content');
+    content.innerHTML = '';
+    renderBioLine(content, {
+      DOB:        bio.dob        || '',
+      COLLEGE:    bio.college    || '',
+      COUNTRY:    bio.country    || '',
+      NBN_DFT_YR: bio.draft_year  ? String(bio.draft_year)  : '',
+      NBN_DFT_R:  bio.draft_round ? String(bio.draft_round) : '',
+      NBN_DFT_P:  bio.draft_pick  ? String(bio.draft_pick)  : '',
+    });
+
+    const editBioBtn = document.createElement('button');
+    editBioBtn.className = 'btn-edit-bio';
+    editBioBtn.textContent = 'Edit Bio';
+    content.appendChild(editBioBtn);
+    let bioFormEl = null;
+    editBioBtn.addEventListener('click', () => {
+      if (bioFormEl) { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; return; }
+      const token = getToken(); if (!token) return;
+      bioFormEl = renderBioForm(
+        { ...bio },
+        async (token, payload) => {
+          const resp = await fetch(`/api/players/${bioSlug}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (resp.status === 403) { clearToken(); throw new Error('Token rejected.'); }
+          if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
+          location.reload();
+        },
+        () => { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; }
+      );
+      content.insertBefore(bioFormEl, editBioBtn.nextSibling);
+      editBioBtn.textContent = 'Close';
+    });
+  }
+
   // ── Render: index (player directory) ─────────────────────────────────────────
 
   function renderIndex(rows) {
@@ -860,9 +1131,24 @@
       return s;
     }
 
+    // Add bio-only players not yet in the CSV
+    Object.entries(biosData).forEach(([bioSlug, bio]) => {
+      if (!playerFirstRow.has(bioSlug)) {
+        playerFirstRow.set(bioSlug, {
+          SLUG: bioSlug, PLAYER: displayName(bio.name || bioSlug),
+          PHOTO_URL: bio.photo_url || '', RINGS: '0',
+          DOB: bio.dob || '', COUNTRY: bio.country || '', COLLEGE: bio.college || '',
+          NBN_DFT_YR: bio.draft_year  ? String(bio.draft_year)  : '',
+          NBN_DFT_R:  bio.draft_round ? String(bio.draft_round) : '',
+          NBN_DFT_P:  bio.draft_pick  ? String(bio.draft_pick)  : '',
+        });
+      }
+    });
+
     // Build one display-object per player
     const players = [...playerFirstRow.values()].map(r => {
-      const dobRaw = bioVal(r.DOB);
+      const bio = biosData[r.SLUG] || {};
+      const dobRaw = bio.dob || bioVal(r.DOB);
       const d = dobRaw ? new Date(dobRaw) : null;
       const dobOk = d && !isNaN(d);
       let age = null;
@@ -872,19 +1158,22 @@
         const mo = now.getMonth() - d.getMonth();
         if (mo < 0 || (mo === 0 && now.getDate() < d.getDate())) age--;
       }
+      const dftYr = bio.draft_year  ? String(bio.draft_year)  : r.NBN_DFT_YR;
+      const dftR  = bio.draft_round ? String(bio.draft_round) : r.NBN_DFT_R;
+      const dftP  = bio.draft_pick  ? String(bio.draft_pick)  : r.NBN_DFT_P;
       return {
-        SLUG:      r.SLUG,
-        PLAYER:    r.PLAYER,
-        PHOTO_URL: r.PHOTO_URL,
-        RINGS:     r.RINGS,
-        AGE:       age,                            // number | null
-        DOB_FMT:   fmtDOB(r.DOB),                 // "Sep 19, 1999" | null
-        DOB_SORT:  dobOk ? d.getTime() : null,
-        COUNTRY:   bioVal(r.COUNTRY),
-        COLLEGE:   bioVal(r.COLLEGE),
-        DRAFT_FMT: fmtDraft(r.NBN_DFT_YR, r.NBN_DFT_R, r.NBN_DFT_P),
-        DRAFT_SORT: bioVal(r.NBN_DFT_YR) ? parseInt(r.NBN_DFT_YR, 10) : null,
-        TEAMS:     playerTeamsList.get(r.SLUG) || [],
+        SLUG:       r.SLUG,
+        PLAYER:     bio.name ? displayName(bio.name) : r.PLAYER,
+        PHOTO_URL:  bio.photo_url || r.PHOTO_URL,
+        RINGS:      r.RINGS,
+        AGE:        age,
+        DOB_FMT:    fmtDOB(dobRaw),
+        DOB_SORT:   dobOk ? d.getTime() : null,
+        COUNTRY:    bio.country || bioVal(r.COUNTRY),
+        COLLEGE:    bio.college || bioVal(r.COLLEGE),
+        DRAFT_FMT:  fmtDraft(dftYr, dftR, dftP),
+        DRAFT_SORT: dftYr ? parseInt(dftYr, 10) : null,
+        TEAMS:      playerTeamsList.get(r.SLUG) || [],
       };
     });
 
@@ -916,6 +1205,15 @@
     const resultCount = document.createElement('span');
     resultCount.className = 'filter-count';
     filterBar.appendChild(resultCount);
+
+    if (localStorage.getItem('nbn_token')) {
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn-add-player';
+      addBtn.textContent = '+ Add Player';
+      addBtn.addEventListener('click', showAddPlayerModal);
+      filterBar.appendChild(addBtn);
+    }
+
     content.appendChild(filterBar);
 
     // Table
@@ -1109,7 +1407,16 @@
     document.getElementById('page-sub').textContent =
       `${seasonCount} season${seasonCount !== 1 ? 's' : ''} in NBN`;
 
-    const photoUrl = rows[0].PHOTO_URL;
+    const bio = biosData[slug] || {};
+    const mergedRow = {
+      DOB:        bio.dob        || rows[0].DOB,
+      COLLEGE:    bio.college    || rows[0].COLLEGE,
+      COUNTRY:    bio.country    || rows[0].COUNTRY,
+      NBN_DFT_YR: bio.draft_year  ? String(bio.draft_year)  : rows[0].NBN_DFT_YR,
+      NBN_DFT_R:  bio.draft_round ? String(bio.draft_round) : rows[0].NBN_DFT_R,
+      NBN_DFT_P:  bio.draft_pick  ? String(bio.draft_pick)  : rows[0].NBN_DFT_P,
+    };
+    const photoUrl = bio.photo_url || rows[0].PHOTO_URL;
     const header = document.querySelector('header');
     header.querySelectorAll('.profile-photo').forEach(el => el.remove());
     if (photoUrl) {
@@ -1125,7 +1432,35 @@
     content.innerHTML = '';
 
     // bio line
-    renderBioLine(content, rows[0]);
+    renderBioLine(content, mergedRow);
+
+    // edit bio button
+    const editBioBtn = document.createElement('button');
+    editBioBtn.className = 'btn-edit-bio';
+    editBioBtn.textContent = 'Edit Bio';
+    content.appendChild(editBioBtn);
+    let bioFormEl = null;
+    editBioBtn.addEventListener('click', () => {
+      if (bioFormEl) { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; return; }
+      const token = getToken(); if (!token) return;
+      const cur = biosData[slug] || {};
+      bioFormEl = renderBioForm(
+        { name: cur.name || '', pos: cur.pos || '', dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, photo_url: cur.photo_url || rows[0].PHOTO_URL || '' },
+        async (token, payload) => {
+          const resp = await fetch(`/api/players/${slug}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (resp.status === 403) { clearToken(); throw new Error('Token rejected.'); }
+          if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
+          location.reload();
+        },
+        () => { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; }
+      );
+      content.insertBefore(bioFormEl, editBioBtn.nextSibling);
+      editBioBtn.textContent = 'Close';
+    });
 
     // accolades
     renderAccolades(content, slug, rows[0].RINGS, playerAwards, seasonLeaders);
@@ -1231,9 +1566,12 @@
 
   Promise.all([
     fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw new Error(); return r.text(); }),
-    fetch('/players/player_awards.csv').then(r => r.text()).catch(() => '')
+    fetch('/players/player_awards.csv').then(r => r.text()).catch(() => ''),
+    fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
   ])
-    .then(([seasonsText, awardsText]) => {
+    .then(([seasonsText, awardsText, biosJson]) => {
+      biosData = biosJson;
+
       const rows = parseCSV(seasonsText);
       const awards = awardsText ? parseCSV(awardsText) : [];
 
@@ -1252,11 +1590,19 @@
 
       const playerRows = rows.filter(r => r.SLUG === slug);
       if (!playerRows.length) {
-        showError(`Player not found: <strong>${slug}</strong>`);
+        // Player exists in bios but has no stats yet
+        const bio = biosData[slug];
+        if (bio) {
+          renderBioOnlyPlayer(slug, bio);
+        } else {
+          showError(`Player not found: <strong>${slug}</strong>`);
+        }
         return;
       }
 
-      renderPlayer(playerRows[0].PLAYER, playerRows, playerAwards, seasonLeaders);
+      const bio = biosData[slug] || {};
+      const playerName = bio.name ? displayName(bio.name) : playerRows[0].PLAYER;
+      renderPlayer(playerName, playerRows, playerAwards, seasonLeaders);
     })
     .catch(() => showError('Failed to load data.'));
 })();
