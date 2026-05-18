@@ -44,7 +44,7 @@ def main():
                 continue
             seen[slug] = {
                 "name":        clean(row["PLAYER"]).upper(),
-                "pos":         "",
+                "pos":         [],
                 "dob":         parse_dob(row["DOB"]),
                 "college":     clean(row["COLLEGE"]),
                 "country":     clean(row["COUNTRY"]),

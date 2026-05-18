@@ -331,6 +331,14 @@
       padding: 0.32rem 0.55rem; outline: none;
     }
     .slug-field input:focus { border-color: #3b82f6; }
+    .pos-picker { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.25rem; }
+    .pos-pill {
+      padding: 0.18rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; border: 1px solid #374151;
+      background: transparent; color: #6b7280;
+    }
+    .pos-pill.selected { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
+    .pos-pill:hover:not(.selected) { border-color: #6b7280; color: #9ca3af; }
   </style>
 </head>
 <body>
@@ -747,15 +755,35 @@
       return inp;
     }
 
-    const fName    = field('Name (Last, First)', 'name',        'text');
-    const fPos     = field('Position',           'pos',         'text');
-    const fDob     = field('Date of Birth',      'dob',         'date');
-    const fCollege = field('College',            'college',     'text');
-    const fCountry = field('Country',            'country',     'text');
-    const fDftYr   = field('Draft Year',         'draft_year',  'number');
-    const fDftR    = field('Draft Round (1/2)',  'draft_round', 'number');
-    const fDftP    = field('Draft Pick #',       'draft_pick',  'number');
-                     field('Photo URL',          'photo_url',   'text', 'full-col');
+    const fName    = field('Name (Last, First)', 'name',       'text');
+
+    // Position multi-select pills
+    const posLbl = document.createElement('label');
+    posLbl.textContent = 'Positions';
+    const posPicker = document.createElement('div');
+    posPicker.className = 'pos-picker';
+    const selectedPos = new Set(Array.isArray(initial.pos) ? initial.pos : []);
+    ['PG', 'SG', 'SF', 'PF', 'C'].forEach(p => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pos-pill' + (selectedPos.has(p) ? ' selected' : '');
+      btn.textContent = p;
+      btn.addEventListener('click', () => {
+        if (selectedPos.has(p)) { selectedPos.delete(p); btn.classList.remove('selected'); }
+        else { selectedPos.add(p); btn.classList.add('selected'); }
+      });
+      posPicker.appendChild(btn);
+    });
+    posLbl.appendChild(posPicker);
+    form.appendChild(posLbl);
+
+    const fDob     = field('Date of Birth',     'dob',        'date');
+    const fCollege = field('College',           'college',    'text');
+    const fCountry = field('Country',           'country',    'text');
+    const fDftYr   = field('Draft Year',        'draft_year', 'number');
+    const fDftR    = field('Draft Round (1/2)', 'draft_round','number');
+    const fDftP    = field('Draft Pick #',      'draft_pick', 'number');
+    const fPhoto   = field('Photo URL',         'photo_url',  'text', 'full-col');
 
     if (onNameChange) fName.addEventListener('input', () => onNameChange(fName.value));
 
@@ -780,14 +808,14 @@
       if (!token) return;
       const payload = {
         name:        fName.value.trim(),
-        pos:         fPos.value.trim(),
+        pos:         [...selectedPos],
         dob:         fDob.value.trim(),
         college:     fCollege.value.trim(),
         country:     fCountry.value.trim(),
         draft_year:  fDftYr.value  ? +fDftYr.value  : null,
         draft_round: fDftR.value   ? +fDftR.value   : null,
         draft_pick:  fDftP.value   ? +fDftP.value   : null,
-        photo_url:   form.querySelectorAll('input')[8].value.trim(),
+        photo_url:   fPhoto.value.trim(),
       };
       if (!payload.name) { status.textContent = 'Name is required.'; return; }
       saveBtn.disabled = true;
