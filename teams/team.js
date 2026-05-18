@@ -292,6 +292,11 @@ document.body.innerHTML = `
   </div>
 `;
 
+const _badgeScript = document.createElement('script');
+_badgeScript.src = '/token-badge.js';
+_badgeScript.onload = function () { window.__nbnBadge && window.__nbnBadge(); };
+document.head.appendChild(_badgeScript);
+
 function parseCSV(text) {
   const lines = text.trim().split('\n');
   const headers = parseLine(lines[0]);

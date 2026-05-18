@@ -92,8 +92,11 @@ FastAPI app running as a systemd service on port 8001, proxied through nginx. So
 |---|---|
 | `rosters` | `PUT /api/roster/{team}`, `PUT /api/picks/{team}` |
 | `admin` | Everything `rosters` can do + token management (`GET/POST/DELETE /api/tokens`) |
+| `atl`, `bkn`, `bos`, `cha`, `chi`, `cle`, `dal`, `den`, `det`, `gsw`, `hou`, `ind`, `lac`, `lal`, `mem`, `mia`, `mil`, `min`, `nop`, `nyk`, `okc`, `orl`, `phi`, `phx`, `por`, `sac`, `sas`, `tor`, `uta`, `was` | No special permissions yet — roles are validated and assignable but not enforced |
 
-`admin` implicitly satisfies any role check. There is one admin token (yours). Everyone else gets a `rosters` token.
+`admin` implicitly satisfies any role check. There is one admin token (yours). Everyone else gets a `rosters` token (or a per-team role once permissions are wired up).
+
+Valid roles are enforced at token creation time — `POST /api/tokens` rejects any unrecognized role name.
 
 ### Token management
 
