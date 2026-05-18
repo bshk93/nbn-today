@@ -67,6 +67,24 @@
     td.ovr-cell { font-weight: 700; text-align: right; }
     td.notes-cell { color: #9ca3af; font-size: 0.8rem; white-space: normal; min-width: 140px; max-width: 260px; }
 
+    td.cap-ufa        { background: hsl(45,  60%, 20%); color: hsl(45,  90%, 72%); }
+    td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
+    td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
+    td.cap-team-opt   { background: hsl(210, 55%, 20%); color: hsl(210, 75%, 70%); }
+    td.cap-non-gtd    { color: #4b5563; text-decoration: line-through; }
+
+    .cap-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1.25rem;
+      padding: 0.6rem 1rem 0.75rem;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      border-top: 1px solid #283141;
+    }
+    .cap-legend-item { display: flex; align-items: center; gap: 0.35rem; }
+    .cap-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+
     #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
 
     /* Edit panel */
@@ -236,6 +254,29 @@
     const getToken = () => localStorage.getItem(TOKEN_KEY);
     const setToken = t => localStorage.setItem(TOKEN_KEY, t);
 
+    const CAP_HOLD_CSS = {
+      UFA: 'cap-ufa', RFA: 'cap-rfa',
+      PLAYER_OPT: 'cap-player-opt', TEAM_OPT: 'cap-team-opt', NON_GTD: 'cap-non-gtd',
+    };
+    const CAP_HOLD_LABELS = {
+      UFA: 'UFA Hold', RFA: 'RFA Hold',
+      PLAYER_OPT: 'Player Option', TEAM_OPT: 'Team Option', NON_GTD: 'Non-Guaranteed',
+    };
+    const CAP_SWATCH_COLORS = {
+      UFA: 'hsl(45,60%,35%)', RFA: 'hsl(25,60%,35%)',
+      PLAYER_OPT: 'hsl(120,50%,30%)', TEAM_OPT: 'hsl(210,55%,35%)', NON_GTD: '#374151',
+    };
+
+    function parseCapHolds(str) {
+      const map = {};
+      if (!str) return map;
+      str.split(',').forEach(pair => {
+        const [yr, type] = pair.split(':');
+        if (yr && type) map[yr] = type;
+      });
+      return map;
+    }
+
     let sortField = 'ovr';
     let sortDir = -1;
     let COLS = [];
@@ -371,6 +412,10 @@
                 td.style.color     = `hsl(${Math.round(t * 120)}, 80%, 72%)`;
               }
             }
+          } else if (/^\d{2}-\d{2}$/.test(col.key)) {
+            td.textContent = row[col.key] || '—';
+            const capType = parseCapHolds(row.cap_holds)[col.key];
+            if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
           } else {
             td.textContent = row[col.key] || '—';
           }
@@ -617,7 +662,7 @@
         Object.entries(tb).forEach(([team, entries]) => {
           entries.forEach(({ player, notes }) => {
             const pr = (rosterData[team] || []).find(r => r.PLAYER === player) || {};
-            const row = { team, player, pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '' };
+            const row = { team, player, pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '', cap_holds: pr.CAP_HOLDS || '' };
             salaryYears.forEach(yr => { row[yr] = pr[yr] || '—'; });
             tableRows.push(row);
           });
@@ -653,6 +698,26 @@
 
         statusEl.remove();
         wrap.appendChild(buildTable());
+
+        // Cap hold legend
+        const allCapTypes = new Set();
+        tableRows.forEach(r => Object.values(parseCapHolds(r.cap_holds)).forEach(t => allCapTypes.add(t)));
+        if (allCapTypes.size > 0) {
+          const legend = document.createElement('div');
+          legend.className = 'cap-legend';
+          ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
+            if (!allCapTypes.has(type)) return;
+            const item = document.createElement('span');
+            item.className = 'cap-legend-item';
+            const swatch = document.createElement('span');
+            swatch.className = 'cap-swatch';
+            swatch.style.background = CAP_SWATCH_COLORS[type];
+            item.appendChild(swatch);
+            item.appendChild(document.createTextNode(CAP_HOLD_LABELS[type]));
+            legend.appendChild(item);
+          });
+          wrap.appendChild(legend);
+        }
       } catch {
         statusEl.textContent = 'Failed to load trading block.';
       }
