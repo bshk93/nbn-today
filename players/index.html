@@ -339,6 +339,11 @@
     }
     .pos-pill.selected { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
     .pos-pill:hover:not(.selected) { border-color: #6b7280; color: #9ca3af; }
+    .pos-display { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .pos-tag {
+      padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
+      border: 1px solid #3b82f6; background: #1e3a5f; color: #93c5fd;
+    }
   </style>
 </head>
 <body>
@@ -1093,6 +1098,18 @@
       NBN_DFT_P:  bio.draft_pick  ? String(bio.draft_pick)  : '',
     });
 
+    if (bio.pos && bio.pos.length) {
+      const posDiv = document.createElement('div');
+      posDiv.className = 'pos-display';
+      bio.pos.forEach(p => {
+        const tag = document.createElement('span');
+        tag.className = 'pos-tag';
+        tag.textContent = p;
+        posDiv.appendChild(tag);
+      });
+      content.appendChild(posDiv);
+    }
+
     const editBioBtn = document.createElement('button');
     editBioBtn.className = 'btn-edit-bio';
     editBioBtn.textContent = 'Edit Bio';
@@ -1192,6 +1209,7 @@
       return {
         SLUG:       r.SLUG,
         PLAYER:     bio.name ? displayName(bio.name) : r.PLAYER,
+        POS:        Array.isArray(bio.pos) ? bio.pos : [],
         PHOTO_URL:  bio.photo_url || r.PHOTO_URL,
         RINGS:      r.RINGS,
         AGE:        age,
@@ -1247,6 +1265,7 @@
     // Table
     const IDX_COLS = [
       { label: 'Player',  field: 'PLAYER',     defaultDir:  1 },
+      { label: 'Pos',     field: null,          display: p => p.POS.length ? p.POS.join(' · ') : '—', cls: 'muted' },
       { label: 'Age',     field: 'AGE',         defaultDir: -1, cls: 'right' },
       { label: 'Born',    field: 'DOB_SORT',    defaultDir: -1, cls: 'right', display: p => p.DOB_FMT || '—' },
       { label: 'Country', field: 'COUNTRY',     defaultDir:  1, display: p => {
@@ -1461,6 +1480,19 @@
 
     // bio line
     renderBioLine(content, mergedRow);
+
+    // position tags
+    if (bio.pos && bio.pos.length) {
+      const posDiv = document.createElement('div');
+      posDiv.className = 'pos-display';
+      bio.pos.forEach(p => {
+        const tag = document.createElement('span');
+        tag.className = 'pos-tag';
+        tag.textContent = p;
+        posDiv.appendChild(tag);
+      });
+      content.appendChild(posDiv);
+    }
 
     // edit bio button
     const editBioBtn = document.createElement('button');
