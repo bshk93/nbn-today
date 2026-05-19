@@ -409,7 +409,7 @@
 
         const tbl = document.createElement('table');
         tbl.innerHTML = `<thead><tr>
-          <th>Orig</th><th>Owner</th><th>Pick #</th><th>Player</th><th>Top-N Prot.</th><th>Swap Owner</th><th>Notes</th>
+          <th>Owner</th><th>Orig</th><th>Pick #</th><th>Selection</th><th>Top-N Prot.</th><th>Swap Owner</th><th>Notes</th>
         </tr></thead>`;
         const tbody = document.createElement('tbody');
 
@@ -427,11 +427,6 @@
         rndPicks.forEach(p => {
           const tr = document.createElement('tr');
 
-          const tdOrig = document.createElement('td');
-          tdOrig.textContent = p.orig;
-          tdOrig.style.color = '#6b7280';
-          tr.appendChild(tdOrig);
-
           const selOwner = document.createElement('select');
           selOwner.style.cssText = INP;
           TEAM_ABBRS.forEach(t => {
@@ -443,6 +438,11 @@
           const tdOwner = document.createElement('td');
           tdOwner.appendChild(selOwner);
           tr.appendChild(tdOwner);
+
+          const tdOrig = document.createElement('td');
+          tdOrig.textContent = p.orig;
+          tdOrig.style.color = '#6b7280';
+          tr.appendChild(tdOrig);
 
           const inpPick = document.createElement('input');
           inpPick.type = 'number'; inpPick.min = '1'; inpPick.max = '60';
@@ -580,9 +580,9 @@
         const tbl = document.createElement('table');
         tbl.innerHTML = `<thead><tr>
           <th class="right">Pick</th>
-          <th>Player</th>
-          <th>Orig</th>
+          <th>Selection</th>
           <th>Owner</th>
+          <th>Orig</th>
           <th>Protection</th>
           <th>Swap</th>
           <th>Status</th>
@@ -611,15 +611,15 @@
           }
           tr.appendChild(tdPlayer);
 
-          const tdOrig = document.createElement('td');
-          tdOrig.className = 'orig-cell';
-          tdOrig.textContent = p.orig;
-          tr.appendChild(tdOrig);
-
           const tdOwner = document.createElement('td');
           tdOwner.className = 'owner-cell';
-          tdOwner.textContent = traded ? p.owner : '—';
+          tdOwner.textContent = p.owner;
           tr.appendChild(tdOwner);
+
+          const tdOrig = document.createElement('td');
+          tdOrig.className = 'orig-cell muted';
+          tdOrig.textContent = traded ? p.orig : '—';
+          tr.appendChild(tdOrig);
 
           const tdProt = document.createElement('td');
           tdProt.className = 'muted';
