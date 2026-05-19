@@ -1492,6 +1492,164 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
   });
 }
 
+function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
+  const INP = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
+
+  function renderView(currentPicks) {
+    wrapEl.innerHTML = '';
+    const t = buildPicksTable(currentPicks, teamAbbr);
+    if (t) wrapEl.appendChild(t);
+    else wrapEl.innerHTML = '<div class="status">No picks on file.</div>';
+    attachBtn(currentPicks);
+  }
+
+  function attachBtn(currentPicks) {
+    const titleEl = document.getElementById(titleId);
+    titleEl.querySelector('.section-edit-btn')?.remove();
+    const btn = document.createElement('button');
+    btn.className = 'section-edit-btn';
+    btn.textContent = 'Edit';
+    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #374151;border-radius:4px;background:transparent;color:#6b7280;cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+    btn.onmouseenter = () => { btn.style.color = '#d1d5db'; btn.style.borderColor = '#6b7280'; };
+    btn.onmouseleave = () => { btn.style.color = '#6b7280'; btn.style.borderColor = '#374151'; };
+    btn.addEventListener('click', () => withToken(() => enterPicksEdit(currentPicks)));
+    titleEl.appendChild(btn);
+  }
+
+  function enterPicksEdit(currentPicks) {
+    wrapEl.innerHTML = '';
+
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save';
+    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit';
+
+    const statusEl = document.createElement('span');
+    statusEl.style.cssText = 'font-size:0.75rem;color:#6b7280;margin-left:auto';
+
+    toolbar.appendChild(saveBtn);
+    toolbar.appendChild(cancelBtn);
+    toolbar.appendChild(statusEl);
+
+    // Build editable table
+    const gridWrap = document.createElement('div');
+    gridWrap.className = 'table-wrap';
+    gridWrap.style.overflowX = 'auto';
+
+    const table = document.createElement('table');
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    ['Year', 'Rnd', 'Orig', 'Owner', 'Pick #', 'Top-N Prot.', 'Notes'].forEach(label => {
+      const th = document.createElement('th');
+      th.textContent = label;
+      hr.appendChild(th);
+    });
+
+    const teamOptions = Object.keys(TEAMS).sort();
+    const rowGetters = [];
+
+    const tbody = table.createTBody();
+    currentPicks.forEach(p => {
+      const tr = tbody.insertRow();
+
+      // read-only: year, round, orig
+      [String(p.year), p.round === 1 ? '1st' : '2nd', p.orig].forEach(v => {
+        const td = tr.insertCell();
+        td.textContent = v;
+        td.style.color = '#6b7280';
+      });
+
+      // owner select
+      const tdOwner = tr.insertCell();
+      const selOwner = document.createElement('select');
+      selOwner.style.cssText = INP;
+      teamOptions.forEach(t => {
+        const o = document.createElement('option');
+        o.value = t; o.textContent = t;
+        if (t === p.owner) o.selected = true;
+        selOwner.appendChild(o);
+      });
+      tdOwner.appendChild(selOwner);
+
+      // pick number
+      const tdPick = tr.insertCell();
+      const inpPick = document.createElement('input');
+      inpPick.type = 'number'; inpPick.min = '1'; inpPick.max = '60';
+      inpPick.style.cssText = INP;
+      if (p.pick != null) inpPick.value = p.pick;
+      tdPick.appendChild(inpPick);
+
+      // protected
+      const tdProt = tr.insertCell();
+      const inpProt = document.createElement('input');
+      inpProt.type = 'number'; inpProt.min = '1'; inpProt.max = '30';
+      inpProt.style.cssText = INP;
+      if (p.protected != null) inpProt.value = p.protected;
+      tdProt.appendChild(inpProt);
+
+      // notes
+      const tdNotes = tr.insertCell();
+      const inpNotes = document.createElement('input');
+      inpNotes.type = 'text';
+      inpNotes.style.cssText = INP;
+      inpNotes.value = p.notes || '';
+      tdNotes.appendChild(inpNotes);
+
+      rowGetters.push(() => ({
+        year: p.year, round: p.round, orig: p.orig,
+        owner:     selOwner.value,
+        pick:      inpPick.value  ? parseInt(inpPick.value)  : null,
+        protected: inpProt.value  ? parseInt(inpProt.value)  : null,
+        notes:     inpNotes.value.trim(),
+      }));
+    });
+
+    gridWrap.appendChild(table);
+    wrapEl.appendChild(toolbar);
+    wrapEl.appendChild(gridWrap);
+
+    cancelBtn.addEventListener('click', () => renderView(currentPicks));
+
+    saveBtn.addEventListener('click', async () => {
+      const updated = rowGetters.map(g => g());
+      saveBtn.disabled = true; cancelBtn.disabled = true;
+      statusEl.textContent = 'Saving…';
+      try {
+        const token = getToken();
+        const results = await Promise.all(updated.map(p =>
+          fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ owner: p.owner, pick: p.pick, protected: p.protected, notes: p.notes }),
+          })
+        ));
+        const failed = results.find(r => !r.ok);
+        if (failed) {
+          if (failed.status === 403) { localStorage.removeItem(TOKEN_KEY); statusEl.textContent = 'Invalid token — cleared.'; }
+          else statusEl.textContent = `Error ${failed.status}`;
+          saveBtn.disabled = false; cancelBtn.disabled = false;
+          return;
+        }
+        // Re-fetch to get server-computed conveys
+        const fresh = await fetch(`/api/picks/${abbr}`).then(r => r.json());
+        statusEl.textContent = 'Saved!';
+        setTimeout(() => renderView(fresh), 700);
+      } catch {
+        statusEl.textContent = 'Network error';
+        saveBtn.disabled = false; cancelBtn.disabled = false;
+      }
+    });
+  }
+
+  attachBtn(picks);
+}
+
 function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellConfig = {}) {
   function renderView(currentRows) {
     const wrapEl = document.getElementById(wrapId);
@@ -1706,6 +1864,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     const t = buildPicksTable(pkr.value, abbr);
     if (t) picksWrap.appendChild(t);
     else picksWrap.innerHTML = '<div class="status">No picks on file.</div>';
+    setupPicksEditable('picks-title', picksWrap, pkr.value, abbr);
   } else {
     picksWrap.innerHTML = '<div class="status">Failed to load picks data.</div>';
   }
