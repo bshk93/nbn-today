@@ -569,6 +569,15 @@
           });
         if (!picks.length) return;
 
+        // When a swap conveys, the swap_owner's own pick goes to the swap holder.
+        // Build a reverse map: orig team → who actually gets their pick.
+        const swapTakesFrom = {};
+        picks.forEach(p => {
+          if (p.swap_conveys === true && p.swap_owner) {
+            swapTakesFrom[p.swap_owner] = p.owner;
+          }
+        });
+
         const block = document.createElement('div');
         block.className = 'round-block';
         const h2 = document.createElement('h2');
@@ -591,7 +600,9 @@
         const tbody = document.createElement('tbody');
 
         picks.forEach(p => {
-          const traded = p.orig !== p.owner;
+          const effectiveOwner = p.swap_conveys === true ? p.swap_owner
+                               : (swapTakesFrom[p.orig] ?? p.owner);
+          const traded = p.orig !== effectiveOwner;
           const tr = document.createElement('tr');
           if (traded) tr.className = 'pick-row-traded';
 
@@ -613,7 +624,7 @@
 
           const tdOwner = document.createElement('td');
           tdOwner.className = 'owner-cell';
-          tdOwner.textContent = p.owner;
+          tdOwner.textContent = effectiveOwner;
           tr.appendChild(tdOwner);
 
           const tdOrig = document.createElement('td');
