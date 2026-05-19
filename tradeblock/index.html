@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trading Block — NBN</title>
+  <title>Tradeblock — NBN</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -266,13 +266,13 @@
   <div class="page">
     <nav class="nav"><a href="/">← Nothing But Net</a></nav>
     <header>
-      <h1>Trading Block</h1>
+      <h1>Tradeblock</h1>
       <p>Players available for trade. Click any column header to sort.</p>
     </header>
 
     <div id="edit-panel" style="display:none"></div>
     <div id="signin-prompt" class="signin-prompt" style="display:none">
-      Team member? <button id="signin-btn">Enter your token</button> to manage your trading block.
+      Team member? <button id="signin-btn">Enter your token</button> to manage your tradeblock.
     </div>
 
     <div id="pos-filter" class="pos-filter" style="display:none"></div>
@@ -319,14 +319,44 @@
       return map;
     }
 
-    // ── Player slug lookup (via player_seasons.csv) ───────────────────────────
+    // ── Player bio lookup ─────────────────────────────────────────────────────
 
-    const slugMap = new Map(); // "last first" → slug
+    let biosData = {};
+    const nameToSlugMap = new Map(); // display name (lowercase) → slug
+
+    function buildNameMap(bios) {
+      biosData = bios;
+      Object.entries(bios).forEach(([slug, bio]) => {
+        const dn = displayNameFromBio(bio.name || '');
+        if (dn) nameToSlugMap.set(dn.toLowerCase(), slug);
+      });
+    }
+
+    function displayNameFromBio(canonical) {
+      if (!canonical) return '';
+      const toTitle = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      if (canonical.includes(',')) {
+        const [last, first] = canonical.split(',', 2);
+        return toTitle(`${first.trim()} ${last.trim()}`);
+      }
+      return toTitle(canonical);
+    }
+
+    function calcAgeFromDob(dob) {
+      if (!dob) return '';
+      return String(Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 3600 * 1000)));
+    }
+
+    function nameToSlug(name) {
+      return nameToSlugMap.get(name.toLowerCase()) || null;
+    }
+
+    // Legacy: slug lookup via player_seasons.csv (kept as fallback)
+    const slugMap = new Map();
 
     function buildSlugMap(rows) {
       rows.forEach(r => {
         if (!r.SLUG || !r.PLAYER) return;
-        // PLAYER is "Last, First" — strip suffix, remove comma, lowercase
         const key = r.PLAYER
           .replace(/,?\s+(jr\.|sr\.|ii|iii|iv)\.?\s*$/i, '')
           .replace(',', '')
@@ -337,7 +367,9 @@
     }
 
     function rosterNameToSlug(name) {
-      // name is "First Last" or "First Last Jr." etc.
+      // Try biosData map first, then legacy slugMap
+      const fromBio = nameToSlug(name);
+      if (fromBio) return fromBio;
       const stripped = name.replace(/\s+(jr\.|sr\.|ii|iii|iv)\.?\s*$/i, '').trim();
       const lastSpace = stripped.lastIndexOf(' ');
       if (lastSpace === -1) return slugMap.get(stripped.toLowerCase()) || null;
@@ -505,7 +537,7 @@
         td.colSpan = COLS.length;
         td.style.cssText = 'text-align:center;padding:3rem;color:#6b7280;font-size:0.9rem;';
         td.textContent = tableRows.length === 0
-          ? 'No players on the trading block yet.'
+          ? 'No players on the tradeblock yet.'
           : 'No players match the selected position filter.';
         return;
       }
@@ -565,7 +597,7 @@
       header.className = 'edit-panel-header';
 
       const h2 = document.createElement('h2');
-      h2.innerHTML = `Manage Trading Block <span class="team-badge">${myTeam}</span>`;
+      h2.innerHTML = `Manage Tradeblock <span class="team-badge">${myTeam}</span>`;
 
       const toggle = document.createElement('span');
       toggle.className = 'panel-toggle';
@@ -631,17 +663,29 @@
       addRow.className = 'add-row';
 
       const onBlock = new Set(pendingEntries.map(e => e.player));
-      const available = myRoster.filter(r => r.TYPE !== 'dead' && !onBlock.has(r.PLAYER));
+      const isNewFormat = myRoster.length > 0 && 'SLUG' in myRoster[0] && !('PLAYER' in myRoster[0]);
+      const available = isNewFormat
+        ? myRoster
+            .filter(r => {
+              const bio = biosData[r.SLUG];
+              return (!bio || bio.type !== 'dead') && !onBlock.has(displayNameFromBio((bio && bio.name) || ''));
+            })
+            .map(r => {
+              const bio = biosData[r.SLUG] || {};
+              return { player: displayNameFromBio(bio.name || '') || r.SLUG };
+            })
+        : myRoster.filter(r => r.TYPE !== 'dead' && !onBlock.has(r.PLAYER))
+            .map(r => ({ player: r.PLAYER }));
 
       const sel = document.createElement('select');
       const defaultOpt = document.createElement('option');
       defaultOpt.value = '';
       defaultOpt.textContent = available.length ? 'Select player…' : 'All players added';
       sel.appendChild(defaultOpt);
-      available.forEach(r => {
+      available.forEach(({ player }) => {
         const opt = document.createElement('option');
-        opt.value = r.PLAYER;
-        opt.textContent = r.PLAYER;
+        opt.value = player;
+        opt.textContent = player;
         sel.appendChild(opt);
       });
 
@@ -717,7 +761,7 @@
       overlay.innerHTML = `
         <div class="token-modal">
           <h3>Team token required</h3>
-          <p>Enter your team token to manage your trading block. It will be saved in this browser.</p>
+          <p>Enter your team token to manage your tradeblock. It will be saved in this browser.</p>
           <input type="password" placeholder="Paste token…" autocomplete="off" />
           <div class="token-modal-actions">
             <button class="btn-tok-cancel">Cancel</button>
@@ -770,13 +814,15 @@
       const signinPrompt = document.getElementById('signin-prompt');
 
       try {
-        const [tb, userInfo, playerSeasonsTxt] = await Promise.all([
+        const [tb, userInfo, biosJson, playerSeasonsTxt] = await Promise.all([
           fetch('/api/trading-block').then(r => { if (!r.ok) throw r; return r.json(); }),
           checkAuth(),
+          fetch('/api/players').then(r => r.ok ? r.json() : {}),
           fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : null),
         ]);
         tbData = tb;
 
+        buildNameMap(biosJson);
         if (playerSeasonsTxt) buildSlugMap(parseCSV(playerSeasonsTxt));
 
         const teamRole = userInfo && userInfo.roles.find(r => VALID_TEAMS_LC.has(r));
@@ -799,24 +845,52 @@
           });
         }
 
-        // Detect salary year columns
+        // Detect salary year columns from old-format rosters and biosData
         const salaryYearSet = new Set();
         Object.values(rosterData).forEach(rows => {
-          if (rows.length > 0) {
+          if (rows.length > 0 && 'PLAYER' in rows[0]) {
             Object.keys(rows[0])
               .filter(k => /^\d{2}-\d{2}$/.test(k) && k >= CUR_YR)
               .forEach(k => salaryYearSet.add(k));
           }
+        });
+        // Also collect from biosData salaries for players on the block
+        Object.values(tb).forEach(entries => {
+          entries.forEach(({ player }) => {
+            const slug = rosterNameToSlug(player);
+            const bio = slug ? biosData[slug] : null;
+            if (bio && bio.salaries) {
+              Object.keys(bio.salaries).filter(k => k >= CUR_YR).forEach(k => salaryYearSet.add(k));
+            }
+          });
         });
         salaryYears = [...salaryYearSet].sort();
 
         // Build flat table rows
         tableRows = [];
         Object.entries(tb).forEach(([team, entries]) => {
+          const rosterRows = rosterData[team] || [];
+          const isNewFormat = rosterRows.length > 0 && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
           entries.forEach(({ player, notes }) => {
-            const pr = (rosterData[team] || []).find(r => r.PLAYER === player) || {};
-            const row = { team, player, pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '', cap_holds: pr.CAP_HOLDS || '' };
-            salaryYears.forEach(yr => { row[yr] = pr[yr] || '—'; });
+            let row;
+            if (isNewFormat) {
+              const slug = rosterNameToSlug(player);
+              const bio = slug ? biosData[slug] : null;
+              const pr = slug ? rosterRows.find(r => r.SLUG === slug) : null;
+              row = {
+                team, player,
+                pos: bio ? ((bio.pos || []).join('/') || '—') : '—',
+                ovr: pr ? pr.OVR : '',
+                age: bio ? calcAgeFromDob(bio.dob) : '',
+                notes: notes || '',
+                cap_holds: bio ? (bio.cap_holds || '') : '',
+              };
+              salaryYears.forEach(yr => { row[yr] = (bio && bio.salaries && bio.salaries[yr]) || '—'; });
+            } else {
+              const pr = rosterRows.find(r => r.PLAYER === player) || {};
+              row = { team, player, pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '', cap_holds: pr.CAP_HOLDS || '' };
+              salaryYears.forEach(yr => { row[yr] = pr[yr] || '—'; });
+            }
             tableRows.push(row);
           });
         });
@@ -873,7 +947,7 @@
           wrap.appendChild(legend);
         }
       } catch {
-        statusEl.textContent = 'Failed to load trading block.';
+        statusEl.textContent = 'Failed to load tradeblock.';
       }
     })();
   </script>

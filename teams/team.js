@@ -224,6 +224,23 @@ document.title = `${abbr} — NBN`;
     border-radius: 2px;
     flex-shrink: 0;
   }
+  tfoot tr td { font-size: 0.8rem; padding: 0.3rem 0.6rem; color: #9ca3af; border-top: none; }
+  tfoot tr.tfoot-divider td { border-top: 1px solid #374151; padding-top: 0.45rem; }
+  tfoot tr.tfoot-total td { font-weight: 700; color: #d1d5db; }
+  tfoot tr.tfoot-cap td { color: #6b7280; }
+  tfoot tr.tfoot-cap.over td.tfoot-diff { color: #ef4444; }
+  tfoot tr.tfoot-cap.under td.tfoot-diff { color: #22c55e; }
+  tfoot td.tfoot-label { color: #6b7280; }
+  tfoot td.tfoot-count { color: #374151; font-size: 0.72rem; text-align: right; }
+  .cap-edit-form {
+    display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+    margin-top: 0.75rem; padding: 0.6rem 0.75rem;
+    background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+    font-size: 0.8rem;
+  }
+  .cap-edit-form label { display: flex; flex-direction: column; gap: 0.2rem; color: #6b7280; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+  .cap-edit-form input { background: #111827; border: 1px solid #374151; border-radius: 4px; color: #f3f4f6; font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
+  .cap-edit-form input:focus { border-color: #3b82f6; }
   .token-overlay {
     position: fixed;
     inset: 0;
@@ -279,10 +296,16 @@ document.body.innerHTML = `
     <section>
       <h2 class="section-title" id="roster-title">Roster</h2>
       <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
+      <div id="cap-edit-wrap"></div>
     </section>
     <section>
       <h2 class="section-title" id="picks-title">Draft Picks</h2>
       <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
+    </section>
+    <section>
+      <h2 class="section-title">Draft History</h2>
+      <p class="section-sub">Players drafted by this franchise</p>
+      <div class="table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
     </section>
     <section>
       <h2 class="section-title">All-Time Top Players</h2>
@@ -336,6 +359,31 @@ function sv(row, field) {
   if (!v || v === 'NA') return -Infinity;
   const n = parseFloat(v);
   return isNaN(n) ? v : n;
+}
+
+function formatSalary(v) {
+  if (!v && v !== 0) return '—';
+  const s = String(v).trim();
+  if (!s || s === '—') return '—';
+  const digits = s.replace(/[$,\s]/g, '');
+  const n = parseFloat(digits);
+  if (isNaN(n)) return s;
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+
+function displayNameFromBio(canonical) {
+  if (!canonical) return '';
+  const toTitle = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  if (canonical.includes(',')) {
+    const [last, first] = canonical.split(',', 2);
+    return toTitle(`${first.trim()} ${last.trim()}`);
+  }
+  return toTitle(canonical);
+}
+
+function calcAge(dob) {
+  if (!dob) return '';
+  return Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 3600 * 1000));
 }
 
 function buildTable(cols, rows, initSortField, initSortDir, renderCell) {
@@ -411,6 +459,14 @@ const CAP_HOLD_LABELS = {
   NON_GTD:    'Non-Guaranteed',
 };
 
+const SWATCH_COLORS = {
+  UFA:        'hsl(45,  60%, 35%)',
+  RFA:        'hsl(25,  60%, 35%)',
+  PLAYER_OPT: 'hsl(120, 50%, 30%)',
+  TEAM_OPT:   'hsl(210, 55%, 35%)',
+  NON_GTD:    '#374151',
+};
+
 function parseCapHolds(str) {
   const map = {};
   if (!str) return map;
@@ -430,28 +486,171 @@ function currentSeasonYr() {
     : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
 }
 
-function buildRosterTable(rows) {
+function parseSalaryNum(v) {
+  if (!v && v !== 0) return 0;
+  const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
+  return isNaN(n) ? 0 : Math.round(n);
+}
+
+function buildRosterTable(rows, biosData, capLevels) {
   if (!rows.length) return null;
   const curYr = currentSeasonYr();
-  const salaryKeys = Object.keys(rows[0]).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= curYr);
-  const ovrVals = rows.map(r => parseFloat(r.OVR)).filter(v => !isNaN(v));
-  const ovrMin = Math.min(...ovrVals), ovrMax = Math.max(...ovrVals);
+  const hasSlug = 'SLUG' in rows[0] && !('PLAYER' in rows[0]);
+
+  if (!hasSlug) {
+    // ── Legacy format: CSV has PLAYER, POS, AGE, TYPE, CAP_HOLDS, salary cols ──
+    const salaryKeys = Object.keys(rows[0]).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= curYr);
+    const ovrMin = 60, ovrMax = 100;
+
+    const cols = [
+      { key: 'PLAYER', label: 'Player',   cls: 'bold',         },
+      { key: 'POS',    label: 'Pos',      cls: 'muted center', },
+      { key: 'AGE',    label: 'Age',      cls: 'right',        },
+      { key: 'OVR',    label: 'OVR',      cls: 'right bold',   },
+      ...salaryKeys.map((k, i) => ({
+        key: k, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
+        display: r => formatSalary(r[k]),
+      })),
+    ];
+
+    const typeOrder = { player: 0, 'two-way': 1, dead: 2 };
+    const sorted = [...rows].sort((a, b) => {
+      const ta = typeOrder[a.TYPE] ?? 3, tb = typeOrder[b.TYPE] ?? 3;
+      if (ta !== tb) return ta - tb;
+      return (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
+    });
+
+    const table = document.createElement('table');
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    cols.forEach(col => {
+      const th = document.createElement('th');
+      th.textContent = col.label;
+      if (col.cls?.includes('right')) th.classList.add('right');
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    let lastType = null;
+    const LABELS = { 'two-way': 'Two-Way Contracts', dead: 'Dead Cap' };
+
+    sorted.forEach(row => {
+      if (row.TYPE !== lastType && LABELS[row.TYPE]) {
+        const sep = tbody.insertRow();
+        sep.className = 'subheader';
+        const td = sep.insertCell();
+        td.colSpan = cols.length;
+        td.textContent = LABELS[row.TYPE];
+        lastType = row.TYPE;
+      } else if (row.TYPE !== lastType) {
+        lastType = row.TYPE;
+      }
+
+      const tr = tbody.insertRow();
+      if (row.TYPE === 'two-way') tr.className = 'row-twoway';
+      if (row.TYPE === 'dead')    tr.className = 'row-dead';
+
+      const capMap = parseCapHolds(row.CAP_HOLDS);
+
+      cols.forEach(col => {
+        const td = tr.insertCell();
+        col.cls?.split(' ').forEach(c => c && td.classList.add(c));
+
+        if (col.key === 'PLAYER') {
+          const a = document.createElement('a');
+          a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
+          a.textContent = row.PLAYER;
+          td.appendChild(a);
+        } else if (col.key === 'OVR') {
+          const n = parseFloat(row.OVR);
+          td.textContent = isNaN(n) ? '—' : String(n);
+          if (!isNaN(n)) {
+            const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
+            const hue = Math.round(t * 120);
+            td.style.background = `hsl(${hue}, 55%, 18%)`;
+            td.style.color = `hsl(${hue}, 80%, 72%)`;
+          }
+        } else if (/^\d{2}-\d{2}$/.test(col.key)) {
+          td.textContent = col.display ? col.display(row) : (row[col.key] || '—');
+          const capType = capMap[col.key];
+          if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
+        } else if (col.display) {
+          td.textContent = col.display(row);
+        } else {
+          td.textContent = row[col.key] ?? '—';
+        }
+      });
+    });
+
+    const hasCapData = rows.some(r => r.CAP_HOLDS && r.CAP_HOLDS.trim() !== '');
+    if (!hasCapData) return table;
+
+    const allTypes = new Set();
+    rows.forEach(r => {
+      Object.values(parseCapHolds(r.CAP_HOLDS || '')).forEach(t => allTypes.add(t));
+    });
+
+    const legend = document.createElement('div');
+    legend.className = 'cap-legend';
+    ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
+      if (!allTypes.has(type)) return;
+      const item = document.createElement('span');
+      item.className = 'cap-legend-item';
+      const swatch = document.createElement('span');
+      swatch.className = 'cap-swatch';
+      swatch.style.background = SWATCH_COLORS[type];
+      item.appendChild(swatch);
+      item.appendChild(document.createTextNode(CAP_HOLD_LABELS[type]));
+      legend.appendChild(item);
+    });
+
+    const legacyWrap = document.createElement('div');
+    legacyWrap.appendChild(table);
+    legacyWrap.appendChild(legend);
+    return legacyWrap;
+  }
+
+  // ── New format: SLUG + OVR, join from biosData ──────────────────────────────
+  biosData = biosData || {};
+
+  const augmented = rows.map(row => {
+    const bio = biosData[row.SLUG] || {};
+    return {
+      SLUG:       row.SLUG,
+      OVR:        row.OVR,
+      _name:      displayNameFromBio(bio.name || '') || row.SLUG || '—',
+      _pos:       (bio.pos || []).join(' · ') || '—',
+      _age:       calcAge(bio.dob),
+      _type:      row.TYPE || bio.type || '',
+      _cap_holds: bio.cap_holds || '',
+      _salaries:  bio.salaries || {},
+    };
+  });
+
+  const salaryKeySet = new Set();
+  augmented.forEach(a => {
+    Object.keys(a._salaries).forEach(k => { if (k >= curYr) salaryKeySet.add(k); });
+  });
+  const salaryKeys = [...salaryKeySet].sort();
+  augmented.forEach(a => {
+    salaryKeys.forEach(k => { a[`_s_${k}`] = a._salaries[k] || ''; });
+  });
+
+  const ovrMin = 60, ovrMax = 100;
 
   const cols = [
-    { key: 'PLAYER', label: 'Player',   cls: 'bold',         sortField: 'PLAYER', defaultDir:  1 },
-    { key: 'POS',    label: 'Pos',      cls: 'muted center', sortField: 'POS',    defaultDir:  1 },
-    { key: 'AGE',    label: 'Age',      cls: 'right',        sortField: 'AGE',    defaultDir:  1 },
-    { key: 'OVR',    label: 'OVR',      cls: 'right bold',   sortField: 'OVR',    defaultDir: -1 },
+    { key: '_name', label: 'Player', cls: 'bold' },
+    { key: '_pos',  label: 'Pos',    cls: 'muted center' },
+    { key: '_age',  label: 'Age',    cls: 'right' },
+    { key: 'OVR',   label: 'OVR',    cls: 'right bold' },
     ...salaryKeys.map((k, i) => ({
-      key: k, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
-      sortField: k, defaultDir: -1,
-      display: r => r[k] && r[k] !== '' ? r[k] : '—',
+      key: `_s_${k}`, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
     })),
   ];
 
   const typeOrder = { player: 0, 'two-way': 1, dead: 2 };
-  const sorted = [...rows].sort((a, b) => {
-    const ta = typeOrder[a.TYPE] ?? 3, tb = typeOrder[b.TYPE] ?? 3;
+  const sorted = [...augmented].sort((a, b) => {
+    const ta = typeOrder[a._type] ?? 3, tb = typeOrder[b._type] ?? 3;
     if (ta !== tb) return ta - tb;
     return (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
   });
@@ -471,68 +670,171 @@ function buildRosterTable(rows) {
   const LABELS = { 'two-way': 'Two-Way Contracts', dead: 'Dead Cap' };
 
   sorted.forEach(row => {
-    if (row.TYPE !== lastType && LABELS[row.TYPE]) {
+    if (row._type !== lastType && LABELS[row._type]) {
       const sep = tbody.insertRow();
       sep.className = 'subheader';
       const td = sep.insertCell();
       td.colSpan = cols.length;
-      td.textContent = LABELS[row.TYPE];
-      lastType = row.TYPE;
-    } else if (row.TYPE !== lastType) {
-      lastType = row.TYPE;
+      td.textContent = LABELS[row._type];
+      lastType = row._type;
+    } else if (row._type !== lastType) {
+      lastType = row._type;
     }
 
     const tr = tbody.insertRow();
-    if (row.TYPE === 'two-way') tr.className = 'row-twoway';
-    if (row.TYPE === 'dead')    tr.className = 'row-dead';
+    if (row._type === 'two-way') tr.className = 'row-twoway';
+    if (row._type === 'dead')    tr.className = 'row-dead';
 
-    const capMap = parseCapHolds(row.CAP_HOLDS);
+    const capMap = parseCapHolds(row._cap_holds);
 
     cols.forEach(col => {
       const td = tr.insertCell();
       col.cls?.split(' ').forEach(c => c && td.classList.add(c));
 
-      if (col.key === 'OVR') {
+      if (col.key === '_name') {
+        if (row.SLUG) {
+          const a = document.createElement('a');
+          a.href = `/players/?p=${row.SLUG}`;
+          a.textContent = row._name;
+          td.appendChild(a);
+        } else {
+          td.textContent = row._name;
+        }
+      } else if (col.key === 'OVR') {
         const n = parseFloat(row.OVR);
         td.textContent = isNaN(n) ? '—' : String(n);
-        if (!isNaN(n) && ovrMax > ovrMin) {
-          const t = (n - ovrMin) / (ovrMax - ovrMin);
+        if (!isNaN(n)) {
+          const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
           const hue = Math.round(t * 120);
           td.style.background = `hsl(${hue}, 55%, 18%)`;
           td.style.color = `hsl(${hue}, 80%, 72%)`;
         }
-      } else if (/^\d{2}-\d{2}$/.test(col.key)) {
-        td.textContent = col.display ? col.display(row) : (row[col.key] || '—');
-        const capType = capMap[col.key];
+      } else if (col.key.startsWith('_s_')) {
+        const k = col.key.slice(3);
+        td.textContent = formatSalary(row[col.key]);
+        const capType = capMap[k];
         if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
-      } else if (col.display) {
-        td.textContent = col.display(row);
       } else {
         td.textContent = row[col.key] ?? '—';
       }
     });
   });
 
-  // Build legend only if any row has cap hold data
-  const hasCapData = rows.some(r => r.CAP_HOLDS && r.CAP_HOLDS.trim() !== '');
-  if (!hasCapData) return table;
+  // ── Salary tfoot ─────────────────────────────────────────────────────────────
+  if (salaryKeys.length) {
+    const BUCKET_ORDER = ['Guaranteed', 'Player Option', 'Team Option', 'Non-Guaranteed', 'Two-Way', 'Dead Cap', 'UFA Hold', 'RFA Hold'];
+    const nonSalCols = cols.length - salaryKeys.length;
 
-  const allTypes = new Set();
-  rows.forEach(r => {
-    Object.values(parseCapHolds(r.CAP_HOLDS || '')).forEach(t => allTypes.add(t));
+    // per-year per-bucket totals
+    const totals = {};
+    BUCKET_ORDER.forEach(b => { totals[b] = {}; salaryKeys.forEach(k => { totals[b][k] = { amt: 0, count: 0 }; }); });
+    const grandTotals = {};
+    salaryKeys.forEach(k => { grandTotals[k] = 0; });
+
+    augmented.forEach(a => {
+      const capMap = parseCapHolds(a._cap_holds);
+      salaryKeys.forEach(k => {
+        const amt = parseSalaryNum(a._salaries[k]);
+        if (!amt) return;
+        const holdType = capMap[k];
+        let bucket;
+        if (a._type === 'dead')              bucket = 'Dead Cap';
+        else if (a._type === 'two-way')      bucket = 'Two-Way';
+        else if (holdType === 'PLAYER_OPT')  bucket = 'Player Option';
+        else if (holdType === 'TEAM_OPT')    bucket = 'Team Option';
+        else if (holdType === 'NON_GTD')     bucket = 'Non-Guaranteed';
+        else if (holdType === 'UFA')         bucket = 'UFA Hold';
+        else if (holdType === 'RFA')         bucket = 'RFA Hold';
+        else                                 bucket = 'Guaranteed';
+        totals[bucket][k].amt += amt;
+        totals[bucket][k].count += 1;
+        grandTotals[k] += amt;
+      });
+    });
+
+    const anyData = salaryKeys.some(k => grandTotals[k] > 0);
+    if (anyData) {
+      const tfoot = table.createTFoot();
+
+      function tfRow(cls) {
+        const tr = tfoot.insertRow();
+        if (cls) tr.className = cls;
+        return tr;
+      }
+      function tfCell(tr, text, cls, colspan) {
+        const td = tr.insertCell();
+        td.textContent = text;
+        if (cls) td.className = cls;
+        if (colspan) td.colSpan = colspan;
+        return td;
+      }
+
+      // bucket rows
+      BUCKET_ORDER.forEach(name => {
+        const hasAny = salaryKeys.some(k => totals[name][k].count > 0);
+        if (!hasAny) return;
+        const tr = tfRow('tfoot-bucket');
+        tfCell(tr, name, 'tfoot-label', nonSalCols);
+        salaryKeys.forEach(k => {
+          const { amt, count } = totals[name][k];
+          const td = tfCell(tr, amt ? formatSalary(amt) : '—', 'right');
+          if (count) {
+            const sup = document.createElement('sup');
+            sup.textContent = count;
+            sup.style.cssText = 'color:#374151;font-size:0.65rem;margin-left:2px';
+            td.appendChild(sup);
+          }
+        });
+      });
+
+      // total row
+      const totalTr = tfRow('tfoot-divider tfoot-total');
+      tfCell(totalTr, 'Total', 'tfoot-label', nonSalCols);
+      salaryKeys.forEach(k => tfCell(totalTr, grandTotals[k] ? formatSalary(grandTotals[k]) : '—', 'right'));
+
+      // cap level rows
+      if (capLevels) {
+        const capDefs = [
+          { label: 'Salary Cap', key: 'cap' },
+          { label: '1st Apron',  key: 'apron1' },
+          { label: '2nd Apron',  key: 'apron2' },
+        ];
+        capDefs.forEach(({ label, key }) => {
+          const hasCap = salaryKeys.some(k => capLevels[k]?.[key]);
+          if (!hasCap) return;
+          const tr = tfRow('tfoot-cap');
+          tfCell(tr, label, 'tfoot-label', nonSalCols);
+          salaryKeys.forEach(k => {
+            const val = capLevels[k]?.[key];
+            if (!val) { tfCell(tr, '—', 'right'); return; }
+            const diff = grandTotals[k] - val;
+            const over = diff > 0;
+            if (over) tr.classList.add('over'); else tr.classList.add('under');
+            const td = tfCell(tr, formatSalary(val), 'right');
+            const diffSpan = document.createElement('span');
+            diffSpan.className = 'tfoot-diff';
+            diffSpan.style.cssText = 'margin-left:0.4rem;font-size:0.7rem';
+            diffSpan.textContent = over
+              ? `+${formatSalary(diff)}`
+              : `-${formatSalary(Math.abs(diff))}`;
+            td.appendChild(diffSpan);
+          });
+        });
+      }
+    }
+  }
+
+  const allCapTypes = new Set();
+  augmented.forEach(a => {
+    Object.values(parseCapHolds(a._cap_holds || '')).forEach(t => allCapTypes.add(t));
   });
+  const hasCapData = augmented.some(a => a._cap_holds && a._cap_holds.trim() !== '');
+  if (!hasCapData) return table;
 
   const legend = document.createElement('div');
   legend.className = 'cap-legend';
-  const SWATCH_COLORS = {
-    UFA:        'hsl(45,  60%, 35%)',
-    RFA:        'hsl(25,  60%, 35%)',
-    PLAYER_OPT: 'hsl(120, 50%, 30%)',
-    TEAM_OPT:   'hsl(210, 55%, 35%)',
-    NON_GTD:    '#374151',
-  };
   ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
-    if (!allTypes.has(type)) return;
+    if (!allCapTypes.has(type)) return;
     const item = document.createElement('span');
     item.className = 'cap-legend-item';
     const swatch = document.createElement('span');
@@ -824,7 +1126,7 @@ function prevSalaryYear(yr) {
   return `${String((a - 1 + 100) % 100).padStart(2,'0')}-${String(a).padStart(2,'0')}`;
 }
 
-function makeEditCell(header, value, config) {
+function makeEditCell(header, value, config, pickerCtx) {
   const td = document.createElement('td');
   let getValue;
   let capHoldRef = null;
@@ -881,6 +1183,20 @@ function makeEditCell(header, value, config) {
     });
     getValue = () => td.textContent.trim();
 
+  } else if (config?.type === 'player-picker') {
+    const ctx = pickerCtx || {};
+    const input = document.createElement('input');
+    input.type = 'text';
+    if (ctx.listId) input.setAttribute('list', ctx.listId);
+    input.value = value && ctx.slugToDisplay ? (ctx.slugToDisplay.get(value) || value) : (value || '');
+    input.style.cssText = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:180px;box-sizing:border-box';
+    td.style.cssText = 'padding:0.4rem 0.5rem;vertical-align:middle';
+    td.appendChild(input);
+    getValue = () => {
+      const typed = input.value.trim();
+      return (ctx.nameToSlug && ctx.nameToSlug.get(typed.toLowerCase())) || '';
+    };
+
   } else {
     td.contentEditable = 'true';
     td.textContent = value;
@@ -903,6 +1219,31 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
   const mutableHeaders = [...headers];
   const capHoldCells = [];
 
+  // Build shared datalist for any player-picker column
+  let pickerCtx = null;
+  const pickerConf = Object.values(cellConfig).find(c => c?.type === 'player-picker');
+  if (pickerConf) {
+    const bios = pickerConf.biosData || {};
+    const nameToSlug = new Map();
+    const slugToDisplay = new Map();
+    const listId = `nbn-pdl-${Date.now()}`;
+    const dl = document.createElement('datalist');
+    dl.id = listId;
+    Object.entries(bios).sort(([, a], [, b]) => {
+      return displayNameFromBio(a.name || '').localeCompare(displayNameFromBio(b.name || ''));
+    }).forEach(([s, bio]) => {
+      const dn = displayNameFromBio(bio.name || '');
+      if (!dn) return;
+      nameToSlug.set(dn.toLowerCase(), s);
+      slugToDisplay.set(s, dn);
+      const opt = document.createElement('option');
+      opt.value = dn;
+      dl.appendChild(opt);
+    });
+    document.body.appendChild(dl);
+    pickerCtx = { listId, nameToSlug, slugToDisplay };
+  }
+
   const table = document.createElement('table');
   const thead = table.createTHead();
   const headerRow = thead.insertRow();
@@ -911,7 +1252,7 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
   headerRow.appendChild(emptyTh);
   mutableHeaders.forEach(h => {
     const th = document.createElement('th');
-    th.textContent = h;
+    th.textContent = cellConfig[h]?.label || h;
     headerRow.appendChild(th);
   });
 
@@ -933,7 +1274,7 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
     tr.appendChild(delTd);
 
     mutableHeaders.forEach(h => {
-      const { td, getValue, capHoldRef } = makeEditCell(h, data[h] ?? '', cellConfig[h]);
+      const { td, getValue, capHoldRef } = makeEditCell(h, data[h] ?? '', cellConfig[h], pickerCtx);
       getters.push(getValue);
       if (capHoldRef) capHoldCells.push(capHoldRef);
       tr.appendChild(td);
@@ -1020,7 +1361,18 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
   return { table, getRows, getHeaders, addYearColumn };
 }
 
-function rosterCellConfig(headers) {
+function rosterCellConfig(headers, biosData = {}) {
+  if (headers.includes('SLUG') && !headers.includes('PLAYER')) {
+    return {
+      SLUG: { type: 'player-picker', biosData, label: 'Player' },
+      TYPE: { type: 'select', options: [
+        { value: '',        label: 'Player'   },
+        { value: 'two-way', label: 'Two-Way'  },
+        { value: 'dead',    label: 'Dead Cap' },
+      ]},
+      OVR:  { label: 'OVR' },
+    };
+  }
   const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
   const config = {
     TYPE: { type: 'select', options: [
@@ -1177,17 +1529,24 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
 }
 
 (async () => {
-  const seasonsWrap = document.getElementById('seasons-wrap');
-  const playersWrap = document.getElementById('players-wrap');
-  const rosterWrap  = document.getElementById('roster-wrap');
-  const picksWrap   = document.getElementById('picks-wrap');
+  const seasonsWrap  = document.getElementById('seasons-wrap');
+  const playersWrap  = document.getElementById('players-wrap');
+  const rosterWrap   = document.getElementById('roster-wrap');
+  const picksWrap    = document.getElementById('picks-wrap');
+  const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr] = await Promise.allSettled([
     fetch(`/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/${slug}-picks.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch('/api/players').then(r => r.ok ? r.json() : {}),
+    fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
+    fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
   ]);
+
+  const biosData  = biosr.status === 'fulfilled' ? biosr.value : {};
+  const capLevels = capr.status === 'fulfilled'  ? capr.value  : {};
 
   if (sr.status === 'fulfilled') {
     seasonsWrap.innerHTML = '';
@@ -1205,14 +1564,144 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     playersWrap.innerHTML = '<div class="status">Failed to load player data.</div>';
   }
 
+  if (psr.status === 'fulfilled') {
+    draftedWrap.innerHTML = '';
+    const allSeasons = parseCSV(psr.value);
+    const draftTag = `(${abbr})`;
+    const bySlug = {};
+    for (const row of allSeasons) {
+      if (!row.NBN_DFT_P.includes(draftTag)) continue;
+      const s = row.SLUG.trim();
+      if (!s) continue;
+      if (!bySlug[s]) {
+        const pickMatch = row.NBN_DFT_P.match(/Pick (\d+)/);
+        const roundNum  = row.NBN_DFT_R === 'Round 2' ? 2 : 1;
+        bySlug[s] = {
+          SLUG:    s,
+          PLAYER:  row.PLAYER,
+          YEAR:    parseInt(row.NBN_DFT_YR) || 0,
+          ROUND:   roundNum,
+          PICK:    pickMatch ? parseInt(pickMatch[1]) : 0,
+          PICK_LABEL: `R${roundNum} · #${pickMatch ? pickMatch[1] : '?'}`,
+          _G:   0, _PTS: 0, _REB: 0, _AST: 0, _GMSC: 0,
+        };
+      }
+      const g = parseInt(row.G) || 0;
+      bySlug[s]._G    += g;
+      bySlug[s]._PTS  += parseFloat(row.PTS)  || 0;
+      bySlug[s]._REB  += parseFloat(row.REB)  || 0;
+      bySlug[s]._AST  += parseFloat(row.AST)  || 0;
+      bySlug[s]._GMSC += parseFloat(row.GMSC) || 0;
+    }
+    const draftedRows = Object.values(bySlug).map(p => ({
+      ...p,
+      GP:      p._G,
+      GMSC_TOT: Math.round(p._GMSC * 10) / 10,
+      PPG:     p._G ? Math.round(p._PTS  / p._G * 10) / 10 : 0,
+      RPG:     p._G ? Math.round(p._REB  / p._G * 10) / 10 : 0,
+      APG:     p._G ? Math.round(p._AST  / p._G * 10) / 10 : 0,
+    }));
+    draftedRows.sort((a, b) => a.YEAR - b.YEAR || a.PICK - b.PICK);
+
+    const DRAFTED_COLS = [
+      { key: 'PLAYER',    label: 'Player', cls: 'bold',        sortField: 'PLAYER',    defaultDir:  1 },
+      { key: 'YEAR',      label: 'Year',   cls: 'right',       sortField: 'YEAR',      defaultDir:  1 },
+      { key: 'PICK_LABEL',label: 'Pick',   cls: 'right muted', sortField: 'PICK',      defaultDir:  1 },
+      { key: 'GP',        label: 'GP',     cls: 'right',       sortField: 'GP',        defaultDir: -1 },
+      { key: 'GMSC_TOT',  label: 'GMSC',   cls: 'right',       sortField: 'GMSC_TOT',  defaultDir: -1 },
+      { key: 'PPG',       label: 'PPG',    cls: 'right',       sortField: 'PPG',       defaultDir: -1 },
+      { key: 'RPG',       label: 'RPG',    cls: 'right',       sortField: 'RPG',       defaultDir: -1 },
+      { key: 'APG',       label: 'APG',    cls: 'right',       sortField: 'APG',       defaultDir: -1 },
+    ];
+    const renderDraftedCell = (td, col, row) => {
+      if (col.key === 'PLAYER') {
+        const a = document.createElement('a');
+        a.href = `/players/?p=${row.SLUG}`;
+        a.textContent = row.PLAYER;
+        td.appendChild(a);
+      } else {
+        td.textContent = row[col.key] ?? '—';
+      }
+    };
+    if (draftedRows.length) {
+      draftedWrap.appendChild(buildTable(DRAFTED_COLS, draftedRows, 'YEAR', 1, renderDraftedCell));
+    } else {
+      draftedWrap.innerHTML = '<div class="status">No draft history found.</div>';
+    }
+  } else {
+    draftedWrap.innerHTML = '<div class="status">Failed to load draft history.</div>';
+  }
+
+  const capEditWrap = document.getElementById('cap-edit-wrap');
+
   if (rr.status === 'fulfilled') {
     rosterWrap.innerHTML = '';
     const rosterRows = parseCSV(rr.value);
     const rosterHeaders = parseLine(rr.value.trim().split('\n')[0]);
-    const t = buildRosterTable(rosterRows);
+    const t = buildRosterTable(rosterRows, biosData, capLevels);
     if (t) rosterWrap.appendChild(t);
     else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
-    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, buildRosterTable, rosterCellConfig(rosterHeaders));
+    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels), rosterCellConfig(rosterHeaders, biosData));
+
+    // Cap numbers edit button (rosters role)
+    const token = localStorage.getItem('nbn_token');
+    if (token) {
+      const season = currentSeasonYr();
+      const editCapBtn = document.createElement('button');
+      editCapBtn.className = 'edit-toggle-btn';
+      editCapBtn.style.cssText = 'margin-top:0.75rem;font-size:0.72rem;padding:0.15rem 0.45rem';
+      editCapBtn.textContent = 'Edit Cap Numbers';
+      capEditWrap.appendChild(editCapBtn);
+
+      let capFormEl = null;
+      editCapBtn.addEventListener('click', () => {
+        if (capFormEl) { capFormEl.remove(); capFormEl = null; editCapBtn.textContent = 'Edit Cap Numbers'; return; }
+        const cur = capLevels[season] || {};
+        capFormEl = document.createElement('div');
+        capFormEl.className = 'cap-edit-form';
+
+        function capField(labelText, key) {
+          const lbl = document.createElement('label');
+          lbl.textContent = labelText;
+          const inp = document.createElement('input');
+          inp.type = 'number'; inp.value = cur[key] || ''; inp.placeholder = '0';
+          lbl.appendChild(inp);
+          capFormEl.appendChild(lbl);
+          return inp;
+        }
+        const fCap    = capField('Salary Cap',  'cap');
+        const fApron1 = capField('1st Apron',   'apron1');
+        const fApron2 = capField('2nd Apron',   'apron2');
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'edit-btn edit-btn-primary';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.cssText = 'align-self:flex-end;margin-top:0.6rem';
+        const statusEl = document.createElement('span');
+        statusEl.style.cssText = 'font-size:0.72rem;color:#ef4444;align-self:flex-end';
+        capFormEl.appendChild(saveBtn);
+        capFormEl.appendChild(statusEl);
+
+        saveBtn.addEventListener('click', async () => {
+          saveBtn.disabled = true; statusEl.textContent = 'Saving…';
+          try {
+            const resp = await fetch(`/api/cap-levels/${season}`, {
+              method: 'PUT',
+              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ cap: +fCap.value, apron1: +fApron1.value, apron2: +fApron2.value }),
+            });
+            if (resp.status === 403) { statusEl.textContent = 'Not authorized.'; saveBtn.disabled = false; return; }
+            if (!resp.ok) throw new Error('Save failed.');
+            location.reload();
+          } catch (e) {
+            statusEl.textContent = e.message; saveBtn.disabled = false;
+          }
+        });
+
+        editCapBtn.after(capFormEl);
+        editCapBtn.textContent = 'Cancel';
+      });
+    }
   } else {
     rosterWrap.innerHTML = '<div class="status">Failed to load roster data.</div>';
   }

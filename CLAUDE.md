@@ -32,7 +32,7 @@ All CSVs live at the project root or in subdirectories and are fetched at runtim
 | `hof.csv` | `hof/index.html` |
 | `league-history.csv` | `history/index.html` |
 | `nbntv-classics/playoff-classics.csv`, `nbntv-classics/playoff-series-margins.csv` | `nbntv-classics/index.html` |
-| `/api/trading-block` (JSON via API, not a static file) | `trading-block/index.html` |
+| `/api/trading-block` (JSON via API, not a static file) | `tradeblock/index.html` |
 
 `owner_stats.csv` headers: `owner, teams, seasons, best_reg_season, best_reg_pct, worst_reg_season, worst_reg_pct, reg_w, reg_l, reg_pct, playoff_w, playoff_l, playoff_pct, total_w, total_l, total_pct, playoff_appearances, po_r2, po_conf_finals, po_finals, championships, off_rtg, def_rtg`
 
@@ -106,7 +106,7 @@ Valid roles are enforced at token creation time — `POST /api/tokens` rejects a
 | `GET /api/trading-block` | Public | Returns `{ "ATL": [{player, notes}], … }` for all 30 teams |
 | `PUT /api/trading-block/{team}` | Team role or admin | Replaces that team's list; body is `[{player, notes}]` |
 
-Data stored in `/var/lib/nothing-but-stats/trading-block.json`. The page at `trading-block/index.html` fetches this API plus the relevant teams' roster CSVs to join player metadata (POS, OVR, AGE, salary columns).
+Data stored in `/var/lib/nothing-but-stats/trading-block.json`. The page at `tradeblock/index.html` fetches this API plus the relevant teams' roster CSVs to join player metadata (POS, OVR, AGE, salary columns).
 
 ### Token management
 
@@ -144,17 +144,40 @@ journalctl -u nbn-api -n 50       # last 50 log lines
 
 ### Roster CSV columns
 
+**Post-migration (new format):**
+
 | Column | Description | Example |
 |---|---|---|
-| `PLAYER` | Full name | `Scottie Barnes` |
-| `POS` | Position(s) | `SF/PF` |
-| `AGE` | Age (integer) | `24` |
+| `SLUG` | Player slug (key into player-bios.json) | `barnes-scottie` |
 | `OVR` | Overall rating | `86` |
-| `TYPE` | Contract type | `player`, `two-way`, or `dead` |
-| `CAP_HOLDS` | Option/hold flags | `29-30:PLAYER_OPT,30-31:UFA` |
-| `25-26`, `26-27`, … | Salary by season | `$38,661,750` |
+
+All other player data (name, pos, age, type, cap holds, salaries) lives in `player-bios.json` and is joined at render time.
+
+**Legacy format (pre-migration):** columns were `PLAYER, POS, AGE, OVR, TYPE, CAP_HOLDS, 25-26, 26-27, …`. `team.js` handles both formats transparently — if the CSV has a `SLUG` column (and no `PLAYER`), it uses the new path; otherwise falls back to the legacy path.
 
 `CAP_HOLDS` is comma-separated `YEAR:TYPE` pairs. Valid types: `UFA`, `RFA`, `PLAYER_OPT`, `TEAM_OPT`, `NON_GTD`.
+
+### Player bios (player-bios.json)
+
+Canonical player data lives in `/var/lib/nothing-but-stats/player-bios.json`, served by `GET /api/players`. Fields:
+
+| Field | Description |
+|---|---|
+| `name` | `"LAST, FIRST"` uppercase |
+| `pos` | Array: subset of `["PG","SG","SF","PF","C"]` |
+| `dob` | ISO date `"YYYY-MM-DD"` |
+| `college`, `country` | Strings |
+| `draft_year`, `draft_round`, `draft_pick` | Integers or null |
+| `photo_url` | String |
+| `type` | `"player"`, `"two-way"`, `"dead"`, or `""` |
+| `cap_holds` | String, same format as old CSV column |
+| `salaries` | Dict keyed by season string: `{"25-26": "$37,000,000"}` |
+
+Endpoints: `GET /api/players` (public), `POST /api/players` (admin, creates), `PUT /api/players/{slug}` (rosters role, upserts).
+
+### Migration script
+
+`players/migrate_rosters.py` — one-time script to migrate 30 roster CSVs from legacy format to `SLUG,OVR`. Dry run by default; `--apply` writes changes. Run after all team/tradeblock/bio pages are updated to handle new format.
 
 ### Picks CSV columns
 

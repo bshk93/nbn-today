@@ -24,8 +24,17 @@
     .nav a { color: #9ca3af; }
     .nav a:hover { color: #f3f4f6; }
 
-    header { margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1.25rem; }
+    header { margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1rem; }
+    .header-main { display: flex; align-items: center; gap: 1.25rem; flex: 1; }
     .header-text { display: flex; flex-direction: column; }
+    .player-nav-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 2rem; height: 2rem; border-radius: 50%;
+      background: transparent; border: 1px solid #374151;
+      color: #6b7280; font-size: 1rem; cursor: pointer;
+      text-decoration: none; flex-shrink: 0; line-height: 1;
+    }
+    .player-nav-btn:hover { border-color: #6b7280; color: #d1d5db; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
 
@@ -286,7 +295,27 @@
       padding: 0.32rem 0.55rem; outline: none;
     }
     .bio-edit-form input:focus { border-color: #3b82f6; }
+    .bio-edit-form select {
+      background: #1f2937; border: 1px solid #374151; border-radius: 6px;
+      color: #f3f4f6; font-size: 0.85rem; font-family: inherit;
+      padding: 0.32rem 0.55rem; outline: none; cursor: pointer;
+    }
+    .bio-edit-form select:focus { border-color: #3b82f6; }
+    .salary-rows { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.25rem; }
+    .salary-row { display: flex; gap: 0.4rem; align-items: center; }
+    .salary-row input { background: #1f2937; border: 1px solid #374151; border-radius: 6px;
+      color: #f3f4f6; font-size: 0.85rem; font-family: inherit; padding: 0.32rem 0.55rem; outline: none; }
+    .salary-row input:focus { border-color: #3b82f6; }
+    .salary-row .season-input { width: 5.5rem; }
+    .salary-row .amount-input { flex: 1; }
+    .salary-row .hold-select {
+      background: #1f2937; border: 1px solid #374151; border-radius: 6px;
+      color: #9ca3af; font-size: 0.8rem; font-family: inherit;
+      padding: 0.32rem 0.4rem; outline: none; cursor: pointer;
+    }
+    .salary-row .hold-select:focus { border-color: #3b82f6; }
     .bio-edit-form .full-col { grid-column: 1 / -1; }
+    .field-hint { font-size: 0.68rem; color: #6b7280; margin-top: 0.2rem; line-height: 1.4; }
     .bio-edit-actions {
       grid-column: 1 / -1; display: flex; gap: 0.5rem; align-items: center; padding-top: 0.1rem;
     }
@@ -300,11 +329,24 @@
     .edit-btn-secondary:hover { color: #d1d5db; border-color: #6b7280; }
     .edit-status { font-size: 0.75rem; color: #ef4444; }
     .btn-edit-bio {
-      padding: 0.15rem 0.45rem; border-radius: 4px; background: transparent;
+      display: block; padding: 0.15rem 0.45rem; border-radius: 4px; background: transparent;
       border: 1px solid #374151; color: #6b7280; font-size: 0.7rem; font-weight: 600;
-      cursor: pointer; font-family: inherit; margin-left: 0.6rem; vertical-align: middle;
+      cursor: pointer; font-family: inherit; margin: 0.5rem 0 0.75rem;
     }
     .btn-edit-bio:hover { color: #d1d5db; border-color: #6b7280; }
+    .salary-table { width: 100%; border-collapse: collapse; margin: 1rem 0 0.5rem; font-size: 0.85rem; }
+    .salary-table th { text-align: left; color: #6b7280; font-weight: 600; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.6rem; border-bottom: 1px solid #374151; }
+    .salary-table th.right, .salary-table td.right { text-align: right; }
+    .salary-table td { padding: 0.35rem 0.6rem; border-bottom: 1px solid #1f2937; color: #d1d5db; }
+    .salary-table tr.total-row td { border-top: 1px solid #374151; border-bottom: none;
+      color: #f3f4f6; font-weight: 700; padding-top: 0.5rem; }
+    .salary-table td.hold-label { font-size: 0.7rem; color: #9ca3af; padding-left: 0.5rem; }
+    .cap-ufa        td { background: hsl(45,  35%, 14%); }
+    .cap-rfa        td { background: hsl(25,  35%, 14%); }
+    .cap-player-opt td { background: hsl(120, 30%, 13%); }
+    .cap-team-opt   td { background: hsl(210, 35%, 14%); }
+    .cap-non-gtd    td { background: #1a1f2b; }
     .btn-add-player {
       padding: 0.35rem 0.75rem; background: #1e3a5f; border: 1px solid #3b82f6;
       border-radius: 6px; color: #93c5fd; font-size: 0.78rem; font-weight: 600;
@@ -348,15 +390,26 @@
       padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
       border: 1px solid #2d3748; background: transparent; color: #374151;
     }
+    .current-team {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.22rem 0.65rem 0.22rem 0.45rem;
+      background: #1f2937; border: 1px solid #374151; border-radius: 999px;
+      color: #9ca3af; font-size: 0.8rem; font-weight: 600;
+      text-decoration: none; margin: 0.5rem 0 0.6rem; width: fit-content;
+    }
+    .current-team:hover { border-color: #6b7280; color: #d1d5db; text-decoration: none; }
+    .current-team img { width: 18px; height: 18px; object-fit: contain; }
   </style>
 </head>
 <body>
 <div class="page">
   <nav class="nav" id="nav"></nav>
   <header>
-    <div class="header-text">
-      <h1 id="page-title">Players</h1>
-      <p id="page-sub"></p>
+    <div class="header-main">
+      <div class="header-text">
+        <h1 id="page-title">Players</h1>
+        <p id="page-sub"></p>
+      </div>
     </div>
   </header>
   <div id="content"><div id="status">Loading...</div></div>
@@ -367,6 +420,18 @@
   const slug = new URLSearchParams(location.search).get('p');
 
   let biosData = {};
+  let teamMap = {};
+
+  const TEAM_NAMES = {
+    ATL:'Atlanta Hawks', BKN:'Brooklyn Nets', BOS:'Boston Celtics', CHA:'Charlotte Hornets',
+    CHI:'Chicago Bulls', CLE:'Cleveland Cavaliers', DAL:'Dallas Mavericks', DEN:'Denver Nuggets',
+    DET:'Detroit Pistons', GSW:'Golden State Warriors', HOU:'Houston Rockets', IND:'Indiana Pacers',
+    LAC:'LA Clippers', LAL:'Los Angeles Lakers', MEM:'Memphis Grizzlies', MIA:'Miami Heat',
+    MIL:'Milwaukee Bucks', MIN:'Minnesota Timberwolves', NOP:'New Orleans Pelicans', NYK:'New York Knicks',
+    OKC:'Oklahoma City Thunder', ORL:'Orlando Magic', PHI:'Philadelphia 76ers', PHX:'Phoenix Suns',
+    POR:'Portland Trail Blazers', SAC:'Sacramento Kings', SAS:'San Antonio Spurs', TOR:'Toronto Raptors',
+    UTA:'Utah Jazz', WAS:'Washington Wizards',
+  };
 
   // ── Bio name helpers ─────────────────────────────────────────────────────────
 
@@ -714,6 +779,7 @@
     'Japan':                            'JP',
     'Latvia':                           'LV',
     'Lithuania':                        'LT',
+    'Mali':                             'ML',
     'Montenegro':                       'ME',
     'New Zealand':                      'NZ',
     'Nigeria':                          'NG',
@@ -792,7 +858,78 @@
     const fDftYr   = field('Draft Year',        'draft_year', 'number');
     const fDftR    = field('Draft Round (1/2)', 'draft_round','number');
     const fDftP    = field('Draft Pick #',      'draft_pick', 'number');
+    const fHeight  = field('Height (e.g. 6\'8")',  'height',   'text');
+    const fWeight  = field('Weight (lbs)',          'weight',   'number');
+    const fWingspan= field('Wingspan (e.g. 6\'11")', 'wingspan', 'text');
     const fPhoto   = field('Photo URL',         'photo_url',  'text', 'full-col');
+
+    // Contract type
+    const typeLbl = document.createElement('label');
+    typeLbl.textContent = 'Contract Type';
+    const typeSelect = document.createElement('select');
+    [['', '—'], ['player', 'Player'], ['two-way', 'Two-Way'], ['dead', 'Dead Cap']].forEach(([v, l]) => {
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = l;
+      if ((initial.type || '') === v) opt.selected = true;
+      typeSelect.appendChild(opt);
+    });
+    typeLbl.appendChild(typeSelect);
+    form.appendChild(typeLbl);
+
+    // Salaries
+    const salLbl = document.createElement('label');
+    salLbl.className = 'full-col';
+    salLbl.appendChild(Object.assign(document.createElement('span'), { textContent: 'Salaries' }));
+    const salRows = document.createElement('div');
+    salRows.className = 'salary-rows';
+
+    const HOLD_OPTIONS = [
+      ['', 'Guaranteed'],
+      ['UFA', 'UFA Hold'],
+      ['RFA', 'RFA Hold'],
+      ['PLAYER_OPT', 'Player Option'],
+      ['TEAM_OPT', 'Team Option'],
+      ['NON_GTD', 'Non-Guaranteed'],
+    ];
+
+    function makeSalaryRow(season, amount, holdType) {
+      const row = document.createElement('div');
+      row.className = 'salary-row';
+      const seasonIn = document.createElement('input');
+      seasonIn.type = 'text'; seasonIn.className = 'season-input'; seasonIn.placeholder = '25-26'; seasonIn.value = season || '';
+      const amountIn = document.createElement('input');
+      amountIn.type = 'text'; amountIn.className = 'amount-input'; amountIn.placeholder = '$0'; amountIn.value = amount || '';
+      const holdSel = document.createElement('select');
+      holdSel.className = 'hold-select';
+      HOLD_OPTIONS.forEach(([v, l]) => {
+        const opt = document.createElement('option');
+        opt.value = v; opt.textContent = l;
+        if (v === (holdType || '')) opt.selected = true;
+        holdSel.appendChild(opt);
+      });
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button'; removeBtn.textContent = '✕';
+      removeBtn.style.cssText = 'background:none;border:none;color:#4b5563;cursor:pointer;font-size:0.9rem;padding:0 0.2rem;font-family:inherit';
+      removeBtn.onmouseenter = () => { removeBtn.style.color = '#f87171'; };
+      removeBtn.onmouseleave = () => { removeBtn.style.color = '#4b5563'; };
+      removeBtn.addEventListener('click', () => row.remove());
+      row.appendChild(seasonIn); row.appendChild(amountIn); row.appendChild(holdSel); row.appendChild(removeBtn);
+      return row;
+    }
+
+    const initCapMap = parseCapHolds(initial.cap_holds || '');
+    const initSalaries = (initial.salaries && typeof initial.salaries === 'object') ? initial.salaries : {};
+    Object.entries(initSalaries).sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([k, v]) => salRows.appendChild(makeSalaryRow(k, v, initCapMap[k] || '')));
+
+    const addSalBtn = document.createElement('button');
+    addSalBtn.type = 'button'; addSalBtn.textContent = '+ Add season';
+    addSalBtn.style.cssText = 'background:none;border:1px dashed #374151;border-radius:4px;color:#6b7280;cursor:pointer;font-size:0.75rem;padding:0.2rem 0.6rem;font-family:inherit;margin-top:0.25rem;width:fit-content';
+    addSalBtn.onmouseenter = () => { addSalBtn.style.color = '#d1d5db'; addSalBtn.style.borderColor = '#9ca3af'; };
+    addSalBtn.onmouseleave = () => { addSalBtn.style.color = '#6b7280'; addSalBtn.style.borderColor = '#374151'; };
+    addSalBtn.addEventListener('click', () => salRows.appendChild(makeSalaryRow('', '')));
+    salLbl.appendChild(salRows); salLbl.appendChild(addSalBtn);
+    form.appendChild(salLbl);
 
     if (onNameChange) fName.addEventListener('input', () => onNameChange(fName.value));
 
@@ -815,6 +952,15 @@
     saveBtn.addEventListener('click', async () => {
       const token = getToken();
       if (!token) return;
+      const salaries = {};
+      const capHoldParts = [];
+      salRows.querySelectorAll('.salary-row').forEach(row => {
+        const season = row.querySelector('.season-input').value.trim();
+        const amount = row.querySelector('.amount-input').value.trim();
+        const hold   = row.querySelector('.hold-select').value;
+        if (season && amount) salaries[season] = amount;
+        if (season && hold)   capHoldParts.push(`${season}:${hold}`);
+      });
       const payload = {
         name:        fName.value.trim(),
         pos:         [...selectedPos],
@@ -824,7 +970,13 @@
         draft_year:  fDftYr.value  ? +fDftYr.value  : null,
         draft_round: fDftR.value   ? +fDftR.value   : null,
         draft_pick:  fDftP.value   ? +fDftP.value   : null,
+        height:      fHeight.value.trim(),
+        weight:      fWeight.value  ? +fWeight.value  : null,
+        wingspan:    fWingspan.value.trim(),
         photo_url:   fPhoto.value.trim(),
+        type:        typeSelect.value,
+        cap_holds:   capHoldParts.join(','),
+        salaries,
       };
       if (!payload.name) { status.textContent = 'Name is required.'; return; }
       saveBtn.disabled = true;
@@ -864,7 +1016,7 @@
     card.appendChild(slugLabel);
 
     const form = renderBioForm(
-      { name: '', pos: '', dob: '', college: '', country: '', draft_year: null, draft_round: null, draft_pick: null, photo_url: '' },
+      { name: '', pos: [], dob: '', college: '', country: '', draft_year: null, draft_round: null, draft_pick: null, photo_url: '', type: '', cap_holds: '', salaries: {} },
       async (token, payload) => {
         const sl = slugInput.value.trim();
         if (!sl) throw new Error('Slug is required.');
@@ -889,6 +1041,90 @@
   }
 
   // ── Bio section ──────────────────────────────────────────────────────────────
+
+  function formatSalary(v) {
+    if (!v && v !== 0) return '—';
+    const s = String(v).trim();
+    if (!s || s === '—') return '—';
+    const n = parseFloat(s.replace(/[$,\s]/g, ''));
+    if (isNaN(n)) return s;
+    return '$' + Math.round(n).toLocaleString('en-US');
+  }
+
+  function parseCapHolds(str) {
+    const map = {};
+    if (!str) return map;
+    str.split(',').forEach(pair => {
+      const [yr, type] = pair.split(':');
+      if (yr && type) map[yr.trim()] = type.trim();
+    });
+    return map;
+  }
+
+  const CAP_HOLD_LABELS = {
+    UFA:        'UFA Hold',
+    RFA:        'RFA Hold',
+    PLAYER_OPT: 'Player Option',
+    TEAM_OPT:   'Team Option',
+    NON_GTD:    'Non-Guaranteed',
+  };
+
+  const CAP_HOLD_CSS = {
+    UFA:        'cap-ufa',
+    RFA:        'cap-rfa',
+    PLAYER_OPT: 'cap-player-opt',
+    TEAM_OPT:   'cap-team-opt',
+    NON_GTD:    'cap-non-gtd',
+  };
+
+  function renderSalaryTable(container, bio) {
+    const salaries = bio.salaries && typeof bio.salaries === 'object' ? bio.salaries : {};
+    if (!Object.keys(salaries).length) return;
+
+    const capMap = parseCapHolds(bio.cap_holds || '');
+    const sorted = Object.keys(salaries).sort();
+
+    const table = document.createElement('table');
+    table.className = 'salary-table';
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    ['Season', 'Salary', ''].forEach((h, i) => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      if (i === 1) th.className = 'right';
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    let total = 0;
+
+    sorted.forEach(season => {
+      const raw = salaries[season];
+      const holdType = capMap[season];
+      const tr = tbody.insertRow();
+      if (holdType && CAP_HOLD_CSS[holdType]) tr.className = CAP_HOLD_CSS[holdType];
+
+      const tdSeason = tr.insertCell(); tdSeason.textContent = season;
+      const tdAmt    = tr.insertCell(); tdAmt.className = 'right'; tdAmt.textContent = formatSalary(raw);
+      const tdLabel  = tr.insertCell(); tdLabel.className = 'hold-label';
+      if (holdType && CAP_HOLD_LABELS[holdType]) tdLabel.textContent = CAP_HOLD_LABELS[holdType];
+
+      if (!holdType) {
+        const n = parseFloat(String(raw).replace(/[$,\s]/g, ''));
+        if (!isNaN(n)) total += n;
+      }
+    });
+
+    if (total > 0) {
+      const tr = tbody.insertRow();
+      tr.className = 'total-row';
+      const tdL = tr.insertCell(); tdL.textContent = 'Total Earnings';
+      const tdV = tr.insertCell(); tdV.className = 'right'; tdV.textContent = formatSalary(total);
+      tr.insertCell();
+    }
+
+    container.appendChild(table);
+  }
 
   function renderBioLine(container, row) {
     const parts = [];
@@ -926,10 +1162,23 @@
       const dftR = bioVal(row.NBN_DFT_R);
       const dftP = bioVal(row.NBN_DFT_P);
       let draftStr = dftYr + ' Draft';
-      if (dftR) draftStr += ' · ' + dftR;
-      if (dftP) draftStr += ' · ' + dftP;
+      if (dftR || dftP) {
+        const rndPart  = dftR ? 'Round ' + dftR : '';
+        const pickPart = dftP ? 'Pick ' + dftP  : '';
+        draftStr += ' · ' + [rndPart, pickPart].filter(Boolean).join(', ');
+      }
       parts.push(draftStr);
     }
+
+    // Measurements
+    const measParts = [];
+    const height  = bioVal(row.HEIGHT);
+    const weight  = bioVal(row.WEIGHT);
+    const wingspan = bioVal(row.WINGSPAN);
+    if (height)   measParts.push(height);
+    if (weight)   measParts.push(weight + ' lbs');
+    if (wingspan) measParts.push(wingspan + ' ws');
+    if (measParts.length) parts.push(measParts.join(' · '));
 
     if (!parts.length) return;
 
@@ -1072,6 +1321,54 @@
     };
   }
 
+  // ── Player prev/next navigation ──────────────────────────────────────────────
+
+  function renderPlayerNav(currentSlug) {
+    const slugs = Object.entries(biosData)
+      .sort(([, a], [, b]) => (a.name || '').localeCompare(b.name || ''))
+      .map(([s]) => s);
+    const idx = slugs.indexOf(currentSlug);
+    const prevSlug = idx > 0 ? slugs[idx - 1] : null;
+    const nextSlug = idx < slugs.length - 1 ? slugs[idx + 1] : null;
+
+    const header = document.querySelector('header');
+
+    if (prevSlug) {
+      const btn = document.createElement('a');
+      btn.className = 'player-nav-btn';
+      btn.href = `/players/?p=${prevSlug}`;
+      btn.title = displayName(biosData[prevSlug].name || prevSlug);
+      btn.textContent = '‹';
+      header.insertBefore(btn, header.firstChild);
+    }
+
+    if (nextSlug) {
+      const btn = document.createElement('a');
+      btn.className = 'player-nav-btn';
+      btn.href = `/players/?p=${nextSlug}`;
+      btn.title = displayName(biosData[nextSlug].name || nextSlug);
+      btn.textContent = '›';
+      header.appendChild(btn);
+    }
+  }
+
+  // ── Current team chip ────────────────────────────────────────────────────────
+
+  function renderCurrentTeam(container, playerSlug) {
+    const team = teamMap[playerSlug];
+    if (!team) return;
+    const a = document.createElement('a');
+    a.className = 'current-team';
+    a.href = `/teams/${team}/`;
+    const img = document.createElement('img');
+    img.src = `/logos/logo-${team.toLowerCase()}.png`;
+    img.alt = team;
+    img.onerror = function() { this.remove(); };
+    a.appendChild(img);
+    a.appendChild(document.createTextNode(TEAM_NAMES[team] || team));
+    container.appendChild(a);
+  }
+
   // ── Render: bio-only player (no stats yet) ───────────────────────────────────
 
   function renderBioOnlyPlayer(bioSlug, bio) {
@@ -1088,8 +1385,9 @@
       img.src = bio.photo_url;
       img.alt = '';
       img.onerror = function() { this.remove(); };
-      document.querySelector('header').appendChild(img);
+      document.querySelector('.header-main').appendChild(img);
     }
+    renderPlayerNav(bioSlug);
 
     const content = document.getElementById('content');
     content.innerHTML = '';
@@ -1100,6 +1398,9 @@
       NBN_DFT_YR: bio.draft_year  ? String(bio.draft_year)  : '',
       NBN_DFT_R:  bio.draft_round ? String(bio.draft_round) : '',
       NBN_DFT_P:  bio.draft_pick  ? String(bio.draft_pick)  : '',
+      HEIGHT:     bio.height    || '',
+      WEIGHT:     bio.weight    != null ? String(bio.weight) : '',
+      WINGSPAN:   bio.wingspan  || '',
     });
 
     const bioOnlyPosDiv = document.createElement('div');
@@ -1112,6 +1413,8 @@
       bioOnlyPosDiv.appendChild(tag);
     });
     content.appendChild(bioOnlyPosDiv);
+    renderCurrentTeam(content, bioSlug);
+    renderSalaryTable(content, bio);
 
     const editBioBtn = document.createElement('button');
     editBioBtn.className = 'btn-edit-bio';
@@ -1160,7 +1463,7 @@
       if (!playerFirstRow.has(r.SLUG)) playerFirstRow.set(r.SLUG, r);
       if (!playerTeamsList.has(r.SLUG)) playerTeamsList.set(r.SLUG, []);
       const tl = playerTeamsList.get(r.SLUG);
-      if (r.TEAM && !tl.includes(r.TEAM)) tl.push(r.TEAM);
+      if (r.TEAM && r.TEAM !== 'NA' && !tl.includes(r.TEAM)) tl.push(r.TEAM);
     });
 
     function fmtDOB(dob) {
@@ -1223,6 +1526,9 @@
         DRAFT_FMT:  fmtDraft(dftYr, dftR, dftP),
         DRAFT_SORT: dftYr ? parseInt(dftYr, 10) : null,
         TEAMS:      playerTeamsList.get(r.SLUG) || [],
+        HEIGHT:     bio.height  || '',
+        WEIGHT:     bio.weight  != null ? bio.weight : null,
+        WINGSPAN:   bio.wingspan || '',
       };
     });
 
@@ -1279,7 +1585,24 @@
       },
       { label: 'College', field: 'COLLEGE',     defaultDir:  1, display: p => p.COLLEGE || '—' },
       { label: 'Draft',   field: 'DRAFT_SORT',  defaultDir:  1, display: p => p.DRAFT_FMT || '—' },
-      { label: 'Teams',   field: null,                           display: p => p.TEAMS.join(', ') },
+      { label: 'Teams',   field: null, display: p => {
+          if (!p.TEAMS.length) return '—';
+          const wrap = document.createElement('div');
+          wrap.style.cssText = 'display:flex;gap:3px;align-items:center;min-width:115px';
+          p.TEAMS.forEach(t => {
+            const img = document.createElement('img');
+            img.src = `/logos/logo-${t.toLowerCase()}.png`;
+            img.alt = t; img.title = t;
+            img.style.cssText = 'width:20px;height:20px;object-fit:contain';
+            img.onerror = function() { this.replaceWith(document.createTextNode(t)); };
+            wrap.appendChild(img);
+          });
+          return wrap;
+        }
+      },
+      { label: 'Ht',  field: 'HEIGHT',   defaultDir: 1, cls: 'right muted', display: p => p.HEIGHT   || '—' },
+      { label: 'Wt',  field: 'WEIGHT',   defaultDir:-1, cls: 'right muted', display: p => p.WEIGHT != null ? p.WEIGHT + ' lbs' : '—' },
+      { label: 'WS',  field: 'WINGSPAN', defaultDir: 1, cls: 'right muted', display: p => p.WINGSPAN  || '—' },
     ];
 
     let sortField = 'PLAYER', sortDir = 1;
@@ -1465,18 +1788,22 @@
       NBN_DFT_YR: bio.draft_year  ? String(bio.draft_year)  : rows[0].NBN_DFT_YR,
       NBN_DFT_R:  bio.draft_round ? String(bio.draft_round) : rows[0].NBN_DFT_R,
       NBN_DFT_P:  bio.draft_pick  ? String(bio.draft_pick)  : rows[0].NBN_DFT_P,
+      HEIGHT:     bio.height   || '',
+      WEIGHT:     bio.weight   != null ? String(bio.weight) : '',
+      WINGSPAN:   bio.wingspan || '',
     };
     const photoUrl = bio.photo_url || rows[0].PHOTO_URL;
-    const header = document.querySelector('header');
-    header.querySelectorAll('.profile-photo').forEach(el => el.remove());
+    const headerMain = document.querySelector('.header-main');
+    headerMain.querySelectorAll('.profile-photo').forEach(el => el.remove());
     if (photoUrl) {
       const img = document.createElement('img');
       img.className = 'profile-photo';
       img.src = photoUrl;
       img.alt = '';
       img.onerror = function() { this.remove(); };
-      header.appendChild(img);
+      headerMain.appendChild(img);
     }
+    renderPlayerNav(slug);
 
     const content = document.getElementById('content');
     content.innerHTML = '';
@@ -1495,6 +1822,7 @@
       posDiv.appendChild(tag);
     });
     content.appendChild(posDiv);
+    renderCurrentTeam(content, slug);
 
     // edit bio button
     const editBioBtn = document.createElement('button');
@@ -1507,7 +1835,7 @@
       const token = getToken(); if (!token) return;
       const cur = biosData[slug] || {};
       bioFormEl = renderBioForm(
-        { name: cur.name || '', pos: cur.pos || '', dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, photo_url: cur.photo_url || rows[0].PHOTO_URL || '' },
+        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', type: cur.type || '', cap_holds: cur.cap_holds || '', salaries: cur.salaries || {} },
         async (token, payload) => {
           const resp = await fetch(`/api/players/${slug}`, {
             method: 'PUT',
@@ -1547,6 +1875,7 @@
     // sections container
     const sections = document.createElement('div');
     content.appendChild(sections);
+    renderSalaryTable(content, bio);
 
     let bySeasonMode = false;
     let showPlayoffs = false;
@@ -1630,9 +1959,11 @@
     fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw new Error(); return r.text(); }),
     fetch('/players/player_awards.csv').then(r => r.text()).catch(() => ''),
     fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/team-map').then(r => r.ok ? r.json() : {}).catch(() => ({})),
   ])
-    .then(([seasonsText, awardsText, biosJson]) => {
+    .then(([seasonsText, awardsText, biosJson, teamMapJson]) => {
       biosData = biosJson;
+      teamMap = teamMapJson;
 
       const rows = parseCSV(seasonsText);
       const awards = awardsText ? parseCSV(awardsText) : [];
