@@ -614,21 +614,30 @@ function buildRosterTable(rows, biosData, capLevels) {
 
   const augmented = rows.map(row => {
     const bio = biosData[row.SLUG] || {};
+    const _type = row.TYPE || bio.type || '';
+    // For dead cap rows, salary columns in the roster CSV override bio salary
+    const rowSals = {};
+    Object.keys(row).forEach(k => { if (/^\d{2}-\d{2}$/.test(k) && row[k]) rowSals[k] = row[k]; });
+    const _salaries = (_type === 'dead' && Object.keys(rowSals).length) ? rowSals : (bio.salaries || {});
     return {
       SLUG:       row.SLUG,
       OVR:        row.OVR,
       _name:      displayNameFromBio(bio.name || '') || row.SLUG || '—',
       _pos:       (bio.pos || []).join(' · ') || '—',
       _age:       calcAge(bio.dob),
-      _type:      row.TYPE || bio.type || '',
+      _type,
       _cap_holds: bio.cap_holds || '',
-      _salaries:  bio.salaries || {},
+      _salaries,
     };
   });
 
   const salaryKeySet = new Set();
   augmented.forEach(a => {
     Object.keys(a._salaries).forEach(k => { if (k >= curYr) salaryKeySet.add(k); });
+  });
+  // Also include any salary year columns present in the raw rows (for dead cap entries)
+  rows.forEach(row => {
+    Object.keys(row).forEach(k => { if (/^\d{2}-\d{2}$/.test(k) && row[k] && k >= curYr) salaryKeySet.add(k); });
   });
   const salaryKeys = [...salaryKeySet].sort();
   augmented.forEach(a => {
@@ -1374,7 +1383,8 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
 
 function rosterCellConfig(headers, biosData = {}) {
   if (headers.includes('SLUG') && !headers.includes('PLAYER')) {
-    return {
+    const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
+    const config = {
       SLUG: { type: 'player-picker', biosData, label: 'Player' },
       TYPE: { type: 'select', options: [
         { value: '',        label: 'Player'   },
@@ -1383,6 +1393,8 @@ function rosterCellConfig(headers, biosData = {}) {
       ]},
       OVR:  { label: 'OVR' },
     };
+    salaryYears.forEach(yr => { config[yr] = { type: 'salary' }; });
+    return config;
   }
   const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
   const config = {
@@ -1419,7 +1431,7 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
   toolbar.appendChild(cancelBtn);
 
   const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
-  if (salaryYears.length && cellConfig.CAP_HOLDS) {
+  if (salaryYears.length && (cellConfig.CAP_HOLDS || cellConfig.OVR)) {
     const YR_BTN = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:500;cursor:pointer;background:transparent;color:#9ca3af;font-family:inherit';
     const onYrEnter = e => { e.target.style.color = '#d1d5db'; e.target.style.borderColor = '#6b7280'; };
     const onYrLeave = e => { e.target.style.color = '#9ca3af'; e.target.style.borderColor = '#374151'; };
