@@ -314,6 +314,10 @@ document.body.innerHTML = `
   </div>
 `;
 
+const _navScript = document.createElement('script');
+_navScript.src = '/nav.js';
+document.head.appendChild(_navScript);
+
 const _badgeScript = document.createElement('script');
 _badgeScript.src = '/token-badge.js';
 _badgeScript.onload = function () { window.__nbnBadge && window.__nbnBadge(); };

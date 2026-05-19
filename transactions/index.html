@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transactions — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+    }
+
+
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    main {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Auth bar ── */
+    .auth-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+
+    .auth-bar button {
+      background: #374151;
+      border: 1px solid #4b5563;
+      color: #f3f4f6;
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .auth-bar button:hover { background: #4b5563; }
+
+    /* ── Form card ── */
+    .form-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .form-card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      color: #e5e7eb;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.875rem 1.25rem;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .form-field.full { grid-column: 1 / -1; }
+
+    .form-field label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9ca3af;
+    }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      background: #111827;
+      border: 1px solid #374151;
+      color: #f3f4f6;
+      border-radius: 6px;
+      padding: 0.5rem 0.625rem;
+      font-size: 0.875rem;
+      font-family: inherit;
+      width: 100%;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .form-field select option[disabled] { color: #6b7280; }
+
+    .radio-group {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.875rem;
+      font-weight: normal;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #f3f4f6;
+      cursor: pointer;
+    }
+
+    /* ── Salary rows ── */
+    .salary-rows { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .salary-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .salary-row input { flex: 1; }
+
+    .salary-row .year-input { max-width: 5rem; }
+
+    .salary-row .hold-select {
+      flex: 0 0 auto;
+      width: 9rem;
+      background: #111827;
+      border: 1px solid #374151;
+      color: #f3f4f6;
+      border-radius: 6px;
+      padding: 0.5rem 0.5rem;
+      font-size: 0.8rem;
+      font-family: inherit;
+    }
+
+    .salary-row button {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0 0.25rem;
+    }
+
+    .add-salary-btn {
+      margin-top: 0.4rem;
+      background: none;
+      border: 1px dashed #374151;
+      color: #6b7280;
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      width: 100%;
+    }
+
+    .add-salary-btn:hover { border-color: #4b5563; color: #9ca3af; }
+
+    /* ── Pick fields ── */
+    #pick-fields { display: none; }
+    #pick-fields.visible { display: contents; }
+
+    /* ── Submit row ── */
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+
+    .btn-submit {
+      background: #2563eb;
+      border: none;
+      color: #fff;
+      border-radius: 8px;
+      padding: 0.55rem 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-submit:hover { background: #1d4ed8; }
+    .btn-submit:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+
+    .form-status {
+      font-size: 0.85rem;
+    }
+
+    .form-status.ok { color: #34d399; }
+    .form-status.err { color: #f87171; }
+
+    /* ── Token modal ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 360px;
+      max-width: 90vw;
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+
+    .modal h3 { font-size: 1rem; font-weight: 600; }
+
+    .modal input {
+      background: #111827;
+      border: 1px solid #374151;
+      color: #f3f4f6;
+      border-radius: 6px;
+      padding: 0.5rem 0.625rem;
+      font-size: 0.875rem;
+      width: 100%;
+    }
+
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+    .modal-actions button {
+      border-radius: 6px;
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-cancel { background: #374151; color: #f3f4f6; }
+    .btn-save   { background: #2563eb; color: #fff; }
+
+    /* ── Filters ── */
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      align-items: center;
+    }
+
+    .filter-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-right: 0.25rem;
+    }
+
+    .chip {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #9ca3af;
+      border-radius: 999px;
+      padding: 0.2rem 0.75rem;
+      font-size: 0.78rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .chip.active { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #374151;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+
+    tbody tr { border-bottom: 1px solid #1f2937; }
+    tbody tr:hover { background: #1f2937; }
+
+    tbody td {
+      padding: 0.625rem 0.75rem;
+      vertical-align: middle;
+      color: #d1d5db;
+    }
+
+    td a { color: #60a5fa; text-decoration: none; }
+    td a:hover { text-decoration: underline; }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 0.15rem 0.6rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-sign    { background: #064e3b; color: #34d399; }
+    .badge-pick    { background: #1e3a5f; color: #93c5fd; }
+    .badge-release { background: #450a0a; color: #f87171; }
+    .badge-callup  { background: #451a03; color: #fb923c; }
+    .badge-calldown { background: #451a03; color: #fb923c; }
+    .badge-trade   { background: #2e1065; color: #c084fc; }
+
+    .empty-state {
+      text-align: center;
+      color: #6b7280;
+      padding: 3rem 0;
+      font-size: 0.9rem;
+    }
+
+    /* ── Player autocomplete ── */
+    .player-wrap { position: relative; }
+
+    .player-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 2px);
+      left: 0;
+      right: 0;
+      background: #1f2937;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 50;
+    }
+
+    .player-dropdown.open { display: block; }
+
+    .pd-item {
+      padding: 0.45rem 0.625rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .pd-item:hover, .pd-item.focused { background: #374151; }
+
+    .pd-item .pd-slug {
+      font-size: 0.72rem;
+      color: #6b7280;
+      margin-left: 0.5rem;
+    }
+
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-field.full { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+<script src="/nav.js"></script>
+
+<main>
+  <nav class="nav"><a href="/">← Home</a></nav>
+  <h1>Transactions</h1>
+
+  <div class="auth-bar" id="auth-bar">
+    <span id="auth-status">Not signed in</span>
+    <button id="auth-btn">Sign in</button>
+  </div>
+
+  <!-- New transaction form (shown when authenticated) -->
+  <div class="form-card" id="form-card" style="display:none">
+    <h2>New Transaction</h2>
+    <div class="form-grid">
+
+      <div class="form-field">
+        <label>Type</label>
+        <select id="f-type">
+          <option value="sign">Free Agency Signing</option>
+          <option value="pick">Draft Pick</option>
+          <option value="" disabled>─────────</option>
+          <option value="" disabled>Release (coming soon)</option>
+          <option value="" disabled>Call-up (coming soon)</option>
+          <option value="" disabled>Call-down (coming soon)</option>
+          <option value="" disabled>Trade (coming soon)</option>
+        </select>
+      </div>
+
+      <!-- sign-only -->
+      <div class="form-field" id="f-date-field">
+        <label>Date</label>
+        <input type="date" id="f-date">
+      </div>
+
+      <div class="form-field">
+        <label>Player</label>
+        <div class="player-wrap">
+          <input type="text" id="f-player-display" placeholder="Search by name…" autocomplete="off">
+          <div class="player-dropdown" id="player-dropdown"></div>
+          <input type="hidden" id="f-player-slug">
+        </div>
+      </div>
+
+      <!-- sign-only -->
+      <div class="form-field" id="f-team-field">
+        <label>Team</label>
+        <select id="f-team">
+          <option value="">— select —</option>
+          <option>ATL</option><option>BKN</option><option>BOS</option><option>CHA</option>
+          <option>CHI</option><option>CLE</option><option>DAL</option><option>DEN</option>
+          <option>DET</option><option>GSW</option><option>HOU</option><option>IND</option>
+          <option>LAC</option><option>LAL</option><option>MEM</option><option>MIA</option>
+          <option>MIL</option><option>MIN</option><option>NOP</option><option>NYK</option>
+          <option>OKC</option><option>ORL</option><option>PHI</option><option>PHX</option>
+          <option>POR</option><option>SAC</option><option>SAS</option><option>TOR</option>
+          <option>UTA</option><option>WAS</option>
+        </select>
+      </div>
+
+      <!-- pick-only -->
+      <div class="form-field" id="f-pick-year-field" style="display:none">
+        <label>Draft Year</label>
+        <select id="f-pick-year-sel">
+          <option value="">— loading —</option>
+        </select>
+      </div>
+
+      <!-- pick-only -->
+      <div class="form-field" id="f-pick-sel-field" style="display:none">
+        <label>Pick</label>
+        <select id="f-pick-sel">
+          <option value="">— select draft year —</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label>Contract Type</label>
+        <div class="radio-group">
+          <label><input type="radio" name="contract-type" value="player" checked> Player</label>
+          <label><input type="radio" name="contract-type" value="two-way"> Two-Way</label>
+        </div>
+      </div>
+
+      <div class="form-field full">
+        <label>Salaries</label>
+        <div class="salary-rows" id="salary-rows"></div>
+        <button class="add-salary-btn" id="add-salary-btn" type="button">+ Add season</button>
+      </div>
+
+      <div class="form-field full">
+        <label>Note <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:#6b7280">(optional)</span></label>
+        <input type="text" id="f-description" placeholder="e.g. 4yr max deal">
+      </div>
+
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-submit" id="submit-btn" type="button">Submit Transaction</button>
+      <span class="form-status" id="form-status"></span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters" id="filters">
+    <span class="filter-label">Type:</span>
+    <span class="chip active" data-filter="type" data-value="">All</span>
+    <span class="chip" data-filter="type" data-value="sign">Signings</span>
+    <span class="chip" data-filter="type" data-value="pick">Draft Picks</span>
+    <span class="chip" data-filter="type" data-value="release">Releases</span>
+    <span class="chip" data-filter="type" data-value="trade">Trades</span>
+  </div>
+
+  <!-- Log table -->
+  <div class="table-wrap">
+    <table id="txn-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Team</th>
+          <th>Player</th>
+          <th>Details</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody id="txn-tbody">
+        <tr><td colspan="6" class="empty-state">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Token modal -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <h3>Enter Bearer Token</h3>
+    <input type="password" id="modal-token-input" placeholder="Paste your token…">
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modal-cancel">Cancel</button>
+      <button class="btn-save" id="modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN_KEY = 'nbn_token';
+
+const HOLD_OPTIONS = [
+  ['', 'Guaranteed'],
+  ['UFA', 'UFA Hold'],
+  ['RFA', 'RFA Hold'],
+  ['PLAYER_OPT', 'Player Option'],
+  ['TEAM_OPT', 'Team Option'],
+  ['NON_GTD', 'Non-Guaranteed'],
+];
+
+// ── State ──────────────────────────────────────────────────────────────────
+let allTransactions = [];
+let bios = {};
+let allPicks = [];
+let activeTypeFilter = '';
+let currentToken = localStorage.getItem(TOKEN_KEY) || '';
+
+// ── Init ───────────────────────────────────────────────────────────────────
+(async function init() {
+  setDefaultDate();
+  addSalaryRow();
+  renderAuthBar();
+  setupTypeSwitch();
+  setupPlayerSearch();
+  setupSalaryRows();
+  setupFilters();
+  setupModal();
+  setupSubmit();
+
+  const [txnRes, biosRes, picksRes] = await Promise.allSettled([
+    fetch('/api/transactions?limit=500').then(r => r.json()),
+    fetch('/api/players').then(r => r.json()),
+    fetch('/api/picks').then(r => r.json()),
+  ]);
+
+  if (biosRes.status === 'fulfilled') bios = biosRes.value;
+  if (txnRes.status === 'fulfilled') allTransactions = txnRes.value.transactions || [];
+  if (picksRes.status === 'fulfilled') allPicks = picksRes.value || [];
+  populatePickYears();
+
+  renderTable();
+})();
+
+// ── Auth ───────────────────────────────────────────────────────────────────
+function renderAuthBar() {
+  const bar = document.getElementById('auth-bar');
+  const status = document.getElementById('auth-status');
+  const btn = document.getElementById('auth-btn');
+  const formCard = document.getElementById('form-card');
+
+  if (currentToken) {
+    status.textContent = 'Signed in';
+    btn.textContent = 'Sign out';
+    formCard.style.display = '';
+  } else {
+    status.textContent = 'Not signed in';
+    btn.textContent = 'Sign in';
+    formCard.style.display = 'none';
+  }
+}
+
+function setupModal() {
+  const backdrop = document.getElementById('modal-backdrop');
+  const input = document.getElementById('modal-token-input');
+
+  document.getElementById('auth-btn').addEventListener('click', () => {
+    if (currentToken) {
+      currentToken = '';
+      localStorage.removeItem(TOKEN_KEY);
+      renderAuthBar();
+      return;
+    }
+    backdrop.classList.add('open');
+    input.value = '';
+    input.focus();
+  });
+
+  document.getElementById('modal-cancel').addEventListener('click', () => {
+    backdrop.classList.remove('open');
+  });
+
+  document.getElementById('modal-save').addEventListener('click', saveToken);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') saveToken(); });
+
+  backdrop.addEventListener('click', e => {
+    if (e.target === backdrop) backdrop.classList.remove('open');
+  });
+}
+
+function saveToken() {
+  const input = document.getElementById('modal-token-input');
+  const t = input.value.trim();
+  if (!t) return;
+  currentToken = t;
+  localStorage.setItem(TOKEN_KEY, t);
+  document.getElementById('modal-backdrop').classList.remove('open');
+  renderAuthBar();
+}
+
+// ── Form setup ─────────────────────────────────────────────────────────────
+function setDefaultDate() {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-date').value = today;
+}
+
+function setupTypeSwitch() {
+  document.getElementById('f-type').addEventListener('change', function() {
+    const isPick = this.value === 'pick';
+    document.getElementById('f-date-field').style.display    = isPick ? 'none' : '';
+    document.getElementById('f-team-field').style.display    = isPick ? 'none' : '';
+    document.getElementById('f-pick-year-field').style.display = isPick ? '' : 'none';
+    document.getElementById('f-pick-sel-field').style.display  = isPick ? '' : 'none';
+  });
+}
+
+function populatePickYears() {
+  const sel = document.getElementById('f-pick-year-sel');
+  const years = [...new Set(allPicks.map(p => p.year))].sort((a, b) => b - a);
+  sel.innerHTML = years.length
+    ? years.map(y => `<option value="${y}">${y}</option>`).join('')
+    : '<option value="">No picks available</option>';
+  if (years.length) populatePickSel(years[0]);
+}
+
+function effectivePickOwner(p, yearPicks) {
+  // Mirrors the draft page's effectiveOwner logic
+  const swapTakesFrom = {};
+  yearPicks.forEach(q => {
+    if (q.swap_conveys === true && q.swap_owner) swapTakesFrom[q.swap_owner] = q.owner;
+  });
+  return p.swap_conveys === true ? p.swap_owner : (swapTakesFrom[p.orig] ?? p.owner);
+}
+
+function populatePickSel(year) {
+  const sel = document.getElementById('f-pick-sel');
+  const yearPicks = allPicks.filter(p => p.year === +year);
+  const available = yearPicks
+    .filter(p => !p.player)
+    .map(p => ({ ...p, effectiveOwner: effectivePickOwner(p, yearPicks) }))
+    .sort((a, b) => a.round - b.round || (a.pick ?? 999) - (b.pick ?? 999));
+
+  if (!available.length) {
+    sel.innerHTML = '<option value="">No unassigned picks this year</option>';
+    return;
+  }
+
+  sel.innerHTML = '<option value="">— select a pick —</option>' + available.map(p => {
+    const num = p.pick != null ? `#${p.pick}` : 'TBD';
+    const origin = p.effectiveOwner !== p.orig ? ` ← ${p.orig}` : '';
+    const label = `R${p.round} ${num} — ${p.effectiveOwner}${origin}`;
+    return `<option value='${JSON.stringify({year: p.year, round: p.round, orig: p.orig, pick_number: p.pick, owner: p.effectiveOwner})}'>${label}</option>`;
+  }).join('');
+}
+
+document.getElementById('f-pick-year-sel').addEventListener('change', function() {
+  populatePickSel(+this.value);
+});
+
+// ── Player search ──────────────────────────────────────────────────────────
+function setupPlayerSearch() {
+  const displayInput = document.getElementById('f-player-display');
+  const slugInput = document.getElementById('f-player-slug');
+  const dropdown = document.getElementById('player-dropdown');
+  let focusedIndex = -1;
+
+  displayInput.addEventListener('input', function() {
+    slugInput.value = '';
+    const q = this.value.trim().toLowerCase();
+    if (q.length < 2) { dropdown.classList.remove('open'); return; }
+
+    const matches = Object.entries(bios)
+      .map(([slug, bio]) => ({ slug, name: bioDisplayName(bio) }))
+      .filter(({ slug, name }) => name.toLowerCase().includes(q) || slug.includes(q))
+      .slice(0, 20);
+
+    if (!matches.length) { dropdown.classList.remove('open'); return; }
+
+    dropdown.innerHTML = matches.map((m, i) =>
+      `<div class="pd-item" data-slug="${m.slug}" data-name="${m.name}">${m.name}<span class="pd-slug">${m.slug}</span></div>`
+    ).join('');
+    dropdown.classList.add('open');
+    focusedIndex = -1;
+
+    dropdown.querySelectorAll('.pd-item').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        selectPlayer(el.dataset.slug, el.dataset.name);
+      });
+    });
+  });
+
+  displayInput.addEventListener('keydown', function(e) {
+    const items = dropdown.querySelectorAll('.pd-item');
+    if (!dropdown.classList.contains('open') || !items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setFocus(items, ++focusedIndex); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setFocus(items, --focusedIndex); }
+    else if (e.key === 'Enter' && focusedIndex >= 0) {
+      e.preventDefault();
+      const el = items[focusedIndex];
+      selectPlayer(el.dataset.slug, el.dataset.name);
+    } else if (e.key === 'Escape') { dropdown.classList.remove('open'); }
+  });
+
+  displayInput.addEventListener('blur', () => {
+    setTimeout(() => dropdown.classList.remove('open'), 150);
+  });
+
+  function setFocus(items, idx) {
+    items.forEach(el => el.classList.remove('focused'));
+    focusedIndex = Math.max(0, Math.min(idx, items.length - 1));
+    items[focusedIndex].classList.add('focused');
+  }
+
+  function selectPlayer(slug, name) {
+    slugInput.value = slug;
+    displayInput.value = name;
+    dropdown.classList.remove('open');
+  }
+}
+
+// ── Salary rows ────────────────────────────────────────────────────────────
+function setupSalaryRows() {
+  document.getElementById('add-salary-btn').addEventListener('click', addSalaryRow);
+}
+
+function addSalaryRow(year, amount, holdType) {
+  const container = document.getElementById('salary-rows');
+  const row = document.createElement('div');
+  row.className = 'salary-row';
+
+  const yearIn = document.createElement('input');
+  yearIn.type = 'text'; yearIn.className = 'year-input'; yearIn.placeholder = 'YY-YY';
+  yearIn.value = year || nextSalaryYear(); yearIn.maxLength = 5;
+
+  const amountIn = document.createElement('input');
+  amountIn.type = 'text'; amountIn.placeholder = '$0,000,000';
+  amountIn.value = amount || '';
+
+  const holdSel = document.createElement('select');
+  holdSel.className = 'hold-select';
+  HOLD_OPTIONS.forEach(([v, l]) => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = l;
+    if (v === (holdType || '')) opt.selected = true;
+    holdSel.appendChild(opt);
+  });
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button'; removeBtn.textContent = '×';
+  removeBtn.addEventListener('click', () => row.remove());
+
+  row.appendChild(yearIn); row.appendChild(amountIn); row.appendChild(holdSel); row.appendChild(removeBtn);
+  container.appendChild(row);
+}
+
+function nextSalaryYear() {
+  const rows = document.querySelectorAll('.salary-row .year-input');
+  if (!rows.length) {
+    const now = new Date();
+    const yr = now.getMonth() >= 7 ? now.getFullYear() + 1 : now.getFullYear();
+    return `${String(yr).slice(-2)}-${String(yr + 1).slice(-2)}`;
+  }
+  const last = rows[rows.length - 1].value;
+  const m = last.match(/^(\d{2})-(\d{2})$/);
+  if (!m) return '';
+  const nextEnd = parseInt(m[2]) + 1;
+  return `${m[2]}-${String(nextEnd).padStart(2, '0')}`;
+}
+
+function collectSalaries() {
+  const salaries = {};
+  const holdParts = [];
+  document.querySelectorAll('.salary-row').forEach(row => {
+    const yr  = row.querySelector('.year-input').value.trim();
+    const amt = row.querySelectorAll('input')[1].value.trim();
+    const hold = row.querySelector('.hold-select').value;
+    if (yr && amt) salaries[yr] = amt;
+    if (yr && hold) holdParts.push(`${yr}:${hold}`);
+  });
+  return { salaries, cap_holds: holdParts.join(',') };
+}
+
+// ── Filters ────────────────────────────────────────────────────────────────
+function setupFilters() {
+  document.querySelectorAll('.chip[data-filter="type"]').forEach(chip => {
+    chip.addEventListener('click', function() {
+      document.querySelectorAll('.chip[data-filter="type"]').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+      activeTypeFilter = this.dataset.value;
+      renderTable();
+    });
+  });
+}
+
+// ── Submit ─────────────────────────────────────────────────────────────────
+function setupSubmit() {
+  document.getElementById('submit-btn').addEventListener('click', submitTransaction);
+}
+
+async function submitTransaction() {
+  const status = document.getElementById('form-status');
+  const btn = document.getElementById('submit-btn');
+
+  const type = document.getElementById('f-type').value;
+  const playerSlug = document.getElementById('f-player-slug').value.trim();
+  const contractType = document.querySelector('input[name="contract-type"]:checked').value;
+  const { salaries, cap_holds } = collectSalaries();
+  const description = document.getElementById('f-description').value.trim();
+
+  if (!type) { setStatus('err', 'Select a transaction type.'); return; }
+  if (!playerSlug) { setStatus('err', 'Select a player from the dropdown.'); return; }
+
+  const contract = { type: contractType, salaries, cap_holds };
+  let date, details;
+
+  if (type === 'sign') {
+    date = document.getElementById('f-date').value;
+    const team = document.getElementById('f-team').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
+    if (!team) { setStatus('err', 'Select a team.'); return; }
+    details = { player: playerSlug, team, contract };
+  } else {
+    date = new Date().toISOString().slice(0, 10);
+    const pickVal = document.getElementById('f-pick-sel').value;
+    if (!pickVal) { setStatus('err', 'Select a pick.'); return; }
+    const pick = JSON.parse(pickVal);
+    details = {
+      player: playerSlug,
+      team: pick.owner,
+      pick: { year: pick.year, round: pick.round, orig: pick.orig, pick_number: pick.pick_number },
+      contract,
+    };
+  }
+
+  const body = { type, date, description, details };
+
+  btn.disabled = true;
+  setStatus('', 'Submitting…');
+
+  try {
+    const res = await fetch('/api/transactions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${currentToken}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      currentToken = '';
+      localStorage.removeItem(TOKEN_KEY);
+      renderAuthBar();
+      setStatus('err', 'Token rejected — please sign in again.');
+      return;
+    }
+
+    const data = await res.json();
+    if (!res.ok) {
+      setStatus('err', data.detail || `Error ${res.status}`);
+      return;
+    }
+
+    // Prepend to local list and re-render
+    allTransactions.unshift(data);
+    renderTable();
+    setStatus('ok', 'Transaction recorded.');
+    resetForm();
+  } catch (e) {
+    setStatus('err', 'Network error.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function resetForm() {
+  document.getElementById('f-player-display').value = '';
+  document.getElementById('f-player-slug').value = '';
+  document.getElementById('f-team').value = '';
+  document.getElementById('f-description').value = '';
+  document.getElementById('salary-rows').innerHTML = '';
+  addSalaryRow();
+  setDefaultDate();
+  // Re-populate pick selector to reflect newly assigned pick
+  const yearSel = document.getElementById('f-pick-year-sel');
+  if (yearSel.value) populatePickSel(+yearSel.value);
+}
+
+function setStatus(cls, msg) {
+  const el = document.getElementById('form-status');
+  el.className = 'form-status' + (cls ? ' ' + cls : '');
+  el.textContent = msg;
+}
+
+// ── Table rendering ────────────────────────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('txn-tbody');
+  let txns = allTransactions;
+
+  if (activeTypeFilter) {
+    txns = txns.filter(t => t.type === activeTypeFilter);
+  }
+
+  if (!txns.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No transactions yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = txns.map(renderRow).join('');
+}
+
+function renderRow(t) {
+  const d = t.details || {};
+  const dateStr = fmtDate(t.date);
+  const badge = `<span class="badge badge-${t.type}">${typeLabel(t.type)}</span>`;
+  const teamCell = d.team ? `<a href="/teams/${d.team.toLowerCase()}">${d.team}</a>` : '—';
+  const playerCell = renderPlayerCell(d.player);
+  const detailsCell = renderDetailsCell(t);
+  const note = escHtml(t.description || '');
+  return `<tr><td>${dateStr}</td><td>${badge}</td><td>${teamCell}</td><td>${playerCell}</td><td>${detailsCell}</td><td style="color:#6b7280">${note}</td></tr>`;
+}
+
+function renderPlayerCell(slug) {
+  if (!slug) return '—';
+  const bio = bios[slug];
+  const name = bio ? bioDisplayName(bio) : slug;
+  return `<a href="/players/?p=${slug}">${escHtml(name)}</a>`;
+}
+
+function renderDetailsCell(t) {
+  const d = t.details || {};
+  if (t.type === 'sign' || t.type === 'pick') {
+    const c = d.contract || {};
+    const years = Object.keys(c.salaries || {}).length;
+    const total = Object.values(c.salaries || {}).reduce((sum, v) => {
+      const n = parseInt(v.replace(/[^0-9]/g, ''), 10) || 0;
+      return sum + n;
+    }, 0);
+    const contractStr = years
+      ? `${years}yr / $${(total / 1e6).toFixed(1)}M`
+      : (c.type === 'two-way' ? 'Two-Way' : '');
+
+    if (t.type === 'pick' && d.pick) {
+      const p = d.pick;
+      const pickStr = `${p.year} R${p.round} ${p.orig}${p.pick_number ? ' #' + p.pick_number : ''}`;
+      return `${escHtml(pickStr)}${contractStr ? ' · ' + escHtml(contractStr) : ''}`;
+    }
+    return escHtml(contractStr);
+  }
+  return '';
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function bioDisplayName(bio) {
+  if (!bio || !bio.name) return '';
+  // bio.name is "LAST, FIRST" → "First Last"
+  const parts = bio.name.split(', ');
+  if (parts.length === 2) {
+    return toTitleCase(parts[1]) + ' ' + toTitleCase(parts[0]);
+  }
+  return toTitleCase(bio.name);
+}
+
+function toTitleCase(s) {
+  return s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-').map(Number);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[m - 1]} ${d}, ${y}`;
+}
+
+function typeLabel(type) {
+  const labels = { sign: 'Signing', pick: 'Draft Pick', release: 'Release', callup: 'Call-Up', calldown: 'Call-Down', trade: 'Trade' };
+  return labels[type] || type;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

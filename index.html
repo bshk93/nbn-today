@@ -12,45 +12,13 @@
       background: #111827;
       color: #f3f4f6;
       min-height: 100vh;
+    }
+
+    .page-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 5rem 1rem 4rem;
-    }
-
-    .topbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: #1f2937;
-      border-bottom: 1px solid #374151;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 0.25rem;
-      padding: 0 1.5rem;
-      height: 2.75rem;
-      font-size: 0.8rem;
-      z-index: 10;
-    }
-
-.topbar a {
-      color: #9ca3af;
-      text-decoration: none;
-      padding: 0.25rem 0.5rem;
-      border-radius: 6px;
-      transition: color 0.1s, background 0.1s;
-    }
-
-    .topbar a:hover {
-      color: #f3f4f6;
-      background: #374151;
-    }
-
-    .topbar-sep {
-      color: #374151;
-      user-select: none;
+      padding: 2.5rem 1rem 4rem;
     }
 
     header {
@@ -167,16 +135,7 @@
   </style>
 </head>
 <body>
-  <nav class="topbar">
-<a href="https://docs.google.com/spreadsheets/d/14Pwrjk4S9cgB1f2Q16S3YgfoHre8gUxjjXde8k5Nn_0/edit?gid=167248319#gid=167248319">Rosters</a>
-    <span class="topbar-sep">·</span>
-    <a href="https://docs.google.com/spreadsheets/d/1SDheJUhHfFmB7UGu9sds8t8Z8YyrYqB0JC3d7MEd7BU/edit?gid=1455096121#gid=1455096121">Members</a>
-    <span class="topbar-sep">·</span>
-    <a href="https://discord.gg/t4FB6XbryN">Discord</a>
-    <span class="topbar-sep">·</span>
-    <a href="https://docs.google.com/document/d/1ZQJN9T9PdX_OGVRpRPvtg_jfrnBerNcprV90j8Hpywk/edit?usp=drive_link" target="_blank" rel="noopener">Constitution</a>
-  </nav>
-
+  <div class="page-wrap">
   <header>
     <img src="/logo.png" alt="NBN logo">
     <h1>Nothing But Net</h1>
@@ -206,6 +165,10 @@
       <div class="card-header"><span class="card-icon">🤝</span><span class="card-title">Tradeblock</span></div>
     </a>
 
+    <a class="card" href="/transactions">
+      <div class="card-header"><span class="card-icon">📝</span><span class="card-title">Transactions</span></div>
+    </a>
+
     <span class="section-label">Stats</span>
 
     <a class="card" href="/teams">
@@ -216,16 +179,28 @@
       <div class="card-header"><span class="card-icon">⛹️</span><span class="card-title">Players</span></div>
     </a>
 
-    <a class="card" href="/stats">
-      <div class="card-header"><span class="card-icon">📊</span><span class="card-title">Stats</span></div>
-    </a>
-
     <a class="card" href="/owners">
       <div class="card-header"><span class="card-icon">🏛️</span><span class="card-title">Owners</span></div>
     </a>
 
+    <a class="card" href="/stats/seasons">
+      <div class="card-header"><span class="card-icon">📅</span><span class="card-title">Season Stats</span></div>
+    </a>
+
+    <a class="card" href="/stats/totals">
+      <div class="card-header"><span class="card-icon">🏅</span><span class="card-title">Totals Leaderboards</span></div>
+    </a>
+
+    <a class="card" href="/stats/highs">
+      <div class="card-header"><span class="card-icon">🔝</span><span class="card-title">Single-Game Highs</span></div>
+    </a>
+
     <a class="card" href="/h2h">
       <div class="card-header"><span class="card-icon">⚔️</span><span class="card-title">Head to Head</span></div>
+    </a>
+
+    <a class="card" href="https://stats.nbn.today">
+      <div class="card-header"><span class="card-icon">📊</span><span class="card-title">Full Stats Dashboard</span></div>
     </a>
 
     <span class="section-label">Miscellaneous</span>
@@ -240,6 +215,18 @@
 
     <a class="card" href="https://stats.nbn.today/files/">
       <div class="card-header"><span class="card-icon">📁</span><span class="card-title">Data Files</span></div>
+    </a>
+
+    <a class="card" href="https://docs.google.com/spreadsheets/d/14Pwrjk4S9cgB1f2Q16S3YgfoHre8gUxjjXde8k5Nn_0/edit?gid=167248319#gid=167248319" target="_blank" rel="noopener">
+      <div class="card-header"><span class="card-icon">📋</span><span class="card-title">Rosters (Sheet)</span></div>
+    </a>
+
+    <a class="card" href="https://docs.google.com/spreadsheets/d/1SDheJUhHfFmB7UGu9sds8t8Z8YyrYqB0JC3d7MEd7BU/edit?gid=1455096121#gid=1455096121" target="_blank" rel="noopener">
+      <div class="card-header"><span class="card-icon">👥</span><span class="card-title">Members (Sheet)</span></div>
+    </a>
+
+    <a class="card" href="https://docs.google.com/document/d/1ZQJN9T9PdX_OGVRpRPvtg_jfrnBerNcprV90j8Hpywk/edit?usp=drive_link" target="_blank" rel="noopener">
+      <div class="card-header"><span class="card-icon">📄</span><span class="card-title">Constitution</span></div>
     </a>
   </main>
 
@@ -266,6 +253,8 @@
       </div>
     </div>
   </footer>
+  </div>
+  <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
 </body>
 </html>
