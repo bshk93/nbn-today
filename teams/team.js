@@ -180,7 +180,7 @@ document.title = `${abbr} — NBN`;
   }
   .row-twoway td { opacity: 0.6; }
   .row-dead td   { opacity: 0.45; font-style: italic; }
-  .picks-acquired td.type-badge { color: #60a5fa; }
+  .picks-acquired td { color: #60a5fa; }
   .retired-banners {
     display: flex;
     flex-wrap: wrap;
@@ -202,7 +202,6 @@ document.title = `${abbr} — NBN`;
   .retired-no   { font-size: 2rem; font-weight: 800; color: #f3f4f6; line-height: 1; letter-spacing: -0.03em; }
   .retired-name { font-size: 0.62rem; color: #9ca3af; text-align: center; line-height: 1.3; }
   .retired-date { font-size: 0.58rem; color: #4b5563; margin-top: 0.15rem; }
-  .picks-own-traded td { opacity: 0.5; }
   td.cap-ufa        { background: hsl(45,  60%, 20%); color: hsl(45,  90%, 72%); }
   td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
   td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
@@ -851,55 +850,55 @@ function buildRosterTable(rows, biosData, capLevels) {
   return wrap;
 }
 
-function buildPicksTable(rows) {
-  if (!rows.length) return null;
+function buildPicksTable(picks, teamAbbr) {
+  if (!picks.length) return null;
+
+  const sortPicks = arr => [...arr].sort((a, b) => a.year - b.year || a.round - b.round);
+  const own      = sortPicks(picks.filter(p => p.orig === teamAbbr));
+  const acquired = sortPicks(picks.filter(p => p.orig !== teamAbbr));
 
   const table = document.createElement('table');
   const thead = table.createTHead();
   const hr = thead.insertRow();
-  [
-    { label: 'Year',  cls: '' },
-    { label: 'Round', cls: '' },
-    { label: 'Team',  cls: 'muted' },
-    { label: 'Type',  cls: 'muted' },
-  ].forEach(({ label, cls }) => {
+  ['Year', 'Rnd', 'From', 'Pick', 'Notes'].forEach(label => {
     const th = document.createElement('th');
     th.textContent = label;
+    if (label === 'Pick' || label === 'Year' || label === 'Rnd') th.classList.add('right');
+    if (label === 'From' || label === 'Notes') th.classList.add('muted');
     hr.appendChild(th);
   });
 
   const tbody = table.createTBody();
-  let lastSection = null;
-  const SECTION_LABELS = { own: 'Original Picks', acquired: 'Acquired Picks' };
 
-  rows.forEach(row => {
-    const section = row.TYPE;
-    if (section !== lastSection) {
-      const sep = tbody.insertRow();
-      sep.className = 'subheader';
-      const td = sep.insertCell();
-      td.colSpan = 4;
-      td.textContent = SECTION_LABELS[section] ?? section;
-      lastSection = section;
-    }
+  const addSection = (label, rows, isAcquired) => {
+    if (!rows.length) return;
+    const sep = tbody.insertRow();
+    sep.className = 'subheader';
+    const td = sep.insertCell();
+    td.colSpan = 5;
+    td.textContent = label;
 
-    const tr = tbody.insertRow();
-    const isTraded = row.TYPE === 'own' && row.TEAM !== 'Own';
-    if (isTraded) tr.className = 'picks-own-traded';
-    if (row.TYPE === 'acquired') tr.className = 'picks-acquired';
+    rows.forEach(p => {
+      const tr = tbody.insertRow();
+      if (isAcquired) tr.className = 'picks-acquired';
 
-    const cells = [
-      row.YEAR,
-      row.ROUND,
-      isTraded ? `→ ${row.TEAM}` : row.TYPE === 'acquired' ? `from ${row.TEAM}` : '—',
-      isTraded ? 'Traded away' : row.TYPE === 'acquired' ? 'Acquired' : 'Own',
-    ];
-    cells.forEach((text, i) => {
-      const td = tr.insertCell();
-      if (i === 3) td.className = 'type-badge';
-      td.textContent = text;
+      const cells = [
+        [String(p.year),                   'right',       false],
+        [p.round === 1 ? '1st' : '2nd',    'right',       false],
+        [isAcquired ? p.orig : '—',        'muted center',false],
+        [p.pick != null ? `#${p.pick}` : '—', 'right',   false],
+        [p.notes || '',                    'muted',       false],
+      ];
+      cells.forEach(([text, cls]) => {
+        const td = tr.insertCell();
+        if (cls) cls.split(' ').forEach(c => td.classList.add(c));
+        td.textContent = text;
+      });
     });
-  });
+  };
+
+  addSection('Own Picks', own, false);
+  addSection('Acquired Picks', acquired, true);
 
   return table;
 }
@@ -1386,12 +1385,6 @@ function rosterCellConfig(headers, biosData = {}) {
   return config;
 }
 
-function picksCellConfig() {
-  return {
-    ROUND: { type: 'select', options: ['1st', '2nd'] },
-    TYPE:  { type: 'select', options: ['own', 'acquired'] },
-  };
-}
 
 function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = {}) {
   const { table, getRows, getHeaders, addYearColumn } = buildEditableGrid(headers, rows, cellConfig);
@@ -1539,7 +1532,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     fetch(`/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
-    fetch(`/${slug}-picks.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch(`/api/picks/${abbr}`).then(r => { if (!r.ok) throw r; return r.json(); }),
     fetch('/api/players').then(r => r.ok ? r.json() : {}),
     fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
     fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -1708,12 +1701,9 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
 
   if (pkr.status === 'fulfilled') {
     picksWrap.innerHTML = '';
-    const picksRows = parseCSV(pkr.value);
-    const picksHeaders = parseLine(pkr.value.trim().split('\n')[0]);
-    const t = buildPicksTable(picksRows);
+    const t = buildPicksTable(pkr.value, abbr);
     if (t) picksWrap.appendChild(t);
-    else picksWrap.innerHTML = '<div class="status">No picks data.</div>';
-    setupEditable('picks-title', 'picks-wrap', picksHeaders, picksRows, `/picks/${abbr}`, buildPicksTable, picksCellConfig());
+    else picksWrap.innerHTML = '<div class="status">No picks on file.</div>';
   } else {
     picksWrap.innerHTML = '<div class="status">Failed to load picks data.</div>';
   }
