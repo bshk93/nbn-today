@@ -548,6 +548,81 @@
       return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
     }
 
+    function calcAge(dob) {
+      if (!dob) return '—';
+      const birth = new Date(dob);
+      if (isNaN(birth)) return '—';
+      const now = new Date();
+      let age = now.getFullYear() - birth.getFullYear();
+      if (now.getMonth() < birth.getMonth() ||
+          (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
+      return age;
+    }
+
+    function renderUndraftedTable(allPicks, year, bios) {
+      const assignedSlugs = new Set(
+        allPicks.filter(p => p.year === +year && p.player).map(p => p.player)
+      );
+
+      const draftClass = Object.entries(bios)
+        .filter(([slug, bio]) => bio.draft_year === +year && !assignedSlugs.has(slug))
+        .map(([slug, bio]) => ({ slug, bio }))
+        .sort((a, b) => a.bio.name.localeCompare(b.bio.name));
+
+      if (!draftClass.length) return null;
+
+      const block = document.createElement('div');
+      block.className = 'round-block';
+      const h2 = document.createElement('h2');
+      h2.textContent = `Undrafted Players (${draftClass.length})`;
+      block.appendChild(h2);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+
+      const tbl = document.createElement('table');
+      tbl.innerHTML = `<thead><tr>
+        <th>Player</th><th>Pos</th><th class="right">Age</th><th>College / Country</th>
+      </tr></thead>`;
+      const tbody = document.createElement('tbody');
+
+      draftClass.forEach(({ slug, bio }) => {
+        const tr = document.createElement('tr');
+
+        const tdName = document.createElement('td');
+        tdName.className = 'player-cell';
+        const a = document.createElement('a');
+        a.href = `/players/?p=${slug}`;
+        const parts = (bio.name || slug).split(', ');
+        a.textContent = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : (bio.name || slug);
+        tdName.appendChild(a);
+        tr.appendChild(tdName);
+
+        const tdPos = document.createElement('td');
+        tdPos.textContent = Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '—');
+        tr.appendChild(tdPos);
+
+        const tdAge = document.createElement('td');
+        tdAge.className = 'right';
+        tdAge.textContent = bio.dob ? calcAge(bio.dob) : '—';
+        tr.appendChild(tdAge);
+
+        const tdSchool = document.createElement('td');
+        tdSchool.className = 'muted';
+        const college = bio.college && bio.college !== 'NA' ? bio.college : null;
+        const country = bio.country && bio.country !== 'NA' ? bio.country : null;
+        tdSchool.textContent = college || country || '—';
+        tr.appendChild(tdSchool);
+
+        tbody.appendChild(tr);
+      });
+
+      tbl.appendChild(tbody);
+      wrap.appendChild(tbl);
+      block.appendChild(wrap);
+      return block;
+    }
+
     function renderFuture(allPicks, year, bios) {
       const content = document.getElementById('content');
       content.innerHTML = '';
@@ -674,6 +749,9 @@
         block.appendChild(wrap);
         content.appendChild(block);
       });
+
+      const undraftedBlock = renderUndraftedTable(allPicks, year, bios);
+      if (undraftedBlock) content.appendChild(undraftedBlock);
     }
 
     async function init() {

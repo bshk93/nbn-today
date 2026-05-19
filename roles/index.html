@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roles & Permissions — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page { max-width: 760px; margin: 0 auto; }
+
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    /* ── Role cards ── */
+    .roles-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+
+    .role-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .role-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .role-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+    }
+
+    .badge-admin   { background: #450a0a; color: #fca5a5; }
+    .badge-rosters { background: #1e3a5f; color: #93c5fd; }
+    .badge-team    { background: #1c2c1e; color: #86efac; }
+
+    .role-card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .role-card p {
+      color: #9ca3af;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+
+    .role-card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .role-card li {
+      font-size: 0.85rem;
+      color: #d1d5db;
+      padding-left: 1rem;
+      position: relative;
+    }
+
+    .role-card li::before {
+      content: '·';
+      position: absolute;
+      left: 0;
+      color: #4b5563;
+    }
+
+    .inherits {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+    }
+
+    /* ── Active tokens section ── */
+    .section-heading {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .auth-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+
+    .auth-bar button {
+      background: #374151;
+      border: 1px solid #4b5563;
+      color: #f3f4f6;
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+    }
+    .auth-bar button:hover { background: #4b5563; }
+
+    .table-wrap {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead th {
+      padding: 0.6rem 1rem;
+      text-align: left;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+    }
+
+    tbody td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid #1f2937;
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #263244; }
+
+    .token-roles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .token-role-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .trb-admin   { background: #450a0a; color: #fca5a5; }
+    .trb-rosters { background: #1e3a5f; color: #93c5fd; }
+    .trb-team    { background: #1c2c1e; color: #86efac; }
+
+    .empty-state { text-align: center; color: #6b7280; padding: 2rem; }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .modal h3 { font-size: 1rem; font-weight: 600; }
+    .modal input {
+      background: #111827;
+      border: 1px solid #374151;
+      color: #f3f4f6;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      width: 100%;
+      font-family: inherit;
+    }
+    .modal input:focus { outline: none; border-color: #60a5fa; }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .btn-cancel {
+      background: transparent; border: 1px solid #374151; color: #d1d5db;
+      border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer; font-size: 0.8rem; font-family: inherit;
+    }
+    .btn-save {
+      background: #2563eb; border: 1px solid #3b82f6; color: #fff;
+      border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer; font-size: 0.8rem; font-family: inherit;
+    }
+    .btn-save:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+<script src="/nav.js"></script>
+
+<div class="page">
+  <nav class="nav"><a href="/">← Home</a></nav>
+
+  <header>
+    <h1>Roles &amp; Permissions</h1>
+    <p>What each access level can do in the NBN system.</p>
+  </header>
+
+  <div class="roles-grid">
+
+    <div class="role-card">
+      <div class="role-card-header">
+        <span class="role-badge badge-admin">Admin</span>
+        <h2>Admin</h2>
+      </div>
+      <p>Full system access. There is one admin token. Admins can do everything the Rosters role can do, plus:</p>
+      <ul>
+        <li>Create, list, and revoke access tokens for other members</li>
+      </ul>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
+        <span class="role-badge badge-rosters">Rosters</span>
+        <h2>Rosters</h2>
+      </div>
+      <p>Manages all roster and contract operations across the league.</p>
+      <ul>
+        <li>Record transactions — free agency signings, draft picks, option decisions</li>
+        <li>Edit any team's active roster (players, OVR ratings)</li>
+        <li>Edit any team's draft pick ownership, protections, and swap rights</li>
+        <li>Edit player bio data — salary, cap holds, contract type, personal info</li>
+        <li>Add new players to the player database</li>
+        <li>Delete transaction records from the log</li>
+        <li>Delete draft pick rows</li>
+      </ul>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
+        <span class="role-badge badge-team">Team Roles</span>
+        <h2>Team Roles <span style="font-weight:400;color:#6b7280;font-size:0.875rem">(atl, bkn, bos, …)</span></h2>
+      </div>
+      <p>One role per NBA franchise. Assigned to a team's front office members.</p>
+      <ul>
+        <li>Update that team's trade block — add, remove, or annotate players available for trade</li>
+      </ul>
+      <p class="inherits">Team roles do not grant roster editing access. Members who also manage contracts need the Rosters role separately.</p>
+    </div>
+
+  </div>
+
+  <div class="section-heading">Active Tokens</div>
+
+  <div class="auth-bar" id="auth-bar">
+    <span id="auth-status">Sign in with an admin token to view active tokens.</span>
+    <button id="auth-btn">Sign in</button>
+  </div>
+
+  <div id="tokens-section" style="display:none">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Roles</th>
+          </tr>
+        </thead>
+        <tbody id="tokens-tbody">
+          <tr><td colspan="2" class="empty-state">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <h3>Enter Admin Token</h3>
+    <input type="password" id="modal-token-input" placeholder="Paste your token…">
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modal-cancel">Cancel</button>
+      <button class="btn-save" id="modal-save">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN_KEY = 'nbn_token';
+let currentToken = localStorage.getItem(TOKEN_KEY) || '';
+
+const TEAM_ABBRS = new Set([
+  'atl','bkn','bos','cha','chi','cle','dal','den','det','gsw',
+  'hou','ind','lac','lal','mem','mia','mil','min','nop','nyk',
+  'okc','orl','phi','phx','por','sac','sas','tor','uta','was',
+]);
+
+function roleBadgeClass(role) {
+  if (role === 'admin') return 'trb-admin';
+  if (role === 'rosters') return 'trb-rosters';
+  return 'trb-team';
+}
+
+function renderTokens(tokens) {
+  const tbody = document.getElementById('tokens-tbody');
+  if (!tokens.length) {
+    tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No active tokens.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = tokens.map(t => {
+    const roles = (t.roles || []).map(r =>
+      `<span class="token-role-badge ${roleBadgeClass(r)}">${r}</span>`
+    ).join('');
+    return `<tr>
+      <td>${escHtml(t.name || '—')}</td>
+      <td><div class="token-roles">${roles || '<span style="color:#6b7280">—</span>'}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadTokens() {
+  try {
+    const res = await fetch('/api/tokens', {
+      headers: { 'Authorization': `Bearer ${currentToken}` },
+    });
+    if (res.status === 401 || res.status === 403) {
+      showUnauthenticated();
+      return;
+    }
+    const data = await res.json();
+    document.getElementById('tokens-section').style.display = '';
+    renderTokens(data);
+  } catch {
+    document.getElementById('tokens-tbody').innerHTML =
+      '<tr><td colspan="2" class="empty-state">Failed to load tokens.</td></tr>';
+  }
+}
+
+function showUnauthenticated() {
+  currentToken = '';
+  localStorage.removeItem(TOKEN_KEY);
+  document.getElementById('auth-status').textContent = 'Sign in with an admin token to view active tokens.';
+  document.getElementById('auth-btn').textContent = 'Sign in';
+  document.getElementById('tokens-section').style.display = 'none';
+}
+
+function renderAuthBar() {
+  if (currentToken) {
+    document.getElementById('auth-status').textContent = 'Signed in';
+    document.getElementById('auth-btn').textContent = 'Sign out';
+  } else {
+    showUnauthenticated();
+  }
+}
+
+document.getElementById('auth-btn').addEventListener('click', () => {
+  if (currentToken) {
+    currentToken = '';
+    localStorage.removeItem(TOKEN_KEY);
+    renderAuthBar();
+    return;
+  }
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.getElementById('modal-token-input').value = '';
+  document.getElementById('modal-token-input').focus();
+});
+
+document.getElementById('modal-cancel').addEventListener('click', () => {
+  document.getElementById('modal-backdrop').classList.remove('open');
+});
+
+document.getElementById('modal-backdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-backdrop'))
+    document.getElementById('modal-backdrop').classList.remove('open');
+});
+
+function saveToken() {
+  const t = document.getElementById('modal-token-input').value.trim();
+  if (!t) return;
+  currentToken = t;
+  localStorage.setItem(TOKEN_KEY, t);
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.getElementById('auth-status').textContent = 'Signed in';
+  document.getElementById('auth-btn').textContent = 'Sign out';
+  loadTokens();
+}
+
+document.getElementById('modal-save').addEventListener('click', saveToken);
+document.getElementById('modal-token-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveToken();
+});
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Auto-load if already signed in
+if (currentToken) {
+  renderAuthBar();
+  loadTokens();
+} else {
+  renderAuthBar();
+}
+</script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

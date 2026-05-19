@@ -314,6 +314,10 @@
       padding: 0.32rem 0.4rem; outline: none; cursor: pointer;
     }
     .salary-row .hold-select:focus { border-color: #3b82f6; }
+    .salary-row .gtd-input { width: 8rem; display: none; }
+    .salary-row .gtd-input.visible { display: block; }
+    .salary-row .gtd-date-input { width: 9rem; display: none; }
+    .salary-row .gtd-date-input.visible { display: block; }
     .bio-edit-form .full-col { grid-column: 1 / -1; }
     .field-hint { font-size: 0.68rem; color: #6b7280; margin-top: 0.2rem; line-height: 1.4; }
     .bio-edit-actions {
@@ -892,7 +896,7 @@
       ['NON_GTD', 'Non-Guaranteed'],
     ];
 
-    function makeSalaryRow(season, amount, holdType) {
+    function makeSalaryRow(season, amount, holdType, gtdAmount, gtdDate) {
       const row = document.createElement('div');
       row.className = 'salary-row';
       const seasonIn = document.createElement('input');
@@ -907,20 +911,37 @@
         if (v === (holdType || '')) opt.selected = true;
         holdSel.appendChild(opt);
       });
+      const gtdIn = document.createElement('input');
+      gtdIn.type = 'text'; gtdIn.className = 'gtd-input'; gtdIn.placeholder = 'Gtd: $0';
+      gtdIn.value = gtdAmount || '';
+      const gtdDateIn = document.createElement('input');
+      gtdDateIn.type = 'date'; gtdDateIn.className = 'gtd-date-input';
+      gtdDateIn.title = 'Fully guaranteed after this date';
+      gtdDateIn.value = gtdDate || '';
+      const isNonGtd = (holdType || '') === 'NON_GTD';
+      if (isNonGtd) { gtdIn.classList.add('visible'); gtdDateIn.classList.add('visible'); }
+      holdSel.addEventListener('change', () => {
+        const on = holdSel.value === 'NON_GTD';
+        gtdIn.classList.toggle('visible', on);
+        gtdDateIn.classList.toggle('visible', on);
+        if (!on) { gtdIn.value = ''; gtdDateIn.value = ''; }
+      });
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button'; removeBtn.textContent = '✕';
       removeBtn.style.cssText = 'background:none;border:none;color:#4b5563;cursor:pointer;font-size:0.9rem;padding:0 0.2rem;font-family:inherit';
       removeBtn.onmouseenter = () => { removeBtn.style.color = '#f87171'; };
       removeBtn.onmouseleave = () => { removeBtn.style.color = '#4b5563'; };
       removeBtn.addEventListener('click', () => row.remove());
-      row.appendChild(seasonIn); row.appendChild(amountIn); row.appendChild(holdSel); row.appendChild(removeBtn);
+      row.appendChild(seasonIn); row.appendChild(amountIn); row.appendChild(holdSel); row.appendChild(gtdIn); row.appendChild(gtdDateIn); row.appendChild(removeBtn);
       return row;
     }
 
     const initCapMap = parseCapHolds(initial.cap_holds || '');
     const initSalaries = (initial.salaries && typeof initial.salaries === 'object') ? initial.salaries : {};
+    const initGuaranteed = (initial.guaranteed && typeof initial.guaranteed === 'object') ? initial.guaranteed : {};
+    const initGuaranteeDates = (initial.guarantee_dates && typeof initial.guarantee_dates === 'object') ? initial.guarantee_dates : {};
     Object.entries(initSalaries).sort(([a], [b]) => a.localeCompare(b))
-      .forEach(([k, v]) => salRows.appendChild(makeSalaryRow(k, v, initCapMap[k] || '')));
+      .forEach(([k, v]) => salRows.appendChild(makeSalaryRow(k, v, initCapMap[k] || '', initGuaranteed[k] || '', initGuaranteeDates[k] || '')));
 
     const addSalBtn = document.createElement('button');
     addSalBtn.type = 'button'; addSalBtn.textContent = '+ Add season';
@@ -953,13 +974,21 @@
       const token = getToken();
       if (!token) return;
       const salaries = {};
+      const guaranteed = {};
+      const guarantee_dates = {};
       const capHoldParts = [];
       salRows.querySelectorAll('.salary-row').forEach(row => {
-        const season = row.querySelector('.season-input').value.trim();
-        const amount = row.querySelector('.amount-input').value.trim();
-        const hold   = row.querySelector('.hold-select').value;
+        const season  = row.querySelector('.season-input').value.trim();
+        const amount  = row.querySelector('.amount-input').value.trim();
+        const hold    = row.querySelector('.hold-select').value;
+        const gtd     = row.querySelector('.gtd-input').value.trim();
+        const gtdDate = row.querySelector('.gtd-date-input').value.trim();
         if (season && amount) salaries[season] = amount;
         if (season && hold)   capHoldParts.push(`${season}:${hold}`);
+        if (season && hold === 'NON_GTD') {
+          if (gtd)     guaranteed[season] = gtd;
+          if (gtdDate) guarantee_dates[season] = gtdDate;
+        }
       });
       const payload = {
         name:        fName.value.trim(),
@@ -977,6 +1006,8 @@
         type:        typeSelect.value,
         cap_holds:   capHoldParts.join(','),
         salaries,
+        guaranteed,
+        guarantee_dates,
       };
       if (!payload.name) { status.textContent = 'Name is required.'; return; }
       saveBtn.disabled = true;
@@ -1051,6 +1082,13 @@
     return '$' + Math.round(n).toLocaleString('en-US');
   }
 
+  function fmtGuaranteeDate(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-').map(Number);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[m - 1]} ${d}, ${y}`;
+  }
+
   function parseCapHolds(str) {
     const map = {};
     if (!str) return map;
@@ -1082,6 +1120,8 @@
     if (!Object.keys(salaries).length) return;
 
     const capMap = parseCapHolds(bio.cap_holds || '');
+    const guaranteed = bio.guaranteed && typeof bio.guaranteed === 'object' ? bio.guaranteed : {};
+    const guarantee_dates = bio.guarantee_dates && typeof bio.guarantee_dates === 'object' ? bio.guarantee_dates : {};
     const sorted = Object.keys(salaries).sort();
 
     const table = document.createElement('table');
@@ -1107,7 +1147,20 @@
       const tdSeason = tr.insertCell(); tdSeason.textContent = season;
       const tdAmt    = tr.insertCell(); tdAmt.className = 'right'; tdAmt.textContent = formatSalary(raw);
       const tdLabel  = tr.insertCell(); tdLabel.className = 'hold-label';
-      if (holdType && CAP_HOLD_LABELS[holdType]) tdLabel.textContent = CAP_HOLD_LABELS[holdType];
+      if (holdType === 'NON_GTD') {
+        const gtd = guaranteed[season];
+        const gDate = guarantee_dates[season];
+        let label = 'Non-Guaranteed';
+        if (gtd || gDate) {
+          const parts = [];
+          if (gtd) parts.push(`${formatSalary(gtd)} gtd`);
+          if (gDate) parts.push(`fully gtd ${fmtGuaranteeDate(gDate)}`);
+          label = `Non-Gtd (${parts.join(' · ')})`;
+        }
+        tdLabel.textContent = label;
+      } else if (holdType && CAP_HOLD_LABELS[holdType]) {
+        tdLabel.textContent = CAP_HOLD_LABELS[holdType];
+      }
 
       if (!holdType) {
         const n = parseFloat(String(raw).replace(/[$,\s]/g, ''));
@@ -1835,7 +1888,7 @@
       const token = getToken(); if (!token) return;
       const cur = biosData[slug] || {};
       bioFormEl = renderBioForm(
-        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', type: cur.type || '', cap_holds: cur.cap_holds || '', salaries: cur.salaries || {} },
+        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', type: cur.type || '', cap_holds: cur.cap_holds || '', salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {} },
         async (token, payload) => {
           const resp = await fetch(`/api/players/${slug}`, {
             method: 'PUT',
