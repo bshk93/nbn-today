@@ -613,12 +613,12 @@
 
           const tdOwner = document.createElement('td');
           tdOwner.className = 'owner-cell';
-          tdOwner.textContent = p.owner;
+          tdOwner.textContent = traded ? p.owner : '—';
           tr.appendChild(tdOwner);
 
           const tdOrig = document.createElement('td');
           tdOrig.className = 'orig-cell muted';
-          tdOrig.textContent = traded ? p.orig : '—';
+          tdOrig.textContent = p.orig;
           tr.appendChild(tdOrig);
 
           const tdProt = document.createElement('td');
