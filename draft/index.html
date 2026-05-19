@@ -409,7 +409,7 @@
 
         const tbl = document.createElement('table');
         tbl.innerHTML = `<thead><tr>
-          <th>Orig</th><th>Owner</th><th>Pick #</th><th>Top-N Prot.</th><th>Notes</th>
+          <th>Orig</th><th>Owner</th><th>Pick #</th><th>Top-N Prot.</th><th>Swap Owner</th><th>Notes</th>
         </tr></thead>`;
         const tbody = document.createElement('tbody');
 
@@ -449,6 +449,18 @@
           tdProt.appendChild(inpProt);
           tr.appendChild(tdProt);
 
+          const selSwap = document.createElement('select');
+          selSwap.style.cssText = INP;
+          [{ value: '', label: '—' }, ...TEAM_ABBRS.map(t => ({ value: t, label: t }))].forEach(({ value, label }) => {
+            const o = document.createElement('option');
+            o.value = value; o.textContent = label;
+            if (value === (p.swap_owner || '')) o.selected = true;
+            selSwap.appendChild(o);
+          });
+          const tdSwap = document.createElement('td');
+          tdSwap.appendChild(selSwap);
+          tr.appendChild(tdSwap);
+
           const inpNotes = document.createElement('input');
           inpNotes.type = 'text'; inpNotes.style.cssText = INP;
           inpNotes.value = p.notes || '';
@@ -456,7 +468,7 @@
           tdNotes.appendChild(inpNotes);
           tr.appendChild(tdNotes);
 
-          p._inputs = { selOwner, inpPick, inpProt, inpNotes };
+          p._inputs = { selOwner, inpPick, inpProt, selSwap, inpNotes };
           tbody.appendChild(tr);
         });
 
@@ -473,15 +485,16 @@
         statusEl.textContent = 'Saving…';
         try {
           const results = await Promise.all(yearPicks.map(p => {
-            const { selOwner, inpPick, inpProt, inpNotes } = p._inputs;
+            const { selOwner, inpPick, inpProt, selSwap, inpNotes } = p._inputs;
             return fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
-                owner:     selOwner.value,
-                pick:      inpPick.value  ? parseInt(inpPick.value)  : null,
-                protected: inpProt.value  ? parseInt(inpProt.value)  : null,
-                notes:     inpNotes.value.trim(),
+                owner:      selOwner.value,
+                pick:       inpPick.value  ? parseInt(inpPick.value)  : null,
+                protected:  inpProt.value  ? parseInt(inpProt.value)  : null,
+                swap_owner: selSwap.value  || null,
+                notes:      inpNotes.value.trim(),
               }),
             });
           }));
@@ -537,6 +550,7 @@
           <th>Orig</th>
           <th>Owner</th>
           <th>Protection</th>
+          <th>Swap</th>
           <th>Status</th>
           <th>Notes</th>
         </tr></thead>`;
@@ -566,6 +580,11 @@
           tdProt.className = 'muted';
           tdProt.textContent = p.protected != null ? `Top-${p.protected}` : '—';
           tr.appendChild(tdProt);
+
+          const tdSwap = document.createElement('td');
+          tdSwap.className = 'muted';
+          tdSwap.textContent = p.swap_owner || '—';
+          tr.appendChild(tdSwap);
 
           const tdStatus = document.createElement('td');
           if (p.conveys === true) {

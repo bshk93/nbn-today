@@ -860,11 +860,11 @@ function buildPicksTable(picks, teamAbbr) {
   const table = document.createElement('table');
   const thead = table.createTHead();
   const hr = thead.insertRow();
-  ['Year', 'Rnd', 'From', 'Pick', 'Protection', 'Notes'].forEach(label => {
+  ['Year', 'Rnd', 'From', 'Pick', 'Protection', 'Swap', 'Notes'].forEach(label => {
     const th = document.createElement('th');
     th.textContent = label;
     if (label === 'Pick' || label === 'Year' || label === 'Rnd') th.classList.add('right');
-    if (label === 'From' || label === 'Protection' || label === 'Notes') th.classList.add('muted');
+    if (label === 'From' || label === 'Protection' || label === 'Swap' || label === 'Notes') th.classList.add('muted');
     hr.appendChild(th);
   });
 
@@ -875,7 +875,7 @@ function buildPicksTable(picks, teamAbbr) {
     const sep = tbody.insertRow();
     sep.className = 'subheader';
     const td = sep.insertCell();
-    td.colSpan = 6;
+    td.colSpan = 7;
     td.textContent = label;
 
     rows.forEach(p => {
@@ -889,6 +889,7 @@ function buildPicksTable(picks, teamAbbr) {
         [isAcquired ? p.orig : '—',           'muted center', ],
         [p.pick != null ? `#${p.pick}` : '—', 'right',        ],
         [protLabel,                            'muted',        ],
+        [p.swap_owner || '',                   'muted',        ],
         [p.notes || '',                        'muted',        ],
       ];
       cells.forEach(([text, cls]) => {
@@ -1545,7 +1546,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
     const table = document.createElement('table');
     const thead = table.createTHead();
     const hr = thead.insertRow();
-    ['Year', 'Rnd', 'Orig', 'Owner', 'Pick #', 'Top-N Prot.', 'Notes'].forEach(label => {
+    ['Year', 'Rnd', 'Orig', 'Owner', 'Pick #', 'Top-N Prot.', 'Swap Owner', 'Notes'].forEach(label => {
       const th = document.createElement('th');
       th.textContent = label;
       hr.appendChild(th);
@@ -1593,6 +1594,18 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
       if (p.protected != null) inpProt.value = p.protected;
       tdProt.appendChild(inpProt);
 
+      // swap owner
+      const tdSwap = tr.insertCell();
+      const selSwap = document.createElement('select');
+      selSwap.style.cssText = INP;
+      [{ value: '', label: '—' }, ...teamOptions.map(t => ({ value: t, label: t }))].forEach(({ value, label }) => {
+        const o = document.createElement('option');
+        o.value = value; o.textContent = label;
+        if (value === (p.swap_owner || '')) o.selected = true;
+        selSwap.appendChild(o);
+      });
+      tdSwap.appendChild(selSwap);
+
       // notes
       const tdNotes = tr.insertCell();
       const inpNotes = document.createElement('input');
@@ -1603,10 +1616,11 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
 
       rowGetters.push(() => ({
         year: p.year, round: p.round, orig: p.orig,
-        owner:     selOwner.value,
-        pick:      inpPick.value  ? parseInt(inpPick.value)  : null,
-        protected: inpProt.value  ? parseInt(inpProt.value)  : null,
-        notes:     inpNotes.value.trim(),
+        owner:      selOwner.value,
+        pick:       inpPick.value  ? parseInt(inpPick.value)  : null,
+        protected:  inpProt.value  ? parseInt(inpProt.value)  : null,
+        swap_owner: selSwap.value  || null,
+        notes:      inpNotes.value.trim(),
       }));
     });
 
@@ -1626,7 +1640,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
           fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ owner: p.owner, pick: p.pick, protected: p.protected, notes: p.notes }),
+            body: JSON.stringify({ owner: p.owner, pick: p.pick, protected: p.protected, swap_owner: p.swap_owner, notes: p.notes }),
           })
         ));
         const failed = results.find(r => !r.ok);
