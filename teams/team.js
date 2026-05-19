@@ -1636,14 +1636,15 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
       statusEl.textContent = 'Saving…';
       try {
         const token = getToken();
-        const results = await Promise.all(updated.map(p =>
-          fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
+        let failed = null;
+        for (const p of updated) {
+          const r = await fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ owner: p.owner, pick: p.pick, protected: p.protected, swap_owner: p.swap_owner, notes: p.notes }),
-          })
-        ));
-        const failed = results.find(r => !r.ok);
+          });
+          if (!r.ok) { failed = r; break; }
+        }
         if (failed) {
           if (failed.status === 403) { localStorage.removeItem(TOKEN_KEY); statusEl.textContent = 'Invalid token — cleared.'; }
           else statusEl.textContent = `Error ${failed.status}`;

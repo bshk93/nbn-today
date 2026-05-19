@@ -484,9 +484,10 @@
         saveBtn.disabled = true; cancelBtn.disabled = true;
         statusEl.textContent = 'Saving…';
         try {
-          const results = await Promise.all(yearPicks.map(p => {
+          let failed = null;
+          for (const p of yearPicks) {
             const { selOwner, inpPick, inpProt, selSwap, inpNotes } = p._inputs;
-            return fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
+            const r = await fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -497,8 +498,8 @@
                 notes:      inpNotes.value.trim(),
               }),
             });
-          }));
-          const failed = results.find(r => !r.ok);
+            if (!r.ok) { failed = r; break; }
+          }
           if (failed) {
             if (failed.status === 403) { localStorage.removeItem(TOKEN_KEY); statusEl.textContent = 'Invalid token — cleared.'; }
             else statusEl.textContent = `Error ${failed.status}`;
