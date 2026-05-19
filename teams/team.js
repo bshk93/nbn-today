@@ -860,11 +860,11 @@ function buildPicksTable(picks, teamAbbr) {
   const table = document.createElement('table');
   const thead = table.createTHead();
   const hr = thead.insertRow();
-  ['Year', 'Rnd', 'From', 'Pick', 'Notes'].forEach(label => {
+  ['Year', 'Rnd', 'From', 'Pick', 'Protection', 'Notes'].forEach(label => {
     const th = document.createElement('th');
     th.textContent = label;
     if (label === 'Pick' || label === 'Year' || label === 'Rnd') th.classList.add('right');
-    if (label === 'From' || label === 'Notes') th.classList.add('muted');
+    if (label === 'From' || label === 'Protection' || label === 'Notes') th.classList.add('muted');
     hr.appendChild(th);
   });
 
@@ -875,19 +875,21 @@ function buildPicksTable(picks, teamAbbr) {
     const sep = tbody.insertRow();
     sep.className = 'subheader';
     const td = sep.insertCell();
-    td.colSpan = 5;
+    td.colSpan = 6;
     td.textContent = label;
 
     rows.forEach(p => {
       const tr = tbody.insertRow();
       if (isAcquired) tr.className = 'picks-acquired';
 
+      const protLabel = p.protected != null ? `Top-${p.protected}` : '';
       const cells = [
-        [String(p.year),                   'right',       false],
-        [p.round === 1 ? '1st' : '2nd',    'right',       false],
-        [isAcquired ? p.orig : '—',        'muted center',false],
-        [p.pick != null ? `#${p.pick}` : '—', 'right',   false],
-        [p.notes || '',                    'muted',       false],
+        [String(p.year),                      'right',        ],
+        [p.round === 1 ? '1st' : '2nd',       'right',        ],
+        [isAcquired ? p.orig : '—',           'muted center', ],
+        [p.pick != null ? `#${p.pick}` : '—', 'right',        ],
+        [protLabel,                            'muted',        ],
+        [p.notes || '',                        'muted',        ],
       ];
       cells.forEach(([text, cls]) => {
         const td = tr.insertCell();

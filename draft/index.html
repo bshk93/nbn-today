@@ -379,6 +379,8 @@
           <th class="right">Pick</th>
           <th>Orig</th>
           <th>Owner</th>
+          <th>Protection</th>
+          <th>Status</th>
           <th>Notes</th>
         </tr></thead>`;
         const tbody = document.createElement('tbody');
@@ -402,6 +404,24 @@
           tdOwner.className = 'owner-cell';
           tdOwner.textContent = traded ? p.owner : '—';
           tr.appendChild(tdOwner);
+
+          const tdProt = document.createElement('td');
+          tdProt.className = 'muted';
+          tdProt.textContent = p.protected != null ? `Top-${p.protected}` : '—';
+          tr.appendChild(tdProt);
+
+          const tdStatus = document.createElement('td');
+          if (p.conveys === true) {
+            tdStatus.textContent = 'Conveys';
+            tdStatus.style.color = '#4ade80';
+          } else if (p.conveys === false) {
+            tdStatus.textContent = 'Does not convey';
+            tdStatus.style.color = '#f87171';
+          } else {
+            tdStatus.textContent = '—';
+            tdStatus.className = 'muted';
+          }
+          tr.appendChild(tdStatus);
 
           const tdNotes = document.createElement('td');
           tdNotes.className = 'notes-cell';
