@@ -87,9 +87,10 @@
 
     thead th.right { text-align: right; }
 
-    tbody tr { border-bottom: 1px solid #283141; transition: background 0.1s; cursor: pointer; }
+    tbody tr { border-bottom: 1px solid #283141; transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: #263244; }
+    tbody tr[data-clickable] { cursor: pointer; }
 
     td { padding: 0.55rem 0.75rem; color: #d1d5db; }
     td.pick { color: #6b7280; font-size: 0.78rem; width: 2.5rem; font-variant-numeric: tabular-nums; }
@@ -124,6 +125,27 @@
     .player-name { font-weight: 600; color: #f3f4f6; }
 
     #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+
+    .upcoming-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: #1e3a5f;
+      color: #60a5fa;
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      vertical-align: middle;
+      margin-left: 0.5rem;
+    }
+
+    .pick-row-traded td { color: #60a5fa; }
+    .pick-row-traded td.orig-cell,
+    .pick-row-traded td.owner-cell { font-weight: 600; }
+    td.owner-cell { font-weight: 500; }
+    td.notes-cell { color: #6b7280; font-size: 0.8rem; font-style: italic; }
+    td.picknum-cell { color: #6b7280; font-size: 0.78rem; width: 2.5rem; font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
@@ -131,8 +153,8 @@
     <nav class="nav"><a href="/">← Nothing But Net</a></nav>
 
     <header>
-      <h1>Draft History</h1>
-      <p>NBN draft classes, pick by pick.</p>
+      <h1>Draft</h1>
+      <p>Past draft classes and upcoming pick ownership.</p>
     </header>
 
     <div class="controls">
@@ -223,6 +245,7 @@
       const tbody = document.createElement('tbody');
       picks.forEach(({ pick, player }) => {
         const tr = document.createElement('tr');
+        tr.dataset.clickable = '1';
         tr.addEventListener('click', () => { location.href = `/players/?p=${player.SLUG}`; });
 
         // Photo
@@ -322,10 +345,88 @@
       });
     }
 
+    function renderFuture(allPicks, year) {
+      const content = document.getElementById('content');
+      content.innerHTML = '';
+
+      const yearPicks = allPicks.filter(p => p.year === +year);
+      if (!yearPicks.length) {
+        content.innerHTML = '<div id="status">No pick data for this year.</div>';
+        return;
+      }
+
+      [1, 2].forEach(rnd => {
+        const picks = yearPicks
+          .filter(p => p.round === rnd)
+          .sort((a, b) => {
+            if (a.pick != null && b.pick != null) return a.pick - b.pick;
+            if (a.pick != null) return -1;
+            if (b.pick != null) return 1;
+            return a.orig.localeCompare(b.orig);
+          });
+        if (!picks.length) return;
+
+        const block = document.createElement('div');
+        block.className = 'round-block';
+        const h2 = document.createElement('h2');
+        h2.textContent = `Round ${rnd}`;
+        block.appendChild(h2);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'table-wrap';
+        const tbl = document.createElement('table');
+        tbl.innerHTML = `<thead><tr>
+          <th class="right">Pick</th>
+          <th>Orig</th>
+          <th>Owner</th>
+          <th>Notes</th>
+        </tr></thead>`;
+        const tbody = document.createElement('tbody');
+
+        picks.forEach(p => {
+          const traded = p.orig !== p.owner;
+          const tr = document.createElement('tr');
+          if (traded) tr.className = 'pick-row-traded';
+
+          const tdPick = document.createElement('td');
+          tdPick.className = 'picknum-cell right';
+          tdPick.textContent = p.pick != null ? `#${p.pick}` : '—';
+          tr.appendChild(tdPick);
+
+          const tdOrig = document.createElement('td');
+          tdOrig.className = 'orig-cell';
+          tdOrig.textContent = p.orig;
+          tr.appendChild(tdOrig);
+
+          const tdOwner = document.createElement('td');
+          tdOwner.className = 'owner-cell';
+          tdOwner.textContent = traded ? p.owner : '—';
+          tr.appendChild(tdOwner);
+
+          const tdNotes = document.createElement('td');
+          tdNotes.className = 'notes-cell';
+          tdNotes.textContent = p.notes || '';
+          tr.appendChild(tdNotes);
+
+          tbody.appendChild(tr);
+        });
+
+        tbl.appendChild(tbody);
+        wrap.appendChild(tbl);
+        block.appendChild(wrap);
+        content.appendChild(block);
+      });
+    }
+
     async function init() {
-      const res = await fetch('/players/player_seasons.csv');
-      if (!res.ok) { document.getElementById('status').textContent = 'Failed to load data.'; return; }
-      const rows = parseCSV(await res.text());
+      const [seasonsRes, picksRes] = await Promise.all([
+        fetch('/players/player_seasons.csv'),
+        fetch('/api/picks'),
+      ]);
+
+      if (!seasonsRes.ok) { document.getElementById('status').textContent = 'Failed to load data.'; return; }
+      const rows = parseCSV(await seasonsRes.text());
+      const allPicks = picksRes.ok ? await picksRes.json() : [];
 
       // Aggregate career totals and deduplicate by slug
       const players = {};
@@ -338,28 +439,56 @@
         players[r.SLUG]._career_PTS += +r.PTS  || 0;
         players[r.SLUG]._career_REB += +r.REB  || 0;
         players[r.SLUG]._career_AST += +r.AST  || 0;
-        // Keep most recent bio data
         if (r.PHOTO_URL) players[r.SLUG].PHOTO_URL = r.PHOTO_URL;
         if (r.COUNTRY && r.COUNTRY !== 'NA') players[r.SLUG].COUNTRY = r.COUNTRY;
         if (r.COLLEGE && r.COLLEGE !== 'NA') players[r.SLUG].COLLEGE = r.COLLEGE;
       });
 
-      // Filter to drafted players
       const drafted = Object.fromEntries(
         Object.entries(players).filter(([, p]) => p.NBN_DFT_YR && p.NBN_DFT_YR !== 'NA')
       );
 
-      const years = [...new Set(Object.values(drafted).map(p => p.NBN_DFT_YR))].sort().reverse();
+      const pastYears = new Set(Object.values(drafted).map(p => p.NBN_DFT_YR));
+      const futureYears = [...new Set(allPicks.map(p => String(p.year)))]
+        .filter(y => !pastYears.has(y))
+        .sort();
 
       const sel = document.getElementById('year-select');
-      years.forEach(y => {
+
+      futureYears.forEach(y => {
         const opt = document.createElement('option');
-        opt.value = y; opt.textContent = y + ' Draft';
+        opt.value = y;
+        opt.dataset.future = '1';
+        opt.textContent = `${y} Draft`;
         sel.appendChild(opt);
       });
 
-      render(drafted, years[0]);
-      sel.addEventListener('change', () => render(drafted, sel.value));
+      [...pastYears].sort().reverse().forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = `${y} Draft`;
+        sel.appendChild(opt);
+      });
+
+      const allYears = [...futureYears, ...[...pastYears].sort().reverse()];
+
+      function renderYear(y) {
+        const isFuture = !pastYears.has(y);
+        // Update header badge
+        const badge = document.querySelector('.upcoming-badge');
+        if (badge) badge.remove();
+        if (isFuture) {
+          const b = document.createElement('span');
+          b.className = 'upcoming-badge';
+          b.textContent = 'Upcoming';
+          document.querySelector('header h1').appendChild(b);
+        }
+        if (isFuture) renderFuture(allPicks, y);
+        else render(drafted, y);
+      }
+
+      renderYear(allYears[0]);
+      sel.addEventListener('change', () => renderYear(sel.value));
     }
 
     init();
