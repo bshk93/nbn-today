@@ -160,6 +160,7 @@
     <div class="controls">
       <label for="year-select">Draft Class</label>
       <select id="year-select"></select>
+      <button id="edit-btn" style="display:none;margin-left:auto;padding:0.3rem 0.7rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#6b7280;font-family:inherit">Edit</button>
     </div>
 
     <div id="content"><div id="status">Loading…</div></div>
@@ -345,6 +346,162 @@
       });
     }
 
+    const TOKEN_KEY = 'nbn_token';
+    const getToken = () => localStorage.getItem(TOKEN_KEY);
+    const setToken = t => localStorage.setItem(TOKEN_KEY, t);
+
+    function withToken(fn) {
+      const t = getToken();
+      if (t) { fn(t); return; }
+      const tok = prompt('Enter your NBN access token:');
+      if (!tok) return;
+      setToken(tok);
+      fn(tok);
+    }
+
+    const TEAM_ABBRS = [
+      'ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
+      'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+      'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS',
+    ];
+
+    const INP = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
+
+    function renderFutureEditable(allPicks, year, onSaved) {
+      const content = document.getElementById('content');
+      content.innerHTML = '';
+
+      const yearPicks = allPicks.filter(p => p.year === +year)
+        .sort((a, b) => a.round - b.round || (a.pick ?? 999) - (b.pick ?? 999) || a.orig.localeCompare(b.orig));
+
+      const toolbar = document.createElement('div');
+      toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Save';
+      saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit';
+
+      const statusEl = document.createElement('span');
+      statusEl.style.cssText = 'font-size:0.75rem;color:#6b7280;margin-left:auto';
+
+      toolbar.appendChild(saveBtn);
+      toolbar.appendChild(cancelBtn);
+      toolbar.appendChild(statusEl);
+      content.appendChild(toolbar);
+
+      [1, 2].forEach(rnd => {
+        const rndPicks = yearPicks.filter(p => p.round === rnd);
+        if (!rndPicks.length) return;
+
+        const block = document.createElement('div');
+        block.className = 'round-block';
+        const h2 = document.createElement('h2');
+        h2.textContent = `Round ${rnd}`;
+        block.appendChild(h2);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'table-wrap';
+        wrap.style.overflowX = 'auto';
+
+        const tbl = document.createElement('table');
+        tbl.innerHTML = `<thead><tr>
+          <th>Orig</th><th>Owner</th><th>Pick #</th><th>Top-N Prot.</th><th>Notes</th>
+        </tr></thead>`;
+        const tbody = document.createElement('tbody');
+
+        rndPicks.forEach(p => {
+          const tr = document.createElement('tr');
+
+          const tdOrig = document.createElement('td');
+          tdOrig.textContent = p.orig;
+          tdOrig.style.color = '#6b7280';
+          tr.appendChild(tdOrig);
+
+          const selOwner = document.createElement('select');
+          selOwner.style.cssText = INP;
+          TEAM_ABBRS.forEach(t => {
+            const o = document.createElement('option');
+            o.value = t; o.textContent = t;
+            if (t === p.owner) o.selected = true;
+            selOwner.appendChild(o);
+          });
+          const tdOwner = document.createElement('td');
+          tdOwner.appendChild(selOwner);
+          tr.appendChild(tdOwner);
+
+          const inpPick = document.createElement('input');
+          inpPick.type = 'number'; inpPick.min = '1'; inpPick.max = '60';
+          inpPick.style.cssText = INP;
+          if (p.pick != null) inpPick.value = p.pick;
+          const tdPick = document.createElement('td');
+          tdPick.appendChild(inpPick);
+          tr.appendChild(tdPick);
+
+          const inpProt = document.createElement('input');
+          inpProt.type = 'number'; inpProt.min = '1'; inpProt.max = '30';
+          inpProt.style.cssText = INP;
+          if (p.protected != null) inpProt.value = p.protected;
+          const tdProt = document.createElement('td');
+          tdProt.appendChild(inpProt);
+          tr.appendChild(tdProt);
+
+          const inpNotes = document.createElement('input');
+          inpNotes.type = 'text'; inpNotes.style.cssText = INP;
+          inpNotes.value = p.notes || '';
+          const tdNotes = document.createElement('td');
+          tdNotes.appendChild(inpNotes);
+          tr.appendChild(tdNotes);
+
+          p._inputs = { selOwner, inpPick, inpProt, inpNotes };
+          tbody.appendChild(tr);
+        });
+
+        tbl.appendChild(tbody);
+        wrap.appendChild(tbl);
+        block.appendChild(wrap);
+        content.appendChild(block);
+      });
+
+      cancelBtn.addEventListener('click', () => onSaved(allPicks));
+
+      saveBtn.addEventListener('click', () => withToken(async token => {
+        saveBtn.disabled = true; cancelBtn.disabled = true;
+        statusEl.textContent = 'Saving…';
+        try {
+          const results = await Promise.all(yearPicks.map(p => {
+            const { selOwner, inpPick, inpProt, inpNotes } = p._inputs;
+            return fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                owner:     selOwner.value,
+                pick:      inpPick.value  ? parseInt(inpPick.value)  : null,
+                protected: inpProt.value  ? parseInt(inpProt.value)  : null,
+                notes:     inpNotes.value.trim(),
+              }),
+            });
+          }));
+          const failed = results.find(r => !r.ok);
+          if (failed) {
+            if (failed.status === 403) { localStorage.removeItem(TOKEN_KEY); statusEl.textContent = 'Invalid token — cleared.'; }
+            else statusEl.textContent = `Error ${failed.status}`;
+            saveBtn.disabled = false; cancelBtn.disabled = false;
+            return;
+          }
+          const fresh = await fetch('/api/picks').then(r => r.json());
+          statusEl.textContent = 'Saved!';
+          setTimeout(() => onSaved(fresh), 700);
+        } catch {
+          statusEl.textContent = 'Network error';
+          saveBtn.disabled = false; cancelBtn.disabled = false;
+        }
+      }));
+    }
+
     function renderFuture(allPicks, year) {
       const content = document.getElementById('content');
       content.innerHTML = '';
@@ -492,9 +649,13 @@
 
       const allYears = [...futureYears, ...[...pastYears].sort().reverse()];
 
-      function renderYear(y) {
+      const editBtn = document.getElementById('edit-btn');
+      let currentAllPicks = allPicks;
+
+      function renderYear(y, picksData) {
+        const picks = picksData ?? currentAllPicks;
         const isFuture = !pastYears.has(y);
-        // Update header badge
+
         const badge = document.querySelector('.upcoming-badge');
         if (badge) badge.remove();
         if (isFuture) {
@@ -503,7 +664,14 @@
           b.textContent = 'Upcoming';
           document.querySelector('header h1').appendChild(b);
         }
-        if (isFuture) renderFuture(allPicks, y);
+
+        editBtn.style.display = isFuture ? '' : 'none';
+        editBtn.onclick = () => withToken(() => renderFutureEditable(picks, y, fresh => {
+          currentAllPicks = fresh;
+          renderYear(y, fresh);
+        }));
+
+        if (isFuture) renderFuture(picks, y);
         else render(drafted, y);
       }
 
