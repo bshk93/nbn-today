@@ -594,6 +594,12 @@
           } else if (p.conveys === false) {
             tdStatus.textContent = 'Does not convey';
             tdStatus.style.color = '#f87171';
+          } else if (p.swap_conveys === true) {
+            tdStatus.textContent = 'Swap conveys';
+            tdStatus.style.color = '#4ade80';
+          } else if (p.swap_conveys === false) {
+            tdStatus.textContent = 'Swap does not convey';
+            tdStatus.style.color = '#f87171';
           } else {
             tdStatus.textContent = '—';
             tdStatus.className = 'muted';
