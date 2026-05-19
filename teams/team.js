@@ -850,7 +850,15 @@ function buildRosterTable(rows, biosData, capLevels) {
   return wrap;
 }
 
-function buildPicksTable(picks, teamAbbr) {
+function bioPlayerName(slug, bios) {
+  if (!slug || !bios) return null;
+  const bio = bios[slug];
+  if (!bio) return null;
+  const parts = bio.name.split(',');
+  return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+}
+
+function buildPicksTable(picks, teamAbbr, bios = {}) {
   if (!picks.length) return null;
 
   const sortPicks = arr => [...arr].sort((a, b) => a.year - b.year || a.round - b.round);
@@ -860,11 +868,11 @@ function buildPicksTable(picks, teamAbbr) {
   const table = document.createElement('table');
   const thead = table.createTHead();
   const hr = thead.insertRow();
-  ['Year', 'Rnd', 'From', 'Pick', 'Protection', 'Swap', 'Notes'].forEach(label => {
+  ['Year', 'Rnd', 'From', 'Pick', 'Player', 'Protection', 'Swap', 'Notes'].forEach(label => {
     const th = document.createElement('th');
     th.textContent = label;
     if (label === 'Pick' || label === 'Year' || label === 'Rnd') th.classList.add('right');
-    if (label === 'From' || label === 'Protection' || label === 'Swap' || label === 'Notes') th.classList.add('muted');
+    if (label === 'From' || label === 'Player' || label === 'Protection' || label === 'Swap' || label === 'Notes') th.classList.add('muted');
     hr.appendChild(th);
   });
 
@@ -875,7 +883,7 @@ function buildPicksTable(picks, teamAbbr) {
     const sep = tbody.insertRow();
     sep.className = 'subheader';
     const td = sep.insertCell();
-    td.colSpan = 7;
+    td.colSpan = 8;
     td.textContent = label;
 
     rows.forEach(p => {
@@ -888,6 +896,7 @@ function buildPicksTable(picks, teamAbbr) {
         [p.round === 1 ? '1st' : '2nd',       'right',        ],
         [isAcquired ? p.orig : '—',           'muted center', ],
         [p.pick != null ? `#${p.pick}` : '—', 'right',        ],
+        [bioPlayerName(p.player, bios) || '',  'muted',        ],
         [protLabel,                            'muted',        ],
         [p.swap_owner || '',                   'muted',        ],
         [p.notes || '',                        'muted',        ],
@@ -1493,12 +1502,22 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
   });
 }
 
-function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
+function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}) {
   const INP = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
+
+  const playerOpts = [{ slug: '', label: '—' },
+    ...Object.entries(bios)
+      .map(([slug, bio]) => {
+        const parts = bio.name.split(',');
+        const label = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+        return { slug, label };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label))
+  ];
 
   function renderView(currentPicks) {
     wrapEl.innerHTML = '';
-    const t = buildPicksTable(currentPicks, teamAbbr);
+    const t = buildPicksTable(currentPicks, teamAbbr, bios);
     if (t) wrapEl.appendChild(t);
     else wrapEl.innerHTML = '<div class="status">No picks on file.</div>';
     attachBtn(currentPicks);
@@ -1546,7 +1565,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
     const table = document.createElement('table');
     const thead = table.createTHead();
     const hr = thead.insertRow();
-    ['Year', 'Rnd', 'Orig', 'Owner', 'Pick #', 'Top-N Prot.', 'Swap Owner', 'Notes'].forEach(label => {
+    ['Year', 'Rnd', 'Orig', 'Owner', 'Pick #', 'Player', 'Top-N Prot.', 'Swap Owner', 'Notes'].forEach(label => {
       const th = document.createElement('th');
       th.textContent = label;
       hr.appendChild(th);
@@ -1586,6 +1605,18 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
       if (p.pick != null) inpPick.value = p.pick;
       tdPick.appendChild(inpPick);
 
+      // player
+      const tdPlayer = tr.insertCell();
+      const selPlayer = document.createElement('select');
+      selPlayer.style.cssText = INP;
+      playerOpts.forEach(({ slug, label }) => {
+        const o = document.createElement('option');
+        o.value = slug; o.textContent = label;
+        if (slug === (p.player || '')) o.selected = true;
+        selPlayer.appendChild(o);
+      });
+      tdPlayer.appendChild(selPlayer);
+
       // protected
       const tdProt = tr.insertCell();
       const inpProt = document.createElement('input');
@@ -1618,6 +1649,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
         year: p.year, round: p.round, orig: p.orig,
         owner:      selOwner.value,
         pick:       inpPick.value  ? parseInt(inpPick.value)  : null,
+        player:     selPlayer.value || null,
         protected:  inpProt.value  ? parseInt(inpProt.value)  : null,
         swap_owner: selSwap.value  || null,
         notes:      inpNotes.value.trim(),
@@ -1641,7 +1673,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr) {
           const r = await fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ owner: p.owner, pick: p.pick, protected: p.protected, swap_owner: p.swap_owner, notes: p.notes }),
+            body: JSON.stringify({ owner: p.owner, pick: p.pick, player: p.player, protected: p.protected, swap_owner: p.swap_owner, notes: p.notes }),
           });
           if (!r.ok) { failed = r; break; }
         }
@@ -1876,10 +1908,10 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
 
   if (pkr.status === 'fulfilled') {
     picksWrap.innerHTML = '';
-    const t = buildPicksTable(pkr.value, abbr);
+    const t = buildPicksTable(pkr.value, abbr, biosData);
     if (t) picksWrap.appendChild(t);
     else picksWrap.innerHTML = '<div class="status">No picks on file.</div>';
-    setupPicksEditable('picks-title', picksWrap, pkr.value, abbr);
+    setupPicksEditable('picks-title', picksWrap, pkr.value, abbr, biosData);
   } else {
     picksWrap.innerHTML = '<div class="status">Failed to load picks data.</div>';
   }

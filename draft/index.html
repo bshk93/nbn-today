@@ -367,7 +367,7 @@
 
     const INP = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
 
-    function renderFutureEditable(allPicks, year, onSaved) {
+    function renderFutureEditable(allPicks, year, bios, onSaved) {
       const content = document.getElementById('content');
       content.innerHTML = '';
 
@@ -409,9 +409,20 @@
 
         const tbl = document.createElement('table');
         tbl.innerHTML = `<thead><tr>
-          <th>Orig</th><th>Owner</th><th>Pick #</th><th>Top-N Prot.</th><th>Swap Owner</th><th>Notes</th>
+          <th>Orig</th><th>Owner</th><th>Pick #</th><th>Player</th><th>Top-N Prot.</th><th>Swap Owner</th><th>Notes</th>
         </tr></thead>`;
         const tbody = document.createElement('tbody');
+
+        // Build sorted player list for select: [{slug, label}]
+        const playerOpts = [{ slug: '', label: '—' },
+          ...Object.entries(bios)
+            .map(([slug, bio]) => {
+              const parts = bio.name.split(',');
+              const label = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+              return { slug, label };
+            })
+            .sort((a, b) => a.label.localeCompare(b.label))
+        ];
 
         rndPicks.forEach(p => {
           const tr = document.createElement('tr');
@@ -441,6 +452,18 @@
           tdPick.appendChild(inpPick);
           tr.appendChild(tdPick);
 
+          const selPlayer = document.createElement('select');
+          selPlayer.style.cssText = INP;
+          playerOpts.forEach(({ slug, label }) => {
+            const o = document.createElement('option');
+            o.value = slug; o.textContent = label;
+            if (slug === (p.player || '')) o.selected = true;
+            selPlayer.appendChild(o);
+          });
+          const tdPlayer = document.createElement('td');
+          tdPlayer.appendChild(selPlayer);
+          tr.appendChild(tdPlayer);
+
           const inpProt = document.createElement('input');
           inpProt.type = 'number'; inpProt.min = '1'; inpProt.max = '30';
           inpProt.style.cssText = INP;
@@ -468,7 +491,7 @@
           tdNotes.appendChild(inpNotes);
           tr.appendChild(tdNotes);
 
-          p._inputs = { selOwner, inpPick, inpProt, selSwap, inpNotes };
+          p._inputs = { selOwner, inpPick, selPlayer, inpProt, selSwap, inpNotes };
           tbody.appendChild(tr);
         });
 
@@ -486,13 +509,14 @@
         try {
           let failed = null;
           for (const p of yearPicks) {
-            const { selOwner, inpPick, inpProt, selSwap, inpNotes } = p._inputs;
+            const { selOwner, inpPick, selPlayer, inpProt, selSwap, inpNotes } = p._inputs;
             const r = await fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
                 owner:      selOwner.value,
                 pick:       inpPick.value  ? parseInt(inpPick.value)  : null,
+                player:     selPlayer.value || null,
                 protected:  inpProt.value  ? parseInt(inpProt.value)  : null,
                 swap_owner: selSwap.value  || null,
                 notes:      inpNotes.value.trim(),
@@ -516,7 +540,15 @@
       }));
     }
 
-    function renderFuture(allPicks, year) {
+    function playerName(slug, bios) {
+      if (!slug) return null;
+      const bio = bios[slug];
+      if (!bio) return slug;
+      const parts = bio.name.split(',');
+      return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+    }
+
+    function renderFuture(allPicks, year, bios) {
       const content = document.getElementById('content');
       content.innerHTML = '';
 
@@ -548,6 +580,7 @@
         const tbl = document.createElement('table');
         tbl.innerHTML = `<thead><tr>
           <th class="right">Pick</th>
+          <th>Player</th>
           <th>Orig</th>
           <th>Owner</th>
           <th>Protection</th>
@@ -566,6 +599,17 @@
           tdPick.className = 'picknum-cell right';
           tdPick.textContent = p.pick != null ? `#${p.pick}` : '—';
           tr.appendChild(tdPick);
+
+          const tdPlayer = document.createElement('td');
+          tdPlayer.className = 'player-cell';
+          const pName = playerName(p.player, bios);
+          if (pName) {
+            tdPlayer.textContent = pName;
+          } else {
+            tdPlayer.textContent = '—';
+            tdPlayer.classList.add('muted');
+          }
+          tr.appendChild(tdPlayer);
 
           const tdOrig = document.createElement('td');
           tdOrig.className = 'orig-cell';
@@ -622,14 +666,16 @@
     }
 
     async function init() {
-      const [seasonsRes, picksRes] = await Promise.all([
+      const [seasonsRes, picksRes, biosRes] = await Promise.all([
         fetch('/players/player_seasons.csv'),
         fetch('/api/picks'),
+        fetch('/api/players'),
       ]);
 
       if (!seasonsRes.ok) { document.getElementById('status').textContent = 'Failed to load data.'; return; }
       const rows = parseCSV(await seasonsRes.text());
       const allPicks = picksRes.ok ? await picksRes.json() : [];
+      const bios = biosRes.ok ? await biosRes.json() : {};
 
       // Aggregate career totals and deduplicate by slug
       const players = {};
@@ -692,12 +738,12 @@
         }
 
         editBtn.style.display = isFuture ? '' : 'none';
-        editBtn.onclick = () => withToken(() => renderFutureEditable(picks, y, fresh => {
+        editBtn.onclick = () => withToken(() => renderFutureEditable(picks, y, bios, fresh => {
           currentAllPicks = fresh;
           renderYear(y, fresh);
         }));
 
-        if (isFuture) renderFuture(picks, y);
+        if (isFuture) renderFuture(picks, y, bios);
         else render(drafted, y);
       }
 
