@@ -351,6 +351,8 @@
     .cap-player-opt td { background: hsl(120, 30%, 13%); }
     .cap-team-opt   td { background: hsl(210, 35%, 14%); }
     .cap-non-gtd    td { background: #1a1f2b; }
+    .dead-cap-row   td { background: hsl(0, 25%, 13%); color: #f87171; }
+    .dead-cap-row td.hold-label { color: #f87171; opacity: 0.7; }
     .btn-add-player {
       padding: 0.35rem 0.75rem; background: #1e3a5f; border: 1px solid #3b82f6;
       border-radius: 6px; color: #93c5fd; font-size: 0.78rem; font-weight: 600;
@@ -1153,12 +1155,30 @@
 
   function renderSalaryTable(container, bio) {
     const salaries = bio.salaries && typeof bio.salaries === 'object' ? bio.salaries : {};
-    if (!Object.keys(salaries).length) return;
+    const rawDeadCap = bio.dead_cap && typeof bio.dead_cap === 'object' ? bio.dead_cap : {};
+    // Backward compat: old dead players stored dead cap in salaries with no dead_cap field
+    const deadCapData = Object.keys(rawDeadCap).length
+      ? rawDeadCap
+      : (bio.type === 'dead' ? salaries : {});
+    const salaryData = (bio.type === 'dead' && !Object.keys(rawDeadCap).length) ? {} : salaries;
+
+    if (!Object.keys(salaryData).length && !Object.keys(deadCapData).length) return;
 
     const capMap = parseCapHolds(bio.cap_holds || '');
     const guaranteed = bio.guaranteed && typeof bio.guaranteed === 'object' ? bio.guaranteed : {};
     const guarantee_dates = bio.guarantee_dates && typeof bio.guarantee_dates === 'object' ? bio.guarantee_dates : {};
-    const sorted = Object.keys(salaries).sort();
+
+    // Merge all seasons, tagging each entry
+    const allEntries = [];
+    Object.keys(salaryData).sort().forEach(season => {
+      allEntries.push({ season, amount: salaryData[season], isDeadCap: false });
+    });
+    Object.keys(deadCapData).sort().forEach(season => {
+      allEntries.push({ season, amount: deadCapData[season], isDeadCap: true });
+    });
+    allEntries.sort((a, b) => a.season < b.season ? -1 : a.season > b.season ? 1 : a.isDeadCap ? 1 : -1);
+
+    if (!allEntries.length) return;
 
     const table = document.createElement('table');
     table.className = 'salary-table';
@@ -1174,16 +1194,23 @@
     const tbody = table.createTBody();
     let total = 0;
 
-    sorted.forEach(season => {
-      const raw = salaries[season];
+    allEntries.forEach(({ season, amount, isDeadCap }) => {
       const holdType = capMap[season];
       const tr = tbody.insertRow();
-      if (holdType && CAP_HOLD_CSS[holdType]) tr.className = CAP_HOLD_CSS[holdType];
+
+      if (isDeadCap) {
+        tr.className = 'dead-cap-row';
+      } else if (holdType && CAP_HOLD_CSS[holdType]) {
+        tr.className = CAP_HOLD_CSS[holdType];
+      }
 
       const tdSeason = tr.insertCell(); tdSeason.textContent = season;
-      const tdAmt    = tr.insertCell(); tdAmt.className = 'right'; tdAmt.textContent = formatSalary(raw);
+      const tdAmt    = tr.insertCell(); tdAmt.className = 'right'; tdAmt.textContent = formatSalary(amount);
       const tdLabel  = tr.insertCell(); tdLabel.className = 'hold-label';
-      if (holdType === 'NON_GTD') {
+
+      if (isDeadCap) {
+        tdLabel.textContent = 'Dead cap';
+      } else if (holdType === 'NON_GTD') {
         const gtd = guaranteed[season];
         const gDate = guarantee_dates[season];
         let label = 'Non-Guaranteed';
@@ -1198,8 +1225,8 @@
         tdLabel.textContent = CAP_HOLD_LABELS[holdType];
       }
 
-      if (!holdType) {
-        const n = parseFloat(String(raw).replace(/[$,\s]/g, ''));
+      if (isDeadCap || !holdType) {
+        const n = parseFloat(String(amount).replace(/[$,\s]/g, ''));
         if (!isNaN(n)) total += n;
       }
     });
@@ -1207,7 +1234,7 @@
     if (total > 0) {
       const tr = tbody.insertRow();
       tr.className = 'total-row';
-      const tdL = tr.insertCell(); tdL.textContent = 'Total Earnings';
+      const tdL = tr.insertCell(); tdL.textContent = 'Career Earnings';
       const tdV = tr.insertCell(); tdV.className = 'right'; tdV.textContent = formatSalary(total);
       tr.insertCell();
     }
