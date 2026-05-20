@@ -472,7 +472,11 @@
     }
     .pos-pill.selected { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
     .pos-pill:hover:not(.selected) { border-color: #6b7280; color: #9ca3af; }
-    .pos-display { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .pos-display { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.5rem; align-items: center; }
+    .retired-tag {
+      padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
+      border: 1px solid #4b5563; background: #1f2937; color: #9ca3af; letter-spacing: 0.04em;
+    }
     .pos-tag {
       padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
       border: 1px solid #3b82f6; background: #1e3a5f; color: #93c5fd;
@@ -881,6 +885,7 @@
     'Latvia':                           'LV',
     'Lithuania':                        'LT',
     'Mali':                             'ML',
+    'Mexico':                           'MX',
     'Montenegro':                       'ME',
     'New Zealand':                      'NZ',
     'Nigeria':                          'NG',
@@ -963,6 +968,16 @@
     const fWeight  = field('Weight (lbs)',          'weight',   'number');
     const fWingspan= field('Wingspan (e.g. 6\'11")', 'wingspan', 'text');
     const fPhoto   = field('Photo URL',         'photo_url',  'text', 'full-col');
+
+    // Retired checkbox
+    const retiredLbl = document.createElement('label');
+    retiredLbl.style.cssText = 'display:flex;align-items:center;gap:0.45rem;cursor:pointer;';
+    const retiredCb = document.createElement('input');
+    retiredCb.type = 'checkbox';
+    retiredCb.checked = !!initial.retired;
+    retiredLbl.appendChild(retiredCb);
+    retiredLbl.appendChild(Object.assign(document.createElement('span'), { textContent: 'Retired' }));
+    form.appendChild(retiredLbl);
 
     // Contract type
     const typeLbl = document.createElement('label');
@@ -1100,6 +1115,7 @@
         weight:      fWeight.value  ? +fWeight.value  : null,
         wingspan:    fWingspan.value.trim(),
         photo_url:   fPhoto.value.trim(),
+        retired:     retiredCb.checked,
         type:        typeSelect.value,
         cap_holds,
         salaries,
@@ -1820,6 +1836,12 @@
       tag.textContent = p;
       bioOnlyPosDiv.appendChild(tag);
     });
+    if (bio.retired) {
+      const rt = document.createElement('span');
+      rt.className = 'retired-tag';
+      rt.textContent = 'Retired';
+      bioOnlyPosDiv.appendChild(rt);
+    }
     content.appendChild(bioOnlyPosDiv);
     renderCurrentTeam(content, bioSlug);
     renderOvrBadge(content, bioSlug);
@@ -2339,6 +2361,12 @@
       tag.textContent = p;
       posDiv.appendChild(tag);
     });
+    if (bio.retired) {
+      const rt = document.createElement('span');
+      rt.className = 'retired-tag';
+      rt.textContent = 'Retired';
+      posDiv.appendChild(rt);
+    }
     content.appendChild(posDiv);
     renderCurrentTeam(content, slug);
     renderOvrBadge(content, slug);
@@ -2354,7 +2382,7 @@
       const token = getToken(); if (!token) return;
       const cur = biosData[slug] || {};
       bioFormEl = renderBioForm(
-        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {} },
+        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', retired: cur.retired || false, type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {} },
         async (token, payload) => {
           const resp = await fetch(`/api/players/${slug}`, {
             method: 'PUT',
