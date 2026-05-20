@@ -377,6 +377,13 @@
       padding: 0.32rem 0.55rem; outline: none;
     }
     .slug-field input:focus { border-color: #3b82f6; }
+    .slug-exists-warn {
+      display: none; margin-top: 0.3rem; padding: 0.4rem 0.6rem;
+      background: #431407; border: 1px solid #7c2d12; border-radius: 6px;
+      color: #fca5a5; font-size: 0.78rem; font-weight: 400;
+      text-transform: none; letter-spacing: 0;
+    }
+    .slug-exists-warn a { color: #fca5a5; text-decoration: underline; }
     .pos-picker { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.25rem; }
     .pos-pill {
       padding: 0.18rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;
@@ -1052,7 +1059,27 @@
     slugLabel.textContent = 'Slug (auto-derived, editable)';
     const slugInput = document.createElement('input');
     slugInput.type = 'text';
+
+    const slugWarn = document.createElement('div');
+    slugWarn.className = 'slug-exists-warn';
+
+    function checkSlugExists() {
+      const sl = slugInput.value.trim();
+      if (sl && biosData[sl]) {
+        const existing = biosData[sl];
+        const displayN = existing.name ? displayName(existing.name) : sl;
+        slugWarn.innerHTML = `⚠ <strong>${displayN}</strong> already exists — <a href="/players/?p=${sl}" target="_blank">view profile</a>`;
+        slugWarn.style.display = '';
+        slugInput.style.borderColor = '#ef4444';
+      } else {
+        slugWarn.style.display = 'none';
+        slugInput.style.borderColor = '';
+      }
+    }
+
+    slugInput.addEventListener('input', checkSlugExists);
     slugLabel.appendChild(slugInput);
+    slugLabel.appendChild(slugWarn);
     card.appendChild(slugLabel);
 
     const form = renderBioForm(
@@ -1071,7 +1098,7 @@
         location.reload();
       },
       () => overlay.remove(),
-      (nameVal) => { slugInput.value = slugFromName(nameVal); }
+      (nameVal) => { slugInput.value = slugFromName(nameVal); checkSlugExists(); }
     );
 
     card.appendChild(form);
