@@ -18,6 +18,8 @@ See `README.md` for league-wide constants.
 
 ### Cash / other assets
 
+**Cash is not a tradeable asset in NBN.** Trades may only involve players and draft picks.
+
 
 ---
 
@@ -25,6 +27,20 @@ See `README.md` for league-wide constants.
 
 <!-- Is there a salary matching requirement? What's the allowable delta?
      Any exceptions (e.g. teams under the cap can absorb without matching) -->
+
+### Second Apron: no salary aggregation
+
+A team **at or above the Second Apron** may not combine multiple outgoing players' salaries to satisfy matching for a higher-salaried incoming player. Trading multiple players is permitted only if each player's salary could independently satisfy the match — aggregation itself is what's prohibited.
+
+A team **below the Second Apron** that aggregates salaries in a trade is **hard-capped at the Second Apron for the remainder of the season**.
+
+### First Apron salary-matching cap
+
+A team **at or above the First Apron** may only acquire a player whose incoming salary is at most the **outgoing salary plus $250,000**. Standard matching spreads do not apply.
+
+A team **below the First Apron** that executes a trade where incoming salary exceeds outgoing + $250,000 is **hard-capped at the First Apron for the remainder of the season**.
+
+> Full First Apron standing restrictions are in `README.md`.
 
 
 ---

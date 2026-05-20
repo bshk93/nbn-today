@@ -34,7 +34,9 @@ See `README.md` for league-wide constants.
 
 ### Annual raises/cuts
 
-<!-- Allowable % change year-over-year within the extension -->
+For all extensions (except extend-and-trades — see below), the player's Salary (excluding Incentive Compensation) may increase or decrease year-over-year by no more than **8% of the Year 1 salary of the extended term**. The same applies to Regular Salary. As with new contracts, the 8% is fixed in dollar terms off Year 1 of the extension — not compounding off the prior year.
+
+**Extend-and-trades (Section 8(e)(2)):** Extensions entered into in connection with a trade use **5%** (not 8%) of the Year 1 extended-term salary as the annual raise/cut limit. Same fixed-dollar calculation off Year 1 — just a lower cap.
 
 ---
 

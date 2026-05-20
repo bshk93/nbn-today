@@ -22,8 +22,8 @@ See `README.md` for league-wide constants.
 
 ## Two-Way Salary Rules
 
-<!-- Salary structure: fixed amount, or negotiated within a band?
-     How it counts (or doesn't count) against the salary cap -->
+Two-way contracts **do not count against the salary cap**. A two-way player's salary is represented as **$0 for every year of their contract** — they carry no cap charge at any point.
+
 
 
 ---
