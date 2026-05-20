@@ -419,7 +419,7 @@
       const status = document.getElementById('status');
       const wrap = document.getElementById('table-wrap');
       try {
-        const res = await fetch('/owner_stats.csv');
+        const res = await fetch('/data/owner_stats.csv');
         if (!res.ok) throw new Error(res.statusText);
         const text = await res.text();
         const rows = parseCSV(text);

@@ -359,9 +359,9 @@
 
       try {
         const [r1, r2, r3] = await Promise.all([
-          fetch('/h2h-alltime.csv'),
-          fetch('/h2h-playoffs.csv'),
-          fetch('/h2h-owners.csv'),
+          fetch('/data/h2h-alltime.csv'),
+          fetch('/data/h2h-playoffs.csv'),
+          fetch('/data/h2h-owners.csv'),
         ]);
         if (!r1.ok) throw new Error('alltime: ' + r1.statusText);
         if (!r2.ok) throw new Error('playoffs: ' + r2.statusText);

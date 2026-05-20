@@ -271,7 +271,7 @@
     (async () => {
       const wrap = document.getElementById('table-wrap');
       try {
-        const res = await fetch('/league-history.csv');
+        const res = await fetch('/data/league-history.csv');
         if (!res.ok) throw new Error(res.statusText);
         wrap.innerHTML = '';
         wrap.appendChild(buildTable(parseCSV(await res.text())));

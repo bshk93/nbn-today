@@ -790,7 +790,7 @@
 
     async function activateEditPanel(rosterData) {
       if (!myRoster.length && myTeam) {
-        const r = await fetch(`/${myTeam.toLowerCase()}-roster.csv`);
+        const r = await fetch(`/data/${myTeam.toLowerCase()}-roster.csv`);
         if (r.ok) { myRoster = parseCSV(await r.text()); rosterData[myTeam] = myRoster; }
       }
       pendingEntries = [...(tbData[myTeam] || [])];
@@ -827,7 +827,7 @@
         if (teamsToFetch.length > 0) {
           const results = await Promise.allSettled(
             teamsToFetch.map(t =>
-              fetch(`/${t.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : null)
+              fetch(`/data/${t.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : null)
             )
           );
           teamsToFetch.forEach((t, i) => {

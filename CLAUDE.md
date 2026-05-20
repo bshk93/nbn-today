@@ -40,19 +40,19 @@ All CSVs live at the project root or in subdirectories and are fetched at runtim
 
 | Pattern | Used by |
 |---|---|
-| `owner_stats.csv` (symlink to `/var/lib/nothing-but-stats/owner_stats.csv`) | `owners/index.html` |
-| `{abbr}-seasons.csv`, `{abbr}-roster.csv`, `{abbr}-picks.csv`, `{abbr}-players.csv` | `teams/{ABB}/index.html` via `teams/team.js` |
+| `data/owner_stats.csv` | `owners/index.html` |
+| `data/{abbr}-seasons.csv`, `data/{abbr}-roster.csv`, `data/{abbr}-picks.csv`, `data/{abbr}-players.csv` | `teams/{ABB}/index.html` via `teams/team.js` |
 | `standings/standings-history.csv`, `standings/playoff-brackets.csv` | `standings/index.html` |
-| `game-highs-{p,r,a,s,b,3pm}.csv` | `stats/highs/{stat}/index.html` via `stats/highs/table.js` |
-| `totals-{p,r,a,s,b,3pm}.csv` | `stats/totals/{stat}/index.html` via `stats/totals/table.js` |
+| `data/game-highs-{p,r,a,s,b,3pm}.csv` | `stats/highs/{stat}/index.html` via `stats/highs/table.js` |
+| `data/totals-{p,r,a,s,b,3pm}.csv` | `stats/totals/{stat}/index.html` via `stats/totals/table.js` |
 | `players/player_seasons.csv`, `players/player_seasons_playoffs.csv`, `players/player_awards.csv` | `players/index.html` |
-| `h2h-alltime.csv`, `h2h-owners.csv`, `h2h-playoffs.csv` | `h2h/index.html` |
-| `hof.csv` | `hof/index.html` |
-| `league-history.csv` | `history/index.html` |
+| `data/h2h-alltime.csv`, `data/h2h-owners.csv`, `data/h2h-playoffs.csv` | `h2h/index.html` |
+| `data/hof.csv` | `hof/index.html` |
+| `data/league-history.csv` | `history/index.html` |
 | `nbntv-classics/playoff-classics.csv`, `nbntv-classics/playoff-series-margins.csv` | `nbntv-classics/index.html` |
 | `/api/trading-block` (JSON via API, not a static file) | `tradeblock/index.html` |
 
-`owner_stats.csv` headers: `owner, teams, seasons, best_reg_season, best_reg_pct, worst_reg_season, worst_reg_pct, reg_w, reg_l, reg_pct, playoff_w, playoff_l, playoff_pct, total_w, total_l, total_pct, playoff_appearances, po_r2, po_conf_finals, po_finals, championships, off_rtg, def_rtg`
+`data/owner_stats.csv` headers: `owner, teams, seasons, best_reg_season, best_reg_pct, worst_reg_season, worst_reg_pct, reg_w, reg_l, reg_pct, playoff_w, playoff_l, playoff_pct, total_w, total_l, total_pct, playoff_appearances, po_r2, po_conf_finals, po_finals, championships, off_rtg, def_rtg`
 
 ## Architecture
 
@@ -72,7 +72,7 @@ No framework or build step. Every page is a self-contained HTML file with inline
 
 ### owners/index.html data flow
 
-1. `fetch('/owner_stats.csv')` → `parseCSV(text)` → array of row objects keyed by CSV header
+1. `fetch('/data/owner_stats.csv')` → `parseCSV(text)` → array of row objects keyed by CSV header
 2. `buildTable(rows)` creates the `<table>`, renders `<thead>` from the `COLS` array, attaches sort click handlers, calls `rebuildBody`
 3. `rebuildBody(rows, tbody)` sorts rows and re-renders all `<td>` cells on every sort change
 
@@ -334,7 +334,7 @@ Key columns: `SEASON`, `W`, `L`, `PCT`, `PPG`, `OPPG`, `DIFF`, `SEED` (e.g. `"Ea
 
 ### Owner
 
-One row in `owner_stats.csv`. Career-aggregate stats for a GM across all seasons they managed a team.
+One row in `data/owner_stats.csv`. Career-aggregate stats for a GM across all seasons they managed a team.
 
 Key columns: `owner`, `teams` (comma-separated abbrs), `seasons`, `reg_w/l/pct`, `playoff_w/l/pct`, `playoff_appearances`, `po_r2`, `po_conf_finals`, `po_finals`, `championships`, `off_rtg`, `def_rtg`.
 

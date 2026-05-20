@@ -1892,9 +1892,9 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   const draftedWrap  = document.getElementById('drafted-wrap');
 
   const [sr, pr, rr, pkr, biosr, capr, psr, ovrr] = await Promise.allSettled([
-    fetch(`/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
-    fetch(`/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
-    fetch(`/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/api/picks/${abbr}`).then(r => { if (!r.ok) throw r; return r.json(); }),
     fetch('/api/players').then(r => r.ok ? r.json() : {}),
     fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
