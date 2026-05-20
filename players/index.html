@@ -1964,6 +1964,7 @@
         JERSEY:     bio.jersey_number ?? null,
         TYPE:       bio.type || '',
         OVR:        currentOvr[r.SLUG] ?? null,
+        RETIRED:    bio.retired || false,
       };
     });
 
@@ -2115,6 +2116,7 @@
       { label: 'Ht',  field: 'HEIGHT',   defaultDir: 1, cls: 'right muted', display: p => p.HEIGHT   || '—' },
       { label: 'Wt',  field: 'WEIGHT',   defaultDir:-1, cls: 'right muted', display: p => p.WEIGHT != null ? p.WEIGHT + ' lbs' : '—' },
       { label: 'WS',  field: 'WINGSPAN', defaultDir: 1, cls: 'right muted', display: p => p.WINGSPAN  || '—' },
+      { label: 'Ret', field: 'RETIRED',  defaultDir:-1, cls: 'center muted', display: p => p.RETIRED ? '✓' : '—' },
     ];
 
     let sortField = 'PLAYER', sortDir = 1;
