@@ -187,3 +187,128 @@ Endpoints: `GET /api/players` (public), `POST /api/players` (admin, creates), `P
 | `ROUND` | Round | `1st` or `2nd` |
 | `TEAM` | Origin or destination | `Own`, `from NYK` |
 | `TYPE` | Direction | `own` or `acquired` |
+
+## Data model
+
+The core entities and how they relate.
+
+### Player
+
+A player is the stable identity unit across the whole site. The canonical store is `player-bios.json` (served via `GET /api/players`), keyed by **slug** (`"curry-stephen"`).
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | string | `"LAST, FIRST"` uppercase |
+| `pos` | string[] | Subset of `PG SG SF PF C` |
+| `dob` | ISO date | `"1988-03-14"` |
+| `college`, `country` | string | |
+| `draft_year`, `draft_round`, `draft_pick` | int or null | NBN draft, not NBA |
+| `height`, `weight`, `wingspan` | string / int | |
+| `photo_url` | string | |
+| `type` | enum | See **Player types** below |
+| `cap_holds` | string | See **Cap holds** below |
+| `salaries` | `{season: "$amount"}` | Keyed by `"YY-YY"` season string |
+
+#### Player types
+
+| Value | Meaning |
+|---|---|
+| `"player"` | Standard roster player |
+| `"two-way"` | Two-way contract; salary/cap rules differ |
+| `"dead"` | Dead cap entry — no active player, just cap hit |
+| `""` | Unset / not yet classified |
+
+#### Cap holds
+
+`cap_holds` is a comma-separated string of `YEAR:TYPE` pairs, e.g. `"27-28:PLAYER_OPT,28-29:UFA"`. It describes what happens **after** the last contract year.
+
+| Type | Meaning |
+|---|---|
+| `UFA` | Unrestricted free agent |
+| `RFA` | Restricted free agent |
+| `PLAYER_OPT` | Player holds option to extend |
+| `TEAM_OPT` | Team holds option to extend |
+| `NON_GTD` | Non-guaranteed salary year |
+
+### Roster entry
+
+One row in `{abbr}-roster.csv`. Links a player to a team for the current season.
+
+| Column | Notes |
+|---|---|
+| `SLUG` | Foreign key into `player-bios.json` |
+| `OVR` | Overall rating (integer, e.g. `86`) |
+
+All other display data (name, position, age, salary, cap holds) is joined from `player-bios.json` at render time.
+
+### Draft pick
+
+One row in `{abbr}-picks.csv`. Represents a future draft pick owned by or owed by the team.
+
+| Column | Values | Notes |
+|---|---|---|
+| `YEAR` | e.g. `2026` | Draft year |
+| `ROUND` | `1st` or `2nd` | |
+| `TEAM` | `Own`, `from NYK`, … | Origin team (for acquired picks) or `Own` |
+| `TYPE` | `own` or `acquired` | Whether the team retains or receives this pick |
+
+A trailing `*` on `TEAM` (e.g. `Own*`) conventionally marks a pick with conditions.
+
+### Player season
+
+One row in `players/player_seasons.csv` (regular season) or `players/player_seasons_playoffs.csv` (playoffs). Aggregated stats for one player in one season on one team.
+
+Key columns: `PLAYER`, `SEASON` (e.g. `"24-25"`), `TEAM`, `G`, `MIN`, `PTS`, `REB`, `AST`, `STL`, `BLK`, `3PM`, `GMSC` (game score total), and single-game highs (`HIGH_P`, `HIGH_R`, etc.). Also carries bio snapshot fields (`DOB`, `COLLEGE`, `PHOTO_URL`, `NBN_DFT_*`) and `SLUG`.
+
+`RINGS` (reg season only) counts championship rings the player holds as of that season.
+
+### Player award
+
+One row in `players/player_awards.csv`. One award instance per player per season.
+
+| Column | Example |
+|---|---|
+| `SLUG` | `"durant-kevin"` |
+| `PLAYER` | `"Durant, Kevin"` |
+| `SEASON` | `"20-21"` |
+| `AWARD` | `"All-Star"`, `"MVP"`, `"DPOY"`, `"All-NBN 1st"`, … |
+
+### Team season
+
+One row in `{abbr}-seasons.csv` (and mirrored in `standings/standings-history.csv`). One team's record for one regular season.
+
+Key columns: `SEASON`, `W`, `L`, `PCT`, `PPG`, `OPPG`, `DIFF`, `SEED` (e.g. `"East-3"`), `SEED_NUM`, `OFF_RTG`, `DEF_RTG`, `PLAYOFF_RESULT`, `FOTY` (Franchise of the Year, bool), `COTY` (Coach of the Year, bool).
+
+`PLAYOFF_RESULT` values: `Missed`, `First Round`, `Conf Finals`, `Runner-Up`, `Champion`.
+
+### Owner
+
+One row in `owner_stats.csv`. Career-aggregate stats for a GM across all seasons they managed a team.
+
+Key columns: `owner`, `teams` (comma-separated abbrs), `seasons`, `reg_w/l/pct`, `playoff_w/l/pct`, `playoff_appearances`, `po_r2`, `po_conf_finals`, `po_finals`, `championships`, `off_rtg`, `def_rtg`.
+
+### HOF entry
+
+One row in `hof.csv`. Tracks a player's Hall of Fame eligibility score.
+
+Key columns: `PLAYER`, `TEAMS`, `HOF_POINTS`, `RINGS`, `PLAYOFF_APPS`, `ALLSTARS`, `ALL_NBN_1/2/3`, `MVP`, `DPOY`, `G`, `P/R/A/S/B` (career totals), `ACTIVE` (bool).
+
+### Game high
+
+One row in `game-highs-{p,r,a,s,b,3pm}.csv`. A single-game stat record entry.
+
+Key columns: `RANK`, `DATE`, `SEASON`, `PLAYER`, `TEAM`, `OPP`, `gametype` (`REGULAR` or `PLAYOFF`), plus the six stat columns (`P`, `R`, `A`, `S`, `B`, `3PM`).
+
+### Playoff bracket
+
+One row in `standings/playoff-brackets.csv`. One matchup in one season's bracket.
+
+| Column | Notes |
+|---|---|
+| `SEASON` | e.g. `"24-25"` |
+| `ROUND` | `1` (first round) through `4` (finals) |
+| `T1`, `T2` | Team abbreviations |
+| `T1_W`, `T2_W` | Wins per team |
+| `WINNER` | Winning team abbreviation |
+| `T1_SEED`, `T2_SEED` | e.g. `"East-1"` |
+| `T1_SEED_NUM`, `T2_SEED_NUM` | Integer seed |
