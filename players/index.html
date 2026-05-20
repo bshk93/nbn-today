@@ -1975,6 +1975,7 @@
       { id: 'e-k', label: 'E – K', from: 'E', to: 'K' },
       { id: 'l-p', label: 'L – P', from: 'L', to: 'P' },
       { id: 'q-z', label: 'Q – Z', from: 'Q', to: 'Z' },
+      { id: 'all', label: 'All', all: true },
     ];
     const tabParam = new URLSearchParams(location.search).get('tab');
     let activePage = PAGES.find(p => p.id === tabParam) || PAGES[0];
@@ -2253,6 +2254,7 @@
       const pagePlayers = activeFilters.size > 0
         ? players.filter(p => MISSING_FILTERS.some(f => activeFilters.has(f.id) && f.test(p)))
         : players.filter(p => {
+            if (activePage.all) return true;
             const l = (p.PLAYER[0] || '').toUpperCase();
             return l >= activePage.from && l <= activePage.to;
           });
