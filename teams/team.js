@@ -470,12 +470,13 @@ const SWATCH_COLORS = {
   NON_GTD:    '#374151',
 };
 
-function parseCapHolds(str) {
+function parseCapHolds(val) {
+  if (val && typeof val === 'object') return val;
   const map = {};
-  if (!str) return map;
-  str.split(',').forEach(pair => {
+  if (!val) return map;
+  String(val).split(',').forEach(pair => {
     const [yr, type] = pair.split(':');
-    if (yr && type) map[yr] = type;
+    if (yr && type) map[yr.trim()] = type.trim();
   });
   return map;
 }
@@ -630,7 +631,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}) {
       _pos:       (bio.pos || []).join(' · ') || '—',
       _age:       calcAge(bio.dob),
       _type,
-      _cap_holds: bio.cap_holds || '',
+      _cap_holds: bio.cap_holds || {},
       _salaries,
       _jersey:    bio.jersey_number ?? null,
     };
@@ -844,7 +845,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}) {
   augmented.forEach(a => {
     Object.values(parseCapHolds(a._cap_holds || '')).forEach(t => allCapTypes.add(t));
   });
-  const hasCapData = augmented.some(a => a._cap_holds && a._cap_holds.trim() !== '');
+  const hasCapData = augmented.some(a => Object.keys(a._cap_holds || {}).length > 0);
   if (!hasCapData) return table;
 
   const legend = document.createElement('div');

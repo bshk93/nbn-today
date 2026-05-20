@@ -925,9 +925,10 @@ function setupPlayerSearch() {
   }
 }
 
-function parseCapHolds(str) {
-  if (!str) return [];
-  return str.split(',').map(s => {
+function parseCapHolds(val) {
+  if (!val) return [];
+  if (typeof val === 'object') return Object.entries(val).map(([year, type]) => ({ year, type }));
+  return String(val).split(',').map(s => {
     const [year, type] = s.trim().split(':');
     return { year: (year || '').trim(), type: (type || '').trim() };
   }).filter(h => h.year && h.type);
@@ -1006,15 +1007,15 @@ function nextSalaryYear() {
 
 function collectSalaries() {
   const salaries = {};
-  const holdParts = [];
+  const cap_holds = {};
   document.querySelectorAll('.salary-row').forEach(row => {
     const yr  = row.querySelector('.year-input').value.trim();
     const amt = row.querySelectorAll('input')[1].value.trim();
     const hold = row.querySelector('.hold-select').value;
     if (yr && amt) salaries[yr] = amt;
-    if (yr && hold) holdParts.push(`${yr}:${hold}`);
+    if (yr && hold) cap_holds[yr] = hold;
   });
-  return { salaries, cap_holds: holdParts.join(',') };
+  return { salaries, cap_holds };
 }
 
 // ── Trade builder ──────────────────────────────────────────────────────────

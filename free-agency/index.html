@@ -169,15 +169,6 @@
       return isNaN(n) ? v : '$' + Math.round(n).toLocaleString('en-US');
     }
 
-    function parseCapHolds(str) {
-      const map = {};
-      if (!str) return map;
-      str.split(',').forEach(pair => {
-        const [yr, type] = pair.split(':');
-        if (yr && type) map[yr.trim()] = type.trim();
-      });
-      return map;
-    }
 
     // ── State ─────────────────────────────────────────────────────────────────
 
@@ -388,7 +379,7 @@
 
         // Build rows grouped by year
         Object.entries(biosJson).forEach(([slug, bio]) => {
-          const capMap = parseCapHolds(bio.cap_holds || '');
+          const capMap = bio.cap_holds || {};
           const salaries = bio.salaries || {};
 
           Object.entries(capMap).forEach(([yr, type]) => {

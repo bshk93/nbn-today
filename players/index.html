@@ -954,7 +954,7 @@
       return row;
     }
 
-    const initCapMap = parseCapHolds(initial.cap_holds || '');
+    const initCapMap = initial.cap_holds || {};
     const initSalaries = (initial.salaries && typeof initial.salaries === 'object') ? initial.salaries : {};
     const initGuaranteed = (initial.guaranteed && typeof initial.guaranteed === 'object') ? initial.guaranteed : {};
     const initGuaranteeDates = (initial.guarantee_dates && typeof initial.guarantee_dates === 'object') ? initial.guarantee_dates : {};
@@ -992,9 +992,9 @@
       const token = getToken();
       if (!token) return;
       const salaries = {};
+      const cap_holds = {};
       const guaranteed = {};
       const guarantee_dates = {};
-      const capHoldParts = [];
       salRows.querySelectorAll('.salary-row').forEach(row => {
         const season  = row.querySelector('.season-input').value.trim();
         const amount  = row.querySelector('.amount-input').value.trim();
@@ -1002,7 +1002,7 @@
         const gtd     = row.querySelector('.gtd-input').value.trim();
         const gtdDate = row.querySelector('.gtd-date-input').value.trim();
         if (season && amount) salaries[season] = amount;
-        if (season && hold)   capHoldParts.push(`${season}:${hold}`);
+        if (season && hold)   cap_holds[season] = hold;
         if (season && hold === 'NON_GTD') {
           if (gtd)     guaranteed[season] = gtd;
           if (gtdDate) guarantee_dates[season] = gtdDate;
@@ -1022,7 +1022,7 @@
         wingspan:    fWingspan.value.trim(),
         photo_url:   fPhoto.value.trim(),
         type:        typeSelect.value,
-        cap_holds:   capHoldParts.join(','),
+        cap_holds,
         salaries,
         guaranteed,
         guarantee_dates,
@@ -1085,7 +1085,7 @@
     card.appendChild(slugLabel);
 
     const form = renderBioForm(
-      { name: '', pos: [], dob: '', college: '', country: '', draft_year: null, draft_round: null, draft_pick: null, photo_url: '', type: '', cap_holds: '', salaries: {} },
+      { name: '', pos: [], dob: '', college: '', country: '', draft_year: null, draft_round: null, draft_pick: null, photo_url: '', type: '', cap_holds: {}, salaries: {} },
       async (token, payload) => {
         const sl = slugInput.value.trim();
         if (!sl) throw new Error('Slug is required.');
@@ -1127,15 +1127,6 @@
     return `${months[m - 1]} ${d}, ${y}`;
   }
 
-  function parseCapHolds(str) {
-    const map = {};
-    if (!str) return map;
-    str.split(',').forEach(pair => {
-      const [yr, type] = pair.split(':');
-      if (yr && type) map[yr.trim()] = type.trim();
-    });
-    return map;
-  }
 
   const CAP_HOLD_LABELS = {
     UFA:        'UFA Hold',
@@ -1164,7 +1155,7 @@
 
     if (!Object.keys(salaryData).length && !Object.keys(deadCapData).length) return;
 
-    const capMap = parseCapHolds(bio.cap_holds || '');
+    const capMap = bio.cap_holds || {};
     const guaranteed = bio.guaranteed && typeof bio.guaranteed === 'object' ? bio.guaranteed : {};
     const guarantee_dates = bio.guarantee_dates && typeof bio.guarantee_dates === 'object' ? bio.guarantee_dates : {};
 
@@ -2184,7 +2175,7 @@
       const token = getToken(); if (!token) return;
       const cur = biosData[slug] || {};
       bioFormEl = renderBioForm(
-        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', type: cur.type || '', cap_holds: cur.cap_holds || '', salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {} },
+        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {} },
         async (token, payload) => {
           const resp = await fetch(`/api/players/${slug}`, {
             method: 'PUT',

@@ -155,7 +155,7 @@ All other player data (name, pos, age, type, cap holds, salaries) lives in `play
 
 **Legacy format (pre-migration):** columns were `PLAYER, POS, AGE, OVR, TYPE, CAP_HOLDS, 25-26, 26-27, …`. `team.js` handles both formats transparently — if the CSV has a `SLUG` column (and no `PLAYER`), it uses the new path; otherwise falls back to the legacy path.
 
-`CAP_HOLDS` is comma-separated `YEAR:TYPE` pairs. Valid types: `UFA`, `RFA`, `PLAYER_OPT`, `TEAM_OPT`, `NON_GTD`.
+`CAP_HOLDS` is a legacy CSV column only present in the old roster format. In `player-bios.json`, `cap_holds` is a JSON object keyed by season string (e.g. `{"27-28": "PLAYER_OPT", "28-29": "UFA"}`). Valid types: `UFA`, `RFA`, `PLAYER_OPT`, `TEAM_OPT`, `NON_GTD`.
 
 ### Player bios (player-bios.json)
 
@@ -170,7 +170,7 @@ Canonical player data lives in `/var/lib/nothing-but-stats/player-bios.json`, se
 | `draft_year`, `draft_round`, `draft_pick` | Integers or null |
 | `photo_url` | String |
 | `type` | `"player"`, `"two-way"`, `"dead"`, or `""` |
-| `cap_holds` | String, same format as old CSV column |
+| `cap_holds` | Object keyed by season string: `{"27-28": "PLAYER_OPT", "28-29": "UFA"}` |
 | `salaries` | Dict keyed by season string: `{"25-26": "$37,000,000"}` |
 
 Endpoints: `GET /api/players` (public), `POST /api/players` (admin, creates), `PUT /api/players/{slug}` (rosters role, upserts).
@@ -231,7 +231,7 @@ These reflect the current contract state and are updated whenever a transaction 
 | Field | Type | When it changes |
 |---|---|---|
 | `type` | enum | Changes on transactions: `""` → `"player"` on signing, `"player"` ↔ `"two-way"` on conversion, `"dead"` when a player is cut and only a cap hit remains |
-| `salaries` | `{"YY-YY": "$amount"}` | Replaced wholesale on any new contract, extension, or option exercise/decline |
+| `salaries` | `{"YY-YY": "$amount"}` | Accumulates across contracts — past seasons are preserved; current-season-onwards entries are replaced by each new contract. The player page displays all entries as career earnings history; roster/tradeblock display code filters to `>= current season`. |
 | `cap_holds` | string | Updated alongside `salaries` to reflect the status after each contract year |
 | `guaranteed` | `{"YY-YY": "$amount"}` | Guaranteed portion of each year; set when partial guarantees exist |
 | `guarantee_dates` | `{"YY-YY": "YYYY-MM-DD"}` | The date after which that season's salary becomes fully guaranteed; cleared once the date passes |
@@ -253,7 +253,7 @@ The roster CSV (`{abbr}-roster.csv`) stores the most recent OVR as a convenience
 
 #### Cap holds
 
-`cap_holds` is a comma-separated string of `YEAR:TYPE` pairs, e.g. `"27-28:PLAYER_OPT,28-29:UFA"`. It describes what happens **after** the last contract year — i.e., the player's free-agent or option status in each subsequent offseason.
+`cap_holds` is a JSON object keyed by season string, e.g. `{"27-28": "PLAYER_OPT", "28-29": "UFA"}`. It describes what happens **after** the last contract year — i.e., the player's free-agent or option status in each subsequent offseason.
 
 | Type | Meaning |
 |---|---|

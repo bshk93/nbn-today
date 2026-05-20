@@ -309,15 +309,6 @@
       PLAYER_OPT: 'hsl(120,50%,30%)', TEAM_OPT: 'hsl(210,55%,35%)', NON_GTD: '#374151',
     };
 
-    function parseCapHolds(str) {
-      const map = {};
-      if (!str) return map;
-      str.split(',').forEach(pair => {
-        const [yr, type] = pair.split(':');
-        if (yr && type) map[yr] = type;
-      });
-      return map;
-    }
 
     // ── Player bio lookup ─────────────────────────────────────────────────────
 
@@ -575,7 +566,7 @@
             }
           } else if (/^\d{2}-\d{2}$/.test(col.key)) {
             td.textContent = row[col.key] || '—';
-            const capType = parseCapHolds(row.cap_holds)[col.key];
+            const capType = (row.cap_holds || {})[col.key];
             if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
           } else {
             td.textContent = row[col.key] || '—';
@@ -883,12 +874,14 @@
                 ovr: pr ? pr.OVR : '',
                 age: bio ? calcAgeFromDob(bio.dob) : '',
                 notes: notes || '',
-                cap_holds: bio ? (bio.cap_holds || '') : '',
+                cap_holds: bio ? (bio.cap_holds || {}) : {},
               };
               salaryYears.forEach(yr => { row[yr] = (bio && bio.salaries && bio.salaries[yr]) || '—'; });
             } else {
               const pr = rosterRows.find(r => r.PLAYER === player) || {};
-              row = { team, player, pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '', cap_holds: pr.CAP_HOLDS || '' };
+              const legacyHolds = {};
+              (pr.CAP_HOLDS || '').split(',').forEach(p => { const [y, t] = p.split(':'); if (y && t) legacyHolds[y.trim()] = t.trim(); });
+              row = { team, player, pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '', cap_holds: legacyHolds };
               salaryYears.forEach(yr => { row[yr] = pr[yr] || '—'; });
             }
             tableRows.push(row);
@@ -929,7 +922,7 @@
 
         // Cap hold legend
         const allCapTypes = new Set();
-        tableRows.forEach(r => Object.values(parseCapHolds(r.cap_holds)).forEach(t => allCapTypes.add(t)));
+        tableRows.forEach(r => Object.values(r.cap_holds || {}).forEach(t => allCapTypes.add(t)));
         if (allCapTypes.size > 0) {
           const legend = document.createElement('div');
           legend.className = 'cap-legend';
