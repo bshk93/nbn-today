@@ -350,6 +350,31 @@
     .badge-callup  { background: #451a03; color: #fb923c; }
     .badge-calldown { background: #451a03; color: #fb923c; }
     .badge-trade   { background: #2e1065; color: #c084fc; }
+    .badge-tbd     { background: #374151; color: #6b7280; font-size: 0.68rem; }
+
+    /* ── Trade builder ── */
+    .trade-leg { background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
+    .trade-leg-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .trade-team-sel { background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.85rem; font-family: inherit; outline: none; }
+    .trade-team-sel:focus { border-color: #3b82f6; }
+    .trade-leg-arrow { color: #6b7280; font-size: 1.1rem; }
+    .trade-asset-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
+    .trade-asset-sel { flex: 1; min-width: 160px; background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-asset-sel:focus { border-color: #3b82f6; }
+    .trade-prot-inp { width: 5rem; background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-prot-inp:focus { border-color: #3b82f6; }
+    .trade-swap-sel { background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-swap-sel:focus { border-color: #3b82f6; }
+    .trade-add-asset-btn { background: none; border: 1px dashed #374151; color: #6b7280; border-radius: 4px; padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; font-family: inherit; margin-top: 0.15rem; }
+    .trade-add-asset-btn:hover { border-color: #4b5563; color: #9ca3af; }
+    .trade-add-main-btn { width: 100%; background: none; border: 1px dashed #374151; color: #6b7280; border-radius: 6px; padding: 0.4rem; cursor: pointer; font-size: 0.82rem; font-family: inherit; margin-bottom: 0.75rem; }
+    .trade-add-main-btn:hover { border-color: #4b5563; color: #9ca3af; }
+    .remove-leg-btn, .remove-asset-btn { background: none; border: none; color: #4b5563; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.25rem; }
+    .remove-leg-btn:hover, .remove-asset-btn:hover { color: #f87171; }
+    .legality-section { border: 1px solid #374151; border-radius: 8px; overflow: hidden; margin-top: 1rem; margin-bottom: 0.75rem; }
+    .legality-header { background: #1a2535; padding: 0.45rem 0.75rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; border-bottom: 1px solid #374151; }
+    .legality-row { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; font-size: 0.82rem; color: #9ca3af; border-bottom: 1px solid #283141; }
+    .legality-row:last-child { border-bottom: none; }
 
     .empty-state {
       text-align: center;
@@ -421,10 +446,10 @@
           <option value="pick">Draft Pick</option>
           <option value="option">Option Decision</option>
           <option value="release">Release</option>
+          <option value="trade">Trade</option>
           <option value="" disabled>─────────</option>
           <option value="" disabled>Call-up (coming soon)</option>
           <option value="" disabled>Call-down (coming soon)</option>
-          <option value="" disabled>Trade (coming soon)</option>
         </select>
       </div>
 
@@ -524,6 +549,29 @@
 
     </div>
 
+    <!-- Trade builder (shown instead of form-grid when type = "trade") -->
+    <div id="trade-builder" style="display:none">
+      <div class="form-grid" style="margin-bottom:1rem">
+        <div class="form-field">
+          <label>Date</label>
+          <input type="date" id="f-trade-date">
+        </div>
+        <div class="form-field">
+          <label>Note <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:#6b7280">(optional)</span></label>
+          <input type="text" id="f-trade-description" placeholder="e.g. 3-team blockbuster">
+        </div>
+      </div>
+      <div id="trade-legs"></div>
+      <button type="button" id="add-leg-btn" class="trade-add-main-btn">+ Add Leg</button>
+      <div class="legality-section">
+        <div class="legality-header">Legality</div>
+        <div class="legality-row"><span>Salary matching</span><span class="badge badge-tbd">TBD</span></div>
+        <div class="legality-row"><span>Roster sizes</span><span class="badge badge-tbd">TBD</span></div>
+        <div class="legality-row"><span>Pick sending rules</span><span class="badge badge-tbd">TBD</span></div>
+        <div class="legality-row"><span>Apron restrictions</span><span class="badge badge-tbd">TBD</span></div>
+      </div>
+    </div>
+
     <div class="form-actions">
       <button class="btn-submit" id="submit-btn" type="button">Submit Transaction</button>
       <span class="form-status" id="form-status"></span>
@@ -537,7 +585,6 @@
     <span class="chip" data-filter="type" data-value="sign">Signings</span>
     <span class="chip" data-filter="type" data-value="pick">Draft Picks</span>
     <span class="chip" data-filter="type" data-value="option">Options</span>
-    <span class="chip" data-filter="type" data-value="release">Releases</span>
     <span class="chip" data-filter="type" data-value="release">Releases</span>
     <span class="chip" data-filter="type" data-value="trade">Trades</span>
   </div>
@@ -591,9 +638,13 @@ const HOLD_OPTIONS = [
 let allTransactions = [];
 let bios = {};
 let allPicks = [];
+let teamMap = {};    // slug → "TEAM"
+let legCounter = 0;
 let activeTypeFilter = '';
 let currentToken = localStorage.getItem(TOKEN_KEY) || '';
 let isAdmin = false;
+
+const TEAM_ABBRS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW','HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK','OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'];
 
 // ── Init ───────────────────────────────────────────────────────────────────
 (async function init() {
@@ -607,6 +658,7 @@ let isAdmin = false;
   setupFilters();
   setupModal();
   setupSubmit();
+  setupTrade();
 
   if (currentToken) {
     const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${currentToken}` } })
@@ -615,15 +667,17 @@ let isAdmin = false;
     document.querySelector('.txn-table').classList.toggle('admin-mode', isAdmin);
   }
 
-  const [txnRes, biosRes, picksRes] = await Promise.allSettled([
+  const [txnRes, biosRes, picksRes, mapRes] = await Promise.allSettled([
     fetch('/api/transactions?limit=500').then(r => r.json()),
     fetch('/api/players').then(r => r.json()),
     fetch('/api/picks').then(r => r.json()),
+    fetch('/api/team-map').then(r => r.json()),
   ]);
 
   if (biosRes.status === 'fulfilled') bios = biosRes.value;
   if (txnRes.status === 'fulfilled') allTransactions = txnRes.value.transactions || [];
   if (picksRes.status === 'fulfilled') allPicks = picksRes.value || [];
+  if (mapRes.status === 'fulfilled') teamMap = mapRes.value;
   populatePickYears();
 
   renderTable();
@@ -703,19 +757,27 @@ function setDefaultDate() {
 function setupTypeSwitch() {
   document.getElementById('f-type').addEventListener('change', function() {
     const v = this.value;
+    const isTrade = v === 'trade';
     const isSign = v === 'sign', isPick = v === 'pick', isOpt = v === 'option', isRelease = v === 'release';
     const needsContract = isSign || isPick;
-    document.getElementById('f-date-field').style.display          = isPick ? 'none' : '';
-    document.getElementById('f-team-field').style.display          = isSign ? '' : 'none';
-    document.getElementById('f-pick-year-field').style.display     = isPick ? '' : 'none';
-    document.getElementById('f-pick-sel-field').style.display      = isPick ? '' : 'none';
-    document.getElementById('f-opt-year-field').style.display      = isOpt ? '' : 'none';
-    document.getElementById('f-opt-type-field').style.display      = isOpt ? '' : 'none';
-    document.getElementById('f-opt-decision-field').style.display  = isOpt ? '' : 'none';
-    document.getElementById('f-opt-hold-field').style.display      = 'none';
-    document.getElementById('f-contract-type-field').style.display = needsContract ? '' : 'none';
-    document.getElementById('f-salaries-field').style.display      = needsContract ? '' : 'none';
-    // Clear player on type switch (filtered pool changes per type)
+
+    // Show trade builder OR simple form
+    document.getElementById('trade-builder').style.display = isTrade ? '' : 'none';
+    document.querySelector('.form-grid').style.display = isTrade ? 'none' : '';
+
+    if (!isTrade) {
+      document.getElementById('f-date-field').style.display          = isPick ? 'none' : '';
+      document.getElementById('f-team-field').style.display          = isSign ? '' : 'none';
+      document.getElementById('f-pick-year-field').style.display     = isPick ? '' : 'none';
+      document.getElementById('f-pick-sel-field').style.display      = isPick ? '' : 'none';
+      document.getElementById('f-opt-year-field').style.display      = isOpt ? '' : 'none';
+      document.getElementById('f-opt-type-field').style.display      = isOpt ? '' : 'none';
+      document.getElementById('f-opt-decision-field').style.display  = isOpt ? '' : 'none';
+      document.getElementById('f-opt-hold-field').style.display      = 'none';
+      document.getElementById('f-contract-type-field').style.display = needsContract ? '' : 'none';
+      document.getElementById('f-salaries-field').style.display      = needsContract ? '' : 'none';
+    }
+
     document.getElementById('f-player-display').value = '';
     document.getElementById('f-player-slug').value = '';
     if (!isOpt) {
@@ -723,6 +785,7 @@ function setupTypeSwitch() {
       document.getElementById('f-opt-type').value = '';
       document.getElementById('f-opt-type-display').value = '';
     }
+    document.getElementById('submit-btn').textContent = isTrade ? 'Submit Trade' : 'Submit Transaction';
   });
 }
 
@@ -942,6 +1005,259 @@ function collectSalaries() {
   return { salaries, cap_holds: holdParts.join(',') };
 }
 
+// ── Trade builder ──────────────────────────────────────────────────────────
+function setupTrade() {
+  document.getElementById('add-leg-btn').addEventListener('click', () => addTradeLeg());
+  addTradeLeg();
+  addTradeLeg();
+  document.getElementById('f-trade-date').value = new Date().toISOString().slice(0, 10);
+}
+
+function addTradeLeg(fromTeam, toTeam) {
+  const legId = ++legCounter;
+  const legs = document.getElementById('trade-legs');
+
+  const leg = document.createElement('div');
+  leg.className = 'trade-leg';
+  leg.dataset.legId = legId;
+
+  // ── Header: From → To selects + remove button ──
+  const header = document.createElement('div');
+  header.className = 'trade-leg-header';
+
+  const fromSel = document.createElement('select');
+  fromSel.className = 'trade-team-sel';
+  fromSel.dataset.role = 'from';
+  const toSel = document.createElement('select');
+  toSel.className = 'trade-team-sel';
+  toSel.dataset.role = 'to';
+
+  [fromSel, toSel].forEach(sel => {
+    const blank = document.createElement('option');
+    blank.value = ''; blank.textContent = '— Team —';
+    sel.appendChild(blank);
+    TEAM_ABBRS.forEach(abbr => {
+      const o = document.createElement('option');
+      o.value = abbr; o.textContent = abbr;
+      sel.appendChild(o);
+    });
+  });
+  if (fromTeam) fromSel.value = fromTeam;
+  if (toTeam) toSel.value = toTeam;
+
+  const arrow = document.createElement('span');
+  arrow.className = 'trade-leg-arrow';
+  arrow.textContent = '→';
+
+  const removeLegBtn = document.createElement('button');
+  removeLegBtn.type = 'button';
+  removeLegBtn.className = 'remove-leg-btn';
+  removeLegBtn.title = 'Remove leg';
+  removeLegBtn.textContent = '×';
+  removeLegBtn.style.marginLeft = 'auto';
+  removeLegBtn.addEventListener('click', () => leg.remove());
+
+  header.append(fromSel, arrow, toSel, removeLegBtn);
+
+  // ── Players section ──
+  const playerLabel = sectionLabel('Players');
+  const playerRows = document.createElement('div');
+  playerRows.dataset.section = 'players';
+  const addPlayerBtn = document.createElement('button');
+  addPlayerBtn.type = 'button';
+  addPlayerBtn.className = 'trade-add-asset-btn';
+  addPlayerBtn.textContent = '+ Add Player';
+  addPlayerBtn.addEventListener('click', () => addPlayerRow(leg));
+
+  // ── Picks section ──
+  const pickLabel = sectionLabel('Picks');
+  const pickRows = document.createElement('div');
+  pickRows.dataset.section = 'picks';
+  const addPickBtn = document.createElement('button');
+  addPickBtn.type = 'button';
+  addPickBtn.className = 'trade-add-asset-btn';
+  addPickBtn.textContent = '+ Add Pick';
+  addPickBtn.addEventListener('click', () => addPickRow(leg));
+
+  leg.append(header, playerLabel, playerRows, addPlayerBtn, pickLabel, pickRows, addPickBtn);
+  legs.appendChild(leg);
+
+  fromSel.addEventListener('change', () => refreshLegAssets(leg));
+  return leg;
+}
+
+function sectionLabel(text) {
+  const el = document.createElement('div');
+  el.style.cssText = 'font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#6b7280;margin-bottom:0.35rem;margin-top:0.5rem;';
+  el.textContent = text;
+  return el;
+}
+
+function addPlayerRow(leg) {
+  const section = leg.querySelector('[data-section="players"]');
+  const fromTeam = leg.querySelector('[data-role="from"]').value;
+
+  const row = document.createElement('div');
+  row.className = 'trade-asset-row';
+  row.dataset.assetType = 'player';
+
+  const sel = document.createElement('select');
+  sel.className = 'trade-asset-sel';
+  buildPlayerOptions(sel, fromTeam);
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'remove-asset-btn';
+  removeBtn.textContent = '×';
+  removeBtn.addEventListener('click', () => row.remove());
+
+  row.append(sel, removeBtn);
+  section.appendChild(row);
+}
+
+function buildPlayerOptions(sel, fromTeam) {
+  sel.innerHTML = '<option value="">— select player —</option>';
+  if (!fromTeam) return;
+  Object.entries(bios)
+    .filter(([slug]) => (teamMap[slug] || '').toUpperCase() === fromTeam.toUpperCase())
+    .map(([slug, bio]) => ({ slug, name: bioDisplayName(bio) }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach(({ slug, name }) => {
+      const o = document.createElement('option');
+      o.value = slug; o.textContent = name;
+      sel.appendChild(o);
+    });
+}
+
+function addPickRow(leg) {
+  const section = leg.querySelector('[data-section="picks"]');
+  const fromTeam = leg.querySelector('[data-role="from"]').value;
+
+  const row = document.createElement('div');
+  row.className = 'trade-asset-row';
+  row.dataset.assetType = 'pick';
+
+  const sel = document.createElement('select');
+  sel.className = 'trade-asset-sel';
+  buildPickOptions(sel, fromTeam, null);
+
+  const protLabel = document.createElement('span');
+  protLabel.style.cssText = 'font-size:0.75rem;color:#6b7280;white-space:nowrap;';
+  protLabel.textContent = 'Prot:';
+
+  const protInp = document.createElement('input');
+  protInp.type = 'number';
+  protInp.className = 'trade-prot-inp';
+  protInp.placeholder = '—';
+  protInp.min = 1;
+  protInp.max = 30;
+
+  const swapLabel = document.createElement('span');
+  swapLabel.style.cssText = 'font-size:0.75rem;color:#6b7280;white-space:nowrap;';
+  swapLabel.textContent = 'Swap:';
+
+  const swapSel = document.createElement('select');
+  swapSel.className = 'trade-swap-sel';
+  swapSel.innerHTML = '<option value="">—</option>';
+  TEAM_ABBRS.forEach(abbr => {
+    const o = document.createElement('option');
+    o.value = abbr; o.textContent = abbr;
+    swapSel.appendChild(o);
+  });
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'remove-asset-btn';
+  removeBtn.textContent = '×';
+  removeBtn.addEventListener('click', () => row.remove());
+
+  row.append(sel, protLabel, protInp, swapLabel, swapSel, removeBtn);
+  section.appendChild(row);
+}
+
+function buildPickOptions(sel, fromTeam, currentValue) {
+  sel.innerHTML = '<option value="">— select pick —</option>';
+  if (!fromTeam) return;
+  const usedIds = getUsedPickIds();
+  if (currentValue) usedIds.delete(currentValue);
+  allPicks
+    .filter(p => (p.owner || '').toUpperCase() === fromTeam.toUpperCase() && !p.player && !usedIds.has(tradePickId(p)))
+    .sort((a, b) => a.year - b.year || a.round - b.round)
+    .forEach(p => {
+      const o = document.createElement('option');
+      o.value = tradePickId(p);
+      o.textContent = tradePickLabel(p);
+      o.dataset.year = p.year;
+      o.dataset.round = p.round;
+      o.dataset.orig = p.orig;
+      sel.appendChild(o);
+    });
+}
+
+function getUsedPickIds() {
+  const used = new Set();
+  document.querySelectorAll('#trade-legs .trade-asset-row[data-asset-type="pick"] .trade-asset-sel').forEach(sel => {
+    if (sel.value) used.add(sel.value);
+  });
+  return used;
+}
+
+function tradePickId(p) {
+  return `${p.year}|${p.round}|${p.orig}`;
+}
+
+function tradePickLabel(p) {
+  return `${p.year} R${p.round} ${p.orig}`;
+}
+
+function refreshLegAssets(leg) {
+  const fromTeam = leg.querySelector('[data-role="from"]').value;
+  leg.querySelectorAll('.trade-asset-row[data-asset-type="player"] .trade-asset-sel').forEach(sel => {
+    const cur = sel.value;
+    buildPlayerOptions(sel, fromTeam);
+    if (cur) sel.value = cur;
+  });
+  leg.querySelectorAll('.trade-asset-row[data-asset-type="pick"] .trade-asset-sel').forEach(sel => {
+    const cur = sel.value;
+    buildPickOptions(sel, fromTeam, cur);
+    if (cur) sel.value = cur;
+  });
+}
+
+function collectTrade() {
+  const date = document.getElementById('f-trade-date').value;
+  const description = document.getElementById('f-trade-description').value.trim();
+  const transfers = [];
+  document.querySelectorAll('#trade-legs .trade-leg').forEach(leg => {
+    const from_team = leg.querySelector('[data-role="from"]').value;
+    const to_team = leg.querySelector('[data-role="to"]').value;
+    if (!from_team || !to_team) return;
+    const assets = [];
+    leg.querySelectorAll('.trade-asset-row[data-asset-type="player"]').forEach(row => {
+      const slug = row.querySelector('.trade-asset-sel').value;
+      if (slug) assets.push({ type: 'player', slug });
+    });
+    leg.querySelectorAll('.trade-asset-row[data-asset-type="pick"]').forEach(row => {
+      const sel = row.querySelector('.trade-asset-sel');
+      if (!sel.value) return;
+      const opt = sel.options[sel.selectedIndex];
+      const asset = {
+        type: 'pick',
+        year: parseInt(opt.dataset.year),
+        round: parseInt(opt.dataset.round),
+        orig: opt.dataset.orig,
+      };
+      const prot = row.querySelector('.trade-prot-inp').value;
+      const swap = row.querySelector('.trade-swap-sel').value;
+      if (prot) asset.protection = parseInt(prot);
+      if (swap) asset.swap_with = swap;
+      assets.push(asset);
+    });
+    if (assets.length) transfers.push({ from_team, to_team, assets });
+  });
+  return { date, description, transfers };
+}
+
 // ── Filters ────────────────────────────────────────────────────────────────
 function setupFilters() {
   document.querySelectorAll('.chip[data-filter="type"]').forEach(chip => {
@@ -967,10 +1283,12 @@ async function submitTransaction() {
   const playerSlug = document.getElementById('f-player-slug').value.trim();
   const contractType = document.querySelector('input[name="contract-type"]:checked').value;
   const { salaries, cap_holds } = collectSalaries();
-  const description = document.getElementById('f-description').value.trim();
+  let description = type === 'trade'
+    ? document.getElementById('f-trade-description').value.trim()
+    : document.getElementById('f-description').value.trim();
 
   if (!type) { setStatus('err', 'Select a transaction type.'); return; }
-  if (!playerSlug) { setStatus('err', 'Select a player from the dropdown.'); return; }
+  if (!playerSlug && type !== 'trade') { setStatus('err', 'Select a player from the dropdown.'); return; }
 
   const contract = { type: contractType, salaries, cap_holds };
   let date, details;
@@ -1005,6 +1323,12 @@ async function submitTransaction() {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     details = { player: playerSlug };
+  } else if (type === 'trade') {
+    const trade = collectTrade();
+    if (!trade.date) { setStatus('err', 'Date is required.'); return; }
+    if (trade.transfers.length < 2) { setStatus('err', 'A trade needs at least 2 legs with assets.'); return; }
+    date = trade.date;
+    details = { transfers: trade.transfers, legality: 'tbd' };
   } else {
     setStatus('err', 'Unsupported transaction type.'); return;
   }
@@ -1066,6 +1390,13 @@ function resetForm() {
   // Re-populate pick selector to reflect newly assigned pick
   const yearSel = document.getElementById('f-pick-year-sel');
   if (yearSel.value) populatePickSel(+yearSel.value);
+  // Trade builder
+  document.getElementById('trade-legs').innerHTML = '';
+  legCounter = 0;
+  addTradeLeg();
+  addTradeLeg();
+  document.getElementById('f-trade-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-trade-description').value = '';
 }
 
 function setStatus(cls, msg) {
@@ -1121,8 +1452,15 @@ function renderRow(t) {
   const d = t.details || {};
   const dateStr = fmtDate(t.date);
   const badge = `<span class="badge badge-${t.type}">${typeLabel(t.type)}</span>`;
-  const teamCell = d.team ? `<a href="/teams/${d.team}">${d.team}</a>` : '—';
-  const playerCell = renderPlayerCell(d.player);
+  let teamCell, playerCell;
+  if (t.type === 'trade') {
+    const teams = d.teams || [];
+    teamCell = teams.length ? teams.map(tm => `<a href="/teams/${tm}">${escHtml(tm)}</a>`).join(' · ') : '—';
+    playerCell = '—';
+  } else {
+    teamCell = d.team ? `<a href="/teams/${d.team}">${d.team}</a>` : '—';
+    playerCell = renderPlayerCell(d.player);
+  }
   const detailsCell = renderDetailsCell(t);
   const note = escHtml(t.description || '');
   const delCell = `<td class="del-col"><button class="delete-txn-btn" data-id="${escHtml(t.id)}" title="Delete transaction">×</button></td>`;
@@ -1172,6 +1510,28 @@ function renderDetailsCell(t) {
     const total = entries.reduce((sum, [, v]) => sum + (parseInt(v.replace(/[^0-9]/g, ''), 10) || 0), 0);
     const years = entries.map(([yr]) => yr).join(', ');
     return `Dead cap: $${(total / 1e6).toFixed(1)}M (${escHtml(years)})`;
+  }
+  if (t.type === 'trade') {
+    const transfers = d.transfers || [];
+    return transfers.map(tr => {
+      const assetStrs = (tr.assets || []).map(a => {
+        if (a.type === 'player') {
+          const bio = bios[a.slug];
+          const name = bio ? bioDisplayName(bio) : a.slug;
+          return `<a href="/players/?p=${escHtml(a.slug)}">${escHtml(name)}</a>`;
+        }
+        if (a.type === 'pick') {
+          let s = `${a.year} R${a.round} ${a.orig}`;
+          const mods = [];
+          if (a.protection) mods.push(`top-${a.protection} prot.`);
+          if (a.swap_with) mods.push(`swap w/ ${a.swap_with}`);
+          if (mods.length) s += ` (${mods.join(', ')})`;
+          return escHtml(s);
+        }
+        return '';
+      }).filter(Boolean).join(' · ');
+      return `${escHtml(tr.from_team)} → ${escHtml(tr.to_team)}: ${assetStrs || '—'}`;
+    }).join('<br>');
   }
   return '';
 }

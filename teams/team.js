@@ -495,7 +495,7 @@ function parseSalaryNum(v) {
   return isNaN(n) ? 0 : Math.round(n);
 }
 
-function buildRosterTable(rows, biosData, capLevels) {
+function buildRosterTable(rows, biosData, capLevels, currentOvr = {}) {
   if (!rows.length) return null;
   const curYr = currentSeasonYr();
   const hasSlug = 'SLUG' in rows[0] && !('PLAYER' in rows[0]);
@@ -613,7 +613,7 @@ function buildRosterTable(rows, biosData, capLevels) {
     return legacyWrap;
   }
 
-  // ── New format: SLUG + OVR, join from biosData ──────────────────────────────
+  // ── New format: SLUG + TYPE, OVR from currentOvr, rest from biosData ────────
   biosData = biosData || {};
 
   const augmented = rows.map(row => {
@@ -625,13 +625,14 @@ function buildRosterTable(rows, biosData, capLevels) {
     const _salaries = (_type === 'dead' && Object.keys(rowSals).length) ? rowSals : (bio.salaries || {});
     return {
       SLUG:       row.SLUG,
-      OVR:        row.OVR,
+      OVR:        currentOvr[row.SLUG] ?? row.OVR ?? '',
       _name:      displayNameFromBio(bio.name || '') || row.SLUG || '—',
       _pos:       (bio.pos || []).join(' · ') || '—',
       _age:       calcAge(bio.dob),
       _type,
       _cap_holds: bio.cap_holds || '',
       _salaries,
+      _jersey:    bio.jersey_number ?? null,
     };
   });
 
@@ -651,10 +652,11 @@ function buildRosterTable(rows, biosData, capLevels) {
   const ovrMin = 60, ovrMax = 100;
 
   const cols = [
-    { key: '_name', label: 'Player', cls: 'bold' },
-    { key: '_pos',  label: 'Pos',    cls: 'muted center' },
-    { key: '_age',  label: 'Age',    cls: 'right' },
-    { key: 'OVR',   label: 'OVR',    cls: 'right bold' },
+    { key: '_jersey', label: '#',      cls: 'right muted' },
+    { key: '_name',   label: 'Player', cls: 'bold' },
+    { key: '_pos',    label: 'Pos',    cls: 'muted center' },
+    { key: '_age',    label: 'Age',    cls: 'right' },
+    { key: 'OVR',     label: 'OVR',    cls: 'right bold' },
     ...salaryKeys.map((k, i) => ({
       key: `_s_${k}`, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
     })),
@@ -703,7 +705,9 @@ function buildRosterTable(rows, biosData, capLevels) {
       const td = tr.insertCell();
       col.cls?.split(' ').forEach(c => c && td.classList.add(c));
 
-      if (col.key === '_name') {
+      if (col.key === '_jersey') {
+        td.textContent = row._jersey != null ? `#${row._jersey}` : '—';
+      } else if (col.key === '_name') {
         if (row.SLUG) {
           const a = document.createElement('a');
           a.href = `/players/?p=${row.SLUG}`;
@@ -1395,7 +1399,6 @@ function rosterCellConfig(headers, biosData = {}) {
         { value: 'two-way', label: 'Two-Way'  },
         { value: 'dead',    label: 'Dead Cap' },
       ]},
-      OVR:  { label: 'OVR' },
     };
     salaryYears.forEach(yr => { config[yr] = { type: 'salary' }; });
     return config;
@@ -1435,7 +1438,7 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
   toolbar.appendChild(cancelBtn);
 
   const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
-  if (salaryYears.length && (cellConfig.CAP_HOLDS || cellConfig.OVR)) {
+  if (salaryYears.length && (cellConfig.CAP_HOLDS || cellConfig.SLUG)) {
     const YR_BTN = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:500;cursor:pointer;background:transparent;color:#9ca3af;font-family:inherit';
     const onYrEnter = e => { e.target.style.color = '#d1d5db'; e.target.style.borderColor = '#6b7280'; };
     const onYrLeave = e => { e.target.style.color = '#9ca3af'; e.target.style.borderColor = '#374151'; };
@@ -1713,6 +1716,142 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}) {
   attachBtn(picks);
 }
 
+function setupJerseyEditable(titleId, wrapId, rosterRows, biosData, restoreView) {
+  const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
+  if (!hasSlug) return;
+
+  const activeRows = rosterRows.filter(r => {
+    const bio = biosData[r.SLUG] || {};
+    return (r.TYPE || bio.type || '') !== 'dead';
+  });
+  if (!activeRows.length) return;
+
+  const titleEl = document.getElementById(titleId);
+  const btn = document.createElement('button');
+  btn.className = 'jersey-edit-btn';
+  btn.textContent = 'Edit #';
+  btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #374151;border-radius:4px;background:transparent;color:#6b7280;cursor:pointer;font-weight:500;margin-left:0.4rem;font-family:inherit;vertical-align:middle';
+  btn.onmouseenter = () => { btn.style.color = '#d1d5db'; btn.style.borderColor = '#6b7280'; };
+  btn.onmouseleave = () => { btn.style.color = '#6b7280'; btn.style.borderColor = '#374151'; };
+  btn.addEventListener('click', () => withToken(() => enterJerseyEdit()));
+  titleEl.appendChild(btn);
+
+  function enterJerseyEdit() {
+    const wrapEl = document.getElementById(wrapId);
+
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save';
+    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit';
+
+    const statusEl = document.createElement('span');
+    statusEl.style.cssText = 'font-size:0.75rem;color:#6b7280;margin-left:auto';
+
+    toolbar.appendChild(saveBtn);
+    toolbar.appendChild(cancelBtn);
+    toolbar.appendChild(statusEl);
+
+    const table = document.createElement('table');
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    ['Player', '#'].forEach(label => {
+      const th = document.createElement('th');
+      th.textContent = label;
+      if (label === '#') th.classList.add('right');
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    const inputs = [];
+
+    activeRows.forEach(row => {
+      const bio = biosData[row.SLUG] || {};
+      const name = displayNameFromBio(bio.name || '') || row.SLUG || '—';
+      const jersey = bio.jersey_number ?? '';
+
+      const tr = tbody.insertRow();
+      const nameTd = tr.insertCell();
+      nameTd.textContent = name;
+      nameTd.className = 'bold';
+
+      const numTd = tr.insertCell();
+      numTd.className = 'right';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 2;
+      input.pattern = '\\d{1,2}';
+      input.value = jersey;
+      input.placeholder = '—';
+      input.style.cssText = 'width:3.5rem;background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;text-align:right;outline:none';
+      input.addEventListener('focus', () => { input.style.borderColor = '#3b82f6'; });
+      input.addEventListener('blur',  () => { input.style.borderColor = '#374151'; });
+      numTd.appendChild(input);
+
+      inputs.push({ slug: row.SLUG, input, original: String(jersey) });
+    });
+
+    const gridWrap = document.createElement('div');
+    gridWrap.className = 'table-wrap';
+    gridWrap.style.overflowX = 'auto';
+    gridWrap.appendChild(table);
+
+    wrapEl.innerHTML = '';
+    wrapEl.appendChild(toolbar);
+    wrapEl.appendChild(gridWrap);
+
+    cancelBtn.addEventListener('click', () => restoreView());
+
+    saveBtn.addEventListener('click', async () => {
+      const changed = inputs.filter(({ input, original }) => String(input.value.trim()) !== original);
+      if (!changed.length) { restoreView(); return; }
+
+      saveBtn.disabled = true;
+      cancelBtn.disabled = true;
+      statusEl.textContent = 'Saving…';
+
+      try {
+        const token = getToken();
+        const results = await Promise.all(changed.map(({ slug, input }) => {
+          const val = input.value.trim();
+          const jersey_number = val === '' ? null : val;
+          return fetch(`/api/players/${slug}/jersey`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ jersey_number }),
+          });
+        }));
+
+        const failed = results.find(r => !r.ok);
+        if (failed) {
+          if (failed.status === 403) {
+            localStorage.removeItem(TOKEN_KEY);
+            statusEl.textContent = 'Invalid token — cleared. Try again.';
+          } else {
+            const err = await failed.json().catch(() => ({}));
+            statusEl.textContent = `Error: ${err.detail || failed.status}`;
+          }
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+          return;
+        }
+
+        statusEl.textContent = 'Saved!';
+        setTimeout(() => location.reload(), 700);
+      } catch {
+        statusEl.textContent = 'Network error';
+        saveBtn.disabled = false;
+        cancelBtn.disabled = false;
+      }
+    });
+  }
+}
+
 function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellConfig = {}) {
   function renderView(currentRows) {
     const wrapEl = document.getElementById(wrapId);
@@ -1751,7 +1890,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr] = await Promise.allSettled([
     fetch(`/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -1759,10 +1898,12 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     fetch('/api/players').then(r => r.ok ? r.json() : {}),
     fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
     fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
   ]);
 
-  const biosData  = biosr.status === 'fulfilled' ? biosr.value : {};
-  const capLevels = capr.status === 'fulfilled'  ? capr.value  : {};
+  const biosData   = biosr.status === 'fulfilled' ? biosr.value : {};
+  const capLevels  = capr.status === 'fulfilled'  ? capr.value  : {};
+  const currentOvr = ovrr.status === 'fulfilled'  ? ovrr.value  : {};
 
   if (sr.status === 'fulfilled') {
     seasonsWrap.innerHTML = '';
@@ -1854,10 +1995,17 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     rosterWrap.innerHTML = '';
     const rosterRows = parseCSV(rr.value);
     const rosterHeaders = parseLine(rr.value.trim().split('\n')[0]);
-    const t = buildRosterTable(rosterRows, biosData, capLevels);
+    const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr);
     if (t) rosterWrap.appendChild(t);
     else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
-    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels), rosterCellConfig(rosterHeaders, biosData));
+    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels, currentOvr), rosterCellConfig(rosterHeaders, biosData));
+    setupJerseyEditable('roster-title', 'roster-wrap', rosterRows, biosData, () => {
+      const wrapEl = document.getElementById('roster-wrap');
+      wrapEl.innerHTML = '';
+      const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr);
+      if (t) wrapEl.appendChild(t);
+      else wrapEl.innerHTML = '<div class="status">No roster data.</div>';
+    });
 
     // Cap numbers edit button (rosters role)
     const token = localStorage.getItem('nbn_token');
