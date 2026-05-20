@@ -240,6 +240,39 @@
     .page-tab:hover { background: #263244; color: #d1d5db; }
     .page-tab.active { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
 
+    .missing-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .missing-bar-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #4b5563;
+      margin-right: 0.1rem;
+    }
+
+    .missing-btn {
+      padding: 0.3rem 0.75rem;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .missing-btn:hover { background: #263244; color: #d1d5db; }
+    .missing-btn.active { background: #451a03; border-color: #d97706; color: #fcd34d; }
+
     .filter-bar {
       display: flex;
       gap: 0.75rem;
@@ -1908,8 +1941,10 @@
       btn.className = 'page-tab' + (pg === activePage ? ' active' : '');
       btn.textContent = pg.label;
       btn.addEventListener('click', () => {
-        if (activePage === pg) return;
+        if (activePage === pg && activeFilters.size === 0) return;
         activePage = pg;
+        activeFilters.clear();
+        content.querySelectorAll('.missing-btn').forEach(b => b.classList.remove('active'));
         tabBtns.forEach((b, i) => b.classList.toggle('active', PAGES[i] === pg));
         history.replaceState(null, '', `?tab=${pg.id}`);
         searchInput.value = '';
@@ -1954,6 +1989,42 @@
     }
 
     content.appendChild(filterBar);
+
+    const MISSING_FILTERS = [
+      { id: 'pos',   label: 'Missing Pos',          test: p => !p.POS.length },
+      { id: 'dob',   label: 'Missing DOB',          test: p => !p.DOB_SORT },
+      { id: 'image', label: 'Missing Image',        test: p => !p.PHOTO_URL },
+      { id: 'meas',  label: 'Missing Measurements', test: p => !p.HEIGHT || p.WEIGHT == null || !p.WINGSPAN },
+    ];
+    let activeFilters = new Set();
+
+    if (localStorage.getItem('nbn_token')) {
+      const missingBar = document.createElement('div');
+      missingBar.className = 'missing-bar';
+      const lbl = document.createElement('span');
+      lbl.className = 'missing-bar-label';
+      lbl.textContent = 'Missing:';
+      missingBar.appendChild(lbl);
+      MISSING_FILTERS.forEach(f => {
+        const btn = document.createElement('button');
+        btn.className = 'missing-btn';
+        btn.textContent = f.label.replace('Missing ', '');
+        btn.addEventListener('click', () => {
+          if (activeFilters.has(f.id)) {
+            activeFilters.delete(f.id);
+            btn.classList.remove('active');
+          } else {
+            activeFilters.add(f.id);
+            btn.classList.add('active');
+          }
+          searchInput.value = '';
+          filterQ = '';
+          rebuildBody();
+        });
+        missingBar.appendChild(btn);
+      });
+      content.appendChild(missingBar);
+    }
 
     // Table
     const IDX_COLS = [
@@ -2106,10 +2177,12 @@
     }
 
     function rebuildBody() {
-      const pagePlayers = players.filter(p => {
-        const l = (p.PLAYER[0] || '').toUpperCase();
-        return l >= activePage.from && l <= activePage.to;
-      });
+      const pagePlayers = activeFilters.size > 0
+        ? players.filter(p => MISSING_FILTERS.some(f => activeFilters.has(f.id) && f.test(p)))
+        : players.filter(p => {
+            const l = (p.PLAYER[0] || '').toUpperCase();
+            return l >= activePage.from && l <= activePage.to;
+          });
       const sorted = [...pagePlayers].sort((a, b) => {
         const va = idxSortVal(a, sortField), vb = idxSortVal(b, sortField);
         if (va === Infinity && vb === Infinity) return a.PLAYER.localeCompare(b.PLAYER);
