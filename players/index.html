@@ -218,6 +218,28 @@
     .career-row { border-top: 2px solid #374151 !important; }
     .career-row td { font-weight: 600; color: #f3f4f6; }
 
+    .page-tabs {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+    }
+
+    .page-tab {
+      padding: 0.3rem 0.75rem;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .page-tab:hover { background: #263244; color: #d1d5db; }
+    .page-tab.active { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
+
     .filter-bar {
       display: flex;
       gap: 0.75rem;
@@ -1866,8 +1888,38 @@
 
     const allTeams = [...new Set(rows.map(r => r.TEAM).filter(Boolean))].sort();
 
+    const PAGES = [
+      { id: 'a-d', label: 'A – D', from: 'A', to: 'D' },
+      { id: 'e-k', label: 'E – K', from: 'E', to: 'K' },
+      { id: 'l-p', label: 'L – P', from: 'L', to: 'P' },
+      { id: 'q-z', label: 'Q – Z', from: 'Q', to: 'Z' },
+    ];
+    const tabParam = new URLSearchParams(location.search).get('tab');
+    let activePage = PAGES.find(p => p.id === tabParam) || PAGES[0];
+
     const content = document.getElementById('content');
     content.innerHTML = '';
+
+    // Tab bar
+    const tabBar = document.createElement('div');
+    tabBar.className = 'page-tabs';
+    const tabBtns = PAGES.map(pg => {
+      const btn = document.createElement('button');
+      btn.className = 'page-tab' + (pg === activePage ? ' active' : '');
+      btn.textContent = pg.label;
+      btn.addEventListener('click', () => {
+        if (activePage === pg) return;
+        activePage = pg;
+        tabBtns.forEach((b, i) => b.classList.toggle('active', PAGES[i] === pg));
+        history.replaceState(null, '', `?tab=${pg.id}`);
+        searchInput.value = '';
+        filterQ = '';
+        rebuildBody();
+      });
+      return btn;
+    });
+    tabBtns.forEach(b => tabBar.appendChild(b));
+    content.appendChild(tabBar);
 
     // Filter bar
     const filterBar = document.createElement('div');
@@ -2054,7 +2106,11 @@
     }
 
     function rebuildBody() {
-      const sorted = [...players].sort((a, b) => {
+      const pagePlayers = players.filter(p => {
+        const l = (p.PLAYER[0] || '').toUpperCase();
+        return l >= activePage.from && l <= activePage.to;
+      });
+      const sorted = [...pagePlayers].sort((a, b) => {
         const va = idxSortVal(a, sortField), vb = idxSortVal(b, sortField);
         if (va === Infinity && vb === Infinity) return a.PLAYER.localeCompare(b.PLAYER);
         if (va === Infinity) return 1;
@@ -2072,7 +2128,7 @@
         else count++;
         tbody.appendChild(tr);
       });
-      const total = players.length;
+      const total = pagePlayers.length;
       resultCount.textContent = count === total ? `${total} players` : `${count} of ${total}`;
       noResults.style.display = count === 0 ? '' : 'none';
     }
@@ -2080,15 +2136,15 @@
     function applyFilters() {
       filterQ = searchInput.value.trim().toLowerCase();
       filterTeam = teamSelect.value;
-      let count = 0;
+      let count = 0, total = 0;
       tbody.querySelectorAll('tr').forEach(tr => {
+        total++;
         const nameOk = !filterQ || tr.dataset.name.includes(filterQ);
         const teamOk = !filterTeam || tr.dataset.teams.split('|').includes(filterTeam);
         const show = nameOk && teamOk;
         tr.style.display = show ? '' : 'none';
         if (show) count++;
       });
-      const total = players.length;
       resultCount.textContent = count === total ? `${total} players` : `${count} of ${total}`;
       noResults.style.display = count === 0 ? '' : 'none';
     }
