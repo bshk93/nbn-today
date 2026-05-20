@@ -528,6 +528,11 @@
         </select>
       </div>
 
+      <div class="form-field" id="f-opt-hold-amount-field" style="display:none">
+        <label>Cap Hold Amount</label>
+        <input type="text" id="f-opt-hold-amount" placeholder="$0,000,000">
+      </div>
+
       <div class="form-field" id="f-contract-type-field">
         <label>Contract Type</label>
         <div class="radio-group">
@@ -773,8 +778,9 @@ function setupTypeSwitch() {
       document.getElementById('f-opt-year-field').style.display      = isOpt ? '' : 'none';
       document.getElementById('f-opt-type-field').style.display      = isOpt ? '' : 'none';
       document.getElementById('f-opt-decision-field').style.display  = isOpt ? '' : 'none';
-      document.getElementById('f-opt-hold-field').style.display      = 'none';
-      document.getElementById('f-contract-type-field').style.display = needsContract ? '' : 'none';
+      document.getElementById('f-opt-hold-field').style.display        = 'none';
+      document.getElementById('f-opt-hold-amount-field').style.display = 'none';
+      document.getElementById('f-contract-type-field').style.display   = needsContract ? '' : 'none';
       document.getElementById('f-salaries-field').style.display      = needsContract ? '' : 'none';
     }
 
@@ -792,7 +798,9 @@ function setupTypeSwitch() {
 function setupOptionDecision() {
   document.querySelectorAll('input[name="opt-decision"]').forEach(r => {
     r.addEventListener('change', function() {
-      document.getElementById('f-opt-hold-field').style.display = this.value === 'decline' ? '' : 'none';
+      const isDecline = this.value === 'decline';
+      document.getElementById('f-opt-hold-field').style.display        = isDecline ? '' : 'none';
+      document.getElementById('f-opt-hold-amount-field').style.display = isDecline ? '' : 'none';
     });
   });
 }
@@ -941,6 +949,8 @@ function onPlayerSelected(slug) {
   document.getElementById('f-opt-type').value = earliest.type;
   document.getElementById('f-opt-type-display').value =
     earliest.type === 'PLAYER_OPT' ? 'Player Option' : 'Team Option';
+  const optSalary = bio.salaries && bio.salaries[earliest.year] ? bio.salaries[earliest.year] : '';
+  document.getElementById('f-opt-hold-amount').value = optSalary;
 }
 
 // ── Salary rows ────────────────────────────────────────────────────────────
@@ -1315,10 +1325,12 @@ async function submitTransaction() {
     const year = document.getElementById('f-opt-year').value;
     const option_type = document.getElementById('f-opt-type').value;
     const decision = document.querySelector('input[name="opt-decision"]:checked').value;
-    const cap_hold_type = document.getElementById('f-opt-hold').value;
+    const cap_hold_type   = document.getElementById('f-opt-hold').value;
+    const cap_hold_amount = document.getElementById('f-opt-hold-amount').value.trim() || null;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     if (!year || !option_type) { setStatus('err', 'Select a player with an option year.'); return; }
-    details = { player: playerSlug, decision, option_type, year, cap_hold_type };
+    if (decision === 'decline' && !cap_hold_amount) { setStatus('err', 'Cap hold amount is required for a decline.'); return; }
+    details = { player: playerSlug, decision, option_type, year, cap_hold_type, cap_hold_amount };
   } else if (type === 'release') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -1386,7 +1398,9 @@ function resetForm() {
   document.getElementById('f-opt-type').value = '';
   document.getElementById('f-opt-type-display').value = '';
   document.querySelector('input[name="opt-decision"][value="accept"]').checked = true;
-  document.getElementById('f-opt-hold-field').style.display = 'none';
+  document.getElementById('f-opt-hold-field').style.display        = 'none';
+  document.getElementById('f-opt-hold-amount-field').style.display = 'none';
+  document.getElementById('f-opt-hold-amount').value = '';
   // Re-populate pick selector to reflect newly assigned pick
   const yearSel = document.getElementById('f-pick-year-sel');
   if (yearSel.value) populatePickSel(+yearSel.value);
