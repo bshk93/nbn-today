@@ -2,6 +2,24 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## League rules and transaction rubrics
+
+Per-transaction rules, salary cap rules, and validity rubrics live in `rules/`.
+`rules/README.md` has league-wide constants (cap ceiling, roster limits, season timeline) that all rubrics assume.
+Read the relevant file before making or validating any transaction:
+
+| Transaction | File |
+|---|---|
+| Trade | `rules/trades.md` |
+| FA signing | `rules/free-agency.md` |
+| Extension | `rules/extensions.md` |
+| Option exercise / decline | `rules/options.md` |
+| Release / waiver | `rules/releases.md` |
+| Two-way conversion | `rules/two-way.md` |
+| Draft pick signing | `rules/draft.md` |
+
+---
+
 ## What this project is
 
 **NBN (Nothing But Net)** is a static website for a fantasy basketball simulation GM league. It hosts owner history stats, team pages, player profiles, standings, draft history, stats leaderboards, and NBNTV Classics (curated playoff highlights).
