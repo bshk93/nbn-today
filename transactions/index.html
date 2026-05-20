@@ -346,7 +346,8 @@
       font-size: 1rem; padding: 0.15rem 0.4rem; border-radius: 4px; line-height: 1;
     }
     .delete-txn-btn:hover { color: #f87171; }
-    .badge-release { background: #450a0a; color: #f87171; }
+    .badge-release        { background: #450a0a; color: #f87171; }
+    .badge-convert_twoway { background: #1c1917; color: #a8a29e; }
     .badge-callup  { background: #451a03; color: #fb923c; }
     .badge-calldown { background: #451a03; color: #fb923c; }
     .badge-trade   { background: #2e1065; color: #c084fc; }
@@ -447,9 +448,7 @@
           <option value="option">Option Decision</option>
           <option value="release">Release</option>
           <option value="trade">Trade</option>
-          <option value="" disabled>─────────</option>
-          <option value="" disabled>Call-up (coming soon)</option>
-          <option value="" disabled>Call-down (coming soon)</option>
+          <option value="convert_twoway">Convert Two-Way</option>
         </select>
       </div>
 
@@ -764,7 +763,8 @@ function setupTypeSwitch() {
     const v = this.value;
     const isTrade = v === 'trade';
     const isSign = v === 'sign', isPick = v === 'pick', isOpt = v === 'option', isRelease = v === 'release';
-    const needsContract = isSign || isPick;
+    const isConvertTwoWay = v === 'convert_twoway';
+    const needsContract = isSign || isPick || isConvertTwoWay;
 
     // Show trade builder OR simple form
     document.getElementById('trade-builder').style.display = isTrade ? '' : 'none';
@@ -780,7 +780,7 @@ function setupTypeSwitch() {
       document.getElementById('f-opt-decision-field').style.display  = isOpt ? '' : 'none';
       document.getElementById('f-opt-hold-field').style.display        = 'none';
       document.getElementById('f-opt-hold-amount-field').style.display = 'none';
-      document.getElementById('f-contract-type-field').style.display   = needsContract ? '' : 'none';
+      document.getElementById('f-contract-type-field').style.display   = (needsContract && !isConvertTwoWay) ? '' : 'none';
       document.getElementById('f-salaries-field').style.display      = needsContract ? '' : 'none';
     }
 
@@ -869,6 +869,8 @@ function setupPlayerSearch() {
       });
     } else if (txnType === 'release') {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'player' || bio.type === 'two-way');
+    } else if (txnType === 'convert_twoway') {
+      pool = Object.entries(bios).filter(([, bio]) => bio.type === 'two-way');
     } else {
       pool = Object.entries(bios);
     }
@@ -1335,6 +1337,11 @@ async function submitTransaction() {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     details = { player: playerSlug };
+  } else if (type === 'convert_twoway') {
+    date = document.getElementById('f-date').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
+    if (!Object.keys(salaries).length) { setStatus('err', 'At least one salary year is required.'); return; }
+    details = { player: playerSlug, contract: { type: 'player', salaries, cap_holds } };
   } else if (type === 'trade') {
     const trade = collectTrade();
     if (!trade.date) { setStatus('err', 'Date is required.'); return; }
@@ -1517,6 +1524,15 @@ function renderDetailsCell(t) {
       return `${yearStr} ${escHtml(optLabel)} — declined → ${escHtml(d.cap_hold_type || 'UFA')} hold`;
     }
   }
+  if (t.type === 'convert_twoway') {
+    const c = d.contract || {};
+    const years = Object.keys(c.salaries || {}).length;
+    const total = Object.values(c.salaries || {}).reduce((sum, v) => {
+      const n = parseInt(v.replace(/[^0-9]/g, ''), 10) || 0;
+      return sum + n;
+    }, 0);
+    return years ? escHtml(`${years}yr / $${(total / 1e6).toFixed(1)}M`) : '';
+  }
   if (t.type === 'release') {
     const dc = d.dead_cap || {};
     const entries = Object.entries(dc);
@@ -1573,7 +1589,7 @@ function fmtDate(iso) {
 }
 
 function typeLabel(type) {
-  const labels = { sign: 'Signing', pick: 'Draft Pick', option: 'Option', release: 'Release', callup: 'Call-Up', calldown: 'Call-Down', trade: 'Trade' };
+  const labels = { sign: 'Signing', pick: 'Draft Pick', option: 'Option', release: 'Release', trade: 'Trade', convert_twoway: 'Two-Way Conversion' };
   return labels[type] || type;
 }
 
