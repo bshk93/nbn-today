@@ -403,6 +403,13 @@
     }
     .current-team:hover { border-color: #6b7280; color: #d1d5db; text-decoration: none; }
     .current-team img { width: 18px; height: 18px; object-fit: contain; }
+
+    .ovr-wrap { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0.75rem; flex-wrap: wrap; }
+    .ovr-edit-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .ovr-edit-row input { background: #1f2937; border: 1px solid #374151; border-radius: 6px;
+      color: #f3f4f6; font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.45rem; outline: none; }
+    .ovr-edit-row input:focus { border-color: #3b82f6; }
+    .ovr-edit-row input[type=number] { width: 4.5rem; }
   </style>
 </head>
 <body>
@@ -425,6 +432,8 @@
 
   let biosData = {};
   let teamMap = {};
+  let currentOvr = {};
+  let allOvrHistory = {};
 
   const TEAM_NAMES = {
     ATL:'Atlanta Hawks', BKN:'Brooklyn Nets', BOS:'Boston Celtics', CHA:'Charlotte Hornets',
@@ -1179,6 +1188,203 @@
     container.appendChild(table);
   }
 
+  function renderOvrHistory(container, playerSlug) {
+    const hasToken = !!localStorage.getItem('nbn_token');
+    const entries = allOvrHistory[playerSlug] || [];
+    if (!entries.length && !hasToken) return;
+
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = 'OVR History';
+    container.appendChild(h2);
+
+    const wrap = document.createElement('div');
+    container.appendChild(wrap);
+
+    function rebuild() {
+      wrap.innerHTML = '';
+      const current = allOvrHistory[playerSlug] || [];
+      const loggedIn = !!localStorage.getItem('nbn_token');
+      const hasChange = current.length > 1;
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const inputCss = 'background:#1f2937;border:1px solid #374151;border-radius:6px;color:#f3f4f6;font-size:0.8rem;padding:0.2rem 0.35rem;font-family:inherit;outline:none;';
+
+      if (current.length) {
+        const table = document.createElement('table');
+        table.className = 'salary-table';
+        const thead = table.createTHead();
+        const hr = thead.insertRow();
+        ['Date', 'OVR', ...(hasChange ? ['Change'] : []), ...(loggedIn ? [''] : [])].forEach((h, i) => {
+          const th = document.createElement('th');
+          th.textContent = h;
+          if (i === 1) th.className = 'right';
+          hr.appendChild(th);
+        });
+        const tbody = table.createTBody();
+        current.forEach((entry, i) => {
+          const tr = tbody.insertRow();
+          const [y, m, d] = entry.date.split('-').map(Number);
+          const dateTd = tr.insertCell();
+          dateTd.textContent = `${months[m-1]} ${d}, ${y}`;
+          const ovrTd = tr.insertCell();
+          ovrTd.className = 'right';
+          ovrTd.textContent = entry.ovr;
+          Object.assign(ovrTd.style, ovrHeatStyle(entry.ovr));
+          ovrTd.style.borderRadius = '4px';
+          ovrTd.style.padding = '0.15rem 0.4rem';
+          if (hasChange) {
+            const changeTd = tr.insertCell();
+            changeTd.className = 'right';
+            if (i === 0) {
+              changeTd.textContent = '—';
+              changeTd.style.color = '#6b7280';
+            } else {
+              const delta = entry.ovr - current[i - 1].ovr;
+              changeTd.textContent = delta > 0 ? `+${delta}` : String(delta);
+              changeTd.style.color = delta > 0 ? '#4ade80' : delta < 0 ? '#f87171' : '#9ca3af';
+            }
+          }
+          if (loggedIn) {
+            const actionTd = tr.insertCell();
+            actionTd.style.textAlign = 'right';
+            const editRowBtn = document.createElement('button');
+            editRowBtn.className = 'edit-btn edit-btn-secondary';
+            editRowBtn.textContent = 'Edit';
+            editRowBtn.style.cssText = 'font-size:0.7rem;padding:0.1rem 0.35rem;';
+            actionTd.appendChild(editRowBtn);
+
+            editRowBtn.addEventListener('click', () => {
+              if (tr.dataset.editing) { rebuild(); return; }
+              table.querySelectorAll('tr[data-editing]').forEach(r => { delete r.dataset.editing; });
+              tr.dataset.editing = '1';
+
+              dateTd.innerHTML = '';
+              const dateIn = document.createElement('input');
+              dateIn.type = 'date';
+              dateIn.value = entry.date;
+              dateIn.style.cssText = inputCss;
+              dateTd.appendChild(dateIn);
+
+              ovrTd.innerHTML = '';
+              ovrTd.className = '';
+              ovrTd.removeAttribute('style');
+              const ovrIn = document.createElement('input');
+              ovrIn.type = 'number';
+              ovrIn.min = '50'; ovrIn.max = '99';
+              ovrIn.value = entry.ovr;
+              ovrIn.style.cssText = inputCss + 'width:4.5rem;text-align:right;';
+              ovrTd.appendChild(ovrIn);
+
+              actionTd.innerHTML = '';
+              const saveRowBtn = document.createElement('button');
+              saveRowBtn.className = 'edit-btn edit-btn-primary';
+              saveRowBtn.textContent = 'Save';
+              saveRowBtn.style.cssText = 'font-size:0.7rem;padding:0.1rem 0.35rem;';
+              const cancelRowBtn = document.createElement('button');
+              cancelRowBtn.className = 'edit-btn edit-btn-secondary';
+              cancelRowBtn.textContent = 'Cancel';
+              cancelRowBtn.style.cssText = 'font-size:0.7rem;padding:0.1rem 0.35rem;';
+              const rowStatus = document.createElement('span');
+              rowStatus.style.cssText = 'font-size:0.7rem;color:#ef4444;margin-left:0.25rem;';
+              actionTd.appendChild(saveRowBtn);
+              actionTd.appendChild(cancelRowBtn);
+              actionTd.appendChild(rowStatus);
+
+              cancelRowBtn.addEventListener('click', () => rebuild());
+
+              saveRowBtn.addEventListener('click', async () => {
+                const token = getToken();
+                if (!token) return;
+                const dateVal = dateIn.value.trim();
+                const ovrVal = parseInt(ovrIn.value, 10);
+                if (!dateVal) { rowStatus.textContent = 'Date required.'; return; }
+                if (isNaN(ovrVal) || ovrVal < 50 || ovrVal > 99) { rowStatus.textContent = 'OVR must be 50–99.'; return; }
+                saveRowBtn.disabled = true;
+                rowStatus.textContent = 'Saving…';
+                const updated = current.map((e, j) => j === i ? { date: dateVal, ovr: ovrVal } : e);
+                try {
+                  const resp = await fetch(`/api/ovr/${playerSlug}/history`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updated),
+                  });
+                  if (resp.status === 403) { clearToken(); throw new Error('Token rejected.'); }
+                  if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
+                  allOvrHistory[playerSlug] = updated.slice().sort((a, b) => a.date < b.date ? -1 : 1);
+                  currentOvr[playerSlug] = allOvrHistory[playerSlug].at(-1).ovr;
+                  rebuild();
+                } catch (e) {
+                  rowStatus.textContent = e.message || 'Save failed.';
+                  saveRowBtn.disabled = false;
+                }
+              });
+            });
+          }
+        });
+        wrap.appendChild(table);
+      }
+
+      if (!loggedIn) return;
+
+      const formRow = document.createElement('div');
+      formRow.className = 'ovr-edit-row';
+      formRow.style.marginTop = '0.6rem';
+
+      const today = new Date().toISOString().slice(0, 10);
+      const dateIn = document.createElement('input');
+      dateIn.type = 'date';
+      dateIn.value = today;
+
+      const ovrIn = document.createElement('input');
+      ovrIn.type = 'number';
+      ovrIn.min = '50'; ovrIn.max = '99';
+      ovrIn.placeholder = 'OVR';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'edit-btn edit-btn-primary';
+      saveBtn.textContent = 'Add Entry';
+
+      const statusEl = document.createElement('span');
+      statusEl.style.cssText = 'font-size:0.75rem;color:#ef4444';
+
+      saveBtn.addEventListener('click', async () => {
+        const token = getToken();
+        if (!token) return;
+        const dateVal = dateIn.value.trim();
+        const ovrVal = parseInt(ovrIn.value, 10);
+        if (!dateVal) { statusEl.textContent = 'Date required.'; return; }
+        if (isNaN(ovrVal) || ovrVal < 50 || ovrVal > 99) { statusEl.textContent = 'OVR must be 50–99.'; return; }
+        saveBtn.disabled = true;
+        statusEl.textContent = 'Saving…';
+        try {
+          const resp = await fetch(`/api/ovr/${playerSlug}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: dateVal, ovr: ovrVal }),
+          });
+          if (resp.status === 403) { clearToken(); throw new Error('Token rejected.'); }
+          if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
+          if (!allOvrHistory[playerSlug]) allOvrHistory[playerSlug] = [];
+          allOvrHistory[playerSlug].push({ date: dateVal, ovr: ovrVal });
+          allOvrHistory[playerSlug].sort((a, b) => a.date < b.date ? -1 : 1);
+          currentOvr[playerSlug] = allOvrHistory[playerSlug].at(-1).ovr;
+          rebuild();
+        } catch (e) {
+          statusEl.textContent = e.message || 'Save failed.';
+          saveBtn.disabled = false;
+        }
+      });
+
+      formRow.appendChild(dateIn);
+      formRow.appendChild(ovrIn);
+      formRow.appendChild(saveBtn);
+      formRow.appendChild(statusEl);
+      wrap.appendChild(formRow);
+    }
+
+    rebuild();
+  }
+
   function renderBioLine(container, row) {
     const parts = [];
 
@@ -1422,6 +1628,31 @@
     container.appendChild(a);
   }
 
+  // ── OVR badge + inline editor ────────────────────────────────────────────────
+
+  function ovrHeatStyle(n) {
+    const t = Math.min(1, Math.max(0, (n - 60) / 40));
+    const hue = Math.round(t * 120);
+    return {
+      background: `hsl(${hue},55%,18%)`,
+      color:      `hsl(${hue},80%,72%)`,
+      border:     `1px solid hsl(${hue},55%,30%)`,
+    };
+  }
+
+  function renderOvrBadge(container, playerSlug) {
+    const ovr = currentOvr[playerSlug];
+    if (ovr == null) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'ovr-wrap';
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = `OVR ${ovr}`;
+    Object.assign(badge.style, ovrHeatStyle(ovr));
+    wrap.appendChild(badge);
+    container.appendChild(wrap);
+  }
+
   // ── Render: bio-only player (no stats yet) ───────────────────────────────────
 
   function renderBioOnlyPlayer(bioSlug, bio) {
@@ -1467,7 +1698,9 @@
     });
     content.appendChild(bioOnlyPosDiv);
     renderCurrentTeam(content, bioSlug);
+    renderOvrBadge(content, bioSlug);
     renderSalaryTable(content, bio);
+    renderOvrHistory(content, bioSlug);
 
     const editBioBtn = document.createElement('button');
     editBioBtn.className = 'btn-edit-bio';
@@ -1582,6 +1815,7 @@
         HEIGHT:     bio.height  || '',
         WEIGHT:     bio.weight  != null ? bio.weight : null,
         WINGSPAN:   bio.wingspan || '',
+        JERSEY:     bio.jersey_number ?? null,
       };
     });
 
@@ -1626,6 +1860,7 @@
 
     // Table
     const IDX_COLS = [
+      { label: '#',       field: 'JERSEY',     defaultDir:  1, cls: 'right muted', display: p => p.JERSEY != null ? `#${p.JERSEY}` : '—' },
       { label: 'Player',  field: 'PLAYER',     defaultDir:  1 },
       { label: 'Pos',     field: null,          display: p => p.POS.length ? p.POS.join(' · ') : '—', cls: 'muted' },
       { label: 'Age',     field: 'AGE',         defaultDir: -1, cls: 'right' },
@@ -1722,7 +1957,13 @@
       tr.dataset.teams = p.TEAMS.join('|');
       tr.addEventListener('click', () => { location.href = `/players/?p=${p.SLUG}`; });
 
-      // Player cell: photo + name
+      // Jersey cell (IDX_COLS[0])
+      const tdJ = tr.insertCell();
+      const jerseyCol = IDX_COLS[0];
+      if (jerseyCol.cls) tdJ.className = jerseyCol.cls;
+      tdJ.textContent = jerseyCol.display(p);
+
+      // Player cell: photo + name (IDX_COLS[1])
       const tdP = tr.insertCell();
       const cell = document.createElement('div');
       cell.className = 'player-name-cell';
@@ -1749,7 +1990,7 @@
       tdP.appendChild(cell);
 
       // Remaining cells
-      IDX_COLS.slice(1).forEach(col => {
+      IDX_COLS.slice(2).forEach(col => {
         const td = tr.insertCell();
         if (col.cls) td.className = col.cls;
         const val = col.display ? col.display(p) : (p[col.field] ?? '—');
@@ -1876,6 +2117,7 @@
     });
     content.appendChild(posDiv);
     renderCurrentTeam(content, slug);
+    renderOvrBadge(content, slug);
 
     // edit bio button
     const editBioBtn = document.createElement('button');
@@ -1929,6 +2171,7 @@
     const sections = document.createElement('div');
     content.appendChild(sections);
     renderSalaryTable(content, bio);
+    renderOvrHistory(content, slug);
 
     let bySeasonMode = false;
     let showPlayoffs = false;
@@ -2013,10 +2256,14 @@
     fetch('/players/player_awards.csv').then(r => r.text()).catch(() => ''),
     fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('/api/team-map').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/ovr').then(r => r.ok ? r.json() : {}).catch(() => ({})),
   ])
-    .then(([seasonsText, awardsText, biosJson, teamMapJson]) => {
+    .then(([seasonsText, awardsText, biosJson, teamMapJson, ovrJson, ovrHistoryJson]) => {
       biosData = biosJson;
       teamMap = teamMapJson;
+      currentOvr = ovrJson;
+      allOvrHistory = ovrHistoryJson;
 
       const rows = parseCSV(seasonsText);
       const awards = awardsText ? parseCSV(awardsText) : [];
