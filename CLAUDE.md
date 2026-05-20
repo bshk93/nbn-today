@@ -196,18 +196,51 @@ The core entities and how they relate.
 
 A player is the stable identity unit across the whole site. The canonical store is `player-bios.json` (served via `GET /api/players`), keyed by **slug** (`"curry-stephen"`).
 
+#### Slug
+
+The slug is the permanent primary key for a player — it ties together the bio, roster entries, OVR history, stats rows, and awards. It is set once at creation (`POST /api/players`) and **never changes**. There is no rename endpoint; changing a slug would orphan every other reference to that player across all CSVs and history files.
+
+#### Fields: set once, never changed
+
+These are historical facts about the player. Correct a typo if you must, but they should not change as a result of in-league events.
+
 | Field | Type | Notes |
 |---|---|---|
-| `name` | string | `"LAST, FIRST"` uppercase |
-| `pos` | string[] | Subset of `PG SG SF PF C` |
 | `dob` | ISO date | `"1988-03-14"` |
-| `college`, `country` | string | |
-| `draft_year`, `draft_round`, `draft_pick` | int or null | NBN draft, not NBA |
-| `height`, `weight`, `wingspan` | string / int | |
-| `photo_url` | string | |
-| `type` | enum | See **Player types** below |
-| `cap_holds` | string | See **Cap holds** below |
-| `salaries` | `{season: "$amount"}` | Keyed by `"YY-YY"` season string |
+| `college` | string | |
+| `country` | string | |
+| `draft_year`, `draft_round`, `draft_pick` | int or null | NBN draft position, not NBA — null if undrafted |
+| `height`, `wingspan` | string | e.g. `"6'8\""`, `"7'1\""` |
+| `weight` | int | lbs |
+
+#### Fields: updated occasionally
+
+These change infrequently but can legitimately be updated as better information is available or as in-league decisions happen.
+
+| Field | Type | When it changes |
+|---|---|---|
+| `name` | string (`"LAST, FIRST"` uppercase) | Typo correction only; not a game event |
+| `pos` | string[] (subset of `PG SG SF PF C`) | If the league reclassifies a player's eligible positions |
+| `photo_url` | string | Replaced if a better image is found |
+| `jersey_number` | string or null | Updated by the owning team via `PUT /api/players/{slug}/jersey`; only the team owner (or admin) can change it |
+
+#### Fields: change with contract/roster activity
+
+These reflect the current contract state and are updated whenever a transaction touches this player.
+
+| Field | Type | When it changes |
+|---|---|---|
+| `type` | enum | Changes on transactions: `""` → `"player"` on signing, `"player"` ↔ `"two-way"` on conversion, `"dead"` when a player is cut and only a cap hit remains |
+| `salaries` | `{"YY-YY": "$amount"}` | Replaced wholesale on any new contract, extension, or option exercise/decline |
+| `cap_holds` | string | Updated alongside `salaries` to reflect the status after each contract year |
+| `guaranteed` | `{"YY-YY": "$amount"}` | Guaranteed portion of each year; set when partial guarantees exist |
+| `guarantee_dates` | `{"YY-YY": "YYYY-MM-DD"}` | The date after which that season's salary becomes fully guaranteed; cleared once the date passes |
+
+#### OVR (not in player-bios.json)
+
+OVR is **not** stored on the player bio. It lives in a separate append-only log at `ovr-history.json` (served via `GET /api/ovr`), keyed by slug, as an array of `{date, ovr}` entries. The current rating is always the last entry. Updated via `PUT /api/ovr/{slug}` whenever ratings are refreshed (valid range 50–99).
+
+The roster CSV (`{abbr}-roster.csv`) stores the most recent OVR as a convenience column, but `ovr-history.json` is the source of truth for history.
 
 #### Player types
 
@@ -215,12 +248,12 @@ A player is the stable identity unit across the whole site. The canonical store 
 |---|---|
 | `"player"` | Standard roster player |
 | `"two-way"` | Two-way contract; salary/cap rules differ |
-| `"dead"` | Dead cap entry — no active player, just cap hit |
+| `"dead"` | Dead cap entry — no active player, just the cap hit on the books |
 | `""` | Unset / not yet classified |
 
 #### Cap holds
 
-`cap_holds` is a comma-separated string of `YEAR:TYPE` pairs, e.g. `"27-28:PLAYER_OPT,28-29:UFA"`. It describes what happens **after** the last contract year.
+`cap_holds` is a comma-separated string of `YEAR:TYPE` pairs, e.g. `"27-28:PLAYER_OPT,28-29:UFA"`. It describes what happens **after** the last contract year — i.e., the player's free-agent or option status in each subsequent offseason.
 
 | Type | Meaning |
 |---|---|
@@ -228,7 +261,7 @@ A player is the stable identity unit across the whole site. The canonical store 
 | `RFA` | Restricted free agent |
 | `PLAYER_OPT` | Player holds option to extend |
 | `TEAM_OPT` | Team holds option to extend |
-| `NON_GTD` | Non-guaranteed salary year |
+| `NON_GTD` | Non-guaranteed salary year (team can waive without full cap hit) |
 
 ### Roster entry
 
