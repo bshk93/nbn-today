@@ -88,9 +88,25 @@
     td.muted  { color: #6b7280; }
     td.bold   { font-weight: 600; color: #f3f4f6; }
     td.ovr-cell { font-weight: 700; text-align: right; }
-    td.salary-cell { text-align: right; color: #6b7280; text-decoration: line-through; }
-    td.gtd-cell { text-align: right; font-size: 0.82rem; color: #9ca3af; }
-    td.gtd-none { color: #374151; text-align: right; font-size: 0.82rem; }
+    td.salary-cell { text-align: right; }
+
+    td.cap-ufa        { background: hsl(45,  60%, 20%); color: hsl(45,  90%, 72%); }
+    td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
+    td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
+    td.cap-team-opt   { background: hsl(210, 55%, 20%); color: hsl(210, 75%, 70%); }
+    td.cap-non-gtd    { color: #4b5563; text-decoration: line-through; }
+
+    .cap-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1.25rem;
+      padding: 0.6rem 1rem 0.75rem;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      border-top: 1px solid #283141;
+    }
+    .cap-legend-item { display: flex; align-items: center; gap: 0.35rem; }
+    .cap-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
 
     #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
   </style>
@@ -163,13 +179,6 @@
       return map;
     }
 
-    function fmtGuaranteeDate(iso) {
-      if (!iso) return '';
-      const [y, m, d] = iso.split('-').map(Number);
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      return `${months[m-1]} ${d}, ${y}`;
-    }
-
     // ── State ─────────────────────────────────────────────────────────────────
 
     let allRows = {};        // year → row[]
@@ -179,14 +188,27 @@
     let sortDir = -1;
     let currentTbody = null;
 
+    const CAP_HOLD_CSS = {
+      UFA: 'cap-ufa', RFA: 'cap-rfa',
+      PLAYER_OPT: 'cap-player-opt', TEAM_OPT: 'cap-team-opt', NON_GTD: 'cap-non-gtd',
+    };
+    const CAP_HOLD_LABELS = {
+      UFA: 'UFA', RFA: 'RFA',
+      PLAYER_OPT: 'Player Opt', TEAM_OPT: 'Team Opt', NON_GTD: 'Non-Gtd',
+    };
+    const CAP_SWATCH_COLORS = {
+      UFA: 'hsl(45,60%,35%)', RFA: 'hsl(25,60%,35%)',
+      PLAYER_OPT: 'hsl(120,50%,30%)', TEAM_OPT: 'hsl(210,55%,35%)', NON_GTD: '#374151',
+    };
+
     const COLS = [
-      { key: 'team',   label: 'Team',      sortField: 'team',   cls: '',             numeric: false, defaultDir:  1 },
-      { key: 'player', label: 'Player',    sortField: 'player', cls: 'bold',         numeric: false, defaultDir:  1 },
-      { key: 'pos',    label: 'POS',       sortField: 'pos',    cls: 'muted center', numeric: false, defaultDir:  1 },
-      { key: 'ovr',    label: 'OVR',       sortField: 'ovr',    cls: 'ovr-cell',     numeric: true,  defaultDir: -1 },
-      { key: 'age',    label: 'Age',       sortField: 'age',    cls: 'right',        numeric: true,  defaultDir:  1 },
-      { key: 'salary', label: 'Salary',    sortField: 'salary', cls: 'salary-cell',  numeric: true,  defaultDir: -1 },
-      { key: 'gtd',    label: 'Guaranteed',sortField: 'gtd',    cls: 'gtd-cell',     numeric: true,  defaultDir: -1 },
+      { key: 'team',   label: 'Team',   sortField: 'team',   cls: '',             numeric: false, defaultDir:  1 },
+      { key: 'player', label: 'Player', sortField: 'player', cls: 'bold',         numeric: false, defaultDir:  1 },
+      { key: 'pos',    label: 'POS',    sortField: 'pos',    cls: 'muted center', numeric: false, defaultDir:  1 },
+      { key: 'ovr',    label: 'OVR',    sortField: 'ovr',    cls: 'ovr-cell',     numeric: true,  defaultDir: -1 },
+      { key: 'age',    label: 'Age',    sortField: 'age',    cls: 'right',        numeric: true,  defaultDir:  1 },
+      { key: 'salary', label: 'Salary', sortField: 'salary', cls: 'salary-cell',  numeric: true,  defaultDir: -1 },
+      { key: 'type',   label: 'Status', sortField: 'type',   cls: 'muted',        numeric: false, defaultDir:  1 },
     ];
 
     function visibleRows() {
@@ -265,18 +287,10 @@
             }
           } else if (col.key === 'salary') {
             td.textContent = row.salaryFmt;
-          } else if (col.key === 'gtd') {
-            if (row.gtdFmt) {
-              td.textContent = row.gtdFmt;
-              td.classList.remove('gtd-cell');
-              td.classList.add('gtd-cell');
-            } else if (row.gtdDate) {
-              td.textContent = `fully gtd ${fmtGuaranteeDate(row.gtdDate)}`;
-            } else {
-              td.textContent = 'none';
-              td.classList.remove('gtd-cell');
-              td.classList.add('gtd-none');
-            }
+            const cls = CAP_HOLD_CSS[row.capType];
+            if (cls) td.classList.add(cls);
+          } else if (col.key === 'type') {
+            td.textContent = CAP_HOLD_LABELS[row.capType] || row.capType;
           } else {
             td.textContent = row[col.key] || '—';
           }
@@ -301,7 +315,7 @@
         arrow.textContent = isActive ? (sortDir === -1 ? '↓' : '↑') : '↓';
         th.appendChild(arrow);
         th.dataset.active = isActive;
-        if (col.cls.includes('right') || col.cls.includes('ovr-cell') || col.cls.includes('salary') || col.cls.includes('gtd')) th.style.textAlign = 'right';
+        if (col.cls.includes('right') || col.cls.includes('ovr-cell') || col.cls.includes('salary-cell')) th.style.textAlign = 'right';
         if (col.cls.includes('center')) th.style.textAlign = 'center';
 
         th.addEventListener('click', () => {
@@ -376,17 +390,12 @@
         Object.entries(biosJson).forEach(([slug, bio]) => {
           const capMap = parseCapHolds(bio.cap_holds || '');
           const salaries = bio.salaries || {};
-          const guaranteed = bio.guaranteed || {};
-          const guarantee_dates = bio.guarantee_dates || {};
 
           Object.entries(capMap).forEach(([yr, type]) => {
-            if (type !== 'NON_GTD') return;
             if (!salaries[yr]) return;
 
             const salaryRaw = salaries[yr];
             const salaryNum = parseFloat(String(salaryRaw).replace(/[$,\s]/g, '')) || 0;
-            const gtdRaw = guaranteed[yr] || '';
-            const gtdNum = parseFloat(String(gtdRaw).replace(/[$,\s]/g, '')) || 0;
 
             const row = {
               slug,
@@ -397,9 +406,8 @@
               age: calcAge(bio.dob),
               salary: salaryNum,
               salaryFmt: formatSalary(salaryRaw),
-              gtd: gtdNum,
-              gtdFmt: gtdRaw ? formatSalary(gtdRaw) : '',
-              gtdDate: guarantee_dates[yr] || '',
+              capType: type,
+              type: CAP_HOLD_LABELS[type] || type,
             };
 
             if (!allRows[yr]) allRows[yr] = [];
@@ -418,6 +426,22 @@
         buildPosChips();
         statusEl.remove();
         buildTable();
+
+        const legend = document.createElement('div');
+        legend.className = 'cap-legend';
+        ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
+          const item = document.createElement('span');
+          item.className = 'cap-legend-item';
+          const swatch = document.createElement('span');
+          swatch.className = 'cap-swatch';
+          swatch.style.background = CAP_SWATCH_COLORS[type];
+          item.appendChild(swatch);
+          item.appendChild(document.createTextNode(
+            { PLAYER_OPT: 'Player Option', TEAM_OPT: 'Team Option', UFA: 'UFA Hold', RFA: 'RFA Hold', NON_GTD: 'Non-Guaranteed' }[type]
+          ));
+          legend.appendChild(item);
+        });
+        document.getElementById('table-wrap').appendChild(legend);
       } catch (e) {
         statusEl.textContent = 'Failed to load data.';
       }
