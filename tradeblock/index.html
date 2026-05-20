@@ -805,11 +805,12 @@
       const signinPrompt = document.getElementById('signin-prompt');
 
       try {
-        const [tb, userInfo, biosJson, playerSeasonsTxt] = await Promise.all([
+        const [tb, userInfo, biosJson, playerSeasonsTxt, ovrCurrent] = await Promise.all([
           fetch('/api/trading-block').then(r => { if (!r.ok) throw r; return r.json(); }),
           checkAuth(),
           fetch('/api/players').then(r => r.ok ? r.json() : {}),
           fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : null),
+          fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
         ]);
         tbData = tb;
 
@@ -867,11 +868,10 @@
             if (isNewFormat) {
               const slug = rosterNameToSlug(player);
               const bio = slug ? biosData[slug] : null;
-              const pr = slug ? rosterRows.find(r => r.SLUG === slug) : null;
               row = {
                 team, player,
                 pos: bio ? ((bio.pos || []).join('/') || '—') : '—',
-                ovr: pr ? pr.OVR : '',
+                ovr: slug ? (ovrCurrent[slug] || '') : '',
                 age: bio ? calcAgeFromDob(bio.dob) : '',
                 notes: notes || '',
                 cap_holds: bio ? (bio.cap_holds || {}) : {},

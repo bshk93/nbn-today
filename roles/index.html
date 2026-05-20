@@ -62,6 +62,7 @@
 
     .badge-admin   { background: #450a0a; color: #fca5a5; }
     .badge-rosters { background: #1e3a5f; color: #93c5fd; }
+    .badge-curator { background: #2e1065; color: #c4b5fd; }
     .badge-team    { background: #1c2c1e; color: #86efac; }
 
     .role-card h2 {
@@ -181,9 +182,33 @@
 
     .trb-admin   { background: #450a0a; color: #fca5a5; }
     .trb-rosters { background: #1e3a5f; color: #93c5fd; }
+    .trb-curator { background: #2e1065; color: #c4b5fd; }
     .trb-team    { background: #1c2c1e; color: #86efac; }
 
     .empty-state { text-align: center; color: #6b7280; padding: 2rem; }
+
+    .token-value {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      letter-spacing: 0.02em;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid #374151;
+      color: #6b7280;
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.7rem;
+      cursor: pointer;
+      font-family: inherit;
+      margin-left: 0.4rem;
+      white-space: nowrap;
+    }
+    .copy-btn:hover { border-color: #6b7280; color: #d1d5db; }
+    .copy-btn.copied { border-color: #16a34a; color: #86efac; }
 
     /* ── Modal ── */
     .modal-backdrop {
@@ -274,12 +299,26 @@
 
     <div class="role-card">
       <div class="role-card-header">
+        <span class="role-badge badge-curator">Curator</span>
+        <h2>Curator</h2>
+      </div>
+      <p>A subset of Rosters. For members who maintain player data but do not handle contracts.</p>
+      <ul>
+        <li>Edit OVR ratings (current and history) for any player</li>
+        <li>Edit non-contract player bio fields — name, positions, DOB, college, country, draft info, photo, height, weight, wingspan, jersey number</li>
+      </ul>
+      <p class="inherits">Curators cannot record transactions, edit contracts or salaries, edit rosters or picks, or add new players.</p>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
         <span class="role-badge badge-team">Team Roles</span>
         <h2>Team Roles <span style="font-weight:400;color:#6b7280;font-size:0.875rem">(atl, bkn, bos, …)</span></h2>
       </div>
       <p>One role per NBA franchise. Assigned to a team's front office members.</p>
       <ul>
         <li>Update that team's trade block — add, remove, or annotate players available for trade</li>
+        <li>Assign jersey numbers for players on that team's roster</li>
       </ul>
       <p class="inherits">Team roles do not grant roster editing access. Members who also manage contracts need the Rosters role separately.</p>
     </div>
@@ -300,10 +339,11 @@
           <tr>
             <th>Name</th>
             <th>Roles</th>
+            <th>Token</th>
           </tr>
         </thead>
         <tbody id="tokens-tbody">
-          <tr><td colspan="2" class="empty-state">Loading…</td></tr>
+          <tr><td colspan="3" class="empty-state">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -334,24 +374,66 @@ const TEAM_ABBRS = new Set([
 function roleBadgeClass(role) {
   if (role === 'admin') return 'trb-admin';
   if (role === 'rosters') return 'trb-rosters';
+  if (role === 'curator') return 'trb-curator';
   return 'trb-team';
 }
 
 function renderTokens(tokens) {
   const tbody = document.getElementById('tokens-tbody');
   if (!tokens.length) {
-    tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No active tokens.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No active tokens.</td></tr>';
     return;
   }
-  tbody.innerHTML = tokens.map(t => {
-    const roles = (t.roles || []).map(r =>
-      `<span class="token-role-badge ${roleBadgeClass(r)}">${r}</span>`
-    ).join('');
-    return `<tr>
-      <td>${escHtml(t.name || '—')}</td>
-      <td><div class="token-roles">${roles || '<span style="color:#6b7280">—</span>'}</div></td>
-    </tr>`;
-  }).join('');
+  tbody.innerHTML = '';
+  tokens.forEach(t => {
+    const tr = document.createElement('tr');
+
+    const tdName = tr.insertCell();
+    tdName.textContent = t.name || '—';
+
+    const tdRoles = tr.insertCell();
+    const rolesWrap = document.createElement('div');
+    rolesWrap.className = 'token-roles';
+    (t.roles || []).forEach(r => {
+      const span = document.createElement('span');
+      span.className = `token-role-badge ${roleBadgeClass(r)}`;
+      span.textContent = r;
+      rolesWrap.appendChild(span);
+    });
+    if (!t.roles || !t.roles.length) {
+      rolesWrap.innerHTML = '<span style="color:#6b7280">—</span>';
+    }
+    tdRoles.appendChild(rolesWrap);
+
+    const tdToken = tr.insertCell();
+    if (t.token) {
+      const wrap = document.createElement('span');
+      wrap.style.display = 'flex';
+      wrap.style.alignItems = 'center';
+
+      const val = document.createElement('span');
+      val.className = 'token-value';
+      val.textContent = t.token;
+      wrap.appendChild(val);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'copy-btn';
+      copyBtn.textContent = 'Copy';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(t.token).then(() => {
+          copyBtn.textContent = 'Copied!';
+          copyBtn.classList.add('copied');
+          setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 1500);
+        });
+      });
+      wrap.appendChild(copyBtn);
+      tdToken.appendChild(wrap);
+    } else {
+      tdToken.textContent = '—';
+    }
+
+    tbody.appendChild(tr);
+  });
 }
 
 async function loadTokens() {
@@ -368,7 +450,7 @@ async function loadTokens() {
     renderTokens(data);
   } catch {
     document.getElementById('tokens-tbody').innerHTML =
-      '<tr><td colspan="2" class="empty-state">Failed to load tokens.</td></tr>';
+      '<tr><td colspan="3" class="empty-state">Failed to load tokens.</td></tr>';
   }
 }
 

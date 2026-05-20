@@ -123,6 +123,14 @@
       cursor: default;
     }
 
+    .ovr-badge {
+      padding: 0.35rem 1rem;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      border-radius: 10px;
+    }
+
     /* toggle */
     .toggle-bar {
       display: flex;
@@ -272,6 +280,21 @@
 
     .missing-btn:hover { background: #263244; color: #d1d5db; }
     .missing-btn.active { background: #451a03; border-color: #d97706; color: #fcd34d; }
+
+    .rostered-btn {
+      padding: 0.3rem 0.75rem;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .rostered-btn:hover { background: #263244; color: #d1d5db; }
+    .rostered-btn.active { background: #052e16; border-color: #16a34a; color: #86efac; }
 
     .filter-bar {
       display: flex;
@@ -831,6 +854,7 @@
     'Austria':                          'AT',
     'Bahamas':                          'BS',
     'Belgium':                          'BE',
+    'Benin':                            'BJ',
     'Bosnia and Herzegovina':           'BA',
     'Brazil':                           'BR',
     'Cameroon':                         'CM',
@@ -1746,8 +1770,8 @@
     const wrap = document.createElement('div');
     wrap.className = 'ovr-wrap';
     const badge = document.createElement('span');
-    badge.className = 'badge';
-    badge.textContent = `OVR ${ovr}`;
+    badge.className = 'badge ovr-badge';
+    badge.textContent = ovr;
     Object.assign(badge.style, ovrHeatStyle(ovr));
     wrap.appendChild(badge);
     container.appendChild(wrap);
@@ -1916,6 +1940,8 @@
         WEIGHT:     bio.weight  != null ? bio.weight : null,
         WINGSPAN:   bio.wingspan || '',
         JERSEY:     bio.jersey_number ?? null,
+        TYPE:       bio.type || '',
+        OVR:        currentOvr[r.SLUG] ?? null,
       };
     });
 
@@ -1941,9 +1967,11 @@
       btn.className = 'page-tab' + (pg === activePage ? ' active' : '');
       btn.textContent = pg.label;
       btn.addEventListener('click', () => {
-        if (activePage === pg && activeFilters.size === 0) return;
+        if (activePage === pg && activeFilters.size === 0 && !filterRostered) return;
         activePage = pg;
         activeFilters.clear();
+        filterRostered = false;
+        rosteredBtn.classList.remove('active');
         content.querySelectorAll('.missing-btn').forEach(b => b.classList.remove('active'));
         tabBtns.forEach((b, i) => b.classList.toggle('active', PAGES[i] === pg));
         history.replaceState(null, '', `?tab=${pg.id}`);
@@ -1975,6 +2003,11 @@
       teamSelect.appendChild(opt);
     });
     filterBar.appendChild(teamSelect);
+
+    const rosteredBtn = document.createElement('button');
+    rosteredBtn.className = 'rostered-btn';
+    rosteredBtn.textContent = 'Rostered';
+    filterBar.appendChild(rosteredBtn);
 
     const resultCount = document.createElement('span');
     resultCount.className = 'filter-count';
@@ -2031,6 +2064,7 @@
       { label: '#',       field: 'JERSEY',     defaultDir:  1, cls: 'right muted', display: p => p.JERSEY != null ? `#${p.JERSEY}` : '—' },
       { label: 'Player',  field: 'PLAYER',     defaultDir:  1 },
       { label: 'Pos',     field: null,          display: p => p.POS.length ? p.POS.join(' · ') : '—', cls: 'muted' },
+      { label: 'OVR',     field: 'OVR',         defaultDir: -1, cls: 'right', display: p => p.OVR ?? '—' },
       { label: 'Age',     field: 'AGE',         defaultDir: -1, cls: 'right' },
       { label: 'Born',    field: 'DOB_SORT',    defaultDir: -1, cls: 'right', display: p => p.DOB_FMT || '—' },
       { label: 'Country', field: 'COUNTRY',     defaultDir:  1, display: p => {
@@ -2123,6 +2157,7 @@
       tr.className = 'clickable-row';
       tr.dataset.name = p.PLAYER.toLowerCase();
       tr.dataset.teams = p.TEAMS.join('|');
+      tr.dataset.type = p.TYPE;
       tr.addEventListener('click', () => { location.href = `/players/?p=${p.SLUG}`; });
 
       // Jersey cell (IDX_COLS[0])
@@ -2164,16 +2199,30 @@
         const val = col.display ? col.display(p) : (p[col.field] ?? '—');
         if (val instanceof Node) td.appendChild(val);
         else td.textContent = val == null ? '—' : val;
+        if (col.field === 'OVR' && p.OVR != null) {
+          Object.assign(td.style, ovrHeatStyle(p.OVR));
+          td.style.borderRadius = '4px';
+          td.style.padding = '0.15rem 0.4rem';
+          td.style.fontWeight = '700';
+          td.style.textAlign = 'center';
+        }
       });
 
       return tr;
     }
 
-    let filterQ = '', filterTeam = '';
+    let filterQ = '', filterTeam = '', filterRostered = false;
+
+    rosteredBtn.addEventListener('click', () => {
+      filterRostered = !filterRostered;
+      rosteredBtn.classList.toggle('active', filterRostered);
+      rebuildBody();
+    });
 
     function visible(p) {
       return (!filterQ || p.PLAYER.toLowerCase().includes(filterQ)) &&
-             (!filterTeam || p.TEAMS.includes(filterTeam));
+             (!filterTeam || p.TEAMS.includes(filterTeam)) &&
+             (!filterRostered || p.TYPE === 'player' || p.TYPE === 'two-way');
     }
 
     function rebuildBody() {
@@ -2214,7 +2263,8 @@
         total++;
         const nameOk = !filterQ || tr.dataset.name.includes(filterQ);
         const teamOk = !filterTeam || tr.dataset.teams.split('|').includes(filterTeam);
-        const show = nameOk && teamOk;
+        const rosteredOk = !filterRostered || tr.dataset.type === 'player' || tr.dataset.type === 'two-way';
+        const show = nameOk && teamOk && rosteredOk;
         tr.style.display = show ? '' : 'none';
         if (show) count++;
       });
