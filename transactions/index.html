@@ -958,7 +958,7 @@ function onPlayerSelected(slug) {
 
 // ── Salary rows ────────────────────────────────────────────────────────────
 function setupSalaryRows() {
-  document.getElementById('add-salary-btn').addEventListener('click', addSalaryRow);
+  document.getElementById('add-salary-btn').addEventListener('click', () => addSalaryRow());
 }
 
 function addSalaryRow(year, amount, holdType) {
