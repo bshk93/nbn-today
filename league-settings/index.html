@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>League Settings — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827; color: #f3f4f6; min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 720px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .auth-banner {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .auth-banner p { font-size: 0.875rem; color: #9ca3af; }
+    .btn {
+      font-size: 0.8rem; font-weight: 600; font-family: inherit; cursor: pointer;
+      padding: 0.35rem 0.75rem; border-radius: 6px; border: none;
+    }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-primary:disabled { background: #374151; color: #6b7280; cursor: default; }
+
+    .seasons { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .season-card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+    }
+    .season-card h2 {
+      font-size: 1rem; font-weight: 700; margin-bottom: 1rem;
+      color: #60a5fa; font-family: ui-monospace, 'Cascadia Code', monospace;
+    }
+    .fields {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .field label {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: #6b7280;
+    }
+    .field input {
+      background: #111827; border: 1px solid #374151; border-radius: 6px;
+      color: #f3f4f6; font-size: 0.85rem; font-family: inherit;
+      padding: 0.35rem 0.5rem; outline: none; width: 100%;
+    }
+    .field input:focus { border-color: #3b82f6; }
+    .field .hint { font-size: 0.72rem; color: #4b5563; }
+
+    .card-footer {
+      display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem;
+    }
+    .status { font-size: 0.78rem; }
+    .status.ok  { color: #22c55e; }
+    .status.err { color: #ef4444; }
+
+    @media (max-width: 540px) {
+      .fields { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Home</a></nav>
+    <header>
+      <h1>League Settings</h1>
+      <p>Salary cap, apron thresholds, and exception amounts by season.</p>
+    </header>
+
+    <div class="auth-banner" id="auth-banner" style="display:none">
+      <p id="auth-msg">A committee token is required to edit these values.</p>
+      <button class="btn btn-primary" id="auth-btn">Enter Token</button>
+    </div>
+
+    <div class="seasons" id="seasons">
+      <p style="color:#6b7280;font-size:0.875rem;">Loading…</p>
+    </div>
+  </div>
+
+  <script>
+    const FIELDS = [
+      { key: 'cap',          label: 'Salary Cap' },
+      { key: 'apron1',       label: '1st Apron' },
+      { key: 'apron2',       label: '2nd Apron' },
+      { key: 'ntmle_amount', label: 'Non-Taxpayer MLE' },
+      { key: 'tmle_amount',  label: 'Taxpayer MLE' },
+      { key: 'bae_amount',   label: 'Bi-Annual Exception' },
+    ];
+
+    function currentSeason() {
+      const now = new Date();
+      const y = now.getFullYear() % 100;
+      const m = now.getMonth() + 1;
+      return m < 7
+        ? `${String(y - 1).padStart(2, '0')}-${String(y).padStart(2, '0')}`
+        : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
+    }
+
+    function nextSeason(s) {
+      const [a, b] = s.split('-').map(Number);
+      return `${String((a + 1) % 100).padStart(2, '0')}-${String((b + 1) % 100).padStart(2, '0')}`;
+    }
+
+    function fmtDollars(v) {
+      return v ? '$' + Number(v).toLocaleString('en-US') : '';
+    }
+
+    function getToken() { return localStorage.getItem('nbn_token'); }
+    function setToken(t) { localStorage.setItem('nbn_token', t); }
+
+    function promptToken(cb) {
+      const t = window.prompt('Enter your NBN committee token:');
+      if (t && t.trim()) { setToken(t.trim()); cb(t.trim()); }
+    }
+
+    function renderSeasons(capLevels, canEdit) {
+      const cur  = currentSeason();
+      const next = nextSeason(cur);
+      const all  = new Set([...Object.keys(capLevels), cur, next]);
+      const seasons = [...all].sort((a, b) => b.localeCompare(a));
+
+      const container = document.getElementById('seasons');
+      container.innerHTML = '';
+
+      seasons.forEach(season => {
+        const data = capLevels[season] || {};
+        const card = document.createElement('div');
+        card.className = 'season-card';
+
+        const h2 = document.createElement('h2');
+        h2.textContent = season;
+        card.appendChild(h2);
+
+        const fieldsDiv = document.createElement('div');
+        fieldsDiv.className = 'fields';
+
+        const inputs = {};
+        FIELDS.forEach(({ key, label }) => {
+          const wrap = document.createElement('div');
+          wrap.className = 'field';
+          const lbl = document.createElement('label');
+          lbl.textContent = label;
+          const inp = document.createElement('input');
+          inp.type = 'number';
+          inp.value = data[key] || '';
+          inp.placeholder = '0';
+          inp.disabled = !canEdit;
+          const hint = document.createElement('div');
+          hint.className = 'hint';
+          hint.textContent = fmtDollars(data[key]);
+          inp.addEventListener('input', () => { hint.textContent = fmtDollars(inp.value); });
+          wrap.appendChild(lbl);
+          wrap.appendChild(inp);
+          wrap.appendChild(hint);
+          fieldsDiv.appendChild(wrap);
+          inputs[key] = inp;
+        });
+        card.appendChild(fieldsDiv);
+
+        if (canEdit) {
+          const footer = document.createElement('div');
+          footer.className = 'card-footer';
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-primary';
+          btn.textContent = 'Save';
+          const status = document.createElement('span');
+          status.className = 'status';
+          footer.appendChild(btn);
+          footer.appendChild(status);
+          card.appendChild(footer);
+
+          btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            status.textContent = 'Saving…';
+            status.className = 'status';
+            const token = getToken();
+            const body = {};
+            FIELDS.forEach(({ key }) => { body[key] = Number(inputs[key].value) || 0; });
+            try {
+              const r = await fetch(`/api/cap-levels/${season}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+              });
+              if (r.status === 403) {
+                localStorage.removeItem('nbn_token');
+                status.textContent = 'Token rejected — refresh and re-enter.';
+                status.className = 'status err';
+              } else if (!r.ok) {
+                throw new Error('Save failed');
+              } else {
+                status.textContent = 'Saved.';
+                status.className = 'status ok';
+                setTimeout(() => { status.textContent = ''; }, 3000);
+              }
+            } catch {
+              status.textContent = 'Error saving.';
+              status.className = 'status err';
+            }
+            btn.disabled = false;
+          });
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    async function init() {
+      const token = getToken();
+      const authBanner = document.getElementById('auth-banner');
+      const authMsg    = document.getElementById('auth-msg');
+      const authBtn    = document.getElementById('auth-btn');
+
+      let canEdit = false;
+
+      if (!token) {
+        authMsg.textContent = 'A committee token is required to edit these values.';
+        authBanner.style.display = '';
+        authBtn.addEventListener('click', () => promptToken(() => location.reload()));
+      } else {
+        const meResp = await fetch('/api/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => null);
+
+        if (!meResp || !meResp.ok) {
+          authMsg.textContent = 'Token invalid or expired.';
+          authBanner.style.display = '';
+          authBtn.textContent = 'Re-enter Token';
+          authBtn.addEventListener('click', () => promptToken(() => location.reload()));
+        } else {
+          const me = await meResp.json();
+          canEdit = me.roles.some(r => r === 'rosters' || r === 'admin');
+          if (!canEdit) {
+            authMsg.textContent = `Signed in as ${me.name}, but this role cannot edit league settings.`;
+            authBanner.style.display = '';
+            authBtn.style.display = 'none';
+          }
+        }
+      }
+
+      const capResp = await fetch('/api/cap-levels').catch(() => null);
+      const capLevels = (capResp && capResp.ok) ? await capResp.json() : {};
+      renderSeasons(capLevels, canEdit);
+    }
+
+    init();
+  </script>
+  <script src="/nav.js"></script>
+</body>
+</html>

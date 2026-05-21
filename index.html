@@ -247,6 +247,12 @@
     <a class="card" href="https://stats.nbn.today/files/">
       <div class="card-header"><span class="card-icon">📁</span><span class="card-title">Data Files</span></div>
     </a>
+
+    <span class="section-label" id="lo-label" style="display:none">League Office</span>
+
+    <a class="card" id="lo-league-settings" href="/league-settings/" style="display:none">
+      <div class="card-header"><span class="card-icon">⚙️</span><span class="card-title">League Settings</span></div>
+    </a>
   </main>
 
   <footer>
@@ -278,6 +284,19 @@
       const el = document.getElementById('site-version');
       if (el) el.textContent = 'v' + d.version;
     });
+
+    const _loToken = localStorage.getItem('nbn_token');
+    if (_loToken) {
+      fetch('/api/me', { headers: { 'Authorization': `Bearer ${_loToken}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.roles?.some(r => r === 'rosters' || r === 'admin')) {
+            document.getElementById('lo-label').style.display = '';
+            document.getElementById('lo-league-settings').style.display = '';
+          }
+        })
+        .catch(() => {});
+    }
   </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
