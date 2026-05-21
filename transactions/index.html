@@ -964,6 +964,8 @@ function setupPlayerSearch() {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'player' || bio.type === 'two-way');
     } else if (txnType === 'convert_twoway') {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'two-way');
+    } else if (txnType === 'sign') {
+      pool = Object.entries(bios).filter(([slug, bio]) => !teamMap[slug] && !bio.retired && bio.type !== 'dead');
     } else {
       pool = Object.entries(bios);
     }
