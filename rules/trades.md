@@ -29,6 +29,8 @@ Draft picks may only be traded up to **7 years in advance** of the current seaso
 
 **Cash is not a tradeable asset in NBN.** Trades may only involve players and draft picks.
 
+**Traded Player Exceptions (TPEs) do not exist in NBN.** When a player is traded, no exception is generated for the sending team. Salary matching must be satisfied with real outgoing salary at the time of the trade.
+
 
 ---
 
@@ -100,6 +102,22 @@ A team **below the First Apron** that executes a trade where incoming salary exc
 ---
 
 ## Restrictions
+
+### Trade deadline and window
+
+<!-- TODO: document the trade open date and trade deadline for each season. These dates are set externally each season. -->
+
+### Roster size limits
+
+A trade may not leave any participating team with fewer than the **minimum roster size** after the trade is processed.
+
+<!-- TODO: define minimum roster size. Maximum is 15 standard players (see README.md). -->
+
+There is no restriction on trading away the last player at any given position.
+
+### Contract options
+
+When a player is traded, all option provisions in their contract (team options, player options, non-guaranteed years) travel with the player to the new team unchanged.
 
 ### Re-acquisition restriction
 

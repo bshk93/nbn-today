@@ -78,18 +78,11 @@ Each apron level restricts a different set of transactions per the Transaction R
 | B | Team signs or acquires a player using the **Non-Taxpayer Mid-Level Salary Exception (NTMLE)** | First Apron |
 | C | Team acquires a player via a contract entered into under Section 8(e)(1) *(sign-and-trade)* | First Apron |
 | D | Team signs a player **during the Regular Season** whose prior contract was terminated that same Regular Season, where the prior contract's salary exceeded the NTMLE amount | First Apron |
-| E | Team acquires a player using an **Expanded Traded Player Exception** | First Apron |
-| F | Team acquires a player using a **Standard Traded Player Exception** — but only (i) after the end of the Regular Season in which the exception arose, or (ii) if the exception arose in the offseason, after the end of the following Regular Season | First Apron |
-| G | Team acquires a player using a **Transition Traded Player Exception** | First Apron |
-| H | Team acquires a player using an **Aggregated Standard Traded Player Exception** | Second Apron |
-| J | Team acquires a player using any **Traded Player Exception arising from a sign-and-trade** (Section 8(e)(1)) | Second Apron |
 | K | Team signs a player using the **Taxpayer Mid-Level Salary Exception (TMLE)** | Second Apron |
 
-> **Rows E–J** are subject to the additional post-season forward-look rule (see below).
-> **Rows A–F** cannot be used after the team has already used the TMLE that season (see TMLE trigger below).
-> **Rows H–J** push teams over the Second Apron — note that the Second Apron is a stricter threshold than the First Apron.
+> **Rows A–D** cannot be used after the team has already used the TMLE that season (see TMLE trigger below).
 
-> **NBN league rule:** Cash is not a tradeable asset in this league. CBA row I (cash payments in trades) does not apply and has been omitted.
+> **NBN league rules:** Cash is not a tradeable asset in this league. Traded Player Exceptions (TPEs) do not exist in NBN — teams may not generate or use TPEs of any kind. CBA rows E–J (all TPE-related) do not apply and have been omitted.
 
 Once a team engages in a transaction that is subject to an apron restriction, they are **hard-capped at that apron level for the remainder of that salary cap year** — their salary may not exceed the applicable apron level at any point for the rest of the season, regardless of other exceptions. This is distinct from the soft cap: there is no exception or mechanism to exceed the apron once triggered.
 
@@ -98,28 +91,6 @@ Once a team engages in a transaction that is subject to an apron restriction, th
 A team that uses the **Taxpayer Mid-Level Salary Exception (TMLE)** to sign a player during a salary cap year may not, for the remainder of that year, engage in any transaction listed in **rows A–F** of the Transaction Restrictions Table. Using the TMLE effectively hard-caps the team at the apron level associated with rows A–F for the rest of the season.
 
 > The TMLE itself is defined in `free-agency.md`.
-
-#### Post-season forward look (rows E–J only)
-
-During the window **after the last day of the Regular Season through the end of the Salary Cap Year** (roughly the playoff/offseason transition period), transactions in rows E–J of the Transaction Restrictions Table carry an additional forward-looking restriction:
-
-- A team may not engage in such a transaction if doing so would push their salary for the **following** salary cap year over the applicable apron level for that following year.
-- If a team does engage in such a transaction during this window, they are **hard-capped at the apron for the following salary cap year** as well.
-
-In plain terms: rows E–J transactions done in the post-season window lock you into the apron not just for the rest of the current year, but for all of next year too. Rows E–G trigger the First Apron for next year; rows H–J trigger the Second Apron for next year.
-
-##### How to project next year's salary for this check
-
-When evaluating whether a post-season transaction would violate the forward-look rule, the team's salary for the following year is calculated using these assumptions:
-
-| # | Assumption |
-|---|---|
-| A | All team and player options for the following year are **assumed exercised** (maximizes projected salary) |
-| B | No Early Termination Options (ETOs) for the following year are assumed exercised (players stay on) |
-| C | The team makes **no additional transactions** for the remainder of the current salary cap year |
-| D | Any player eligible for a "Higher Max" bump in year 4 of their Rookie Scale Contract is assumed to earn the **highest salary they could qualify for**, based on any league honors already announced for the just-completed season |
-
-For the cap thresholds themselves: if next year's Salary Cap, First Apron, and Second Apron levels have not yet been set, assume they are **equal to the current year's levels**.
 
 ---
 
