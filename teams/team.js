@@ -179,7 +179,7 @@ document.title = `${abbr} — NBN`;
     border-top: 1px solid #374151;
   }
   .row-twoway td { opacity: 0.6; }
-  .row-dead td   { opacity: 0.45; font-style: italic; }
+  .row-dead td   { opacity: 0.45; font-style: italic; text-decoration: line-through; }
   .picks-acquired td { color: #60a5fa; }
   .retired-banners {
     display: flex;
@@ -206,7 +206,7 @@ document.title = `${abbr} — NBN`;
   td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
   td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
   td.cap-team-opt   { background: hsl(210, 55%, 20%); color: hsl(210, 75%, 70%); }
-  td.cap-non-gtd    { color: #4b5563; text-decoration: line-through; }
+  td.cap-non-gtd    { color: #4b5563; }
   .cap-legend {
     display: flex;
     flex-wrap: wrap;
