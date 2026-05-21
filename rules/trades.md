@@ -43,6 +43,24 @@ A player on a **minimum contract of 2 seasons or fewer** does not count as incom
 
 A minimum contract player **does** count as incoming salary if their contract is **longer than 2 seasons**.
 
+### Base Year Compensation (BYC)
+
+BYC modifies the outgoing salary figure used by the **sending team** when matching in a sign-and-trade. It applies when a player meets **all four** of the following criteria:
+
+1. He is a **Bird or Early Bird free agent** of the signing team.
+2. His new salary is **above the minimum**.
+3. He receives a **raise greater than 20%** over his previous salary.
+4. The signing team is **at or above the salary cap** immediately after the signing.
+
+When BYC applies:
+
+| Side | Salary used for matching |
+|---|---|
+| Sending team (outgoing) | The **greater of** his previous salary or **50% of his new salary** |
+| Receiving team (incoming) | His **full new salary** (no adjustment) |
+
+This asymmetry means the sending team gets less "credit" for trading him than the receiving team pays in incoming — BYC trades are therefore harder to match from the sending side.
+
 ### Second Apron: no salary aggregation
 
 A team **at or above the Second Apron** may not combine multiple outgoing players' salaries to satisfy matching for a higher-salaried incoming player. Trading multiple players is permitted only if each player's salary could independently satisfy the match — aggregation itself is what's prohibited.
