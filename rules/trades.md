@@ -37,6 +37,12 @@ For teams **below the First Apron**, the maximum incoming salary in a trade is d
 
 If a trade triggers an apron hard-cap (e.g. by aggregating salaries or exceeding the +$250,000 First Apron cap), the relevant apron restriction overrides these tiers for that trade. See below.
 
+### Minimum contract exception
+
+A player on a **minimum contract of 2 seasons or fewer** does not count as incoming salary for the purposes of salary matching. Their salary is excluded from the incoming total when calculating whether a trade satisfies the matching tiers above.
+
+A minimum contract player **does** count as incoming salary if their contract is **longer than 2 seasons**.
+
 ### Second Apron: no salary aggregation
 
 A team **at or above the Second Apron** may not combine multiple outgoing players' salaries to satisfy matching for a higher-salaried incoming player. Trading multiple players is permitted only if each player's salary could independently satisfy the match — aggregation itself is what's prohibited.
