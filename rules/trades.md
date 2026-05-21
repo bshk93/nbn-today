@@ -13,8 +13,17 @@ See `README.md` for league-wide constants.
 
 ### Draft picks
 
-<!-- Any limits on how many picks or how far out picks can be traded,
-     pick swap rules, conditions allowed on picks -->
+#### Stepien Rule
+
+A team may not trade away first-round picks in **consecutive seasons**. Every team must retain the ability to make a first-round selection at least once every two years. A proposed trade is illegal if, after the trade, the team would have no first-round pick in two or more consecutive draft years.
+
+Trading the **right to make a selection** after already holding the pick (i.e. trading the pick slot post-draft, after the team has made their selection) does not count as trading away a first-round pick for purposes of this rule.
+
+> See also `draft.md` for additional Second Apron restrictions on trading first-round picks.
+
+#### 7-year advance limit
+
+Draft picks may only be traded up to **7 years in advance** of the current season. A pick further out than 7 years from the current season may not be included in any trade.
 
 ### Cash / other assets
 
