@@ -2,6 +2,28 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Versioning
+
+The site uses semantic versioning (`MAJOR.MINOR.PATCH`) stored in `version.json` at the repo root.
+
+**On every commit:**
+1. Add a new entry to the **top** of `changelog.json` with `"version": "pending"`, today's date (`YYYY-MM-DD`), and a `changes` array of human-readable bullet strings.
+2. Commit normally. The pre-commit hook (`.git/hooks/pre-commit`) will auto-bump the patch digit in `version.json` and replace `"pending"` in the new changelog entry with the real version number, then stage both files automatically.
+
+**For minor or major bumps** (new feature area, significant overhaul): manually edit `version.json` to the desired version before committing. The hook detects that `version.json` is already staged and skips the auto-bump.
+
+`changelog.json` format — newest entry first:
+```json
+[
+  { "version": "pending", "date": "YYYY-MM-DD", "changes": ["..."] },
+  { "version": "0.0.1",   "date": "2026-05-21", "changes": ["Initial versioned release"] }
+]
+```
+
+The changelog is served at `/changelog` and the current version appears on the homepage card.
+
+---
+
 ## League rules and transaction rubrics
 
 Per-transaction rules, salary cap rules, and validity rubrics live in `rules/`.

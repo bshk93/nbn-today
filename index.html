@@ -240,6 +240,11 @@
     <a class="card" href="/roles">
       <div class="card-header"><span class="card-icon">🔑</span><span class="card-title">Roles &amp; Permissions</span></div>
     </a>
+
+    <a class="card" href="/changelog">
+      <div class="card-header"><span class="card-icon">🔖</span><span class="card-title">Changelog</span></div>
+      <span id="site-version" style="font-size:0.75rem;color:#6b7280;"></span>
+    </a>
   </main>
 
   <footer>
@@ -266,6 +271,12 @@
     </div>
   </footer>
   </div>
+  <script>
+    fetch('/version.json').then(r => r.json()).then(d => {
+      const el = document.getElementById('site-version');
+      if (el) el.textContent = 'v' + d.version;
+    });
+  </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
 </body>

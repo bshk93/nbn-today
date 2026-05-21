@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 680px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+    header { margin-bottom: 2.5rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    .entries { display: flex; flex-direction: column; gap: 1.5rem; }
+    .entry {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+    }
+    .entry-header {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      margin-bottom: 0.875rem;
+    }
+    .version {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #60a5fa;
+      font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+    }
+    .date {
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+    .changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .changes li {
+      font-size: 0.875rem;
+      color: #d1d5db;
+      padding-left: 1rem;
+      position: relative;
+    }
+    .changes li::before {
+      content: '–';
+      position: absolute;
+      left: 0;
+      color: #4b5563;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Home</a></nav>
+    <header>
+      <h1>Changelog</h1>
+      <p id="current-version">Site version history.</p>
+    </header>
+    <div class="entries" id="entries">
+      <p style="color:#6b7280;font-size:0.875rem;">Loading…</p>
+    </div>
+  </div>
+
+  <script>
+    fetch('/changelog.json')
+      .then(r => r.json())
+      .then(entries => {
+        const container = document.getElementById('entries');
+        container.innerHTML = entries.map(e => `
+          <div class="entry">
+            <div class="entry-header">
+              <span class="version">v${e.version}</span>
+              <span class="date">${e.date}</span>
+            </div>
+            <ul class="changes">
+              ${e.changes.map(c => `<li>${c}</li>`).join('')}
+            </ul>
+          </div>
+        `).join('');
+        const latest = entries[0];
+        document.getElementById('current-version').textContent = `Current version: v${latest.version}`;
+      })
+      .catch(() => {
+        document.getElementById('entries').innerHTML =
+          '<p style="color:#ef4444;">Failed to load changelog.</p>';
+      });
+  </script>
+  <script src="/nav.js"></script>
+</body>
+</html>
