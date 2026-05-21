@@ -78,9 +78,30 @@ A team **below the First Apron** that executes a trade where incoming salary exc
 
 A team may not re-acquire a player they previously traded away until the following free agency period. This applies regardless of how the original trade was structured (direct trade, multi-team trade, or sign-and-trade).
 
+### Newly signed free agent restriction
+
+A player signed as a free agent may not be traded until **both** of the following conditions are met:
+
+1. At least **90 days** have elapsed since the player signed.
+2. **December 15** of the current league season has passed.
+
+The trade window opens on whichever date is **later**. A player signed before September 16 would be tradeable on December 15; a player signed after September 16 would be tradeable 90 days after signing.
+
 
 ---
 
 ## Multi-Team Trades
 
-<!-- Any special rules or limits for 3+ team trades -->
+### The Touch Rule
+
+In a trade involving **3 or more teams**, each team must "touch" at least **two other teams** in the trade. A team touches another team when at least one qualifying asset flows between them (in either direction).
+
+**Qualifying assets for a touch:**
+
+1. **An active player contract** — any player currently on a standard or two-way roster contract.
+2. **A future pick that will actually convey** — the pick must have a realistic path to conveying as a first-round pick. A heavily protected pick (e.g. top-55 protected) does not qualify because it is unlikely to convey as a first. A pick with a top-10 protection that converts to a second-round pick if it doesn't convey **does** qualify, because something of value will convey regardless.
+3. **Draft rights to an actual NBA prospect** — rights to a player with a reasonable chance of reaching the NBA during his career, or who is currently a contributing player in a reputable professional league. Rights to marginal or untrackable players do not qualify.
+
+A draft pick that stays with its original team (i.e. is traded away and immediately returned in the same deal) does not count as a touch.
+
+> **Example:** In a 3-team trade, Team A must touch Teams B and C, Team B must touch Teams A and C, and Team C must touch Teams A and B — six touches total (three pairs, each bidirectional).
