@@ -483,6 +483,32 @@
         </select>
       </div>
 
+      <!-- sign-only: signing method -->
+      <div class="form-field" id="f-signing-method-field" style="display:none">
+        <label>Signing Method</label>
+        <select id="f-signing-method">
+          <option value="">— select —</option>
+          <option value="cap_space">Cap Space</option>
+          <option value="bird_rights">Bird Rights</option>
+          <option value="ntmle">Non-Taxpayer MLE (NTMLE)</option>
+          <option value="tmle">Taxpayer MLE (TMLE)</option>
+          <option value="room_exception">Room Exception</option>
+          <option value="bae">Bi-Annual Exception (BAE)</option>
+          <option value="sign_and_trade">Sign-and-Trade</option>
+        </select>
+        <span id="mle-hint" style="display:none;font-size:0.75rem;margin-top:0.25rem"></span>
+      </div>
+
+      <!-- sign-only: bird rights subtype -->
+      <div class="form-field" id="f-bird-rights-field" style="display:none">
+        <label>Bird Rights Type</label>
+        <select id="f-bird-rights-type">
+          <option value="QVFA">QVFA (Qualifying Veteran)</option>
+          <option value="EQVFA">EQVFA (Early Qualifying Veteran)</option>
+          <option value="Non-QVFA">Non-QVFA</option>
+        </select>
+      </div>
+
       <!-- pick-only -->
       <div class="form-field" id="f-pick-year-field" style="display:none">
         <label>Draft Year</label>
@@ -643,6 +669,8 @@ let allTransactions = [];
 let bios = {};
 let allPicks = [];
 let teamMap = {};    // slug → "TEAM"
+let teamStates = {};   // abbr → { hard_cap, mle_used, bae_used, bae_available, ... }
+let capLevelsData = {}; // season → { cap, apron1, ntmle_amount, ... }
 let legCounter = 0;
 let activeTypeFilter = '';
 let currentToken = localStorage.getItem(TOKEN_KEY) || '';
@@ -671,17 +699,26 @@ const TEAM_ABBRS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
     document.querySelector('.txn-table').classList.toggle('admin-mode', isAdmin);
   }
 
-  const [txnRes, biosRes, picksRes, mapRes] = await Promise.allSettled([
+  const [txnRes, biosRes, picksRes, mapRes, statesRes, capRes] = await Promise.allSettled([
     fetch('/api/transactions?limit=500').then(r => r.json()),
     fetch('/api/players').then(r => r.json()),
     fetch('/api/picks').then(r => r.json()),
     fetch('/api/team-map').then(r => r.json()),
+    fetch('/api/team-state').then(r => r.ok ? r.json() : {}),
+    fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
   ]);
 
   if (biosRes.status === 'fulfilled') bios = biosRes.value;
   if (txnRes.status === 'fulfilled') allTransactions = txnRes.value.transactions || [];
   if (picksRes.status === 'fulfilled') allPicks = picksRes.value || [];
   if (mapRes.status === 'fulfilled') teamMap = mapRes.value;
+  if (statesRes.status === 'fulfilled') {
+    const raw = statesRes.value;
+    Object.keys(raw).forEach(team => {
+      teamStates[team] = { ...raw[team].current, bae_available: raw[team].bae_available };
+    });
+  }
+  if (capRes.status === 'fulfilled') capLevelsData = capRes.value;
   populatePickYears();
 
   renderTable();
@@ -773,6 +810,11 @@ function setupTypeSwitch() {
     if (!isTrade) {
       document.getElementById('f-date-field').style.display          = isPick ? 'none' : '';
       document.getElementById('f-team-field').style.display          = isSign ? '' : 'none';
+      document.getElementById('f-signing-method-field').style.display = isSign ? '' : 'none';
+      if (!isSign) {
+        document.getElementById('f-bird-rights-field').style.display = 'none';
+        document.getElementById('mle-hint').style.display = 'none';
+      }
       document.getElementById('f-pick-year-field').style.display     = isPick ? '' : 'none';
       document.getElementById('f-pick-sel-field').style.display      = isPick ? '' : 'none';
       document.getElementById('f-opt-year-field').style.display      = isOpt ? '' : 'none';
@@ -794,6 +836,57 @@ function setupTypeSwitch() {
     document.getElementById('submit-btn').textContent = isTrade ? 'Submit Trade' : 'Submit Transaction';
   });
 }
+
+function currentSeasonStr() {
+  const now = new Date();
+  const y = now.getFullYear() % 100;
+  const m = now.getMonth() + 1;
+  return m < 7
+    ? `${String(y - 1).padStart(2, '0')}-${String(y).padStart(2, '0')}`
+    : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
+}
+
+function fmtDollarsShort(v) {
+  if (!v) return '$0';
+  const m = v / 1e6;
+  return m >= 1 ? `$${m.toFixed(1)}M` : `$${Math.round(v / 1e3)}K`;
+}
+
+function updateMleHint() {
+  const hint = document.getElementById('mle-hint');
+  const method = document.getElementById('f-signing-method').value;
+  const team = document.getElementById('f-team')?.value;
+  const birdField = document.getElementById('f-bird-rights-field');
+  if (birdField) birdField.style.display = method === 'bird_rights' ? '' : 'none';
+
+  const poolMethods = ['ntmle', 'tmle', 'room_exception', 'bae'];
+  if (!team || !poolMethods.includes(method)) { hint.style.display = 'none'; return; }
+
+  const curYr = currentSeasonStr();
+  const cl = capLevelsData[curYr] || {};
+  const state = teamStates[team] || {};
+
+  if (method === 'bae') {
+    hint.style.display = '';
+    const available = !state.bae_used && (state.bae_available !== false);
+    hint.style.color = available ? '#34d399' : '#f87171';
+    hint.textContent = state.bae_used ? 'BAE: already used this season'
+      : state.bae_available === false ? 'BAE: not available (used last season)'
+      : `BAE: ${fmtDollarsShort(cl.bae_amount || 0)} available`;
+    return;
+  }
+
+  const total = method === 'tmle' ? (cl.tmle_amount || 0) : (cl.ntmle_amount || 0);
+  if (!total) { hint.style.display = 'none'; return; }
+  const remaining = Math.max(0, total - (state.mle_used || 0));
+  hint.style.display = '';
+  hint.style.color = remaining > 0 ? '#34d399' : '#f87171';
+  hint.textContent = `${fmtDollarsShort(remaining)} remaining of ${fmtDollarsShort(total)}`;
+}
+
+// Wire up signing method + team change → hint update
+document.getElementById('f-signing-method').addEventListener('change', updateMleHint);
+document.getElementById('f-team').addEventListener('change', updateMleHint);
 
 function setupOptionDecision() {
   document.querySelectorAll('input[name="opt-decision"]').forEach(r => {
@@ -1309,9 +1402,16 @@ async function submitTransaction() {
   if (type === 'sign') {
     date = document.getElementById('f-date').value;
     const team = document.getElementById('f-team').value;
+    const signingMethod = document.getElementById('f-signing-method').value || null;
+    const birdRightsType = signingMethod === 'bird_rights'
+      ? (document.getElementById('f-bird-rights-type').value || null) : null;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     if (!team) { setStatus('err', 'Select a team.'); return; }
-    details = { player: playerSlug, team, contract };
+    details = {
+      player: playerSlug, team, contract,
+      ...(signingMethod ? { signing_method: signingMethod } : {}),
+      ...(birdRightsType ? { bird_rights_type: birdRightsType } : {}),
+    };
   } else if (type === 'pick') {
     date = new Date().toISOString().slice(0, 10);
     const pickVal = document.getElementById('f-pick-sel').value;
@@ -1398,6 +1498,9 @@ function resetForm() {
   document.getElementById('f-player-display').value = '';
   document.getElementById('f-player-slug').value = '';
   document.getElementById('f-team').value = '';
+  document.getElementById('f-signing-method').value = '';
+  document.getElementById('f-bird-rights-field').style.display = 'none';
+  document.getElementById('mle-hint').style.display = 'none';
   document.getElementById('f-description').value = '';
   document.getElementById('salary-rows').innerHTML = '';
   addSalaryRow();
@@ -1514,7 +1617,14 @@ function renderDetailsCell(t) {
       const pickStr = `${p.year} R${p.round} ${p.orig}${p.pick_number ? ' #' + p.pick_number : ''}`;
       return `${escHtml(pickStr)}${contractStr ? ' · ' + escHtml(contractStr) : ''}`;
     }
-    return escHtml(contractStr);
+    const METHOD_LABELS = { bird_rights: 'Bird Rights', ntmle: 'NTMLE', tmle: 'TMLE',
+      room_exception: 'Room Exc.', bae: 'BAE', sign_and_trade: 'S&T' };
+    let methodStr = '';
+    if (d.signing_method && d.signing_method !== 'cap_space') {
+      methodStr = ' · ' + (METHOD_LABELS[d.signing_method] || d.signing_method);
+      if (d.bird_rights_type) methodStr += ` (${d.bird_rights_type})`;
+    }
+    return escHtml(contractStr + methodStr);
   }
   if (t.type === 'option') {
     const optLabel = d.option_type === 'PLAYER_OPT' ? 'Player Opt' : 'Team Opt';

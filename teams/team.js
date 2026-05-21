@@ -240,6 +240,23 @@ document.title = `${abbr} — NBN`;
   .cap-edit-form label { display: flex; flex-direction: column; gap: 0.2rem; color: #6b7280; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
   .cap-edit-form input { background: #111827; border: 1px solid #374151; border-radius: 4px; color: #f3f4f6; font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
   .cap-edit-form input:focus { border-color: #3b82f6; }
+  .cap-edit-form select { background: #111827; border: 1px solid #374151; border-radius: 4px; color: #f3f4f6; font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
+  .cap-edit-form select:focus { border-color: #3b82f6; }
+  .cap-edit-form .form-divider { width: 100%; height: 1px; background: #374151; margin: 0.25rem 0; }
+  .cap-edit-form .form-section-label { width: 100%; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #4b5563; letter-spacing: 0.05em; padding-top: 0.15rem; }
+  .hard-cap-banner {
+    background: #450a0a; border: 1px solid #7f1d1d; border-radius: 8px;
+    padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; color: #f87171;
+    margin-bottom: 1.25rem;
+  }
+  .hard-cap-banner.apron2 { background: #431407; border-color: #7c2d12; color: #fb923c; }
+  .exceptions-card { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 0.85rem 1.25rem; font-size: 0.85rem; }
+  .exceptions-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid #283141; gap: 1rem; }
+  .exceptions-row:last-child { border-bottom: none; }
+  .exc-label { color: #9ca3af; font-size: 0.78rem; }
+  .exc-mle-type { font-size: 0.7rem; color: #6b7280; margin-left: 0.35rem; }
+  .exc-remaining { color: #34d399; }
+  .exc-used { color: #f87171; }
   .token-overlay {
     position: fixed;
     inset: 0;
@@ -292,10 +309,15 @@ document.body.innerHTML = `
       <h2 class="section-title">Retired Numbers</h2>
       <div class="retired-banners" id="retired-banners"></div>
     </section>
+    <div id="hard-cap-banner" style="display:none"></div>
     <section>
       <h2 class="section-title" id="roster-title">Roster</h2>
       <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
       <div id="cap-edit-wrap"></div>
+    </section>
+    <section id="exceptions-section" style="display:none">
+      <h2 class="section-title">Cap Exceptions</h2>
+      <div id="exceptions-wrap" class="exceptions-card"></div>
     </section>
     <section>
       <h2 class="section-title" id="picks-title">Draft Picks</h2>
@@ -494,6 +516,73 @@ function parseSalaryNum(v) {
   if (!v && v !== 0) return 0;
   const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
   return isNaN(n) ? 0 : Math.round(n);
+}
+
+function fmtDollars(v) {
+  return v ? '$' + Math.round(v).toLocaleString('en-US') : '$0';
+}
+
+function computeMleType(teamSalary, capLevels, season) {
+  const cl = capLevels?.[season];
+  if (!cl?.ntmle_amount) return null;
+  if (cl.cap - teamSalary > cl.ntmle_amount) return 'room';
+  if (cl.apron1 - teamSalary >= cl.ntmle_amount) return 'ntmle';
+  return 'tmle';
+}
+
+function mleTypeLabel(type) {
+  return { room: 'Room Exception', ntmle: 'Non-Taxpayer MLE', tmle: 'Taxpayer MLE' }[type] || '—';
+}
+
+function renderHardCapBanner(teamState) {
+  const el = document.getElementById('hard-cap-banner');
+  if (!teamState?.hard_cap) { el.style.display = 'none'; return; }
+  const isApron2 = teamState.hard_cap === 'second_apron';
+  el.className = 'hard-cap-banner' + (isApron2 ? ' apron2' : '');
+  el.style.display = '';
+  const reason = teamState.hard_cap_reason ? ` · ${teamState.hard_cap_reason}` : '';
+  el.textContent = `⚠ Hard-Capped: ${isApron2 ? 'Second' : 'First'} Apron${reason}`;
+}
+
+function renderExceptionsSection(teamState, capLevels, teamSalary, season) {
+  const section = document.getElementById('exceptions-section');
+  const wrap = document.getElementById('exceptions-wrap');
+  const cl = capLevels?.[season];
+  if (!cl?.ntmle_amount && !cl?.bae_amount) { section.style.display = 'none'; return; }
+
+  const mleType = computeMleType(teamSalary, capLevels, season);
+  const mleTotal = mleType === 'tmle' ? (cl.tmle_amount || 0) : (cl.ntmle_amount || 0);
+  const mleUsed = teamState?.mle_used || 0;
+  const mleRemaining = Math.max(0, mleTotal - mleUsed);
+  const baeUsed = teamState?.bae_used;
+  const baeAvail = teamState?.bae_available;
+
+  wrap.innerHTML = '';
+
+  if (mleType && mleTotal > 0) {
+    const row = document.createElement('div');
+    row.className = 'exceptions-row';
+    const remCls = mleRemaining > 0 ? 'exc-remaining' : 'exc-used';
+    row.innerHTML = `
+      <span class="exc-label">MLE <span class="exc-mle-type">(${mleTypeLabel(mleType)})</span></span>
+      <span>
+        <span class="${remCls}">${fmtDollars(mleRemaining)} remaining</span>
+        <span style="color:#4b5563;font-size:0.75rem"> / ${fmtDollars(mleTotal)}</span>
+        ${mleUsed ? `<span style="color:#6b7280;font-size:0.72rem"> (${fmtDollars(mleUsed)} used)</span>` : ''}
+      </span>`;
+    wrap.appendChild(row);
+  }
+
+  if (baeAvail || baeUsed) {
+    const row = document.createElement('div');
+    row.className = 'exceptions-row';
+    row.innerHTML = baeUsed
+      ? `<span class="exc-label">BAE</span><span class="exc-used">Used · ${fmtDollars(cl.bae_amount)}</span>`
+      : `<span class="exc-label">BAE</span><span class="exc-remaining">Available · ${fmtDollars(cl.bae_amount)}</span>`;
+    wrap.appendChild(row);
+  }
+
+  section.style.display = wrap.children.length ? '' : 'none';
 }
 
 function buildRosterTable(rows, biosData, capLevels, currentOvr = {}) {
@@ -1891,7 +1980,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -1900,11 +1989,13 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
     fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
+    fetch(`/api/team-state/${abbr}`).then(r => r.ok ? r.json() : null),
   ]);
 
   const biosData   = biosr.status === 'fulfilled' ? biosr.value : {};
   const capLevels  = capr.status === 'fulfilled'  ? capr.value  : {};
   const currentOvr = ovrr.status === 'fulfilled'  ? ovrr.value  : {};
+  const teamState  = tsr.status  === 'fulfilled'  ? tsr.value   : null;
 
   if (sr.status === 'fulfilled') {
     seasonsWrap.innerHTML = '';
@@ -1999,6 +2090,18 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr);
     if (t) rosterWrap.appendChild(t);
     else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
+
+    // Hard cap banner + exceptions section
+    const curYr = currentSeasonYr();
+    let teamSalaryTotal = 0;
+    rosterRows.forEach(row => {
+      const bio = biosData[row.SLUG] || {};
+      const type = (row.TYPE || bio.type || '').trim();
+      if (type === 'dead') return;
+      teamSalaryTotal += parseSalaryNum((bio.salaries || {})[curYr]);
+    });
+    renderHardCapBanner(teamState);
+    renderExceptionsSection(teamState, capLevels, teamSalaryTotal, curYr);
     setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels, currentOvr), rosterCellConfig(rosterHeaders, biosData));
     setupJerseyEditable('roster-title', 'roster-wrap', rosterRows, biosData, () => {
       const wrapEl = document.getElementById('roster-wrap');
@@ -2037,6 +2140,57 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
         const fCap    = capField('Salary Cap',  'cap');
         const fApron1 = capField('1st Apron',   'apron1');
         const fApron2 = capField('2nd Apron',   'apron2');
+        const fNtmle  = capField('NTMLE Amount', 'ntmle_amount');
+        const fTmle   = capField('TMLE Amount',  'tmle_amount');
+        const fBae    = capField('BAE Amount',   'bae_amount');
+
+        // Team-state section
+        const divider = document.createElement('div');
+        divider.className = 'form-divider';
+        capFormEl.appendChild(divider);
+        const stateLabel = document.createElement('div');
+        stateLabel.className = 'form-section-label';
+        stateLabel.textContent = 'Team State';
+        capFormEl.appendChild(stateLabel);
+
+        const curState = teamState || {};
+
+        const fHardCapLbl = document.createElement('label');
+        fHardCapLbl.textContent = 'Hard Cap';
+        const fHardCap = document.createElement('select');
+        [['', 'None'], ['first_apron', 'First Apron'], ['second_apron', 'Second Apron']].forEach(([v, l]) => {
+          const o = document.createElement('option');
+          o.value = v; o.textContent = l;
+          if (v === (curState.hard_cap || '')) o.selected = true;
+          fHardCap.appendChild(o);
+        });
+        fHardCapLbl.appendChild(fHardCap);
+        capFormEl.appendChild(fHardCapLbl);
+
+        const fReasonLbl = document.createElement('label');
+        fReasonLbl.textContent = 'Reason';
+        const fReason = document.createElement('input');
+        fReason.type = 'text'; fReason.placeholder = 'e.g. NTMLE signing';
+        fReason.value = curState.hard_cap_reason || '';
+        fReason.style.width = '14rem';
+        fReasonLbl.appendChild(fReason);
+        capFormEl.appendChild(fReasonLbl);
+
+        const fMleUsedLbl = document.createElement('label');
+        fMleUsedLbl.textContent = 'MLE Used ($)';
+        const fMleUsed = document.createElement('input');
+        fMleUsed.type = 'number'; fMleUsed.placeholder = '0';
+        fMleUsed.value = curState.mle_used || 0;
+        fMleUsedLbl.appendChild(fMleUsed);
+        capFormEl.appendChild(fMleUsedLbl);
+
+        const fBaeUsedLbl = document.createElement('label');
+        fBaeUsedLbl.style.cssText = 'flex-direction:row;align-items:center;gap:0.4rem;cursor:pointer';
+        const fBaeUsed = document.createElement('input');
+        fBaeUsed.type = 'checkbox'; fBaeUsed.checked = !!curState.bae_used;
+        fBaeUsedLbl.appendChild(fBaeUsed);
+        fBaeUsedLbl.appendChild(document.createTextNode('BAE Used'));
+        capFormEl.appendChild(fBaeUsedLbl);
 
         const saveBtn = document.createElement('button');
         saveBtn.className = 'edit-btn edit-btn-primary';
@@ -2050,13 +2204,29 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
         saveBtn.addEventListener('click', async () => {
           saveBtn.disabled = true; statusEl.textContent = 'Saving…';
           try {
-            const resp = await fetch(`/api/cap-levels/${season}`, {
+            const capResp = await fetch(`/api/cap-levels/${season}`, {
               method: 'PUT',
               headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ cap: +fCap.value, apron1: +fApron1.value, apron2: +fApron2.value }),
+              body: JSON.stringify({
+                cap: +fCap.value, apron1: +fApron1.value, apron2: +fApron2.value,
+                ntmle_amount: +fNtmle.value, tmle_amount: +fTmle.value, bae_amount: +fBae.value,
+              }),
             });
-            if (resp.status === 403) { statusEl.textContent = 'Not authorized.'; saveBtn.disabled = false; return; }
-            if (!resp.ok) throw new Error('Save failed.');
+            if (capResp.status === 403) { statusEl.textContent = 'Not authorized.'; saveBtn.disabled = false; return; }
+            if (!capResp.ok) throw new Error('Cap save failed.');
+
+            const stateResp = await fetch(`/api/team-state/${abbr}`, {
+              method: 'PUT',
+              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                hard_cap: fHardCap.value || null,
+                hard_cap_reason: fReason.value.trim(),
+                mle_used: +fMleUsed.value || 0,
+                bae_used: fBaeUsed.checked,
+              }),
+            });
+            if (stateResp.status === 403) { statusEl.textContent = 'Not authorized.'; saveBtn.disabled = false; return; }
+            if (!stateResp.ok) throw new Error('State save failed.');
             location.reload();
           } catch (e) {
             statusEl.textContent = e.message; saveBtn.disabled = false;
