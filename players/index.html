@@ -608,7 +608,7 @@
     const m = season && season.match(/\d{2}-(\d{2})/);
     if (!m) return '';
     const ref = new Date(2000 + parseInt(m[1], 10), 0, 1); // Jan 1 of end year
-    const d = new Date(dob);
+    const d = new Date(dob + 'T00:00:00');
     if (isNaN(d)) return '';
     let age = ref.getFullYear() - d.getFullYear();
     const mo = ref.getMonth() - d.getMonth();
@@ -1531,7 +1531,7 @@
     // DOB + age
     const dob = bioVal(row.DOB);
     if (dob) {
-      const d = new Date(dob);
+      const d = new Date(dob + 'T00:00:00');
       if (!isNaN(d)) {
         const now = new Date();
         let age = now.getFullYear() - d.getFullYear();
@@ -1901,7 +1901,7 @@
     function fmtDOB(dob) {
       const v = bioVal(dob);
       if (!v) return null;
-      const d = new Date(v);
+      const d = new Date(v + 'T00:00:00');
       return isNaN(d) ? null : d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
@@ -1932,7 +1932,7 @@
     const players = [...playerFirstRow.values()].map(r => {
       const bio = biosData[r.SLUG] || {};
       const dobRaw = bio.dob || bioVal(r.DOB);
-      const d = dobRaw ? new Date(dobRaw) : null;
+      const d = dobRaw ? new Date(dobRaw + 'T00:00:00') : null;
       const dobOk = d && !isNaN(d);
       let age = null;
       if (dobOk) {

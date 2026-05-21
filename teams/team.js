@@ -463,7 +463,7 @@ function displayNameFromBio(canonical) {
 
 function calcAge(dob) {
   if (!dob) return '';
-  return Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 3600 * 1000));
+  return Math.floor((Date.now() - new Date(dob + 'T00:00:00').getTime()) / (365.25 * 24 * 3600 * 1000));
 }
 
 function buildTable(cols, rows, initSortField, initSortDir, renderCell) {
