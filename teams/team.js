@@ -1,3 +1,58 @@
+// =============================================================================
+// FUNCTION INDEX (teams/team.js)
+// =============================================================================
+// Constants & boot
+//   TEAMS                     1   abbr → full team name
+//   RETIRED_JERSEYS          34   per-team retired number records
+//
+// Parsing & formatting utilities
+//   parseCSV                348   CSV text → array of row objects
+//   parseLine               359   handles quoted fields
+//   fmtPct                  371   decimal → "56.1%"
+//   fmtSigned               376   signed decimal with +/- prefix
+//   sv                      382   safe numeric value from row field
+//   formatSalary            389   "$37,000,000" display
+//   displayNameFromBio      399   "LAST, FIRST" → "First Last"
+//   calcAge                 409   ISO dob → age string
+//   parseCapHolds           495   legacy CSV cap-holds string → object
+//   currentSeasonYr         506   infers current season year
+//   parseSalaryNum          515   "$37,000,000" → 37000000
+//   fmtDollars              521   number → "$37.0M"
+//
+// Cap & roster logic
+//   computeMleType          525   determines MLE type from team salary
+//   mleTypeLabel            533   MLE type → display label
+//   renderHardCapBanner     537   injects hard cap warning banner
+//   renderExceptionsSection 547   renders MLE/BAE exceptions panel
+//
+// Table builders
+//   buildTable              414   generic sortable table (used by owners page too)
+//   buildRosterTable        588   renders the Roster section with salary/cap data
+//   bioPlayerName           960   slug → display name from bios
+//   buildPicksTable         968   renders the Draft Picks section
+//   makeSeasonRenderCell   1069   season history cell renderer (badges, playoff coloring)
+//   buildTimeline          1112   season timeline component
+//
+// Player cell rendering
+//   playerSlug             1138   name → slug
+//   renderPlayerCell       1142   renders player name/photo/pos badge cell
+//   applyCapHoldColor      1178   colors cap-hold cells by type
+//
+// Edit mode & auth
+//   promptToken            1185   modal to enter/store bearer token
+//   withToken              1216   wraps fn with stored token
+//   makeSelect             1222   <select> helper
+//   nextSalaryYear         1237   "25-26" → "26-27"
+//   prevSalaryYear         1242   "26-27" → "25-26"
+//   makeEditCell           1247   creates editable cell (text/select/salary/cap-hold)
+//   buildEditableGrid      1336   full in-place editable table grid
+//   rosterCellConfig       1482   cell config map for roster editing
+//   enterEditMode          1510   swaps read view for edit grid
+//   setupPicksEditable     1614   wires edit mode for picks table
+//   setupJerseyEditable    1809   wires jersey number editing
+//   setupEditable          1945   wires edit mode for roster table
+// =============================================================================
+
 const TEAMS = {
   ATL: "Atlanta Hawks",
   BKN: "Brooklyn Nets",

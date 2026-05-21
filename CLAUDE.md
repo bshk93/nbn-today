@@ -58,6 +58,32 @@ All CSVs live at the project root or in subdirectories and are fetched at runtim
 
 No framework or build step. Every page is a self-contained HTML file with inline `<style>` and `<script>`. Two shared JS files break the pattern as described below.
 
+## Common task lookup
+
+| Task | Where to edit |
+|---|---|
+| Add/change a roster table column | `buildRosterTable` — `teams/team.js:588` |
+| Add/change a draft picks column | `buildPicksTable` — `teams/team.js:968` |
+| Add/change a season history column | `makeSeasonRenderCell` — `teams/team.js:1069` |
+| Add/change an owners table column | `COLS` array — `owners/index.html:164` |
+| Change team page layout or HTML structure | `teams/team.js` (the injected HTML, not per-team files) |
+| Change cap/MLE/exception display | `renderHardCapBanner` / `renderExceptionsSection` — `teams/team.js:537` |
+| Change edit mode behavior | `enterEditMode` / `setupEditable` — `teams/team.js:1510` |
+| Change stats highs table | `stats/highs/table.js` (not the per-stat HTML files) |
+| Change stats totals table | `stats/totals/table.js` (not the per-stat HTML files) |
+| Add/edit a NBNTV blurb | `BLURBS` object — `nbntv-classics/index.html` |
+| Change standings display | `standings/index.html` |
+| Change player index display | `players/index.html` |
+| Change HOF display | `hof/index.html` |
+| Change H2H display | `h2h/index.html` |
+| Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js:34` |
+
+---
+
+## Architecture
+
+No framework or build step. Every page is a self-contained HTML file with inline `<style>` and `<script>`. Two shared JS files break the pattern as described below.
+
 ### Shared scripts
 
 **`teams/team.js`** — loaded by every team page (`teams/{ABB}/index.html`). It:
@@ -68,7 +94,11 @@ No framework or build step. Every page is a self-contained HTML file with inline
 - Exports reusable helpers: `buildTable(cols, rows, sortField, sortDir, renderCell)`, `buildRosterTable`, `buildPicksTable`, `buildEditableGrid`, `setupEditable`
 - Handles **edit mode**: committee members can click an "Edit" button on roster/picks sections, enter a bearer token (stored in `localStorage` as `nbn_token`), and save changes via `PUT /api/roster/{ABB}` or `PUT /api/picks/{ABB}` against a backend API running at port 8001.
 
+> **Never edit `teams/{ABB}/index.html` directly.** All 30 files are identical 11-line shells (`<script src="../team.js"></script>`). All team page logic lives in `team.js`.
+
 **`stats/highs/table.js`** and **`stats/totals/table.js`** — loaded by each stat-category page. The page sets `window.PAGE_CONFIG = { statKey, csvPath }` before the script tag, and the script reads that config to know which CSV to fetch and which column to highlight as primary.
+
+> **Never edit individual stat-category HTML files** (`stats/highs/{stat}/index.html`, `stats/totals/{stat}/index.html`). They only differ by 3 lines (title, heading, `PAGE_CONFIG`). All display logic lives in `table.js`.
 
 ### owners/index.html data flow
 
