@@ -78,6 +78,14 @@ A team **below the First Apron** that executes a trade where incoming salary exc
 
 A team may not re-acquire a player they previously traded away until the following free agency period. This applies regardless of how the original trade was structured (direct trade, multi-team trade, or sign-and-trade).
 
+### Sign-and-trade: First Apron restriction
+
+A team **receiving** a player via sign-and-trade may not be above the First Apron at the conclusion of the trade.
+
+A team that is **already above the First Apron** may receive a player in a sign-and-trade only if the trade itself reduces that team's payroll to below the First Apron — i.e., the outgoing salary shed in the deal brings them under.
+
+> See also Row C in `README.md` (Transaction Restrictions Table) — executing a sign-and-trade hard-caps the acquiring team at the First Apron for the remainder of the season.
+
 ### Newly signed free agent restriction
 
 A player signed as a free agent may not be traded until **both** of the following conditions are met:
