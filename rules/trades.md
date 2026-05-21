@@ -25,8 +25,17 @@ See `README.md` for league-wide constants.
 
 ## Salary Matching
 
-<!-- Is there a salary matching requirement? What's the allowable delta?
-     Any exceptions (e.g. teams under the cap can absorb without matching) -->
+### Below the First Apron: tiered matching
+
+For teams **below the First Apron**, the maximum incoming salary in a trade is determined by the total outgoing salary using three tiers:
+
+| Outgoing salary | Max incoming salary |
+|---|---|
+| $0 – $8,527,000 | 200% of outgoing + $250,000 |
+| $8,527,001 – $29,000,000 | Outgoing + $8,527,000 |
+| Above $29,000,000 | 125% of outgoing + $250,000 |
+
+If a trade triggers an apron hard-cap (e.g. by aggregating salaries or exceeding the +$250,000 First Apron cap), the relevant apron restriction overrides these tiers for that trade. See below.
 
 ### Second Apron: no salary aggregation
 
@@ -59,8 +68,9 @@ A team **below the First Apron** that executes a trade where incoming salary exc
 
 ## Restrictions
 
-<!-- Holdout rules, recently-signed restrictions (e.g. can't trade a player
-     signed within X days), any player veto rights, etc. -->
+### Re-acquisition restriction
+
+A team may not re-acquire a player they previously traded away until the following free agency period. This applies regardless of how the original trade was structured (direct trade, multi-team trade, or sign-and-trade).
 
 
 ---
