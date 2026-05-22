@@ -375,6 +375,23 @@
       });
     }
 
+    // ── Age calculation ───────────────────────────────────────────────────────
+
+    function ageForSeason(dob, season) {
+      if (!dob) return null;
+      const parts = dob.split('/');
+      if (parts.length !== 3) return null;
+      const startYr = parseInt(season.split('-')[0]);
+      const fullYr  = startYr < 50 ? 2000 + startYr : 1900 + startYr;
+      const birthYear = parseInt(parts[2]);
+      const birthMonth = parseInt(parts[0]);
+      const birthDay   = parseInt(parts[1]);
+      // Age as of October 1 of the season start year
+      let age = fullYr - birthYear;
+      if (birthMonth > 10 || (birthMonth === 10 && birthDay > 1)) age--;
+      return age;
+    }
+
     // ── Name formatting: "LAST, FIRST" → "First Last" ─────────────────────────
 
     function fmtName(raw) {
@@ -391,7 +408,7 @@
       for (const row of rows) {
         const slug = row.SLUG;
         if (!slug) continue;
-        if (!bySlug.has(slug)) bySlug.set(slug, { name: row.PLAYER, seasons: new Map() });
+        if (!bySlug.has(slug)) bySlug.set(slug, { name: row.PLAYER, dob: row.DOB, seasons: new Map() });
         const player = bySlug.get(slug);
         const s = row.SEASON;
         if (!player.seasons.has(s)) {
@@ -432,6 +449,7 @@
               'FG%': agg.FGA > 0 ? agg.FGM / agg.FGA : null,
               '3P%': agg.p3a  > 0 ? agg.p3  / agg.p3a  : null,
               'FT%': agg.FTA  > 0 ? agg.FTM / agg.FTA  : null,
+              age:  ageForSeason(player.dob, season),
             };
           });
 
@@ -457,6 +475,7 @@
         const cells = OPT_STATS.map(k => `<td>${fmtStat(k, row[k])}</td>`).join('');
         return `<tr>
           <td>${row.season}</td>
+          <td>${row.age ?? '—'}</td>
           <td>${row.team}</td>
           <td>${fmtStat('MPG', row.MPG)}</td>
           ${cells}
@@ -464,7 +483,7 @@
       }).join('');
 
       return `<thead><tr>
-          <th>Season</th><th>Team</th><th>MPG</th>${heads}
+          <th>Season</th><th>Age</th><th>Team</th><th>MPG</th>${heads}
         </tr></thead>
         <tbody>${bodyRows}</tbody>`;
     }
