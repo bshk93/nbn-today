@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.20",
+    "date": "2026-05-22",
+    "changes": [
+      "Add GET/PUT /api/deadcap/{team} endpoints for managing dead cap entries",
+      "Dead cap edit UI on team pages (Edit Dead Cap button, inline form, requires rosters token)",
+      "_apply_release transaction now automatically writes dead cap to the team's deadcap CSV"
+    ]
+  },
+  {
     "version": "0.0.19",
     "date": "2026-05-22",
     "changes": [

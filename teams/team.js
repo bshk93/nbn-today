@@ -369,6 +369,7 @@ document.body.innerHTML = `
       <h2 class="section-title" id="roster-title">Roster</h2>
       <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
       <div id="cap-edit-wrap"></div>
+      <div id="dead-cap-edit-wrap"></div>
     </section>
     <section id="exceptions-section" style="display:none">
       <h2 class="section-title">Cap Exceptions</h2>
@@ -2008,6 +2009,168 @@ function setupJerseyEditable(titleId, wrapId, rosterRows, biosData, restoreView)
   }
 }
 
+function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
+  if (!localStorage.getItem('nbn_token')) return;
+
+  // Seasons to show: curYr + next 2, plus any already in data
+  const seasons = new Set([curYr, nextSalaryYear(curYr), nextSalaryYear(nextSalaryYear(curYr))]);
+  deadCapRows.forEach(r => Object.keys(r).forEach(k => { if (/^\d{2}-\d{2}$/.test(k)) seasons.add(k); }));
+  const seasonList = [...seasons].sort();
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'edit-toggle-btn';
+  editBtn.style.cssText = 'margin-top:0.5rem;font-size:0.72rem;padding:0.15rem 0.45rem';
+  editBtn.textContent = 'Edit Dead Cap';
+  wrapEl.appendChild(editBtn);
+
+  let formEl = null;
+
+  editBtn.addEventListener('click', () => {
+    if (formEl) { formEl.remove(); formEl = null; editBtn.textContent = 'Edit Dead Cap'; return; }
+    editBtn.textContent = 'Close';
+
+    let rows = deadCapRows.map(r => ({ ...r }));
+
+    formEl = document.createElement('div');
+    formEl.style.cssText = 'margin-top:0.75rem;background:#1f2937;border:1px solid #374151;border-radius:6px;padding:0.75rem;overflow-x:auto';
+
+    function render() {
+      formEl.innerHTML = '';
+
+      const tbl = document.createElement('table');
+      tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.8rem';
+      const thead = tbl.createTHead();
+      const hr = thead.insertRow();
+      ['Player', ...seasonList, ''].forEach((lbl, i) => {
+        const th = document.createElement('th');
+        th.textContent = lbl;
+        th.style.cssText = `padding:3px 8px;color:#9ca3af;text-align:${i === 0 ? 'left' : 'right'}`;
+        hr.appendChild(th);
+      });
+
+      const tbody = tbl.createTBody();
+
+      rows.forEach((row, ri) => {
+        const tr = tbody.insertRow();
+        // Player name
+        const nameTd = tr.insertCell();
+        const bio = biosData[row.SLUG] || {};
+        nameTd.textContent = displayNameFromBio(bio.name || '') || row.SLUG;
+        nameTd.style.cssText = 'padding:3px 8px';
+
+        // Season amounts
+        seasonList.forEach(s => {
+          const td = tr.insertCell();
+          td.style.cssText = 'padding:3px 6px;text-align:right';
+          const inp = document.createElement('input');
+          inp.type = 'text';
+          inp.value = row[s] || '';
+          inp.placeholder = '—';
+          inp.style.cssText = 'width:90px;text-align:right;background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 4px;font-size:0.75rem';
+          inp.addEventListener('input', () => { row[s] = inp.value.trim(); });
+          td.appendChild(inp);
+        });
+
+        // Delete
+        const delTd = tr.insertCell();
+        delTd.style.cssText = 'padding:3px 6px;text-align:right';
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '✕';
+        delBtn.style.cssText = 'background:none;border:none;color:#ef4444;cursor:pointer;padding:0 4px';
+        delBtn.addEventListener('click', () => { rows.splice(ri, 1); render(); });
+        delTd.appendChild(delBtn);
+      });
+
+      // Add-entry row
+      const addTr = tbody.insertRow();
+      addTr.style.borderTop = '1px solid #374151';
+      const addTd = addTr.insertCell();
+      addTd.colSpan = seasonList.length + 2;
+      addTd.style.cssText = 'padding:6px 8px';
+
+      const slugInp = document.createElement('input');
+      slugInp.type = 'text'; slugInp.placeholder = 'player-slug';
+      slugInp.style.cssText = 'background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 6px;font-size:0.75rem;width:140px;margin-right:6px';
+
+      const seasonInp = document.createElement('input');
+      seasonInp.type = 'text'; seasonInp.placeholder = '25-26';
+      seasonInp.style.cssText = 'background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 6px;font-size:0.75rem;width:70px;margin-right:6px';
+
+      const amtInp = document.createElement('input');
+      amtInp.type = 'text'; amtInp.placeholder = '$X,XXX,XXX';
+      amtInp.style.cssText = 'background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 6px;font-size:0.75rem;width:110px;margin-right:6px';
+
+      const addBtn = document.createElement('button');
+      addBtn.textContent = '+ Add';
+      addBtn.style.cssText = 'background:#1d4ed8;color:#fff;border:none;border-radius:3px;padding:2px 8px;font-size:0.75rem;cursor:pointer';
+      addBtn.addEventListener('click', () => {
+        const slug = slugInp.value.trim();
+        const season = seasonInp.value.trim();
+        const amt = amtInp.value.trim();
+        if (!slug || !season || !amt) return;
+        const existing = rows.find(r => r.SLUG === slug);
+        if (existing) {
+          existing[season] = amt;
+        } else {
+          rows.push({ SLUG: slug, [season]: amt });
+          if (!seasons.has(season)) { seasons.add(season); seasonList.length = 0; [...seasons].sort().forEach(s => seasonList.push(s)); }
+        }
+        slugInp.value = ''; seasonInp.value = ''; amtInp.value = '';
+        render();
+      });
+
+      addTd.append(slugInp, seasonInp, amtInp, addBtn);
+      formEl.appendChild(tbl);
+
+      // Save / Cancel
+      const btns = document.createElement('div');
+      btns.style.cssText = 'margin-top:0.5rem;display:flex;gap:0.5rem';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Save';
+      saveBtn.style.cssText = 'background:#1d4ed8;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.75rem';
+      saveBtn.addEventListener('click', () => {
+        withToken(token => {
+          const payload = rows
+            .filter(r => r.SLUG && Object.keys(r).some(k => /^\d{2}-\d{2}$/.test(k) && r[k]))
+            .map(r => {
+              const out = { SLUG: r.SLUG };
+              Object.keys(r).forEach(k => { if (/^\d{2}-\d{2}$/.test(k) && r[k]) out[k] = r[k]; });
+              return out;
+            });
+          fetch(`/api/deadcap/${abbr}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+          })
+          .then(r => { if (!r.ok) throw r; return r.json(); })
+          .then(() => {
+            formEl.remove(); formEl = null;
+            editBtn.textContent = 'Edit Dead Cap';
+            onSave(payload);
+          })
+          .catch(r => {
+            if (r.status === 403) localStorage.removeItem('nbn_token');
+            saveBtn.textContent = 'Error — retry';
+            setTimeout(() => { saveBtn.textContent = 'Save'; }, 2000);
+          });
+        });
+      });
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style.cssText = 'background:#374151;color:#e5e7eb;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.75rem';
+      cancelBtn.addEventListener('click', () => { formEl.remove(); formEl = null; editBtn.textContent = 'Edit Dead Cap'; });
+
+      btns.append(saveBtn, cancelBtn);
+      formEl.appendChild(btns);
+    }
+
+    render();
+    wrapEl.appendChild(formEl);
+  });
+}
+
 function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellConfig = {}) {
   function renderView(currentRows) {
     const wrapEl = document.getElementById(wrapId);
@@ -2056,14 +2219,14 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
     fetch(`/api/team-state/${abbr}`).then(r => r.ok ? r.json() : null),
-    fetch(`/data/${slug}-deadcap.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : []),
   ]);
 
   const biosData    = biosr.status === 'fulfilled' ? biosr.value : {};
   const capLevels   = capr.status === 'fulfilled'  ? capr.value  : {};
   const currentOvr  = ovrr.status === 'fulfilled'  ? ovrr.value  : {};
   const teamState   = tsr.status  === 'fulfilled'  ? tsr.value   : null;
-  const deadCapRows = dcr.status  === 'fulfilled'  ? parseCSV(dcr.value) : [];
+  const deadCapRows = dcr.status  === 'fulfilled'  ? dcr.value : [];
 
   if (sr.status === 'fulfilled') {
     seasonsWrap.innerHTML = '';
@@ -2181,6 +2344,19 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
       if (t) wrapEl.appendChild(t);
       else wrapEl.innerHTML = '<div class="status">No roster data.</div>';
     });
+
+    setupDeadCapEditable(
+      document.getElementById('dead-cap-edit-wrap'),
+      deadCapRows, biosData, currentSeasonYr(),
+      newRows => {
+        deadCapRows.length = 0;
+        newRows.forEach(r => deadCapRows.push(r));
+        rosterWrap.innerHTML = '';
+        const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows);
+        if (t) rosterWrap.appendChild(t);
+        else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
+      }
+    );
 
     // Cap numbers edit button (rosters role)
     const token = localStorage.getItem('nbn_token');
