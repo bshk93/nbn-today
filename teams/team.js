@@ -640,7 +640,7 @@ function renderExceptionsSection(teamState, capLevels, teamSalary, season) {
   section.style.display = wrap.children.length ? '' : 'none';
 }
 
-function buildRosterTable(rows, biosData, capLevels, currentOvr = {}) {
+function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = []) {
   if (!rows.length) return null;
   const curYr = currentSeasonYr();
   const hasSlug = 'SLUG' in rows[0] && !('PLAYER' in rows[0]);
@@ -761,33 +761,44 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}) {
   // ── New format: SLUG + TYPE, OVR from currentOvr, rest from biosData ────────
   biosData = biosData || {};
 
-  const augmented = rows.map(row => {
+  const augmented = rows
+    .filter(row => (row.TYPE || '').trim() !== 'dead')
+    .map(row => {
+      const bio = biosData[row.SLUG] || {};
+      const _type = row.TYPE || bio.type || '';
+      return {
+        SLUG:       row.SLUG,
+        OVR:        currentOvr[row.SLUG] ?? row.OVR ?? '',
+        _name:      displayNameFromBio(bio.name || '') || row.SLUG || '—',
+        _pos:       (bio.pos || []).join(' · ') || '—',
+        _age:       calcAge(bio.dob),
+        _type,
+        _cap_holds: bio.cap_holds || {},
+        _salaries:  bio.salaries || {},
+        _jersey:    bio.jersey_number ?? null,
+      };
+    });
+
+  deadCapRows.forEach(row => {
     const bio = biosData[row.SLUG] || {};
-    const _type = row.TYPE || bio.type || '';
-    // For dead cap rows, salary columns in the roster CSV override bio salary
-    const rowSals = {};
-    Object.keys(row).forEach(k => { if (/^\d{2}-\d{2}$/.test(k) && row[k]) rowSals[k] = row[k]; });
-    const _salaries = (_type === 'dead' && Object.keys(rowSals).length) ? rowSals : (bio.salaries || {});
-    return {
+    const dcSals = {};
+    Object.keys(row).forEach(k => { if (/^\d{2}-\d{2}$/.test(k) && row[k]) dcSals[k] = row[k]; });
+    augmented.push({
       SLUG:       row.SLUG,
-      OVR:        currentOvr[row.SLUG] ?? row.OVR ?? '',
+      OVR:        '',
       _name:      displayNameFromBio(bio.name || '') || row.SLUG || '—',
       _pos:       (bio.pos || []).join(' · ') || '—',
       _age:       calcAge(bio.dob),
-      _type,
-      _cap_holds: bio.cap_holds || {},
-      _salaries,
-      _jersey:    bio.jersey_number ?? null,
-    };
+      _type:      'dead',
+      _cap_holds: {},
+      _salaries:  dcSals,
+      _jersey:    null,
+    });
   });
 
   const salaryKeySet = new Set();
   augmented.forEach(a => {
     Object.keys(a._salaries).forEach(k => { if (k >= curYr) salaryKeySet.add(k); });
-  });
-  // Also include any salary year columns present in the raw rows (for dead cap entries)
-  rows.forEach(row => {
-    Object.keys(row).forEach(k => { if (/^\d{2}-\d{2}$/.test(k) && row[k] && k >= curYr) salaryKeySet.add(k); });
   });
   const salaryKeys = [...salaryKeySet].sort();
   augmented.forEach(a => {
@@ -2035,7 +2046,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -2045,12 +2056,14 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
     fetch(`/api/team-state/${abbr}`).then(r => r.ok ? r.json() : null),
+    fetch(`/data/${slug}-deadcap.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
   ]);
 
-  const biosData   = biosr.status === 'fulfilled' ? biosr.value : {};
-  const capLevels  = capr.status === 'fulfilled'  ? capr.value  : {};
-  const currentOvr = ovrr.status === 'fulfilled'  ? ovrr.value  : {};
-  const teamState  = tsr.status  === 'fulfilled'  ? tsr.value   : null;
+  const biosData    = biosr.status === 'fulfilled' ? biosr.value : {};
+  const capLevels   = capr.status === 'fulfilled'  ? capr.value  : {};
+  const currentOvr  = ovrr.status === 'fulfilled'  ? ovrr.value  : {};
+  const teamState   = tsr.status  === 'fulfilled'  ? tsr.value   : null;
+  const deadCapRows = dcr.status  === 'fulfilled'  ? parseCSV(dcr.value) : [];
 
   if (sr.status === 'fulfilled') {
     seasonsWrap.innerHTML = '';
@@ -2142,7 +2155,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     rosterWrap.innerHTML = '';
     const rosterRows = parseCSV(rr.value);
     const rosterHeaders = parseLine(rr.value.trim().split('\n')[0]);
-    const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr);
+    const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows);
     if (t) rosterWrap.appendChild(t);
     else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
 
@@ -2155,13 +2168,16 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
       if (type === 'dead') return;
       teamSalaryTotal += parseSalaryNum((bio.salaries || {})[curYr]);
     });
+    deadCapRows.forEach(row => {
+      teamSalaryTotal += parseSalaryNum(row[curYr] || '');
+    });
     renderHardCapBanner(teamState);
     renderExceptionsSection(teamState, capLevels, teamSalaryTotal, curYr);
-    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels, currentOvr), rosterCellConfig(rosterHeaders, biosData));
+    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels, currentOvr, deadCapRows), rosterCellConfig(rosterHeaders, biosData));
     setupJerseyEditable('roster-title', 'roster-wrap', rosterRows, biosData, () => {
       const wrapEl = document.getElementById('roster-wrap');
       wrapEl.innerHTML = '';
-      const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr);
+      const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows);
       if (t) wrapEl.appendChild(t);
       else wrapEl.innerHTML = '<div class="status">No roster data.</div>';
     });

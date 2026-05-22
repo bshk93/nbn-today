@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.0.19",
+    "date": "2026-05-22",
+    "changes": [
+      "Dead cap modeled as separate per-team {abbr}-deadcap.csv files (SLUG + season columns) instead of roster CSV entries; dead cap now counts toward teamSalaryTotal for apron/cap comparisons",
+      "ATL: migrated Zach Collins dead cap ($3,960,000 in 25-26) to atl-deadcap.csv"
+    ]
+  },
+  {
     "version": "0.0.18",
     "date": "2026-05-22",
     "changes": [
