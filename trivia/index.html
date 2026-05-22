@@ -110,6 +110,31 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .timer-wrap {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .timer-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+    }
+    .timer-num {
+      font-size: 1.875rem;
+      font-weight: 800;
+      color: #60a5fa;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      min-width: 2.2ch;
+      text-align: right;
+      transition: color 0.3s;
+    }
+    .timer-num.urgent { color: #ef4444; }
+
     .table-scroll {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -292,6 +317,10 @@
         <div class="streak-bar">
           <span class="streak-label">Streak</span>
           <span id="streak-count" class="streak-num">0</span>
+          <div class="timer-wrap">
+            <span class="timer-label">Time</span>
+            <span id="timer-count" class="timer-num">60</span>
+          </div>
         </div>
         <div class="table-scroll">
           <table class="stats-table" id="stats-table"></table>
@@ -459,6 +488,7 @@
 
     // ── DOM refs ──────────────────────────────────────────────────────────────
 
+    const timerCountEl    = document.getElementById('timer-count');
     const loadingEl       = document.getElementById('loading');
     const idleScreen      = document.getElementById('idle-screen');
     const playScreen      = document.getElementById('play-screen');
@@ -480,8 +510,29 @@
     let pool = [], allNames = [];
     let streak = 0, currentPlayer = null, visibleStats = null;
     let usedSlugs = new Set(), selectedSlug = null;
+    let timerInterval = null, timeLeft = 0;
 
     // ── Screen management ─────────────────────────────────────────────────────
+
+    function startTimer() {
+      stopTimer();
+      timeLeft = 60;
+      timerCountEl.textContent = timeLeft;
+      timerCountEl.classList.remove('urgent');
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerCountEl.textContent = timeLeft;
+        timerCountEl.classList.toggle('urgent', timeLeft <= 10);
+        if (timeLeft <= 0) {
+          stopTimer();
+          gameOver();
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
 
     function showScreen(name) {
       loadingEl.hidden      = name !== 'loading';
@@ -537,6 +588,7 @@
       selectedSlug = null;
       dropdownEl.hidden = true;
       showScreen('playing');
+      startTimer();
       guessInput.focus();
     }
 
@@ -560,6 +612,7 @@
         guessBtn.classList.add('btn-correct');
         guessBtn.disabled = true;
         guessInput.disabled = true;
+        stopTimer();
         setTimeout(nextQuestion, 900);
       } else {
         gameOver();
@@ -567,6 +620,7 @@
     }
 
     function gameOver() {
+      stopTimer();
       goStreakCountEl.textContent = streak;
       goAnswerNameEl.textContent  = currentPlayer.displayName;
       submitStatusEl.textContent  = '';
