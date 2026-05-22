@@ -2365,40 +2365,14 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
       const editCapBtn = document.createElement('button');
       editCapBtn.className = 'edit-toggle-btn';
       editCapBtn.style.cssText = 'margin-top:0.75rem;font-size:0.72rem;padding:0.15rem 0.45rem';
-      editCapBtn.textContent = 'Edit Cap Numbers';
+      editCapBtn.textContent = 'Edit Team State';
       capEditWrap.appendChild(editCapBtn);
 
       let capFormEl = null;
       editCapBtn.addEventListener('click', () => {
-        if (capFormEl) { capFormEl.remove(); capFormEl = null; editCapBtn.textContent = 'Edit Cap Numbers'; return; }
-        const cur = capLevels[season] || {};
+        if (capFormEl) { capFormEl.remove(); capFormEl = null; editCapBtn.textContent = 'Edit Team State'; return; }
         capFormEl = document.createElement('div');
         capFormEl.className = 'cap-edit-form';
-
-        function capField(labelText, key) {
-          const lbl = document.createElement('label');
-          lbl.textContent = labelText;
-          const inp = document.createElement('input');
-          inp.type = 'number'; inp.value = cur[key] || ''; inp.placeholder = '0';
-          lbl.appendChild(inp);
-          capFormEl.appendChild(lbl);
-          return inp;
-        }
-        const fCap    = capField('Salary Cap',  'cap');
-        const fApron1 = capField('1st Apron',   'apron1');
-        const fApron2 = capField('2nd Apron',   'apron2');
-        const fNtmle  = capField('NTMLE Amount', 'ntmle_amount');
-        const fTmle   = capField('TMLE Amount',  'tmle_amount');
-        const fBae    = capField('BAE Amount',   'bae_amount');
-
-        // Team-state section
-        const divider = document.createElement('div');
-        divider.className = 'form-divider';
-        capFormEl.appendChild(divider);
-        const stateLabel = document.createElement('div');
-        stateLabel.className = 'form-section-label';
-        stateLabel.textContent = 'Team State';
-        capFormEl.appendChild(stateLabel);
 
         const curState = teamState || {};
 
@@ -2451,17 +2425,6 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
         saveBtn.addEventListener('click', async () => {
           saveBtn.disabled = true; statusEl.textContent = 'Saving…';
           try {
-            const capResp = await fetch(`/api/cap-levels/${season}`, {
-              method: 'PUT',
-              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                cap: +fCap.value, apron1: +fApron1.value, apron2: +fApron2.value,
-                ntmle_amount: +fNtmle.value, tmle_amount: +fTmle.value, bae_amount: +fBae.value,
-              }),
-            });
-            if (capResp.status === 403) { statusEl.textContent = 'Not authorized.'; saveBtn.disabled = false; return; }
-            if (!capResp.ok) throw new Error('Cap save failed.');
-
             const stateResp = await fetch(`/api/team-state/${abbr}`, {
               method: 'PUT',
               headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
