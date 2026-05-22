@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Rosters — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827; color: #f3f4f6; min-height: 100vh;
+      padding: 2rem 1rem 5rem;
+    }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 760px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+    header { margin-bottom: 2.5rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.5rem; font-size: 0.95rem; line-height: 1.6; }
+
+    .toc {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1.25rem 1.5rem; margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.75rem; }
+    .toc ol { padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; }
+    .toc li { font-size: 0.875rem; }
+
+    .section { margin-bottom: 2.75rem; }
+    .section h2 {
+      font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;
+      padding-bottom: 0.5rem; border-bottom: 1px solid #374151;
+    }
+    .section h3 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: #e5e7eb; }
+    .section p { font-size: 0.9rem; line-height: 1.7; color: #d1d5db; margin-bottom: 0.6rem; }
+    .section ul, .section ol { padding-left: 1.4rem; display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.6rem; }
+    .section li { font-size: 0.9rem; line-height: 1.6; color: #d1d5db; }
+    .section li strong { color: #f3f4f6; }
+
+    .card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1.1rem 1.4rem; margin-top: 1rem;
+    }
+    .card h4 { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem; color: #f3f4f6; }
+    .card p { font-size: 0.85rem; color: #9ca3af; margin-bottom: 0; }
+    .card ul { padding-left: 1.2rem; }
+    .card li { font-size: 0.85rem; color: #9ca3af; }
+
+    .step-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
+    .step { display: flex; gap: 0.75rem; align-items: flex-start; }
+    .step-num {
+      flex-shrink: 0; width: 1.4rem; height: 1.4rem; border-radius: 50%;
+      background: #1d4ed8; color: #fff; font-size: 0.7rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; margin-top: 0.15rem;
+    }
+    .step p { margin-bottom: 0; }
+
+    code {
+      font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.82em; background: #111827; color: #a5b4fc;
+      padding: 0.1em 0.4em; border-radius: 4px; border: 1px solid #374151;
+    }
+
+    .tag {
+      display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; padding: 0.15rem 0.45rem; border-radius: 4px; margin-right: 0.3rem;
+    }
+    .tag-auto { background: #064e3b; color: #6ee7b7; }
+    .tag-manual { background: #1e3a5f; color: #93c5fd; }
+    .tag-admin { background: #4c1d95; color: #c4b5fd; }
+
+    .callout {
+      background: #1c2f45; border-left: 3px solid #3b82f6; border-radius: 0 8px 8px 0;
+      padding: 0.75rem 1rem; margin: 0.75rem 0; font-size: 0.875rem; color: #93c5fd; line-height: 1.6;
+    }
+    .callout strong { color: #bfdbfe; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 0.75rem 0; }
+    th { text-align: left; padding: 0.4rem 0.75rem; background: #1f2937; color: #9ca3af; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { padding: 0.45rem 0.75rem; border-top: 1px solid #1f2937; color: #d1d5db; vertical-align: top; }
+    tr:hover td { background: #1f2937; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="nav"><a href="/">← Home</a></div>
+
+  <header>
+    <h1>How to Rosters</h1>
+    <p>A guide for committee members with the <strong>rosters</strong> role. Covers how to record transactions, edit team data, and manage player records on the site.</p>
+  </header>
+
+  <div class="toc">
+    <h2>On this page</h2>
+    <ol>
+      <li><a href="#token">Your token</a></li>
+      <li><a href="#transactions">Recording transactions</a></li>
+      <li><a href="#team-pages">Editing team pages</a></li>
+      <li><a href="#players">Player records</a></li>
+      <li><a href="#cap-settings">Cap &amp; league settings</a></li>
+    </ol>
+  </div>
+
+  <!-- ── 1. Token ─────────────────────────────────────────────────────────── -->
+  <div class="section" id="token">
+    <h2>1. Your token</h2>
+    <p>Your bearer token is what identifies you as a rosters member. You receive it once via Discord DM from an admin. Keep it private — it gives write access to the whole league.</p>
+    <p>To activate edit controls on any team page or the transactions page:</p>
+    <div class="step-list">
+      <div class="step"><div class="step-num">1</div><p>Open any team page (e.g. <a href="/teams/ATL/">/teams/ATL/</a>).</p></div>
+      <div class="step"><div class="step-num">2</div><p>Click the <strong>Edit</strong> button next to the Roster section header. A token prompt appears.</p></div>
+      <div class="step"><div class="step-num">3</div><p>Paste your token and confirm. It is saved to your browser's local storage — you won't be asked again on this device unless you clear storage or your token is revoked.</p></div>
+    </div>
+    <div class="callout"><strong>Token lost or revoked?</strong> Message an admin on Discord. Tokens can be re-issued instantly.</div>
+  </div>
+
+  <!-- ── 2. Transactions ──────────────────────────────────────────────────── -->
+  <div class="section" id="transactions">
+    <h2>2. Recording transactions</h2>
+    <p>All league transactions are recorded on the <a href="/transactions/">Transactions page</a>. Use this for any official roster move — signings, trades, releases, options, and two-way conversions. Each transaction updates the relevant roster CSVs and player bio automatically.</p>
+
+    <h3>FA Signing</h3>
+    <p>Use when a free agent signs a new contract with a team.</p>
+    <div class="card">
+      <h4>Required fields</h4>
+      <ul>
+        <li><strong>Player</strong> — start typing a name to search unsigned players</li>
+        <li><strong>Team</strong> — the signing team</li>
+        <li><strong>Signing method</strong> — Cap Space, Bird Rights, NTMLE, TMLE, Room Exception, BAE, or Sign-and-Trade</li>
+        <li><strong>Contract</strong> — salary per season (e.g. <code>25-26: $5,000,000</code>) and cap hold type for the year after the contract ends</li>
+      </ul>
+    </div>
+    <p>Signing via NTMLE sets the team's hard cap to First Apron. Signing via TMLE sets it to Second Apron. Both are tracked automatically.</p>
+
+    <h3>Release</h3>
+    <p>Use when a team waives a player. The player is removed from the roster. Any remaining guaranteed salary becomes dead cap on that team's page automatically.</p>
+    <div class="callout"><strong>Dead cap is calculated from the player's contract at the time of release.</strong> Non-guaranteed years count only if the release date is on or after the guarantee date. TEAM_OPT, UFA, and RFA cap hold years are never dead cap.</div>
+
+    <h3>Trade</h3>
+    <p>Use for any trade between two or more teams. Each transfer specifies a <strong>from team</strong>, a <strong>to team</strong>, and a list of assets (players or picks). Multi-team trades use multiple transfers.</p>
+    <div class="card">
+      <h4>Pick assets</h4>
+      <p>Identify picks by <strong>year</strong>, <strong>round</strong>, and <strong>originating team</strong> (e.g. "2027 R1 NYK"). Protection and swap rights can be updated on the pick at the same time.</p>
+    </div>
+
+    <h3>Option exercise / decline</h3>
+    <p>Use when a player or team exercises or declines a contract option.</p>
+    <ul>
+      <li><strong>Accept</strong> — converts the option year to a guaranteed salary year.</li>
+      <li><strong>Decline</strong> — removes the option year and future years from the contract; adds a free agent cap hold for that season.</li>
+    </ul>
+
+    <h3>Two-way conversion</h3>
+    <p>Use to convert a player from a two-way contract to a standard contract. You provide the new full contract terms at the time of conversion.</p>
+
+    <h3>Draft pick signing</h3>
+    <p>Use when a drafted player signs their rookie scale deal. Select the draft pick (year / round / originating team) and provide the contract terms.</p>
+  </div>
+
+  <!-- ── 3. Team pages ────────────────────────────────────────────────────── -->
+  <div class="section" id="team-pages">
+    <h2>3. Editing team pages</h2>
+    <p>Team pages have several inline edit sections accessible to rosters members after entering your token. These are for corrections and manual adjustments that don't go through the transactions system.</p>
+
+    <h3>Roster</h3>
+    <p>Click <strong>Edit</strong> next to the Roster heading to enter edit mode. You can change each player's OVR and contract type (player / two-way). To add or remove players, use the <a href="/transactions/">Transactions page</a> instead — the roster CSV is managed by transactions.</p>
+
+    <h3>Draft picks</h3>
+    <p>Click <strong>Edit</strong> next to Draft Picks to manage the team's pick inventory. You can add new pick rows, change the originating team, update protection, or remove picks that have conveyed.</p>
+
+    <h3>Dead cap</h3>
+    <p>Click <strong>Edit Dead Cap</strong> below the roster table to manage dead cap entries. Each entry is a player slug plus the dollar amount owed per season (e.g. <code>25-26: $3,960,000</code>).</p>
+    <ul>
+      <li>Dead cap is created automatically when you record a <strong>Release</strong> transaction.</li>
+      <li>Use this editor for manual corrections or to enter historical dead cap that predates the transaction system.</li>
+      <li>A player slug is the hyphenated lowercase form of their name: <code>collins-zach</code>, <code>curry-stephen</code>.</li>
+    </ul>
+
+    <h3>Team state</h3>
+    <p>Click <strong>Edit Team State</strong> to set per-team flags that affect cap display:</p>
+    <table>
+      <tr><th>Field</th><th>What it does</th></tr>
+      <tr><td><strong>Hard Cap</strong></td><td>Sets whether the team is hard-capped at the First or Second Apron. A red banner appears on the team page when set.</td></tr>
+      <tr><td><strong>Hard Cap Reason</strong></td><td>Short description shown in the banner (e.g. "NTMLE signing: Player Name").</td></tr>
+      <tr><td><strong>MLE Used ($)</strong></td><td>Cumulative salary committed via MLE signings this season. Used to calculate remaining MLE space in the exceptions panel.</td></tr>
+      <tr><td><strong>BAE Used</strong></td><td>Check if the team has used their Bi-Annual Exception this season. Prevents BAE from appearing as available.</td></tr>
+    </table>
+    <div class="callout"><strong>Hard cap and BAE flags are set automatically</strong> when you record a signing via NTMLE, TMLE, or BAE on the transactions page. You only need to set them manually if correcting an error.</div>
+
+    <h3>Jersey numbers</h3>
+    <p>Each player row in the roster has an editable jersey number cell (the <strong>#</strong> column). Click the cell to edit inline. No save button needed — it saves on blur.</p>
+  </div>
+
+  <!-- ── 4. Players ───────────────────────────────────────────────────────── -->
+  <div class="section" id="players">
+    <h2>4. Player records</h2>
+    <p>Player bios live at <a href="/players/">the Players page</a>. Each player has a permanent slug (e.g. <code>curry-stephen</code>) that ties together their bio, roster entries, OVR history, stats, and awards.</p>
+
+    <h3>Creating a new player</h3>
+    <p>New players need to be created before they can be signed. On the Players page, click <strong>New Player</strong> (visible when logged in). Fill in:</p>
+    <ul>
+      <li><strong>Slug</strong> — <code>lastname-firstname</code>, lowercase, hyphens only. This is permanent and cannot be changed.</li>
+      <li><strong>Name</strong> — <code>LAST, FIRST</code> format in all caps (e.g. <code>COLLINS, ZACH</code>).</li>
+      <li><strong>Position(s)</strong> — one or more of PG, SG, SF, PF, C.</li>
+      <li><strong>Date of birth</strong> — ISO format <code>YYYY-MM-DD</code>.</li>
+      <li>Other fields (college, country, draft info, photo URL) as available.</li>
+    </ul>
+
+    <h3>Editing a player bio</h3>
+    <p>On any player's profile page, click <strong>Edit Bio</strong> to update their details. Salary and cap hold fields are managed by transactions — edit them manually only to correct errors.</p>
+
+    <h3>OVR ratings</h3>
+    <p>OVR ratings are updated via the <strong>parse-ovrs</strong> skill in Claude Code (ask the NBN bot). Each update is appended to the player's OVR history with a date stamp; the roster table always shows the most recent rating.</p>
+  </div>
+
+  <!-- ── 5. Cap settings ─────────────────────────────────────────────────── -->
+  <div class="section" id="cap-settings">
+    <h2>5. Cap &amp; league settings</h2>
+    <p>Global salary cap thresholds and exception amounts live in <a href="/cap-settings/">League Office → Cap Settings</a>. These apply league-wide across all team pages.</p>
+    <table>
+      <tr><th>Setting</th><th>What it affects</th></tr>
+      <tr><td><strong>Salary Cap</strong></td><td>The soft cap threshold. Teams below this can use cap space to sign players.</td></tr>
+      <tr><td><strong>1st Apron</strong></td><td>Hard cap level for NTMLE signings and certain trade restrictions.</td></tr>
+      <tr><td><strong>2nd Apron</strong></td><td>Hard cap level for TMLE signings. Most restrictive tier.</td></tr>
+      <tr><td><strong>NTMLE / TMLE / BAE amounts</strong></td><td>Dollar values shown in each team's cap exceptions panel.</td></tr>
+    </table>
+    <p>Cap levels are set once per season. The <a href="/rookie-scale/">Rookie Scale</a> page (also under League Office) shows first-round contract amounts by pick number and draft year.</p>
+  </div>
+
+</div>
+</body>
+</html>
