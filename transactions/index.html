@@ -212,6 +212,35 @@
     }
 
     .form-status.ok { color: #34d399; }
+
+    .validation-panel {
+      display: none; margin-top: 1rem;
+      background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+      padding: 1rem 1.25rem;
+    }
+    .validation-panel h4 {
+      font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: #9ca3af; margin-bottom: 0.6rem;
+    }
+    .check-row {
+      display: flex; align-items: flex-start; gap: 0.6rem;
+      padding: 0.3rem 0; font-size: 0.85rem; line-height: 1.5;
+    }
+    .check-row + .check-row { border-top: 1px solid #111827; }
+    .check-icon { flex-shrink: 0; font-size: 0.9rem; margin-top: 0.05rem; }
+    .check-row.error .check-msg  { color: #fca5a5; }
+    .check-row.warning .check-msg { color: #fde68a; }
+    .check-row.pass .check-msg   { color: #6b7280; }
+    .validation-actions {
+      margin-top: 0.85rem; display: flex; align-items: center; gap: 0.75rem;
+      padding-top: 0.75rem; border-top: 1px solid #374151;
+    }
+    .btn-force {
+      background: #92400e; color: #fde68a; border: 1px solid #b45309;
+      border-radius: 6px; font-size: 0.8rem; font-weight: 600;
+      padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit;
+    }
+    .btn-force:hover { background: #b45309; }
     .form-status.err { color: #f87171; }
 
     /* ── Token modal ── */
@@ -606,6 +635,7 @@
       <button class="btn-submit" id="submit-btn" type="button">Submit Transaction</button>
       <span class="form-status" id="form-status"></span>
     </div>
+    <div class="validation-panel" id="validation-panel"></div>
   </div>
 
   <!-- Filters -->
@@ -1460,10 +1490,11 @@ async function submitTransaction() {
     setStatus('err', 'Unsupported transaction type.'); return;
   }
 
-  const body = { type, date, description, details };
+  const body = { type, date, description, details, force: false };
 
   btn.disabled = true;
   setStatus('', 'Submitting…');
+  document.getElementById('validation-panel').style.display = 'none';
 
   try {
     const res = await fetch('/api/transactions', {
@@ -1484,6 +1515,11 @@ async function submitTransaction() {
     }
 
     const data = await res.json();
+    if (res.status === 422 && data.detail?.validation) {
+      renderValidationPanel(data.detail, body);
+      setStatus('', '');
+      return;
+    }
     if (!res.ok) {
       setStatus('err', data.detail || `Error ${res.status}`);
       return;
@@ -1535,6 +1571,80 @@ function setStatus(cls, msg) {
   const el = document.getElementById('form-status');
   el.className = 'form-status' + (cls ? ' ' + cls : '');
   el.textContent = msg;
+}
+
+function renderValidationPanel(result, originalBody) {
+  const panel = document.getElementById('validation-panel');
+  const btn   = document.getElementById('submit-btn');
+  const { checks, can_force } = result;
+
+  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+
+  panel.innerHTML = '';
+  const heading = document.createElement('h4');
+  heading.textContent = 'Transaction checks';
+  panel.appendChild(heading);
+
+  checks.forEach(c => {
+    const row = document.createElement('div');
+    const kind = c.passed ? 'pass' : c.level;
+    row.className = `check-row ${kind}`;
+
+    const icon = document.createElement('span');
+    icon.className = 'check-icon';
+    icon.textContent = ICON[kind] ?? '?';
+
+    const msg = document.createElement('span');
+    msg.className = 'check-msg';
+    msg.textContent = c.message;
+
+    row.append(icon, msg);
+    panel.appendChild(row);
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'validation-actions';
+
+  if (can_force) {
+    const note = document.createElement('span');
+    note.style.cssText = 'font-size:0.8rem;color:#9ca3af;flex:1';
+    note.textContent = 'Warnings above can be overridden.';
+    actions.appendChild(note);
+
+    const forceBtn = document.createElement('button');
+    forceBtn.className = 'btn-force';
+    forceBtn.textContent = 'Submit anyway';
+    forceBtn.addEventListener('click', async () => {
+      panel.style.display = 'none';
+      btn.disabled = true;
+      setStatus('', 'Submitting…');
+      try {
+        const res = await fetch('/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+          body: JSON.stringify({ ...originalBody, force: true }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setStatus('err', data.detail || `Error ${res.status}`); return; }
+        setStatus('ok', `Saved — ${data.type} #${data.id}`);
+        setTimeout(() => location.reload(), 900);
+      } catch (e) {
+        setStatus('err', e.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    actions.appendChild(forceBtn);
+  } else {
+    const note = document.createElement('span');
+    note.style.cssText = 'font-size:0.8rem;color:#fca5a5';
+    note.textContent = 'Fix the errors above before submitting.';
+    actions.appendChild(note);
+  }
+
+  panel.appendChild(actions);
+  panel.style.display = '';
+  btn.disabled = false;
 }
 
 // ── Delete ─────────────────────────────────────────────────────────────────
