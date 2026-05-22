@@ -61,8 +61,10 @@
     }
 
     .badge-admin   { background: #450a0a; color: #fca5a5; }
+    .badge-bod     { background: #3d2200; color: #fcd34d; }
     .badge-rosters { background: #1e3a5f; color: #93c5fd; }
     .badge-curator { background: #2e1065; color: #c4b5fd; }
+    .badge-stats   { background: #0c2a1a; color: #6ee7b7; }
     .badge-team    { background: #1c2c1e; color: #86efac; }
 
     .role-card h2 {
@@ -181,8 +183,10 @@
     }
 
     .trb-admin   { background: #450a0a; color: #fca5a5; }
+    .trb-bod     { background: #3d2200; color: #fcd34d; }
     .trb-rosters { background: #1e3a5f; color: #93c5fd; }
     .trb-curator { background: #2e1065; color: #c4b5fd; }
+    .trb-stats   { background: #0c2a1a; color: #6ee7b7; }
     .trb-team    { background: #1c2c1e; color: #86efac; }
 
     .empty-state { text-align: center; color: #6b7280; padding: 2rem; }
@@ -209,6 +213,115 @@
     }
     .copy-btn:hover { border-color: #6b7280; color: #d1d5db; }
     .copy-btn.copied { border-color: #16a34a; color: #86efac; }
+
+    /* ── Token admin actions ── */
+    .create-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .btn-create {
+      background: #2563eb;
+      border: 1px solid #3b82f6;
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.35rem 0.8rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+    }
+    .btn-create:hover { background: #1d4ed8; }
+
+    .action-cell { display: flex; gap: 0.4rem; align-items: center; white-space: nowrap; }
+    .btn-edit, .btn-delete {
+      background: transparent;
+      border: 1px solid #374151;
+      color: #9ca3af;
+      border-radius: 5px;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.72rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-edit:hover { border-color: #60a5fa; color: #60a5fa; }
+    .btn-delete:hover { border-color: #ef4444; color: #ef4444; }
+
+    .show-tokens-label {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      color: #6b7280;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .show-tokens-label input { cursor: pointer; accent-color: #3b82f6; }
+
+    .token-value { display: none; }
+    #tokens-table-wrap.tokens-revealed .token-value { display: inline; }
+
+    /* ── Token mgmt modal extras ── */
+    .modal-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+    }
+    .roles-check-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+    .roles-check-group.teams-group {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.3rem 0.5rem;
+    }
+    .role-check-label {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.8rem;
+      color: #d1d5db;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .role-check-label input[type=checkbox] { cursor: pointer; accent-color: #3b82f6; }
+
+    .token-result-box {
+      background: #111827;
+      border: 1px solid #2d6a30;
+      border-radius: 6px;
+      padding: 0.65rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .token-result-label { font-size: 0.7rem; color: #6b7280; }
+    .token-result-value {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.72rem;
+      color: #86efac;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    .btn-copy-result {
+      background: none;
+      border: 1px solid #2d6a30;
+      color: #86efac;
+      border-radius: 4px;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.7rem;
+      cursor: pointer;
+      font-family: inherit;
+      align-self: flex-start;
+    }
+    .btn-copy-result:hover { background: #14532d; }
+    .btn-copy-result.copied { background: #14532d; }
 
     /* ── Modal ── */
     .modal-backdrop {
@@ -282,6 +395,18 @@
 
     <div class="role-card">
       <div class="role-card-header">
+        <span class="role-badge badge-bod">BOD</span>
+        <h2>Board of Directors</h2>
+      </div>
+      <p>All Rosters permissions, plus early access to award results before they're publicly revealed.</p>
+      <ul>
+        <li>Everything the Rosters role can do</li>
+        <li>Preview unrevealed award season results (other members see a "not released yet" message)</li>
+      </ul>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
         <span class="role-badge badge-rosters">Rosters</span>
         <h2>Rosters</h2>
       </div>
@@ -312,6 +437,18 @@
 
     <div class="role-card">
       <div class="role-card-header">
+        <span class="role-badge badge-stats">Stats</span>
+        <h2>Stats</h2>
+      </div>
+      <p>For members who enter game data and maintain the stats database.</p>
+      <ul>
+        <li>Access the Box Score Import tool to parse and commit game box scores from screenshots</li>
+      </ul>
+      <p class="inherits">Stats does not grant roster editing, transaction recording, or player bio access.</p>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
         <span class="role-badge badge-team">Team Roles</span>
         <h2>Team Roles <span style="font-weight:400;color:#6b7280;font-size:0.875rem">(atl, bkn, bos, …)</span></h2>
       </div>
@@ -325,25 +462,34 @@
 
   </div>
 
-  <div class="section-heading">Active Tokens</div>
+  <div class="create-bar">
+    <div class="section-heading" style="margin-bottom:0">Active Tokens</div>
+    <div style="display:flex;align-items:center;gap:0.75rem">
+      <label class="show-tokens-label" id="show-tokens-label" style="display:none">
+        <input type="checkbox" id="show-tokens-cb"> Show tokens
+      </label>
+      <button class="btn-create" id="create-token-btn" style="display:none" onclick="openCreateModal()">+ New Token</button>
+    </div>
+  </div>
 
   <div class="auth-bar" id="auth-bar">
-    <span id="auth-status">Sign in with an admin token to view active tokens.</span>
+    <span id="auth-status">Sign in as admin to create or edit tokens.</span>
     <button id="auth-btn">Sign in</button>
   </div>
 
-  <div id="tokens-section" style="display:none">
-    <div class="table-wrap">
+  <div id="tokens-section">
+    <div class="table-wrap" id="tokens-table-wrap">
       <table>
         <thead>
           <tr>
             <th>Name</th>
             <th>Roles</th>
-            <th>Token</th>
+            <th class="col-admin" style="display:none">Token</th>
+            <th class="col-admin" style="display:none"></th>
           </tr>
         </thead>
         <tbody id="tokens-tbody">
-          <tr><td colspan="3" class="empty-state">Loading…</td></tr>
+          <tr><td colspan="2" class="empty-state">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -361,27 +507,75 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="token-mgmt-backdrop">
+  <div class="modal" style="max-width:500px;gap:0.85rem">
+    <h3 id="token-mgmt-title">Create Token</h3>
+
+    <div>
+      <div class="modal-label">Name</div>
+      <input type="text" id="token-mgmt-name" placeholder="Display name…">
+    </div>
+
+    <div>
+      <div class="modal-label">Roles</div>
+      <div class="roles-check-group" id="roles-named"></div>
+    </div>
+
+    <div>
+      <div class="modal-label" style="margin-bottom:0.5rem">Team Access</div>
+      <div class="roles-check-group teams-group" id="roles-teams"></div>
+    </div>
+
+    <div id="token-mgmt-error" style="display:none;font-size:0.8rem;color:#fca5a5;background:#450a0a;border-radius:6px;padding:0.5rem 0.75rem"></div>
+
+    <div id="token-result-box" style="display:none" class="token-result-box">
+      <div class="token-result-label">Token created — copy it now, it won't be shown again.</div>
+      <div class="token-result-value" id="token-result-value"></div>
+      <button class="btn-copy-result" id="token-result-copy">Copy token</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="token-mgmt-cancel">Cancel</button>
+      <button class="btn-save" id="token-mgmt-save">Create</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const TOKEN_KEY = 'nbn_token';
 let currentToken = localStorage.getItem(TOKEN_KEY) || '';
 
-const TEAM_ABBRS = new Set([
+const NAMED_ROLES = ['admin', 'bod', 'rosters', 'curator', 'stats'];
+const TEAM_ABBRS = [
   'atl','bkn','bos','cha','chi','cle','dal','den','det','gsw',
   'hou','ind','lac','lal','mem','mia','mil','min','nop','nyk',
   'okc','orl','phi','phx','por','sac','sas','tor','uta','was',
-]);
+];
 
 function roleBadgeClass(role) {
   if (role === 'admin') return 'trb-admin';
+  if (role === 'bod') return 'trb-bod';
   if (role === 'rosters') return 'trb-rosters';
   if (role === 'curator') return 'trb-curator';
+  if (role === 'stats') return 'trb-stats';
   return 'trb-team';
 }
 
-function renderTokens(tokens) {
+// ── Token table ────────────────────────────────────────────────────────────
+
+function setAdminColumns(visible) {
+  document.querySelectorAll('.col-admin').forEach(el => {
+    el.style.display = visible ? '' : 'none';
+  });
+}
+
+function renderTokens(tokens, admin) {
+  const colCount = admin ? 4 : 2;
+  setAdminColumns(admin);
+
   const tbody = document.getElementById('tokens-tbody');
   if (!tokens.length) {
-    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No active tokens.</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="${colCount}" class="empty-state">No active tokens.</td></tr>`;
     return;
   }
   tbody.innerHTML = '';
@@ -405,61 +599,97 @@ function renderTokens(tokens) {
     }
     tdRoles.appendChild(rolesWrap);
 
-    const tdToken = tr.insertCell();
-    if (t.token) {
-      const wrap = document.createElement('span');
-      wrap.style.display = 'flex';
-      wrap.style.alignItems = 'center';
-
-      const val = document.createElement('span');
-      val.className = 'token-value';
-      val.textContent = t.token;
-      wrap.appendChild(val);
-
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'copy-btn';
-      copyBtn.textContent = 'Copy';
-      copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(t.token).then(() => {
-          copyBtn.textContent = 'Copied!';
-          copyBtn.classList.add('copied');
-          setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 1500);
+    if (admin) {
+      const tdToken = tr.insertCell();
+      if (t.token) {
+        const wrap = document.createElement('span');
+        wrap.style.display = 'flex';
+        wrap.style.alignItems = 'center';
+        const val = document.createElement('span');
+        val.className = 'token-value';
+        val.textContent = t.token;
+        wrap.appendChild(val);
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-btn';
+        copyBtn.textContent = 'Copy';
+        copyBtn.addEventListener('click', () => {
+          navigator.clipboard.writeText(t.token).then(() => {
+            copyBtn.textContent = 'Copied!';
+            copyBtn.classList.add('copied');
+            setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 1500);
+          });
         });
-      });
-      wrap.appendChild(copyBtn);
-      tdToken.appendChild(wrap);
-    } else {
-      tdToken.textContent = '—';
+        wrap.appendChild(copyBtn);
+        tdToken.appendChild(wrap);
+      } else {
+        tdToken.textContent = '—';
+      }
+
+      const tdActions = tr.insertCell();
+      const cell = document.createElement('div');
+      cell.className = 'action-cell';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn-edit';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', () => openEditModal(t.token, t.name, t.roles || []));
+      cell.appendChild(editBtn);
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-delete';
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', () => confirmDelete(t.token, t.name));
+      cell.appendChild(delBtn);
+      tdActions.appendChild(cell);
     }
 
     tbody.appendChild(tr);
   });
 }
 
-async function loadTokens() {
+async function loadPublicTokens() {
+  try {
+    const res = await fetch('/api/tokens/public');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    renderTokens(data, false);
+  } catch {
+    document.getElementById('tokens-tbody').innerHTML =
+      '<tr><td colspan="2" class="empty-state">Failed to load tokens.</td></tr>';
+  }
+}
+
+async function loadAdminTokens() {
   try {
     const res = await fetch('/api/tokens', {
       headers: { 'Authorization': `Bearer ${currentToken}` },
     });
     if (res.status === 401 || res.status === 403) {
-      showUnauthenticated();
+      const meRes = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${currentToken}` },
+      });
+      if (meRes.ok) {
+        const me = await meRes.json();
+        const firstName = (me.name || '').split(' ')[0] || 'you';
+        document.getElementById('auth-status').textContent =
+          `Signed in as ${firstName} — admin token needed to manage tokens.`;
+        document.getElementById('auth-btn').textContent = 'Use admin token';
+      } else {
+        currentToken = '';
+        localStorage.removeItem(TOKEN_KEY);
+        document.getElementById('auth-status').textContent = 'Sign in as admin to create or edit tokens.';
+        document.getElementById('auth-btn').textContent = 'Sign in';
+      }
+      document.getElementById('create-token-btn').style.display = 'none';
+      document.getElementById('show-tokens-label').style.display = 'none';
+      loadPublicTokens();
       return;
     }
     const data = await res.json();
-    document.getElementById('tokens-section').style.display = '';
-    renderTokens(data);
+    document.getElementById('create-token-btn').style.display = '';
+    document.getElementById('show-tokens-label').style.display = '';
+    renderTokens(data, true);
   } catch {
-    document.getElementById('tokens-tbody').innerHTML =
-      '<tr><td colspan="3" class="empty-state">Failed to load tokens.</td></tr>';
+    loadPublicTokens();
   }
-}
-
-function showUnauthenticated() {
-  currentToken = '';
-  localStorage.removeItem(TOKEN_KEY);
-  document.getElementById('auth-status').textContent = 'Sign in with an admin token to view active tokens.';
-  document.getElementById('auth-btn').textContent = 'Sign in';
-  document.getElementById('tokens-section').style.display = 'none';
 }
 
 function renderAuthBar() {
@@ -467,12 +697,16 @@ function renderAuthBar() {
     document.getElementById('auth-status').textContent = 'Signed in';
     document.getElementById('auth-btn').textContent = 'Sign out';
   } else {
-    showUnauthenticated();
+    document.getElementById('auth-status').textContent = 'Sign in as admin to create or edit tokens.';
+    document.getElementById('auth-btn').textContent = 'Sign in';
   }
 }
 
+// ── Sign-in modal ──────────────────────────────────────────────────────────
+
 document.getElementById('auth-btn').addEventListener('click', () => {
-  if (currentToken) {
+  const btnText = document.getElementById('auth-btn').textContent;
+  if (btnText === 'Sign out') {
     currentToken = '';
     localStorage.removeItem(TOKEN_KEY);
     renderAuthBar();
@@ -492,7 +726,7 @@ document.getElementById('modal-backdrop').addEventListener('click', e => {
     document.getElementById('modal-backdrop').classList.remove('open');
 });
 
-function saveToken() {
+function saveSignIn() {
   const t = document.getElementById('modal-token-input').value.trim();
   if (!t) return;
   currentToken = t;
@@ -500,24 +734,207 @@ function saveToken() {
   document.getElementById('modal-backdrop').classList.remove('open');
   document.getElementById('auth-status').textContent = 'Signed in';
   document.getElementById('auth-btn').textContent = 'Sign out';
-  loadTokens();
+  loadAdminTokens();
 }
 
-document.getElementById('modal-save').addEventListener('click', saveToken);
+document.getElementById('modal-save').addEventListener('click', saveSignIn);
 document.getElementById('modal-token-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') saveToken();
+  if (e.key === 'Enter') saveSignIn();
 });
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ── Token management modal ─────────────────────────────────────────────────
+
+let editingToken = null; // null = create mode, string = edit mode
+
+function buildRoleCheckboxes() {
+  const namedEl = document.getElementById('roles-named');
+  const teamsEl = document.getElementById('roles-teams');
+  namedEl.innerHTML = '';
+  teamsEl.innerHTML = '';
+
+  NAMED_ROLES.forEach(r => {
+    const label = document.createElement('label');
+    label.className = 'role-check-label';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = r;
+    cb.dataset.role = r;
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(r));
+    namedEl.appendChild(label);
+  });
+
+  TEAM_ABBRS.forEach(r => {
+    const label = document.createElement('label');
+    label.className = 'role-check-label';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = r;
+    cb.dataset.role = r;
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(r));
+    teamsEl.appendChild(label);
+  });
 }
 
-// Auto-load if already signed in
+function getCheckedRoles() {
+  return [...document.querySelectorAll('#token-mgmt-backdrop input[type=checkbox]:checked')]
+    .map(cb => cb.value);
+}
+
+function setCheckedRoles(roles) {
+  const roleSet = new Set(roles);
+  document.querySelectorAll('#token-mgmt-backdrop input[type=checkbox]').forEach(cb => {
+    cb.checked = roleSet.has(cb.value);
+  });
+}
+
+function openCreateModal() {
+  editingToken = null;
+  document.getElementById('token-mgmt-title').textContent = 'Create Token';
+  const saveBtn = document.getElementById('token-mgmt-save');
+  saveBtn.textContent = 'Create';
+  saveBtn.style.display = '';
+  saveBtn.disabled = false;
+  document.getElementById('token-mgmt-cancel').textContent = 'Cancel';
+  document.getElementById('token-mgmt-name').value = '';
+  document.getElementById('token-result-box').style.display = 'none';
+  document.getElementById('token-mgmt-error').style.display = 'none';
+  setCheckedRoles([]);
+  document.getElementById('token-mgmt-backdrop').classList.add('open');
+  document.getElementById('token-mgmt-name').focus();
+}
+
+function openEditModal(token, name, roles) {
+  editingToken = token;
+  document.getElementById('token-mgmt-title').textContent = 'Edit Token';
+  const saveBtn = document.getElementById('token-mgmt-save');
+  saveBtn.textContent = 'Save';
+  saveBtn.style.display = '';
+  saveBtn.disabled = false;
+  document.getElementById('token-mgmt-cancel').textContent = 'Cancel';
+  document.getElementById('token-mgmt-name').value = name || '';
+  document.getElementById('token-result-box').style.display = 'none';
+  document.getElementById('token-mgmt-error').style.display = 'none';
+  setCheckedRoles(roles);
+  document.getElementById('token-mgmt-backdrop').classList.add('open');
+  document.getElementById('token-mgmt-name').focus();
+}
+
+function closeTokenModal() {
+  document.getElementById('token-mgmt-backdrop').classList.remove('open');
+  const saveBtn = document.getElementById('token-mgmt-save');
+  saveBtn.style.display = '';
+  saveBtn.disabled = false;
+  document.getElementById('token-mgmt-cancel').textContent = 'Cancel';
+  document.getElementById('token-mgmt-error').style.display = 'none';
+  editingToken = null;
+}
+
+async function saveTokenModal() {
+  const name = document.getElementById('token-mgmt-name').value.trim();
+  const roles = getCheckedRoles();
+  if (!name) {
+    document.getElementById('token-mgmt-name').focus();
+    return;
+  }
+
+  const saveBtn = document.getElementById('token-mgmt-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = editingToken ? 'Saving…' : 'Creating…';
+
+  try {
+    if (editingToken) {
+      const res = await fetch(`/api/tokens/${editingToken}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, roles }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      closeTokenModal();
+      loadAdminTokens();
+    } else {
+      const res = await fetch('/api/tokens', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, roles }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      // Show created token — user must copy before closing
+      const resultBox = document.getElementById('token-result-box');
+      document.getElementById('token-result-value').textContent = data.token;
+      resultBox.style.display = '';
+      saveBtn.style.display = 'none';
+      document.getElementById('token-mgmt-cancel').textContent = 'Done';
+      loadAdminTokens();
+    }
+  } catch (err) {
+    const errEl = document.getElementById('token-mgmt-error');
+    errEl.textContent = 'Error: ' + err.message;
+    errEl.style.display = '';
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = editingToken ? 'Save' : 'Create';
+  }
+}
+
+document.getElementById('token-mgmt-cancel').addEventListener('click', () => {
+  closeTokenModal();
+});
+
+document.getElementById('token-mgmt-backdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('token-mgmt-backdrop')) closeTokenModal();
+});
+
+document.getElementById('token-mgmt-save').addEventListener('click', saveTokenModal);
+
+document.getElementById('token-result-copy').addEventListener('click', () => {
+  const val = document.getElementById('token-result-value').textContent;
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = document.getElementById('token-result-copy');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy token'; btn.classList.remove('copied'); }, 1500);
+  });
+});
+
+// ── Delete ─────────────────────────────────────────────────────────────────
+
+async function confirmDelete(token, name) {
+  if (!confirm(`Delete token for "${name}"?\n\nThis cannot be undone.`)) return;
+  try {
+    const res = await fetch(`/api/tokens/${token}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${currentToken}` },
+    });
+    if (!res.ok) throw new Error(await res.text());
+    loadAdminTokens();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// ── Show tokens toggle ─────────────────────────────────────────────────────
+
+document.getElementById('show-tokens-cb').addEventListener('change', e => {
+  document.getElementById('tokens-table-wrap').classList.toggle('tokens-revealed', e.target.checked);
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+buildRoleCheckboxes();
+renderAuthBar();
 if (currentToken) {
-  renderAuthBar();
-  loadTokens();
+  loadAdminTokens();
 } else {
-  renderAuthBar();
+  loadPublicTokens();
 }
 </script>
 <script src="/token-badge.js"></script>

@@ -274,6 +274,10 @@
       <div class="card-header"><span class="card-icon">📖</span><span class="card-title">How to Rosters</span></div>
     </a>
 
+    <a class="card" id="lo-boxscore" href="/boxscore/" style="display:none">
+      <div class="card-header"><span class="card-icon">📸</span><span class="card-title">Box Score Import</span></div>
+    </a>
+
     <div class="card" id="lo-reveal-awards" style="display:none;cursor:pointer">
       <div class="card-header"><span class="card-icon">🏆</span><span class="card-title">Reveal Season Awards</span></div>
     </div>
@@ -318,11 +322,16 @@
           if (!data) return;
           const isRosters = data.roles?.some(r => r === 'rosters' || r === 'admin');
           const isAdmin   = data.roles?.includes('admin');
+          const isStats = data.roles?.some(r => r === 'stats' || r === 'admin');
           if (isRosters) {
             document.getElementById('lo-label').style.display = '';
             document.getElementById('lo-league-settings').style.display = '';
             document.getElementById('lo-rookie-scale').style.display = '';
             document.getElementById('lo-how-to-rosters').style.display = '';
+          }
+          if (isStats) {
+            document.getElementById('lo-label').style.display = '';
+            document.getElementById('lo-boxscore').style.display = '';
           }
           if (isAdmin) {
             const card = document.getElementById('lo-reveal-awards');
