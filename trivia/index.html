@@ -172,12 +172,6 @@
     .stats-table td:nth-child(2) { text-align: left; }
     .stats-table tbody tr:last-child td { border-bottom: none; }
 
-    .col-hidden {
-      color: #374151 !important;
-      background: rgba(0,0,0,0.18);
-    }
-    th.col-hidden { color: #4b5563 !important; }
-
     .guess-area {
       display: flex;
       gap: 0.625rem;
@@ -308,7 +302,7 @@
 
       <div id="idle-screen" hidden>
         <div class="idle-inner">
-          <p>A random player from the league's history is shown — their stats, season by season. Three of eight stat categories are revealed each round. Guess who it is. How long can you streak?</p>
+          <p>A random player from the league's history is shown — their full stats, season by season. Guess who it is. How long can you streak?</p>
           <button id="start-btn" class="btn-primary">Start Game</button>
         </div>
       </div>
@@ -450,28 +444,17 @@
 
     const OPT_STATS = ['PPG', 'RPG', 'APG', 'SPG', 'BPG', 'FG%', '3P%', 'FT%'];
 
-    function pickStats() {
-      const sh = [...OPT_STATS].sort(() => Math.random() - 0.5);
-      return new Set(sh.slice(0, 3));
-    }
-
     function fmtStat(key, val) {
       if (val === null || val === undefined || Number.isNaN(val)) return '—';
       if (key.endsWith('%')) return (val * 100).toFixed(1) + '%';
       return val.toFixed(1);
     }
 
-    function buildTableHTML(player, visible) {
-      const heads = OPT_STATS.map(k =>
-        `<th class="${visible.has(k) ? '' : 'col-hidden'}">${k}</th>`
-      ).join('');
+    function buildTableHTML(player) {
+      const heads = OPT_STATS.map(k => `<th>${k}</th>`).join('');
 
       const bodyRows = player.seasonRows.map(row => {
-        const cells = OPT_STATS.map(k =>
-          visible.has(k)
-            ? `<td>${fmtStat(k, row[k])}</td>`
-            : `<td class="col-hidden">?</td>`
-        ).join('');
+        const cells = OPT_STATS.map(k => `<td>${fmtStat(k, row[k])}</td>`).join('');
         return `<tr>
           <td>${row.season}</td>
           <td>${row.team}</td>
@@ -508,7 +491,7 @@
     // ── State ─────────────────────────────────────────────────────────────────
 
     let pool = [], allNames = [];
-    let streak = 0, currentPlayer = null, visibleStats = null;
+    let streak = 0, currentPlayer = null;
     let usedSlugs = new Set(), selectedSlug = null;
     let timerInterval = null, timeLeft = 0;
 
@@ -576,9 +559,7 @@
       if (!avail.length) { usedSlugs.clear(); avail = pool; }
       currentPlayer = avail[Math.floor(Math.random() * avail.length)];
       usedSlugs.add(currentPlayer.slug);
-      visibleStats = pickStats();
-
-      statsTable.innerHTML = buildTableHTML(currentPlayer, visibleStats);
+      statsTable.innerHTML = buildTableHTML(currentPlayer);
       streakCountEl.textContent = streak;
       guessInput.value = '';
       guessInput.disabled = false;
