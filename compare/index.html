@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frivolities &amp; Viz — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem; }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 1400px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #374151;
+      margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #9ca3af;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: -1px;
+      padding: 0.6rem 1.1rem;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn:hover { color: #e5e7eb; }
+    .tab-btn.active { border-bottom-color: #60a5fa; color: #f3f4f6; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.875rem;
+    }
+    .team-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 0.875rem 0.875rem 0.625rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+    .team-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .team-abbr { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; color: #f3f4f6; text-decoration: none; }
+    .team-abbr:hover { color: #60a5fa; text-decoration: none; }
+    .team-avg  { font-size: 0.7rem; color: #6b7280; }
+    .team-chart { width: 100%; }
+    .no-data { color: #4b5563; font-size: 0.75rem; padding: 1rem 0; text-align: center; }
+
+    .league-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 1rem 0.875rem 0.75rem;
+    }
+
+    .loading { color: #6b7280; font-size: 0.9rem; text-align: center; padding: 3rem; grid-column: 1 / -1; }
+
+    .league-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .league-scroll svg { display: block; width: 100%; }
+    @media (max-width: 640px) {
+      .league-scroll svg { height: 220px; width: auto; }
+    }
+
+    [data-slug] { cursor: pointer; }
+
+    #tooltip {
+      position: fixed;
+      background: #1f2937;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.8rem;
+      color: #f3f4f6;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    @media (max-width: 1000px) { .team-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width: 700px)  { .team-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 480px)  { .team-grid { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div id="tooltip"></div>
+    <nav class="nav"><a href="/">← Home</a></nav>
+    <header>
+      <h1>Frivolities &amp; Viz</h1>
+      <p>Team and player visualizations.</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="roster">Roster OVRs</button>
+      <button class="tab-btn" data-tab="league">League OVRs</button>
+      <button class="tab-btn" data-tab="salaries">Salaries</button>
+    </div>
+
+    <div id="tab-roster" class="tab-panel active">
+      <div id="ovr-grid" class="team-grid">
+        <div class="loading">Loading...</div>
+      </div>
+    </div>
+
+    <div id="tab-league" class="tab-panel">
+      <div class="league-card">
+        <div id="league-chart"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+
+    <div id="tab-salaries" class="tab-panel">
+      <div class="league-card">
+        <div id="salary-chart"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TEAM_COLORS = {
+      ATL: '#E03A3E', BKN: '#9EA1A2', BOS: '#007A33', CHA: '#00788C',
+      CHI: '#CE1141', CLE: '#860038', DAL: '#00538C', DEN: '#FEC524',
+      DET: '#1D428A', GSW: '#FFC72C', HOU: '#BA0C2F', IND: '#FDBB30',
+      LAC: '#C8102E', LAL: '#552583', MEM: '#5D76A9', MIA: '#98002E',
+      MIL: '#00471B', MIN: '#236192', NOP: '#85714D', NYK: '#F58426',
+      OKC: '#007AC1', ORL: '#0077C0', PHI: '#006BB6', PHX: '#E56020',
+      POR: '#E03A3E', SAC: '#5A2D81', SAS: '#8A8D8F', TOR: '#A4224B',
+      UTA: '#002B5C', WAS: '#E31837',
+    };
+
+    const TEAMS = {
+      ATL: "Atlanta Hawks",     BKN: "Brooklyn Nets",       BOS: "Boston Celtics",
+      CHA: "Charlotte Hornets", CHI: "Chicago Bulls",        CLE: "Cleveland Cavaliers",
+      DAL: "Dallas Mavericks",  DEN: "Denver Nuggets",       DET: "Detroit Pistons",
+      GSW: "Golden State Warriors", HOU: "Houston Rockets",  IND: "Indiana Pacers",
+      LAC: "LA Clippers",       LAL: "Los Angeles Lakers",   MEM: "Memphis Grizzlies",
+      MIA: "Miami Heat",        MIL: "Milwaukee Bucks",      MIN: "Minnesota Timberwolves",
+      NOP: "New Orleans Pelicans", NYK: "New York Knicks",   OKC: "Oklahoma City Thunder",
+      ORL: "Orlando Magic",     PHI: "Philadelphia 76ers",   PHX: "Phoenix Suns",
+      POR: "Portland Trail Blazers", SAC: "Sacramento Kings", SAS: "San Antonio Spurs",
+      TOR: "Toronto Raptors",   UTA: "Utah Jazz",            WAS: "Washington Wizards",
+    };
+
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) return [];
+      const headers = lines[0].split(',').map(h => h.trim());
+      return lines.slice(1).map(line => {
+        const vals = line.split(',');
+        const row = {};
+        headers.forEach((h, i) => { row[h] = (vals[i] || '').trim(); });
+        return row;
+      });
+    }
+
+    function formatName(raw) {
+      if (!raw) return raw;
+      const [last, first] = raw.split(', ');
+      if (!first) return raw;
+      const cap = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+      return `${cap(first)} ${cap(last)}`;
+    }
+
+    function ovrColor(ovr) {
+      const t = Math.max(0, Math.min(1, (ovr - 60) / 39));
+      const hue = Math.round(220 - t * 100);
+      const lightness = Math.round(48 + t * 10);
+      return `hsl(${hue},68%,${lightness}%)`;
+    }
+
+    // ── shared data cache ─────────────────────────────────────────────────────
+
+    let _cache = null;
+
+    async function loadData() {
+      if (_cache) return _cache;
+      const abbrs = Object.keys(TEAMS);
+      const [ovrRes, playersRes, capLevelsRes, ...rosterResults] = await Promise.allSettled([
+        fetch('/api/ovr').then(r => r.json()),
+        fetch('/api/players').then(r => r.json()),
+        fetch('/api/cap-levels').then(r => r.json()),
+        ...abbrs.map(abbr => fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.text())),
+      ]);
+
+      const ovrMap = {};
+      if (ovrRes.status === 'fulfilled') {
+        for (const [slug, entries] of Object.entries(ovrRes.value)) {
+          if (entries.length) ovrMap[slug] = entries[entries.length - 1].ovr;
+        }
+      }
+
+      const playersData = playersRes.status === 'fulfilled' ? playersRes.value : {};
+      const capLevels   = capLevelsRes.status === 'fulfilled' ? capLevelsRes.value : {};
+
+      const nameMap = {};
+      for (const [slug, bio] of Object.entries(playersData)) {
+        if (bio.name) nameMap[slug] = bio.name;
+      }
+
+      const teamData = {}, rosterRows = {};
+      abbrs.forEach((abbr, i) => {
+        const res = rosterResults[i];
+        const rows = res.status === 'fulfilled' ? parseCSV(res.value).filter(r => r.SLUG) : [];
+        rosterRows[abbr] = rows;
+        teamData[abbr] = rows
+          .filter(r => r.TYPE !== 'dead')
+          .map(r => ({ name: nameMap[r.SLUG] || r.SLUG, ovr: ovrMap[r.SLUG] || 0, slug: r.SLUG }))
+          .filter(p => p.ovr > 0)
+          .sort((a, b) => b.ovr - a.ovr);
+      });
+
+      _cache = { teamData, rosterRows, playersData, capLevels };
+      return _cache;
+    }
+
+    // ── viz: roster OVR small multiples ──────────────────────────────────────
+
+    function renderSmallChart(players) {
+      const W = 200, H = 108;
+      const PAD = { t: 6, r: 6, b: 4, l: 26 };
+      const chartW = W - PAD.l - PAD.r;
+      const chartH = H - PAD.t - PAD.b;
+      const OVR_MIN = 60, OVR_MAX = 99;
+      const n = players.length;
+      const barW = Math.max(2, Math.floor((chartW - Math.max(n - 1, 0)) / n));
+      const gap  = n > 1 ? Math.max(1, Math.floor((chartW - n * barW) / (n - 1))) : 0;
+      const yPos = ovr => PAD.t + chartH - Math.max(0, Math.min(chartH, ((ovr - OVR_MIN) / (OVR_MAX - OVR_MIN)) * chartH));
+      const bH   = ovr => Math.max(0, Math.min(chartH, ((ovr - OVR_MIN) / (OVR_MAX - OVR_MIN)) * chartH));
+
+      const gridLines = [70, 80, 90].map(ovr => {
+        const y = yPos(ovr);
+        return `<line x1="${PAD.l}" y1="${y}" x2="${W - PAD.r}" y2="${y}" stroke="#2d3748" stroke-dasharray="3,2"/>
+                <text x="${PAD.l - 4}" y="${y + 3.5}" text-anchor="end" fill="#4b5563" font-size="7.5">${ovr}</text>`;
+      }).join('');
+
+      const bars = players.map((p, i) => {
+        const x = PAD.l + i * (barW + gap);
+        const h = bH(p.ovr);
+        const y = PAD.t + chartH - h;
+        return `<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${ovrColor(p.ovr)}" rx="1" data-label="${formatName(p.name)} — ${p.ovr}" data-slug="${p.slug}"></rect>`;
+      }).join('');
+
+      return `<svg width="100%" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+        ${gridLines}
+        <line x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${PAD.t + chartH}" stroke="#374151"/>
+        <line x1="${PAD.l}" y1="${PAD.t + chartH}" x2="${W - PAD.r}" y2="${PAD.t + chartH}" stroke="#374151"/>
+        ${bars}
+      </svg>`;
+    }
+
+    function renderRosterTab({ teamData }) {
+      const top6Avg = players => {
+        const top = players.slice(0, 6);
+        return top.length ? top.reduce((s, p) => s + p.ovr, 0) / top.length : 0;
+      };
+      const sorted = Object.keys(TEAMS).sort((a, b) => top6Avg(teamData[b]) - top6Avg(teamData[a]));
+
+      const grid = document.getElementById('ovr-grid');
+      grid.innerHTML = sorted.map(abbr => {
+        const players = teamData[abbr];
+        const avg = players.length ? top6Avg(players).toFixed(1) : null;
+        const content = players.length
+          ? `<div class="team-chart">${renderSmallChart(players)}</div>`
+          : `<div class="no-data">No data</div>`;
+        return `<div class="team-card">
+          <div class="team-card-header">
+            <a class="team-abbr" href="/teams/${abbr}/">${abbr}</a>
+            ${avg ? `<span class="team-avg">avg ${avg}</span>` : ''}
+          </div>
+          ${content}
+        </div>`;
+      }).join('');
+      attachTooltip(grid);
+    }
+
+    // ── viz: league landscape ─────────────────────────────────────────────────
+
+    function renderLeagueTab({ teamData }) {
+      const allPlayers = Object.entries(teamData)
+        .flatMap(([abbr, players]) => players.map(p => ({ ...p, team: abbr })))
+        .sort((a, b) => b.ovr - a.ovr);
+
+      const BAR = 3, PAD = { t: 8, r: 10, b: 6, l: 32 };
+      const n = allPlayers.length;
+      const chartW = n * BAR;
+      const chartH = 160;
+      const W = chartW + PAD.l + PAD.r;
+      const H = chartH + PAD.t + PAD.b;
+      const OVR_MIN = 60, OVR_MAX = 99;
+      const yPos = ovr => PAD.t + chartH - Math.max(0, Math.min(chartH, ((ovr - OVR_MIN) / (OVR_MAX - OVR_MIN)) * chartH));
+      const bH   = ovr => Math.max(0, Math.min(chartH, ((ovr - OVR_MIN) / (OVR_MAX - OVR_MIN)) * chartH));
+
+      const gridLines = [70, 80, 90].map(ovr => {
+        const y = yPos(ovr);
+        return `<line x1="${PAD.l}" y1="${y}" x2="${W - PAD.r}" y2="${y}" stroke="#283141" stroke-dasharray="4,3"/>
+                <text x="${PAD.l - 5}" y="${y + 3.5}" text-anchor="end" fill="#4b5563" font-size="9">${ovr}</text>`;
+      }).join('');
+
+      const bars = allPlayers.map((p, i) => {
+        const x = PAD.l + i * BAR;
+        const h = bH(p.ovr);
+        const y = PAD.t + chartH - h;
+        const color = TEAM_COLORS[p.team] || '#4b5563';
+        return `<rect x="${x}" y="${y}" width="${BAR}" height="${h}" fill="${color}" data-label="${formatName(p.name)} (${p.team}) — ${p.ovr}" data-slug="${p.slug}"></rect>`;
+      }).join('');
+
+      const LEG_COLS = 10, LEG_ROW_H = 16, LEG_COL_W = 48;
+      const legendItems = Object.keys(TEAM_COLORS).map((abbr, i) => {
+        const col = i % LEG_COLS, row = Math.floor(i / LEG_COLS);
+        return `<g transform="translate(${col * LEG_COL_W},${row * LEG_ROW_H})">
+          <rect width="10" height="10" rx="2" fill="${TEAM_COLORS[abbr]}"/>
+          <text x="13" y="9" fill="#9ca3af" font-size="9">${abbr}</text>
+        </g>`;
+      }).join('');
+      const legRows = Math.ceil(Object.keys(TEAM_COLORS).length / LEG_COLS);
+      const legW = LEG_COLS * LEG_COL_W, legH = legRows * LEG_ROW_H;
+
+      const leagueEl = document.getElementById('league-chart');
+      leagueEl.innerHTML = `
+        <div class="league-scroll">
+          <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+            ${gridLines}
+            <line x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${PAD.t + chartH}" stroke="#374151"/>
+            <line x1="${PAD.l}" y1="${PAD.t + chartH}" x2="${W - PAD.r}" y2="${PAD.t + chartH}" stroke="#374151"/>
+            ${bars}
+          </svg>
+        </div>
+        <svg width="100%" viewBox="0 0 ${legW} ${legH}" xmlns="http://www.w3.org/2000/svg" style="display:block;margin-top:0.625rem;max-width:${legW}px">
+          ${legendItems}
+        </svg>`;
+      attachTooltip(leagueEl);
+    }
+
+    // ── viz: salaries ─────────────────────────────────────────────────────────
+
+    function renderSalaryTab({ rosterRows, playersData, capLevels }) {
+      const SEASON = '25-26';
+      const levels = capLevels?.[SEASON] || {};
+
+      function parseSalary(s) {
+        if (!s) return 0;
+        return parseInt(String(s).replace(/[$,]/g, '')) || 0;
+      }
+
+      const SEG_COLORS = {
+        dead:       '#4b5563',
+        twoway:     '#0891b2',
+        nongtd:     '#d97706',
+        player_opt: '#7c3aed',
+        team_opt:   '#059669',
+      };
+      const SEG_LABELS = {
+        dead: 'Dead cap', twoway: 'Two-way', nongtd: 'Non-gtd',
+        player_opt: 'Player opt', team_opt: 'Team opt',
+      };
+
+      function classify(bio) {
+        if (bio.type === 'dead')     return 'dead';
+        if (bio.type === 'two-way')  return 'twoway';
+        const g = bio.guaranteed?.[SEASON];
+        if (g === '0' || g === 0)    return 'nongtd';
+        const hold = bio.cap_holds?.[SEASON];
+        if (hold === 'PLAYER_OPT')   return 'player_opt';
+        if (hold === 'TEAM_OPT')     return 'team_opt';
+        return 'regular';
+      }
+
+      // Build per-team segments
+      const teamSal = {};
+      for (const abbr of Object.keys(TEAMS)) {
+        const segments = (rosterRows[abbr] || [])
+          .map(r => {
+            const bio = playersData[r.SLUG];
+            if (!bio) return null;
+            const salary = parseSalary(bio.salaries?.[SEASON]);
+            if (!salary) return null;
+            const cls   = classify(bio);
+            const name  = formatName(bio.name || r.SLUG);
+            const salStr = '$' + (salary / 1e6).toFixed(1) + 'M';
+            const note  = SEG_LABELS[cls];
+            return {
+              slug:   r.SLUG,
+              salary,
+              cls,
+              label: note ? `${name} — ${salStr} (${note})` : `${name} — ${salStr}`,
+            };
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.salary - a.salary);
+        teamSal[abbr] = { segments, total: segments.reduce((s, p) => s + p.salary, 0) };
+      }
+
+      const sorted = Object.keys(TEAMS).sort((a, b) => teamSal[b].total - teamSal[a].total);
+
+      // Layout constants
+      const VB_W = 1000;
+      const PAD  = { t: 26, r: 80, b: 28, l: 44 };
+      const BAR_H = 18, GAP = 5, BAND = BAR_H + GAP;
+      const chartW = VB_W - PAD.l - PAD.r;
+      const chartH = sorted.length * BAND;
+      const VB_H   = chartH + PAD.t + PAD.b;
+
+      const maxSal = Math.max(...sorted.map(a => teamSal[a].total), (levels.apron2 || 0) * 1.06);
+      const xS = v => PAD.l + (v / maxSal) * chartW;
+
+      // Threshold lines (stagger label heights to avoid overlap)
+      const thresholds = [
+        { val: levels.cap,    label: 'Cap',     color: '#d1d5db', dy: -14 },
+        { val: levels.apron1, label: 'Apron 1', color: '#f59e0b', dy: -5  },
+        { val: levels.apron2, label: 'Apron 2', color: '#ef4444', dy: -14 },
+      ].filter(t => t.val);
+      const threshLines = thresholds.map(t => {
+        const x = xS(t.val).toFixed(1);
+        return `<line x1="${x}" y1="${PAD.t}" x2="${x}" y2="${PAD.t + chartH}" stroke="${t.color}" stroke-width="1" stroke-dasharray="4,3" opacity="0.85"/>
+                <text x="${x}" y="${PAD.t + t.dy}" text-anchor="middle" fill="${t.color}" font-size="8.5">${t.label}</text>`;
+      }).join('');
+
+      // X-axis ticks
+      const xTicks = [];
+      for (let v = 0; v <= maxSal; v += 50e6) {
+        const x = xS(v).toFixed(1);
+        xTicks.push(`<line x1="${x}" y1="${PAD.t + chartH}" x2="${x}" y2="${PAD.t + chartH + 4}" stroke="#4b5563"/>
+                     <text x="${x}" y="${PAD.t + chartH + 13}" text-anchor="middle" fill="#6b7280" font-size="8">${v === 0 ? '' : '$' + (v / 1e6).toFixed(0) + 'M'}</text>`);
+      }
+
+      // Bars
+      const bars = sorted.map((abbr, row) => {
+        const { segments, total } = teamSal[abbr];
+        const y  = PAD.t + row * BAND;
+        let   cx = PAD.l;
+        const segs = segments.map(seg => {
+          const w     = Math.max(0.5, (seg.salary / maxSal) * chartW);
+          const color = SEG_COLORS[seg.cls] || '#3b82f6';
+          const rect  = `<rect x="${cx.toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="${BAR_H}" fill="${color}" stroke="#111827" stroke-width="0.5" data-label="${seg.label}" data-slug="${seg.slug}"></rect>`;
+          cx += w;
+          return rect;
+        }).join('');
+        const totalLabel = '$' + (total / 1e6).toFixed(1) + 'M';
+        return `
+          <a href="/teams/${abbr}/" style="text-decoration:none;cursor:pointer">
+            <text x="${PAD.l - 5}" y="${y + BAR_H / 2 + 4}" text-anchor="end" fill="#9ca3af" font-size="10" font-weight="600">${abbr}</text>
+          </a>
+          ${segs}
+          <text x="${cx + 4}" y="${y + BAR_H / 2 + 4}" fill="#6b7280" font-size="8.5">${totalLabel}</text>`;
+      }).join('');
+
+      // Legend
+      const legendDefs = [
+        { label: 'Guaranteed',    color: '#3b82f6'            },
+        { label: 'Non-gtd',       color: SEG_COLORS.nongtd },
+        { label: 'Player opt',    color: SEG_COLORS.player_opt },
+        { label: 'Team opt',      color: SEG_COLORS.team_opt },
+        { label: 'Dead cap',      color: SEG_COLORS.dead },
+        { label: 'Two-way',       color: SEG_COLORS.twoway },
+      ];
+      const LEG_COL_W = 100;
+      const legItems = legendDefs.map((d, i) =>
+        `<g transform="translate(${i * LEG_COL_W},0)">
+          <rect width="10" height="10" rx="2" fill="${d.color}"/>
+          <text x="14" y="9" fill="#9ca3af" font-size="9">${d.label}</text>
+        </g>`
+      ).join('');
+
+      const el = document.getElementById('salary-chart');
+      el.innerHTML = `
+        <svg viewBox="0 0 ${VB_W} ${VB_H}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">
+          ${xTicks.join('')}
+          <line x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${PAD.t + chartH}" stroke="#374151"/>
+          <line x1="${PAD.l}" y1="${PAD.t + chartH}" x2="${VB_W - PAD.r}" y2="${PAD.t + chartH}" stroke="#374151"/>
+          ${bars}
+          ${threshLines}
+        </svg>
+        <svg viewBox="0 0 ${legendDefs.length * LEG_COL_W} 14" width="${legendDefs.length * LEG_COL_W}" style="display:block;margin-top:0.75rem;max-width:100%" xmlns="http://www.w3.org/2000/svg">
+          ${legItems}
+        </svg>`;
+      attachTooltip(el);
+    }
+
+    // ── tooltip ───────────────────────────────────────────────────────────────
+
+    const tooltip = document.getElementById('tooltip');
+
+    function attachTooltip(el) {
+      el.addEventListener('mousemove', e => {
+        const target = e.target.closest('[data-label]');
+        if (!target) { tooltip.style.display = 'none'; return; }
+        tooltip.textContent = target.dataset.label;
+        tooltip.style.display = 'block';
+        const x = e.clientX + 14;
+        const y = e.clientY - 36;
+        tooltip.style.left = Math.min(x, window.innerWidth - tooltip.offsetWidth - 8) + 'px';
+        tooltip.style.top  = (y < 8 ? e.clientY + 14 : y) + 'px';
+      });
+      el.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+      el.addEventListener('click', e => {
+        const target = e.target.closest('[data-slug]');
+        if (target?.dataset.slug) location.href = `/players/?p=${target.dataset.slug}`;
+      });
+    }
+
+    // ── tab routing ───────────────────────────────────────────────────────────
+
+    const RENDERERS = { roster: renderRosterTab, league: renderLeagueTab, salaries: renderSalaryTab };
+    const rendered = new Set();
+
+    async function activateTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${name}`));
+
+      if (!rendered.has(name)) {
+        rendered.add(name);
+        const data = await loadData();
+        RENDERERS[name](data);
+      }
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    });
+
+    activateTab('roster');
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>
