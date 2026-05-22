@@ -6,8 +6,9 @@ See `README.md` for league-wide constants.
 
 ## Draft Format
 
-<!-- Number of rounds, number of picks per round, any lottery system,
-     how order is determined (reverse standings, lottery odds, etc.) -->
+The draft has **2 rounds**. The number of picks per round equals the number of teams in the league — currently **30**, but this is dynamic and will increase if the league expands. Any rule or system that references pick numbers (e.g., the rookie scale tier for a given slot) must derive the total picks per round from the current team count rather than treating 30 as a fixed constant.
+
+<!-- Draft order: reverse standings, lottery, or other? Lottery odds methodology? -->
 
 
 ---
@@ -25,7 +26,22 @@ See `README.md` for league-wide constants.
 
 ### Length and salary
 
-<!-- How many years, what salary scale or range -->
+NBN follows the NBA rookie scale structure exactly. All cap numbers (scale amounts, cap levels, thresholds) are sourced from the NBA — NBN does not derive them independently. Actual dollar figures are provided externally and recorded here or in `cap-levels.json` when available.
+
+**First round picks — mandatory rookie scale contract:**
+- 4 years total
+- Years 1 and 2: fully guaranteed at the scale amount for that pick slot
+- Year 3: team option
+- Year 4: team option (available only if Year 3 option was exercised)
+- Scale amount per slot is tiered by pick number (pick 1 highest, pick 30 lowest) following the NBA's published rookie scale for that draft year
+- **Scale indexing:** The rookie scale increases each year at the same rate as the salary cap — a 5% cap increase means a 5% increase to all scale amounts
+
+> Per-pick scale amounts for each draft year to be recorded here when provided.
+
+**Second round picks — no mandatory scale:**
+- No rookie scale applies; contract terms are negotiated within standard FA rules
+- See `free-agency.md` for applicable caps and exceptions
+- The Second Round Pick Exception (July delay) still applies — see below
 
 ### Cap treatment
 

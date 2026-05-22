@@ -253,6 +253,10 @@
     <a class="card" id="lo-league-settings" href="/cap-settings/" style="display:none">
       <div class="card-header"><span class="card-icon">⚙️</span><span class="card-title">Cap Settings</span></div>
     </a>
+
+    <a class="card" id="lo-rookie-scale" href="/rookie-scale/" style="display:none">
+      <div class="card-header"><span class="card-icon">📋</span><span class="card-title">Rookie Scale</span></div>
+    </a>
   </main>
 
   <footer>
@@ -293,6 +297,7 @@
           if (data?.roles?.some(r => r === 'rosters' || r === 'admin')) {
             document.getElementById('lo-label').style.display = '';
             document.getElementById('lo-league-settings').style.display = '';
+            document.getElementById('lo-rookie-scale').style.display = '';
           }
         })
         .catch(() => {});

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rookie Scale — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827; color: #f3f4f6; min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 760px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .auth-banner {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .auth-banner p { font-size: 0.875rem; color: #9ca3af; }
+    .btn {
+      font-size: 0.8rem; font-weight: 600; font-family: inherit; cursor: pointer;
+      padding: 0.35rem 0.75rem; border-radius: 6px; border: none;
+    }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-primary:disabled { background: #374151; color: #6b7280; cursor: default; }
+
+    .years { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .year-card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+    }
+    .year-card h2 {
+      font-size: 1rem; font-weight: 700; margin-bottom: 1rem;
+      color: #60a5fa; font-family: ui-monospace, 'Cascadia Code', monospace;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    thead th {
+      text-align: right; padding: 0.3rem 0.5rem; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280;
+      border-bottom: 1px solid #374151;
+    }
+    thead th:first-child { text-align: center; width: 2.5rem; }
+    tbody tr:hover { background: #1a2332; }
+    tbody td {
+      padding: 0.25rem 0.5rem; text-align: right;
+      border-bottom: 1px solid #252f3e;
+      font-variant-numeric: tabular-nums;
+    }
+    tbody td:first-child { text-align: center; color: #6b7280; font-size: 0.75rem; }
+
+    input[type=number] {
+      background: #111827; border: 1px solid #374151; border-radius: 4px;
+      color: #f3f4f6; font-size: 0.8rem; font-family: inherit;
+      padding: 0.2rem 0.35rem; outline: none; width: 100%; text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    input[type=number]:focus { border-color: #3b82f6; }
+    input[type=number]:disabled {
+      background: transparent; border-color: transparent; cursor: default;
+    }
+
+    .card-footer {
+      display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem;
+    }
+    .status { font-size: 0.78rem; }
+    .status.ok  { color: #22c55e; }
+    .status.err { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Home</a></nav>
+    <header>
+      <h1>Rookie Scale</h1>
+      <p>First-round rookie contract amounts by pick. Scale indexes annually with the salary cap. 2nd round picks are not on the scale.</p>
+    </header>
+
+    <div class="auth-banner" id="auth-banner" style="display:none">
+      <p id="auth-msg">A committee token is required to edit these values.</p>
+      <button class="btn btn-primary" id="auth-btn">Enter Token</button>
+    </div>
+
+    <div class="years" id="years">
+      <p style="color:#6b7280;font-size:0.875rem;">Loading…</p>
+    </div>
+  </div>
+
+  <script>
+    const COL_LABELS = ['Year 1', 'Year 2', 'Year 3 (Opt)', 'Year 4 (Opt)'];
+
+    function currentDraftYear() { return new Date().getFullYear(); }
+
+    function getToken() { return localStorage.getItem('nbn_token'); }
+    function setToken(t) { localStorage.setItem('nbn_token', t); }
+
+    function promptToken(cb) {
+      const t = window.prompt('Enter your NBN committee token:');
+      if (t && t.trim()) { setToken(t.trim()); cb(t.trim()); }
+    }
+
+    function emptyPicks(n) {
+      return Array.from({ length: n }, () => [0, 0, 0, 0]);
+    }
+
+    function buildYearCard(year, picks, canEdit) {
+      const card = document.createElement('div');
+      card.className = 'year-card';
+
+      const h2 = document.createElement('h2');
+      h2.textContent = year + ' Draft';
+      card.appendChild(h2);
+
+      const table = document.createElement('table');
+
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      ['#', ...COL_LABELS].forEach(label => {
+        const th = document.createElement('th');
+        th.textContent = label;
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      const inputs = [];
+
+      picks.forEach((row, i) => {
+        const tr = document.createElement('tr');
+
+        const pickTd = document.createElement('td');
+        pickTd.textContent = i + 1;
+        tr.appendChild(pickTd);
+
+        const rowInputs = row.map((val, j) => {
+          const td = document.createElement('td');
+          const inp = document.createElement('input');
+          inp.type = 'number';
+          inp.value = val || '';
+          inp.placeholder = '0';
+          inp.disabled = !canEdit;
+          td.appendChild(inp);
+          tr.appendChild(td);
+          return inp;
+        });
+        inputs.push(rowInputs);
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      card.appendChild(table);
+
+      if (canEdit) {
+        const footer = document.createElement('div');
+        footer.className = 'card-footer';
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-primary';
+        btn.textContent = 'Save';
+        const status = document.createElement('span');
+        status.className = 'status';
+        footer.appendChild(btn);
+        footer.appendChild(status);
+        card.appendChild(footer);
+
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          status.textContent = 'Saving…';
+          status.className = 'status';
+          const body = inputs.map(row => row.map(inp => Number(inp.value) || 0));
+          try {
+            const r = await fetch(`/api/rookie-scale/${year}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${getToken()}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(body),
+            });
+            if (r.status === 403) {
+              localStorage.removeItem('nbn_token');
+              status.textContent = 'Token rejected — refresh and re-enter.';
+              status.className = 'status err';
+            } else if (!r.ok) {
+              throw new Error();
+            } else {
+              status.textContent = 'Saved.';
+              status.className = 'status ok';
+              setTimeout(() => { status.textContent = ''; }, 3000);
+            }
+          } catch {
+            status.textContent = 'Error saving.';
+            status.className = 'status err';
+          }
+          btn.disabled = false;
+        });
+      }
+
+      return card;
+    }
+
+    function renderYears(scaleData, canEdit) {
+      const cur  = currentDraftYear();
+      const all  = new Set([...Object.keys(scaleData).map(Number), cur, cur + 1]);
+      const years = [...all].sort((a, b) => b - a);
+
+      const container = document.getElementById('years');
+      container.innerHTML = '';
+      years.forEach(year => {
+        const picks = scaleData[String(year)] || emptyPicks(30);
+        container.appendChild(buildYearCard(year, picks, canEdit));
+      });
+    }
+
+    async function init() {
+      const token = getToken();
+      const authBanner = document.getElementById('auth-banner');
+      const authMsg    = document.getElementById('auth-msg');
+      const authBtn    = document.getElementById('auth-btn');
+
+      let canEdit = false;
+
+      if (!token) {
+        authMsg.textContent = 'A committee token is required to edit these values.';
+        authBanner.style.display = '';
+        authBtn.addEventListener('click', () => promptToken(() => location.reload()));
+      } else {
+        const meResp = await fetch('/api/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => null);
+
+        if (!meResp || !meResp.ok) {
+          authMsg.textContent = 'Token invalid or expired.';
+          authBanner.style.display = '';
+          authBtn.textContent = 'Re-enter Token';
+          authBtn.addEventListener('click', () => promptToken(() => location.reload()));
+        } else {
+          const me = await meResp.json();
+          canEdit = me.roles.some(r => r === 'rosters' || r === 'admin');
+          if (!canEdit) {
+            authMsg.textContent = `Signed in as ${me.name}, but this role cannot edit league settings.`;
+            authBanner.style.display = '';
+            authBtn.style.display = 'none';
+          }
+        }
+      }
+
+      const scaleResp = await fetch('/api/rookie-scale').catch(() => null);
+      const scaleData = (scaleResp && scaleResp.ok) ? await scaleResp.json() : {};
+      renderYears(scaleData, canEdit);
+    }
+
+    init();
+  </script>
+  <script src="/nav.js"></script>
+</body>
+</html>

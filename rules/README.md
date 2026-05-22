@@ -35,6 +35,10 @@ Each season has three cap thresholds, all set externally (stored in `cap-levels.
 
 These values are inputs — they are not derived from any formula within this system. Update them each season via `PUT /api/cap-levels/{season}`.
 
+### League size
+
+The league currently has **30 teams**. This is dynamic — the league may expand and add new teams. Any rule that depends on team count (draft picks per round, revenue splits, etc.) must treat this as a variable, not a fixed constant.
+
 ### Roster limits
 
 | Limit | Value |

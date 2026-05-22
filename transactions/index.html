@@ -458,6 +458,14 @@
         <input type="date" id="f-date">
       </div>
 
+      <!-- pick-only -->
+      <div class="form-field" id="f-pick-year-field" style="display:none">
+        <label>Draft Year</label>
+        <select id="f-pick-year-sel">
+          <option value="">— loading —</option>
+        </select>
+      </div>
+
       <div class="form-field">
         <label>Player</label>
         <div class="player-wrap">
@@ -465,6 +473,14 @@
           <div class="player-dropdown" id="player-dropdown"></div>
           <input type="hidden" id="f-player-slug">
         </div>
+      </div>
+
+      <!-- pick-only -->
+      <div class="form-field" id="f-pick-sel-field" style="display:none">
+        <label>Pick</label>
+        <select id="f-pick-sel">
+          <option value="">— select draft year —</option>
+        </select>
       </div>
 
       <!-- sign-only -->
@@ -506,22 +522,6 @@
           <option value="QVFA">QVFA (Qualifying Veteran)</option>
           <option value="EQVFA">EQVFA (Early Qualifying Veteran)</option>
           <option value="Non-QVFA">Non-QVFA</option>
-        </select>
-      </div>
-
-      <!-- pick-only -->
-      <div class="form-field" id="f-pick-year-field" style="display:none">
-        <label>Draft Year</label>
-        <select id="f-pick-year-sel">
-          <option value="">— loading —</option>
-        </select>
-      </div>
-
-      <!-- pick-only -->
-      <div class="form-field" id="f-pick-sel-field" style="display:none">
-        <label>Pick</label>
-        <select id="f-pick-sel">
-          <option value="">— select draft year —</option>
         </select>
       </div>
 
@@ -939,6 +939,8 @@ function populatePickSel(year) {
 
 document.getElementById('f-pick-year-sel').addEventListener('change', function() {
   populatePickSel(+this.value);
+  document.getElementById('f-player-display').value = '';
+  document.getElementById('f-player-slug').value = '';
 });
 
 // ── Player search ──────────────────────────────────────────────────────────
@@ -966,6 +968,9 @@ function setupPlayerSearch() {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'two-way');
     } else if (txnType === 'sign') {
       pool = Object.entries(bios).filter(([slug, bio]) => !teamMap[slug] && !bio.retired && bio.type !== 'dead');
+    } else if (txnType === 'pick') {
+      const draftYear = +document.getElementById('f-pick-year-sel').value;
+      pool = Object.entries(bios).filter(([slug, bio]) => bio.draft_year === draftYear && !teamMap[slug]);
     } else {
       pool = Object.entries(bios);
     }
