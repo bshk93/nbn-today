@@ -29,7 +29,7 @@
 //   buildTable              414   generic sortable table (used by owners page too)
 //   buildRosterTable        588   renders the Roster section with salary/cap data
 //   bioPlayerName           960   slug → display name from bios
-//   buildPicksTable         968   renders the Draft Picks section
+//   buildPicksTable         1036  renders the Draft Picks section
 //   makeSeasonRenderCell   1069   season history cell renderer (badges, playoff coloring)
 //   buildTimeline          1112   season timeline component
 //
@@ -236,6 +236,7 @@ document.title = `${abbr} — NBN`;
   .row-twoway td { opacity: 0.6; }
   .row-dead td   { opacity: 0.45; font-style: italic; text-decoration: line-through; }
   .picks-acquired td { color: #60a5fa; }
+  .picks-traded td   { color: #6b7280; font-style: italic; }
   .retired-banners {
     display: flex;
     flex-wrap: wrap;
@@ -1032,27 +1033,28 @@ function bioPlayerName(slug, bios) {
   return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
 }
 
-function buildPicksTable(picks, teamAbbr, bios = {}) {
-  if (!picks.length) return null;
-
+function buildPicksTable(picks, teamAbbr, bios = {}, allPicks = []) {
   const sortPicks = arr => [...arr].sort((a, b) => a.year - b.year || a.round - b.round);
   const own      = sortPicks(picks.filter(p => p.orig === teamAbbr));
   const acquired = sortPicks(picks.filter(p => p.orig !== teamAbbr));
+  const traded   = sortPicks(allPicks.filter(p => p.orig === teamAbbr && p.owner !== teamAbbr));
+
+  if (!own.length && !acquired.length && !traded.length) return null;
 
   const table = document.createElement('table');
   const thead = table.createTHead();
   const hr = thead.insertRow();
-  ['Year', 'Rnd', 'From', 'Pick', 'Player', 'Protection', 'Swap', 'Notes'].forEach(label => {
+  ['Year', 'Rnd', 'Team', 'Pick', 'Player', 'Protection', 'Swap', 'Notes'].forEach(label => {
     const th = document.createElement('th');
     th.textContent = label;
     if (label === 'Pick' || label === 'Year' || label === 'Rnd') th.classList.add('right');
-    if (label === 'From' || label === 'Player' || label === 'Protection' || label === 'Swap' || label === 'Notes') th.classList.add('muted');
+    if (label === 'Team' || label === 'Player' || label === 'Protection' || label === 'Swap' || label === 'Notes') th.classList.add('muted');
     hr.appendChild(th);
   });
 
   const tbody = table.createTBody();
 
-  const addSection = (label, rows, isAcquired) => {
+  const addSection = (label, rows, rowClass, teamCell) => {
     if (!rows.length) return;
     const sep = tbody.insertRow();
     sep.className = 'subheader';
@@ -1062,13 +1064,13 @@ function buildPicksTable(picks, teamAbbr, bios = {}) {
 
     rows.forEach(p => {
       const tr = tbody.insertRow();
-      if (isAcquired) tr.className = 'picks-acquired';
+      if (rowClass) tr.className = rowClass;
 
       const protLabel = p.protected != null ? `Top-${p.protected}` : '';
       const cells = [
         [String(p.year),                      'right',        ],
         [p.round === 1 ? '1st' : '2nd',       'right',        ],
-        [isAcquired ? p.orig : '—',           'muted center', ],
+        [teamCell(p),                          'muted center', ],
         [p.pick != null ? `#${p.pick}` : '—', 'right',        ],
         [bioPlayerName(p.player, bios) || '',  'muted',        ],
         [protLabel,                            'muted',        ],
@@ -1083,8 +1085,9 @@ function buildPicksTable(picks, teamAbbr, bios = {}) {
     });
   };
 
-  addSection('Own Picks', own, false);
-  addSection('Acquired Picks', acquired, true);
+  addSection('Own Picks',      own,      null,             () => '—');
+  addSection('Acquired Picks', acquired, 'picks-acquired', p => p.orig);
+  addSection('Traded Away',    traded,   'picks-traded',   p => p.owner);
 
   return table;
 }
@@ -1678,7 +1681,7 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
   });
 }
 
-function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}) {
+function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPicks = []) {
   const INP = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
 
   const playerOpts = [{ slug: '', label: '—' },
@@ -1693,7 +1696,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}) {
 
   function renderView(currentPicks) {
     wrapEl.innerHTML = '';
-    const t = buildPicksTable(currentPicks, teamAbbr, bios);
+    const t = buildPicksTable(currentPicks, teamAbbr, bios, allPicks);
     if (t) wrapEl.appendChild(t);
     else wrapEl.innerHTML = '<div class="status">No picks on file.</div>';
     attachBtn(currentPicks);
@@ -2024,12 +2027,32 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
   wrapEl.appendChild(editBtn);
 
   let formEl = null;
+  let formDl = null;
 
   editBtn.addEventListener('click', () => {
-    if (formEl) { formEl.remove(); formEl = null; editBtn.textContent = 'Edit Dead Cap'; return; }
+    if (formEl) { formEl.remove(); formEl = null; formDl?.remove(); formDl = null; editBtn.textContent = 'Edit Dead Cap'; return; }
     editBtn.textContent = 'Close';
 
     let rows = deadCapRows.map(r => ({ ...r }));
+
+    const nameToSlug = new Map();
+    const slugToDisplay = new Map();
+    const dlId = `dc-pdl-${Date.now()}`;
+    const dl = document.createElement('datalist');
+    dl.id = dlId;
+    Object.entries(biosData).sort(([, a], [, b]) =>
+      displayNameFromBio(a.name || '').localeCompare(displayNameFromBio(b.name || ''))
+    ).forEach(([slug, bio]) => {
+      const dn = displayNameFromBio(bio.name || '');
+      if (!dn) return;
+      nameToSlug.set(dn.toLowerCase(), slug);
+      slugToDisplay.set(slug, dn);
+      const opt = document.createElement('option');
+      opt.value = dn;
+      dl.appendChild(opt);
+    });
+    document.body.appendChild(dl);
+    formDl = dl;
 
     formEl = document.createElement('div');
     formEl.style.cssText = 'margin-top:0.75rem;background:#1f2937;border:1px solid #374151;border-radius:6px;padding:0.75rem;overflow-x:auto';
@@ -2088,9 +2111,10 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
       addTd.colSpan = seasonList.length + 2;
       addTd.style.cssText = 'padding:6px 8px';
 
-      const slugInp = document.createElement('input');
-      slugInp.type = 'text'; slugInp.placeholder = 'player-slug';
-      slugInp.style.cssText = 'background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 6px;font-size:0.75rem;width:140px;margin-right:6px';
+      const nameInp = document.createElement('input');
+      nameInp.type = 'text'; nameInp.placeholder = 'Player name';
+      nameInp.setAttribute('list', dlId);
+      nameInp.style.cssText = 'background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 6px;font-size:0.75rem;width:160px;margin-right:6px';
 
       const seasonInp = document.createElement('input');
       seasonInp.type = 'text'; seasonInp.placeholder = '25-26';
@@ -2104,7 +2128,8 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
       addBtn.textContent = '+ Add';
       addBtn.style.cssText = 'background:#1d4ed8;color:#fff;border:none;border-radius:3px;padding:2px 8px;font-size:0.75rem;cursor:pointer';
       addBtn.addEventListener('click', () => {
-        const slug = slugInp.value.trim();
+        const typed = nameInp.value.trim();
+        const slug = nameToSlug.get(typed.toLowerCase()) || '';
         const season = seasonInp.value.trim();
         const amt = amtInp.value.trim();
         if (!slug || !season || !amt) return;
@@ -2115,11 +2140,11 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
           rows.push({ SLUG: slug, [season]: amt });
           if (!seasons.has(season)) { seasons.add(season); seasonList.length = 0; [...seasons].sort().forEach(s => seasonList.push(s)); }
         }
-        slugInp.value = ''; seasonInp.value = ''; amtInp.value = '';
+        nameInp.value = ''; seasonInp.value = ''; amtInp.value = '';
         render();
       });
 
-      addTd.append(slugInp, seasonInp, amtInp, addBtn);
+      addTd.append(nameInp, seasonInp, amtInp, addBtn);
       formEl.appendChild(tbl);
 
       // Save / Cancel
@@ -2145,7 +2170,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
           })
           .then(r => { if (!r.ok) throw r; return r.json(); })
           .then(() => {
-            formEl.remove(); formEl = null;
+            formEl.remove(); formEl = null; formDl?.remove(); formDl = null;
             editBtn.textContent = 'Edit Dead Cap';
             onSave(payload);
           })
@@ -2160,7 +2185,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
       cancelBtn.style.cssText = 'background:#374151;color:#e5e7eb;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.75rem';
-      cancelBtn.addEventListener('click', () => { formEl.remove(); formEl = null; editBtn.textContent = 'Edit Dead Cap'; });
+      cancelBtn.addEventListener('click', () => { formEl.remove(); formEl = null; formDl?.remove(); formDl = null; editBtn.textContent = 'Edit Dead Cap'; });
 
       btns.append(saveBtn, cancelBtn);
       formEl.appendChild(btns);
@@ -2209,7 +2234,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -2220,6 +2245,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
     fetch(`/api/team-state/${abbr}`).then(r => r.ok ? r.json() : null),
     fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : []),
+    fetch('/api/picks').then(r => r.ok ? r.json() : []),
   ]);
 
   const biosData    = biosr.status === 'fulfilled' ? biosr.value : {};
@@ -2453,10 +2479,11 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
 
   if (pkr.status === 'fulfilled') {
     picksWrap.innerHTML = '';
-    const t = buildPicksTable(pkr.value, abbr, biosData);
+    const allPicks = allpkr.status === 'fulfilled' ? allpkr.value : [];
+    const t = buildPicksTable(pkr.value, abbr, biosData, allPicks);
     if (t) picksWrap.appendChild(t);
     else picksWrap.innerHTML = '<div class="status">No picks on file.</div>';
-    setupPicksEditable('picks-title', picksWrap, pkr.value, abbr, biosData);
+    setupPicksEditable('picks-title', picksWrap, pkr.value, abbr, biosData, allPicks);
   } else {
     picksWrap.innerHTML = '<div class="status">Failed to load picks data.</div>';
   }

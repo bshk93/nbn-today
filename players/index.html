@@ -501,6 +501,17 @@
       color: #f3f4f6; font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.45rem; outline: none; }
     .ovr-edit-row input:focus { border-color: #3b82f6; }
     .ovr-edit-row input[type=number] { width: 4.5rem; }
+    .txn-badge { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 4px;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+    .txn-badge-sign    { background: #064e3b; color: #34d399; }
+    .txn-badge-pick    { background: #1e3a5f; color: #93c5fd; }
+    .txn-badge-option  { background: #431407; color: #fb923c; }
+    .txn-badge-release { background: #450a0a; color: #f87171; }
+    .txn-badge-convert_twoway { background: #1c1917; color: #a8a29e; }
+    .txn-badge-trade   { background: #2e1065; color: #c084fc; }
+    .txn-table-details { color: #9ca3af; font-size: 0.8rem; }
+    .txn-table-details a { color: #93c5fd; text-decoration: none; }
+    .txn-table-details a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -1060,7 +1071,18 @@
     addSalBtn.style.cssText = 'background:none;border:1px dashed #374151;border-radius:4px;color:#6b7280;cursor:pointer;font-size:0.75rem;padding:0.2rem 0.6rem;font-family:inherit;margin-top:0.25rem;width:fit-content';
     addSalBtn.onmouseenter = () => { addSalBtn.style.color = '#d1d5db'; addSalBtn.style.borderColor = '#9ca3af'; };
     addSalBtn.onmouseleave = () => { addSalBtn.style.color = '#6b7280'; addSalBtn.style.borderColor = '#374151'; };
-    addSalBtn.addEventListener('click', () => salRows.appendChild(makeSalaryRow('', '')));
+    addSalBtn.addEventListener('click', () => {
+      const existing = salRows.querySelectorAll('.season-input');
+      let next = '';
+      if (existing.length) {
+        const m = existing[existing.length - 1].value.match(/^(\d{2})-(\d{2})$/);
+        if (m) next = `${m[2]}-${String(+m[2] + 1).padStart(2, '0')}`;
+      } else {
+        const yr = new Date().getMonth() >= 7 ? new Date().getFullYear() + 1 : new Date().getFullYear();
+        next = `${String(yr).slice(-2)}-${String(yr + 1).slice(-2)}`;
+      }
+      salRows.appendChild(makeSalaryRow(next, ''));
+    });
     salLbl.appendChild(salRows); salLbl.appendChild(addSalBtn);
     form.appendChild(salLbl);
 
@@ -1525,6 +1547,148 @@
     rebuild();
   }
 
+  function renderTransactionHistory(container, playerSlug) {
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      const [y, m, d] = iso.split('-').map(Number);
+      return `${MONTHS[m - 1]} ${d}, ${y}`;
+    }
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function playerLink(slug) {
+      if (!slug) return '';
+      const bio = biosData[slug];
+      const name = bio ? displayName(bio.name) : slug;
+      return `<a href="/players/?p=${esc(slug)}">${esc(name)}</a>`;
+    }
+    function fmtContract(c) {
+      if (!c) return '';
+      const yrs = Object.keys(c.salaries || {}).length;
+      const total = Object.values(c.salaries || {}).reduce((s, v) => s + (parseInt(String(v).replace(/\D/g,''), 10) || 0), 0);
+      if (!yrs) return c.type === 'two-way' ? 'Two-Way' : '';
+      return `${yrs}yr / $${(total / 1e6).toFixed(1)}M`;
+    }
+    const METHOD = { bird_rights:'Bird Rights', ntmle:'NTMLE', tmle:'TMLE',
+      room_exception:'Room Exc.', bae:'BAE', sign_and_trade:'S&T' };
+    const TYPE_LABEL = { sign:'Signing', pick:'Draft Pick', option:'Option',
+      release:'Release', trade:'Trade', convert_twoway:'Two-Way Conv.' };
+
+    function detailsHtml(t) {
+      const d = t.details || {};
+      if (t.type === 'sign' || t.type === 'pick') {
+        let s = fmtContract(d.contract);
+        if (d.signing_method && d.signing_method !== 'cap_space')
+          s += (s ? ' · ' : '') + (METHOD[d.signing_method] || d.signing_method);
+        if (t.type === 'pick' && d.pick) {
+          const p = d.pick;
+          const ps = `${p.year} R${p.round} ${p.orig}${p.pick_number ? ' #'+p.pick_number : ''}`;
+          s = esc(ps) + (s ? ' · ' + esc(s) : '');
+        } else { s = esc(s); }
+        return s;
+      }
+      if (t.type === 'option') {
+        const ol = d.option_type === 'PLAYER_OPT' ? 'Player Opt' : 'Team Opt';
+        return d.decision === 'accept'
+          ? esc(`${d.year || ''} ${ol} — accepted`)
+          : esc(`${d.year || ''} ${ol} — declined → ${d.cap_hold_type || 'UFA'} hold`);
+      }
+      if (t.type === 'convert_twoway') return esc(fmtContract(d.contract));
+      if (t.type === 'release') {
+        const dc = d.dead_cap || {};
+        const entries = Object.entries(dc);
+        if (!entries.length) return 'No dead cap';
+        const total = entries.reduce((s, [,v]) => s + (parseInt(String(v).replace(/\D/g,''), 10) || 0), 0);
+        return esc(`Dead cap: $${(total / 1e6).toFixed(1)}M (${entries.map(([yr]) => yr).join(', ')})`);
+      }
+      if (t.type === 'trade') {
+        const transfers = d.transfers || [];
+        // Find the leg this player is in
+        const myLeg = transfers.find(tr =>
+          (tr.assets || []).some(a => a.type === 'player' && a.slug === playerSlug));
+        // Other assets in my leg (exclude this player)
+        const myOtherAssets = myLeg
+          ? (myLeg.assets || []).filter(a => !(a.type === 'player' && a.slug === playerSlug))
+          : [];
+        // Other legs
+        const otherLegs = transfers.filter(tr => tr !== myLeg);
+
+        const parts = [];
+        myOtherAssets.forEach(a => {
+          if (a.type === 'player') parts.push(playerLink(a.slug));
+          else if (a.type === 'pick') {
+            let s = `${a.year} R${a.round} ${a.orig}`;
+            if (a.protection) s += ` (top-${a.protection})`;
+            parts.push(esc(s));
+          }
+        });
+        if (otherLegs.length) {
+          otherLegs.forEach(tr => {
+            const assetStrs = (tr.assets || []).map(a =>
+              a.type === 'player' ? playerLink(a.slug) : esc(`${a.year} R${a.round} ${a.orig}`)
+            ).filter(Boolean);
+            parts.push(esc(`${tr.from_team}→${tr.to_team}`) + (assetStrs.length ? ': ' + assetStrs.join(', ') : ''));
+          });
+        }
+        return parts.join(' · ') || '—';
+      }
+      return '';
+    }
+
+    function teamHtml(t) {
+      const d = t.details || {};
+      if (t.type === 'trade') {
+        const transfers = d.transfers || [];
+        const myLeg = transfers.find(tr =>
+          (tr.assets || []).some(a => a.type === 'player' && a.slug === playerSlug));
+        if (!myLeg) return (d.teams || []).map(esc).join(' · ') || '—';
+        return `<a href="/teams/${esc(myLeg.from_team)}">${esc(myLeg.from_team)}</a> → <a href="/teams/${esc(myLeg.to_team)}">${esc(myLeg.to_team)}</a>`;
+      }
+      return d.team ? `<a href="/teams/${esc(d.team)}">${esc(d.team)}</a>` : '—';
+    }
+
+    fetch(`/api/transactions?player=${encodeURIComponent(playerSlug)}`)
+      .then(r => r.ok ? r.json() : { transactions: [] })
+      .then(({ transactions }) => {
+        if (!transactions.length) return;
+
+        const h2 = document.createElement('h2');
+        h2.className = 'section-heading';
+        h2.textContent = 'Transaction History';
+        container.appendChild(h2);
+
+        const table = document.createElement('table');
+        table.className = 'salary-table';
+        table.style.cssText = 'font-size:0.8rem';
+        const thead = table.createTHead();
+        const hr = thead.insertRow();
+        ['Date', 'Type', 'Team', 'Details', 'Note'].forEach((h, i) => {
+          const th = document.createElement('th');
+          th.textContent = h;
+          if (i >= 2) th.style.width = i === 2 ? '10%' : 'auto';
+          hr.appendChild(th);
+        });
+
+        const tbody = table.createTBody();
+        transactions.forEach(t => {
+          const tr = tbody.insertRow();
+          const label = TYPE_LABEL[t.type] || t.type;
+          tr.innerHTML = `
+            <td style="white-space:nowrap;color:#9ca3af">${esc(fmtDate(t.date))}</td>
+            <td><span class="txn-badge txn-badge-${esc(t.type)}">${esc(label)}</span></td>
+            <td style="white-space:nowrap" class="txn-table-details">${teamHtml(t)}</td>
+            <td class="txn-table-details">${detailsHtml(t)}</td>
+            <td style="color:#6b7280;font-size:0.75rem">${esc(t.description || '')}</td>
+          `;
+        });
+
+        table.appendChild(tbody);
+        container.appendChild(table);
+      })
+      .catch(() => {});
+  }
+
   function renderBioLine(container, row) {
     const parts = [];
 
@@ -1847,6 +2011,7 @@
     renderOvrBadge(content, bioSlug);
     renderSalaryTable(content, bio);
     renderOvrHistory(content, bioSlug);
+    renderTransactionHistory(content, bioSlug);
 
     const editBioBtn = document.createElement('button');
     editBioBtn.className = 'btn-edit-bio';
@@ -2428,6 +2593,7 @@
     content.appendChild(sections);
     renderSalaryTable(content, bio);
     renderOvrHistory(content, slug);
+    renderTransactionHistory(content, slug);
 
     let bySeasonMode = false;
     let showPlayoffs = false;

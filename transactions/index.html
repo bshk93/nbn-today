@@ -157,6 +157,11 @@
       font-family: inherit;
     }
 
+    .salary-row .gtd-input { max-width: 8rem; display: none; }
+    .salary-row .gtd-input.visible { display: block; }
+    .salary-row .gtd-date-input { max-width: 9rem; display: none; }
+    .salary-row .gtd-date-input.visible { display: block; }
+
     .salary-row button {
       background: none;
       border: none;
@@ -467,8 +472,8 @@
   <!-- New transaction form (shown when authenticated) -->
   <div class="form-card" id="form-card" style="display:none">
     <h2>New Transaction</h2>
-    <div class="form-grid">
 
+    <div class="form-grid" style="margin-bottom:0.5rem">
       <div class="form-field">
         <label>Type</label>
         <select id="f-type">
@@ -480,6 +485,9 @@
           <option value="convert_twoway">Convert Two-Way</option>
         </select>
       </div>
+    </div>
+
+    <div class="form-grid" id="form-grid-fields">
 
       <!-- sign-only -->
       <div class="form-field" id="f-date-field">
@@ -835,7 +843,7 @@ function setupTypeSwitch() {
 
     // Show trade builder OR simple form
     document.getElementById('trade-builder').style.display = isTrade ? '' : 'none';
-    document.querySelector('.form-grid').style.display = isTrade ? 'none' : '';
+    document.getElementById('form-grid-fields').style.display = isTrade ? 'none' : '';
 
     if (!isTrade) {
       document.getElementById('f-date-field').style.display          = isPick ? 'none' : '';
@@ -1091,7 +1099,7 @@ function setupSalaryRows() {
   document.getElementById('add-salary-btn').addEventListener('click', () => addSalaryRow());
 }
 
-function addSalaryRow(year, amount, holdType) {
+function addSalaryRow(year, amount, holdType, gtdAmount, gtdDate) {
   const container = document.getElementById('salary-rows');
   const row = document.createElement('div');
   row.className = 'salary-row';
@@ -1101,7 +1109,7 @@ function addSalaryRow(year, amount, holdType) {
   yearIn.value = year || nextSalaryYear(); yearIn.maxLength = 5;
 
   const amountIn = document.createElement('input');
-  amountIn.type = 'text'; amountIn.placeholder = '$0,000,000';
+  amountIn.type = 'text'; amountIn.className = 'amount-input'; amountIn.placeholder = '$0,000,000';
   amountIn.value = amount || '';
 
   const holdSel = document.createElement('select');
@@ -1113,11 +1121,30 @@ function addSalaryRow(year, amount, holdType) {
     holdSel.appendChild(opt);
   });
 
+  const gtdIn = document.createElement('input');
+  gtdIn.type = 'text'; gtdIn.className = 'gtd-input'; gtdIn.placeholder = 'Gtd: $0';
+  gtdIn.value = gtdAmount || '';
+
+  const gtdDateIn = document.createElement('input');
+  gtdDateIn.type = 'date'; gtdDateIn.className = 'gtd-date-input';
+  gtdDateIn.title = 'Fully guaranteed after this date';
+  gtdDateIn.value = gtdDate || '';
+
+  const isNonGtd = (holdType || '') === 'NON_GTD';
+  if (isNonGtd) { gtdIn.classList.add('visible'); gtdDateIn.classList.add('visible'); }
+  holdSel.addEventListener('change', () => {
+    const on = holdSel.value === 'NON_GTD';
+    gtdIn.classList.toggle('visible', on);
+    gtdDateIn.classList.toggle('visible', on);
+    if (!on) { gtdIn.value = ''; gtdDateIn.value = ''; }
+  });
+
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button'; removeBtn.textContent = '×';
   removeBtn.addEventListener('click', () => row.remove());
 
-  row.appendChild(yearIn); row.appendChild(amountIn); row.appendChild(holdSel); row.appendChild(removeBtn);
+  row.appendChild(yearIn); row.appendChild(amountIn); row.appendChild(holdSel);
+  row.appendChild(gtdIn); row.appendChild(gtdDateIn); row.appendChild(removeBtn);
   container.appendChild(row);
 }
 
@@ -1138,14 +1165,22 @@ function nextSalaryYear() {
 function collectSalaries() {
   const salaries = {};
   const cap_holds = {};
+  const guaranteed = {};
+  const guarantee_dates = {};
   document.querySelectorAll('.salary-row').forEach(row => {
-    const yr  = row.querySelector('.year-input').value.trim();
-    const amt = row.querySelectorAll('input')[1].value.trim();
-    const hold = row.querySelector('.hold-select').value;
+    const yr      = row.querySelector('.year-input').value.trim();
+    const amt     = row.querySelector('.amount-input').value.trim();
+    const hold    = row.querySelector('.hold-select').value;
+    const gtd     = row.querySelector('.gtd-input').value.trim();
+    const gtdDate = row.querySelector('.gtd-date-input').value.trim();
     if (yr && amt) salaries[yr] = amt;
     if (yr && hold) cap_holds[yr] = hold;
+    if (yr && hold === 'NON_GTD') {
+      if (gtd)     guaranteed[yr] = gtd;
+      if (gtdDate) guarantee_dates[yr] = gtdDate;
+    }
   });
-  return { salaries, cap_holds };
+  return { salaries, cap_holds, guaranteed, guarantee_dates };
 }
 
 // ── Trade builder ──────────────────────────────────────────────────────────
@@ -1425,7 +1460,7 @@ async function submitTransaction() {
   const type = document.getElementById('f-type').value;
   const playerSlug = document.getElementById('f-player-slug').value.trim();
   const contractType = document.querySelector('input[name="contract-type"]:checked').value;
-  const { salaries, cap_holds } = collectSalaries();
+  const { salaries, cap_holds, guaranteed, guarantee_dates } = collectSalaries();
   let description = type === 'trade'
     ? document.getElementById('f-trade-description').value.trim()
     : document.getElementById('f-description').value.trim();
@@ -1433,7 +1468,10 @@ async function submitTransaction() {
   if (!type) { setStatus('err', 'Select a transaction type.'); return; }
   if (!playerSlug && type !== 'trade') { setStatus('err', 'Select a player from the dropdown.'); return; }
 
-  const contract = { type: contractType, salaries, cap_holds };
+  const contract = { type: contractType, salaries, cap_holds,
+    ...(Object.keys(guaranteed).length      ? { guaranteed }       : {}),
+    ...(Object.keys(guarantee_dates).length ? { guarantee_dates }  : {}),
+  };
   let date, details;
 
   if (type === 'sign') {
