@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBN Trivia — Nothing But Net</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .game-wrap {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .loading-msg {
+      color: #9ca3af;
+      text-align: center;
+      padding: 2.5rem;
+      font-size: 0.9rem;
+    }
+
+    .idle-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+
+    .idle-inner p {
+      color: #9ca3af;
+      max-width: 460px;
+      line-height: 1.6;
+      font-size: 0.9rem;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.6rem 1.5rem;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; }
+    .btn-primary:disabled { opacity: 0.55; cursor: default; }
+    .btn-primary.btn-correct { background: #059669; }
+
+    .btn-secondary {
+      background: #374151;
+      border: none;
+      border-radius: 8px;
+      color: #f3f4f6;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.6rem 1.5rem;
+      transition: background 0.15s;
+    }
+    .btn-secondary:hover { background: #4b5563; }
+
+    .streak-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .streak-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+    }
+    .streak-num {
+      font-size: 1.875rem;
+      font-weight: 800;
+      color: #f59e0b;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: 1.25rem;
+      border-radius: 6px;
+    }
+
+    .stats-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+
+    .stats-table th {
+      padding: 0.45rem 0.65rem;
+      font-weight: 700;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #9ca3af;
+      border-bottom: 1px solid #374151;
+      text-align: right;
+    }
+    .stats-table th:first-child,
+    .stats-table th:nth-child(2) { text-align: left; }
+
+    .stats-table td {
+      padding: 0.35rem 0.65rem;
+      border-bottom: 1px solid #283141;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .stats-table td:first-child,
+    .stats-table td:nth-child(2) { text-align: left; }
+    .stats-table tbody tr:last-child td { border-bottom: none; }
+
+    .col-hidden {
+      color: #374151 !important;
+      background: rgba(0,0,0,0.18);
+    }
+    th.col-hidden { color: #4b5563 !important; }
+
+    .guess-area {
+      display: flex;
+      gap: 0.625rem;
+      align-items: flex-start;
+    }
+
+    .combo-wrap {
+      position: relative;
+      flex: 1;
+    }
+
+    .combo-wrap input {
+      width: 100%;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      color: #f3f4f6;
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.575rem 0.75rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .combo-wrap input:focus { border-color: #3b82f6; }
+    .combo-wrap input.shake {
+      animation: shake 0.3s ease;
+      border-color: #ef4444;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25%       { transform: translateX(-5px); }
+      75%       { transform: translateX(5px); }
+    }
+
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    .dd-item {
+      padding: 0.45rem 0.75rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .dd-item:hover, .dd-item.active { background: #374151; }
+    .dd-item:first-child { border-radius: 8px 8px 0 0; }
+    .dd-item:last-child  { border-radius: 0 0 8px 8px; }
+
+    .gameover-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.875rem;
+      padding: 1.75rem 1rem;
+      text-align: center;
+    }
+    .go-title { font-size: 1.5rem; font-weight: 700; color: #ef4444; }
+    .go-streak { font-size: 1rem; color: #9ca3af; }
+    .go-streak span { font-weight: 700; color: #f59e0b; font-size: 1.5rem; }
+    .go-answer { color: #d1d5db; font-size: 0.9rem; }
+    .go-answer strong { color: #f3f4f6; }
+    .go-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin-top: 0.25rem; }
+    .submit-status { font-size: 0.825rem; min-height: 1.25rem; color: #9ca3af; }
+    .submit-status.ok  { color: #34d399; }
+    .submit-status.err { color: #f87171; }
+
+    .scores-section { margin-top: 0; }
+    .scores-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #f3f4f6;
+    }
+
+    .scores-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .scores-table th {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6b7280;
+      padding: 0.4rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #374151;
+    }
+    .scores-table td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #1a2233;
+    }
+    .scores-table tbody tr:last-child td { border-bottom: none; }
+    .scores-table .rank { color: #6b7280; width: 2.5rem; }
+    .scores-table .score-val { font-weight: 700; color: #f59e0b; font-variant-numeric: tabular-nums; }
+    .scores-table .date-val { color: #6b7280; font-size: 0.8rem; }
+
+    .no-scores { color: #6b7280; font-size: 0.875rem; padding: 0.5rem 0; }
+
+    @media (max-width: 500px) {
+      .guess-area { flex-direction: column; }
+      .guess-area .btn-primary { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Home</a></nav>
+    <header>
+      <h1>NBN Trivia</h1>
+      <p>Guess the player from their season-by-season averages.</p>
+    </header>
+
+    <div class="game-wrap">
+      <div id="loading" class="loading-msg">Loading player data…</div>
+
+      <div id="idle-screen" hidden>
+        <div class="idle-inner">
+          <p>A random player from the league's history is shown — their stats, season by season. Three of eight stat categories are revealed each round. Guess who it is. How long can you streak?</p>
+          <button id="start-btn" class="btn-primary">Start Game</button>
+        </div>
+      </div>
+
+      <div id="play-screen" hidden>
+        <div class="streak-bar">
+          <span class="streak-label">Streak</span>
+          <span id="streak-count" class="streak-num">0</span>
+        </div>
+        <div class="table-scroll">
+          <table class="stats-table" id="stats-table"></table>
+        </div>
+        <div class="guess-area">
+          <div class="combo-wrap" id="combo-wrap">
+            <input type="text" id="guess-input" placeholder="Type a player name…" autocomplete="off" spellcheck="false">
+            <div id="dropdown" class="dropdown" hidden></div>
+          </div>
+          <button id="guess-btn" class="btn-primary">Submit</button>
+        </div>
+      </div>
+
+      <div id="gameover-screen" hidden>
+        <div class="gameover-card">
+          <div class="go-title">Game Over</div>
+          <div class="go-streak">Streak: <span id="go-streak-count">0</span></div>
+          <div class="go-answer">The answer was <strong id="go-answer-name"></strong></div>
+          <div class="go-actions">
+            <button id="submit-score-btn" class="btn-primary">Submit to Leaderboard</button>
+            <button id="play-again-btn" class="btn-secondary">Play Again</button>
+          </div>
+          <div id="submit-status" class="submit-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <section class="scores-section">
+      <h2 class="scores-title">Leaderboard</h2>
+      <div id="scores-container"><p class="no-scores">Loading…</p></div>
+    </section>
+  </div>
+
+  <script>
+    // ── CSV parsing (handles quoted fields) ───────────────────────────────────
+
+    function parseLine(line) {
+      const result = [];
+      let cur = '', inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') inQ = !inQ;
+        else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+        else cur += c;
+      }
+      result.push(cur);
+      return result;
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = parseLine(lines[0]).map(h => h.trim());
+      return lines.slice(1).filter(l => l.trim()).map(line => {
+        const vals = parseLine(line);
+        const row = {};
+        headers.forEach((h, i) => row[h] = (vals[i] || '').trim());
+        return row;
+      });
+    }
+
+    // ── Name formatting: "LAST, FIRST" → "First Last" ─────────────────────────
+
+    function fmtName(raw) {
+      if (!raw) return '';
+      const comma = raw.indexOf(', ');
+      if (comma === -1) return raw;
+      return raw.slice(comma + 2) + ' ' + raw.slice(0, comma);
+    }
+
+    // ── Build player pool ─────────────────────────────────────────────────────
+
+    function buildPool(rows) {
+      const bySlug = new Map();
+      for (const row of rows) {
+        const slug = row.SLUG;
+        if (!slug) continue;
+        if (!bySlug.has(slug)) bySlug.set(slug, { name: row.PLAYER, seasons: new Map() });
+        const player = bySlug.get(slug);
+        const s = row.SEASON;
+        if (!player.seasons.has(s)) {
+          player.seasons.set(s, {
+            teams: [], G: 0, MIN: 0, PTS: 0, REB: 0, AST: 0, STL: 0, BLK: 0,
+            FGM: 0, FGA: 0, p3: 0, p3a: 0, FTM: 0, FTA: 0,
+          });
+        }
+        const agg = player.seasons.get(s);
+        const n = v => parseFloat(v) || 0;
+        agg.teams.push(row.TEAM);
+        agg.G   += n(row.G);   agg.MIN += n(row.MIN); agg.PTS += n(row.PTS);
+        agg.REB += n(row.REB); agg.AST += n(row.AST); agg.STL += n(row.STL);
+        agg.BLK += n(row.BLK); agg.FGM += n(row.FGM); agg.FGA += n(row.FGA);
+        agg.p3  += n(row['3PM']); agg.p3a += n(row['3PA']);
+        agg.FTM += n(row.FTM); agg.FTA += n(row.FTA);
+      }
+
+      const pool = [];
+      for (const [slug, player] of bySlug) {
+        let totalG = 0;
+        for (const agg of player.seasons.values()) totalG += agg.G;
+        if (totalG < 100) continue;
+
+        const seasonRows = Array.from(player.seasons.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([season, agg]) => {
+            const g = Math.max(agg.G, 1);
+            return {
+              season,
+              team: [...new Set(agg.teams)].join('/'),
+              MPG: agg.MIN / g,
+              PPG: agg.PTS / g,
+              RPG: agg.REB / g,
+              APG: agg.AST / g,
+              SPG: agg.STL / g,
+              BPG: agg.BLK / g,
+              'FG%': agg.FGA > 0 ? agg.FGM / agg.FGA : null,
+              '3P%': agg.p3a  > 0 ? agg.p3  / agg.p3a  : null,
+              'FT%': agg.FTA  > 0 ? agg.FTM / agg.FTA  : null,
+            };
+          });
+
+        pool.push({ slug, name: player.name, displayName: fmtName(player.name), seasonRows });
+      }
+      return pool;
+    }
+
+    // ── Stats table ───────────────────────────────────────────────────────────
+
+    const OPT_STATS = ['PPG', 'RPG', 'APG', 'SPG', 'BPG', 'FG%', '3P%', 'FT%'];
+
+    function pickStats() {
+      const sh = [...OPT_STATS].sort(() => Math.random() - 0.5);
+      return new Set(sh.slice(0, 3));
+    }
+
+    function fmtStat(key, val) {
+      if (val === null || val === undefined || Number.isNaN(val)) return '—';
+      if (key.endsWith('%')) return (val * 100).toFixed(1) + '%';
+      return val.toFixed(1);
+    }
+
+    function buildTableHTML(player, visible) {
+      const heads = OPT_STATS.map(k =>
+        `<th class="${visible.has(k) ? '' : 'col-hidden'}">${k}</th>`
+      ).join('');
+
+      const bodyRows = player.seasonRows.map(row => {
+        const cells = OPT_STATS.map(k =>
+          visible.has(k)
+            ? `<td>${fmtStat(k, row[k])}</td>`
+            : `<td class="col-hidden">?</td>`
+        ).join('');
+        return `<tr>
+          <td>${row.season}</td>
+          <td>${row.team}</td>
+          <td>${fmtStat('MPG', row.MPG)}</td>
+          ${cells}
+        </tr>`;
+      }).join('');
+
+      return `<thead><tr>
+          <th>Season</th><th>Team</th><th>MPG</th>${heads}
+        </tr></thead>
+        <tbody>${bodyRows}</tbody>`;
+    }
+
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+
+    const loadingEl       = document.getElementById('loading');
+    const idleScreen      = document.getElementById('idle-screen');
+    const playScreen      = document.getElementById('play-screen');
+    const gameoverScreen  = document.getElementById('gameover-screen');
+    const statsTable      = document.getElementById('stats-table');
+    const streakCountEl   = document.getElementById('streak-count');
+    const guessInput      = document.getElementById('guess-input');
+    const dropdownEl      = document.getElementById('dropdown');
+    const guessBtn        = document.getElementById('guess-btn');
+    const goStreakCountEl = document.getElementById('go-streak-count');
+    const goAnswerNameEl  = document.getElementById('go-answer-name');
+    const submitScoreBtn  = document.getElementById('submit-score-btn');
+    const playAgainBtn    = document.getElementById('play-again-btn');
+    const submitStatusEl  = document.getElementById('submit-status');
+    const scoresContainer = document.getElementById('scores-container');
+
+    // ── State ─────────────────────────────────────────────────────────────────
+
+    let pool = [], allNames = [];
+    let streak = 0, currentPlayer = null, visibleStats = null;
+    let usedSlugs = new Set(), selectedSlug = null;
+
+    // ── Screen management ─────────────────────────────────────────────────────
+
+    function showScreen(name) {
+      loadingEl.hidden      = name !== 'loading';
+      idleScreen.hidden     = name !== 'idle';
+      playScreen.hidden     = name !== 'playing';
+      gameoverScreen.hidden = name !== 'gameover';
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+
+    async function init() {
+      showScreen('loading');
+      try {
+        const text = await fetch('/players/player_seasons.csv').then(r => r.text());
+        pool = buildPool(parseCSV(text));
+        allNames = pool
+          .map(p => ({ displayName: p.displayName, slug: p.slug }))
+          .sort((a, b) => a.displayName.localeCompare(b.displayName));
+        setupDropdown();
+        showScreen('idle');
+      } catch {
+        loadingEl.textContent = 'Failed to load player data. Please refresh.';
+      }
+      loadScores();
+    }
+
+    // ── Game logic ────────────────────────────────────────────────────────────
+
+    function startGame() {
+      streak = 0;
+      usedSlugs.clear();
+      nextQuestion();
+    }
+
+    function nextQuestion() {
+      let avail = pool.filter(p => !usedSlugs.has(p.slug));
+      if (!avail.length) { usedSlugs.clear(); avail = pool; }
+      currentPlayer = avail[Math.floor(Math.random() * avail.length)];
+      usedSlugs.add(currentPlayer.slug);
+      visibleStats = pickStats();
+
+      statsTable.innerHTML = buildTableHTML(currentPlayer, visibleStats);
+      streakCountEl.textContent = streak;
+      guessInput.value = '';
+      guessInput.disabled = false;
+      guessBtn.disabled = false;
+      guessBtn.textContent = 'Submit';
+      guessBtn.classList.remove('btn-correct');
+      selectedSlug = null;
+      dropdownEl.hidden = true;
+      showScreen('playing');
+      guessInput.focus();
+    }
+
+    function handleGuess() {
+      let slug = selectedSlug;
+      if (!slug) {
+        const v = guessInput.value.trim().toLowerCase();
+        const m = allNames.find(n => n.displayName.toLowerCase() === v);
+        if (m) slug = m.slug;
+      }
+      if (!slug) {
+        guessInput.classList.remove('shake');
+        void guessInput.offsetWidth;
+        guessInput.classList.add('shake');
+        return;
+      }
+      if (slug === currentPlayer.slug) {
+        streak++;
+        streakCountEl.textContent = streak;
+        guessBtn.textContent = 'Correct!';
+        guessBtn.classList.add('btn-correct');
+        guessBtn.disabled = true;
+        guessInput.disabled = true;
+        setTimeout(nextQuestion, 900);
+      } else {
+        gameOver();
+      }
+    }
+
+    function gameOver() {
+      goStreakCountEl.textContent = streak;
+      goAnswerNameEl.textContent  = currentPlayer.displayName;
+      submitStatusEl.textContent  = '';
+      submitStatusEl.className    = 'submit-status';
+
+      const token = localStorage.getItem('nbn_token');
+      if (!token || streak === 0) {
+        submitScoreBtn.hidden = true;
+        if (!token && streak > 0) {
+          submitStatusEl.textContent = 'No league token found — only committee members can post to the leaderboard.';
+        }
+      } else {
+        submitScoreBtn.hidden    = false;
+        submitScoreBtn.disabled  = false;
+        submitScoreBtn.textContent = 'Submit to Leaderboard';
+      }
+      showScreen('gameover');
+    }
+
+    async function submitScore() {
+      const token = localStorage.getItem('nbn_token');
+      if (!token) return;
+      submitScoreBtn.disabled   = true;
+      submitScoreBtn.textContent = 'Submitting…';
+      try {
+        const res = await fetch('/api/trivia/scores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ score: streak }),
+        });
+        if (res.ok) {
+          submitScoreBtn.hidden      = true;
+          submitStatusEl.className   = 'submit-status ok';
+          submitStatusEl.textContent = `Score of ${streak} submitted!`;
+          loadScores();
+        } else {
+          submitStatusEl.className   = 'submit-status err';
+          submitStatusEl.textContent = (res.status === 401 || res.status === 403)
+            ? 'Invalid or expired token.' : 'Submit failed — try again.';
+          submitScoreBtn.disabled    = false;
+          submitScoreBtn.textContent = 'Submit to Leaderboard';
+        }
+      } catch {
+        submitStatusEl.className   = 'submit-status err';
+        submitStatusEl.textContent = 'Network error — try again.';
+        submitScoreBtn.disabled    = false;
+        submitScoreBtn.textContent = 'Submit to Leaderboard';
+      }
+    }
+
+    // ── Leaderboard ───────────────────────────────────────────────────────────
+
+    async function loadScores() {
+      try {
+        const data = await fetch('/api/trivia/scores').then(r => r.json());
+        if (!Array.isArray(data) || !data.length) {
+          scoresContainer.innerHTML = '<p class="no-scores">No scores yet — be the first!</p>';
+          return;
+        }
+        const rows = data.map((e, i) => `
+          <tr>
+            <td class="rank">${i + 1}</td>
+            <td>${escHtml(e.name)}</td>
+            <td class="score-val">${e.score}</td>
+            <td class="date-val">${e.date || ''}</td>
+          </tr>`).join('');
+        scoresContainer.innerHTML = `
+          <table class="scores-table">
+            <thead><tr><th>#</th><th>Name</th><th>Streak</th><th>Date</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      } catch {
+        scoresContainer.innerHTML = '<p class="no-scores">Failed to load leaderboard.</p>';
+      }
+    }
+
+    // ── Autocomplete dropdown ─────────────────────────────────────────────────
+
+    function setupDropdown() {
+      let filtered = [], activeIdx = -1;
+
+      guessInput.addEventListener('input', () => {
+        selectedSlug = null;
+        const q = guessInput.value.trim().toLowerCase();
+        if (!q) { dropdownEl.hidden = true; return; }
+        filtered  = allNames.filter(n => n.displayName.toLowerCase().includes(q)).slice(0, 10);
+        activeIdx = -1;
+        renderDD();
+        dropdownEl.hidden = filtered.length === 0;
+      });
+
+      guessInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (!dropdownEl.hidden && activeIdx >= 0) pick(filtered[activeIdx]);
+          else handleGuess();
+          return;
+        }
+        if (dropdownEl.hidden) return;
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          activeIdx = Math.min(activeIdx + 1, filtered.length - 1);
+          renderDD();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          activeIdx = Math.max(activeIdx - 1, -1);
+          renderDD();
+        } else if (e.key === 'Escape') {
+          dropdownEl.hidden = true;
+        }
+      });
+
+      document.addEventListener('click', e => {
+        if (!e.target.closest('#combo-wrap')) dropdownEl.hidden = true;
+      });
+
+      function renderDD() {
+        dropdownEl.innerHTML = filtered.map((item, i) =>
+          `<div class="dd-item${i === activeIdx ? ' active' : ''}" data-i="${i}">${escHtml(item.displayName)}</div>`
+        ).join('');
+        dropdownEl.querySelectorAll('.dd-item').forEach((el, i) => {
+          el.addEventListener('mousedown', ev => { ev.preventDefault(); pick(filtered[i]); });
+        });
+      }
+
+      function pick(item) {
+        guessInput.value = item.displayName;
+        selectedSlug     = item.slug;
+        dropdownEl.hidden = true;
+      }
+    }
+
+    // ── Wire up buttons ───────────────────────────────────────────────────────
+
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    guessBtn.addEventListener('click', handleGuess);
+    submitScoreBtn.addEventListener('click', submitScore);
+    playAgainBtn.addEventListener('click', startGame);
+
+    init();
+  </script>
+  <script src="/nav.js"></script>
+</body>
+</html>

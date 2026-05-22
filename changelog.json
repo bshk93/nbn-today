@@ -1,5 +1,31 @@
 [
   {
+    "version": "0.0.24",
+    "date": "2026-05-22",
+    "changes": [
+      "Add NBN Trivia game (/trivia): guess the player from their season-by-season averages; player pool is anyone with 100+ career games; three of eight stat categories revealed per round; streak-based scoring; leaderboard stored server-side via GET/POST /api/trivia/scores (best score per person, auth required to submit)"
+    ]
+  },
+  {
+    "version": "pending",
+    "date": "2026-05-22",
+    "changes": [
+      "Clarify Roster OVRs average label to show it's top-6 average",
+      "Rename /compare to /frivolities to match nav label; old URL redirects",
+      "Add Traded Away picks section to team draft picks page",
+      "Dead cap add form: replace slug input with player name autocomplete",
+      "Add Transaction History table to player profiles; API supports filtering by player slug (including trade participants)",
+      "Fix: transactions form now supports guaranteed amounts and guarantee dates on NON_GTD years, matching bio edit form; ContractIn model updated to carry these fields through to player bio",
+      "Add Awards page (/awards/) listing seasons; unrevealed seasons show ballot-pending message; admin can toggle reveal per season from homepage League Office section",
+      "Redesign awards results pages: major awards (MVP, DPOY, ROTY, 6MOY, MIP, FOTY, COTY) show gold/silver/bronze podium top-3 above vote breakdown table; All-NBN rows colored gold (1-5), silver (6-10), bronze (11-15); All-Defense and All-Rookie rows colored gold (1-5), silver (6-10)",
+      "Add 'bod' role: inherits all rosters permissions; bod members can preview unrevealed award seasons that show a locked message to other members",
+      "Update Roles & Permissions page with BOD role card and badge styling",
+      "Move 24-25 awards ballot data from Google Sheets to on-disk JSON (awards-ballots-24-25.json); ballot entries stored as player slugs and team abbreviations (not display names); add GET/PUT /api/awards-ballots/{season} endpoints with reveal-gated auth; 24-25 awards page fetches player bios to resolve slugs to display names at render time; add ballot tracker at bottom of awards page showing which teams submitted",
+      "Move 25-26 awards ballot data to on-disk JSON (awards-ballots-25-26.json); add PUT /api/awards-ballots/{season}/{team} for per-team ballot editing (ongoing voting); 25-26 awards page polls every 60s and shows ballot tracker; placeholder entries (PERIM, SWISHY) cleaned to null",
+      "Add awards ballot vote pages at /awards/{season}/vote/: shows team's current ballot (identified by token), drag-to-reorder picks, player/team autocomplete search, auto-saves on change; read-only if season is revealed; add GET /api/awards-ballots/{season}/{team} endpoint (team-role gated for unrevealed seasons); PUT /api/awards-ballots/{season}/{team} now accepts team-role tokens in addition to rosters; move results pages to /awards/{season}/results/ with old URLs redirecting; awards index links team members to vote page for open seasons"
+    ]
+  },
+  {
     "version": "0.0.23",
     "date": "2026-05-22",
     "changes": [

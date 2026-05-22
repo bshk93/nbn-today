@@ -161,6 +161,10 @@
       <div class="card-header"><span class="card-icon">⭐</span><span class="card-title">Hall of Fame</span></div>
     </a>
 
+    <a class="card" href="/awards/">
+      <div class="card-header"><span class="card-icon">🏆</span><span class="card-title">Awards</span></div>
+    </a>
+
     <a class="card" href="/tradeblock/">
       <div class="card-header"><span class="card-icon">🤝</span><span class="card-title">Tradeblock</span></div>
     </a>
@@ -203,7 +207,7 @@
       <div class="card-header"><span class="card-icon">⚔️</span><span class="card-title">Head to Head</span></div>
     </a>
 
-    <a class="card" href="/compare">
+    <a class="card" href="/frivolities">
       <div class="card-header"><span class="card-icon">📈</span><span class="card-title">Frivolities &amp; Viz</span></div>
     </a>
 
@@ -212,6 +216,10 @@
     </a>
 
     <span class="section-label">Miscellaneous</span>
+
+    <a class="card" href="/trivia">
+      <div class="card-header"><span class="card-icon">🧠</span><span class="card-title">Trivia</span></div>
+    </a>
 
     <a class="card" href="/nbntv-classics">
       <div class="card-header"><span class="card-icon">📺</span><span class="card-title">NBNTV Classics</span></div>
@@ -265,6 +273,11 @@
     <a class="card" id="lo-how-to-rosters" href="/how-to-rosters/" style="display:none">
       <div class="card-header"><span class="card-icon">📖</span><span class="card-title">How to Rosters</span></div>
     </a>
+
+    <div class="card" id="lo-reveal-awards" style="display:none;cursor:pointer">
+      <div class="card-header"><span class="card-icon">🏆</span><span class="card-title">Reveal Season Awards</span></div>
+    </div>
+    <div id="lo-reveal-awards-form" style="display:none;grid-column:1/-1;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
   </main>
 
   <footer>
@@ -302,11 +315,57 @@
       fetch('/api/me', { headers: { 'Authorization': `Bearer ${_loToken}` } })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
-          if (data?.roles?.some(r => r === 'rosters' || r === 'admin')) {
+          if (!data) return;
+          const isRosters = data.roles?.some(r => r === 'rosters' || r === 'admin');
+          const isAdmin   = data.roles?.includes('admin');
+          if (isRosters) {
             document.getElementById('lo-label').style.display = '';
             document.getElementById('lo-league-settings').style.display = '';
             document.getElementById('lo-rookie-scale').style.display = '';
             document.getElementById('lo-how-to-rosters').style.display = '';
+          }
+          if (isAdmin) {
+            const card = document.getElementById('lo-reveal-awards');
+            const form = document.getElementById('lo-reveal-awards-form');
+            card.style.display = '';
+            const SEASONS = ['25-26', '24-25'];
+            const LABELS  = { '25-26': '2025–26', '24-25': '2024–25' };
+            let cfg = {};
+            fetch('/api/awards-config').then(r => r.json()).then(c => { cfg = c; }).catch(() => {});
+            card.addEventListener('click', () => {
+              if (form.style.display !== 'none') { form.style.display = 'none'; return; }
+              form.innerHTML = '<div style="color:#9ca3af;margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Reveal Season Awards</div>';
+              SEASONS.forEach(s => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid #374151';
+                const label = document.createElement('span');
+                label.textContent = LABELS[s] || s;
+                label.style.color = '#d1d5db';
+                const revealed = !!(cfg[s]?.revealed);
+                const toggle = document.createElement('button');
+                toggle.textContent = revealed ? 'Revealed ✓' : 'Hidden';
+                toggle.style.cssText = `background:${revealed ? '#064e3b' : '#374151'};color:${revealed ? '#34d399' : '#9ca3af'};border:none;border-radius:5px;padding:0.2rem 0.65rem;font-size:0.78rem;cursor:pointer;font-family:inherit`;
+                toggle.addEventListener('click', async () => {
+                  const next = !cfg[s]?.revealed;
+                  const res = await fetch(`/api/awards-config/${s}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${_loToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ revealed: next }),
+                  });
+                  if (res.ok) {
+                    if (!cfg[s]) cfg[s] = {};
+                    cfg[s].revealed = next;
+                    toggle.textContent = next ? 'Revealed ✓' : 'Hidden';
+                    toggle.style.background = next ? '#064e3b' : '#374151';
+                    toggle.style.color = next ? '#34d399' : '#9ca3af';
+                  }
+                });
+                row.appendChild(label);
+                row.appendChild(toggle);
+                form.appendChild(row);
+              });
+              form.style.display = '';
+            });
           }
         })
         .catch(() => {});
