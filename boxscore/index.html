@@ -296,6 +296,12 @@
       </div>
     </div>
 
+    <!-- Build status -->
+    <div id="build-banner" style="display:none;background:#1f2937;border:1px solid #374151;border-radius:12px;padding:1rem 1.5rem;margin-bottom:1.5rem;font-size:0.85rem;display:flex;align-items:center;gap:0.75rem;">
+      <span id="build-icon">⏳</span>
+      <span id="build-msg">Rebuilding site stats…</span>
+    </div>
+
     <!-- Pending games -->
     <div class="card" id="pending-card">
       <h2>Pending Games</h2>
@@ -410,7 +416,7 @@
       const url = URL.createObjectURL(file);
       preview.src = url;
       preview.style.display = "block";
-      checkParseReady();
+      checkUploadReady();
     }
 
     setupZone("home-zone", "home-file", "home-filename", "home-preview");
@@ -499,6 +505,56 @@
     }
 
     loadPending();
+
+    // Build status banner
+    let buildPollInterval = null;
+
+    async function checkBuildStatus() {
+      if (!token) return;
+      try {
+        const res = await fetch("/api/build/status", {
+          headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const banner = document.getElementById("build-banner");
+        const icon = document.getElementById("build-icon");
+        const msg = document.getElementById("build-msg");
+
+        if (data.status === "running") {
+          banner.style.display = "flex";
+          icon.textContent = "⏳";
+          msg.style.color = "#9ca3af";
+          msg.textContent = "Rebuilding site stats…";
+          if (!buildPollInterval) buildPollInterval = setInterval(checkBuildStatus, 4000);
+        } else if (data.status === "done") {
+          banner.style.display = "flex";
+          icon.textContent = "✓";
+          msg.style.color = "#34d399";
+          msg.textContent = `Site stats updated (finished ${new Date(data.finished_at).toLocaleTimeString()})`;
+          stopBuildPoll();
+        } else if (data.status === "error") {
+          banner.style.display = "flex";
+          icon.textContent = "✗";
+          msg.style.color = "#f87171";
+          msg.textContent = `Build failed: ${data.error || "unknown error"}`;
+          stopBuildPoll();
+        } else {
+          banner.style.display = "none";
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    function startBuildPoll() {
+      checkBuildStatus();
+      buildPollInterval = setInterval(checkBuildStatus, 4000);
+    }
+
+    function stopBuildPoll() {
+      if (buildPollInterval) { clearInterval(buildPollInterval); buildPollInterval = null; }
+    }
+
+    checkBuildStatus();
   </script>
 </body>
 </html>
