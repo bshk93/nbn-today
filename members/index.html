@@ -288,6 +288,26 @@
   </div>
 </div>
 
+<!-- Edit roles modal -->
+<div class="modal-backdrop" id="roles-backdrop">
+  <div class="modal" style="max-width:520px">
+    <h3 id="roles-modal-title">Edit Roles</h3>
+    <div>
+      <div class="modal-label">Roles</div>
+      <div class="roles-check-group" id="roles-named"></div>
+    </div>
+    <div>
+      <div class="modal-label" style="margin-bottom:0.5rem">Team Access</div>
+      <div class="roles-check-group teams-group" id="roles-teams"></div>
+    </div>
+    <div id="roles-error" style="display:none" class="error-box"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="roles-cancel">Cancel</button>
+      <button class="btn-save" id="roles-save">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Tenure edit modal -->
 <div class="modal-backdrop" id="tenure-backdrop">
   <div class="modal" style="max-width:660px">
@@ -454,6 +474,11 @@ function renderTable() {
         div.appendChild(btn);
       }
       if (isAdmin) {
+        const rolesBtn = document.createElement('button');
+        rolesBtn.className = 'btn-sm'; rolesBtn.textContent = 'Roles';
+        rolesBtn.addEventListener('click', () => openRolesModal(m.name, m.roles));
+        div.appendChild(rolesBtn);
+
         const rotBtn = document.createElement('button');
         rotBtn.className = 'btn-sm rotate'; rotBtn.textContent = 'Rotate';
         rotBtn.addEventListener('click', () => doRotateToken(m.name));
@@ -657,7 +682,66 @@ async function doDeleteMember(name) {
   } catch (err) { alert('Error: ' + err.message); }
 }
 
-// ── Tenure modal ──────────────────────────────────────────────────────────────
+// ── Roles modal ───────────────────────────────────────────────────────────────
+
+let rolesModalName = '';
+
+function buildRolesCheckboxes(currentRoles) {
+  const namedEl = document.getElementById('roles-named');
+  const teamsEl = document.getElementById('roles-teams');
+  namedEl.innerHTML = ''; teamsEl.innerHTML = '';
+  NAMED_ROLES.forEach(r => {
+    const lbl = makeCheckbox(r);
+    lbl.querySelector('input').checked = currentRoles.includes(r);
+    namedEl.appendChild(lbl);
+  });
+  TEAM_ABBRS.forEach(r => {
+    const lbl = makeCheckbox(r.toLowerCase());
+    lbl.querySelector('input').checked = currentRoles.includes(r.toLowerCase());
+    teamsEl.appendChild(lbl);
+  });
+}
+
+function openRolesModal(name, roles) {
+  rolesModalName = name;
+  document.getElementById('roles-modal-title').textContent = `Edit Roles — ${name}`;
+  document.getElementById('roles-error').style.display = 'none';
+  document.getElementById('roles-save').disabled = false;
+  document.getElementById('roles-save').textContent = 'Save';
+  buildRolesCheckboxes(roles || []);
+  document.getElementById('roles-backdrop').classList.add('open');
+}
+
+document.getElementById('roles-cancel').addEventListener('click', () =>
+  document.getElementById('roles-backdrop').classList.remove('open'));
+document.getElementById('roles-backdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('roles-backdrop'))
+    document.getElementById('roles-backdrop').classList.remove('open');
+});
+
+document.getElementById('roles-save').addEventListener('click', async () => {
+  const roles = [...document.querySelectorAll('#roles-backdrop input[type=checkbox]:checked')].map(c => c.value);
+  const btn = document.getElementById('roles-save');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  document.getElementById('roles-error').style.display = 'none';
+  try {
+    const res = await fetch(`/api/members/${encodeURIComponent(rolesModalName)}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roles }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    const r2 = await fetch('/api/members', { headers: { Authorization: `Bearer ${currentToken}` } });
+    if (r2.ok) { allMembers = await r2.json(); renderTable(); }
+    document.getElementById('roles-backdrop').classList.remove('open');
+  } catch (err) {
+    const el = document.getElementById('roles-error');
+    el.textContent = 'Error: ' + err.message; el.style.display = '';
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+});
+
+// ── Tenure modal ───────────────────────────────────────────────────────────────
 
 let tenureModalName = '';
 let workingTenures  = [];
