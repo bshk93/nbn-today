@@ -609,7 +609,7 @@ function renderExceptionsSection(teamState, capLevels, teamSalary, season) {
   if (!cl?.ntmle_amount && !cl?.bae_amount) { section.style.display = 'none'; return; }
 
   const mleType = computeMleType(teamSalary, capLevels, season, teamState);
-  const mleTotal = mleType === 'tmle' ? (cl.tmle_amount || 0) : (cl.ntmle_amount || 0);
+  const mleTotal = mleType === 'tmle' ? (cl.tmle_amount || 0) : mleType === 'room' ? (cl.room_amount || 0) : (cl.ntmle_amount || 0);
   const mleUsed = teamState?.mle_used || 0;
   const mleRemaining = Math.max(0, mleTotal - mleUsed);
   const baeUsed = teamState?.bae_used;
