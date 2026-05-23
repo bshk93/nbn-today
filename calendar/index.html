@@ -58,7 +58,6 @@
   </div>
 
   <script>
-    const SEASON = "25-26";
     const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -69,7 +68,7 @@
 
     async function init() {
       try {
-        const games = await fetch(`/api/boxscores/games?season=${SEASON}`).then(r => r.json());
+        const games = await fetch(`/api/boxscores/games`).then(r => r.json());
         if (!games.length) {
           document.getElementById("content").innerHTML = '<span class="loading">No games available.</span>';
           return;
