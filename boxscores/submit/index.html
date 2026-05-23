@@ -7,51 +7,73 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem; }
-    .page { max-width: 960px; margin: 0 auto; }
+    .page { max-width: 1000px; margin: 0 auto; }
     .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
     .nav a { color: #9ca3af; text-decoration: none; }
     .nav a:hover { color: #f3f4f6; }
     header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.75rem; gap: 1rem; flex-wrap: wrap; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
 
-    .layout { display: grid; grid-template-columns: 280px 1fr; gap: 1.25rem; align-items: start; }
-    @media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+    .layout { display: grid; grid-template-columns: 300px 1fr; gap: 1.25rem; align-items: start; }
+    @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } }
+
+    /* Shared panel */
+    .panel { background: #1f2937; border: 1px solid #374151; border-radius: 10px; overflow: hidden; }
+    .panel-header { padding: 0.7rem 1rem; border-bottom: 1px solid #374151; display: flex; align-items: center; justify-content: space-between; }
+    .panel-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; }
+
+    /* Upload form */
+    .form-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+    .field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .field label { font-size: 0.72rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.04em; }
+    .field input, .field select { background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.85rem; font-family: inherit; width: 100%; }
+    .field input:focus, .field select:focus { outline: none; border-color: #3b82f6; }
+    .field select option { background: #1f2937; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .field-file { display: flex; flex-direction: column; gap: 0.3rem; }
+    .file-label { font-size: 0.72rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.04em; }
+    .file-drop { border: 1px dashed #374151; border-radius: 6px; padding: 0.6rem; text-align: center; cursor: pointer; font-size: 0.78rem; color: #6b7280; background: #111827; transition: border-color 0.15s; position: relative; }
+    .file-drop:hover, .file-drop.dragover { border-color: #3b82f6; color: #9ca3af; }
+    .file-drop.has-file { border-color: #374151; color: #34d399; }
+    .file-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+    .playoff-fields { display: none; }
+    .playoff-fields.show { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .submit-row { display: flex; gap: 0.6rem; align-items: center; }
+    .btn-submit { background: #1d4ed8; border: none; color: #fff; border-radius: 6px; padding: 0.5rem 1.1rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; flex: 1; }
+    .btn-submit:hover:not(:disabled) { background: #2563eb; }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .upload-status { font-size: 0.78rem; color: #6b7280; }
+    .upload-status.ok { color: #34d399; }
+    .upload-status.err { color: #f87171; }
 
     /* Pending queue */
-    .queue-panel { background: #1f2937; border: 1px solid #374151; border-radius: 10px; overflow: hidden; }
-    .queue-header { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid #374151; }
-    .queue-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; }
-    .queue-count { font-size: 0.75rem; color: #9ca3af; }
-    .queue-empty { padding: 1.25rem 1rem; font-size: 0.85rem; color: #4b5563; }
-    .queue-item { padding: 0.7rem 1rem; border-bottom: 1px solid #1a2332; }
+    .queue-empty { padding: 1rem; font-size: 0.85rem; color: #4b5563; }
+    .queue-item { padding: 0.65rem 1rem; border-bottom: 1px solid #1a2332; }
     .queue-item:last-child { border-bottom: none; }
     .qi-matchup { font-size: 0.875rem; font-weight: 600; }
-    .qi-meta { font-size: 0.72rem; color: #6b7280; margin-top: 0.2rem; }
+    .qi-meta { font-size: 0.72rem; color: #6b7280; margin-top: 0.15rem; }
+    .queue-count { font-size: 0.75rem; color: #9ca3af; }
 
+    /* Parse button */
     .parse-btn { background: #1d4ed8; border: none; color: #fff; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
     .parse-btn:hover { background: #2563eb; }
     .parse-btn.active { background: #dc2626; }
     .parse-btn.active:hover { background: #ef4444; }
 
     /* Terminal */
-    .term-panel { border: 1px solid #374151; border-radius: 10px; overflow: hidden; background: #000; display: none; }
+    .term-panel { border: 1px solid #374151; border-radius: 10px; overflow: hidden; background: #000; display: none; margin-top: 1.25rem; }
     .term-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: #1f2937; border-bottom: 1px solid #374151; font-size: 0.75rem; color: #9ca3af; }
     .term-header span:first-child { font-weight: 600; color: #f3f4f6; }
     #terminal-el { padding: 0.5rem; }
 
     .no-token { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 1.5rem; font-size: 0.875rem; color: #6b7280; }
-    .loading { color: #6b7280; font-size: 0.875rem; }
   </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
 </head>
 <body>
   <div class="page">
     <nav class="nav"><a href="/boxscores/">← Box Scores</a></nav>
-    <header>
-      <h1>Submit Box Scores</h1>
-      <button class="parse-btn" id="parse-btn" style="display:none">Parse with Claude</button>
-    </header>
-
+    <header><h1>Submit Box Scores</h1></header>
     <div id="root"></div>
   </div>
 
@@ -59,31 +81,201 @@
   <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
   <script>
     const token = localStorage.getItem("nbn_token");
-    const root = document.getElementById("root");
-    const parseBtn = document.getElementById("parse-btn");
+    const root  = document.getElementById("root");
 
     if (!token) {
       root.innerHTML = '<div class="no-token">No admin token found. Save your token via the Edit button on any team page first.</div>';
     } else {
-      root.innerHTML = `
-        <div class="layout">
-          <div class="queue-panel" id="queue-panel">
-            <div class="queue-header">
-              <span class="queue-title">Pending</span>
-              <span class="queue-count" id="queue-count"></span>
-            </div>
-            <div id="queue-body"><span class="loading" style="display:block;padding:1rem">Loading…</span></div>
-          </div>
-          <div class="term-panel" id="term-panel">
-            <div class="term-header"><span>Claude — parse-boxscores</span><span id="term-status">connecting…</span></div>
-            <div id="terminal-el"></div>
-          </div>
-        </div>`;
-      parseBtn.style.display = "inline-block";
-      loadQueue();
+      boot();
     }
 
-    let term = null, fitAddon = null, ws = null;
+    const TEAMS = ["ATL","BKN","BOS","CHA","CHI","CLE","DAL","DEN","DET","GSW","HOU","IND","LAC","LAL","MEM","MIA","MIL","MIN","NOP","NYK","OKC","ORL","PHI","PHX","POR","SAC","SAS","TOR","UTA","WAS"];
+
+    function teamOptions(selected) {
+      return TEAMS.map(t => `<option value="${t}" ${t === selected ? "selected" : ""}>${t}</option>`).join("");
+    }
+
+    function boot() {
+      const today = new Date().toISOString().slice(0, 10);
+
+      root.innerHTML = `
+        <div class="layout">
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+            <!-- Upload form -->
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title">Upload Game</span></div>
+              <div class="form-body">
+                <div class="row2">
+                  <div class="field">
+                    <label>Away</label>
+                    <select id="f-away">${teamOptions("GSW")}</select>
+                  </div>
+                  <div class="field">
+                    <label>Home</label>
+                    <select id="f-home">${teamOptions("LAL")}</select>
+                  </div>
+                </div>
+                <div class="row2">
+                  <div class="field">
+                    <label>Date</label>
+                    <input type="date" id="f-date" value="${today}">
+                  </div>
+                  <div class="field">
+                    <label>Season</label>
+                    <input type="text" id="f-season" value="25-26" placeholder="25-26">
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Game Type</label>
+                  <select id="f-gametype">
+                    <option value="REG">Regular Season</option>
+                    <option value="PLAYOFF">Playoffs</option>
+                  </select>
+                </div>
+                <div class="playoff-fields" id="playoff-fields">
+                  <div class="field">
+                    <label>Round #</label>
+                    <input type="number" id="f-round" min="1" max="4" placeholder="1">
+                  </div>
+                  <div class="field">
+                    <label>Game #</label>
+                    <input type="number" id="f-gamenum" min="1" max="7" placeholder="1">
+                  </div>
+                </div>
+                <div class="row2">
+                  <div class="field-file">
+                    <span class="file-label">Away Screenshot</span>
+                    <div class="file-drop" id="drop-away">
+                      <span id="drop-away-label">click or drop</span>
+                      <input type="file" id="f-away-img" accept="image/*">
+                    </div>
+                  </div>
+                  <div class="field-file">
+                    <span class="file-label">Home Screenshot</span>
+                    <div class="file-drop" id="drop-home">
+                      <span id="drop-home-label">click or drop</span>
+                      <input type="file" id="f-home-img" accept="image/*">
+                    </div>
+                  </div>
+                </div>
+                <div class="submit-row">
+                  <button class="btn-submit" id="btn-upload">Upload</button>
+                  <span class="upload-status" id="upload-status"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pending queue -->
+            <div class="panel" id="queue-panel">
+              <div class="panel-header">
+                <span class="panel-title">Pending</span>
+                <span class="queue-count" id="queue-count"></span>
+              </div>
+              <div id="queue-body"><span class="queue-empty">Loading…</span></div>
+            </div>
+
+          </div>
+
+          <!-- Right: parse button + terminal -->
+          <div>
+            <button class="parse-btn" id="parse-btn">Parse with Claude</button>
+            <div class="term-panel" id="term-panel">
+              <div class="term-header">
+                <span>Claude — parse-boxscores</span>
+                <span id="term-status">connecting…</span>
+              </div>
+              <div id="terminal-el"></div>
+            </div>
+          </div>
+        </div>`;
+
+      // Playoff fields toggle
+      document.getElementById("f-gametype").onchange = e => {
+        document.getElementById("playoff-fields").classList.toggle("show", e.target.value === "PLAYOFF");
+      };
+
+      // File drop labels
+      setupFileDrop("f-away-img", "drop-away", "drop-away-label");
+      setupFileDrop("f-home-img", "drop-home", "drop-home-label");
+
+      document.getElementById("btn-upload").onclick = uploadGame;
+
+      loadQueue();
+      initTerminal();
+    }
+
+    function setupFileDrop(inputId, dropId, labelId) {
+      const input = document.getElementById(inputId);
+      const drop  = document.getElementById(dropId);
+      const lbl   = document.getElementById(labelId);
+      const update = () => {
+        if (input.files[0]) { lbl.textContent = input.files[0].name; drop.classList.add("has-file"); }
+        else { lbl.textContent = "click or drop"; drop.classList.remove("has-file"); }
+      };
+      input.onchange = update;
+      drop.ondragover = e => { e.preventDefault(); drop.classList.add("dragover"); };
+      drop.ondragleave = () => drop.classList.remove("dragover");
+      drop.ondrop = e => {
+        e.preventDefault();
+        drop.classList.remove("dragover");
+        if (e.dataTransfer.files[0]) {
+          const dt = new DataTransfer();
+          dt.items.add(e.dataTransfer.files[0]);
+          input.files = dt.files;
+          update();
+        }
+      };
+    }
+
+    async function uploadGame() {
+      const statusEl = document.getElementById("upload-status");
+      const btn = document.getElementById("btn-upload");
+      const awayImg = document.getElementById("f-away-img").files[0];
+      const homeImg = document.getElementById("f-home-img").files[0];
+      if (!awayImg || !homeImg) { statusEl.textContent = "Select both screenshots."; statusEl.className = "upload-status err"; return; }
+
+      const fd = new FormData();
+      fd.append("away_image", awayImg);
+      fd.append("home_image", homeImg);
+      fd.append("away_team", document.getElementById("f-away").value);
+      fd.append("home_team", document.getElementById("f-home").value);
+      fd.append("date", document.getElementById("f-date").value);
+      fd.append("season", document.getElementById("f-season").value);
+      fd.append("game_type", document.getElementById("f-gametype").value);
+      const roundVal = document.getElementById("f-round").value;
+      const gameVal  = document.getElementById("f-gamenum").value;
+      if (roundVal) fd.append("round_num", roundVal);
+      if (gameVal)  fd.append("game_num", gameVal);
+
+      btn.disabled = true;
+      statusEl.textContent = "Uploading…";
+      statusEl.className = "upload-status";
+
+      try {
+        const r = await fetch("/api/boxscore/upload", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
+        const j = await r.json();
+        if (j.ok) {
+          statusEl.textContent = `Uploaded (id: ${j.id})`;
+          statusEl.className = "upload-status ok";
+          document.getElementById("f-away-img").value = "";
+          document.getElementById("f-home-img").value = "";
+          document.getElementById("drop-away-label").textContent = "click or drop";
+          document.getElementById("drop-home-label").textContent = "click or drop";
+          document.getElementById("drop-away").classList.remove("has-file");
+          document.getElementById("drop-home").classList.remove("has-file");
+          loadQueue();
+        } else {
+          statusEl.textContent = j.detail || "Upload failed.";
+          statusEl.className = "upload-status err";
+        }
+      } catch(e) {
+        statusEl.textContent = e.message;
+        statusEl.className = "upload-status err";
+      }
+      btn.disabled = false;
+    }
+
     let pending = [];
 
     async function loadQueue() {
@@ -91,61 +283,55 @@
         const r = await fetch("/api/boxscore/pending", { headers: { Authorization: `Bearer ${token}` } });
         pending = await r.json();
         renderQueue();
-      } catch(e) {
-        document.getElementById("queue-body").innerHTML = `<div class="queue-empty">Error loading queue.</div>`;
-      }
+      } catch { document.getElementById("queue-body").innerHTML = '<div class="queue-empty">Error loading queue.</div>'; }
     }
 
     function renderQueue() {
-      const countEl = document.getElementById("queue-count");
-      const bodyEl = document.getElementById("queue-body");
-      countEl.textContent = pending.length ? `${pending.length} game${pending.length === 1 ? "" : "s"}` : "";
-      if (!pending.length) {
-        bodyEl.innerHTML = '<div class="queue-empty">No pending games.</div>';
-        return;
-      }
-      bodyEl.innerHTML = "";
+      document.getElementById("queue-count").textContent = pending.length ? `${pending.length} game${pending.length === 1 ? "" : "s"}` : "";
+      const body = document.getElementById("queue-body");
+      if (!pending.length) { body.innerHTML = '<div class="queue-empty">No pending games.</div>'; return; }
+      body.innerHTML = "";
       pending.forEach(item => {
         const div = document.createElement("div");
         div.className = "queue-item";
-        div.innerHTML = `
-          <div class="qi-matchup">${item.away_team} @ ${item.home_team}</div>
+        div.innerHTML = `<div class="qi-matchup">${item.away_team} @ ${item.home_team}</div>
           <div class="qi-meta">${item.date} · ${item.season} · ${item.game_type}</div>`;
-        bodyEl.appendChild(div);
+        body.appendChild(div);
       });
     }
+
+    let term = null, fitAddon = null, ws = null;
 
     function initTerminal() {
       term = new Terminal({ theme: { background: "#000000" }, fontSize: 13, fontFamily: "monospace", convertEol: true });
       fitAddon = new FitAddon.FitAddon();
       term.loadAddon(fitAddon);
       term.open(document.getElementById("terminal-el"));
-      fitAddon.fit();
       window.addEventListener("resize", () => fitAddon && fitAddon.fit());
       term.onData(data => ws && ws.readyState === WebSocket.OPEN && ws.send(new TextEncoder().encode(data)));
       term.onResize(({ cols, rows }) => ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: "resize", cols, rows })));
+
+      document.getElementById("parse-btn").onclick = () => ws ? stopSession() : startSession();
     }
 
-    async function startSession() {
+    function startSession() {
       if (!pending.length) { alert("No pending games in the queue."); return; }
-
-      parseBtn.textContent = "Stop";
-      parseBtn.classList.add("active");
+      const btn = document.getElementById("parse-btn");
+      btn.textContent = "Stop";
+      btn.classList.add("active");
       document.getElementById("term-panel").style.display = "block";
       document.getElementById("term-status").textContent = "connecting…";
-
-      if (!term) initTerminal();
-      else term.clear();
+      term.clear();
+      fitAddon.fit();
 
       ws = new WebSocket(`wss://nbn.today/api/ws/claude?token=${encodeURIComponent(token)}`);
       ws.binaryType = "arraybuffer";
-
       ws.onopen = () => { document.getElementById("term-status").textContent = "connected"; fitAddon.fit(); };
       ws.onmessage = e => term.write(new Uint8Array(e.data));
       ws.onclose = () => {
         document.getElementById("term-status").textContent = "session ended";
-        parseBtn.textContent = "Parse with Claude";
-        parseBtn.classList.remove("active");
+        btn.textContent = "Parse with Claude";
+        btn.classList.remove("active");
         ws = null;
         loadQueue();
       };
@@ -155,8 +341,6 @@
     function stopSession() {
       if (ws) { ws.close(); ws = null; }
     }
-
-    parseBtn.onclick = () => ws ? stopSession() : startSession();
   </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
