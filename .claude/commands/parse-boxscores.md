@@ -39,6 +39,10 @@ Use the Read tool to view both images:
 
 #### 3d. Parse each screenshot
 
+2K box score column order (left to right): MIN, PTS, REB, AST, STL, BLK, TO, FGM/FGA, 3PM/3PA, FTM/FTA, OREB, PF
+
+DREB is not shown — derive it as REB − OREB.
+
 For the **home team** screenshot, extract all players who played (skip DNP). For each player:
 - Match the name to the closest player in the home team's roster context
 - Convert minutes MM:SS → integer (round down)
@@ -47,6 +51,16 @@ For the **home team** screenshot, extract all players who played (skip DNP). For
 - If the screenshot shows team totals, extract the team score too
 
 Repeat for the **away team** screenshot.
+
+#### 3d-sanity. Sanity checks
+
+Run these checks on every row before presenting results:
+
+1. **Points formula**: PTS = (FGM − 3PM) × 2 + 3PM × 3 + FTM
+2. **Bounds**: 3PM ≤ FGM, FTM ≤ FTA, OREB ≤ REB
+3. **Team total**: sum of all player PTS = team score from the screenshot
+
+Flag any row that fails with [?].
 
 #### 3e. Present results for review
 
