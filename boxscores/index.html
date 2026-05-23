@@ -106,7 +106,8 @@
         const r = await fetch(`/api/boxscores/dates?season=${SEASON}`);
         allDates = await r.json();
         if (!allDates.length) { setContent('<span class="loading">No games available.</span>'); return; }
-        cur = allDates[0];
+        const param = new URLSearchParams(location.search).get("date");
+        cur = (param && allDates.includes(param)) ? param : allDates[0];
         dateInput.value = cur;
         updateNav();
         load(cur);
