@@ -579,7 +579,8 @@ function fmtDollars(v) {
   return v ? '$' + Math.round(v).toLocaleString('en-US') : '$0';
 }
 
-function computeMleType(teamSalary, capLevels, season) {
+function computeMleType(teamSalary, capLevels, season, teamState) {
+  if (teamState?.mle_type) return teamState.mle_type;
   const cl = capLevels?.[season];
   if (!cl?.ntmle_amount) return null;
   if (cl.cap - teamSalary > cl.ntmle_amount) return 'room';
@@ -607,7 +608,7 @@ function renderExceptionsSection(teamState, capLevels, teamSalary, season) {
   const cl = capLevels?.[season];
   if (!cl?.ntmle_amount && !cl?.bae_amount) { section.style.display = 'none'; return; }
 
-  const mleType = computeMleType(teamSalary, capLevels, season);
+  const mleType = computeMleType(teamSalary, capLevels, season, teamState);
   const mleTotal = mleType === 'tmle' ? (cl.tmle_amount || 0) : (cl.ntmle_amount || 0);
   const mleUsed = teamState?.mle_used || 0;
   const mleRemaining = Math.max(0, mleTotal - mleUsed);
@@ -2423,6 +2424,18 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
         fReasonLbl.appendChild(fReason);
         capFormEl.appendChild(fReasonLbl);
 
+        const fMleTypeLbl = document.createElement('label');
+        fMleTypeLbl.textContent = 'MLE Type';
+        const fMleType = document.createElement('select');
+        [['', 'Auto (calculated)'], ['room', 'Room Exception'], ['ntmle', 'Non-Taxpayer MLE'], ['tmle', 'Taxpayer MLE']].forEach(([v, l]) => {
+          const o = document.createElement('option');
+          o.value = v; o.textContent = l;
+          if (v === (curState.mle_type || '')) o.selected = true;
+          fMleType.appendChild(o);
+        });
+        fMleTypeLbl.appendChild(fMleType);
+        capFormEl.appendChild(fMleTypeLbl);
+
         const fMleUsedLbl = document.createElement('label');
         fMleUsedLbl.textContent = 'MLE Used ($)';
         const fMleUsed = document.createElement('input');
@@ -2457,6 +2470,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
               body: JSON.stringify({
                 hard_cap: fHardCap.value || null,
                 hard_cap_reason: fReason.value.trim(),
+                mle_type: fMleType.value || null,
                 mle_used: +fMleUsed.value || 0,
                 bae_used: fBaeUsed.checked,
               }),
