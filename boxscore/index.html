@@ -221,7 +221,7 @@
   <main>
     <div class="nav"><a href="/">&#8592; Home</a></div>
     <h1>Box Score Import</h1>
-    <p class="subtitle">Upload two 2K screenshots (one per team), review the parsed data, and commit to the stats database.</p>
+    <p class="subtitle">Upload two 2K screenshots (one per team). They'll be queued for parsing.</p>
 
     <div class="auth-bar">
       <span id="auth-name">Not authenticated</span>
@@ -291,55 +291,15 @@
       </div>
 
       <div class="form-actions">
-        <button class="btn-primary" id="parse-btn" disabled>Parse Box Scores</button>
-        <span class="form-status" id="parse-status"></span>
+        <button class="btn-primary" id="upload-btn" disabled>Upload for Parsing</button>
+        <span class="form-status" id="upload-status"></span>
       </div>
     </div>
 
-    <!-- Review -->
-    <div id="review">
-      <div class="card">
-        <h2>Review &amp; Edit</h2>
-        <p style="font-size:0.82rem;color:#9ca3af;margin-bottom:1.25rem;">Edit any cell before committing. Player names with a yellow or red badge need attention.</p>
-
-        <div id="concerns-box" class="concerns" style="display:none">
-          <h4>Concerns flagged by parser</h4>
-          <ul id="concerns-list"></ul>
-        </div>
-
-        <div class="team-section">
-          <div class="team-header">
-            <h3 id="home-review-label">Home</h3>
-            <span class="score-badge" id="home-score-badge"></span>
-            <span style="color:#6b7280;font-size:0.8rem;">vs</span>
-            <span class="score-badge" id="away-score-badge"></span>
-            <span id="away-review-label" style="color:#9ca3af;font-size:0.85rem;font-weight:600;"></span>
-          </div>
-          <div class="table-wrap">
-            <table id="home-table">
-              <thead><tr id="home-thead-row"></tr></thead>
-              <tbody id="home-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="team-section">
-          <div class="team-header">
-            <h3 id="away-review-label2"></h3>
-          </div>
-          <div class="table-wrap">
-            <table id="away-table">
-              <thead><tr id="away-thead-row"></tr></thead>
-              <tbody id="away-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button class="btn-success" id="commit-btn">Commit to Database</button>
-          <span class="form-status" id="commit-status"></span>
-        </div>
-      </div>
+    <!-- Pending games -->
+    <div class="card" id="pending-card">
+      <h2>Pending Games</h2>
+      <div id="pending-list"><span style="color:#6b7280;font-size:0.85rem;">Loading…</span></div>
     </div>
   </main>
 
@@ -456,100 +416,23 @@
     setupZone("home-zone", "home-file", "home-filename", "home-preview");
     setupZone("away-zone", "away-file", "away-filename", "away-preview");
 
-    function checkParseReady() {
+    function checkUploadReady() {
       const ready = document.getElementById("home-file").files[0]
         && document.getElementById("away-file").files[0]
         && homeSelect.value && awaySelect.value && token;
-      document.getElementById("parse-btn").disabled = !ready;
+      document.getElementById("upload-btn").disabled = !ready;
     }
-    homeSelect.addEventListener("change", checkParseReady);
-    awaySelect.addEventListener("change", checkParseReady);
-    document.getElementById("auth-btn").addEventListener("click", checkParseReady);
+    homeSelect.addEventListener("change", checkUploadReady);
+    awaySelect.addEventListener("change", checkUploadReady);
+    document.getElementById("auth-btn").addEventListener("click", checkUploadReady);
 
-    // Parsed state (mutable — user edits update these)
-    let parsedData = null;
-
-    // Build review table
-    function buildTheadRow(trId) {
-      const tr = document.getElementById(trId);
-      tr.innerHTML = `<th class="player-col">Player</th>` +
-        STAT_COLS.map(c => `<th>${c}</th>`).join("") +
-        `<th></th>`;
-    }
-
-    function buildTbody(tbodyId, rows) {
-      const tbody = document.getElementById(tbodyId);
-      tbody.innerHTML = "";
-      rows.forEach((row, i) => {
-        const tr = document.createElement("tr");
-        const conf = row.confidence || "high";
-        const confBadge = conf !== "high" ? `<span class="conf ${conf}">${conf}</span>` : "";
-        // Player cell
-        const tdPlayer = document.createElement("td");
-        tdPlayer.className = "player-col";
-        const playerInput = document.createElement("input");
-        playerInput.type = "text";
-        playerInput.className = "player-input";
-        playerInput.value = row.player || "";
-        playerInput.dataset.idx = i;
-        playerInput.addEventListener("input", e => { rows[i].player = e.target.value; });
-        tdPlayer.appendChild(playerInput);
-        if (confBadge) tdPlayer.insertAdjacentHTML("beforeend", confBadge);
-        if (row.concern) {
-          const tip = document.createElement("span");
-          tip.title = row.concern;
-          tip.textContent = " ⚠";
-          tip.style.cssText = "color:#fde68a;cursor:help;font-size:0.75rem;";
-          tdPlayer.appendChild(tip);
-        }
-        tr.appendChild(tdPlayer);
-
-        // Stat cells
-        STAT_KEYS.forEach(key => {
-          const td = document.createElement("td");
-          const inp = document.createElement("input");
-          inp.type = "number";
-          inp.className = "cell-input";
-          inp.value = row[key] ?? 0;
-          inp.min = 0;
-          inp.addEventListener("input", e => {
-            rows[i][key] = parseInt(e.target.value) || 0;
-            // Keep reb in sync if oreb/dreb change
-            if (key === "oreb" || key === "dreb") {
-              rows[i].reb = rows[i].oreb + rows[i].dreb;
-              // find the reb input in this row and update it
-              const rebIdx = STAT_KEYS.indexOf("reb");
-              tr.querySelectorAll("input[type=number]")[rebIdx].value = rows[i].reb;
-            }
-          });
-          td.appendChild(inp);
-          tr.appendChild(td);
-        });
-
-        // Delete button
-        const tdDel = document.createElement("td");
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "×";
-        delBtn.style.cssText = "background:none;border:none;color:#6b7280;cursor:pointer;font-size:1.1rem;padding:0 0.25rem;";
-        delBtn.title = "Remove row";
-        delBtn.onclick = () => {
-          rows.splice(i, 1);
-          buildTbody(tbodyId, rows);
-        };
-        tdDel.appendChild(delBtn);
-        tr.appendChild(tdDel);
-
-        tbody.appendChild(tr);
-      });
-    }
-
-    // Parse
-    document.getElementById("parse-btn").onclick = async () => {
-      const btn = document.getElementById("parse-btn");
-      const status = document.getElementById("parse-status");
+    // Upload
+    document.getElementById("upload-btn").onclick = async () => {
+      const btn = document.getElementById("upload-btn");
+      const status = document.getElementById("upload-status");
       btn.disabled = true;
       status.className = "form-status";
-      status.textContent = "Parsing screenshots… (this may take 10–20 seconds)";
+      status.textContent = "Uploading…";
 
       const fd = new FormData();
       fd.append("home_image", document.getElementById("home-file").files[0]);
@@ -565,7 +448,7 @@
       if (roundNum) fd.append("round_num", roundNum);
 
       try {
-        const res = await fetch("/api/boxscore/parse", {
+        const res = await fetch("/api/boxscore/upload", {
           method: "POST",
           headers: { "Authorization": `Bearer ${token}` },
           body: fd,
@@ -574,130 +457,48 @@
           const err = await res.json().catch(() => ({}));
           throw new Error(err.detail || `HTTP ${res.status}`);
         }
-        parsedData = await res.json();
-        status.className = "form-status ok";
-        status.textContent = `Parsed ${parsedData.home_rows.length + parsedData.away_rows.length} players. Review below.`;
-        renderReview();
-      } catch (e) {
-        status.className = "form-status err";
-        status.textContent = e.message;
-        btn.disabled = false;
-      }
-    };
-
-    function renderReview() {
-      const d = parsedData;
-      const homeTeam = homeSelect.value;
-      const awayTeam = awaySelect.value;
-      const homePts = d.home_pts ?? "?";
-      const awayPts = d.away_pts ?? "?";
-      const homeWon = typeof d.home_pts === "number" && typeof d.away_pts === "number" && d.home_pts > d.away_pts;
-
-      document.getElementById("home-review-label").textContent = homeTeam;
-      document.getElementById("home-score-badge").textContent = homePts;
-      document.getElementById("home-score-badge").className = `score-badge ${homeWon ? "winner" : "loser"}`;
-      document.getElementById("away-score-badge").textContent = awayPts;
-      document.getElementById("away-score-badge").className = `score-badge ${!homeWon ? "winner" : "loser"}`;
-      document.getElementById("away-review-label").textContent = awayTeam;
-      document.getElementById("away-review-label2").textContent = awayTeam;
-
-      // Concerns
-      const concerns = d.concerns || [];
-      // Also collect per-row concerns
-      [...d.home_rows, ...d.away_rows].forEach(r => {
-        if (r.concern) concerns.push(`${r.player}: ${r.concern}`);
-      });
-      const cbox = document.getElementById("concerns-box");
-      const clist = document.getElementById("concerns-list");
-      if (concerns.length > 0) {
-        clist.innerHTML = concerns.map(c => `<li>${c}</li>`).join("");
-        cbox.style.display = "block";
-      } else {
-        cbox.style.display = "none";
-      }
-
-      buildTheadRow("home-thead-row");
-      buildTheadRow("away-thead-row");
-      buildTbody("home-tbody", d.home_rows);
-      buildTbody("away-tbody", d.away_rows);
-
-      // Score inputs in header (editable)
-      addScoreEdits(homePts, awayPts);
-
-      document.getElementById("review").classList.add("visible");
-      document.getElementById("review").scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-
-    function addScoreEdits(homePts, awayPts) {
-      // Replace score badges with editable inputs
-      ["home-score-badge", "away-score-badge"].forEach((id, isAway) => {
-        const badge = document.getElementById(id);
-        const inp = document.createElement("input");
-        inp.type = "number";
-        inp.value = isAway ? awayPts : homePts;
-        inp.min = 0;
-        inp.style.cssText = "width:3.5rem;background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.4rem;font-size:1.1rem;font-weight:700;text-align:center;";
-        inp.addEventListener("input", e => {
-          if (isAway) parsedData.away_pts = parseInt(e.target.value) || 0;
-          else parsedData.home_pts = parseInt(e.target.value) || 0;
-        });
-        badge.replaceWith(inp);
-      });
-    }
-
-    // Commit
-    document.getElementById("commit-btn").onclick = async () => {
-      const btn = document.getElementById("commit-btn");
-      const status = document.getElementById("commit-status");
-      btn.disabled = true;
-      status.className = "form-status";
-      status.textContent = "Committing…";
-
-      const payload = {
-        date: document.getElementById("date").value,
-        home_team: homeSelect.value,
-        away_team: awaySelect.value,
-        season: document.getElementById("season").value,
-        game_type: document.querySelector('input[name="game-type"]:checked').value,
-        home_pts: parsedData.home_pts ?? 0,
-        away_pts: parsedData.away_pts ?? 0,
-        home_rows: parsedData.home_rows,
-        away_rows: parsedData.away_rows,
-      };
-      const gameNum = document.getElementById("game-num").value;
-      const roundNum = document.getElementById("round-num").value;
-      if (gameNum) payload.game_num = parseInt(gameNum);
-      if (roundNum) payload.round_num = parseInt(roundNum);
-
-      try {
-        const res = await fetch("/api/boxscore/commit", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.detail || `HTTP ${res.status}`);
-        }
         const data = await res.json();
         status.className = "form-status ok";
-        status.textContent = `Done — ${data.rows_added} rows added to ${payload.season} ${payload.game_type}.`;
-        // Reset for next game
-        setTimeout(() => {
-          document.getElementById("review").classList.remove("visible");
-          document.getElementById("parse-btn").disabled = false;
-          document.getElementById("parse-status").textContent = "";
-          parsedData = null;
-        }, 3000);
+        status.textContent = `Queued (id: ${data.id}) — screenshots saved for parsing.`;
+        btn.disabled = false;
+        loadPending();
       } catch (e) {
         status.className = "form-status err";
         status.textContent = e.message;
         btn.disabled = false;
       }
     };
+
+    // Pending list
+    async function loadPending() {
+      const el = document.getElementById("pending-list");
+      if (!token) {
+        el.innerHTML = `<span style="color:#6b7280;font-size:0.85rem;">Set a token to see pending games.</span>`;
+        return;
+      }
+      try {
+        const res = await fetch("/api/boxscore/pending", {
+          headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const items = await res.json();
+        if (items.length === 0) {
+          el.innerHTML = `<span style="color:#6b7280;font-size:0.85rem;">No pending games.</span>`;
+          return;
+        }
+        el.innerHTML = items.map(m => `
+          <div style="display:flex;align-items:center;gap:1rem;padding:0.5rem 0;border-bottom:1px solid #374151;font-size:0.85rem;">
+            <span style="font-weight:600;color:#e5e7eb;">${m.home_team} vs ${m.away_team}</span>
+            <span style="color:#9ca3af;">${m.date} · ${m.season} ${m.game_type}</span>
+            <span style="color:#6b7280;font-size:0.75rem;">id: ${m.id}</span>
+            <span style="color:#6b7280;font-size:0.75rem;">by ${m.uploaded_by || "?"}</span>
+          </div>`).join("");
+      } catch (e) {
+        el.innerHTML = `<span style="color:#f87171;font-size:0.85rem;">${e.message}</span>`;
+      }
+    }
+
+    loadPending();
   </script>
 </body>
 </html>
