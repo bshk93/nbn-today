@@ -52,13 +52,19 @@ For the **home team** screenshot, extract all players who played (skip DNP). For
 
 Repeat for the **away team** screenshot.
 
-#### 3d-sanity. Sanity checks
+#### 3d. Sanity checks
 
 Run these checks on every row before presenting results:
 
 1. **Points formula**: PTS = (FGM − 3PM) × 2 + 3PM × 3 + FTM
-2. **Bounds**: 3PM ≤ FGM, FTM ≤ FTA, OREB ≤ REB
-3. **Team total**: sum of all player PTS = team score from the screenshot
+2. **Bounds**: 3PM ≤ FGM, FTM ≤ FTA, FGM ≤ FGA, 3PM ≤ 3PA, OREB ≤ REB
+3. **Team total**: sum of all player PTS = team score from the screenshot, if exists
+4. Teams cannot have the same score.
+5. Minutes total between the two teams in a game should be 240 (most games) or 240 plus a multiple of 10 (denoting one or more 5-minute overtime periods were played)
+6. Maximum 6 PF
+7. Maximum 48 M
+8. PTS ≤ team score
+9. Sum of columns match total row
 
 Flag any row that fails with [?].
 
