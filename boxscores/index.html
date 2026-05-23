@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Box Scores — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem; }
+    .page { max-width: 860px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; text-decoration: none; }
+    .nav a:hover { color: #f3f4f6; }
+    header { margin-bottom: 1.75rem; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+
+    /* Date nav */
+    .date-nav { display: flex; align-items: center; gap: 0.5rem; }
+    .date-btn { background: #374151; border: 1px solid #4b5563; color: #d1d5db; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; font-size: 0.85rem; line-height: 1.4; }
+    .date-btn:hover:not(:disabled) { background: #4b5563; }
+    .date-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .date-input { background: #1f2937; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.875rem; font-family: inherit; cursor: pointer; }
+    .date-input:focus { outline: none; border-color: #3b82f6; }
+
+    .loading { color: #6b7280; font-size: 0.875rem; }
+
+    /* Games */
+    .games { display: flex; flex-direction: column; gap: 1rem; }
+    .game { background: #1f2937; border: 1px solid #374151; border-radius: 10px; overflow: hidden; }
+    .game-header { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.25rem; cursor: pointer; user-select: none; gap: 0.75rem; }
+    .game-header:hover { background: #263244; }
+    .matchup { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
+    .team-block { display: flex; align-items: center; gap: 0.5rem; }
+    .team-abbr { font-size: 1rem; font-weight: 700; }
+    .team-score { font-size: 1.25rem; font-weight: 700; }
+    .team-score.win { color: #34d399; }
+    .team-score.loss { color: #6b7280; }
+    .at { color: #4b5563; font-size: 0.85rem; }
+    .badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #374151; color: #9ca3af; border-radius: 3px; padding: 0.15rem 0.4rem; white-space: nowrap; }
+    .badge.playoff { background: #451a03; color: #fb923c; }
+    .chevron { color: #4b5563; font-size: 0.7rem; flex-shrink: 0; transition: transform 0.15s; }
+    .game.open .chevron { transform: rotate(180deg); }
+
+    /* Box score body */
+    .game-body { display: none; border-top: 1px solid #374151; }
+    .game.open .game-body { display: block; }
+    .team-section { padding: 0 0 0.75rem; }
+    .team-section + .team-section { border-top: 1px solid #374151; padding-top: 0; }
+    .team-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; padding: 0.75rem 1.25rem 0.35rem; }
+    .table-wrap { overflow-x: auto; padding: 0 0.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    th { text-align: center; padding: 0.3rem 0.3rem; font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; border-bottom: 1px solid #374151; white-space: nowrap; }
+    th.pname { text-align: left; min-width: 140px; }
+    td { padding: 0.28rem 0.3rem; border-bottom: 1px solid #1a2332; text-align: center; color: #d1d5db; }
+    td.pname { text-align: left; color: #f3f4f6; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .dim { color: #4b5563; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Home</a></nav>
+    <header>
+      <h1>Box Scores</h1>
+      <div class="date-nav">
+        <button class="date-btn" id="btn-prev">&#8592;</button>
+        <input type="date" class="date-input" id="date-input">
+        <button class="date-btn" id="btn-next">&#8594;</button>
+      </div>
+    </header>
+    <div id="content"><span class="loading">Loading…</span></div>
+  </div>
+
+  <script>
+    const SEASON = "25-26";
+    let allDates = [], cur = "";
+
+    const contentEl = document.getElementById("content");
+    const dateInput = document.getElementById("date-input");
+    const btnPrev   = document.getElementById("btn-prev");
+    const btnNext   = document.getElementById("btn-next");
+
+    async function init() {
+      try {
+        const r = await fetch(`/api/boxscores/dates?season=${SEASON}`);
+        allDates = await r.json();
+        if (!allDates.length) { setContent('<span class="loading">No games available.</span>'); return; }
+        cur = allDates[0];
+        dateInput.value = cur;
+        updateNav();
+        load(cur);
+      } catch(e) { setContent(`<span class="loading" style="color:#f87171">${e.message}</span>`); }
+    }
+
+    function setContent(html) { contentEl.innerHTML = html; }
+    function updateNav() {
+      const i = allDates.indexOf(cur);
+      btnNext.disabled = i <= 0;
+      btnPrev.disabled = i >= allDates.length - 1;
+    }
+    function go(d) { cur = d; dateInput.value = cur; updateNav(); load(cur); }
+
+    btnPrev.onclick = () => { const i = allDates.indexOf(cur); if (i < allDates.length - 1) go(allDates[i + 1]); };
+    btnNext.onclick = () => { const i = allDates.indexOf(cur); if (i > 0) go(allDates[i - 1]); };
+    dateInput.onchange = e => go(e.target.value);
+
+    async function load(date) {
+      setContent('<span class="loading">Loading…</span>');
+      try {
+        const r = await fetch(`/api/boxscores?date=${date}&season=${SEASON}`);
+        const games = await r.json();
+        if (!games.length) { setContent('<span class="loading">No games on this date.</span>'); return; }
+        contentEl.innerHTML = "";
+        const wrap = document.createElement("div");
+        wrap.className = "games";
+        games.forEach(g => wrap.appendChild(buildGame(g)));
+        contentEl.appendChild(wrap);
+      } catch(e) { setContent(`<span class="loading" style="color:#f87171">${e.message}</span>`); }
+    }
+
+    const COLS = [
+      { h: "MIN", k: "min" },
+      { h: "PTS", k: "pts" },
+      { h: "REB", k: "reb" },
+      { h: "OR",  k: "oreb", dim: true },
+      { h: "DR",  k: "dreb", dim: true },
+      { h: "AST", k: "ast" },
+      { h: "STL", k: "stl" },
+      { h: "BLK", k: "blk" },
+      { h: "TO",  k: "tov" },
+      { h: "PF",  k: "pf" },
+      { h: "FG",  k: p => `${p.fgm}/${p.fga}` },
+      { h: "FG%", k: p => p.fgpct != null ? (p.fgpct * 100).toFixed(0) + "%" : "—", dim: true },
+      { h: "3P",  k: p => `${p.tpm}/${p.tpa}` },
+      { h: "3P%", k: p => p.tppct != null ? (p.tppct * 100).toFixed(0) + "%" : "—", dim: true },
+      { h: "FT",  k: p => `${p.ftm}/${p.fta}` },
+      { h: "FT%", k: p => p.ftpct != null ? (p.ftpct * 100).toFixed(0) + "%" : "—", dim: true },
+    ];
+
+    function buildGame(g) {
+      const homeWin = g.home_score > g.away_score;
+      const div = document.createElement("div");
+      div.className = "game";
+
+      const hdr = document.createElement("div");
+      hdr.className = "game-header";
+      hdr.innerHTML = `
+        <div class="matchup">
+          <div class="team-block">
+            <span class="team-abbr">${g.away_team}</span>
+            <span class="team-score ${homeWin ? "loss" : "win"}">${g.away_score ?? "—"}</span>
+          </div>
+          <span class="at">@</span>
+          <div class="team-block">
+            <span class="team-abbr">${g.home_team}</span>
+            <span class="team-score ${homeWin ? "win" : "loss"}">${g.home_score ?? "—"}</span>
+          </div>
+          <span class="badge ${g.gametype === "PLAYOFF" ? "playoff" : ""}">${g.gametype === "PLAYOFF" ? "Playoffs" : "Regular Season"}</span>
+        </div>
+        <span class="chevron">▼</span>`;
+      hdr.onclick = () => div.classList.toggle("open");
+
+      const body = document.createElement("div");
+      body.className = "game-body";
+      buildTeamSection(body, g.home_players, `${g.home_team} — Home`);
+      buildTeamSection(body, g.away_players, `${g.away_team} — Away`);
+
+      div.appendChild(hdr);
+      div.appendChild(body);
+      return div;
+    }
+
+    function buildTeamSection(parent, players, label) {
+      const section = document.createElement("div");
+      section.className = "team-section";
+
+      const lbl = document.createElement("div");
+      lbl.className = "team-label";
+      lbl.textContent = label;
+      section.appendChild(lbl);
+
+      const wrap = document.createElement("div");
+      wrap.className = "table-wrap";
+      const tbl = document.createElement("table");
+
+      const hrow = tbl.createTHead().insertRow();
+      const thp = document.createElement("th");
+      thp.className = "pname";
+      thp.textContent = "Player";
+      hrow.appendChild(thp);
+      COLS.forEach(c => {
+        const th = document.createElement("th");
+        th.textContent = c.h;
+        hrow.appendChild(th);
+      });
+
+      const tbody = tbl.createTBody();
+      (players || []).forEach(p => {
+        const tr = tbody.insertRow();
+        const tdp = tr.insertCell();
+        tdp.className = "pname";
+        const parts = p.player.split(", ");
+        tdp.textContent = parts.length === 2 ? `${parts[1]} ${parts[0]}` : p.player;
+        COLS.forEach(c => {
+          const td = tr.insertCell();
+          td.textContent = typeof c.k === "function" ? c.k(p) : (p[c.k] ?? "—");
+          if (c.dim) td.className = "dim";
+        });
+      });
+
+      wrap.appendChild(tbl);
+      section.appendChild(wrap);
+      parent.appendChild(section);
+    }
+
+    init();
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>
