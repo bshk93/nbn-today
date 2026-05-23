@@ -62,63 +62,42 @@
     const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-    // "YYYY-MM-DD" → [{home_team, away_team, gametype, ...}] — populated lazily per month
-    const gameCache = {};
-    // Set of all dates that have games (from /api/boxscores/dates)
-    let gameDateSet = new Set();
+    // "YYYY-MM-DD" → [{home_team, away_team, gametype, home_score, away_score}]
+    let gamesByDate = {};
     let leagueToday = null;
     let viewYear, viewMonth;
 
     async function init() {
       try {
-        const dates = await fetch(`/api/boxscores/dates?season=${SEASON}`).then(r => r.json());
-        if (!dates.length) {
+        const games = await fetch(`/api/boxscores/games?season=${SEASON}`).then(r => r.json());
+        if (!games.length) {
           document.getElementById("content").innerHTML = '<span class="loading">No games available.</span>';
           return;
         }
 
-        gameDateSet = new Set(dates);
+        games.forEach(g => {
+          if (!gamesByDate[g.date]) gamesByDate[g.date] = [];
+          gamesByDate[g.date].push(g);
+        });
 
-        const lastDt = new Date(dates[0] + "T00:00:00");
+        const lastDate = games[0].date;
+        const lastDt = new Date(lastDate + "T00:00:00");
         lastDt.setDate(lastDt.getDate() + 1);
         leagueToday = lastDt.toISOString().slice(0, 10);
 
         viewYear = lastDt.getFullYear();
         viewMonth = lastDt.getMonth();
 
-        await renderMonth();
+        renderMonth();
       } catch(e) {
         document.getElementById("content").innerHTML = `<span class="loading" style="color:#f87171">${e.message}</span>`;
       }
     }
 
-    async function fetchMonthGames(year, month) {
-      const prefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
-      const datesInMonth = [...gameDateSet].filter(d => d.startsWith(prefix));
-      const unfetched = datesInMonth.filter(d => !(d in gameCache));
-      if (!unfetched.length) return;
-
-      await Promise.all(unfetched.map(async d => {
-        try {
-          const games = await fetch(`/api/boxscores?date=${d}&season=${SEASON}`).then(r => r.json());
-          // dedupe to unique matchups (each game appears once per home team)
-          const seen = new Set();
-          gameCache[d] = games.filter(g => {
-            const k = `${g.away_team}@${g.home_team}`;
-            if (seen.has(k)) return false;
-            seen.add(k);
-            return true;
-          });
-        } catch { gameCache[d] = []; }
-      }));
-    }
-
-    async function renderMonth() {
+    function renderMonth() {
       document.getElementById("month-label").textContent = `${MONTHS[viewMonth]} ${viewYear}`;
       document.getElementById("btn-prev").onclick = () => shiftMonth(-1);
       document.getElementById("btn-next").onclick = () => shiftMonth(1);
-
-      await fetchMonthGames(viewYear, viewMonth);
 
       const firstDay = new Date(viewYear, viewMonth, 1);
       const lastDay  = new Date(viewYear, viewMonth + 1, 0);
@@ -143,10 +122,10 @@
         if (cellCount && cellCount % 7 === 0) row = tbody.insertRow();
         const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
         const classes = [];
-        if (gameDateSet.has(dateStr)) classes.push("has-games");
+        if (gamesByDate[dateStr]) classes.push("has-games");
         if (dateStr === leagueToday) classes.push("is-today");
         else if (dateStr > leagueToday) classes.push("future");
-        addCell(row, dateStr, d, classes, dateStr === leagueToday, gameCache[dateStr] || null);
+        addCell(row, dateStr, d, classes, dateStr === leagueToday, gamesByDate[dateStr] || null);
         cellCount++;
       }
 
@@ -194,11 +173,11 @@
       td.appendChild(cell);
     }
 
-    async function shiftMonth(delta) {
+    function shiftMonth(delta) {
       viewMonth += delta;
       if (viewMonth > 11) { viewMonth = 0; viewYear++; }
       if (viewMonth < 0)  { viewMonth = 11; viewYear--; }
-      await renderMonth();
+      renderMonth();
     }
 
     init();
