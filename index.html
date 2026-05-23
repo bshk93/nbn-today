@@ -132,6 +132,43 @@
       header h1 { font-size: 2rem; }
       header img { height: 90px; }
     }
+
+    /* Box scores card */
+    .bs-card { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 0.875rem 1rem; grid-column: 1 / -1; }
+    .bs-card-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.875rem; }
+    .bs-card-title { display: flex; align-items: center; gap: 0.4rem; font-size: 0.875rem; font-weight: 600; }
+    .bs-date-nav { display: flex; align-items: center; gap: 0.35rem; }
+    .bs-date-btn { background: #374151; border: 1px solid #4b5563; color: #d1d5db; border-radius: 5px; padding: 0.2rem 0.5rem; cursor: pointer; font-size: 0.78rem; line-height: 1.4; }
+    .bs-date-btn:hover:not(:disabled) { background: #4b5563; }
+    .bs-date-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .bs-date-input { background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 5px; padding: 0.2rem 0.4rem; font-size: 0.78rem; font-family: inherit; cursor: pointer; }
+    .bs-date-input:focus { outline: none; border-color: #3b82f6; }
+    .bs-loading { color: #6b7280; font-size: 0.8rem; }
+    .bs-games { display: flex; flex-direction: column; gap: 0.5rem; }
+    .bs-game { border: 1px solid #2d3748; border-radius: 6px; overflow: hidden; }
+    .bs-game-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: #111827; cursor: pointer; user-select: none; gap: 0.5rem; }
+    .bs-game-header:hover { background: #1a2332; }
+    .bs-matchup { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; flex: 1; min-width: 0; }
+    .bs-vs { color: #4b5563; font-weight: 400; font-size: 0.75rem; }
+    .bs-score-home, .bs-score-away { font-size: 0.9rem; font-weight: 700; }
+    .bs-score-home.win, .bs-score-away.win { color: #34d399; }
+    .bs-score-home.loss, .bs-score-away.loss { color: #6b7280; }
+    .bs-badge { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #374151; color: #9ca3af; border-radius: 3px; padding: 0.1rem 0.35rem; white-space: nowrap; }
+    .bs-badge.playoff { background: #451a03; color: #fb923c; }
+    .bs-chevron { color: #4b5563; font-size: 0.65rem; flex-shrink: 0; transition: transform 0.15s; }
+    .bs-game.open .bs-chevron { transform: rotate(180deg); }
+    .bs-body { display: none; }
+    .bs-game.open .bs-body { display: block; }
+    .bs-team-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; padding: 0.5rem 0.75rem 0.25rem; }
+    .bs-table-wrap { overflow-x: auto; }
+    .bs-table { width: 100%; border-collapse: collapse; font-size: 0.73rem; }
+    .bs-table th { text-align: center; padding: 0.25rem 0.25rem; font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; border-bottom: 1px solid #374151; white-space: nowrap; }
+    .bs-table th.pname { text-align: left; min-width: 120px; }
+    .bs-table td { padding: 0.2rem 0.25rem; border-bottom: 1px solid #1a2332; text-align: center; color: #d1d5db; }
+    .bs-table td.pname { text-align: left; color: #f3f4f6; }
+    .bs-table tr:last-child td { border-bottom: none; }
+    .bs-table .dim { color: #4b5563; }
+    .bs-divider { border: none; border-top: 1px solid #1f2937; margin: 0; }
   </style>
 </head>
 <body>
@@ -194,6 +231,19 @@
     <a class="card" href="/stats/seasons">
       <div class="card-header"><span class="card-icon">📅</span><span class="card-title">Season Stats</span></div>
     </a>
+
+    <!-- Box Scores card -->
+    <div class="bs-card">
+      <div class="bs-card-header">
+        <div class="bs-card-title"><span>🗂</span> Box Scores</div>
+        <div class="bs-date-nav">
+          <button class="bs-date-btn" id="bs-prev">&#8592;</button>
+          <input type="date" class="bs-date-input" id="bs-date">
+          <button class="bs-date-btn" id="bs-next">&#8594;</button>
+        </div>
+      </div>
+      <div id="bs-content"><span class="bs-loading">Loading…</span></div>
+    </div>
 
     <a class="card" href="/stats/totals">
       <div class="card-header"><span class="card-icon">🏅</span><span class="card-title">Totals Leaderboards</span></div>
@@ -309,6 +359,108 @@
   </footer>
   </div>
   <script>
+    // Box scores
+    (function() {
+      const SEASON = "25-26";
+      const API = "";
+      let allDates = [], cur = "";
+
+      async function bsInit() {
+        try {
+          const r = await fetch(`${API}/api/boxscores/dates?season=${SEASON}`);
+          allDates = await r.json();
+          if (!allDates.length) { bsSetContent('<span class="bs-loading">No games available.</span>'); return; }
+          cur = allDates[0];
+          document.getElementById("bs-date").value = cur;
+          bsUpdateNav();
+          bsLoad(cur);
+        } catch(e) { bsSetContent(`<span class="bs-loading" style="color:#f87171">${e.message}</span>`); }
+      }
+
+      function bsSetContent(html) { document.getElementById("bs-content").innerHTML = html; }
+      function bsUpdateNav() {
+        const i = allDates.indexOf(cur);
+        document.getElementById("bs-next").disabled = i <= 0;
+        document.getElementById("bs-prev").disabled = i >= allDates.length - 1;
+      }
+      function bsGo(d) { cur = d; document.getElementById("bs-date").value = cur; bsUpdateNav(); bsLoad(cur); }
+
+      document.getElementById("bs-prev").onclick = () => { const i = allDates.indexOf(cur); if (i < allDates.length - 1) bsGo(allDates[i + 1]); };
+      document.getElementById("bs-next").onclick = () => { const i = allDates.indexOf(cur); if (i > 0) bsGo(allDates[i - 1]); };
+      document.getElementById("bs-date").onchange = e => bsGo(e.target.value);
+
+      async function bsLoad(date) {
+        bsSetContent('<span class="bs-loading">Loading…</span>');
+        try {
+          const r = await fetch(`${API}/api/boxscores?date=${date}&season=${SEASON}`);
+          const games = await r.json();
+          if (!games.length) { bsSetContent('<span class="bs-loading">No games on this date.</span>'); return; }
+          const wrap = document.createElement("div");
+          wrap.className = "bs-games";
+          games.forEach(g => wrap.appendChild(bsBuildGame(g)));
+          const el = document.getElementById("bs-content");
+          el.innerHTML = "";
+          el.appendChild(wrap);
+          if (games.length === 1) wrap.querySelector(".bs-game").classList.add("open");
+        } catch(e) { bsSetContent(`<span class="bs-loading" style="color:#f87171">${e.message}</span>`); }
+      }
+
+      const BS_COLS = [
+        {h:"MIN",k:"min"},{h:"PTS",k:"pts"},{h:"REB",k:"reb"},
+        {h:"OR",k:"oreb",dim:1},{h:"DR",k:"dreb",dim:1},{h:"AST",k:"ast"},{h:"STL",k:"stl"},{h:"BLK",k:"blk"},{h:"TO",k:"tov"},{h:"PF",k:"pf"},
+        {h:"FG",k:p=>`${p.fgm}/${p.fga}`},{h:"FG%",k:p=>p.fgpct!=null?(p.fgpct*100).toFixed(0)+"%":"—",dim:1},
+        {h:"3P",k:p=>`${p.tpm}/${p.tpa}`},{h:"3P%",k:p=>p.tppct!=null?(p.tppct*100).toFixed(0)+"%":"—",dim:1},
+        {h:"FT",k:p=>`${p.ftm}/${p.fta}`},{h:"FT%",k:p=>p.ftpct!=null?(p.ftpct*100).toFixed(0)+"%":"—",dim:1},
+      ];
+
+      function bsBuildGame(g) {
+        const homeWin = g.home_score > g.away_score;
+        const div = document.createElement("div");
+        div.className = "bs-game";
+        const hdr = document.createElement("div");
+        hdr.className = "bs-game-header";
+        hdr.innerHTML = `<div class="bs-matchup">
+          <span class="bs-score-away ${homeWin?"loss":"win"}">${g.away_score??'—'}</span>
+          <span>${g.away_team}</span>
+          <span class="bs-vs">@</span>
+          <span>${g.home_team}</span>
+          <span class="bs-score-home ${homeWin?"win":"loss"}">${g.home_score??'—'}</span>
+          <span class="bs-badge ${g.gametype==="PLAYOFF"?"playoff":""}">${g.gametype==="PLAYOFF"?"Playoffs":"Reg"}</span>
+        </div><span class="bs-chevron">▼</span>`;
+        hdr.onclick = () => div.classList.toggle("open");
+        const body = document.createElement("div");
+        body.className = "bs-body";
+        bsBuildTable(body, g.home_players, `${g.home_team} — Home`);
+        const hr = document.createElement("hr"); hr.className = "bs-divider"; body.appendChild(hr);
+        bsBuildTable(body, g.away_players, `${g.away_team} — Away`);
+        div.appendChild(hdr); div.appendChild(body);
+        return div;
+      }
+
+      function bsBuildTable(parent, players, label) {
+        const lbl = document.createElement("div"); lbl.className = "bs-team-label"; lbl.textContent = label; parent.appendChild(lbl);
+        const wrap = document.createElement("div"); wrap.className = "bs-table-wrap";
+        const tbl = document.createElement("table"); tbl.className = "bs-table";
+        const hrow = tbl.createTHead().insertRow();
+        const thp = document.createElement("th"); thp.className = "pname"; thp.textContent = "Player"; hrow.appendChild(thp);
+        BS_COLS.forEach(c => { const th = document.createElement("th"); th.textContent = c.h; hrow.appendChild(th); });
+        const tbody = tbl.createTBody();
+        (players||[]).forEach(p => {
+          const tr = tbody.insertRow();
+          const tdp = tr.insertCell(); tdp.className = "pname";
+          const parts = p.player.split(", "); tdp.textContent = parts.length===2 ? `${parts[1]} ${parts[0]}` : p.player;
+          BS_COLS.forEach(c => {
+            const td = tr.insertCell();
+            td.textContent = typeof c.k==="function" ? c.k(p) : (p[c.k]??'—');
+            if (c.dim) td.className = "dim";
+          });
+        });
+        wrap.appendChild(tbl); parent.appendChild(wrap);
+      }
+
+      bsInit();
+    })();
+
     fetch('/version.json').then(r => r.json()).then(d => {
       const el = document.getElementById('site-version');
       if (el) el.textContent = 'v' + d.version;
