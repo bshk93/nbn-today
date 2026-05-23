@@ -258,9 +258,21 @@
       term.onResize(({ cols, rows }) => ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: "resize", cols, rows })));
     }
 
-    function startSession() {
+    async function startSession() {
       const token = localStorage.getItem("nbn_token");
       if (!token) { alert("No token stored. Save your admin token first via the Edit button on any team page."); return; }
+
+      try {
+        const r = await fetch("/api/boxscore/pending", { headers: { Authorization: `Bearer ${token}` } });
+        const pending = await r.json();
+        if (!Array.isArray(pending) || pending.length === 0) {
+          alert("No pending games in the queue.");
+          return;
+        }
+      } catch(e) {
+        alert("Could not reach the pending queue. Is the API up?");
+        return;
+      }
 
       parseBtn.textContent = "Stop";
       parseBtn.classList.add("active");
