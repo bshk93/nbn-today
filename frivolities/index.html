@@ -197,12 +197,16 @@
     async function loadData() {
       if (_cache) return _cache;
       const abbrs = Object.keys(TEAMS);
-      const [ovrRes, playersRes, capLevelsRes, ...rosterResults] = await Promise.allSettled([
+      const [ovrRes, playersRes, capLevelsRes, ...rosterAndDcResults] = await Promise.allSettled([
         fetch('/api/ovr').then(r => r.json()),
         fetch('/api/players').then(r => r.json()),
         fetch('/api/cap-levels').then(r => r.json()),
         ...abbrs.map(abbr => fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.text())),
+        ...abbrs.map(abbr => fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : [])),
       ]);
+
+      const rosterResults = rosterAndDcResults.slice(0, abbrs.length);
+      const dcResults     = rosterAndDcResults.slice(abbrs.length);
 
       const ovrMap = {};
       if (ovrRes.status === 'fulfilled') {
@@ -219,7 +223,7 @@
         if (bio.name) nameMap[slug] = bio.name;
       }
 
-      const teamData = {}, rosterRows = {};
+      const teamData = {}, rosterRows = {}, deadCapData = {};
       abbrs.forEach((abbr, i) => {
         const res = rosterResults[i];
         const rows = res.status === 'fulfilled' ? parseCSV(res.value).filter(r => r.SLUG) : [];
@@ -229,9 +233,10 @@
           .map(r => ({ name: nameMap[r.SLUG] || r.SLUG, ovr: ovrMap[r.SLUG] || 0, slug: r.SLUG }))
           .filter(p => p.ovr > 0)
           .sort((a, b) => b.ovr - a.ovr);
+        deadCapData[abbr] = dcResults[i].status === 'fulfilled' ? dcResults[i].value : [];
       });
 
-      _cache = { teamData, rosterRows, playersData, capLevels };
+      _cache = { teamData, rosterRows, playersData, capLevels, deadCapData };
       return _cache;
     }
 
@@ -355,7 +360,7 @@
 
     // ── viz: salaries ─────────────────────────────────────────────────────────
 
-    function renderSalaryTab({ rosterRows, playersData, capLevels }) {
+    function renderSalaryTab({ rosterRows, playersData, capLevels, deadCapData }) {
       const SEASON = '25-26';
       const levels = capLevels?.[SEASON] || {};
 
@@ -377,7 +382,6 @@
       };
 
       function classify(bio) {
-        if (bio.type === 'dead')     return 'dead';
         if (bio.type === 'two-way')  return 'twoway';
         const g = bio.guaranteed?.[SEASON];
         if (g === '0' || g === 0)    return 'nongtd';
@@ -390,25 +394,36 @@
       // Build per-team segments
       const teamSal = {};
       for (const abbr of Object.keys(TEAMS)) {
-        const segments = (rosterRows[abbr] || [])
+        // Active roster players
+        const rosterSegs = (rosterRows[abbr] || [])
           .map(r => {
             const bio = playersData[r.SLUG];
             if (!bio) return null;
             const salary = parseSalary(bio.salaries?.[SEASON]);
             if (!salary) return null;
-            const cls   = classify(bio);
-            const name  = formatName(bio.name || r.SLUG);
+            const cls    = classify(bio);
+            const name   = formatName(bio.name || r.SLUG);
             const salStr = '$' + (salary / 1e6).toFixed(1) + 'M';
-            const note  = SEG_LABELS[cls];
-            return {
-              slug:   r.SLUG,
-              salary,
-              cls,
-              label: note ? `${name} — ${salStr} (${note})` : `${name} — ${salStr}`,
-            };
+            const note   = SEG_LABELS[cls];
+            return { slug: r.SLUG, salary, cls,
+              label: note ? `${name} — ${salStr} (${note})` : `${name} — ${salStr}` };
           })
-          .filter(Boolean)
-          .sort((a, b) => b.salary - a.salary);
+          .filter(Boolean);
+
+        // Dead cap (separate CSV, salary stored per-row not in bio)
+        const dcSegs = (deadCapData[abbr] || [])
+          .map(r => {
+            const salary = parseSalary(r[SEASON]);
+            if (!salary) return null;
+            const bio  = playersData[r.SLUG];
+            const name = formatName(bio?.name || r.SLUG);
+            const salStr = '$' + (salary / 1e6).toFixed(1) + 'M';
+            return { slug: r.SLUG, salary, cls: 'dead',
+              label: `${name} — ${salStr} (Dead cap)` };
+          })
+          .filter(Boolean);
+
+        const segments = [...rosterSegs, ...dcSegs].sort((a, b) => b.salary - a.salary);
         teamSal[abbr] = { segments, total: segments.reduce((s, p) => s + p.salary, 0) };
       }
 

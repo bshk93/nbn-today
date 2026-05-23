@@ -346,6 +346,23 @@ document.title = `${abbr} — NBN`;
   }
   .token-modal input:focus { outline: none; border-color: #3b82f6; }
   .token-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+  .player-note {
+    display: inline-block; margin-left: 0.3rem; font-size: 0.72rem;
+    color: #4b5563; cursor: default; position: relative;
+    vertical-align: middle; line-height: 1; transition: color 0.1s;
+  }
+  .player-note:hover { color: #9ca3af; }
+  .player-note::after {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 5px); left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937; border: 1px solid #374151; color: #d1d5db;
+    padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem;
+    white-space: pre-wrap; max-width: 240px;
+    pointer-events: none; opacity: 0; transition: opacity 0.12s;
+    z-index: 10; font-weight: normal;
+  }
+  .player-note:hover::after { opacity: 1; }
 `; document.head.appendChild(_s); }
 
 document.body.innerHTML = `
@@ -765,7 +782,6 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   biosData = biosData || {};
 
   const augmented = rows
-    .filter(row => (row.TYPE || '').trim() !== 'dead')
     .map(row => {
       const bio = biosData[row.SLUG] || {};
       const _type = row.TYPE || bio.type || '';
@@ -779,6 +795,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         _cap_holds: bio.cap_holds || {},
         _salaries:  bio.salaries || {},
         _jersey:    bio.jersey_number ?? null,
+        _notes:     bio.notes || '',
       };
     });
 
@@ -796,6 +813,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       _cap_holds: {},
       _salaries:  dcSals,
       _jersey:    null,
+      _notes:     bio.notes || '',
     });
   });
 
@@ -873,7 +891,14 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           a.textContent = row._name;
           td.appendChild(a);
         } else {
-          td.textContent = row._name;
+          td.appendChild(document.createTextNode(row._name));
+        }
+        if (row._notes) {
+          const pip = document.createElement('span');
+          pip.className = 'player-note';
+          pip.dataset.tip = row._notes;
+          pip.textContent = '◦';
+          td.appendChild(pip);
         }
       } else if (col.key === 'OVR') {
         const n = parseFloat(row.OVR);
@@ -1881,10 +1906,7 @@ function setupJerseyEditable(titleId, wrapId, rosterRows, biosData, restoreView)
   const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
   if (!hasSlug) return;
 
-  const activeRows = rosterRows.filter(r => {
-    const bio = biosData[r.SLUG] || {};
-    return (r.TYPE || bio.type || '') !== 'dead';
-  });
+  const activeRows = rosterRows.filter(r => r.SLUG);
   if (!activeRows.length) return;
 
   const titleEl = document.getElementById(titleId);
@@ -2354,8 +2376,6 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     let teamSalaryTotal = 0;
     rosterRows.forEach(row => {
       const bio = biosData[row.SLUG] || {};
-      const type = (row.TYPE || bio.type || '').trim();
-      if (type === 'dead') return;
       teamSalaryTotal += parseSalaryNum((bio.salaries || {})[curYr]);
     });
     deadCapRows.forEach(row => {

@@ -462,96 +462,27 @@
 
   </div>
 
-  <div class="create-bar">
-    <div class="section-heading" style="margin-bottom:0">Active Tokens</div>
-    <div style="display:flex;align-items:center;gap:0.75rem">
-      <label class="show-tokens-label" id="show-tokens-label" style="display:none">
-        <input type="checkbox" id="show-tokens-cb"> Show tokens
-      </label>
-      <button class="btn-create" id="create-token-btn" style="display:none" onclick="openCreateModal()">+ New Token</button>
-    </div>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1rem">
+    <div class="section-heading" style="margin-bottom:0">Active Members</div>
+    <a href="/members/" style="font-size:0.8rem;color:#60a5fa">Manage members →</a>
   </div>
 
-  <div class="auth-bar" id="auth-bar">
-    <span id="auth-status">Sign in as admin to create or edit tokens.</span>
-    <button id="auth-btn">Sign in</button>
-  </div>
-
-  <div id="tokens-section">
-    <div class="table-wrap" id="tokens-table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Roles</th>
-            <th class="col-admin" style="display:none">Token</th>
-            <th class="col-admin" style="display:none"></th>
-          </tr>
-        </thead>
-        <tbody id="tokens-tbody">
-          <tr><td colspan="2" class="empty-state">Loading…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<div class="modal-backdrop" id="modal-backdrop">
-  <div class="modal">
-    <h3>Enter Admin Token</h3>
-    <input type="password" id="modal-token-input" placeholder="Paste your token…">
-    <div class="modal-actions">
-      <button class="btn-cancel" id="modal-cancel">Cancel</button>
-      <button class="btn-save" id="modal-save">Sign in</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-backdrop" id="token-mgmt-backdrop">
-  <div class="modal" style="max-width:500px;gap:0.85rem">
-    <h3 id="token-mgmt-title">Create Token</h3>
-
-    <div>
-      <div class="modal-label">Name</div>
-      <input type="text" id="token-mgmt-name" placeholder="Display name…">
-    </div>
-
-    <div>
-      <div class="modal-label">Roles</div>
-      <div class="roles-check-group" id="roles-named"></div>
-    </div>
-
-    <div>
-      <div class="modal-label" style="margin-bottom:0.5rem">Team Access</div>
-      <div class="roles-check-group teams-group" id="roles-teams"></div>
-    </div>
-
-    <div id="token-mgmt-error" style="display:none;font-size:0.8rem;color:#fca5a5;background:#450a0a;border-radius:6px;padding:0.5rem 0.75rem"></div>
-
-    <div id="token-result-box" style="display:none" class="token-result-box">
-      <div class="token-result-label">Token created — copy it now, it won't be shown again.</div>
-      <div class="token-result-value" id="token-result-value"></div>
-      <button class="btn-copy-result" id="token-result-copy">Copy token</button>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" id="token-mgmt-cancel">Cancel</button>
-      <button class="btn-save" id="token-mgmt-save">Create</button>
-    </div>
+  <div class="table-wrap" id="tokens-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Roles</th>
+        </tr>
+      </thead>
+      <tbody id="tokens-tbody">
+        <tr><td colspan="2" class="empty-state">Loading…</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
 <script>
-const TOKEN_KEY = 'nbn_token';
-let currentToken = localStorage.getItem(TOKEN_KEY) || '';
-
-const NAMED_ROLES = ['admin', 'bod', 'rosters', 'curator', 'stats'];
-const TEAM_ABBRS = [
-  'atl','bkn','bos','cha','chi','cle','dal','den','det','gsw',
-  'hou','ind','lac','lal','mem','mia','mil','min','nop','nyk',
-  'okc','orl','phi','phx','por','sac','sas','tor','uta','was',
-];
-
 function roleBadgeClass(role) {
   if (role === 'admin') return 'trb-admin';
   if (role === 'bod') return 'trb-bod';
@@ -561,381 +492,41 @@ function roleBadgeClass(role) {
   return 'trb-team';
 }
 
-// ── Token table ────────────────────────────────────────────────────────────
-
-function setAdminColumns(visible) {
-  document.querySelectorAll('.col-admin').forEach(el => {
-    el.style.display = visible ? '' : 'none';
-  });
-}
-
-function renderTokens(tokens, admin) {
-  const colCount = admin ? 4 : 2;
-  setAdminColumns(admin);
-
+function renderMembers(members) {
   const tbody = document.getElementById('tokens-tbody');
-  if (!tokens.length) {
-    tbody.innerHTML = `<tr><td colspan="${colCount}" class="empty-state">No active tokens.</td></tr>`;
+  const active = members.filter(m => m.tenures.some(t => !t.end));
+  const sorted = [...active].sort((a, b) => a.name.localeCompare(b.name));
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No active members.</td></tr>';
     return;
   }
   tbody.innerHTML = '';
-  tokens.forEach(t => {
+  sorted.forEach(m => {
     const tr = document.createElement('tr');
-
     const tdName = tr.insertCell();
-    tdName.textContent = t.name || '—';
-
+    tdName.textContent = m.name || '—';
     const tdRoles = tr.insertCell();
-    const rolesWrap = document.createElement('div');
-    rolesWrap.className = 'token-roles';
-    (t.roles || []).forEach(r => {
+    const wrap = document.createElement('div');
+    wrap.className = 'token-roles';
+    (m.roles || []).forEach(r => {
       const span = document.createElement('span');
       span.className = `token-role-badge ${roleBadgeClass(r)}`;
       span.textContent = r;
-      rolesWrap.appendChild(span);
+      wrap.appendChild(span);
     });
-    if (!t.roles || !t.roles.length) {
-      rolesWrap.innerHTML = '<span style="color:#6b7280">—</span>';
-    }
-    tdRoles.appendChild(rolesWrap);
-
-    if (admin) {
-      const tdToken = tr.insertCell();
-      if (t.token) {
-        const wrap = document.createElement('span');
-        wrap.style.display = 'flex';
-        wrap.style.alignItems = 'center';
-        const val = document.createElement('span');
-        val.className = 'token-value';
-        val.textContent = t.token;
-        wrap.appendChild(val);
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'copy-btn';
-        copyBtn.textContent = 'Copy';
-        copyBtn.addEventListener('click', () => {
-          navigator.clipboard.writeText(t.token).then(() => {
-            copyBtn.textContent = 'Copied!';
-            copyBtn.classList.add('copied');
-            setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 1500);
-          });
-        });
-        wrap.appendChild(copyBtn);
-        tdToken.appendChild(wrap);
-      } else {
-        tdToken.textContent = '—';
-      }
-
-      const tdActions = tr.insertCell();
-      const cell = document.createElement('div');
-      cell.className = 'action-cell';
-      const editBtn = document.createElement('button');
-      editBtn.className = 'btn-edit';
-      editBtn.textContent = 'Edit';
-      editBtn.addEventListener('click', () => openEditModal(t.token, t.name, t.roles || []));
-      cell.appendChild(editBtn);
-      const delBtn = document.createElement('button');
-      delBtn.className = 'btn-delete';
-      delBtn.textContent = 'Delete';
-      delBtn.addEventListener('click', () => confirmDelete(t.token, t.name));
-      cell.appendChild(delBtn);
-      tdActions.appendChild(cell);
-    }
-
+    if (!m.roles || !m.roles.length) wrap.innerHTML = '<span style="color:#6b7280">—</span>';
+    tdRoles.appendChild(wrap);
     tbody.appendChild(tr);
   });
 }
 
-async function loadPublicTokens() {
-  try {
-    const res = await fetch('/api/tokens/public');
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    renderTokens(data, false);
-  } catch {
+fetch('/api/members/public')
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(renderMembers)
+  .catch(() => {
     document.getElementById('tokens-tbody').innerHTML =
-      '<tr><td colspan="2" class="empty-state">Failed to load tokens.</td></tr>';
-  }
-}
-
-async function loadAdminTokens() {
-  try {
-    const res = await fetch('/api/tokens', {
-      headers: { 'Authorization': `Bearer ${currentToken}` },
-    });
-    if (res.status === 401 || res.status === 403) {
-      const meRes = await fetch('/api/me', {
-        headers: { 'Authorization': `Bearer ${currentToken}` },
-      });
-      if (meRes.ok) {
-        const me = await meRes.json();
-        const firstName = (me.name || '').split(' ')[0] || 'you';
-        document.getElementById('auth-status').textContent =
-          `Signed in as ${firstName} — admin token needed to manage tokens.`;
-        document.getElementById('auth-btn').textContent = 'Use admin token';
-      } else {
-        currentToken = '';
-        localStorage.removeItem(TOKEN_KEY);
-        document.getElementById('auth-status').textContent = 'Sign in as admin to create or edit tokens.';
-        document.getElementById('auth-btn').textContent = 'Sign in';
-      }
-      document.getElementById('create-token-btn').style.display = 'none';
-      document.getElementById('show-tokens-label').style.display = 'none';
-      loadPublicTokens();
-      return;
-    }
-    const data = await res.json();
-    document.getElementById('create-token-btn').style.display = '';
-    document.getElementById('show-tokens-label').style.display = '';
-    renderTokens(data, true);
-  } catch {
-    loadPublicTokens();
-  }
-}
-
-function renderAuthBar() {
-  if (currentToken) {
-    document.getElementById('auth-status').textContent = 'Signed in';
-    document.getElementById('auth-btn').textContent = 'Sign out';
-  } else {
-    document.getElementById('auth-status').textContent = 'Sign in as admin to create or edit tokens.';
-    document.getElementById('auth-btn').textContent = 'Sign in';
-  }
-}
-
-// ── Sign-in modal ──────────────────────────────────────────────────────────
-
-document.getElementById('auth-btn').addEventListener('click', () => {
-  const btnText = document.getElementById('auth-btn').textContent;
-  if (btnText === 'Sign out') {
-    currentToken = '';
-    localStorage.removeItem(TOKEN_KEY);
-    renderAuthBar();
-    return;
-  }
-  document.getElementById('modal-backdrop').classList.add('open');
-  document.getElementById('modal-token-input').value = '';
-  document.getElementById('modal-token-input').focus();
-});
-
-document.getElementById('modal-cancel').addEventListener('click', () => {
-  document.getElementById('modal-backdrop').classList.remove('open');
-});
-
-document.getElementById('modal-backdrop').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal-backdrop'))
-    document.getElementById('modal-backdrop').classList.remove('open');
-});
-
-function saveSignIn() {
-  const t = document.getElementById('modal-token-input').value.trim();
-  if (!t) return;
-  currentToken = t;
-  localStorage.setItem(TOKEN_KEY, t);
-  document.getElementById('modal-backdrop').classList.remove('open');
-  document.getElementById('auth-status').textContent = 'Signed in';
-  document.getElementById('auth-btn').textContent = 'Sign out';
-  loadAdminTokens();
-}
-
-document.getElementById('modal-save').addEventListener('click', saveSignIn);
-document.getElementById('modal-token-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') saveSignIn();
-});
-
-// ── Token management modal ─────────────────────────────────────────────────
-
-let editingToken = null; // null = create mode, string = edit mode
-
-function buildRoleCheckboxes() {
-  const namedEl = document.getElementById('roles-named');
-  const teamsEl = document.getElementById('roles-teams');
-  namedEl.innerHTML = '';
-  teamsEl.innerHTML = '';
-
-  NAMED_ROLES.forEach(r => {
-    const label = document.createElement('label');
-    label.className = 'role-check-label';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.value = r;
-    cb.dataset.role = r;
-    label.appendChild(cb);
-    label.appendChild(document.createTextNode(r));
-    namedEl.appendChild(label);
+      '<tr><td colspan="2" class="empty-state">Failed to load members.</td></tr>';
   });
-
-  TEAM_ABBRS.forEach(r => {
-    const label = document.createElement('label');
-    label.className = 'role-check-label';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.value = r;
-    cb.dataset.role = r;
-    label.appendChild(cb);
-    label.appendChild(document.createTextNode(r));
-    teamsEl.appendChild(label);
-  });
-}
-
-function getCheckedRoles() {
-  return [...document.querySelectorAll('#token-mgmt-backdrop input[type=checkbox]:checked')]
-    .map(cb => cb.value);
-}
-
-function setCheckedRoles(roles) {
-  const roleSet = new Set(roles);
-  document.querySelectorAll('#token-mgmt-backdrop input[type=checkbox]').forEach(cb => {
-    cb.checked = roleSet.has(cb.value);
-  });
-}
-
-function openCreateModal() {
-  editingToken = null;
-  document.getElementById('token-mgmt-title').textContent = 'Create Token';
-  const saveBtn = document.getElementById('token-mgmt-save');
-  saveBtn.textContent = 'Create';
-  saveBtn.style.display = '';
-  saveBtn.disabled = false;
-  document.getElementById('token-mgmt-cancel').textContent = 'Cancel';
-  document.getElementById('token-mgmt-name').value = '';
-  document.getElementById('token-result-box').style.display = 'none';
-  document.getElementById('token-mgmt-error').style.display = 'none';
-  setCheckedRoles([]);
-  document.getElementById('token-mgmt-backdrop').classList.add('open');
-  document.getElementById('token-mgmt-name').focus();
-}
-
-function openEditModal(token, name, roles) {
-  editingToken = token;
-  document.getElementById('token-mgmt-title').textContent = 'Edit Token';
-  const saveBtn = document.getElementById('token-mgmt-save');
-  saveBtn.textContent = 'Save';
-  saveBtn.style.display = '';
-  saveBtn.disabled = false;
-  document.getElementById('token-mgmt-cancel').textContent = 'Cancel';
-  document.getElementById('token-mgmt-name').value = name || '';
-  document.getElementById('token-result-box').style.display = 'none';
-  document.getElementById('token-mgmt-error').style.display = 'none';
-  setCheckedRoles(roles);
-  document.getElementById('token-mgmt-backdrop').classList.add('open');
-  document.getElementById('token-mgmt-name').focus();
-}
-
-function closeTokenModal() {
-  document.getElementById('token-mgmt-backdrop').classList.remove('open');
-  const saveBtn = document.getElementById('token-mgmt-save');
-  saveBtn.style.display = '';
-  saveBtn.disabled = false;
-  document.getElementById('token-mgmt-cancel').textContent = 'Cancel';
-  document.getElementById('token-mgmt-error').style.display = 'none';
-  editingToken = null;
-}
-
-async function saveTokenModal() {
-  const name = document.getElementById('token-mgmt-name').value.trim();
-  const roles = getCheckedRoles();
-  if (!name) {
-    document.getElementById('token-mgmt-name').focus();
-    return;
-  }
-
-  const saveBtn = document.getElementById('token-mgmt-save');
-  saveBtn.disabled = true;
-  saveBtn.textContent = editingToken ? 'Saving…' : 'Creating…';
-
-  try {
-    if (editingToken) {
-      const res = await fetch(`/api/tokens/${editingToken}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${currentToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, roles }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      closeTokenModal();
-      loadAdminTokens();
-    } else {
-      const res = await fetch('/api/tokens', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${currentToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, roles }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      // Show created token — user must copy before closing
-      const resultBox = document.getElementById('token-result-box');
-      document.getElementById('token-result-value').textContent = data.token;
-      resultBox.style.display = '';
-      saveBtn.style.display = 'none';
-      document.getElementById('token-mgmt-cancel').textContent = 'Done';
-      loadAdminTokens();
-    }
-  } catch (err) {
-    const errEl = document.getElementById('token-mgmt-error');
-    errEl.textContent = 'Error: ' + err.message;
-    errEl.style.display = '';
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = editingToken ? 'Save' : 'Create';
-  }
-}
-
-document.getElementById('token-mgmt-cancel').addEventListener('click', () => {
-  closeTokenModal();
-});
-
-document.getElementById('token-mgmt-backdrop').addEventListener('click', e => {
-  if (e.target === document.getElementById('token-mgmt-backdrop')) closeTokenModal();
-});
-
-document.getElementById('token-mgmt-save').addEventListener('click', saveTokenModal);
-
-document.getElementById('token-result-copy').addEventListener('click', () => {
-  const val = document.getElementById('token-result-value').textContent;
-  navigator.clipboard.writeText(val).then(() => {
-    const btn = document.getElementById('token-result-copy');
-    btn.textContent = 'Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy token'; btn.classList.remove('copied'); }, 1500);
-  });
-});
-
-// ── Delete ─────────────────────────────────────────────────────────────────
-
-async function confirmDelete(token, name) {
-  if (!confirm(`Delete token for "${name}"?\n\nThis cannot be undone.`)) return;
-  try {
-    const res = await fetch(`/api/tokens/${token}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${currentToken}` },
-    });
-    if (!res.ok) throw new Error(await res.text());
-    loadAdminTokens();
-  } catch (err) {
-    alert('Error: ' + err.message);
-  }
-}
-
-// ── Show tokens toggle ─────────────────────────────────────────────────────
-
-document.getElementById('show-tokens-cb').addEventListener('change', e => {
-  document.getElementById('tokens-table-wrap').classList.toggle('tokens-revealed', e.target.checked);
-});
-
-// ── Init ───────────────────────────────────────────────────────────────────
-
-buildRoleCheckboxes();
-renderAuthBar();
-if (currentToken) {
-  loadAdminTokens();
-} else {
-  loadPublicTokens();
-}
 </script>
 <script src="/token-badge.js"></script>
 </body>

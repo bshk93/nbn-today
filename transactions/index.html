@@ -601,6 +601,16 @@
         </div>
       </div>
 
+      <!-- two-way shorthand fields (shown instead of salary rows) -->
+      <div class="form-field" id="f-twoway-years-field" style="display:none">
+        <label>Years</label>
+        <input type="number" id="f-twoway-years" value="2" min="1" max="10" style="width:5rem">
+      </div>
+      <div class="form-field" id="f-twoway-start-field" style="display:none">
+        <label>Starting Season</label>
+        <input type="text" id="f-twoway-start" placeholder="25-26" maxlength="5">
+      </div>
+
       <div class="form-field full" id="f-salaries-field">
         <label>Salaries</label>
         <div class="salary-rows" id="salary-rows"></div>
@@ -832,12 +842,24 @@ function setDefaultDate() {
 }
 
 function setupTypeSwitch() {
+  function applyContractTypeVisibility(needsContract, isConvertTwoWay) {
+    const isTwoWay = needsContract && !isConvertTwoWay &&
+      document.querySelector('input[name="contract-type"]:checked')?.value === 'two-way';
+    document.getElementById('f-salaries-field').style.display       = needsContract && !isTwoWay ? '' : 'none';
+    document.getElementById('f-twoway-years-field').style.display   = isTwoWay ? '' : 'none';
+    document.getElementById('f-twoway-start-field').style.display   = isTwoWay ? '' : 'none';
+  }
+
   function onTypeChange() {
     const v = document.getElementById('f-type').value;
     const isTrade = v === 'trade';
     const isSign = v === 'sign', isPick = v === 'pick', isOpt = v === 'option', isRelease = v === 'release';
     const isConvertTwoWay = v === 'convert_twoway';
     const needsContract = isSign || isPick || isConvertTwoWay;
+
+    // Reset contract-type to player whenever transaction type changes
+    const playerRadio = document.querySelector('input[name="contract-type"][value="player"]');
+    if (playerRadio) playerRadio.checked = true;
 
     // Show trade builder OR simple form
     document.getElementById('trade-builder').style.display = isTrade ? '' : 'none';
@@ -859,7 +881,7 @@ function setupTypeSwitch() {
       document.getElementById('f-opt-hold-field').style.display        = 'none';
       document.getElementById('f-opt-hold-amount-field').style.display = 'none';
       document.getElementById('f-contract-type-field').style.display   = (needsContract && !isConvertTwoWay) ? '' : 'none';
-      document.getElementById('f-salaries-field').style.display      = needsContract ? '' : 'none';
+      applyContractTypeVisibility(needsContract, isConvertTwoWay);
     }
 
     document.getElementById('f-player-display').value = '';
@@ -871,7 +893,23 @@ function setupTypeSwitch() {
     }
     document.getElementById('submit-btn').textContent = isTrade ? 'Submit Trade' : 'Submit Transaction';
   }
+
   document.getElementById('f-type').addEventListener('change', onTypeChange);
+
+  // When contract-type radio changes, re-evaluate salary vs twoway fields
+  document.querySelectorAll('input[name="contract-type"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const v = document.getElementById('f-type').value;
+      const needsContract = v === 'sign' || v === 'pick' || v === 'convert_twoway';
+      applyContractTypeVisibility(needsContract, v === 'convert_twoway');
+      // Pre-fill starting season when switching to two-way
+      if (r.value === 'two-way') {
+        const startEl = document.getElementById('f-twoway-start');
+        if (!startEl.value) startEl.value = currentSeasonStr();
+      }
+    });
+  });
+
   onTypeChange();
 }
 
@@ -882,6 +920,26 @@ function currentSeasonStr() {
   return m < 7
     ? `${String(y - 1).padStart(2, '0')}-${String(y).padStart(2, '0')}`
     : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
+}
+
+function nextSeasonStr(s) {
+  const m = s.match(/^(\d{2})-(\d{2})$/);
+  if (!m) return '';
+  const nextEnd = (parseInt(m[2]) + 1) % 100;
+  return `${m[2]}-${String(nextEnd).padStart(2, '0')}`;
+}
+
+function buildTwowayContract(years, startSeason) {
+  const salaries = {}, guaranteed = {}, cap_holds = {};
+  let s = startSeason;
+  for (let i = 0; i < years; i++) {
+    salaries[s] = '$0';
+    guaranteed[s] = '$0';
+    s = nextSeasonStr(s);
+  }
+  salaries[s] = '$1';
+  cap_holds[s] = 'RFA';
+  return { type: 'two-way', salaries, cap_holds, guaranteed };
 }
 
 function fmtDollarsShort(v) {
@@ -1465,7 +1523,6 @@ async function submitTransaction() {
   const type = document.getElementById('f-type').value;
   const playerSlug = document.getElementById('f-player-slug').value.trim();
   const contractType = document.querySelector('input[name="contract-type"]:checked').value;
-  const { salaries, cap_holds, guaranteed, guarantee_dates } = collectSalaries();
   let description = type === 'trade'
     ? document.getElementById('f-trade-description').value.trim()
     : document.getElementById('f-description').value.trim();
@@ -1473,10 +1530,20 @@ async function submitTransaction() {
   if (!type) { setStatus('err', 'Select a transaction type.'); return; }
   if (!playerSlug && type !== 'trade') { setStatus('err', 'Select a player from the dropdown.'); return; }
 
-  const contract = { type: contractType, salaries, cap_holds,
-    ...(Object.keys(guaranteed).length      ? { guaranteed }       : {}),
-    ...(Object.keys(guarantee_dates).length ? { guarantee_dates }  : {}),
-  };
+  let contract;
+  if (contractType === 'two-way') {
+    const years = parseInt(document.getElementById('f-twoway-years').value) || 0;
+    const startSeason = document.getElementById('f-twoway-start').value.trim();
+    if (years < 1) { setStatus('err', 'Two-way contract must be at least 1 year.'); return; }
+    if (!/^\d{2}-\d{2}$/.test(startSeason)) { setStatus('err', 'Starting season must be in YY-YY format (e.g. 25-26).'); return; }
+    contract = buildTwowayContract(years, startSeason);
+  } else {
+    const { salaries, cap_holds, guaranteed, guarantee_dates } = collectSalaries();
+    contract = { type: contractType, salaries, cap_holds,
+      ...(Object.keys(guaranteed).length      ? { guaranteed }       : {}),
+      ...(Object.keys(guarantee_dates).length ? { guarantee_dates }  : {}),
+    };
+  }
   let date, details;
 
   if (type === 'sign') {

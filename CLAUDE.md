@@ -162,12 +162,13 @@ FastAPI app running as a systemd service on port 8001, proxied through nginx. So
 | Role | Permissions |
 |---|---|
 | `rosters` | `PUT /api/roster/{team}`, `PUT /api/picks/{team}` |
-| `admin` | Everything `rosters` can do + token management (`GET/POST/DELETE /api/tokens`) |
+| `bod` | Everything `rosters` can do + early award access + edit member tenures |
+| `admin` | Everything + member management (`GET/POST/PATCH/DELETE /api/members`) |
 | `atl`, `bkn`, `bos`, `cha`, `chi`, `cle`, `dal`, `den`, `det`, `gsw`, `hou`, `ind`, `lac`, `lal`, `mem`, `mia`, `mil`, `min`, `nop`, `nyk`, `okc`, `orl`, `phi`, `phx`, `por`, `sac`, `sas`, `tor`, `uta`, `was` | `PUT /api/trading-block/{team}` for their own team only |
 
-`admin` implicitly satisfies any role check. There is one admin token (yours). Everyone else gets a `rosters` token (or a per-team role once permissions are wired up).
+`admin` implicitly satisfies any role check.
 
-Valid roles are enforced at token creation time — `POST /api/tokens` rejects any unrecognized role name.
+Valid roles are enforced at member creation time — `POST /api/members` rejects any unrecognized role name.
 
 ### Trading Block endpoints
 
@@ -178,30 +179,55 @@ Valid roles are enforced at token creation time — `POST /api/tokens` rejects a
 
 Data stored in `/var/lib/nothing-but-stats/trading-block.json`. The page at `tradeblock/index.html` fetches this API plus the relevant teams' roster CSVs to join player metadata (POS, OVR, AGE, salary columns).
 
-### Token management
+### Member management
 
-Tokens are stored in `/var/lib/nothing-but-stats/tokens.json` as `{ "<hex-token>": { "name": "...", "roles": [...] } }`.
+Members are the canonical identity for all league participants. Stored in `/var/lib/nothing-but-stats/members.json` as `{ "username": { "token": "<hex>", "roles": [...], "tenures": [{team, start, end, position}] } }`.
 
-**Create a token** (send to new rosters member over Discord DM):
+The member name (key) is the canonical name that matches `owner` in `owners.csv` and `owner_stats.csv` — this is the join key between the members system and the stats pipeline.
+
+**Tenure positions:** `owner`, `gm`, `coach`, `none`
+
+Member management UI is at `/members/`. Admin creates members (token auto-generated, shown once). BOD can edit tenures. Token rotation and deletion are admin-only.
+
+**Create a member** (use the UI at `/members/` — token is shown once in-browser):
 ```bash
-curl -X POST https://nbn.today/api/tokens \
+curl -X POST https://nbn.today/api/members \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Their Name", "roles": ["rosters"]}'
+  -d '{"name": "username", "roles": ["rosters"], "tenures": []}'
 ```
 
-**List all tokens:**
+**List all members (public):**
 ```bash
-curl https://nbn.today/api/tokens -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+curl https://nbn.today/api/members/public
 ```
 
-**Revoke a token:**
+**List all members with tokens (admin):**
 ```bash
-curl -X DELETE https://nbn.today/api/tokens/TOKEN_TO_REVOKE \
+curl https://nbn.today/api/members -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+**Update member roles (admin) or tenures (admin/bod):**
+```bash
+curl -X PATCH https://nbn.today/api/members/username \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"roles": ["rosters", "phx"], "tenures": [{"team": "PHX", "start": "2020-07-01", "end": null, "position": "owner"}]}'
+```
+
+**Rotate a token:**
+```bash
+curl -X POST https://nbn.today/api/members/username/rotate-token \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
-Revocation is instant — the next save attempt returns 403 and the browser clears the stored token automatically.
+**Delete a member:**
+```bash
+curl -X DELETE https://nbn.today/api/members/username \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+The old `/api/tokens/*` endpoints remain as compatibility shims backed by members.json.
 
 ### Service management
 

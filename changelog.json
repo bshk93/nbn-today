@@ -1,5 +1,21 @@
 [
   {
+    "version": "0.0.46",
+    "date": "2026-05-23",
+    "changes": [
+      "Members: add /members/ page \u2014 canonical identity for all league participants, unifying owner stats history and API tokens into a single members.json store keyed by canonical username",
+      "Members: migrate all 46 historical owners from owners.csv (with computed tenure start/end dates) and 13 token holders into members.json; names standardized to match stats pipeline",
+      "Members: admin can create members (token auto-generated, shown once), rotate tokens, and delete members; BOD can edit team tenures; all via /members/ UI",
+      "Members: add Members card to homepage after Owners card",
+      "Roles: simplify /roles/ active tokens section to read-only member list using new /api/members/public endpoint; link to /members/ for management",
+      "API: add /api/members/* endpoints (public list, admin full list, create, patch, rotate-token, delete); /api/tokens/* kept as compatibility shims",
+      "Players: add notes field to player bios; shown as a hover tooltip (\u25e6 icon) on the player name in team roster tables",
+      "Transactions: two-way contract input simplified to Years + Starting Season; contract is auto-generated as N\u00d7$0 (guaranteed) + $1 RFA cap hold in year N+1",
+      "Frivolities salary viz: fix dead cap entries missing from chart \u2014 now fetches per-team dead cap data from the API alongside roster data",
+      "Remove legacy dead cap roster designation: drop TYPE=dead filters, migration shims, and Dead Cap contract type option now that all dead cap lives in per-team deadcap CSVs"
+    ]
+  },
+  {
     "version": "0.0.32",
     "date": "2026-05-23",
     "changes": [

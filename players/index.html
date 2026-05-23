@@ -994,7 +994,7 @@
     const typeLbl = document.createElement('label');
     typeLbl.textContent = 'Contract Type';
     const typeSelect = document.createElement('select');
-    [['', '—'], ['player', 'Player'], ['two-way', 'Two-Way'], ['dead', 'Dead Cap']].forEach(([v, l]) => {
+    [['', '—'], ['player', 'Player'], ['two-way', 'Two-Way']].forEach(([v, l]) => {
       const opt = document.createElement('option');
       opt.value = v; opt.textContent = l;
       if ((initial.type || '') === v) opt.selected = true;
@@ -1002,6 +1002,34 @@
     });
     typeLbl.appendChild(typeSelect);
     form.appendChild(typeLbl);
+
+    // Two-way shorthand (shown in place of salary rows when contract type = two-way)
+    const twowayDiv = document.createElement('div');
+    twowayDiv.className = 'full-col';
+    twowayDiv.style.display = 'none';
+    const twHeader = Object.assign(document.createElement('span'), { textContent: 'Two-Way Contract' });
+    twHeader.style.cssText = 'font-size:0.75rem;color:#9ca3af;display:block;margin-bottom:0.4rem';
+    const twRow = document.createElement('div');
+    twRow.style.cssText = 'display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap';
+    const twYearsWrap = document.createElement('label');
+    twYearsWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:#9ca3af';
+    twYearsWrap.appendChild(Object.assign(document.createElement('span'), { textContent: 'Years' }));
+    const twYears = document.createElement('input');
+    twYears.type = 'number'; twYears.value = '2'; twYears.min = '1'; twYears.max = '10';
+    twYears.style.cssText = 'width:4rem;background:#111827;border:1px solid #374151;border-radius:4px;color:#f3f4f6;padding:0.3rem 0.4rem;font-size:0.85rem;font-family:inherit;outline:none';
+    twYearsWrap.appendChild(twYears);
+    const twStartWrap = document.createElement('label');
+    twStartWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:#9ca3af';
+    twStartWrap.appendChild(Object.assign(document.createElement('span'), { textContent: 'Starting Season' }));
+    const twStart = document.createElement('input');
+    twStart.type = 'text'; twStart.maxLength = 5; twStart.placeholder = '25-26';
+    { const _y = new Date().getMonth() >= 7 ? new Date().getFullYear() + 1 : new Date().getFullYear();
+      twStart.value = `${String(_y).slice(-2)}-${String(_y + 1).slice(-2)}`; }
+    twStart.style.cssText = 'width:5rem;background:#111827;border:1px solid #374151;border-radius:4px;color:#f3f4f6;padding:0.3rem 0.4rem;font-size:0.85rem;font-family:inherit;outline:none';
+    twStartWrap.appendChild(twStart);
+    twRow.appendChild(twYearsWrap); twRow.appendChild(twStartWrap);
+    twowayDiv.appendChild(twHeader); twowayDiv.appendChild(twRow);
+    form.appendChild(twowayDiv);
 
     // Salaries
     const salLbl = document.createElement('label');
@@ -1086,6 +1114,20 @@
     salLbl.appendChild(salRows); salLbl.appendChild(addSalBtn);
     form.appendChild(salLbl);
 
+    // Toggle salary rows vs two-way shorthand
+    typeSelect.addEventListener('change', () => {
+      const isTW = typeSelect.value === 'two-way';
+      twowayDiv.style.display = isTW ? '' : 'none';
+      salLbl.style.display = isTW ? 'none' : '';
+    });
+    if ((initial.type || '') === 'two-way') {
+      twowayDiv.style.display = '';
+      salLbl.style.display = 'none';
+      // Pre-fill years/start from existing salary data if it matches expected pattern
+      const zeroYears = Object.entries(initSalaries).filter(([, v]) => v === '$0').map(([k]) => k).sort();
+      if (zeroYears.length) { twStart.value = zeroYears[0]; twYears.value = String(zeroYears.length); }
+    }
+
     if (onNameChange) fName.addEventListener('input', () => onNameChange(fName.value));
 
     const actions = document.createElement('div');
@@ -1111,19 +1153,30 @@
       const cap_holds = {};
       const guaranteed = {};
       const guarantee_dates = {};
-      salRows.querySelectorAll('.salary-row').forEach(row => {
-        const season  = row.querySelector('.season-input').value.trim();
-        const amount  = row.querySelector('.amount-input').value.trim();
-        const hold    = row.querySelector('.hold-select').value;
-        const gtd     = row.querySelector('.gtd-input').value.trim();
-        const gtdDate = row.querySelector('.gtd-date-input').value.trim();
-        if (season && amount) salaries[season] = amount;
-        if (season && hold)   cap_holds[season] = hold;
-        if (season && hold === 'NON_GTD') {
-          if (gtd)     guaranteed[season] = gtd;
-          if (gtdDate) guarantee_dates[season] = gtdDate;
+      if (typeSelect.value === 'two-way') {
+        const yrs = parseInt(twYears.value) || 0;
+        let s = twStart.value.trim();
+        for (let i = 0; i < yrs; i++) {
+          salaries[s] = '$0'; guaranteed[s] = '$0';
+          const m = s.match(/^(\d{2})-(\d{2})$/);
+          s = m ? `${m[2]}-${String((+m[2] + 1) % 100).padStart(2, '0')}` : '';
         }
-      });
+        if (s) { salaries[s] = '$1'; cap_holds[s] = 'RFA'; }
+      } else {
+        salRows.querySelectorAll('.salary-row').forEach(row => {
+          const season  = row.querySelector('.season-input').value.trim();
+          const amount  = row.querySelector('.amount-input').value.trim();
+          const hold    = row.querySelector('.hold-select').value;
+          const gtd     = row.querySelector('.gtd-input').value.trim();
+          const gtdDate = row.querySelector('.gtd-date-input').value.trim();
+          if (season && amount) salaries[season] = amount;
+          if (season && hold)   cap_holds[season] = hold;
+          if (season && hold === 'NON_GTD') {
+            if (gtd)     guaranteed[season] = gtd;
+            if (gtdDate) guarantee_dates[season] = gtdDate;
+          }
+        });
+      }
       const payload = {
         name:        fName.value.trim(),
         pos:         [...selectedPos],
@@ -2412,7 +2465,7 @@
     function visible(p) {
       return (!filterQ || p.PLAYER.toLowerCase().includes(filterQ)) &&
              (!filterTeam || p.TEAMS.includes(filterTeam)) &&
-             (!filterRostered || p.TYPE === 'player' || p.TYPE === 'two-way');
+             (!filterRostered || (!p.RETIRED && (p.TYPE === 'player' || p.TYPE === 'two-way')));
     }
 
     function rebuildBody() {

@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Members — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem;
+    }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 900px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .auth-bar {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 1.25rem; font-size: 0.85rem; color: #9ca3af;
+    }
+    .auth-bar button {
+      background: #374151; border: 1px solid #4b5563; color: #f3f4f6;
+      border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer;
+      font-size: 0.8rem; font-family: inherit;
+    }
+    .auth-bar button:hover { background: #4b5563; }
+
+    .create-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .section-heading { font-size: 1.125rem; font-weight: 700; }
+    .btn-create {
+      background: #2563eb; border: 1px solid #3b82f6; color: #fff;
+      border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer;
+      font-size: 0.8rem; font-family: inherit;
+    }
+    .btn-create:hover { background: #1d4ed8; }
+
+    .table-wrap {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    thead th {
+      padding: 0.6rem 1rem; text-align: left; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280;
+      border-bottom: 1px solid #374151;
+    }
+    tbody td { padding: 0.65rem 1rem; border-bottom: 1px solid #1f2937; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #263244; }
+    tr.former-row { opacity: 0.5; }
+
+    .member-name { font-weight: 600; }
+    .team-badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 4px;
+      background: #1c2c1e; color: #86efac;
+    }
+    .team-badge a { color: inherit; }
+    .pos-text { font-size: 0.85rem; color: #d1d5db; }
+    .role-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .rbadge {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.15rem 0.45rem; border-radius: 4px;
+    }
+    .rb-admin   { background: #450a0a; color: #fca5a5; }
+    .rb-bod     { background: #3d2200; color: #fcd34d; }
+    .rb-rosters { background: #1e3a5f; color: #93c5fd; }
+    .rb-curator { background: #2e1065; color: #c4b5fd; }
+    .rb-stats   { background: #0c2a1a; color: #6ee7b7; }
+    .rb-team    { background: #1c2c1e; color: #86efac; }
+
+    .action-cell { display: flex; gap: 0.35rem; align-items: center; white-space: nowrap; }
+    .btn-sm {
+      background: transparent; border: 1px solid #374151; color: #9ca3af;
+      border-radius: 5px; padding: 0.15rem 0.5rem; font-size: 0.72rem;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .btn-sm:hover { border-color: #60a5fa; color: #60a5fa; }
+    .btn-sm.danger:hover { border-color: #ef4444; color: #ef4444; }
+    .btn-sm.rotate:hover { border-color: #f59e0b; color: #f59e0b; }
+
+    .empty-state { text-align: center; color: #6b7280; padding: 2rem; }
+
+    /* ── Modals ── */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 200; align-items: flex-start; justify-content: center; padding-top: 5vh;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1.5rem; width: 100%; max-width: 420px;
+      display: flex; flex-direction: column; gap: 1rem;
+      max-height: 88vh; overflow-y: auto;
+    }
+    .modal h3 { font-size: 1rem; font-weight: 600; }
+    .modal input, .modal select {
+      background: #111827; border: 1px solid #374151; color: #f3f4f6;
+      border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+      width: 100%; font-family: inherit;
+    }
+    .modal input:focus, .modal select:focus { outline: none; border-color: #60a5fa; }
+    .modal select option { background: #1f2937; }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .modal-label {
+      font-size: 0.75rem; font-weight: 600; color: #9ca3af;
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem;
+    }
+    .btn-cancel {
+      background: transparent; border: 1px solid #374151; color: #d1d5db;
+      border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer;
+      font-size: 0.8rem; font-family: inherit;
+    }
+    .btn-cancel:hover { border-color: #6b7280; }
+    .btn-save {
+      background: #2563eb; border: 1px solid #3b82f6; color: #fff;
+      border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer;
+      font-size: 0.8rem; font-family: inherit;
+    }
+    .btn-save:hover { background: #1d4ed8; }
+
+    .roles-check-group { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
+    .roles-check-group.teams-group { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.3rem 0.5rem; }
+    .role-check-label {
+      display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem;
+      color: #d1d5db; cursor: pointer; white-space: nowrap;
+    }
+    .role-check-label input[type=checkbox] { cursor: pointer; accent-color: #3b82f6; }
+
+    .token-result-box {
+      background: #111827; border: 1px solid #2d6a30; border-radius: 6px;
+      padding: 0.65rem 0.75rem; display: flex; flex-direction: column; gap: 0.35rem;
+    }
+    .token-result-label { font-size: 0.7rem; color: #6b7280; }
+    .token-result-value {
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.72rem;
+      color: #86efac; word-break: break-all; line-height: 1.5;
+    }
+    .btn-copy-result {
+      background: none; border: 1px solid #2d6a30; color: #86efac;
+      border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.7rem;
+      cursor: pointer; font-family: inherit; align-self: flex-start;
+    }
+    .btn-copy-result:hover { background: #14532d; }
+    .btn-copy-result.copied { background: #14532d; }
+
+    .error-box {
+      font-size: 0.8rem; color: #fca5a5; background: #450a0a;
+      border-radius: 6px; padding: 0.5rem 0.75rem;
+    }
+
+    /* Tenure modal */
+    .tenure-table-wrap {
+      background: #111827; border: 1px solid #374151; border-radius: 8px;
+      overflow-x: auto;
+    }
+    .tenure-table-wrap table { font-size: 0.82rem; }
+    .tenure-table-wrap thead th { font-size: 0.65rem; padding: 0.45rem 0.75rem; }
+    .tenure-table-wrap tbody td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #1f2937; }
+    .tenure-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ongoing-text { color: #86efac; }
+    .tenure-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr auto auto;
+      gap: 0.4rem;
+      align-items: center;
+    }
+    .tenure-form-grid input, .tenure-form-grid select {
+      padding: 0.35rem 0.5rem; font-size: 0.8rem;
+    }
+    .tenure-hint { font-size: 0.7rem; color: #6b7280; margin-top: 0.25rem; }
+
+    @media (max-width: 640px) {
+      .roles-check-group.teams-group { grid-template-columns: repeat(4, 1fr); }
+      .tenure-form-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<script src="/nav.js"></script>
+
+<div class="page">
+  <nav class="nav"><a href="/">← Home</a></nav>
+
+  <header>
+    <h1>Members</h1>
+    <p>League members, team assignments, and access roles.</p>
+  </header>
+
+  <div class="auth-bar" id="auth-bar">
+    <span id="auth-status">Sign in to manage members.</span>
+    <button id="auth-btn">Sign in</button>
+  </div>
+
+  <div class="create-bar" id="create-bar" style="display:none">
+    <div class="section-heading">All Members</div>
+    <button class="btn-create" id="create-btn">+ Create Member</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Team</th>
+          <th>Position</th>
+          <th>Roles</th>
+          <th id="actions-th" style="display:none"></th>
+        </tr>
+      </thead>
+      <tbody id="members-tbody">
+        <tr><td colspan="4" class="empty-state">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Sign-in modal -->
+<div class="modal-backdrop" id="signin-backdrop">
+  <div class="modal">
+    <h3>Sign In</h3>
+    <input type="password" id="signin-input" placeholder="Paste your token…">
+    <div class="modal-actions">
+      <button class="btn-cancel" id="signin-cancel">Cancel</button>
+      <button class="btn-save" id="signin-save">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create member modal -->
+<div class="modal-backdrop" id="create-backdrop">
+  <div class="modal" style="max-width:520px">
+    <h3>Create Member</h3>
+    <div>
+      <div class="modal-label">Username</div>
+      <input type="text" id="create-name" placeholder="Unique display name…">
+    </div>
+    <div>
+      <div class="modal-label">Roles</div>
+      <div class="roles-check-group" id="create-roles-named"></div>
+    </div>
+    <div>
+      <div class="modal-label" style="margin-bottom:0.5rem">Team Access</div>
+      <div class="roles-check-group teams-group" id="create-roles-teams"></div>
+    </div>
+    <div>
+      <div class="modal-label">Initial Tenure <span style="color:#6b7280;font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem">
+        <select id="create-team-sel"></select>
+        <select id="create-pos-sel"></select>
+        <input type="date" id="create-start-input">
+      </div>
+    </div>
+    <div id="create-error" style="display:none" class="error-box"></div>
+    <div id="create-token-result" style="display:none" class="token-result-box">
+      <div class="token-result-label">Token created — copy it now, it won't be shown again.</div>
+      <div class="token-result-value" id="create-token-value"></div>
+      <button class="btn-copy-result" id="create-copy-btn">Copy token</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="create-cancel">Cancel</button>
+      <button class="btn-save" id="create-save">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rotate token result modal -->
+<div class="modal-backdrop" id="rotate-backdrop">
+  <div class="modal">
+    <h3>Token Rotated</h3>
+    <div class="token-result-box">
+      <div class="token-result-label">New token — copy it now, it won't be shown again.</div>
+      <div class="token-result-value" id="rotate-token-value"></div>
+      <button class="btn-copy-result" id="rotate-copy-btn">Copy token</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" id="rotate-done">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tenure edit modal -->
+<div class="modal-backdrop" id="tenure-backdrop">
+  <div class="modal" style="max-width:660px">
+    <h3 id="tenure-modal-title">Tenures</h3>
+    <div class="tenure-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Team</th><th>Position</th><th>Start</th><th>End</th><th></th></tr>
+        </thead>
+        <tbody id="tenure-tbody"></tbody>
+      </table>
+    </div>
+    <div>
+      <div class="modal-label" id="tenure-form-label">Add Tenure</div>
+      <div class="tenure-form-grid">
+        <select id="tf-team"></select>
+        <select id="tf-pos"></select>
+        <input type="date" id="tf-start">
+        <input type="date" id="tf-end">
+        <button class="btn-save" id="tf-add" style="white-space:nowrap">Add</button>
+        <button class="btn-cancel" id="tf-cancel" style="display:none">×</button>
+      </div>
+      <p class="tenure-hint">Leave end date blank for an ongoing tenure.</p>
+    </div>
+    <div id="tenure-error" style="display:none" class="error-box"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="tenure-discard">Discard</button>
+      <button class="btn-save" id="tenure-save">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN_KEY   = 'nbn_token';
+const TEAM_ABBRS  = [
+  'ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
+  'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+  'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS',
+];
+const NAMED_ROLES = ['admin','bod','rosters','curator','stats'];
+const POSITIONS   = ['owner','gm','coach','none'];
+
+let currentToken = localStorage.getItem(TOKEN_KEY) || '';
+let myName = '', myRoles = [], isAdmin = false, isBod = false;
+let allMembers = [];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function displayPos(p) {
+  return p === 'owner' ? 'Owner' : p === 'gm' ? 'GM' : p === 'coach' ? 'Coach' : '—';
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  return `${parseInt(m)}/${parseInt(d)}/${y}`;
+}
+
+function activeTenure(tenures) {
+  const active = tenures.filter(t => !t.end);
+  if (!active.length) return null;
+  return active.sort((a, b) => b.start.localeCompare(a.start))[0];
+}
+
+function lastTenure(tenures) {
+  if (!tenures.length) return null;
+  return [...tenures].sort((a, b) => b.start.localeCompare(a.start))[0];
+}
+
+function roleClass(r) {
+  if (r === 'admin')   return 'rb-admin';
+  if (r === 'bod')     return 'rb-bod';
+  if (r === 'rosters') return 'rb-rosters';
+  if (r === 'curator') return 'rb-curator';
+  if (r === 'stats')   return 'rb-stats';
+  return 'rb-team';
+}
+
+function roleBadgesHtml(roles) {
+  if (!roles.length) return '<span style="color:#4b5563">—</span>';
+  return roles.map(r => `<span class="rbadge ${roleClass(r)}">${r}</span>`).join('');
+}
+
+function populateSel(id, opts, blank) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = blank ? `<option value="">${blank}</option>` : '';
+  opts.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    sel.appendChild(o);
+  });
+}
+
+function populatePosSel(id) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = '';
+  POSITIONS.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p; o.textContent = p === 'none' ? 'None' : displayPos(p);
+    sel.appendChild(o);
+  });
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+
+function renderTable() {
+  const tbody = document.getElementById('members-tbody');
+  if (!allMembers.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No members found.</td></tr>';
+    return;
+  }
+  const sorted = [...allMembers].sort((a, b) => {
+    const aA = !!activeTenure(a.tenures), bA = !!activeTenure(b.tenures);
+    if (aA !== bA) return bA ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const hasActions = isAdmin || isBod;
+  tbody.innerHTML = '';
+
+  sorted.forEach(m => {
+    const cur = activeTenure(m.tenures);
+    const last = lastTenure(m.tenures);
+    const tr = document.createElement('tr');
+    if (!cur) tr.classList.add('former-row');
+
+    // Name
+    const tdName = tr.insertCell();
+    tdName.innerHTML = `<span class="member-name">${m.name}</span>`;
+
+    // Team
+    const tdTeam = tr.insertCell();
+    if (cur) {
+      tdTeam.innerHTML = `<span class="team-badge"><a href="/teams/${cur.team.toLowerCase()}/">${cur.team}</a></span>`;
+    } else if (last) {
+      tdTeam.innerHTML = `<span class="team-badge" style="opacity:0.6">${last.team}</span>`;
+    } else {
+      tdTeam.innerHTML = '<span style="color:#4b5563">—</span>';
+    }
+
+    // Position
+    const tdPos = tr.insertCell();
+    if (cur) {
+      tdPos.innerHTML = `<span class="pos-text">${displayPos(cur.position)}</span>`;
+    } else if (last) {
+      tdPos.innerHTML = `<span class="pos-text" style="color:#6b7280;font-style:italic">Former</span>`;
+    } else {
+      tdPos.innerHTML = '<span style="color:#4b5563">—</span>';
+    }
+
+    // Roles
+    const tdRoles = tr.insertCell();
+    tdRoles.innerHTML = `<div class="role-badges">${roleBadgesHtml(m.roles)}</div>`;
+
+    // Actions
+    if (hasActions) {
+      const tdAct = tr.insertCell();
+      const div = document.createElement('div');
+      div.className = 'action-cell';
+      if (isBod) {
+        const btn = document.createElement('button');
+        btn.className = 'btn-sm'; btn.textContent = 'Tenures';
+        btn.addEventListener('click', () => openTenureModal(m.name, m.tenures));
+        div.appendChild(btn);
+      }
+      if (isAdmin) {
+        const rotBtn = document.createElement('button');
+        rotBtn.className = 'btn-sm rotate'; rotBtn.textContent = 'Rotate';
+        rotBtn.addEventListener('click', () => doRotateToken(m.name));
+        div.appendChild(rotBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-sm danger'; delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', () => doDeleteMember(m.name));
+        div.appendChild(delBtn);
+      }
+      tdAct.appendChild(div);
+    }
+
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+function updateAuthBar() {
+  const status = document.getElementById('auth-status');
+  const btn    = document.getElementById('auth-btn');
+  if (currentToken && myName) {
+    status.textContent = `Signed in as ${myName}`;
+    btn.textContent = 'Sign out';
+  } else if (currentToken) {
+    status.textContent = 'Signed in';
+    btn.textContent = 'Sign out';
+  } else {
+    status.textContent = 'Sign in to manage members.';
+    btn.textContent = 'Sign in';
+  }
+}
+
+async function initAuth() {
+  try {
+    const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${currentToken}` } });
+    if (!res.ok) { signOut(); return; }
+    const me = await res.json();
+    myName = me.name; myRoles = me.roles || [];
+    isAdmin = myRoles.includes('admin');
+    isBod   = myRoles.includes('bod') || isAdmin;
+    updateAuthBar();
+    if (isAdmin || isBod) {
+      document.getElementById('actions-th').style.display = '';
+    }
+    if (isAdmin) {
+      document.getElementById('create-bar').style.display = '';
+      const r2 = await fetch('/api/members', { headers: { Authorization: `Bearer ${currentToken}` } });
+      if (r2.ok) { allMembers = await r2.json(); }
+    }
+    renderTable();
+  } catch { signOut(); }
+}
+
+function signOut() {
+  currentToken = ''; myName = ''; myRoles = []; isAdmin = false; isBod = false;
+  localStorage.removeItem(TOKEN_KEY);
+  document.getElementById('actions-th').style.display = 'none';
+  document.getElementById('create-bar').style.display = 'none';
+  updateAuthBar();
+  renderTable();
+}
+
+document.getElementById('auth-btn').addEventListener('click', () => {
+  if (currentToken) { signOut(); }
+  else {
+    document.getElementById('signin-backdrop').classList.add('open');
+    document.getElementById('signin-input').value = '';
+    setTimeout(() => document.getElementById('signin-input').focus(), 50);
+  }
+});
+
+document.getElementById('signin-cancel').addEventListener('click', () =>
+  document.getElementById('signin-backdrop').classList.remove('open'));
+document.getElementById('signin-backdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('signin-backdrop'))
+    document.getElementById('signin-backdrop').classList.remove('open');
+});
+
+async function doSignIn() {
+  const t = document.getElementById('signin-input').value.trim();
+  if (!t) return;
+  currentToken = t; localStorage.setItem(TOKEN_KEY, t);
+  document.getElementById('signin-backdrop').classList.remove('open');
+  await initAuth();
+}
+document.getElementById('signin-save').addEventListener('click', doSignIn);
+document.getElementById('signin-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+
+// ── Create member ─────────────────────────────────────────────────────────────
+
+function buildCreateCheckboxes() {
+  const namedEl = document.getElementById('create-roles-named');
+  const teamsEl = document.getElementById('create-roles-teams');
+  namedEl.innerHTML = ''; teamsEl.innerHTML = '';
+  NAMED_ROLES.forEach(r => namedEl.appendChild(makeCheckbox(r)));
+  TEAM_ABBRS.forEach(r => teamsEl.appendChild(makeCheckbox(r.toLowerCase())));
+}
+
+function makeCheckbox(r) {
+  const label = document.createElement('label');
+  label.className = 'role-check-label';
+  const cb = document.createElement('input');
+  cb.type = 'checkbox'; cb.value = r;
+  label.append(cb, r);
+  return label;
+}
+
+function openCreateModal() {
+  document.getElementById('create-name').value = '';
+  document.querySelectorAll('#create-backdrop input[type=checkbox]').forEach(cb => cb.checked = false);
+  document.getElementById('create-team-sel').value = '';
+  document.getElementById('create-pos-sel').value = 'owner';
+  document.getElementById('create-start-input').value = '';
+  document.getElementById('create-error').style.display = 'none';
+  document.getElementById('create-token-result').style.display = 'none';
+  document.getElementById('create-save').style.display = '';
+  document.getElementById('create-save').disabled = false;
+  document.getElementById('create-cancel').textContent = 'Cancel';
+  document.getElementById('create-backdrop').classList.add('open');
+  setTimeout(() => document.getElementById('create-name').focus(), 50);
+}
+
+document.getElementById('create-btn').addEventListener('click', openCreateModal);
+document.getElementById('create-cancel').addEventListener('click', () =>
+  document.getElementById('create-backdrop').classList.remove('open'));
+document.getElementById('create-backdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('create-backdrop'))
+    document.getElementById('create-backdrop').classList.remove('open');
+});
+
+async function doCreateMember() {
+  const name  = document.getElementById('create-name').value.trim();
+  if (!name) { document.getElementById('create-name').focus(); return; }
+  const roles   = [...document.querySelectorAll('#create-backdrop input[type=checkbox]:checked')].map(c => c.value);
+  const team    = document.getElementById('create-team-sel').value;
+  const pos     = document.getElementById('create-pos-sel').value;
+  const start   = document.getElementById('create-start-input').value;
+  const tenures = (team && start) ? [{ team, start, end: null, position: pos }] : [];
+
+  const saveBtn = document.getElementById('create-save');
+  saveBtn.disabled = true; saveBtn.textContent = 'Creating…';
+  document.getElementById('create-error').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/members', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, roles, tenures }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    const data = await res.json();
+    document.getElementById('create-token-value').textContent = data.token;
+    document.getElementById('create-token-result').style.display = '';
+    saveBtn.style.display = 'none';
+    document.getElementById('create-cancel').textContent = 'Done';
+    const r2 = await fetch('/api/members', { headers: { Authorization: `Bearer ${currentToken}` } });
+    if (r2.ok) { allMembers = await r2.json(); renderTable(); }
+  } catch (err) {
+    const el = document.getElementById('create-error');
+    el.textContent = 'Error: ' + err.message; el.style.display = '';
+    saveBtn.disabled = false; saveBtn.textContent = 'Create';
+  }
+}
+
+document.getElementById('create-save').addEventListener('click', doCreateMember);
+document.getElementById('create-copy-btn').addEventListener('click', () => copyText('create-token-value', 'create-copy-btn'));
+
+// ── Rotate token ──────────────────────────────────────────────────────────────
+
+async function doRotateToken(name) {
+  if (!confirm(`Rotate token for "${name}"?\n\nTheir current token stops working immediately.`)) return;
+  try {
+    const res = await fetch(`/api/members/${encodeURIComponent(name)}/rotate-token`, {
+      method: 'POST', headers: { Authorization: `Bearer ${currentToken}` },
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    const data = await res.json();
+    document.getElementById('rotate-token-value').textContent = data.token;
+    document.getElementById('rotate-backdrop').classList.add('open');
+    const r2 = await fetch('/api/members', { headers: { Authorization: `Bearer ${currentToken}` } });
+    if (r2.ok) { allMembers = await r2.json(); renderTable(); }
+  } catch (err) { alert('Error: ' + err.message); }
+}
+document.getElementById('rotate-copy-btn').addEventListener('click', () => copyText('rotate-token-value', 'rotate-copy-btn'));
+document.getElementById('rotate-done').addEventListener('click', () =>
+  document.getElementById('rotate-backdrop').classList.remove('open'));
+
+// ── Delete member ─────────────────────────────────────────────────────────────
+
+async function doDeleteMember(name) {
+  if (!confirm(`Delete member "${name}"?\n\nThis removes their account and all tenure history.`)) return;
+  try {
+    const res = await fetch(`/api/members/${encodeURIComponent(name)}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${currentToken}` },
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    const r2 = await fetch('/api/members', { headers: { Authorization: `Bearer ${currentToken}` } });
+    if (r2.ok) { allMembers = await r2.json(); renderTable(); }
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+// ── Tenure modal ──────────────────────────────────────────────────────────────
+
+let tenureModalName = '';
+let workingTenures  = [];
+let editingIdx      = null;
+
+function openTenureModal(name, tenures) {
+  tenureModalName = name;
+  workingTenures  = JSON.parse(JSON.stringify(tenures));
+  document.getElementById('tenure-modal-title').textContent = `Tenures — ${name}`;
+  document.getElementById('tenure-error').style.display = 'none';
+  resetTenureForm();
+  renderTenureTable();
+  document.getElementById('tenure-backdrop').classList.add('open');
+}
+
+document.getElementById('tenure-discard').addEventListener('click', () =>
+  document.getElementById('tenure-backdrop').classList.remove('open'));
+document.getElementById('tenure-backdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('tenure-backdrop'))
+    document.getElementById('tenure-backdrop').classList.remove('open');
+});
+
+function resetTenureForm() {
+  editingIdx = null;
+  document.getElementById('tf-team').value    = '';
+  document.getElementById('tf-pos').value     = 'owner';
+  document.getElementById('tf-start').value   = '';
+  document.getElementById('tf-end').value     = '';
+  document.getElementById('tf-add').textContent = 'Add';
+  document.getElementById('tf-cancel').style.display = 'none';
+  document.getElementById('tenure-form-label').textContent = 'Add Tenure';
+}
+
+function renderTenureTable() {
+  const tbody = document.getElementById('tenure-tbody');
+  if (!workingTenures.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:#6b7280;padding:0.75rem;text-align:center">No tenures yet.</td></tr>';
+    return;
+  }
+  const sorted = workingTenures
+    .map((t, i) => ({ ...t, _i: i }))
+    .sort((a, b) => b.start.localeCompare(a.start));
+  tbody.innerHTML = '';
+  sorted.forEach(({ _i, team, position, start, end }) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="team-badge">${team}</span></td>
+      <td style="color:#d1d5db">${displayPos(position)}</td>
+      <td style="color:#9ca3af;font-size:0.8rem">${fmtDate(start)}</td>
+      <td>${end ? `<span style="color:#9ca3af;font-size:0.8rem">${fmtDate(end)}</span>` : '<span class="ongoing-text" style="font-size:0.8rem">Ongoing</span>'}</td>
+      <td>
+        <div class="action-cell">
+          <button class="btn-sm" data-edit="${_i}">Edit</button>
+          <button class="btn-sm danger" data-del="${_i}">Del</button>
+        </div>
+      </td>`;
+    tr.querySelector('[data-edit]').addEventListener('click', () => startEditTenure(_i));
+    tr.querySelector('[data-del]').addEventListener('click',  () => deleteTenure(_i));
+    tbody.appendChild(tr);
+  });
+}
+
+function startEditTenure(idx) {
+  editingIdx = idx;
+  const t = workingTenures[idx];
+  document.getElementById('tf-team').value  = t.team;
+  document.getElementById('tf-pos').value   = t.position;
+  document.getElementById('tf-start').value = t.start;
+  document.getElementById('tf-end').value   = t.end || '';
+  document.getElementById('tf-add').textContent = 'Update';
+  document.getElementById('tf-cancel').style.display = '';
+  document.getElementById('tenure-form-label').textContent = 'Edit Tenure';
+}
+
+function deleteTenure(idx) {
+  workingTenures.splice(idx, 1);
+  if (editingIdx === idx) resetTenureForm();
+  renderTenureTable();
+}
+
+document.getElementById('tf-cancel').addEventListener('click', resetTenureForm);
+
+document.getElementById('tf-add').addEventListener('click', () => {
+  const team  = document.getElementById('tf-team').value;
+  const pos   = document.getElementById('tf-pos').value;
+  const start = document.getElementById('tf-start').value;
+  const end   = document.getElementById('tf-end').value || null;
+  const errEl = document.getElementById('tenure-error');
+  if (!team || !start) {
+    errEl.textContent = 'Team and start date are required.'; errEl.style.display = ''; return;
+  }
+  errEl.style.display = 'none';
+  const entry = { team: team.toUpperCase(), position: pos, start, end };
+  if (editingIdx !== null) workingTenures[editingIdx] = entry;
+  else workingTenures.push(entry);
+  resetTenureForm();
+  renderTenureTable();
+});
+
+document.getElementById('tenure-save').addEventListener('click', async () => {
+  const btn = document.getElementById('tenure-save');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  document.getElementById('tenure-error').style.display = 'none';
+  try {
+    const res = await fetch(`/api/members/${encodeURIComponent(tenureModalName)}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenures: workingTenures }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    // Refresh list
+    const endpoint = isAdmin ? '/api/members' : '/api/members/public';
+    const opts = isAdmin ? { headers: { Authorization: `Bearer ${currentToken}` } } : {};
+    const r2 = await fetch(endpoint, opts);
+    if (r2.ok) { allMembers = await r2.ok ? await r2.json() : allMembers; renderTable(); }
+    document.getElementById('tenure-backdrop').classList.remove('open');
+  } catch (err) {
+    const el = document.getElementById('tenure-error');
+    el.textContent = 'Error: ' + err.message; el.style.display = '';
+  } finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
+});
+
+// ── Clipboard helper ──────────────────────────────────────────────────────────
+
+function copyText(valueId, btnId) {
+  const val = document.getElementById(valueId).textContent;
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = document.getElementById(btnId);
+    btn.textContent = 'Copied!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy token'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+buildCreateCheckboxes();
+populateSel('create-team-sel', TEAM_ABBRS, '— Team —');
+populatePosSel('create-pos-sel');
+populateSel('tf-team', TEAM_ABBRS, '— Team —');
+populatePosSel('tf-pos');
+updateAuthBar();
+
+async function init() {
+  try {
+    const res = await fetch('/api/members/public');
+    if (!res.ok) throw new Error();
+    allMembers = await res.json();
+    renderTable();
+  } catch {
+    document.getElementById('members-tbody').innerHTML =
+      '<tr><td colspan="4" class="empty-state">Failed to load members.</td></tr>';
+  }
+  if (currentToken) await initAuth();
+}
+
+init();
+</script>
+<script src="/token-badge.js"></script>
+</body>
+</html>
