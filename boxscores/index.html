@@ -56,19 +56,39 @@
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: rgba(255,255,255,0.02); }
     .dim { color: #4b5563; }
+
+    /* Parse button */
+    .parse-btn { background: #1d4ed8; border: none; color: #fff; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; display: none; }
+    .parse-btn:hover { background: #2563eb; }
+    .parse-btn.active { background: #dc2626; }
+    .parse-btn.active:hover { background: #ef4444; }
+
+    /* Terminal panel */
+    #terminal-panel { display: none; margin-bottom: 1.5rem; border: 1px solid #374151; border-radius: 10px; overflow: hidden; background: #000; }
+    #terminal-panel .term-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: #1f2937; border-bottom: 1px solid #374151; font-size: 0.75rem; color: #9ca3af; }
+    #terminal-panel .term-header span { font-weight: 600; color: #f3f4f6; }
+    #terminal-el { padding: 0.5rem; }
   </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
 </head>
 <body>
   <div class="page">
     <nav class="nav"><a href="/">← Home</a></nav>
     <header>
       <h1>Box Scores</h1>
-      <div class="date-nav">
-        <button class="date-btn" id="btn-prev">&#8592;</button>
-        <input type="date" class="date-input" id="date-input">
-        <button class="date-btn" id="btn-next">&#8594;</button>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="parse-btn" id="parse-btn">Parse with Claude</button>
+        <div class="date-nav">
+          <button class="date-btn" id="btn-prev">&#8592;</button>
+          <input type="date" class="date-input" id="date-input">
+          <button class="date-btn" id="btn-next">&#8594;</button>
+        </div>
       </div>
     </header>
+    <div id="terminal-panel">
+      <div class="term-header"><span>Claude — parse-boxscores</span><span id="term-status">connecting…</span></div>
+      <div id="terminal-el"></div>
+    </div>
     <div id="content"><span class="loading">Loading…</span></div>
   </div>
 
@@ -218,5 +238,65 @@
   </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+  <script>
+    const parseBtn = document.getElementById("parse-btn");
+    const termPanel = document.getElementById("terminal-panel");
+    const termStatus = document.getElementById("term-status");
+
+    let term = null, fitAddon = null, ws = null;
+
+    function initTerminal() {
+      term = new Terminal({ theme: { background: "#000000" }, fontSize: 13, fontFamily: "monospace", convertEol: true });
+      fitAddon = new FitAddon.FitAddon();
+      term.loadAddon(fitAddon);
+      term.open(document.getElementById("terminal-el"));
+      fitAddon.fit();
+      window.addEventListener("resize", () => fitAddon && fitAddon.fit());
+      term.onData(data => ws && ws.readyState === WebSocket.OPEN && ws.send(new TextEncoder().encode(data)));
+      term.onResize(({ cols, rows }) => ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: "resize", cols, rows })));
+    }
+
+    function startSession() {
+      const token = localStorage.getItem("nbn_token");
+      if (!token) { alert("No token stored. Save your admin token first via the Edit button on any team page."); return; }
+
+      parseBtn.textContent = "Stop";
+      parseBtn.classList.add("active");
+      termPanel.style.display = "block";
+      termStatus.textContent = "connecting…";
+
+      if (!term) initTerminal();
+      else term.clear();
+
+      ws = new WebSocket(`wss://nbn.today/api/ws/claude?token=${encodeURIComponent(token)}`);
+      ws.binaryType = "arraybuffer";
+
+      ws.onopen = () => { termStatus.textContent = "connected"; fitAddon.fit(); };
+      ws.onmessage = e => term.write(new Uint8Array(e.data));
+      ws.onclose = () => {
+        termStatus.textContent = "session ended";
+        parseBtn.textContent = "Parse with Claude";
+        parseBtn.classList.remove("active");
+        ws = null;
+        load(cur);
+      };
+      ws.onerror = () => { termStatus.textContent = "connection error"; };
+    }
+
+    function stopSession() {
+      if (ws) { ws.close(); ws = null; }
+    }
+
+    parseBtn.onclick = () => ws ? stopSession() : startSession();
+
+    // show button only if token is present
+    function checkToken() {
+      if (localStorage.getItem("nbn_token")) parseBtn.style.display = "inline-block";
+    }
+    checkToken();
+    window.addEventListener("storage", checkToken);
+  </script>
 </body>
 </html>
