@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submit Box Scores — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem; }
+    .page { max-width: 960px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; text-decoration: none; }
+    .nav a:hover { color: #f3f4f6; }
+    header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.75rem; gap: 1rem; flex-wrap: wrap; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+
+    .layout { display: grid; grid-template-columns: 280px 1fr; gap: 1.25rem; align-items: start; }
+    @media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+
+    /* Pending queue */
+    .queue-panel { background: #1f2937; border: 1px solid #374151; border-radius: 10px; overflow: hidden; }
+    .queue-header { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid #374151; }
+    .queue-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; }
+    .queue-count { font-size: 0.75rem; color: #9ca3af; }
+    .queue-empty { padding: 1.25rem 1rem; font-size: 0.85rem; color: #4b5563; }
+    .queue-item { padding: 0.7rem 1rem; border-bottom: 1px solid #1a2332; }
+    .queue-item:last-child { border-bottom: none; }
+    .qi-matchup { font-size: 0.875rem; font-weight: 600; }
+    .qi-meta { font-size: 0.72rem; color: #6b7280; margin-top: 0.2rem; }
+
+    .parse-btn { background: #1d4ed8; border: none; color: #fff; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+    .parse-btn:hover { background: #2563eb; }
+    .parse-btn.active { background: #dc2626; }
+    .parse-btn.active:hover { background: #ef4444; }
+
+    /* Terminal */
+    .term-panel { border: 1px solid #374151; border-radius: 10px; overflow: hidden; background: #000; display: none; }
+    .term-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: #1f2937; border-bottom: 1px solid #374151; font-size: 0.75rem; color: #9ca3af; }
+    .term-header span:first-child { font-weight: 600; color: #f3f4f6; }
+    #terminal-el { padding: 0.5rem; }
+
+    .no-token { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 1.5rem; font-size: 0.875rem; color: #6b7280; }
+    .loading { color: #6b7280; font-size: 0.875rem; }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/boxscores/">← Box Scores</a></nav>
+    <header>
+      <h1>Submit Box Scores</h1>
+      <button class="parse-btn" id="parse-btn" style="display:none">Parse with Claude</button>
+    </header>
+
+    <div id="root"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+  <script>
+    const token = localStorage.getItem("nbn_token");
+    const root = document.getElementById("root");
+    const parseBtn = document.getElementById("parse-btn");
+
+    if (!token) {
+      root.innerHTML = '<div class="no-token">No admin token found. Save your token via the Edit button on any team page first.</div>';
+    } else {
+      root.innerHTML = `
+        <div class="layout">
+          <div class="queue-panel" id="queue-panel">
+            <div class="queue-header">
+              <span class="queue-title">Pending</span>
+              <span class="queue-count" id="queue-count"></span>
+            </div>
+            <div id="queue-body"><span class="loading" style="display:block;padding:1rem">Loading…</span></div>
+          </div>
+          <div class="term-panel" id="term-panel">
+            <div class="term-header"><span>Claude — parse-boxscores</span><span id="term-status">connecting…</span></div>
+            <div id="terminal-el"></div>
+          </div>
+        </div>`;
+      parseBtn.style.display = "inline-block";
+      loadQueue();
+    }
+
+    let term = null, fitAddon = null, ws = null;
+    let pending = [];
+
+    async function loadQueue() {
+      try {
+        const r = await fetch("/api/boxscore/pending", { headers: { Authorization: `Bearer ${token}` } });
+        pending = await r.json();
+        renderQueue();
+      } catch(e) {
+        document.getElementById("queue-body").innerHTML = `<div class="queue-empty">Error loading queue.</div>`;
+      }
+    }
+
+    function renderQueue() {
+      const countEl = document.getElementById("queue-count");
+      const bodyEl = document.getElementById("queue-body");
+      countEl.textContent = pending.length ? `${pending.length} game${pending.length === 1 ? "" : "s"}` : "";
+      if (!pending.length) {
+        bodyEl.innerHTML = '<div class="queue-empty">No pending games.</div>';
+        return;
+      }
+      bodyEl.innerHTML = "";
+      pending.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "queue-item";
+        div.innerHTML = `
+          <div class="qi-matchup">${item.away_team} @ ${item.home_team}</div>
+          <div class="qi-meta">${item.date} · ${item.season} · ${item.game_type}</div>`;
+        bodyEl.appendChild(div);
+      });
+    }
+
+    function initTerminal() {
+      term = new Terminal({ theme: { background: "#000000" }, fontSize: 13, fontFamily: "monospace", convertEol: true });
+      fitAddon = new FitAddon.FitAddon();
+      term.loadAddon(fitAddon);
+      term.open(document.getElementById("terminal-el"));
+      fitAddon.fit();
+      window.addEventListener("resize", () => fitAddon && fitAddon.fit());
+      term.onData(data => ws && ws.readyState === WebSocket.OPEN && ws.send(new TextEncoder().encode(data)));
+      term.onResize(({ cols, rows }) => ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: "resize", cols, rows })));
+    }
+
+    async function startSession() {
+      if (!pending.length) { alert("No pending games in the queue."); return; }
+
+      parseBtn.textContent = "Stop";
+      parseBtn.classList.add("active");
+      document.getElementById("term-panel").style.display = "block";
+      document.getElementById("term-status").textContent = "connecting…";
+
+      if (!term) initTerminal();
+      else term.clear();
+
+      ws = new WebSocket(`wss://nbn.today/api/ws/claude?token=${encodeURIComponent(token)}`);
+      ws.binaryType = "arraybuffer";
+
+      ws.onopen = () => { document.getElementById("term-status").textContent = "connected"; fitAddon.fit(); };
+      ws.onmessage = e => term.write(new Uint8Array(e.data));
+      ws.onclose = () => {
+        document.getElementById("term-status").textContent = "session ended";
+        parseBtn.textContent = "Parse with Claude";
+        parseBtn.classList.remove("active");
+        ws = null;
+        loadQueue();
+      };
+      ws.onerror = () => { document.getElementById("term-status").textContent = "connection error"; };
+    }
+
+    function stopSession() {
+      if (ws) { ws.close(); ws = null; }
+    }
+
+    parseBtn.onclick = () => ws ? stopSession() : startSession();
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>
