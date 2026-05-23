@@ -668,7 +668,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   if (!hasSlug) {
     // ── Legacy format: CSV has PLAYER, POS, AGE, TYPE, CAP_HOLDS, salary cols ──
     const salaryKeys = Object.keys(rows[0]).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= curYr);
-    const ovrMin = 60, ovrMax = 100;
+    const ovrMin = 60, ovrMax = 99;
 
     const cols = [
       { key: 'PLAYER', label: 'Player',   cls: 'bold',         },

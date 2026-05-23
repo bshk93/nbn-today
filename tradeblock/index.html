@@ -425,7 +425,7 @@
     let myRoster = [];
     let pendingEntries = [];
     let panelCollapsed = true;
-    let ovrRange = { min: 0, max: 100 };
+    // OVR color scale is fixed 60–99 (see renderCell)
     let tbData = {};
 
     function parseLine(line) {
@@ -556,10 +556,10 @@
             }
           } else if (col.key === 'ovr') {
             td.textContent = row.ovr || '—';
-            if (row.ovr && ovrRange.max > ovrRange.min) {
+            if (row.ovr) {
               const n = parseFloat(row.ovr);
               if (!isNaN(n)) {
-                const t = (n - ovrRange.min) / (ovrRange.max - ovrRange.min);
+                const t = Math.min(1, Math.max(0, (n - 60) / (99 - 60)));
                 td.style.background = `hsl(${Math.round(t * 120)}, 55%, 18%)`;
                 td.style.color     = `hsl(${Math.round(t * 120)}, 80%, 72%)`;
               }
@@ -887,10 +887,6 @@
             tableRows.push(row);
           });
         });
-
-        // OVR heatmap range
-        const ovrVals = tableRows.map(r => parseFloat(r.ovr)).filter(v => !isNaN(v));
-        if (ovrVals.length > 1) ovrRange = { min: Math.min(...ovrVals), max: Math.max(...ovrVals) };
 
         buildCols();
         buildFilterChips();
