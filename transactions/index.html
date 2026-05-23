@@ -832,8 +832,8 @@ function setDefaultDate() {
 }
 
 function setupTypeSwitch() {
-  document.getElementById('f-type').addEventListener('change', function() {
-    const v = this.value;
+  function onTypeChange() {
+    const v = document.getElementById('f-type').value;
     const isTrade = v === 'trade';
     const isSign = v === 'sign', isPick = v === 'pick', isOpt = v === 'option', isRelease = v === 'release';
     const isConvertTwoWay = v === 'convert_twoway';
@@ -870,7 +870,9 @@ function setupTypeSwitch() {
       document.getElementById('f-opt-type-display').value = '';
     }
     document.getElementById('submit-btn').textContent = isTrade ? 'Submit Trade' : 'Submit Transaction';
-  });
+  }
+  document.getElementById('f-type').addEventListener('change', onTypeChange);
+  onTypeChange();
 }
 
 function currentSeasonStr() {
