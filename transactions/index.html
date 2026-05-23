@@ -542,12 +542,10 @@
         <select id="f-signing-method">
           <option value="">— select —</option>
           <option value="cap_space">Cap Space</option>
+          <option value="minimum">Minimum</option>
           <option value="bird_rights">Bird Rights</option>
-          <option value="ntmle">Non-Taxpayer MLE (NTMLE)</option>
-          <option value="tmle">Taxpayer MLE (TMLE)</option>
-          <option value="room_exception">Room Exception</option>
+          <option value="mle">MLE</option>
           <option value="bae">Bi-Annual Exception (BAE)</option>
-          <option value="sign_and_trade">Sign-and-Trade</option>
         </select>
         <span id="mle-hint" style="display:none;font-size:0.75rem;margin-top:0.25rem"></span>
       </div>
@@ -897,7 +895,7 @@ function updateMleHint() {
   const birdField = document.getElementById('f-bird-rights-field');
   if (birdField) birdField.style.display = method === 'bird_rights' ? '' : 'none';
 
-  const poolMethods = ['ntmle', 'tmle', 'room_exception', 'bae'];
+  const poolMethods = ['mle', 'bae'];
   if (!team || !poolMethods.includes(method)) { hint.style.display = 'none'; return; }
 
   const curYr = currentSeasonStr();
@@ -914,12 +912,17 @@ function updateMleHint() {
     return;
   }
 
-  const total = method === 'tmle' ? (cl.tmle_amount || 0) : (cl.ntmle_amount || 0);
+  // MLE: resolve type from team state
+  const mleType = state.mle_type || 'ntmle';
+  const total = mleType === 'tmle' ? (cl.tmle_amount || 0)
+              : mleType === 'room' ? (cl.room_amount || 0)
+              : (cl.ntmle_amount || 0);
+  const mleLabel = mleType === 'tmle' ? 'TMLE' : mleType === 'room' ? 'Room Exception' : 'NTMLE';
   if (!total) { hint.style.display = 'none'; return; }
   const remaining = Math.max(0, total - (state.mle_used || 0));
   hint.style.display = '';
   hint.style.color = remaining > 0 ? '#34d399' : '#f87171';
-  hint.textContent = `${fmtDollarsShort(remaining)} remaining of ${fmtDollarsShort(total)}`;
+  hint.textContent = `${mleLabel}: ${fmtDollarsShort(remaining)} remaining of ${fmtDollarsShort(total)}`;
 }
 
 // Wire up signing method + team change → hint update
@@ -1772,7 +1775,7 @@ function renderDetailsCell(t) {
       const pickStr = `${p.year} R${p.round} ${p.orig}${p.pick_number ? ' #' + p.pick_number : ''}`;
       return `${escHtml(pickStr)}${contractStr ? ' · ' + escHtml(contractStr) : ''}`;
     }
-    const METHOD_LABELS = { bird_rights: 'Bird Rights', ntmle: 'NTMLE', tmle: 'TMLE',
+    const METHOD_LABELS = { bird_rights: 'Bird Rights', mle: 'MLE', ntmle: 'NTMLE', tmle: 'TMLE', minimum: 'Minimum',
       room_exception: 'Room Exc.', bae: 'BAE', sign_and_trade: 'S&T' };
     let methodStr = '';
     if (d.signing_method && d.signing_method !== 'cap_space') {
