@@ -377,33 +377,41 @@
 
         const slugToTeam = teamMapJson; // already slug → team
 
-        // Build rows grouped by year
+        // Build rows grouped by year.
+        // Rule: each player appears in exactly one FA class — the first year where
+        // they have a PO, TO, UFA, or RFA cap hold (NON_GTD treated as guaranteed,
+        // downstream holds after a PO/TO are contingent and not shown independently).
         Object.entries(biosJson).forEach(([slug, bio]) => {
           const capMap = bio.cap_holds || {};
           const salaries = bio.salaries || {};
 
-          Object.entries(capMap).forEach(([yr, type]) => {
-            if (!salaries[yr]) return;
+          // Find the earliest cap_hold year that is actionable (not NON_GTD)
+          // and has a corresponding salary entry.
+          const firstEntry = Object.entries(capMap)
+            .filter(([yr, type]) => type !== 'NON_GTD' && salaries[yr])
+            .sort(([a], [b]) => a.localeCompare(b))[0];
 
-            const salaryRaw = salaries[yr];
-            const salaryNum = parseFloat(String(salaryRaw).replace(/[$,\s]/g, '')) || 0;
+          if (!firstEntry) return;
+          const [yr, type] = firstEntry;
 
-            const row = {
-              slug,
-              player: displayName(bio.name || slug),
-              team: slugToTeam[slug] || '',
-              pos: (bio.pos || []).join('/') || '—',
-              ovr: String(ovrJson[slug] || ''),
-              age: calcAge(bio.dob),
-              salary: salaryNum,
-              salaryFmt: formatSalary(salaryRaw),
-              capType: type,
-              type: CAP_HOLD_LABELS[type] || type,
-            };
+          const salaryRaw = salaries[yr];
+          const salaryNum = parseFloat(String(salaryRaw).replace(/[$,\s]/g, '')) || 0;
 
-            if (!allRows[yr]) allRows[yr] = [];
-            allRows[yr].push(row);
-          });
+          const row = {
+            slug,
+            player: displayName(bio.name || slug),
+            team: slugToTeam[slug] || '',
+            pos: (bio.pos || []).join('/') || '—',
+            ovr: String(ovrJson[slug] || ''),
+            age: calcAge(bio.dob),
+            salary: salaryNum,
+            salaryFmt: formatSalary(salaryRaw),
+            capType: type,
+            type: CAP_HOLD_LABELS[type] || type,
+          };
+
+          if (!allRows[yr]) allRows[yr] = [];
+          allRows[yr].push(row);
         });
 
         const years = Object.keys(allRows).sort();
@@ -420,7 +428,7 @@
 
         const legend = document.createElement('div');
         legend.className = 'cap-legend';
-        ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
+        ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA'].forEach(type => {
           const item = document.createElement('span');
           item.className = 'cap-legend-item';
           const swatch = document.createElement('span');
