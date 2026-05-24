@@ -74,7 +74,6 @@
     .btn-token:hover { background: #2563eb; }
     .qi-ts { color: #4b5563; }
   </style>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
 </head>
 <body>
   <div class="page">
@@ -83,8 +82,6 @@
     <div id="root"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
   <script>
     const root = document.getElementById("root");
 
@@ -369,18 +366,45 @@
       } catch(e) { alert(e.message); }
     }
 
-    let term = null, fitAddon = null, ws = null;
+    let term = null, fitAddon = null, ws = null, xtermReady = false;
 
     function initTerminal() {
-      term = new Terminal({ theme: { background: "#000000" }, fontSize: 13, fontFamily: "monospace", convertEol: true });
-      fitAddon = new FitAddon.FitAddon();
-      term.loadAddon(fitAddon);
-      term.open(document.getElementById("terminal-el"));
-      window.addEventListener("resize", () => fitAddon && fitAddon.fit());
-      term.onData(data => ws && ws.readyState === WebSocket.OPEN && ws.send(new TextEncoder().encode(data)));
-      term.onResize(({ cols, rows }) => ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: "resize", cols, rows })));
+      // Wire up the parse button; xterm itself loads lazily on first click.
+      document.getElementById("parse-btn").onclick = () => ws ? stopSession() : loadXtermThenStart();
+    }
 
-      document.getElementById("parse-btn").onclick = () => ws ? stopSession() : startSession();
+    function loadXtermThenStart() {
+      if (xtermReady) { startSession(); return; }
+      const btn = document.getElementById("parse-btn");
+      btn.disabled = true;
+      btn.textContent = "Loading…";
+
+      const cssLink = document.createElement("link");
+      cssLink.rel = "stylesheet";
+      cssLink.href = "https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css";
+      document.head.appendChild(cssLink);
+
+      function loadScript(src, cb) {
+        const s = document.createElement("script");
+        s.src = src; s.onload = cb;
+        s.onerror = () => { btn.disabled = false; btn.textContent = "Parse with Claude"; alert("Failed to load terminal library."); };
+        document.head.appendChild(s);
+      }
+
+      loadScript("https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js", () => {
+        loadScript("https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js", () => {
+          term = new Terminal({ theme: { background: "#000000" }, fontSize: 13, fontFamily: "monospace", convertEol: true });
+          fitAddon = new FitAddon.FitAddon();
+          term.loadAddon(fitAddon);
+          term.open(document.getElementById("terminal-el"));
+          window.addEventListener("resize", () => fitAddon && fitAddon.fit());
+          term.onData(data => ws && ws.readyState === WebSocket.OPEN && ws.send(new TextEncoder().encode(data)));
+          term.onResize(({ cols, rows }) => ws && ws.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: "resize", cols, rows })));
+          xtermReady = true;
+          btn.disabled = false;
+          startSession();
+        });
+      });
     }
 
     function startSession() {
