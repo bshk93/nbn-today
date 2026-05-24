@@ -4,7 +4,7 @@ Run with no arguments to process all pending games.
 
 ## Steps
 
-### 1. Get admin token
+### 1. Get token
 
 Check `echo $NBN_TOKEN`. If non-empty, use it as the Bearer token. Otherwise ask the user to paste their admin token.
 
@@ -17,91 +17,87 @@ curl -s http://localhost:8001/api/boxscore/pending \
 
 If the result is an empty array, report "No pending games" and stop.
 
-Print a numbered list of pending items: `id · date · HOME vs AWAY · season game_type`.
+Print a numbered list: `id · date · HOME vs AWAY · season game_type`
 
 ### 3. For each pending game
 
 Process one game at a time in the order returned.
 
-#### 3a. Read the meta
+#### 3a. Read meta + both images in parallel
 
-The pending folder is at `/var/lib/nothing-but-stats/pending-boxscores/<id>/`. Read `meta.json` with the Read tool to get `home_team`, `away_team`, `date`, `season`, `game_type`, `game_num`, `round_num`, `home_image`, `away_image`.
-
-#### 3b. Load roster context
-
-Read `/var/lib/nothing-but-stats/player-bios.json`. For each team, read their roster CSV at `/var/lib/nothing-but-stats/<team_lower>-roster.csv` and build a list of `{slug, name}` for all players on the roster (join slug → name via player-bios.json).
-
-#### 3c. Read the screenshots
-
-Use the Read tool to view both images:
+In a single batch of tool calls, read all three:
+- `/var/lib/nothing-but-stats/pending-boxscores/<id>/meta.json`
 - `/var/lib/nothing-but-stats/pending-boxscores/<id>/<home_image>`
 - `/var/lib/nothing-but-stats/pending-boxscores/<id>/<away_image>`
 
-#### 3d. Parse each screenshot
+#### 3b. Parse both teams in one pass
+
+With both images in view, extract every player who played (skip DNP rows) for **both** teams simultaneously.
 
 2K box score column order (left to right): MIN, PTS, REB, AST, STL, BLK, TO, FGM/FGA, 3PM/3PA, FTM/FTA, OREB, PF
 
-DREB is not shown — derive it as REB − OREB.
+- DREB is not shown — derive it as REB − OREB
+- Use player names **exactly as shown** in the screenshot — do not guess or look up rosters
+- Mark any name or number that is hard to read with **[?]**
+- Extract team scores from the screenshot if shown
 
-For the **home team** screenshot, extract all players who played (skip DNP). For each player:
-- Match the name to the closest player in the home team's roster context
-- Convert minutes MM:SS → integer (round down)
-- Extract all stat columns: MIN, PTS, REB, OREB, DREB, AST, STL, BLK, TO, PF, FGM, FGA, 3PM, 3PA, FTM, FTA
-- Note confidence: high (obvious match), medium (uncertain), low (best guess)
-- If the screenshot shows team totals, extract the team score too
-
-Repeat for the **away team** screenshot.
-
-#### 3d. Sanity checks
-
-Run these checks on every row before presenting results:
-
+Run these sanity checks on every row:
 1. **Points formula**: PTS = (FGM − 3PM) × 2 + 3PM × 3 + FTM
 2. **Bounds**: 3PM ≤ FGM, FTM ≤ FTA, FGM ≤ FGA, 3PM ≤ 3PA, OREB ≤ REB
-3. **Team total**: sum of all player PTS = team score from the screenshot, if exists
-4. Teams cannot have the same score.
-5. Minutes total between the two teams in a game should be 240 (most games) or 240 plus a multiple of 10 (denoting one or more 5-minute overtime periods were played)
-6. Maximum 6 PF
-7. Maximum 48 M
-8. PTS ≤ team score
-9. Sum of columns match total row
+3. **Team total**: sum of player PTS = team score, if shown
+4. Teams must have different scores
+5. Total minutes across both teams ≈ 240 (or 240 + multiple of 10 for OT)
+6. MAX 6 PF per player, MAX 48 MIN per player
 
-Flag any row that fails with [?].
+Flag any row that fails a check with **[!]**.
 
-#### 3e. Present results for review
+#### 3c. Present results and ask for confirmation
 
-Print a clear summary:
+Print a clean summary:
 
 ```
 Game: HOME vs AWAY — DATE (SEASON, GAME_TYPE)
 
 HOME (score: XX)
-  Player Name [slug]          MIN  PTS  REB  AST  STL  BLK  TO  PF  FGM/FGA  3PM/3PA  FTM/FTA
+  Name as shown [?]   MIN  PTS  REB  AST  STL  BLK  TO  PF  FGM/FGA  3PM/3PA  FTM/FTA
   ...
 
 AWAY (score: XX)
   ...
 
 Issues:
-  - any name mismatches or low-confidence reads
+  [?] names that were hard to read — please confirm or correct
+  [!] rows that failed a sanity check
 ```
 
-Mark any low/medium confidence entries with [?]. Ask the user to confirm or provide corrections before continuing.
+Ask the user to confirm the data or provide corrections. Keep it brief — if everything looks clean, a simple "looks good" is enough.
 
-Wait for the user's response. Apply any corrections.
+**Wait for the user's response. Apply any corrections they provide.**
+
+#### 3d. Resolve player slugs
+
+After confirmation, fetch the player registry once:
+
+```bash
+curl -s http://localhost:8001/api/players
+```
+
+For each confirmed player name, find their slug in the registry by matching the name field (stored as `"LAST, FIRST"` uppercase). The screenshot may show abbreviated or display names — use context to match.
+
+If a player cannot be matched, derive the slug from the confirmed name: `"LAST, FIRST"` → `last-first` (lowercase, spaces to hyphens, remove punctuation). Flag any uncertain derivations and ask the user if needed.
 
 ### 4. Commit
 
-Once the user confirms the data is correct, build the commit payload and POST to:
+Build the payload and POST:
 
 ```bash
 curl -s -X POST http://localhost:8001/api/boxscore/commit \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
-  -d '<JSON payload>'
+  -d '<JSON>'
 ```
 
-The payload shape:
+Payload shape:
 ```json
 {
   "date": "YYYY-MM-DD",
@@ -130,8 +126,6 @@ Report the API response. If `ok: true`, report how many rows were added.
 
 ### 5. Clean up
 
-After a successful commit, delete the pending item:
-
 ```bash
 curl -s -X DELETE http://localhost:8001/api/boxscore/pending/<id> \
   -H "Authorization: Bearer <TOKEN>"
@@ -139,4 +133,4 @@ curl -s -X DELETE http://localhost:8001/api/boxscore/pending/<id> \
 
 ### 6. Continue or stop
 
-If there are more pending games, ask the user if they want to continue to the next one. If yes, go back to step 3. If no, stop.
+If there are more pending games, ask the user if they want to continue. If yes, return to step 3.
