@@ -254,8 +254,8 @@
           viewMonth = now.getMonth();
         }
 
-        // Default schedule window: last SCHED_PAGE game days
-        shownPastIdx = Math.max(0, pastDatesAll.length - SCHED_PAGE);
+        // Default: show only upcoming events; past loads on demand
+        shownPastIdx = pastDatesAll.length;
 
         // Wire up view toggle
         document.getElementById('btn-sched').onclick  = () => switchView('schedule');
@@ -292,11 +292,14 @@
       const olderCount  = shownPastIdx;
       const futureDates = Object.keys(vestingByDate).filter(d => d >= leagueToday).sort();
 
-      // "Load more" button
+      // "Load past games" button
       if (olderCount > 0) {
         const btn = document.createElement('button');
         btn.className = 'load-more-btn';
-        btn.textContent = `↑ Load ${Math.min(olderCount, SCHED_PAGE)} earlier game days`;
+        const isFirst = shownPast.length === 0;
+        btn.textContent = isFirst
+          ? `Show past games`
+          : `↑ Load ${Math.min(olderCount, SCHED_PAGE)} more`;
         btn.onclick = () => {
           shownPastIdx = Math.max(0, shownPastIdx - SCHED_PAGE);
           renderSchedule();
