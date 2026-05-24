@@ -347,9 +347,9 @@ document.title = `${abbr} — NBN`;
   .token-modal input:focus { outline: none; border-color: #3b82f6; }
   .token-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
   .player-note {
-    display: inline-block; margin-left: 0.3rem; font-size: 0.72rem;
-    color: #b45309; cursor: default; position: relative;
-    vertical-align: middle; line-height: 1; transition: color 0.1s;
+    display: inline-flex; align-items: center;
+    margin-left: 0.35rem; color: #b45309; cursor: default;
+    position: relative; vertical-align: middle; transition: color 0.1s;
   }
   .player-note:hover { color: #fbbf24; }
   .player-note::after {
@@ -897,7 +897,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           const pip = document.createElement('span');
           pip.className = 'player-note';
           pip.dataset.tip = row._notes;
-          pip.textContent = '◦';
+          pip.innerHTML = '<svg width="9" height="11" viewBox="0 0 9 11" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0.5" y="0.5" width="8" height="10" rx="1" stroke="currentColor"/><line x1="2" y1="3.5" x2="7" y2="3.5" stroke="currentColor"/><line x1="2" y1="5.5" x2="7" y2="5.5" stroke="currentColor"/><line x1="2" y1="7.5" x2="5" y2="7.5" stroke="currentColor"/></svg>';
           td.appendChild(pip);
         }
       } else if (col.key === 'OVR') {
