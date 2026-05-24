@@ -379,23 +379,32 @@
       padding: 0.32rem 0.55rem; outline: none; cursor: pointer;
     }
     .bio-edit-form select:focus { border-color: #3b82f6; }
-    .salary-rows { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.25rem; }
-    .salary-row { display: flex; gap: 0.4rem; align-items: center; }
-    .salary-row input { background: #1f2937; border: 1px solid #374151; border-radius: 6px;
+    .salary-rows { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.25rem; }
+    .salary-row { display: flex; flex-direction: column; gap: 0.2rem; }
+    .salary-row-main { display: flex; gap: 0.4rem; align-items: center; }
+    .salary-row-main input { background: #1f2937; border: 1px solid #374151; border-radius: 6px;
       color: #f3f4f6; font-size: 0.85rem; font-family: inherit; padding: 0.32rem 0.55rem; outline: none; }
-    .salary-row input:focus { border-color: #3b82f6; }
-    .salary-row .season-input { width: 5.5rem; }
-    .salary-row .amount-input { flex: 1; }
-    .salary-row .hold-select {
+    .salary-row-main input:focus { border-color: #3b82f6; }
+    .salary-row-main .season-input { width: 5.5rem; flex: 0 0 auto; }
+    .salary-row-main .amount-input { flex: 1; }
+    .salary-row-main .hold-select {
       background: #1f2937; border: 1px solid #374151; border-radius: 6px;
       color: #9ca3af; font-size: 0.8rem; font-family: inherit;
-      padding: 0.32rem 0.4rem; outline: none; cursor: pointer;
+      padding: 0.32rem 0.4rem; outline: none; cursor: pointer; flex: 0 0 auto;
     }
-    .salary-row .hold-select:focus { border-color: #3b82f6; }
-    .salary-row .gtd-input { width: 8rem; display: none; }
-    .salary-row .gtd-input.visible { display: block; }
-    .salary-row .gtd-date-input { width: 9rem; display: none; }
-    .salary-row .gtd-date-input.visible { display: block; }
+    .salary-row-main .hold-select:focus { border-color: #3b82f6; }
+    /* Guarantee steps */
+    .gtd-steps { display: none; flex-direction: column; gap: 0.2rem; margin-left: 1rem; padding: 0.25rem 0.5rem; background: rgba(0,0,0,0.2); border-left: 2px solid #374151; border-radius: 0 4px 4px 0; }
+    .gtd-steps.visible { display: flex; }
+    .gtd-step { display: flex; gap: 0.4rem; align-items: center; }
+    .gtd-step input { background: #1f2937; border: 1px solid #374151; border-radius: 6px; color: #f3f4f6; font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.5rem; outline: none; }
+    .gtd-step input:focus { border-color: #3b82f6; }
+    .gtd-step .gtd-step-amount { max-width: 9rem; }
+    .gtd-step .gtd-step-date { max-width: 9.5rem; }
+    .gtd-step .gtd-step-remove { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 1rem; padding: 0 0.2rem; line-height: 1; }
+    .gtd-step .gtd-step-remove:hover { color: #ef4444; }
+    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed #374151; border-radius: 3px; color: #6b7280; cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
+    .add-step-btn:hover { color: #d1d5db; border-color: #9ca3af; }
     .bio-edit-form .full-col { grid-column: 1 / -1; }
     .field-hint { font-size: 0.68rem; color: #6b7280; margin-top: 0.2rem; line-height: 1.4; }
     .bio-edit-actions {
@@ -1047,9 +1056,15 @@
       ['NON_GTD', 'Non-Guaranteed'],
     ];
 
-    function makeSalaryRow(season, amount, holdType, gtdAmount, gtdDate) {
+    // steps: [{amount?, date?}, …] for NON_GTD; falls back to legacy gtdAmount/gtdDate if passed as string
+    function makeSalaryRow(season, amount, holdType, steps) {
       const row = document.createElement('div');
       row.className = 'salary-row';
+
+      // Main row
+      const main = document.createElement('div');
+      main.className = 'salary-row-main';
+
       const seasonIn = document.createElement('input');
       seasonIn.type = 'text'; seasonIn.className = 'season-input'; seasonIn.placeholder = '25-26'; seasonIn.value = season || '';
       const amountIn = document.createElement('input');
@@ -1062,28 +1077,56 @@
         if (v === (holdType || '')) opt.selected = true;
         holdSel.appendChild(opt);
       });
-      const gtdIn = document.createElement('input');
-      gtdIn.type = 'text'; gtdIn.className = 'gtd-input'; gtdIn.placeholder = 'Gtd: $0';
-      gtdIn.value = gtdAmount || '';
-      const gtdDateIn = document.createElement('input');
-      gtdDateIn.type = 'date'; gtdDateIn.className = 'gtd-date-input';
-      gtdDateIn.title = 'Fully guaranteed after this date';
-      gtdDateIn.value = gtdDate || '';
-      const isNonGtd = (holdType || '') === 'NON_GTD';
-      if (isNonGtd) { gtdIn.classList.add('visible'); gtdDateIn.classList.add('visible'); }
-      holdSel.addEventListener('change', () => {
-        const on = holdSel.value === 'NON_GTD';
-        gtdIn.classList.toggle('visible', on);
-        gtdDateIn.classList.toggle('visible', on);
-        if (!on) { gtdIn.value = ''; gtdDateIn.value = ''; }
-      });
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button'; removeBtn.textContent = '✕';
       removeBtn.style.cssText = 'background:none;border:none;color:#4b5563;cursor:pointer;font-size:0.9rem;padding:0 0.2rem;font-family:inherit';
       removeBtn.onmouseenter = () => { removeBtn.style.color = '#f87171'; };
       removeBtn.onmouseleave = () => { removeBtn.style.color = '#4b5563'; };
       removeBtn.addEventListener('click', () => row.remove());
-      row.appendChild(seasonIn); row.appendChild(amountIn); row.appendChild(holdSel); row.appendChild(gtdIn); row.appendChild(gtdDateIn); row.appendChild(removeBtn);
+
+      main.appendChild(seasonIn); main.appendChild(amountIn); main.appendChild(holdSel); main.appendChild(removeBtn);
+      row.appendChild(main);
+
+      // Guarantee steps section
+      const stepsDiv = document.createElement('div');
+      stepsDiv.className = 'gtd-steps' + ((holdType || '') === 'NON_GTD' ? ' visible' : '');
+
+      function addGuaranteeStep(amt, dt) {
+        const stepRow = document.createElement('div');
+        stepRow.className = 'gtd-step';
+        const amtIn = document.createElement('input');
+        amtIn.type = 'text'; amtIn.className = 'gtd-step-amount'; amtIn.placeholder = '$ amount (blank = fully gtd)';
+        amtIn.value = amt || '';
+        const dateIn = document.createElement('input');
+        dateIn.type = 'date'; dateIn.className = 'gtd-step-date';
+        dateIn.title = 'Date this amount vests (blank = at signing)';
+        dateIn.value = dt || '';
+        const rmBtn = document.createElement('button');
+        rmBtn.type = 'button'; rmBtn.className = 'gtd-step-remove'; rmBtn.textContent = '×';
+        rmBtn.style.cssText = 'background:none;border:none;color:#4b5563;cursor:pointer;font-size:1rem;padding:0 0.2rem;line-height:1';
+        rmBtn.addEventListener('click', () => stepRow.remove());
+        stepRow.appendChild(amtIn); stepRow.appendChild(dateIn); stepRow.appendChild(rmBtn);
+        stepsDiv.insertBefore(stepRow, addStepBtn);
+      }
+
+      const addStepBtn = document.createElement('button');
+      addStepBtn.type = 'button'; addStepBtn.className = 'add-step-btn';
+      addStepBtn.textContent = '+ guarantee step';
+      addStepBtn.addEventListener('click', () => addGuaranteeStep());
+      stepsDiv.appendChild(addStepBtn);
+
+      holdSel.addEventListener('change', () => {
+        const on = holdSel.value === 'NON_GTD';
+        stepsDiv.classList.toggle('visible', on);
+        if (!on) stepsDiv.querySelectorAll('.gtd-step').forEach(s => s.remove());
+      });
+
+      // Pre-populate steps
+      if (Array.isArray(steps) && steps.length) {
+        steps.forEach(s => addGuaranteeStep(s.amount, s.date));
+      }
+
+      row.appendChild(stepsDiv);
       return row;
     }
 
@@ -1091,8 +1134,22 @@
     const initSalaries = (initial.salaries && typeof initial.salaries === 'object') ? initial.salaries : {};
     const initGuaranteed = (initial.guaranteed && typeof initial.guaranteed === 'object') ? initial.guaranteed : {};
     const initGuaranteeDates = (initial.guarantee_dates && typeof initial.guarantee_dates === 'object') ? initial.guarantee_dates : {};
+    const initGuaranteeSchedule = (initial.guarantee_schedule && typeof initial.guarantee_schedule === 'object') ? initial.guarantee_schedule : {};
     Object.entries(initSalaries).sort(([a], [b]) => a.localeCompare(b))
-      .forEach(([k, v]) => salRows.appendChild(makeSalaryRow(k, v, initCapMap[k] || '', initGuaranteed[k] || '', initGuaranteeDates[k] || '')));
+      .forEach(([k, v]) => {
+        // Use guarantee_schedule if present; otherwise convert legacy guaranteed/guarantee_dates to steps
+        let steps = initGuaranteeSchedule[k] || null;
+        if (!steps) {
+          const oldAmt  = initGuaranteed[k];
+          const oldDate = initGuaranteeDates[k];
+          if (oldAmt || oldDate) {
+            steps = [];
+            if (oldAmt)  steps.push({ amount: oldAmt });
+            if (oldDate) steps.push({ date: oldDate });
+          }
+        }
+        salRows.appendChild(makeSalaryRow(k, v, initCapMap[k] || '', steps));
+      });
 
     const addSalBtn = document.createElement('button');
     addSalBtn.type = 'button'; addSalBtn.textContent = '+ Add season';
@@ -1152,7 +1209,7 @@
       const salaries = {};
       const cap_holds = {};
       const guaranteed = {};
-      const guarantee_dates = {};
+      const guarantee_schedule = {};
       if (typeSelect.value === 'two-way') {
         const yrs = parseInt(twYears.value) || 0;
         let s = twStart.value.trim();
@@ -1167,13 +1224,19 @@
           const season  = row.querySelector('.season-input').value.trim();
           const amount  = row.querySelector('.amount-input').value.trim();
           const hold    = row.querySelector('.hold-select').value;
-          const gtd     = row.querySelector('.gtd-input').value.trim();
-          const gtdDate = row.querySelector('.gtd-date-input').value.trim();
           if (season && amount) salaries[season] = amount;
           if (season && hold)   cap_holds[season] = hold;
           if (season && hold === 'NON_GTD') {
-            if (gtd)     guaranteed[season] = gtd;
-            if (gtdDate) guarantee_dates[season] = gtdDate;
+            const steps = [];
+            row.querySelectorAll('.gtd-step').forEach(step => {
+              const sAmt  = step.querySelector('.gtd-step-amount').value.trim();
+              const sDate = step.querySelector('.gtd-step-date').value.trim();
+              const entry = {};
+              if (sAmt)  entry.amount = sAmt;
+              if (sDate) entry.date   = sDate;
+              steps.push(entry);
+            });
+            if (steps.length) guarantee_schedule[season] = steps;
           }
         });
       }
@@ -1195,7 +1258,7 @@
         cap_holds,
         salaries,
         guaranteed,
-        guarantee_dates,
+        guarantee_schedule,
       };
       if (!payload.name) { status.textContent = 'Name is required.'; return; }
       saveBtn.disabled = true;
@@ -1328,6 +1391,7 @@
     const capMap = bio.cap_holds || {};
     const guaranteed = bio.guaranteed && typeof bio.guaranteed === 'object' ? bio.guaranteed : {};
     const guarantee_dates = bio.guarantee_dates && typeof bio.guarantee_dates === 'object' ? bio.guarantee_dates : {};
+    const guarantee_schedule = bio.guarantee_schedule && typeof bio.guarantee_schedule === 'object' ? bio.guarantee_schedule : {};
 
     // Merge all seasons, tagging each entry
     const allEntries = [];
@@ -1372,14 +1436,29 @@
       if (isDeadCap) {
         tdLabel.textContent = 'Dead cap';
       } else if (holdType === 'NON_GTD') {
-        const gtd = guaranteed[season];
-        const gDate = guarantee_dates[season];
+        const schedule = guarantee_schedule[season];
         let label = 'Non-Guaranteed';
-        if (gtd || gDate) {
-          const parts = [];
-          if (gtd) parts.push(`${formatSalary(gtd)} gtd`);
-          if (gDate) parts.push(`fully gtd ${fmtGuaranteeDate(gDate)}`);
+        if (schedule && schedule.length) {
+          // Multi-step schedule
+          const parts = schedule.map(step => {
+            const amt  = step.amount ? formatSalary(step.amount) : null;
+            const dt   = step.date   ? fmtGuaranteeDate(step.date) : null;
+            if (!amt && dt)  return `fully gtd ${dt}`;
+            if (!amt && !dt) return 'fully gtd';
+            if (!dt)         return `${amt} gtd`;
+            return `+${amt} on ${dt}`;
+          });
           label = `Non-Gtd (${parts.join(' · ')})`;
+        } else {
+          // Legacy single-step display
+          const gtd = guaranteed[season];
+          const gDate = guarantee_dates[season];
+          if (gtd || gDate) {
+            const parts = [];
+            if (gtd) parts.push(`${formatSalary(gtd)} gtd`);
+            if (gDate) parts.push(`fully gtd ${fmtGuaranteeDate(gDate)}`);
+            label = `Non-Gtd (${parts.join(' · ')})`;
+          }
         }
         tdLabel.textContent = label;
       } else if (holdType && CAP_HOLD_LABELS[holdType]) {
@@ -2604,7 +2683,7 @@
       const token = getToken(); if (!token) return;
       const cur = biosData[slug] || {};
       bioFormEl = renderBioForm(
-        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', retired: cur.retired || false, type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {} },
+        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', retired: cur.retired || false, type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {}, guarantee_schedule: cur.guarantee_schedule || {} },
         async (token, payload) => {
           const resp = await fetch(`/api/players/${slug}`, {
             method: 'PUT',

@@ -133,19 +133,25 @@
     }
 
     /* ── Salary rows ── */
-    .salary-rows { display: flex; flex-direction: column; gap: 0.4rem; }
+    .salary-rows { display: flex; flex-direction: column; gap: 0.5rem; }
 
     .salary-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .salary-row-main {
       display: flex;
       gap: 0.5rem;
       align-items: center;
     }
 
-    .salary-row input { flex: 1; }
+    .salary-row-main input { flex: 1; }
 
-    .salary-row .year-input { max-width: 5rem; }
+    .salary-row-main .year-input { max-width: 5rem; flex: 0 0 auto; }
 
-    .salary-row .hold-select {
+    .salary-row-main .hold-select {
       flex: 0 0 auto;
       width: 9rem;
       background: #111827;
@@ -157,12 +163,18 @@
       font-family: inherit;
     }
 
-    .salary-row .gtd-input { max-width: 8rem; display: none; }
-    .salary-row .gtd-input.visible { display: block; }
-    .salary-row .gtd-date-input { max-width: 9rem; display: none; }
-    .salary-row .gtd-date-input.visible { display: block; }
+    /* Guarantee steps */
+    .gtd-steps { display: none; flex-direction: column; gap: 0.2rem; margin-left: 1.25rem; padding: 0.3rem 0.6rem; background: rgba(0,0,0,0.25); border-left: 2px solid #374151; border-radius: 0 4px 4px 0; }
+    .gtd-steps.visible { display: flex; }
+    .gtd-step { display: flex; gap: 0.4rem; align-items: center; }
+    .gtd-step .gtd-step-amount { max-width: 9rem; }
+    .gtd-step .gtd-step-date { max-width: 9.5rem; }
+    .gtd-step .gtd-step-remove { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 1rem; padding: 0 0.2rem; line-height: 1; }
+    .gtd-step .gtd-step-remove:hover { color: #ef4444; }
+    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed #374151; border-radius: 3px; color: #6b7280; cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
+    .add-step-btn:hover { color: #d1d5db; border-color: #9ca3af; }
 
-    .salary-row button {
+    .salary-row-main button {
       background: none;
       border: none;
       color: #ef4444;
@@ -1162,10 +1174,14 @@ function setupSalaryRows() {
   document.getElementById('add-salary-btn').addEventListener('click', () => addSalaryRow());
 }
 
-function addSalaryRow(year, amount, holdType, gtdAmount, gtdDate) {
+function addSalaryRow(year, amount, holdType, steps) {
   const container = document.getElementById('salary-rows');
   const row = document.createElement('div');
   row.className = 'salary-row';
+
+  // ── Main row ──────────────────────────────────────────────────────────────
+  const main = document.createElement('div');
+  main.className = 'salary-row-main';
 
   const yearIn = document.createElement('input');
   yearIn.type = 'text'; yearIn.className = 'year-input'; yearIn.placeholder = 'YY-YY';
@@ -1184,30 +1200,59 @@ function addSalaryRow(year, amount, holdType, gtdAmount, gtdDate) {
     holdSel.appendChild(opt);
   });
 
-  const gtdIn = document.createElement('input');
-  gtdIn.type = 'text'; gtdIn.className = 'gtd-input'; gtdIn.placeholder = 'Gtd: $0';
-  gtdIn.value = gtdAmount || '';
-
-  const gtdDateIn = document.createElement('input');
-  gtdDateIn.type = 'date'; gtdDateIn.className = 'gtd-date-input';
-  gtdDateIn.title = 'Fully guaranteed after this date';
-  gtdDateIn.value = gtdDate || '';
-
-  const isNonGtd = (holdType || '') === 'NON_GTD';
-  if (isNonGtd) { gtdIn.classList.add('visible'); gtdDateIn.classList.add('visible'); }
-  holdSel.addEventListener('change', () => {
-    const on = holdSel.value === 'NON_GTD';
-    gtdIn.classList.toggle('visible', on);
-    gtdDateIn.classList.toggle('visible', on);
-    if (!on) { gtdIn.value = ''; gtdDateIn.value = ''; }
-  });
-
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button'; removeBtn.textContent = '×';
   removeBtn.addEventListener('click', () => row.remove());
 
-  row.appendChild(yearIn); row.appendChild(amountIn); row.appendChild(holdSel);
-  row.appendChild(gtdIn); row.appendChild(gtdDateIn); row.appendChild(removeBtn);
+  main.appendChild(yearIn); main.appendChild(amountIn); main.appendChild(holdSel); main.appendChild(removeBtn);
+  row.appendChild(main);
+
+  // ── Guarantee steps ───────────────────────────────────────────────────────
+  const stepsDiv = document.createElement('div');
+  stepsDiv.className = 'gtd-steps';
+
+  function addGuaranteeStep(amt, dt) {
+    const stepRow = document.createElement('div');
+    stepRow.className = 'gtd-step';
+
+    const amtIn = document.createElement('input');
+    amtIn.type = 'text'; amtIn.className = 'gtd-step-amount'; amtIn.placeholder = '$ amount (blank = fully gtd)';
+    amtIn.value = amt || '';
+
+    const dateIn = document.createElement('input');
+    dateIn.type = 'date'; dateIn.className = 'gtd-step-date';
+    dateIn.title = 'Date this amount vests (blank = at signing)';
+    dateIn.value = dt || '';
+
+    const rmBtn = document.createElement('button');
+    rmBtn.type = 'button'; rmBtn.className = 'gtd-step-remove'; rmBtn.textContent = '×';
+    rmBtn.addEventListener('click', () => stepRow.remove());
+
+    stepRow.appendChild(amtIn); stepRow.appendChild(dateIn); stepRow.appendChild(rmBtn);
+    stepsDiv.insertBefore(stepRow, addStepBtn);
+  }
+
+  const addStepBtn = document.createElement('button');
+  addStepBtn.type = 'button'; addStepBtn.className = 'add-step-btn';
+  addStepBtn.textContent = '+ guarantee step';
+  addStepBtn.addEventListener('click', () => addGuaranteeStep());
+  stepsDiv.appendChild(addStepBtn);
+
+  const isNonGtd = (holdType || '') === 'NON_GTD';
+  if (isNonGtd) stepsDiv.classList.add('visible');
+
+  holdSel.addEventListener('change', () => {
+    const on = holdSel.value === 'NON_GTD';
+    stepsDiv.classList.toggle('visible', on);
+    if (!on) stepsDiv.querySelectorAll('.gtd-step').forEach(s => s.remove());
+  });
+
+  // Pre-populate steps
+  if (steps && steps.length) {
+    steps.forEach(s => addGuaranteeStep(s.amount, s.date));
+  }
+
+  row.appendChild(stepsDiv);
   container.appendChild(row);
 }
 
@@ -1228,22 +1273,27 @@ function nextSalaryYear() {
 function collectSalaries() {
   const salaries = {};
   const cap_holds = {};
-  const guaranteed = {};
-  const guarantee_dates = {};
+  const guarantee_schedule = {};
   document.querySelectorAll('.salary-row').forEach(row => {
-    const yr      = row.querySelector('.year-input').value.trim();
-    const amt     = row.querySelector('.amount-input').value.trim();
-    const hold    = row.querySelector('.hold-select').value;
-    const gtd     = row.querySelector('.gtd-input').value.trim();
-    const gtdDate = row.querySelector('.gtd-date-input').value.trim();
+    const yr   = row.querySelector('.year-input').value.trim();
+    const amt  = row.querySelector('.amount-input').value.trim();
+    const hold = row.querySelector('.hold-select').value;
     if (yr && amt) salaries[yr] = amt;
     if (yr && hold) cap_holds[yr] = hold;
     if (yr && hold === 'NON_GTD') {
-      if (gtd)     guaranteed[yr] = gtd;
-      if (gtdDate) guarantee_dates[yr] = gtdDate;
+      const steps = [];
+      row.querySelectorAll('.gtd-step').forEach(step => {
+        const sAmt  = step.querySelector('.gtd-step-amount').value.trim();
+        const sDate = step.querySelector('.gtd-step-date').value.trim();
+        const entry = {};
+        if (sAmt)  entry.amount = sAmt;
+        if (sDate) entry.date   = sDate;
+        steps.push(entry);
+      });
+      if (steps.length) guarantee_schedule[yr] = steps;
     }
   });
-  return { salaries, cap_holds, guaranteed, guarantee_dates };
+  return { salaries, cap_holds, guarantee_schedule };
 }
 
 // ── Trade builder ──────────────────────────────────────────────────────────
@@ -1538,10 +1588,9 @@ async function submitTransaction() {
     if (!/^\d{2}-\d{2}$/.test(startSeason)) { setStatus('err', 'Starting season must be in YY-YY format (e.g. 25-26).'); return; }
     contract = buildTwowayContract(years, startSeason);
   } else {
-    const { salaries, cap_holds, guaranteed, guarantee_dates } = collectSalaries();
+    const { salaries, cap_holds, guarantee_schedule } = collectSalaries();
     contract = { type: contractType, salaries, cap_holds,
-      ...(Object.keys(guaranteed).length      ? { guaranteed }       : {}),
-      ...(Object.keys(guarantee_dates).length ? { guarantee_dates }  : {}),
+      ...(Object.keys(guarantee_schedule).length ? { guarantee_schedule } : {}),
     };
   }
   let date, details;
