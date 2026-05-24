@@ -268,15 +268,122 @@
       return table;
     }
 
+    // Seasons up to and including this are sourced from the metadata.R pipeline (league-history.csv).
+    // Seasons strictly after this are built live from bracket + award ballot data.
+    const LEGACY_CUTOFF = '24-25';
+
+    // Tally a single award category from ballot data using the [5,3,1] point system.
+    // Returns the winning candidate (slug or team abbr) or null.
+    function tallyAward(ballots, key) {
+      const pts = {};
+      Object.values(ballots).forEach(ballot => {
+        (ballot[key] || []).forEach((candidate, i) => {
+          if (candidate != null) {
+            const w = [5, 3, 1][i] ?? 0;
+            if (w) pts[candidate] = (pts[candidate] || 0) + w;
+          }
+        });
+      });
+      const sorted = Object.entries(pts).sort((a, b) => b[1] - a[1]);
+      return sorted.length ? sorted[0][0] : null;
+    }
+
+    // Convert a player slug to "LAST, FIRST" format using the bios dict.
+    function slugToName(slug, bios) {
+      if (!slug) return '';
+      return (bios && bios[slug]) ? bios[slug].name || '' : '';
+    }
+
+    // Derive the loser of a bracket matchup row.
+    function loser(g) {
+      if (!g) return '';
+      return g.T1 === g.WINNER ? g.T2 : g.T1;
+    }
+
+    // Build one live history row from bracket + ballot data for the given season.
+    function buildLiveRow(season, brackets, ballots, bios) {
+      const s = brackets.filter(r => r.SEASON === season);
+      const finals = s.find(r => r.ROUND === '4');
+      const confFinals = s.filter(r => r.ROUND === '3');
+      const eastCF = confFinals.find(r => r.T1_SEED && r.T1_SEED.startsWith('East-'));
+      const westCF = confFinals.find(r => r.T1_SEED && r.T1_SEED.startsWith('West-'));
+
+      const row = {
+        SEASON:         season,
+        CHAMPION:       finals ? finals.WINNER : '',
+        RUNNER_UP:      loser(finals),
+        EAST_RUNNER_UP: loser(eastCF),
+        WEST_RUNNER_UP: loser(westCF),
+        MVP: '', DPOY: '', ROTY: '', MIP: '', FOTY: '', COTY: '',
+        PTS_LEADER: '', REB_LEADER: '', AST_LEADER: '',
+        STL_LEADER: '', BLK_LEADER: '', TPM_LEADER: '',
+        BEST_OFF: '', BEST_DEF: '', BEST_OVERALL: '',
+      };
+
+      if (ballots) {
+        row.MVP  = slugToName(tallyAward(ballots, 'MVP'),  bios);
+        row.DPOY = slugToName(tallyAward(ballots, 'DPOY'), bios);
+        row.ROTY = slugToName(tallyAward(ballots, 'ROTY'), bios);
+        row.MIP  = slugToName(tallyAward(ballots, 'MIP'),  bios);
+        row.FOTY = tallyAward(ballots, 'FOTY') || '';
+        row.COTY = tallyAward(ballots, 'COTY') || '';
+      }
+
+      return row;
+    }
+
     (async () => {
       const wrap = document.getElementById('table-wrap');
+      const token = localStorage.getItem('nbn_token') || '';
       try {
-        const res = await fetch('/data/league-history.csv');
-        if (!res.ok) throw new Error(res.statusText);
+        // Fetch all data sources in parallel.
+        const [historyRes, bracketsRes, configRes] = await Promise.all([
+          fetch('/data/league-history.csv'),
+          fetch('/standings/playoff-brackets.csv'),
+          fetch('/api/awards-config'),
+        ]);
+
+        if (!historyRes.ok) throw new Error('Failed to load league-history.csv');
+
+        // Legacy rows: from CSV, only up to and including LEGACY_CUTOFF.
+        const legacyRows = parseCSV(await historyRes.text())
+          .filter(r => r.SEASON <= LEGACY_CUTOFF);
+
+        // Playoff bracket data for live seasons.
+        const allBrackets = bracketsRes.ok ? parseCSV(await bracketsRes.text()) : [];
+
+        // Awards reveal config.
+        const awardsConfig = configRes.ok ? await configRes.json() : {};
+
+        // Build live rows for any season beyond the cutoff that has bracket data.
+        const liveSeasons = [...new Set(
+          allBrackets.filter(r => r.SEASON > LEGACY_CUTOFF).map(r => r.SEASON)
+        )].sort();
+
+        const liveRows = [];
+        for (const season of liveSeasons) {
+          const isRevealed = !!(awardsConfig[season]?.revealed);
+          let ballots = null;
+          let bios = null;
+
+          if (isRevealed) {
+            const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
+            const [ballotsRes, biosRes] = await Promise.all([
+              fetch(`/api/awards-ballots/${season}`, { headers: authHeader }),
+              fetch('/api/players'),
+            ]);
+            if (ballotsRes.ok) ballots = await ballotsRes.json();
+            if (biosRes.ok)    bios    = await biosRes.json();
+          }
+
+          liveRows.push(buildLiveRow(season, allBrackets, ballots, bios));
+        }
+
+        const allRows = [...legacyRows, ...liveRows];
         wrap.innerHTML = '';
-        wrap.appendChild(buildTable(parseCSV(await res.text())));
+        wrap.appendChild(buildTable(allRows));
       } catch (e) {
-        wrap.innerHTML = '<div class="status">Failed to load league history.</div>';
+        wrap.innerHTML = `<div class="status">Failed to load league history: ${e.message}</div>`;
       }
     })();
   </script>

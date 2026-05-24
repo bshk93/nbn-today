@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.0.96",
+    "date": "2026-05-24",
+    "changes": [
+      "Fix homepage reveal-awards toggle disappearing \u2014 lo-boxscore null ref threw TypeError before isAdmin block ran",
+      "History: 24-25 and earlier from metadata.R CSV; 25-26+ postseason from playoff-brackets.csv, awards from ballot data (shown only when revealed)"
+    ]
+  },
+  {
     "version": "0.0.95",
     "date": "2026-05-24",
     "changes": [
