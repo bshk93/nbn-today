@@ -303,8 +303,9 @@
     // Build one live history row from bracket + ballot data for the given season.
     function buildLiveRow(season, brackets, ballots, bios) {
       const s = brackets.filter(r => r.SEASON === season);
-      const finals = s.find(r => r.ROUND === '4' && r.WINNER);
-      const confFinals = s.filter(r => r.ROUND === '3' && r.WINNER);
+      const done = r => parseInt(r.T1_W) === 4 || parseInt(r.T2_W) === 4;
+      const finals = s.find(r => r.ROUND === '4' && done(r));
+      const confFinals = s.filter(r => r.ROUND === '3' && done(r));
       const eastCF = confFinals.find(r => r.T1_SEED && r.T1_SEED.startsWith('East-'));
       const westCF = confFinals.find(r => r.T1_SEED && r.T1_SEED.startsWith('West-'));
 
