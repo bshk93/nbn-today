@@ -475,6 +475,35 @@
       }
     };
 
+    function relTime(iso) {
+      if (!iso) return '';
+      const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+      if (m < 1) return 'just now';
+      if (m < 60) return `${m}m ago`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `${h}h ago`;
+      return `${Math.floor(h / 24)}d ago`;
+    }
+
+    async function removeGame(id, rowEl) {
+      try {
+        const res = await fetch(`/api/boxscore/pending/${id}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (res.ok) {
+          rowEl.remove();
+          const el = document.getElementById("pending-list");
+          if (!el.querySelector("div")) {
+            el.innerHTML = `<span style="color:#6b7280;font-size:0.85rem;">No pending games.</span>`;
+          }
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Failed to remove.");
+        }
+      } catch (e) { alert(e.message); }
+    }
+
     // Pending list
     async function loadPending() {
       const el = document.getElementById("pending-list");
@@ -492,13 +521,25 @@
           el.innerHTML = `<span style="color:#6b7280;font-size:0.85rem;">No pending games.</span>`;
           return;
         }
-        el.innerHTML = items.map(m => `
-          <div style="display:flex;align-items:center;gap:1rem;padding:0.5rem 0;border-bottom:1px solid #374151;font-size:0.85rem;">
-            <span style="font-weight:600;color:#e5e7eb;">${m.home_team} vs ${m.away_team}</span>
+        el.innerHTML = "";
+        items.forEach(m => {
+          const row = document.createElement("div");
+          row.style.cssText = "display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid #374151;font-size:0.85rem;";
+          const ts = m.uploaded_at ? ` · ${relTime(m.uploaded_at)}` : "";
+          row.innerHTML = `
+            <span style="font-weight:600;color:#e5e7eb;flex:1;min-width:0;">${m.home_team} vs ${m.away_team}</span>
             <span style="color:#9ca3af;">${m.date} · ${m.season} ${m.game_type}</span>
-            <span style="color:#6b7280;font-size:0.75rem;">id: ${m.id}</span>
-            <span style="color:#6b7280;font-size:0.75rem;">by ${m.uploaded_by || "?"}</span>
-          </div>`).join("");
+            <span style="color:#6b7280;font-size:0.75rem;">by ${m.uploaded_by || "?"}${ts}</span>`;
+          const btn = document.createElement("button");
+          btn.title = "Remove from queue";
+          btn.textContent = "×";
+          btn.style.cssText = "background:none;border:1px solid #374151;color:#6b7280;border-radius:4px;width:1.5rem;height:1.5rem;cursor:pointer;font-size:0.85rem;flex-shrink:0;line-height:1;";
+          btn.onmouseenter = () => { btn.style.borderColor="#ef4444"; btn.style.color="#ef4444"; btn.style.background="rgba(239,68,68,0.08)"; };
+          btn.onmouseleave = () => { btn.style.borderColor="#374151"; btn.style.color="#6b7280"; btn.style.background="none"; };
+          btn.onclick = () => removeGame(m.id, row);
+          row.appendChild(btn);
+          el.appendChild(row);
+        });
       } catch (e) {
         el.innerHTML = `<span style="color:#f87171;font-size:0.85rem;">${e.message}</span>`;
       }
