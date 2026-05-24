@@ -999,6 +999,20 @@
     retiredLbl.appendChild(Object.assign(document.createElement('span'), { textContent: 'Retired' }));
     form.appendChild(retiredLbl);
 
+    // Notes (free-form contract/roster notes shown as tooltip on roster table)
+    const notesLbl = document.createElement('label');
+    notesLbl.className = 'full-col';
+    notesLbl.textContent = 'Notes';
+    const fNotes = document.createElement('textarea');
+    fNotes.rows = 2;
+    fNotes.placeholder = 'e.g. Matched RFA offer, no trade clause';
+    fNotes.value = initial.notes || '';
+    fNotes.style.cssText = 'width:100%;resize:vertical;background:#111827;border:1px solid #374151;border-radius:6px;color:#f3f4f6;padding:0.35rem 0.5rem;font-size:0.85rem;font-family:inherit;outline:none;box-sizing:border-box';
+    fNotes.addEventListener('focus', () => fNotes.style.borderColor = '#3b82f6');
+    fNotes.addEventListener('blur',  () => fNotes.style.borderColor = '#374151');
+    notesLbl.appendChild(fNotes);
+    form.appendChild(notesLbl);
+
     // Contract type
     const typeLbl = document.createElement('label');
     typeLbl.textContent = 'Contract Type';
@@ -1254,6 +1268,7 @@
         wingspan:    fWingspan.value.trim(),
         photo_url:   fPhoto.value.trim(),
         retired:     retiredCb.checked,
+        notes:       fNotes.value.trim(),
         type:        typeSelect.value,
         cap_holds,
         salaries,
