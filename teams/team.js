@@ -348,10 +348,10 @@ document.title = `${abbr} — NBN`;
   .token-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
   .player-note {
     display: inline-block; margin-left: 0.3rem; font-size: 0.72rem;
-    color: #4b5563; cursor: default; position: relative;
+    color: #b45309; cursor: default; position: relative;
     vertical-align: middle; line-height: 1; transition: color 0.1s;
   }
-  .player-note:hover { color: #9ca3af; }
+  .player-note:hover { color: #fbbf24; }
   .player-note::after {
     content: attr(data-tip);
     position: absolute; bottom: calc(100% + 5px); left: 50%;
