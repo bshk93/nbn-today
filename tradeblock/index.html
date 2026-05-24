@@ -581,10 +581,10 @@
               const badge = document.createElement('span');
               badge.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:0.15rem 0.5rem;border-radius:4px;background:#1e1b4b;color:#a5b4fc;';
               badge.textContent = row.player;
-              if (row.notes) {
+              if (row.pickApiNotes) {
                 const wrap = document.createElement('span');
                 wrap.className = 'pick-badge-wrap';
-                wrap.dataset.tip = row.notes;
+                wrap.dataset.tip = row.pickApiNotes;
                 wrap.appendChild(badge);
                 const dot = document.createElement('span');
                 dot.className = 'pick-note-dot';
@@ -620,12 +620,7 @@
             const capType = (row.cap_holds || {})[col.key];
             if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
           } else {
-            // For pick rows, notes are shown via the hover tooltip on the badge — suppress column
-            if (col.key === 'notes' && row.isPick) {
-              td.textContent = '—';
-            } else {
-              td.textContent = row[col.key] || '—';
-            }
+            td.textContent = row[col.key] || '—';
           }
         });
       });
@@ -924,6 +919,7 @@
 
         // Which roster CSVs to fetch
         const teamsWithEntries = Object.keys(tb).filter(t => tb[t].players?.length || tb[t].picks?.length);
+        const teamsWithPicks   = Object.keys(tb).filter(t => tb[t].picks?.length);
         const teamsToFetch = [...new Set([...teamsWithEntries, ...(myTeam ? [myTeam] : [])])];
 
         const rosterData = {};
@@ -936,6 +932,25 @@
           teamsToFetch.forEach((t, i) => {
             const res = results[i];
             if (res.status === 'fulfilled' && res.value) rosterData[t] = parseCSV(res.value);
+          });
+        }
+
+        // Fetch picks API for teams that have picks on the block, to get pick notes (protection etc.)
+        // Map: team → Map of "year|round|orig" → notes string
+        const picksApiMap = {};
+        if (teamsWithPicks.length > 0) {
+          const results = await Promise.allSettled(
+            teamsWithPicks.map(t => fetch(`/api/picks/${t}`).then(r => r.ok ? r.json() : []))
+          );
+          teamsWithPicks.forEach((t, i) => {
+            const res = results[i];
+            const picks = res.status === 'fulfilled' ? res.value : [];
+            const m = {};
+            picks.forEach(p => {
+              const rs = p.round === 1 ? '1st' : '2nd';
+              m[`${p.year}|${rs}|${p.orig}`] = p.notes || '';
+            });
+            picksApiMap[t] = m;
           });
         }
 
@@ -995,11 +1010,14 @@
           (block.picks || []).forEach(({ year, round, team: origin = 'Own', notes }) => {
             const isOwnPick = !origin || origin === 'Own' || origin.toUpperCase() === team.toUpperCase();
             const pickLabel = isOwnPick ? `${year} ${round}` : `${year} ${round} (${origin})`;
+            const originKey = isOwnPick ? team : (origin || team);
+            const pickApiNotes = (picksApiMap[team] || {})[`${year}|${round}|${originKey}`] || '';
             const row = {
               team, isPick: true,
               player: pickLabel,
               pos: 'Pick', ovr: '', age: '',
-              notes: notes || '', cap_holds: {},
+              notes: notes || '', pickApiNotes,
+              cap_holds: {},
             };
             salaryYears.forEach(yr => { row[yr] = '—'; });
             tableRows.push(row);
