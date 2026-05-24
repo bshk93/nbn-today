@@ -394,13 +394,15 @@
     }
     .salary-row-main .hold-select:focus { border-color: #3b82f6; }
     /* Guarantee steps */
-    .gtd-steps { display: none; flex-direction: column; gap: 0.2rem; margin-left: 1rem; padding: 0.25rem 0.5rem; background: rgba(0,0,0,0.2); border-left: 2px solid #374151; border-radius: 0 4px 4px 0; }
+    .gtd-steps { display: none; flex-direction: column; gap: 0.3rem; margin-left: 1rem; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.2); border-left: 2px solid #374151; border-radius: 0 4px 4px 0; }
     .gtd-steps.visible { display: flex; }
-    .gtd-step { display: flex; gap: 0.4rem; align-items: center; }
+    .gtd-steps-desc { font-size: 0.68rem; color: #6b7280; font-style: italic; margin-bottom: 0.15rem; }
+    .gtd-step { display: flex; gap: 0.35rem; align-items: center; }
+    .gtd-step-conn { font-size: 0.72rem; color: #6b7280; white-space: nowrap; flex-shrink: 0; }
     .gtd-step input { background: #1f2937; border: 1px solid #374151; border-radius: 6px; color: #f3f4f6; font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.5rem; outline: none; }
     .gtd-step input:focus { border-color: #3b82f6; }
-    .gtd-step .gtd-step-amount { max-width: 9rem; }
-    .gtd-step .gtd-step-date { max-width: 9.5rem; }
+    .gtd-step .gtd-step-amount { width: 9rem; }
+    .gtd-step .gtd-step-date { width: 9.5rem; }
     .gtd-step .gtd-step-remove { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 1rem; padding: 0 0.2rem; line-height: 1; }
     .gtd-step .gtd-step-remove:hover { color: #ef4444; }
     .add-step-btn { align-self: flex-start; background: none; border: 1px dashed #374151; border-radius: 3px; color: #6b7280; cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
@@ -1105,21 +1107,37 @@
       const stepsDiv = document.createElement('div');
       stepsDiv.className = 'gtd-steps' + ((holdType || '') === 'NON_GTD' ? ' visible' : '');
 
+      const stepsDesc = document.createElement('div');
+      stepsDesc.className = 'gtd-steps-desc';
+      stepsDesc.textContent = 'Each step adds to the guaranteed total on its date. Leave amount blank to guarantee the full remaining salary on that date.';
+      stepsDiv.appendChild(stepsDesc);
+
       function addGuaranteeStep(amt, dt) {
         const stepRow = document.createElement('div');
         stepRow.className = 'gtd-step';
+
         const amtIn = document.createElement('input');
-        amtIn.type = 'text'; amtIn.className = 'gtd-step-amount'; amtIn.placeholder = '$ amount (blank = fully gtd)';
+        amtIn.type = 'text'; amtIn.className = 'gtd-step-amount';
+        amtIn.placeholder = '$ partial amount';
+        amtIn.title = 'Dollar amount that vests on this date. Leave blank to guarantee the full remaining salary.';
         amtIn.value = amt || '';
+
+        const connOn = document.createElement('span');
+        connOn.className = 'gtd-step-conn'; connOn.textContent = 'on';
+
         const dateIn = document.createElement('input');
         dateIn.type = 'date'; dateIn.className = 'gtd-step-date';
-        dateIn.title = 'Date this amount vests (blank = at signing)';
+        dateIn.title = 'Date this amount vests. Leave blank for "at signing".';
         dateIn.value = dt || '';
+
         const rmBtn = document.createElement('button');
         rmBtn.type = 'button'; rmBtn.className = 'gtd-step-remove'; rmBtn.textContent = '×';
-        rmBtn.style.cssText = 'background:none;border:none;color:#4b5563;cursor:pointer;font-size:1rem;padding:0 0.2rem;line-height:1';
         rmBtn.addEventListener('click', () => stepRow.remove());
-        stepRow.appendChild(amtIn); stepRow.appendChild(dateIn); stepRow.appendChild(rmBtn);
+
+        stepRow.appendChild(amtIn);
+        stepRow.appendChild(connOn);
+        stepRow.appendChild(dateIn);
+        stepRow.appendChild(rmBtn);
         stepsDiv.insertBefore(stepRow, addStepBtn);
       }
 
