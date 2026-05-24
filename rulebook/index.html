@@ -93,6 +93,11 @@
       margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
     }
     .sec-num { color: #4b5563; font-weight: 500; }
+    .sub-title {
+      font-size: 0.875rem; font-weight: 700; color: #e5e7eb;
+      margin: 1.1rem 0 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+      padding-top: 0.75rem; border-top: 1px solid #1f2937;
+    }
 
     p { margin-bottom: 0.75rem; color: #d1d5db; }
     p:last-child { margin-bottom: 0; }
@@ -293,11 +298,41 @@
           </div>
 
           <div class="doc-section" id="s1-3">
-            <h3 class="sec-title"><span class="sec-num">§ 1.3</span> Hard Cap <span class="badge badge-enforced">🔒 system-enforced</span></h3>
-            <p>The Hard Cap is an <strong>absolute league-wide spending ceiling</strong>. No team's Team Salary may exceed the Hard Cap at any point during the salary cap year, regardless of exceptions or prior transactions. There is no mechanism to go over it.</p>
-            <p>Additionally, individual teams may be <strong>hard-capped at a lower threshold</strong> — either the First Apron or the Second Apron — when they engage in certain transactions (see § 1.4). A team hard-capped at an apron cannot exceed that apron even if they remain below the league Hard Cap.</p>
-            <p>In summary, every team's effective ceiling is the lowest of: (a) the league Hard Cap, (b) any triggered apron lock, or (c) the Second Apron, if applicable.</p>
+            <h3 class="sec-title"><span class="sec-num">§ 1.3</span> Hard Cap <span class="badge badge-enforced">🔒 system-enforced</span> <span class="badge badge-manual">👁 manual review</span></h3>
+            <p>The Hard Cap is an <strong>absolute league-wide spending ceiling</strong>. No team's combined Team Salary — active player salaries plus dead cap — may exceed the Hard Cap at any point during the salary cap year, regardless of exceptions or prior transactions.</p>
+            <p>Additionally, individual teams may be <strong>hard-capped at a lower threshold</strong> — either the First Apron or the Second Apron — when they engage in certain transactions (see § 1.4). A team hard-capped at an apron cannot exceed that apron even if they remain below the league Hard Cap. Every team's effective ceiling is the lowest of: (a) the league Hard Cap, (b) any triggered apron lock.</p>
             <p>The transaction system blocks any signing, trade, draft pick signing, or two-way conversion that would push a team over any applicable ceiling. The error message will identify which limit was breached and the projected overage.</p>
+
+            <h4 class="sub-title">Hard Cap Calculation</h4>
+            <p>Each season, the Hard Cap is derived from historical NBA spending data using the following method:</p>
+            <ol>
+              <li>For each of the <strong>previous three NBA seasons</strong>, compute every team's total spending as a percentage of the NBA salary cap for that season. Total spending includes both active player salaries and dead cap.</li>
+              <li>Identify the <strong>single highest percentage</strong> observed across all teams and all three seasons.</li>
+              <li><strong>Round that percentage up</strong> to the nearest whole number.</li>
+              <li>Apply that percentage to the <strong>NBN salary cap</strong> for the current season to arrive at the Hard Cap dollar threshold.</li>
+            </ol>
+            <div class="callout callout-note">
+              The Hard Cap is set by the league office at the start of each salary cap year and recorded in Cap Settings. Because it is derived from NBA data rather than set proportionally like the aprons, it is not automatically pegged to cap increases.
+            </div>
+
+            <h4 class="sub-title">Hard Cap Grace Period <span class="badge badge-manual">👁 manual review</span></h4>
+            <p>A franchise may begin a new league year with a Team Salary exceeding the Hard Cap only if <strong>both</strong> of the following conditions are met:</p>
+            <ol>
+              <li>The roster was already over the Hard Cap at the <strong>conclusion of the prior regular season</strong>.</li>
+              <li><strong>No moves</strong> were made during the offseason period — between the end of the regular season and the start of the new league year — that increased salary and pushed the team over the Hard Cap.</li>
+            </ol>
+            <p>A franchise operating under the grace period is subject to strict transaction limits until cap compliance is achieved:</p>
+            <ul>
+              <li><strong>Permitted:</strong> Player waivers; trades that result in a <em>net reduction</em> of Team Salary.</li>
+              <li><strong>Prohibited:</strong> Any signing of any kind; draft pick signings (picks may not be signed until the team is cap-compliant).</li>
+            </ul>
+            <div class="callout callout-warn">
+              <strong>Compliance deadline: August 31st.</strong> A franchise in the grace period must achieve Hard Cap compliance before August 31st of that league year. Failure to comply by this date results in:
+              <ul style="margin-top:0.5rem;padding-left:1.25rem;">
+                <li>All unsigned draft picks are <strong>forfeited</strong>.</li>
+                <li>Franchise ownership is subject to <strong>disciplinary review and penalties</strong> at the discretion of the Board of Directors.</li>
+              </ul>
+            </div>
           </div>
 
           <div class="doc-section" id="s1-4">
