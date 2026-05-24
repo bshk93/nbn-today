@@ -479,6 +479,18 @@ function renderTable() {
         rolesBtn.addEventListener('click', () => openRolesModal(m.name, m.roles));
         div.appendChild(rolesBtn);
 
+        if (m.token) {
+          const cpyBtn = document.createElement('button');
+          cpyBtn.className = 'btn-sm'; cpyBtn.textContent = 'Copy Token';
+          cpyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(m.token).then(() => {
+              cpyBtn.textContent = 'Copied!';
+              setTimeout(() => { cpyBtn.textContent = 'Copy Token'; }, 1500);
+            });
+          });
+          div.appendChild(cpyBtn);
+        }
+
         const rotBtn = document.createElement('button');
         rotBtn.className = 'btn-sm rotate'; rotBtn.textContent = 'Rotate';
         rotBtn.addEventListener('click', () => doRotateToken(m.name));
