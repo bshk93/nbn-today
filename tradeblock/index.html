@@ -948,7 +948,7 @@
             const m = {};
             picks.forEach(p => {
               const rs = p.round === 1 ? '1st' : '2nd';
-              m[`${p.year}|${rs}|${p.orig}`] = p.notes || '';
+              m[`${p.year}|${rs}|${p.orig}`] = { notes: p.notes || '', pick: p.pick ?? null };
             });
             picksApiMap[t] = m;
           });
@@ -1009,9 +1009,12 @@
           // Pick rows
           (block.picks || []).forEach(({ year, round, team: origin = 'Own', notes }) => {
             const isOwnPick = !origin || origin === 'Own' || origin.toUpperCase() === team.toUpperCase();
-            const pickLabel = isOwnPick ? `${year} ${round}` : `${year} ${round} (${origin})`;
             const originKey = isOwnPick ? team : (origin || team);
-            const pickApiNotes = (picksApiMap[team] || {})[`${year}|${round}|${originKey}`] || '';
+            const pickApiData  = (picksApiMap[team] || {})[`${year}|${round}|${originKey}`] || {};
+            const pickApiNotes = pickApiData.notes || '';
+            const pickNum      = pickApiData.pick ?? null;
+            const numSuffix    = pickNum ? ` · #${pickNum}` : '';
+            const pickLabel    = isOwnPick ? `${year} ${round}${numSuffix}` : `${year} ${round} (${origin})${numSuffix}`;
             const row = {
               team, isPick: true,
               player: pickLabel,
