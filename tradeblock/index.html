@@ -410,17 +410,19 @@
       { id: 'G',  label: 'G',  pos: ['PG', 'SG'] },
       { id: 'W',  label: 'W',  pos: ['SG', 'SF'] },
       { id: 'F',  label: 'F',  pos: ['SF', 'PF'] },
+      { id: 'PICKS', label: 'Picks', pos: [], isPick: true },
     ];
 
     const activeFilters = new Set();
 
     function rowMatchesFilter(row) {
       if (activeFilters.size === 0) return true;
-      if (row.isPick) return true;  // picks always shown regardless of position filter
-      const playerPos = new Set(
-        (row.pos === '—' ? [] : row.pos.split('/').map(p => p.trim()))
-      );
-      for (const id of activeFilters) {
+      const picksActive = activeFilters.has('PICKS');
+      const posFilters  = [...activeFilters].filter(id => id !== 'PICKS');
+      if (row.isPick) return picksActive;
+      if (posFilters.length === 0) return false; // only Picks chip active — hide players
+      const playerPos = new Set(row.pos === '—' ? [] : row.pos.split('/').map(p => p.trim()));
+      for (const id of posFilters) {
         const def = FILTER_DEFS.find(d => d.id === id);
         if (def && def.pos.some(p => playerPos.has(p))) return true;
       }
@@ -431,6 +433,12 @@
       const container = document.getElementById('pos-filter');
       container.innerHTML = '';
       FILTER_DEFS.forEach(def => {
+        if (def.isPick) {
+          const sep = document.createElement('span');
+          sep.style.cssText = 'color:#374151;align-self:center;font-size:0.75rem;';
+          sep.textContent = '·';
+          container.appendChild(sep);
+        }
         const btn = document.createElement('button');
         btn.className = 'pos-chip' + (activeFilters.has(def.id) ? ' active' : '');
         btn.textContent = def.label;
