@@ -201,6 +201,12 @@
         <a class="sec-link" href="#s3-7">§ 3.7 DPE</a>
         <a class="sec-link" href="#s3-8">§ 3.8 Bird Rights</a>
         <a class="sec-link" href="#s3-9">§ 3.9 Raise Limits</a>
+        <a class="sec-link" href="#s3-10">§ 3.10 Cap Holds</a>
+        <a class="sec-link" href="#s3-11">§ 3.11 Max Contracts</a>
+        <a class="sec-link" href="#s3-12">§ 3.12 Min Contracts</a>
+        <a class="sec-link" href="#s3-13">§ 3.13 Contract Structure</a>
+        <a class="sec-link" href="#s3-14">§ 3.14 Sign-and-Trade</a>
+        <a class="sec-link" href="#s3-15">§ 3.15 RFA Rules</a>
 
         <a class="art-link" href="#art4"><span class="art-num">Article IV</span><span class="art-ttl">Trades</span></a>
         <a class="sec-link" href="#s4-1">§ 4.1 Assets</a>
@@ -217,11 +223,13 @@
         <a class="art-link" href="#art6"><span class="art-num">Article VI</span><span class="art-ttl">Options &amp; Extensions</span></a>
         <a class="sec-link" href="#s6-1">§ 6.1 Options</a>
         <a class="sec-link" href="#s6-2">§ 6.2 Extensions</a>
+        <a class="sec-link" href="#s6-3">§ 6.3 Extension Windows</a>
 
         <a class="art-link" href="#art7"><span class="art-num">Article VII</span><span class="art-ttl">The Draft</span></a>
         <a class="sec-link" href="#s7-1">§ 7.1 Format & Rookies</a>
         <a class="sec-link" href="#s7-2">§ 7.2 Pick Trading</a>
         <a class="sec-link" href="#s7-3">§ 7.3 Second Apron Picks</a>
+        <a class="sec-link" href="#s7-4">§ 7.4 International Players</a>
       </aside>
 
       <!-- ── Document body ───────────────────────────────────────────── -->
@@ -234,6 +242,7 @@
 
           <div class="doc-section" id="s1-1">
             <h3 class="sec-title"><span class="sec-num">§ 1.1</span> Salary Cap Thresholds</h3>
+            <p>The NBN Salary Cap mirrors the <strong>NBA's official salary cap</strong> for the same season. When the NBA announces its cap number each summer, the NBN cap is set to the same value. All apron thresholds follow the same proportional relationships as the NBA. Mid-Level Exception values increase each season at the same percentage rate as the overall cap.</p>
             <p>All three cap thresholds are set externally each season by the league office and recorded in the system. The values below are live for the current season.</p>
             <div class="cap-table-wrap">
               <div class="cap-table-header">
@@ -306,6 +315,9 @@
             <div class="callout callout-note">
               Additionally, a team below an apron that executes a trade where the incoming salary exceeds outgoing + $250,000 is <strong>hard-capped at the First Apron</strong> for the remainder of the season (contagion rule — see § 4.3). A team below the Second Apron that aggregates salaries in a trade is <strong>hard-capped at the Second Apron</strong> (see § 4.4).
             </div>
+            <div class="callout callout-note">
+              <strong>Post-regular-season timing:</strong> A trade that would trigger a hard cap, when completed after the end of the regular season and before the start of the new league year (typically July 1), applies the hard cap to the <em>following</em> season rather than the current one. This rule took effect starting after the 2024–25 regular season.
+            </div>
           </div>
 
           <div class="doc-section" id="s1-5">
@@ -339,16 +351,29 @@
           <div class="doc-section" id="s2-1">
             <h3 class="sec-title"><span class="sec-num">§ 2.1</span> Standard Roster Size <span class="badge badge-enforced">🔒 system-enforced</span></h3>
             <p>A team's standard roster may not exceed <strong>15 players</strong> at any time. If a trade would push a receiving team's roster over 15, the team must release a player before the trade is processed.</p>
-            <p>There is no minimum roster size restriction at this time.</p>
+            <p><strong>Pre-season minimum:</strong> Teams must have at least <strong>14 players</strong> on their main roster by the day before the regular season begins.</p>
+            <p><strong>In-season minimum:</strong> If a roster move during the regular season reduces a team below 14 players, the team has a <strong>one-week grace period</strong> to restore the minimum. If the minimum is not restored:</p>
+            <ul>
+              <li>At the <strong>1-week mark</strong>: each FO member of the affected team receives an <strong>activity strike</strong>, and a cap hold of <strong>$1,620,564</strong> is added to the team's books for each open slot below 14.</li>
+              <li>Activity strikes and additional cap holds continue at the <strong>2-week</strong> and <strong>3-week</strong> marks if the minimum is still not met.</li>
+              <li>Cap holds are removed once the team reaches 14 players.</li>
+            </ul>
+            <p><strong>Simultaneous waiver restriction:</strong> A team at the 15-player maximum may not acquire a player and simultaneously waive another to remain at 15. A roster spot must exist <em>before</em> the acquisition is made. For example, a team with 14 players may not trade one player for three while simultaneously waiving one of the incoming players to land at 15 — the trade would leave the roster at 16, which is illegal.</p>
           </div>
 
           <div class="doc-section" id="s2-2">
             <h3 class="sec-title"><span class="sec-num">§ 2.2</span> Two-Way Contracts</h3>
-            <p>Two-way players occupy a <strong>separate roster slot</strong> outside the 15-man standard limit — they do not count toward the 15-player maximum.</p>
-            <p>Two-way contracts carry a salary of <strong>$0</strong> and are not included in Team Salary for cap purposes at any point during the contract. If a two-way player is converted to a standard contract (§ 6.1), their new salary begins counting against the cap from the date of conversion.</p>
-            <div class="callout callout-pending">
-              Additional two-way eligibility rules (experience limits, conversion windows, mid-season waiver restrictions) are pending documentation.
-            </div>
+            <p>Teams may carry up to <strong>3 Two-Way players</strong> in separate G-League roster slots outside the 15-man standard limit. Two-Way players in their G-League slot do <strong>not</strong> count toward the 14-player roster minimum.</p>
+            <p>Two-way contracts carry a salary of <strong>$0</strong> and are not included in Team Salary for cap purposes. If a two-way player is converted to a standard contract (§ 6.1), their new salary begins counting against the cap from the date of conversion.</p>
+            <p><strong>Eligibility:</strong> Players with <strong>3 or fewer years of NBA experience</strong> are eligible for Two-Way contracts. A second-round pick may receive a Two-Way contract in lieu of a standard contract (see § 7.1).</p>
+            <p><strong>Contract terms:</strong> Maximum length is <strong>2 years</strong>. A team may keep the same player in a Two-Way spot for up to <strong>2 consecutive years</strong>. Two-Way players are eligible to play in a maximum of <strong>50 games</strong> per season. Bird Rights accumulate normally while on a Two-Way contract.</p>
+            <p><strong>Conversion to a standard contract:</strong></p>
+            <ul>
+              <li>A Two-Way player may be signed to a <strong>minimum contract matching the length of their previous contract</strong> at any time, provided a standard roster spot is available.</li>
+              <li>Any other contract structure requires a <strong>pitch and bid through the free agency committee</strong>.</li>
+              <li>A player converted from Two-Way to a standard contract is subject to a trade restriction of <strong>3 months or December 15, whichever is earlier</strong>.</li>
+              <li>A player on a standard contract <strong>may not</strong> be converted to a Two-Way spot.</li>
+            </ul>
           </div>
         </article>
 
@@ -382,6 +407,7 @@
             </table>
             <p>The Room Exception assignment is <strong>locked on July 1</strong>. A team assigned the Room Exception cannot move out of it during that year, even if they later exceed the cap.</p>
             <p>Exceptions and cap space may <strong>not</strong> be combined to offer a larger contract — they are separate mechanisms. A team with $4M of cap room and a $5M MLE cannot offer $9M; they must choose one.</p>
+            <p><strong>Annual scaling:</strong> All MLE amounts (NTMLE, TMLE, Room Exception) increase each season at the same percentage rate as the overall salary cap.</p>
           </div>
 
           <div class="doc-section" id="s3-3">
@@ -410,6 +436,7 @@
               <li>Cannot be used if the team has already used cap space or the Room Exception during that salary cap year.</li>
             </ul>
             <p><strong>Hard-cap trigger:</strong> Using the BAE hard-caps the team at the <strong>First Apron</strong> for the remainder of the season (Row A). The system sets this automatically.</p>
+            <p>The BAE <strong>expires unused at the end of the regular season</strong>. It is automatically refreshed on <strong>July 1</strong> at the start of the new salary cap year, subject to the consecutive-year restriction above.</p>
           </div>
 
           <div class="doc-section" id="s3-6">
@@ -433,15 +460,13 @@
 
           <div class="doc-section" id="s3-8">
             <h3 class="sec-title"><span class="sec-num">§ 3.8</span> Veteran Free Agent Exception (Bird Rights) <span class="badge badge-manual">👁 manual review</span></h3>
-            <p>A team may re-sign their own free agents using one of three Bird Rights tracks:</p>
+            <p>A team may re-sign their own free agents using one of three Bird Rights tracks. Rights accrue when a player remains with the same team without clearing waivers or signing as a free agent in between:</p>
             <ol>
-              <li><strong>Qualifying Veteran FA (QVFA):</strong> Up to the maximum salary. Annual raises/decreases governed by the <strong>8% rule</strong> (see § 3.9).</li>
-              <li><strong>Non-Qualifying Veteran FA (Non-QVFA):</strong> Up to the greater of 120% of the final-year salary, 120% of the applicable minimum, or (for RFAs) the qualifying offer amount. Annual raises governed by the 5% rule.</li>
-              <li><strong>Early Qualifying Veteran FA (EQVFA):</strong> Contract must cover at least 2 seasons. Up to the greater of 175% of the final-year salary or 105% of the Average Player Salary for the prior cap year. Annual raises governed by the 8% rule. Minimum 2 seasons (option years excluded).</li>
+              <li><strong>Qualifying Veteran FA (QVFA) — Full Bird Rights:</strong> Requires <strong>3+ seasons</strong> with the same team. Up to the maximum salary. Contract up to <strong>5 years</strong>. Annual raises/decreases governed by the <strong>8% rule</strong> (see § 3.9).</li>
+              <li><strong>Early Qualifying Veteran FA (EQVFA) — Early Bird Rights:</strong> Requires <strong>2+ seasons</strong> with the same team. Up to <strong>175% of the player's previous season salary</strong>, not to exceed the maximum salary. Contract must be at least <strong>2 years</strong>, up to <strong>4 years</strong>. Annual raises governed by the <strong>8% rule</strong>.</li>
+              <li><strong>Non-Qualifying Veteran FA (Non-QVFA) — Non-Bird Rights:</strong> Requires at most <strong>1 season</strong> with the team. Up to the greatest of: 120% of the final-year salary, 120% of the applicable minimum, or (for RFAs) the qualifying offer amount. Contract up to <strong>4 years</strong>. Annual raises governed by the <strong>5% rule</strong>.</li>
             </ol>
-            <div class="callout callout-pending">
-              RFA matching rights and eligibility windows are pending documentation.
-            </div>
+            <p><strong>Gilbert Arenas Provision:</strong> If a player qualifies for Early Bird Rights (EQVFA), is a Restricted Free Agent, and has exactly 2 years of service, the retaining team may use their Early Bird rights to <strong>match an offer sheet</strong> received from another team — even if matching would put them over the cap. See § 3.15 for offer sheet procedures.</p>
           </div>
 
           <div class="doc-section" id="s3-9">
@@ -459,6 +484,96 @@
                 <tr><td>QVFA / EQVFA via sign-and-trade</td><td>5% of Year 1 salary (Bird % does not apply in S&amp;T)</td></tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="doc-section" id="s3-10">
+            <h3 class="sec-title"><span class="sec-num">§ 3.10</span> Cap Holds <span class="badge badge-manual">👁 manual review</span></h3>
+            <p>A cap hold appears on a team's books whenever a player's contract ends and the player has not yet been re-signed, renounced, or signed elsewhere. The hold amount depends on Bird Rights status:</p>
+            <table class="rule-table">
+              <thead>
+                <tr><th>Situation</th><th>Cap Hold Amount</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Full Bird Rights (QVFA), salary above league average</td><td>150% of previous salary</td></tr>
+                <tr><td>Full Bird Rights (QVFA), salary at or below league average</td><td>190% of previous salary</td></tr>
+                <tr><td>Early Bird Rights (EQVFA)</td><td>130% of previous salary</td></tr>
+                <tr><td>Non-Bird Rights (Non-QVFA)</td><td>120% of previous salary</td></tr>
+                <tr><td>Coming off Rookie Contract, salary above league average</td><td>250% of previous salary</td></tr>
+                <tr><td>Coming off Rookie Contract, salary at or below league average</td><td>300% of previous salary</td></tr>
+                <tr><td>Coming off a minimum contract</td><td>Minimum salary</td></tr>
+              </tbody>
+            </table>
+            <p>Cap holds are capped at the player's applicable <strong>maximum salary</strong>. A team may <strong>renounce</strong> a cap hold to remove it from their books, forfeiting any associated Bird Rights.</p>
+            <p><strong>Rescission after offer sheet:</strong> A team that renounces cap holds to create space for an RFA offer sheet may <strong>rescind</strong> (restore) those renouncements if the original team matches — except: (a) rescinding would move the team from below the cap to above it; or (b) the team is already above the cap and rescinding increases their cap figure further.</p>
+          </div>
+
+          <div class="doc-section" id="s3-11">
+            <h3 class="sec-title"><span class="sec-num">§ 3.11</span> Maximum Contracts <span class="badge badge-manual">👁 manual review</span></h3>
+            <p>The maximum Year 1 salary a player may receive depends on their years of NBA experience:</p>
+            <table class="rule-table">
+              <thead>
+                <tr><th>Years of Experience</th><th>Maximum Year 1 Salary</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>6 or fewer</td><td>25% of the Salary Cap</td></tr>
+                <tr><td>7–9</td><td>30% of the Salary Cap</td></tr>
+                <tr><td>10 or more</td><td>35% of the Salary Cap</td></tr>
+              </tbody>
+            </table>
+            <p>Standard annual raise limits apply (§ 3.9). Max contracts may be offered using cap space, Bird Rights, or qualifying exceptions.</p>
+          </div>
+
+          <div class="doc-section" id="s3-12">
+            <h3 class="sec-title"><span class="sec-num">§ 3.12</span> Minimum Contracts <span class="badge badge-manual">👁 manual review</span></h3>
+            <p>Players may be signed to a minimum contract at any time:</p>
+            <ul>
+              <li><strong>1-year minimum deal:</strong> The cap hit is equal to the <strong>2-year veteran minimum</strong>, regardless of the player's actual experience tier.</li>
+              <li><strong>Multi-year minimum deal:</strong> Each year's salary follows the standard minimum scale for the player's years of experience.</li>
+            </ul>
+            <p>Minimum contract values by experience are available at <a href="http://basketball.realgm.com/nba/info/minimum_scale" target="_blank">basketball.realgm.com</a>.</p>
+          </div>
+
+          <div class="doc-section" id="s3-13">
+            <h3 class="sec-title"><span class="sec-num">§ 3.13</span> Contract Structure <span class="badge badge-manual">👁 manual review</span></h3>
+            <p>All contracts — free agent signings and extensions — may be structured as <strong>flat</strong>, <strong>back-loaded</strong>, or <strong>front-loaded</strong>, subject to the annual raise/decrease limits in § 3.9. A team with Full Bird Rights (QVFA) may structure up to an 8% annual change; all other contracts are limited to 5%. No season's salary may fall below the applicable minimum.</p>
+            <p>For a reference tool for building contract structures, see <a href="https://www.dangerc.art/contract-structures" target="_blank">dangerc.art/contract-structures</a>.</p>
+          </div>
+
+          <div class="doc-section" id="s3-14">
+            <h3 class="sec-title"><span class="sec-num">§ 3.14</span> Sign-and-Trade Rules <span class="badge badge-manual">👁 manual review</span></h3>
+            <p>A sign-and-trade (S&amp;T) is a transaction in which a team signs their own free agent and immediately trades them to another team. General S&amp;T salary-matching and apron restrictions are in §§ 4.2–4.3. The following additional rules apply:</p>
+            <p><strong>Eligibility:</strong></p>
+            <ul>
+              <li>The player must have at least <strong>Early Bird Rights (EQVFA)</strong> with the signing team — minimum 2 seasons with the same team, without clearing waivers or signing as a free agent in between.</li>
+              <li>The signing team must satisfy all applicable cap hold requirements before the signing.</li>
+              <li>A team that has already used the <strong>Taxpayer MLE</strong> that season may not participate in an S&amp;T.</li>
+            </ul>
+            <p><strong>Contract requirements:</strong></p>
+            <ul>
+              <li>The contract must be <strong>3 or 4 years</strong> in length. 5-year deals are not permitted in sign-and-trades.</li>
+              <li>Annual raises are limited to <strong>5%</strong> of Year 1 (Bird Rights 8% rate does not apply in S&amp;Ts — see § 3.9).</li>
+              <li>The MLE may <strong>not</strong> be used to fund any portion of an S&amp;T contract.</li>
+            </ul>
+            <p><strong>Timing and process:</strong></p>
+            <ul>
+              <li>Must be completed <strong>before the start of the regular season</strong>.</li>
+              <li>Once submitted to the committee, an S&amp;T <strong>cannot be withdrawn</strong>.</li>
+              <li>Up to <strong>3 different S&amp;T offers</strong> may be submitted for a single free agent across different acquiring teams.</li>
+            </ul>
+            <p><strong>Hard-cap effect:</strong> Using an S&amp;T hard-caps the receiving team at the First Apron (§ 1.4, Row C). The receiving team may not be above the First Apron at the conclusion of the trade (§ 4.3).</p>
+          </div>
+
+          <div class="doc-section" id="s3-15">
+            <h3 class="sec-title"><span class="sec-num">§ 3.15</span> Restricted Free Agents — Offer Sheets &amp; Matching <span class="badge badge-manual">👁 manual review</span></h3>
+            <p>A player becomes a Restricted Free Agent (RFA) when their team issues a Qualifying Offer at the end of their contract and the player does not accept. The retaining team holds the right to match any offer sheet.</p>
+            <p><strong>Offer sheets:</strong></p>
+            <ul>
+              <li>Any team may sign an RFA to an offer sheet. The offer must be for <strong>at least 2 guaranteed years</strong>.</li>
+              <li>The offering team has a <strong>cap hold equal to the offer sheet value</strong> placed on their books until the matching period concludes.</li>
+              <li>The retaining team has <strong>48 hours</strong> to match. If matched, the player remains. If not matched within 48 hours, the player signs with the offering team.</li>
+            </ul>
+            <p><strong>Renouncement and rescission:</strong> A team may renounce cap holds to create space for an offer sheet. If the retaining team matches, the offering team may rescind those renouncements (see § 3.10 for restrictions).</p>
+            <p><strong>RFA via S&amp;T:</strong> Under the Gilbert Arenas Provision (§ 3.8), a team with Early Bird Rights may use those rights to match an offer sheet for an RFA with 2 years of service.</p>
           </div>
         </article>
 
@@ -538,10 +653,27 @@
 
           <div class="doc-section" id="s5-1">
             <h3 class="sec-title"><span class="sec-num">§ 5.1</span> Release Rules <span class="badge badge-manual">👁 manual review</span></h3>
-            <p>A team may release a player from their standard roster at any time. The player is immediately removed from the roster, but guaranteed salary amounts convert to dead cap and continue to count against Team Salary for the duration of the remaining contract years.</p>
+            <p>A team may release a player from their standard roster at any time. The player is immediately removed from the roster. The team is responsible for the remaining contract obligation, satisfied via one of three methods:</p>
+            <ol>
+              <li><strong>Original payment schedule:</strong> Pay the remaining salary according to the contract's original timeline.</li>
+              <li><strong>Stretch provision:</strong> Double the number of remaining contract years, then add one additional year. The total remaining obligation is spread evenly across this stretched period. Example: 3 years remaining → 7-year stretch.</li>
+              <li><strong>Buyout with cap space:</strong> If the team has available cap space equal to or greater than the total remaining contract value, they may pay off the full obligation in the current year. The buyout amount may not exceed what a <strong>maximum contract</strong> would be for that player.</li>
+            </ol>
+            <p><strong>Waiver claims:</strong> If a released player is claimed off waivers, the claiming team <strong>assumes the full remaining contract</strong> (salary and remaining years). The releasing team is no longer responsible for any further payment.</p>
+            <p><strong>Option handling on release:</strong></p>
+            <ul>
+              <li>If the released player had a <strong>player option</strong> in a future year, that salary becomes <strong>fully guaranteed</strong> and is included in the total obligation.</li>
+              <li>If the released player had a <strong>team option</strong> in a future year, that year is <strong>cleared</strong> and not included in the obligation.</li>
+            </ul>
             <p><strong>Mid-season waiver signing restriction (First Apron):</strong> A team at or above the First Apron may not sign a player who was waived during the current Regular Season if that player's terminated contract carried a salary exceeding the full NTMLE amount.</p>
-            <div class="callout callout-pending">
-              Additional release window restrictions (playoff-period releases, trade-linked releases) are pending documentation.
+            <p><strong>Contract voiding — no payment obligation:</strong> In the following circumstances a team may release a player without owing the remaining salary:</p>
+            <ol>
+              <li>Second-round picks or undrafted free agents the team does not wish to sign — must notify the league by <strong>July 31</strong>.</li>
+              <li>The player is <strong>not present in the current version of NBA 2K</strong>.</li>
+              <li>The player <strong>retires in real life</strong>, including medical retirement.</li>
+            </ol>
+            <div class="callout callout-warn">
+              Teams must make the void-or-pay decision immediately when a voiding condition arises. A team may not make a trade or acquisition that transfers the decision-making right to a different team.
             </div>
           </div>
 
@@ -600,14 +732,47 @@
 
           <div class="doc-section" id="s6-2">
             <h3 class="sec-title"><span class="sec-num">§ 6.2</span> Extensions <span class="badge badge-manual">👁 manual review</span></h3>
-            <p>A player currently under contract (not a free agent) may be extended by their team under the following raise rules:</p>
+            <p><strong>Eligibility:</strong></p>
             <ul>
-              <li><strong>Standard extension:</strong> Up to 8% of Year 1 of the extended term per year.</li>
-              <li><strong>Extend-and-trade (§ 8(e)(2)):</strong> Up to 5% of Year 1 of the extended term per year.</li>
+              <li>The player's existing contract must be at least <strong>3 years</strong> in total length.</li>
+              <li>The extension may only be negotiated in the <strong>final year</strong> of the contract, or in <strong>Year 4 of a 5-year</strong> contract.</li>
+              <li>The player must have <strong>at least 2 years of service</strong> with the current team, or hold Bird Rights with the team via trade.</li>
+              <li>Extensions may <strong>not</strong> be offered at the league minimum.</li>
+              <li>All extension amounts must comply with salary cap and Bird Rights rules.</li>
             </ul>
-            <div class="callout callout-pending">
-              Extension eligibility criteria, maximum years, maximum Year 1 salary, and eligibility windows are pending documentation.
-            </div>
+            <p><strong>Extension terms:</strong></p>
+            <ul>
+              <li>Minimum length: <strong>2 years guaranteed</strong>.</li>
+              <li>Maximum Year 1 salary of the extended term: <strong>140% of the player's prior salary</strong> or <strong>140% of the estimated average salary</strong>, whichever applies.</li>
+              <li>Annual raises: up to <strong>8% of Year 1</strong> of the extended term (§ 3.9). Extend-and-trade: up to <strong>5%</strong>.</li>
+              <li>May include <strong>player option years</strong>.</li>
+              <li>Extension salary begins after the final fully guaranteed year of the original contract. Regardless of when signed, the new salary <strong>always kicks in the following season</strong> after finalization.</li>
+            </ul>
+            <p><strong>Trade restriction:</strong> A player who signs an extension may <strong>not be traded for 6 months</strong> from the announcement date.</p>
+            <p><strong>Conditional trade + extension:</strong> If Team B wants to acquire a player only upon that player agreeing to an extension, <strong>Team A</strong> (the sending team) must submit the extension pitch on Team B's behalf. The trade is only submitted if the player agrees to the extension.</p>
+          </div>
+
+          <div class="doc-section" id="s6-3">
+            <h3 class="sec-title"><span class="sec-num">§ 6.3</span> Extension Submission Windows &amp; Process <span class="badge badge-manual">👁 manual review</span></h3>
+            <p><strong>Rookie Scale Extension:</strong> Former first-round picks entering the fourth and final year of their rookie deal are eligible.</p>
+            <ul>
+              <li>Window: any time up to the <strong>day before the regular season starts</strong>.</li>
+              <li>Submit proposal via the committee email; committee head initiates the discussion.</li>
+              <li>If rejected, the team may resubmit at any point before the deadline.</li>
+              <li>If no agreement by the deadline: <strong>no further extension opportunities arise</strong> for that player.</li>
+            </ul>
+            <p><strong>Veteran Extension (not on expiring contract):</strong> Veterans under a multi-year deal not in their final year.</p>
+            <ul>
+              <li>Window: any time up to the <strong>day before the regular season starts</strong>.</li>
+              <li>Submit via committee email; committee head initiates discussion.</li>
+              <li>If rejected, the team may resubmit before the deadline. If no agreement by the deadline: <strong>no further extension opportunities</strong>.</li>
+            </ul>
+            <p><strong>Veteran Extension (expiring contract):</strong> A veteran in the final year of their deal may negotiate throughout the league year.</p>
+            <ul>
+              <li>Window: any time up to <strong>June 30</strong> (the day before free agency begins).</li>
+              <li>The team has a maximum of <strong>3 total proposals</strong> for any one negotiation.</li>
+              <li>After 3 rejected proposals: <strong>no further extension opportunities arise</strong>.</li>
+            </ul>
           </div>
         </article>
 
@@ -621,13 +786,29 @@
           <div class="doc-section" id="s7-1">
             <h3 class="sec-title"><span class="sec-num">§ 7.1</span> Format &amp; Rookie Contracts <span class="badge badge-manual">👁 manual review</span></h3>
             <p>The draft has <strong>2 rounds</strong>. The number of picks per round equals the current number of teams in the league (currently 30, but dynamic — any system referencing pick counts must derive the total from the current team count, not treat 30 as fixed).</p>
-            <p><strong>First-round picks — mandatory rookie scale:</strong></p>
+            <p><strong>First-round picks — signing deadline: August 31:</strong></p>
             <ul>
-              <li>4-year contract. Years 1 and 2 fully guaranteed at the scale amount for the pick slot.</li>
-              <li>Year 3: team option. Year 4: team option (available only if Year 3 was exercised).</li>
-              <li>Scale amounts tier by pick number following the NBA's published rookie scale for that draft year, indexed to the salary cap (a 5% cap increase means a 5% scale increase).</li>
+              <li>4-year contract at <strong>120% of the NBA rookie scale amount</strong> for the pick slot. Scale amounts tier by pick number and index to the salary cap (a 5% cap increase means a 5% scale increase).</li>
+              <li>Years 1 and 2 are fully guaranteed. Year 3: team option. Year 4: team option (available only if Year 3 was exercised).</li>
+              <li><strong>Cap hold:</strong> A cap hold equal to <strong>120% of the rookie scale amount</strong> is placed on the team's books until the player is signed or the rights are forfeited. This cap hold does <strong>not</strong> count as outgoing salary for trade matching purposes.</li>
             </ul>
-            <p><strong>Second-round picks — no mandatory scale.</strong> Contract terms are negotiated within standard FA rules (see Article III). The Second Round Pick Exception applies: contracts signed under this exception from July 1–30 are not included in Team Salary until July 31.</p>
+            <p><strong>Second-round picks — signing deadline: September 6:</strong></p>
+            <p>Teams sign their second-round picks using the <strong>Second Round Exception</strong>, without spending cap room or other exceptions. Contract options:</p>
+            <p><em>3-year deal:</em></p>
+            <ul>
+              <li>Year 1: minimum salary for a player with 1 year of NBA experience</li>
+              <li>Year 2: 2nd-year rookie minimum (non-guaranteed)</li>
+              <li>Year 3: 3rd-year rookie minimum (team option)</li>
+            </ul>
+            <p><em>4-year deal:</em></p>
+            <ul>
+              <li>Year 1: minimum salary for a player with 2 years of NBA experience</li>
+              <li>Year 2: 2nd-year minimum for a player with 1 year of experience</li>
+              <li>Year 3: 3rd-year rookie minimum (non-guaranteed)</li>
+              <li>Year 4: 4th-year rookie minimum (team option)</li>
+            </ul>
+            <p><em>Two-way contract:</em> A second-round pick may also receive a Two-Way contract in lieu of a standard deal (see § 2.2).</p>
+            <p><strong>Retaining unsigned draft rights:</strong> A team may leave a pick unsigned (retaining the player's rights for a future season) <strong>only if</strong> the player is not in the current version of NBA 2K <em>and</em> is sitting out of organized basketball in real life for the following season. Injury alone does not qualify.</p>
           </div>
 
           <div class="doc-section" id="s7-2">
@@ -649,6 +830,23 @@
               <li><strong>Outcome A (penalty — ≥ 2 of 4 years are Second Apron):</strong> The frozen pick is moved to the <strong>final slot in the first round</strong> of the applicable draft. If multiple teams have this penalty in the same draft, they pick among themselves in inverse order of winning percentage (worst record picks last overall).</li>
               <li><strong>Outcome B (no penalty — fewer than 2 of 4 years are Second Apron):</strong> The freeze lifts — the team may trade the pick — as of the day following the last Regular Season game of the 3rd non-Second-Apron year among those four.</li>
             </ul>
+          </div>
+
+          <div class="doc-section" id="s7-4">
+            <h3 class="sec-title"><span class="sec-num">§ 7.4</span> International Player Rights <span class="badge badge-manual">👁 manual review</span></h3>
+            <p>When a team drafts a player who is currently playing in an overseas league rather than the NBA, they retain that player's NBN rights for as long as the player remains overseas.</p>
+            <p><strong>Eligibility:</strong> Only drafted players under an active overseas contract qualify. A player who has not signed with any team overseas (due to injury or otherwise) does <strong>not</strong> qualify — rights are retained only for players actively playing in a professional league abroad.</p>
+            <p><strong>Triggering event:</strong> When the player signs an NBA contract in real life, the NBN team has <strong>30 days</strong> to decide whether to sign the player or release the rights.</p>
+            <table class="rule-table">
+              <thead>
+                <tr><th>Draft Year</th><th>Contract Terms Available</th><th>If Team Declines</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>2019 or earlier</td><td>Sign to the <strong>same deal the player received in the NBA</strong></td><td>Player becomes a UFA</td></tr>
+                <tr><td>2020 or later</td><td>Sign to a <strong>rookie scale contract</strong> based on draft position (§ 7.1)</td><td>Player becomes a UFA</td></tr>
+              </tbody>
+            </table>
+            <p>Teams must notify the league of their decision within 30 days of the player's NBA signing. Failure to respond within the window results in the player becoming a UFA.</p>
           </div>
         </article>
 
