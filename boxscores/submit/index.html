@@ -177,6 +177,37 @@
     }
     select.player-select:focus { outline: none; border-color: #3b82f6; }
 
+    /* Game queue */
+    .queue-section {
+      margin-top: 2rem; border-top: 1px solid #374151; padding-top: 1.25rem;
+    }
+    .queue-header {
+      display: flex; align-items: center; gap: 1rem; margin-bottom: 0.875rem;
+    }
+    .queue-header h3 { font-size: 0.9rem; font-weight: 600; color: #e5e7eb; }
+    .queue-badge {
+      background: #1e3a5f; color: #60a5fa; font-size: 0.72rem; font-weight: 700;
+      border-radius: 10px; padding: 0.1rem 0.55rem;
+    }
+    .queue-empty { font-size: 0.82rem; color: #6b7280; }
+    .queue-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.5rem 0; border-bottom: 1px solid #374151; font-size: 0.84rem;
+    }
+    .queue-item:last-of-type { border-bottom: none; }
+    .queue-item-label { flex: 1; font-weight: 600; color: #e5e7eb; }
+    .queue-item-meta { color: #9ca3af; font-size: 0.78rem; }
+    .queue-actions {
+      display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; flex-wrap: wrap;
+    }
+    .btn-queue {
+      background: #7c3aed; border: 1px solid #8b5cf6; color: #ddd6fe; border-radius: 8px;
+      padding: 0.55rem 1.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-queue:hover { background: #6d28d9; }
+    .btn-queue:disabled { background: #374151; color: #6b7280; cursor: not-allowed; border-color: #374151; }
+
     .btn-add-row {
       background: none; border: 1px dashed #374151; color: #9ca3af;
       border-radius: 6px; padding: 0.3rem 0.875rem; font-size: 0.78rem;
@@ -358,8 +389,22 @@
           </div>
 
           <div class="form-actions">
-            <button class="btn-success" id="commit-btn" disabled>Commit Box Score</button>
+            <button class="btn-primary" id="add-to-queue-btn" disabled>Add to Queue</button>
+            <button class="btn-success" id="commit-btn" disabled>Commit &amp; Rebuild Now</button>
             <span class="form-status" id="commit-status"></span>
+          </div>
+
+          <!-- Game queue -->
+          <div class="queue-section">
+            <div class="queue-header">
+              <h3>Queue</h3>
+              <span class="queue-badge" id="queue-count">0</span>
+            </div>
+            <div id="queue-list"><span class="queue-empty">No games queued.</span></div>
+            <div class="queue-actions">
+              <button class="btn-queue" id="commit-queue-btn" disabled>Commit Queue &amp; Rebuild</button>
+              <span class="form-status" id="queue-status"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -808,11 +853,144 @@
       document.getElementById(`${side}-score-live`).textContent = total;
     }
 
+    // ── Game queue ───────────────────────────────────────────────
+    let gameQueue = [];
+
     function checkCommitReady() {
       const homeRows = document.getElementById("home-entry-tbody").querySelectorAll("tr").length;
       const awayRows = document.getElementById("away-entry-tbody").querySelectorAll("tr").length;
-      document.getElementById("commit-btn").disabled = !(homeRows > 0 && awayRows > 0 && token);
+      const ready = homeRows > 0 && awayRows > 0 && token;
+      document.getElementById("commit-btn").disabled = !ready;
+      document.getElementById("add-to-queue-btn").disabled = !ready;
     }
+
+    function renderQueue() {
+      const list  = document.getElementById("queue-list");
+      const badge = document.getElementById("queue-count");
+      const commitBtn = document.getElementById("commit-queue-btn");
+      badge.textContent = gameQueue.length;
+      commitBtn.disabled = !(gameQueue.length > 0 && token);
+      if (gameQueue.length === 0) {
+        list.innerHTML = '<span class="queue-empty">No games queued.</span>';
+        return;
+      }
+      list.innerHTML = "";
+      gameQueue.forEach((g, idx) => {
+        const item = document.createElement("div");
+        item.className = "queue-item";
+        const typeLabel = g.game_type === "PLAYOFF"
+          ? ` · PO G${g.game_num || "?"}` : "";
+        item.innerHTML = `
+          <span class="queue-item-label">${g.home_team} ${g.home_pts} – ${g.away_pts} ${g.away_team}</span>
+          <span class="queue-item-meta">${g.date} · ${g.season}${typeLabel} · ${g.home_rows.length + g.away_rows.length} players</span>`;
+        const rm = document.createElement("button");
+        rm.className = "btn-remove-row";
+        rm.textContent = "×";
+        rm.title = "Remove from queue";
+        rm.onclick = () => { gameQueue.splice(idx, 1); renderQueue(); };
+        item.appendChild(rm);
+        list.appendChild(item);
+      });
+    }
+
+    function collectGameData() {
+      const { rows: homeRows, errors: homeErrs } = getTableRows("home");
+      const { rows: awayRows, errors: awayErrs } = getTableRows("away");
+      const errors = [...homeErrs, ...awayErrs];
+      if (errors.length) return { errors };
+      if (!homeRows.length || !awayRows.length) return { errors: ["Both teams need at least one player."] };
+      const homePts    = homeRows.reduce((s, r) => s + r.pts, 0);
+      const awayPts    = awayRows.reduce((s, r) => s + r.pts, 0);
+      const gameNumVal  = parseInt(document.getElementById("game-num").value  || "0", 10) || null;
+      const roundNumVal = parseInt(document.getElementById("round-num").value || "0", 10) || null;
+      return {
+        errors: [],
+        game: {
+          date:       document.getElementById("date").value,
+          season:     document.getElementById("season").value,
+          home_team:  homeSelect.value,
+          away_team:  awaySelect.value,
+          game_type:  document.querySelector('input[name="game-type"]:checked').value,
+          home_pts:   homePts,
+          away_pts:   awayPts,
+          game_num:   gameNumVal,
+          round_num:  roundNumVal,
+          home_rows:  homeRows,
+          away_rows:  awayRows,
+        },
+      };
+    }
+
+    document.getElementById("add-to-queue-btn").onclick = () => {
+      const status = document.getElementById("commit-status");
+      const { errors, game } = collectGameData();
+      if (errors.length) {
+        status.className = "form-status err";
+        status.textContent = errors[0];
+        return;
+      }
+      gameQueue.push(game);
+      renderQueue();
+      status.className = "form-status ok";
+      status.textContent = `Added to queue (${game.home_team} vs ${game.away_team}).`;
+    };
+
+    document.getElementById("commit-queue-btn").onclick = async () => {
+      const btn    = document.getElementById("commit-queue-btn");
+      const status = document.getElementById("queue-status");
+      if (!gameQueue.length) return;
+      btn.disabled = true;
+      status.className = "form-status";
+      let totalRows = 0;
+      const failed = [];
+
+      for (let i = 0; i < gameQueue.length; i++) {
+        const g = gameQueue[i];
+        status.textContent = `Committing game ${i + 1} of ${gameQueue.length}…`;
+        try {
+          const res = await fetch("/api/boxscore/commit", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ ...g, skip_build: true }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            failed.push(`${g.home_team} vs ${g.away_team}: ${err.detail || `HTTP ${res.status}`}`);
+          } else {
+            const data = await res.json();
+            totalRows += data.rows_added || 0;
+          }
+        } catch (e) {
+          failed.push(`${g.home_team} vs ${g.away_team}: ${e.message}`);
+        }
+      }
+
+      if (failed.length) {
+        status.className = "form-status err";
+        status.textContent = `${failed.length} game(s) failed: ${failed[0]}`;
+        btn.disabled = false;
+        return;
+      }
+
+      // All committed — trigger one build
+      status.textContent = "All games committed. Triggering rebuild…";
+      try {
+        const res = await fetch("/api/build/trigger", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        status.className = "form-status ok";
+        status.textContent = `✓ ${gameQueue.length} game(s) committed (${totalRows} rows). Rebuilding stats…`;
+        gameQueue = [];
+        renderQueue();
+        startBuildPoll();
+      } catch (e) {
+        status.className = "form-status err";
+        status.textContent = `Games committed but build trigger failed: ${e.message}`;
+      }
+      btn.disabled = false;
+    };
 
     // Add Player buttons
     document.getElementById("home-add-row").onclick = () => addBlankRow("home");
@@ -890,40 +1068,12 @@
       const btn    = document.getElementById("commit-btn");
       const status = document.getElementById("commit-status");
 
-      const { rows: homeRows, errors: homeErrs } = getTableRows("home");
-      const { rows: awayRows, errors: awayErrs } = getTableRows("away");
-      const allErrors = [...homeErrs, ...awayErrs];
-
-      if (allErrors.length) {
+      const { errors, game } = collectGameData();
+      if (errors.length) {
         status.className = "form-status err";
-        status.textContent = allErrors[0];
+        status.textContent = errors[0];
         return;
       }
-      if (!homeRows.length || !awayRows.length) {
-        status.className = "form-status err";
-        status.textContent = "Both teams need at least one player.";
-        return;
-      }
-
-      const homePts = homeRows.reduce((s, r) => s + r.pts, 0);
-      const awayPts = awayRows.reduce((s, r) => s + r.pts, 0);
-
-      const gameNumVal  = parseInt(document.getElementById("game-num").value  || "0", 10) || null;
-      const roundNumVal = parseInt(document.getElementById("round-num").value || "0", 10) || null;
-
-      const body = {
-        date:       document.getElementById("date").value,
-        season:     document.getElementById("season").value,
-        home_team:  homeSelect.value,
-        away_team:  awaySelect.value,
-        game_type:  document.querySelector('input[name="game-type"]:checked').value,
-        home_pts:   homePts,
-        away_pts:   awayPts,
-        game_num:   gameNumVal,
-        round_num:  roundNumVal,
-        home_rows:  homeRows,
-        away_rows:  awayRows,
-      };
 
       btn.disabled = true;
       status.className = "form-status";
@@ -932,11 +1082,8 @@
       try {
         const res = await fetch("/api/boxscore/commit", {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
+          headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify(game),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -944,7 +1091,7 @@
         }
         const data = await res.json();
         status.className = "form-status ok";
-        status.textContent = `✓ Committed ${data.rows_added} rows (${homePts}–${awayPts})${data.building ? " · Rebuilding stats…" : ""}`;
+        status.textContent = `✓ Committed ${data.rows_added} rows (${game.home_pts}–${game.away_pts})${data.building ? " · Rebuilding stats…" : ""}`;
         if (data.building) startBuildPoll();
       } catch (e) {
         status.className = "form-status err";
