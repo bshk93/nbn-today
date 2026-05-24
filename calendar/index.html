@@ -27,11 +27,16 @@
     .day-cell { height: 100%; padding: 0.4rem 0.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
     .day-num { font-size: 0.78rem; font-weight: 600; color: #6b7280; }
 
-    .cal td.has-games .day-num { color: #d1d5db; }
-    .cal td.is-today .day-num { color: #60a5fa; font-weight: 700; }
-    .cal td.other-month { background: #0d1117; }
+    .cal td.has-games .day-num  { color: #d1d5db; }
+    .cal td.is-today .day-num   { color: #60a5fa; font-weight: 700; }
+    .cal td.other-month         { background: #0d1117; }
     .cal td.other-month .day-num { color: #374151; }
-    .cal td.future .day-num { color: #374151; }
+    .cal td.future .day-num     { color: #374151; }
+
+    /* Vesting days */
+    .cal td.has-vesting .day-num { color: #d1d5db; }
+    .cal td.has-vesting:not(.has-games) { background: #1c1710; }
+    .cal td.has-vesting:not(.has-games):hover { background: #25200f; }
 
     .cal td.has-games { background: #1a2535; cursor: pointer; }
     .cal td.has-games:hover { background: #1e3a5f; }
@@ -39,6 +44,17 @@
 
     .today-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #60a5fa; }
     .game-pip { font-size: 0.68rem; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+
+    /* Vesting pips */
+    .vest-pip {
+      font-size: 0.68rem; color: #f59e0b; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; line-height: 1.3; cursor: pointer;
+    }
+    .vest-pip:hover { color: #fbbf24; text-decoration: underline; }
+    .vest-count {
+      font-size: 0.68rem; color: #f59e0b; line-height: 1.3;
+    }
+    .vest-icon { font-size: 0.6rem; margin-right: 0.15rem; }
 
     .loading { color: #6b7280; font-size: 0.875rem; }
   </style>
@@ -58,34 +74,144 @@
   </div>
 
   <script>
-    const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const TEAMS  = ["atl","bkn","bos","cha","chi","cle","dal","den","det","gsw","hou","ind","lac","lal","mem","mia","mil","min","nop","nyk","okc","orl","phi","phx","por","sac","sas","tor","uta","was"];
 
     // "YYYY-MM-DD" → [{home_team, away_team, gametype, home_score, away_score}]
-    let gamesByDate = {};
-    let leagueToday = null;
+    let gamesByDate   = {};
+    // "YYYY-MM-DD" → [{slug, name, team, season, amount}]
+    let vestingByDate = {};
+    let leagueToday   = null;
     let viewYear, viewMonth;
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function fmtVestAmt(amount) {
+      if (!amount) return 'fully gtd';
+      const n = typeof amount === 'string'
+        ? parseFloat(amount.replace(/[^0-9.]/g, ''))
+        : Number(amount);
+      if (isNaN(n) || n === 0) return 'fully gtd';
+      if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+      if (n >= 1_000)     return `$${Math.round(n / 1_000)}K`;
+      return `$${n}`;
+    }
+
+    function fmtPlayerName(raw) {
+      // "LAST, FIRST" → "F. Last"  |  "LAST COMPOUND, FIRST" → "F. Last Compound"
+      const comma = raw.indexOf(',');
+      const titleCase = s => s.split(' ').map(w => w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '').join(' ');
+      if (comma === -1) return titleCase(raw);
+      const last  = titleCase(raw.slice(0, comma).trim());
+      const first = raw.slice(comma + 1).trim();
+      return first ? `${first[0]}. ${last}` : last;
+    }
+
+    function parseCsvSlugs(text) {
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) return [];
+      const headers = lines[0].split(',').map(h => h.trim());
+      const si = headers.indexOf('SLUG');
+      if (si === -1) return [];
+      return lines.slice(1).map(l => l.split(',')[si]?.trim()).filter(Boolean);
+    }
+
+    // ── Data loading ─────────────────────────────────────────────────────────
+
+    async function loadVestingEvents() {
+      // Fetch player bios and all roster CSVs in parallel
+      const [biosRaw, ...rosterResults] = await Promise.allSettled([
+        fetch('/api/players').then(r => r.json()),
+        ...TEAMS.map(t =>
+          fetch(`/data/${t}-roster.csv`).then(r => r.text()).then(txt => ({ team: t.toUpperCase(), slugs: parseCsvSlugs(txt) }))
+        ),
+      ]);
+
+      if (biosRaw.status !== 'fulfilled') return {};
+      const bios = biosRaw.value;
+
+      // Build slug → team map from roster CSVs
+      const slugTeam = {};
+      rosterResults.forEach(res => {
+        if (res.status !== 'fulfilled') return;
+        const { team, slugs } = res.value;
+        slugs.forEach(slug => { slugTeam[slug] = team; });
+      });
+
+      const byDate = {};
+
+      Object.entries(bios).forEach(([slug, bio]) => {
+        const name = fmtPlayerName(bio.name || slug);
+        const team = slugTeam[slug] || null;
+
+        // Multi-step guarantee_schedule: { "YY-YY": [{amount?, date?}] }
+        const sched = bio.guarantee_schedule || {};
+        Object.entries(sched).forEach(([season, steps]) => {
+          if (!Array.isArray(steps)) return;
+          steps.forEach(step => {
+            if (!step.date) return;   // no date = vests at signing, skip
+            if (!byDate[step.date]) byDate[step.date] = [];
+            byDate[step.date].push({ slug, name, team, season, amount: step.amount || null });
+          });
+        });
+
+        // Legacy guarantee_dates: { "YY-YY": "YYYY-MM-DD" }
+        const legacyDates = bio.guarantee_dates || {};
+        Object.entries(legacyDates).forEach(([season, date]) => {
+          if (!date) return;
+          // Skip if already covered by guarantee_schedule for same date+season
+          const schedSteps = sched[season] || [];
+          if (schedSteps.some(s => s.date === date)) return;
+          const amount = (bio.guaranteed || {})[season] || null;
+          if (!byDate[date]) byDate[date] = [];
+          byDate[date].push({ slug, name, team, season, amount });
+        });
+      });
+
+      return byDate;
+    }
+
+    // ── Init ─────────────────────────────────────────────────────────────────
 
     async function init() {
       try {
-        const games = await fetch(`/api/boxscores/games`).then(r => r.json());
-        if (!games.length) {
-          document.getElementById("content").innerHTML = '<span class="loading">No games available.</span>';
-          return;
+        const [gamesResult, vestResult] = await Promise.allSettled([
+          fetch('/api/boxscores/games').then(r => r.json()),
+          loadVestingEvents(),
+        ]);
+
+        if (gamesResult.status === 'fulfilled') {
+          const games = gamesResult.value;
+          games.forEach(g => {
+            if (!gamesByDate[g.date]) gamesByDate[g.date] = [];
+            gamesByDate[g.date].push(g);
+          });
+          if (games.length) {
+            const lastDt = new Date(games[0].date + "T00:00:00");
+            lastDt.setDate(lastDt.getDate() + 1);
+            leagueToday = lastDt.toISOString().slice(0, 10);
+            viewYear  = lastDt.getFullYear();
+            viewMonth = lastDt.getMonth();
+          }
         }
 
-        games.forEach(g => {
-          if (!gamesByDate[g.date]) gamesByDate[g.date] = [];
-          gamesByDate[g.date].push(g);
-        });
+        if (vestResult.status === 'fulfilled') {
+          vestingByDate = vestResult.value;
+        }
 
-        const lastDate = games[0].date;
-        const lastDt = new Date(lastDate + "T00:00:00");
-        lastDt.setDate(lastDt.getDate() + 1);
-        leagueToday = lastDt.toISOString().slice(0, 10);
+        // Default to current calendar month if no games loaded
+        if (!leagueToday) {
+          const now = new Date();
+          leagueToday = now.toISOString().slice(0, 10);
+          viewYear  = now.getFullYear();
+          viewMonth = now.getMonth();
+        }
 
-        viewYear = lastDt.getFullYear();
-        viewMonth = lastDt.getMonth();
+        if (!Object.keys(gamesByDate).length && !Object.keys(vestingByDate).length) {
+          document.getElementById("content").innerHTML = '<span class="loading">No data available.</span>';
+          return;
+        }
 
         renderMonth();
       } catch(e) {
@@ -93,13 +219,15 @@
       }
     }
 
+    // ── Render ────────────────────────────────────────────────────────────────
+
     function renderMonth() {
       document.getElementById("month-label").textContent = `${MONTHS[viewMonth]} ${viewYear}`;
       document.getElementById("btn-prev").onclick = () => shiftMonth(-1);
       document.getElementById("btn-next").onclick = () => shiftMonth(1);
 
-      const firstDay = new Date(viewYear, viewMonth, 1);
-      const lastDay  = new Date(viewYear, viewMonth + 1, 0);
+      const firstDay    = new Date(viewYear, viewMonth, 1);
+      const lastDay     = new Date(viewYear, viewMonth + 1, 0);
       const startOffset = firstDay.getDay();
 
       const table = document.createElement("table");
@@ -108,30 +236,33 @@
       DAYS.forEach(d => { const th = document.createElement("th"); th.textContent = d; hrow.appendChild(th); });
 
       const tbody = table.createTBody();
-      let row = tbody.insertRow();
+      let row       = tbody.insertRow();
       let cellCount = 0;
 
       const prevMonthLast = new Date(viewYear, viewMonth, 0).getDate();
       for (let i = 0; i < startOffset; i++) {
-        addCell(row, null, prevMonthLast - startOffset + 1 + i, ["other-month"], false, null);
+        addCell(row, null, prevMonthLast - startOffset + 1 + i, ["other-month"], false, null, null);
         cellCount++;
       }
 
       for (let d = 1; d <= lastDay.getDate(); d++) {
         if (cellCount && cellCount % 7 === 0) row = tbody.insertRow();
-        const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
         const classes = [];
-        if (gamesByDate[dateStr]) classes.push("has-games");
+        const games   = gamesByDate[dateStr]  || null;
+        const vesting = vestingByDate[dateStr] || null;
+        if (games)   classes.push("has-games");
+        if (vesting) classes.push("has-vesting");
         if (dateStr === leagueToday) classes.push("is-today");
-        else if (dateStr > leagueToday) classes.push("future");
-        addCell(row, dateStr, d, classes, dateStr === leagueToday, gamesByDate[dateStr] || null);
+        else if (!games && !vesting && dateStr > leagueToday) classes.push("future");
+        addCell(row, dateStr, d, classes, dateStr === leagueToday, games, vesting);
         cellCount++;
       }
 
       const trailing = (7 - (cellCount % 7)) % 7;
       for (let i = 1; i <= trailing; i++) {
         if (cellCount % 7 === 0) row = tbody.insertRow();
-        addCell(row, null, i, ["other-month"], false, null);
+        addCell(row, null, i, ["other-month"], false, null, null);
         cellCount++;
       }
 
@@ -140,7 +271,7 @@
       content.appendChild(table);
     }
 
-    function addCell(row, dateStr, dayNum, classes, isToday, games) {
+    function addCell(row, dateStr, dayNum, classes, isToday, games, vesting) {
       const td = row.insertCell();
       td.className = classes.join(" ");
 
@@ -159,6 +290,7 @@
         cell.appendChild(lbl);
       }
 
+      // Game pips
       if (games) {
         games.forEach(g => {
           const pip = document.createElement("div");
@@ -167,6 +299,50 @@
           cell.appendChild(pip);
         });
         if (dateStr) td.onclick = () => location.href = `/boxscores/?date=${dateStr}`;
+      }
+
+      // Vesting pips
+      if (vesting && vesting.length) {
+        if (vesting.length === 1) {
+          const ev = vesting[0];
+          const pip = document.createElement("div");
+          pip.className = "vest-pip";
+          const teamStr = ev.team ? ` · ${ev.team}` : '';
+          pip.textContent = `🔒 ${ev.name}${teamStr} — ${fmtVestAmt(ev.amount)}`;
+          pip.title = `${ev.name} (${ev.season}) — ${fmtVestAmt(ev.amount)} vests`;
+          if (dateStr) {
+            pip.onclick = e => { e.stopPropagation(); location.href = `/players/?p=${ev.slug}`; };
+          }
+          cell.appendChild(pip);
+        } else {
+          // Group: show count + individual player names (up to 2) + overflow
+          const count = document.createElement("div");
+          count.className = "vest-count";
+          count.textContent = `🔒 ${vesting.length} contracts vest`;
+          cell.appendChild(count);
+
+          const show = vesting.slice(0, 2);
+          show.forEach(ev => {
+            const pip = document.createElement("div");
+            pip.className = "vest-pip";
+            pip.style.paddingLeft = "1rem";
+            const amtStr = fmtVestAmt(ev.amount);
+            pip.textContent = `${ev.name}${ev.team ? ' · ' + ev.team : ''} — ${amtStr}`;
+            pip.title = `${ev.name} (${ev.season}) — ${amtStr}`;
+            if (dateStr) {
+              pip.onclick = e => { e.stopPropagation(); location.href = `/players/?p=${ev.slug}`; };
+            }
+            cell.appendChild(pip);
+          });
+
+          if (vesting.length > 2) {
+            const more = document.createElement("div");
+            more.className = "vest-count";
+            more.style.paddingLeft = "1rem";
+            more.textContent = `+${vesting.length - 2} more`;
+            cell.appendChild(more);
+          }
+        }
       }
 
       td.appendChild(cell);
