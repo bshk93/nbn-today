@@ -72,6 +72,20 @@
     #playoff-fields { display: none; }
     #playoff-fields.visible { display: contents; }
 
+    /* Tab switcher */
+    .tab-bar {
+      display: flex; border-bottom: 1px solid #374151;
+      margin-bottom: 1.5rem; gap: 0;
+    }
+    .tab-btn {
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: #9ca3af; font-size: 0.875rem; font-weight: 600;
+      padding: 0.625rem 1.25rem; cursor: pointer; margin-bottom: -1px;
+      font-family: inherit; transition: color 0.12s;
+    }
+    .tab-btn:hover { color: #e5e7eb; }
+    .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+
     /* Upload zones */
     .uploads { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
     .upload-zone {
@@ -99,12 +113,14 @@
     .btn-primary {
       background: #2563eb; border: none; color: #fff; border-radius: 8px;
       padding: 0.55rem 1.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      font-family: inherit;
     }
     .btn-primary:hover { background: #1d4ed8; }
     .btn-primary:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
     .btn-success {
       background: #065f46; border: 1px solid #059669; color: #6ee7b7; border-radius: 8px;
       padding: 0.55rem 1.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      font-family: inherit;
     }
     .btn-success:hover { background: #047857; }
     .btn-success:disabled { background: #374151; color: #6b7280; cursor: not-allowed; border-color: #374151; }
@@ -112,24 +128,25 @@
     .form-status.ok { color: #34d399; }
     .form-status.err { color: #f87171; }
 
-    /* Review section */
-    #review { display: none; }
-    #review.visible { display: block; }
-
-    .team-section { margin-bottom: 1.5rem; }
-    .team-header {
-      display: flex; align-items: baseline; gap: 1rem;
-      margin-bottom: 0.875rem; padding-bottom: 0.625rem;
-      border-bottom: 1px solid #374151;
+    /* ── Manual Entry ── */
+    .manual-load-bar {
+      display: flex; align-items: center; gap: 1rem;
+      padding-bottom: 1.25rem; border-bottom: 1px solid #374151; margin-bottom: 1.5rem;
     }
-    .team-header h3 { font-size: 1rem; font-weight: 700; }
-    .score-badge {
-      font-size: 1.25rem; font-weight: 700; color: #f3f4f6;
-    }
-    .score-badge.winner { color: #34d399; }
-    .score-badge.loser { color: #9ca3af; }
+    #manual-msg { font-size: 0.82rem; color: #9ca3af; }
 
-    /* Stats table */
+    .team-entry-section { margin-bottom: 2rem; }
+    .team-entry-header {
+      display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;
+    }
+    .team-entry-header h3 { font-size: 1rem; font-weight: 700; }
+    .score-live-wrap { font-size: 0.8rem; color: #9ca3af; }
+    .score-live {
+      font-size: 1.125rem; font-weight: 800; color: #3b82f6;
+      background: rgba(59,130,246,0.12); border-radius: 6px;
+      padding: 0.15rem 0.6rem; margin-left: 0.25rem;
+    }
+
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
     th {
@@ -137,7 +154,7 @@
       font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
       color: #9ca3af; border-bottom: 1px solid #374151; white-space: nowrap;
     }
-    th.player-col { text-align: left; min-width: 160px; }
+    th.player-col { text-align: left; }
     td {
       padding: 0.3rem 0.25rem; border-bottom: 1px solid #1f2937; text-align: center;
     }
@@ -149,38 +166,30 @@
     .cell-input {
       background: transparent; border: none; color: #f3f4f6;
       font-size: 0.8rem; font-family: inherit; text-align: center;
-      width: 100%; min-width: 2.5rem; padding: 0;
+      width: 100%; min-width: 2rem; max-width: 3.5rem; padding: 0;
     }
     .cell-input:focus { outline: 1px solid #3b82f6; border-radius: 3px; background: #111827; }
-    .player-input {
-      background: transparent; border: none; color: #f3f4f6;
-      font-size: 0.8rem; font-family: inherit; text-align: left;
-      width: 100%; padding: 0;
-    }
-    .player-input:focus { outline: 1px solid #3b82f6; border-radius: 3px; background: #111827; padding: 0 3px; }
 
-    /* Confidence badges */
-    .conf {
-      display: inline-block; font-size: 0.65rem; font-weight: 700;
-      padding: 0.1rem 0.35rem; border-radius: 3px; margin-left: 0.35rem;
-      vertical-align: middle; text-transform: uppercase;
+    select.player-select {
+      background: #111827; border: 1px solid #374151; color: #f3f4f6;
+      border-radius: 4px; padding: 0.2rem 0.3rem; font-size: 0.78rem;
+      font-family: inherit; width: 100%; min-width: 150px;
     }
-    .conf.high { background: #064e3b; color: #6ee7b7; }
-    .conf.medium { background: #78350f; color: #fde68a; }
-    .conf.low { background: #7f1d1d; color: #fca5a5; }
+    select.player-select:focus { outline: none; border-color: #3b82f6; }
 
-    /* Concerns */
-    .concerns {
-      background: #292524; border: 1px solid #57534e; border-radius: 8px;
-      padding: 0.875rem 1rem; margin-bottom: 1.5rem;
+    .btn-add-row {
+      background: none; border: 1px dashed #374151; color: #9ca3af;
+      border-radius: 6px; padding: 0.3rem 0.875rem; font-size: 0.78rem;
+      cursor: pointer; margin-top: 0.5rem; font-family: inherit;
     }
-    .concerns h4 {
-      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.06em; color: #a8a29e; margin-bottom: 0.5rem;
+    .btn-add-row:hover { border-color: #3b82f6; color: #3b82f6; }
+
+    .btn-remove-row {
+      background: none; border: 1px solid #374151; color: #6b7280;
+      border-radius: 4px; width: 1.5rem; height: 1.5rem; cursor: pointer;
+      font-size: 0.85rem; line-height: 1; font-family: inherit; padding: 0;
     }
-    .concerns ul { list-style: none; }
-    .concerns li { font-size: 0.83rem; color: #fde68a; padding: 0.2rem 0; }
-    .concerns li::before { content: "⚠ "; }
+    .btn-remove-row:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.08); }
 
     /* Token modal */
     .modal-backdrop {
@@ -221,15 +230,15 @@
   <main>
     <div class="nav"><a href="/">&#8592; Home</a></div>
     <h1>Box Score Import</h1>
-    <p class="subtitle">Upload two 2K screenshots (one per team). They'll be queued for parsing.</p>
+    <p class="subtitle">Import a game result via screenshot upload or manual stat entry.</p>
 
     <div class="auth-bar">
       <span id="auth-name">Not authenticated</span>
       <button id="auth-btn">Set Token</button>
     </div>
 
-    <!-- Upload form -->
-    <div class="card" id="upload-card">
+    <!-- Shared game details -->
+    <div class="card" id="details-card">
       <h2>Game Details</h2>
       <div class="form-grid">
         <div class="form-field">
@@ -270,29 +279,89 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="uploads">
-        <div class="upload-zone" id="home-zone">
-          <input type="file" id="home-file" accept="image/*">
-          <div class="upload-label" id="home-team-label">Home Team</div>
-          <div class="upload-icon">🏠</div>
-          <div class="upload-hint">Click or drag screenshot here</div>
-          <div class="upload-filename" id="home-filename"></div>
-          <img class="preview-img" id="home-preview">
+    <!-- Tab switcher -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="screenshot">📷 Screenshot Upload</button>
+      <button class="tab-btn" data-tab="manual">⌨️ Manual Entry</button>
+    </div>
+
+    <!-- Screenshot Upload panel -->
+    <div id="tab-screenshot" class="tab-panel">
+      <div class="card">
+        <h2>Upload Screenshots</h2>
+        <div class="uploads">
+          <div class="upload-zone" id="home-zone">
+            <input type="file" id="home-file" accept="image/*">
+            <div class="upload-label" id="home-team-label">Home Team</div>
+            <div class="upload-icon">🏠</div>
+            <div class="upload-hint">Click or drag screenshot here</div>
+            <div class="upload-filename" id="home-filename"></div>
+            <img class="preview-img" id="home-preview">
+          </div>
+          <div class="upload-zone" id="away-zone">
+            <input type="file" id="away-file" accept="image/*">
+            <div class="upload-label" id="away-team-label">Away Team</div>
+            <div class="upload-icon">✈️</div>
+            <div class="upload-hint">Click or drag screenshot here</div>
+            <div class="upload-filename" id="away-filename"></div>
+            <img class="preview-img" id="away-preview">
+          </div>
         </div>
-        <div class="upload-zone" id="away-zone">
-          <input type="file" id="away-file" accept="image/*">
-          <div class="upload-label" id="away-team-label">Away Team</div>
-          <div class="upload-icon">✈️</div>
-          <div class="upload-hint">Click or drag screenshot here</div>
-          <div class="upload-filename" id="away-filename"></div>
-          <img class="preview-img" id="away-preview">
+        <div class="form-actions">
+          <button class="btn-primary" id="upload-btn" disabled>Upload for Parsing</button>
+          <span class="form-status" id="upload-status"></span>
         </div>
       </div>
+    </div>
 
-      <div class="form-actions">
-        <button class="btn-primary" id="upload-btn" disabled>Upload for Parsing</button>
-        <span class="form-status" id="upload-status"></span>
+    <!-- Manual Entry panel -->
+    <div id="tab-manual" class="tab-panel" style="display:none;">
+      <div class="card" id="manual-card">
+        <h2>Player Stats</h2>
+
+        <div class="manual-load-bar">
+          <button class="btn-primary" id="load-rosters-btn" disabled>Load Rosters</button>
+          <span id="manual-msg">Select home &amp; away teams above, then load their rosters.</span>
+        </div>
+
+        <div id="manual-tables" style="display:none;">
+          <!-- Home team -->
+          <div class="team-entry-section">
+            <div class="team-entry-header">
+              <h3 id="home-entry-label">Home</h3>
+              <span class="score-live-wrap">Score: <span class="score-live" id="home-score-live">0</span></span>
+            </div>
+            <div class="table-wrap">
+              <table id="home-entry-table">
+                <thead id="home-entry-thead"></thead>
+                <tbody id="home-entry-tbody"></tbody>
+              </table>
+            </div>
+            <button class="btn-add-row" id="home-add-row">+ Add Player</button>
+          </div>
+
+          <!-- Away team -->
+          <div class="team-entry-section">
+            <div class="team-entry-header">
+              <h3 id="away-entry-label">Away</h3>
+              <span class="score-live-wrap">Score: <span class="score-live" id="away-score-live">0</span></span>
+            </div>
+            <div class="table-wrap">
+              <table id="away-entry-table">
+                <thead id="away-entry-thead"></thead>
+                <tbody id="away-entry-tbody"></tbody>
+              </table>
+            </div>
+            <button class="btn-add-row" id="away-add-row">+ Add Player</button>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-success" id="commit-btn" disabled>Commit Box Score</button>
+            <span class="form-status" id="commit-status"></span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -330,7 +399,7 @@
     const STAT_COLS = ["MIN","PTS","REB","OR","DR","AST","STL","BLK","TO","PF","FGM","FGA","3PM","3PA","FTM","FTA"];
     const STAT_KEYS = ["min","pts","reb","oreb","dreb","ast","stl","blk","tov","pf","fgm","fga","tpm","tpa","ftm","fta"];
 
-    // Populate team dropdowns
+    // ── Populate team dropdowns ──────────────────────────────────
     const homeSelect = document.getElementById("home-team");
     const awaySelect = document.getElementById("away-team");
     TEAMS.forEach(t => {
@@ -338,7 +407,7 @@
       awaySelect.insertAdjacentHTML("beforeend", `<option value="${t}">${t}</option>`);
     });
 
-    // Auth
+    // ── Auth ─────────────────────────────────────────────────────
     let token = localStorage.getItem("nbn_token") || "";
     function updateAuthBar() {
       const name = localStorage.getItem("nbn_token_name") || "";
@@ -360,14 +429,14 @@
       localStorage.removeItem("nbn_token_name");
       document.getElementById("token-modal").classList.remove("open");
       updateAuthBar();
+      checkUploadReady();
     };
 
-    // Default date to today
-    const today = new Date().toISOString().slice(0,10);
-    document.getElementById("date").value = today;
+    // ── Default form values ──────────────────────────────────────
+    document.getElementById("date").value = new Date().toISOString().slice(0,10);
     document.getElementById("season").value = "25-26";
 
-    // Playoff fields toggle
+    // ── Playoff fields toggle ────────────────────────────────────
     document.querySelectorAll('input[name="game-type"]').forEach(r => {
       r.addEventListener("change", () => {
         const pf = document.getElementById("playoff-fields");
@@ -375,17 +444,35 @@
       });
     });
 
-    // Team label updates
+    // ── Team label updates (screenshot tab) ─────────────────────
     function updateUploadLabels() {
       const ht = homeSelect.value || "Home Team";
       const at = awaySelect.value || "Away Team";
       document.getElementById("home-team-label").textContent = ht;
       document.getElementById("away-team-label").textContent = at;
     }
-    homeSelect.addEventListener("change", updateUploadLabels);
-    awaySelect.addEventListener("change", updateUploadLabels);
+    homeSelect.addEventListener("change", () => {
+      updateUploadLabels();
+      checkUploadReady();
+      updateLoadRostersBtn();
+    });
+    awaySelect.addEventListener("change", () => {
+      updateUploadLabels();
+      checkUploadReady();
+      updateLoadRostersBtn();
+    });
 
-    // File upload zones
+    // ── Tab switching ────────────────────────────────────────────
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach(p => p.style.display = "none");
+        btn.classList.add("active");
+        document.getElementById("tab-" + btn.dataset.tab).style.display = "";
+      });
+    });
+
+    // ── Screenshot upload zones ──────────────────────────────────
     function setupZone(zoneId, fileId, filenameId, previewId) {
       const zone = document.getElementById(zoneId);
       const input = document.getElementById(fileId);
@@ -409,7 +496,6 @@
         if (input.files[0]) onFileSelected(input.files[0], zone, fname, preview);
       });
     }
-
     function onFileSelected(file, zone, fname, preview) {
       zone.classList.add("has-file");
       fname.textContent = file.name;
@@ -418,7 +504,6 @@
       preview.style.display = "block";
       checkUploadReady();
     }
-
     setupZone("home-zone", "home-file", "home-filename", "home-preview");
     setupZone("away-zone", "away-file", "away-filename", "away-preview");
 
@@ -428,11 +513,7 @@
         && homeSelect.value && awaySelect.value && token;
       document.getElementById("upload-btn").disabled = !ready;
     }
-    homeSelect.addEventListener("change", checkUploadReady);
-    awaySelect.addEventListener("change", checkUploadReady);
-    document.getElementById("auth-btn").addEventListener("click", checkUploadReady);
 
-    // Upload
     document.getElementById("upload-btn").onclick = async () => {
       const btn = document.getElementById("upload-btn");
       const status = document.getElementById("upload-status");
@@ -475,6 +556,401 @@
       }
     };
 
+    // ── Manual Entry ─────────────────────────────────────────────
+    let allPlayers = {};          // slug → bio
+    let loadedHomeAbbr = null;
+    let loadedAwayAbbr = null;
+
+    function updateLoadRostersBtn() {
+      const btn = document.getElementById("load-rosters-btn");
+      btn.disabled = !(homeSelect.value && awaySelect.value);
+      if (homeSelect.value && awaySelect.value) {
+        document.getElementById("manual-msg").textContent =
+          "Click "Load Rosters" to populate player tables.";
+      } else {
+        document.getElementById("manual-msg").textContent =
+          "Select home & away teams above, then load their rosters.";
+      }
+    }
+
+    document.getElementById("load-rosters-btn").onclick = () => loadRosters();
+
+    async function ensureAllPlayers() {
+      if (Object.keys(allPlayers).length > 0) return;
+      const res = await fetch("/api/players");
+      if (!res.ok) throw new Error(`Failed to load player list: HTTP ${res.status}`);
+      allPlayers = await res.json();
+    }
+
+    function parseCSVLine(line) {
+      // Handle quoted fields with commas
+      const result = [];
+      let cur = "";
+      let inQuote = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          inQuote = !inQuote;
+        } else if (ch === ',' && !inQuote) {
+          result.push(cur.trim());
+          cur = "";
+        } else {
+          cur += ch;
+        }
+      }
+      result.push(cur.trim());
+      return result;
+    }
+
+    async function fetchTeamRoster(abbr) {
+      const res = await fetch(`/data/${abbr}-roster.csv`);
+      if (!res.ok) throw new Error(`Failed to load ${abbr} roster (HTTP ${res.status})`);
+      const text = await res.text();
+      const lines = text.trim().split("\n").filter(l => l.trim());
+      if (lines.length < 2) return [];
+
+      const headers = parseCSVLine(lines[0]);
+      const slugIdx   = headers.indexOf("SLUG");
+      const playerIdx = headers.indexOf("PLAYER");
+      const ovrIdx    = headers.indexOf("OVR");
+
+      return lines.slice(1).map(line => {
+        const cols = parseCSVLine(line);
+        let slug = "", displayName = "", bioName = "";
+
+        if (slugIdx >= 0) {
+          slug = cols[slugIdx] || "";
+          const bio = allPlayers[slug] || {};
+          bioName = bio.name || slug;           // "CURRY, STEPHEN"
+          displayName = bioNameToDisplay(bioName);
+        } else if (playerIdx >= 0) {
+          // Legacy format: PLAYER column already has "LAST, FIRST"
+          bioName = cols[playerIdx] || "";
+          displayName = bioNameToDisplay(bioName);
+          // Try to find slug by matching name in allPlayers
+          slug = Object.keys(allPlayers).find(s => allPlayers[s].name === bioName) || bioName;
+        }
+
+        const ovr = ovrIdx >= 0 ? (cols[ovrIdx] || "") : "";
+        return { slug, name: displayName, bioName, ovr };
+      }).filter(r => r.slug || r.name);
+    }
+
+    function bioNameToDisplay(bioName) {
+      // "CURRY, STEPHEN" → "Stephen Curry"
+      if (!bioName) return "";
+      const comma = bioName.indexOf(",");
+      if (comma < 0) return toTitleCase(bioName);
+      const last  = bioName.slice(0, comma).trim();
+      const first = bioName.slice(comma + 1).trim();
+      return `${toTitleCase(first)} ${toTitleCase(last)}`;
+    }
+
+    function toTitleCase(s) {
+      return s.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    }
+
+    async function loadRosters() {
+      const homeAbbr = homeSelect.value;
+      const awayAbbr = awaySelect.value;
+      if (!homeAbbr || !awayAbbr) return;
+
+      const btn = document.getElementById("load-rosters-btn");
+      const msg = document.getElementById("manual-msg");
+      btn.disabled = true;
+      msg.textContent = "Loading…";
+
+      try {
+        await ensureAllPlayers();
+        const [homeRoster, awayRoster] = await Promise.all([
+          fetchTeamRoster(homeAbbr),
+          fetchTeamRoster(awayAbbr),
+        ]);
+
+        loadedHomeAbbr = homeAbbr;
+        loadedAwayAbbr = awayAbbr;
+
+        buildEntryTable("home", homeAbbr, homeRoster, homeRoster, awayRoster);
+        buildEntryTable("away", awayAbbr, awayRoster, homeRoster, awayRoster);
+
+        document.getElementById("home-entry-label").textContent = homeAbbr;
+        document.getElementById("away-entry-label").textContent = awayAbbr;
+
+        document.getElementById("manual-tables").style.display = "";
+        msg.textContent = `${homeRoster.length} + ${awayRoster.length} players loaded.`;
+        checkCommitReady();
+      } catch (e) {
+        msg.textContent = `Error: ${e.message}`;
+        btn.disabled = false;
+        return;
+      }
+      btn.disabled = false;
+    }
+
+    function buildTableHeader(tbodyId) {
+      // thead is the sibling before tbody
+      const tbody = document.getElementById(tbodyId);
+      const thead = tbody.previousElementSibling;
+      const tr = document.createElement("tr");
+      // Player col
+      const thP = document.createElement("th");
+      thP.className = "player-col";
+      thP.textContent = "Player";
+      tr.appendChild(thP);
+      // Stat cols
+      STAT_COLS.forEach(col => {
+        const th = document.createElement("th");
+        th.textContent = col;
+        tr.appendChild(th);
+      });
+      // Remove col
+      const thX = document.createElement("th");
+      thX.textContent = "";
+      tr.appendChild(thX);
+      thead.innerHTML = "";
+      thead.appendChild(tr);
+    }
+
+    function buildEntryTable(side, abbr, roster, homeRoster, awayRoster) {
+      const tbodyId = `${side}-entry-tbody`;
+      const tbody = document.getElementById(tbodyId);
+      buildTableHeader(tbodyId);
+      tbody.innerHTML = "";
+      roster.forEach(player => {
+        tbody.appendChild(makePlayerRow(side, player, roster, homeRoster, awayRoster));
+      });
+      updateScore(side);
+    }
+
+    function makePlayerSelect(currentSlug, teamRoster, homeRoster, awayRoster) {
+      const sel = document.createElement("select");
+      sel.className = "player-select";
+
+      // Primary group: this team's roster
+      const rosterGroup = document.createElement("optgroup");
+      rosterGroup.label = "This Team";
+      teamRoster.forEach(p => {
+        const opt = new Option(p.name || p.slug, p.slug);
+        opt.dataset.bioName = p.bioName || p.name || p.slug;
+        rosterGroup.appendChild(opt);
+      });
+      sel.appendChild(rosterGroup);
+
+      // Secondary group: other teams' players + anyone from allPlayers
+      const rosterSlugs = new Set([...homeRoster, ...awayRoster].map(p => p.slug));
+      const otherEntries = Object.entries(allPlayers)
+        .filter(([slug]) => !rosterSlugs.has(slug))
+        .sort((a, b) => bioNameToDisplay(a[1].name || a[0]).localeCompare(bioNameToDisplay(b[1].name || b[0])));
+
+      if (otherEntries.length > 0) {
+        const othGroup = document.createElement("optgroup");
+        othGroup.label = "Other Players";
+        otherEntries.forEach(([slug, bio]) => {
+          const display = bioNameToDisplay(bio.name || slug);
+          const opt = new Option(display, slug);
+          opt.dataset.bioName = bio.name || slug;
+          othGroup.appendChild(opt);
+        });
+        sel.appendChild(othGroup);
+      }
+
+      sel.value = currentSlug;
+      return sel;
+    }
+
+    function makePlayerRow(side, player, teamRoster, homeRoster, awayRoster) {
+      const tr = document.createElement("tr");
+
+      // Player select cell
+      const playerTd = document.createElement("td");
+      playerTd.className = "player-col";
+      const sel = makePlayerSelect(player.slug, teamRoster, homeRoster, awayRoster);
+      playerTd.appendChild(sel);
+      tr.appendChild(playerTd);
+
+      // Stat input cells
+      STAT_KEYS.forEach((key, i) => {
+        const td = document.createElement("td");
+        const inp = document.createElement("input");
+        inp.type = "number";
+        inp.min = 0;
+        inp.max = key === "min" ? 60 : 99;
+        inp.className = "cell-input";
+        inp.value = "";
+        inp.placeholder = "0";
+        inp.setAttribute("data-key", key);
+        if (key === "pts") inp.addEventListener("input", () => updateScore(side));
+        td.appendChild(inp);
+        tr.appendChild(td);
+      });
+
+      // Remove button cell
+      const removeTd = document.createElement("td");
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "btn-remove-row";
+      removeBtn.textContent = "×";
+      removeBtn.title = "Remove row";
+      removeBtn.onclick = () => { tr.remove(); updateScore(side); checkCommitReady(); };
+      removeTd.appendChild(removeBtn);
+      tr.appendChild(removeTd);
+
+      return tr;
+    }
+
+    function updateScore(side) {
+      const tbody = document.getElementById(`${side}-entry-tbody`);
+      let total = 0;
+      tbody.querySelectorAll("tr").forEach(tr => {
+        const inp = tr.querySelector('[data-key="pts"]');
+        if (inp) total += parseInt(inp.value || "0", 10);
+      });
+      document.getElementById(`${side}-score-live`).textContent = total;
+    }
+
+    function checkCommitReady() {
+      const homeRows = document.getElementById("home-entry-tbody").querySelectorAll("tr").length;
+      const awayRows = document.getElementById("away-entry-tbody").querySelectorAll("tr").length;
+      document.getElementById("commit-btn").disabled = !(homeRows > 0 && awayRows > 0 && token);
+    }
+
+    // Add Player buttons
+    document.getElementById("home-add-row").onclick = () => addBlankRow("home");
+    document.getElementById("away-add-row").onclick = () => addBlankRow("away");
+
+    function addBlankRow(side) {
+      // Build a fake empty player — user picks from dropdown
+      const homeRoster = getRosterFromTable("home");
+      const awayRoster = getRosterFromTable("away");
+      const teamRoster = side === "home" ? homeRoster : awayRoster;
+      const firstPlayer = teamRoster[0] || { slug: "", name: "", bioName: "" };
+      const tbody = document.getElementById(`${side}-entry-tbody`);
+      const row = makePlayerRow(side, firstPlayer, teamRoster, homeRoster, awayRoster);
+      tbody.appendChild(row);
+      checkCommitReady();
+    }
+
+    function getRosterFromTable(side) {
+      // Reconstruct roster from current table selects (to populate new rows correctly)
+      const tbody = document.getElementById(`${side}-entry-tbody`);
+      const seen = new Set();
+      const roster = [];
+      tbody.querySelectorAll("tr").forEach(tr => {
+        const sel = tr.querySelector(".player-select");
+        if (!sel || seen.has(sel.value)) return;
+        seen.add(sel.value);
+        const selectedOpt = sel.options[sel.selectedIndex];
+        roster.push({
+          slug: sel.value,
+          name: selectedOpt ? selectedOpt.text : sel.value,
+          bioName: selectedOpt ? (selectedOpt.dataset.bioName || sel.value) : sel.value,
+        });
+      });
+      return roster;
+    }
+
+    function getTableRows(side) {
+      const tbody = document.getElementById(`${side}-entry-tbody`);
+      const rows = [];
+      const slugsSeen = new Set();
+      let errors = [];
+
+      tbody.querySelectorAll("tr").forEach((tr, i) => {
+        const sel = tr.querySelector(".player-select");
+        const inputs = [...tr.querySelectorAll(".cell-input")];
+        if (!sel || inputs.length !== STAT_KEYS.length) return;
+
+        const slug = sel.value;
+        if (!slug) { errors.push(`Row ${i+1}: no player selected`); return; }
+        if (slugsSeen.has(slug)) {
+          errors.push(`Duplicate player: ${sel.options[sel.selectedIndex]?.text || slug}`);
+          return;
+        }
+        slugsSeen.add(slug);
+
+        const selectedOpt = sel.options[sel.selectedIndex];
+        // bioName is "LAST, FIRST" format needed by the API
+        const bio = allPlayers[slug];
+        const playerName = bio ? bio.name : (selectedOpt?.dataset.bioName || slug);
+
+        const vals = STAT_KEYS.reduce((obj, key, idx) => {
+          obj[key] = parseInt(inputs[idx].value || "0", 10);
+          return obj;
+        }, {});
+
+        rows.push({ player: playerName, slug, ...vals });
+      });
+
+      return { rows, errors };
+    }
+
+    document.getElementById("commit-btn").onclick = async () => {
+      const btn    = document.getElementById("commit-btn");
+      const status = document.getElementById("commit-status");
+
+      const { rows: homeRows, errors: homeErrs } = getTableRows("home");
+      const { rows: awayRows, errors: awayErrs } = getTableRows("away");
+      const allErrors = [...homeErrs, ...awayErrs];
+
+      if (allErrors.length) {
+        status.className = "form-status err";
+        status.textContent = allErrors[0];
+        return;
+      }
+      if (!homeRows.length || !awayRows.length) {
+        status.className = "form-status err";
+        status.textContent = "Both teams need at least one player.";
+        return;
+      }
+
+      const homePts = homeRows.reduce((s, r) => s + r.pts, 0);
+      const awayPts = awayRows.reduce((s, r) => s + r.pts, 0);
+
+      const gameNumVal  = parseInt(document.getElementById("game-num").value  || "0", 10) || null;
+      const roundNumVal = parseInt(document.getElementById("round-num").value || "0", 10) || null;
+
+      const body = {
+        date:       document.getElementById("date").value,
+        season:     document.getElementById("season").value,
+        home_team:  homeSelect.value,
+        away_team:  awaySelect.value,
+        game_type:  document.querySelector('input[name="game-type"]:checked').value,
+        home_pts:   homePts,
+        away_pts:   awayPts,
+        game_num:   gameNumVal,
+        round_num:  roundNumVal,
+        home_rows:  homeRows,
+        away_rows:  awayRows,
+      };
+
+      btn.disabled = true;
+      status.className = "form-status";
+      status.textContent = "Committing…";
+
+      try {
+        const res = await fetch("/api/boxscore/commit", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        status.className = "form-status ok";
+        status.textContent = `✓ Committed ${data.rows_added} rows (${homePts}–${awayPts})${data.building ? " · Rebuilding stats…" : ""}`;
+        if (data.building) startBuildPoll();
+      } catch (e) {
+        status.className = "form-status err";
+        status.textContent = e.message;
+      }
+      btn.disabled = false;
+    };
+
+    // ── Pending games list ───────────────────────────────────────
     function relTime(iso) {
       if (!iso) return '';
       const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -504,7 +980,6 @@
       } catch (e) { alert(e.message); }
     }
 
-    // Pending list
     async function loadPending() {
       const el = document.getElementById("pending-list");
       if (!token) {
@@ -547,7 +1022,7 @@
 
     loadPending();
 
-    // Build status banner
+    // ── Build status banner ──────────────────────────────────────
     let buildPollInterval = null;
 
     async function checkBuildStatus() {
@@ -559,8 +1034,8 @@
         if (!res.ok) return;
         const data = await res.json();
         const banner = document.getElementById("build-banner");
-        const icon = document.getElementById("build-icon");
-        const msg = document.getElementById("build-msg");
+        const icon   = document.getElementById("build-icon");
+        const msg    = document.getElementById("build-msg");
 
         if (data.status === "running") {
           banner.style.display = "flex";
