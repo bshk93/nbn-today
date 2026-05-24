@@ -69,7 +69,10 @@
     .term-header span:first-child { font-weight: 600; color: #f3f4f6; }
     #terminal-el { padding: 0.5rem; }
 
-    .no-token { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 1.5rem; font-size: 0.875rem; color: #6b7280; }
+    .no-token { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 1.5rem; font-size: 0.875rem; color: #6b7280; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .btn-token { background: #1d4ed8; border: none; color: #fff; border-radius: 6px; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .btn-token:hover { background: #2563eb; }
+    .qi-ts { color: #4b5563; }
   </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
 </head>
@@ -83,11 +86,41 @@
   <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
   <script>
+    const root = document.getElementById("root");
+
+    function enterToken() {
+      const overlay = document.createElement("div");
+      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000";
+      overlay.innerHTML = `<div style="background:#1f2937;border:1px solid #374151;border-radius:12px;padding:1.5rem;width:360px;max-width:90vw">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.4rem;color:#f3f4f6;font-family:inherit">Enter your token</h3>
+        <p style="font-size:0.8rem;color:#9ca3af;margin-bottom:1rem;font-family:inherit">Paste the token you received from the league office.</p>
+        <input type="password" placeholder="Paste token…" autocomplete="off" style="width:100%;background:#111827;border:1px solid #374151;border-radius:6px;color:#f3f4f6;font-size:0.875rem;font-family:monospace;padding:0.5rem 0.75rem;margin-bottom:1rem;box-sizing:border-box;outline:none">
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+          <button id="tok-cancel" style="padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit">Cancel</button>
+          <button id="tok-save" style="padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit">Continue</button>
+        </div>
+      </div>`;
+      document.body.appendChild(overlay);
+      const input = overlay.querySelector("input");
+      input.focus();
+      const dismiss = () => overlay.remove();
+      const save = () => {
+        const val = input.value.trim();
+        if (!val) return;
+        localStorage.setItem("nbn_token", val);
+        overlay.remove();
+        boot();
+      };
+      overlay.querySelector("#tok-cancel").onclick = dismiss;
+      overlay.querySelector("#tok-save").onclick = save;
+      input.addEventListener("keydown", e => { if (e.key === "Enter") save(); if (e.key === "Escape") dismiss(); });
+    }
+
     const token = localStorage.getItem("nbn_token");
-    const root  = document.getElementById("root");
 
     if (!token) {
-      root.innerHTML = '<div class="no-token">No admin token found. Save your token via the Edit button on any team page first.</div>';
+      root.innerHTML = `<div class="no-token"><span>Enter your NBN token to manage the box score queue.</span><button class="btn-token" id="btn-enter-tok">Enter Token</button></div>`;
+      document.getElementById("btn-enter-tok").onclick = enterToken;
     } else {
       boot();
     }
@@ -279,6 +312,16 @@
       btn.disabled = false;
     }
 
+    function relTime(iso) {
+      if (!iso) return '';
+      const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+      if (m < 1) return 'just now';
+      if (m < 60) return `${m}m ago`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `${h}h ago`;
+      return `${Math.floor(h / 24)}d ago`;
+    }
+
     let pending = [];
 
     async function loadQueue() {
@@ -299,8 +342,9 @@
         div.className = "queue-item";
         const info = document.createElement("div");
         info.className = "qi-info";
+        const ts = item.uploaded_at ? `<span class="qi-ts"> · ${relTime(item.uploaded_at)}</span>` : '';
         info.innerHTML = `<div class="qi-matchup">${item.away_team} @ ${item.home_team}</div>
-          <div class="qi-meta">${item.date} · ${item.season} · ${item.game_type}</div>`;
+          <div class="qi-meta">${item.date} · ${item.season} · ${item.game_type}${ts}</div>`;
         const btn = document.createElement("button");
         btn.className = "qi-remove";
         btn.title = "Remove from queue";
