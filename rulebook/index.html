@@ -243,7 +243,7 @@
           <div class="doc-section" id="s1-1">
             <h3 class="sec-title"><span class="sec-num">§ 1.1</span> Salary Cap Thresholds</h3>
             <p>The NBN Salary Cap mirrors the <strong>NBA's official salary cap</strong> for the same season. When the NBA announces its cap number each summer, the NBN cap is set to the same value. All apron thresholds follow the same proportional relationships as the NBA. Mid-Level Exception values increase each season at the same percentage rate as the overall cap.</p>
-            <p>All three cap thresholds are set externally each season by the league office and recorded in the system. The values below are live for the current season.</p>
+            <p>All four cap thresholds are set externally each season by the league office and recorded in the system. The values below are live for the current season.</p>
             <div class="cap-table-wrap">
               <div class="cap-table-header">
                 <span id="cap-season-label">25-26</span> Season Thresholds
@@ -260,6 +260,10 @@
                 <tr class="highlight">
                   <td>Second Apron</td>
                   <td><span data-cap="apron2">—</span></td>
+                </tr>
+                <tr class="highlight">
+                  <td>Hard Cap</td>
+                  <td><span data-cap="hard_cap">—</span></td>
                 </tr>
                 <tr class="divider">
                   <td>Non-Taxpayer MLE (NTMLE)</td>
@@ -290,8 +294,10 @@
 
           <div class="doc-section" id="s1-3">
             <h3 class="sec-title"><span class="sec-num">§ 1.3</span> Hard Cap <span class="badge badge-enforced">🔒 system-enforced</span></h3>
-            <p>Once a team has triggered a hard cap (see § 1.4), their Team Salary <strong>may not exceed the applicable apron level at any point for the remainder of that salary cap year</strong>, regardless of exceptions. There is no mechanism to go over the hard cap — it is an absolute ceiling.</p>
-            <p>The transaction system blocks any signing, trade, draft pick signing, or two-way conversion that would push a hard-capped team over their apron threshold. The error message will show the projected overage.</p>
+            <p>The Hard Cap is an <strong>absolute league-wide spending ceiling</strong>. No team's Team Salary may exceed the Hard Cap at any point during the salary cap year, regardless of exceptions or prior transactions. There is no mechanism to go over it.</p>
+            <p>Additionally, individual teams may be <strong>hard-capped at a lower threshold</strong> — either the First Apron or the Second Apron — when they engage in certain transactions (see § 1.4). A team hard-capped at an apron cannot exceed that apron even if they remain below the league Hard Cap.</p>
+            <p>In summary, every team's effective ceiling is the lowest of: (a) the league Hard Cap, (b) any triggered apron lock, or (c) the Second Apron, if applicable.</p>
+            <p>The transaction system blocks any signing, trade, draft pick signing, or two-way conversion that would push a team over any applicable ceiling. The error message will identify which limit was breached and the projected overage.</p>
           </div>
 
           <div class="doc-section" id="s1-4">

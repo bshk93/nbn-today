@@ -1050,6 +1050,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           { label: 'Salary Cap', key: 'cap' },
           { label: '1st Apron',  key: 'apron1' },
           { label: '2nd Apron',  key: 'apron2' },
+          { label: 'Hard Cap',   key: 'hard_cap' },
         ];
         capDefs.forEach(({ label, key }) => {
           const hasCap = salaryKeys.some(k => capLevels[k]?.[key]);

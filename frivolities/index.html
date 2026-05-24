@@ -437,14 +437,15 @@
       const chartH = sorted.length * BAND;
       const VB_H   = chartH + PAD.t + PAD.b;
 
-      const maxSal = Math.max(...sorted.map(a => teamSal[a].total), (levels.apron2 || 0) * 1.06);
+      const maxSal = Math.max(...sorted.map(a => teamSal[a].total), (levels.hard_cap || levels.apron2 || 0) * 1.06);
       const xS = v => PAD.l + (v / maxSal) * chartW;
 
       // Threshold lines (stagger label heights to avoid overlap)
       const thresholds = [
-        { val: levels.cap,    label: 'Cap',     color: '#d1d5db', dy: -14 },
-        { val: levels.apron1, label: 'Apron 1', color: '#f59e0b', dy: -5  },
-        { val: levels.apron2, label: 'Apron 2', color: '#ef4444', dy: -14 },
+        { val: levels.cap,      label: 'Cap',      color: '#d1d5db', dy: -14 },
+        { val: levels.apron1,   label: 'Apron 1',  color: '#f59e0b', dy: -5  },
+        { val: levels.apron2,   label: 'Apron 2',  color: '#ef4444', dy: -14 },
+        { val: levels.hard_cap, label: 'Hard Cap', color: '#7c3aed', dy: -5  },
       ].filter(t => t.val);
       const threshLines = thresholds.map(t => {
         const x = xS(t.val).toFixed(1);
