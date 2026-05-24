@@ -603,7 +603,7 @@
     }
 
     async function fetchTeamRoster(abbr) {
-      const res = await fetch(`/data/${abbr}-roster.csv`);
+      const res = await fetch(`/data/${abbr.toLowerCase()}-roster.csv`);
       if (!res.ok) throw new Error(`Failed to load ${abbr} roster (HTTP ${res.status})`);
       const text = await res.text();
       const lines = text.trim().split("\n").filter(l => l.trim());
