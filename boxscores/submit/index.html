@@ -48,11 +48,14 @@
 
     /* Pending queue */
     .queue-empty { padding: 1rem; font-size: 0.85rem; color: #4b5563; }
-    .queue-item { padding: 0.65rem 1rem; border-bottom: 1px solid #1a2332; }
+    .queue-item { padding: 0.65rem 1rem; border-bottom: 1px solid #1a2332; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
     .queue-item:last-child { border-bottom: none; }
+    .qi-info { flex: 1; min-width: 0; }
     .qi-matchup { font-size: 0.875rem; font-weight: 600; }
     .qi-meta { font-size: 0.72rem; color: #6b7280; margin-top: 0.15rem; }
     .queue-count { font-size: 0.75rem; color: #9ca3af; }
+    .qi-remove { background: none; border: 1px solid #374151; color: #6b7280; border-radius: 4px; width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; flex-shrink: 0; line-height: 1; }
+    .qi-remove:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.08); }
 
     /* Parse button */
     .parse-btn { background: #1d4ed8; border: none; color: #fff; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
@@ -294,10 +297,32 @@
       pending.forEach(item => {
         const div = document.createElement("div");
         div.className = "queue-item";
-        div.innerHTML = `<div class="qi-matchup">${item.away_team} @ ${item.home_team}</div>
+        const info = document.createElement("div");
+        info.className = "qi-info";
+        info.innerHTML = `<div class="qi-matchup">${item.away_team} @ ${item.home_team}</div>
           <div class="qi-meta">${item.date} · ${item.season} · ${item.game_type}</div>`;
+        const btn = document.createElement("button");
+        btn.className = "qi-remove";
+        btn.title = "Remove from queue";
+        btn.textContent = "×";
+        btn.onclick = () => removeGame(item.id);
+        div.appendChild(info);
+        div.appendChild(btn);
         body.appendChild(div);
       });
+    }
+
+    async function removeGame(id) {
+      try {
+        const r = await fetch(`/api/boxscore/pending/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+        if (r.ok) {
+          pending = pending.filter(p => p.id !== id);
+          renderQueue();
+        } else {
+          const j = await r.json().catch(() => ({}));
+          alert(j.detail || "Failed to remove game.");
+        }
+      } catch(e) { alert(e.message); }
     }
 
     let term = null, fitAddon = null, ws = null;
