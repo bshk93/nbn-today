@@ -699,7 +699,7 @@
           row.className = 'entry-row';
           const pickSpan = document.createElement('span');
           pickSpan.className = 'entry-player';
-          pickSpan.textContent = (pick.team && pick.team !== 'Own') ? `${pick.year} ${pick.round} (${pick.team})` : `${pick.year} ${pick.round}`;
+          pickSpan.textContent = (pick.team && pick.team !== 'Own' && pick.team.toUpperCase() !== myTeam) ? `${pick.year} ${pick.round} (${pick.team})` : `${pick.year} ${pick.round}`;
           const notesSpan = document.createElement('span');
           notesSpan.className = 'entry-notes';
           if (pick.notes) { notesSpan.textContent = pick.notes; }
@@ -717,8 +717,9 @@
       const pickAddRow = document.createElement('div');
       pickAddRow.className = 'add-row';
 
+      const roundStr = r => r === 1 ? '1st' : '2nd';
       const onPickBlock = new Set(pendingPicks.map(p => `${p.year}|${p.round}|${p.team}`));
-      const availablePicks = myPicks.filter(p => !onPickBlock.has(`${p.YEAR}|${p.ROUND}|${p.TEAM}`));
+      const availablePicks = myPicks.filter(p => !onPickBlock.has(`${p.year}|${roundStr(p.round)}|${p.orig}`));
 
       const pickSel = document.createElement('select');
       const pickDefaultOpt = document.createElement('option');
@@ -726,9 +727,10 @@
       pickDefaultOpt.textContent = availablePicks.length ? 'Select pick…' : 'All picks added';
       pickSel.appendChild(pickDefaultOpt);
       availablePicks.forEach(p => {
-        const label = p.TEAM === 'Own' ? `${p.YEAR} ${p.ROUND}` : `${p.YEAR} ${p.ROUND} (${p.TEAM})`;
+        const rs = roundStr(p.round);
+        const label = p.orig === myTeam ? `${p.year} ${rs}` : `${p.year} ${rs} (${p.orig})`;
         const opt = document.createElement('option');
-        opt.value = JSON.stringify({ year: parseInt(p.YEAR), round: p.ROUND, team: p.TEAM });
+        opt.value = JSON.stringify({ year: p.year, round: rs, team: p.orig });
         opt.textContent = label;
         pickSel.appendChild(opt);
       });
@@ -830,7 +832,7 @@
       } catch { return null; }
     }
 
-    let myPicks = [];   // rows from {team}-picks.csv
+    let myPicks = [];   // picks owned by myTeam from /api/picks/{team}
 
     async function activateEditPanel(rosterData) {
       if (!myRoster.length && myTeam) {
@@ -838,8 +840,11 @@
         if (r.ok) { myRoster = parseCSV(await r.text()); rosterData[myTeam] = myRoster; }
       }
       if (!myPicks.length && myTeam) {
-        const r = await fetch(`/data/${myTeam.toLowerCase()}-picks.csv`);
-        if (r.ok) myPicks = parseCSV(await r.text());
+        const r = await fetch(`/api/picks/${myTeam}`);
+        if (r.ok) {
+          const all = await r.json();
+          myPicks = all.filter(p => (p.owner || '').toUpperCase() === myTeam);
+        }
       }
       const teamBlock = tbData[myTeam] || {};
       pendingEntries = [...(teamBlock.players || [])];
@@ -941,7 +946,8 @@
 
           // Pick rows
           (block.picks || []).forEach(({ year, round, team: origin = 'Own', notes }) => {
-            const pickLabel = origin === 'Own' ? `${year} ${round}` : `${year} ${round} (${origin})`;
+            const isOwnPick = !origin || origin === 'Own' || origin.toUpperCase() === team.toUpperCase();
+            const pickLabel = isOwnPick ? `${year} ${round}` : `${year} ${round} (${origin})`;
             const row = {
               team, isPick: true,
               player: pickLabel,
