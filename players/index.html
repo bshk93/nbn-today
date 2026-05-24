@@ -1084,7 +1084,7 @@
       const seasonIn = document.createElement('input');
       seasonIn.type = 'text'; seasonIn.className = 'season-input'; seasonIn.placeholder = '25-26'; seasonIn.value = season || '';
       const amountIn = document.createElement('input');
-      amountIn.type = 'text'; amountIn.className = 'amount-input'; amountIn.placeholder = '$0'; amountIn.value = amount || '';
+      amountIn.type = 'text'; amountIn.className = 'amount-input'; amountIn.placeholder = 'full salary (cap hit)'; amountIn.value = amount || '';
       const holdSel = document.createElement('select');
       holdSel.className = 'hold-select';
       HOLD_OPTIONS.forEach(([v, l]) => {
@@ -1109,7 +1109,7 @@
 
       const stepsDesc = document.createElement('div');
       stepsDesc.className = 'gtd-steps-desc';
-      stepsDesc.textContent = 'Each step adds to the guaranteed total on its date. Leave amount blank to guarantee the full remaining salary on that date.';
+      stepsDesc.textContent = 'What\'s owed if released — separate from the cap hit above. Each step adds to the dead cap total on its date. Leave amount blank = full remaining salary becomes guaranteed.';
       stepsDiv.appendChild(stepsDesc);
 
       function addGuaranteeStep(amt, dt) {
