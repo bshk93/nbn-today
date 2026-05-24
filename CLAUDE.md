@@ -26,19 +26,21 @@ The changelog is served at `/changelog` and the current version appears on the h
 
 ## League rules and transaction rubrics
 
-Per-transaction rules, salary cap rules, and validity rubrics live in `rules/`.
-`rules/README.md` has league-wide constants (cap ceiling, roster limits, season timeline) that all rubrics assume.
-Read the relevant file before making or validating any transaction:
+All league rules, salary cap rules, and transaction validity rubrics live in **`rulebook/index.html`** — the canonical CBA-style document served at `nbn.today/rulebook`.
 
-| Transaction | File |
+Read the relevant article before making or validating any transaction:
+
+| Transaction | Section |
 |---|---|
-| Trade | `rules/trades.md` |
-| FA signing | `rules/free-agency.md` |
-| Extension | `rules/extensions.md` |
-| Option exercise / decline | `rules/options.md` |
-| Release / waiver | `rules/releases.md` |
-| Two-way conversion | `rules/two-way.md` |
-| Draft pick signing | `rules/draft.md` |
+| Trade | Article IV (§ 4.1 – § 4.6) |
+| FA signing | Article III (§ 3.1 – § 3.9) |
+| Extension | § 6.2 |
+| Option exercise / decline | § 6.1 |
+| Release / waiver | Article V (§ 5.1 – § 5.2) |
+| Two-way conversion | § 6.1 |
+| Draft pick signing | Article VII (§ 7.1 – § 7.3) |
+
+League-wide constants (cap thresholds, roster limits, apron triggers) are in Article I and Article II. `rules/` has been retired — `rulebook/index.html` is the single source of truth.
 
 ---
 

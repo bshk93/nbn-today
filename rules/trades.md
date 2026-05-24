@@ -1,1 +1,0 @@
-/var/lib/nothing-but-stats/rules/trades.md
