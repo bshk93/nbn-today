@@ -1134,9 +1134,14 @@
         rmBtn.type = 'button'; rmBtn.className = 'gtd-step-remove'; rmBtn.textContent = '×';
         rmBtn.addEventListener('click', () => stepRow.remove());
 
+        const dateHint = document.createElement('span');
+        dateHint.className = 'gtd-step-conn';
+        dateHint.textContent = '(blank = at signing)';
+
         stepRow.appendChild(amtIn);
         stepRow.appendChild(connOn);
         stepRow.appendChild(dateIn);
+        stepRow.appendChild(dateHint);
         stepRow.appendChild(rmBtn);
         stepsDiv.insertBefore(stepRow, addStepBtn);
       }
