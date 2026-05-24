@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.0.81",
+    "date": "2026-05-24",
+    "changes": [
+      "Calendar: rename 'Show past games' to 'Show past events'; add custom events \u2014 BOD/admin can add/delete dated events with a label via '+ Add event' button; custom events shown in violet in both schedule and month views; add GET/POST/DELETE /api/calendar/events and GET /api/auth/me endpoints"
+    ]
+  },
+  {
     "version": "0.0.80",
     "date": "2026-05-24",
     "changes": [

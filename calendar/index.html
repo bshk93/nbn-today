@@ -15,7 +15,10 @@
     /* ── Header ────────────────────────────────────────────────── */
     header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; gap: 1rem; flex-wrap: wrap; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    .controls { display: flex; align-items: center; gap: 0.75rem; }
+    .controls { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+
+    .add-event-btn { background: none; border: 1px solid #4b5563; color: #a78bfa; border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+    .add-event-btn:hover { border-color: #a78bfa; background: #1e1b2e; }
 
     /* View toggle */
     .view-toggle { display: flex; background: #1f2937; border-radius: 6px; padding: 2px; gap: 2px; }
@@ -28,6 +31,23 @@
     .month-btn { background: #374151; border: 1px solid #4b5563; color: #d1d5db; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; font-size: 0.85rem; line-height: 1.4; }
     .month-btn:hover { background: #4b5563; }
     .month-label { font-size: 1rem; font-weight: 600; min-width: 140px; text-align: center; }
+
+    /* ── Add event form ─────────────────────────────────────────── */
+    .add-event-form { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; background: #1e1b2e; border: 1px solid #4c1d95; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
+    .add-event-form label { font-size: 0.78rem; color: #c4b5fd; font-weight: 600; white-space: nowrap; }
+    .add-event-form input[type="date"], .add-event-form input[type="text"] {
+      background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 5px;
+      padding: 0.3rem 0.6rem; font-size: 0.82rem; outline: none;
+    }
+    .add-event-form input[type="date"] { width: 140px; }
+    .add-event-form input[type="text"] { flex: 1; min-width: 140px; }
+    .add-event-form input:focus { border-color: #7c3aed; }
+    .add-event-form .form-save { background: #7c3aed; border: none; color: #fff; border-radius: 5px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .add-event-form .form-save:hover { background: #6d28d9; }
+    .add-event-form .form-save:disabled { opacity: 0.5; cursor: default; }
+    .add-event-form .form-cancel { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.5rem; }
+    .add-event-form .form-cancel:hover { color: #9ca3af; }
+    .add-event-form .form-err { font-size: 0.75rem; color: #f87171; width: 100%; }
 
     /* ── Schedule view ──────────────────────────────────────────── */
     .schedule { display: flex; flex-direction: column; }
@@ -43,9 +63,7 @@
 
     .sched-day { padding: 0.6rem 0; border-bottom: 1px solid #1f2937; }
     .sched-day:last-child { border-bottom: none; }
-
     .sched-date-hdr { font-size: 0.8rem; font-weight: 600; color: #9ca3af; margin-bottom: 0.35rem; }
-
     .sched-events { display: flex; flex-direction: column; gap: 0.15rem; padding-left: 0.75rem; }
 
     .sched-game { font-size: 0.82rem; color: #d1d5db; cursor: pointer; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
@@ -59,6 +77,13 @@
     .sched-vest-name { flex: 1; }
     .sched-vest-amt { font-size: 0.75rem; color: #d97706; white-space: nowrap; }
 
+    .sched-custom { font-size: 0.82rem; color: #c4b5fd; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
+    .sched-custom-label { flex: 1; }
+    .sched-custom-del { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 0.8rem; padding: 0 0.2rem; line-height: 1; opacity: 0; transition: opacity 0.1s; }
+    .sched-custom:hover { background: #1f2937; }
+    .sched-custom:hover .sched-custom-del { opacity: 1; }
+    .sched-custom-del:hover { color: #f87171; }
+
     /* ── Month / grid view ──────────────────────────────────────── */
     .cal { width: 100%; border-collapse: collapse; table-layout: fixed; }
     .cal th { text-align: center; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; padding: 0.5rem 0; border-bottom: 1px solid #374151; }
@@ -67,25 +92,29 @@
     .day-cell { height: 100%; padding: 0.4rem 0.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
     .day-num { font-size: 0.78rem; font-weight: 600; color: #6b7280; }
 
-    .cal td.has-games .day-num   { color: #d1d5db; }
-    .cal td.is-today .day-num    { color: #60a5fa; font-weight: 700; }
-    .cal td.other-month          { background: #0d1117; }
-    .cal td.other-month .day-num { color: #374151; }
-    .cal td.future .day-num      { color: #374151; }
+    .cal td.has-games .day-num    { color: #d1d5db; }
+    .cal td.is-today .day-num     { color: #60a5fa; font-weight: 700; }
+    .cal td.other-month           { background: #0d1117; }
+    .cal td.other-month .day-num  { color: #374151; }
+    .cal td.future .day-num       { color: #374151; }
 
-    .cal td.has-vesting .day-num { color: #d1d5db; }
+    .cal td.has-vesting .day-num  { color: #d1d5db; }
     .cal td.has-vesting:not(.has-games) { background: #1c1710; }
     .cal td.has-vesting:not(.has-games):hover { background: #25200f; }
+
+    .cal td.has-custom .day-num   { color: #d1d5db; }
+    .cal td.has-custom:not(.has-games):not(.has-vesting) { background: #13111e; }
 
     .cal td.has-games { background: #1a2535; cursor: pointer; }
     .cal td.has-games:hover { background: #1e3a5f; }
     .cal td.is-today { outline: 2px solid #3b82f6; outline-offset: -2px; }
 
-    .today-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #60a5fa; }
-    .game-pip    { font-size: 0.68rem; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
-    .vest-pip    { font-size: 0.68rem; color: #f59e0b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; cursor: pointer; }
+    .today-label  { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #60a5fa; }
+    .game-pip     { font-size: 0.68rem; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+    .vest-pip     { font-size: 0.68rem; color: #f59e0b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; cursor: pointer; }
     .vest-pip:hover  { color: #fbbf24; text-decoration: underline; }
-    .vest-count  { font-size: 0.68rem; color: #f59e0b; line-height: 1.3; }
+    .vest-count   { font-size: 0.68rem; color: #f59e0b; line-height: 1.3; }
+    .custom-pip   { font-size: 0.68rem; color: #a78bfa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 
     .loading { color: #6b7280; font-size: 0.875rem; }
   </style>
@@ -96,6 +125,7 @@
     <header>
       <h1>Calendar</h1>
       <div class="controls">
+        <button class="add-event-btn" id="add-event-btn" style="display:none">+ Add event</button>
         <div class="view-toggle">
           <button class="view-btn active" id="btn-sched">Schedule</button>
           <button class="view-btn"        id="btn-month">Month</button>
@@ -111,22 +141,24 @@
   </div>
 
   <script>
-    const CAL_DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-    const CAL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const CAL_DAYS    = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const CAL_MONTHS  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const TEAMS      = ["atl","bkn","bos","cha","chi","cle","dal","den","det","gsw","hou","ind","lac","lal","mem","mia","mil","min","nop","nyk","okc","orl","phi","phx","por","sac","sas","tor","uta","was"];
-    const SCHED_PAGE = 30; // game days loaded per "Load more"
+    const TEAMS       = ["atl","bkn","bos","cha","chi","cle","dal","den","det","gsw","hou","ind","lac","lal","mem","mia","mil","min","nop","nyk","okc","orl","phi","phx","por","sac","sas","tor","uta","was"];
+    const SCHED_PAGE  = 30;   // event days per "load more"
 
-    let gamesByDate   = {};    // "YYYY-MM-DD" → [{home_team, away_team, home_score, away_score, gametype}]
-    let vestingByDate = {};    // "YYYY-MM-DD" → [{slug, name, team, season, amount}]
-    let leagueToday   = null;  // "YYYY-MM-DD" — day after last recorded game
+    let gamesByDate         = {};   // "YYYY-MM-DD" → [{home_team, away_team, home_score, away_score, gametype}]
+    let vestingByDate       = {};   // "YYYY-MM-DD" → [{slug, name, team, season, amount}]
+    let customEventsByDate  = {};   // "YYYY-MM-DD" → [{id, date, label}]
+    let leagueToday         = null; // "YYYY-MM-DD"
+    let isBoD               = false;
+    let showAddForm         = false;
 
-    let viewMode      = 'schedule';
+    let viewMode   = 'schedule';
     let viewYear, viewMonth;
+    let shownPastIdx = 0;  // index into getPastEventDates()
 
-    // Schedule state
-    let pastDatesAll  = [];    // all game dates before leagueToday, oldest→newest
-    let shownPastIdx  = 0;     // show pastDatesAll[shownPastIdx..]
+    const storedToken = () => localStorage.getItem('nbn_token');
 
     // ── Helpers ────────────────────────────────────────────────────
 
@@ -162,10 +194,22 @@
       return `${CAL_DAYS[dt.getDay()]}, ${MONTHS_SHORT[dt.getMonth()]} ${dt.getDate()}`;
     }
 
-    function monthKey(dateStr) { return dateStr.slice(0, 7); }   // "YYYY-MM"
-    function fmtMonthLabel(ym) {
+    function monthKey(dateStr)  { return dateStr.slice(0, 7); }
+    function fmtMonthLabel(ym)  {
       const [y, m] = ym.split('-');
       return `${CAL_MONTHS[+m - 1]} ${y}`;
+    }
+
+    function getPastEventDates() {
+      const gameDates   = Object.keys(gamesByDate).filter(d => d < leagueToday);
+      const customDates = Object.keys(customEventsByDate).filter(d => d < leagueToday);
+      return [...new Set([...gameDates, ...customDates])].sort();
+    }
+
+    function getFutureEventDates() {
+      const vestDates   = Object.keys(vestingByDate).filter(d => d >= leagueToday);
+      const customDates = Object.keys(customEventsByDate).filter(d => d >= leagueToday);
+      return [...new Set([...vestDates, ...customDates])].sort();
     }
 
     // ── Data loading ──────────────────────────────────────────────
@@ -178,22 +222,18 @@
             .then(txt => ({ team: t.toUpperCase(), slugs: parseCsvSlugs(txt) }))
         ),
       ]);
-
       if (biosRaw.status !== 'fulfilled') return {};
       const bios = biosRaw.value;
-
       const slugTeam = {};
       rosterResults.forEach(res => {
         if (res.status !== 'fulfilled') return;
         const { team, slugs } = res.value;
         slugs.forEach(slug => { slugTeam[slug] = team; });
       });
-
       const byDate = {};
       Object.entries(bios).forEach(([slug, bio]) => {
         const name = fmtPlayerName(bio.name || slug);
         const team = slugTeam[slug] || null;
-
         const sched = bio.guarantee_schedule || {};
         Object.entries(sched).forEach(([season, steps]) => {
           if (!Array.isArray(steps)) return;
@@ -203,7 +243,6 @@
             byDate[step.date].push({ slug, name, team, season, amount: step.amount || null });
           });
         });
-
         const legacyDates = bio.guarantee_dates || {};
         Object.entries(legacyDates).forEach(([season, date]) => {
           if (!date) return;
@@ -214,17 +253,40 @@
           byDate[date].push({ slug, name, team, season, amount });
         });
       });
-
       return byDate;
+    }
+
+    function loadCustomEvents() {
+      return fetch('/api/calendar/events').then(r => r.json()).then(events => {
+        const byDate = {};
+        events.forEach(ev => {
+          if (!byDate[ev.date]) byDate[ev.date] = [];
+          byDate[ev.date].push(ev);
+        });
+        return byDate;
+      });
+    }
+
+    async function checkAuth() {
+      const token = storedToken();
+      if (!token) return false;
+      try {
+        const me = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        }).then(r => r.json());
+        return me.roles.includes('bod') || me.roles.includes('admin');
+      } catch { return false; }
     }
 
     // ── Init ──────────────────────────────────────────────────────
 
     async function init() {
       try {
-        const [gamesResult, vestResult] = await Promise.allSettled([
+        const [gamesResult, vestResult, customResult, bodResult] = await Promise.allSettled([
           fetch('/api/boxscores/games').then(r => r.json()),
           loadVestingEvents(),
+          loadCustomEvents(),
+          checkAuth(),
         ]);
 
         if (gamesResult.status === 'fulfilled') {
@@ -237,29 +299,31 @@
             const lastDt = new Date(dates[dates.length - 1] + 'T00:00:00');
             lastDt.setDate(lastDt.getDate() + 1);
             leagueToday = lastDt.toISOString().slice(0, 10);
-            viewYear  = lastDt.getFullYear();
-            viewMonth = lastDt.getMonth();
-            pastDatesAll = dates.filter(d => d < leagueToday);
+            viewYear    = lastDt.getFullYear();
+            viewMonth   = lastDt.getMonth();
           }
         }
-
-        if (vestResult.status === 'fulfilled') {
-          vestingByDate = vestResult.value;
-        }
+        if (vestResult.status === 'fulfilled')   vestingByDate      = vestResult.value;
+        if (customResult.status === 'fulfilled') customEventsByDate = customResult.value;
+        if (bodResult.status === 'fulfilled')    isBoD              = bodResult.value;
 
         if (!leagueToday) {
           const now = new Date();
           leagueToday = now.toISOString().slice(0, 10);
-          viewYear  = now.getFullYear();
-          viewMonth = now.getMonth();
+          viewYear    = now.getFullYear();
+          viewMonth   = now.getMonth();
         }
 
-        // Default: show only upcoming events; past loads on demand
-        shownPastIdx = pastDatesAll.length;
+        shownPastIdx = getPastEventDates().length; // default: no past shown
 
-        // Wire up view toggle
-        document.getElementById('btn-sched').onclick  = () => switchView('schedule');
-        document.getElementById('btn-month').onclick  = () => switchView('month');
+        if (isBoD) {
+          const btn = document.getElementById('add-event-btn');
+          btn.style.display = '';
+          btn.onclick = () => { showAddForm = !showAddForm; renderView(); };
+        }
+
+        document.getElementById('btn-sched').onclick = () => switchView('schedule');
+        document.getElementById('btn-month').onclick = () => switchView('month');
 
         renderView();
       } catch(e) {
@@ -270,6 +334,7 @@
 
     function switchView(mode) {
       viewMode = mode;
+      showAddForm = false;
       document.getElementById('btn-sched').classList.toggle('active', mode === 'schedule');
       document.getElementById('btn-month').classList.toggle('active', mode === 'month');
       document.getElementById('month-nav').style.display = mode === 'month' ? '' : 'none';
@@ -281,6 +346,88 @@
       else                         renderMonth();
     }
 
+    // ── Add event form ────────────────────────────────────────────
+
+    function makeAddEventForm() {
+      const form = document.createElement('div');
+      form.className = 'add-event-form';
+
+      const dateLbl = document.createElement('label');
+      dateLbl.textContent = 'Date';
+      const dateIn = document.createElement('input');
+      dateIn.type = 'date';
+      dateIn.required = true;
+
+      const labelLbl = document.createElement('label');
+      labelLbl.textContent = 'Label';
+      const labelIn = document.createElement('input');
+      labelIn.type = 'text';
+      labelIn.placeholder = 'e.g. Free Agency Opens';
+      labelIn.required = true;
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'form-save';
+      saveBtn.textContent = 'Save';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'form-cancel';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.onclick = () => { showAddForm = false; renderView(); };
+
+      const errEl = document.createElement('div');
+      errEl.className = 'form-err';
+
+      saveBtn.onclick = async () => {
+        const date  = dateIn.value.trim();
+        const label = labelIn.value.trim();
+        if (!date || !label) { errEl.textContent = 'Date and label are required.'; return; }
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+        errEl.textContent = '';
+        try {
+          const res = await fetch('/api/calendar/events', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${storedToken()}`,
+            },
+            body: JSON.stringify({ date, label }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP ${res.status}`);
+          }
+          const ev = await res.json();
+          if (!customEventsByDate[ev.date]) customEventsByDate[ev.date] = [];
+          customEventsByDate[ev.date].push(ev);
+          showAddForm = false;
+          renderView();
+        } catch(e) {
+          errEl.textContent = e.message;
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save';
+        }
+      };
+
+      form.append(dateLbl, dateIn, labelLbl, labelIn, saveBtn, cancelBtn, errEl);
+      return form;
+    }
+
+    async function deleteCustomEvent(id, date) {
+      try {
+        const res = await fetch(`/api/calendar/events/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${storedToken()}` },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        customEventsByDate[date] = (customEventsByDate[date] || []).filter(e => e.id !== id);
+        if (!customEventsByDate[date].length) delete customEventsByDate[date];
+        renderView();
+      } catch(e) {
+        alert(`Could not delete event: ${e.message}`);
+      }
+    }
+
     // ── Schedule view ─────────────────────────────────────────────
 
     function renderSchedule() {
@@ -288,17 +435,19 @@
       const wrap = document.createElement('div');
       wrap.className = 'schedule';
 
-      const shownPast   = pastDatesAll.slice(shownPastIdx);
-      const olderCount  = shownPastIdx;
-      const futureDates = Object.keys(vestingByDate).filter(d => d >= leagueToday).sort();
+      // Add event form (if open)
+      if (showAddForm) wrap.appendChild(makeAddEventForm());
 
-      // "Load past games" button
+      const allPast    = getPastEventDates();
+      const shownPast  = allPast.slice(shownPastIdx);
+      const olderCount = shownPastIdx;
+
+      // "Show past events" button
       if (olderCount > 0) {
         const btn = document.createElement('button');
         btn.className = 'load-more-btn';
-        const isFirst = shownPast.length === 0;
-        btn.textContent = isFirst
-          ? `Show past games`
+        btn.textContent = shownPast.length === 0
+          ? 'Show past events'
           : `↑ Load ${Math.min(olderCount, SCHED_PAGE)} more`;
         btn.onclick = () => {
           shownPastIdx = Math.max(0, shownPastIdx - SCHED_PAGE);
@@ -307,41 +456,36 @@
         wrap.appendChild(btn);
       }
 
-      // Past game days
+      // Past dates
       let lastMK = null;
       shownPast.forEach(date => {
         const mk = monthKey(date);
-        if (mk !== lastMK) {
-          wrap.appendChild(makeMonthHdr(mk));
-          lastMK = mk;
-        }
-        wrap.appendChild(makeSchedDay(date, gamesByDate[date] || null, null));
+        if (mk !== lastMK) { wrap.appendChild(makeMonthHdr(mk)); lastMK = mk; }
+        wrap.appendChild(makeSchedDay(date,
+          gamesByDate[date]         || null,
+          null,
+          customEventsByDate[date]  || null,
+        ));
       });
 
       // Today divider
-      const div = document.createElement('div');
-      div.className = 'today-divider';
-      const lbl = document.createElement('span');
-      lbl.textContent = 'Today';
-      div.appendChild(lbl);
-      wrap.appendChild(div);
+      const todayDiv = document.createElement('div');
+      todayDiv.className = 'today-divider';
+      const todayLbl = document.createElement('span');
+      todayLbl.textContent = 'Today';
+      todayDiv.appendChild(todayLbl);
+      wrap.appendChild(todayDiv);
 
-      // Future vesting dates
-      futureDates.forEach(date => {
+      // Future dates
+      getFutureEventDates().forEach(date => {
         const mk = monthKey(date);
-        if (mk !== lastMK) {
-          wrap.appendChild(makeMonthHdr(mk));
-          lastMK = mk;
-        }
-        wrap.appendChild(makeSchedDay(date, gamesByDate[date] || null, vestingByDate[date] || null));
+        if (mk !== lastMK) { wrap.appendChild(makeMonthHdr(mk)); lastMK = mk; }
+        wrap.appendChild(makeSchedDay(date,
+          gamesByDate[date]         || null,
+          vestingByDate[date]       || null,
+          customEventsByDate[date]  || null,
+        ));
       });
-
-      if (!shownPast.length && !futureDates.length) {
-        const empty = document.createElement('div');
-        empty.className = 'loading';
-        empty.textContent = 'No events to display.';
-        wrap.appendChild(empty);
-      }
 
       content.innerHTML = '';
       content.appendChild(wrap);
@@ -354,7 +498,7 @@
       return hdr;
     }
 
-    function makeSchedDay(dateStr, games, vesting) {
+    function makeSchedDay(dateStr, games, vesting, custom) {
       const day = document.createElement('div');
       day.className = 'sched-day';
 
@@ -366,6 +510,31 @@
       const evts = document.createElement('div');
       evts.className = 'sched-events';
 
+      // Custom events first (most prominent)
+      if (custom) {
+        custom.forEach(ev => {
+          const row = document.createElement('div');
+          row.className = 'sched-custom';
+
+          const lbl = document.createElement('span');
+          lbl.className = 'sched-custom-label';
+          lbl.textContent = `📅 ${ev.label}`;
+          row.appendChild(lbl);
+
+          if (isBoD) {
+            const del = document.createElement('button');
+            del.className = 'sched-custom-del';
+            del.textContent = '×';
+            del.title = 'Delete event';
+            del.onclick = e => { e.stopPropagation(); deleteCustomEvent(ev.id, ev.date); };
+            row.appendChild(del);
+          }
+
+          evts.appendChild(row);
+        });
+      }
+
+      // Games
       if (games) {
         games.forEach(g => {
           const row = document.createElement('div');
@@ -383,18 +552,17 @@
             score.textContent = `${g.away_score}–${g.home_score}`;
             row.appendChild(score);
           }
-
           if (g.gametype === 'PLAYOFF') {
             const badge = document.createElement('span');
             badge.className = 'sched-game-type';
             badge.textContent = 'PO';
             row.appendChild(badge);
           }
-
           evts.appendChild(row);
         });
       }
 
+      // Vesting events
       if (vesting) {
         vesting.forEach(ev => {
           const row = document.createElement('div');
@@ -445,28 +613,30 @@
 
       const prevLast = new Date(viewYear, viewMonth, 0).getDate();
       for (let i = 0; i < startOffset; i++) {
-        addMonthCell(row, null, prevLast - startOffset + 1 + i, ['other-month'], false, null, null);
+        addMonthCell(row, null, prevLast - startOffset + 1 + i, ['other-month'], false, null, null, null);
         cellCount++;
       }
 
       for (let d = 1; d <= lastDay.getDate(); d++) {
         if (cellCount && cellCount % 7 === 0) row = tbody.insertRow();
         const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const classes  = [];
-        const games    = gamesByDate[dateStr]   || null;
-        const vesting  = vestingByDate[dateStr] || null;
+        const classes = [];
+        const games   = gamesByDate[dateStr]          || null;
+        const vesting = vestingByDate[dateStr]        || null;
+        const custom  = customEventsByDate[dateStr]   || null;
         if (games)   classes.push('has-games');
         if (vesting) classes.push('has-vesting');
+        if (custom)  classes.push('has-custom');
         if (dateStr === leagueToday) classes.push('is-today');
-        else if (!games && !vesting && dateStr > leagueToday) classes.push('future');
-        addMonthCell(row, dateStr, d, classes, dateStr === leagueToday, games, vesting);
+        else if (!games && !vesting && !custom && dateStr > leagueToday) classes.push('future');
+        addMonthCell(row, dateStr, d, classes, dateStr === leagueToday, games, vesting, custom);
         cellCount++;
       }
 
       const trailing = (7 - (cellCount % 7)) % 7;
       for (let i = 1; i <= trailing; i++) {
         if (cellCount % 7 === 0) row = tbody.insertRow();
-        addMonthCell(row, null, i, ['other-month'], false, null, null);
+        addMonthCell(row, null, i, ['other-month'], false, null, null, null);
         cellCount++;
       }
 
@@ -475,7 +645,7 @@
       content.appendChild(table);
     }
 
-    function addMonthCell(row, dateStr, dayNum, classes, isToday, games, vesting) {
+    function addMonthCell(row, dateStr, dayNum, classes, isToday, games, vesting, custom) {
       const td = row.insertCell();
       td.className = classes.join(' ');
 
@@ -492,6 +662,16 @@
         lbl.className = 'today-label';
         lbl.textContent = 'Today';
         cell.appendChild(lbl);
+      }
+
+      if (custom) {
+        custom.forEach(ev => {
+          const pip = document.createElement('div');
+          pip.className = 'custom-pip';
+          pip.textContent = `📅 ${ev.label}`;
+          pip.title = ev.label;
+          cell.appendChild(pip);
+        });
       }
 
       if (games) {
