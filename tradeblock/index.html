@@ -90,6 +90,36 @@
     td.ovr-cell { font-weight: 700; text-align: right; }
     td.notes-cell { color: #9ca3af; font-size: 0.8rem; white-space: normal; min-width: 140px; max-width: 260px; }
 
+    /* Pick badge + notes tooltip */
+    .pick-badge-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .pick-badge-wrap::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 0;
+      top: calc(100% + 6px);
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #d1d5db;
+      font-size: 0.75rem;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s;
+      z-index: 20;
+    }
+    .pick-badge-wrap:hover::after { opacity: 1; }
+    .pick-note-dot { font-size: 0.55rem; color: #818cf8; line-height: 1; cursor: help; }
+
     td.cap-ufa        { background: hsl(45,  60%, 20%); color: hsl(45,  90%, 72%); }
     td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
     td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
@@ -551,7 +581,19 @@
               const badge = document.createElement('span');
               badge.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:0.15rem 0.5rem;border-radius:4px;background:#1e1b4b;color:#a5b4fc;';
               badge.textContent = row.player;
-              td.appendChild(badge);
+              if (row.notes) {
+                const wrap = document.createElement('span');
+                wrap.className = 'pick-badge-wrap';
+                wrap.dataset.tip = row.notes;
+                wrap.appendChild(badge);
+                const dot = document.createElement('span');
+                dot.className = 'pick-note-dot';
+                dot.textContent = '●';
+                wrap.appendChild(dot);
+                td.appendChild(wrap);
+              } else {
+                td.appendChild(badge);
+              }
             } else {
               const slug = rosterNameToSlug(row.player);
               if (slug) {
@@ -578,7 +620,12 @@
             const capType = (row.cap_holds || {})[col.key];
             if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
           } else {
-            td.textContent = row[col.key] || '—';
+            // For pick rows, notes are shown via the hover tooltip on the badge — suppress column
+            if (col.key === 'notes' && row.isPick) {
+              td.textContent = '—';
+            } else {
+              td.textContent = row[col.key] || '—';
+            }
           }
         });
       });
