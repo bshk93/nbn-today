@@ -283,8 +283,8 @@ document.title = `${abbr} — NBN`;
   tfoot tr.tfoot-divider td { border-top: 1px solid #374151; padding-top: 0.45rem; }
   tfoot tr.tfoot-total td { font-weight: 700; color: #d1d5db; }
   tfoot tr.tfoot-cap td { color: #6b7280; }
-  tfoot tr.tfoot-cap.over td.tfoot-diff { color: #ef4444; }
-  tfoot tr.tfoot-cap.under td.tfoot-diff { color: #22c55e; }
+  tfoot tr.tfoot-cap.over .tfoot-diff { color: #f87171; }
+  tfoot tr.tfoot-cap.under .tfoot-diff { color: #4ade80; }
   tfoot td.tfoot-label { color: #6b7280; }
   tfoot td.tfoot-count { color: #374151; font-size: 0.72rem; text-align: right; }
   .cap-edit-form {
@@ -363,6 +363,19 @@ document.title = `${abbr} — NBN`;
     z-index: 10; font-weight: normal;
   }
   .player-note:hover::after { opacity: 1; }
+
+  /* NON_GTD salary cell tooltip */
+  .sal-tip { position: relative; cursor: default; }
+  .sal-tip::after {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 5px); right: 0;
+    background: #1f2937; border: 1px solid #374151; color: #d1d5db;
+    padding: 0.35rem 0.65rem; border-radius: 5px; font-size: 0.75rem;
+    white-space: pre; min-width: 160px; text-align: left;
+    pointer-events: none; opacity: 0; transition: opacity 0.12s;
+    z-index: 20; font-weight: normal; line-height: 1.6;
+  }
+  .sal-tip:hover::after { opacity: 1; }
 `; document.head.appendChild(_s); }
 
 document.body.innerHTML = `
@@ -468,6 +481,33 @@ function formatSalary(v) {
   const n = parseFloat(digits);
   if (isNaN(n)) return s;
   return '$' + Math.round(n).toLocaleString('en-US');
+}
+
+function buildNonGtdTip(year, guaranteed, guarantee_dates, guarantee_schedule) {
+  function fmtDate(d) {
+    if (!d) return '';
+    const dt = new Date(d + 'T00:00:00');
+    return isNaN(dt) ? d : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  const sched    = (guarantee_schedule || {})[year];
+  const gtdAmt   = (guaranteed || {})[year];
+  const gtdDate  = (guarantee_dates || {})[year];
+  const lines = ['Non-Guaranteed'];
+  if (sched && sched.length) {
+    sched.forEach(step => {
+      if (!step.amount) {
+        lines.push('→ Fully guaranteed' + (step.date ? ' ' + fmtDate(step.date) : ' at signing'));
+      } else {
+        lines.push('→ ' + formatSalary(step.amount) + ' vests' + (step.date ? ' ' + fmtDate(step.date) : ' at signing'));
+      }
+    });
+  } else if (gtdAmt || gtdDate) {
+    if (gtdAmt)  lines.push('→ ' + formatSalary(gtdAmt) + ' guaranteed');
+    if (gtdDate) lines.push('→ Fully guaranteed ' + fmtDate(gtdDate));
+  } else {
+    lines.push('→ $0 guaranteed');
+  }
+  return lines.join('\n');
 }
 
 function displayNameFromBio(canonical) {
@@ -792,10 +832,13 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         _pos:       (bio.pos || []).join(' · ') || '—',
         _age:       calcAge(bio.dob),
         _type,
-        _cap_holds: bio.cap_holds || {},
-        _salaries:  bio.salaries || {},
-        _jersey:    bio.jersey_number ?? null,
-        _notes:     bio.notes || '',
+        _cap_holds:          bio.cap_holds || {},
+        _salaries:           bio.salaries || {},
+        _guaranteed:         bio.guaranteed || {},
+        _guarantee_dates:    bio.guarantee_dates || {},
+        _guarantee_schedule: bio.guarantee_schedule || {},
+        _jersey:             bio.jersey_number ?? null,
+        _notes:              bio.notes || '',
       };
     });
 
@@ -911,8 +954,17 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         }
       } else if (col.key.startsWith('_s_')) {
         const k = col.key.slice(3);
-        td.textContent = formatSalary(row[col.key]);
         const capType = capMap[k];
+        if (capType === 'NON_GTD' && row[col.key]) {
+          const tipText = buildNonGtdTip(k, row._guaranteed, row._guarantee_dates, row._guarantee_schedule);
+          const wrap = document.createElement('span');
+          wrap.className = 'sal-tip';
+          wrap.dataset.tip = tipText;
+          wrap.textContent = formatSalary(row[col.key]);
+          td.appendChild(wrap);
+        } else {
+          td.textContent = formatSalary(row[col.key]);
+        }
         if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
       } else {
         td.textContent = row[col.key] ?? '—';
@@ -1013,7 +1065,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
             const td = tfCell(tr, formatSalary(val), 'right');
             const diffSpan = document.createElement('span');
             diffSpan.className = 'tfoot-diff';
-            diffSpan.style.cssText = 'margin-left:0.4rem;font-size:0.7rem';
+            diffSpan.style.cssText = 'display:block;font-size:0.7rem;margin-top:0.1rem';
             diffSpan.textContent = over
               ? `+${formatSalary(diff)}`
               : `-${formatSalary(Math.abs(diff))}`;
