@@ -396,8 +396,9 @@
       "HOU","IND","LAC","LAL","MEM","MIA","MIL","MIN","NOP","NYK",
       "OKC","ORL","PHI","PHX","POR","SAC","SAS","TOR","UTA","WAS",
     ];
-    const STAT_COLS = ["MIN","PTS","REB","OR","DR","AST","STL","BLK","TO","PF","FGM","FGA","3PM","3PA","FTM","FTA"];
-    const STAT_KEYS = ["min","pts","reb","oreb","dreb","ast","stl","blk","tov","pf","fgm","fga","tpm","tpa","ftm","fta"];
+    const STAT_COLS = ["MIN","PTS","REB","AST","STL","BLK","TO","FGM","FGA","3PM","3PA","FTM","FTA","OR","FLS"];
+    const STAT_KEYS = ["min","pts","reb","ast","stl","blk","tov","fgm","fga","tpm","tpa","ftm","fta","oreb","pf"];
+    // DR (dreb) is not entered — computed as REB − OR at submit time
 
     // ── Populate team dropdowns ──────────────────────────────────
     const homeSelect = document.getElementById("home-team");
@@ -876,6 +877,8 @@
           obj[key] = parseInt(inputs[idx].value || "0", 10);
           return obj;
         }, {});
+        // Derive dreb = reb − oreb (never negative)
+        vals.dreb = Math.max(0, vals.reb - vals.oreb);
 
         rows.push({ player: playerName, slug, ...vals });
       });
