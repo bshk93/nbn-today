@@ -291,6 +291,12 @@
       <div class="card-header"><span class="card-icon">🏆</span><span class="card-title">Reveal Season Awards</span></div>
     </div>
     <div id="lo-reveal-awards-form" style="display:none;grid-column:1/-1;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
+
+    <div class="card" id="lo-discord-standings" style="display:none;cursor:pointer">
+      <div class="card-header"><span class="card-icon">📡</span><span class="card-title">Post Standings to Discord</span></div>
+      <span style="font-size:0.72rem;color:#6b7280">Announces to #stats-and-standings</span>
+    </div>
+    <div id="lo-discord-standings-form" style="display:none;grid-column:1/-1;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
   </main>
 
   <footer>
@@ -342,6 +348,7 @@
             document.getElementById('lo-label').style.display = '';
           }
           if (isAdmin) {
+            // ── Reveal Season Awards ──────────────────────────────────────
             const card = document.getElementById('lo-reveal-awards');
             const form = document.getElementById('lo-reveal-awards-form');
             card.style.display = '';
@@ -382,6 +389,86 @@
                 form.appendChild(row);
               });
               form.style.display = '';
+            });
+
+            // ── Post Standings to Discord ─────────────────────────────────
+            const DISCORD_SEASONS = ['25-26','24-25','23-24','22-23','21-22','20-21'];
+            const DISCORD_LABELS  = {
+              '25-26':'2025–26','24-25':'2024–25','23-24':'2023–24',
+              '22-23':'2022–23','21-22':'2021–22','20-21':'2020–21',
+            };
+
+            const discCard = document.getElementById('lo-discord-standings');
+            const discForm = document.getElementById('lo-discord-standings-form');
+            discCard.style.display = '';
+
+            discCard.addEventListener('click', () => {
+              if (discForm.style.display !== 'none') { discForm.style.display = 'none'; return; }
+
+              discForm.innerHTML = '';
+
+              // Header
+              const hdr = document.createElement('div');
+              hdr.style.cssText = 'color:#9ca3af;margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em';
+              hdr.textContent = 'Post Standings to Discord';
+              discForm.appendChild(hdr);
+
+              // Description
+              const desc = document.createElement('p');
+              desc.style.cssText = 'color:#6b7280;font-size:0.78rem;margin-bottom:0.9rem';
+              desc.textContent = 'Posts a formatted standings embed to the #stats-and-standings channel. Select the season to announce, then click Post.';
+              discForm.appendChild(desc);
+
+              // Controls row
+              const row = document.createElement('div');
+              row.style.cssText = 'display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap';
+
+              const seasonLbl = document.createElement('label');
+              seasonLbl.textContent = 'Season';
+              seasonLbl.style.cssText = 'font-size:0.78rem;color:#d1d5db;font-weight:600';
+
+              const select = document.createElement('select');
+              select.style.cssText = 'background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.65rem;font-size:0.82rem;outline:none;font-family:inherit;cursor:pointer';
+              DISCORD_SEASONS.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = DISCORD_LABELS[s] || s;
+                select.appendChild(opt);
+              });
+
+              const postBtn = document.createElement('button');
+              postBtn.textContent = '📡 Post to Discord';
+              postBtn.style.cssText = 'background:#5865f2;color:#fff;border:none;border-radius:5px;padding:0.3rem 0.9rem;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap';
+
+              const status = document.createElement('span');
+              status.style.cssText = 'font-size:0.78rem;color:#9ca3af';
+
+              postBtn.addEventListener('click', async () => {
+                postBtn.disabled = true;
+                postBtn.textContent = 'Posting…';
+                status.textContent = '';
+                status.style.color = '#9ca3af';
+                try {
+                  const res = await fetch(
+                    `/api/admin/discord/post-standings?season=${encodeURIComponent(select.value)}`,
+                    { method: 'POST', headers: { 'Authorization': `Bearer ${_loToken}` } },
+                  );
+                  const body = await res.json().catch(() => ({}));
+                  if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+                  status.style.color = '#34d399';
+                  status.textContent = `✓ Posted ${DISCORD_LABELS[select.value] || select.value} standings`;
+                } catch(e) {
+                  status.style.color = '#f87171';
+                  status.textContent = `✗ ${e.message}`;
+                } finally {
+                  postBtn.disabled = false;
+                  postBtn.textContent = '📡 Post to Discord';
+                }
+              });
+
+              row.append(seasonLbl, select, postBtn, status);
+              discForm.appendChild(row);
+              discForm.style.display = '';
             });
           }
         })
