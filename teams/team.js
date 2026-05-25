@@ -1633,11 +1633,6 @@ function rosterCellConfig(headers, biosData = {}) {
     const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
     const config = {
       SLUG: { type: 'player-picker', biosData, label: 'Player' },
-      TYPE: { type: 'select', options: [
-        { value: '',        label: 'Player'   },
-        { value: 'two-way', label: 'Two-Way'  },
-        { value: 'dead',    label: 'Dead Cap' },
-      ]},
     };
     salaryYears.forEach(yr => { config[yr] = { type: 'salary' }; });
     return config;
