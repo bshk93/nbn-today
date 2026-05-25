@@ -1804,6 +1804,7 @@ function renderValidationPanel(result, originalBody) {
   panel.appendChild(actions);
   panel.style.display = '';
   btn.disabled = false;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // ── Delete ─────────────────────────────────────────────────────────────────
