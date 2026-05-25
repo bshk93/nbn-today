@@ -264,25 +264,36 @@ function badgeHtml(status) {
   return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
 }
 
-function eligibleLabel(roles) {
-  if (!roles || roles.length === 0) return 'All GMs eligible to vote';
-  if (roles.length === 1 && roles[0] === 'bod') return 'BOD vote only';
-  return `Eligible: ${roles.join(', ')}`;
+function eligibleLabel(p) {
+  const roles = p.eligible_roles || [];
+  const positions = p.eligible_positions || [];
+  const parts = [];
+  if (roles.length === 1 && roles[0] === 'bod') parts.push('BOD only');
+  else if (roles.length > 0) parts.push(`Roles: ${roles.join(', ')}`);
+  if (positions.length > 0) {
+    const posLabels = { owner: 'Owners', gm: 'GMs', coach: 'Coaches' };
+    parts.push(positions.map(p => posLabels[p] || p).join(' + '));
+  }
+  if (parts.length === 0) return 'All GMs eligible to vote';
+  return parts.join(' or ') + ' eligible to vote';
 }
 
 function checkEligibility(p) {
   if (!me) return false;
   const myRoles = new Set(me.roles || []);
   if (myRoles.has('admin')) return true;
-  const eligible = p.eligible_roles || [];
-  if (eligible.length === 0) {
-    // All team members
+  const eligRoles = p.eligible_roles || [];
+  const eligPositions = p.eligible_positions || [];
+  if (!eligRoles.length && !eligPositions.length) {
     const TEAM_ROLES = new Set(['atl','bkn','bos','cha','chi','cle','dal','den','det','gsw',
       'hou','ind','lac','lal','mem','mia','mil','min','nop','nyk','okc','orl','phi','phx',
       'por','sac','sas','tor','uta','was']);
     return [...myRoles].some(r => TEAM_ROLES.has(r));
   }
-  return eligible.some(r => myRoles.has(r));
+  const roleMatch = eligRoles.length > 0 && eligRoles.some(r => myRoles.has(r));
+  const myPositions = new Set(me.positions || []);
+  const posMatch = eligPositions.length > 0 && eligPositions.some(pos => myPositions.has(pos));
+  return roleMatch || posMatch;
 }
 
 function render(p) {
@@ -334,14 +345,14 @@ function render(p) {
       btn.textContent = 'Open Voting';
       btn.onclick = doOpenVoting;
       bodActions.appendChild(btn);
-      bodNote.textContent = eligibleLabel(p.eligible_roles);
+      bodNote.textContent = eligibleLabel(p);
     } else if (p.status === 'voting') {
       const btn = document.createElement('button');
       btn.className = 'btn-secondary';
       btn.textContent = 'Close Voting';
       btn.onclick = doCloseVoting;
       bodActions.appendChild(btn);
-      bodNote.textContent = `${p.vote_count || 0} vote${p.vote_count !== 1 ? 's' : ''} cast so far. ${eligibleLabel(p.eligible_roles)}`;
+      bodNote.textContent = `${p.vote_count || 0} vote${p.vote_count !== 1 ? 's' : ''} cast so far. ${eligibleLabel(p)}`;
     } else if (p.status === 'closed') {
       bodNote.textContent = 'Voting is closed.';
     }
@@ -371,7 +382,7 @@ function renderVotePanel(p) {
       return;
     }
     if (!isEligibleVoter) {
-      content.innerHTML = `<div class="not-eligible">You are not eligible to vote on this proposal.<br><span style="font-size:0.75rem;color:#374151;">${eligibleLabel(p.eligible_roles)}</span></div>`;
+      content.innerHTML = `<div class="not-eligible">You are not eligible to vote on this proposal.<br><span style="font-size:0.75rem;color:#374151;">${eligibleLabel(p)}</span></div>`;
       return;
     }
 

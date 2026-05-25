@@ -174,6 +174,9 @@
       <div class="roles-row" id="roles-row">
         <button type="button" class="role-chip active" data-value="all_gms" onclick="setVoters(this)">All GMs</button>
         <button type="button" class="role-chip" data-value="bod" onclick="setVoters(this)">BOD only</button>
+        <button type="button" class="role-chip" data-value="pos:owner" onclick="setVoters(this)">Owners</button>
+        <button type="button" class="role-chip" data-value="pos:gm" onclick="setVoters(this)">GMs</button>
+        <button type="button" class="role-chip" data-value="pos:coach" onclick="setVoters(this)">Coaches</button>
       </div>
       <div class="roles-hint" id="roles-hint">Any member with a team role can vote.</div>
     </div>
@@ -203,16 +206,25 @@ const params = new URLSearchParams(location.search);
 
 function getToken() { return localStorage.getItem('nbn_token'); }
 
+const VOTER_HINTS = {
+  all_gms:    'Any member with a team role can vote.',
+  bod:        'Only BOD members can vote.',
+  'pos:owner': 'Only members with an active Owner position can vote.',
+  'pos:gm':    'Only members with an active GM position can vote.',
+  'pos:coach': 'Only members with an active Coach position can vote.',
+};
+
 function setVoters(btn) {
   document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
   selectedVoters = btn.dataset.value;
-  document.getElementById('roles-hint').textContent =
-    selectedVoters === 'bod' ? 'Only BOD members can vote.' : 'Any member with a team role can vote.';
+  document.getElementById('roles-hint').textContent = VOTER_HINTS[selectedVoters] || '';
 }
 
 function eligibleRolesPayload() {
-  return selectedVoters === 'bod' ? ['bod'] : [];
+  if (selectedVoters === 'bod')        return { eligible_roles: ['bod'], eligible_positions: [] };
+  if (selectedVoters.startsWith('pos:')) return { eligible_roles: [], eligible_positions: [selectedVoters.slice(4)] };
+  return { eligible_roles: [], eligible_positions: [] }; // all_gms default
 }
 
 function setStatus(msg, cls) {
@@ -270,10 +282,12 @@ async function loadExisting(id) {
     if (editor) editor.value(p.body || '');
     // Restore voter selection
     const roles = p.eligible_roles || [];
-    if (roles.length === 1 && roles[0] === 'bod') {
-      const bodChip = document.querySelector('[data-value="bod"]');
-      setVoters(bodChip);
-    }
+    const positions = p.eligible_positions || [];
+    let chipValue = 'all_gms';
+    if (roles.length === 1 && roles[0] === 'bod') chipValue = 'bod';
+    else if (positions.length === 1) chipValue = `pos:${positions[0]}`;
+    const chip = document.querySelector(`[data-value="${chipValue}"]`);
+    if (chip) setVoters(chip);
     // Show/hide elements based on status
     isSubmitted = p.status !== 'draft';
     if (isSubmitted) {
@@ -304,7 +318,7 @@ async function doSave() {
       const res = await fetch(`${API}/proposals/${proposalId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title, body, eligible_roles: eligibleRolesPayload() }),
+        body: JSON.stringify({ title, body, ...eligibleRolesPayload() }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Save failed'); }
       setStatus('Saved.', 'ok');
@@ -313,7 +327,7 @@ async function doSave() {
       const res = await fetch(`${API}/proposals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title, body, eligible_roles: eligibleRolesPayload() }),
+        body: JSON.stringify({ title, body, ...eligibleRolesPayload() }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Create failed'); }
       const p = await res.json();
