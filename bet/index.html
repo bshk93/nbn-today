@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bets — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem; }
+    .page { max-width: 700px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; text-decoration: none; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; gap: 1rem; flex-wrap: wrap; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    .header-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+    .balance-chip { font-size: 0.82rem; font-weight: 700; color: #fbbf24; background: #1c1710; border: 1px solid #78350f; border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
+
+    .new-bet-btn { background: none; border: 1px solid #4b5563; color: #34d399; border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+    .new-bet-btn:hover { border-color: #34d399; background: #0a1f15; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 2px; background: #1f2937; border-radius: 8px; padding: 3px; margin-bottom: 1.5rem; width: fit-content; }
+    .tab-btn { background: none; border: none; color: #9ca3af; padding: 0.35rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 500; white-space: nowrap; }
+    .tab-btn.active { background: #374151; color: #f3f4f6; }
+    .tab-btn:hover:not(.active) { color: #d1d5db; }
+
+    /* New bet form */
+    .new-bet-form { background: #0a1f15; border: 1px solid #065f46; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .new-bet-form label { font-size: 0.78rem; color: #6ee7b7; font-weight: 600; }
+    .new-bet-form input[type="text"], .new-bet-form textarea {
+      background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 5px;
+      padding: 0.35rem 0.65rem; font-size: 0.85rem; outline: none; width: 100%; font-family: inherit;
+    }
+    .new-bet-form input:focus, .new-bet-form textarea:focus { border-color: #10b981; }
+    .new-bet-form textarea { resize: vertical; min-height: 48px; }
+    .opt-row { display: flex; gap: 0.4rem; align-items: center; }
+    .opt-row input { flex: 1; }
+    .opt-del { background: none; border: none; color: #374151; cursor: pointer; font-size: 1.1rem; padding: 0 0.2rem; }
+    .opt-del:hover { color: #f87171; }
+    .add-opt-btn { background: none; border: 1px dashed #374151; color: #6b7280; border-radius: 5px; padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; width: fit-content; }
+    .add-opt-btn:hover { border-color: #6b7280; color: #9ca3af; }
+    .form-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .form-submit { background: #059669; border: none; color: #fff; border-radius: 5px; padding: 0.3rem 0.85rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .form-submit:hover { background: #047857; }
+    .form-submit:disabled { opacity: 0.5; cursor: default; }
+    .form-cancel-btn { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.5rem; }
+    .form-cancel-btn:hover { color: #9ca3af; }
+    .form-err { font-size: 0.75rem; color: #f87171; }
+
+    /* Bet card */
+    .bet-card { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .bet-card.closed { background: #171f2a; border-color: #2d3748; }
+    .bet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
+    .bet-title { font-size: 1rem; font-weight: 700; color: #f3f4f6; }
+    .bet-status-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 4px; padding: 0.15rem 0.45rem; white-space: nowrap; flex-shrink: 0; }
+    .badge-open   { background: #064e3b; color: #34d399; }
+    .badge-closed { background: #1f2937; color: #6b7280; border: 1px solid #374151; }
+    .badge-voided { background: #292008; color: #f59e0b; }
+    .bet-meta { font-size: 0.72rem; color: #6b7280; margin-bottom: 0.75rem; }
+    .bet-desc { font-size: 0.82rem; color: #9ca3af; margin-bottom: 0.75rem; }
+    .pool-total { font-size: 0.75rem; color: #6b7280; margin: 0.5rem 0 0.9rem; }
+    .pool-total .nby { color: #fbbf24; }
+
+    /* Option bars */
+    .options-list { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem; }
+    .opt-bar-row { display: flex; align-items: center; gap: 0.5rem; }
+    .opt-label { font-size: 0.8rem; color: #d1d5db; min-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .opt-label.winner { color: #fbbf24; font-weight: 700; }
+    .opt-label.my-pick::after { content: ' ✓'; color: #60a5fa; font-size: 0.7rem; }
+    .bar-wrap { flex: 1; height: 8px; background: #374151; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; background: #3b82f6; transition: width 0.3s; }
+    .bar-fill.winner { background: #f59e0b; }
+    .bar-fill.zero   { background: #374151; }
+    .opt-pct  { font-size: 0.72rem; color: #9ca3af; min-width: 36px; text-align: right; }
+    .opt-amt  { font-size: 0.72rem; color: #fbbf24; min-width: 60px; text-align: right; }
+    .opt-winner-badge { font-size: 0.6rem; font-weight: 700; color: #fbbf24; background: #292008; border-radius: 3px; padding: 0.1rem 0.3rem; }
+
+    /* My current bet info */
+    .my-bet-info { font-size: 0.78rem; color: #93c5fd; background: #0c1929; border: 1px solid #1d4ed8; border-radius: 6px; padding: 0.4rem 0.75rem; margin: 0.75rem 0 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .my-bet-info .nby { color: #fbbf24; font-weight: 700; }
+
+    /* Wager form */
+    .wager-form { margin-top: 0.75rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .wager-form input[type="number"] {
+      background: #111827; border: 1px solid #374151; color: #fbbf24; border-radius: 5px;
+      padding: 0.3rem 0.6rem; font-size: 0.85rem; outline: none; width: 100px; font-family: inherit;
+    }
+    .wager-form input[type="number"]:focus { border-color: #f59e0b; }
+    .wager-form select {
+      background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 5px;
+      padding: 0.3rem 0.6rem; font-size: 0.82rem; outline: none; font-family: inherit; cursor: pointer;
+    }
+    .wager-form select:focus { border-color: #3b82f6; }
+    .wager-form .place-btn { background: #1d4ed8; border: none; color: #fff; border-radius: 5px; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .wager-form .place-btn:hover { background: #1e40af; }
+    .wager-form .place-btn:disabled { opacity: 0.5; cursor: default; }
+    .wager-avail { font-size: 0.72rem; color: #6b7280; }
+    .wager-avail .nby { color: #fbbf24; }
+    .wager-err { font-size: 0.73rem; color: #f87171; width: 100%; }
+
+    /* Close bet (bets role) */
+    .close-bet-section { margin-top: 0.75rem; border-top: 1px solid #374151; padding-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .close-toggle { background: none; border: 1px solid #4b5563; color: #9ca3af; border-radius: 5px; padding: 0.25rem 0.65rem; cursor: pointer; font-size: 0.78rem; }
+    .close-toggle:hover { border-color: #f87171; color: #f87171; }
+    .close-form { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .close-form select { background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 5px; padding: 0.3rem 0.6rem; font-size: 0.82rem; outline: none; font-family: inherit; }
+    .close-confirm { background: #dc2626; border: none; color: #fff; border-radius: 5px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .close-confirm:hover { background: #b91c1c; }
+    .close-confirm:disabled { opacity: 0.5; cursor: default; }
+    .delete-btn { background: none; border: none; color: #374151; cursor: pointer; font-size: 0.78rem; padding: 0.25rem 0.5rem; margin-left: auto; }
+    .delete-btn:hover { color: #f87171; }
+
+    /* Payout info (closed bets) */
+    .payout-section { margin-top: 0.75rem; border-top: 1px solid #2d3748; padding-top: 0.75rem; font-size: 0.78rem; }
+    .payout-hdr { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #4b5563; margin-bottom: 0.4rem; }
+    .payout-row { display: flex; justify-content: space-between; padding: 0.15rem 0; color: #9ca3af; }
+    .payout-row .payout-winner { color: #fbbf24; font-weight: 600; }
+    .payout-row .payout-profit { font-size: 0.72rem; color: #34d399; }
+    .voided-notice { color: #f59e0b; font-size: 0.78rem; font-weight: 600; margin-top: 0.5rem; }
+
+    /* Balances leaderboard */
+    .balances-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .balances-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; padding: 0 0.5rem 0.5rem; border-bottom: 1px solid #374151; }
+    .balances-table th.num { text-align: right; }
+    .balances-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid #1f2937; color: #d1d5db; }
+    .balances-table td.num { text-align: right; }
+    .balances-table tr:last-child td { border-bottom: none; }
+    .balances-table tr.me td { color: #f3f4f6; background: #1a2535; }
+    .rank-cell { color: #6b7280; font-size: 0.8rem; }
+    .name-cell { font-weight: 500; }
+    .bal-cell  { color: #fbbf24; font-weight: 700; }
+    .pl-pos    { color: #34d399; }
+    .pl-neg    { color: #f87171; }
+    .pl-zero   { color: #6b7280; }
+
+    .empty-state { color: #6b7280; font-size: 0.875rem; padding: 2rem 0; text-align: center; }
+    .loading { color: #6b7280; font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"><a href="/">← Home</a></nav>
+    <header>
+      <h1>🎲 NBN Bets</h1>
+      <div class="header-right">
+        <span class="balance-chip" id="balance-chip" style="display:none"></span>
+        <button class="new-bet-btn" id="new-bet-btn" style="display:none">+ New Bet</button>
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-open">Open</button>
+      <button class="tab-btn"        id="tab-closed">Closed</button>
+      <button class="tab-btn"        id="tab-balances">Balances</button>
+    </div>
+
+    <div id="new-bet-form-wrap" style="display:none"></div>
+    <div id="content"><span class="loading">Loading…</span></div>
+  </div>
+
+  <script>
+    const TOKEN = localStorage.getItem('nbn_token');
+    let currentUser  = null;   // {name, roles}
+    let allBets      = [];
+    let balancesList = [];
+    let currentTab   = 'open';
+    let showNewForm  = false;
+
+    const nby = (n, decimals = 2) => {
+      const v = Number(n);
+      if (isNaN(v)) return 'NB¥0';
+      const str = Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: decimals });
+      return `NB¥${str}`;
+    };
+
+    const fmtDate = iso => {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    // ── Data ─────────────────────────────────────────────────────────────────
+
+    async function loadData() {
+      const [betsRes, balsRes] = await Promise.allSettled([
+        fetch('/api/bets').then(r => r.json()),
+        fetch('/api/bets/balances').then(r => r.json()),
+      ]);
+      if (betsRes.status === 'fulfilled') allBets      = betsRes.value;
+      if (balsRes.status === 'fulfilled') balancesList = balsRes.value;
+    }
+
+    async function checkAuth() {
+      if (!TOKEN) return;
+      try {
+        const me = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${TOKEN}` } }).then(r => r.ok ? r.json() : null);
+        if (!me) return;
+        currentUser = { name: me.name || me.username, roles: me.roles || [] };
+      } catch {}
+    }
+
+    function myBalance() {
+      if (!currentUser) return null;
+      const row = balancesList.find(b => b.name === currentUser.name);
+      return row ? row.balance : 1000;
+    }
+
+    function isBetsRole() {
+      return currentUser && (currentUser.roles.includes('bets') || currentUser.roles.includes('admin'));
+    }
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+
+    async function init() {
+      await Promise.all([loadData(), checkAuth()]);
+
+      if (currentUser) {
+        const chip = document.getElementById('balance-chip');
+        chip.textContent = nby(myBalance());
+        chip.style.display = '';
+      }
+
+      if (isBetsRole()) {
+        const btn = document.getElementById('new-bet-btn');
+        btn.style.display = '';
+        btn.onclick = () => { showNewForm = !showNewForm; renderNewBetForm(); };
+      }
+
+      document.getElementById('tab-open').onclick     = () => switchTab('open');
+      document.getElementById('tab-closed').onclick   = () => switchTab('closed');
+      document.getElementById('tab-balances').onclick = () => switchTab('balances');
+
+      renderView();
+    }
+
+    function switchTab(t) {
+      currentTab  = t;
+      showNewForm = false;
+      renderNewBetForm();
+      ['open','closed','balances'].forEach(id => {
+        document.getElementById(`tab-${id}`).classList.toggle('active', id === t);
+      });
+      renderView();
+    }
+
+    function renderView() {
+      if (currentTab === 'open')     renderOpenBets();
+      else if (currentTab === 'closed')   renderClosedBets();
+      else                                renderBalances();
+    }
+
+    // ── New Bet Form ──────────────────────────────────────────────────────────
+
+    function renderNewBetForm() {
+      const wrap = document.getElementById('new-bet-form-wrap');
+      if (!showNewForm) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+
+      const form = document.createElement('div');
+      form.className = 'new-bet-form';
+
+      const addField = (labelText, el) => {
+        const lbl = document.createElement('label');
+        lbl.textContent = labelText;
+        form.appendChild(lbl);
+        form.appendChild(el);
+      };
+
+      const titleIn = document.createElement('input');
+      titleIn.type = 'text';
+      titleIn.placeholder = 'e.g. Who wins the Western Conference?';
+      addField('Title *', titleIn);
+
+      const descIn = document.createElement('textarea');
+      descIn.placeholder = 'Description (optional)';
+      addField('Description', descIn);
+
+      const optsLbl = document.createElement('label');
+      optsLbl.textContent = 'Options *';
+      form.appendChild(optsLbl);
+
+      const optsWrap = document.createElement('div');
+      optsWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.3rem';
+      form.appendChild(optsWrap);
+      const optInputs = [];
+
+      function addOptRow(val = '') {
+        const row = document.createElement('div');
+        row.className = 'opt-row';
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.value = val;
+        inp.placeholder = `Option ${optInputs.length + 1}`;
+        const del = document.createElement('button');
+        del.className = 'opt-del';
+        del.textContent = '×';
+        del.onclick = () => {
+          if (optInputs.length <= 2) return;
+          const idx = optInputs.indexOf(inp);
+          if (idx !== -1) optInputs.splice(idx, 1);
+          row.remove();
+        };
+        optInputs.push(inp);
+        row.append(inp, del);
+        optsWrap.appendChild(row);
+      }
+      addOptRow('');
+      addOptRow('');
+
+      const addOptBtn = document.createElement('button');
+      addOptBtn.className = 'add-opt-btn';
+      addOptBtn.textContent = '＋ Add option';
+      addOptBtn.onclick = () => addOptRow('');
+      form.appendChild(addOptBtn);
+
+      const actions = document.createElement('div');
+      actions.className = 'form-actions';
+      const submitBtn = document.createElement('button');
+      submitBtn.className = 'form-submit';
+      submitBtn.textContent = 'Create Bet';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'form-cancel-btn';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.onclick = () => { showNewForm = false; renderNewBetForm(); };
+      const errEl = document.createElement('div');
+      errEl.className = 'form-err';
+
+      submitBtn.onclick = async () => {
+        const title = titleIn.value.trim();
+        const opts  = optInputs.map(i => i.value.trim()).filter(Boolean);
+        if (!title)       { errEl.textContent = 'Title is required.'; return; }
+        if (opts.length < 2) { errEl.textContent = 'At least 2 options required.'; return; }
+        submitBtn.disabled = true; submitBtn.textContent = 'Creating…';
+        errEl.textContent = '';
+        try {
+          const res = await fetch('/api/bets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+            body: JSON.stringify({ title, description: descIn.value.trim(), options: opts.map(l => ({ label: l })) }),
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+          allBets.unshift(body);
+          showNewForm = false;
+          renderNewBetForm();
+          currentTab = 'open';
+          ['open','closed','balances'].forEach(id => document.getElementById(`tab-${id}`).classList.toggle('active', id === 'open'));
+          renderView();
+        } catch(e) {
+          errEl.textContent = e.message;
+          submitBtn.disabled = false; submitBtn.textContent = 'Create Bet';
+        }
+      };
+
+      actions.append(submitBtn, cancelBtn, errEl);
+      form.appendChild(actions);
+      wrap.innerHTML = '';
+      wrap.appendChild(form);
+      wrap.style.display = '';
+    }
+
+    // ── Open Bets ─────────────────────────────────────────────────────────────
+
+    function renderOpenBets() {
+      const content = document.getElementById('content');
+      const open = allBets.filter(b => b.status === 'open');
+      if (!open.length) {
+        content.innerHTML = '<div class="empty-state">No open bets right now.</div>';
+        return;
+      }
+      content.innerHTML = '';
+      open.forEach(bet => content.appendChild(makeBetCard(bet)));
+    }
+
+    // ── Closed Bets ───────────────────────────────────────────────────────────
+
+    function renderClosedBets() {
+      const content = document.getElementById('content');
+      const closed = allBets.filter(b => b.status === 'closed');
+      if (!closed.length) {
+        content.innerHTML = '<div class="empty-state">No closed bets yet.</div>';
+        return;
+      }
+      content.innerHTML = '';
+      // Most recent first
+      [...closed].reverse().forEach(bet => content.appendChild(makeBetCard(bet)));
+    }
+
+    // ── Balances ─────────────────────────────────────────────────────────────
+
+    function renderBalances() {
+      const content = document.getElementById('content');
+      if (!balancesList.length) {
+        content.innerHTML = '<div class="empty-state">No balance data yet.</div>';
+        return;
+      }
+      const table = document.createElement('table');
+      table.className = 'balances-table';
+      const thead = table.createTHead();
+      const hrow  = thead.insertRow();
+      ['#', 'Member', 'NB¥ Balance', 'P/L'].forEach((h, i) => {
+        const th = document.createElement('th');
+        th.textContent = h;
+        if (i >= 2) th.className = 'num';
+        hrow.appendChild(th);
+      });
+      const tbody = table.createTBody();
+      balancesList.forEach((row, idx) => {
+        const tr = tbody.insertRow();
+        if (currentUser && row.name === currentUser.name) tr.className = 'me';
+        const pl = row.balance - 1000;
+        const plClass = pl > 0 ? 'pl-pos' : pl < 0 ? 'pl-neg' : 'pl-zero';
+        const plSign  = pl >= 0 ? '+' : '';
+
+        const rankTd = tr.insertCell(); rankTd.className = 'rank-cell'; rankTd.style.textAlign = 'right'; rankTd.textContent = idx + 1;
+        const nameTd = tr.insertCell(); nameTd.className = 'name-cell'; nameTd.textContent = row.name;
+        if (currentUser && row.name === currentUser.name) {
+          const you = document.createElement('span');
+          you.style.cssText = 'font-size:0.68rem;color:#6b7280;margin-left:0.4rem';
+          you.textContent = '(you)';
+          nameTd.appendChild(you);
+        }
+        const balTd = tr.insertCell(); balTd.className = 'bal-cell'; balTd.style.textAlign = 'right'; balTd.textContent = nby(row.balance);
+        const plTd  = tr.insertCell(); plTd.className  = plClass;    plTd.style.textAlign  = 'right'; plTd.textContent  = `${plSign}${nby(pl)}`;
+      });
+
+      content.innerHTML = '';
+      content.appendChild(table);
+    }
+
+    // ── Bet Card ──────────────────────────────────────────────────────────────
+
+    function makeBetCard(bet) {
+      const isOpen   = bet.status === 'open';
+      const isClosed = bet.status === 'closed';
+      const voided   = bet.resolution?.voided;
+      const myWager  = currentUser ? bet.wagers?.[currentUser.name] : null;
+      const optMap   = Object.fromEntries(bet.options.map(o => [o.id, o.label]));
+      const totals   = bet.option_totals || {};
+      const pool     = bet.total_pool || 0;
+
+      const card = document.createElement('div');
+      card.className = `bet-card${isClosed ? ' closed' : ''}`;
+
+      // Header
+      const hdr = document.createElement('div');
+      hdr.className = 'bet-header';
+      const title = document.createElement('div');
+      title.className = 'bet-title';
+      title.textContent = bet.title;
+      const badge = document.createElement('span');
+      badge.className = `bet-status-badge ${voided ? 'badge-voided' : isOpen ? 'badge-open' : 'badge-closed'}`;
+      badge.textContent = voided ? 'Voided' : isOpen ? 'Open' : 'Closed';
+      hdr.append(title, badge);
+      card.appendChild(hdr);
+
+      // Meta
+      const meta = document.createElement('div');
+      meta.className = 'bet-meta';
+      meta.textContent = `Created by ${bet.created_by} · ${fmtDate(bet.created_at)}`;
+      if (isClosed && bet.closed_at) meta.textContent += ` · Closed ${fmtDate(bet.closed_at)}`;
+      card.appendChild(meta);
+
+      if (bet.description) {
+        const desc = document.createElement('div');
+        desc.className = 'bet-desc';
+        desc.textContent = bet.description;
+        card.appendChild(desc);
+      }
+
+      // Options bars
+      const optsList = document.createElement('div');
+      optsList.className = 'options-list';
+      bet.options.forEach(opt => {
+        const amt     = totals[opt.id] || 0;
+        const pct     = pool > 0 ? (amt / pool * 100) : 0;
+        const isWin   = isClosed && bet.winning_option_id === opt.id;
+        const isMyPick = myWager && myWager.option_id === opt.id;
+
+        const row = document.createElement('div');
+        row.className = 'opt-bar-row';
+
+        const lbl = document.createElement('span');
+        lbl.className = `opt-label${isWin ? ' winner' : ''}${isMyPick ? ' my-pick' : ''}`;
+        lbl.textContent = opt.label;
+        lbl.title = opt.label;
+
+        const barWrap = document.createElement('div');
+        barWrap.className = 'bar-wrap';
+        const barFill = document.createElement('div');
+        barFill.className = `bar-fill${isWin ? ' winner' : amt === 0 ? ' zero' : ''}`;
+        barFill.style.width = `${pct}%`;
+        barWrap.appendChild(barFill);
+
+        const pctEl = document.createElement('span');
+        pctEl.className = 'opt-pct';
+        pctEl.textContent = pool > 0 ? `${pct.toFixed(1)}%` : '—';
+
+        const amtEl = document.createElement('span');
+        amtEl.className = 'opt-amt';
+        amtEl.textContent = nby(amt);
+
+        row.append(lbl, barWrap, pctEl, amtEl);
+
+        if (isWin) {
+          const winBadge = document.createElement('span');
+          winBadge.className = 'opt-winner-badge';
+          winBadge.textContent = '🏆 WIN';
+          row.appendChild(winBadge);
+        }
+
+        optsList.appendChild(row);
+      });
+      card.appendChild(optsList);
+
+      // Pool total
+      const poolEl = document.createElement('div');
+      poolEl.className = 'pool-total';
+      poolEl.innerHTML = `Total pool: <span class="nby">${nby(pool)}</span>`;
+      card.appendChild(poolEl);
+
+      // My current bet
+      if (myWager) {
+        const myInfo = document.createElement('div');
+        myInfo.className = 'my-bet-info';
+        myInfo.innerHTML = `Your bet: <span class="nby">${nby(myWager.amount)}</span> on <strong>${optMap[myWager.option_id] || myWager.option_id}</strong>`;
+        card.appendChild(myInfo);
+      }
+
+      // Wager form (open bets, logged in)
+      if (isOpen && currentUser) {
+        const wagerSection = makeWagerForm(bet, myWager, optMap, pool);
+        card.appendChild(wagerSection);
+      }
+
+      // Close bet controls (open bets, bets role)
+      if (isOpen && isBetsRole()) {
+        const closeSec = makeCloseSection(bet, optMap);
+        card.appendChild(closeSec);
+      }
+
+      // Payout section (closed bets)
+      if (isClosed && bet.resolution) {
+        card.appendChild(makePayoutSection(bet, optMap));
+      }
+
+      // Delete button (open bets, bets role, no wagers OR admin)
+      if (isOpen && isBetsRole()) {
+        const noWagers = !bet.wagers || Object.keys(bet.wagers).length === 0;
+        const isAdmin  = currentUser?.roles?.includes('admin');
+        if (noWagers || isAdmin) {
+          const delBtn = document.createElement('button');
+          delBtn.className = 'delete-btn';
+          delBtn.textContent = '✕ Delete bet';
+          delBtn.style.cssText = 'display:block;margin-top:0.5rem;font-size:0.72rem;color:#4b5563;background:none;border:none;cursor:pointer;padding:0';
+          delBtn.onclick = async () => {
+            if (!confirm(`Delete "${bet.title}"?`)) return;
+            const res = await fetch(`/api/bets/${bet.id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${TOKEN}` },
+            });
+            if (res.ok) {
+              allBets = allBets.filter(b => b.id !== bet.id);
+              renderView();
+            } else {
+              const err = await res.json().catch(() => ({}));
+              alert(err.detail || 'Delete failed');
+            }
+          };
+          card.appendChild(delBtn);
+        }
+      }
+
+      return card;
+    }
+
+    function makeWagerForm(bet, myWager, optMap, pool) {
+      const wrap = document.createElement('div');
+      const locked = !!myWager; // already bet on a specific option
+
+      const form = document.createElement('div');
+      form.className = 'wager-form';
+
+      const amtIn = document.createElement('input');
+      amtIn.type = 'number';
+      amtIn.min = '1';
+      amtIn.step = '1';
+      amtIn.placeholder = 'NB¥';
+
+      let chosenOptionId = myWager?.option_id || bet.options[0]?.id;
+
+      let selectEl = null;
+      if (locked) {
+        // Locked — show which option you're adding to
+        const lockLabel = document.createElement('span');
+        lockLabel.style.cssText = 'font-size:0.78rem;color:#9ca3af';
+        lockLabel.innerHTML = `on <strong style="color:#d1d5db">${optMap[myWager.option_id]}</strong> (add more)`;
+        form.append(amtIn, lockLabel);
+      } else {
+        selectEl = document.createElement('select');
+        bet.options.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt.id;
+          o.textContent = opt.label;
+          selectEl.appendChild(o);
+        });
+        selectEl.value = chosenOptionId;
+        selectEl.onchange = () => { chosenOptionId = selectEl.value; };
+        const onLbl = document.createElement('span');
+        onLbl.style.cssText = 'font-size:0.78rem;color:#6b7280';
+        onLbl.textContent = 'on';
+        form.append(amtIn, onLbl, selectEl);
+      }
+
+      const placeBtn = document.createElement('button');
+      placeBtn.className = 'place-btn';
+      placeBtn.textContent = locked ? 'Add More' : 'Place Bet';
+      form.appendChild(placeBtn);
+
+      // Available balance
+      const bal = myBalance();
+      if (bal !== null) {
+        const avail = document.createElement('span');
+        avail.className = 'wager-avail';
+        avail.innerHTML = `Available: <span class="nby">${nby(bal)}</span>`;
+        form.appendChild(avail);
+      }
+
+      const errEl = document.createElement('div');
+      errEl.className = 'wager-err';
+      form.appendChild(errEl);
+
+      placeBtn.onclick = async () => {
+        const amount = parseFloat(amtIn.value);
+        if (!amount || amount <= 0) { errEl.textContent = 'Enter a positive amount.'; return; }
+        const optId = locked ? myWager.option_id : chosenOptionId;
+        placeBtn.disabled = true;
+        placeBtn.textContent = 'Placing…';
+        errEl.textContent = '';
+        try {
+          const res = await fetch(`/api/bets/${bet.id}/wager`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+            body: JSON.stringify({ option_id: optId, amount }),
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+          // Update local state
+          const idx = allBets.findIndex(b => b.id === bet.id);
+          if (idx !== -1) allBets[idx] = body;
+          // Update balance chip
+          await refreshBalance();
+          renderView();
+        } catch(e) {
+          errEl.textContent = e.message;
+          placeBtn.disabled = false;
+          placeBtn.textContent = locked ? 'Add More' : 'Place Bet';
+        }
+      };
+
+      wrap.appendChild(form);
+      return wrap;
+    }
+
+    function makeCloseSection(bet, optMap) {
+      const sec = document.createElement('div');
+      sec.className = 'close-bet-section';
+
+      let formVisible = false;
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'close-toggle';
+      toggleBtn.textContent = 'Close Bet…';
+      sec.appendChild(toggleBtn);
+
+      const closeForm = document.createElement('div');
+      closeForm.className = 'close-form';
+      closeForm.style.display = 'none';
+
+      const winSel = document.createElement('select');
+      winSel.className = 'close-form select';
+      winSel.style.cssText = 'background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.6rem;font-size:0.82rem;outline:none;font-family:inherit';
+      bet.options.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt.id;
+        o.textContent = opt.label;
+        winSel.appendChild(o);
+      });
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'close-confirm';
+      confirmBtn.textContent = 'Confirm Close';
+
+      const closeErr = document.createElement('span');
+      closeErr.style.cssText = 'font-size:0.72rem;color:#f87171';
+
+      confirmBtn.onclick = async () => {
+        if (!confirm(`Close this bet with "${optMap[winSel.value]}" as the winner?`)) return;
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Closing…';
+        closeErr.textContent = '';
+        try {
+          const res = await fetch(`/api/bets/${bet.id}/close`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+            body: JSON.stringify({ winning_option_id: winSel.value }),
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+          const idx = allBets.findIndex(b => b.id === bet.id);
+          if (idx !== -1) allBets[idx] = body;
+          // Refresh balances
+          const newBals = await fetch('/api/bets/balances').then(r => r.json()).catch(() => balancesList);
+          balancesList = newBals;
+          await refreshBalance();
+          renderView();
+        } catch(e) {
+          closeErr.textContent = e.message;
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirm Close';
+        }
+      };
+
+      closeForm.append(winSel, confirmBtn, closeErr);
+      sec.appendChild(closeForm);
+
+      toggleBtn.onclick = () => {
+        formVisible = !formVisible;
+        closeForm.style.display = formVisible ? '' : 'none';
+        toggleBtn.textContent = formVisible ? '✕ Cancel' : 'Close Bet…';
+      };
+
+      return sec;
+    }
+
+    function makePayoutSection(bet, optMap) {
+      const res = bet.resolution;
+      const sec = document.createElement('div');
+      sec.className = 'payout-section';
+
+      const hdr = document.createElement('div');
+      hdr.className = 'payout-hdr';
+
+      if (res.voided) {
+        hdr.textContent = 'Result: Voided — stakes refunded';
+        sec.appendChild(hdr);
+        const notice = document.createElement('div');
+        notice.className = 'voided-notice';
+        notice.textContent = '⚠️ No one picked the winning option — all bets were refunded.';
+        sec.appendChild(notice);
+        return sec;
+      }
+
+      hdr.textContent = `Winning option: ${optMap[bet.winning_option_id] || '?'}`;
+      sec.appendChild(hdr);
+
+      // Payouts list
+      const entries = Object.entries(res.payouts || {});
+      if (entries.length) {
+        entries.sort((a, b) => b[1] - a[1]).forEach(([member, payout]) => {
+          const wager  = bet.wagers?.[member]?.amount || 0;
+          const profit = payout - wager;
+          const row    = document.createElement('div');
+          row.className = 'payout-row';
+          const nameEl = document.createElement('span');
+          nameEl.className = 'payout-winner';
+          nameEl.textContent = member;
+          const amtEl  = document.createElement('div');
+          amtEl.style.cssText = 'display:flex;gap:0.5rem;align-items:center';
+          const payEl  = document.createElement('span');
+          payEl.style.color = '#fbbf24';
+          payEl.textContent = `won ${nby(payout)}`;
+          const profitEl = document.createElement('span');
+          profitEl.className = 'payout-profit';
+          profitEl.textContent = `+${nby(profit)} profit`;
+          amtEl.append(payEl, profitEl);
+          row.append(nameEl, amtEl);
+          sec.appendChild(row);
+        });
+      }
+
+      // My payout highlight
+      if (currentUser && res.payouts?.[currentUser.name]) {
+        const myPayout = res.payouts[currentUser.name];
+        const myWager  = bet.wagers?.[currentUser.name]?.amount || 0;
+        const myProfit = myPayout - myWager;
+        const myRow = document.createElement('div');
+        myRow.style.cssText = 'margin-top:0.4rem;font-size:0.75rem;color:#34d399;font-weight:600';
+        myRow.textContent = `✓ You won ${nby(myPayout)} (+${nby(myProfit)} profit)`;
+        sec.appendChild(myRow);
+      }
+
+      return sec;
+    }
+
+    async function refreshBalance() {
+      if (!currentUser) return;
+      try {
+        balancesList = await fetch('/api/bets/balances').then(r => r.json());
+        const chip = document.getElementById('balance-chip');
+        chip.textContent = nby(myBalance());
+        chip.style.display = '';
+      } catch {}
+    }
+
+    init();
+  </script>
+  <script src="/nav.js"></script>
+</body>
+</html>
