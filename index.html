@@ -301,6 +301,12 @@
       <span style="font-size:0.72rem;color:#6b7280">Announces to #stats-and-standings</span>
     </div>
     <div id="lo-discord-standings-form" style="display:none;grid-column:1/-1;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
+
+    <div class="card" id="lo-nby-adjust" style="display:none;cursor:pointer">
+      <div class="card-header"><span class="card-icon">🪙</span><span class="card-title">Adjust NB¥</span></div>
+      <span style="font-size:0.72rem;color:#6b7280">Give or take NBYen from a member</span>
+    </div>
+    <div id="lo-nby-adjust-form" style="display:none;grid-column:1/-1;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
   </main>
 
   <footer>
@@ -474,6 +480,98 @@
               discForm.appendChild(row);
               discForm.style.display = '';
             });
+
+            // ── Adjust NB¥ ───────────────────────────────────────────────
+            const nbyCard = document.getElementById('lo-nby-adjust');
+            const nbyForm = document.getElementById('lo-nby-adjust-form');
+            nbyCard.style.display = '';
+
+            nbyCard.addEventListener('click', async () => {
+              if (nbyForm.style.display !== 'none') { nbyForm.style.display = 'none'; return; }
+
+              nbyForm.innerHTML = '<div style="color:#9ca3af;margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Adjust NB¥</div>';
+
+              // Fetch members + current balances in parallel
+              const [membersRaw, balsRaw] = await Promise.all([
+                fetch('/api/members/public').then(r => r.json()).catch(() => []),
+                fetch('/api/bets/balances').then(r => r.json()).catch(() => []),
+              ]);
+              const members = membersRaw.map(m => m.name).sort();
+              const balMap  = Object.fromEntries(balsRaw.map(b => [b.name, b.balance]));
+
+              const INPUT_CSS = 'background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.65rem;font-size:0.82rem;outline:none;font-family:inherit';
+              const fmtNby = n => `NB¥${Number(n).toLocaleString('en-US', {minimumFractionDigits:0,maximumFractionDigits:2})}`;
+
+              const row = document.createElement('div');
+              row.style.cssText = 'display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap';
+
+              // Action: Give / Take
+              const actionSel = document.createElement('select');
+              actionSel.style.cssText = INPUT_CSS + ';cursor:pointer;width:80px';
+              ['Give','Take'].forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; actionSel.appendChild(o); });
+
+              // Amount
+              const amtIn = document.createElement('input');
+              amtIn.type = 'number'; amtIn.min = '1'; amtIn.step = '1'; amtIn.placeholder = 'NB¥';
+              amtIn.style.cssText = INPUT_CSS + ';width:90px;color:#fbbf24';
+
+              // Member
+              const memberSel = document.createElement('select');
+              memberSel.style.cssText = INPUT_CSS + ';cursor:pointer';
+              const blank = document.createElement('option'); blank.value = ''; blank.textContent = '— member —'; memberSel.appendChild(blank);
+              members.forEach(name => { const o = document.createElement('option'); o.value = name; o.textContent = name; memberSel.appendChild(o); });
+
+              // Current balance hint
+              const curBalEl = document.createElement('span');
+              curBalEl.style.cssText = 'font-size:0.75rem;color:#6b7280';
+              memberSel.addEventListener('change', () => {
+                const bal = balMap[memberSel.value];
+                curBalEl.textContent = memberSel.value ? `(currently ${fmtNby(bal ?? 1000)})` : '';
+              });
+
+              // Reason
+              const reasonIn = document.createElement('input');
+              reasonIn.type = 'text'; reasonIn.placeholder = 'Reason (optional)';
+              reasonIn.style.cssText = INPUT_CSS + ';flex:1;min-width:110px';
+
+              // Submit
+              const submitBtn = document.createElement('button');
+              submitBtn.style.cssText = 'background:#d97706;border:none;color:#fff;border-radius:5px;padding:0.3rem 0.85rem;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap';
+              submitBtn.textContent = '✓ Apply';
+
+              const statusEl = document.createElement('span');
+              statusEl.style.cssText = 'font-size:0.78rem;color:#9ca3af;width:100%';
+
+              submitBtn.addEventListener('click', async () => {
+                const member = memberSel.value;
+                const amt    = parseFloat(amtIn.value);
+                if (!member)          { statusEl.style.color = '#f87171'; statusEl.textContent = 'Select a member.'; return; }
+                if (!amt || amt <= 0) { statusEl.style.color = '#f87171'; statusEl.textContent = 'Enter a positive amount.'; return; }
+                const delta = actionSel.value === 'Give' ? amt : -amt;
+                submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; statusEl.textContent = '';
+                try {
+                  const res = await fetch('/api/bets/admin/adjust', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${_loToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ member, delta, reason: reasonIn.value.trim() }),
+                  });
+                  const body = await res.json().catch(() => ({}));
+                  if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+                  balMap[member] = body.new_balance;
+                  statusEl.style.color = '#34d399';
+                  statusEl.textContent = `✓ ${member}: ${fmtNby(body.old_balance)} → ${fmtNby(body.new_balance)}`;
+                  curBalEl.textContent = `(currently ${fmtNby(body.new_balance)})`;
+                  amtIn.value = ''; reasonIn.value = '';
+                } catch(e) {
+                  statusEl.style.color = '#f87171'; statusEl.textContent = `✗ ${e.message}`;
+                } finally { submitBtn.disabled = false; submitBtn.textContent = '✓ Apply'; }
+              });
+
+              row.append(actionSel, amtIn, memberSel, curBalEl, reasonIn, submitBtn, statusEl);
+              nbyForm.appendChild(row);
+              nbyForm.style.display = '';
+            });
+
           }
         })
         .catch(() => {});
