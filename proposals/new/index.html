@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Proposal — NBN</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem;
+    }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 820px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header { margin-bottom: 1.75rem; }
+    header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+
+    /* Auth gate */
+    #auth-gate {
+      background: #1f2937; border: 1px solid #374151; border-radius: 12px;
+      padding: 2rem; text-align: center;
+    }
+    #auth-gate h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    #auth-gate p { color: #9ca3af; font-size: 0.875rem; margin-bottom: 1.25rem; }
+    #auth-gate input {
+      width: 100%; max-width: 340px; background: #111827; border: 1px solid #374151;
+      color: #f3f4f6; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+      font-family: monospace; margin-bottom: 0.75rem; display: block; margin: 0 auto 0.75rem;
+    }
+    #auth-gate input:focus { outline: none; border-color: #3b82f6; }
+
+    /* Form */
+    #editor-form { display: none; }
+
+    .field { margin-bottom: 1.25rem; }
+    .field label {
+      display: block; font-size: 0.75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-bottom: 0.4rem;
+    }
+    .field input[type="text"] {
+      width: 100%; background: #1f2937; border: 1px solid #374151; color: #f3f4f6;
+      border-radius: 8px; padding: 0.6rem 0.85rem; font-size: 1rem; font-family: inherit;
+    }
+    .field input[type="text"]:focus { outline: none; border-color: #3b82f6; }
+
+    /* Eligible roles */
+    .roles-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .role-chip {
+      background: transparent; border: 1px solid #374151; border-radius: 20px;
+      color: #9ca3af; cursor: pointer; font-family: inherit; font-size: 0.75rem;
+      font-weight: 600; padding: 0.25rem 0.75rem; letter-spacing: 0.04em;
+    }
+    .role-chip:hover { border-color: #6b7280; color: #d1d5db; }
+    .role-chip.active { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+    .roles-hint { font-size: 0.75rem; color: #4b5563; margin-top: 0.4rem; }
+
+    /* Action bar */
+    .action-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 1.5rem; flex-wrap: wrap; gap: 0.75rem;
+    }
+    .action-left { display: flex; gap: 0.5rem; }
+    .action-right { display: flex; gap: 0.5rem; align-items: center; }
+
+    button {
+      font-family: inherit; cursor: pointer; border-radius: 6px;
+      font-size: 0.85rem; font-weight: 500; padding: 0.45rem 1rem;
+      border: 1px solid transparent;
+    }
+    .btn-primary { background: #2563eb; border-color: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-secondary { background: #1f2937; border-color: #374151; color: #d1d5db; }
+    .btn-secondary:hover { background: #263244; border-color: #4b5563; }
+    .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-danger { background: transparent; border-color: #374151; color: #f87171; }
+    .btn-danger:hover { background: #3b1f1f; border-color: #ef4444; }
+    .btn-ghost { background: transparent; border-color: transparent; color: #6b7280; }
+    .btn-ghost:hover { color: #9ca3af; }
+
+    .status-msg { font-size: 0.8rem; color: #6b7280; }
+    .status-msg.ok { color: #4ade80; }
+    .status-msg.err { color: #f87171; }
+
+    /* Submitted banner */
+    .submitted-banner {
+      background: #1e3a5f; border: 1px solid #1d4ed8; border-radius: 8px;
+      padding: 0.75rem 1rem; font-size: 0.85rem; color: #93c5fd; margin-bottom: 1.25rem;
+      display: none;
+    }
+
+    /* EasyMDE dark theme overrides */
+    .EasyMDEContainer .CodeMirror {
+      background: #1f2937 !important;
+      color: #f3f4f6 !important;
+      border-color: #374151 !important;
+      font-size: 0.9rem;
+    }
+    .EasyMDEContainer .editor-toolbar {
+      background: #161f2e !important;
+      border-color: #374151 !important;
+    }
+    .EasyMDEContainer .editor-toolbar button {
+      color: #9ca3af !important;
+    }
+    .EasyMDEContainer .editor-toolbar button:hover,
+    .EasyMDEContainer .editor-toolbar button.active {
+      background: #374151 !important;
+      color: #f3f4f6 !important;
+      border-color: #4b5563 !important;
+    }
+    .EasyMDEContainer .editor-toolbar i.separator { border-color: #374151 !important; }
+    .EasyMDEContainer .editor-preview {
+      background: #111827 !important;
+      color: #f3f4f6 !important;
+    }
+    .EasyMDEContainer .editor-preview h1, .EasyMDEContainer .editor-preview h2,
+    .EasyMDEContainer .editor-preview h3 { color: #f3f4f6; }
+    .EasyMDEContainer .editor-preview p { color: #d1d5db; }
+    .EasyMDEContainer .editor-preview a { color: #60a5fa; }
+    .EasyMDEContainer .editor-preview pre { background: #1f2937; border-color: #374151; }
+    .EasyMDEContainer .editor-preview code { background: #1f2937; color: #f3f4f6; }
+    .EasyMDEContainer .CodeMirror-cursor { border-left-color: #f3f4f6 !important; }
+    .EasyMDEContainer .CodeMirror-selected { background: #1d4ed8 !important; }
+    .EasyMDEContainer .editor-statusbar { color: #4b5563 !important; border-color: #374151 !important; }
+    .EasyMDEContainer { border-radius: 8px; overflow: hidden; }
+    .EasyMDEContainer .CodeMirror { border-radius: 0 0 8px 8px; }
+    .EasyMDEContainer .editor-toolbar { border-radius: 8px 8px 0 0; }
+    .editor-preview-side { background: #111827 !important; border-color: #374151 !important; }
+    .editor-preview-side h1, .editor-preview-side h2, .editor-preview-side h3 { color: #f3f4f6; }
+    .editor-preview-side p { color: #d1d5db; }
+    .editor-preview-side a { color: #60a5fa; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="nav"><a href="/proposals/">← Proposals</a></div>
+  <header><h1 id="page-title">New Proposal</h1></header>
+
+  <!-- Auth gate -->
+  <div id="auth-gate">
+    <h2>Sign in to create a proposal</h2>
+    <p>You need a valid member token to draft or submit proposals.</p>
+    <input type="password" id="gate-token" placeholder="Paste your token" autocomplete="off">
+    <div style="margin-top:0.75rem;">
+      <button class="btn-primary" onclick="gateSignIn()">Sign in</button>
+    </div>
+  </div>
+
+  <!-- Editor -->
+  <div id="editor-form">
+    <div class="submitted-banner" id="submitted-banner">
+      This proposal has been submitted and is visible to the league. Edits are still allowed.
+    </div>
+
+    <div class="field">
+      <label for="title-input">Title</label>
+      <input type="text" id="title-input" placeholder="Proposal title…" maxlength="200">
+    </div>
+
+    <div class="field">
+      <label>Body</label>
+      <textarea id="body-editor"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Who can vote?</label>
+      <div class="roles-row" id="roles-row">
+        <button type="button" class="role-chip active" data-value="all_gms" onclick="setVoters(this)">All GMs</button>
+        <button type="button" class="role-chip" data-value="bod" onclick="setVoters(this)">BOD only</button>
+      </div>
+      <div class="roles-hint" id="roles-hint">Any member with a team role can vote.</div>
+    </div>
+
+    <div class="action-bar">
+      <div class="action-left">
+        <button class="btn-danger" id="btn-delete" onclick="doDelete()" style="display:none;">Delete Draft</button>
+      </div>
+      <div class="action-right">
+        <span class="status-msg" id="status-msg"></span>
+        <button class="btn-secondary" id="btn-save" onclick="doSave()">Save Draft</button>
+        <button class="btn-primary" id="btn-submit" onclick="doSubmit()">Submit for Review</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
+<script>
+const API = '/api';
+let editor = null;
+let proposalId = null;
+let isSubmitted = false;
+let selectedVoters = 'all_gms'; // 'all_gms' or 'bod'
+
+const params = new URLSearchParams(location.search);
+
+function getToken() { return localStorage.getItem('nbn_token'); }
+
+function setVoters(btn) {
+  document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  selectedVoters = btn.dataset.value;
+  document.getElementById('roles-hint').textContent =
+    selectedVoters === 'bod' ? 'Only BOD members can vote.' : 'Any member with a team role can vote.';
+}
+
+function eligibleRolesPayload() {
+  return selectedVoters === 'bod' ? ['bod'] : [];
+}
+
+function setStatus(msg, cls) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = 'status-msg' + (cls ? ' ' + cls : '');
+}
+
+function setLoading(on) {
+  document.getElementById('btn-save').disabled = on;
+  document.getElementById('btn-submit').disabled = on;
+}
+
+async function gateSignIn() {
+  const token = document.getElementById('gate-token').value.trim();
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { alert('Invalid token.'); return; }
+    localStorage.setItem('nbn_token', token);
+    init();
+  } catch { alert('Could not sign in. Check your connection.'); }
+}
+
+document.getElementById('gate-token').addEventListener('keydown', e => {
+  if (e.key === 'Enter') gateSignIn();
+});
+
+function showEditor() {
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('editor-form').style.display = 'block';
+  if (!editor) {
+    editor = new EasyMDE({
+      element: document.getElementById('body-editor'),
+      spellChecker: false,
+      autofocus: false,
+      placeholder: 'Write your proposal in Markdown…\n\n## Background\n\n## Proposed change\n\n## Rationale',
+      toolbar: ['bold','italic','heading','|','quote','unordered-list','ordered-list','|','link','|','preview','side-by-side','fullscreen'],
+      minHeight: '260px',
+      status: ['lines','words'],
+    });
+  }
+}
+
+async function loadExisting(id) {
+  const token = getToken();
+  try {
+    const res = await fetch(`${API}/proposals/${id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) { alert('Could not load proposal.'); return; }
+    const p = await res.json();
+    proposalId = p.id;
+    document.getElementById('title-input').value = p.title || '';
+    if (editor) editor.value(p.body || '');
+    // Restore voter selection
+    const roles = p.eligible_roles || [];
+    if (roles.length === 1 && roles[0] === 'bod') {
+      const bodChip = document.querySelector('[data-value="bod"]');
+      setVoters(bodChip);
+    }
+    // Show/hide elements based on status
+    isSubmitted = p.status !== 'draft';
+    if (isSubmitted) {
+      document.getElementById('submitted-banner').style.display = 'block';
+      document.getElementById('btn-submit').style.display = 'none';
+      document.getElementById('btn-delete').style.display = 'none';
+      document.getElementById('page-title').textContent = 'Edit Proposal';
+      document.getElementById('btn-save').textContent = 'Save Changes';
+    } else {
+      document.getElementById('btn-delete').style.display = '';
+      document.getElementById('page-title').textContent = 'Edit Draft';
+    }
+  } catch { alert('Failed to load proposal.'); }
+}
+
+async function doSave() {
+  const title = document.getElementById('title-input').value.trim();
+  const body = editor ? editor.value() : '';
+  const token = getToken();
+  if (!token) return;
+  if (!title) { setStatus('Title is required.', 'err'); document.getElementById('title-input').focus(); return; }
+
+  setLoading(true);
+  setStatus('Saving…');
+  try {
+    if (proposalId) {
+      // Update existing
+      const res = await fetch(`${API}/proposals/${proposalId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title, body, eligible_roles: eligibleRolesPayload() }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Save failed'); }
+      setStatus('Saved.', 'ok');
+    } else {
+      // Create new draft
+      const res = await fetch(`${API}/proposals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title, body, eligible_roles: eligibleRolesPayload() }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Create failed'); }
+      const p = await res.json();
+      proposalId = p.id;
+      // Update URL without reload
+      history.replaceState(null, '', `/proposals/new/?id=${proposalId}`);
+      document.getElementById('btn-delete').style.display = '';
+      setStatus('Draft saved.', 'ok');
+    }
+  } catch (err) { setStatus(err.message, 'err'); }
+  finally { setLoading(false); }
+}
+
+async function doSubmit() {
+  const title = document.getElementById('title-input').value.trim();
+  if (!title) { setStatus('Title is required.', 'err'); document.getElementById('title-input').focus(); return; }
+
+  // Save first (creates if needed)
+  await doSave();
+  if (!proposalId) return;
+
+  const token = getToken();
+  if (!confirm('Submit this proposal? It will be visible to all league members.')) return;
+
+  setLoading(true);
+  setStatus('Submitting…');
+  try {
+    const res = await fetch(`${API}/proposals/${proposalId}/submit`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Submit failed'); }
+    // Redirect to view page
+    location.href = `/proposals/view/?id=${proposalId}`;
+  } catch (err) { setStatus(err.message, 'err'); setLoading(false); }
+}
+
+async function doDelete() {
+  if (!proposalId) return;
+  if (!confirm('Delete this draft? This cannot be undone.')) return;
+  const token = getToken();
+  try {
+    const res = await fetch(`${API}/proposals/${proposalId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Delete failed'); }
+    location.href = '/proposals/';
+  } catch (err) { alert(err.message); }
+}
+
+async function init() {
+  const token = getToken();
+  if (!token) {
+    document.getElementById('auth-gate').style.display = 'block';
+    document.getElementById('editor-form').style.display = 'none';
+    return;
+  }
+  // Verify token
+  try {
+    const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) {
+      localStorage.removeItem('nbn_token');
+      document.getElementById('auth-gate').style.display = 'block';
+      return;
+    }
+  } catch {
+    document.getElementById('auth-gate').style.display = 'block';
+    return;
+  }
+
+  showEditor();
+
+  const id = params.get('id');
+  if (id) {
+    proposalId = id;
+    await loadExisting(id);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

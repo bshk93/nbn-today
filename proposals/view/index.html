@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposal — NBN</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem;
+    }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 820px; margin: 0 auto; }
+    .nav { margin-bottom: 1.5rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    /* Status badge */
+    .badge {
+      display: inline-block; font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+    }
+    .badge-submitted { background: #1e3a5f; border: 1px solid #1d4ed8; color: #93c5fd; }
+    .badge-voting    { background: #3b1f00; border: 1px solid #b45309; color: #fbbf24; }
+    .badge-closed    { background: #1a1f2e; border: 1px solid #374151; color: #4b5563; }
+    .badge-draft     { background: #1f2937; border: 1px solid #374151; color: #6b7280; }
+
+    /* Proposal header */
+    .proposal-header { margin-bottom: 1.5rem; }
+    .proposal-header .badge { margin-bottom: 0.6rem; }
+    .proposal-header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .proposal-meta { font-size: 0.8rem; color: #6b7280; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .proposal-meta .sep { color: #374151; }
+
+    /* Header actions */
+    .header-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    button {
+      font-family: inherit; cursor: pointer; border-radius: 6px;
+      font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.85rem;
+      border: 1px solid transparent;
+    }
+    .btn-primary { background: #2563eb; border-color: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-secondary { background: #1f2937; border-color: #374151; color: #d1d5db; }
+    .btn-secondary:hover { background: #263244; border-color: #4b5563; }
+    .btn-success { background: #14532d; border-color: #16a34a; color: #4ade80; }
+    .btn-success:hover { background: #166534; }
+    .btn-warning { background: #3b1f00; border-color: #b45309; color: #fbbf24; }
+    .btn-warning:hover { background: #451f00; }
+    .btn-ghost { background: transparent; border-color: #374151; color: #9ca3af; }
+    .btn-ghost:hover { background: #1f2937; color: #f3f4f6; }
+    .btn-danger { background: transparent; border-color: #374151; color: #f87171; }
+    .btn-danger:hover { background: #3b1f1f; border-color: #ef4444; }
+
+    /* Divider */
+    .divider { border: none; border-top: 1px solid #374151; margin: 2rem 0; }
+
+    /* Markdown body */
+    .md-body { line-height: 1.7; color: #d1d5db; }
+    .md-body h1, .md-body h2, .md-body h3, .md-body h4 { color: #f3f4f6; margin: 1.25rem 0 0.5rem; font-weight: 700; }
+    .md-body h1 { font-size: 1.4rem; }
+    .md-body h2 { font-size: 1.15rem; }
+    .md-body h3 { font-size: 1rem; }
+    .md-body p { margin-bottom: 0.9rem; }
+    .md-body ul, .md-body ol { margin: 0.5rem 0 0.9rem 1.5rem; }
+    .md-body li { margin-bottom: 0.25rem; }
+    .md-body blockquote {
+      border-left: 3px solid #374151; padding-left: 1rem; color: #9ca3af; margin: 0.75rem 0;
+    }
+    .md-body code {
+      background: #1f2937; border: 1px solid #374151; border-radius: 3px;
+      padding: 0.1rem 0.35rem; font-size: 0.85em; font-family: monospace; color: #f3f4f6;
+    }
+    .md-body pre { background: #1f2937; border: 1px solid #374151; border-radius: 6px; padding: 1rem; overflow-x: auto; margin-bottom: 0.9rem; }
+    .md-body pre code { background: none; border: none; padding: 0; }
+    .md-body a { color: #60a5fa; }
+    .md-body hr { border: none; border-top: 1px solid #374151; margin: 1rem 0; }
+    .md-body table { border-collapse: collapse; width: 100%; margin-bottom: 0.9rem; }
+    .md-body th, .md-body td { border: 1px solid #374151; padding: 0.4rem 0.7rem; }
+    .md-body th { background: #1f2937; font-weight: 600; }
+
+    /* Section titles */
+    .section-title {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #4b5563; margin-bottom: 1rem;
+    }
+
+    /* BOD panel */
+    .bod-panel {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    }
+    .bod-panel .section-title { margin-bottom: 0.75rem; }
+    .bod-panel .bod-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .bod-note { font-size: 0.75rem; color: #6b7280; margin-top: 0.5rem; }
+
+    /* Vote section */
+    .vote-panel {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    }
+    .vote-panel .section-title { margin-bottom: 0.5rem; }
+    .vote-buttons { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+    .vote-btn {
+      padding: 0.5rem 1.5rem; font-size: 0.875rem; font-weight: 600; border-radius: 6px;
+      border: 2px solid transparent; cursor: pointer; font-family: inherit;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .vote-btn-yes    { background: #14532d; border-color: #16a34a; color: #4ade80; }
+    .vote-btn-yes:hover, .vote-btn-yes.active    { background: #166534; border-color: #22c55e; }
+    .vote-btn-no     { background: #3b1f1f; border-color: #991b1b; color: #f87171; }
+    .vote-btn-no:hover, .vote-btn-no.active      { background: #4b2121; border-color: #ef4444; }
+    .vote-btn-abstain { background: #1f2937; border-color: #4b5563; color: #9ca3af; }
+    .vote-btn-abstain:hover, .vote-btn-abstain.active { background: #263244; border-color: #6b7280; }
+    .vote-note { font-size: 0.75rem; color: #6b7280; margin-top: 0.6rem; }
+    .vote-info { font-size: 0.8rem; color: #6b7280; margin-top: 0.4rem; }
+    .vote-count { font-size: 0.8rem; color: #9ca3af; }
+    .not-eligible { font-size: 0.85rem; color: #4b5563; padding: 0.5rem 0; }
+
+    /* Results */
+    .results-grid { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .result-item { text-align: center; }
+    .result-num { font-size: 1.75rem; font-weight: 700; }
+    .result-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; margin-top: 0.15rem; }
+    .result-yes .result-num  { color: #4ade80; }
+    .result-no .result-num   { color: #f87171; }
+    .result-abstain .result-num { color: #9ca3af; }
+    .my-vote-chip {
+      display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem;
+      border-radius: 4px; margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .mv-yes     { background: #14532d; color: #4ade80; }
+    .mv-no      { background: #3b1f1f; color: #f87171; }
+    .mv-abstain { background: #1f2937; color: #9ca3af; }
+
+    /* Comments */
+    .comment {
+      border-top: 1px solid #1f2937; padding: 1rem 0;
+    }
+    .comment:first-child { border-top: none; }
+    .comment-header {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 0.6rem;
+    }
+    .comment-author { font-size: 0.8rem; font-weight: 700; color: #d1d5db; }
+    .comment-date { font-size: 0.75rem; color: #4b5563; }
+    .comment-delete { font-size: 0.7rem; color: #4b5563; background: none; border: none; cursor: pointer; }
+    .comment-delete:hover { color: #f87171; }
+    .comment-body { font-size: 0.875rem; }
+
+    /* Add comment */
+    .add-comment { margin-top: 1.25rem; }
+    .add-comment textarea {
+      width: 100%; background: #1f2937; border: 1px solid #374151; color: #f3f4f6;
+      border-radius: 8px; padding: 0.65rem 0.85rem; font-size: 0.875rem;
+      font-family: inherit; resize: vertical; min-height: 90px;
+    }
+    .add-comment textarea:focus { outline: none; border-color: #3b82f6; }
+    .add-comment textarea::placeholder { color: #4b5563; }
+    .comment-form-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
+    .comment-auth { font-size: 0.75rem; color: #6b7280; }
+    .comment-auth a { color: #60a5fa; cursor: pointer; }
+    .status-msg { font-size: 0.75rem; }
+    .status-msg.ok { color: #4ade80; }
+    .status-msg.err { color: #f87171; }
+
+    .empty { color: #4b5563; font-size: 0.875rem; padding: 1rem 0; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="nav"><a href="/proposals/">← Proposals</a></div>
+
+  <div id="loading" style="color:#6b7280;font-size:0.9rem;">Loading…</div>
+  <div id="content" style="display:none;">
+
+    <!-- Header -->
+    <div class="proposal-header">
+      <div id="status-badge"></div>
+      <h1 id="proposal-title"></h1>
+      <div class="proposal-meta" id="proposal-meta"></div>
+      <div class="header-actions" id="header-actions"></div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Body -->
+    <div class="md-body" id="proposal-body"></div>
+
+    <hr class="divider">
+
+    <!-- BOD panel -->
+    <div class="bod-panel" id="bod-panel" style="display:none;">
+      <div class="section-title">BOD Controls</div>
+      <div class="bod-actions" id="bod-actions"></div>
+      <div class="bod-note" id="bod-note"></div>
+    </div>
+
+    <!-- Vote panel -->
+    <div class="vote-panel" id="vote-panel" style="display:none;">
+      <div class="section-title" id="vote-title">Cast Your Vote</div>
+      <div id="vote-content"></div>
+    </div>
+
+    <!-- Comments -->
+    <div>
+      <div class="section-title" id="comments-title">Comments</div>
+      <div id="comments-list"></div>
+      <div class="add-comment" id="add-comment-section" style="display:none;">
+        <textarea id="comment-textarea" placeholder="Write a comment… (Markdown supported)"></textarea>
+        <div class="comment-form-footer">
+          <span class="comment-auth" id="comment-auth-msg"></span>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span class="status-msg" id="comment-status"></span>
+            <button class="btn-primary" id="btn-comment-submit" onclick="submitComment()">Post Comment</button>
+          </div>
+        </div>
+      </div>
+      <div id="comment-signin-prompt" style="display:none;margin-top:1rem;">
+        <span style="font-size:0.85rem;color:#6b7280;">
+          <a onclick="openTokenPrompt()" style="cursor:pointer;color:#60a5fa;">Sign in</a> to leave a comment.
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="error-msg" style="display:none;color:#f87171;font-size:0.9rem;"></div>
+</div>
+
+<script>
+const API = '/api';
+const params = new URLSearchParams(location.search);
+const PROPOSAL_ID = params.get('id');
+
+let proposal = null;
+let me = null; // { name, roles }
+let isBod = false;
+let isAuthor = false;
+let canEdit = false;
+let isEligibleVoter = false;
+
+function getToken() { return localStorage.getItem('nbn_token'); }
+
+marked.use({ gfm: true, breaks: true });
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function badgeHtml(status) {
+  const labels = { draft: 'Draft', submitted: 'Submitted', voting: 'Voting Open', closed: 'Closed' };
+  return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
+}
+
+function eligibleLabel(roles) {
+  if (!roles || roles.length === 0) return 'All GMs eligible to vote';
+  if (roles.length === 1 && roles[0] === 'bod') return 'BOD vote only';
+  return `Eligible: ${roles.join(', ')}`;
+}
+
+function checkEligibility(p) {
+  if (!me) return false;
+  const myRoles = new Set(me.roles || []);
+  if (myRoles.has('admin')) return true;
+  const eligible = p.eligible_roles || [];
+  if (eligible.length === 0) {
+    // All team members
+    const TEAM_ROLES = new Set(['atl','bkn','bos','cha','chi','cle','dal','den','det','gsw',
+      'hou','ind','lac','lal','mem','mia','mil','min','nop','nyk','okc','orl','phi','phx',
+      'por','sac','sas','tor','uta','was']);
+    return [...myRoles].some(r => TEAM_ROLES.has(r));
+  }
+  return eligible.some(r => myRoles.has(r));
+}
+
+function render(p) {
+  proposal = p;
+  const token = getToken();
+
+  isAuthor = me && me.name === p.author;
+  isBod = me && (me.roles || []).some(r => r === 'bod' || r === 'admin');
+  canEdit = (p.status === 'draft' && isAuthor) || (p.status === 'submitted' && (isAuthor || isBod));
+  isEligibleVoter = checkEligibility(p);
+
+  // Header
+  document.getElementById('status-badge').innerHTML = badgeHtml(p.status);
+  document.getElementById('proposal-title').textContent = p.title;
+
+  const votingDatePart = p.voting_opened_at ? ` <span class="sep">•</span> Voting opened ${fmtDate(p.voting_opened_at)}` : '';
+  const closedDatePart = p.voting_closed_at ? ` <span class="sep">•</span> Closed ${fmtDate(p.voting_closed_at)}` : '';
+  document.getElementById('proposal-meta').innerHTML =
+    `<span>by ${escHtml(p.author)}</span>` +
+    `<span class="sep">•</span><span>Submitted ${fmtDate(p.submitted_at || p.created_at)}</span>` +
+    votingDatePart + closedDatePart;
+
+  // Header actions (Edit link)
+  const actionsEl = document.getElementById('header-actions');
+  actionsEl.innerHTML = '';
+  if (canEdit) {
+    const editLink = document.createElement('a');
+    editLink.href = `/proposals/new/?id=${p.id}`;
+    editLink.className = 'btn-ghost';
+    editLink.style.cssText = 'display:inline-block;padding:0.35rem 0.85rem;border-radius:6px;border:1px solid #374151;font-size:0.8rem;font-weight:500;color:#9ca3af;';
+    editLink.textContent = 'Edit';
+    actionsEl.appendChild(editLink);
+  }
+
+  // Body
+  document.getElementById('proposal-body').innerHTML = marked.parse(p.body || '');
+  document.title = `${p.title} — NBN`;
+
+  // BOD panel
+  if (isBod) {
+    const bodPanel = document.getElementById('bod-panel');
+    bodPanel.style.display = 'block';
+    const bodActions = document.getElementById('bod-actions');
+    const bodNote = document.getElementById('bod-note');
+    bodActions.innerHTML = '';
+    if (p.status === 'submitted') {
+      const btn = document.createElement('button');
+      btn.className = 'btn-warning';
+      btn.textContent = 'Open Voting';
+      btn.onclick = doOpenVoting;
+      bodActions.appendChild(btn);
+      bodNote.textContent = eligibleLabel(p.eligible_roles);
+    } else if (p.status === 'voting') {
+      const btn = document.createElement('button');
+      btn.className = 'btn-secondary';
+      btn.textContent = 'Close Voting';
+      btn.onclick = doCloseVoting;
+      bodActions.appendChild(btn);
+      bodNote.textContent = `${p.vote_count || 0} vote${p.vote_count !== 1 ? 's' : ''} cast so far. ${eligibleLabel(p.eligible_roles)}`;
+    } else if (p.status === 'closed') {
+      bodNote.textContent = 'Voting is closed.';
+    }
+  }
+
+  // Vote panel
+  renderVotePanel(p);
+
+  // Comments
+  renderComments(p);
+}
+
+function renderVotePanel(p) {
+  const panel = document.getElementById('vote-panel');
+  const content = document.getElementById('vote-content');
+  const title = document.getElementById('vote-title');
+  content.innerHTML = '';
+
+  if (p.status === 'voting') {
+    panel.style.display = 'block';
+    title.textContent = 'Cast Your Vote';
+
+    if (!me) {
+      content.innerHTML = `<div class="not-eligible">
+        <a onclick="openTokenPrompt()" style="cursor:pointer;color:#60a5fa;">Sign in</a> to vote.
+      </div>`;
+      return;
+    }
+    if (!isEligibleVoter) {
+      content.innerHTML = `<div class="not-eligible">You are not eligible to vote on this proposal.<br><span style="font-size:0.75rem;color:#374151;">${eligibleLabel(p.eligible_roles)}</span></div>`;
+      return;
+    }
+
+    const myVote = p.my_vote;
+    const voteCount = p.vote_count || 0;
+
+    const btns = document.createElement('div');
+    btns.className = 'vote-buttons';
+    ['yes','no','abstain'].forEach(v => {
+      const btn = document.createElement('button');
+      btn.className = `vote-btn vote-btn-${v}${myVote === v ? ' active' : ''}`;
+      btn.textContent = v.charAt(0).toUpperCase() + v.slice(1);
+      if (myVote === v) {
+        btn.textContent += ' ✓';
+        btn.style.outline = '2px solid currentColor';
+        btn.style.outlineOffset = '1px';
+      }
+      btn.onclick = () => doVote(v);
+      btns.appendChild(btn);
+    });
+    content.appendChild(btns);
+
+    const note = document.createElement('div');
+    note.className = 'vote-note';
+    note.innerHTML = myVote
+      ? `You voted <strong>${myVote}</strong>. You can change your vote while voting is open.`
+      : 'Your vote is private until voting closes.';
+    content.appendChild(note);
+
+    if (voteCount > 0) {
+      const cnt = document.createElement('div');
+      cnt.className = 'vote-count';
+      cnt.style.marginTop = '0.4rem';
+      cnt.textContent = `${voteCount} vote${voteCount !== 1 ? 's' : ''} cast`;
+      content.appendChild(cnt);
+    }
+
+  } else if (p.status === 'closed') {
+    panel.style.display = 'block';
+    title.textContent = 'Vote Results';
+
+    const r = p.results || { yes: 0, no: 0, abstain: 0 };
+    const total = (r.yes || 0) + (r.no || 0) + (r.abstain || 0);
+    const myVote = p.my_vote;
+
+    const grid = document.createElement('div');
+    grid.className = 'results-grid';
+    const items = [
+      { key: 'yes', label: 'Yes' },
+      { key: 'no', label: 'No' },
+      { key: 'abstain', label: 'Abstain' },
+    ];
+    items.forEach(({ key, label }) => {
+      const div = document.createElement('div');
+      div.className = `result-item result-${key}`;
+      div.innerHTML = `<div class="result-num">${r[key] || 0}</div><div class="result-label">${label}</div>`;
+      grid.appendChild(div);
+    });
+
+    const totalDiv = document.createElement('div');
+    totalDiv.className = 'result-item';
+    totalDiv.style.cssText = 'border-left:1px solid #374151;padding-left:1.5rem;';
+    totalDiv.innerHTML = `<div class="result-num" style="color:#9ca3af;">${total}</div><div class="result-label">Total</div>`;
+    grid.appendChild(totalDiv);
+
+    content.appendChild(grid);
+
+    if (myVote && me) {
+      const chip = document.createElement('div');
+      chip.innerHTML = `You voted: <span class="my-vote-chip mv-${myVote}">${myVote}</span>`;
+      chip.style.marginTop = '0.75rem';
+      chip.style.fontSize = '0.8rem';
+      chip.style.color = '#6b7280';
+      content.appendChild(chip);
+    }
+  }
+}
+
+function renderComments(p) {
+  const comments = p.comments || [];
+  const countEl = document.getElementById('comments-title');
+  countEl.textContent = `Comments (${comments.length})`;
+
+  const list = document.getElementById('comments-list');
+  list.innerHTML = '';
+  if (comments.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'No comments yet.';
+    list.appendChild(empty);
+  } else {
+    comments.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'comment';
+      const canDelete = me && (me.name === c.author || (me.roles || []).some(r => r === 'bod' || r === 'admin'));
+      div.innerHTML = `
+        <div class="comment-header">
+          <div>
+            <span class="comment-author">${escHtml(c.author)}</span>
+            <span class="comment-date" style="margin-left:0.5rem;">${fmtDate(c.created_at)}</span>
+          </div>
+          ${canDelete ? `<button class="comment-delete" onclick="deleteComment('${c.id}')">Delete</button>` : ''}
+        </div>
+        <div class="comment-body md-body" style="font-size:0.875rem;">${marked.parse(c.body || '')}</div>`;
+      list.appendChild(div);
+    });
+  }
+
+  // Add comment section
+  const addSection = document.getElementById('add-comment-section');
+  const signinPrompt = document.getElementById('comment-signin-prompt');
+  const authMsg = document.getElementById('comment-auth-msg');
+
+  if (p.status === 'draft') {
+    addSection.style.display = 'none';
+    signinPrompt.style.display = 'none';
+  } else if (me) {
+    addSection.style.display = 'block';
+    signinPrompt.style.display = 'none';
+    authMsg.textContent = `Commenting as ${me.name}`;
+  } else {
+    addSection.style.display = 'none';
+    signinPrompt.style.display = 'block';
+  }
+}
+
+async function doVote(vote) {
+  const token = getToken();
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/vote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ vote }),
+    });
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Vote failed'); return; }
+    await reload();
+  } catch { alert('Vote failed. Please try again.'); }
+}
+
+async function doOpenVoting() {
+  if (!confirm('Open this proposal for voting? Members will be able to cast their votes.')) return;
+  const token = getToken();
+  try {
+    const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/open-voting`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    await reload();
+  } catch { alert('Failed. Please try again.'); }
+}
+
+async function doCloseVoting() {
+  if (!confirm('Close voting? Results will be revealed to all members.')) return;
+  const token = getToken();
+  try {
+    const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/close-voting`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    await reload();
+  } catch { alert('Failed. Please try again.'); }
+}
+
+async function submitComment() {
+  const body = document.getElementById('comment-textarea').value.trim();
+  if (!body) return;
+  const token = getToken();
+  if (!token) return;
+  const btn = document.getElementById('btn-comment-submit');
+  const statusEl = document.getElementById('comment-status');
+  btn.disabled = true;
+  statusEl.textContent = '';
+  try {
+    const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ body }),
+    });
+    if (!res.ok) { const e = await res.json(); statusEl.textContent = e.detail || 'Failed'; statusEl.className = 'status-msg err'; return; }
+    document.getElementById('comment-textarea').value = '';
+    await reload();
+  } catch { statusEl.textContent = 'Failed. Try again.'; statusEl.className = 'status-msg err'; }
+  finally { btn.disabled = false; }
+}
+
+async function deleteComment(commentId) {
+  if (!confirm('Delete this comment?')) return;
+  const token = getToken();
+  try {
+    const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/comments/${commentId}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    await reload();
+  } catch { alert('Failed. Please try again.'); }
+}
+
+function openTokenPrompt() {
+  const token = prompt('Enter your member token:');
+  if (!token) return;
+  fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } })
+    .then(r => r.ok ? r.json() : null)
+    .then(info => {
+      if (!info) { alert('Invalid token.'); return; }
+      localStorage.setItem('nbn_token', token);
+      me = info;
+      isBod = (me.roles || []).some(r => r === 'bod' || r === 'admin');
+      isEligibleVoter = checkEligibility(proposal);
+      render(proposal);
+    });
+}
+
+async function reload() {
+  const token = getToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const res = await fetch(`${API}/proposals/${PROPOSAL_ID}`, { headers });
+  if (!res.ok) return;
+  const p = await res.json();
+  render(p);
+}
+
+async function init() {
+  if (!PROPOSAL_ID) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'block';
+    document.getElementById('error-msg').textContent = 'No proposal ID specified.';
+    return;
+  }
+
+  // Resolve current user
+  const token = getToken();
+  if (token) {
+    try {
+      const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) me = await res.json();
+      else localStorage.removeItem('nbn_token');
+    } catch {}
+  }
+
+  // Load proposal
+  try {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await fetch(`${API}/proposals/${PROPOSAL_ID}`, { headers });
+    if (!res.ok) {
+      const e = await res.json();
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error-msg').style.display = 'block';
+      document.getElementById('error-msg').textContent = e.detail || 'Proposal not found.';
+      return;
+    }
+    const p = await res.json();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    render(p);
+  } catch {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'block';
+    document.getElementById('error-msg').textContent = 'Failed to load proposal.';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

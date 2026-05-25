@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposals — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem;
+    }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 860px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    .top-bar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
+    .top-bar h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    .top-bar p { color: #9ca3af; margin-top: 0.35rem; font-size: 0.9rem; }
+
+    .right-bar { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    .auth-label { font-size: 0.8rem; color: #6b7280; }
+    .auth-name { font-size: 0.8rem; color: #9ca3af; font-weight: 600; }
+
+    button {
+      font-family: inherit; cursor: pointer; border-radius: 6px;
+      font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.8rem;
+      border: 1px solid transparent; transition: background 0.1s;
+    }
+    .btn-primary { background: #2563eb; border-color: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-ghost { background: transparent; border-color: #374151; color: #9ca3af; }
+    .btn-ghost:hover { background: #1f2937; color: #f3f4f6; }
+
+    .section-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #4b5563; margin-bottom: 0.75rem;
+    }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 1px solid #374151; }
+    .tab {
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: #6b7280; padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; margin-bottom: -1px;
+      letter-spacing: 0.02em;
+    }
+    .tab:hover { color: #d1d5db; }
+    .tab.active { color: #f3f4f6; border-bottom-color: #3b82f6; }
+
+    /* Proposal cards */
+    .proposal-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .proposal-card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem;
+      cursor: pointer; text-decoration: none; color: inherit;
+      transition: border-color 0.1s, background 0.1s;
+    }
+    .proposal-card:hover { border-color: #4b5563; background: #263244; text-decoration: none; }
+    .proposal-card .card-body { flex: 1; min-width: 0; }
+    .card-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { font-size: 0.75rem; color: #6b7280; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .card-meta .sep { color: #374151; }
+
+    .badge {
+      display: inline-block; font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.5rem;
+      border-radius: 4px; flex-shrink: 0;
+    }
+    .badge-draft    { background: #1f2937; border: 1px solid #374151; color: #6b7280; }
+    .badge-submitted { background: #1e3a5f; border: 1px solid #1d4ed8; color: #93c5fd; }
+    .badge-voting   { background: #3b1f00; border: 1px solid #b45309; color: #fbbf24; }
+    .badge-closed   { background: #1a1f2e; border: 1px solid #374151; color: #4b5563; }
+
+    .card-arrow { color: #374151; font-size: 1.1rem; flex-shrink: 0; }
+    .proposal-card:hover .card-arrow { color: #6b7280; }
+
+    .section { margin-bottom: 2.5rem; }
+    .empty { text-align: center; padding: 3rem 1rem; color: #4b5563; font-size: 0.9rem; }
+
+    /* Auth modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 100; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #1f2937; border: 1px solid #374151; border-radius: 12px;
+      padding: 1.5rem; width: 100%; max-width: 380px; margin: 1rem;
+    }
+    .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .modal input {
+      width: 100%; background: #111827; border: 1px solid #374151; color: #f3f4f6;
+      border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+      font-family: monospace; margin-bottom: 0.75rem;
+    }
+    .modal input:focus { outline: none; border-color: #3b82f6; }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .modal p.note { font-size: 0.75rem; color: #6b7280; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="nav"><a href="/">← Home</a></div>
+
+  <div class="top-bar">
+    <div>
+      <h1>Proposals</h1>
+      <p>League proposals, discussion, and voting</p>
+    </div>
+    <div class="right-bar">
+      <span class="auth-label" id="auth-label">Not signed in</span>
+      <span class="auth-name" id="auth-name"></span>
+      <button class="btn-ghost" id="btn-auth" onclick="openAuthModal()">Sign in</button>
+      <a href="/proposals/new/" class="btn-primary" id="btn-new" style="display:none;padding:0.35rem 0.8rem;border-radius:6px;font-size:0.8rem;font-weight:500;background:#2563eb;border:1px solid #3b82f6;color:#fff;">+ New Proposal</a>
+    </div>
+  </div>
+
+  <!-- My Drafts -->
+  <div class="section" id="drafts-section" style="display:none;">
+    <div class="section-label">My Drafts</div>
+    <div class="proposal-list" id="drafts-list"></div>
+  </div>
+
+  <!-- Proposals -->
+  <div class="section">
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('all')">All</button>
+      <button class="tab" onclick="setTab('voting')">Voting</button>
+      <button class="tab" onclick="setTab('submitted')">Submitted</button>
+      <button class="tab" onclick="setTab('closed')">Closed</button>
+    </div>
+    <div class="proposal-list" id="proposals-list">
+      <div class="empty">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Auth modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeAuthModal(event)">
+  <div class="modal">
+    <h2>Sign in with your token</h2>
+    <p class="note">Your token is provided by the league admin. It's stored locally in your browser.</p>
+    <input type="password" id="token-input" placeholder="Paste your token" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeAuthModal()">Cancel</button>
+      <button class="btn-primary" onclick="doSignIn()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let allProposals = [];
+let currentTab = 'all';
+let me = null; // { name, roles }
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function badge(status) {
+  const labels = { draft: 'Draft', submitted: 'Submitted', voting: 'Voting', closed: 'Closed' };
+  return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
+}
+
+function renderCard(p) {
+  const el = document.createElement('a');
+  el.className = 'proposal-card';
+  el.href = `/proposals/view/?id=${p.id}`;
+  const commentPart = p.comment_count > 0 ? `<span class="sep">•</span> 💬 ${p.comment_count}` : '';
+  const votePart = (p.status === 'voting' && p.vote_count > 0)
+    ? `<span class="sep">•</span> ${p.vote_count} vote${p.vote_count !== 1 ? 's' : ''}`
+    : '';
+  el.innerHTML = `
+    <div class="card-body">
+      <div class="card-title">${escHtml(p.title)}</div>
+      <div class="card-meta">
+        ${badge(p.status)}
+        <span class="sep">•</span>
+        <span>${escHtml(p.author)}</span>
+        <span class="sep">•</span>
+        <span>${fmtDate(p.submitted_at || p.created_at)}</span>
+        ${commentPart}
+        ${votePart}
+      </div>
+    </div>
+    <span class="card-arrow">›</span>`;
+  return el;
+}
+
+function renderDraftCard(p) {
+  const el = document.createElement('a');
+  el.className = 'proposal-card';
+  el.href = `/proposals/new/?id=${p.id}`;
+  el.innerHTML = `
+    <div class="card-body">
+      <div class="card-title">${escHtml(p.title || '(untitled draft)')}</div>
+      <div class="card-meta">
+        ${badge('draft')}
+        <span class="sep">•</span>
+        <span>Last edited ${fmtDate(p.updated_at || p.created_at)}</span>
+      </div>
+    </div>
+    <span class="card-arrow">›</span>`;
+  return el;
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.textContent.toLowerCase() === tab || (tab === 'all' && t.textContent === 'All'));
+  });
+  renderProposals();
+}
+
+function renderProposals() {
+  const list = document.getElementById('proposals-list');
+  let filtered = allProposals;
+  if (currentTab !== 'all') {
+    filtered = allProposals.filter(p => p.status === currentTab);
+  }
+  list.innerHTML = '';
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty">No ${currentTab === 'all' ? '' : currentTab + ' '}proposals yet.</div>`;
+    return;
+  }
+  filtered.forEach(p => list.appendChild(renderCard(p)));
+}
+
+async function loadProposals() {
+  const token = localStorage.getItem('nbn_token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  try {
+    const res = await fetch(`${API}/proposals`, { headers });
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    allProposals = data.proposals || [];
+    renderProposals();
+
+    const drafts = data.drafts || [];
+    const draftsSection = document.getElementById('drafts-section');
+    const draftsList = document.getElementById('drafts-list');
+    if (drafts.length && me) {
+      draftsSection.style.display = 'block';
+      draftsList.innerHTML = '';
+      drafts.forEach(p => draftsList.appendChild(renderDraftCard(p)));
+    } else {
+      draftsSection.style.display = 'none';
+    }
+  } catch {
+    document.getElementById('proposals-list').innerHTML = '<div class="empty">Failed to load proposals.</div>';
+  }
+}
+
+async function resolveToken(token) {
+  try {
+    const res = await fetch(`${API}/proposals`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    // The API returns proposals but we also need to know who we are.
+    // Use /api/members/public to find our name from the token.
+    const meRes = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (meRes.ok) return await meRes.json();
+    // Fallback: no /me endpoint, just mark as authenticated without name
+    return { name: '(you)', roles: [] };
+  } catch { return null; }
+}
+
+async function initAuth() {
+  const token = localStorage.getItem('nbn_token');
+  if (!token) { updateAuthUI(null); return; }
+  // Resolve who we are via /api/members/me
+  try {
+    const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) {
+      me = await res.json();
+      updateAuthUI(me);
+    } else {
+      localStorage.removeItem('nbn_token');
+      updateAuthUI(null);
+    }
+  } catch {
+    // Can't reach /me — still show as logged in if token exists
+    me = { name: '…', roles: [] };
+    updateAuthUI(me);
+  }
+}
+
+function updateAuthUI(info) {
+  const label = document.getElementById('auth-label');
+  const name = document.getElementById('auth-name');
+  const btn = document.getElementById('btn-auth');
+  const btnNew = document.getElementById('btn-new');
+  if (info) {
+    label.textContent = 'Signed in as';
+    name.textContent = info.name;
+    btn.textContent = 'Sign out';
+    btn.onclick = doSignOut;
+    btnNew.style.display = '';
+  } else {
+    label.textContent = 'Not signed in';
+    name.textContent = '';
+    btn.textContent = 'Sign in';
+    btn.onclick = openAuthModal;
+    btnNew.style.display = 'none';
+  }
+}
+
+function openAuthModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('token-input').focus(), 50);
+}
+
+function closeAuthModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('token-input').value = '';
+}
+
+async function doSignIn() {
+  const token = document.getElementById('token-input').value.trim();
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { alert('Invalid token.'); return; }
+    me = await res.json();
+    localStorage.setItem('nbn_token', token);
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.getElementById('token-input').value = '';
+    updateAuthUI(me);
+    loadProposals();
+  } catch { alert('Could not sign in. Check your connection.'); }
+}
+
+function doSignOut() {
+  localStorage.removeItem('nbn_token');
+  me = null;
+  updateAuthUI(null);
+  loadProposals();
+}
+
+// Keyboard: Enter in token input
+document.getElementById('token-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSignIn();
+  if (e.key === 'Escape') closeAuthModal();
+});
+
+(async () => {
+  await initAuth();
+  await loadProposals();
+})();
+</script>
+</body>
+</html>
