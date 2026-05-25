@@ -1115,10 +1115,11 @@ function bioPlayerName(slug, bios) {
 
 function buildPicksTable(picks, teamAbbr, bios = {}, allPicks = []) {
   const sortPicks  = arr => [...arr].sort((a, b) => a.year - b.year || a.round - b.round);
+  const isTBD      = p => p.owner === '?' || p.owner.includes('|');
   const own        = sortPicks(picks.filter(p => p.orig === teamAbbr && p.owner === teamAbbr));
-  const uncertain  = sortPicks(picks.filter(p => p.orig === teamAbbr && p.owner === '?'));
-  const acquired   = sortPicks(picks.filter(p => p.orig !== teamAbbr));
-  const traded     = sortPicks(allPicks.filter(p => p.orig === teamAbbr && p.owner !== teamAbbr && p.owner !== '?'));
+  const uncertain  = sortPicks(picks.filter(p => isTBD(p)));
+  const acquired   = sortPicks(picks.filter(p => p.orig !== teamAbbr && !isTBD(p)));
+  const traded     = sortPicks(allPicks.filter(p => p.orig === teamAbbr && p.owner !== teamAbbr && !isTBD(p)));
 
   if (!own.length && !uncertain.length && !acquired.length && !traded.length) return null;
 
@@ -1167,7 +1168,7 @@ function buildPicksTable(picks, teamAbbr, bios = {}, allPicks = []) {
   };
 
   addSection('Own Picks',           own,       null,              () => '—');
-  addSection('Owner TBD',           uncertain, 'picks-uncertain',  () => '?');
+  addSection('Owner TBD',           uncertain, 'picks-uncertain',  p => p.owner === '?' ? '?' : p.owner.split('|').join(' | '));
   addSection('Acquired Picks',      acquired,  'picks-acquired',   p => p.orig);
   addSection('Traded Away',         traded,    'picks-traded',     p => p.owner);
 
@@ -1841,17 +1842,15 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
         td.style.color = '#6b7280';
       });
 
-      // owner select
+      // owner input (supports single team, pipe-separated candidates, or '?')
       const tdOwner = tr.insertCell();
-      const selOwner = document.createElement('select');
-      selOwner.style.cssText = INP;
-      [{ value: '?', label: '? (TBD)' }, ...teamOptions.map(t => ({ value: t, label: t }))].forEach(({ value, label }) => {
-        const o = document.createElement('option');
-        o.value = value; o.textContent = label;
-        if (value === p.owner) o.selected = true;
-        selOwner.appendChild(o);
-      });
-      tdOwner.appendChild(selOwner);
+      const inpOwner = document.createElement('input');
+      inpOwner.type = 'text';
+      inpOwner.style.cssText = INP;
+      inpOwner.value = p.owner || '';
+      inpOwner.placeholder = 'ATL or ATL|BKN or ?';
+      inpOwner.style.textTransform = 'uppercase';
+      tdOwner.appendChild(inpOwner);
 
       // pick number
       const tdPick = tr.insertCell();
@@ -1903,7 +1902,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
 
       rowGetters.push(() => ({
         year: p.year, round: p.round, orig: p.orig,
-        owner:      selOwner.value,
+        owner:      inpOwner.value.trim().toUpperCase() || p.orig,
         pick:       inpPick.value  ? parseInt(inpPick.value)  : null,
         player:     selPlayer.value || null,
         protected:  inpProt.value  ? parseInt(inpProt.value)  : null,
