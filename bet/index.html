@@ -52,11 +52,14 @@
 
     /* Bet card */
     .bet-card { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .bet-card.locked { background: #16172a; border-color: #2d2d54; }
     .bet-card.closed { background: #171f2a; border-color: #2d3748; }
+    .locked-notice { font-size: 0.78rem; color: #818cf8; margin-top: 0.6rem; }
     .bet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
     .bet-title { font-size: 1rem; font-weight: 700; color: #f3f4f6; }
     .bet-status-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 4px; padding: 0.15rem 0.45rem; white-space: nowrap; flex-shrink: 0; }
     .badge-open   { background: #064e3b; color: #34d399; }
+    .badge-locked { background: #1e1b4b; color: #818cf8; border: 1px solid #3730a3; }
     .badge-closed { background: #1f2937; color: #6b7280; border: 1px solid #374151; }
     .badge-voided { background: #292008; color: #f59e0b; }
     .bet-meta { font-size: 0.72rem; color: #6b7280; margin-bottom: 0.75rem; }
@@ -365,7 +368,7 @@
 
     function renderOpenBets() {
       const content = document.getElementById('content');
-      const open = allBets.filter(b => b.status === 'open');
+      const open = allBets.filter(b => b.status === 'open' || b.status === 'locked');
       if (!open.length) {
         content.innerHTML = '<div class="empty-state">No open bets right now.</div>';
         return;
@@ -434,6 +437,7 @@
 
     function makeBetCard(bet) {
       const isOpen   = bet.status === 'open';
+      const isLocked = bet.status === 'locked';
       const isClosed = bet.status === 'closed';
       const voided   = bet.resolution?.voided;
       const myWager  = currentUser ? bet.wagers?.[currentUser.name] : null;
@@ -442,7 +446,7 @@
       const pool     = bet.total_pool || 0;
 
       const card = document.createElement('div');
-      card.className = `bet-card${isClosed ? ' closed' : ''}`;
+      card.className = `bet-card${isLocked ? ' locked' : isClosed ? ' closed' : ''}`;
 
       // Header
       const hdr = document.createElement('div');
@@ -451,8 +455,8 @@
       title.className = 'bet-title';
       title.textContent = bet.title;
       const badge = document.createElement('span');
-      badge.className = `bet-status-badge ${voided ? 'badge-voided' : isOpen ? 'badge-open' : 'badge-closed'}`;
-      badge.textContent = voided ? 'Voided' : isOpen ? 'Open' : 'Closed';
+      badge.className = `bet-status-badge ${voided ? 'badge-voided' : isOpen ? 'badge-open' : isLocked ? 'badge-locked' : 'badge-closed'}`;
+      badge.textContent = voided ? 'Voided' : isOpen ? 'Open' : isLocked ? 'Locked' : 'Closed';
       hdr.append(title, badge);
       card.appendChild(hdr);
 
@@ -460,6 +464,7 @@
       const meta = document.createElement('div');
       meta.className = 'bet-meta';
       meta.textContent = `Created by ${bet.created_by} · ${fmtDate(bet.created_at)}`;
+      if (isLocked && bet.locked_at) meta.textContent += ` · Locked ${fmtDate(bet.locked_at)}`;
       if (isClosed && bet.closed_at) meta.textContent += ` · Closed ${fmtDate(bet.closed_at)}`;
       card.appendChild(meta);
 
@@ -529,15 +534,23 @@
         card.appendChild(myInfo);
       }
 
-      // Wager form (open bets, logged in)
+      // Wager form (open bets only, logged in)
       if (isOpen && currentUser) {
         const wagerSection = makeWagerForm(bet, myWager, optMap, pool);
         card.appendChild(wagerSection);
       }
 
-      // Close bet controls (open bets, bets role)
-      if (isOpen && isBetsRole()) {
-        const closeSec = makeCloseSection(bet, optMap);
+      // Locked notice (locked bets, non-admin users with a bet placed)
+      if (isLocked && currentUser && !isBetsRole()) {
+        const notice = document.createElement('div');
+        notice.className = 'locked-notice';
+        notice.textContent = '🔒 Betting is closed — awaiting result.';
+        card.appendChild(notice);
+      }
+
+      // Close bet controls (open or locked bets, bets role)
+      if ((isOpen || isLocked) && isBetsRole()) {
+        const closeSec = makeCloseSection(bet, optMap, isLocked);
         card.appendChild(closeSec);
       }
 
@@ -546,8 +559,8 @@
         card.appendChild(makePayoutSection(bet, optMap));
       }
 
-      // Delete button (open bets, bets role, no wagers OR admin)
-      if (isOpen && isBetsRole()) {
+      // Delete button (open/locked bets, bets role, no wagers OR admin)
+      if ((isOpen || isLocked) && isBetsRole()) {
         const noWagers = !bet.wagers || Object.keys(bet.wagers).length === 0;
         const isAdmin  = currentUser?.roles?.includes('admin');
         if (noWagers || isAdmin) {
@@ -664,14 +677,44 @@
       return wrap;
     }
 
-    function makeCloseSection(bet, optMap) {
+    function makeCloseSection(bet, optMap, alreadyLocked = false) {
       const sec = document.createElement('div');
       sec.className = 'close-bet-section';
 
+      // ── Lock button (only on open bets) ──────────────────────────────────────
+      if (!alreadyLocked) {
+        const lockBtn = document.createElement('button');
+        lockBtn.className = 'close-toggle';
+        lockBtn.textContent = '🔒 Lock Bet';
+        lockBtn.style.cssText = 'border-color:#3730a3;color:#818cf8';
+        lockBtn.onclick = async () => {
+          if (!confirm('Lock this bet? No more wagers will be accepted until an outcome is set.')) return;
+          lockBtn.disabled = true;
+          lockBtn.textContent = 'Locking…';
+          try {
+            const res = await fetch(`/api/bets/${bet.id}/lock`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${TOKEN}` },
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+            const idx = allBets.findIndex(b => b.id === bet.id);
+            if (idx !== -1) allBets[idx] = body;
+            renderView();
+          } catch(e) {
+            alert(e.message);
+            lockBtn.disabled = false;
+            lockBtn.textContent = '🔒 Lock Bet';
+          }
+        };
+        sec.appendChild(lockBtn);
+      }
+
+      // ── Set Outcome toggle + form ─────────────────────────────────────────────
       let formVisible = false;
       const toggleBtn = document.createElement('button');
       toggleBtn.className = 'close-toggle';
-      toggleBtn.textContent = 'Close Bet…';
+      toggleBtn.textContent = alreadyLocked ? 'Set Outcome…' : 'Close with Outcome…';
       sec.appendChild(toggleBtn);
 
       const closeForm = document.createElement('div');
@@ -679,7 +722,6 @@
       closeForm.style.display = 'none';
 
       const winSel = document.createElement('select');
-      winSel.className = 'close-form select';
       winSel.style.cssText = 'background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.6rem;font-size:0.82rem;outline:none;font-family:inherit';
       bet.options.forEach(opt => {
         const o = document.createElement('option');
@@ -690,13 +732,13 @@
 
       const confirmBtn = document.createElement('button');
       confirmBtn.className = 'close-confirm';
-      confirmBtn.textContent = 'Confirm Close';
+      confirmBtn.textContent = 'Confirm';
 
       const closeErr = document.createElement('span');
       closeErr.style.cssText = 'font-size:0.72rem;color:#f87171';
 
       confirmBtn.onclick = async () => {
-        if (!confirm(`Close this bet with "${optMap[winSel.value]}" as the winner?`)) return;
+        if (!confirm(`Set "${optMap[winSel.value]}" as the winner and pay out?`)) return;
         confirmBtn.disabled = true;
         confirmBtn.textContent = 'Closing…';
         closeErr.textContent = '';
@@ -710,7 +752,6 @@
           if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
           const idx = allBets.findIndex(b => b.id === bet.id);
           if (idx !== -1) allBets[idx] = body;
-          // Refresh balances
           const newBals = await fetch('/api/bets/balances').then(r => r.json()).catch(() => balancesList);
           balancesList = newBals;
           await refreshBalance();
@@ -718,7 +759,7 @@
         } catch(e) {
           closeErr.textContent = e.message;
           confirmBtn.disabled = false;
-          confirmBtn.textContent = 'Confirm Close';
+          confirmBtn.textContent = 'Confirm';
         }
       };
 
@@ -728,7 +769,7 @@
       toggleBtn.onclick = () => {
         formVisible = !formVisible;
         closeForm.style.display = formVisible ? '' : 'none';
-        toggleBtn.textContent = formVisible ? '✕ Cancel' : 'Close Bet…';
+        toggleBtn.textContent = formVisible ? '✕ Cancel' : (alreadyLocked ? 'Set Outcome…' : 'Close with Outcome…');
       };
 
       return sec;
