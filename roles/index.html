@@ -65,6 +65,7 @@
     .badge-rosters { background: #1e3a5f; color: #93c5fd; }
     .badge-curator { background: #2e1065; color: #c4b5fd; }
     .badge-stats   { background: #0d2a33; color: #5eead4; }
+    .badge-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid #854d0e; }
     .badge-team    { background: #1c2c1e; color: #86efac; }
 
     .role-card h2 {
@@ -187,6 +188,7 @@
     .trb-rosters { background: #1e3a5f; color: #93c5fd; }
     .trb-curator { background: #2e1065; color: #c4b5fd; }
     .trb-stats   { background: #0d2a33; color: #5eead4; }
+    .trb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid #854d0e; }
     .trb-team    { background: #1c2c1e; color: #86efac; }
 
     .empty-state { text-align: center; color: #6b7280; padding: 2rem; }
@@ -449,6 +451,21 @@
 
     <div class="role-card">
       <div class="role-card-header">
+        <span class="role-badge badge-bookie">Bookie</span>
+        <h2>Bookie</h2>
+      </div>
+      <p>Manages the NBN Bets system.</p>
+      <ul>
+        <li>Create new bets (pool and fixed-odds) via the pre-canned wizard or custom form</li>
+        <li>Lock open bets to close wagering</li>
+        <li>Set outcomes and close bets, triggering automatic payouts</li>
+        <li>Delete bets with no wagers placed</li>
+      </ul>
+      <p class="inherits">Does not grant roster editing, transaction recording, or any other league admin access.</p>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
         <span class="role-badge badge-team">Team Roles</span>
         <h2>Team Roles <span style="font-weight:400;color:#6b7280;font-size:0.875rem">(atl, bkn, bos, …)</span></h2>
       </div>
@@ -484,11 +501,12 @@
 
 <script>
 function roleBadgeClass(role) {
-  if (role === 'admin') return 'trb-admin';
-  if (role === 'bod') return 'trb-bod';
+  if (role === 'admin')   return 'trb-admin';
+  if (role === 'bod')     return 'trb-bod';
   if (role === 'rosters') return 'trb-rosters';
   if (role === 'curator') return 'trb-curator';
-  if (role === 'stats') return 'trb-stats';
+  if (role === 'stats')   return 'trb-stats';
+  if (role === 'bookie')  return 'trb-bookie';
   return 'trb-team';
 }
 
