@@ -592,7 +592,8 @@
         }
         const data = await res.json();
         status.className = "form-status ok";
-        status.textContent = `Queued (id: ${data.id}) — screenshots saved for parsing.`;
+        const rewardStr = data.nbyen_reward ? ` · +NB¥${data.nbyen_reward} earned` : '';
+        status.textContent = `Queued (id: ${data.id}) — screenshots saved for parsing${rewardStr}.`;
         btn.disabled = false;
         loadPending();
       } catch (e) {
@@ -942,6 +943,7 @@
       btn.disabled = true;
       status.className = "form-status";
       let totalRows = 0;
+      let totalReward = 0;
       const failed = [];
 
       for (let i = 0; i < gameQueue.length; i++) {
@@ -959,6 +961,7 @@
           } else {
             const data = await res.json();
             totalRows += data.rows_added || 0;
+            totalReward += data.nbyen_reward || 0;
           }
         } catch (e) {
           failed.push(`${g.home_team} vs ${g.away_team}: ${e.message}`);
@@ -981,7 +984,8 @@
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         status.className = "form-status ok";
-        status.textContent = `✓ ${gameQueue.length} game(s) committed (${totalRows} rows). Rebuilding stats…`;
+        const rewardStr = totalReward > 0 ? ` · +NB¥${totalReward} earned` : '';
+        status.textContent = `✓ ${gameQueue.length} game(s) committed (${totalRows} rows). Rebuilding stats…${rewardStr}`;
         gameQueue = [];
         renderQueue();
         startBuildPoll();
@@ -1091,7 +1095,8 @@
         }
         const data = await res.json();
         status.className = "form-status ok";
-        status.textContent = `✓ Committed ${data.rows_added} rows (${game.home_pts}–${game.away_pts})${data.building ? " · Rebuilding stats…" : ""}`;
+        const rewardStr = data.nbyen_reward ? ` · +NB¥${data.nbyen_reward} earned` : '';
+        status.textContent = `✓ Committed ${data.rows_added} rows (${game.home_pts}–${game.away_pts})${data.building ? " · Rebuilding stats…" : ""}${rewardStr}`;
         if (data.building) startBuildPoll();
       } catch (e) {
         status.className = "form-status err";
