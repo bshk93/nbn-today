@@ -206,12 +206,14 @@
 
   <script>
     const TOKEN = localStorage.getItem('nbn_token');
-    let currentUser   = null;   // {name, roles}
-    let allBets       = [];
-    let balancesList  = [];
-    let currentTab    = 'open';
-    let showNewForm   = false;
-    let showCannedForm = false;
+    let currentUser     = null;   // {name, roles}
+    let allBets         = [];
+    let balancesList    = [];
+    let formerMembers   = new Set();  // names with no active tenure
+    let currentTab      = 'open';
+    let showNewForm     = false;
+    let showCannedForm  = false;
+    let showFormerBals  = false;
 
     // Canned bet data caches
     let _futureGamesCache  = null;
@@ -250,12 +252,20 @@
     // ── Data ─────────────────────────────────────────────────────────────────
 
     async function loadData() {
-      const [betsRes, balsRes] = await Promise.allSettled([
+      const [betsRes, balsRes, membersRes] = await Promise.allSettled([
         fetch('/api/bets').then(r => r.json()),
         fetch('/api/bets/balances').then(r => r.json()),
+        fetch('/api/members/public').then(r => r.json()),
       ]);
-      if (betsRes.status === 'fulfilled') allBets      = betsRes.value;
-      if (balsRes.status === 'fulfilled') balancesList = balsRes.value;
+      if (betsRes.status === 'fulfilled')    allBets      = betsRes.value;
+      if (balsRes.status === 'fulfilled')    balancesList = balsRes.value;
+      if (membersRes.status === 'fulfilled') {
+        formerMembers = new Set(
+          membersRes.value
+            .filter(m => !m.tenures.some(t => !t.end))
+            .map(m => m.name)
+        );
+      }
     }
 
     async function checkAuth() {
@@ -332,6 +342,7 @@
       currentTab    = t;
       showNewForm   = false;
       showCannedForm = false;
+      if (t !== 'balances') showFormerBals = false;
       renderFormArea();
       ['open','closed','balances'].forEach(id => {
         document.getElementById(`tab-${id}`).classList.toggle('active', id === t);
@@ -597,6 +608,14 @@
         content.innerHTML = '<div class="empty-state">No balance data yet.</div>';
         return;
       }
+
+      const formerCount  = balancesList.filter(r => formerMembers.has(r.name)).length;
+      const visibleRows  = showFormerBals
+        ? balancesList
+        : balancesList.filter(r => !formerMembers.has(r.name));
+
+      const wrap = document.createElement('div');
+
       const table = document.createElement('table');
       table.className = 'balances-table';
       const thead = table.createTHead();
@@ -608,27 +627,50 @@
         hrow.appendChild(th);
       });
       const tbody = table.createTBody();
-      balancesList.forEach((row, idx) => {
+      visibleRows.forEach((row, idx) => {
         const tr = tbody.insertRow();
-        if (currentUser && row.name === currentUser.name) tr.className = 'me';
+        const isMe     = currentUser && row.name === currentUser.name;
+        const isFormer = formerMembers.has(row.name);
+        if (isMe) tr.className = 'me';
+        if (isFormer) tr.style.opacity = '0.45';
+
         const pl = row.balance - 1000;
         const plClass = pl > 0 ? 'pl-pos' : pl < 0 ? 'pl-neg' : 'pl-zero';
         const plSign  = pl >= 0 ? '+' : '';
 
         const rankTd = tr.insertCell(); rankTd.className = 'rank-cell'; rankTd.style.textAlign = 'right'; rankTd.textContent = idx + 1;
         const nameTd = tr.insertCell(); nameTd.className = 'name-cell'; nameTd.textContent = row.name;
-        if (currentUser && row.name === currentUser.name) {
+        if (isMe) {
           const you = document.createElement('span');
           you.style.cssText = 'font-size:0.68rem;color:#6b7280;margin-left:0.4rem';
           you.textContent = '(you)';
           nameTd.appendChild(you);
         }
+        if (isFormer) {
+          const tag = document.createElement('span');
+          tag.style.cssText = 'font-size:0.65rem;color:#4b5563;margin-left:0.4rem;font-style:italic';
+          tag.textContent = 'former';
+          nameTd.appendChild(tag);
+        }
         const balTd = tr.insertCell(); balTd.className = 'bal-cell'; balTd.style.textAlign = 'right'; balTd.textContent = nby(row.balance);
         const plTd  = tr.insertCell(); plTd.className  = plClass;    plTd.style.textAlign  = 'right'; plTd.textContent  = `${plSign}${nby(pl)}`;
       });
 
+      wrap.appendChild(table);
+
+      // Former members toggle
+      if (formerCount > 0) {
+        const toggle = document.createElement('button');
+        toggle.style.cssText = 'margin-top:0.75rem;background:none;border:none;color:#4b5563;font-size:0.75rem;cursor:pointer;padding:0;font-family:inherit;';
+        toggle.textContent = showFormerBals
+          ? `Hide former members`
+          : `Show ${formerCount} former member${formerCount !== 1 ? 's' : ''}`;
+        toggle.onclick = () => { showFormerBals = !showFormerBals; renderBalances(); };
+        wrap.appendChild(toggle);
+      }
+
       content.innerHTML = '';
-      content.appendChild(table);
+      content.appendChild(wrap);
     }
 
     // ── Bet Card ──────────────────────────────────────────────────────────────
