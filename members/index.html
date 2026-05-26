@@ -76,6 +76,7 @@
     .rb-rosters { background: #1e3a5f; color: #93c5fd; }
     .rb-curator { background: #2e1065; color: #c4b5fd; }
     .rb-stats   { background: #0d2a33; color: #5eead4; }
+    .rb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid #854d0e; }
     .rb-team    { background: #1c2c1e; color: #86efac; }
 
     .action-cell { display: flex; gap: 0.35rem; align-items: center; white-space: nowrap; }
@@ -383,6 +384,7 @@ function roleClass(r) {
   if (r === 'rosters') return 'rb-rosters';
   if (r === 'curator') return 'rb-curator';
   if (r === 'stats')   return 'rb-stats';
+  if (r === 'bookie')  return 'rb-bookie';
   return 'rb-team';
 }
 
