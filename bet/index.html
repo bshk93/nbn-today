@@ -233,6 +233,20 @@
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
+    // American odds ↔ probability conversions
+    const pctToOdds = pct => {
+      const p = pct / 100;
+      if (p <= 0 || p >= 1) return '';
+      if (Math.abs(p - 0.5) < 0.0001) return '+100';
+      if (p > 0.5) return String(Math.round(-p / (1 - p) * 100));
+      return '+' + Math.round((1 - p) / p * 100);
+    };
+    const oddsToPct = str => {
+      const n = parseFloat(str);
+      if (isNaN(n) || n === 0) return null;
+      return n > 0 ? 100 / (n + 100) * 100 : Math.abs(n) / (Math.abs(n) + 100) * 100;
+    };
+
     // ── Data ─────────────────────────────────────────────────────────────────
 
     async function loadData() {
@@ -417,19 +431,41 @@
         // Probability wrap (shown only in fixed_odds mode)
         const probWrap = document.createElement('span');
         probWrap.className = 'prob-wrap';
-        probWrap.style.cssText = `display:${betType === 'fixed_odds' ? 'flex' : 'none'};align-items:center;gap:2px;flex-shrink:0`;
+        probWrap.style.cssText = `display:${betType === 'fixed_odds' ? 'flex' : 'none'};align-items:center;gap:3px;flex-shrink:0`;
 
         const probInp = document.createElement('input');
-        probInp.type = 'number'; probInp.min = '1'; probInp.max = '99'; probInp.step = '0.1';
+        probInp.type = 'number'; probInp.min = '0.1'; probInp.max = '99.9'; probInp.step = '0.1';
         probInp.placeholder = '%';
-        probInp.style.cssText = 'width:56px;background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.4rem;font-size:0.82rem;outline:none;font-family:inherit;';
-        probInp.oninput = updateProbSum;
+        probInp.style.cssText = 'width:52px;background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.4rem;font-size:0.82rem;outline:none;font-family:inherit;';
 
         const pctLbl = document.createElement('span');
         pctLbl.textContent = '%';
-        pctLbl.style.cssText = 'font-size:0.72rem;color:#6b7280;';
+        pctLbl.style.cssText = 'font-size:0.72rem;color:#6b7280;margin-right:2px;';
 
-        probWrap.append(probInp, pctLbl);
+        const divLbl = document.createElement('span');
+        divLbl.textContent = '/';
+        divLbl.style.cssText = 'font-size:0.72rem;color:#4b5563;';
+
+        const oddsInp = document.createElement('input');
+        oddsInp.type = 'text'; oddsInp.placeholder = 'odds';
+        oddsInp.style.cssText = 'width:62px;background:#111827;border:1px solid #374151;color:#a78bfa;border-radius:5px;padding:0.3rem 0.4rem;font-size:0.82rem;outline:none;font-family:inherit;';
+
+        // Cross-sync: % ↔ American odds
+        probInp.oninput = () => {
+          const pct = parseFloat(probInp.value);
+          if (!isNaN(pct) && pct > 0 && pct < 100) oddsInp.value = pctToOdds(pct);
+          else oddsInp.value = '';
+          updateProbSum();
+        };
+        oddsInp.oninput = () => {
+          const pct = oddsToPct(oddsInp.value);
+          if (pct !== null && pct > 0 && pct < 100) {
+            probInp.value = pct.toFixed(1);
+            updateProbSum();
+          }
+        };
+
+        probWrap.append(probInp, pctLbl, divLbl, oddsInp);
 
         const del = document.createElement('button');
         del.className = 'opt-del';
