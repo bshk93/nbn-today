@@ -636,7 +636,7 @@
 
         const pl = row.balance - 1000;
         const plClass = pl > 0 ? 'pl-pos' : pl < 0 ? 'pl-neg' : 'pl-zero';
-        const plSign  = pl >= 0 ? '+' : '';
+        const plSign  = pl > 0 ? '+' : pl < 0 ? '-' : '';
 
         const rankTd = tr.insertCell(); rankTd.className = 'rank-cell'; rankTd.style.textAlign = 'right'; rankTd.textContent = idx + 1;
         const nameTd = tr.insertCell(); nameTd.className = 'name-cell'; nameTd.textContent = row.name;
