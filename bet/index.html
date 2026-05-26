@@ -142,6 +142,18 @@
     .empty-state { color: #6b7280; font-size: 0.875rem; padding: 2rem 0; text-align: center; }
     .loading { color: #6b7280; font-size: 0.875rem; }
 
+    /* Ledger table */
+    .ledger-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .ledger-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; padding: 0 0.5rem 0.5rem; border-bottom: 1px solid #374151; }
+    .ledger-table th.num { text-align: right; }
+    .ledger-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #1f2937; color: #d1d5db; vertical-align: top; }
+    .ledger-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .ledger-table tr:last-child td { border-bottom: none; }
+    .ledger-ts   { font-size: 0.7rem; color: #6b7280; white-space: nowrap; }
+    .ledger-name { font-weight: 500; color: #f3f4f6; }
+    .ledger-reason { font-size: 0.75rem; color: #9ca3af; }
+    .ledger-bal  { color: #fbbf24; }
+
     /* Fixed-odds type badge */
     .bet-type-badge { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 3px; padding: 0.1rem 0.35rem; background: #1e1b4b; color: #a78bfa; border: 1px solid #4c1d95; margin-left: 0.4rem; vertical-align: middle; }
     /* Form type toggle */
@@ -198,6 +210,7 @@
       <button class="tab-btn active" id="tab-open">Open</button>
       <button class="tab-btn"        id="tab-closed">Closed</button>
       <button class="tab-btn"        id="tab-balances">Balances</button>
+      <button class="tab-btn"        id="tab-history" style="display:none">History</button>
     </div>
 
     <div id="new-bet-form-wrap" style="display:none"></div>
@@ -210,6 +223,7 @@
     let allBets         = [];
     let balancesList    = [];
     let formerMembers   = new Set();  // names with no active tenure
+    let ledgerEntries   = [];
     let currentTab      = 'open';
     let showNewForm     = false;
     let showCannedForm  = false;
@@ -322,6 +336,11 @@
       document.getElementById('tab-open').onclick     = () => switchTab('open');
       document.getElementById('tab-closed').onclick   = () => switchTab('closed');
       document.getElementById('tab-balances').onclick = () => switchTab('balances');
+      document.getElementById('tab-history').onclick  = () => switchTab('history');
+
+      if (currentUser?.roles?.includes('admin')) {
+        document.getElementById('tab-history').style.display = '';
+      }
 
       renderView();
     }
@@ -344,15 +363,17 @@
       showCannedForm = false;
       if (t !== 'balances') showFormerBals = false;
       renderFormArea();
-      ['open','closed','balances'].forEach(id => {
-        document.getElementById(`tab-${id}`).classList.toggle('active', id === t);
+      ['open','closed','balances','history'].forEach(id => {
+        const el = document.getElementById(`tab-${id}`);
+        if (el) el.classList.toggle('active', id === t);
       });
       renderView();
     }
 
     function renderView() {
-      if (currentTab === 'open')     renderOpenBets();
+      if      (currentTab === 'open')     renderOpenBets();
       else if (currentTab === 'closed')   renderClosedBets();
+      else if (currentTab === 'history')  renderHistory();
       else                                renderBalances();
     }
 
@@ -551,7 +572,7 @@
           showNewForm = false;
           renderFormArea();
           currentTab = 'open';
-          ['open','closed','balances'].forEach(id => document.getElementById(`tab-${id}`).classList.toggle('active', id === 'open'));
+          ['open','closed','balances','history'].forEach(id => { const el = document.getElementById(`tab-${id}`); if (el) el.classList.toggle('active', id === 'open'); });
           renderView();
         } catch(e) {
           errEl.textContent = e.message;
@@ -662,6 +683,89 @@
         wrap.appendChild(toggle);
       }
 
+      content.innerHTML = '';
+      content.appendChild(wrap);
+    }
+
+    // ── History (ledger) ─────────────────────────────────────────────────────
+
+    async function renderHistory() {
+      const content = document.getElementById('content');
+      content.innerHTML = '<span class="loading">Loading…</span>';
+
+      try {
+        const res = await fetch('/api/bets/ledger', {
+          headers: { 'Authorization': `Bearer ${TOKEN}` }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        ledgerEntries = await res.json();
+      } catch (e) {
+        content.innerHTML = `<div class="empty-state">Failed to load ledger: ${e.message}</div>`;
+        return;
+      }
+
+      if (!ledgerEntries.length) {
+        content.innerHTML = '<div class="empty-state">No balance history yet.</div>';
+        return;
+      }
+
+      const wrap = document.createElement('div');
+
+      // Summary line
+      const summary = document.createElement('div');
+      summary.style.cssText = 'font-size:0.75rem;color:#6b7280;margin-bottom:0.75rem;';
+      summary.textContent = `${ledgerEntries.length.toLocaleString()} entries`;
+      wrap.appendChild(summary);
+
+      const table = document.createElement('table');
+      table.className = 'ledger-table';
+      const thead = table.createTHead();
+      const hrow  = thead.insertRow();
+      [['Time',''], ['Member',''], ['Δ NB¥','num'], ['Balance','num'], ['Reason','']].forEach(([text, cls]) => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        if (cls) th.className = cls;
+        hrow.appendChild(th);
+      });
+
+      const tbody = table.createTBody();
+      ledgerEntries.forEach(entry => {
+        const tr = tbody.insertRow();
+
+        // Timestamp
+        const tsTd = tr.insertCell();
+        tsTd.className = 'ledger-ts';
+        const ts = new Date(entry.ts);
+        tsTd.textContent = ts.toLocaleString('en-US', {
+          month: 'short', day: 'numeric',
+          hour: 'numeric', minute: '2-digit', hour12: true
+        });
+
+        // Member name
+        const nameTd = tr.insertCell();
+        nameTd.className = 'ledger-name';
+        nameTd.textContent = entry.member;
+
+        // Delta
+        const deltaTd = tr.insertCell();
+        deltaTd.className = 'num';
+        const delta = Number(entry.delta);
+        const sign  = delta > 0 ? '+' : delta < 0 ? '-' : '';
+        deltaTd.textContent = `${sign}${nby(delta)}`;
+        deltaTd.style.color = delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : '#6b7280';
+
+        // New balance
+        const balTd = tr.insertCell();
+        balTd.className = 'ledger-bal num';
+        balTd.textContent = nby(entry.balance);
+
+        // Reason
+        const reasonTd = tr.insertCell();
+        reasonTd.className = 'ledger-reason';
+        reasonTd.textContent = entry.reason || '';
+      });
+
+      wrap.appendChild(table);
       content.innerHTML = '';
       content.appendChild(wrap);
     }
