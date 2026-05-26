@@ -429,8 +429,8 @@
         if (betType !== 'fixed_odds') { probSumEl.style.display = 'none'; return; }
         const sum = probInputs.reduce((acc, inp) => acc + (parseFloat(inp.value) || 0), 0);
         const ok  = Math.abs(sum - 100) < 0.1;
-        probSumEl.textContent = `Sum: ${sum.toFixed(1)}%${ok ? ' ✓' : ''}`;
-        probSumEl.style.color   = ok ? '#34d399' : '#f87171';
+        probSumEl.textContent = ok ? `Sum: ${sum.toFixed(1)}% ✓` : `Sum: ${sum.toFixed(1)}% — house edge applies`;
+        probSumEl.style.color   = ok ? '#34d399' : '#f59e0b';
         probSumEl.style.display = '';
       }
 
@@ -537,13 +537,6 @@
         if (rawOpts.some(o => o === null)) return;
         const opts = rawOpts.filter(Boolean);
         if (opts.length < 2)               { errEl.textContent = 'At least 2 options required.'; return; }
-        if (betType === 'fixed_odds') {
-          const sum = opts.reduce((acc, o) => acc + o.probability, 0);
-          if (Math.abs(sum - 1.0) > 0.005) {
-            errEl.textContent = `Probabilities must sum to 100% (currently ${(sum * 100).toFixed(1)}%).`;
-            return;
-          }
-        }
         submitBtn.disabled = true; submitBtn.textContent = 'Creating…';
         errEl.textContent = '';
         try {
