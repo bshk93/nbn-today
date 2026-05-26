@@ -141,6 +141,23 @@
 
     .empty-state { color: #6b7280; font-size: 0.875rem; padding: 2rem 0; text-align: center; }
     .loading { color: #6b7280; font-size: 0.875rem; }
+
+    /* Fixed-odds type badge */
+    .bet-type-badge { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 3px; padding: 0.1rem 0.35rem; background: #1e1b4b; color: #a78bfa; border: 1px solid #4c1d95; margin-left: 0.4rem; vertical-align: middle; }
+    /* Form type toggle */
+    .type-toggle-wrap { display: flex; gap: 0.35rem; }
+    .type-toggle-btn { background: none; border: 1px solid #374151; color: #6b7280; border-radius: 5px; padding: 0.25rem 0.75rem; cursor: pointer; font-size: 0.78rem; font-weight: 500; }
+    .type-toggle-btn.active { background: #1e1b4b; border-color: #4c1d95; color: #a78bfa; }
+    .type-toggle-btn:hover:not(.active) { border-color: #6b7280; color: #9ca3af; }
+    /* Odds multiplier chip on option row */
+    .opt-odds { font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: #1e1b4b; border-radius: 3px; padding: 0.1rem 0.3rem; white-space: nowrap; flex-shrink: 0; margin-left: 0.2rem; }
+    /* Potential payout preview in wager form */
+    .payout-preview { font-size: 0.72rem; color: #34d399; padding: 0.15rem 0 0; }
+    /* Prob sum indicator in form */
+    .prob-sum-row { font-size: 0.72rem; font-weight: 600; }
+    /* Shortfall/surplus notice on closed fixed-odds bets */
+    .shortfall-notice { font-size: 0.72rem; color: #f59e0b; margin-top: 0.35rem; }
+    .surplus-notice   { font-size: 0.72rem; color: #34d399;  margin-top: 0.35rem; }
   </style>
 </head>
 <body>
@@ -264,6 +281,9 @@
       const form = document.createElement('div');
       form.className = 'new-bet-form';
 
+      let betType     = 'pool';
+      const probInputs = [];  // parallel to optInputs
+
       const addField = (labelText, el) => {
         const lbl = document.createElement('label');
         lbl.textContent = labelText;
@@ -280,6 +300,34 @@
       descIn.placeholder = 'Description (optional)';
       addField('Description', descIn);
 
+      // ── Bet type toggle ──────────────────────────────────────────────────────
+      const typeLbl = document.createElement('label');
+      typeLbl.textContent = 'Bet Type *';
+      form.appendChild(typeLbl);
+
+      const typeWrap = document.createElement('div');
+      typeWrap.className = 'type-toggle-wrap';
+      const poolBtn = document.createElement('button');
+      poolBtn.type = 'button'; poolBtn.className = 'type-toggle-btn active'; poolBtn.textContent = '🪣 Pool';
+      const oddsBtn = document.createElement('button');
+      oddsBtn.type = 'button'; oddsBtn.className = 'type-toggle-btn'; oddsBtn.textContent = '🎯 Fixed Odds';
+
+      // defined after optsWrap is created; called via onclick
+      function setTypeToggle(type) {
+        betType = type;
+        poolBtn.classList.toggle('active', type === 'pool');
+        oddsBtn.classList.toggle('active', type === 'fixed_odds');
+        optsWrap.querySelectorAll('.prob-wrap').forEach(w => {
+          w.style.display = type === 'fixed_odds' ? 'flex' : 'none';
+        });
+        updateProbSum();
+      }
+      poolBtn.onclick = () => setTypeToggle('pool');
+      oddsBtn.onclick = () => setTypeToggle('fixed_odds');
+      typeWrap.append(poolBtn, oddsBtn);
+      form.appendChild(typeWrap);
+
+      // ── Options ──────────────────────────────────────────────────────────────
       const optsLbl = document.createElement('label');
       optsLbl.textContent = 'Options *';
       form.appendChild(optsLbl);
@@ -289,28 +337,64 @@
       form.appendChild(optsWrap);
       const optInputs = [];
 
+      const probSumEl = document.createElement('div');
+      probSumEl.className = 'prob-sum-row';
+      probSumEl.style.display = 'none';
+
+      function updateProbSum() {
+        if (betType !== 'fixed_odds') { probSumEl.style.display = 'none'; return; }
+        const sum = probInputs.reduce((acc, inp) => acc + (parseFloat(inp.value) || 0), 0);
+        const ok  = Math.abs(sum - 100) < 0.1;
+        probSumEl.textContent = `Sum: ${sum.toFixed(1)}%${ok ? ' ✓' : ''}`;
+        probSumEl.style.color   = ok ? '#34d399' : '#f87171';
+        probSumEl.style.display = '';
+      }
+
       function addOptRow(val = '') {
         const row = document.createElement('div');
         row.className = 'opt-row';
+
         const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.value = val;
+        inp.type = 'text'; inp.value = val;
         inp.placeholder = `Option ${optInputs.length + 1}`;
+
+        // Probability wrap (shown only in fixed_odds mode)
+        const probWrap = document.createElement('span');
+        probWrap.className = 'prob-wrap';
+        probWrap.style.cssText = `display:${betType === 'fixed_odds' ? 'flex' : 'none'};align-items:center;gap:2px;flex-shrink:0`;
+
+        const probInp = document.createElement('input');
+        probInp.type = 'number'; probInp.min = '1'; probInp.max = '99'; probInp.step = '0.1';
+        probInp.placeholder = '%';
+        probInp.style.cssText = 'width:56px;background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.4rem;font-size:0.82rem;outline:none;font-family:inherit;';
+        probInp.oninput = updateProbSum;
+
+        const pctLbl = document.createElement('span');
+        pctLbl.textContent = '%';
+        pctLbl.style.cssText = 'font-size:0.72rem;color:#6b7280;';
+
+        probWrap.append(probInp, pctLbl);
+
         const del = document.createElement('button');
         del.className = 'opt-del';
         del.textContent = '×';
         del.onclick = () => {
           if (optInputs.length <= 2) return;
           const idx = optInputs.indexOf(inp);
-          if (idx !== -1) optInputs.splice(idx, 1);
+          if (idx !== -1) { optInputs.splice(idx, 1); probInputs.splice(idx, 1); }
           row.remove();
+          updateProbSum();
         };
+
         optInputs.push(inp);
-        row.append(inp, del);
+        probInputs.push(probInp);
+        row.append(inp, probWrap, del);
         optsWrap.appendChild(row);
       }
       addOptRow('');
       addOptRow('');
+
+      form.appendChild(probSumEl);
 
       const addOptBtn = document.createElement('button');
       addOptBtn.className = 'add-opt-btn';
@@ -331,17 +415,36 @@
       errEl.className = 'form-err';
 
       submitBtn.onclick = async () => {
-        const title = titleIn.value.trim();
-        const opts  = optInputs.map(i => i.value.trim()).filter(Boolean);
-        if (!title)       { errEl.textContent = 'Title is required.'; return; }
-        if (opts.length < 2) { errEl.textContent = 'At least 2 options required.'; return; }
+        const title   = titleIn.value.trim();
+        const rawOpts = optInputs.map((inp, i) => {
+          const label = inp.value.trim();
+          if (!label) return null;
+          const obj = { label };
+          if (betType === 'fixed_odds') {
+            const pct = parseFloat(probInputs[i].value);
+            if (isNaN(pct) || pct <= 0) { errEl.textContent = `Enter a probability % for "${label}".`; return null; }
+            obj.probability = pct / 100;
+          }
+          return obj;
+        });
+        if (!title)                        { errEl.textContent = 'Title is required.'; return; }
+        if (rawOpts.some(o => o === null)) return;
+        const opts = rawOpts.filter(Boolean);
+        if (opts.length < 2)               { errEl.textContent = 'At least 2 options required.'; return; }
+        if (betType === 'fixed_odds') {
+          const sum = opts.reduce((acc, o) => acc + o.probability, 0);
+          if (Math.abs(sum - 1.0) > 0.005) {
+            errEl.textContent = `Probabilities must sum to 100% (currently ${(sum * 100).toFixed(1)}%).`;
+            return;
+          }
+        }
         submitBtn.disabled = true; submitBtn.textContent = 'Creating…';
         errEl.textContent = '';
         try {
           const res = await fetch('/api/bets', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-            body: JSON.stringify({ title, description: descIn.value.trim(), options: opts.map(l => ({ label: l })) }),
+            body: JSON.stringify({ title, description: descIn.value.trim(), options: opts, bet_type: betType }),
           });
           const body = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
@@ -436,14 +539,15 @@
     // ── Bet Card ──────────────────────────────────────────────────────────────
 
     function makeBetCard(bet) {
-      const isOpen   = bet.status === 'open';
-      const isLocked = bet.status === 'locked';
-      const isClosed = bet.status === 'closed';
-      const voided   = bet.resolution?.voided;
-      const myWager  = currentUser ? bet.wagers?.[currentUser.name] : null;
-      const optMap   = Object.fromEntries(bet.options.map(o => [o.id, o.label]));
-      const totals   = bet.option_totals || {};
-      const pool     = bet.total_pool || 0;
+      const isOpen      = bet.status === 'open';
+      const isLocked    = bet.status === 'locked';
+      const isClosed    = bet.status === 'closed';
+      const voided      = bet.resolution?.voided;
+      const isFixedOdds = bet.bet_type === 'fixed_odds';
+      const myWager     = currentUser ? bet.wagers?.[currentUser.name] : null;
+      const optMap      = Object.fromEntries(bet.options.map(o => [o.id, o.label]));
+      const totals      = bet.option_totals || {};
+      const pool        = bet.total_pool || 0;
 
       const card = document.createElement('div');
       card.className = `bet-card${isLocked ? ' locked' : isClosed ? ' closed' : ''}`;
@@ -463,9 +567,16 @@
       // Meta
       const meta = document.createElement('div');
       meta.className = 'bet-meta';
-      meta.textContent = `Created by ${bet.created_by} · ${fmtDate(bet.created_at)}`;
-      if (isLocked && bet.locked_at) meta.textContent += ` · Locked ${fmtDate(bet.locked_at)}`;
-      if (isClosed && bet.closed_at) meta.textContent += ` · Closed ${fmtDate(bet.closed_at)}`;
+      let metaText = `Created by ${bet.created_by} · ${fmtDate(bet.created_at)}`;
+      if (isLocked && bet.locked_at) metaText += ` · Locked ${fmtDate(bet.locked_at)}`;
+      if (isClosed && bet.closed_at) metaText += ` · Closed ${fmtDate(bet.closed_at)}`;
+      meta.textContent = metaText;
+      if (isFixedOdds) {
+        const typeBadge = document.createElement('span');
+        typeBadge.className = 'bet-type-badge';
+        typeBadge.textContent = 'Fixed Odds';
+        meta.appendChild(typeBadge);
+      }
       card.appendChild(meta);
 
       if (bet.description) {
@@ -479,9 +590,12 @@
       const optsList = document.createElement('div');
       optsList.className = 'options-list';
       bet.options.forEach(opt => {
-        const amt     = totals[opt.id] || 0;
-        const pct     = pool > 0 ? (amt / pool * 100) : 0;
-        const isWin   = isClosed && bet.winning_option_id === opt.id;
+        const amt      = totals[opt.id] || 0;
+        const prob     = isFixedOdds ? (opt.probability || 0) : 0;
+        const mult     = isFixedOdds && prob > 0 ? (1 / prob) : 0;
+        // Fixed-odds: bar = stated probability; Pool: bar = stake share
+        const barPct   = isFixedOdds ? prob * 100 : (pool > 0 ? amt / pool * 100 : 0);
+        const isWin    = isClosed && bet.winning_option_id === opt.id;
         const isMyPick = myWager && myWager.option_id === opt.id;
 
         const row = document.createElement('div');
@@ -491,23 +605,35 @@
         lbl.className = `opt-label${isWin ? ' winner' : ''}${isMyPick ? ' my-pick' : ''}`;
         lbl.textContent = opt.label;
         lbl.title = opt.label;
+        row.appendChild(lbl);
+
+        // Multiplier chip for fixed-odds
+        if (isFixedOdds && mult > 0) {
+          const oddsChip = document.createElement('span');
+          oddsChip.className = 'opt-odds';
+          oddsChip.textContent = `${mult.toFixed(2)}×`;
+          row.appendChild(oddsChip);
+        }
 
         const barWrap = document.createElement('div');
         barWrap.className = 'bar-wrap';
         const barFill = document.createElement('div');
-        barFill.className = `bar-fill${isWin ? ' winner' : amt === 0 ? ' zero' : ''}`;
-        barFill.style.width = `${pct}%`;
+        barFill.className = `bar-fill${isWin ? ' winner' : barPct === 0 ? ' zero' : ''}`;
+        barFill.style.width = `${barPct}%`;
+        if (isFixedOdds && !isWin) barFill.style.background = '#7c3aed';
         barWrap.appendChild(barFill);
 
         const pctEl = document.createElement('span');
         pctEl.className = 'opt-pct';
-        pctEl.textContent = pool > 0 ? `${pct.toFixed(1)}%` : '—';
+        pctEl.textContent = isFixedOdds
+          ? `${(prob * 100).toFixed(1)}%`
+          : (pool > 0 ? `${barPct.toFixed(1)}%` : '—');
 
         const amtEl = document.createElement('span');
         amtEl.className = 'opt-amt';
         amtEl.textContent = nby(amt);
 
-        row.append(lbl, barWrap, pctEl, amtEl);
+        row.append(barWrap, pctEl, amtEl);
 
         if (isWin) {
           const winBadge = document.createElement('span');
@@ -520,17 +646,21 @@
       });
       card.appendChild(optsList);
 
-      // Pool total
+      // Pool total / staked
       const poolEl = document.createElement('div');
       poolEl.className = 'pool-total';
-      poolEl.innerHTML = `Total pool: <span class="nby">${nby(pool)}</span>`;
+      poolEl.innerHTML = `${isFixedOdds ? 'Total staked' : 'Total pool'}: <span class="nby">${nby(pool)}</span>`;
       card.appendChild(poolEl);
 
       // My current bet
       if (myWager) {
         const myInfo = document.createElement('div');
         myInfo.className = 'my-bet-info';
-        myInfo.innerHTML = `Your bet: <span class="nby">${nby(myWager.amount)}</span> on <strong>${optMap[myWager.option_id] || myWager.option_id}</strong>`;
+        let myInfoHtml = `Your bet: <span class="nby">${nby(myWager.amount)}</span> on <strong>${optMap[myWager.option_id] || myWager.option_id}</strong>`;
+        if (isFixedOdds && myWager.potential_payout) {
+          myInfoHtml += ` · potential payout: <span class="nby">${nby(myWager.potential_payout)}</span>`;
+        }
+        myInfo.innerHTML = myInfoHtml;
         card.appendChild(myInfo);
       }
 
@@ -590,23 +720,44 @@
     }
 
     function makeWagerForm(bet, myWager, optMap, pool) {
-      const wrap = document.createElement('div');
-      const locked = !!myWager; // already bet on a specific option
+      const wrap        = document.createElement('div');
+      const locked      = !!myWager;
+      const isFixedOdds = bet.bet_type === 'fixed_odds';
+      const optProbMap  = isFixedOdds
+        ? Object.fromEntries(bet.options.map(o => [o.id, o.probability || 0]))
+        : {};
 
       const form = document.createElement('div');
       form.className = 'wager-form';
 
       const amtIn = document.createElement('input');
-      amtIn.type = 'number';
-      amtIn.min = '1';
-      amtIn.step = '1';
-      amtIn.placeholder = 'NB¥';
+      amtIn.type = 'number'; amtIn.min = '1'; amtIn.step = '1'; amtIn.placeholder = 'NB¥';
 
       let chosenOptionId = myWager?.option_id || bet.options[0]?.id;
 
+      // Potential payout preview (fixed-odds only)
+      const payoutPreviewEl = document.createElement('div');
+      payoutPreviewEl.className = 'payout-preview';
+      payoutPreviewEl.style.display = 'none';
+
+      function updatePayoutPreview() {
+        if (!isFixedOdds) return;
+        const amount = parseFloat(amtIn.value);
+        const optId  = locked ? myWager.option_id : chosenOptionId;
+        const prob   = optProbMap[optId] || 0;
+        if (amount > 0 && prob > 0) {
+          const pp   = amount / prob;
+          const mult = (1 / prob).toFixed(2);
+          payoutPreviewEl.textContent = `→ potential payout: ${nby(pp)} (${mult}×)`;
+          payoutPreviewEl.style.display = '';
+        } else {
+          payoutPreviewEl.style.display = 'none';
+        }
+      }
+      amtIn.oninput = updatePayoutPreview;
+
       let selectEl = null;
       if (locked) {
-        // Locked — show which option you're adding to
         const lockLabel = document.createElement('span');
         lockLabel.style.cssText = 'font-size:0.78rem;color:#9ca3af';
         lockLabel.innerHTML = `on <strong style="color:#d1d5db">${optMap[myWager.option_id]}</strong> (add more)`;
@@ -616,11 +767,12 @@
         bet.options.forEach(opt => {
           const o = document.createElement('option');
           o.value = opt.id;
-          o.textContent = opt.label;
+          const multStr = isFixedOdds && opt.probability ? ` (${(1/opt.probability).toFixed(2)}×)` : '';
+          o.textContent = opt.label + multStr;
           selectEl.appendChild(o);
         });
         selectEl.value = chosenOptionId;
-        selectEl.onchange = () => { chosenOptionId = selectEl.value; };
+        selectEl.onchange = () => { chosenOptionId = selectEl.value; updatePayoutPreview(); };
         const onLbl = document.createElement('span');
         onLbl.style.cssText = 'font-size:0.78rem;color:#6b7280';
         onLbl.textContent = 'on';
@@ -660,10 +812,8 @@
           });
           const body = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
-          // Update local state
           const idx = allBets.findIndex(b => b.id === bet.id);
           if (idx !== -1) allBets[idx] = body;
-          // Update balance chip
           await refreshBalance();
           renderView();
         } catch(e) {
@@ -674,6 +824,7 @@
       };
 
       wrap.appendChild(form);
+      if (isFixedOdds) wrap.appendChild(payoutPreviewEl);
       return wrap;
     }
 
@@ -830,6 +981,22 @@
         myRow.style.cssText = 'margin-top:0.4rem;font-size:0.75rem;color:#34d399;font-weight:600';
         myRow.textContent = `✓ You won ${nby(myPayout)} (+${nby(myProfit)} profit)`;
         sec.appendChild(myRow);
+      }
+
+      // Shortfall / surplus for fixed-odds bets
+      if (bet.bet_type === 'fixed_odds' && !res.voided) {
+        const shortfall = res.net_shortfall || 0;
+        if (shortfall > 0) {
+          const notice = document.createElement('div');
+          notice.className = 'shortfall-notice';
+          notice.textContent = `⚠️ Shortfall: ${nby(shortfall)} — admin top-up needed`;
+          sec.appendChild(notice);
+        } else if (shortfall < 0) {
+          const notice = document.createElement('div');
+          notice.className = 'surplus-notice';
+          notice.textContent = `✓ House surplus: ${nby(Math.abs(shortfall))}`;
+          sec.appendChild(notice);
+        }
       }
 
       return sec;
