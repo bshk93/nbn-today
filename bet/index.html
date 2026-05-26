@@ -274,7 +274,11 @@
     }
 
     function isBetsRole() {
-      return currentUser && (currentUser.roles.includes('bets') || currentUser.roles.includes('admin'));
+      return currentUser && (
+        currentUser.roles.includes('bets') ||
+        currentUser.roles.includes('bookie') ||
+        currentUser.roles.includes('admin')
+      );
     }
 
     // ── Init ─────────────────────────────────────────────────────────────────
