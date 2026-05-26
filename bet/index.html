@@ -158,6 +158,28 @@
     /* Shortfall/surplus notice on closed fixed-odds bets */
     .shortfall-notice { font-size: 0.72rem; color: #f59e0b; margin-top: 0.35rem; }
     .surplus-notice   { font-size: 0.72rem; color: #34d399;  margin-top: 0.35rem; }
+
+    /* Canned bet button */
+    .new-canned-btn { background: none; border: 1px solid #4b5563; color: #60a5fa; border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+    .new-canned-btn:hover { border-color: #60a5fa; background: #0c1929; }
+
+    /* Canned bet form — uses same .new-bet-form shell but with blue accent */
+    .canned-bet-form { background: #0c1929; border: 1px solid #1d4ed8; }
+    .canned-bet-form label { color: #93c5fd; }
+    .canned-bet-form input[type="text"]:focus,
+    .canned-bet-form textarea:focus,
+    .canned-select:focus { border-color: #3b82f6; }
+    .canned-select {
+      background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 5px;
+      padding: 0.35rem 0.65rem; font-size: 0.85rem; outline: none; font-family: inherit; cursor: pointer; width: 100%;
+    }
+    .canned-info { font-size: 0.78rem; color: #9ca3af; background: #1a2535; border: 1px solid #1e3a5f; border-radius: 5px; padding: 0.4rem 0.75rem; }
+    .canned-opts-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: #6b7280; }
+    .canned-opt-chip { background: #1f2937; border: 1px solid #374151; border-radius: 4px; padding: 0.15rem 0.5rem; color: #d1d5db; font-size: 0.75rem; }
+    .canned-adj-row { display: flex; align-items: center; gap: 0.5rem; }
+    .canned-adj-btn { background: #1f2937; border: 1px solid #374151; color: #f3f4f6; border-radius: 4px; padding: 0.2rem 0.65rem; cursor: pointer; font-size: 1rem; font-family: inherit; line-height: 1; }
+    .canned-adj-btn:hover { border-color: #6b7280; }
+    .canned-line-val { font-weight: 700; font-size: 1.05rem; color: #f3f4f6; min-width: 3rem; text-align: center; }
   </style>
 </head>
 <body>
@@ -167,7 +189,8 @@
       <h1>🎲 NBN Bets</h1>
       <div class="header-right">
         <span class="balance-chip" id="balance-chip" style="display:none"></span>
-        <button class="new-bet-btn" id="new-bet-btn" style="display:none">+ New Bet</button>
+        <button class="new-canned-btn" id="new-canned-btn" style="display:none">+ New Bet</button>
+        <button class="new-bet-btn" id="new-bet-btn" style="display:none">+ New Custom Bet</button>
       </div>
     </header>
 
@@ -183,11 +206,19 @@
 
   <script>
     const TOKEN = localStorage.getItem('nbn_token');
-    let currentUser  = null;   // {name, roles}
-    let allBets      = [];
-    let balancesList = [];
-    let currentTab   = 'open';
-    let showNewForm  = false;
+    let currentUser   = null;   // {name, roles}
+    let allBets       = [];
+    let balancesList  = [];
+    let currentTab    = 'open';
+    let showNewForm   = false;
+    let showCannedForm = false;
+
+    // Canned bet data caches
+    let _futureGamesCache  = null;
+    let _playersCache      = null;
+    let _teamDiffCache     = {};    // abbr.lower → number
+    let _rosterCache       = {};    // abbr.lower → [{slug, name}]
+    let _playerStatsCache  = null;  // slug → most-recent-season row
 
     const nby = (n, decimals = 2) => {
       const v = Number(n);
@@ -244,9 +275,21 @@
       }
 
       if (isBetsRole()) {
+        const cannedBtn = document.getElementById('new-canned-btn');
+        cannedBtn.style.display = '';
+        cannedBtn.onclick = () => {
+          showCannedForm = !showCannedForm;
+          showNewForm    = false;
+          renderFormArea();
+        };
+
         const btn = document.getElementById('new-bet-btn');
         btn.style.display = '';
-        btn.onclick = () => { showNewForm = !showNewForm; renderNewBetForm(); };
+        btn.onclick = () => {
+          showNewForm    = !showNewForm;
+          showCannedForm = false;
+          renderFormArea();
+        };
       }
 
       document.getElementById('tab-open').onclick     = () => switchTab('open');
@@ -256,10 +299,23 @@
       renderView();
     }
 
+    function renderFormArea() {
+      if (showCannedForm) {
+        renderCannedBetForm();
+      } else if (showNewForm) {
+        renderNewBetForm();
+      } else {
+        const wrap = document.getElementById('new-bet-form-wrap');
+        wrap.style.display = 'none';
+        wrap.innerHTML = '';
+      }
+    }
+
     function switchTab(t) {
-      currentTab  = t;
-      showNewForm = false;
-      renderNewBetForm();
+      currentTab    = t;
+      showNewForm   = false;
+      showCannedForm = false;
+      renderFormArea();
       ['open','closed','balances'].forEach(id => {
         document.getElementById(`tab-${id}`).classList.toggle('active', id === t);
       });
@@ -410,7 +466,7 @@
       const cancelBtn = document.createElement('button');
       cancelBtn.className = 'form-cancel-btn';
       cancelBtn.textContent = 'Cancel';
-      cancelBtn.onclick = () => { showNewForm = false; renderNewBetForm(); };
+      cancelBtn.onclick = () => { showNewForm = false; renderFormArea(); };
       const errEl = document.createElement('div');
       errEl.className = 'form-err';
 
@@ -450,7 +506,7 @@
           if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
           allBets.unshift(body);
           showNewForm = false;
-          renderNewBetForm();
+          renderFormArea();
           currentTab = 'open';
           ['open','closed','balances'].forEach(id => document.getElementById(`tab-${id}`).classList.toggle('active', id === 'open'));
           renderView();
@@ -1010,6 +1066,526 @@
         chip.textContent = nby(myBalance());
         chip.style.display = '';
       } catch {}
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CANNED BET — helpers & form
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    function _parseCSV(text) {
+      const lines = text.trim().split('\n').filter(l => l.trim());
+      if (lines.length < 2) return [];
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+      return lines.slice(1).map(line => {
+        const cells = [];
+        let inQ = false, cur = '';
+        for (const ch of line) {
+          if (ch === '"') { inQ = !inQ; continue; }
+          if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ''; continue; }
+          cur += ch;
+        }
+        cells.push(cur.trim());
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = cells[i] ?? ''; });
+        return obj;
+      });
+    }
+
+    const _roundHalf = x => Math.round(x * 2) / 2;
+
+    function _fmtBioName(raw) {
+      const comma = raw.indexOf(',');
+      const tc = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      if (comma === -1) return tc(raw);
+      return `${tc(raw.slice(comma + 1).trim())} ${tc(raw.slice(0, comma).trim())}`;
+    }
+
+    async function _getFutureGames() {
+      if (_futureGamesCache) return _futureGamesCache;
+      const today = new Date().toISOString().slice(0, 10);
+      const games = await fetch('/api/calendar/games').then(r => r.json());
+      _futureGamesCache = games.filter(g => g.date >= today);
+      return _futureGamesCache;
+    }
+
+    async function _getPlayers() {
+      if (_playersCache) return _playersCache;
+      _playersCache = await fetch('/api/players').then(r => r.json());
+      return _playersCache;
+    }
+
+    async function _getTeamDiff(abbr) {
+      const key = abbr.toLowerCase();
+      if (key in _teamDiffCache) return _teamDiffCache[key];
+      try {
+        const text = await fetch(`/data/${key}-seasons.csv`).then(r => r.text());
+        const rows = _parseCSV(text);
+        if (!rows.length) { _teamDiffCache[key] = 0; return 0; }
+        rows.sort((a, b) => b.SEASON.localeCompare(a.SEASON));
+        const val = parseFloat(rows[0].DIFF) || 0;
+        _teamDiffCache[key] = val;
+        return val;
+      } catch {
+        _teamDiffCache[key] = 0;
+        return 0;
+      }
+    }
+
+    async function _getRosterPlayers(abbr) {
+      const key = abbr.toLowerCase();
+      if (_rosterCache[key]) return _rosterCache[key];
+      try {
+        const [txt, players] = await Promise.all([
+          fetch(`/data/${key}-roster.csv`).then(r => r.text()),
+          _getPlayers(),
+        ]);
+        const rows = _parseCSV(txt).filter(r => r.SLUG);
+        const result = rows.map(r => {
+          const bio = players[r.SLUG] || {};
+          return { slug: r.SLUG, name: bio.name ? _fmtBioName(bio.name) : r.SLUG };
+        });
+        _rosterCache[key] = result;
+        return result;
+      } catch {
+        _rosterCache[key] = [];
+        return [];
+      }
+    }
+
+    async function _getPlayerStats() {
+      if (_playerStatsCache) return _playerStatsCache;
+      const text = await fetch('/players/player_seasons.csv').then(r => r.text());
+      const rows = _parseCSV(text);
+      const bySlug = {};
+      rows.forEach(row => {
+        const s = row.SLUG;
+        if (!s) return;
+        if (!bySlug[s] || row.SEASON > bySlug[s].SEASON) bySlug[s] = row;
+      });
+      _playerStatsCache = bySlug;
+      return bySlug;
+    }
+
+    function _mkAdjBtn(text) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'canned-adj-btn';
+      btn.textContent = text;
+      return btn;
+    }
+
+    async function _submitCannedBet(btn, errEl, payload) {
+      const title = (payload.title || '').trim();
+      if (!title) { errEl.textContent = 'Title is required.'; return; }
+      btn.disabled = true; btn.textContent = 'Creating…';
+      errEl.textContent = '';
+      try {
+        const res = await fetch('/api/bets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+          body: JSON.stringify({
+            title,
+            description: (payload.description || '').trim(),
+            options:     payload.options,
+            bet_type:    'pool',
+          }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+        allBets.unshift(body);
+        showCannedForm = false;
+        renderFormArea();
+        currentTab = 'open';
+        ['open','closed','balances'].forEach(id =>
+          document.getElementById(`tab-${id}`).classList.toggle('active', id === 'open'));
+        renderView();
+      } catch(e) {
+        errEl.textContent = e.message;
+        btn.disabled = false; btn.textContent = 'Create Bet';
+      }
+    }
+
+    async function renderCannedBetForm() {
+      const wrap = document.getElementById('new-bet-form-wrap');
+      if (!showCannedForm) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+
+      wrap.innerHTML = '';
+      const form = document.createElement('div');
+      form.className = 'new-bet-form canned-bet-form';
+
+      // ── Game selector ──────────────────────────────────────────────────────────
+      const gameLbl = document.createElement('label');
+      gameLbl.textContent = 'Game *';
+      form.appendChild(gameLbl);
+
+      const gameSel = document.createElement('select');
+      gameSel.className = 'canned-select';
+      const gDef = document.createElement('option');
+      gDef.value = ''; gDef.textContent = 'Loading games…'; gDef.disabled = true; gDef.selected = true;
+      gameSel.appendChild(gDef);
+      form.appendChild(gameSel);
+
+      // ── Bet type toggle ────────────────────────────────────────────────────────
+      const typeLbl = document.createElement('label');
+      typeLbl.textContent = 'Bet Type *';
+      form.appendChild(typeLbl);
+
+      const typeWrap = document.createElement('div');
+      typeWrap.className = 'type-toggle-wrap';
+      const movBtn   = document.createElement('button');
+      movBtn.type = 'button'; movBtn.className = 'type-toggle-btn active';
+      movBtn.textContent = '📊 Margin of Victory';
+      const propsBtn = document.createElement('button');
+      propsBtn.type = 'button'; propsBtn.className = 'type-toggle-btn';
+      propsBtn.textContent = '🏀 Player Props';
+      typeWrap.append(movBtn, propsBtn);
+      form.appendChild(typeWrap);
+
+      // ── Dynamic content area ───────────────────────────────────────────────────
+      const dynWrap = document.createElement('div');
+      dynWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.6rem';
+      form.appendChild(dynWrap);
+
+      wrap.appendChild(form);
+      wrap.style.display = '';
+
+      // ── State ──────────────────────────────────────────────────────────────────
+      let selectedGame  = null;
+      let betTypeMode   = 'mov';  // 'mov' | 'props'
+
+      // Load & populate games dropdown
+      try {
+        const games = await _getFutureGames();
+        gDef.textContent = games.length ? 'Select a game…' : 'No upcoming games scheduled';
+        games.forEach(g => {
+          const d  = new Date(g.date + 'T00:00:00');
+          const ds = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const opt = document.createElement('option');
+          opt.value = g.id;
+          opt.textContent = `${ds} — ${g.away_team} @ ${g.home_team}${g.note ? ' (' + g.note + ')' : ''}`;
+          gameSel.appendChild(opt);
+        });
+      } catch {
+        gDef.textContent = 'Failed to load games';
+      }
+
+      const rebuild = () => {
+        if (!selectedGame) return;
+        dynWrap.innerHTML = '';
+        const loadEl = document.createElement('div');
+        loadEl.className = 'loading';
+        loadEl.textContent = 'Loading stats…';
+        dynWrap.appendChild(loadEl);
+        const fn = betTypeMode === 'mov' ? buildMovContent : buildPropsContent;
+        fn(dynWrap).catch(e => { loadEl.textContent = `Error: ${e.message}`; });
+      };
+
+      gameSel.onchange = () => {
+        const games = _futureGamesCache || [];
+        selectedGame = games.find(g => g.id === gameSel.value) || null;
+        rebuild();
+      };
+      movBtn.onclick = () => {
+        betTypeMode = 'mov';
+        movBtn.classList.add('active'); propsBtn.classList.remove('active');
+        rebuild();
+      };
+      propsBtn.onclick = () => {
+        betTypeMode = 'props';
+        propsBtn.classList.add('active'); movBtn.classList.remove('active');
+        rebuild();
+      };
+
+      // ── MoV content ────────────────────────────────────────────────────────────
+      async function buildMovContent(container) {
+        container.innerHTML = '';
+        const g = selectedGame;
+        const [dA, dH] = await Promise.all([_getTeamDiff(g.away_team), _getTeamDiff(g.home_team)]);
+
+        const isFavAway = dA >= dH;
+        const favTeam   = isFavAway ? g.away_team : g.home_team;
+        const dogTeam   = isFavAway ? g.home_team : g.away_team;
+        let line        = _roundHalf(Math.abs(dA - dH));
+
+        // Stats info
+        const infoEl = document.createElement('div');
+        infoEl.className = 'canned-info';
+        const updateInfo = () => {
+          infoEl.innerHTML =
+            `<span style="color:#9ca3af">${g.away_team} diff:</span> ` +
+            `<strong style="color:${dA >= 0 ? '#34d399' : '#f87171'}">${dA >= 0 ? '+' : ''}${dA.toFixed(1)}</strong>` +
+            `&ensp;<span style="color:#9ca3af">${g.home_team} diff:</span> ` +
+            `<strong style="color:${dH >= 0 ? '#34d399' : '#f87171'}">${dH >= 0 ? '+' : ''}${dH.toFixed(1)}</strong>` +
+            `&ensp;<span style="color:#6b7280">→</span>&ensp;` +
+            `<strong style="color:#d1d5db">${favTeam}</strong> <span style="color:#9ca3af">fav by</span> ` +
+            `<strong style="color:#f3f4f6">${line}</strong>`;
+        };
+        updateInfo();
+        container.appendChild(infoEl);
+
+        // Line adjuster
+        const adjRow = document.createElement('div');
+        adjRow.className = 'canned-adj-row';
+        const adjLbl = document.createElement('label');
+        adjLbl.style.margin = '0';
+        adjLbl.textContent = `Line (${favTeam} wins by)`;
+        const minBtn  = _mkAdjBtn('−');
+        const lineSpan = document.createElement('span');
+        lineSpan.className = 'canned-line-val';
+        lineSpan.textContent = line;
+        const plusBtn = _mkAdjBtn('+');
+        adjRow.append(adjLbl, minBtn, lineSpan, plusBtn);
+        container.appendChild(adjRow);
+
+        // Options preview
+        const prevEl = document.createElement('div');
+        prevEl.className = 'canned-opts-preview';
+        const updatePreview = () => {
+          prevEl.innerHTML =
+            `<span>Options:</span>` +
+            `<span class="canned-opt-chip">Over ${line} — ${favTeam} wins by &gt;${line}</span>` +
+            `<span class="canned-opt-chip">Under ${line} — ${dogTeam} wins or ${favTeam} by &lt;${line}</span>`;
+        };
+        updatePreview();
+        container.appendChild(prevEl);
+
+        // Title + description
+        const titleLbl = document.createElement('label'); titleLbl.textContent = 'Title';
+        const titleIn  = document.createElement('input');
+        titleIn.type = 'text';
+        const descLbl = document.createElement('label'); descLbl.textContent = 'Description';
+        const descIn  = document.createElement('textarea');
+        descIn.placeholder = 'Description (optional)';
+
+        let titleEdited = false, descEdited = false;
+        const autoTitle = () => `${g.away_team} @ ${g.home_team} — O/U MoV ${favTeam} by ${line}`;
+        const autoDesc  = () =>
+          `${g.away_team} avg differential: ${dA >= 0 ? '+' : ''}${dA.toFixed(1)}, ` +
+          `${g.home_team} avg differential: ${dH >= 0 ? '+' : ''}${dH.toFixed(1)} ` +
+          `→ ${favTeam} favored by ${line}`;
+
+        titleIn.value = autoTitle();
+        descIn.value  = autoDesc();
+        titleIn.oninput = () => { titleEdited = true; };
+        descIn.oninput  = () => { descEdited  = true; };
+
+        container.append(titleLbl, titleIn, descLbl, descIn);
+
+        // Actions
+        const actions = document.createElement('div');
+        actions.className = 'form-actions';
+        const submitBtn = document.createElement('button');
+        submitBtn.className = 'form-submit'; submitBtn.textContent = 'Create Bet';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'form-cancel-btn'; cancelBtn.textContent = 'Cancel';
+        cancelBtn.onclick = () => { showCannedForm = false; renderFormArea(); };
+        const errEl = document.createElement('div'); errEl.className = 'form-err';
+
+        submitBtn.onclick = () => _submitCannedBet(submitBtn, errEl, {
+          title:       titleIn.value,
+          description: descIn.value,
+          options: [
+            { label: `Over ${line} (${favTeam} wins by >${line})` },
+            { label: `Under ${line} (${dogTeam} wins or ${favTeam} by <${line})` },
+          ],
+        });
+        actions.append(submitBtn, cancelBtn, errEl);
+        container.appendChild(actions);
+
+        // Line change handler (wired after all elements are created)
+        const onLineChange = (delta) => {
+          line = Math.max(0.5, line + delta);
+          lineSpan.textContent = line;
+          updateInfo();
+          updatePreview();
+          if (!titleEdited) titleIn.value = autoTitle();
+          if (!descEdited)  descIn.value  = autoDesc();
+        };
+        minBtn.onclick  = () => onLineChange(-0.5);
+        plusBtn.onclick = () => onLineChange(+0.5);
+      }
+
+      // ── Player Props content ───────────────────────────────────────────────────
+      async function buildPropsContent(container) {
+        container.innerHTML = '';
+        const g = selectedGame;
+        const [awayP, homeP] = await Promise.all([
+          _getRosterPlayers(g.away_team),
+          _getRosterPlayers(g.home_team),
+        ]);
+
+        // Player dropdown
+        const playerLbl = document.createElement('label'); playerLbl.textContent = 'Player *';
+        container.appendChild(playerLbl);
+
+        const playerSel = document.createElement('select');
+        playerSel.className = 'canned-select';
+        const pDef = document.createElement('option');
+        pDef.value = ''; pDef.textContent = 'Select a player…'; pDef.disabled = true; pDef.selected = true;
+        playerSel.appendChild(pDef);
+
+        [{ abbr: g.away_team, players: awayP }, { abbr: g.home_team, players: homeP }].forEach(({ abbr, players }) => {
+          if (!players.length) return;
+          const grp = document.createElement('optgroup');
+          grp.label = abbr;
+          players.forEach(p => {
+            const o = document.createElement('option');
+            o.value = p.slug; o.textContent = p.name;
+            grp.appendChild(o);
+          });
+          playerSel.appendChild(grp);
+        });
+        container.appendChild(playerSel);
+
+        // Stat selector
+        const statLbl = document.createElement('label'); statLbl.textContent = 'Stat *';
+        container.appendChild(statLbl);
+
+        const STATS = [
+          { key: 'P',   label: 'Points',     col: 'PTS' },
+          { key: 'R',   label: 'Rebounds',   col: 'REB' },
+          { key: 'A',   label: 'Assists',    col: 'AST' },
+          { key: '3PM', label: '3-Pointers', col: '3PM' },
+        ];
+        let activeStat = STATS[0];
+
+        const statWrap = document.createElement('div');
+        statWrap.className = 'type-toggle-wrap';
+        const statBtns = {};
+        STATS.forEach(s => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `type-toggle-btn${s === activeStat ? ' active' : ''}`;
+          btn.textContent = s.label;
+          btn.onclick = () => {
+            activeStat = s;
+            STATS.forEach(ss => statBtns[ss.key].classList.toggle('active', ss === s));
+            if (playerSel.value) refreshStatLine();
+          };
+          statBtns[s.key] = btn;
+          statWrap.appendChild(btn);
+        });
+        container.appendChild(statWrap);
+
+        // Lower section (populated after player selected)
+        const lowerSection = document.createElement('div');
+        lowerSection.style.cssText = 'display:flex;flex-direction:column;gap:0.6rem';
+        container.appendChild(lowerSection);
+
+        async function refreshStatLine() {
+          lowerSection.innerHTML = '';
+          const slug   = playerSel.value;
+          const allP   = [...awayP.map(p => ({ ...p, team: g.away_team })),
+                          ...homeP.map(p => ({ ...p, team: g.home_team }))];
+          const pInfo  = allP.find(x => x.slug === slug);
+          const pName  = pInfo ? pInfo.name : slug;
+          const opp    = pInfo ? (pInfo.team === g.away_team ? g.home_team : g.away_team) : '';
+
+          // Stats info
+          const infoEl = document.createElement('div');
+          infoEl.className = 'canned-info';
+          infoEl.textContent = 'Loading stats…';
+          lowerSection.appendChild(infoEl);
+
+          let line = 0.5;
+          try {
+            const allStats = await _getPlayerStats();
+            const row = allStats[slug];
+            const col = activeStat.col;
+            let avg = null;
+            if (row && parseFloat(row.G) > 0) avg = parseFloat(row[col]) / parseFloat(row.G);
+
+            if (avg !== null && !isNaN(avg)) {
+              line = _roundHalf(avg);
+              infoEl.innerHTML =
+                `<span style="color:#9ca3af">${pName} averaging </span>` +
+                `<strong style="color:#d1d5db">${avg.toFixed(1)}</strong>` +
+                `<span style="color:#9ca3af"> ${activeStat.label.toLowerCase()}/game (${row.SEASON})</span>` +
+                `<span style="color:#6b7280"> → line: </span>` +
+                `<strong style="color:#f3f4f6">${line}</strong>`;
+            } else {
+              infoEl.innerHTML =
+                `<span style="color:#f59e0b">No current season stats for ${pName}. Adjust line manually.</span>`;
+            }
+          } catch {
+            infoEl.innerHTML = `<span style="color:#f59e0b">Could not load stats. Set line manually.</span>`;
+          }
+
+          // Line adjuster
+          const adjRow = document.createElement('div');
+          adjRow.className = 'canned-adj-row';
+          const adjLbl2 = document.createElement('label');
+          adjLbl2.style.margin = '0';
+          adjLbl2.textContent = `Line (${activeStat.label})`;
+          const minBtn2  = _mkAdjBtn('−');
+          const lineSpan = document.createElement('span');
+          lineSpan.className = 'canned-line-val';
+          lineSpan.textContent = line;
+          const plusBtn2 = _mkAdjBtn('+');
+          adjRow.append(adjLbl2, minBtn2, lineSpan, plusBtn2);
+          lowerSection.appendChild(adjRow);
+
+          // Options preview
+          const prevEl = document.createElement('div');
+          prevEl.className = 'canned-opts-preview';
+          const updatePrev = () => {
+            prevEl.innerHTML =
+              `<span>Options:</span>` +
+              `<span class="canned-opt-chip">Over ${line} ${activeStat.label}</span>` +
+              `<span class="canned-opt-chip">Under ${line} ${activeStat.label}</span>`;
+          };
+          updatePrev();
+          lowerSection.appendChild(prevEl);
+
+          // Title + description
+          const titleLbl2 = document.createElement('label'); titleLbl2.textContent = 'Title';
+          const titleIn   = document.createElement('input');
+          titleIn.type = 'text';
+          const descLbl2 = document.createElement('label'); descLbl2.textContent = 'Description';
+          const descIn   = document.createElement('textarea');
+          descIn.placeholder = 'Description (optional)';
+
+          let titleEdited = false;
+          const autoTitle = () => `${pName} O/U ${line} ${activeStat.label}${opp ? ' vs ' + opp : ''}`;
+          titleIn.value = autoTitle();
+          titleIn.oninput = () => { titleEdited = true; };
+
+          lowerSection.append(titleLbl2, titleIn, descLbl2, descIn);
+
+          // Actions
+          const actions = document.createElement('div');
+          actions.className = 'form-actions';
+          const submitBtn = document.createElement('button');
+          submitBtn.className = 'form-submit'; submitBtn.textContent = 'Create Bet';
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'form-cancel-btn'; cancelBtn.textContent = 'Cancel';
+          cancelBtn.onclick = () => { showCannedForm = false; renderFormArea(); };
+          const errEl = document.createElement('div'); errEl.className = 'form-err';
+
+          submitBtn.onclick = () => _submitCannedBet(submitBtn, errEl, {
+            title:       titleIn.value,
+            description: descIn.value,
+            options: [
+              { label: `Over ${line} ${activeStat.label}` },
+              { label: `Under ${line} ${activeStat.label}` },
+            ],
+          });
+          actions.append(submitBtn, cancelBtn, errEl);
+          lowerSection.appendChild(actions);
+
+          // Line change handler
+          const onLineChange = (delta) => {
+            line = Math.max(0.5, line + delta);
+            lineSpan.textContent = line;
+            updatePrev();
+            if (!titleEdited) titleIn.value = autoTitle();
+          };
+          minBtn2.onclick  = () => onLineChange(-0.5);
+          plusBtn2.onclick = () => onLineChange(+0.5);
+        }
+
+        playerSel.onchange = refreshStatLine;
+      }
     }
 
     init();
