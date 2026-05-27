@@ -400,9 +400,9 @@
       card.className = 'series-card' + (isChampSeries ? ' finals-card' : '');
 
       [
-        { team: series.T1, seed: series.T1_SEED, wins: +series.T1_W },
-        { team: series.T2, seed: series.T2_SEED, wins: +series.T2_W },
-      ].forEach(({ team, seed, wins }) => {
+        { team: series.T1, seed: series.T1_SEED, wins: +series.T1_W, seedNum: +series.T1_SEED_NUM || 99 },
+        { team: series.T2, seed: series.T2_SEED, wins: +series.T2_W, seedNum: +series.T2_SEED_NUM || 99 },
+      ].sort((a, b) => a.seedNum - b.seedNum).forEach(({ team, seed, wins }) => {
         const isWinner = team === series.WINNER;
         const isChamp = isChampSeries && isWinner;
         const row = document.createElement('div');
