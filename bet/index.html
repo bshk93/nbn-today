@@ -648,6 +648,7 @@
         ['P/L',        true,  false],
         ['Bet Won',    true,  true ],
         ['Bet Lost',   true,  true ],
+        ['Bet Placed', true,  true ],
         ['Stats',      true,  true ],
         ['Trivia',     true,  true ],
       ];
@@ -689,12 +690,13 @@
         const plTd  = tr.insertCell(); plTd.className  = `${plClass} num`; plTd.textContent = `${plSign}${nby(Math.abs(pl))}`;
 
         // Breakdown columns — dim when zero
-        const betWon  = row.bet_won   ?? 0;
-        const betLost = row.bet_lost  ?? 0;
-        const stats   = row.stats_earned  ?? 0;
-        const trivia  = row.trivia_earned ?? 0;
+        const betWon     = row.bet_won      ?? 0;
+        const betLost    = row.bet_lost     ?? 0;
+        const betPlaced  = row.bet_placed   ?? 0;
+        const stats      = row.stats_earned  ?? 0;
+        const trivia     = row.trivia_earned ?? 0;
 
-        [[betWon, 'pl-pos'], [betLost, 'pl-neg'], [stats, ''], [trivia, '']].forEach(([val, colorClass]) => {
+        [[betWon, 'pl-pos'], [betLost, 'pl-neg'], [betPlaced, ''], [stats, ''], [trivia, '']].forEach(([val, colorClass]) => {
           const td = tr.insertCell();
           td.className = ['num', val === 0 ? 'dim' : colorClass].filter(Boolean).join(' ');
           td.textContent = val === 0 ? '—' : nby(val);
