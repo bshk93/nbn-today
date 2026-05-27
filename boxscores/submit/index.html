@@ -923,7 +923,8 @@
       };
     }
 
-    document.getElementById("add-to-queue-btn").onclick = () => {
+    document.getElementById("add-to-queue-btn").onclick = async () => {
+      const btn = document.getElementById("add-to-queue-btn");
       const status = document.getElementById("commit-status");
       const { errors, game } = collectGameData();
       if (errors.length) {
@@ -931,10 +932,38 @@
         status.textContent = errors[0];
         return;
       }
-      gameQueue.push(game);
-      renderQueue();
-      status.className = "form-status ok";
-      status.textContent = `Added to queue (${game.home_team} vs ${game.away_team}).`;
+      btn.disabled = true;
+      status.className = "form-status";
+      status.textContent = "Registering…";
+      try {
+        const res = await fetch("/api/boxscore/queue", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date:      game.date,
+            home_team: game.home_team,
+            away_team: game.away_team,
+            season:    game.season,
+            game_type: game.game_type,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        game._queue_id = data.id;  // track server-assigned ID
+        gameQueue.push(game);
+        renderQueue();
+        status.className = "form-status ok";
+        const rewardStr = data.nbyen_reward ? ` · +NB¥${data.nbyen_reward} earned` : '';
+        status.textContent = `Added to queue (${game.home_team} vs ${game.away_team})${rewardStr}.`;
+      } catch (e) {
+        status.className = "form-status err";
+        status.textContent = e.message;
+      }
+      btn.disabled = false;
+      checkCommitReady();
     };
 
     document.getElementById("commit-queue-btn").onclick = async () => {
@@ -954,7 +983,7 @@
           const res = await fetch("/api/boxscore/commit", {
             method: "POST",
             headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ ...g, skip_build: true }),
+            body: JSON.stringify({ ...g, skip_build: true, skip_reward: true }),
           });
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
