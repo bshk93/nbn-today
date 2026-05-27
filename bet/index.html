@@ -125,11 +125,14 @@
     .voided-notice { color: #f59e0b; font-size: 0.78rem; font-weight: 600; margin-top: 0.5rem; }
 
     /* Balances leaderboard */
-    .balances-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .balances-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .balances-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; white-space: nowrap; }
     .balances-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; padding: 0 0.5rem 0.5rem; border-bottom: 1px solid #374151; }
     .balances-table th.num { text-align: right; }
+    .balances-table th.dim { color: #4b5563; }
     .balances-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid #1f2937; color: #d1d5db; }
-    .balances-table td.num { text-align: right; }
+    .balances-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .balances-table td.dim { color: #6b7280; }
     .balances-table tr:last-child td { border-bottom: none; }
     .balances-table tr.me td { color: #f3f4f6; background: #1a2535; }
     .rank-cell { color: #6b7280; font-size: 0.8rem; }
@@ -630,16 +633,31 @@
 
       const wrap = document.createElement('div');
 
+      const scroll = document.createElement('div');
+      scroll.className = 'balances-scroll';
+
       const table = document.createElement('table');
       table.className = 'balances-table';
       const thead = table.createTHead();
       const hrow  = thead.insertRow();
-      ['#', 'Member', 'NB¥ Balance', 'P/L'].forEach((h, i) => {
+      // [label, numClass, dimClass]
+      const COLS = [
+        ['#',          false, false],
+        ['Member',     false, false],
+        ['NB¥ Balance',true,  false],
+        ['P/L',        true,  false],
+        ['Bet Won',    true,  true ],
+        ['Bet Lost',   true,  true ],
+        ['Stats',      true,  true ],
+        ['Trivia',     true,  true ],
+      ];
+      COLS.forEach(([label, isNum, isDim]) => {
         const th = document.createElement('th');
-        th.textContent = h;
-        if (i >= 2) th.className = 'num';
+        th.textContent = label;
+        th.className   = [isNum ? 'num' : '', isDim ? 'dim' : ''].join(' ').trim();
         hrow.appendChild(th);
       });
+
       const tbody = table.createTBody();
       visibleRows.forEach((row, idx) => {
         const tr = tbody.insertRow();
@@ -652,7 +670,7 @@
         const plClass = pl > 0 ? 'pl-pos' : pl < 0 ? 'pl-neg' : 'pl-zero';
         const plSign  = pl > 0 ? '+' : pl < 0 ? '-' : '';
 
-        const rankTd = tr.insertCell(); rankTd.className = 'rank-cell'; rankTd.style.textAlign = 'right'; rankTd.textContent = idx + 1;
+        const rankTd = tr.insertCell(); rankTd.className = 'rank-cell num'; rankTd.textContent = idx + 1;
         const nameTd = tr.insertCell(); nameTd.className = 'name-cell'; nameTd.textContent = row.name;
         if (isMe) {
           const you = document.createElement('span');
@@ -666,11 +684,25 @@
           tag.textContent = 'former';
           nameTd.appendChild(tag);
         }
-        const balTd = tr.insertCell(); balTd.className = 'bal-cell'; balTd.style.textAlign = 'right'; balTd.textContent = nby(row.balance);
-        const plTd  = tr.insertCell(); plTd.className  = plClass;    plTd.style.textAlign  = 'right'; plTd.textContent  = `${plSign}${nby(pl)}`;
+
+        const balTd = tr.insertCell(); balTd.className = 'bal-cell num'; balTd.textContent = nby(row.balance);
+        const plTd  = tr.insertCell(); plTd.className  = `${plClass} num`; plTd.textContent = `${plSign}${nby(Math.abs(pl))}`;
+
+        // Breakdown columns — dim when zero
+        const betWon  = row.bet_won   ?? 0;
+        const betLost = row.bet_lost  ?? 0;
+        const stats   = row.stats_earned  ?? 0;
+        const trivia  = row.trivia_earned ?? 0;
+
+        [[betWon, 'pl-pos'], [betLost, 'pl-neg'], [stats, ''], [trivia, '']].forEach(([val, colorClass]) => {
+          const td = tr.insertCell();
+          td.className = ['num', val === 0 ? 'dim' : colorClass].filter(Boolean).join(' ');
+          td.textContent = val === 0 ? '—' : nby(val);
+        });
       });
 
-      wrap.appendChild(table);
+      scroll.appendChild(table);
+      wrap.appendChild(scroll);
 
       // Former members toggle
       if (formerCount > 0) {
