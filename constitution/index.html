@@ -20,17 +20,28 @@
     .breadcrumb a { color: #6b7280; }
     .breadcrumb a:hover { color: #d1d5db; }
 
-    .doc-header { margin-bottom: 2rem; border-bottom: 1px solid #374151; padding-bottom: 1.25rem; }
+    /* ── Header ── */
+    .doc-header {
+      margin-bottom: 2rem; border-bottom: 1px solid #374151; padding-bottom: 1.25rem;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    }
     .doc-header h1 { font-size: 2rem; font-weight: 800; color: #f3f4f6; letter-spacing: -0.025em; }
     .doc-meta { margin-top: 0.4rem; font-size: 0.8rem; color: #6b7280; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-    .season-chip {
+    .version-chip {
       background: #1e3a5f; border: 1px solid #2563eb; color: #93c5fd;
-      padding: 0.1rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700;
-      letter-spacing: 0.04em;
+      padding: 0.1rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
     }
+    .btn-edit {
+      background: #1f2937; border: 1px solid #374151; color: #d1d5db;
+      border-radius: 6px; padding: 0.4rem 0.9rem; font-size: 0.82rem; font-weight: 500;
+      cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-edit:hover { background: #263244; border-color: #4b5563; }
 
+    /* ── Layout ── */
     .doc-layout { display: grid; grid-template-columns: 200px 1fr; gap: 2.5rem; align-items: start; }
 
+    /* ── Sidebar TOC ── */
     .toc {
       position: sticky; top: 1.5rem; background: #1f2937; border: 1px solid #374151;
       border-radius: 10px; padding: 1rem 0; font-size: 0.78rem;
@@ -40,107 +51,142 @@
       font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
       color: #6b7280; padding: 0 1rem 0.5rem; border-bottom: 1px solid #374151; margin-bottom: 0.4rem;
     }
-    .toc a { display: block; color: #9ca3af; padding: 0.2rem 1rem; border-left: 2px solid transparent; line-height: 1.45; }
+    .toc a { display: block; color: #9ca3af; padding: 0.22rem 1rem; border-left: 2px solid transparent; line-height: 1.4; }
     .toc a:hover { color: #f3f4f6; text-decoration: none; background: rgba(255,255,255,0.03); }
-    .toc a.art-link {
-      font-weight: 600; color: #d1d5db; padding-top: 0.35rem; margin-top: 0.1rem;
-      display: flex; flex-direction: column; gap: 0.05rem;
-    }
-    .toc a.art-link .art-num { font-size: 0.72rem; color: #6b7280; font-weight: 500; }
-    .toc a.art-link .art-ttl { font-size: 0.8rem; }
-    .toc a.art-link:hover, .toc a.sec-link:hover { color: #f3f4f6; }
+    .toc a.toc-h2 { font-weight: 600; color: #d1d5db; font-size: 0.78rem; }
+    .toc a.toc-h3 { font-size: 0.7rem; color: #6b7280; padding-left: 1.6rem; }
+    .toc a.toc-h2:hover, .toc a.toc-h3:hover { color: #f3f4f6; }
 
-    .doc-content article { margin-bottom: 3.5rem; }
-    .art-header {
-      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-      color: #6b7280; margin-bottom: 0.3rem;
+    /* ── Rendered markdown content ── */
+    .doc-content { min-width: 0; }
+    .doc-content h1 { font-size: 1.7rem; font-weight: 800; color: #f3f4f6; margin: 0 0 1rem; letter-spacing: -0.02em; display: none; }
+    .doc-content h2 {
+      font-size: 1.35rem; font-weight: 800; color: #f3f4f6; letter-spacing: -0.01em;
+      border-bottom: 2px solid #1d4ed8; padding-bottom: 0.45rem;
+      margin: 2.75rem 0 1.25rem;
     }
-    .art-title {
-      font-size: 1.4rem; font-weight: 800; color: #f3f4f6;
-      border-bottom: 2px solid #1d4ed8; padding-bottom: 0.5rem; margin-bottom: 1.5rem;
-      letter-spacing: -0.01em;
+    .doc-content h2:first-of-type { margin-top: 0; }
+    .doc-content h3 { font-size: 1rem; font-weight: 700; color: #f3f4f6; margin: 1.5rem 0 0.5rem; }
+    .doc-content h4 { font-size: 0.9rem; font-weight: 700; color: #e5e7eb; margin: 1rem 0 0.4rem; }
+    .doc-content p { margin-bottom: 0.75rem; color: #d1d5db; }
+    .doc-content ul, .doc-content ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    .doc-content li { margin-bottom: 0.2rem; }
+    .doc-content li > ul, .doc-content li > ol { margin-top: 0.2rem; margin-bottom: 0.1rem; }
+    .doc-content strong { color: #f3f4f6; font-weight: 600; }
+    .doc-content em { color: #9ca3af; }
+    .doc-content a { color: #60a5fa; }
+    .doc-content a:hover { text-decoration: underline; }
+    .doc-content hr { border: none; border-top: 1px solid #374151; margin: 2.5rem 0; }
+    .doc-content blockquote {
+      border-left: 3px solid #2563eb; background: rgba(29,78,216,0.08);
+      border-radius: 0 6px 6px 0; padding: 0.65rem 1rem; margin: 0.75rem 0 1rem;
+      color: #93c5fd; font-size: 0.875rem;
     }
-    .doc-section { margin-bottom: 2rem; }
-    .sec-title {
-      font-size: 1rem; font-weight: 700; color: #f3f4f6;
-      margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-    }
-    .sub-title {
-      font-size: 0.875rem; font-weight: 700; color: #e5e7eb;
-      margin: 1.1rem 0 0.5rem; display: flex; align-items: center; gap: 0.5rem;
-      padding-top: 0.75rem; border-top: 1px solid #1f2937;
-    }
-    p { margin-bottom: 0.75rem; color: #d1d5db; }
-    p:last-child { margin-bottom: 0; }
-    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
-    li { margin-bottom: 0.2rem; }
-    li > ul, li > ol { margin-top: 0.2rem; margin-bottom: 0; }
-    strong { color: #f3f4f6; font-weight: 600; }
+    .doc-content blockquote p { color: #93c5fd; margin: 0; }
+    .doc-content blockquote a { color: #93c5fd; text-decoration: underline; }
+    .doc-content blockquote a:hover { color: #bfdbfe; }
+    .doc-content code { background: #1f2937; border-radius: 4px; padding: 0.1em 0.35em; font-size: 0.85em; color: #a5b4fc; }
+    .doc-content pre { background: #1f2937; border-radius: 6px; padding: 0.9em 1em; overflow-x: auto; margin: 0.75em 0; }
+    .doc-content pre code { background: none; padding: 0; color: #e5e7eb; }
 
-    .callout {
-      border-left: 3px solid; border-radius: 0 6px 6px 0;
-      padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; font-size: 0.875rem;
+    /* ── Version history ── */
+    .history-toggle {
+      margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #374151;
+      display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+      font-size: 0.8rem; color: #6b7280; user-select: none;
     }
-    .callout-note { border-color: #2563eb; background: rgba(29,78,216,0.08); color: #93c5fd; }
-    .callout-note a { color: #93c5fd; text-decoration: underline; }
-    .callout-note a:hover { color: #bfdbfe; }
-    .callout-warn { border-color: #b45309; background: rgba(180,83,9,0.08); color: #fcd34d; }
+    .history-toggle:hover { color: #9ca3af; }
+    .history-toggle .chevron { font-size: 0.6rem; transition: transform 0.15s; }
+    .history-toggle.open .chevron { transform: rotate(180deg); }
+    .history-table-wrap { display: none; margin-top: 0.75rem; }
+    .history-table-wrap.open { display: block; }
+    .history-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .history-table th {
+      text-align: left; padding: 0.3rem 0.75rem; font-size: 0.67rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; border-bottom: 1px solid #374151;
+    }
+    .history-table td { padding: 0.4rem 0.75rem; border-top: 1px solid #1a2332; color: #d1d5db; }
+    .history-table td.ht-ver { color: #4b5563; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+    .history-table td.ht-date { color: #6b7280; white-space: nowrap; }
+    .history-table td.ht-author { color: #9ca3af; white-space: nowrap; }
 
-    .art-divider { border: none; border-top: 1px solid #374151; margin: 3rem 0; }
+    /* ── Editor ── */
+    #edit-mode { display: none; }
+    .edit-layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 
-    /* ── Amendment Log ───────────────────────────────────────────── */
-    .amendments-wrap {
-      border-top: 2px solid #374151; padding-top: 2rem; margin-top: 0.5rem;
+    .editor-wrap {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px; overflow: hidden;
     }
-    .amendments-header {
-      display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+    .editor-bar {
+      display: flex; align-items: center; gap: 0.2rem;
+      padding: 0.35rem 0.5rem; border-bottom: 1px solid #374151; background: #18212f;
     }
-    .amendments-title { font-size: 1.2rem; font-weight: 800; color: #f3f4f6; letter-spacing: -0.01em; }
-    .amendments-subtitle { font-size: 0.78rem; color: #4b5563; }
+    .fmt-btn {
+      background: transparent; border: none; border-radius: 4px; color: #6b7280;
+      cursor: pointer; font-family: inherit; font-size: 0.73rem; font-weight: 700;
+      line-height: 1; padding: 0.28rem 0.42rem; min-width: 1.6rem; text-align: center;
+    }
+    .fmt-btn:hover { background: #374151; color: #d1d5db; }
+    .fmt-sep { width: 1px; height: 13px; background: #2d3748; margin: 0 0.1rem; flex-shrink: 0; }
+    .mode-tabs { display: flex; background: #111827; border-radius: 5px; padding: 2px; margin-left: auto; }
+    .mode-tab {
+      padding: 0.18rem 0.6rem; font-size: 0.72rem; font-weight: 600; color: #4b5563;
+      background: transparent; border: none; border-radius: 3px; cursor: pointer; font-family: inherit;
+    }
+    .mode-tab:hover { color: #9ca3af; }
+    .mode-tab.active { background: #374151; color: #e5e7eb; }
+    #body-write {
+      display: block; width: 100%; min-height: 480px; background: transparent; border: none;
+      color: #e5e7eb; caret-color: #60a5fa; outline: none; resize: vertical;
+      font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, monospace;
+      font-size: 0.875rem; line-height: 1.8; padding: 1rem 1.25rem;
+    }
+    #body-preview {
+      display: none; min-height: 480px; padding: 1.1rem 1.4rem;
+      color: #d1d5db; font-size: 0.9rem; line-height: 1.75;
+    }
+    /* reuse doc-content styles for preview */
+    #body-preview h2 { font-size: 1.2rem; font-weight: 700; color: #f3f4f6; border-bottom: 2px solid #1d4ed8; padding-bottom: 0.3rem; margin: 2rem 0 0.9rem; }
+    #body-preview h3 { font-size: 0.95rem; font-weight: 700; color: #f3f4f6; margin: 1.2rem 0 0.4rem; }
+    #body-preview p { margin-bottom: 0.65rem; }
+    #body-preview ul, #body-preview ol { padding-left: 1.4rem; margin-bottom: 0.65rem; }
+    #body-preview li { margin-bottom: 0.15rem; }
+    #body-preview strong { color: #f3f4f6; }
+    #body-preview em { color: #9ca3af; }
+    #body-preview hr { border: none; border-top: 1px solid #374151; margin: 1.75rem 0; }
+    #body-preview a { color: #60a5fa; }
+    #body-preview blockquote {
+      border-left: 3px solid #2563eb; background: rgba(29,78,216,0.08);
+      border-radius: 0 6px 6px 0; padding: 0.65rem 1rem; margin: 0.75rem 0;
+      color: #93c5fd; font-size: 0.875rem;
+    }
+    #body-preview blockquote p { color: #93c5fd; margin: 0; }
 
-    .amendment-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 1.5rem; }
-    .amendment-table th {
-      text-align: left; padding: 0.35rem 0.75rem; font-size: 0.67rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280;
-      border-bottom: 1px solid #374151;
+    .summary-row {
+      display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; margin-top: 0.75rem;
     }
-    .amendment-table td { padding: 0.45rem 0.75rem; border-top: 1px solid #1a2332; color: #d1d5db; vertical-align: top; }
-    .amendment-table tr:hover td { background: rgba(255,255,255,0.02); }
-    .amendment-table td.amd-date { color: #6b7280; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .amendment-table td.amd-author { color: #9ca3af; white-space: nowrap; }
-    .amendment-table td.amd-del { text-align: center; }
-    .amd-del-btn {
-      background: none; border: none; color: #374151; cursor: pointer; font-size: 0.75rem;
-      padding: 0.15rem 0.3rem; border-radius: 3px;
+    .summary-field { flex: 1; min-width: 200px; }
+    .summary-field label {
+      display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: #6b7280; margin-bottom: 0.3rem;
     }
-    .amd-del-btn:hover { color: #f87171; background: rgba(239,68,68,0.1); }
-    .empty-note { color: #4b5563; font-size: 0.82rem; font-style: italic; margin-bottom: 1rem; }
+    .summary-field input {
+      width: 100%; background: #1f2937; border: 1px solid #374151; color: #f3f4f6;
+      border-radius: 6px; padding: 0.45rem 0.75rem; font-size: 0.875rem; font-family: inherit;
+    }
+    .summary-field input:focus { outline: none; border-color: #3b82f6; }
 
-    .log-form {
-      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
-      padding: 1.1rem 1.25rem; max-width: 600px;
-    }
-    .log-form-title {
-      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-      color: #6b7280; margin-bottom: 0.85rem;
-    }
-    .log-form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-    .log-form label { display: block; font-size: 0.72rem; color: #9ca3af; margin-bottom: 0.25rem; }
-    .log-form input[type="date"], .log-form input[type="text"] {
-      background: #111827; border: 1px solid #374151; color: #f3f4f6;
-      border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.85rem;
-      font-family: inherit; width: 100%;
-    }
-    .log-form input:focus { outline: none; border-color: #3b82f6; }
-    .log-form .date-field { flex: 0 0 160px; }
-    .log-form .summary-field { flex: 1; min-width: 200px; }
-    .log-form-actions { display: flex; align-items: center; gap: 0.75rem; }
-    .btn-log { background: #2563eb; border: 1px solid #3b82f6; color: #fff; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.82rem; font-family: inherit; font-weight: 500; cursor: pointer; }
-    .btn-log:hover { background: #1d4ed8; }
-    .btn-log:disabled { opacity: 0.45; cursor: not-allowed; }
-    .log-status { font-size: 0.78rem; color: #6b7280; }
-    .log-status.ok { color: #4ade80; }
-    .log-status.err { color: #f87171; }
+    .edit-actions { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; }
+    .btn-primary { background: #2563eb; border: 1px solid #3b82f6; color: #fff; border-radius: 6px; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-secondary { background: #1f2937; border: 1px solid #374151; color: #d1d5db; border-radius: 6px; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+    .btn-secondary:hover { background: #263244; }
+    .save-status { font-size: 0.8rem; color: #6b7280; }
+    .save-status.ok { color: #4ade80; }
+    .save-status.err { color: #f87171; }
+
+    .loading { color: #6b7280; font-size: 0.875rem; }
 
     @media (max-width: 768px) {
       .doc-layout { grid-template-columns: 1fr; }
@@ -153,580 +199,127 @@
   <div class="breadcrumb"><a href="/">← Home</a></div>
 
   <header class="doc-header">
-    <h1>NBN Constitution</h1>
-    <div class="doc-meta">
-      <span class="season-chip">Founding Document</span>
-      <span>League governance — membership, committees, and operating procedures</span>
+    <div>
+      <h1>NBN Constitution</h1>
+      <div class="doc-meta">
+        <span class="version-chip" id="version-chip"></span>
+        <span id="version-date"></span>
+        <span>League governance — membership, committees, and operating procedures</span>
+      </div>
     </div>
+    <button class="btn-edit" id="edit-btn" style="display:none" onclick="enterEdit()">Edit</button>
   </header>
 
-  <div class="doc-layout">
-    <!-- ── Sidebar TOC ── -->
-    <nav class="toc">
-      <div class="toc-heading">Contents</div>
-      <a class="art-link" href="#art-I"><span class="art-num">Article I</span><span class="art-ttl">Foundation</span></a>
-      <a class="art-link" href="#art-II"><span class="art-num">Article II</span><span class="art-ttl">Front Office Duties</span></a>
-      <a class="art-link" href="#art-III"><span class="art-num">Article III</span><span class="art-ttl">Rules</span></a>
-      <a class="art-link" href="#art-IV"><span class="art-num">Article IV</span><span class="art-ttl">Membership</span></a>
-      <a class="art-link" href="#art-V"><span class="art-num">Article V</span><span class="art-ttl">Standing Committees</span></a>
-      <a class="art-link" href="#art-VI"><span class="art-num">Article VI</span><span class="art-ttl">Commissioner</span></a>
-      <a class="art-link" href="#art-VII"><span class="art-num">Article VII</span><span class="art-ttl">Amendment Procedure</span></a>
-      <a class="art-link" href="#art-VIII"><span class="art-num">Article VIII</span><span class="art-ttl">Salary Cap</span></a>
-      <a class="art-link" href="#art-IX"><span class="art-num">Article IX</span><span class="art-ttl">Trading</span></a>
-      <a class="art-link" href="#art-X"><span class="art-num">Article X</span><span class="art-ttl">Free Agency</span></a>
-      <a class="art-link" href="#art-XI"><span class="art-num">Article XI</span><span class="art-ttl">Rookie Draft Day</span></a>
-      <a class="art-link" href="#art-XII"><span class="art-num">Article XII</span><span class="art-ttl">Contracts</span></a>
-      <a class="art-link" href="#art-XIII"><span class="art-num">Article XIII</span><span class="art-ttl">Termination &amp; Quitting</span></a>
-      <a class="art-link" href="#art-XIV"><span class="art-num">Article XIV</span><span class="art-ttl">Streaming &amp; Updates</span></a>
-      <a class="art-link" href="#art-XV"><span class="art-num">Article XV</span><span class="art-ttl">Tank Rules</span></a>
-      <a class="art-link" href="#art-XVI"><span class="art-num">Article XVI</span><span class="art-ttl">Useful Links</span></a>
-      <a class="art-link" href="#amendments"><span class="art-num">Appendix</span><span class="art-ttl">Amendment Log</span></a>
-    </nav>
-
-    <!-- ── Document content ── -->
-    <div class="doc-content">
-
-      <!-- ────────────────────────────────────────── Article I ── -->
-      <article id="art-I">
-        <div class="art-header">Article I</div>
-        <h2 class="art-title">Foundation</h2>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Overview</h3>
-          <p>The Nothing But Net Sim League (NBN) is a "NBA Fantasy Front Office" league that allows members to take total control of an NBN franchise. In the 2023 offseason, owners voted for the league to follow a future commitment to CBA rules except where exceptions were enforced by the Board of Directors, at the behest of owners.</p>
-          <ul>
-            <li>The league runs on a real-time basis, and follows the NBA schedule as closely as possible.</li>
-            <li>Members of front offices will be responsible for drafting rookies, signing free agents, making trades, and even coaching their teams.</li>
-            <li>The NBN is run on NBA 2K and shows live games numerous times per week on Twitch.</li>
-            <li>Each day of the season, box scores will be shown for every game as they correspond to games in real life.</li>
-          </ul>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Mission</h3>
-          <p>The principal mission of Nothing But Net, from its beginning day to its end, is to:</p>
-          <ul>
-            <li>Provide a competitive environment in which basketball enthusiasts from around the world can enjoy.</li>
-            <li>Maintain the highest sense of ethics throughout the league in order to ensure fair play.</li>
-            <li>Guarantee that all participating members of the league are active and contributing to the overall growth and health of the league.</li>
-            <li>Reject all forms of racism and discrimination towards any party to promote a comfortable and friendly atmosphere.</li>
-          </ul>
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article II ── -->
-      <article id="art-II">
-        <div class="art-header">Article II</div>
-        <h2 class="art-title">Front Office Duties</h2>
-
-        <p>An ideal NBN front office consists of an Owner, General Manager, and Head Coach. Each front office may operate in their own fashion, but here are the suggested roles of each position.</p>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Owner</h3>
-          <ul>
-            <li>Set the direction and vision of the franchise (compete/tank/rebuild/etc.)</li>
-            <li>Hire and maintain a full staff at all times.</li>
-            <li>Make sure goals are always being met.</li>
-          </ul>
-          <p><em>The owner is the main person in charge of the franchise and ultimately has the final say on all trades and draft choices. The owner is also allowed to replace/fire current staff members at will.</em></p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">General Manager</h3>
-          <ul>
-            <li>Conducting trades with other teams in order to improve the roster.</li>
-            <li>Sign free agents during free agency.</li>
-            <li>Managing the salary cap.</li>
-            <li>Scouting future prospects entering the league.</li>
-          </ul>
-          <p><em>The General Manager is the right hand man to the owner and does whatever is necessary to make sure his vision and goals are being fulfilled.</em></p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Head Coach</h3>
-          <ul>
-            <li>Setting the starting lineup and rotations for the team.</li>
-            <li>Implementing an offensive and defensive scheme best suited to the team.</li>
-            <li>Adjusting rotations and schemes based on the opponents' players.</li>
-          </ul>
-          <p><em>Coaches can also assist in scouting future prospects for Draft Day while making recommendations on who the organization should draft and pursue during free agency.</em></p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Additional Positions</h3>
-          <ul>
-            <li>Assistant General Manager</li>
-            <li>Assistant Coach</li>
-          </ul>
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article III ── -->
-      <article id="art-III">
-        <div class="art-header">Article III</div>
-        <h2 class="art-title">Rules</h2>
-
-        <div class="doc-section">
-          <h3 class="sec-title">General League Rules</h3>
-          <ul>
-            <li>Neither racism nor discrimination will be tolerated in the league.</li>
-            <li>No form of cheating is allowed in the league:
-              <ul>
-                <li>No tampering.</li>
-                <li>No real money transactions to benefit your team.</li>
-                <li>Using any committee privileges (if applicable) to use information/knowledge to your advantage is prohibited.</li>
-                <li>Use of alternate accounts is strictly prohibited.</li>
-                <li>Adding illegal conditions to trade agreements (e.g., committing to tank in order to heighten pick value) is prohibited.</li>
-              </ul>
-            </li>
-            <li>Harmful sayings such as "kill yourself" are banned from the league.</li>
-            <li>Questioning leadership for the sole purpose of causing trouble is not allowed.</li>
-            <li>Punishments for improper conduct (in any form):
-              <ul>
-                <li>1st Offense: 48-hour ban</li>
-                <li>2nd Offense: 1-week ban</li>
-                <li>3rd Offense: Permanent ban</li>
-              </ul>
-            </li>
-            <li>Depending on the severity of the infraction, punishments will not necessarily follow this order, according to the discretion of the Board of Directors.</li>
-            <li>All concerns should be addressed privately with a member of the Board of Directors and/or the Commissioner.</li>
-            <li>You must notify your respective team and the Board of Directors if you will be inactive for a given period of time.</li>
-            <li>Displaying a player's personal information without his/her consent is prohibited.</li>
-            <li>Remember that this is a game and have fun.</li>
-            <li>No witch hunting.</li>
-          </ul>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Discord Rules</h3>
-          <ul>
-            <li>Listings in #tradeblock must be serious and professional.</li>
-            <li>Keep information channels free of chatter (#news, #leaguepolls, etc.)</li>
-            <li>Commands for bots should be exclusively posted in the #commands channel.</li>
-            <li>NSFW content belongs exclusively in the #nsfw channel.</li>
-            <li>No spamming of any kind, in any channel.</li>
-            <li>#ownerschat should be limited to serious discussion in order to encourage ideas that will help the league.</li>
-          </ul>
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article IV ── -->
-      <article id="art-IV">
-        <div class="art-header">Article IV</div>
-        <h2 class="art-title">Membership</h2>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Recruitment</h3>
-          <p>Current members are encouraged to invite their respective friends in order to maximize personal experience in the league and make it more entertaining. The majority of recruitment, however, will take place on Reddit through each team's respective subreddit, as well as various internet forums and other communities. The recruitment committee will make an effort to recruit members consistently to help make the league more entertaining and maintain full staffing in each front office.</p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Interview Process</h3>
-          <p>Those who express interest in joining the Nothing But Net Sim League will be invited to the league's Discord server. Upon entry to the Discord, the applicant will be asked to schedule a voice chat interview with a member of the Recruitment Committee. This first interview screens the candidate to make sure he/she is active, intelligent, and non-toxic to the current environment.</p>
-          <p>Once the candidate has gone through the interview process, the head of the recruitment committee shall notify the owner of the applicant's desired team, beginning the second interview. The owner is free to ask the applicant any question he/she sees fit, as long as no rules are violated.</p>
-          <ul>
-            <li>Owners should be looking to fill their front offices at all times if they are managing their teams alone.</li>
-          </ul>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Hiring Process</h3>
-          <p>As the second interview concludes, the owner of the applicant's team will notify both the applicant and the head of the recruitment committee whether or not the applicant is hired. Should the applicant be hired, the owner will announce the new hire in the #News channel. Should the applicant not be hired by his/her desired team, they remain a free agent and will have to await interviews from other interested teams.</p>
-          <p>You have a <strong>2-week period</strong> to join a team in the NBN or contribute in another way, or you will be removed from the NBN.</p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Security</h3>
-          <p>The Nothing But Net Sim League aspires to be an honest and fair simulation for all members. In order to promote fair play, members may be asked to disable VPNs, complete voice interviews to verify activity and legitimacy, and submit to other forms of authentication. If a member is unwilling to verify certain security measures, they may be removed from the league.</p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Activity Check</h3>
-          <p>To combat inactivity from owners and high turnover in the league, the following methodology will be implemented:</p>
-          <ul>
-            <li>Monthly #leaguepolls check-in. At the beginning of each month, a BOD member will post a poll. Polls must be responded to within <strong>5 days</strong> of being posted (applies to all members).</li>
-          </ul>
-          <p><strong>Ownership strikes</strong> result from a lack of activity:</p>
-          <ul>
-            <li>Failure to vote in a poll.</li>
-            <li>Complaints from other FO members that the owner is not around (FO members must provide proof that contact has been ignored within a 5-day span).</li>
-          </ul>
-          <p>When one or more of the above situations occurs, the BOD will first reach out to the team FO and then the owner via DM to confirm activity. Failure to respond within 24 hours will result in a strike.</p>
-          <ul>
-            <li>At <strong>3 strikes</strong>, the owner will be asked to step down into a lesser role and will not be eligible for ownership again for one year.</li>
-            <li>For regular coaches and GMs who are inactive, their position will be vacated immediately.</li>
-            <li>Your account will be demoted to Free Agent status unless you have not been heard from within 2 weeks of being replaced. If you have left the Discord server, reach out to a BOD member via Reddit DM to be allowed back in.</li>
-            <li>An owner is allowed to vouch for his/her FO member before removal occurs.</li>
-          </ul>
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article V ── -->
-      <article id="art-V">
-        <div class="art-header">Article V</div>
-        <h2 class="art-title">Standing Committees</h2>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Recruitment Committee</h3>
-          <p>It is the sole responsibility of the recruitment committee to implement and execute a strategy that effectively recruits and maintains new members in the league. The committee must also maintain a strict interview and security structure that best reflects the traits needed to flourish in the league.</p>
-          <p><em>Current head and members: Bryn (head), KVL, CF, That1Guy, and JD.</em></p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Free Agency Committee</h3>
-          <p>The Free Agency Committee is in charge of grading each team's submitted pitch for their desired free agent. Each member of the committee (5 per FA) is given 100 percentage points to distribute between each bidding team on how likely the free agent is to play for that team. Points are then converted to balls for a lottery system.</p>
-          <p><em>Current members: KidMonotone, cheppywire, DarthAwn, JDDN, hkd, Jonny, Kamal, immaking, Rodney McDoom, Mega, Jaywalker7, and Wonder.</em></p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Trade Review Committee</h3>
-          <p>The Trade Review Committee is responsible for reviewing all trades submitted before announcing them as completed. <strong>ALL trades must be submitted for review before they can be announced</strong> on the #transactions channel. The review board ensures that both teams are within the legal cap should the trade be approved.</p>
-          <ul>
-            <li>Trade Committee must have five members at all times.</li>
-            <li>All trades must be analyzed to ensure compliance with the Stepien rule, cap rules, and future pick protections.</li>
-            <li>Three of the five TRC members must approve each trade.</li>
-            <li><strong>Veto Process:</strong> Three of the five TRC members can veto a trade. This sends the trade to the BOD, where a majority (3/5) can confirm the veto or override and allow the trade.</li>
-          </ul>
-          <p><em>Current members: CF (head), killerdawg7, NotChris, Adams17, and JDDN. Chuck acts as the alternative committee member if a member's team is involved in a trade or a member is away.</em></p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">PO-Ext Committee</h3>
-          <p>The PO-Ext committee is responsible for handling league player options in existing and future contracts and for the judgment of future contract extensions. Committee members allocate lottery balls for their decisions, using the same methodology as the FAC. Members are banned from discussing their lottery ball allocations with anyone outside the committee. Decisions will be automatically determined if the lottery ball allocation exceeds 85% in favor of any one option. The final outcomes will be streamed live by the streaming committee.</p>
-          <p>The committee will consist of a maximum of nine members with the power to make lottery ball allocations.</p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Rosters Committee</h3>
-          <p>The Rosters Committee handles all tasks related to the maintenance of current rosters, including updating spreadsheets to reflect trades, updating cap room for each team, reflecting free agent signings, and updating each team's current picks on a regular basis.</p>
-          <p class="callout callout-warn" style="font-size:0.85rem;margin-top:0.5rem;">Please allow up to 48 hours after your trade is announced for it to be reflected in the spreadsheets.</p>
-          <p><em>Current members: Killer, Nelson.</em></p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Streaming Committee</h3>
-          <p>The streaming committee will be in charge of making sure all free agency lotteries and any type of game played with the teams are streamed live on Twitch for the rest of the league to watch. Streaming these events live guarantees that there is no form of collusion/cheating taking place.</p>
-          <ul>
-            <li>The league save will be hosted on the league Shadow PC, the login to which is given only to members of the streaming committee and select members of the rosters/update committee.</li>
-            <li>Individual games will be streamed on a three-to-four games per week schedule, at the discretion of the committee.</li>
-            <li>The committee will be in charge of updating teams on the fatigue of their players.</li>
-          </ul>
-          <p><em>Streaming members: Cheppy, KyleWTF, Chuck, and That1Guy. Scheduling: bjbren17.</em></p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Website and Statistics Committee</h3>
-          <p>Members of the WSC assigned to the website division will be responsible for making sure everything included in the NBN Google Drive is available to the league in website format. The statistics division will consist of 4–6 members who divide the league into equal parts, with each member responsible for a certain number of teams. Stat keepers are encouraged to keep their assigned teams updated on a daily basis, and weekly at a minimum.</p>
-          <p><em>Current members: Bryn, Chuck.</em></p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Board of Directors</h3>
-          <p>The Board of Directors is a group of seven people, appointed by a league-wide vote, who are in charge of keeping the league in order and improving all aspects of it. Each board member is usually in charge of one specific section of the league.</p>
-          <ul>
-            <li>The Board of Directors votes on important changes to the league's structure overall.</li>
-            <li>At the end of each league season, the owners group will vote on and elect a new Board of Directors for the upcoming league season.</li>
-            <li>Members that served on the Board the previous year are eligible to serve multiple years in a row.</li>
-            <li>The Board of Directors has the power to moderate the Discord chat and delete messages.</li>
-          </ul>
-          <p><em>Current members: Bryn, Not Chris, Cheppywire, Chuck, KidMonotone, Killerdawg7, and That1Guy101.</em></p>
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article VI ── -->
-      <article id="art-VI">
-        <div class="art-header">Article VI</div>
-        <h2 class="art-title">Commissioner</h2>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Responsibilities</h3>
-          <ul>
-            <li>The Commissioner of the NBN Sim League will serve as the Chairman of the Board of Directors.</li>
-            <li>His primary responsibility will be to lead and participate in discussions among the Board of Directors.</li>
-            <li>If at any time during an Owner's Vote there is a tie, the Commissioner shall serve as a tiebreaker. The Commissioner will not vote on any matter unless there is a tie.</li>
-          </ul>
-          <p><em>Current commissioner: Chuck.</em></p>
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article VII ── -->
-      <article id="art-VII">
-        <div class="art-header">Article VII</div>
-        <h2 class="art-title">Amendment Procedure</h2>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Rule Changes</h3>
-          <ul>
-            <li>Any owner may present a rule change proposal in #ownerschat.
-              <ul>
-                <li>Any proposal must be accompanied by the endorsement of another owner.</li>
-              </ul>
-            </li>
-            <li>Rule changes are typically done in the offseason.
-              <ul>
-                <li>Owners may still present a proposal to the Board of Directors during the season.</li>
-                <li>The Board of Directors will confirm whether this proposal should be voted on in-season or tabled until the offseason.</li>
-              </ul>
-            </li>
-          </ul>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Voting</h3>
-          <ul>
-            <li>Any proposal will be initially voted on by the owners not serving on the Board of Directors.</li>
-            <li>If that vote passes, it will travel to the Board of Directors for a confirmation vote.
-              <ul>
-                <li>The Commissioner will serve as tiebreaker for any vote by the Board of Directors.</li>
-              </ul>
-            </li>
-            <li>GMs and coaches have no voting power — the owner of a team is responsible for feeling out their front office's opinion.</li>
-          </ul>
-          <div class="callout callout-note" style="margin-top:0.75rem;">
-            Proposals can be submitted and tracked using the <a href="/proposals/">Proposals</a> section of this site.
-          </div>
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article VIII ── -->
-      <article id="art-VIII">
-        <div class="art-header">Article VIII</div>
-        <h2 class="art-title">Salary Cap</h2>
-        <div class="callout callout-note">
-          Detailed salary cap rules, apron thresholds, mid-level exceptions, the bi-annual exception, and the disabled player exception are governed by the <strong>NBN Rulebook</strong>. See <a href="/rulebook/#art-I">Article I — The Salary Cap</a> and <a href="/rulebook/#art-II">Article II — Roster Construction</a> for current rules.
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article IX ── -->
-      <article id="art-IX">
-        <div class="art-header">Article IX</div>
-        <h2 class="art-title">Trading</h2>
-        <div class="callout callout-note">
-          Trade procedures, restrictions, timelines, sign-and-trade rules, and draft pick trading rules are governed by the <strong>NBN Rulebook</strong>. See <a href="/rulebook/#art-IV">Article IV — Trades</a> for current rules.
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article X ── -->
-      <article id="art-X">
-        <div class="art-header">Article X</div>
-        <h2 class="art-title">Free Agency</h2>
-        <div class="callout callout-note">
-          Free agency procedures, committee review, lottery mechanics, pitch formats, guarantees, UDFA rules, and in-season FA are governed by the <strong>NBN Rulebook</strong>. See <a href="/rulebook/#art-III">Article III — Free Agent Signings</a> for current rules.
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article XI ── -->
-      <article id="art-XI">
-        <div class="art-header">Article XI</div>
-        <h2 class="art-title">Rookie Draft Day</h2>
-        <div class="callout callout-note">
-          Lottery procedures, draft day rules, rookie signing scales, and restrictions are governed by the <strong>NBN Rulebook</strong>. See <a href="/rulebook/#art-VII">Article VII — The Draft</a> for current rules.
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article XII ── -->
-      <article id="art-XII">
-        <div class="art-header">Article XII</div>
-        <h2 class="art-title">Contracts &amp; Position Restrictions</h2>
-        <div class="callout callout-note">
-          Contract structures, roster spots, two-way contracts, max/minimum contracts, bird rights, cap holds, extensions, international player rights, waivers/buyouts, and position eligibility are governed by the <strong>NBN Rulebook</strong>. See <a href="/rulebook/#art-II">Article II — Roster Construction</a>, <a href="/rulebook/#art-V">Article V — Releases &amp; Waivers</a>, and <a href="/rulebook/#art-VI">Article VI — Contract Options &amp; Extensions</a> for current rules.
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article XIII ── -->
-      <article id="art-XIII">
-        <div class="art-header">Article XIII</div>
-        <h2 class="art-title">Termination, Quitting, and Penalties</h2>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Termination Process</h3>
-          <p>Owners are free to fire/hire their general managers and coaches at any point during the regular season and offseason. If terminating a player from his/her team, the owner must provide a reason for the termination and submit it to the Commissioner. Players who are terminated from their previous teams are free to be interviewed and hired by another team at any point in the league's existence.</p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Quitting</h3>
-          <ul>
-            <li>Once you announce your leave, you have until the start of the new season to join a new team of your choosing. You must go through the interview process to be hired on a new team.</li>
-            <li>Anyone who quits during a period outside of this window must wait until the end of the season to be interviewed for another team. This prevents players from making moves on other teams and then abandoning them for another team.</li>
-            <li>You may not quit your team if you are the only representative for it unless you are leaving the league entirely.</li>
-          </ul>
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article XIV ── -->
-      <article id="art-XIV">
-        <div class="art-header">Article XIV</div>
-        <h2 class="art-title">Streaming Gameplay, Player Updates, and Rotation Updates</h2>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Streaming</h3>
-          <ul>
-            <li>Games throughout the regular season will be either streamed or simulated by designated committee members.</li>
-            <li>Games will be streamed based on the schedule set by the committee at the beginning of the season. Games will be scheduled up to the last month of the regular season before the rest are decided by league vote through polls.</li>
-            <li>Teams will <strong>not</strong> be allowed to rest players free of injury during a streamed game.</li>
-            <li>Simmed games and streamed games will be stored on the NBN YouTube channel.</li>
-          </ul>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Player Updates</h3>
-          <p>As the season progresses, 2K will regularly update players' OVR ratings. The criteria for a player to be updated in our league (done manually) is as follows:</p>
-          <ul>
-            <li>Players rated <strong>90 OVR and above:</strong> ±1 OVR change required</li>
-            <li>Players rated <strong>80–89 OVR:</strong> ±1 OVR change required</li>
-            <li>Players rated <strong>79 and below:</strong> ±2 OVR change required</li>
-          </ul>
-          <p>Before the playoffs start, any player that has changed during the season will be updated regardless of the magnitude of change.</p>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Rotation Updates</h3>
-          <ul>
-            <li>All rotation updates are to occur on the team coaching spreadsheet given to each team.</li>
-            <li>Rotations need to be updated by <strong>11:59 PM EST the day before</strong> your game is scheduled. You can set multiple rotations in advance.</li>
-            <li>Whenever you make a rotational change, please note it on the "ALL CHANGES" sheet in the Google Drive and highlight changes on the rotation sheet.</li>
-            <li>Teams will be allowed to fully customize their coaches' attributes and styles at allotted intervals: beginning of season, trade deadline, and end of regular season (if the team qualifies for the playoffs).</li>
-            <li>Teams will be informed of their players' fatigue levels as they change by members of the streaming committee.</li>
-          </ul>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">Injuries</h3>
-          <ul>
-            <li>The league will be set to injury sliders of 31 to begin the season, confirmed by owners prior to the beginning of each season.</li>
-            <li>Injuries will be promptly reported to teams by members of the streaming committee along with expected recovery times.</li>
-            <li>Teams with newly injured players must update their rotation prior to the day of their next scheduled game if the injured player was initially given minutes. Failure to do so will result in an auto-sorted rotation.</li>
-          </ul>
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article XV ── -->
-      <article id="art-XV">
-        <div class="art-header">Article XV</div>
-        <h2 class="art-title">Tank Rules</h2>
-
-        <ul>
-          <li>Teams must play their best (2K overall rated) player <strong>30+ minutes per game.</strong></li>
-          <li>Teams must play their next two best players <strong>24+ minutes per game.</strong></li>
-          <li>Resting these players after back-to-backs, or very heavy weeks, for 1 game at a time is acceptable. No resting back-to-back.</li>
-          <li>If you break these rules, the BOD will give you a warning, and you must change your rotation to meet these requirements.</li>
-          <li>If you refuse to change your roster, it will be auto-sorted.</li>
-          <li>FOs are encouraged to inform the BOD of teams breaking these rules.</li>
-          <li>Constant skirting of the rules / doing the absolute minimum to comply will be tracked and documented by the BOD, and that information will be passed on to the FAC.</li>
-          <li>Some situations are negotiable with the BOD for circumstances like older players, players who have been injured during the season, etc. If the BOD reaches out to you, you are simply asked to fix your roster to comply with the rules that day.</li>
-          <li>Once eliminated from play-in contention, you are able to rest/bench/sit your players with no restrictions. Teams are still encouraged to promote realism.</li>
-        </ul>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Article XVI ── -->
-      <article id="art-XVI">
-        <div class="art-header">Article XVI</div>
-        <h2 class="art-title">Useful Links</h2>
-
-        <div class="doc-section">
-          <h3 class="sec-title">NBN Google Drive</h3>
-          <p>The NBN Google Drive holds all of the documents and tools NBN members will require to compete. It is <strong>highly suggested</strong> that you bookmark the Google Drive for quick access.</p>
-          <ul>
-            <li><a href="https://docs.google.com/spreadsheets/d/1vaXiZ4_Omi-F9kBkgXfQm00VVL0rUm-2kPSkmYQ_Q5Y/edit?usp=sharing" target="_blank" rel="noopener">Rosters &amp; Salaries</a></li>
-            <li><a href="https://docs.google.com/spreadsheets/d/1HxYJpTR2D_4MVe-QlffwSfYdr9F43DwJLeQKDJrG_Qs/edit?usp=sharing" target="_blank" rel="noopener">Standings</a></li>
-            <li><a href="https://docs.google.com/spreadsheets/d/1px9o9kEkCeyuooVpsZdaiu9cl-jnU9x7J-lbNA2z2Xo/edit?usp=sharing" target="_blank" rel="noopener">Rotation Log</a></li>
-            <li>Your team's rotation sheet</li>
-          </ul>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">NBN Website</h3>
-          <p>The NBN website aims to mimic an NBA.com-style website and is the canonical source for team info, stats, standings, and league history.</p>
-          <ul>
-            <li><a href="/">nbn.today</a></li>
-            <li><a href="/rulebook/">NBN Rulebook</a> — detailed transaction and cap rules</li>
-          </ul>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">NBN Twitch</h3>
-          <p>The NBN streams box scores and games live via Twitch.</p>
-          <ul>
-            <li><a href="https://www.twitch.tv/nothingbutnet" target="_blank" rel="noopener">twitch.tv/nothingbutnet</a></li>
-          </ul>
-        </div>
-
-        <div class="doc-section">
-          <h3 class="sec-title">NBN YouTube</h3>
-          <p>Each box score and live game will be uploaded to YouTube shortly after completion.</p>
-          <ul>
-            <li><a href="https://www.youtube.com/channel/UCxK_hb6f4HbLRry6NFW2MwA" target="_blank" rel="noopener">NBN YouTube Channel</a></li>
-          </ul>
-        </div>
-      </article>
-
-      <hr class="art-divider">
-
-      <!-- ────────────────────────────────────────── Amendment Log ── -->
-      <div id="amendments" class="amendments-wrap">
-        <div class="amendments-header">
-          <h2 class="amendments-title">Amendment Log</h2>
-          <span class="amendments-subtitle">Official record of changes to this document</span>
-        </div>
-        <div id="amd-list-wrap"></div>
-        <div id="amd-form-wrap" style="display:none;">
-          <div class="log-form">
-            <div class="log-form-title">Log an Amendment</div>
-            <div class="log-form-row">
-              <div class="date-field">
-                <label for="amd-date">Date</label>
-                <input type="date" id="amd-date">
-              </div>
-              <div class="summary-field">
-                <label for="amd-summary">Summary of change</label>
-                <input type="text" id="amd-summary" placeholder="e.g. Updated committee members in Article V">
-              </div>
-            </div>
-            <div class="log-form-actions">
-              <button class="btn-log" id="amd-submit">Log Amendment</button>
-              <span class="log-status" id="amd-status"></span>
-            </div>
-          </div>
+  <!-- ── View mode ── -->
+  <div id="view-mode">
+    <div class="doc-layout">
+      <nav class="toc" id="toc">
+        <div class="toc-heading">Contents</div>
+        <div id="toc-links"><span class="loading" style="padding:0 1rem;display:block">Loading…</span></div>
+      </nav>
+      <div class="doc-content" id="doc-content">
+        <span class="loading">Loading…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Edit mode ── -->
+  <div id="edit-mode">
+    <div class="editor-wrap">
+      <div class="editor-bar">
+        <button type="button" class="fmt-btn" title="Bold (Ctrl+B)" onclick="fmt('**','**')"><b>B</b></button>
+        <button type="button" class="fmt-btn" title="Italic (Ctrl+I)" onclick="fmt('_','_')"><i style="font-style:italic">I</i></button>
+        <div class="fmt-sep"></div>
+        <button type="button" class="fmt-btn" title="Heading 2" onclick="fmtLine('## ')">H2</button>
+        <button type="button" class="fmt-btn" title="Heading 3" onclick="fmtLine('### ')">H3</button>
+        <div class="fmt-sep"></div>
+        <button type="button" class="fmt-btn" title="Blockquote" onclick="fmtLine('> ')">❝</button>
+        <button type="button" class="fmt-btn" title="Bullet list" onclick="fmtLine('- ')">• —</button>
+        <button type="button" class="fmt-btn" title="Link (Ctrl+K)" onclick="fmtLink()">🔗</button>
+        <div class="mode-tabs">
+          <button type="button" class="mode-tab active" data-mode="write" onclick="setPreviewMode('write')">Write</button>
+          <button type="button" class="mode-tab" data-mode="preview" onclick="setPreviewMode('preview')">Preview</button>
         </div>
       </div>
+      <textarea id="body-write"></textarea>
+      <div id="body-preview"></div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-field">
+        <label for="edit-summary">Summary of changes</label>
+        <input type="text" id="edit-summary" placeholder="e.g. Updated committee members in Article V">
+      </div>
+      <div class="edit-actions">
+        <button class="btn-primary" id="save-btn" onclick="saveEdit()">Save Amendment</button>
+        <button class="btn-secondary" onclick="cancelEdit()">Cancel</button>
+        <span class="save-status" id="save-status"></span>
+      </div>
+    </div>
+  </div>
+</div>
 
-    </div><!-- /.doc-content -->
-  </div><!-- /.doc-layout -->
-</div><!-- /.page -->
-
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
 <script>
 const API = '/api';
+let constitutionData = null;
 let isBod = false;
+
+// ── marked.js setup: add IDs to headings ──────────────────────────────────
+const tocEntries = [];
+const renderer = new marked.Renderer();
+renderer.heading = function({ text, depth }) {
+  const raw = text.replace(/<[^>]+>/g, '');
+  const id = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  tocEntries.push({ depth, text: raw, id });
+  return `<h${depth} id="${id}">${text}</h${depth}>`;
+};
+marked.use({ renderer, breaks: false });
+
+// ── Render & TOC ─────────────────────────────────────────────────────────
+function renderContent(content) {
+  tocEntries.length = 0;
+  const html = marked.parse(content || '');
+  document.getElementById('doc-content').innerHTML = html + buildHistoryHTML();
+  buildToc();
+  // Attach history toggle
+  const tog = document.getElementById('history-toggle');
+  if (tog) tog.addEventListener('click', () => {
+    tog.classList.toggle('open');
+    document.getElementById('history-body').classList.toggle('open');
+  });
+}
+
+function buildHistoryHTML() {
+  if (!constitutionData?.history?.length) return '';
+  const rows = constitutionData.history.slice().reverse().map(h => `
+    <tr>
+      <td class="ht-ver">v${h.version}</td>
+      <td class="ht-date">${fmtDate(h.date)}</td>
+      <td>${h.summary}</td>
+      <td class="ht-author">${h.author || ''}</td>
+    </tr>`).join('');
+  const count = constitutionData.history.length;
+  return `
+    <div class="history-toggle" id="history-toggle">
+      <span class="chevron">▼</span>
+      <span>Amendment History (${count} ${count === 1 ? 'entry' : 'entries'})</span>
+    </div>
+    <div class="history-table-wrap" id="history-body">
+      <table class="history-table">
+        <thead><tr><th>Ver</th><th>Date</th><th>Summary</th><th>Author</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function buildToc() {
+  const wrap = document.getElementById('toc-links');
+  if (!tocEntries.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = tocEntries
+    .filter(e => e.depth === 2 || e.depth === 3)
+    .map(e => `<a href="#${e.id}" class="toc-h${e.depth}">${e.text}</a>`)
+    .join('');
+}
 
 function fmtDate(iso) {
   if (!iso) return '';
@@ -734,79 +327,19 @@ function fmtDate(iso) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function renderAmendments(list) {
-  const wrap = document.getElementById('amd-list-wrap');
-  if (!list.length) {
-    wrap.innerHTML = '<p class="empty-note">No amendments have been logged yet.</p>';
-    return;
+// ── Load ─────────────────────────────────────────────────────────────────
+async function load() {
+  try {
+    const r = await fetch(`${API}/constitution`);
+    constitutionData = await r.json();
+    const v = constitutionData.version;
+    document.getElementById('version-chip').textContent = `v${v}`;
+    document.getElementById('version-date').textContent = constitutionData.date ? `Amended ${fmtDate(constitutionData.date)}` : '';
+    renderContent(constitutionData.content || '');
+  } catch (e) {
+    document.getElementById('doc-content').innerHTML = `<span class="loading" style="color:#f87171">${e.message}</span>`;
   }
-  const rows = list.slice().reverse().map(a => `
-    <tr>
-      <td class="amd-date">${fmtDate(a.date)}</td>
-      <td>${a.summary}</td>
-      <td class="amd-author">${a.author || ''}</td>
-      ${isBod ? `<td class="amd-del"><button class="amd-del-btn" title="Delete" onclick="deleteAmendment('${a.id}')">✕</button></td>` : ''}
-    </tr>`).join('');
-  wrap.innerHTML = `
-    <table class="amendment-table">
-      <thead>
-        <tr>
-          <th style="width:110px">Date</th>
-          <th>Summary</th>
-          <th style="width:110px">Author</th>
-          ${isBod ? '<th style="width:40px"></th>' : ''}
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>`;
 }
-
-async function loadAmendments() {
-  try {
-    const r = await fetch(`${API}/constitution/amendments`);
-    const list = await r.json();
-    renderAmendments(list);
-  } catch { document.getElementById('amd-list-wrap').innerHTML = '<p class="empty-note">Could not load amendments.</p>'; }
-}
-
-async function deleteAmendment(id) {
-  if (!confirm('Delete this amendment entry?')) return;
-  const token = localStorage.getItem('nbn_token');
-  try {
-    const r = await fetch(`${API}/constitution/amendments/${id}`, {
-      method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!r.ok) { const e = await r.json(); alert(e.detail || 'Delete failed'); return; }
-    loadAmendments();
-  } catch (e) { alert(e.message); }
-}
-
-function setAmdStatus(msg, cls) {
-  const el = document.getElementById('amd-status');
-  el.textContent = msg;
-  el.className = 'log-status' + (cls ? ' ' + cls : '');
-}
-
-document.getElementById('amd-submit').addEventListener('click', async () => {
-  const date = document.getElementById('amd-date').value;
-  const summary = document.getElementById('amd-summary').value.trim();
-  if (!date || !summary) { setAmdStatus('Date and summary are required.', 'err'); return; }
-  const token = localStorage.getItem('nbn_token');
-  document.getElementById('amd-submit').disabled = true;
-  setAmdStatus('Saving…');
-  try {
-    const r = await fetch(`${API}/constitution/amendments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ date, summary }),
-    });
-    if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Save failed'); }
-    document.getElementById('amd-summary').value = '';
-    setAmdStatus('Logged.', 'ok');
-    loadAmendments();
-  } catch (e) { setAmdStatus(e.message, 'err'); }
-  finally { document.getElementById('amd-submit').disabled = false; }
-});
 
 async function initAuth() {
   const token = localStorage.getItem('nbn_token');
@@ -815,20 +348,100 @@ async function initAuth() {
     const r = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
     if (!r.ok) return;
     const me = await r.json();
-    const roles = me.roles || [];
-    if (roles.includes('bod') || roles.includes('admin')) {
+    if ((me.roles || []).some(r => r === 'bod' || r === 'admin')) {
       isBod = true;
-      document.getElementById('amd-form-wrap').style.display = 'block';
-      // Pre-fill today's date
-      document.getElementById('amd-date').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('edit-btn').style.display = '';
     }
-  } catch { /* no auth, silently ignore */ }
+  } catch { /* ignore */ }
 }
 
-(async () => {
-  await initAuth();
-  await loadAmendments();
-})();
+// ── Edit mode ─────────────────────────────────────────────────────────────
+function enterEdit() {
+  document.getElementById('view-mode').style.display = 'none';
+  document.getElementById('edit-mode').style.display = 'block';
+  document.getElementById('body-write').value = constitutionData?.content || '';
+  document.getElementById('edit-summary').value = '';
+  document.getElementById('save-status').textContent = '';
+  setPreviewMode('write');
+  document.getElementById('body-write').focus();
+}
+
+function cancelEdit() {
+  document.getElementById('edit-mode').style.display = 'none';
+  document.getElementById('view-mode').style.display = 'block';
+}
+
+function setSaveStatus(msg, cls) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.className = 'save-status' + (cls ? ' ' + cls : '');
+}
+
+async function saveEdit() {
+  const content = document.getElementById('body-write').value;
+  const summary = document.getElementById('edit-summary').value.trim();
+  if (!summary) { setSaveStatus('Summary is required.', 'err'); document.getElementById('edit-summary').focus(); return; }
+  const token = localStorage.getItem('nbn_token');
+  document.getElementById('save-btn').disabled = true;
+  setSaveStatus('Saving…');
+  try {
+    const r = await fetch(`${API}/constitution`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ content, summary }),
+    });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Save failed'); }
+    // Reload and return to view
+    await load();
+    cancelEdit();
+  } catch (e) { setSaveStatus(e.message, 'err'); }
+  finally { document.getElementById('save-btn').disabled = false; }
+}
+
+// ── Editor helpers ────────────────────────────────────────────────────────
+function setPreviewMode(mode) {
+  const write = document.getElementById('body-write');
+  const preview = document.getElementById('body-preview');
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+  if (mode === 'preview') {
+    preview.innerHTML = marked.parse(write.value || '');
+    write.style.display = 'none'; preview.style.display = 'block';
+  } else {
+    write.style.display = 'block'; preview.style.display = 'none'; write.focus();
+  }
+}
+function fmt(before, after) {
+  const ta = document.getElementById('body-write');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = ta.value.slice(s, e);
+  ta.setRangeText(before + (sel || 'text') + after, s, e, 'select');
+  if (!sel) { ta.selectionStart = s + before.length; ta.selectionEnd = s + before.length + 4; }
+  ta.focus();
+}
+function fmtLine(prefix) {
+  const ta = document.getElementById('body-write');
+  const lineStart = ta.value.lastIndexOf('\n', ta.selectionStart - 1) + 1;
+  const has = ta.value.slice(lineStart).startsWith(prefix);
+  ta.setRangeText('', lineStart, lineStart + (has ? prefix.length : 0), 'end');
+  if (!has) ta.setRangeText(prefix, lineStart, lineStart, 'end');
+  ta.focus();
+}
+function fmtLink() {
+  const ta = document.getElementById('body-write');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = ta.value.slice(s, e);
+  ta.setRangeText(`[${sel || 'link text'}](url)`, s, e, 'select');
+  if (!sel) { ta.selectionStart = s + 1; ta.selectionEnd = s + 9; }
+  ta.focus();
+}
+document.addEventListener('keydown', e => {
+  if (document.activeElement.id !== 'body-write') return;
+  if ((e.ctrlKey || e.metaKey) && e.key === 'b') { e.preventDefault(); fmt('**','**'); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'i') { e.preventDefault(); fmt('_','_'); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); fmtLink(); }
+});
+
+(async () => { await initAuth(); await load(); })();
 </script>
 <script src="/nav.js"></script>
 <script src="/token-badge.js"></script>
