@@ -498,9 +498,48 @@
         {length: finalsCol}, (_, i) => i % 2 === 0 ? '1fr' : '28px'
       ).join(' ');
 
-      const sortBySeed = (a, b) => (+a.T1_SEED_NUM || 99) - (+b.T1_SEED_NUM || 99);
       const isEast = s => s.T1_SEED?.startsWith('East') || s.T2_SEED?.startsWith('East');
       const isWest = s => s.T1_SEED?.startsWith('West') || s.T2_SEED?.startsWith('West');
+
+      // Round-1 canonical sort key: sort by whichever of seeds 1/4/3/2 is in the series.
+      // This gives the bracket order 1v_, 4v_, 3v_, 2v_ regardless of who the opponent is
+      // (opponent may be 5–10 depending on the season's play-in format).
+      function r1BracketKey(s) {
+        const minS = Math.min(+s.T1_SEED_NUM || 99, +s.T2_SEED_NUM || 99);
+        if (minS === 1) return 0;
+        if (minS === 4) return 1;
+        if (minS === 3) return 2;
+        if (minS === 2) return 3;
+        return 99;
+      }
+
+      // Pre-sort round 1 for each conference, then tag every team with its bracket half
+      // (0 = top half: positions 0–1; 1 = bottom half: positions 2–3).
+      // This lets us correctly sort round-2+ series even after upsets leave no 1/2/3/4-seed
+      // in a matchup (e.g. a 5v9 or 7v8 round-2 series).
+      const r1Rows = seasonRows.filter(r => r.ROUND === '1');
+      const eastR1 = r1Rows.filter(isEast).sort((a, b) => r1BracketKey(a) - r1BracketKey(b));
+      const westR1 = r1Rows.filter(isWest).sort((a, b) => r1BracketKey(a) - r1BracketKey(b));
+      const bracketHalf = new Map(); // team name → 0 (top) or 1 (bottom)
+      [eastR1, westR1].forEach(r1 => {
+        r1.forEach((s, i) => {
+          bracketHalf.set(s.T1, i < 2 ? 0 : 1);
+          bracketHalf.set(s.T2, i < 2 ? 0 : 1);
+        });
+      });
+
+      function sortSeries(a, b, rnd) {
+        if (rnd === '1') return r1BracketKey(a) - r1BracketKey(b);
+        // For round 2+, both teams in a series come from the same bracket half;
+        // use min() as a fallback in case only one team appears in the half map.
+        const halfA = Math.min(bracketHalf.get(a.T1) ?? 1, bracketHalf.get(a.T2) ?? 1);
+        const halfB = Math.min(bracketHalf.get(b.T1) ?? 1, bracketHalf.get(b.T2) ?? 1);
+        if (halfA !== halfB) return halfA - halfB;
+        // Tiebreaker (reseeded brackets where teams crossed halves): better seed first.
+        const minSA = Math.min(+a.T1_SEED_NUM || 99, +a.T2_SEED_NUM || 99);
+        const minSB = Math.min(+b.T1_SEED_NUM || 99, +b.T2_SEED_NUM || 99);
+        return minSA - minSB;
+      }
 
       // Infer expected series count for a round from the nearest earlier round with data.
       function inferCount(roundKey, isConfFn) {
@@ -514,8 +553,8 @@
       nonChampRoundKeys.forEach((rnd, i) => {
         const col = i * 2 + 1;
         const roundSeries = seasonRows.filter(r => r.ROUND === rnd);
-        const east = roundSeries.filter(isEast).sort(sortBySeed);
-        const west = roundSeries.filter(isWest).sort(sortBySeed);
+        const east = roundSeries.filter(isEast).sort((a, b) => sortSeries(a, b, rnd));
+        const west = roundSeries.filter(isWest).sort((a, b) => sortSeries(a, b, rnd));
 
         const label = document.createElement('div');
         label.className = 'bracket-round-label';
