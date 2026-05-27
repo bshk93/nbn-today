@@ -264,23 +264,22 @@ const API = '/api';
 let constitutionData = null;
 let isBod = false;
 
-// ── marked.js setup: add IDs to headings ──────────────────────────────────
-const tocEntries = [];
-const renderer = new marked.Renderer();
-renderer.heading = function({ text, depth }) {
-  const raw = text.replace(/<[^>]+>/g, '');
-  const id = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  tocEntries.push({ depth, text: raw, id });
-  return `<h${depth} id="${id}">${text}</h${depth}>`;
-};
-marked.use({ renderer, breaks: false });
-
 // ── Render & TOC ─────────────────────────────────────────────────────────
 function renderContent(content) {
-  tocEntries.length = 0;
   const html = marked.parse(content || '');
-  document.getElementById('doc-content').innerHTML = html + buildHistoryHTML();
-  buildToc();
+  const el = document.getElementById('doc-content');
+  el.innerHTML = html + buildHistoryHTML();
+
+  // Add IDs to headings by walking the DOM (avoids marked renderer API quirks)
+  const entries = [];
+  el.querySelectorAll('h2, h3').forEach(h => {
+    const text = h.textContent;
+    const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    h.id = id;
+    entries.push({ depth: parseInt(h.tagName[1]), text, id });
+  });
+  buildToc(entries);
+
   // Attach history toggle
   const tog = document.getElementById('history-toggle');
   if (tog) tog.addEventListener('click', () => {
@@ -312,11 +311,10 @@ function buildHistoryHTML() {
     </div>`;
 }
 
-function buildToc() {
+function buildToc(entries) {
   const wrap = document.getElementById('toc-links');
-  if (!tocEntries.length) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = tocEntries
-    .filter(e => e.depth === 2 || e.depth === 3)
+  if (!entries.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = entries
     .map(e => `<a href="#${e.id}" class="toc-h${e.depth}">${e.text}</a>`)
     .join('');
 }
