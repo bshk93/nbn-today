@@ -1225,7 +1225,10 @@ function makeSeasonRenderCell(rows) {
   const ranges = {};
   SEASON_COLOR_COLS.forEach(key => {
     const vals = rows.map(r => parseFloat(r[key])).filter(v => !isNaN(v));
-    if (vals.length > 1) ranges[key] = { min: Math.min(...vals), max: Math.max(...vals) };
+    if (vals.length > 0) {
+      const absMax = Math.max(...vals.map(Math.abs));
+      ranges[key] = { absMax };
+    }
   });
 
   return function(td, col, row) {
@@ -1254,8 +1257,8 @@ function makeSeasonRenderCell(rows) {
     if (ranges[col.key]) {
       const n = parseFloat(row[col.key]);
       if (!isNaN(n)) {
-        const { min, max } = ranges[col.key];
-        const t = max === min ? 0.5 : (n - min) / (max - min);
+        const { absMax } = ranges[col.key];
+        const t = absMax === 0 ? 0.5 : Math.min(1, Math.max(0, n / absMax * 0.5 + 0.5));
         const hue = Math.round(t * 120);
         td.style.background = `hsl(${hue}, 55%, 18%)`;
         td.style.color = `hsl(${hue}, 80%, 72%)`;
