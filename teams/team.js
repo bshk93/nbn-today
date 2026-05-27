@@ -98,6 +98,8 @@ const slug = abbr.toLowerCase();
 
 document.title = `${abbr} — NBN`;
 
+{ const _favicon = document.createElement('link'); _favicon.rel = 'icon'; _favicon.href = '/logo.png'; document.head.appendChild(_favicon); }
+
 { const _s = document.createElement('style'); _s.textContent = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
