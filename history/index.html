@@ -347,12 +347,22 @@
 
         if (!historyRes.ok) throw new Error('Failed to load league-history.csv');
 
-        // Legacy rows: from CSV, only up to and including LEGACY_CUTOFF.
-        const legacyRows = parseCSV(await historyRes.text())
-          .filter(r => r.SEASON <= LEGACY_CUTOFF);
-
-        // Playoff bracket data for live seasons.
+        // Playoff bracket data (needed for both legacy champion lookup and live seasons).
         const allBrackets = bracketsRes.ok ? parseCSV(await bracketsRes.text()) : [];
+
+        // Legacy rows: from CSV, only up to and including LEGACY_CUTOFF.
+        // CSV has one row per team-season; deduplicate to one row per SEASON.
+        const dedupedLegacy = {};
+        parseCSV(await historyRes.text())
+          .filter(r => r.SEASON <= LEGACY_CUTOFF)
+          .forEach(r => { if (!dedupedLegacy[r.SEASON]) dedupedLegacy[r.SEASON] = r; });
+        const legacyRows = Object.values(dedupedLegacy);
+        // Override CHAMPION from bracket data (more reliable than CSV join artifacts).
+        legacyRows.forEach(r => {
+          const done = b => parseInt(b.T1_W) === 4 || parseInt(b.T2_W) === 4;
+          const finals = allBrackets.find(b => b.SEASON === r.SEASON && b.ROUND === '4' && done(b));
+          if (finals) r.CHAMPION = finals.WINNER;
+        });
 
         // Awards reveal config.
         const awardsConfig = configRes.ok ? await configRes.json() : {};
