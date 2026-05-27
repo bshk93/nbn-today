@@ -59,6 +59,51 @@
       font-size: 0.9rem;
     }
 
+    /* NB¥ reward table on idle screen */
+    .reward-table-wrap {
+      width: 100%;
+      max-width: 340px;
+    }
+    .reward-table-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #6b7280;
+      margin-bottom: 0.5rem;
+      text-align: left;
+    }
+    .reward-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    .reward-table th {
+      font-size: 0.67rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6b7280;
+      padding: 0.3rem 0.6rem;
+      text-align: left;
+      border-bottom: 1px solid #374151;
+    }
+    .reward-table th:last-child { text-align: right; }
+    .reward-table td {
+      padding: 0.3rem 0.6rem;
+      border-bottom: 1px solid #1a2233;
+      color: #d1d5db;
+    }
+    .reward-table td:last-child {
+      text-align: right;
+      font-weight: 700;
+      color: #f59e0b;
+      font-variant-numeric: tabular-nums;
+    }
+    .reward-table tbody tr:last-child td { border-bottom: none; }
+    .reward-table .cap-row td { color: #9ca3af; }
+    .reward-table .cap-row td:last-child { color: #fbbf24; }
+
     .btn-primary {
       background: #3b82f6;
       border: none;
@@ -89,11 +134,13 @@
     }
     .btn-secondary:hover { background: #4b5563; }
 
+    /* Top stats bar: Streak | NB¥ | Timer */
+    .stats-bars { margin-bottom: 1.25rem; }
+
     .streak-bar {
       display: flex;
       align-items: center;
       gap: 0.6rem;
-      margin-bottom: 1.25rem;
     }
     .streak-label {
       font-size: 0.75rem;
@@ -134,6 +181,44 @@
       transition: color 0.3s;
     }
     .timer-num.urgent { color: #ef4444; }
+
+    /* NB¥ session bar */
+    .nby-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      min-height: 1.5rem;
+    }
+    .nby-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+    }
+    .nby-num {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #f59e0b;
+      font-variant-numeric: tabular-nums;
+    }
+    .nby-no-token {
+      font-size: 0.75rem;
+      color: #4b5563;
+      font-style: italic;
+    }
+    .reward-flash {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #34d399;
+      margin-left: 0.25rem;
+      animation: fadeup 0.35s ease forwards;
+    }
+    @keyframes fadeup {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
     .table-scroll {
       overflow-x: auto;
@@ -242,6 +327,15 @@
     .go-title { font-size: 1.5rem; font-weight: 700; color: #ef4444; }
     .go-streak { font-size: 1rem; color: #9ca3af; }
     .go-streak span { font-weight: 700; color: #f59e0b; font-size: 1.5rem; }
+    .go-nby {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 0.5rem 1.1rem;
+    }
+    .go-nby strong { color: #f59e0b; font-size: 1.1rem; }
     .go-answer { color: #d1d5db; font-size: 0.9rem; }
     .go-answer strong { color: #f3f4f6; }
     .go-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin-top: 0.25rem; }
@@ -303,18 +397,41 @@
       <div id="idle-screen" hidden>
         <div class="idle-inner">
           <p>A random player from the league's history is shown — their full stats, season by season. Guess who it is. How long can you streak?</p>
+
+          <div class="reward-table-wrap">
+            <div class="reward-table-label">NB¥ Streak Rewards</div>
+            <table class="reward-table">
+              <thead><tr><th>Correct in a row</th><th>NB¥ earned</th></tr></thead>
+              <tbody>
+                <tr><td>1st</td><td>NB¥1</td></tr>
+                <tr><td>2nd</td><td>+NB¥2</td></tr>
+                <tr><td>3rd</td><td>+NB¥4</td></tr>
+                <tr><td>4th</td><td>+NB¥8</td></tr>
+                <tr><td>5th</td><td>+NB¥16</td></tr>
+                <tr><td>6th</td><td>+NB¥32</td></tr>
+                <tr><td>7th</td><td>+NB¥64</td></tr>
+                <tr><td>8th</td><td>+NB¥128</td></tr>
+                <tr><td>9th</td><td>+NB¥256</td></tr>
+                <tr class="cap-row"><td>10th+ (cap)</td><td>+NB¥512 each</td></tr>
+              </tbody>
+            </table>
+          </div>
+
           <button id="start-btn" class="btn-primary">Start Game</button>
         </div>
       </div>
 
       <div id="play-screen" hidden>
-        <div class="streak-bar">
-          <span class="streak-label">Streak</span>
-          <span id="streak-count" class="streak-num">0</span>
-          <div class="timer-wrap">
-            <span class="timer-label">Time</span>
-            <span id="timer-count" class="timer-num">60</span>
+        <div class="stats-bars">
+          <div class="streak-bar">
+            <span class="streak-label">Streak</span>
+            <span id="streak-count" class="streak-num">0</span>
+            <div class="timer-wrap">
+              <span class="timer-label">Time</span>
+              <span id="timer-count" class="timer-num">60</span>
+            </div>
           </div>
+          <div class="nby-bar" id="nby-bar"></div>
         </div>
         <div class="table-scroll">
           <table class="stats-table" id="stats-table"></table>
@@ -332,6 +449,7 @@
         <div class="gameover-card">
           <div class="go-title">Game Over</div>
           <div class="go-streak">Streak: <span id="go-streak-count">0</span></div>
+          <div id="go-nby" class="go-nby" hidden>Session earnings: <strong id="go-nby-amount">0</strong> NB¥</div>
           <div class="go-answer">The answer was <strong id="go-answer-name"></strong></div>
           <div class="go-actions">
             <button id="submit-score-btn" class="btn-primary">Submit to Leaderboard</button>
@@ -506,6 +624,9 @@
     const playAgainBtn    = document.getElementById('play-again-btn');
     const submitStatusEl  = document.getElementById('submit-status');
     const scoresContainer = document.getElementById('scores-container');
+    const nbyBarEl        = document.getElementById('nby-bar');
+    const goNbyEl         = document.getElementById('go-nby');
+    const goNbyAmountEl   = document.getElementById('go-nby-amount');
 
     // ── State ─────────────────────────────────────────────────────────────────
 
@@ -513,6 +634,46 @@
     let streak = 0, currentPlayer = null;
     let usedSlugs = new Set(), selectedSlug = null;
     let timerInterval = null, timeLeft = 0;
+    let sessionNBY = 0;
+
+    // ── NB¥ helpers ───────────────────────────────────────────────────────────
+
+    /** Reward per correct answer at this streak position (1-based). */
+    function streakReward(s) {
+      return Math.min(Math.pow(2, s - 1), 512);
+    }
+
+    /** Render the NB¥ bar for the play screen. */
+    function renderNBYBar(flashText) {
+      const token = localStorage.getItem('nbn_token');
+      if (!token) {
+        nbyBarEl.innerHTML = `<span class="nby-no-token">Log in to earn NB¥</span>`;
+        return;
+      }
+      const flashHtml = flashText
+        ? `<span class="reward-flash">${escHtml(flashText)}</span>`
+        : '';
+      nbyBarEl.innerHTML =
+        `<span class="nby-label">Session NB¥</span>` +
+        `<span class="nby-num">${sessionNBY}</span>` +
+        flashHtml;
+    }
+
+    /** Fire-and-forget: send correct answer to API to award NB¥. */
+    async function awardNBY(streakNum) {
+      const token = localStorage.getItem('nbn_token');
+      if (!token) return;
+      const reward = streakReward(streakNum);
+      sessionNBY += reward;
+      renderNBYBar(`+${reward} NB¥ ✓`);
+      try {
+        await fetch('/api/trivia/answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ streak: streakNum }),
+        });
+      } catch { /* network error — balance still shown optimistically */ }
+    }
 
     // ── Screen management ─────────────────────────────────────────────────────
 
@@ -569,6 +730,7 @@
 
     function startGame() {
       streak = 0;
+      sessionNBY = 0;
       usedSlugs.clear();
       nextQuestion();
     }
@@ -587,6 +749,7 @@
       guessBtn.classList.remove('btn-correct');
       selectedSlug = null;
       dropdownEl.hidden = true;
+      renderNBYBar(null);   // clear flash, show current session total
       showScreen('playing');
       startTimer();
       guessInput.focus();
@@ -613,6 +776,7 @@
         guessBtn.disabled = true;
         guessInput.disabled = true;
         stopTimer();
+        awardNBY(streak);   // async fire-and-forget; updates sessionNBY + bar
         setTimeout(nextQuestion, 900);
       } else {
         gameOver();
@@ -625,6 +789,14 @@
       goAnswerNameEl.textContent  = currentPlayer.displayName;
       submitStatusEl.textContent  = '';
       submitStatusEl.className    = 'submit-status';
+
+      // NB¥ summary
+      if (sessionNBY > 0) {
+        goNbyAmountEl.textContent = sessionNBY;
+        goNbyEl.hidden = false;
+      } else {
+        goNbyEl.hidden = true;
+      }
 
       const token = localStorage.getItem('nbn_token');
       if (!token || streak === 0) {
