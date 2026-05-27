@@ -203,7 +203,7 @@
       });
 
       const tbody = tbl.createTBody();
-      (players || []).forEach(p => {
+      (players || []).slice().sort((a, b) => (b.pts ?? 0) - (a.pts ?? 0)).forEach(p => {
         const tr = tbody.insertRow();
         const tdp = tr.insertCell();
         tdp.className = "pname";
