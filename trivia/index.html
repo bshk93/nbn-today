@@ -558,6 +558,7 @@
             return {
               season,
               team: [...new Set(agg.teams)].join('/'),
+              G: agg.G,
               MPG: agg.MIN / g,
               PPG: agg.PTS / g,
               RPG: agg.REB / g,
@@ -595,13 +596,14 @@
           <td>${row.season}</td>
           <td>${row.age ?? '—'}</td>
           <td>${row.team}</td>
+          <td>${row.G}</td>
           <td>${fmtStat('MPG', row.MPG)}</td>
           ${cells}
         </tr>`;
       }).join('');
 
       return `<thead><tr>
-          <th>Season</th><th>Age</th><th>Team</th><th>MPG</th>${heads}
+          <th>Season</th><th>Age</th><th>Team</th><th>G</th><th>MPG</th>${heads}
         </tr></thead>
         <tbody>${bodyRows}</tbody>`;
     }
