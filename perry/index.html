@@ -541,7 +541,10 @@
 
       if (!selectedPlayer) {
         const inp = document.getElementById('player-search');
-        if (inp) inp.focus();
+        if (inp) {
+          inp.focus();
+          inp.setSelectionRange(inp.value.length, inp.value.length);
+        }
       }
     }
 
