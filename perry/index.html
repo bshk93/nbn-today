@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <title>Daily Perry Game — Nothing But Net</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #f3f4f6;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page { max-width: 760px; margin: 0 auto; }
+
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    header { margin-bottom: 1.75rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .loading { color: #9ca3af; text-align: center; padding: 3rem; }
+
+    /* Auth gate */
+    .auth-gate {
+      text-align: center;
+      padding: 2.5rem 1rem;
+    }
+    .auth-gate p { color: #9ca3af; margin-bottom: 1.25rem; font-size: 0.9rem; }
+    .token-row { display: flex; gap: 0.5rem; max-width: 380px; margin: 0 auto; }
+    .token-row input {
+      flex: 1;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      color: #f3f4f6;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.875rem;
+      font-family: monospace;
+    }
+    .token-row input:focus { outline: none; border-color: #3b82f6; }
+    .token-err { color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; text-align: center; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; }
+    .btn-secondary { background: #374151; color: #d1d5db; }
+    .btn-secondary:hover:not(:disabled) { background: #4b5563; }
+
+    /* Progress bar */
+    .progress-wrap { margin-bottom: 1.5rem; }
+    .progress-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6b7280;
+      margin-bottom: 0.5rem;
+    }
+    .progress-dots { display: flex; gap: 0.5rem; }
+    .progress-dot {
+      flex: 1; height: 6px; border-radius: 3px;
+      background: #374151;
+      transition: background 0.2s;
+    }
+    .progress-dot.done { background: #3b82f6; }
+    .progress-dot.active { background: #60a5fa; }
+
+    /* Slots grid */
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .slot-chip {
+      padding: 0.4rem 0;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #111827;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: center;
+      cursor: default;
+      color: #6b7280;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .slot-chip.filled { color: #34d399; border-color: #065f46; background: #064e3b22; }
+    .slot-chip.filled .slot-player { font-size: 0.68rem; font-weight: 400; color: #6ee7b7; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot-chip.selectable { color: #f3f4f6; border-color: #4b5563; background: #1f2937; cursor: pointer; }
+    .slot-chip.selectable:hover { border-color: #3b82f6; background: #1e3a5f; color: #93c5fd; }
+    .slot-chip.selected { border-color: #3b82f6; background: #1e3a5f; color: #93c5fd; }
+    .slot-chip.ineligible { opacity: 0.35; }
+
+    /* Team header */
+    .team-step-header {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .step-badge {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #6b7280;
+      background: #111827; border: 1px solid #374151;
+      border-radius: 6px; padding: 0.25rem 0.5rem;
+      white-space: nowrap;
+    }
+    .team-name { font-size: 1.25rem; font-weight: 700; }
+    .team-abbr { font-size: 0.8rem; color: #6b7280; margin-left: 0.4rem; }
+
+    /* Search */
+    .search-wrap { position: relative; margin-bottom: 1rem; }
+    .search-wrap input {
+      width: 100%;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      color: #f3f4f6;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.9rem;
+    }
+    .search-wrap input:focus { outline: none; border-color: #3b82f6; }
+    .search-wrap input::placeholder { color: #4b5563; }
+    .autocomplete-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .autocomplete-item {
+      padding: 0.55rem 0.85rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .autocomplete-item:hover, .autocomplete-item.focused { background: #374151; }
+    .autocomplete-item .pos-tag {
+      font-size: 0.68rem; font-weight: 700; color: #6b7280;
+      background: #111827; border-radius: 4px; padding: 0.15rem 0.4rem;
+    }
+    .selected-player-row {
+      background: #1e3a5f;
+      border: 1px solid #3b82f6;
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      margin-bottom: 1rem;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.875rem;
+    }
+    .selected-player-row .clear-btn {
+      font-size: 0.75rem; color: #6b7280; cursor: pointer;
+      background: none; border: none; padding: 0.1rem 0.3rem;
+    }
+    .selected-player-row .clear-btn:hover { color: #f87171; }
+
+    /* Confirm section */
+    .confirm-section { margin-top: 1rem; }
+    .statline-preview {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .statline-header {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.6rem;
+    }
+    .statline-row { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; }
+    .stat-item { text-align: center; }
+    .stat-val { font-size: 1rem; font-weight: 700; color: #f3f4f6; }
+    .stat-lbl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-top: 0.1rem; }
+    .gmsc-highlight { color: #f59e0b; }
+    .confirm-actions { display: flex; gap: 0.75rem; }
+
+    /* Result screen */
+    .result-score-wrap { text-align: center; margin-bottom: 1.5rem; }
+    .result-score-big { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; color: #f59e0b; }
+    .result-score-sub { color: #9ca3af; margin-top: 0.3rem; font-size: 0.9rem; }
+    .result-pct { font-size: 1.1rem; font-weight: 700; color: #34d399; margin-top: 0.5rem; }
+
+    /* Lineup / solution table */
+    .lineup-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 1.25rem; }
+    .lineup-table th {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #6b7280;
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid #374151;
+      text-align: left;
+    }
+    .lineup-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #1f2937; }
+    .lineup-table tr:last-child td { border-bottom: none; }
+    .slot-badge {
+      font-size: 0.68rem; font-weight: 700;
+      background: #374151; color: #9ca3af;
+      border-radius: 5px; padding: 0.2rem 0.45rem;
+      display: inline-block;
+    }
+    .player-name-cell { font-weight: 600; }
+    .season-cell { color: #9ca3af; font-size: 0.8rem; }
+    .gmsc-cell { font-weight: 700; color: #f59e0b; text-align: right; }
+
+    /* Leaderboard */
+    .lb-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .lb-table th {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #6b7280;
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid #374151;
+      text-align: left;
+    }
+    .lb-table th:last-child { text-align: right; }
+    .lb-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #1f2937; }
+    .lb-table tr:last-child td { border-bottom: none; }
+    .lb-table td:last-child { text-align: right; font-weight: 700; }
+    .lb-rank { font-weight: 700; color: #6b7280; }
+    .lb-rank.top1 { color: #fbbf24; }
+    .lb-rank.top2 { color: #9ca3af; }
+    .lb-rank.top3 { color: #d97706; }
+    .lb-me { background: #1e3a5f22; }
+    .lb-me td:nth-child(2) { font-weight: 700; color: #93c5fd; }
+    .empty-lb { color: #6b7280; text-align: center; padding: 1rem; font-size: 0.85rem; }
+
+    .section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #6b7280; margin-bottom: 0.75rem;
+    }
+
+    .date-chip {
+      display: inline-block;
+      font-size: 0.72rem; font-weight: 700;
+      background: #374151; color: #9ca3af;
+      border-radius: 6px; padding: 0.2rem 0.55rem;
+      margin-left: 0.6rem; vertical-align: middle;
+    }
+
+    .solution-badge {
+      display: inline-block;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; background: #78350f; color: #fcd34d;
+      border-radius: 5px; padding: 0.2rem 0.45rem; margin-right: 0.4rem;
+    }
+
+    .instructions {
+      color: #9ca3af; font-size: 0.85rem; line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    .instructions strong { color: #d1d5db; }
+
+    @media (max-width: 480px) {
+      .slots-grid { grid-template-columns: repeat(2, 1fr); }
+      .result-score-big { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="nav"><a href="/">← Home</a></div>
+
+    <header>
+      <h1>Daily Perry Game</h1>
+      <p>Six teams. Six slots. One chance per day.</p>
+    </header>
+
+    <div id="root"><div class="loading">Loading…</div></div>
+  </div>
+
+  <script>
+    const API = '';
+    const TOKEN_KEY = 'nbn_token';
+    const SLOTS = ['PG', 'SG', 'SF', 'PF', 'C', '6MAN'];
+    const SLOT_LABELS = { PG: 'PG', SG: 'SG', SF: 'SF', PF: 'PF', C: 'C', '6MAN': '6th Man' };
+    const MEDALS = ['🥇', '🥈', '🥉'];
+    const PRIZES = [100, 50, 25];
+
+    let token = localStorage.getItem(TOKEN_KEY) || '';
+    let currentMember = null; // member name from /api/me
+    let gameData = null;   // full /api/perry/today response
+    let state = 'loading'; // loading | auth | playing | done
+
+    // playing state
+    let stepIdx = 0;       // 0-5 which team we're on
+    let picks = {};        // slot -> {team, slug, name, season, gmsc, stats, pos}
+    let searchQuery = '';
+    let selectedPlayer = null; // player object from gameData.teams[stepIdx].players
+    let selectedSlot = null;
+    let acFocusIdx = -1;
+
+    const root = document.getElementById('root');
+
+    // ── Main render ───────────────────────────────────────────────────────────
+
+    function render() {
+      if (state === 'loading') {
+        root.innerHTML = `<div class="loading">Loading…</div>`;
+      } else if (state === 'auth') {
+        renderAuth();
+      } else if (state === 'playing') {
+        renderPlaying();
+      } else if (state === 'done') {
+        renderDone();
+      }
+    }
+
+    // ── Auth ──────────────────────────────────────────────────────────────────
+
+    function renderAuth() {
+      root.innerHTML = `
+        <div class="card">
+          <div class="auth-gate">
+            <p>Enter your league token to play the Daily Perry Game.</p>
+            <div class="token-row">
+              <input id="token-input" type="password" placeholder="Your league token" autocomplete="off">
+              <button class="btn btn-primary" onclick="submitToken()">Play</button>
+            </div>
+            <div id="token-err" class="token-err"></div>
+          </div>
+        </div>`;
+      document.getElementById('token-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') submitToken();
+      });
+      document.getElementById('token-input').focus();
+    }
+
+    async function submitToken() {
+      const input = document.getElementById('token-input');
+      const err = document.getElementById('token-err');
+      const val = input.value.trim();
+      if (!val) return;
+      err.textContent = 'Checking…';
+      try {
+        const res = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${val}` } });
+        if (!res.ok) { err.textContent = 'Invalid token.'; return; }
+        const me = await res.json();
+        token = val;
+        currentMember = me.name || me.username || null;
+        localStorage.setItem(TOKEN_KEY, token);
+        await loadGame();
+      } catch {
+        err.textContent = 'Network error.';
+      }
+    }
+
+    // ── Load game ─────────────────────────────────────────────────────────────
+
+    async function loadGame() {
+      state = 'loading';
+      render();
+      try {
+        // Fetch member name if we have a token but no name yet
+        if (token && !currentMember) {
+          try {
+            const me = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.ok ? r.json() : null);
+            if (me) currentMember = me.name || me.username || null;
+            else { token = ''; localStorage.removeItem(TOKEN_KEY); state = 'auth'; render(); return; }
+          } catch {}
+        }
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const res = await fetch('/api/perry/today', { headers });
+        if (res.status === 401 || res.status === 403) { state = 'auth'; render(); return; }
+        gameData = await res.json();
+        if (!token) { state = 'auth'; render(); return; }
+        if (gameData.your_entry) {
+          state = 'done';
+          renderDone(gameData.your_entry, gameData.solution, gameData.leaderboard);
+        } else {
+          state = 'playing';
+          stepIdx = 0; picks = {}; selectedPlayer = null; selectedSlot = null; searchQuery = '';
+          render();
+        }
+      } catch {
+        root.innerHTML = `<div class="loading">Failed to load. <a href="" onclick="location.reload()">Retry</a></div>`;
+      }
+    }
+
+    // ── Playing ───────────────────────────────────────────────────────────────
+
+    function renderPlaying() {
+      const team = gameData.teams[stepIdx];
+      const filledSlots = Object.keys(picks);
+      const usedSlugs = new Set(Object.values(picks).map(p => p.slug));
+
+      let html = `<div class="card">`;
+
+      // Progress
+      html += `<div class="progress-wrap">
+        <div class="progress-label">Team ${stepIdx + 1} of 6</div>
+        <div class="progress-dots">`;
+      for (let i = 0; i < 6; i++) {
+        const cls = i < stepIdx ? 'done' : i === stepIdx ? 'active' : '';
+        html += `<div class="progress-dot ${cls}"></div>`;
+      }
+      html += `</div></div>`;
+
+      // Slots status
+      html += `<div class="slots-grid">`;
+      for (const slot of SLOTS) {
+        const pick = picks[slot];
+        if (pick) {
+          const shortName = pick.name.split(',')[0];
+          html += `<div class="slot-chip filled">
+            ${SLOT_LABELS[slot]}
+            <span class="slot-player">${shortName}</span>
+          </div>`;
+        } else {
+          html += `<div class="slot-chip" style="opacity:0.4">${SLOT_LABELS[slot]}</div>`;
+        }
+      }
+      html += `</div>`;
+
+      // Team header
+      html += `<div class="team-step-header">
+        <span class="step-badge">Step ${stepIdx + 1}</span>
+        <span class="team-name">${team.name}<span class="team-abbr">${team.abbr}</span></span>
+      </div>`;
+
+      html += `<p class="instructions">Pick a player who played for the <strong>${team.name}</strong> and assign them to an open slot.</p>`;
+
+      // Player search or selected display
+      if (selectedPlayer) {
+        html += `<div class="selected-player-row">
+          <span><strong>${selectedPlayer.name}</strong> <span style="color:#6b7280;font-size:0.8rem">${selectedPlayer.pos.join('/')}</span></span>
+          <button class="clear-btn" onclick="clearPlayer()">✕ clear</button>
+        </div>`;
+      } else {
+        const players = team.players.filter(p => !usedSlugs.has(p.slug));
+        const filtered = searchQuery
+          ? players.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+          : players;
+        html += `<div class="search-wrap">
+          <input id="player-search" type="text" placeholder="Search player name…"
+            value="${escHtml(searchQuery)}"
+            oninput="onSearch(this.value)"
+            onkeydown="onSearchKey(event)"
+            autocomplete="off">`;
+        if (searchQuery && filtered.length > 0) {
+          html += `<div class="autocomplete-list" id="ac-list">`;
+          filtered.slice(0, 20).forEach((p, i) => {
+            html += `<div class="autocomplete-item${i === acFocusIdx ? ' focused' : ''}"
+              onclick="selectPlayer(${escJson(p)})"
+              onmouseover="acFocusIdx=${i};renderAcList(${escJson(filtered.slice(0,20))})">
+              <span>${escHtml(p.name)}</span>
+              <span class="pos-tag">${p.pos.join('/')}</span>
+            </div>`;
+          });
+          html += `</div>`;
+        }
+        html += `</div>`;
+      }
+
+      // Slot selection (only after player picked)
+      if (selectedPlayer) {
+        const eligibleSlots = SLOTS.filter(s => {
+          if (filledSlots.includes(s)) return false;
+          if (s === '6MAN') return true;
+          return selectedPlayer.pos.includes(s);
+        });
+        const ineligibleEmpty = SLOTS.filter(s => {
+          if (filledSlots.includes(s)) return false;
+          if (s === '6MAN') return false;
+          return !selectedPlayer.pos.includes(s);
+        });
+
+        html += `<div class="section-title" style="margin-top:0.25rem">Choose a slot</div>
+          <div class="slots-grid">`;
+        for (const slot of SLOTS) {
+          if (picks[slot]) {
+            const shortName = picks[slot].name.split(',')[0];
+            html += `<div class="slot-chip filled">
+              ${SLOT_LABELS[slot]}
+              <span class="slot-player">${shortName}</span>
+            </div>`;
+          } else if (eligibleSlots.includes(slot)) {
+            const sel = selectedSlot === slot ? ' selected' : ' selectable';
+            html += `<div class="slot-chip${sel}" onclick="selectSlot('${slot}')">${SLOT_LABELS[slot]}</div>`;
+          } else {
+            html += `<div class="slot-chip ineligible">${SLOT_LABELS[slot]}</div>`;
+          }
+        }
+        html += `</div>`;
+      }
+
+      // Statline preview + confirm
+      if (selectedPlayer && selectedSlot) {
+        const p = selectedPlayer;
+        const s = p.stats;
+        html += `<div class="statline-preview">
+          <div class="statline-header">${p.name} · ${team.abbr} ${p.season} · Best season on this team</div>
+          <div class="statline-row">
+            <div class="stat-item"><div class="stat-val">${s.G}</div><div class="stat-lbl">G</div></div>
+            <div class="stat-item"><div class="stat-val">${s.PTS}</div><div class="stat-lbl">PTS</div></div>
+            <div class="stat-item"><div class="stat-val">${s.REB}</div><div class="stat-lbl">REB</div></div>
+            <div class="stat-item"><div class="stat-val">${s.AST}</div><div class="stat-lbl">AST</div></div>
+            <div class="stat-item"><div class="stat-val">${s.STL}</div><div class="stat-lbl">STL</div></div>
+            <div class="stat-item"><div class="stat-val">${s.BLK}</div><div class="stat-lbl">BLK</div></div>
+            <div class="stat-item"><div class="stat-val">${s['3PM']}</div><div class="stat-lbl">3PM</div></div>
+            <div class="stat-item"><div class="stat-val gmsc-highlight">${p.gmsc.toFixed(1)}</div><div class="stat-lbl">GMSC</div></div>
+          </div>
+        </div>
+        <div class="confirm-actions">
+          <button class="btn btn-primary" onclick="confirmPick()">Confirm → +${p.gmsc.toFixed(1)} pts</button>
+        </div>`;
+      }
+
+      html += `</div>`;
+      root.innerHTML = html;
+
+      if (!selectedPlayer) {
+        const inp = document.getElementById('player-search');
+        if (inp) inp.focus();
+      }
+    }
+
+    function onSearch(val) {
+      searchQuery = val;
+      acFocusIdx = -1;
+      renderPlaying();
+    }
+
+    function onSearchKey(e) {
+      const team = gameData.teams[stepIdx];
+      const usedSlugs = new Set(Object.values(picks).map(p => p.slug));
+      const players = team.players.filter(p => !usedSlugs.has(p.slug));
+      const filtered = searchQuery
+        ? players.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        : players;
+      const visible = filtered.slice(0, 20);
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        acFocusIdx = Math.min(acFocusIdx + 1, visible.length - 1);
+        renderAcList(visible);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        acFocusIdx = Math.max(acFocusIdx - 1, 0);
+        renderAcList(visible);
+      } else if (e.key === 'Enter' && acFocusIdx >= 0 && visible[acFocusIdx]) {
+        selectPlayer(visible[acFocusIdx]);
+      }
+    }
+
+    function renderAcList(items) {
+      const list = document.getElementById('ac-list');
+      if (!list) return;
+      list.innerHTML = items.map((p, i) =>
+        `<div class="autocomplete-item${i === acFocusIdx ? ' focused' : ''}"
+          onclick="selectPlayer(${escJson(p)})"
+          onmouseover="acFocusIdx=${i};renderAcList(${escJson(items)})">
+          <span>${escHtml(p.name)}</span>
+          <span class="pos-tag">${p.pos.join('/')}</span>
+        </div>`
+      ).join('');
+    }
+
+    function selectPlayer(p) {
+      selectedPlayer = p;
+      selectedSlot = null;
+      searchQuery = '';
+      acFocusIdx = -1;
+      renderPlaying();
+    }
+
+    function clearPlayer() {
+      selectedPlayer = null;
+      selectedSlot = null;
+      searchQuery = '';
+      renderPlaying();
+    }
+
+    function selectSlot(slot) {
+      selectedSlot = slot;
+      renderPlaying();
+    }
+
+    function confirmPick() {
+      if (!selectedPlayer || !selectedSlot) return;
+      picks[selectedSlot] = {
+        team: gameData.teams[stepIdx].abbr,
+        slug: selectedPlayer.slug,
+        name: selectedPlayer.name,
+        season: selectedPlayer.season,
+        gmsc: selectedPlayer.gmsc,
+        stats: selectedPlayer.stats,
+        pos: selectedPlayer.pos,
+      };
+      selectedPlayer = null;
+      selectedSlot = null;
+      searchQuery = '';
+      acFocusIdx = -1;
+
+      if (stepIdx < 5) {
+        stepIdx++;
+        renderPlaying();
+      } else {
+        submitLineup();
+      }
+    }
+
+    async function submitLineup() {
+      state = 'loading';
+      root.innerHTML = `<div class="loading">Submitting…</div>`;
+      const lineup = {};
+      for (const [slot, pick] of Object.entries(picks)) {
+        lineup[slot] = { team: pick.team, slug: pick.slug };
+      }
+      try {
+        const res = await fetch('/api/perry/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ lineup }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          root.innerHTML = `<div class="card"><p style="color:#f87171">Error: ${escHtml(data.detail || 'Submission failed')}</p></div>`;
+          return;
+        }
+        state = 'done';
+        renderDone(
+          { score: data.score, lineup: data.lineup },
+          data.solution,
+          data.leaderboard,
+          data.pct_of_solution,
+          data.solution_score,
+        );
+      } catch {
+        root.innerHTML = `<div class="card"><p style="color:#f87171">Network error. Please try again.</p></div>`;
+      }
+    }
+
+    // ── Done ──────────────────────────────────────────────────────────────────
+
+    function renderDone(entry, solution, leaderboard, pct, solutionScore) {
+      entry = entry || gameData.your_entry;
+      solution = solution || gameData.solution;
+      leaderboard = leaderboard || gameData.leaderboard;
+      pct = pct != null ? pct : (entry && solutionScore ? Math.round(entry.score / solutionScore * 1000) / 10 : null);
+      solutionScore = solutionScore || gameData.solution_score;
+
+      const myRank = leaderboard.findIndex(e => e.member === myName()) + 1;
+      const dateStr = gameData ? gameData.date : '';
+
+      let html = `<div class="card">`;
+
+      // Score summary
+      html += `<div class="result-score-wrap">
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#6b7280;margin-bottom:0.5rem">Your Score</div>
+        <div class="result-score-big">${entry.score.toFixed(1)}</div>
+        <div class="result-score-sub">/ ${solutionScore ? solutionScore.toFixed(1) : '—'} optimal`;
+      if (pct != null) html += ` &nbsp;·&nbsp; <span class="result-pct">${pct}%</span>`;
+      html += `</div>`;
+      if (myRank > 0) {
+        const medal = myRank <= 3 ? MEDALS[myRank - 1] + ' ' : '';
+        html += `<div style="color:#9ca3af;font-size:0.85rem;margin-top:0.5rem">${medal}Rank #${myRank} today</div>`;
+      }
+      html += `</div>`;
+
+      html += `</div>`;
+
+      // Your lineup
+      html += `<div class="card">
+        <div class="section-title">Your Lineup</div>
+        ${lineupTable(entry.lineup, false)}
+      </div>`;
+
+      // Solution
+      if (solution) {
+        html += `<div class="card">
+          <div class="section-title"><span class="solution-badge">Optimal</span> Best Possible Lineup — ${solutionScore ? solutionScore.toFixed(1) : '—'} pts</div>
+          ${lineupTable(solution, true)}
+        </div>`;
+      }
+
+      // Leaderboard
+      html += `<div class="card">
+        <div class="section-title">Today's Leaderboard <span class="date-chip">${dateStr}</span></div>
+        ${lbTable(leaderboard)}
+      </div>`;
+
+      root.innerHTML = html;
+    }
+
+    function lineupTable(lineup, isSolution) {
+      if (!lineup) return '<div class="empty-lb">—</div>';
+      let html = `<table class="lineup-table">
+        <thead><tr>
+          <th>Slot</th><th>Player</th><th>Team</th><th>Season</th><th style="text-align:right">GMSC</th>
+        </tr></thead><tbody>`;
+      for (const slot of SLOTS) {
+        const p = lineup[slot];
+        if (!p) continue;
+        html += `<tr>
+          <td><span class="slot-badge">${SLOT_LABELS[slot]}</span></td>
+          <td class="player-name-cell">${escHtml(p.name)}</td>
+          <td>${escHtml(p.team)}</td>
+          <td class="season-cell">${escHtml(p.season)}</td>
+          <td class="gmsc-cell">${typeof p.gmsc === 'number' ? p.gmsc.toFixed(1) : p.gmsc}</td>
+        </tr>`;
+      }
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    function lbTable(leaderboard) {
+      if (!leaderboard || leaderboard.length === 0) {
+        return `<div class="empty-lb">No entries yet today.</div>`;
+      }
+      const me = myName();
+      let html = `<table class="lb-table">
+        <thead><tr><th>#</th><th>Member</th><th style="text-align:right">Score</th></tr></thead>
+        <tbody>`;
+      leaderboard.forEach((e, i) => {
+        const rankCls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+        const meCls = e.member === me ? ' lb-me' : '';
+        const medal = i < 3 ? MEDALS[i] : '';
+        const prize = i < 3 ? `<span style="color:#6b7280;font-size:0.75rem"> +NB¥${PRIZES[i]}</span>` : '';
+        html += `<tr class="${meCls}">
+          <td class="lb-rank ${rankCls}">${medal || (i + 1)}</td>
+          <td>${escHtml(e.member)}</td>
+          <td>${e.score.toFixed(1)}${prize}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    function myName() {
+      if (currentMember) return currentMember;
+      if (gameData && gameData.your_entry) return gameData.your_entry.member;
+      return null;
+    }
+
+    // ── Utils ─────────────────────────────────────────────────────────────────
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function escJson(v) {
+      return escHtml(JSON.stringify(v));
+    }
+
+    // ── Boot ──────────────────────────────────────────────────────────────────
+
+    async function init() {
+      if (!token) {
+        // Try to load game data without auth to get the date/leaderboard
+        // but gate the play button behind auth
+        state = 'auth';
+        render();
+        return;
+      }
+      await loadGame();
+    }
+
+    init();
+  </script>
+</body>
+</html>
