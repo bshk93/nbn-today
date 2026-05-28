@@ -815,6 +815,7 @@
       const isFixedOdds = bet.bet_type === 'fixed_odds';
       const myWager     = currentUser ? bet.wagers?.[currentUser.name] : null;
       const optMap      = Object.fromEntries(bet.options.map(o => [o.id, o.label]));
+      const winIds      = new Set(bet.winning_option_ids || (bet.winning_option_id ? [bet.winning_option_id] : []));
       const totals      = bet.option_totals || {};
       const pool        = bet.total_pool || 0;
 
@@ -864,7 +865,7 @@
         const mult     = isFixedOdds && prob > 0 ? (1 / prob) : 0;
         // Fixed-odds: bar = stated probability; Pool: bar = stake share
         const barPct   = isFixedOdds ? prob * 100 : (pool > 0 ? amt / pool * 100 : 0);
-        const isWin    = isClosed && bet.winning_option_id === opt.id;
+        const isWin    = isClosed && winIds.has(opt.id);
         const isMyPick = myWager && myWager.option_id === opt.id;
 
         const row = document.createElement('div');
@@ -1141,14 +1142,20 @@
       closeForm.className = 'close-form';
       closeForm.style.display = 'none';
 
-      const winSel = document.createElement('select');
-      winSel.style.cssText = 'background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.6rem;font-size:0.82rem;outline:none;font-family:inherit';
+      // Checkboxes — one per option, multiple can be checked
+      const winCheckboxes = [];
+      const cbWrap = document.createElement('div');
+      cbWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.3rem';
       bet.options.forEach(opt => {
-        const o = document.createElement('option');
-        o.value = opt.id;
-        o.textContent = opt.label;
-        winSel.appendChild(o);
+        const lbl = document.createElement('label');
+        lbl.style.cssText = 'display:flex;align-items:center;gap:0.45rem;font-size:0.82rem;color:#d1d5db;cursor:pointer';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.value = opt.id; cb.style.cursor = 'pointer';
+        lbl.append(cb, document.createTextNode(opt.label));
+        winCheckboxes.push(cb);
+        cbWrap.appendChild(lbl);
       });
+      closeForm.appendChild(cbWrap);
 
       const confirmBtn = document.createElement('button');
       confirmBtn.className = 'close-confirm';
@@ -1158,7 +1165,10 @@
       closeErr.style.cssText = 'font-size:0.72rem;color:#f87171';
 
       confirmBtn.onclick = async () => {
-        if (!confirm(`Set "${optMap[winSel.value]}" as the winner and pay out?`)) return;
+        const selectedIds = winCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
+        if (!selectedIds.length) { closeErr.textContent = 'Select at least one winning option.'; return; }
+        const winLabels = selectedIds.map(id => optMap[id]).join(', ');
+        if (!confirm(`Set "${winLabels}" as the winning option${selectedIds.length > 1 ? 's' : ''} and pay out?`)) return;
         confirmBtn.disabled = true;
         confirmBtn.textContent = 'Closing…';
         closeErr.textContent = '';
@@ -1166,7 +1176,7 @@
           const res = await fetch(`/api/bets/${bet.id}/close`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-            body: JSON.stringify({ winning_option_id: winSel.value }),
+            body: JSON.stringify({ winning_option_ids: selectedIds }),
           });
           const body = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
@@ -1183,7 +1193,7 @@
         }
       };
 
-      closeForm.append(winSel, confirmBtn, closeErr);
+      closeForm.append(confirmBtn, closeErr);
       sec.appendChild(closeForm);
 
       toggleBtn.onclick = () => {
@@ -1213,7 +1223,9 @@
         return sec;
       }
 
-      hdr.textContent = `Winning option: ${optMap[bet.winning_option_id] || '?'}`;
+      const resolvedWinIds = bet.winning_option_ids || (bet.winning_option_id ? [bet.winning_option_id] : []);
+      const winningLabels  = resolvedWinIds.map(id => optMap[id]).filter(Boolean).join(', ') || '?';
+      hdr.textContent = `Winning option${resolvedWinIds.length > 1 ? 's' : ''}: ${winningLabels}`;
       sec.appendChild(hdr);
 
       // Payouts list
