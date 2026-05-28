@@ -471,8 +471,7 @@
           html += `<div class="autocomplete-list" id="ac-list">`;
           filtered.slice(0, 20).forEach((p, i) => {
             html += `<div class="autocomplete-item${i === acFocusIdx ? ' focused' : ''}"
-              onclick="selectPlayer(${escJson(p)})"
-              onmouseover="acFocusIdx=${i};renderAcList(${escJson(filtered.slice(0,20))})">
+              onmousedown="event.preventDefault(); selectPlayer(${escJson(p)})">
               <span>${escHtml(p.name)}</span>
               <span class="pos-tag">${p.pos.join('/')}</span>
             </div>`;
@@ -581,8 +580,7 @@
       if (!list) return;
       list.innerHTML = items.map((p, i) =>
         `<div class="autocomplete-item${i === acFocusIdx ? ' focused' : ''}"
-          onclick="selectPlayer(${escJson(p)})"
-          onmouseover="acFocusIdx=${i};renderAcList(${escJson(items)})">
+          onmousedown="event.preventDefault(); selectPlayer(${escJson(p)})">
           <span>${escHtml(p.name)}</span>
           <span class="pos-tag">${p.pos.join('/')}</span>
         </div>`
