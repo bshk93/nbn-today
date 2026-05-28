@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <title>Member — NBN</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827; color: #f3f4f6; min-height: 100vh; padding: 2rem 1rem 4rem;
+    }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 700px; margin: 0 auto; }
+    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
+    .nav a { color: #9ca3af; }
+    .nav a:hover { color: #f3f4f6; }
+
+    .profile-name { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+    .profile-meta { color: #9ca3af; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .team-badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 4px;
+      background: #1c2c1e; color: #86efac;
+    }
+    .team-badge a { color: inherit; }
+
+    .balance-pill {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+      padding: 0.5rem 1rem; margin: 1.5rem 0 1.75rem;
+    }
+    .balance-label { color: #9ca3af; font-size: 0.8rem; }
+    .balance-amount { font-weight: 700; font-size: 1.05rem; color: #fde68a; }
+
+    .section { margin-bottom: 2rem; }
+    .section-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem; border-bottom: 1px solid #1f2937;
+    }
+
+    .tenure-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .tenure-table td { padding: 0.45rem 0; color: #d1d5db; vertical-align: middle; }
+    .tenure-table td:first-child { width: 70px; }
+    .tenure-table td:nth-child(2) { width: 70px; color: #9ca3af; }
+    .tenure-table td:last-child { color: #6b7280; font-size: 0.82rem; }
+    .ongoing { color: #86efac; }
+
+    .tip-form {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1.25rem; margin-bottom: 1.25rem;
+    }
+    .tip-form-title { font-size: 0.85rem; font-weight: 600; color: #d1d5db; margin-bottom: 0.85rem; }
+    .tip-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .tip-input-wrap { display: flex; align-items: stretch; }
+    .tip-prefix {
+      background: #374151; border: 1px solid #4b5563; border-right: none;
+      color: #9ca3af; font-size: 0.875rem; padding: 0.45rem 0.65rem;
+      border-radius: 6px 0 0 6px;
+    }
+    .tip-amount {
+      background: #111827; border: 1px solid #4b5563; color: #f3f4f6;
+      border-radius: 0 6px 6px 0; padding: 0.45rem 0.6rem; font-size: 0.875rem;
+      width: 90px; font-family: inherit;
+    }
+    .tip-amount:focus { outline: none; border-color: #60a5fa; }
+    .tip-msg-wrap { margin-top: 0.75rem; }
+    .tip-msg {
+      background: #111827; border: 1px solid #4b5563; color: #f3f4f6;
+      border-radius: 6px; padding: 0.5rem 0.65rem; font-size: 0.875rem;
+      width: 100%; font-family: inherit; resize: vertical; min-height: 64px;
+    }
+    .tip-msg:focus { outline: none; border-color: #60a5fa; }
+    .tip-msg-hint { font-size: 0.72rem; color: #6b7280; margin-top: 0.3rem; }
+    .btn-tip {
+      background: #2563eb; border: 1px solid #3b82f6; color: #fff;
+      border-radius: 6px; padding: 0.45rem 1rem; cursor: pointer;
+      font-size: 0.875rem; font-family: inherit; white-space: nowrap;
+    }
+    .btn-tip:hover { background: #1d4ed8; }
+    .btn-tip:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tip-error { font-size: 0.8rem; color: #fca5a5; background: #450a0a; border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.6rem; }
+    .tip-success { font-size: 0.8rem; color: #86efac; background: #14532d; border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.6rem; }
+
+    .signin-prompt {
+      font-size: 0.85rem; color: #9ca3af;
+      background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+      padding: 0.75rem 1rem; margin-bottom: 1.25rem;
+    }
+
+    .tips-list { display: flex; flex-direction: column; }
+    .tip-item { padding: 0.85rem 0; border-bottom: 1px solid #1f2937; }
+    .tip-item:last-child { border-bottom: none; }
+    .tip-item-header { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+    .tip-from { font-weight: 600; font-size: 0.875rem; }
+    .tip-amt { font-size: 0.85rem; color: #fde68a; font-weight: 600; }
+    .tip-time { font-size: 0.78rem; color: #6b7280; margin-left: auto; }
+    .tip-message {
+      font-size: 0.875rem; color: #d1d5db; margin-top: 0.4rem;
+      font-style: italic; padding-left: 0.65rem;
+      border-left: 2px solid #374151;
+    }
+    .empty-state { color: #6b7280; font-size: 0.875rem; }
+    .error-state { color: #fca5a5; font-size: 0.9rem; padding: 2rem 0; }
+  </style>
+</head>
+<body>
+<script src="/nav.js"></script>
+<div class="page">
+  <nav class="nav"><a href="/members/">← Members</a></nav>
+  <div id="root"><p style="color:#6b7280">Loading…</p></div>
+</div>
+<script>
+const TOKEN_KEY = 'nbn_token';
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function relTime(iso) {
+  const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (s < 60)  return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60)  return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24)  return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30)  return `${d}d ago`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  return `${Math.floor(mo / 12)}y ago`;
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1] + ` ${+d}, ${y}`;
+}
+
+function activeTenure(tenures) {
+  const active = (tenures || []).filter(t => !t.end);
+  return active.length ? active.sort((a,b) => b.start.localeCompare(a.start))[0] : null;
+}
+
+function displayPos(p) {
+  return p === 'owner' ? 'Owner' : p === 'gm' ? 'GM' : p === 'coach' ? 'Coach' : p || '—';
+}
+
+const parts = location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+const memberName = decodeURIComponent(parts[1] || '');
+const token = localStorage.getItem(TOKEN_KEY) || '';
+
+async function init() {
+  if (!memberName) {
+    document.getElementById('root').innerHTML = '<p class="error-state">Invalid URL.</p>';
+    return;
+  }
+  document.title = `${memberName} — NBN`;
+
+  const reqs = [
+    fetch('/api/members/public').then(r => r.json()).catch(() => []),
+    fetch(`/api/tips/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch(`/api/bets/balance/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : null).catch(() => null),
+  ];
+  if (token) reqs.push(fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null).catch(() => null));
+
+  const [allMembers, tips, balData, me] = await Promise.all(reqs);
+
+  const member = allMembers.find(m => m.name === memberName);
+  if (!member) {
+    document.getElementById('root').innerHTML = `<p class="error-state">Member "${esc(memberName)}" not found.</p>`;
+    return;
+  }
+
+  const cur = activeTenure(member.tenures);
+  const sortedTenures = [...(member.tenures || [])].sort((a,b) => b.start.localeCompare(a.start));
+  const balance = balData?.balance ?? null;
+  const isOwn = me && me.name === memberName;
+  const canTip = me && !isOwn;
+
+  let html = '';
+
+  // Header
+  html += `<h1 class="profile-name">${esc(member.name)}</h1>`;
+  html += `<div class="profile-meta">`;
+  if (cur) {
+    html += `${displayPos(cur.position)} · <span class="team-badge"><a href="/teams/${cur.team.toLowerCase()}/">${cur.team}</a></span>`;
+  } else {
+    html += `<span style="color:#6b7280">No active tenure</span>`;
+  }
+  html += `</div>`;
+
+  // Balance
+  if (balance !== null) {
+    html += `<div class="balance-pill">
+      <span class="balance-label">NB¥ balance</span>
+      <span class="balance-amount">NB¥${balance.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+    </div>`;
+  }
+
+  // Tenure history
+  if (sortedTenures.length) {
+    html += `<div class="section"><div class="section-title">Tenure History</div><table class="tenure-table">`;
+    for (const t of sortedTenures) {
+      const end = t.end ? fmtDate(t.end) : '<span class="ongoing">present</span>';
+      html += `<tr>
+        <td><span class="team-badge"><a href="/teams/${t.team.toLowerCase()}/">${t.team}</a></span></td>
+        <td>${displayPos(t.position)}</td>
+        <td>${fmtDate(t.start)} – ${end}</td>
+      </tr>`;
+    }
+    html += `</table></div>`;
+  }
+
+  // Tips section
+  const tipCount = tips.length;
+  html += `<div class="section"><div class="section-title">Tips${tipCount ? ` (${tipCount})` : ''}</div>`;
+
+  if (!token) {
+    html += `<div class="signin-prompt">Sign in at <a href="/members/">Members</a> to tip this member.</div>`;
+  } else if (isOwn) {
+    // no tip form on own page
+  } else if (canTip) {
+    html += `<div class="tip-form" id="tip-form">
+      <div class="tip-form-title">Send NB¥ to ${esc(member.name)}</div>
+      <div class="tip-row">
+        <div class="tip-input-wrap">
+          <span class="tip-prefix">NB¥</span>
+          <input type="number" class="tip-amount" id="tip-amount" min="1" step="1" placeholder="10">
+        </div>
+        <button class="btn-tip" id="tip-btn">Send Tip</button>
+      </div>
+      <div id="tip-msg-wrap" style="display:none" class="tip-msg-wrap">
+        <textarea class="tip-msg" id="tip-msg" placeholder="Add a message…" maxlength="280"></textarea>
+        <p class="tip-msg-hint">Publicly visible on ${esc(member.name)}'s page.</p>
+      </div>
+      <div id="tip-feedback"></div>
+    </div>`;
+  }
+
+  if (!tipCount) {
+    html += `<p class="empty-state">No tips received yet.</p>`;
+  } else {
+    html += `<div class="tips-list">`;
+    for (const t of tips) {
+      html += `<div class="tip-item">
+        <div class="tip-item-header">
+          <span class="tip-from">${esc(t.from)}</span>
+          <span class="tip-amt">NB¥${(+t.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+          <span class="tip-time">${relTime(t.ts)}</span>
+        </div>
+        ${t.message ? `<div class="tip-message">${esc(t.message)}</div>` : ''}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `</div>`; // end tips section
+  document.getElementById('root').innerHTML = html;
+
+  if (canTip) {
+    const amtEl  = document.getElementById('tip-amount');
+    const msgWrap = document.getElementById('tip-msg-wrap');
+    const btn    = document.getElementById('tip-btn');
+    const fb     = document.getElementById('tip-feedback');
+
+    amtEl.addEventListener('input', () => {
+      msgWrap.style.display = parseFloat(amtEl.value) >= 25 ? '' : 'none';
+    });
+
+    btn.addEventListener('click', async () => {
+      const amount = parseFloat(amtEl.value);
+      if (!amount || amount <= 0) { fb.innerHTML = '<div class="tip-error">Enter a valid amount.</div>'; return; }
+      const message = document.getElementById('tip-msg')?.value?.trim() || '';
+      btn.disabled = true; btn.textContent = 'Sending…'; fb.innerHTML = '';
+      try {
+        const res = await fetch('/api/tips', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: memberName, amount, message }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || res.statusText);
+        fb.innerHTML = `<div class="tip-success">Sent NB¥${amount} to ${esc(memberName)}. Your new balance: NB¥${(+data.new_balance).toLocaleString('en-US',{minimumFractionDigits:2})}</div>`;
+        amtEl.value = ''; msgWrap.style.display = 'none';
+        if (document.getElementById('tip-msg')) document.getElementById('tip-msg').value = '';
+        setTimeout(() => location.reload(), 1800);
+      } catch(err) {
+        fb.innerHTML = `<div class="tip-error">${esc(err.message)}</div>`;
+      } finally {
+        btn.disabled = false; btn.textContent = 'Send Tip';
+      }
+    });
+  }
+}
+
+init();
+</script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

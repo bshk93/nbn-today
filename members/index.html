@@ -439,7 +439,7 @@ function renderTable() {
 
     // Name
     const tdName = tr.insertCell();
-    tdName.innerHTML = `<span class="member-name">${m.name}</span>`;
+    tdName.innerHTML = `<span class="member-name"><a href="/members/${encodeURIComponent(m.name)}/">${m.name}</a></span>`;
 
     // Team
     const tdTeam = tr.insertCell();
