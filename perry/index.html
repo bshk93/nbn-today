@@ -319,6 +319,7 @@
     let selectedPlayer = null; // player object from gameData.teams[stepIdx].players
     let selectedSlot = null;
     let acFocusIdx = -1;
+    let lastConfirmedPick = null; // revealed after each confirm
 
     const root = document.getElementById('root');
 
@@ -327,10 +328,13 @@
     function render() {
       if (state === 'loading') {
         root.innerHTML = `<div class="loading">Loading…</div>`;
+
       } else if (state === 'auth') {
         renderAuth();
       } else if (state === 'playing') {
         renderPlaying();
+      } else if (state === 'reveal') {
+        renderReveal();
       } else if (state === 'done') {
         renderDone();
       }
@@ -513,25 +517,10 @@
         html += `</div>`;
       }
 
-      // Statline preview + confirm
+      // Confirm (no statline preview — revealed after confirming)
       if (selectedPlayer && selectedSlot) {
-        const p = selectedPlayer;
-        const s = p.stats;
-        html += `<div class="statline-preview">
-          <div class="statline-header">${p.name} · ${team.abbr} ${p.season} · Best season on this team</div>
-          <div class="statline-row">
-            <div class="stat-item"><div class="stat-val">${s.G}</div><div class="stat-lbl">G</div></div>
-            <div class="stat-item"><div class="stat-val">${s.PTS}</div><div class="stat-lbl">PTS</div></div>
-            <div class="stat-item"><div class="stat-val">${s.REB}</div><div class="stat-lbl">REB</div></div>
-            <div class="stat-item"><div class="stat-val">${s.AST}</div><div class="stat-lbl">AST</div></div>
-            <div class="stat-item"><div class="stat-val">${s.STL}</div><div class="stat-lbl">STL</div></div>
-            <div class="stat-item"><div class="stat-val">${s.BLK}</div><div class="stat-lbl">BLK</div></div>
-            <div class="stat-item"><div class="stat-val">${s['3PM']}</div><div class="stat-lbl">3PM</div></div>
-            <div class="stat-item"><div class="stat-val gmsc-highlight">${p.gmsc.toFixed(1)}</div><div class="stat-lbl">GMSC</div></div>
-          </div>
-        </div>
-        <div class="confirm-actions">
-          <button class="btn btn-primary" onclick="confirmPick()">Confirm → +${p.gmsc.toFixed(1)} pts</button>
+        html += `<div class="confirm-actions" style="margin-top:0.75rem">
+          <button class="btn btn-primary" onclick="confirmPick()">Lock in ${escHtml(selectedPlayer.name)} at ${SLOT_LABELS[selectedSlot]}</button>
         </div>`;
       }
 
@@ -609,7 +598,7 @@
 
     function confirmPick() {
       if (!selectedPlayer || !selectedSlot) return;
-      picks[selectedSlot] = {
+      const pick = {
         team: gameData.teams[stepIdx].abbr,
         slug: selectedPlayer.slug,
         name: selectedPlayer.name,
@@ -618,17 +607,71 @@
         stats: selectedPlayer.stats,
         pos: selectedPlayer.pos,
       };
+      picks[selectedSlot] = pick;
+      lastConfirmedPick = { ...pick, slot: selectedSlot, teamName: gameData.teams[stepIdx].name };
       selectedPlayer = null;
       selectedSlot = null;
       searchQuery = '';
       acFocusIdx = -1;
+      state = 'reveal';
+      render();
+    }
 
+    function advanceAfterReveal() {
       if (stepIdx < 5) {
         stepIdx++;
-        renderPlaying();
+        state = 'playing';
+        render();
       } else {
         submitLineup();
       }
+    }
+
+    function renderReveal() {
+      const p = lastConfirmedPick;
+      const s = p.stats;
+      const isLast = stepIdx === 5;
+      const runningTotal = Object.values(picks).reduce((sum, pk) => sum + pk.gmsc, 0);
+
+      let html = `<div class="card">`;
+
+      // Progress dots (all filled up to and including stepIdx)
+      html += `<div class="progress-wrap">
+        <div class="progress-label">Team ${stepIdx + 1} of 6</div>
+        <div class="progress-dots">`;
+      for (let i = 0; i < 6; i++) {
+        const cls = i <= stepIdx ? 'done' : '';
+        html += `<div class="progress-dot ${cls}"></div>`;
+      }
+      html += `</div></div>`;
+
+      html += `<div style="margin-bottom:1.25rem">
+        <span class="slot-badge" style="margin-right:0.5rem">${SLOT_LABELS[p.slot]}</span>
+        <strong>${escHtml(p.name)}</strong>
+        <span style="color:#6b7280;font-size:0.85rem;margin-left:0.5rem">${escHtml(p.teamName)}</span>
+      </div>`;
+
+      html += `<div class="statline-preview">
+        <div class="statline-header">Best season with ${escHtml(p.team)} — ${escHtml(p.season)}</div>
+        <div class="statline-row">
+          <div class="stat-item"><div class="stat-val">${s.G}</div><div class="stat-lbl">G</div></div>
+          <div class="stat-item"><div class="stat-val">${s.PTS}</div><div class="stat-lbl">PTS</div></div>
+          <div class="stat-item"><div class="stat-val">${s.REB}</div><div class="stat-lbl">REB</div></div>
+          <div class="stat-item"><div class="stat-val">${s.AST}</div><div class="stat-lbl">AST</div></div>
+          <div class="stat-item"><div class="stat-val">${s.STL}</div><div class="stat-lbl">STL</div></div>
+          <div class="stat-item"><div class="stat-val">${s.BLK}</div><div class="stat-lbl">BLK</div></div>
+          <div class="stat-item"><div class="stat-val">${s['3PM']}</div><div class="stat-lbl">3PM</div></div>
+          <div class="stat-item"><div class="stat-val gmsc-highlight">${p.gmsc.toFixed(1)}</div><div class="stat-lbl">GMSC</div></div>
+        </div>
+      </div>`;
+
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem">
+        <span style="color:#9ca3af;font-size:0.85rem">Running total: <strong style="color:#f59e0b">${runningTotal.toFixed(1)}</strong></span>
+        <button class="btn btn-primary" onclick="advanceAfterReveal()">${isLast ? 'Submit Lineup →' : 'Next Team →'}</button>
+      </div>`;
+
+      html += `</div>`;
+      root.innerHTML = html;
     }
 
     async function submitLineup() {
