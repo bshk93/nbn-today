@@ -439,8 +439,6 @@
     function renderPlaying() {
       const team = gameData.teams[stepIdx];
       const filledSlots = Object.keys(picks);
-      const usedSlugs = new Set(Object.values(picks).map(p => p.slug));
-
       let html = `<div class="card">`;
 
       // Progress
@@ -484,7 +482,7 @@
           <button class="clear-btn" onclick="clearPlayer()">✕ clear</button>
         </div>`;
       } else {
-        const players = team.players.filter(p => !usedSlugs.has(p.slug));
+        const players = team.players;
         const filtered = searchQuery
           ? players.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
           : players;
@@ -567,8 +565,7 @@
 
     function onSearchKey(e) {
       const team = gameData.teams[stepIdx];
-      const usedSlugs = new Set(Object.values(picks).map(p => p.slug));
-      const players = team.players.filter(p => !usedSlugs.has(p.slug));
+      const players = team.players;
       const filtered = searchQuery
         ? players.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
         : players;
