@@ -281,6 +281,28 @@
     }
     .instructions strong { color: #d1d5db; }
 
+    /* History */
+    .history-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #1f2937;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .history-row:last-child { border-bottom: none; }
+    .history-row:hover { background: #ffffff08; border-radius: 6px; padding-left: 0.25rem; }
+    .history-date { font-weight: 700; min-width: 90px; }
+    .history-teams { color: #6b7280; font-size: 0.78rem; flex: 1; }
+    .history-winner { color: #d1d5db; font-size: 0.8rem; }
+    .history-chevron { color: #4b5563; margin-left: auto; transition: transform 0.15s; }
+    .history-chevron.open { transform: rotate(90deg); }
+    .history-detail {
+      background: #111827; border-radius: 8px;
+      padding: 1rem; margin-bottom: 0.5rem;
+      font-size: 0.82rem;
+    }
+    .history-loading { color: #6b7280; font-size: 0.82rem; padding: 0.5rem 0; }
+
     @media (max-width: 480px) {
       .slots-grid { grid-template-columns: repeat(2, 1fr); }
       .result-score-big { font-size: 2rem; }
@@ -297,6 +319,7 @@
     </header>
 
     <div id="root"><div class="loading">Loading…</div></div>
+    <div id="history-wrap"></div>
   </div>
 
   <script>
@@ -820,17 +843,101 @@
       return escHtml(JSON.stringify(v));
     }
 
+    // ── History ───────────────────────────────────────────────────────────────
+
+    let historyList = null;
+    let historyOpen = {};
+    let historyCache = {};
+
+    async function loadHistory() {
+      const wrap = document.getElementById('history-wrap');
+      if (!wrap) return;
+      try {
+        historyList = await fetch('/api/perry/history').then(r => r.json());
+        renderHistory();
+      } catch {
+        wrap.innerHTML = '';
+      }
+    }
+
+    function renderHistory() {
+      const wrap = document.getElementById('history-wrap');
+      if (!wrap || !historyList || historyList.length === 0) { if (wrap) wrap.innerHTML = ''; return; }
+      let html = `<div class="card" style="margin-top:1.25rem">
+        <div class="section-title">Past Results</div>`;
+      for (const day of historyList) {
+        const teamStr = day.teams.join(' · ');
+        const winnerStr = day.winner
+          ? `🥇 ${escHtml(day.winner)} &mdash; ${day.winner_score.toFixed(1)}`
+          : `${day.entries} entr${day.entries === 1 ? 'y' : 'ies'}`;
+        const isOpen = !!historyOpen[day.date];
+        html += `<div>
+          <div class="history-row" onclick="toggleHistory('${day.date}')">
+            <span class="history-date">${escHtml(day.date)}</span>
+            <span class="history-teams">${escHtml(teamStr)}</span>
+            <span class="history-winner">${winnerStr}</span>
+            <span class="history-chevron${isOpen ? ' open' : ''}">&#8250;</span>
+          </div>
+          <div id="hd-${day.date}" style="display:${isOpen ? 'block' : 'none'}">
+            ${isOpen ? renderHistoryDetail(day.date) : ''}
+          </div>
+        </div>`;
+      }
+      html += `</div>`;
+      wrap.innerHTML = html;
+    }
+
+    function renderHistoryDetail(date) {
+      const data = historyCache[date];
+      if (!data) return `<div class="history-loading">Loading…</div>`;
+      const lb = data.leaderboard || [];
+      const sol = data.solution || {};
+      let html = `<div class="history-detail">`;
+      html += `<div class="section-title" style="margin-bottom:0.5rem">Leaderboard</div>`;
+      if (lb.length === 0) {
+        html += `<div style="color:#6b7280;font-size:0.82rem;margin-bottom:0.75rem">No entries that day.</div>`;
+      } else {
+        html += `<table class="lb-table" style="margin-bottom:0.75rem">
+          <thead><tr><th>#</th><th>Member</th><th style="text-align:right">Score</th></tr></thead><tbody>`;
+        lb.forEach((e, i) => {
+          const rankCls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+          const medal = i < 3 ? MEDALS[i] : '';
+          const prize = i < 3 ? ` <span style="color:#6b7280;font-size:0.72rem">+NB¥${PRIZES[i]}</span>` : '';
+          html += `<tr><td class="lb-rank ${rankCls}">${medal || (i+1)}</td>
+            <td>${escHtml(e.member)}</td><td>${e.score.toFixed(1)}${prize}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+      html += `<div class="section-title" style="margin-bottom:0.5rem">Optimal Solution &mdash; ${data.solution_score.toFixed(1)} pts</div>`;
+      html += lineupTable(sol, true);
+      html += `</div>`;
+      return html;
+    }
+
+    async function toggleHistory(date) {
+      historyOpen[date] = !historyOpen[date];
+      if (historyOpen[date] && !historyCache[date]) {
+        renderHistory();
+        try {
+          historyCache[date] = await fetch(`/api/perry/history/${date}`).then(r => r.json());
+        } catch {
+          historyOpen[date] = false;
+        }
+      }
+      renderHistory();
+    }
+
     // ── Boot ──────────────────────────────────────────────────────────────────
 
     async function init() {
       if (!token) {
-        // Try to load game data without auth to get the date/leaderboard
-        // but gate the play button behind auth
         state = 'auth';
         render();
+        loadHistory();
         return;
       }
       await loadGame();
+      loadHistory();
     }
 
     init();
