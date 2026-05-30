@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Compare Players — NBN</title>
+  <style>
+    .page { max-width: 1100px; margin: 0 auto; }
+
+    /* Picker state */
+    .pick-header { margin-bottom: 2rem; }
+    .pick-header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+    .pick-header p { color: #9ca3af; font-size: 0.9rem; }
+    .pick-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
+    .pick-vs { font-size: 1.25rem; font-weight: 800; color: #4b5563; text-align: center; }
+    .pick-slot { position: relative; }
+    .pick-input { width: 100%; padding: 0.75rem 1rem; background: #1f2937; border: 1px solid #374151; border-radius: 8px; color: #f3f4f6; font-size: 0.95rem; font-family: inherit; outline: none; }
+    .pick-input:focus { border-color: #3b82f6; }
+    .pick-input.selected { border-color: #34d399; color: #34d399; }
+    .pick-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 240px; overflow-y: auto; z-index: 100; display: none; }
+    .pick-option { padding: 0.55rem 1rem; cursor: pointer; font-size: 0.875rem; display: flex; justify-content: space-between; align-items: center; color: #d1d5db; }
+    .pick-option:hover, .pick-option.active { background: #374151; }
+    .pick-option-meta { font-size: 0.75rem; color: #9ca3af; }
+    .pick-btn { display: block; width: 100%; padding: 0.65rem; background: #059669; border: none; border-radius: 8px; color: #fff; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+    .pick-btn:hover { background: #047857; }
+    .pick-btn:disabled { background: #374151; color: #6b7280; cursor: default; }
+
+    /* Compare state */
+    .cmp-header { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center; margin-bottom: 2rem; }
+    .cmp-card { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; }
+    .cmp-card-b { flex-direction: row-reverse; text-align: right; }
+    .cmp-photo { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: #111827; flex-shrink: 0; }
+    .cmp-name { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .cmp-meta { font-size: 0.8rem; color: #9ca3af; }
+    .cmp-ovr { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 5px; font-size: 0.8rem; font-weight: 700; margin-top: 0.3rem; }
+    .cmp-vs { font-size: 1.5rem; font-weight: 800; color: #374151; text-align: center; }
+    .change-link { font-size: 0.72rem; color: #6b7280; text-decoration: none; display: block; margin-top: 0.4rem; }
+    .change-link:hover { color: #9ca3af; }
+
+    /* Stats sections */
+    .cmp-body { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+    .cmp-col h3 { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.75rem; }
+    .stat-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .stat-table th { text-align: right; color: #6b7280; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.3rem 0.5rem; border-bottom: 1px solid #374151; }
+    .stat-table th:first-child { text-align: left; }
+    .stat-table td { padding: 0.35rem 0.5rem; text-align: right; border-bottom: 1px solid #1f2937; color: #d1d5db; font-variant-numeric: tabular-nums; }
+    .stat-table td:first-child { text-align: left; color: #9ca3af; font-size: 0.75rem; }
+    .stat-table tr:last-child td { border-bottom: none; }
+    .stat-table tr.total-row td { border-top: 1px solid #374151; color: #f3f4f6; font-weight: 600; border-bottom: none; background: #161f2e; }
+    .stat-table td.highlight { color: #f3f4f6; font-weight: 600; }
+
+    /* Awards */
+    .awards-section { margin-bottom: 2rem; }
+    .awards-section h3 { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.75rem; }
+    .awards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .award-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .award-chip { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; background: #1f2937; border: 1px solid #374151; color: #d1d5db; }
+    .award-chip.allstar { background: #0c1a3a; border-color: #1e3a5f; color: #93c5fd; }
+    .award-chip.mvp    { background: #1a1305; border-color: #92400e; color: #fbbf24; }
+    .award-chip.dpoy   { background: #0f1d12; border-color: #065f46; color: #34d399; }
+    .award-chip.allnbn { background: #1a1305; border-color: #374151; color: #9ca3af; }
+    #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav"></nav>
+  <div id="picker" style="display:none">
+    <div class="pick-header">
+      <h1>Compare Players</h1>
+      <p>Select two players to compare stats, contracts, and accolades.</p>
+    </div>
+    <div class="pick-grid">
+      <div class="pick-slot" id="slot-a">
+        <input class="pick-input" type="text" placeholder="Player A…" autocomplete="off" spellcheck="false">
+        <div class="pick-dropdown"></div>
+      </div>
+      <div class="pick-vs">VS</div>
+      <div class="pick-slot" id="slot-b">
+        <input class="pick-input" type="text" placeholder="Player B…" autocomplete="off" spellcheck="false">
+        <div class="pick-dropdown"></div>
+      </div>
+    </div>
+    <button class="pick-btn" id="compare-btn" disabled>Compare →</button>
+  </div>
+  <div id="compare" style="display:none"></div>
+  <div id="status">Loading…</div>
+</div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const slugA = params.get('a'), slugB = params.get('b');
+
+  let allPlayers = {};   // slug → bio
+  let allOvrs = {};      // slug → [{date,ovr}]
+  let currentOvrs = {};  // slug → number
+  let allSeasons = [];   // rows from player_seasons.csv
+  let allAwards = [];    // rows from player_awards.csv
+
+  function displayName(raw) {
+    if (!raw) return '';
+    const [last, first] = raw.split(', ');
+    const tc = s => s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    return first ? `${tc(first)} ${tc(last)}` : tc(last);
+  }
+
+  function fmtStat(v, decimals = 1) {
+    const n = parseFloat(v);
+    return isNaN(n) ? '—' : n.toFixed(decimals);
+  }
+
+  function ovrStyle(n) {
+    const t = Math.min(1, Math.max(0, (n - 60) / 40));
+    const hue = Math.round(t * 120);
+    return `background:hsl(${hue},55%,18%);color:hsl(${hue},80%,72%);border:1px solid hsl(${hue},55%,30%)`;
+  }
+
+  // ── Picker ──────────────────────────────────────────────────────────────────
+
+  function initPicker() {
+    document.getElementById('status').style.display = 'none';
+    const picker = document.getElementById('picker');
+    picker.style.display = '';
+    const picks = { a: null, b: null };
+
+    ['a', 'b'].forEach(side => {
+      const slot = document.getElementById(`slot-${side}`);
+      const input = slot.querySelector('.pick-input');
+      const drop = slot.querySelector('.pick-dropdown');
+      let activeIdx = -1;
+
+      function filter() {
+        const q = input.value.trim().toLowerCase();
+        const entries = Object.entries(allPlayers)
+          .filter(([, p]) => p.type === 'player' || p.type === 'two-way');
+        const matches = q
+          ? entries.filter(([, p]) => displayName(p.name).toLowerCase().includes(q) || p.name.toLowerCase().includes(q))
+          : entries.filter(([, p]) => p.type === 'player').slice(0, 20);
+        matches.sort(([, a], [, b]) => a.name.localeCompare(b.name));
+
+        drop.innerHTML = '';
+        activeIdx = -1;
+        matches.slice(0, 15).forEach(([slug, p]) => {
+          const div = document.createElement('div');
+          div.className = 'pick-option';
+          const pos = Array.isArray(p.pos) ? p.pos.join('/') : (p.pos || '');
+          const ovr = currentOvrs[slug];
+          div.innerHTML = `<span>${displayName(p.name)}</span><span class="pick-option-meta">${pos}${ovr ? ' · ' + ovr : ''}</span>`;
+          div.addEventListener('mousedown', e => { e.preventDefault(); selectPlayer(slug, p); });
+          drop.appendChild(div);
+        });
+        drop.style.display = matches.length ? 'block' : 'none';
+      }
+
+      function selectPlayer(slug, p) {
+        picks[side] = slug;
+        input.value = displayName(p.name);
+        input.classList.add('selected');
+        drop.style.display = 'none';
+        document.getElementById('compare-btn').disabled = !(picks.a && picks.b);
+      }
+
+      input.addEventListener('input', () => { picks[side] = null; input.classList.remove('selected'); filter(); });
+      input.addEventListener('focus', filter);
+      input.addEventListener('blur', () => { setTimeout(() => { drop.style.display = 'none'; }, 150); });
+      input.addEventListener('keydown', e => {
+        const opts = drop.querySelectorAll('.pick-option');
+        if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, opts.length - 1); opts.forEach((o, i) => o.classList.toggle('active', i === activeIdx)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); opts.forEach((o, i) => o.classList.toggle('active', i === activeIdx)); }
+        else if (e.key === 'Enter' && activeIdx >= 0) {
+          const slug = Object.entries(allPlayers).filter(([, p]) => p.type === 'player' || p.type === 'two-way')
+            .filter(([, p]) => displayName(p.name).toLowerCase().includes(input.value.trim().toLowerCase()))
+            .sort(([, a], [, b]) => a.name.localeCompare(b.name))[activeIdx];
+          if (slug) selectPlayer(slug[0], slug[1]);
+        }
+      });
+    });
+
+    document.getElementById('compare-btn').addEventListener('click', () => {
+      if (picks.a && picks.b) window.location.href = `/compare/?a=${picks.a}&b=${picks.b}`;
+    });
+  }
+
+  // ── Comparison render ────────────────────────────────────────────────────────
+
+  function renderComparison(sA, sB) {
+    document.getElementById('status').style.display = 'none';
+    const pA = allPlayers[sA], pB = allPlayers[sB];
+    if (!pA || !pB) { document.getElementById('status').textContent = 'One or both players not found.'; document.getElementById('status').style.display = ''; return; }
+
+    const container = document.getElementById('compare');
+    container.style.display = '';
+    container.innerHTML = '';
+
+    // ── Header cards ──
+    const hdr = document.createElement('div');
+    hdr.className = 'cmp-header';
+    hdr.appendChild(playerCard(sA, pA, false));
+    const vs = document.createElement('div'); vs.className = 'cmp-vs'; vs.textContent = 'VS';
+    hdr.appendChild(vs);
+    hdr.appendChild(playerCard(sB, pB, true));
+    container.appendChild(hdr);
+
+    // ── Stats body ──
+    const body = document.createElement('div');
+    body.className = 'cmp-body';
+    body.appendChild(buildStatsCol(sA, pA));
+    body.appendChild(buildStatsCol(sB, pB));
+    container.appendChild(body);
+
+    // ── Awards ──
+    container.appendChild(buildAwards(sA, pA, sB, pB));
+  }
+
+  function playerCard(slug, bio, isRight) {
+    const div = document.createElement('div');
+    div.className = 'cmp-card' + (isRight ? ' cmp-card-b' : '');
+
+    const img = document.createElement('img');
+    img.className = 'cmp-photo';
+    img.src = bio.photo_url || '';
+    img.onerror = () => { img.style.display = 'none'; };
+
+    const info = document.createElement('div');
+    const pos = Array.isArray(bio.pos) ? bio.pos.join(' · ') : (bio.pos || '');
+    const ovr = currentOvrs[slug];
+    const curSal = Object.entries(bio.salaries || {}).filter(([yr]) => yr >= '25').sort(([a], [b]) => a.localeCompare(b))[0];
+    info.innerHTML = `
+      <div class="cmp-name"><a href="/players/?p=${slug}" style="color:inherit;text-decoration:none">${displayName(bio.name)}</a></div>
+      <div class="cmp-meta">${pos}${curSal ? ' · ' + curSal[1] : ''}</div>
+      ${ovr ? `<span class="cmp-ovr" style="${ovrStyle(ovr)}">${ovr} OVR</span>` : ''}
+      <a class="change-link" href="/compare/?a=${slug}">Compare with another →</a>`;
+
+    div.appendChild(img);
+    div.appendChild(info);
+    return div;
+  }
+
+  function buildStatsCol(slug, bio) {
+    const col = document.createElement('div');
+    col.className = 'cmp-col';
+
+    const rows = allSeasons.filter(r => r.SLUG === slug);
+    if (!rows.length) { col.innerHTML = `<h3>${displayName(bio.name)}</h3><p style="color:#6b7280;font-size:0.85rem">No season data.</p>`; return col; }
+
+    const h3 = document.createElement('h3'); h3.textContent = displayName(bio.name); col.appendChild(h3);
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'background:#1f2937;border:1px solid #374151;border-radius:10px;overflow:hidden;';
+    const table = document.createElement('table');
+    table.className = 'stat-table';
+
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    ['Season', 'Tm', 'G', 'PPG', 'RPG', 'APG', 'SPG', 'BPG', '3PG'].forEach((h, i) => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      if (i === 0) th.style.textAlign = 'left';
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    let totG = 0, totPTS = 0, totREB = 0, totAST = 0, totSTL = 0, totBLK = 0, tot3PM = 0;
+
+    rows.sort((a, b) => a.SEASON.localeCompare(b.SEASON)).forEach(r => {
+      const g = parseInt(r.G) || 0;
+      if (!g) return;
+      totG += g; totPTS += parseFloat(r.PTS) || 0; totREB += parseFloat(r.REB) || 0;
+      totAST += parseFloat(r.AST) || 0; totSTL += parseFloat(r.STL) || 0;
+      totBLK += parseFloat(r.BLK) || 0; tot3PM += parseFloat(r['3PM']) || 0;
+
+      const tr = tbody.insertRow();
+      const vals = [r.SEASON, r.TEAM, g,
+        fmtStat(r.PTS / g), fmtStat(r.REB / g), fmtStat(r.AST / g),
+        fmtStat(r.STL / g), fmtStat(r.BLK / g), fmtStat(r['3PM'] / g),
+      ];
+      vals.forEach((v, i) => {
+        const td = tr.insertCell(); td.textContent = v;
+        if (i === 0) td.style.textAlign = 'left';
+      });
+    });
+
+    if (totG) {
+      const tr = tbody.insertRow(); tr.className = 'total-row';
+      ['Career', '', totG,
+        fmtStat(totPTS / totG), fmtStat(totREB / totG), fmtStat(totAST / totG),
+        fmtStat(totSTL / totG), fmtStat(totBLK / totG), fmtStat(tot3PM / totG),
+      ].forEach((v, i) => {
+        const td = tr.insertCell(); td.textContent = v;
+        if (i === 0) td.style.textAlign = 'left';
+      });
+    }
+
+    wrap.appendChild(table);
+    col.appendChild(wrap);
+    return col;
+  }
+
+  function buildAwards(sA, pA, sB, pB) {
+    const div = document.createElement('div');
+    div.className = 'awards-section';
+    const h3 = document.createElement('h3'); h3.textContent = 'Accolades'; div.appendChild(h3);
+    const grid = document.createElement('div'); grid.className = 'awards-grid'; div.appendChild(grid);
+    [sA, sB].forEach(slug => {
+      const col = document.createElement('div');
+      const awards = allAwards.filter(r => r.SLUG === slug);
+      const counts = {};
+      awards.forEach(r => { counts[r.AWARD] = (counts[r.AWARD] || 0) + 1; });
+      const list = document.createElement('div'); list.className = 'award-list';
+      Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)).forEach(([award, n]) => {
+        const chip = document.createElement('span');
+        chip.className = 'award-chip' +
+          (award === 'All-Star' ? ' allstar' : award === 'MVP' ? ' mvp' : award === 'DPOY' ? ' dpoy' : award.startsWith('All-NBN') ? ' allnbn' : '');
+        chip.textContent = n > 1 ? `${n}× ${award}` : award;
+        list.appendChild(chip);
+      });
+      if (!list.children.length) list.innerHTML = '<span style="color:#6b7280;font-size:0.85rem">No awards</span>';
+      col.appendChild(list);
+      grid.appendChild(col);
+    });
+    return div;
+  }
+
+  // ── Data loading ─────────────────────────────────────────────────────────────
+
+  async function load() {
+    try {
+      const [playersJson, ovrCurrentJson, ovrAllJson, seasonsText, awardsText] = await Promise.all([
+        fetch('/api/players').then(r => r.ok ? r.json() : {}),
+        fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
+        fetch('/api/ovr').then(r => r.ok ? r.json() : {}),
+        fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : ''),
+        fetch('/players/player_awards.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+      ]);
+      allPlayers = playersJson;
+      currentOvrs = ovrCurrentJson;
+      allOvrs = ovrAllJson;
+      allSeasons = parseCSV(seasonsText);
+      allAwards = awardsText ? parseCSV(awardsText) : [];
+
+      document.getElementById('status').style.display = 'none';
+
+      if (slugA && slugB) {
+        renderComparison(slugA, slugB);
+      } else {
+        initPicker();
+      }
+    } catch (e) {
+      document.getElementById('status').textContent = 'Failed to load player data.';
+    }
+  }
+
+  load();
+</script>
+<script src="/nav.js"></script>
+</body>
+</html>

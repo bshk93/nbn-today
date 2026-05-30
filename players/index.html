@@ -2170,6 +2170,14 @@
     badge.textContent = ovr;
     Object.assign(badge.style, ovrHeatStyle(ovr));
     wrap.appendChild(badge);
+    const cmpLink = document.createElement('a');
+    cmpLink.href = `/compare/?a=${playerSlug}`;
+    cmpLink.style.cssText = 'font-size:0.75rem;color:#6b7280;text-decoration:none;border:1px solid #374151;border-radius:5px;padding:0.15rem 0.5rem;margin-left:0.25rem;';
+    cmpLink.textContent = '⇆ Compare';
+    cmpLink.title = 'Compare with another player';
+    cmpLink.addEventListener('mouseover', () => { cmpLink.style.borderColor = '#6b7280'; cmpLink.style.color = '#d1d5db'; });
+    cmpLink.addEventListener('mouseout', () => { cmpLink.style.borderColor = '#374151'; cmpLink.style.color = '#6b7280'; });
+    wrap.appendChild(cmpLink);
     container.appendChild(wrap);
   }
 
