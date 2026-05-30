@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
   <title>Claude Context — NBN</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
@@ -25,13 +26,6 @@
       margin: 0 auto;
     }
 
-    .nav {
-      margin-bottom: 1.75rem;
-      font-size: 0.875rem;
-      color: #9ca3af;
-    }
-    .nav a { color: #9ca3af; }
-    .nav a:hover { color: #f3f4f6; }
 
     header { margin-bottom: 1.5rem; }
     header h1 {
@@ -338,5 +332,6 @@
     nextBtn.addEventListener('click', () => goTo(currentIdx + 1));
     prevBtn.addEventListener('click', () => goTo(currentIdx - 1));
   </script>
+  <script src="/nav.js"></script>
 </body>
 </html>

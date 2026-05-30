@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
   <title>Frivolities &amp; Viz — NBN</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,9 +12,6 @@
     a { color: #60a5fa; text-decoration: none; }
     a:hover { text-decoration: underline; }
     .page { max-width: 1400px; margin: 0 auto; }
-    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; }
-    .nav a { color: #9ca3af; }
-    .nav a:hover { color: #f3f4f6; }
     header { margin-bottom: 2rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
@@ -108,7 +106,7 @@
 <body>
   <div class="page">
     <div id="tooltip"></div>
-    <nav class="nav"><a href="/">← Home</a></nav>
+    <nav class="nav"></nav>
     <header>
       <h1>Frivolities &amp; Viz</h1>
       <p>Team and player visualizations.</p>
@@ -163,18 +161,6 @@
       POR: "Portland Trail Blazers", SAC: "Sacramento Kings", SAS: "San Antonio Spurs",
       TOR: "Toronto Raptors",   UTA: "Utah Jazz",            WAS: "Washington Wizards",
     };
-
-    function parseCSV(text) {
-      const lines = text.trim().split('\n');
-      if (lines.length < 2) return [];
-      const headers = lines[0].split(',').map(h => h.trim());
-      return lines.slice(1).map(line => {
-        const vals = line.split(',');
-        const row = {};
-        headers.forEach((h, i) => { row[h] = (vals[i] || '').trim(); });
-        return row;
-      });
-    }
 
     function formatName(raw) {
       if (!raw) return raw;

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
   <title>NBN Trivia — Nothing But Net</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -21,9 +22,6 @@
 
     .page { max-width: 860px; margin: 0 auto; }
 
-    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; }
-    .nav a { color: #9ca3af; }
-    .nav a:hover { color: #f3f4f6; }
 
     header { margin-bottom: 2rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
@@ -386,7 +384,7 @@
 </head>
 <body>
   <div class="page">
-    <nav class="nav"><a href="/">← Home</a></nav>
+    <nav class="nav"></nav>
     <header>
       <h1>NBN Trivia</h1>
       <p>Guess the player from their season-by-season averages.</p>
@@ -469,30 +467,6 @@
 
   <script>
     // ── CSV parsing (handles quoted fields) ───────────────────────────────────
-
-    function parseLine(line) {
-      const result = [];
-      let cur = '', inQ = false;
-      for (let i = 0; i < line.length; i++) {
-        const c = line[i];
-        if (c === '"') inQ = !inQ;
-        else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
-        else cur += c;
-      }
-      result.push(cur);
-      return result;
-    }
-
-    function parseCSV(text) {
-      const lines = text.trim().split('\n');
-      const headers = parseLine(lines[0]).map(h => h.trim());
-      return lines.slice(1).filter(l => l.trim()).map(line => {
-        const vals = parseLine(line);
-        const row = {};
-        headers.forEach((h, i) => row[h] = (vals[i] || '').trim());
-        return row;
-      });
-    }
 
     // ── Age calculation ───────────────────────────────────────────────────────
 

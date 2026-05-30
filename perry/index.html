@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
   <title>Daily Perry Game — Nothing But Net</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -21,9 +22,6 @@
 
     .page { max-width: 760px; margin: 0 auto; }
 
-    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; }
-    .nav a { color: #9ca3af; }
-    .nav a:hover { color: #f3f4f6; }
 
     header { margin-bottom: 1.75rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
@@ -311,7 +309,7 @@
 </head>
 <body>
   <div class="page">
-    <div class="nav"><a href="/">← Home</a></div>
+    <nav class="nav"></nav>
 
     <header>
       <h1>Daily Perry Game</h1>
@@ -939,5 +937,6 @@
 
     init();
   </script>
+  <script src="/nav.js"></script>
 </body>
 </html>

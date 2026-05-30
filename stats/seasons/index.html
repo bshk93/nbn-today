@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
   <title>Season Stats — NBN</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,9 +12,6 @@
     a { color: #60a5fa; text-decoration: none; }
     a:hover { text-decoration: underline; }
     .page { max-width: 1400px; margin: 0 auto; }
-    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
-    .nav a { color: #9ca3af; }
-    .nav a:hover { color: #f3f4f6; }
     header { margin-bottom: 1.5rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
@@ -64,7 +62,7 @@
 </head>
 <body>
   <div class="page">
-    <nav class="nav"><a href="/">← Home</a></nav>
+    <nav class="nav"></nav>
     <header>
       <h1>Season Stats</h1>
       <p>Every player-season. Click any column to sort.</p>
@@ -116,29 +114,6 @@
       { key: '_TOV',   label: 'TOV',   cls: 'right',               defaultDir: -1 },
       { key: '_GMSC',  label: 'GMSC',  cls: 'right group-start',   defaultDir: -1 },
     ];
-
-    function parseLine(line) {
-      const out = [];
-      let cur = '', quoted = false;
-      for (const ch of line) {
-        if (ch === '"') { quoted = !quoted; }
-        else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
-        else { cur += ch; }
-      }
-      out.push(cur);
-      return out;
-    }
-
-    function parseCSV(text) {
-      const lines = text.trim().split('\n');
-      const headers = parseLine(lines[0]).map(h => h.trim());
-      return lines.slice(1).map(line => {
-        const vals = parseLine(line);
-        const obj = {};
-        headers.forEach((h, i) => { obj[h] = (vals[i] ?? '').trim(); });
-        return obj;
-      });
-    }
 
     function pct(made, att) {
       const m = +made, a = +att;

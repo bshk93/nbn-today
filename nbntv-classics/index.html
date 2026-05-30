@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
   <title>NBNTV Classics — NBN</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -21,9 +22,6 @@
 
     .page { max-width: 760px; margin: 0 auto; }
 
-    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: #9ca3af; }
-    .nav a { color: #9ca3af; }
-    .nav a:hover { color: #f3f4f6; }
 
     header { margin-bottom: 0.5rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
@@ -230,7 +228,7 @@
 </head>
 <body>
 <div class="page">
-  <nav class="nav"><a href="/">← Home</a></nav>
+  <nav class="nav"></nav>
   <header>
     <h1>NBNTV Classics</h1>
     <p>The greatest moments in NBN playoff history.</p>
@@ -286,29 +284,6 @@
   };
 
   // ── CSV parser ───────────────────────────────────────────────────────────────
-
-  function parseLine(line) {
-    const out = [];
-    let cur = '', quoted = false;
-    for (const ch of line) {
-      if (ch === '"') { quoted = !quoted; }
-      else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
-      else { cur += ch; }
-    }
-    out.push(cur);
-    return out;
-  }
-
-  function parseCSV(text) {
-    const lines = text.trim().split('\n');
-    const headers = parseLine(lines[0]).map(h => h.trim());
-    return lines.slice(1).map(line => {
-      const vals = parseLine(line);
-      const obj = {};
-      headers.forEach((h, i) => { obj[h] = (vals[i] ?? '').trim(); });
-      return obj;
-    });
-  }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
