@@ -2,17 +2,33 @@
 
 // ── Nav injection ────────────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', function () {
-  const nav = document.querySelector('.nav');
-  if (nav && nav.id !== 'nav' && !nav.children.length && !nav.textContent.trim()) {
-    nav.innerHTML = '<a href="/">← Home</a><button class="search-btn" aria-label="Search players (Ctrl+K)" title="Search players (Ctrl+K)">⌕</button>';
-    nav.querySelector('.search-btn').addEventListener('click', openSearch);
-  }
-  document.addEventListener('keydown', function (e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
-    if (e.key === 'Escape') closeSearch();
-  });
+document.addEventListener('keydown', function (e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+  if (e.key === 'Escape') closeSearch();
 });
+
+function _initNav() {
+  const nav = document.querySelector('.nav');
+  if (!nav || nav.id === 'nav') return;
+  if (!nav.children.length && !nav.textContent.trim()) {
+    nav.innerHTML = '<a href="/">← Home</a>';
+  }
+  if (!nav.querySelector('.search-btn')) {
+    const btn = document.createElement('button');
+    btn.className = 'search-btn';
+    btn.setAttribute('aria-label', 'Search players (Ctrl+K)');
+    btn.setAttribute('title', 'Search players (Ctrl+K)');
+    btn.textContent = '⌕';
+    btn.addEventListener('click', openSearch);
+    nav.appendChild(btn);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initNav);
+} else {
+  _initNav();
+}
 
 // ── Search overlay ───────────────────────────────────────────────────────────
 
