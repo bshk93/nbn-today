@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Trade Simulator — NBN</title>
+  <style>
+    .page { max-width: 1060px; margin: 0 auto; }
+    header { margin-bottom: 1.75rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.3rem; font-size: 0.9rem; }
+
+    /* Trade grid */
+    .trade-grid { display: grid; grid-template-columns: 1fr 56px 1fr; gap: 0.75rem; margin-bottom: 1.25rem; align-items: start; }
+    .trade-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 2.5rem; gap: 0.5rem; color: #4b5563; font-size: 1.1rem; }
+
+    /* Team panel */
+    .team-panel { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow: hidden; }
+    .team-panel-header { padding: 0.75rem 1rem; border-bottom: 1px solid #374151; display: flex; align-items: center; gap: 0.6rem; }
+    .team-sel { flex: 1; background: #111827; border: 1px solid #374151; border-radius: 6px; color: #f3f4f6; font-size: 0.9rem; padding: 0.35rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; }
+    .team-sel:focus { border-color: #3b82f6; }
+    .team-logo { width: 24px; height: 24px; object-fit: contain; }
+    .panel-body { padding: 0.5rem 0; max-height: 400px; overflow-y: auto; }
+    .panel-section-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #4b5563; padding: 0.5rem 1rem 0.2rem; }
+    .trade-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 1rem; cursor: pointer; border-radius: 0; transition: background 0.08s; }
+    .trade-row:hover { background: #263244; }
+    .trade-row input[type=checkbox] { accent-color: #34d399; flex-shrink: 0; width: 14px; height: 14px; cursor: pointer; }
+    .trade-row-name { flex: 1; font-size: 0.85rem; color: #d1d5db; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .trade-row-meta { font-size: 0.72rem; color: #6b7280; white-space: nowrap; }
+    .trade-row.checked .trade-row-name { color: #f3f4f6; font-weight: 600; }
+    .trade-row.checked .trade-row-meta { color: #34d399; }
+    .panel-empty { padding: 1.25rem 1rem; font-size: 0.82rem; color: #6b7280; text-align: center; }
+    .panel-loading { padding: 1.25rem 1rem; font-size: 0.82rem; color: #6b7280; text-align: center; }
+
+    /* Check button */
+    .check-row { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+    .check-btn { background: #059669; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 0.95rem; font-weight: 600; padding: 0.6rem 2rem; }
+    .check-btn:hover { background: #047857; }
+    .check-btn:disabled { background: #374151; color: #6b7280; cursor: default; }
+
+    /* Results */
+    .results { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow: hidden; }
+    .results-header { padding: 0.75rem 1.25rem; border-bottom: 1px solid #374151; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; }
+    .results-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .result-col { padding: 1rem 1.25rem; }
+    .result-col + .result-col { border-left: 1px solid #374151; }
+    .result-team { font-size: 0.85rem; font-weight: 700; color: #f3f4f6; margin-bottom: 0.75rem; }
+    .result-row { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.35rem; color: #d1d5db; }
+    .result-row .label { color: #9ca3af; }
+    .result-divider { border: none; border-top: 1px solid #374151; margin: 0.6rem 0; }
+    .result-status { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 5px; margin-top: 0.5rem; }
+    .status-ok   { background: #052e16; color: #4ade80; border: 1px solid #14532d; }
+    .status-warn { background: #1c1200; color: #fbbf24; border: 1px solid #78350f; }
+    .status-err  { background: #2d0a0a; color: #f87171; border: 1px solid #7f1d1d; }
+    .result-note { font-size: 0.75rem; color: #9ca3af; margin-top: 0.4rem; line-height: 1.5; }
+    .results-summary { padding: 0.75rem 1.25rem; border-top: 1px solid #374151; font-size: 0.82rem; color: #9ca3af; }
+    .results-summary strong { color: #f3f4f6; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav"></nav>
+  <header>
+    <h1>Trade Simulator</h1>
+    <p>Model a trade and check salary matching, apron status, and cap implications.</p>
+  </header>
+
+  <div class="trade-grid">
+    <div class="team-panel" id="panel-a">
+      <div class="team-panel-header">
+        <img class="team-logo" id="logo-a" src="" alt="" style="display:none">
+        <select class="team-sel" id="sel-a"><option value="">— Select Team A —</option></select>
+      </div>
+      <div class="panel-body" id="body-a"><div class="panel-empty">Select a team to see their roster.</div></div>
+    </div>
+    <div class="trade-arrow">⇄</div>
+    <div class="team-panel" id="panel-b">
+      <div class="team-panel-header">
+        <img class="team-logo" id="logo-b" src="" alt="" style="display:none">
+        <select class="team-sel" id="sel-b"><option value="">— Select Team B —</option></select>
+      </div>
+      <div class="panel-body" id="body-b"><div class="panel-empty">Select a team to see their roster.</div></div>
+    </div>
+  </div>
+
+  <div class="check-row">
+    <button class="check-btn" id="check-btn" disabled>Check Trade</button>
+  </div>
+
+  <div class="results" id="results" style="display:none"></div>
+</div>
+
+<script>
+const TEAMS = {
+  ATL:"Atlanta Hawks",BKN:"Brooklyn Nets",BOS:"Boston Celtics",CHA:"Charlotte Hornets",
+  CHI:"Chicago Bulls",CLE:"Cleveland Cavaliers",DAL:"Dallas Mavericks",DEN:"Denver Nuggets",
+  DET:"Detroit Pistons",GSW:"Golden State Warriors",HOU:"Houston Rockets",IND:"Indiana Pacers",
+  LAC:"LA Clippers",LAL:"Los Angeles Lakers",MEM:"Memphis Grizzlies",MIA:"Miami Heat",
+  MIL:"Milwaukee Bucks",MIN:"Minnesota Timberwolves",NOP:"New Orleans Pelicans",NYK:"New York Knicks",
+  OKC:"Oklahoma City Thunder",ORL:"Orlando Magic",PHI:"Philadelphia 76ers",PHX:"Phoenix Suns",
+  POR:"Portland Trail Blazers",SAC:"Sacramento Kings",SAS:"San Antonio Spurs",TOR:"Toronto Raptors",
+  UTA:"Utah Jazz",WAS:"Washington Wizards",
+};
+
+// § 4.2 salary matching tiers (below First Apron)
+const TIERS = [
+  { max: 8527000,   fn: out => out * 2 + 250000 },
+  { max: 29000000,  fn: out => out + 8527000 },
+  { max: Infinity,  fn: out => out * 1.25 + 250000 },
+];
+const APRON1_MATCH = out => out + 250000; // § 4.3 — at/above First Apron
+
+let allBios = {};        // slug → bio
+let capLevels = {};      // season → { cap, apron1, apron2 }
+let teamState = {};      // abbr → state (hard_cap, etc.)
+let rosterData = {};     // abbr → [{slug, ovr, name, salary, type}]
+let picksData = {};      // abbr → [{year, round, team, type}]
+let selections = { a: { players: new Set(), picks: new Set() }, b: { players: new Set(), picks: new Set() } };
+
+function parseSalaryNum(v) {
+  if (!v) return 0;
+  const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
+  return isNaN(n) ? 0 : Math.round(n);
+}
+
+function fmtM(n) {
+  if (!n) return '$0';
+  return '$' + (n / 1e6).toFixed(1) + 'M';
+}
+
+function displayName(raw) {
+  if (!raw) return '';
+  const [last, first] = raw.split(', ');
+  const tc = s => s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  return first ? `${tc(first)} ${tc(last)}` : tc(last);
+}
+
+function curYr() {
+  const now = new Date(), y = now.getFullYear() % 100, m = now.getMonth() + 1;
+  return m < 7 ? `${String(y-1).padStart(2,'0')}-${String(y).padStart(2,'0')}` : `${String(y).padStart(2,'0')}-${String((y+1)%100).padStart(2,'0')}`;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  [allBios, capLevels] = await Promise.all([
+    fetch('/api/players').then(r => r.ok ? r.json() : {}),
+    fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
+  ]);
+
+  ['a', 'b'].forEach(side => {
+    const sel = document.getElementById(`sel-${side}`);
+    Object.entries(TEAMS).sort(([,a],[,b]) => a.localeCompare(b)).forEach(([abbr, name]) => {
+      const opt = document.createElement('option');
+      opt.value = abbr; opt.textContent = name;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => loadTeam(side, sel.value));
+  });
+
+  // URL params for pre-loading
+  const p = new URLSearchParams(location.search);
+  if (p.get('a')) { document.getElementById('sel-a').value = p.get('a'); loadTeam('a', p.get('a')); }
+  if (p.get('b')) { document.getElementById('sel-b').value = p.get('b'); loadTeam('b', p.get('b')); }
+}
+
+async function loadTeam(side, abbr) {
+  const body = document.getElementById(`body-${side}`);
+  const logo = document.getElementById(`logo-${side}`);
+  if (!abbr) { body.innerHTML = '<div class="panel-empty">Select a team to see their roster.</div>'; logo.style.display = 'none'; selections[side] = { players: new Set(), picks: new Set() }; updateCheckBtn(); return; }
+
+  logo.src = `/logos/logo-${abbr.toLowerCase()}.png`;
+  logo.alt = abbr; logo.style.display = '';
+  body.innerHTML = '<div class="panel-loading">Loading…</div>';
+  selections[side] = { players: new Set(), picks: new Set() };
+
+  const yr = curYr();
+  const [rosterText, picksText, stateJson] = await Promise.all([
+    fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : '').catch(() => ''),
+    fetch(`/data/${abbr.toLowerCase()}-picks.csv`).then(r => r.ok ? r.text() : '').catch(() => ''),
+    fetch(`/api/team-state/${abbr}`).then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+
+  teamState[abbr] = stateJson;
+
+  // Parse roster
+  const roster = rosterText ? parseCSV(rosterText) : [];
+  rosterData[abbr] = roster.map(r => {
+    const bio = allBios[r.SLUG] || {};
+    const sal = parseSalaryNum((bio.salaries || {})[yr]);
+    return { slug: r.SLUG, ovr: parseInt(r.OVR) || 0, name: bio.name || r.SLUG, salary: sal, type: bio.type || 'player', pos: (bio.pos || []).join('/') };
+  }).filter(r => r.type !== 'dead').sort((a, b) => b.ovr - a.ovr);
+
+  // Parse picks
+  const picks = picksText ? parseCSV(picksText) : [];
+  picksData[abbr] = picks.filter(p => p.TYPE === 'own');
+
+  renderPanel(side, abbr, yr);
+  updateCheckBtn();
+}
+
+function renderPanel(side, abbr, yr) {
+  const body = document.getElementById(`body-${side}`);
+  body.innerHTML = '';
+  const roster = rosterData[abbr] || [];
+  const picks = picksData[abbr] || [];
+
+  if (!roster.length && !picks.length) { body.innerHTML = '<div class="panel-empty">No roster data.</div>'; return; }
+
+  if (roster.length) {
+    const lbl = document.createElement('div'); lbl.className = 'panel-section-label'; lbl.textContent = 'Players'; body.appendChild(lbl);
+    roster.forEach(p => {
+      const row = document.createElement('label');
+      row.className = 'trade-row' + (selections[side].players.has(p.slug) ? ' checked' : '');
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selections[side].players.has(p.slug);
+      cb.addEventListener('change', () => {
+        selections[side].players[cb.checked ? 'add' : 'delete'](p.slug);
+        row.classList.toggle('checked', cb.checked);
+        updateCheckBtn();
+      });
+      const nameSpan = document.createElement('span'); nameSpan.className = 'trade-row-name'; nameSpan.textContent = displayName(p.name);
+      const meta = document.createElement('span'); meta.className = 'trade-row-meta';
+      meta.textContent = `${p.pos ? p.pos + ' · ' : ''}${p.salary ? fmtM(p.salary) : 'no sal'}`;
+      row.appendChild(cb); row.appendChild(nameSpan); row.appendChild(meta);
+      body.appendChild(row);
+    });
+  }
+
+  if (picks.length) {
+    const lbl = document.createElement('div'); lbl.className = 'panel-section-label'; lbl.textContent = 'Draft Picks'; body.appendChild(lbl);
+    picks.forEach(p => {
+      const key = `${p.YEAR}-${p.ROUND}-${p.TEAM}`;
+      const row = document.createElement('label');
+      row.className = 'trade-row' + (selections[side].picks.has(key) ? ' checked' : '');
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selections[side].picks.has(key);
+      cb.addEventListener('change', () => {
+        selections[side].picks[cb.checked ? 'add' : 'delete'](key);
+        row.classList.toggle('checked', cb.checked);
+        updateCheckBtn();
+      });
+      const nameSpan = document.createElement('span'); nameSpan.className = 'trade-row-name'; nameSpan.textContent = `${p.YEAR} ${p.ROUND} · ${p.TEAM}`;
+      row.appendChild(cb); row.appendChild(nameSpan);
+      body.appendChild(row);
+    });
+  }
+}
+
+function updateCheckBtn() {
+  const abbA = document.getElementById('sel-a').value;
+  const abbB = document.getElementById('sel-b').value;
+  const hasSelection = selections.a.players.size + selections.a.picks.size + selections.b.players.size + selections.b.picks.size > 0;
+  document.getElementById('check-btn').disabled = !(abbA && abbB && abbA !== abbB);
+}
+
+// ── Cap check ─────────────────────────────────────────────────────────────────
+
+document.getElementById('check-btn').addEventListener('click', runCheck);
+
+function runCheck() {
+  const abbA = document.getElementById('sel-a').value;
+  const abbB = document.getElementById('sel-b').value;
+  if (!abbA || !abbB) return;
+
+  const yr = curYr();
+  const cl = capLevels[yr] || {};
+  const CAP = cl.cap || 154647000;
+  const APRON1 = cl.apron1 || 195945000;
+  const APRON2 = cl.apron2 || 207824000;
+
+  function teamSalary(abbr) {
+    return (rosterData[abbr] || []).reduce((s, p) => s + p.salary, 0);
+  }
+
+  function selectedSalary(abbr, side) {
+    return [...selections[side].players].reduce((s, slug) => {
+      const p = (rosterData[abbr] || []).find(r => r.slug === slug);
+      return s + (p ? p.salary : 0);
+    }, 0);
+  }
+
+  const curA = teamSalary(abbA), curB = teamSalary(abbB);
+  const outA = selectedSalary(abbA, 'a'), outB = selectedSalary(abbB, 'b');
+  const inA = outB, inB = outA;  // Team A receives what B sends, and vice versa
+  const newA = curA - outA + inA, newB = curB - outB + inB;
+  const stA = teamState[abbA], stB = teamState[abbB];
+
+  function matchCheck(abbr, currentSal, outgoing, incoming, state) {
+    const notes = [];
+    let valid = true;
+
+    if (!outgoing && !incoming) return { valid: true, notes: ['No salary exchanged.'] };
+
+    // Determine if team is at/above First Apron (before trade)
+    const aboveApron1 = currentSal >= APRON1 || state?.hard_cap;
+    const aboveApron2 = currentSal >= APRON2;
+
+    let maxIncoming;
+    if (aboveApron1) {
+      maxIncoming = APRON1_MATCH(outgoing);
+      notes.push(`Above 1st Apron: max incoming = outgoing + $250K = ${fmtM(maxIncoming)}`);
+    } else {
+      const tier = TIERS.find(t => outgoing <= t.max);
+      maxIncoming = tier.fn(outgoing);
+      notes.push(`Salary match: max incoming = ${fmtM(maxIncoming)}`);
+    }
+
+    if (incoming > maxIncoming) {
+      valid = false;
+      notes.push(`⚠ Match exceeded by ${fmtM(incoming - maxIncoming)}`);
+    }
+
+    // Apron checks post-trade
+    const newSal = currentSal - outgoing + incoming;
+    if (newSal >= APRON2) notes.push(`New salary ${fmtM(newSal)} — at/above 2nd Apron`);
+    else if (newSal >= APRON1) notes.push(`New salary ${fmtM(newSal)} — at/above 1st Apron`);
+    else if (newSal >= CAP) notes.push(`New salary ${fmtM(newSal)} — over cap`);
+    else notes.push(`New salary ${fmtM(newSal)} — under cap`);
+
+    // Hard cap warning
+    if (state?.hard_cap && newSal > (state.hard_cap === 'second_apron' ? APRON2 : APRON1)) {
+      valid = false;
+      notes.push(`⚠ Hard capped at ${state.hard_cap === 'second_apron' ? '2nd Apron' : '1st Apron'} — trade invalid`);
+    }
+
+    return { valid, maxIncoming, notes };
+  }
+
+  const resA = matchCheck(abbA, curA, outA, inA, stA);
+  const resB = matchCheck(abbB, curB, outB, inB, stB);
+  const overallValid = resA.valid && resB.valid;
+
+  renderResults(abbA, abbB, outA, outB, inA, inB, curA, curB, resA, resB, overallValid);
+}
+
+function renderResults(abbA, abbB, outA, outB, inA, inB, curA, curB, resA, resB, valid) {
+  const el = document.getElementById('results');
+  el.style.display = '';
+
+  const picksAtoB = [...selections.a.picks].join(', ') || '—';
+  const picksBtoA = [...selections.b.picks].join(', ') || '—';
+
+  el.innerHTML = `
+    <div class="results-header">Trade Analysis</div>
+    <div class="results-grid">
+      ${resultCol(abbA, TEAMS[abbA], outA, inA, curA, picksAtoB, resA)}
+      ${resultCol(abbB, TEAMS[abbB], outB, inB, curB, picksBtoA, resB)}
+    </div>
+    <div class="results-summary">
+      ${valid
+        ? '<strong style="color:#4ade80">✓ Trade appears valid</strong> — salary matching and hard cap constraints satisfied.'
+        : '<strong style="color:#f87171">✗ Trade has issues</strong> — see details above.'}
+      &nbsp; Salary data based on current season (${curYr()}). Always verify with the rulebook.
+    </div>`;
+}
+
+function resultCol(abbr, name, outgoing, incoming, current, picks, res) {
+  const yr = curYr();
+  const cl = capLevels[yr] || {};
+  const APRON1 = cl.apron1 || 195945000;
+  const newSal = current - outgoing + incoming;
+  const statusCls = res.valid ? 'status-ok' : 'status-err';
+  const statusText = res.valid ? '✓ Valid' : '✗ Issue';
+
+  const playersOut = [...selections[abbr === document.getElementById('sel-a').value ? 'a' : 'b'].players]
+    .map(slug => { const p = (rosterData[abbr] || []).find(r => r.slug === slug); return p ? displayName(p.name) : slug; })
+    .join(', ') || '—';
+
+  return `<div class="result-col">
+    <div class="result-team">${name}</div>
+    <div class="result-row"><span class="label">Current salary</span><span>${fmtM(current)}</span></div>
+    <div class="result-row"><span class="label">Sending (players)</span><span>${outgoing ? fmtM(outgoing) : '—'}</span></div>
+    <div class="result-row"><span class="label">Sending (picks)</span><span style="font-size:0.75rem">${picks}</span></div>
+    <div class="result-row"><span class="label">Receiving</span><span>${incoming ? fmtM(incoming) : '—'}</span></div>
+    <hr class="result-divider">
+    <div class="result-row"><span class="label">New salary</span><span><strong>${fmtM(newSal)}</strong></span></div>
+    <div class="result-row"><span class="label">vs 1st Apron</span><span style="color:${newSal >= APRON1 ? '#f87171' : '#6b7280'}">${fmtM(APRON1)} (${newSal >= APRON1 ? 'OVER' : fmtM(APRON1 - newSal) + ' room'})</span></div>
+    <span class="result-status ${statusCls}">${statusText}</span>
+    <div class="result-note">${res.notes.join('<br>')}</div>
+  </div>`;
+}
+
+// ── CSV utility (reuse global from nav.js if loaded, else inline) ─────────────
+
+function parseCSV(text) {
+  if (typeof window.parseCSV === 'function' && parseCSV !== window.parseCSV) return window.parseCSV(text);
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = []; let cur = '', inQ = false;
+    for (const ch of line) {
+      if (ch === '"') { inQ = !inQ; } else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; } else { cur += ch; }
+    }
+    vals.push(cur.trim());
+    const obj = {}; headers.forEach((h, i) => { obj[h] = vals[i] ?? ''; });
+    return obj;
+  });
+}
+
+init();
+</script>
+<script src="/nav.js"></script>
+</body>
+</html>
