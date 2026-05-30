@@ -237,17 +237,6 @@ document.title = `${abbr} — NBN`;
   }
   .row-twoway td { opacity: 0.6; }
   .row-dead td   { opacity: 0.45; font-style: italic; text-decoration: line-through; }
-  /* Contract timeline */
-  .ct-wrap { overflow-x: auto; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
-  .ct-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; white-space: nowrap; }
-  .ct-table thead th { padding: 0.5rem 0.75rem; text-align: right; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #6b7280; border-bottom: 1px solid #374151; }
-  .ct-table thead th:first-child { text-align: left; position: sticky; left: 0; background: #1f2937; z-index: 1; min-width: 130px; }
-  .ct-table tbody tr { border-bottom: 1px solid #1a2233; }
-  .ct-table tbody tr:last-child { border-bottom: none; }
-  .ct-table td { padding: 0.4rem 0.75rem; text-align: right; color: #9ca3af; }
-  .ct-table td:first-child { text-align: left; position: sticky; left: 0; background: #1f2937; z-index: 1; font-weight: 600; color: #e5e7eb; }
-  .ct-table tbody tr.ct-total td { background: #161f2e; color: #f3f4f6; font-weight: 700; border-top: 1px solid #374151; }
-  .ct-table tbody tr.ct-total td:first-child { background: #161f2e; }
   .picks-acquired td   { color: #60a5fa; }
   .picks-traded td     { color: #6b7280; font-style: italic; }
   .picks-uncertain td  { color: #f59e0b; font-style: italic; }
@@ -419,10 +408,6 @@ document.body.innerHTML = `
     <section id="exceptions-section" style="display:none">
       <h2 class="section-title">Cap Exceptions</h2>
       <div id="exceptions-wrap" class="exceptions-card"></div>
-    </section>
-    <section id="ct-section" style="display:none">
-      <h2 class="section-title">Contract Timeline</h2>
-      <div id="ct-wrap"></div>
     </section>
     <section>
       <h2 class="section-title" id="picks-title">Draft Picks</h2>
@@ -1128,145 +1113,6 @@ function bioPlayerName(slug, bios) {
   if (!bio) return null;
   const parts = bio.name.split(',');
   return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
-}
-
-function buildContractTimeline(rosterRows, biosData, deadCapRows = []) {
-  const curYr = currentSeasonYr();
-
-  // Collect all salary years >= current season across all players
-  const yearSet = new Set();
-  const allRows = [
-    ...rosterRows.map(r => ({ slug: r.SLUG, type: (biosData[r.SLUG] || {}).type || 'player' })),
-    ...deadCapRows.map(r => ({ slug: r.SLUG || '', type: 'dead', _legacy: r })),
-  ];
-
-  allRows.forEach(({ slug, _legacy }) => {
-    const bio = biosData[slug] || {};
-    const sals = _legacy || (bio.salaries || {});
-    Object.keys(sals).forEach(yr => { if (yr >= curYr) yearSet.add(yr); });
-    Object.keys(bio.cap_holds || {}).forEach(yr => { if (yr >= curYr) yearSet.add(yr); });
-  });
-
-  const years = Array.from(yearSet).sort();
-  if (!years.length) return;
-
-  const HOLD_LABEL = { UFA: 'UFA', RFA: 'RFA', PLAYER_OPT: 'P-OPT', TEAM_OPT: 'T-OPT', NON_GTD: 'NON-GTD' };
-  const HOLD_COLOR = {
-    UFA:       { bg: 'rgba(107,114,128,0.25)', color: '#9ca3af' },
-    RFA:       { bg: 'rgba(96,165,250,0.20)',  color: '#93c5fd' },
-    PLAYER_OPT:{ bg: 'rgba(251,191,36,0.20)',  color: '#fcd34d' },
-    TEAM_OPT:  { bg: 'rgba(251,191,36,0.20)',  color: '#fcd34d' },
-    NON_GTD:   { bg: 'rgba(251,146,60,0.20)',  color: '#fb923c' },
-  };
-  const TYPE_BG = {
-    player:  'rgba(52,211,153,0.10)',
-    'two-way': 'rgba(147,197,253,0.12)',
-    dead:    'rgba(248,113,113,0.10)',
-  };
-
-  const wrap = document.createElement('div');
-  wrap.className = 'ct-wrap';
-  const table = document.createElement('table');
-  table.className = 'ct-table';
-
-  // Header
-  const thead = table.createTHead();
-  const hr = thead.insertRow();
-  const thName = document.createElement('th');
-  thName.textContent = 'Player';
-  hr.appendChild(thName);
-  years.forEach(yr => {
-    const th = document.createElement('th');
-    th.textContent = yr;
-    hr.appendChild(th);
-  });
-
-  const tbody = table.createTBody();
-  const yearTotals = {};
-  years.forEach(yr => { yearTotals[yr] = 0; });
-
-  // Active roster rows
-  const typeOrder = { player: 0, 'two-way': 1, dead: 2 };
-  const sorted = rosterRows
-    .map(r => ({ slug: r.SLUG, ovr: parseFloat(r.OVR) || 0, type: (biosData[r.SLUG] || {}).type || '' }))
-    .sort((a, b) => (typeOrder[a.type] ?? 3) - (typeOrder[b.type] ?? 3) || b.ovr - a.ovr);
-
-  sorted.forEach(({ slug, type }) => {
-    const bio = biosData[slug] || {};
-    const sals = bio.salaries || {};
-    const holds = bio.cap_holds || {};
-    const name = displayNameFromBio(bio.name) || slug;
-
-    const tr = tbody.insertRow();
-    const tdName = tr.insertCell();
-    tdName.textContent = name;
-
-    let hasAny = false;
-    years.forEach(yr => {
-      const td = tr.insertCell();
-      const salRaw = sals[yr];
-      const hold = holds[yr];
-
-      if (salRaw) {
-        const n = parseSalaryNum(salRaw);
-        td.textContent = fmtM(n);
-        td.style.background = TYPE_BG[type] || TYPE_BG.player;
-        td.style.color = '#d1d5db';
-        yearTotals[yr] += n;
-        hasAny = true;
-      } else if (hold && HOLD_LABEL[hold]) {
-        td.textContent = HOLD_LABEL[hold];
-        const hc = HOLD_COLOR[hold];
-        td.style.background = hc.bg;
-        td.style.color = hc.color;
-        td.style.fontSize = '0.65rem';
-        td.style.fontWeight = '700';
-        td.style.letterSpacing = '0.04em';
-        hasAny = true;
-      }
-    });
-
-    if (!hasAny) tr.style.opacity = '0.35';
-  });
-
-  // Dead cap rows
-  deadCapRows.forEach(row => {
-    const slug = row.SLUG || '';
-    const bio = biosData[slug] || {};
-    const name = displayNameFromBio(bio.name) || row.PLAYER || slug || 'Dead Cap';
-    const tr = tbody.insertRow();
-    tr.classList.add('row-dead');
-    const tdName = tr.insertCell();
-    tdName.textContent = name;
-    years.forEach(yr => {
-      const td = tr.insertCell();
-      const n = parseSalaryNum(row[yr]);
-      if (n) {
-        td.textContent = fmtM(n);
-        td.style.background = TYPE_BG.dead;
-        td.style.color = '#fca5a5';
-        yearTotals[yr] += n;
-      }
-    });
-  });
-
-  // Total row
-  const totalTr = tbody.insertRow();
-  totalTr.className = 'ct-total';
-  const tdTotalLabel = totalTr.insertCell();
-  tdTotalLabel.textContent = 'Total';
-  years.forEach(yr => {
-    const td = totalTr.insertCell();
-    if (yearTotals[yr]) td.textContent = fmtM(yearTotals[yr]);
-  });
-
-  wrap.appendChild(table);
-  return wrap;
-}
-
-function fmtM(n) {
-  if (!n) return '';
-  return '$' + (n / 1e6).toFixed(1) + 'M';
 }
 
 function buildPicksTable(picks, teamAbbr, bios = {}, allPicks = []) {
@@ -2592,16 +2438,6 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     });
     renderHardCapBanner(teamState);
     renderExceptionsSection(teamState, capLevels, teamSalaryTotal, curYr);
-
-    // Contract timeline
-    const ctSection = document.getElementById('ct-section');
-    const ctWrap = document.getElementById('ct-wrap');
-    const ctEl = buildContractTimeline(rosterRows, biosData, deadCapRows);
-    if (ctEl) {
-      ctWrap.innerHTML = '';
-      ctWrap.appendChild(ctEl);
-      ctSection.style.display = '';
-    }
 
     setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels, currentOvr, deadCapRows), rosterCellConfig(rosterHeaders, biosData));
     setupJerseyEditable('roster-title', 'roster-wrap', rosterRows, biosData, () => {
