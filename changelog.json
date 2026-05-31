@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.163",
+    "date": "2026-05-31",
+    "changes": [
+      "Add /strikes page (BOD-gated): issue, view, and delete member strikes with date and reason",
+      "Members page: show strike count badge next to names of members with active strikes",
+      "Homepage: Strikes card visible to BOD members under League Office",
+      "API: GET/POST /api/strikes, GET/POST/DELETE /api/strikes/{member}/{id}"
+    ]
+  },
+  {
     "version": "0.0.161",
     "date": "2026-05-30",
     "changes": [

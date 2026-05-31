@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Strikes — NBN</title>
+  <style>
+    .page { max-width: 900px; margin: 0 auto; }
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .auth-bar {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 1.25rem; font-size: 0.85rem; color: #9ca3af;
+    }
+    .auth-bar button {
+      background: #374151; border: 1px solid #4b5563; color: #f3f4f6;
+      border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer;
+      font-size: 0.8rem; font-family: inherit;
+    }
+    .auth-bar button:hover { background: #4b5563; }
+
+    .gate {
+      text-align: center; color: #6b7280; padding: 4rem 1rem;
+      font-size: 0.9rem;
+    }
+    .gate .lock { font-size: 2rem; margin-bottom: 0.75rem; }
+
+    .members-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+
+    .member-card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.6rem;
+    }
+    .member-card.has-strikes { border-color: #7f1d1d; }
+
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    }
+    .card-name {
+      font-weight: 700; font-size: 0.95rem;
+      display: flex; align-items: center; gap: 0.45rem;
+    }
+    .card-name a { color: inherit; }
+    .strike-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #7f1d1d; color: #fca5a5;
+      font-size: 0.65rem; font-weight: 700; border-radius: 99px;
+      min-width: 1.3rem; height: 1.3rem; padding: 0 0.35rem;
+    }
+    .team-badge {
+      display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; padding: 0.12rem 0.45rem; border-radius: 4px;
+      background: #1c2c1e; color: #86efac; white-space: nowrap;
+    }
+    .team-badge a { color: inherit; }
+
+    .strike-list { display: flex; flex-direction: column; gap: 0.4rem; }
+    .strike-row {
+      display: flex; align-items: flex-start; gap: 0.5rem;
+      font-size: 0.8rem; background: #111827; border-radius: 6px; padding: 0.45rem 0.6rem;
+    }
+    .strike-dot { color: #ef4444; margin-top: 0.1rem; flex-shrink: 0; }
+    .strike-body { flex: 1; min-width: 0; }
+    .strike-date { font-size: 0.7rem; color: #6b7280; }
+    .strike-reason { color: #d1d5db; line-height: 1.35; word-break: break-word; }
+    .strike-issuer { font-size: 0.68rem; color: #4b5563; margin-top: 0.1rem; }
+    .btn-del-strike {
+      background: none; border: none; color: #4b5563; cursor: pointer;
+      font-size: 0.75rem; padding: 0; line-height: 1; flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .btn-del-strike:hover { color: #ef4444; }
+
+    .no-strikes { font-size: 0.8rem; color: #4b5563; }
+
+    .add-strike-btn {
+      align-self: flex-start; background: transparent; border: 1px solid #374151;
+      color: #9ca3af; border-radius: 6px; padding: 0.25rem 0.65rem;
+      font-size: 0.75rem; cursor: pointer; font-family: inherit;
+    }
+    .add-strike-btn:hover { border-color: #ef4444; color: #ef4444; }
+
+    .add-form {
+      display: none; flex-direction: column; gap: 0.45rem;
+      background: #111827; border-radius: 8px; padding: 0.65rem 0.75rem;
+    }
+    .add-form.open { display: flex; }
+    .add-form input, .add-form textarea {
+      background: #1f2937; border: 1px solid #374151; color: #f3f4f6;
+      border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.8rem;
+      font-family: inherit; width: 100%; box-sizing: border-box;
+    }
+    .add-form input:focus, .add-form textarea:focus { outline: none; border-color: #60a5fa; }
+    .add-form textarea { resize: vertical; min-height: 56px; }
+    .form-row { display: flex; gap: 0.4rem; justify-content: flex-end; }
+    .btn-form-cancel {
+      background: transparent; border: 1px solid #374151; color: #9ca3af;
+      border-radius: 5px; padding: 0.25rem 0.6rem; font-size: 0.75rem;
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-form-cancel:hover { border-color: #6b7280; color: #d1d5db; }
+    .btn-form-save {
+      background: #7f1d1d; border: 1px solid #991b1b; color: #fca5a5;
+      border-radius: 5px; padding: 0.25rem 0.6rem; font-size: 0.75rem;
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-form-save:hover { background: #991b1b; }
+    .btn-form-save:disabled { opacity: 0.5; cursor: not-allowed; }
+    .form-error { font-size: 0.75rem; color: #fca5a5; }
+
+    @media (max-width: 540px) {
+      .members-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<script src="/nav.js"></script>
+
+<div class="page">
+  <nav class="nav"></nav>
+
+  <header>
+    <h1>Strikes</h1>
+    <p>Disciplinary record for league members. BOD access required.</p>
+  </header>
+
+  <div class="auth-bar" id="auth-bar">
+    <span id="auth-status">Sign in to view strikes.</span>
+    <button id="auth-btn">Sign in</button>
+  </div>
+
+  <div id="gate" class="gate" style="display:none">
+    <div class="lock">🔒</div>
+    <div>This page requires BOD access.</div>
+  </div>
+
+  <div id="members-grid" class="members-grid" style="display:none"></div>
+</div>
+
+<!-- Sign-in modal -->
+<div class="modal-backdrop" id="signin-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding-top:5vh">
+  <div style="background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem">
+    <h3 style="font-size:1rem;font-weight:600">Sign In</h3>
+    <input type="password" id="signin-input" placeholder="Paste your token…"
+      style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:6px;padding:0.5rem 0.75rem;font-size:0.875rem;font-family:inherit;width:100%;box-sizing:border-box">
+    <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+      <button id="signin-cancel" style="background:transparent;border:1px solid #374151;color:#d1d5db;border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Cancel</button>
+      <button id="signin-save" style="background:#2563eb;border:1px solid #3b82f6;color:#fff;border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN_KEY = 'nbn_token';
+let currentToken = localStorage.getItem(TOKEN_KEY) || '';
+let myName = '', isBod = false;
+
+// state: { member: string, strikes: [{id, date, reason, issued_by}] }[]
+let members = [];
+let strikesMap = {}; // member -> [strike]
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+function updateAuthBar() {
+  const status = document.getElementById('auth-status');
+  const btn    = document.getElementById('auth-btn');
+  if (currentToken && myName) {
+    status.textContent = `Signed in as ${myName}`;
+    btn.textContent = 'Sign out';
+  } else if (currentToken) {
+    status.textContent = 'Signed in';
+    btn.textContent = 'Sign out';
+  } else {
+    status.textContent = 'Sign in to view strikes.';
+    btn.textContent = 'Sign in';
+  }
+}
+
+async function initAuth() {
+  try {
+    const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${currentToken}` } });
+    if (!res.ok) { signOut(); return; }
+    const me = await res.json();
+    myName = me.name;
+    const roles = me.roles || [];
+    isBod = roles.includes('bod') || roles.includes('admin');
+    updateAuthBar();
+    if (isBod) {
+      await loadPage();
+    } else {
+      document.getElementById('gate').style.display = '';
+    }
+  } catch { signOut(); }
+}
+
+function signOut() {
+  currentToken = ''; myName = ''; isBod = false;
+  localStorage.removeItem(TOKEN_KEY);
+  updateAuthBar();
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('members-grid').style.display = 'none';
+}
+
+document.getElementById('auth-btn').addEventListener('click', () => {
+  if (currentToken) { signOut(); }
+  else {
+    const bd = document.getElementById('signin-backdrop');
+    bd.style.display = 'flex';
+    document.getElementById('signin-input').value = '';
+    setTimeout(() => document.getElementById('signin-input').focus(), 50);
+  }
+});
+
+document.getElementById('signin-cancel').addEventListener('click', () =>
+  document.getElementById('signin-backdrop').style.display = 'none');
+document.getElementById('signin-backdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('signin-backdrop'))
+    document.getElementById('signin-backdrop').style.display = 'none';
+});
+
+async function doSignIn() {
+  const t = document.getElementById('signin-input').value.trim();
+  if (!t) return;
+  currentToken = t; localStorage.setItem(TOKEN_KEY, t);
+  document.getElementById('signin-backdrop').style.display = 'none';
+  await initAuth();
+}
+document.getElementById('signin-save').addEventListener('click', doSignIn);
+document.getElementById('signin-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+
+async function loadPage() {
+  const headers = { Authorization: `Bearer ${currentToken}` };
+  const [membersRes, strikesRes] = await Promise.all([
+    fetch('/api/members/public'),
+    fetch('/api/strikes', { headers }),
+  ]);
+  if (!membersRes.ok || !strikesRes.ok) { alert('Failed to load data.'); return; }
+  const membersData = await membersRes.json();
+  const countMap    = await strikesRes.json();
+
+  // Fetch full strike details for all members who have strikes
+  const memberNames = membersData.map(m => m.name);
+  const detailFetches = Object.keys(countMap).map(async name => {
+    try {
+      const r = await fetch(`/api/strikes/${encodeURIComponent(name)}`, { headers });
+      strikesMap[name] = r.ok ? await r.json() : [];
+    } catch { strikesMap[name] = []; }
+  });
+  await Promise.all(detailFetches);
+
+  members = membersData;
+  renderGrid();
+  document.getElementById('members-grid').style.display = '';
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+
+function activeTenure(tenures) {
+  const active = tenures.filter(t => !t.end);
+  if (!active.length) return null;
+  return active.sort((a, b) => b.start.localeCompare(a.start))[0];
+}
+
+function lastTenure(tenures) {
+  if (!tenures.length) return null;
+  return [...tenures].sort((a, b) => b.start.localeCompare(a.start))[0];
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  return `${parseInt(m)}/${parseInt(d)}/${y}`;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('members-grid');
+  grid.innerHTML = '';
+
+  const sorted = [...members].sort((a, b) => {
+    const ac = (strikesMap[a.name] || []).length;
+    const bc = (strikesMap[b.name] || []).length;
+    if (ac !== bc) return bc - ac;
+    const aA = !!activeTenure(a.tenures), bA = !!activeTenure(b.tenures);
+    if (aA !== bA) return bA ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
+
+  sorted.forEach(m => {
+    const strikes = strikesMap[m.name] || [];
+    const card = buildCard(m, strikes);
+    grid.appendChild(card);
+  });
+}
+
+function buildCard(m, strikes) {
+  const card = document.createElement('div');
+  card.className = 'member-card' + (strikes.length ? ' has-strikes' : '');
+  card.dataset.member = m.name;
+
+  // Header row
+  const hdr = document.createElement('div');
+  hdr.className = 'card-header';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'card-name';
+  nameEl.innerHTML = `<a href="/members/${encodeURIComponent(m.name)}/">${m.name}</a>`;
+  if (strikes.length) {
+    const badge = document.createElement('span');
+    badge.className = 'strike-count';
+    badge.textContent = strikes.length;
+    nameEl.appendChild(badge);
+  }
+
+  const cur  = activeTenure(m.tenures);
+  const last = lastTenure(m.tenures);
+  const team = cur || last;
+  const teamEl = document.createElement('div');
+  if (team) {
+    teamEl.innerHTML = `<span class="team-badge"><a href="/teams/${team.team.toLowerCase()}/">${team.team}</a></span>`;
+  }
+
+  hdr.appendChild(nameEl);
+  hdr.appendChild(teamEl);
+  card.appendChild(hdr);
+
+  // Strike list
+  if (strikes.length) {
+    const list = document.createElement('div');
+    list.className = 'strike-list';
+    const sorted = [...strikes].sort((a, b) => b.date.localeCompare(a.date));
+    sorted.forEach(s => {
+      list.appendChild(buildStrikeRow(m.name, s));
+    });
+    card.appendChild(list);
+  } else {
+    const none = document.createElement('div');
+    none.className = 'no-strikes';
+    none.textContent = 'No strikes';
+    card.appendChild(none);
+  }
+
+  // Add strike button + inline form
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-strike-btn';
+  addBtn.textContent = '+ Add Strike';
+
+  const form = document.createElement('div');
+  form.className = 'add-form';
+  form.innerHTML = `
+    <input type="date" class="af-date" value="${new Date().toISOString().slice(0,10)}">
+    <textarea class="af-reason" placeholder="Reason for strike…" rows="2"></textarea>
+    <div class="form-error" style="display:none"></div>
+    <div class="form-row">
+      <button class="btn-form-cancel">Cancel</button>
+      <button class="btn-form-save">Issue Strike</button>
+    </div>`;
+
+  addBtn.addEventListener('click', () => {
+    form.classList.add('open');
+    addBtn.style.display = 'none';
+    form.querySelector('.af-reason').focus();
+  });
+  form.querySelector('.btn-form-cancel').addEventListener('click', () => {
+    form.classList.remove('open');
+    addBtn.style.display = '';
+    form.querySelector('.form-error').style.display = 'none';
+  });
+  form.querySelector('.btn-form-save').addEventListener('click', () => doAddStrike(m.name, form, addBtn));
+
+  card.appendChild(addBtn);
+  card.appendChild(form);
+  return card;
+}
+
+function buildStrikeRow(memberName, strike) {
+  const row = document.createElement('div');
+  row.className = 'strike-row';
+  row.dataset.id = strike.id;
+
+  const dot = document.createElement('div');
+  dot.className = 'strike-dot';
+  dot.textContent = '●';
+
+  const body = document.createElement('div');
+  body.className = 'strike-body';
+  body.innerHTML = `
+    <div class="strike-date">${fmtDate(strike.date)}</div>
+    <div class="strike-reason">${escHtml(strike.reason)}</div>
+    ${strike.issued_by ? `<div class="strike-issuer">issued by ${escHtml(strike.issued_by)}</div>` : ''}`;
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn-del-strike';
+  delBtn.title = 'Remove strike';
+  delBtn.textContent = '×';
+  delBtn.addEventListener('click', () => doDeleteStrike(memberName, strike.id));
+
+  row.appendChild(dot);
+  row.appendChild(body);
+  row.appendChild(delBtn);
+  return row;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+
+async function doAddStrike(memberName, form, addBtn) {
+  const date   = form.querySelector('.af-date').value.trim();
+  const reason = form.querySelector('.af-reason').value.trim();
+  const errEl  = form.querySelector('.form-error');
+  const saveBtn = form.querySelector('.btn-form-save');
+
+  if (!date || !reason) {
+    errEl.textContent = 'Date and reason are required.';
+    errEl.style.display = '';
+    return;
+  }
+  errEl.style.display = 'none';
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+
+  try {
+    const res = await fetch(`/api/strikes/${encodeURIComponent(memberName)}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date, reason }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    const strike = await res.json();
+    if (!strikesMap[memberName]) strikesMap[memberName] = [];
+    strikesMap[memberName].push(strike);
+    refreshCard(memberName);
+  } catch (err) {
+    errEl.textContent = 'Error: ' + err.message;
+    errEl.style.display = '';
+    saveBtn.disabled = false; saveBtn.textContent = 'Issue Strike';
+  }
+}
+
+async function doDeleteStrike(memberName, strikeId) {
+  if (!confirm('Remove this strike?')) return;
+  try {
+    const res = await fetch(`/api/strikes/${encodeURIComponent(memberName)}/${strikeId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${currentToken}` },
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    strikesMap[memberName] = (strikesMap[memberName] || []).filter(s => s.id !== strikeId);
+    refreshCard(memberName);
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+function refreshCard(memberName) {
+  const grid = document.getElementById('members-grid');
+  const existing = grid.querySelector(`[data-member="${CSS.escape(memberName)}"]`);
+  const m = members.find(x => x.name === memberName);
+  if (!m || !existing) return;
+  const newCard = buildCard(m, strikesMap[memberName] || []);
+  grid.replaceChild(newCard, existing);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+updateAuthBar();
+if (currentToken) initAuth();
+</script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

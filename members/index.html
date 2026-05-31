@@ -51,6 +51,13 @@
     tr.former-row { opacity: 0.5; }
 
     .member-name { font-weight: 600; }
+    .strike-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #7f1d1d; color: #fca5a5;
+      font-size: 0.65rem; font-weight: 700; border-radius: 99px;
+      min-width: 1.25rem; height: 1.25rem; padding: 0 0.3rem;
+      margin-left: 0.35rem; cursor: default; vertical-align: middle;
+    }
     .team-badge {
       display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
       text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 4px;
@@ -346,6 +353,7 @@ const POSITIONS   = ['owner','gm','coach','none'];
 let currentToken = localStorage.getItem(TOKEN_KEY) || '';
 let myName = '', myRoles = [], isAdmin = false, isBod = false;
 let allMembers = [];
+let strikeMap = {}; // member name -> count
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -430,7 +438,11 @@ function renderTable() {
 
     // Name
     const tdName = tr.insertCell();
-    tdName.innerHTML = `<span class="member-name"><a href="/members/${encodeURIComponent(m.name)}/">${m.name}</a></span>`;
+    const strikeCnt = strikeMap[m.name] || 0;
+    const strikeBadge = strikeCnt > 0
+      ? `<span class="strike-icon" title="${strikeCnt} strike${strikeCnt > 1 ? 's' : ''}">${strikeCnt}</span>`
+      : '';
+    tdName.innerHTML = `<span class="member-name"><a href="/members/${encodeURIComponent(m.name)}/">${m.name}</a>${strikeBadge}</span>`;
 
     // Team
     const tdTeam = tr.insertCell();
@@ -892,9 +904,13 @@ updateAuthBar();
 
 async function init() {
   try {
-    const res = await fetch('/api/members/public');
-    if (!res.ok) throw new Error();
-    allMembers = await res.json();
+    const [membersRes, strikesRes] = await Promise.all([
+      fetch('/api/members/public'),
+      fetch('/api/strikes'),
+    ]);
+    if (!membersRes.ok) throw new Error();
+    allMembers = await membersRes.json();
+    if (strikesRes.ok) strikeMap = await strikesRes.json();
     renderTable();
   } catch {
     document.getElementById('members-tbody').innerHTML =

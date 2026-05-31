@@ -285,6 +285,10 @@
 
     <span class="section-label" id="lo-label" style="display:none">League Office</span>
 
+    <a class="card" id="lo-strikes" href="/strikes/" style="display:none">
+      <div class="card-header"><span class="card-icon">⚠️</span><span class="card-title">Strikes</span></div>
+    </a>
+
     <a class="card" id="lo-league-settings" href="/cap-settings/" style="display:none">
       <div class="card-header"><span class="card-icon">⚙️</span><span class="card-title">Cap Settings</span></div>
     </a>
@@ -353,7 +357,12 @@
           if (!data) return;
           const isRosters = data.roles?.some(r => r === 'rosters' || r === 'admin');
           const isAdmin   = data.roles?.includes('admin');
+          const isBod     = data.roles?.some(r => r === 'bod' || r === 'admin');
           const isStats = data.roles?.some(r => r === 'stats' || r === 'admin');
+          if (isBod) {
+            document.getElementById('lo-label').style.display = '';
+            document.getElementById('lo-strikes').style.display = '';
+          }
           if (isRosters) {
             document.getElementById('lo-label').style.display = '';
             document.getElementById('lo-league-settings').style.display = '';
