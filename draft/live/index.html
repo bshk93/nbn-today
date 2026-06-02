@@ -469,6 +469,7 @@
     }
 
     function pickOwners(p) {
+      if (p.swap_conveys === true && p.swap_owner) return [p.swap_owner.toUpperCase()];
       const o = p.owner || '';
       if (!o || o === '?') return [p.orig];
       return o.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
@@ -478,6 +479,9 @@
       const owners = pickOwners(p);
       const owner = owners.join('/');
       const orig = (p.orig || '').toUpperCase();
+      if (p.swap_conveys === true && p.swap_owner) {
+        return `${owner} <span style="color:#4b5563;font-size:0.78rem;font-weight:400">(swap via ${orig})</span>`;
+      }
       if (orig && !owners.includes(orig)) {
         return `${owner} <span style="color:#4b5563;font-size:0.78rem;font-weight:400">(via ${orig})</span>`;
       }
