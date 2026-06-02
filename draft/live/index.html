@@ -272,6 +272,22 @@
       max-width: 200px;
     }
     select.player-select:focus { outline: none; border-color: #60a5fa; }
+
+    .queue-editor { padding: 0.75rem 1rem; border-bottom: 1px solid #1f2937; }
+    .queue-editor-label {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: #4b5563; margin-bottom: 0.5rem;
+    }
+    .queue-list { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.5rem; }
+    .queue-item {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: #111827; border: 1px solid #1f2937; border-radius: 6px;
+      padding: 0.35rem 0.6rem; font-size: 0.82rem;
+    }
+    .queue-rank { color: #4b5563; font-size: 0.72rem; min-width: 1.1rem; font-variant-numeric: tabular-nums; }
+    .queue-name { flex: 1; color: #f3f4f6; }
+    .queue-empty { color: #374151; font-size: 0.8rem; font-style: italic; padding: 0.3rem 0; }
+    .queue-add { display: flex; gap: 0.4rem; align-items: center; }
   </style>
 </head>
 <body>
@@ -476,6 +492,19 @@
       return yearPicks(state.year).find(p => !p.player) || null;
     }
 
+    // ── Queue helpers ──────────────────────────────────────────────────────────
+
+    function getTeamQueue(team) {
+      const q = (draftState && draftState.queue && draftState.queue[team]) || [];
+      return Array.isArray(q) ? [...q] : [q];
+    }
+
+    async function saveQueue(team, players) {
+      const res = await apiPut(`/api/draft/queue/${team}`, { players });
+      if (res.ok) { await refreshState(); render(); }
+      else { const e = await res.json().catch(() => ({})); alert(e.detail || `Error ${res.status}`); }
+    }
+
     // ── Auth ───────────────────────────────────────────────────────────────────
 
     async function loadAuth() {
@@ -671,10 +700,7 @@
 
       const year = state.year;
       const picks = yearPicks(year);
-      const myPicks = picks.filter(p => {
-        const owners = pickOwners(p);
-        return owners.some(o => myTeams.includes(o));
-      });
+      const myPicks = picks.filter(p => pickOwners(p).some(o => myTeams.includes(o)));
 
       if (!myPicks.length) return;
 
@@ -682,20 +708,117 @@
       section.style.display = '';
       body.innerHTML = '';
 
+      const myOwner = myTeams[0];
       const slot = currentSlot(state);
       const drafted = pickedSlugs(year);
-      const available = Object.entries(bios)
-        .filter(([slug, bio]) => bio.draft_year === year && !drafted.has(slug))
+
+      // Current queue, filtered to available players only
+      const rawQueue = getTeamQueue(myOwner);
+      const queue = rawQueue.filter(s => !drafted.has(s));
+      const queueSet = new Set(queue);
+
+      // Players available to add (not drafted, not already in queue)
+      const addable = Object.entries(bios)
+        .filter(([slug, bio]) => bio.draft_year === year && !drafted.has(slug) && !queueSet.has(slug))
         .map(([slug, bio]) => ({ slug, name: bioName(slug) }))
         .sort((a, b) => a.name.localeCompare(b.name));
 
+      // ── Queue editor ──────────────────────────────────────────────────────
+      const queueDiv = document.createElement('div');
+      queueDiv.className = 'queue-editor';
+
+      const queueLabel = document.createElement('div');
+      queueLabel.className = 'queue-editor-label';
+      queueLabel.textContent = 'Player Queue (in order of preference)';
+      queueDiv.appendChild(queueLabel);
+
+      const listEl = document.createElement('div');
+      listEl.className = 'queue-list';
+
+      if (!queue.length) {
+        const empty = document.createElement('div');
+        empty.className = 'queue-empty';
+        empty.textContent = 'No players queued yet.';
+        listEl.appendChild(empty);
+      }
+
+      queue.forEach((slug, i) => {
+        const item = document.createElement('div');
+        item.className = 'queue-item';
+
+        const rank = document.createElement('span');
+        rank.className = 'queue-rank';
+        rank.textContent = `${i + 1}.`;
+        item.appendChild(rank);
+
+        const name = document.createElement('span');
+        name.className = 'queue-name';
+        name.textContent = bioName(slug);
+        item.appendChild(name);
+
+        const upBtn = document.createElement('button');
+        upBtn.className = 'btn btn-ghost btn-sm';
+        upBtn.textContent = '↑';
+        upBtn.disabled = i === 0;
+        upBtn.addEventListener('click', () => {
+          const q = [...queue];
+          [q[i - 1], q[i]] = [q[i], q[i - 1]];
+          saveQueue(myOwner, q);
+        });
+        item.appendChild(upBtn);
+
+        const downBtn = document.createElement('button');
+        downBtn.className = 'btn btn-ghost btn-sm';
+        downBtn.textContent = '↓';
+        downBtn.disabled = i === queue.length - 1;
+        downBtn.addEventListener('click', () => {
+          const q = [...queue];
+          [q[i], q[i + 1]] = [q[i + 1], q[i]];
+          saveQueue(myOwner, q);
+        });
+        item.appendChild(downBtn);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn btn-danger btn-sm';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', () => {
+          saveQueue(myOwner, queue.filter((_, j) => j !== i));
+        });
+        item.appendChild(removeBtn);
+
+        listEl.appendChild(item);
+      });
+
+      queueDiv.appendChild(listEl);
+
+      // Add player control
+      const addRow = document.createElement('div');
+      addRow.className = 'queue-add';
+      const sel = document.createElement('select');
+      sel.className = 'player-select';
+      sel.style.maxWidth = '260px';
+      sel.innerHTML = `<option value="">Add player to queue…</option>` +
+        addable.map(({ slug, name }) => `<option value="${slug}">${name}</option>`).join('');
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn btn-ghost btn-sm';
+      addBtn.textContent = '+ Add';
+      addBtn.addEventListener('click', () => {
+        if (!sel.value) return;
+        saveQueue(myOwner, [...queue, sel.value]);
+      });
+      addRow.appendChild(sel);
+      addRow.appendChild(addBtn);
+      queueDiv.appendChild(addRow);
+      body.appendChild(queueDiv);
+
+      // ── Pick slots ────────────────────────────────────────────────────────
       myPicks.forEach(p => {
         const owners = pickOwners(p);
-        const myOwner = owners.find(o => myTeams.includes(o)) || owners[0];
         const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick && Date.now() >= slot.start;
         const isSubmitted = !!p.player;
-        const queued = state.queue[myOwner] || null;
-        const queuedName = queued ? bioName(queued) : null;
+
+        // First available player from queue for this pick
+        const nextUp = queue[0] || null;
 
         const div = document.createElement('div');
         div.className = `pick-slot${isOnClock ? ' on-clock' : ''}`;
@@ -706,9 +829,9 @@
 
         let statusHtml;
         if (isSubmitted) {
-          statusHtml = `<div style="color:#4ade80;font-size:0.8rem">✓ Submitted</div>`;
-        } else if (queuedName) {
-          statusHtml = `<div class="pick-slot-queue">Queued: ${queuedName}</div>`;
+          statusHtml = `<div style="color:#4ade80;font-size:0.8rem">✓ ${bioName(p.player)}</div>`;
+        } else if (nextUp) {
+          statusHtml = `<div class="pick-slot-queue">Auto-pick: ${bioName(nextUp)}</div>`;
         } else {
           statusHtml = `<div style="color:#4b5563;font-size:0.8rem">No player queued</div>`;
         }
@@ -722,69 +845,27 @@
           <div class="pick-slot-actions"></div>
         `;
 
-        const actions = div.querySelector('.pick-slot-actions');
-
-        if (!isSubmitted) {
-          if (isOnClock) {
-            const confirmBtn = document.createElement('button');
-            confirmBtn.className = 'btn btn-primary btn-sm';
-            confirmBtn.textContent = queued ? `Submit Pick →` : 'Queue a player first';
-            confirmBtn.disabled = !queued;
-            confirmBtn.addEventListener('click', async () => {
-              confirmBtn.disabled = true;
-              confirmBtn.textContent = 'Submitting…';
-              const res = await apiPost('/api/draft/pick', {
-                year, round: p.round, orig: p.orig, player: queued,
-              });
-              if (res.ok) {
-                await refreshState();
-                render();
-              } else {
-                const err = await res.json().catch(() => ({}));
-                alert(err.detail || `Error ${res.status}`);
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = `Submit Pick →`;
-              }
+        if (!isSubmitted && isOnClock) {
+          const confirmBtn = document.createElement('button');
+          confirmBtn.className = 'btn btn-primary btn-sm';
+          confirmBtn.textContent = nextUp ? `Submit: ${bioName(nextUp)} →` : 'Queue a player first';
+          confirmBtn.disabled = !nextUp;
+          confirmBtn.addEventListener('click', async () => {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Submitting…';
+            const res = await apiPost('/api/draft/pick', {
+              year, round: p.round, orig: p.orig, player: nextUp,
             });
-            actions.appendChild(confirmBtn);
-          }
-
-          // Player select + Queue button
-          const sel = document.createElement('select');
-          sel.className = 'player-select';
-          sel.innerHTML = `<option value="">Select player…</option>` +
-            available.map(({ slug, name }) =>
-              `<option value="${slug}"${slug === queued ? ' selected' : ''}>${name}</option>`
-            ).join('');
-
-          const queueBtn = document.createElement('button');
-          queueBtn.className = 'btn btn-ghost btn-sm';
-          queueBtn.textContent = 'Queue';
-          queueBtn.addEventListener('click', async () => {
-            if (!sel.value) return;
-            queueBtn.disabled = true;
-            const res = await apiPut(`/api/draft/queue/${myOwner}`, { player: sel.value });
             if (res.ok) { await refreshState(); render(); }
-            else { queueBtn.disabled = false; const e = await res.json().catch(()=>({})); alert(e.detail || `Error ${res.status}`); }
+            else {
+              const err = await res.json().catch(() => ({}));
+              alert(err.detail || `Error ${res.status}`);
+              confirmBtn.disabled = false;
+              confirmBtn.textContent = nextUp ? `Submit: ${bioName(nextUp)} →` : 'Queue a player first';
+            }
           });
-
-          if (queued) {
-            const clearBtn = document.createElement('button');
-            clearBtn.className = 'btn btn-danger btn-sm';
-            clearBtn.textContent = '✕';
-            clearBtn.title = 'Clear queue';
-            clearBtn.addEventListener('click', async () => {
-              clearBtn.disabled = true;
-              const res = await apiPut(`/api/draft/queue/${myOwner}`, { player: null });
-              if (res.ok) { await refreshState(); render(); }
-              else { clearBtn.disabled = false; }
-            });
-            actions.appendChild(clearBtn);
-          }
-
-          actions.appendChild(sel);
-          actions.appendChild(queueBtn);
-        } // end !isSubmitted && isLive
+          div.querySelector('.pick-slot-actions').appendChild(confirmBtn);
+        }
 
         body.appendChild(div);
       });
@@ -817,7 +898,7 @@
           const startMs = state.round1_date ? pickWindowStart(state.round1_date, p.round, p.pick) : null;
           const endMs = startMs ? startMs + 10 * 60 * 1000 : null;
           const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick;
-          const isQueued = owners.some(o => state.queue[o]);
+          const isQueued = owners.some(o => { const q = state.queue[o]; return Array.isArray(q) ? q.length > 0 : !!q; });
 
           const tr = document.createElement('tr');
           tr.style.background = isOnClock ? '#0d1f3c' : '#141e2e';
@@ -972,8 +1053,8 @@
       }
 
       const showQueueBtn = myTeams.length > 0;
-      const drafted2 = pickedSlugs(year); // same set
-      const queue = state.queue || {};
+      const myOwnerAvail = myTeams[0] || null;
+      const myQueueSet = myOwnerAvail ? new Set(getTeamQueue(myOwnerAvail)) : new Set();
 
       available.forEach(({ slug, bio }) => {
         const name = bioName(slug);
@@ -1000,22 +1081,16 @@
 
         const tdAction = document.createElement('td');
         if (showQueueBtn) {
-          const isQueued = myTeams.some(t => queue[t] === slug);
+          const inQueue = myQueueSet.has(slug);
           const btn = document.createElement('button');
-          btn.className = `btn btn-ghost btn-sm`;
-          btn.textContent = isQueued ? 'Queued ✓' : 'Queue';
-          btn.style.opacity = isQueued ? '0.5' : '1';
-          if (!isQueued) {
+          btn.className = 'btn btn-ghost btn-sm';
+          btn.textContent = inQueue ? 'Queued ✓' : '+ Queue';
+          btn.style.opacity = inQueue ? '0.5' : '1';
+          if (!inQueue) {
             btn.addEventListener('click', async () => {
-              const team = myTeams[0];
               btn.disabled = true;
-              const res = await apiPut(`/api/draft/queue/${team}`, { player: slug });
-              if (res.ok) { await refreshState(); render(); }
-              else {
-                btn.disabled = false;
-                const e = await res.json().catch(() => ({}));
-                alert(e.detail || `Error ${res.status}`);
-              }
+              const currentQ = getTeamQueue(myOwnerAvail);
+              await saveQueue(myOwnerAvail, [...currentQ, slug]);
             });
           }
           tdAction.appendChild(btn);
