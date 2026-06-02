@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.167",
+    "date": "2026-06-02",
+    "changes": [
+      "Add /draft/live: live draft show page with YouTube embed, on-the-clock countdown, queued picks, draft board with reveal mechanic, and available player pool",
+      "Add API endpoints: GET/PATCH /api/draft/live, PUT /api/draft/queue/{team}, POST /api/draft/pick, POST /api/draft/reveal",
+      "Add backend auto-submit scheduler: queued player is submitted automatically at window end"
+    ]
+  },
+  {
     "version": "0.0.164",
     "date": "2026-06-02",
     "changes": [
@@ -12,7 +21,7 @@
     "changes": [
       "Awards results: BOD members see full ballot on hover for any team chip in the ballot tracker",
       "Players: game log pagination and playoff-round badges on game log entries",
-      "Team pages: Franchise Personnel section — full tenure history with per-tenure W/L record"
+      "Team pages: Franchise Personnel section \u2014 full tenure history with per-tenure W/L record"
     ]
   },
   {
