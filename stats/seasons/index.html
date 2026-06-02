@@ -25,6 +25,24 @@
     }
     .filter-btn:hover { border-color: #4b6a9b; color: #f3f4f6; }
     .filter-btn.active { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+    .filter-select {
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 1.75rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.6rem center;
+    }
+    .filter-select.active { border-color: #3b82f6; color: #fff; }
     .table-wrap { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8rem; white-space: nowrap; }
     thead th {
@@ -70,10 +88,18 @@
     const SEASONS_ORDER = ['20-21','21-22','22-23','23-24','24-25','25-26'];
     const DEFAULT_SEASON = '25-26';
 
+    const TEAM_ABBRS = [
+      'ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
+      'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+      'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS',
+    ];
+
     let sortField = '_GMSC';
     let sortDir = -1;
     let activeSeason = DEFAULT_SEASON;
     let splitByTeam = false;
+    let activeTeamFilter = null;
+    const rosterCache = {};
     let allRows = [];
     let tbody, thEls = [];
 
@@ -247,9 +273,11 @@
     }
 
     function visibleRows() {
-      const filtered = activeSeason === 'all'
-        ? allRows
-        : allRows.filter(r => r.SEASON === activeSeason);
+      let filtered = activeSeason === 'all' ? allRows : allRows.filter(r => r.SEASON === activeSeason);
+      if (activeTeamFilter) {
+        const slugs = rosterCache[activeTeamFilter];
+        if (slugs) filtered = filtered.filter(r => r.SLUG && slugs.has(r.SLUG));
+      }
       return splitByTeam ? filtered : aggregateByPlayerSeason(filtered);
     }
 
@@ -312,6 +340,35 @@
       const sep = document.createElement('span');
       sep.style.cssText = 'flex:1';
       wrap.appendChild(sep);
+
+      const teamSel = document.createElement('select');
+      teamSel.className = 'filter-select';
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = 'All teams';
+      teamSel.appendChild(defaultOpt);
+      TEAM_ABBRS.forEach(abbr => {
+        const opt = document.createElement('option');
+        opt.value = abbr;
+        opt.textContent = abbr;
+        teamSel.appendChild(opt);
+      });
+      teamSel.addEventListener('change', async () => {
+        const abbr = teamSel.value;
+        activeTeamFilter = abbr || null;
+        teamSel.classList.toggle('active', !!abbr);
+        if (abbr && !rosterCache[abbr]) {
+          try {
+            const res = await fetch(`/data/${abbr.toLowerCase()}-roster.csv`);
+            if (res.ok) {
+              const rows = parseCSV(await res.text());
+              rosterCache[abbr] = new Set(rows.map(r => r.SLUG).filter(Boolean));
+            }
+          } catch (e) {}
+        }
+        rebuildBody();
+      });
+      wrap.appendChild(teamSel);
 
       const toggleBtn = document.createElement('button');
       toggleBtn.className = 'filter-btn toggle-btn';
