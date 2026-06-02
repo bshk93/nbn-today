@@ -282,10 +282,6 @@
     <details id="admin-panel" style="display:none">
       <summary>Admin Controls</summary>
       <div class="admin-form">
-        <div class="admin-toggle">
-          <input type="checkbox" id="admin-live" />
-          <label for="admin-live">Draft Live</label>
-        </div>
         <div class="admin-field">
           <label>Year</label>
           <input type="number" id="admin-year" style="width:80px" min="2020" max="2040" />
@@ -537,7 +533,6 @@
     // ── Admin panel ────────────────────────────────────────────────────────────
 
     function initAdminPanel(state) {
-      document.getElementById('admin-live').checked = !!state.live;
       document.getElementById('admin-year').value = state.year || 2026;
       document.getElementById('admin-date').value = state.round1_date || '';
       document.getElementById('admin-youtube').value = state.youtube_embed_url || '';
@@ -549,7 +544,6 @@
       btn.disabled = true;
       statusEl.textContent = 'Saving…';
       const res = await apiPatch('/api/draft/live', {
-        live: document.getElementById('admin-live').checked,
         year: parseInt(document.getElementById('admin-year').value) || 2026,
         round1_date: document.getElementById('admin-date').value || null,
         youtube_embed_url: document.getElementById('admin-youtube').value.trim(),
@@ -600,19 +594,12 @@
         return;
       }
 
-      if (!state.live) {
-        if (state.round1_date) {
-          const r1Start = pickWindowStart(state.round1_date, 1, 1);
-          textEl.textContent = `Draft begins ${formatDateET(r1Start)}`;
-          subEl.textContent = 'Round 1 starts at 12:00 PM ET · Round 2 next day';
-        } else {
-          textEl.textContent = 'Draft date TBD';
-          subEl.textContent = '';
-        }
+      if (!state.round1_date) {
+        textEl.textContent = 'Draft date TBD';
+        subEl.textContent = '';
         return;
       }
 
-      // Live — determine current slot
       const slot = currentSlot(state);
       const liveBadge = `<span class="live-badge"><span class="live-dot"></span>Live</span>`;
 
@@ -695,7 +682,6 @@
       section.style.display = '';
       body.innerHTML = '';
 
-      const isLive = !!state.live;
       const slot = currentSlot(state);
       const drafted = pickedSlugs(year);
       const available = Object.entries(bios)
@@ -706,7 +692,7 @@
       myPicks.forEach(p => {
         const owners = pickOwners(p);
         const myOwner = owners.find(o => myTeams.includes(o)) || owners[0];
-        const isOnClock = isLive && slot && slot.pick.round === p.round && slot.pick.pick === p.pick && Date.now() >= slot.start;
+        const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick && Date.now() >= slot.start;
         const isSubmitted = !!p.player;
         const queued = state.queue[myOwner] || null;
         const queuedName = queued ? bioName(queued) : null;
@@ -738,7 +724,7 @@
 
         const actions = div.querySelector('.pick-slot-actions');
 
-        if (!isSubmitted && isLive) {
+        if (!isSubmitted) {
           if (isOnClock) {
             const confirmBtn = document.createElement('button');
             confirmBtn.className = 'btn btn-primary btn-sm';
@@ -938,7 +924,7 @@
         return;
       }
 
-      const showQueueBtn = state.live && myTeams.length > 0;
+      const showQueueBtn = myTeams.length > 0;
       const drafted2 = pickedSlugs(year); // same set
       const queue = state.queue || {};
 
