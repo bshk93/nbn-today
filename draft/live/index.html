@@ -616,14 +616,24 @@
       const liveBadge = `<span class="live-badge"><span class="live-dot"></span>Live</span>`;
 
       if (!slot) {
-        // Between rounds or before start
+        const now = Date.now();
+        const firstR1 = picks.find(p => p.round === 1 && !p.player);
         const firstR2 = picks.find(p => p.round === 2 && !p.player);
+
+        if (firstR1 && state.round1_date) {
+          const r1Start = pickWindowStart(state.round1_date, 1, firstR1.pick);
+          if (now < r1Start) {
+            textEl.innerHTML = `${liveBadge} Round 1 begins ${formatDateET(r1Start)}`;
+            subEl.textContent = `Picks start at ${formatET(r1Start)} ET · 10 minutes per pick`;
+            return;
+          }
+        }
+
         if (firstR2 && state.round1_date) {
           const r2Start = pickWindowStart(state.round1_date, 2, firstR2.pick);
-          const now = Date.now();
           if (now < r2Start) {
-            textEl.innerHTML = `${liveBadge} Round 2 begins ${formatDateET(r2Start)}`;
-            subEl.textContent = `Starts at ${formatET(r2Start)} ET`;
+            textEl.innerHTML = `${liveBadge} Round 1 complete · Round 2 begins ${formatDateET(r2Start)}`;
+            subEl.textContent = `Picks resume at ${formatET(r2Start)} ET`;
           } else {
             textEl.innerHTML = `${liveBadge} Round 2 · Underway`;
             subEl.textContent = '';
