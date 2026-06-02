@@ -462,14 +462,15 @@
       return o.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
     }
 
-    // The pick whose time window contains `now`
+    // First unsubmitted pick whose window hasn't ended yet — includes pre-draft period
     function currentSlot(state) {
       if (!state.round1_date) return null;
       const now = Date.now();
       for (const p of yearPicks(state.year)) {
+        if (p.player) continue;
         const start = pickWindowStart(state.round1_date, p.round, p.pick);
         const end = start + 10 * 60 * 1000;
-        if (now >= start && now < end) return { pick: p, start, end };
+        if (now < end) return { pick: p, start, end };
       }
       return null;
     }
@@ -616,32 +617,9 @@
       const liveBadge = `<span class="live-badge"><span class="live-dot"></span>Live</span>`;
 
       if (!slot) {
-        const now = Date.now();
-        const firstR1 = picks.find(p => p.round === 1 && !p.player);
-        const firstR2 = picks.find(p => p.round === 2 && !p.player);
-
-        if (firstR1 && state.round1_date) {
-          const r1Start = pickWindowStart(state.round1_date, 1, firstR1.pick);
-          if (now < r1Start) {
-            textEl.innerHTML = `${liveBadge} Round 1 begins ${formatDateET(r1Start)}`;
-            subEl.textContent = `Picks start at ${formatET(r1Start)} ET · 10 minutes per pick`;
-            return;
-          }
-        }
-
-        if (firstR2 && state.round1_date) {
-          const r2Start = pickWindowStart(state.round1_date, 2, firstR2.pick);
-          if (now < r2Start) {
-            textEl.innerHTML = `${liveBadge} Round 1 complete · Round 2 begins ${formatDateET(r2Start)}`;
-            subEl.textContent = `Picks resume at ${formatET(r2Start)} ET`;
-          } else {
-            textEl.innerHTML = `${liveBadge} Round 2 · Underway`;
-            subEl.textContent = '';
-          }
-        } else {
-          textEl.innerHTML = `${liveBadge} Draft underway`;
-          subEl.textContent = '';
-        }
+        // All picks submitted or no date set
+        textEl.innerHTML = `${liveBadge} Draft underway`;
+        subEl.textContent = '';
         return;
       }
 
@@ -659,14 +637,25 @@
         subEl.textContent = 'Awaiting reveal…';
       } else {
         textEl.innerHTML = `${liveBadge} Round ${p.round}, Pick ${p.pick} · <strong style="color:#fff">${teamDisplay}</strong> on the clock`;
-        subEl.textContent = `Window: ${formatET(slot.start)} – ${formatET(slot.end)} ET`;
+        const beforeWindow = Date.now() < slot.start;
+        if (beforeWindow) {
+          subEl.textContent = `Pick window opens ${formatDateET(slot.start)} at ${formatET(slot.start)} ET`;
+        } else {
+          subEl.textContent = `Window: ${formatET(slot.start)} – ${formatET(slot.end)} ET`;
+        }
         cdEl.style.display = '';
         function tick() {
           const rem = slot.end - Date.now();
           if (rem <= 0) { cdEl.textContent = '0:00'; cdEl.className = 'countdown urgent'; return; }
-          const m = Math.floor(rem / 60000);
+          const d = Math.floor(rem / 86400000);
+          const h = Math.floor((rem % 86400000) / 3600000);
+          const m = Math.floor((rem % 3600000) / 60000);
           const s = Math.floor((rem % 60000) / 1000);
-          cdEl.textContent = `${m}:${String(s).padStart(2,'0')}`;
+          let display;
+          if (d > 0) display = `${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+          else if (h > 0) display = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+          else display = `${m}:${String(s).padStart(2,'0')}`;
+          cdEl.textContent = display;
           cdEl.className = rem < 60000 ? 'countdown urgent' : 'countdown';
         }
         tick();
@@ -717,7 +706,7 @@
       myPicks.forEach(p => {
         const owners = pickOwners(p);
         const myOwner = owners.find(o => myTeams.includes(o)) || owners[0];
-        const isOnClock = isLive && slot && slot.pick.round === p.round && slot.pick.pick === p.pick;
+        const isOnClock = isLive && slot && slot.pick.round === p.round && slot.pick.pick === p.pick && Date.now() >= slot.start;
         const isSubmitted = !!p.player;
         const queued = state.queue[myOwner] || null;
         const queuedName = queued ? bioName(queued) : null;
