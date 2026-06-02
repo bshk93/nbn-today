@@ -78,6 +78,68 @@ All CSVs live at the project root or in subdirectories and are fetched at runtim
 
 `data/owner_stats.csv` headers: `owner, teams, seasons, best_reg_season, best_reg_pct, worst_reg_season, worst_reg_pct, reg_w, reg_l, reg_pct, playoff_w, playoff_l, playoff_pct, total_w, total_l, total_pct, playoff_appearances, po_r2, po_conf_finals, po_finals, championships, off_rtg, def_rtg`
 
+## Stats pipeline
+
+Stats flow from game submission to the live site in one automated step:
+
+```
+/boxscores/submit  →  nbn-api appends row to allstats-{season}.csv
+                   →  triggers build/build.sh asynchronously
+                   →  R regenerates all aggregated CSVs into this repo
+                   →  nginx serves the updated files immediately
+```
+
+### build/ directory
+
+| File | Purpose |
+|---|---|
+| `build.sh` | Entry point. Infers season, syncs `owners.csv` from `members.json`, calls Rscript. |
+| `job.R` | Orchestrator. Loads allstats CSVs, computes all aggregations, writes outputs. |
+| `build-utils.R` | Utility functions: data loading/cleaning, standings, award metadata, CSV write helpers. |
+| `preprocess-utils.R` | Additional helpers: win streaks, newsfeed, team offense/defense rating. |
+| `sync_owners.py` | Regenerates `$NBS_DATA_DIR/owners.csv` from `members.json` tenure data. |
+| `seasons.conf` | Maps season strings to playoff start dates (`25-26=2026-04-13`). |
+
+### Data boundaries
+
+**Stays in `/var/lib/nothing-but-stats/` (written by the API, read by the build):**
+- `allstats-{YY-YY}.csv` — raw game-level rows for each regular season
+- `allstats-playoffs-{YY}.csv` — raw playoff rows
+- `player-bios.json`, `members.json`, `owners.csv`, `awards-history.json`
+
+**Written into this repo by the build (served statically):**
+- `data/owner_stats.csv`, `data/{abbr}-seasons.csv`, `data/{abbr}-players.csv`
+- `standings/standings-history.csv`, `standings/playoff-brackets.csv`
+- `players/player_seasons.csv`, `players/player_seasons_playoffs.csv`, `players/player_awards.csv`
+- `data/game-highs-*.csv`, `data/totals-*.csv`, `data/hof.csv`, `data/h2h-*.csv`, `data/league-history.csv`
+- `nbntv-classics/playoff-classics.csv`, `nbntv-classics/playoff-series-margins.csv`
+
+Box score detail (individual game lines) is served via API endpoints (`GET /api/boxscores`, `GET /api/players/{slug}/gamelog`) rather than static files, keeping the repo size manageable.
+
+### Manually triggering a build
+
+```bash
+# via API (requires rosters or stats role token)
+curl -X POST https://nbn.today/api/build/trigger \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# check status
+curl https://nbn.today/api/build/status
+
+# run directly on the server
+bash /home/skim/projects/nbn-today/build/build.sh
+
+# tail the log
+tail -f /var/log/nbn-build.log
+```
+
+### Adding a new season
+
+1. Update `build/seasons.conf` with the new season's playoff start date once known.
+2. The build auto-infers the current season from today's date (Sep 30 cutoff), so no other config change is needed.
+
+---
+
 ## Architecture
 
 No framework or build step. Every page is a self-contained HTML file with inline `<style>` and `<script>`. Two shared JS files break the pattern as described below.
