@@ -468,10 +468,28 @@
       return new Set(allPicks.filter(p => p.year === year && p.player).map(p => p.player));
     }
 
+    // Exact same effectiveOwner logic as draft/index.html — rebuilt each render.
+    let _swapTakesFrom = {};
+
+    function buildSwapTakesFrom(picks2026) {
+      const map = {};
+      picks2026.forEach(p => {
+        if (p.swap_conveys === true && p.swap_owner) {
+          map[p.swap_owner] = p.owner;
+        }
+      });
+      return map;
+    }
+
     function pickOwners(p) {
-      const o = p.owner || '';
-      if (!o || o === '?') return [(p.orig || '').toUpperCase()];
-      return o.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
+      let raw;
+      if (p.swap_conveys === true) {
+        raw = p.swap_owner;
+      } else {
+        raw = _swapTakesFrom[p.orig] ?? p.owner;
+      }
+      if (!raw || raw === '?') return [(p.orig || '').toUpperCase()];
+      return raw.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
     }
 
     function pickTeamHtml(p) {
@@ -1113,6 +1131,8 @@
 
     function render() {
       const state = draftState;
+      _swapTakesFrom = buildSwapTakesFrom(state ? yearPicks(state.year) : []);
+
       if (isAdmin()) {
         const panel = document.getElementById('admin-panel');
         panel.style.display = '';
