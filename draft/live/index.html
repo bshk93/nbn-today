@@ -798,14 +798,61 @@
       const year = state.year;
       const picks = yearPicks(year);
       const submitted = picks.filter(p => p.player);
+      const upcoming = picks.filter(p => !p.player).slice(0, 5);
 
       section.style.display = '';
       tbody.innerHTML = '';
 
-      if (!submitted.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No picks made yet.</td></tr>`;
-        return;
+      // Up-next block
+      if (upcoming.length) {
+        const sepRow = document.createElement('tr');
+        sepRow.innerHTML = `<td colspan="6" class="round-separator">On the Clock / Up Next</td>`;
+        tbody.appendChild(sepRow);
+
+        const slot = currentSlot(state);
+        const now = Date.now();
+        upcoming.forEach((p, i) => {
+          const owners = pickOwners(p);
+          const teamDisplay = owners.join('/');
+          const startMs = state.round1_date ? pickWindowStart(state.round1_date, p.round, p.pick) : null;
+          const endMs = startMs ? startMs + 10 * 60 * 1000 : null;
+          const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick;
+          const isQueued = owners.some(o => state.queue[o]);
+
+          const tr = document.createElement('tr');
+          tr.style.background = isOnClock ? '#0d1f3c' : '#141e2e';
+          tr.style.opacity = i === 0 ? '1' : `${1 - i * 0.12}`;
+
+          const tdNum = document.createElement('td');
+          tdNum.className = 'num';
+          tdNum.textContent = `R${p.round}·${p.pick}`;
+          tr.appendChild(tdNum);
+
+          const tdTeam = document.createElement('td');
+          tdTeam.className = 'team';
+          tdTeam.style.color = isOnClock ? '#93c5fd' : '#d1d5db';
+          tdTeam.textContent = teamDisplay;
+          tr.appendChild(tdTeam);
+
+          const tdStatus = document.createElement('td');
+          tdStatus.colSpan = 3;
+          if (isOnClock && now >= slot.start) {
+            tdStatus.innerHTML = `<span style="color:#facc15;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em">⏱ On the Clock</span>`;
+          } else if (isOnClock) {
+            tdStatus.innerHTML = `<span style="color:#60a5fa;font-size:0.78rem">Picking first</span>`;
+          } else if (isQueued) {
+            tdStatus.innerHTML = `<span style="color:#4ade80;font-size:0.78rem">Pick queued</span>`;
+          } else {
+            tdStatus.innerHTML = `<span style="color:#4b5563;font-size:0.78rem">${startMs ? `${formatET(startMs)} ET` : 'Up next'}</span>`;
+          }
+          tr.appendChild(tdStatus);
+
+          tr.appendChild(document.createElement('td')); // action col
+          tbody.appendChild(tr);
+        });
       }
+
+      if (!submitted.length) return;
 
       let lastRound = null;
       submitted.forEach(p => {
