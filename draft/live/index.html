@@ -474,6 +474,16 @@
       return o.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
     }
 
+    function pickTeamHtml(p) {
+      const owners = pickOwners(p);
+      const owner = owners.join('/');
+      const orig = (p.orig || '').toUpperCase();
+      if (orig && !owners.includes(orig)) {
+        return `${owner} <span style="color:#4b5563;font-size:0.78rem;font-weight:400">(via ${orig})</span>`;
+      }
+      return owner;
+    }
+
     // First unsubmitted pick whose window hasn't ended yet — includes pre-draft period
     function currentSlot(state) {
       if (!state.round1_date) return null;
@@ -912,7 +922,7 @@
           const tdTeam = document.createElement('td');
           tdTeam.className = 'team';
           tdTeam.style.color = isOnClock ? '#93c5fd' : '#d1d5db';
-          tdTeam.textContent = teamDisplay;
+          tdTeam.innerHTML = pickTeamHtml(p);
           tr.appendChild(tdTeam);
 
           const tdStatus = document.createElement('td');
@@ -945,8 +955,6 @@
         }
 
         const revealed = state.revealed.includes(`${p.round}-${p.pick}`);
-        const owners = pickOwners(p);
-        const teamDisplay = owners.join('/');
         const bio = bios[p.player] || {};
         const name = bioName(p.player);
         const pos = Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '—');
@@ -962,7 +970,7 @@
 
         const tdTeam = document.createElement('td');
         tdTeam.className = 'team';
-        tdTeam.textContent = teamDisplay;
+        tdTeam.innerHTML = pickTeamHtml(p);
         tr.appendChild(tdTeam);
 
         const tdPlayer = document.createElement('td');
