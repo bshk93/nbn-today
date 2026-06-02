@@ -468,18 +468,35 @@
       return new Set(allPicks.filter(p => p.year === year && p.player).map(p => p.player));
     }
 
+    // Mirrors draft/index.html effectiveOwner logic. Rebuilt at render time.
+    let _swapTakesFrom = {};
+
+    function buildSwapTakesFrom(picks2026) {
+      const map = {};
+      picks2026.forEach(p => {
+        if (p.swap_conveys === true && p.swap_owner) {
+          map[p.swap_owner] = p.owner;
+        }
+      });
+      return map;
+    }
+
     function pickOwners(p) {
-      if (p.swap_conveys === true && p.swap_owner) return [p.swap_owner.toUpperCase()];
-      const o = p.owner || '';
-      if (!o || o === '?') return [p.orig];
-      return o.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
+      let raw;
+      if (p.swap_conveys === true) {
+        raw = p.swap_owner;
+      } else {
+        raw = _swapTakesFrom[p.orig] ?? p.owner;
+      }
+      if (!raw || raw === '?') return [(p.orig || '').toUpperCase()];
+      return raw.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
     }
 
     function pickTeamHtml(p) {
       const owners = pickOwners(p);
       const owner = owners.join('/');
       const orig = (p.orig || '').toUpperCase();
-      if (p.swap_conveys === true && p.swap_owner) {
+      if (p.swap_conveys === true || _swapTakesFrom[p.orig]) {
         return `${owner} <span style="color:#4b5563;font-size:0.78rem;font-weight:400">(swap via ${orig})</span>`;
       }
       if (orig && !owners.includes(orig)) {
@@ -1117,6 +1134,7 @@
 
     function render() {
       const state = draftState;
+      _swapTakesFrom = buildSwapTakesFrom(state ? yearPicks(state.year) : []);
 
       if (isAdmin()) {
         const panel = document.getElementById('admin-panel');
