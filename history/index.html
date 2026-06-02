@@ -232,7 +232,7 @@
 
     // Seasons up to and including this are sourced from the metadata.R pipeline (league-history.csv).
     // Seasons strictly after this are built live from bracket + award ballot data.
-    const LEGACY_CUTOFF = '25-26';
+    const LEGACY_CUTOFF = '24-25';
 
     // Tally a single award category from ballot data using the [5,3,1] point system.
     // Returns the winning candidate (slug or team abbr) or null.
@@ -263,7 +263,8 @@
     }
 
     // Build one live history row from bracket + ballot data for the given season.
-    function buildLiveRow(season, brackets, ballots, bios) {
+    // statsBySeason: map of season → CSV stat-leader fields (always from the build pipeline).
+    function buildLiveRow(season, brackets, ballots, bios, statsBySeason) {
       const s = brackets.filter(r => r.SEASON === season);
       const done = r => parseInt(r.T1_W) === 4 || parseInt(r.T2_W) === 4;
       const finals = s.find(r => r.ROUND === '4' && done(r));
@@ -271,6 +272,7 @@
       const eastCF = confFinals.find(r => r.T1_SEED && r.T1_SEED.startsWith('East-'));
       const westCF = confFinals.find(r => r.T1_SEED && r.T1_SEED.startsWith('West-'));
 
+      const csvStats = (statsBySeason && statsBySeason[season]) || {};
       const row = {
         SEASON:         season,
         CHAMPION:       finals ? finals.WINNER : '',
@@ -278,9 +280,15 @@
         EAST_RUNNER_UP: loser(eastCF),
         WEST_RUNNER_UP: loser(westCF),
         MVP: '', DPOY: '', ROTY: '', MIP: '', FOTY: '', COTY: '',
-        PTS_LEADER: '', REB_LEADER: '', AST_LEADER: '',
-        STL_LEADER: '', BLK_LEADER: '', TPM_LEADER: '',
-        BEST_OFF: '', BEST_DEF: '', BEST_OVERALL: '',
+        PTS_LEADER: csvStats.PTS_LEADER || '',
+        REB_LEADER: csvStats.REB_LEADER || '',
+        AST_LEADER: csvStats.AST_LEADER || '',
+        STL_LEADER: csvStats.STL_LEADER || '',
+        BLK_LEADER: csvStats.BLK_LEADER || '',
+        TPM_LEADER: csvStats.TPM_LEADER || '',
+        BEST_OFF:    csvStats.BEST_OFF    || '',
+        BEST_DEF:    csvStats.BEST_DEF    || '',
+        BEST_OVERALL: csvStats.BEST_OVERALL || '',
       };
 
       if (ballots) {
@@ -311,10 +319,26 @@
         // Playoff bracket data (needed for both legacy champion lookup and live seasons).
         const allBrackets = bracketsRes.ok ? parseCSV(await bracketsRes.text()) : [];
 
+        // Parse all CSV rows once; stat leaders come from here for every season.
+        const allCsvRows = parseCSV(await historyRes.text());
+
+        // Stat leaders by season (first row per season is enough — all rows share the same leaders).
+        const statsBySeason = {};
+        allCsvRows.forEach(r => {
+          if (!statsBySeason[r.SEASON]) {
+            statsBySeason[r.SEASON] = {
+              PTS_LEADER: r.PTS_LEADER, REB_LEADER: r.REB_LEADER,
+              AST_LEADER: r.AST_LEADER, STL_LEADER: r.STL_LEADER,
+              BLK_LEADER: r.BLK_LEADER, TPM_LEADER: r.TPM_LEADER,
+              BEST_OFF: r.BEST_OFF, BEST_DEF: r.BEST_DEF, BEST_OVERALL: r.BEST_OVERALL,
+            };
+          }
+        });
+
         // Legacy rows: from CSV, only up to and including LEGACY_CUTOFF.
         // CSV has one row per team-season; deduplicate to one row per SEASON.
         const dedupedLegacy = {};
-        parseCSV(await historyRes.text())
+        allCsvRows
           .filter(r => r.SEASON <= LEGACY_CUTOFF)
           .forEach(r => { if (!dedupedLegacy[r.SEASON]) dedupedLegacy[r.SEASON] = r; });
         const legacyRows = Object.values(dedupedLegacy);
@@ -349,7 +373,7 @@
             if (biosRes.ok)    bios    = await biosRes.json();
           }
 
-          liveRows.push(buildLiveRow(season, allBrackets, ballots, bios));
+          liveRows.push(buildLiveRow(season, allBrackets, ballots, bios, statsBySeason));
         }
 
         const allRows = [...legacyRows, ...liveRows];
