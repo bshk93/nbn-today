@@ -294,9 +294,9 @@
   <div class="page">
     <nav class="nav"></nav>
 
-    <!-- Admin panel (hidden until admin role confirmed) -->
+    <!-- BOD/admin panel -->
     <details id="admin-panel" style="display:none">
-      <summary>Admin Controls</summary>
+      <summary>BOD Controls</summary>
       <div class="admin-form">
         <div class="admin-field">
           <label>Year</label>
@@ -312,6 +312,17 @@
         </div>
         <button class="btn btn-primary btn-sm" id="admin-save" style="margin-bottom:1px">Save</button>
         <span id="admin-status"></span>
+      </div>
+      <div class="admin-form" style="border-top:1px solid #1f2937">
+        <div class="admin-field" style="flex:1">
+          <label>Make Pick</label>
+          <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+            <span id="admin-pick-label" style="font-size:0.8rem;color:#9ca3af">—</span>
+            <select id="admin-pick-player" class="player-select" style="max-width:220px"></select>
+            <button class="btn btn-primary btn-sm" id="admin-submit-pick">Submit Pick</button>
+            <span id="admin-pick-status" style="font-size:0.75rem;color:#6b7280"></span>
+          </div>
+        </div>
       </div>
     </details>
 
@@ -593,7 +604,59 @@
       document.getElementById('admin-year').value = state.year || 2026;
       document.getElementById('admin-date').value = state.round1_date || '';
       document.getElementById('admin-youtube').value = state.youtube_embed_url || '';
+
+      // Make Pick section
+      const slot = currentSlot(state);
+      const labelEl = document.getElementById('admin-pick-label');
+      const selEl = document.getElementById('admin-pick-player');
+      const submitEl = document.getElementById('admin-submit-pick');
+
+      if (!slot || slot.pick.player) {
+        labelEl.textContent = slot ? 'Pick already submitted' : 'No active pick';
+        selEl.style.display = 'none';
+        submitEl.disabled = true;
+        return;
+      }
+
+      const p = slot.pick;
+      const owners = pickOwners(p);
+      labelEl.textContent = `R${p.round} · Pick ${p.pick} · ${owners.join('/')}`;
+      selEl.style.display = '';
+      submitEl.disabled = false;
+
+      const drafted = pickedSlugs(state.year);
+      const available = Object.entries(bios)
+        .filter(([slug, bio]) => bio.draft_year === state.year && !drafted.has(slug))
+        .map(([slug, bio]) => ({ slug, name: bioName(slug) }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      selEl.innerHTML = `<option value="">Select player…</option>` +
+        available.map(({ slug, name }) => `<option value="${slug}">${name}</option>`).join('');
+
+      submitEl._pickData = { year: state.year, round: p.round, orig: p.orig };
     }
+
+    document.getElementById('admin-submit-pick').addEventListener('click', async () => {
+      const sel = document.getElementById('admin-pick-player');
+      const statusEl = document.getElementById('admin-pick-status');
+      const btn = document.getElementById('admin-submit-pick');
+      if (!sel.value) return;
+      const pd = btn._pickData;
+      if (!pd) return;
+      btn.disabled = true;
+      statusEl.textContent = 'Submitting…';
+      const res = await apiPost('/api/draft/pick', { ...pd, player: sel.value });
+      if (res.ok) {
+        statusEl.textContent = 'Done!';
+        await refreshState();
+        render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+        btn.disabled = false;
+      }
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
 
     document.getElementById('admin-save').addEventListener('click', async () => {
       const btn = document.getElementById('admin-save');
@@ -1133,7 +1196,7 @@
       const state = draftState;
       _swapTakesFrom = buildSwapTakesFrom(state ? yearPicks(state.year) : []);
 
-      if (isAdmin()) {
+      if (isBod()) {
         const panel = document.getElementById('admin-panel');
         panel.style.display = '';
         initAdminPanel(state || {});
