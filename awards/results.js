@@ -116,9 +116,43 @@
     .ballot-chip {
       font-size: 0.72rem; font-weight: 600;
       letter-spacing: 0.04em; padding: 0.2rem 0.55rem; border-radius: 4px;
+      cursor: default;
     }
-    .ballot-chip.in  { background: #1e3a5f; color: #93c5fd; }
-    .ballot-chip.out { background: #1f2937; color: #4b5563; border: 1px solid #374151; }
+    .ballot-chip.in      { background: #1e3a5f; color: #93c5fd; }
+    .ballot-chip.partial { background: #2d2008; color: #f59e0b; border: 1px solid #78350f; }
+    .ballot-chip.out     { background: #1f2937; color: #4b5563; border: 1px solid #374151; }
+
+    /* Floating tooltip for partial ballots */
+    #ballot-tooltip {
+      position: fixed; z-index: 100; pointer-events: none;
+      background: #1f2937; border: 1px solid #374151; border-radius: 6px;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.75rem; color: #d1d5db; line-height: 1.5;
+      white-space: pre; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      opacity: 0; transition: opacity 0.1s;
+    }
+    #ballot-tooltip.visible { opacity: 1; }
+    #ballot-tooltip.wide {
+      white-space: normal; min-width: 340px; max-width: 520px; padding: 0.6rem 0.75rem;
+    }
+    .btt-header {
+      font-weight: 700; color: #f3f4f6; margin-bottom: 0.5rem; padding-bottom: 0.4rem;
+      border-bottom: 1px solid #374151; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+    }
+    .btt-team { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .btt-state { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.1rem 0.4rem; border-radius: 3px; flex-shrink: 0; }
+    .btt-state-in      { background: #1e3a5f; color: #93c5fd; }
+    .btt-state-partial { background: #2d2008; color: #f59e0b; border: 1px solid #78350f; }
+    .btt-state-out     { background: #1f2937; color: #4b5563; border: 1px solid #374151; }
+    .btt-awards { display: flex; flex-direction: column; gap: 0.3rem; }
+    .btt-award { display: flex; gap: 0.5rem; align-items: flex-start; }
+    .btt-label { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; min-width: 64px; padding-top: 0.07rem; flex-shrink: 0; }
+    .btt-picks { color: #d1d5db; font-size: 0.75rem; line-height: 1.4; }
+    .btt-picks em { color: #4b5563; font-style: normal; }
+    .btt-tiers { display: flex; flex-direction: column; gap: 0.15rem; }
+    .btt-tier { font-size: 0.75rem; color: #d1d5db; line-height: 1.4; }
+    .btt-tier-label { font-size: 0.63rem; font-weight: 600; color: #6b7280; min-width: 28px; display: inline-block; }
+    .btt-empty { color: #4b5563; font-style: italic; font-size: 0.78rem; margin-top: 0.25rem; }
   `; document.head.appendChild(_s); }
 
   document.body.innerHTML = `
@@ -132,6 +166,7 @@
         <div id="status">Loading…</div>
       </div>
     </div>
+    <div id="ballot-tooltip"></div>
   `;
 
   const TEAM_ROLES = new Set([
@@ -324,29 +359,128 @@
     return section;
   }
 
-  function buildBallotTracker(ballots) {
-    const submitted = new Set(Object.keys(ballots));
+  function awardExpectedSize(aw) {
+    return (aw.tierSize && aw.numTiers) ? aw.tierSize * aw.numTiers : aw.maxRank;
+  }
+
+  function ballotState(teamBallot) {
+    const complete = AWARDS.every(aw => {
+      const picks = teamBallot[aw.key];
+      if (!picks) return false;
+      return picks.filter(p => p).length >= awardExpectedSize(aw);
+    });
+    return complete ? 'in' : 'partial';
+  }
+
+  function missingAwards(teamBallot) {
+    return AWARDS
+      .filter(aw => {
+        const picks = teamBallot[aw.key];
+        if (!picks) return true;
+        return picks.filter(p => p).length < awardExpectedSize(aw);
+      })
+      .map(aw => aw.label);
+  }
+
+  const tooltip = document.getElementById('ballot-tooltip');
+
+  function showTooltip(chip, lines) {
+    tooltip.textContent = lines.join('\n');
+    tooltip.classList.add('visible');
+    positionTooltip(chip);
+  }
+
+  function positionTooltip(chip) {
+    const rect = chip.getBoundingClientRect();
+    const tt = tooltip.getBoundingClientRect();
+    let top = rect.top - tt.height - 6;
+    let left = rect.left + rect.width / 2 - tt.width / 2;
+    if (top < 4) top = rect.bottom + 6;
+    if (left < 4) left = 4;
+    if (left + tt.width > window.innerWidth - 4) left = window.innerWidth - tt.width - 4;
+    tooltip.style.top  = `${top}px`;
+    tooltip.style.left = `${left}px`;
+  }
+
+  function hideTooltip() { tooltip.classList.remove('visible', 'wide'); }
+
+  function buildBallotHTML(abb, teamBallot, bios) {
+    const state = teamBallot ? ballotState(teamBallot) : 'out';
+    const stateLabel = { in: 'Complete', partial: 'Partial', out: 'Not submitted' }[state];
+    const teamName = TEAMS[abb] || abb;
+    let html = `<div class="btt-header"><span class="btt-team">${teamName}</span><span class="btt-state btt-state-${state}">${stateLabel}</span></div>`;
+    if (!teamBallot) return html + '<div class="btt-empty">No ballot submitted yet.</div>';
+    html += '<div class="btt-awards">';
+    AWARDS.forEach(aw => {
+      const picks = teamBallot[aw.key] || [];
+      const isTeamAward = aw.key === 'FOTY' || aw.key === 'COTY';
+      html += `<div class="btt-award"><span class="btt-label">${aw.label}</span>`;
+      if (aw.tierSize && aw.numTiers) {
+        html += '<div class="btt-tiers">';
+        for (let t = 0; t < aw.numTiers; t++) {
+          const tierPicks = picks.slice(t * aw.tierSize, (t + 1) * aw.tierSize)
+            .filter(p => p)
+            .map(slug => isTeamAward ? (TEAMS[slug] || slug) : displayNameFromBio(bios, slug));
+          html += `<div class="btt-tier"><span class="btt-tier-label">${['1st','2nd','3rd'][t]}</span>${tierPicks.length ? tierPicks.join(', ') : '<em>—</em>'}</div>`;
+        }
+        html += '</div>';
+      } else {
+        const names = picks.slice(0, aw.maxRank).map(slug =>
+          slug ? (isTeamAward ? (TEAMS[slug] || slug) : displayNameFromBio(bios, slug)) : null
+        );
+        const parts = names.map((n, i) => n ? `${['1st','2nd','3rd'][i]}: ${n}` : null).filter(Boolean);
+        html += `<span class="btt-picks">${parts.length ? parts.join(' · ') : '<em>—</em>'}</span>`;
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function buildBallotTracker(ballots, bios, isBod) {
     const section = document.createElement('div');
     section.className = 'ballot-tracker';
 
+    const completeCount = Object.values(ballots).filter(b => ballotState(b) === 'in').length;
+    const partialCount  = Object.values(ballots).filter(b => ballotState(b) === 'partial').length;
+    const totalTeams    = Object.keys(TEAMS).length;
+
     const heading = document.createElement('div');
     heading.className = 'ballot-tracker-heading';
-    heading.textContent = `Ballots in — ${submitted.size} of ${Object.keys(TEAMS).length}`;
+    heading.textContent = `Ballots — ${completeCount} complete · ${partialCount} incomplete · ${totalTeams - completeCount - partialCount} pending`;
     section.appendChild(heading);
 
     const chips = document.createElement('div');
     chips.className = 'ballot-chips';
     Object.keys(TEAMS).sort().forEach(abb => {
       const chip = document.createElement('span');
-      chip.className = `ballot-chip ${submitted.has(abb) ? 'in' : 'out'}`;
+      const state = ballots[abb] ? ballotState(ballots[abb]) : 'out';
+      chip.className = `ballot-chip ${state}`;
       chip.textContent = abb;
+
+      if (isBod) {
+        chip.style.cursor = 'pointer';
+        chip.addEventListener('mouseenter', () => {
+          tooltip.innerHTML = buildBallotHTML(abb, ballots[abb] || null, bios);
+          tooltip.classList.add('wide', 'visible');
+          positionTooltip(chip);
+        });
+        chip.addEventListener('mousemove',  () => positionTooltip(chip));
+        chip.addEventListener('mouseleave', hideTooltip);
+      } else if (state === 'partial') {
+        const missing = missingAwards(ballots[abb]);
+        chip.addEventListener('mouseenter', () => showTooltip(chip, ['Missing:', ...missing.map(l => `  ${l}`)]));
+        chip.addEventListener('mousemove',  () => positionTooltip(chip));
+        chip.addEventListener('mouseleave', hideTooltip);
+      }
+
       chips.appendChild(chip);
     });
     section.appendChild(chips);
     return section;
   }
 
-  function render(ballots, bios) {
+  function render(ballots, bios, isBod) {
     const container = document.getElementById('awards-container');
     container.innerHTML = '';
 
@@ -361,10 +495,10 @@
       container.appendChild(buildTeamSection(aw, aggregateAward(ballots, bios, aw)));
     });
 
-    container.appendChild(buildBallotTracker(ballots));
+    container.appendChild(buildBallotTracker(ballots, bios, isBod));
   }
 
-  async function fetchAndRender(token) {
+  async function fetchAndRender(token, isBod) {
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
     try {
       const [ballotsRes, biosRes] = await Promise.all([
@@ -373,7 +507,7 @@
       ]);
       if (!ballotsRes.ok) throw new Error(ballotsRes.statusText);
       const [ballots, bios] = await Promise.all([ballotsRes.json(), biosRes.ok ? biosRes.json() : {}]);
-      render(ballots, bios);
+      render(ballots, bios, isBod);
       document.getElementById('page-sub').textContent = 'Live voting results — updates automatically.';
     } catch {
       const c = document.getElementById('awards-container');
@@ -387,7 +521,7 @@
       const r = await fetch('/api/awards-config');
       if (r.ok) config = await r.json();
     } catch {}
-    if ((config[SEASON] || {}).revealed) return { allowed: true, token: null };
+    if ((config[SEASON] || {}).revealed) return { allowed: true, token: null, isBod: false };
 
     const token = localStorage.getItem('nbn_token');
     if (token) {
@@ -400,17 +534,18 @@
             document.getElementById('page-nav').innerHTML =
               '<a href="/awards/">← Awards</a> · <a href="/awards/' + SEASON + '/vote/">My Ballot →</a>';
           }
-          if (roles.some(role => role === 'bod' || role === 'admin')) return { allowed: true, token };
+          const isBod = roles.some(role => role === 'bod' || role === 'admin');
+          if (isBod) return { allowed: true, token, isBod: true };
         }
       } catch {}
     }
-    return { allowed: false, token: null };
+    return { allowed: false, token: null, isBod: false };
   }
 
-  checkAccess().then(({ allowed, token }) => {
+  checkAccess().then(({ allowed, token, isBod }) => {
     if (allowed) {
-      fetchAndRender(token);
-      setInterval(() => fetchAndRender(token), 60_000);
+      fetchAndRender(token, isBod);
+      setInterval(() => fetchAndRender(token, isBod), 60_000);
     } else {
       document.getElementById('awards-container').innerHTML =
         '<div id="status">Awards for this season have not been released yet.</div>';

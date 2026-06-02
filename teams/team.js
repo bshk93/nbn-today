@@ -32,6 +32,7 @@
 //   buildPicksTable         1036  renders the Draft Picks section
 //   makeSeasonRenderCell   1069   season history cell renderer (badges, playoff coloring)
 //   buildTimeline          1112   season timeline component
+//   buildPersonnelSection  1137   franchise personnel history (tenures + records)
 //
 // Player cell rendering
 //   playerSlug             1138   name → slug
@@ -393,6 +394,10 @@ document.body.innerHTML = `
       <h2 class="section-title">Season History</h2>
       <div class="timeline" id="timeline-wrap"></div>
       <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
+    </section>
+    <section id="personnel-section" style="display:none">
+      <h2 class="section-title">Franchise Personnel</h2>
+      <div class="table-wrap" id="personnel-wrap"></div>
     </section>
     <section id="retired-section" style="display:none">
       <h2 class="section-title">Retired Numbers</h2>
@@ -1265,6 +1270,77 @@ function makeSeasonRenderCell(rows) {
       }
     }
   };
+}
+
+function buildPersonnelSection(members, allGames) {
+  const POS_LABEL = { owner: 'Owner', gm: 'GM', coach: 'Coach' };
+
+  const rows = [];
+  for (const member of members) {
+    for (const tenure of (member.tenures || [])) {
+      if (tenure.team !== abbr || tenure.position === 'none') continue;
+
+      const ts = tenure.start;
+      const te = tenure.end ?? '9999-99-99';
+
+      const games = allGames.filter(g =>
+        g.date >= ts && g.date <= te &&
+        (g.home_team === abbr || g.away_team === abbr)
+      );
+
+      let W = 0, L = 0;
+      for (const g of games) {
+        const won = g.home_team === abbr ? g.home_score > g.away_score : g.away_score > g.home_score;
+        if (won) W++; else L++;
+      }
+      const pct    = W + L > 0 ? W / (W + L) : null;
+      const active = tenure.end === null;
+
+      rows.push({
+        name: member.name, posLabel: POS_LABEL[tenure.position] || tenure.position,
+        startDate: tenure.start, endDate: tenure.end,
+        active, n: games.length, W, L, pct,
+      });
+    }
+  }
+
+  if (!rows.length) return;
+  rows.sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+  function fmtTenureDate(iso) {
+    const [y, m] = iso.split('-');
+    return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
+
+  const section = document.getElementById('personnel-section');
+  const wrap    = document.getElementById('personnel-wrap');
+
+  const table = document.createElement('table');
+  const hrow  = table.createTHead().insertRow();
+  ['Name', 'Role', 'Tenure', 'W', 'L', 'PCT'].forEach((h, i) => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    if (i >= 3) th.className = 'right';
+    hrow.appendChild(th);
+  });
+
+  const tbody = table.createTBody();
+  rows.forEach(row => {
+    const tr = tbody.insertRow();
+
+    const tdN = tr.insertCell(); tdN.className = 'bold';  tdN.textContent = row.name;
+    const tdP = tr.insertCell(); tdP.className = 'muted'; tdP.textContent = row.posLabel;
+
+    const tdS = tr.insertCell();
+    tdS.textContent = fmtTenureDate(row.startDate) + ' – ' + (row.active ? 'Present' : fmtTenureDate(row.endDate));
+
+    const tdW   = tr.insertCell(); tdW.className   = 'right'; tdW.textContent   = row.n ? row.W   : '—';
+    const tdL   = tr.insertCell(); tdL.className   = 'right'; tdL.textContent   = row.n ? row.L   : '—';
+    const tdPct = tr.insertCell(); tdPct.className = 'right'; tdPct.textContent = row.pct !== null ? fmtPct(row.pct) : '—';
+  });
+
+  wrap.appendChild(table);
+  section.style.display = '';
 }
 
 function buildTimeline(rows) {
@@ -2312,7 +2388,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -2324,6 +2400,8 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     fetch(`/api/team-state/${abbr}`).then(r => r.ok ? r.json() : null),
     fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/picks').then(r => r.ok ? r.json() : []),
+    fetch('/api/members/public').then(r => r.ok ? r.json() : []),
+    fetch('/api/boxscores/games').then(r => r.ok ? r.json() : []),
   ]);
 
   const biosData    = biosr.status === 'fulfilled' ? biosr.value : {};
@@ -2331,15 +2409,20 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   const currentOvr  = ovrr.status === 'fulfilled'  ? ovrr.value  : {};
   const teamState   = tsr.status  === 'fulfilled'  ? tsr.value   : null;
   const deadCapRows = dcr.status  === 'fulfilled'  ? dcr.value : [];
+  const membersData = memr.status  === 'fulfilled' ? memr.value  : [];
+  const allGames    = gamesr.status === 'fulfilled' ? gamesr.value : [];
 
+  let seasonRows = [];
   if (sr.status === 'fulfilled') {
     seasonsWrap.innerHTML = '';
-    const seasonRows = parseCSV(sr.value);
+    seasonRows = parseCSV(sr.value);
     buildTimeline(seasonRows);
     seasonsWrap.appendChild(buildTable(SEASON_COLS, seasonRows, 'SEASON', 1, makeSeasonRenderCell(seasonRows)));
   } else {
     seasonsWrap.innerHTML = '<div class="status">Failed to load season data.</div>';
   }
+
+  buildPersonnelSection(membersData, allGames);
 
   if (pr.status === 'fulfilled') {
     playersWrap.innerHTML = '';

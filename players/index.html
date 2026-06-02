@@ -506,6 +506,41 @@
     .txn-table-details { color: #9ca3af; font-size: 0.8rem; }
     .txn-table-details a { color: #93c5fd; text-decoration: none; }
     .txn-table-details a:hover { text-decoration: underline; }
+
+    .gamelog-pagination {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+    .gl-page-btn {
+      padding: 0.3rem 0.7rem;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.12s, color 0.12s;
+    }
+    .gl-page-btn:hover:not(:disabled) { background: #263244; color: #d1d5db; }
+    .gl-page-btn:disabled { opacity: 0.35; cursor: default; }
+    .po-badge {
+      display: inline-block;
+      padding: 0.1rem 0.32rem;
+      border-radius: 3px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      background: #1e3a5f;
+      color: #93c5fd;
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+      margin-left: 3px;
+    }
   </style>
 </head>
 <body>
@@ -2274,6 +2309,7 @@
     // Collect teams per player in chronological order
     const playerFirstRow = new Map();
     const playerTeamsList = new Map(); // slug -> ordered unique teams
+    const playerGamesMap = new Map();  // slug -> total G
     const chronoRows = [...rows].sort((a, b) => {
       const sa = parseFloat(a.SEASON) || 0, sb = parseFloat(b.SEASON) || 0;
       if (sa !== sb) return sa - sb;
@@ -2285,6 +2321,7 @@
       if (!playerTeamsList.has(r.SLUG)) playerTeamsList.set(r.SLUG, []);
       const tl = playerTeamsList.get(r.SLUG);
       if (r.TEAM && r.TEAM !== 'NA' && !tl.includes(r.TEAM)) tl.push(r.TEAM);
+      playerGamesMap.set(r.SLUG, (playerGamesMap.get(r.SLUG) || 0) + (+r.G || 0));
     });
 
     function fmtDOB(dob) {
@@ -2352,6 +2389,7 @@
         WINGSPAN:   bio.wingspan || '',
         JERSEY:     bio.jersey_number ?? null,
         TYPE:       bio.type || '',
+        G:          playerGamesMap.get(r.SLUG) ?? null,
         OVR:        currentOvr[r.SLUG] ?? null,
         RETIRED:    bio.retired || false,
       };
@@ -2441,6 +2479,7 @@
       { id: 'dob',   label: 'Missing DOB',          test: p => !p.DOB_SORT },
       { id: 'image', label: 'Missing Image',        test: p => !p.PHOTO_URL },
       { id: 'meas',  label: 'Missing Measurements', test: p => !p.HEIGHT || p.WEIGHT == null || !p.WINGSPAN },
+      { id: 'ovr',   label: 'Missing OVR',          test: p => p.OVR == null },
     ];
     let activeFilters = new Set();
 
@@ -2478,6 +2517,7 @@
       { label: 'Player',  field: 'PLAYER',     defaultDir:  1 },
       { label: 'Pos',     field: null,          display: p => p.POS.length ? p.POS.join(' · ') : '—', cls: 'muted' },
       { label: 'OVR',     field: 'OVR',         defaultDir: -1, cls: 'right', display: p => p.OVR ?? '—' },
+      { label: 'G',       field: 'G',           defaultDir: -1, cls: 'right', display: p => p.G ?? '—' },
       { label: 'Age',     field: 'AGE',         defaultDir: -1, cls: 'right' },
       { label: 'Born',    field: 'DOB_SORT',    defaultDir: -1, cls: 'right', display: p => p.DOB_FMT || '—' },
       { label: 'Country', field: 'COUNTRY',     defaultDir:  1, display: p => {
@@ -2801,15 +2841,19 @@
     const btnTeam     = document.createElement('button');
     const btnSeason   = document.createElement('button');
     const btnPlayoffs = document.createElement('button');
+    const btnGameLog  = document.createElement('button');
     btnTeam.className     = 'toggle-btn active';
     btnSeason.className   = 'toggle-btn';
     btnPlayoffs.className = 'toggle-btn';
+    btnGameLog.className  = 'toggle-btn';
     btnTeam.textContent     = 'By Team';
     btnSeason.textContent   = 'By Season';
     btnPlayoffs.textContent = 'Playoffs';
+    btnGameLog.textContent  = 'Game Log';
     toggleBar.appendChild(btnTeam);
     toggleBar.appendChild(btnSeason);
     toggleBar.appendChild(btnPlayoffs);
+    toggleBar.appendChild(btnGameLog);
     content.appendChild(toggleBar);
 
     // sections container
@@ -2821,7 +2865,127 @@
 
     let bySeasonMode = false;
     let showPlayoffs = false;
+    let showGameLog  = false;
     let poRows = null;
+    let gameLogRows = null;
+    let gameLogPage = 0;
+    const GL_PAGE_SIZE = 10;
+
+    function fmtDate(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[+m - 1]} ${+d}, ${y}`;
+    }
+
+    function renderGameLogSection() {
+      sections.innerHTML = '';
+      if (!gameLogRows) {
+        const msg = document.createElement('div');
+        msg.id = 'status'; msg.textContent = 'Loading game log…';
+        sections.appendChild(msg);
+        return;
+      }
+      if (!gameLogRows.length) {
+        const msg = document.createElement('div');
+        msg.id = 'status'; msg.textContent = 'No games found.';
+        sections.appendChild(msg);
+        return;
+      }
+
+      const totalPages = Math.ceil(gameLogRows.length / GL_PAGE_SIZE);
+      const pageRows = gameLogRows.slice(gameLogPage * GL_PAGE_SIZE, (gameLogPage + 1) * GL_PAGE_SIZE);
+
+      const h2 = document.createElement('h2');
+      h2.className = 'section-heading';
+      h2.textContent = 'Game Log';
+      sections.appendChild(h2);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+      sections.appendChild(wrap);
+
+      const table = document.createElement('table');
+      const thead = table.createTHead();
+      const hr = thead.insertRow();
+      [['Date',''], ['Season',''], ['Opp',''], ['W/L','right'], ['MIN','right'],
+       ['PTS','right'], ['REB','right'], ['AST','right'], ['STL','right'], ['BLK','right'],
+       ['TOV','right'], ['FGM/A','right'], ['3PM/A','right'], ['FTM/A','right']].forEach(([label, cls]) => {
+        const th = document.createElement('th');
+        th.textContent = label;
+        if (cls) th.className = cls;
+        hr.appendChild(th);
+      });
+
+      const tbody = table.createTBody();
+      pageRows.forEach(r => {
+        const tr = tbody.insertRow();
+        const cells = [
+          () => { const td = tr.insertCell(); td.textContent = fmtDate(r.date); return td; },
+          () => {
+            const td = tr.insertCell();
+            td.className = 'muted';
+            td.textContent = r.season;
+            if (r.gametype === 'PLAYOFF') {
+              const b = document.createElement('span');
+              b.className = 'po-badge'; b.textContent = 'PO';
+              td.appendChild(b);
+            }
+            return td;
+          },
+          () => {
+            const td = tr.insertCell();
+            const prefix = r.home ? 'vs' : '@';
+            td.textContent = `${prefix} ${r.opp_raw}`;
+            return td;
+          },
+          () => {
+            const td = tr.insertCell();
+            td.className = 'right';
+            if (r.wl) {
+              const score = r.team_pts || r.opp_pts
+                ? ` ${r.team_pts}–${r.opp_pts}` : '';
+              td.textContent = r.wl + score;
+              td.style.color = r.wl === 'W' ? '#34d399' : r.wl === 'L' ? '#f87171' : '';
+            }
+            return td;
+          },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.min; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.pts; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.reb; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.ast; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.stl; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.blk; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.tov; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = `${r.fgm}/${r.fga}`; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = `${r.tpm}/${r.tpa}`; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = `${r.ftm}/${r.fta}`; return td; },
+        ];
+        cells.forEach(fn => fn());
+      });
+      wrap.appendChild(table);
+
+      const pg = document.createElement('div');
+      pg.className = 'gamelog-pagination';
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'gl-page-btn';
+      prevBtn.textContent = '← Prev';
+      prevBtn.disabled = gameLogPage === 0;
+      prevBtn.addEventListener('click', () => { gameLogPage--; renderGameLogSection(); });
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'gl-page-btn';
+      nextBtn.textContent = 'Next →';
+      nextBtn.disabled = gameLogPage >= totalPages - 1;
+      nextBtn.addEventListener('click', () => { gameLogPage++; renderGameLogSection(); });
+      const info = document.createElement('span');
+      const start = gameLogPage * GL_PAGE_SIZE + 1;
+      const end = Math.min((gameLogPage + 1) * GL_PAGE_SIZE, gameLogRows.length);
+      info.textContent = `${start}–${end} of ${gameLogRows.length}`;
+      pg.appendChild(prevBtn);
+      pg.appendChild(info);
+      pg.appendChild(nextBtn);
+      sections.appendChild(pg);
+    }
 
     function getDisplayRows() {
       const reg = bySeasonMode ? aggregateBySeasonRows(rows) : rows;
@@ -2843,6 +3007,7 @@
     }
 
     function rebuildSections() {
+      if (showGameLog) { renderGameLogSection(); return; }
       const displayRows = getDisplayRows();
       sections.innerHTML = '';
       const iconFn = makeIconFn(rows, poRows, playerAwards, slug, bySeasonMode);
@@ -2850,7 +3015,13 @@
       buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerHighsRow(displayRows), null, iconFn);
     }
 
+    function setStatsMode() {
+      showGameLog = false;
+      btnGameLog.classList.remove('active');
+    }
+
     btnTeam.addEventListener('click', () => {
+      setStatsMode();
       if (bySeasonMode) {
         bySeasonMode = false;
         btnTeam.classList.add('active');
@@ -2860,6 +3031,7 @@
     });
 
     btnSeason.addEventListener('click', () => {
+      setStatsMode();
       if (!bySeasonMode) {
         bySeasonMode = true;
         btnSeason.classList.add('active');
@@ -2869,6 +3041,7 @@
     });
 
     btnPlayoffs.addEventListener('click', () => {
+      setStatsMode();
       if (showPlayoffs) {
         showPlayoffs = false;
         btnPlayoffs.classList.remove('active');
@@ -2888,6 +3061,29 @@
           })
           .catch(() => {
             poRows = [];
+          });
+      }
+    });
+
+    btnGameLog.addEventListener('click', () => {
+      if (showGameLog) return;
+      showGameLog = true;
+      btnGameLog.classList.add('active');
+      btnTeam.classList.remove('active');
+      btnSeason.classList.remove('active');
+      btnPlayoffs.classList.remove('active');
+      gameLogPage = 0;
+      renderGameLogSection();
+      if (gameLogRows === null) {
+        fetch(`/api/players/${slug}/gamelog`)
+          .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+          .then(data => {
+            gameLogRows = data;
+            if (showGameLog) renderGameLogSection();
+          })
+          .catch(() => {
+            gameLogRows = [];
+            if (showGameLog) renderGameLogSection();
           });
       }
     });
