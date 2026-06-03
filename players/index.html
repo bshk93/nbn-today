@@ -2201,7 +2201,7 @@
     return wrap;
   }
 
-  function buildPlayerRadarChart(playerRows, allRows) {
+  function buildPlayerRadarChart(playerRows, allRows, pos) {
     function rowPG(r, f) { return +r[f] / Math.max(1, +r.G); }
     function rowTS(r) {
       const denom = 2 * (+r.FGA + 0.44 * +r.FTA);
@@ -2228,7 +2228,7 @@
       { label: 'STL', angle: 135, get: (r,g) => rowPG(r,'STL'), fmt: v => `${v.toFixed(2)} SPG` },
     ];
 
-    function detectArchetype(dims) {
+    function detectArchetype(dims, pos) {
       const p = {};
       dims.forEach(d => { p[d.label] = d.pct; });
       const elite = k => p[k] >= 0.80;
@@ -2236,6 +2236,7 @@
       const good  = k => p[k] >= 0.65;
       const offAvg = (p.PPG + p['3PT'] + p['TS%'] + p.APG + p.FTA) / 5;
       const defAvg = (p.BLK + p.STL) / 2;
+      const isBig = pos && (pos.includes('PF') || pos.includes('C'));
 
       if (dims.filter(d => d.pct >= 0.75).length >= 6 && defAvg >= 0.50) return 'All-Around';
       if (offAvg >= 0.72 && defAvg >= 0.72) return 'Two-Way Star';
@@ -2243,9 +2244,9 @@
       if (elite('APG') && elite('STL')) return 'Defensive Playmaker';
       if (elite('APG') && p.APG > p.PPG + 0.10) return 'Playmaker';
       if (elite('3PT') && (elite('STL') || elite('BLK'))) return '3-and-D';
-      if (elite('RPG') && elite('BLK') && p['3PT'] < 0.35) return 'Paint Beast';
-      if (good('RPG') && good('BLK') && good('3PT')) return 'Stretch Big';
-      if (elite('BLK') && elite('STL') && p.PPG < 0.50) return 'Defensive Anchor';
+      if (isBig && elite('RPG') && elite('BLK') && p['3PT'] < 0.35) return 'Paint Beast';
+      if (isBig && good('RPG') && good('BLK') && good('3PT')) return 'Stretch Big';
+      if (elite('BLK') && elite('STL')) return 'Defensive Anchor';
       if (elite('3PT') && high('TS%')) return 'Floor Spacer';
       if (elite('BLK') && good('TS%')) return 'Rim Protector';
 
@@ -2275,7 +2276,7 @@
         return { ...d, playerVal, pct: pct(playerVal, peerVals) };
       });
 
-      const archetype = detectArchetype(dims);
+      const archetype = detectArchetype(dims, pos);
 
       const W = 260, H = 278, cx = 130, cy = 125, maxR = 80;
       const ns = 'http://www.w3.org/2000/svg';
@@ -3046,7 +3047,7 @@
     renderAccolades(content, slug, rows[0].RINGS, playerAwards, seasonLeaders);
 
     // player type radar
-    const radarEl = buildPlayerRadarChart(rows, allPlayerSeasons);
+    const radarEl = buildPlayerRadarChart(rows, allPlayerSeasons, bio.pos || []);
     if (radarEl) content.appendChild(radarEl);
 
     // toggle
