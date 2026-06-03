@@ -163,11 +163,8 @@ const DIM_COLOR = {
   BLK: '#6366f1',  STL: '#ec4899',   FTA: '#f97316',
 };
 
-// Cluster names — fill in after exploring
-const NAMES = {
-  0: '', 1: '', 2: '', 3: '',  4: '',  5: '',  6: '', 7: '',
-  8: '', 9: '', 10: '', 11: '', 12: '', 13: '', 14: '', 15: '',
-};
+// Optional display names — fill in after exploring the clusters
+const NAMES = {};
 
 function buildRadar(centroid, size = 110) {
   const NS = 'http://www.w3.org/2000/svg';
@@ -253,9 +250,10 @@ function buildCard(cluster) {
   // header
   const hdr = document.createElement('div');
   hdr.className = 'cluster-header';
+  const displayName = NAMES[cluster.id] || cluster.hier_name;
   hdr.innerHTML = `
-    <span class="cluster-num">#${cluster.id}</span>
-    <span class="cluster-name">${NAMES[cluster.id] || `Cluster ${cluster.id}`}</span>
+    <span class="cluster-num">${cluster.hier_name}</span>
+    <span class="cluster-name">${displayName}</span>
     <span class="cluster-size">${cluster.size} seasons</span>
   `;
   card.appendChild(hdr);
@@ -347,7 +345,7 @@ function buildDendrogram(clusters, linkage) {
   // Build node map: leaves 0..k-1, internals k..2k-2
   const nodes = {};
   clusters.forEach(c => {
-    nodes[c.id] = { id: c.id, isLeaf: true, label: NAMES[c.id] || `#${c.id}`, size: c.size };
+    nodes[c.id] = { id: c.id, isLeaf: true, label: c.hier_name, size: c.size };
   });
   linkage.forEach((m, i) => {
     nodes[k + i] = { id: k + i, isLeaf: false, left: m.a, right: m.b, dist: m.dist };

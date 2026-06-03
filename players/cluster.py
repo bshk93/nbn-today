@@ -250,6 +250,49 @@ def build_dendrogram(centers, cluster_sizes):
 
     return linkage
 
+# ---------- hierarchical naming ----------
+
+def assign_hierarchical_names(clusters, linkage, n_top_groups=4):
+    """
+    Assign names like '1A', '1B', '2A', ... reflecting tree position.
+    Expands the highest-distance nodes from the root until n_top_groups
+    groups exist, then labels leaves A, B, C... in traversal order.
+    """
+    k = len(clusters)
+    nodes = {c['id']: {'id': c['id'], 'leaf': True} for c in clusters}
+    for i, m in enumerate(linkage):
+        nid = k + i
+        nodes[nid] = {'id': nid, 'leaf': False,
+                      'left': m['a'], 'right': m['b'], 'dist': m['dist']}
+    root = k + len(linkage) - 1
+
+    def leaf_order(nid):
+        nd = nodes[nid]
+        return [nid] if nd['leaf'] else leaf_order(nd['left']) + leaf_order(nd['right'])
+
+    # Expand the highest-dist active node until we have n_top_groups groups
+    active = [root]
+    while len(active) < n_top_groups:
+        expandable = [(nodes[nid]['dist'], nid)
+                      for nid in active if not nodes[nid]['leaf']]
+        if not expandable:
+            break
+        _, best = max(expandable)
+        active.remove(best)
+        active += [nodes[best]['left'], nodes[best]['right']]
+
+    # Sort groups by traversal position of their first leaf
+    all_leaves = leaf_order(root)
+    pos = {lid: i for i, lid in enumerate(all_leaves)}
+    groups = sorted([leaf_order(nid) for nid in active], key=lambda g: pos[g[0]])
+
+    letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    name_map = {}
+    for gi, leaves in enumerate(groups):
+        for li, leaf_id in enumerate(leaves):
+            name_map[leaf_id] = f'{gi + 1}{letters[li]}'
+    return name_map
+
 # ---------- build output ----------
 
 def build_output(player_seasons, vecs, labels, centers, k, method):
@@ -286,15 +329,29 @@ def build_output(player_seasons, vecs, labels, centers, k, method):
             'top':      top,
         })
 
+    # Assign temporary IDs for dendrogram (sorted by PPG so it's stable)
     clusters.sort(key=lambda c: -c['centroid']['PPG'])
     for i, c in enumerate(clusters):
         c['id'] = i
 
-    # Build dendrogram on the final k clusters
-    final_cents  = [c['centroid'] for c in clusters]
-    final_cents_arr = [[v for v in cent.values()] for cent in final_cents]
-    final_sizes  = [c['size'] for c in clusters]
-    linkage = build_dendrogram(final_cents_arr, final_sizes)
+    # Build dendrogram and assign hierarchical names
+    final_cents_arr = [[v for v in c['centroid'].values()] for c in clusters]
+    final_sizes     = [c['size'] for c in clusters]
+    linkage  = build_dendrogram(final_cents_arr, final_sizes)
+    name_map = assign_hierarchical_names(clusters, linkage)
+
+    for c in clusters:
+        c['hier_name'] = name_map[c['id']]
+
+    # Re-sort by hier_name (1A, 1B, ..., 4D) and re-assign sequential IDs
+    clusters.sort(key=lambda c: c['hier_name'])
+    for i, c in enumerate(clusters):
+        c['id'] = i
+
+    # Recompute dendrogram with final cluster ordering
+    final_cents_arr2 = [[v for v in c['centroid'].values()] for c in clusters]
+    final_sizes2     = [c['size'] for c in clusters]
+    linkage = build_dendrogram(final_cents_arr2, final_sizes2)
 
     return {
         'dims':     DIMS,
