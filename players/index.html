@@ -2278,31 +2278,23 @@
       return '#b87333';                // bronze
     }
 
-    // Player polygon (faint shape outline)
+    // Player polygon
     const poly = document.createElementNS(ns, 'polygon');
     poly.setAttribute('points', dims.map(d => toXY(d.angle, maxR * d.pct).join(',')).join(' '));
-    poly.setAttribute('fill', 'rgba(255,255,255,0.04)');
-    poly.setAttribute('stroke', 'rgba(255,255,255,0.12)');
-    poly.setAttribute('stroke-width', '1');
+    poly.setAttribute('fill', 'rgba(59,130,246,0.2)');
+    poly.setAttribute('stroke', '#3b82f6');
+    poly.setAttribute('stroke-width', '1.5');
     poly.setAttribute('stroke-linejoin', 'round');
     svg.appendChild(poly);
 
-    // Colored axis segments (center → vertex) + dots + tooltips
+    // Dots + tooltips (tier-colored)
     dims.forEach(d => {
-      const color = tierColor(d.pct);
-      const [vx, vy] = toXY(d.angle, maxR * d.pct);
-
-      const seg = document.createElementNS(ns, 'line');
-      seg.setAttribute('x1', cx); seg.setAttribute('y1', cy);
-      seg.setAttribute('x2', vx); seg.setAttribute('y2', vy);
-      seg.setAttribute('stroke', color);
-      seg.setAttribute('stroke-width', '2');
-      seg.setAttribute('opacity', '0.7');
-      svg.appendChild(seg);
-
+      const [dx, dy] = toXY(d.angle, maxR * d.pct);
       const dot = document.createElementNS(ns, 'circle');
-      dot.setAttribute('cx', vx); dot.setAttribute('cy', vy); dot.setAttribute('r', '4');
-      dot.setAttribute('fill', color);
+      dot.setAttribute('cx', dx); dot.setAttribute('cy', dy); dot.setAttribute('r', '4');
+      dot.setAttribute('fill', tierColor(d.pct));
+      dot.setAttribute('stroke', '#111827');
+      dot.setAttribute('stroke-width', '1');
       const tip = document.createElementNS(ns, 'title');
       tip.textContent = `${d.fmt(d.playerVal)} — ${Math.round(d.pct * 100)}th pct`;
       dot.appendChild(tip);
@@ -2318,9 +2310,9 @@
       text.setAttribute('x', lx);
       text.setAttribute('y', ly + yOff);
       text.setAttribute('text-anchor', lx < cx - 5 ? 'end' : lx > cx + 5 ? 'start' : 'middle');
-      text.setAttribute('fill', tierColor(d.pct));
+      text.setAttribute('fill', '#9ca3af');
       text.setAttribute('font-size', '8.5');
-      text.setAttribute('font-weight', '600');
+      text.setAttribute('font-weight', '500');
       text.textContent = d.label;
       svg.appendChild(text);
     });
