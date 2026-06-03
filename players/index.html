@@ -2291,7 +2291,7 @@
     dims.forEach(d => {
       const [dx, dy] = toXY(d.angle, maxR * d.pct);
       const dot = document.createElementNS(ns, 'circle');
-      dot.setAttribute('cx', dx); dot.setAttribute('cy', dy); dot.setAttribute('r', '4');
+      dot.setAttribute('cx', dx); dot.setAttribute('cy', dy); dot.setAttribute('r', '2.5');
       dot.setAttribute('fill', tierColor(d.pct));
       dot.setAttribute('stroke', '#111827');
       dot.setAttribute('stroke-width', '1');
