@@ -2219,13 +2219,13 @@
 
     const DIM_DEFS = [
       { label: 'PPG', angle: 90,  get: (r,g) => rowPG(r,'PTS'), fmt: v => `${v.toFixed(1)} PPG` },
-      { label: '3PT', angle: 45,  get: (r,g) => rowPG(r,'3PM'), fmt: v => `${v.toFixed(1)} 3P/G` },
+      { label: 'APG', angle: 45,  get: (r,g) => rowPG(r,'AST'), fmt: v => `${v.toFixed(1)} APG` },
       { label: 'TS%', angle: 0,   get: (r,g) => rowTS(r),       fmt: v => `${(v*100).toFixed(1)}% TS` },
-      { label: 'APG', angle: 315, get: (r,g) => rowPG(r,'AST'), fmt: v => `${v.toFixed(1)} APG` },
+      { label: '3PT', angle: 315, get: (r,g) => rowPG(r,'3PM'), fmt: v => `${v.toFixed(1)} 3P/G` },
       { label: 'FTA', angle: 270, get: (r,g) => rowPG(r,'FTA'), fmt: v => `${v.toFixed(1)} FTA/G` },
-      { label: 'RPG', angle: 225, get: (r,g) => rowPG(r,'REB'), fmt: v => `${v.toFixed(1)} RPG` },
+      { label: 'STL', angle: 225, get: (r,g) => rowPG(r,'STL'), fmt: v => `${v.toFixed(2)} SPG` },
       { label: 'BLK', angle: 180, get: (r,g) => rowPG(r,'BLK'), fmt: v => `${v.toFixed(2)} BPG` },
-      { label: 'STL', angle: 135, get: (r,g) => rowPG(r,'STL'), fmt: v => `${v.toFixed(2)} SPG` },
+      { label: 'RPG', angle: 135, get: (r,g) => rowPG(r,'REB'), fmt: v => `${v.toFixed(1)} RPG` },
     ];
 
     function detectArchetype(dims, pos) {
