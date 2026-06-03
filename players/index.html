@@ -490,7 +490,11 @@
 
     .ovr-wrap { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0.75rem; flex-wrap: wrap; }
     .ovr-chart { background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 0.5rem 0.75rem 0.25rem; margin-bottom: 0.75rem; }
-    .player-radar { margin: 0.75rem 0 0.25rem; display: flex; justify-content: center; }
+    .player-radar { margin: 0.75rem 0 0.25rem; display: flex; flex-direction: column; align-items: center; }
+    .radar-season-bar { display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: center; margin-bottom: 0.5rem; }
+    .radar-season-btn { padding: 0.18rem 0.5rem; background: #1f2937; border: 1px solid #374151; border-radius: 5px; color: #6b7280; font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+    .radar-season-btn:hover { background: #263244; color: #d1d5db; }
+    .radar-season-btn.active { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
     .ovr-edit-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .ovr-edit-row input { background: #1f2937; border: 1px solid #374151; border-radius: 6px;
       color: #f3f4f6; font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.45rem; outline: none; }
@@ -2198,26 +2202,6 @@
   }
 
   function buildPlayerRadarChart(playerRows, allRows) {
-    const seasons = [...new Set(playerRows.map(r => r.SEASON))].sort();
-    if (!seasons.length) return null;
-    const recentSeason = seasons[seasons.length - 1];
-
-    const [agg] = aggregateBySeasonRows(playerRows.filter(r => r.SEASON === recentSeason));
-    const g = +agg.G;
-    if (g < 10) return null;
-
-    // Aggregate all players for this season (one row per player, multi-team combined)
-    const seasonMap = new Map();
-    allRows.filter(r => r.SEASON === recentSeason).forEach(r => {
-      if (!seasonMap.has(r.SLUG)) {
-        seasonMap.set(r.SLUG, { ...r });
-      } else {
-        const s = seasonMap.get(r.SLUG);
-        SUM_FIELDS.forEach(f => { s[f] = String(+s[f] + +r[f]); });
-      }
-    });
-    const peers = [...seasonMap.values()].filter(r => +r.G >= 20);
-
     function rowPG(r, f) { return +r[f] / Math.max(1, +r.G); }
     function rowTS(r) {
       const denom = 2 * (+r.FGA + 0.44 * +r.FTA);
@@ -2226,110 +2210,157 @@
     function pct(val, arr) {
       return arr.length ? arr.filter(x => x < val).length / arr.length : 0;
     }
-
-    const dims = [
-      { label: 'PPG', angle: 90,  playerVal: rowPG(agg,'PTS'), peerVals: peers.map(r => rowPG(r,'PTS')), fmt: v => `${v.toFixed(1)} PPG` },
-      { label: '3PT', angle: 45,  playerVal: rowPG(agg,'3PM'), peerVals: peers.map(r => rowPG(r,'3PM')), fmt: v => `${v.toFixed(1)} 3P/G` },
-      { label: 'TS%', angle: 0,   playerVal: rowTS(agg),       peerVals: peers.map(r => rowTS(r)),       fmt: v => `${(v*100).toFixed(1)}% TS` },
-      { label: 'APG', angle: 315, playerVal: rowPG(agg,'AST'), peerVals: peers.map(r => rowPG(r,'AST')), fmt: v => `${v.toFixed(1)} APG` },
-      { label: 'FTA', angle: 270, playerVal: rowPG(agg,'FTA'), peerVals: peers.map(r => rowPG(r,'FTA')), fmt: v => `${v.toFixed(1)} FTA/G` },
-      { label: 'RPG', angle: 225, playerVal: rowPG(agg,'REB'), peerVals: peers.map(r => rowPG(r,'REB')), fmt: v => `${v.toFixed(1)} RPG` },
-      { label: 'BLK', angle: 180, playerVal: rowPG(agg,'BLK'), peerVals: peers.map(r => rowPG(r,'BLK')), fmt: v => `${v.toFixed(2)} BPG` },
-      { label: 'STL', angle: 135, playerVal: rowPG(agg,'STL'), peerVals: peers.map(r => rowPG(r,'STL')), fmt: v => `${v.toFixed(2)} SPG` },
-    ];
-    dims.forEach(d => { d.pct = pct(d.playerVal, d.peerVals); });
-
-    const W = 260, H = 260, cx = 130, cy = 125, maxR = 80;
-    const ns = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    svg.style.cssText = 'width:280px;height:auto;display:block;';
-
-    const toXY = (angle, r) => {
-      const rad = angle * Math.PI / 180;
-      return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)];
-    };
-
-    // Guide rings
-    [0.33, 0.66, 1.0].forEach(frac => {
-      const ring = document.createElementNS(ns, 'polygon');
-      ring.setAttribute('points', dims.map(d => toXY(d.angle, maxR * frac).join(',')).join(' '));
-      ring.setAttribute('fill', 'none');
-      ring.setAttribute('stroke', '#374151');
-      ring.setAttribute('stroke-width', '0.5');
-      svg.appendChild(ring);
-    });
-
-    // Axis lines
-    dims.forEach(d => {
-      const [x2, y2] = toXY(d.angle, maxR);
-      const line = document.createElementNS(ns, 'line');
-      line.setAttribute('x1', cx); line.setAttribute('y1', cy);
-      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-      line.setAttribute('stroke', '#374151');
-      line.setAttribute('stroke-width', '0.5');
-      svg.appendChild(line);
-    });
-
     function tierColor(p) {
-      if (p >= 0.95) return '#a855f7'; // purple
-      if (p >= 0.80) return '#eab308'; // gold
-      if (p >= 0.50) return '#94a3b8'; // silver
-      return '#b87333';                // bronze
+      if (p >= 0.95) return '#a855f7';
+      if (p >= 0.80) return '#eab308';
+      if (p >= 0.50) return '#94a3b8';
+      return '#b87333';
     }
 
-    // Player polygon
-    const poly = document.createElementNS(ns, 'polygon');
-    poly.setAttribute('points', dims.map(d => toXY(d.angle, maxR * d.pct).join(',')).join(' '));
-    poly.setAttribute('fill', 'rgba(59,130,246,0.2)');
-    poly.setAttribute('stroke', '#3b82f6');
-    poly.setAttribute('stroke-width', '1.5');
-    poly.setAttribute('stroke-linejoin', 'round');
-    svg.appendChild(poly);
+    const DIM_DEFS = [
+      { label: 'PPG', angle: 90,  get: (r,g) => rowPG(r,'PTS'), fmt: v => `${v.toFixed(1)} PPG` },
+      { label: '3PT', angle: 45,  get: (r,g) => rowPG(r,'3PM'), fmt: v => `${v.toFixed(1)} 3P/G` },
+      { label: 'TS%', angle: 0,   get: (r,g) => rowTS(r),       fmt: v => `${(v*100).toFixed(1)}% TS` },
+      { label: 'APG', angle: 315, get: (r,g) => rowPG(r,'AST'), fmt: v => `${v.toFixed(1)} APG` },
+      { label: 'FTA', angle: 270, get: (r,g) => rowPG(r,'FTA'), fmt: v => `${v.toFixed(1)} FTA/G` },
+      { label: 'RPG', angle: 225, get: (r,g) => rowPG(r,'REB'), fmt: v => `${v.toFixed(1)} RPG` },
+      { label: 'BLK', angle: 180, get: (r,g) => rowPG(r,'BLK'), fmt: v => `${v.toFixed(2)} BPG` },
+      { label: 'STL', angle: 135, get: (r,g) => rowPG(r,'STL'), fmt: v => `${v.toFixed(2)} SPG` },
+    ];
 
-    // Dots + tooltips (tier-colored)
-    dims.forEach(d => {
-      const [dx, dy] = toXY(d.angle, maxR * d.pct);
-      const dot = document.createElementNS(ns, 'circle');
-      dot.setAttribute('cx', dx); dot.setAttribute('cy', dy); dot.setAttribute('r', '2.5');
-      dot.setAttribute('fill', tierColor(d.pct));
-      dot.setAttribute('stroke', '#111827');
-      dot.setAttribute('stroke-width', '1');
-      const tip = document.createElementNS(ns, 'title');
-      tip.textContent = `${d.fmt(d.playerVal)} — ${Math.round(d.pct * 100)}th pct`;
-      dot.appendChild(tip);
-      svg.appendChild(dot);
-    });
+    function buildSvg(season) {
+      const seasonRows = playerRows.filter(r => r.SEASON === season);
+      const [agg] = aggregateBySeasonRows(seasonRows);
+      if (!agg || +agg.G < 10) return null;
 
-    // Labels
-    dims.forEach(d => {
-      const [lx, ly] = toXY(d.angle, maxR + 16);
-      const nearH = Math.abs(ly - cy) < 8;
-      const yOff = nearH ? 4 : (ly < cy ? -3 : 11);
-      const text = document.createElementNS(ns, 'text');
-      text.setAttribute('x', lx);
-      text.setAttribute('y', ly + yOff);
-      text.setAttribute('text-anchor', lx < cx - 5 ? 'end' : lx > cx + 5 ? 'start' : 'middle');
-      text.setAttribute('fill', '#9ca3af');
-      text.setAttribute('font-size', '8.5');
-      text.setAttribute('font-weight', '500');
-      text.textContent = d.label;
-      svg.appendChild(text);
-    });
+      const seasonMap = new Map();
+      allRows.filter(r => r.SEASON === season).forEach(r => {
+        if (!seasonMap.has(r.SLUG)) seasonMap.set(r.SLUG, { ...r });
+        else { const s = seasonMap.get(r.SLUG); SUM_FIELDS.forEach(f => { s[f] = String(+s[f] + +r[f]); }); }
+      });
+      const peers = [...seasonMap.values()].filter(r => +r.G >= 20);
 
-    // Season label
-    const seasonLbl = document.createElementNS(ns, 'text');
-    seasonLbl.setAttribute('x', cx);
-    seasonLbl.setAttribute('y', H - 6);
-    seasonLbl.setAttribute('text-anchor', 'middle');
-    seasonLbl.setAttribute('fill', '#6b7280');
-    seasonLbl.setAttribute('font-size', '9');
-    seasonLbl.textContent = `${recentSeason} season`;
-    svg.appendChild(seasonLbl);
+      const dims = DIM_DEFS.map(d => {
+        const playerVal = d.get(agg);
+        const peerVals  = peers.map(r => d.get(r));
+        return { ...d, playerVal, pct: pct(playerVal, peerVals) };
+      });
+
+      const W = 260, H = 260, cx = 130, cy = 125, maxR = 80;
+      const ns = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svg.style.cssText = 'width:280px;height:auto;display:block;';
+
+      const toXY = (angle, r) => {
+        const rad = angle * Math.PI / 180;
+        return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)];
+      };
+
+      [0.33, 0.66, 1.0].forEach(frac => {
+        const ring = document.createElementNS(ns, 'polygon');
+        ring.setAttribute('points', dims.map(d => toXY(d.angle, maxR * frac).join(',')).join(' '));
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', '#374151');
+        ring.setAttribute('stroke-width', '0.5');
+        svg.appendChild(ring);
+      });
+
+      dims.forEach(d => {
+        const [x2, y2] = toXY(d.angle, maxR);
+        const line = document.createElementNS(ns, 'line');
+        line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        line.setAttribute('stroke', '#374151');
+        line.setAttribute('stroke-width', '0.5');
+        svg.appendChild(line);
+      });
+
+      const poly = document.createElementNS(ns, 'polygon');
+      poly.setAttribute('points', dims.map(d => toXY(d.angle, maxR * d.pct).join(',')).join(' '));
+      poly.setAttribute('fill', 'rgba(59,130,246,0.2)');
+      poly.setAttribute('stroke', '#3b82f6');
+      poly.setAttribute('stroke-width', '1.5');
+      poly.setAttribute('stroke-linejoin', 'round');
+      svg.appendChild(poly);
+
+      dims.forEach(d => {
+        const [dx, dy] = toXY(d.angle, maxR * d.pct);
+        const dot = document.createElementNS(ns, 'circle');
+        dot.setAttribute('cx', dx); dot.setAttribute('cy', dy); dot.setAttribute('r', '2.5');
+        dot.setAttribute('fill', tierColor(d.pct));
+        dot.setAttribute('stroke', '#111827');
+        dot.setAttribute('stroke-width', '1');
+        const tip = document.createElementNS(ns, 'title');
+        tip.textContent = `${d.fmt(d.playerVal)} — ${Math.round(d.pct * 100)}th pct`;
+        dot.appendChild(tip);
+        svg.appendChild(dot);
+      });
+
+      dims.forEach(d => {
+        const [lx, ly] = toXY(d.angle, maxR + 16);
+        const nearH = Math.abs(ly - cy) < 8;
+        const yOff = nearH ? 4 : (ly < cy ? -3 : 11);
+        const text = document.createElementNS(ns, 'text');
+        text.setAttribute('x', lx);
+        text.setAttribute('y', ly + yOff);
+        text.setAttribute('text-anchor', lx < cx - 5 ? 'end' : lx > cx + 5 ? 'start' : 'middle');
+        text.setAttribute('fill', '#9ca3af');
+        text.setAttribute('font-size', '8.5');
+        text.setAttribute('font-weight', '500');
+        text.textContent = d.label;
+        svg.appendChild(text);
+      });
+
+      const seasonLbl = document.createElementNS(ns, 'text');
+      seasonLbl.setAttribute('x', cx);
+      seasonLbl.setAttribute('y', H - 6);
+      seasonLbl.setAttribute('text-anchor', 'middle');
+      seasonLbl.setAttribute('fill', '#6b7280');
+      seasonLbl.setAttribute('font-size', '9');
+      seasonLbl.textContent = `${season} season`;
+      svg.appendChild(seasonLbl);
+
+      return svg;
+    }
+
+    // Only include seasons with ≥10 games, newest first
+    const eligibleSeasons = [...new Set(playerRows.map(r => r.SEASON))]
+      .sort().reverse()
+      .filter(s => {
+        const [a] = aggregateBySeasonRows(playerRows.filter(r => r.SEASON === s));
+        return a && +a.G >= 10;
+      });
+    if (!eligibleSeasons.length) return null;
 
     const wrap = document.createElement('div');
     wrap.className = 'player-radar';
-    wrap.appendChild(svg);
+
+    const svgSlot = document.createElement('div');
+    const initialSvg = buildSvg(eligibleSeasons[0]);
+    if (initialSvg) svgSlot.appendChild(initialSvg);
+
+    if (eligibleSeasons.length > 1) {
+      const bar = document.createElement('div');
+      bar.className = 'radar-season-bar';
+      eligibleSeasons.forEach((s, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'radar-season-btn' + (i === 0 ? ' active' : '');
+        btn.textContent = s;
+        btn.addEventListener('click', () => {
+          if (btn.classList.contains('active')) return;
+          bar.querySelectorAll('.radar-season-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          svgSlot.innerHTML = '';
+          const svg = buildSvg(s);
+          if (svg) svgSlot.appendChild(svg);
+        });
+        bar.appendChild(btn);
+      });
+      wrap.appendChild(bar);
+    }
+
+    wrap.appendChild(svgSlot);
     return wrap;
   }
 
