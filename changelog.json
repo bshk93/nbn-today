@@ -1,5 +1,47 @@
 [
   {
+    "version": "0.0.183",
+    "date": "2026-06-03",
+    "changes": [
+      "players: radar chart on player profiles showing 8 per-game percentile dimensions (PPG, 3PT, TS%, APG, FTA, RPG, BLK, STL) vs same-season peers"
+    ]
+  },
+  {
+    "version": "pending",
+    "date": "2026-06-03",
+    "changes": [
+      "teams: reorganize team pages into tabs \u2014 Overview (season history, personnel, roster, cap exceptions, picks), Draft History, All-Time Players, Historical Rosters (per-season stats by season selector)"
+    ]
+  },
+  {
+    "version": "pending",
+    "date": "2026-06-02",
+    "changes": [
+      "invest: market summary section at top of Wall Street page \u2014 top 3 risers and fallers by price % change; toggle between 10G, 20G (default), and 82G windows",
+      "bet: fixed odds bets no longer void when nobody picks the winner \u2014 losers still lose; house keeps the stakes",
+      "bet/balances: redesigned table \u2014 ranked by Net Worth (liquid + equity), new Bet P/L and Inv P/L columns, Equity column for open positions, Earned collapsed from 3 columns to 1",
+      "invest: add 8 tradeable indexes \u2014 EAST/WEST (conference) and NATL/CTRL/SE/NW/PAC/SW (divisional); price tracks the daily average return of constituent teams",
+      "members/{name}: new Achievements section with 21 badges across GM performance, longevity, betting, and investing",
+      "Achievements track championships, finals appearances, FOTY/COTY, ratings records, playoff streaks, bet wins, tips, and investment returns",
+      "Locked achievements shown as greyed-out cards; tiered badges (Bronze/Silver/Gold) reflect milestone level",
+      "New API: GET /api/bets/stats/{member} \u2014 wager count, net P&L, win streak, odds, tips sent",
+      "New API: GET /api/invest/stats/{member} \u2014 trade count, realized P&L, best trade, short profit flag",
+      "members/{name}: GM performance achievements (Champion, Finals, Conf Finals, Postseason, Bridesmaid, Seasoned GM) now derived from tenure history + standings data instead of owner_stats.csv \u2014 credits any staff role present during a season"
+    ]
+  },
+  {
+    "version": "pending",
+    "date": "2026-06-02",
+    "changes": [
+      "New page: NBN Wall Street (/invest) \u2014 buy and sell fractional team shares with NB\u00a5",
+      "Share prices compound all-time using SOS-adjusted point differential algorithm (2\u00d7 multiplier for playoff games)",
+      "Portfolio page shows equity, liquid balance, net worth, per-holding P/L, and equity chart over time",
+      "Leaderboard ranks all members by total net worth (equity + liquid)",
+      "Bookie/admin can lock and unlock the market",
+      "All trades logged to NB\u00a5 ledger; homepage card added next to Bets"
+    ]
+  },
+  {
     "version": "0.0.182",
     "date": "2026-06-02",
     "changes": [

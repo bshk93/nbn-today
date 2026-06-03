@@ -490,6 +490,7 @@
 
     .ovr-wrap { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0.75rem; flex-wrap: wrap; }
     .ovr-chart { background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 0.5rem 0.75rem 0.25rem; margin-bottom: 0.75rem; }
+    .player-radar { margin: 0.75rem 0 0.25rem; display: flex; justify-content: center; }
     .ovr-edit-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .ovr-edit-row input { background: #1f2937; border: 1px solid #374151; border-radius: 6px;
       color: #f3f4f6; font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.45rem; outline: none; }
@@ -565,6 +566,7 @@
   let teamMap = {};
   let currentOvr = {};
   let allOvrHistory = {};
+  let allPlayerSeasons = [];
 
   const TEAM_NAMES = {
     ATL:'Atlanta Hawks', BKN:'Brooklyn Nets', BOS:'Boston Celtics', CHA:'Charlotte Hornets',
@@ -2195,6 +2197,133 @@
     return wrap;
   }
 
+  function buildPlayerRadarChart(playerRows, allRows) {
+    const seasons = [...new Set(playerRows.map(r => r.SEASON))].sort();
+    if (!seasons.length) return null;
+    const recentSeason = seasons[seasons.length - 1];
+
+    const [agg] = aggregateBySeasonRows(playerRows.filter(r => r.SEASON === recentSeason));
+    const g = +agg.G;
+    if (g < 10) return null;
+
+    // Aggregate all players for this season (one row per player, multi-team combined)
+    const seasonMap = new Map();
+    allRows.filter(r => r.SEASON === recentSeason).forEach(r => {
+      if (!seasonMap.has(r.SLUG)) {
+        seasonMap.set(r.SLUG, { ...r });
+      } else {
+        const s = seasonMap.get(r.SLUG);
+        SUM_FIELDS.forEach(f => { s[f] = String(+s[f] + +r[f]); });
+      }
+    });
+    const peers = [...seasonMap.values()].filter(r => +r.G >= 20);
+
+    function rowPG(r, f) { return +r[f] / Math.max(1, +r.G); }
+    function rowTS(r) {
+      const denom = 2 * (+r.FGA + 0.44 * +r.FTA);
+      return denom > 0 ? +r.PTS / denom : 0;
+    }
+    function pct(val, arr) {
+      return arr.length ? arr.filter(x => x < val).length / arr.length : 0;
+    }
+
+    const dims = [
+      { label: 'PPG', angle: 90,  playerVal: rowPG(agg,'PTS'), peerVals: peers.map(r => rowPG(r,'PTS')), fmt: v => `${v.toFixed(1)} PPG` },
+      { label: '3PT', angle: 45,  playerVal: rowPG(agg,'3PM'), peerVals: peers.map(r => rowPG(r,'3PM')), fmt: v => `${v.toFixed(1)} 3P/G` },
+      { label: 'TS%', angle: 0,   playerVal: rowTS(agg),       peerVals: peers.map(r => rowTS(r)),       fmt: v => `${(v*100).toFixed(1)}% TS` },
+      { label: 'APG', angle: 315, playerVal: rowPG(agg,'AST'), peerVals: peers.map(r => rowPG(r,'AST')), fmt: v => `${v.toFixed(1)} APG` },
+      { label: 'FTA', angle: 270, playerVal: rowPG(agg,'FTA'), peerVals: peers.map(r => rowPG(r,'FTA')), fmt: v => `${v.toFixed(1)} FTA/G` },
+      { label: 'RPG', angle: 225, playerVal: rowPG(agg,'REB'), peerVals: peers.map(r => rowPG(r,'REB')), fmt: v => `${v.toFixed(1)} RPG` },
+      { label: 'BLK', angle: 180, playerVal: rowPG(agg,'BLK'), peerVals: peers.map(r => rowPG(r,'BLK')), fmt: v => `${v.toFixed(2)} BPG` },
+      { label: 'STL', angle: 135, playerVal: rowPG(agg,'STL'), peerVals: peers.map(r => rowPG(r,'STL')), fmt: v => `${v.toFixed(2)} SPG` },
+    ];
+    dims.forEach(d => { d.pct = pct(d.playerVal, d.peerVals); });
+
+    const W = 260, H = 260, cx = 130, cy = 125, maxR = 80;
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.style.cssText = 'width:200px;height:auto;display:block;';
+
+    const toXY = (angle, r) => {
+      const rad = angle * Math.PI / 180;
+      return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)];
+    };
+
+    // Guide rings
+    [0.33, 0.66, 1.0].forEach(frac => {
+      const ring = document.createElementNS(ns, 'polygon');
+      ring.setAttribute('points', dims.map(d => toXY(d.angle, maxR * frac).join(',')).join(' '));
+      ring.setAttribute('fill', 'none');
+      ring.setAttribute('stroke', '#374151');
+      ring.setAttribute('stroke-width', '0.5');
+      svg.appendChild(ring);
+    });
+
+    // Axis lines
+    dims.forEach(d => {
+      const [x2, y2] = toXY(d.angle, maxR);
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', '#374151');
+      line.setAttribute('stroke-width', '0.5');
+      svg.appendChild(line);
+    });
+
+    // Player polygon
+    const poly = document.createElementNS(ns, 'polygon');
+    poly.setAttribute('points', dims.map(d => toXY(d.angle, maxR * d.pct).join(',')).join(' '));
+    poly.setAttribute('fill', 'rgba(59,130,246,0.2)');
+    poly.setAttribute('stroke', '#3b82f6');
+    poly.setAttribute('stroke-width', '1.5');
+    poly.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(poly);
+
+    // Dots + tooltips
+    dims.forEach(d => {
+      const [dx, dy] = toXY(d.angle, maxR * d.pct);
+      const dot = document.createElementNS(ns, 'circle');
+      dot.setAttribute('cx', dx); dot.setAttribute('cy', dy); dot.setAttribute('r', '3');
+      dot.setAttribute('fill', '#3b82f6');
+      const tip = document.createElementNS(ns, 'title');
+      tip.textContent = `${d.fmt(d.playerVal)} — ${Math.round(d.pct * 100)}th pct`;
+      dot.appendChild(tip);
+      svg.appendChild(dot);
+    });
+
+    // Labels
+    dims.forEach(d => {
+      const [lx, ly] = toXY(d.angle, maxR + 16);
+      const nearH = Math.abs(ly - cy) < 8;
+      const yOff = nearH ? 4 : (ly < cy ? -3 : 11);
+      const text = document.createElementNS(ns, 'text');
+      text.setAttribute('x', lx);
+      text.setAttribute('y', ly + yOff);
+      text.setAttribute('text-anchor', lx < cx - 5 ? 'end' : lx > cx + 5 ? 'start' : 'middle');
+      text.setAttribute('fill', '#9ca3af');
+      text.setAttribute('font-size', '8.5');
+      text.setAttribute('font-weight', '500');
+      text.textContent = d.label;
+      svg.appendChild(text);
+    });
+
+    // Season label
+    const seasonLbl = document.createElementNS(ns, 'text');
+    seasonLbl.setAttribute('x', cx);
+    seasonLbl.setAttribute('y', H - 6);
+    seasonLbl.setAttribute('text-anchor', 'middle');
+    seasonLbl.setAttribute('fill', '#6b7280');
+    seasonLbl.setAttribute('font-size', '9');
+    seasonLbl.textContent = `${recentSeason} season`;
+    svg.appendChild(seasonLbl);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'player-radar';
+    wrap.appendChild(svg);
+    return wrap;
+  }
+
   function renderOvrBadge(container, playerSlug) {
     const ovr = currentOvr[playerSlug];
     if (ovr == null) return;
@@ -2835,6 +2964,10 @@
     // accolades
     renderAccolades(content, slug, rows[0].RINGS, playerAwards, seasonLeaders);
 
+    // player type radar
+    const radarEl = buildPlayerRadarChart(rows, allPlayerSeasons);
+    if (radarEl) content.appendChild(radarEl);
+
     // toggle
     const toggleBar = document.createElement('div');
     toggleBar.className = 'toggle-bar';
@@ -3108,6 +3241,7 @@
       allOvrHistory = ovrHistoryJson;
 
       const rows = parseCSV(seasonsText);
+      allPlayerSeasons = rows;
       const awards = awardsText ? parseCSV(awardsText) : [];
 
       const playerAwards = {};
