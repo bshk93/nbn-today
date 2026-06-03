@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 """
-One-off k-means clustering of NBN player-seasons into archetypes.
+Cluster NBN player-seasons into archetypes.
 Pools all seasons, computes within-season percentile ranks for 9 dims,
-then clusters with k=10. Outputs players/player_clusters.json.
+then clusters with k=10.
+
+Usage:
+  python3 players/cluster.py                     # hierarchical (default)
+  python3 players/cluster.py --method kmeans
+  python3 players/cluster.py --method hierarchical
+  python3 players/cluster.py --k 12
+
+Outputs players/player_clusters.json.
 """
 
 import csv, json, math, random, sys
@@ -79,13 +87,11 @@ def percentile_rank(val, sorted_vals):
 
 def compute_percentiles(player_seasons):
     """Compute within-season percentile ranks for each dim."""
-    # Group raw values by season
     by_season = defaultdict(lambda: defaultdict(list))
     for ps in player_seasons:
         for dim in DIMS:
             by_season[ps['season']][dim].append(ps['raw'][dim])
 
-    # Sort each season's values once
     sorted_vals = {s: {d: sorted(v) for d, v in dims.items()}
                    for s, dims in by_season.items()}
 
@@ -94,53 +100,176 @@ def compute_percentiles(player_seasons):
                                           sorted_vals[ps['season']][dim])
                      for dim in DIMS}
 
-# ---------- k-means ----------
+def make_vecs(player_seasons):
+    import numpy as np
+    return np.array([[ps['pct'][d] for d in DIMS] for ps in player_seasons])
 
-def vec(ps):
-    return [ps['pct'][d] for d in DIMS]
+# ---------- k-means (k-means++ init) ----------
 
-def dist2(a, b):
-    return sum((x - y) ** 2 for x, y in zip(a, b))
-
-def centroid(vecs):
-    n = len(vecs)
-    return [sum(v[i] for v in vecs) / n for i in range(len(vecs[0]))]
-
-def kmeans(player_seasons, k, seed=SEED, max_iter=MAX_ITER):
-    rng = random.Random(seed)
-    vecs = [vec(ps) for ps in player_seasons]
-    n    = len(vecs)
+def kmeans(vecs, k, seed=SEED, max_iter=MAX_ITER):
+    import numpy as np
+    rng = np.random.default_rng(seed)
+    n   = len(vecs)
 
     # k-means++ init
-    centers = [vecs[rng.randrange(n)]]
+    idx = [int(rng.integers(n))]
     for _ in range(k - 1):
-        dists = [min(dist2(v, c) for c in centers) for v in vecs]
-        total = sum(dists)
-        r = rng.random() * total
-        cum = 0
-        for i, d in enumerate(dists):
-            cum += d
-            if cum >= r:
-                centers.append(vecs[i])
-                break
+        d = np.min(np.sum((vecs - vecs[idx[-1]])**2, axis=1, keepdims=False)
+                   if len(idx) == 1
+                   else np.array([np.min([np.sum((v - vecs[i])**2) for i in idx])
+                                  for v in vecs]))
+        # vectorised min-dist to existing centers
+        dists = np.min(np.sum((vecs[:, None] - vecs[idx])**2, axis=2), axis=1)
+        probs = dists / dists.sum()
+        idx.append(int(rng.choice(n, p=probs)))
 
-    labels = [0] * n
+    centers = vecs[idx].copy()
+    labels  = np.zeros(n, dtype=int)
+
     for _ in range(max_iter):
-        new_labels = [min(range(k), key=lambda c: dist2(vecs[i], centers[c]))
-                      for i in range(n)]
-        if new_labels == labels:
+        dists   = np.sum((vecs[:, None] - centers[None])**2, axis=2)  # n×k
+        new_lbl = np.argmin(dists, axis=1)
+        if np.array_equal(new_lbl, labels):
             break
-        labels = new_labels
+        labels = new_lbl
         for c in range(k):
-            cluster_vecs = [vecs[i] for i in range(n) if labels[i] == c]
-            if cluster_vecs:
-                centers[c] = centroid(cluster_vecs)
+            m = vecs[labels == c]
+            if len(m):
+                centers[c] = m.mean(axis=0)
 
-    return labels, centers
+    return labels.tolist(), centers
+
+# ---------- hierarchical Ward (agglomerative) ----------
+
+def hierarchical_ward(vecs, k):
+    """
+    Agglomerative clustering with Ward's linkage via the Lance-Williams
+    update formula. O(n²) memory, O(n² * iters) time with numpy ops.
+    Deterministic — no random init.
+    """
+    import numpy as np
+    n = len(vecs)
+    print(f'  Building {n}×{n} distance matrix...', file=sys.stderr)
+
+    # Initial Ward distances: d(i,j) = (ni*nj/(ni+nj)) * ||ci-cj||²
+    # All sizes=1 initially → d(i,j) = 0.5 * ||xi-xj||²
+    diff = vecs[:, None, :] - vecs[None, :, :]   # n×n×d
+    dist = 0.5 * np.sum(diff ** 2, axis=2)        # n×n
+    np.fill_diagonal(dist, np.inf)
+
+    sizes  = np.ones(n, dtype=float)
+    labels = np.arange(n, dtype=int)   # labels[i] = current cluster id for point i
+
+    print(f'  Merging {n} → {k} clusters...', file=sys.stderr)
+    for step in range(n - k):
+        if step % 500 == 0 and step > 0:
+            print(f'    step {step}/{n-k}', file=sys.stderr)
+
+        # Find closest active pair
+        idx  = int(np.argmin(dist))
+        i, j = divmod(idx, n)
+        if i > j:
+            i, j = j, i
+
+        ni, nj = sizes[i], sizes[j]
+        n_new  = ni + nj
+
+        # Lance-Williams Ward update for all m simultaneously:
+        # d(new, m) = ((ni+nm)/(n_new+nm))*d(i,m)
+        #           + ((nj+nm)/(n_new+nm))*d(j,m)
+        #           - (nm/(n_new+nm))*d(i,j)
+        nm    = sizes                             # shape (n,)
+        denom = n_new + nm
+        new_d = ((ni + nm) / denom) * dist[i] + \
+                ((nj + nm) / denom) * dist[j] - \
+                (nm       / denom) * dist[i, j]
+
+        dist[i, :] = new_d
+        dist[:, i] = new_d
+        dist[i, i] = np.inf
+
+        # Deactivate j
+        dist[j, :] = np.inf
+        dist[:, j] = np.inf
+
+        sizes[i]  = n_new
+        sizes[j]  = 0
+        labels[labels == j] = i
+
+    # Renumber 0..k-1
+    unique = np.unique(labels)
+    final_labels = np.zeros(n, dtype=int)
+    centroids    = []
+    for new_id, old_id in enumerate(unique):
+        mask = labels == old_id
+        final_labels[mask] = new_id
+        centroids.append(vecs[mask].mean(axis=0))
+
+    return final_labels.tolist(), centroids
+
+# ---------- build output ----------
+
+def build_output(player_seasons, vecs, labels, centers, k, method):
+    import numpy as np
+    import math
+
+    clusters = []
+    for c in range(k):
+        mask    = [i for i, l in enumerate(labels) if l == c]
+        center  = np.array(centers[c])
+        members = []
+        for i in mask:
+            ps   = player_seasons[i]
+            v    = vecs[i]
+            dist = float(np.sqrt(np.sum((v - center) ** 2)))
+            members.append((dist, ps))
+        members.sort(key=lambda x: x[0])
+
+        centroid_dict = {DIMS[j]: round(float(centers[c][j]), 4) for j in range(len(DIMS))}
+        top = [{
+            'slug':   ps['slug'],
+            'player': ps['player'],
+            'season': ps['season'],
+            'team':   ps['team'],
+            'dist':   round(d, 4),
+            'pct':    {dim: round(ps['pct'][dim], 3) for dim in DIMS},
+        } for d, ps in members[:15]]
+
+        clusters.append({
+            'id':       c,
+            'name':     '',
+            'size':     len(mask),
+            'centroid': centroid_dict,
+            'top':      top,
+        })
+
+    clusters.sort(key=lambda c: -c['centroid']['PPG'])
+    for i, c in enumerate(clusters):
+        c['id'] = i
+
+    return {
+        'dims':    DIMS,
+        'method':  method,
+        'k':       k,
+        'n':       len(player_seasons),
+        'clusters': clusters,
+    }
 
 # ---------- main ----------
 
 def main():
+    import numpy as np
+
+    args   = sys.argv[1:]
+    method = 'hierarchical'
+    k      = K
+    for i, a in enumerate(args):
+        if a == '--method' and i + 1 < len(args):
+            method = args[i + 1]
+        if a == '--k' and i + 1 < len(args):
+            k = int(args[i + 1])
+
+    print(f'Method: {method}, k={k}', file=sys.stderr)
     print('Loading...', file=sys.stderr)
     rows = load_rows()
     agg  = aggregate(rows)
@@ -159,57 +288,23 @@ def main():
         })
 
     print(f'{len(player_seasons)} player-seasons (>={MIN_GAMES}G)', file=sys.stderr)
-
     compute_percentiles(player_seasons)
+    vecs = make_vecs(player_seasons)
 
-    print(f'Running k-means k={K}...', file=sys.stderr)
-    labels, centers = kmeans(player_seasons, K)
+    if method == 'kmeans':
+        print(f'Running k-means k={k}...', file=sys.stderr)
+        labels, centers = kmeans(vecs, k)
+    else:
+        print(f'Running hierarchical Ward k={k}...', file=sys.stderr)
+        labels, centers = hierarchical_ward(vecs, k)
 
-    # Attach cluster id and distance to centroid
-    for i, ps in enumerate(player_seasons):
-        v = vec(ps)
-        ps['cluster'] = labels[i]
-        ps['dist']    = math.sqrt(dist2(v, centers[labels[i]]))
-
-    # Build output: per-cluster centroid (as dict) + top 15 representative players
-    clusters = []
-    for c in range(K):
-        members = [ps for ps in player_seasons if ps['cluster'] == c]
-        members.sort(key=lambda ps: ps['dist'])
-        centroid_dict = {DIMS[i]: round(centers[c][i], 4) for i in range(len(DIMS))}
-        top = [{
-            'slug':   ps['slug'],
-            'player': ps['player'],
-            'season': ps['season'],
-            'team':   ps['team'],
-            'dist':   round(ps['dist'], 4),
-            'pct':    {d: round(ps['pct'][d], 3) for d in DIMS},
-        } for ps in members[:15]]
-        clusters.append({
-            'id':       c,
-            'name':     '',
-            'size':     len(members),
-            'centroid': centroid_dict,
-            'top':      top,
-        })
-
-    # Sort clusters by PPG centroid descending for consistent ordering
-    clusters.sort(key=lambda c: -c['centroid']['PPG'])
-    for i, c in enumerate(clusters):
-        c['id'] = i
-
-    output = {
-        'dims':     DIMS,
-        'k':        K,
-        'n':        len(player_seasons),
-        'clusters': clusters,
-    }
+    output = build_output(player_seasons, vecs, labels, centers, k, method)
 
     with open(OUT_PATH, 'w') as f:
         json.dump(output, f, indent=2)
 
     print(f'Wrote {OUT_PATH}', file=sys.stderr)
-    for c in clusters:
+    for c in output['clusters']:
         top3 = ', '.join(f"{p['player']} {p['season']}" for p in c['top'][:3])
         print(f"  Cluster {c['id']:2d} (n={c['size']:3d}): {top3}", file=sys.stderr)
 

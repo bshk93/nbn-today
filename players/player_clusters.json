@@ -10,23 +10,312 @@
     "STL",
     "FTA"
   ],
+  "method": "hierarchical",
   "k": 10,
   "n": 2236,
   "clusters": [
     {
       "id": 0,
       "name": "",
-      "size": 232,
+      "size": 150,
       "centroid": {
-        "PPG": 0.8997,
-        "APG": 0.8193,
-        "TOV": 0.8309,
-        "TS%": 0.7902,
-        "3PA": 0.7499,
-        "RPG": 0.8015,
-        "BLK": 0.7442,
-        "STL": 0.7931,
-        "FTA": 0.8883
+        "PPG": 0.8831,
+        "APG": 0.8692,
+        "TOV": 0.8413,
+        "TS%": 0.7763,
+        "3PA": 0.8701,
+        "RPG": 0.5242,
+        "BLK": 0.2354,
+        "STL": 0.7027,
+        "FTA": 0.8578
+      },
+      "top": [
+        {
+          "slug": "murray-jamal",
+          "player": "Murray, Jamal",
+          "season": "23-24",
+          "team": "SAC",
+          "dist": 0.1766,
+          "pct": {
+            "PPG": 0.895,
+            "APG": 0.945,
+            "TOV": 0.882,
+            "TS%": 0.901,
+            "3PA": 0.882,
+            "RPG": 0.488,
+            "BLK": 0.212,
+            "STL": 0.758,
+            "FTA": 0.802
+          }
+        },
+        {
+          "slug": "murray-jamal",
+          "player": "Murray, Jamal",
+          "season": "21-22",
+          "team": "DEN",
+          "dist": 0.1784,
+          "pct": {
+            "PPG": 0.892,
+            "APG": 0.894,
+            "TOV": 0.892,
+            "TS%": 0.789,
+            "3PA": 0.887,
+            "RPG": 0.541,
+            "BLK": 0.272,
+            "STL": 0.86,
+            "FTA": 0.9
+          }
+        },
+        {
+          "slug": "george-keyonte",
+          "player": "George, Keyonte",
+          "season": "25-26",
+          "team": "POR",
+          "dist": 0.2023,
+          "pct": {
+            "PPG": 0.858,
+            "APG": 0.911,
+            "TOV": 0.879,
+            "TS%": 0.75,
+            "3PA": 0.941,
+            "RPG": 0.43,
+            "BLK": 0.21,
+            "STL": 0.556,
+            "FTA": 0.879
+          }
+        },
+        {
+          "slug": "middleton-khris",
+          "player": "Middleton, Khris",
+          "season": "20-21",
+          "team": "MIL",
+          "dist": 0.2121,
+          "pct": {
+            "PPG": 0.898,
+            "APG": 0.839,
+            "TOV": 0.802,
+            "TS%": 0.792,
+            "3PA": 0.854,
+            "RPG": 0.661,
+            "BLK": 0.109,
+            "STL": 0.786,
+            "FTA": 0.852
+          }
+        },
+        {
+          "slug": "murray-jamal",
+          "player": "Murray, Jamal",
+          "season": "20-21",
+          "team": "DEN",
+          "dist": 0.2154,
+          "pct": {
+            "PPG": 0.927,
+            "APG": 0.898,
+            "TOV": 0.966,
+            "TS%": 0.859,
+            "3PA": 0.875,
+            "RPG": 0.521,
+            "BLK": 0.307,
+            "STL": 0.82,
+            "FTA": 0.904
+          }
+        },
+        {
+          "slug": "lavine-zach",
+          "player": "Lavine, Zach",
+          "season": "23-24",
+          "team": "NYK",
+          "dist": 0.22,
+          "pct": {
+            "PPG": 0.959,
+            "APG": 0.81,
+            "TOV": 0.843,
+            "TS%": 0.868,
+            "3PA": 0.961,
+            "RPG": 0.639,
+            "BLK": 0.16,
+            "STL": 0.702,
+            "FTA": 0.917
+          }
+        },
+        {
+          "slug": "middleton-khris",
+          "player": "Middleton, Khris",
+          "season": "23-24",
+          "team": "MIL",
+          "dist": 0.2253,
+          "pct": {
+            "PPG": 0.931,
+            "APG": 0.893,
+            "TOV": 0.835,
+            "TS%": 0.906,
+            "3PA": 0.942,
+            "RPG": 0.675,
+            "BLK": 0.185,
+            "STL": 0.725,
+            "FTA": 0.86
+          }
+        },
+        {
+          "slug": "brunson-jalen",
+          "player": "Brunson, Jalen",
+          "season": "23-24",
+          "team": "IND",
+          "dist": 0.2375,
+          "pct": {
+            "PPG": 0.926,
+            "APG": 0.945,
+            "TOV": 0.769,
+            "TS%": 0.876,
+            "3PA": 0.76,
+            "RPG": 0.452,
+            "BLK": 0.129,
+            "STL": 0.758,
+            "FTA": 0.904
+          }
+        },
+        {
+          "slug": "herro-tyler",
+          "player": "Herro, Tyler",
+          "season": "20-21",
+          "team": "MIA",
+          "dist": 0.2395,
+          "pct": {
+            "PPG": 0.784,
+            "APG": 0.826,
+            "TOV": 0.794,
+            "TS%": 0.677,
+            "3PA": 0.846,
+            "RPG": 0.583,
+            "BLK": 0.234,
+            "STL": 0.74,
+            "FTA": 0.69
+          }
+        },
+        {
+          "slug": "brogdon-malcolm",
+          "player": "Brogdon, Malcolm",
+          "season": "21-22",
+          "team": "TOT",
+          "dist": 0.2399,
+          "pct": {
+            "PPG": 0.873,
+            "APG": 0.955,
+            "TOV": 0.86,
+            "TS%": 0.9,
+            "3PA": 0.828,
+            "RPG": 0.678,
+            "BLK": 0.28,
+            "STL": 0.778,
+            "FTA": 0.821
+          }
+        },
+        {
+          "slug": "booker-devin",
+          "player": "Booker, Devin",
+          "season": "20-21",
+          "team": "PHX",
+          "dist": 0.2439,
+          "pct": {
+            "PPG": 0.979,
+            "APG": 0.945,
+            "TOV": 0.909,
+            "TS%": 0.807,
+            "3PA": 0.943,
+            "RPG": 0.589,
+            "BLK": 0.352,
+            "STL": 0.776,
+            "FTA": 0.961
+          }
+        },
+        {
+          "slug": "reaves-austin",
+          "player": "Reaves, Austin",
+          "season": "25-26",
+          "team": "TOT",
+          "dist": 0.2462,
+          "pct": {
+            "PPG": 0.801,
+            "APG": 0.96,
+            "TOV": 0.828,
+            "TS%": 0.925,
+            "3PA": 0.755,
+            "RPG": 0.581,
+            "BLK": 0.169,
+            "STL": 0.683,
+            "FTA": 0.809
+          }
+        },
+        {
+          "slug": "murray-jamal",
+          "player": "Murray, Jamal",
+          "season": "22-23",
+          "team": "TOT",
+          "dist": 0.2577,
+          "pct": {
+            "PPG": 0.939,
+            "APG": 0.92,
+            "TOV": 0.883,
+            "TS%": 0.798,
+            "3PA": 0.928,
+            "RPG": 0.564,
+            "BLK": 0.157,
+            "STL": 0.91,
+            "FTA": 0.926
+          }
+        },
+        {
+          "slug": "booker-devin",
+          "player": "Booker, Devin",
+          "season": "22-23",
+          "team": "PHX",
+          "dist": 0.2583,
+          "pct": {
+            "PPG": 0.936,
+            "APG": 0.888,
+            "TOV": 0.88,
+            "TS%": 0.875,
+            "3PA": 0.888,
+            "RPG": 0.585,
+            "BLK": 0.444,
+            "STL": 0.755,
+            "FTA": 0.902
+          }
+        },
+        {
+          "slug": "dragic-goran",
+          "player": "Dragic, Goran",
+          "season": "20-21",
+          "team": "PHX",
+          "dist": 0.2587,
+          "pct": {
+            "PPG": 0.865,
+            "APG": 0.906,
+            "TOV": 0.859,
+            "TS%": 0.633,
+            "3PA": 0.93,
+            "RPG": 0.466,
+            "BLK": 0.297,
+            "STL": 0.797,
+            "FTA": 0.701
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "",
+      "size": 310,
+      "centroid": {
+        "PPG": 0.8558,
+        "APG": 0.8203,
+        "TOV": 0.8358,
+        "TS%": 0.6914,
+        "3PA": 0.7271,
+        "RPG": 0.7343,
+        "BLK": 0.6999,
+        "STL": 0.8144,
+        "FTA": 0.839
       },
       "top": [
         {
@@ -34,7 +323,7 @@
           "player": "Harris, Tobias",
           "season": "20-21",
           "team": "SAC",
-          "dist": 0.1376,
+          "dist": 0.1751,
           "pct": {
             "PPG": 0.862,
             "APG": 0.88,
@@ -48,11 +337,29 @@
           }
         },
         {
+          "slug": "ingram-brandon",
+          "player": "Ingram, Brandon",
+          "season": "25-26",
+          "team": "CLE",
+          "dist": 0.1753,
+          "pct": {
+            "PPG": 0.874,
+            "APG": 0.78,
+            "TOV": 0.871,
+            "TS%": 0.61,
+            "3PA": 0.64,
+            "RPG": 0.704,
+            "BLK": 0.594,
+            "STL": 0.788,
+            "FTA": 0.817
+          }
+        },
+        {
           "slug": "brown-jaylen",
           "player": "Brown, Jaylen",
           "season": "24-25",
           "team": "OKC",
-          "dist": 0.1848,
+          "dist": 0.2053,
           "pct": {
             "PPG": 0.89,
             "APG": 0.776,
@@ -66,11 +373,29 @@
           }
         },
         {
+          "slug": "cunningham-cade",
+          "player": "Cunningham, Cade",
+          "season": "22-23",
+          "team": "DET",
+          "dist": 0.2059,
+          "pct": {
+            "PPG": 0.824,
+            "APG": 0.88,
+            "TOV": 0.721,
+            "TS%": 0.686,
+            "3PA": 0.854,
+            "RPG": 0.681,
+            "BLK": 0.652,
+            "STL": 0.785,
+            "FTA": 0.79
+          }
+        },
+        {
           "slug": "brown-jaylen",
           "player": "Brown, Jaylen",
           "season": "23-24",
           "team": "OKC",
-          "dist": 0.2114,
+          "dist": 0.237,
           "pct": {
             "PPG": 0.906,
             "APG": 0.727,
@@ -88,7 +413,7 @@
           "player": "Brown, Jaylen",
           "season": "21-22",
           "team": "BOS",
-          "dist": 0.2214,
+          "dist": 0.2433,
           "pct": {
             "PPG": 0.921,
             "APG": 0.715,
@@ -102,57 +427,39 @@
           }
         },
         {
-          "slug": "towns-karl-anthony",
-          "player": "Towns, Karl-Anthony",
-          "season": "22-23",
-          "team": "TOT",
-          "dist": 0.2264,
-          "pct": {
-            "PPG": 0.904,
-            "APG": 0.782,
-            "TOV": 0.811,
-            "TS%": 0.766,
-            "3PA": 0.856,
-            "RPG": 0.923,
-            "BLK": 0.851,
-            "STL": 0.694,
-            "FTA": 0.848
-          }
-        },
-        {
-          "slug": "vucevic-nikola",
-          "player": "Vucevic, Nikola",
-          "season": "20-21",
-          "team": "HOU",
-          "dist": 0.2285,
-          "pct": {
-            "PPG": 0.867,
-            "APG": 0.732,
-            "TOV": 0.812,
-            "TS%": 0.865,
-            "3PA": 0.776,
-            "RPG": 0.974,
-            "BLK": 0.807,
-            "STL": 0.849,
-            "FTA": 0.878
-          }
-        },
-        {
-          "slug": "brown-jaylen",
-          "player": "Brown, Jaylen",
+          "slug": "williams-jalen",
+          "player": "Williams, Jalen",
           "season": "25-26",
-          "team": "OKC",
-          "dist": 0.2326,
+          "team": "PHX",
+          "dist": 0.2529,
           "pct": {
-            "PPG": 0.927,
-            "APG": 0.858,
-            "TOV": 0.739,
-            "TS%": 0.866,
-            "3PA": 0.887,
-            "RPG": 0.833,
-            "BLK": 0.661,
-            "STL": 0.895,
-            "FTA": 0.914
+            "PPG": 0.82,
+            "APG": 0.86,
+            "TOV": 0.825,
+            "TS%": 0.683,
+            "3PA": 0.548,
+            "RPG": 0.766,
+            "BLK": 0.809,
+            "STL": 0.927,
+            "FTA": 0.782
+          }
+        },
+        {
+          "slug": "leonard-kawhi",
+          "player": "Leonard, Kawhi",
+          "season": "25-26",
+          "team": "PHX",
+          "dist": 0.2564,
+          "pct": {
+            "PPG": 0.825,
+            "APG": 0.661,
+            "TOV": 0.728,
+            "TS%": 0.648,
+            "3PA": 0.651,
+            "RPG": 0.782,
+            "BLK": 0.597,
+            "STL": 0.898,
+            "FTA": 0.82
           }
         },
         {
@@ -160,7 +467,7 @@
           "player": "Leonard, Kawhi",
           "season": "23-24",
           "team": "PHX",
-          "dist": 0.2436,
+          "dist": 0.266,
           "pct": {
             "PPG": 0.89,
             "APG": 0.884,
@@ -174,39 +481,39 @@
           }
         },
         {
-          "slug": "leonard-kawhi",
-          "player": "Leonard, Kawhi",
-          "season": "21-22",
-          "team": "PHX",
-          "dist": 0.2437,
+          "slug": "butler-jimmy",
+          "player": "Butler, Jimmy",
+          "season": "20-21",
+          "team": "MIA",
+          "dist": 0.2721,
           "pct": {
-            "PPG": 0.931,
-            "APG": 0.802,
-            "TOV": 0.865,
-            "TS%": 0.902,
-            "3PA": 0.823,
-            "RPG": 0.821,
-            "BLK": 0.712,
-            "STL": 0.987,
-            "FTA": 0.894
+            "PPG": 0.911,
+            "APG": 0.924,
+            "TOV": 0.94,
+            "TS%": 0.635,
+            "3PA": 0.703,
+            "RPG": 0.807,
+            "BLK": 0.682,
+            "STL": 0.99,
+            "FTA": 0.935
           }
         },
         {
-          "slug": "brown-jaylen",
-          "player": "Brown, Jaylen",
-          "season": "20-21",
-          "team": "BOS",
-          "dist": 0.2544,
+          "slug": "leonard-kawhi",
+          "player": "Leonard, Kawhi",
+          "season": "24-25",
+          "team": "PHX",
+          "dist": 0.2736,
           "pct": {
-            "PPG": 0.909,
-            "APG": 0.784,
-            "TOV": 0.836,
-            "TS%": 0.961,
-            "3PA": 0.859,
-            "RPG": 0.773,
-            "BLK": 0.763,
-            "STL": 0.932,
-            "FTA": 0.93
+            "PPG": 0.807,
+            "APG": 0.771,
+            "TOV": 0.903,
+            "TS%": 0.646,
+            "3PA": 0.613,
+            "RPG": 0.757,
+            "BLK": 0.771,
+            "STL": 0.936,
+            "FTA": 0.666
           }
         },
         {
@@ -214,7 +521,7 @@
           "player": "Edwards, Anthony",
           "season": "21-22",
           "team": "DET",
-          "dist": 0.2567,
+          "dist": 0.2761,
           "pct": {
             "PPG": 0.908,
             "APG": 0.765,
@@ -228,363 +535,57 @@
           }
         },
         {
-          "slug": "edwards-anthony",
-          "player": "Edwards, Anthony",
+          "slug": "miller-brandon",
+          "player": "Miller, Brandon",
           "season": "24-25",
-          "team": "DET",
-          "dist": 0.2704,
+          "team": "TOT",
+          "dist": 0.2786,
           "pct": {
-            "PPG": 0.959,
-            "APG": 0.765,
-            "TOV": 0.967,
-            "TS%": 0.945,
-            "3PA": 0.848,
-            "RPG": 0.738,
-            "BLK": 0.785,
-            "STL": 0.831,
-            "FTA": 0.975
+            "PPG": 0.884,
+            "APG": 0.823,
+            "TOV": 0.909,
+            "TS%": 0.666,
+            "3PA": 0.936,
+            "RPG": 0.713,
+            "BLK": 0.82,
+            "STL": 0.727,
+            "FTA": 0.773
           }
         },
         {
-          "slug": "towns-karl-anthony",
-          "player": "Towns, Karl-Anthony",
-          "season": "24-25",
-          "team": "PHI",
-          "dist": 0.272,
-          "pct": {
-            "PPG": 0.92,
-            "APG": 0.624,
-            "TOV": 0.82,
-            "TS%": 0.837,
-            "3PA": 0.867,
-            "RPG": 0.906,
-            "BLK": 0.718,
-            "STL": 0.779,
-            "FTA": 0.801
-          }
-        },
-        {
-          "slug": "james-lebron",
-          "player": "James, Lebron",
+          "slug": "ingram-brandon",
+          "player": "Ingram, Brandon",
           "season": "24-25",
           "team": "CLE",
-          "dist": 0.2733,
-          "pct": {
-            "PPG": 0.934,
-            "APG": 0.981,
-            "TOV": 0.787,
-            "TS%": 0.92,
-            "3PA": 0.809,
-            "RPG": 0.815,
-            "BLK": 0.878,
-            "STL": 0.815,
-            "FTA": 0.97
-          }
-        },
-        {
-          "slug": "tatum-jayson",
-          "player": "Tatum, Jayson",
-          "season": "20-21",
-          "team": "BOS",
-          "dist": 0.2745,
-          "pct": {
-            "PPG": 0.953,
-            "APG": 0.805,
-            "TOV": 0.852,
-            "TS%": 0.786,
-            "3PA": 0.94,
-            "RPG": 0.849,
-            "BLK": 0.859,
-            "STL": 0.917,
-            "FTA": 0.958
-          }
-        }
-      ]
-    },
-    {
-      "id": 1,
-      "name": "",
-      "size": 253,
-      "centroid": {
-        "PPG": 0.8482,
-        "APG": 0.8084,
-        "TOV": 0.7994,
-        "TS%": 0.6965,
-        "3PA": 0.8497,
-        "RPG": 0.4919,
-        "BLK": 0.2927,
-        "STL": 0.6856,
-        "FTA": 0.8189
-      },
-      "top": [
-        {
-          "slug": "herro-tyler",
-          "player": "Herro, Tyler",
-          "season": "20-21",
-          "team": "MIA",
-          "dist": 0.1901,
-          "pct": {
-            "PPG": 0.784,
-            "APG": 0.826,
-            "TOV": 0.794,
-            "TS%": 0.677,
-            "3PA": 0.846,
-            "RPG": 0.583,
-            "BLK": 0.234,
-            "STL": 0.74,
-            "FTA": 0.69
-          }
-        },
-        {
-          "slug": "dragic-goran",
-          "player": "Dragic, Goran",
-          "season": "20-21",
-          "team": "PHX",
-          "dist": 0.2258,
-          "pct": {
-            "PPG": 0.865,
-            "APG": 0.906,
-            "TOV": 0.859,
-            "TS%": 0.633,
-            "3PA": 0.93,
-            "RPG": 0.466,
-            "BLK": 0.297,
-            "STL": 0.797,
-            "FTA": 0.701
-          }
-        },
-        {
-          "slug": "herro-tyler",
-          "player": "Herro, Tyler",
-          "season": "25-26",
-          "team": "TOT",
-          "dist": 0.2386,
-          "pct": {
-            "PPG": 0.876,
-            "APG": 0.715,
-            "TOV": 0.731,
-            "TS%": 0.731,
-            "3PA": 0.919,
-            "RPG": 0.546,
-            "BLK": 0.309,
-            "STL": 0.505,
-            "FTA": 0.852
-          }
-        },
-        {
-          "slug": "george-keyonte",
-          "player": "George, Keyonte",
-          "season": "25-26",
-          "team": "POR",
-          "dist": 0.2433,
-          "pct": {
-            "PPG": 0.858,
-            "APG": 0.911,
-            "TOV": 0.879,
-            "TS%": 0.75,
-            "3PA": 0.941,
-            "RPG": 0.43,
-            "BLK": 0.21,
-            "STL": 0.556,
-            "FTA": 0.879
-          }
-        },
-        {
-          "slug": "mitchell-donovan",
-          "player": "Mitchell, Donovan",
-          "season": "20-21",
-          "team": "UTA",
-          "dist": 0.2544,
+          "dist": 0.2824,
           "pct": {
             "PPG": 0.914,
-            "APG": 0.799,
-            "TOV": 0.82,
-            "TS%": 0.841,
-            "3PA": 0.87,
-            "RPG": 0.495,
-            "BLK": 0.445,
-            "STL": 0.576,
-            "FTA": 0.875
+            "APG": 0.865,
+            "TOV": 0.707,
+            "TS%": 0.751,
+            "3PA": 0.605,
+            "RPG": 0.669,
+            "BLK": 0.597,
+            "STL": 0.671,
+            "FTA": 0.901
           }
         },
         {
-          "slug": "hayward-gordon",
-          "player": "Hayward, Gordon",
-          "season": "21-22",
-          "team": "MIN",
-          "dist": 0.26,
-          "pct": {
-            "PPG": 0.839,
-            "APG": 0.799,
-            "TOV": 0.881,
-            "TS%": 0.583,
-            "3PA": 0.784,
-            "RPG": 0.596,
-            "BLK": 0.464,
-            "STL": 0.741,
-            "FTA": 0.823
-          }
-        },
-        {
-          "slug": "murray-jamal",
-          "player": "Murray, Jamal",
-          "season": "21-22",
-          "team": "DEN",
-          "dist": 0.26,
-          "pct": {
-            "PPG": 0.892,
-            "APG": 0.894,
-            "TOV": 0.892,
-            "TS%": 0.789,
-            "3PA": 0.887,
-            "RPG": 0.541,
-            "BLK": 0.272,
-            "STL": 0.86,
-            "FTA": 0.9
-          }
-        },
-        {
-          "slug": "porter-kevin",
-          "player": "Porter, Kevin",
-          "season": "25-26",
-          "team": "GSW",
-          "dist": 0.2662,
-          "pct": {
-            "PPG": 0.812,
-            "APG": 0.747,
-            "TOV": 0.788,
-            "TS%": 0.621,
-            "3PA": 0.833,
-            "RPG": 0.573,
-            "BLK": 0.28,
-            "STL": 0.914,
-            "FTA": 0.79
-          }
-        },
-        {
-          "slug": "rozier-terry",
-          "player": "Rozier, Terry",
-          "season": "20-21",
-          "team": "TOT",
-          "dist": 0.2699,
-          "pct": {
-            "PPG": 0.81,
-            "APG": 0.695,
-            "TOV": 0.677,
-            "TS%": 0.812,
-            "3PA": 0.815,
-            "RPG": 0.354,
-            "BLK": 0.195,
-            "STL": 0.703,
-            "FTA": 0.805
-          }
-        },
-        {
-          "slug": "rozier-terry",
-          "player": "Rozier, Terry",
-          "season": "21-22",
-          "team": "NYK",
-          "dist": 0.2757,
+          "slug": "leonard-kawhi",
+          "player": "Leonard, Kawhi",
+          "season": "22-23",
+          "team": "PHX",
+          "dist": 0.2849,
           "pct": {
             "PPG": 0.902,
-            "APG": 0.773,
-            "TOV": 0.918,
-            "TS%": 0.551,
-            "3PA": 0.979,
-            "RPG": 0.472,
-            "BLK": 0.369,
-            "STL": 0.802,
-            "FTA": 0.831
-          }
-        },
-        {
-          "slug": "brogdon-malcolm",
-          "player": "Brogdon, Malcolm",
-          "season": "23-24",
-          "team": "TOT",
-          "dist": 0.2803,
-          "pct": {
-            "PPG": 0.851,
-            "APG": 0.901,
-            "TOV": 0.837,
-            "TS%": 0.76,
-            "3PA": 0.744,
-            "RPG": 0.658,
-            "BLK": 0.281,
-            "STL": 0.526,
-            "FTA": 0.821
-          }
-        },
-        {
-          "slug": "hield-buddy",
-          "player": "Hield, Buddy",
-          "season": "20-21",
-          "team": "CHI",
-          "dist": 0.2831,
-          "pct": {
-            "PPG": 0.893,
-            "APG": 0.615,
-            "TOV": 0.786,
-            "TS%": 0.826,
-            "3PA": 0.958,
-            "RPG": 0.544,
-            "BLK": 0.349,
-            "STL": 0.763,
-            "FTA": 0.823
-          }
-        },
-        {
-          "slug": "irving-kyrie",
-          "player": "Irving, Kyrie",
-          "season": "25-26",
-          "team": "TOT",
-          "dist": 0.2853,
-          "pct": {
-            "PPG": 0.895,
-            "APG": 0.89,
-            "TOV": 0.852,
-            "TS%": 0.785,
-            "3PA": 0.847,
-            "RPG": 0.422,
-            "BLK": 0.492,
-            "STL": 0.793,
-            "FTA": 0.895
-          }
-        },
-        {
-          "slug": "murray-jamal",
-          "player": "Murray, Jamal",
-          "season": "23-24",
-          "team": "SAC",
-          "dist": 0.287,
-          "pct": {
-            "PPG": 0.895,
-            "APG": 0.945,
-            "TOV": 0.882,
-            "TS%": 0.901,
-            "3PA": 0.882,
-            "RPG": 0.488,
-            "BLK": 0.212,
-            "STL": 0.758,
-            "FTA": 0.802
-          }
-        },
-        {
-          "slug": "hield-buddy",
-          "player": "Hield, Buddy",
-          "season": "23-24",
-          "team": "TOT",
-          "dist": 0.2874,
-          "pct": {
-            "PPG": 0.777,
-            "APG": 0.713,
-            "TOV": 0.802,
-            "TS%": 0.893,
-            "3PA": 0.953,
-            "RPG": 0.38,
-            "BLK": 0.353,
-            "STL": 0.664,
-            "FTA": 0.766
+            "APG": 0.856,
+            "TOV": 0.941,
+            "TS%": 0.793,
+            "3PA": 0.79,
+            "RPG": 0.785,
+            "BLK": 0.577,
+            "STL": 0.992,
+            "FTA": 0.896
           }
         }
       ]
@@ -592,161 +593,161 @@
     {
       "id": 2,
       "name": "",
-      "size": 244,
+      "size": 114,
       "centroid": {
-        "PPG": 0.6472,
-        "APG": 0.6002,
-        "TOV": 0.7428,
-        "TS%": 0.3339,
-        "3PA": 0.6201,
-        "RPG": 0.7243,
-        "BLK": 0.7414,
-        "STL": 0.7662,
-        "FTA": 0.6357
+        "PPG": 0.709,
+        "APG": 0.4475,
+        "TOV": 0.6319,
+        "TS%": 0.5159,
+        "3PA": 0.6807,
+        "RPG": 0.7938,
+        "BLK": 0.8173,
+        "STL": 0.6024,
+        "FTA": 0.6903
       },
       "top": [
         {
-          "slug": "young-thaddeus",
-          "player": "Young, Thaddeus",
-          "season": "20-21",
-          "team": "CHI",
-          "dist": 0.2321,
+          "slug": "murray-keegan",
+          "player": "Murray, Keegan",
+          "season": "25-26",
+          "team": "TOT",
+          "dist": 0.2092,
           "pct": {
-            "PPG": 0.547,
-            "APG": 0.68,
-            "TOV": 0.641,
-            "TS%": 0.315,
-            "3PA": 0.669,
-            "RPG": 0.742,
-            "BLK": 0.651,
-            "STL": 0.891,
-            "FTA": 0.654
+            "PPG": 0.594,
+            "APG": 0.419,
+            "TOV": 0.527,
+            "TS%": 0.401,
+            "3PA": 0.72,
+            "RPG": 0.753,
+            "BLK": 0.836,
+            "STL": 0.608,
+            "FTA": 0.648
           }
         },
         {
-          "slug": "portis-bobby",
-          "player": "Portis, Bobby",
-          "season": "21-22",
-          "team": "SAS",
-          "dist": 0.2427,
+          "slug": "collins-zach",
+          "player": "Collins, Zach",
+          "season": "23-24",
+          "team": "ATL",
+          "dist": 0.257,
           "pct": {
-            "PPG": 0.686,
-            "APG": 0.565,
-            "TOV": 0.757,
-            "TS%": 0.248,
-            "3PA": 0.544,
-            "RPG": 0.908,
-            "BLK": 0.776,
-            "STL": 0.707,
-            "FTA": 0.702
+            "PPG": 0.7,
+            "APG": 0.598,
+            "TOV": 0.565,
+            "TS%": 0.372,
+            "3PA": 0.647,
+            "RPG": 0.848,
+            "BLK": 0.832,
+            "STL": 0.485,
+            "FTA": 0.689
+          }
+        },
+        {
+          "slug": "reid-naz",
+          "player": "Reid, Naz",
+          "season": "22-23",
+          "team": "TOT",
+          "dist": 0.2806,
+          "pct": {
+            "PPG": 0.739,
+            "APG": 0.367,
+            "TOV": 0.598,
+            "TS%": 0.673,
+            "3PA": 0.697,
+            "RPG": 0.88,
+            "BLK": 0.979,
+            "STL": 0.668,
+            "FTA": 0.604
+          }
+        },
+        {
+          "slug": "murray-keegan",
+          "player": "Murray, Keegan",
+          "season": "24-25",
+          "team": "MIA",
+          "dist": 0.3039,
+          "pct": {
+            "PPG": 0.743,
+            "APG": 0.409,
+            "TOV": 0.577,
+            "TS%": 0.638,
+            "3PA": 0.826,
+            "RPG": 0.699,
+            "BLK": 0.76,
+            "STL": 0.414,
+            "FTA": 0.635
           }
         },
         {
           "slug": "gay-rudy",
           "player": "Gay, Rudy",
-          "season": "20-21",
-          "team": "TOT",
-          "dist": 0.2475,
-          "pct": {
-            "PPG": 0.609,
-            "APG": 0.547,
-            "TOV": 0.557,
-            "TS%": 0.201,
-            "3PA": 0.62,
-            "RPG": 0.763,
-            "BLK": 0.711,
-            "STL": 0.729,
-            "FTA": 0.667
-          }
-        },
-        {
-          "slug": "miller-brandon",
-          "player": "Miller, Brandon",
-          "season": "23-24",
-          "team": "MEM",
-          "dist": 0.2524,
+          "season": "21-22",
+          "team": "BOS",
+          "dist": 0.3085,
           "pct": {
             "PPG": 0.678,
-            "APG": 0.612,
-            "TOV": 0.78,
-            "TS%": 0.419,
-            "3PA": 0.683,
-            "RPG": 0.609,
-            "BLK": 0.579,
-            "STL": 0.829,
-            "FTA": 0.556
+            "APG": 0.456,
+            "TOV": 0.602,
+            "TS%": 0.438,
+            "3PA": 0.728,
+            "RPG": 0.715,
+            "BLK": 0.583,
+            "STL": 0.744,
+            "FTA": 0.752
           }
         },
         {
-          "slug": "wiggins-andrew",
-          "player": "Wiggins, Andrew",
-          "season": "25-26",
-          "team": "NYK",
-          "dist": 0.2537,
-          "pct": {
-            "PPG": 0.651,
-            "APG": 0.626,
-            "TOV": 0.726,
-            "TS%": 0.185,
-            "3PA": 0.519,
-            "RPG": 0.597,
-            "BLK": 0.823,
-            "STL": 0.683,
-            "FTA": 0.599
-          }
-        },
-        {
-          "slug": "barton-will",
-          "player": "Barton, will",
+          "slug": "grant-jerami",
+          "player": "Grant, Jerami",
           "season": "20-21",
-          "team": "MIN",
-          "dist": 0.2809,
+          "team": "ATL",
+          "dist": 0.3096,
           "pct": {
-            "PPG": 0.708,
-            "APG": 0.786,
-            "TOV": 0.742,
-            "TS%": 0.349,
-            "3PA": 0.729,
-            "RPG": 0.669,
-            "BLK": 0.62,
-            "STL": 0.823,
-            "FTA": 0.721
+            "PPG": 0.643,
+            "APG": 0.503,
+            "TOV": 0.685,
+            "TS%": 0.76,
+            "3PA": 0.607,
+            "RPG": 0.716,
+            "BLK": 0.875,
+            "STL": 0.555,
+            "FTA": 0.596
           }
         },
         {
-          "slug": "cousins-demarcus",
-          "player": "Cousins, Demarcus",
-          "season": "21-22",
-          "team": "DEN",
-          "dist": 0.285,
+          "slug": "holmgren-chet",
+          "player": "Holmgren, Chet",
+          "season": "23-24",
+          "team": "SAS",
+          "dist": 0.3162,
           "pct": {
-            "PPG": 0.623,
-            "APG": 0.675,
-            "TOV": 0.633,
-            "TS%": 0.253,
-            "3PA": 0.757,
+            "PPG": 0.741,
+            "APG": 0.314,
+            "TOV": 0.562,
+            "TS%": 0.65,
+            "3PA": 0.634,
             "RPG": 0.86,
-            "BLK": 0.789,
-            "STL": 0.884,
-            "FTA": 0.691
+            "BLK": 0.981,
+            "STL": 0.741,
+            "FTA": 0.614
           }
         },
         {
-          "slug": "nesmith-aaron",
-          "player": "Nesmith, Aaron",
-          "season": "24-25",
-          "team": "WAS",
-          "dist": 0.2882,
+          "slug": "gordon-aaron",
+          "player": "Gordon, Aaron",
+          "season": "22-23",
+          "team": "TOT",
+          "dist": 0.3164,
           "pct": {
-            "PPG": 0.583,
-            "APG": 0.406,
-            "TOV": 0.696,
-            "TS%": 0.276,
-            "3PA": 0.671,
-            "RPG": 0.58,
-            "BLK": 0.793,
-            "STL": 0.738,
-            "FTA": 0.541
+            "PPG": 0.79,
+            "APG": 0.548,
+            "TOV": 0.665,
+            "TS%": 0.559,
+            "3PA": 0.774,
+            "RPG": 0.859,
+            "BLK": 0.774,
+            "STL": 0.37,
+            "FTA": 0.798
           }
         },
         {
@@ -754,7 +755,7 @@
           "player": "Millsap, Paul",
           "season": "20-21",
           "team": "POR",
-          "dist": 0.2918,
+          "dist": 0.3192,
           "pct": {
             "PPG": 0.674,
             "APG": 0.516,
@@ -768,57 +769,21 @@
           }
         },
         {
-          "slug": "parker-jabari",
-          "player": "Parker, Jabari",
-          "season": "20-21",
-          "team": "DEN",
-          "dist": 0.2976,
-          "pct": {
-            "PPG": 0.591,
-            "APG": 0.664,
-            "TOV": 0.698,
-            "TS%": 0.284,
-            "3PA": 0.549,
-            "RPG": 0.721,
-            "BLK": 0.479,
-            "STL": 0.737,
-            "FTA": 0.589
-          }
-        },
-        {
-          "slug": "sharpe-shaedon",
-          "player": "Sharpe, Shaedon",
+          "slug": "murray-keegan",
+          "player": "Murray, Keegan",
           "season": "22-23",
-          "team": "CHI",
-          "dist": 0.31,
+          "team": "ATL",
+          "dist": 0.3195,
           "pct": {
-            "PPG": 0.604,
-            "APG": 0.481,
-            "TOV": 0.718,
-            "TS%": 0.173,
-            "3PA": 0.487,
-            "RPG": 0.641,
-            "BLK": 0.862,
-            "STL": 0.665,
-            "FTA": 0.572
-          }
-        },
-        {
-          "slug": "wiggins-andrew",
-          "player": "Wiggins, Andrew",
-          "season": "24-25",
-          "team": "TOT",
-          "dist": 0.313,
-          "pct": {
-            "PPG": 0.702,
-            "APG": 0.674,
-            "TOV": 0.633,
-            "TS%": 0.193,
-            "3PA": 0.638,
-            "RPG": 0.597,
-            "BLK": 0.746,
-            "STL": 0.58,
-            "FTA": 0.715
+            "PPG": 0.636,
+            "APG": 0.285,
+            "TOV": 0.54,
+            "TS%": 0.657,
+            "3PA": 0.713,
+            "RPG": 0.614,
+            "BLK": 0.854,
+            "STL": 0.524,
+            "FTA": 0.723
           }
         },
         {
@@ -826,7 +791,7 @@
           "player": "Martin, Kenyon",
           "season": "22-23",
           "team": "ORL",
-          "dist": 0.3183,
+          "dist": 0.3254,
           "pct": {
             "PPG": 0.633,
             "APG": 0.457,
@@ -840,39 +805,75 @@
           }
         },
         {
-          "slug": "coulibaly-bilal",
-          "player": "Coulibaly, Bilal",
-          "season": "24-25",
-          "team": "LAL",
-          "dist": 0.319,
+          "slug": "smith-jabari",
+          "player": "Smith, Jabari",
+          "season": "25-26",
+          "team": "TOT",
+          "dist": 0.3289,
           "pct": {
-            "PPG": 0.616,
-            "APG": 0.566,
-            "TOV": 0.809,
-            "TS%": 0.202,
-            "3PA": 0.699,
-            "RPG": 0.489,
-            "BLK": 0.773,
-            "STL": 0.834,
-            "FTA": 0.533
+            "PPG": 0.624,
+            "APG": 0.309,
+            "TOV": 0.513,
+            "TS%": 0.626,
+            "3PA": 0.685,
+            "RPG": 0.731,
+            "BLK": 0.723,
+            "STL": 0.419,
+            "FTA": 0.594
           }
         },
         {
-          "slug": "anderson-kyle",
-          "player": "Anderson, Kyle",
-          "season": "21-22",
-          "team": "TOT",
-          "dist": 0.3198,
+          "slug": "porzingis-kristaps",
+          "player": "Porzingis, Kristaps",
+          "season": "25-26",
+          "team": "MIL",
+          "dist": 0.3317,
           "pct": {
-            "PPG": 0.504,
-            "APG": 0.683,
-            "TOV": 0.844,
-            "TS%": 0.153,
-            "3PA": 0.612,
-            "RPG": 0.726,
-            "BLK": 0.821,
-            "STL": 0.881,
-            "FTA": 0.525
+            "PPG": 0.777,
+            "APG": 0.634,
+            "TOV": 0.57,
+            "TS%": 0.532,
+            "3PA": 0.793,
+            "RPG": 0.774,
+            "BLK": 0.935,
+            "STL": 0.414,
+            "FTA": 0.753
+          }
+        },
+        {
+          "slug": "harris-tobias",
+          "player": "Harris, Tobias",
+          "season": "25-26",
+          "team": "IND",
+          "dist": 0.3328,
+          "pct": {
+            "PPG": 0.68,
+            "APG": 0.508,
+            "TOV": 0.446,
+            "TS%": 0.527,
+            "3PA": 0.478,
+            "RPG": 0.718,
+            "BLK": 0.683,
+            "STL": 0.683,
+            "FTA": 0.712
+          }
+        },
+        {
+          "slug": "oubre-kelly",
+          "player": "Oubre, Kelly",
+          "season": "25-26",
+          "team": "CHA",
+          "dist": 0.337,
+          "pct": {
+            "PPG": 0.659,
+            "APG": 0.269,
+            "TOV": 0.659,
+            "TS%": 0.419,
+            "3PA": 0.589,
+            "RPG": 0.653,
+            "BLK": 0.704,
+            "STL": 0.726,
+            "FTA": 0.804
           }
         }
       ]
@@ -880,241 +881,25 @@
     {
       "id": 3,
       "name": "",
-      "size": 238,
+      "size": 180,
       "centroid": {
-        "PPG": 0.6029,
-        "APG": 0.6531,
-        "TOV": 0.6274,
-        "TS%": 0.3121,
-        "3PA": 0.688,
-        "RPG": 0.3378,
-        "BLK": 0.2763,
-        "STL": 0.5568,
-        "FTA": 0.5955
+        "PPG": 0.6387,
+        "APG": 0.638,
+        "TOV": 0.7422,
+        "TS%": 0.2458,
+        "3PA": 0.7199,
+        "RPG": 0.482,
+        "BLK": 0.4083,
+        "STL": 0.7298,
+        "FTA": 0.6247
       },
       "top": [
-        {
-          "slug": "fournier-evan",
-          "player": "Fournier, Evan",
-          "season": "22-23",
-          "team": "CHI",
-          "dist": 0.1978,
-          "pct": {
-            "PPG": 0.487,
-            "APG": 0.574,
-            "TOV": 0.551,
-            "TS%": 0.258,
-            "3PA": 0.699,
-            "RPG": 0.285,
-            "BLK": 0.221,
-            "STL": 0.489,
-            "FTA": 0.593
-          }
-        },
-        {
-          "slug": "middleton-khris",
-          "player": "Middleton, Khris",
-          "season": "25-26",
-          "team": "UTA",
-          "dist": 0.2559,
-          "pct": {
-            "PPG": 0.648,
-            "APG": 0.586,
-            "TOV": 0.489,
-            "TS%": 0.247,
-            "3PA": 0.653,
-            "RPG": 0.293,
-            "BLK": 0.312,
-            "STL": 0.39,
-            "FTA": 0.653
-          }
-        },
-        {
-          "slug": "hyland-nahshon",
-          "player": "Hyland, Nahshon",
-          "season": "22-23",
-          "team": "TOT",
-          "dist": 0.2698,
-          "pct": {
-            "PPG": 0.553,
-            "APG": 0.742,
-            "TOV": 0.705,
-            "TS%": 0.364,
-            "3PA": 0.795,
-            "RPG": 0.178,
-            "BLK": 0.356,
-            "STL": 0.497,
-            "FTA": 0.513
-          }
-        },
-        {
-          "slug": "schroder-dennis",
-          "player": "Schroder, Dennis",
-          "season": "24-25",
-          "team": "TOT",
-          "dist": 0.2745,
-          "pct": {
-            "PPG": 0.646,
-            "APG": 0.713,
-            "TOV": 0.522,
-            "TS%": 0.331,
-            "3PA": 0.669,
-            "RPG": 0.188,
-            "BLK": 0.102,
-            "STL": 0.627,
-            "FTA": 0.577
-          }
-        },
-        {
-          "slug": "russell-dangelo",
-          "player": "Russell, Dangelo",
-          "season": "25-26",
-          "team": "LAC",
-          "dist": 0.2846,
-          "pct": {
-            "PPG": 0.602,
-            "APG": 0.801,
-            "TOV": 0.664,
-            "TS%": 0.323,
-            "3PA": 0.75,
-            "RPG": 0.231,
-            "BLK": 0.28,
-            "STL": 0.366,
-            "FTA": 0.519
-          }
-        },
-        {
-          "slug": "nunn-kendrick",
-          "player": "Nunn, Kendrick",
-          "season": "20-21",
-          "team": "MIA",
-          "dist": 0.3,
-          "pct": {
-            "PPG": 0.581,
-            "APG": 0.625,
-            "TOV": 0.612,
-            "TS%": 0.318,
-            "3PA": 0.747,
-            "RPG": 0.19,
-            "BLK": 0.161,
-            "STL": 0.544,
-            "FTA": 0.372
-          }
-        },
-        {
-          "slug": "nunn-kendrick",
-          "player": "Nunn, Kendrick",
-          "season": "21-22",
-          "team": "MIA",
-          "dist": 0.3063,
-          "pct": {
-            "PPG": 0.71,
-            "APG": 0.628,
-            "TOV": 0.72,
-            "TS%": 0.536,
-            "3PA": 0.797,
-            "RPG": 0.269,
-            "BLK": 0.248,
-            "STL": 0.52,
-            "FTA": 0.662
-          }
-        },
-        {
-          "slug": "bufkin-kobe",
-          "player": "Bufkin, Kobe",
-          "season": "23-24",
-          "team": "MIN",
-          "dist": 0.3104,
-          "pct": {
-            "PPG": 0.686,
-            "APG": 0.477,
-            "TOV": 0.62,
-            "TS%": 0.507,
-            "3PA": 0.741,
-            "RPG": 0.342,
-            "BLK": 0.168,
-            "STL": 0.595,
-            "FTA": 0.661
-          }
-        },
-        {
-          "slug": "mccain-jared",
-          "player": "Mccain, Jared",
-          "season": "25-26",
-          "team": "GSW",
-          "dist": 0.3157,
-          "pct": {
-            "PPG": 0.632,
-            "APG": 0.691,
-            "TOV": 0.454,
-            "TS%": 0.524,
-            "3PA": 0.707,
-            "RPG": 0.29,
-            "BLK": 0.172,
-            "STL": 0.586,
-            "FTA": 0.685
-          }
-        },
-        {
-          "slug": "duarte-chris",
-          "player": "Duarte, Chris",
-          "season": "22-23",
-          "team": "LAC",
-          "dist": 0.3162,
-          "pct": {
-            "PPG": 0.609,
-            "APG": 0.508,
-            "TOV": 0.769,
-            "TS%": 0.176,
-            "3PA": 0.628,
-            "RPG": 0.434,
-            "BLK": 0.316,
-            "STL": 0.673,
-            "FTA": 0.484
-          }
-        },
-        {
-          "slug": "osman-cedi",
-          "player": "Osman, Cedi",
-          "season": "22-23",
-          "team": "TOT",
-          "dist": 0.3287,
-          "pct": {
-            "PPG": 0.588,
-            "APG": 0.572,
-            "TOV": 0.665,
-            "TS%": 0.229,
-            "3PA": 0.809,
-            "RPG": 0.38,
-            "BLK": 0.0,
-            "STL": 0.564,
-            "FTA": 0.582
-          }
-        },
-        {
-          "slug": "monk-malik",
-          "player": "Monk, Malik",
-          "season": "22-23",
-          "team": "UTA",
-          "dist": 0.33,
-          "pct": {
-            "PPG": 0.705,
-            "APG": 0.665,
-            "TOV": 0.559,
-            "TS%": 0.287,
-            "3PA": 0.862,
-            "RPG": 0.122,
-            "BLK": 0.386,
-            "STL": 0.559,
-            "FTA": 0.662
-          }
-        },
         {
           "slug": "castle-stephon",
           "player": "Castle, Stephon",
           "season": "24-25",
           "team": "TOT",
-          "dist": 0.3321,
+          "dist": 0.1787,
           "pct": {
             "PPG": 0.674,
             "APG": 0.666,
@@ -1128,11 +913,227 @@
           }
         },
         {
+          "slug": "hunter-deandre",
+          "player": "Hunter, Deandre",
+          "season": "22-23",
+          "team": "OKC",
+          "dist": 0.2298,
+          "pct": {
+            "PPG": 0.654,
+            "APG": 0.484,
+            "TOV": 0.697,
+            "TS%": 0.348,
+            "3PA": 0.668,
+            "RPG": 0.561,
+            "BLK": 0.407,
+            "STL": 0.649,
+            "FTA": 0.652
+          }
+        },
+        {
+          "slug": "alexander-walker-nickeil",
+          "player": "Alexander-Walker, Nickeil",
+          "season": "22-23",
+          "team": "TOR",
+          "dist": 0.245,
+          "pct": {
+            "PPG": 0.713,
+            "APG": 0.713,
+            "TOV": 0.734,
+            "TS%": 0.189,
+            "3PA": 0.811,
+            "RPG": 0.301,
+            "BLK": 0.465,
+            "STL": 0.755,
+            "FTA": 0.646
+          }
+        },
+        {
+          "slug": "duarte-chris",
+          "player": "Duarte, Chris",
+          "season": "22-23",
+          "team": "LAC",
+          "dist": 0.2564,
+          "pct": {
+            "PPG": 0.609,
+            "APG": 0.508,
+            "TOV": 0.769,
+            "TS%": 0.176,
+            "3PA": 0.628,
+            "RPG": 0.434,
+            "BLK": 0.316,
+            "STL": 0.673,
+            "FTA": 0.484
+          }
+        },
+        {
+          "slug": "dort-luguentz",
+          "player": "Dort, Luguentz",
+          "season": "22-23",
+          "team": "OKC",
+          "dist": 0.2657,
+          "pct": {
+            "PPG": 0.67,
+            "APG": 0.537,
+            "TOV": 0.694,
+            "TS%": 0.378,
+            "3PA": 0.795,
+            "RPG": 0.327,
+            "BLK": 0.46,
+            "STL": 0.809,
+            "FTA": 0.66
+          }
+        },
+        {
+          "slug": "henderson-scoot",
+          "player": "Henderson, Scoot",
+          "season": "23-24",
+          "team": "TOT",
+          "dist": 0.2691,
+          "pct": {
+            "PPG": 0.683,
+            "APG": 0.678,
+            "TOV": 0.832,
+            "TS%": 0.27,
+            "3PA": 0.529,
+            "RPG": 0.408,
+            "BLK": 0.51,
+            "STL": 0.722,
+            "FTA": 0.713
+          }
+        },
+        {
+          "slug": "johnson-cameron",
+          "player": "Johnson, Cameron",
+          "season": "25-26",
+          "team": "LAC",
+          "dist": 0.2736,
+          "pct": {
+            "PPG": 0.677,
+            "APG": 0.468,
+            "TOV": 0.774,
+            "TS%": 0.151,
+            "3PA": 0.876,
+            "RPG": 0.513,
+            "BLK": 0.384,
+            "STL": 0.804,
+            "FTA": 0.677
+          }
+        },
+        {
+          "slug": "brooks-dillon",
+          "player": "Brooks, Dillon",
+          "season": "20-21",
+          "team": "POR",
+          "dist": 0.2768,
+          "pct": {
+            "PPG": 0.737,
+            "APG": 0.753,
+            "TOV": 0.828,
+            "TS%": 0.297,
+            "3PA": 0.779,
+            "RPG": 0.424,
+            "BLK": 0.422,
+            "STL": 0.833,
+            "FTA": 0.786
+          }
+        },
+        {
+          "slug": "schroder-dennis",
+          "player": "Schroder, Dennis",
+          "season": "20-21",
+          "team": "POR",
+          "dist": 0.279,
+          "pct": {
+            "PPG": 0.742,
+            "APG": 0.771,
+            "TOV": 0.818,
+            "TS%": 0.341,
+            "3PA": 0.727,
+            "RPG": 0.438,
+            "BLK": 0.32,
+            "STL": 0.685,
+            "FTA": 0.776
+          }
+        },
+        {
+          "slug": "whitmore-cam",
+          "player": "Whitmore, Cam",
+          "season": "23-24",
+          "team": "LAL",
+          "dist": 0.2979,
+          "pct": {
+            "PPG": 0.744,
+            "APG": 0.501,
+            "TOV": 0.694,
+            "TS%": 0.295,
+            "3PA": 0.862,
+            "RPG": 0.57,
+            "BLK": 0.463,
+            "STL": 0.614,
+            "FTA": 0.725
+          }
+        },
+        {
+          "slug": "parker-jabari",
+          "player": "Parker, Jabari",
+          "season": "20-21",
+          "team": "DEN",
+          "dist": 0.3148,
+          "pct": {
+            "PPG": 0.591,
+            "APG": 0.664,
+            "TOV": 0.698,
+            "TS%": 0.284,
+            "3PA": 0.549,
+            "RPG": 0.721,
+            "BLK": 0.479,
+            "STL": 0.737,
+            "FTA": 0.589
+          }
+        },
+        {
+          "slug": "oladipo-victor",
+          "player": "Oladipo, Victor",
+          "season": "22-23",
+          "team": "MIL",
+          "dist": 0.3168,
+          "pct": {
+            "PPG": 0.681,
+            "APG": 0.827,
+            "TOV": 0.891,
+            "TS%": 0.247,
+            "3PA": 0.747,
+            "RPG": 0.468,
+            "BLK": 0.253,
+            "STL": 0.846,
+            "FTA": 0.67
+          }
+        },
+        {
+          "slug": "bufkin-kobe",
+          "player": "Bufkin, Kobe",
+          "season": "25-26",
+          "team": "TOT",
+          "dist": 0.3271,
+          "pct": {
+            "PPG": 0.591,
+            "APG": 0.782,
+            "TOV": 0.621,
+            "TS%": 0.056,
+            "3PA": 0.694,
+            "RPG": 0.444,
+            "BLK": 0.5,
+            "STL": 0.597,
+            "FTA": 0.696
+          }
+        },
+        {
           "slug": "porter-kevin",
           "player": "Porter, Kevin",
           "season": "24-25",
           "team": "TOT",
-          "dist": 0.3341,
+          "dist": 0.3273,
           "pct": {
             "PPG": 0.685,
             "APG": 0.691,
@@ -1146,21 +1147,21 @@
           }
         },
         {
-          "slug": "dinwiddie-spencer",
-          "player": "Dinwiddie, Spencer",
-          "season": "22-23",
-          "team": "HOU",
-          "dist": 0.3346,
+          "slug": "barton-will",
+          "player": "Barton, will",
+          "season": "21-22",
+          "team": "TOT",
+          "dist": 0.3336,
           "pct": {
-            "PPG": 0.617,
-            "APG": 0.838,
-            "TOV": 0.678,
-            "TS%": 0.508,
-            "3PA": 0.742,
-            "RPG": 0.484,
-            "BLK": 0.178,
-            "STL": 0.593,
-            "FTA": 0.633
+            "PPG": 0.636,
+            "APG": 0.776,
+            "TOV": 0.794,
+            "TS%": 0.396,
+            "3PA": 0.66,
+            "RPG": 0.528,
+            "BLK": 0.485,
+            "STL": 0.509,
+            "FTA": 0.707
           }
         }
       ]
@@ -1168,341 +1169,53 @@
     {
       "id": 4,
       "name": "",
-      "size": 174,
+      "size": 404,
       "centroid": {
-        "PPG": 0.5347,
-        "APG": 0.3677,
-        "TOV": 0.4875,
-        "TS%": 0.6895,
-        "3PA": 0.1199,
-        "RPG": 0.8865,
-        "BLK": 0.8717,
-        "STL": 0.5239,
-        "FTA": 0.5499
+        "PPG": 0.5459,
+        "APG": 0.5533,
+        "TOV": 0.4687,
+        "TS%": 0.5529,
+        "3PA": 0.6071,
+        "RPG": 0.3556,
+        "BLK": 0.2905,
+        "STL": 0.4149,
+        "FTA": 0.5467
       },
       "top": [
         {
-          "slug": "capela-clint",
-          "player": "Capela, Clint",
+          "slug": "lamb-jeremy",
+          "player": "Lamb, Jeremy",
           "season": "20-21",
-          "team": "SAC",
-          "dist": 0.2254,
+          "team": "GSW",
+          "dist": 0.137,
           "pct": {
-            "PPG": 0.549,
-            "APG": 0.326,
-            "TOV": 0.594,
-            "TS%": 0.617,
-            "3PA": 0.065,
-            "RPG": 0.995,
-            "BLK": 0.99,
-            "STL": 0.576,
-            "FTA": 0.518
+            "PPG": 0.573,
+            "APG": 0.565,
+            "TOV": 0.453,
+            "TS%": 0.534,
+            "3PA": 0.604,
+            "RPG": 0.336,
+            "BLK": 0.404,
+            "STL": 0.448,
+            "FTA": 0.602
           }
         },
-        {
-          "slug": "carter-wendell",
-          "player": "Carter, Wendell",
-          "season": "20-21",
-          "team": "UTA",
-          "dist": 0.231,
-          "pct": {
-            "PPG": 0.659,
-            "APG": 0.424,
-            "TOV": 0.424,
-            "TS%": 0.682,
-            "3PA": 0.094,
-            "RPG": 0.938,
-            "BLK": 0.885,
-            "STL": 0.503,
-            "FTA": 0.714
-          }
-        },
-        {
-          "slug": "brown-moses",
-          "player": "Brown, Moses",
-          "season": "21-22",
-          "team": "CHI",
-          "dist": 0.2419,
-          "pct": {
-            "PPG": 0.52,
-            "APG": 0.253,
-            "TOV": 0.615,
-            "TS%": 0.699,
-            "3PA": 0.0,
-            "RPG": 0.963,
-            "BLK": 0.931,
-            "STL": 0.586,
-            "FTA": 0.586
-          }
-        },
-        {
-          "slug": "clarke-brandon",
-          "player": "Clarke, Brandon",
-          "season": "23-24",
-          "team": "NYK",
-          "dist": 0.2531,
-          "pct": {
-            "PPG": 0.452,
-            "APG": 0.226,
-            "TOV": 0.446,
-            "TS%": 0.782,
-            "3PA": 0.085,
-            "RPG": 0.813,
-            "BLK": 0.815,
-            "STL": 0.488,
-            "FTA": 0.675
-          }
-        },
-        {
-          "slug": "claxton-nicolas",
-          "player": "Claxton, Nicolas",
-          "season": "22-23",
-          "team": "BKN",
-          "dist": 0.2671,
-          "pct": {
-            "PPG": 0.439,
-            "APG": 0.165,
-            "TOV": 0.402,
-            "TS%": 0.681,
-            "3PA": 0.077,
-            "RPG": 0.819,
-            "BLK": 0.931,
-            "STL": 0.476,
-            "FTA": 0.588
-          }
-        },
-        {
-          "slug": "gafford-daniel",
-          "player": "Gafford, Daniel",
-          "season": "22-23",
-          "team": "TOT",
-          "dist": 0.275,
-          "pct": {
-            "PPG": 0.468,
-            "APG": 0.271,
-            "TOV": 0.484,
-            "TS%": 0.864,
-            "3PA": 0.0,
-            "RPG": 0.822,
-            "BLK": 0.955,
-            "STL": 0.588,
-            "FTA": 0.508
-          }
-        },
-        {
-          "slug": "gobert-rudy",
-          "player": "Gobert, Rudy",
-          "season": "25-26",
-          "team": "TOT",
-          "dist": 0.2768,
-          "pct": {
-            "PPG": 0.492,
-            "APG": 0.36,
-            "TOV": 0.546,
-            "TS%": 0.559,
-            "3PA": 0.0,
-            "RPG": 0.984,
-            "BLK": 0.984,
-            "STL": 0.403,
-            "FTA": 0.492
-          }
-        },
-        {
-          "slug": "plumlee-mason",
-          "player": "Plumlee, Mason",
-          "season": "23-24",
-          "team": "IND",
-          "dist": 0.2779,
-          "pct": {
-            "PPG": 0.405,
-            "APG": 0.548,
-            "TOV": 0.433,
-            "TS%": 0.802,
-            "3PA": 0.039,
-            "RPG": 0.906,
-            "BLK": 0.802,
-            "STL": 0.54,
-            "FTA": 0.545
-          }
-        },
-        {
-          "slug": "harrell-montrezl",
-          "player": "Harrell, Montrezl",
-          "season": "22-23",
-          "team": "LAL",
-          "dist": 0.3009,
-          "pct": {
-            "PPG": 0.606,
-            "APG": 0.301,
-            "TOV": 0.492,
-            "TS%": 0.787,
-            "3PA": 0.125,
-            "RPG": 0.832,
-            "BLK": 0.902,
-            "STL": 0.269,
-            "FTA": 0.598
-          }
-        },
-        {
-          "slug": "holmes-richaun",
-          "player": "Holmes, Richaun",
-          "season": "20-21",
-          "team": "ATL",
-          "dist": 0.3091,
-          "pct": {
-            "PPG": 0.385,
-            "APG": 0.315,
-            "TOV": 0.273,
-            "TS%": 0.654,
-            "3PA": 0.117,
-            "RPG": 0.906,
-            "BLK": 0.852,
-            "STL": 0.427,
-            "FTA": 0.435
-          }
-        },
-        {
-          "slug": "gobert-rudy",
-          "player": "Gobert, Rudy",
-          "season": "20-21",
-          "team": "TOT",
-          "dist": 0.3116,
-          "pct": {
-            "PPG": 0.716,
-            "APG": 0.302,
-            "TOV": 0.44,
-            "TS%": 0.794,
-            "3PA": 0.065,
-            "RPG": 0.984,
-            "BLK": 0.974,
-            "STL": 0.427,
-            "FTA": 0.669
-          }
-        },
-        {
-          "slug": "hayes-jaxson",
-          "player": "Hayes, Jaxson",
-          "season": "20-21",
-          "team": "TOT",
-          "dist": 0.3153,
-          "pct": {
-            "PPG": 0.456,
-            "APG": 0.365,
-            "TOV": 0.513,
-            "TS%": 0.94,
-            "3PA": 0.0,
-            "RPG": 0.826,
-            "BLK": 0.966,
-            "STL": 0.56,
-            "FTA": 0.513
-          }
-        },
-        {
-          "slug": "achiuwa-precious",
-          "player": "Achiuwa, Precious",
-          "season": "21-22",
-          "team": "TOT",
-          "dist": 0.3154,
-          "pct": {
-            "PPG": 0.607,
-            "APG": 0.164,
-            "TOV": 0.583,
-            "TS%": 0.567,
-            "3PA": 0.0,
-            "RPG": 0.892,
-            "BLK": 0.773,
-            "STL": 0.578,
-            "FTA": 0.588
-          }
-        },
-        {
-          "slug": "hayes-jaxson",
-          "player": "Hayes, Jaxson",
-          "season": "22-23",
-          "team": "TOT",
-          "dist": 0.3179,
-          "pct": {
-            "PPG": 0.564,
-            "APG": 0.295,
-            "TOV": 0.585,
-            "TS%": 0.707,
-            "3PA": 0.207,
-            "RPG": 0.814,
-            "BLK": 0.875,
-            "STL": 0.755,
-            "FTA": 0.686
-          }
-        },
-        {
-          "slug": "gobert-rudy",
-          "player": "Gobert, Rudy",
-          "season": "24-25",
-          "team": "TOT",
-          "dist": 0.3264,
-          "pct": {
-            "PPG": 0.522,
-            "APG": 0.238,
-            "TOV": 0.47,
-            "TS%": 0.796,
-            "3PA": 0.0,
-            "RPG": 0.986,
-            "BLK": 0.983,
-            "STL": 0.599,
-            "FTA": 0.362
-          }
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "name": "",
-      "size": 234,
-      "centroid": {
-        "PPG": 0.4786,
-        "APG": 0.4249,
-        "TOV": 0.339,
-        "TS%": 0.698,
-        "3PA": 0.5543,
-        "RPG": 0.2956,
-        "BLK": 0.2263,
-        "STL": 0.2988,
-        "FTA": 0.4663
-      },
-      "top": [
         {
           "slug": "burks-alec",
           "player": "Burks, Alec",
-          "season": "23-24",
-          "team": "TOT",
-          "dist": 0.163,
-          "pct": {
-            "PPG": 0.523,
-            "APG": 0.452,
-            "TOV": 0.306,
-            "TS%": 0.68,
-            "3PA": 0.642,
-            "RPG": 0.251,
-            "BLK": 0.129,
-            "STL": 0.245,
-            "FTA": 0.444
-          }
-        },
-        {
-          "slug": "bane-desmond",
-          "player": "Bane, Desmond",
           "season": "21-22",
-          "team": "ORL",
-          "dist": 0.195,
+          "team": "TOT",
+          "dist": 0.1946,
           "pct": {
-            "PPG": 0.441,
-            "APG": 0.48,
-            "TOV": 0.48,
-            "TS%": 0.797,
-            "3PA": 0.554,
-            "RPG": 0.317,
-            "BLK": 0.272,
-            "STL": 0.298,
-            "FTA": 0.43
+            "PPG": 0.549,
+            "APG": 0.475,
+            "TOV": 0.551,
+            "TS%": 0.67,
+            "3PA": 0.631,
+            "RPG": 0.401,
+            "BLK": 0.219,
+            "STL": 0.472,
+            "FTA": 0.557
           }
         },
         {
@@ -1510,7 +1223,7 @@
           "player": "Duarte, Chris",
           "season": "23-24",
           "team": "LAC",
-          "dist": 0.2291,
+          "dist": 0.2201,
           "pct": {
             "PPG": 0.545,
             "APG": 0.479,
@@ -1524,75 +1237,39 @@
           }
         },
         {
-          "slug": "nowell-jaylen",
-          "player": "Nowell, Jaylen",
+          "slug": "quickley-immanuel",
+          "player": "Quickley, Immanuel",
+          "season": "22-23",
+          "team": "SAS",
+          "dist": 0.2474,
+          "pct": {
+            "PPG": 0.511,
+            "APG": 0.718,
+            "TOV": 0.452,
+            "TS%": 0.537,
+            "3PA": 0.652,
+            "RPG": 0.359,
+            "BLK": 0.152,
+            "STL": 0.516,
+            "FTA": 0.519
+          }
+        },
+        {
+          "slug": "walker-kemba",
+          "player": "Walker, Kemba",
           "season": "22-23",
           "team": "TOT",
-          "dist": 0.2527,
+          "dist": 0.265,
           "pct": {
-            "PPG": 0.465,
-            "APG": 0.556,
-            "TOV": 0.322,
-            "TS%": 0.638,
-            "3PA": 0.423,
-            "RPG": 0.181,
-            "BLK": 0.269,
-            "STL": 0.215,
-            "FTA": 0.407
-          }
-        },
-        {
-          "slug": "hield-buddy",
-          "player": "Hield, Buddy",
-          "season": "25-26",
-          "team": "TOT",
-          "dist": 0.2605,
-          "pct": {
-            "PPG": 0.444,
-            "APG": 0.317,
-            "TOV": 0.352,
-            "TS%": 0.801,
-            "3PA": 0.599,
-            "RPG": 0.185,
-            "BLK": 0.226,
-            "STL": 0.306,
-            "FTA": 0.293
-          }
-        },
-        {
-          "slug": "marshall-naji",
-          "player": "Marshall, Naji",
-          "season": "22-23",
-          "team": "MIA",
-          "dist": 0.268,
-          "pct": {
-            "PPG": 0.484,
-            "APG": 0.399,
-            "TOV": 0.468,
-            "TS%": 0.848,
-            "3PA": 0.495,
-            "RPG": 0.213,
-            "BLK": 0.162,
-            "STL": 0.168,
-            "FTA": 0.457
-          }
-        },
-        {
-          "slug": "lee-damion",
-          "player": "Lee, Damion",
-          "season": "20-21",
-          "team": "TOT",
-          "dist": 0.2722,
-          "pct": {
-            "PPG": 0.471,
-            "APG": 0.523,
-            "TOV": 0.328,
-            "TS%": 0.68,
-            "3PA": 0.534,
-            "RPG": 0.346,
-            "BLK": 0.109,
-            "STL": 0.51,
-            "FTA": 0.516
+            "PPG": 0.476,
+            "APG": 0.678,
+            "TOV": 0.463,
+            "TS%": 0.596,
+            "3PA": 0.58,
+            "RPG": 0.157,
+            "BLK": 0.293,
+            "STL": 0.338,
+            "FTA": 0.505
           }
         },
         {
@@ -1600,7 +1277,7 @@
           "player": "Reaves, Austin",
           "season": "22-23",
           "team": "NOP",
-          "dist": 0.281,
+          "dist": 0.2705,
           "pct": {
             "PPG": 0.431,
             "APG": 0.434,
@@ -1614,93 +1291,147 @@
           }
         },
         {
-          "slug": "gallinari-danilo",
-          "player": "Gallinari, Danilo",
-          "season": "22-23",
-          "team": "DAL",
-          "dist": 0.2867,
-          "pct": {
-            "PPG": 0.5,
-            "APG": 0.258,
-            "TOV": 0.356,
-            "TS%": 0.809,
-            "3PA": 0.556,
-            "RPG": 0.404,
-            "BLK": 0.146,
-            "STL": 0.343,
-            "FTA": 0.612
-          }
-        },
-        {
-          "slug": "merrill-sam",
-          "player": "Merrill, Sam",
-          "season": "25-26",
-          "team": "MIL",
-          "dist": 0.2892,
-          "pct": {
-            "PPG": 0.395,
-            "APG": 0.476,
-            "TOV": 0.29,
-            "TS%": 0.696,
-            "3PA": 0.702,
-            "RPG": 0.089,
-            "BLK": 0.175,
-            "STL": 0.253,
-            "FTA": 0.417
-          }
-        },
-        {
-          "slug": "thomas-matt",
-          "player": "Thomas, Matt",
+          "slug": "lee-damion",
+          "player": "Lee, Damion",
           "season": "20-21",
-          "team": "TOR",
-          "dist": 0.2914,
-          "pct": {
-            "PPG": 0.406,
-            "APG": 0.385,
-            "TOV": 0.206,
-            "TS%": 0.823,
-            "3PA": 0.609,
-            "RPG": 0.352,
-            "BLK": 0.232,
-            "STL": 0.195,
-            "FTA": 0.299
-          }
-        },
-        {
-          "slug": "saric-dario",
-          "player": "Saric, Dario",
-          "season": "21-22",
           "team": "TOT",
-          "dist": 0.2994,
+          "dist": 0.301,
           "pct": {
-            "PPG": 0.509,
-            "APG": 0.404,
-            "TOV": 0.319,
-            "TS%": 0.641,
-            "3PA": 0.536,
-            "RPG": 0.549,
-            "BLK": 0.095,
-            "STL": 0.317,
-            "FTA": 0.517
+            "PPG": 0.471,
+            "APG": 0.523,
+            "TOV": 0.328,
+            "TS%": 0.68,
+            "3PA": 0.534,
+            "RPG": 0.346,
+            "BLK": 0.109,
+            "STL": 0.51,
+            "FTA": 0.516
           }
         },
         {
-          "slug": "mykhailiuk-sviatoslav",
-          "player": "Mykhailiuk, Sviatoslav",
-          "season": "20-21",
-          "team": "MIL",
-          "dist": 0.32,
+          "slug": "demin-egor",
+          "player": "Demin, Egor",
+          "season": "25-26",
+          "team": "TOT",
+          "dist": 0.3059,
           "pct": {
-            "PPG": 0.365,
-            "APG": 0.432,
-            "TOV": 0.31,
-            "TS%": 0.81,
-            "3PA": 0.648,
-            "RPG": 0.057,
-            "BLK": 0.169,
-            "STL": 0.383,
-            "FTA": 0.461
+            "PPG": 0.634,
+            "APG": 0.637,
+            "TOV": 0.433,
+            "TS%": 0.487,
+            "3PA": 0.409,
+            "RPG": 0.277,
+            "BLK": 0.358,
+            "STL": 0.263,
+            "FTA": 0.543
+          }
+        },
+        {
+          "slug": "hardaway-tim",
+          "player": "Hardaway, Tim",
+          "season": "21-22",
+          "team": "ATL",
+          "dist": 0.3112,
+          "pct": {
+            "PPG": 0.612,
+            "APG": 0.422,
+            "TOV": 0.412,
+            "TS%": 0.554,
+            "3PA": 0.768,
+            "RPG": 0.404,
+            "BLK": 0.158,
+            "STL": 0.298,
+            "FTA": 0.66
+          }
+        },
+        {
+          "slug": "hampton-rj",
+          "player": "Hampton, Rj",
+          "season": "20-21",
+          "team": "TOT",
+          "dist": 0.3129,
+          "pct": {
+            "PPG": 0.484,
+            "APG": 0.622,
+            "TOV": 0.432,
+            "TS%": 0.372,
+            "3PA": 0.531,
+            "RPG": 0.51,
+            "BLK": 0.133,
+            "STL": 0.401,
+            "FTA": 0.521
+          }
+        },
+        {
+          "slug": "payne-cameron",
+          "player": "Payne, Cameron",
+          "season": "21-22",
+          "team": "LAC",
+          "dist": 0.3188,
+          "pct": {
+            "PPG": 0.427,
+            "APG": 0.736,
+            "TOV": 0.412,
+            "TS%": 0.586,
+            "3PA": 0.433,
+            "RPG": 0.227,
+            "BLK": 0.327,
+            "STL": 0.38,
+            "FTA": 0.53
+          }
+        },
+        {
+          "slug": "mccain-jared",
+          "player": "Mccain, Jared",
+          "season": "25-26",
+          "team": "GSW",
+          "dist": 0.3227,
+          "pct": {
+            "PPG": 0.632,
+            "APG": 0.691,
+            "TOV": 0.454,
+            "TS%": 0.524,
+            "3PA": 0.707,
+            "RPG": 0.29,
+            "BLK": 0.172,
+            "STL": 0.586,
+            "FTA": 0.685
+          }
+        },
+        {
+          "slug": "monk-malik",
+          "player": "Monk, Malik",
+          "season": "20-21",
+          "team": "TOT",
+          "dist": 0.323,
+          "pct": {
+            "PPG": 0.625,
+            "APG": 0.51,
+            "TOV": 0.469,
+            "TS%": 0.378,
+            "3PA": 0.75,
+            "RPG": 0.253,
+            "BLK": 0.135,
+            "STL": 0.341,
+            "FTA": 0.617
+          }
+        },
+        {
+          "slug": "barnes-harrison",
+          "player": "Barnes, Harrison",
+          "season": "23-24",
+          "team": "NYK",
+          "dist": 0.3261,
+          "pct": {
+            "PPG": 0.59,
+            "APG": 0.449,
+            "TOV": 0.551,
+            "TS%": 0.543,
+            "3PA": 0.598,
+            "RPG": 0.366,
+            "BLK": 0.229,
+            "STL": 0.328,
+            "FTA": 0.273
           }
         },
         {
@@ -1708,7 +1439,7 @@
           "player": "Simons, Anfernee",
           "season": "20-21",
           "team": "OKC",
-          "dist": 0.3223,
+          "dist": 0.3281,
           "pct": {
             "PPG": 0.565,
             "APG": 0.414,
@@ -1720,23 +1451,293 @@
             "STL": 0.417,
             "FTA": 0.63
           }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "",
+      "size": 182,
+      "centroid": {
+        "PPG": 0.4879,
+        "APG": 0.311,
+        "TOV": 0.4051,
+        "TS%": 0.6871,
+        "3PA": 0.1175,
+        "RPG": 0.8421,
+        "BLK": 0.854,
+        "STL": 0.4407,
+        "FTA": 0.5186
+      },
+      "top": [
+        {
+          "slug": "claxton-nicolas",
+          "player": "Claxton, Nicolas",
+          "season": "22-23",
+          "team": "BKN",
+          "dist": 0.1947,
+          "pct": {
+            "PPG": 0.439,
+            "APG": 0.165,
+            "TOV": 0.402,
+            "TS%": 0.681,
+            "3PA": 0.077,
+            "RPG": 0.819,
+            "BLK": 0.931,
+            "STL": 0.476,
+            "FTA": 0.588
+          }
         },
         {
-          "slug": "robinson-duncan",
-          "player": "Robinson, Duncan",
+          "slug": "holmes-richaun",
+          "player": "Holmes, Richaun",
+          "season": "20-21",
+          "team": "ATL",
+          "dist": 0.2007,
+          "pct": {
+            "PPG": 0.385,
+            "APG": 0.315,
+            "TOV": 0.273,
+            "TS%": 0.654,
+            "3PA": 0.117,
+            "RPG": 0.906,
+            "BLK": 0.852,
+            "STL": 0.427,
+            "FTA": 0.435
+          }
+        },
+        {
+          "slug": "clarke-brandon",
+          "player": "Clarke, Brandon",
+          "season": "23-24",
+          "team": "NYK",
+          "dist": 0.2221,
+          "pct": {
+            "PPG": 0.452,
+            "APG": 0.226,
+            "TOV": 0.446,
+            "TS%": 0.782,
+            "3PA": 0.085,
+            "RPG": 0.813,
+            "BLK": 0.815,
+            "STL": 0.488,
+            "FTA": 0.675
+          }
+        },
+        {
+          "slug": "reed-paul",
+          "player": "Reed, Paul",
+          "season": "25-26",
+          "team": "OKC",
+          "dist": 0.2584,
+          "pct": {
+            "PPG": 0.32,
+            "APG": 0.183,
+            "TOV": 0.371,
+            "TS%": 0.774,
+            "3PA": 0.118,
+            "RPG": 0.809,
+            "BLK": 0.839,
+            "STL": 0.548,
+            "FTA": 0.497
+          }
+        },
+        {
+          "slug": "harrell-montrezl",
+          "player": "Harrell, Montrezl",
+          "season": "22-23",
+          "team": "LAL",
+          "dist": 0.2648,
+          "pct": {
+            "PPG": 0.606,
+            "APG": 0.301,
+            "TOV": 0.492,
+            "TS%": 0.787,
+            "3PA": 0.125,
+            "RPG": 0.832,
+            "BLK": 0.902,
+            "STL": 0.269,
+            "FTA": 0.598
+          }
+        },
+        {
+          "slug": "gafford-daniel",
+          "player": "Gafford, Daniel",
+          "season": "22-23",
+          "team": "TOT",
+          "dist": 0.2927,
+          "pct": {
+            "PPG": 0.468,
+            "APG": 0.271,
+            "TOV": 0.484,
+            "TS%": 0.864,
+            "3PA": 0.0,
+            "RPG": 0.822,
+            "BLK": 0.955,
+            "STL": 0.588,
+            "FTA": 0.508
+          }
+        },
+        {
+          "slug": "queta-neemias",
+          "player": "Queta, Neemias",
+          "season": "25-26",
+          "team": "MIL",
+          "dist": 0.2955,
+          "pct": {
+            "PPG": 0.419,
+            "APG": 0.231,
+            "TOV": 0.261,
+            "TS%": 0.833,
+            "3PA": 0.0,
+            "RPG": 0.863,
+            "BLK": 0.927,
+            "STL": 0.462,
+            "FTA": 0.401
+          }
+        },
+        {
+          "slug": "kessler-walker",
+          "player": "Kessler, Walker",
+          "season": "25-26",
+          "team": "LAL",
+          "dist": 0.296,
+          "pct": {
+            "PPG": 0.409,
+            "APG": 0.272,
+            "TOV": 0.272,
+            "TS%": 0.57,
+            "3PA": 0.124,
+            "RPG": 0.927,
+            "BLK": 0.976,
+            "STL": 0.39,
+            "FTA": 0.366
+          }
+        },
+        {
+          "slug": "gobert-rudy",
+          "player": "Gobert, Rudy",
           "season": "25-26",
           "team": "TOT",
-          "dist": 0.3294,
+          "dist": 0.3024,
           "pct": {
-            "PPG": 0.484,
-            "APG": 0.505,
-            "TOV": 0.263,
-            "TS%": 0.895,
-            "3PA": 0.624,
-            "RPG": 0.126,
-            "BLK": 0.245,
-            "STL": 0.199,
-            "FTA": 0.349
+            "PPG": 0.492,
+            "APG": 0.36,
+            "TOV": 0.546,
+            "TS%": 0.559,
+            "3PA": 0.0,
+            "RPG": 0.984,
+            "BLK": 0.984,
+            "STL": 0.403,
+            "FTA": 0.492
+          }
+        },
+        {
+          "slug": "duren-jalen",
+          "player": "Duren, Jalen",
+          "season": "24-25",
+          "team": "CHI",
+          "dist": 0.3075,
+          "pct": {
+            "PPG": 0.503,
+            "APG": 0.373,
+            "TOV": 0.378,
+            "TS%": 0.522,
+            "3PA": 0.091,
+            "RPG": 0.981,
+            "BLK": 0.87,
+            "STL": 0.376,
+            "FTA": 0.323
+          }
+        },
+        {
+          "slug": "carter-wendell",
+          "player": "Carter, Wendell",
+          "season": "20-21",
+          "team": "UTA",
+          "dist": 0.3082,
+          "pct": {
+            "PPG": 0.659,
+            "APG": 0.424,
+            "TOV": 0.424,
+            "TS%": 0.682,
+            "3PA": 0.094,
+            "RPG": 0.938,
+            "BLK": 0.885,
+            "STL": 0.503,
+            "FTA": 0.714
+          }
+        },
+        {
+          "slug": "edey-zach",
+          "player": "Edey, Zach",
+          "season": "25-26",
+          "team": "DAL",
+          "dist": 0.31,
+          "pct": {
+            "PPG": 0.43,
+            "APG": 0.366,
+            "TOV": 0.444,
+            "TS%": 0.505,
+            "3PA": 0.0,
+            "RPG": 0.981,
+            "BLK": 0.914,
+            "STL": 0.325,
+            "FTA": 0.446
+          }
+        },
+        {
+          "slug": "poeltl-jakob",
+          "player": "Poeltl, Jakob",
+          "season": "25-26",
+          "team": "SAS",
+          "dist": 0.3166,
+          "pct": {
+            "PPG": 0.392,
+            "APG": 0.253,
+            "TOV": 0.36,
+            "TS%": 0.43,
+            "3PA": 0.0,
+            "RPG": 0.849,
+            "BLK": 0.906,
+            "STL": 0.495,
+            "FTA": 0.505
+          }
+        },
+        {
+          "slug": "plumlee-mason",
+          "player": "Plumlee, Mason",
+          "season": "23-24",
+          "team": "IND",
+          "dist": 0.3172,
+          "pct": {
+            "PPG": 0.405,
+            "APG": 0.548,
+            "TOV": 0.433,
+            "TS%": 0.802,
+            "3PA": 0.039,
+            "RPG": 0.906,
+            "BLK": 0.802,
+            "STL": 0.54,
+            "FTA": 0.545
+          }
+        },
+        {
+          "slug": "giles-harry",
+          "player": "Giles, Harry",
+          "season": "20-21",
+          "team": "TOT",
+          "dist": 0.3182,
+          "pct": {
+            "PPG": 0.495,
+            "APG": 0.458,
+            "TOV": 0.367,
+            "TS%": 0.573,
+            "3PA": 0.0,
+            "RPG": 0.797,
+            "BLK": 0.68,
+            "STL": 0.307,
+            "FTA": 0.549
           }
         }
       ]
@@ -1744,395 +1745,143 @@
     {
       "id": 6,
       "name": "",
-      "size": 200,
+      "size": 178,
       "centroid": {
-        "PPG": 0.3179,
-        "APG": 0.2665,
-        "TOV": 0.2955,
-        "TS%": 0.2763,
-        "3PA": 0.3355,
-        "RPG": 0.6915,
-        "BLK": 0.7382,
-        "STL": 0.3318,
-        "FTA": 0.3563
+        "PPG": 0.3564,
+        "APG": 0.5582,
+        "TOV": 0.6686,
+        "TS%": 0.3018,
+        "3PA": 0.3186,
+        "RPG": 0.5732,
+        "BLK": 0.6804,
+        "STL": 0.7794,
+        "FTA": 0.3376
       },
       "top": [
         {
-          "slug": "bol-bol",
-          "player": "Bol, Bol",
-          "season": "25-26",
-          "team": "MIN",
-          "dist": 0.2212,
-          "pct": {
-            "PPG": 0.371,
-            "APG": 0.234,
-            "TOV": 0.306,
-            "TS%": 0.234,
-            "3PA": 0.349,
-            "RPG": 0.769,
-            "BLK": 0.866,
-            "STL": 0.261,
-            "FTA": 0.231
-          }
-        },
-        {
-          "slug": "birch-khem",
-          "player": "Birch, Khem",
-          "season": "21-22",
-          "team": "TOT",
-          "dist": 0.2283,
-          "pct": {
-            "PPG": 0.288,
-            "APG": 0.327,
-            "TOV": 0.232,
-            "TS%": 0.306,
-            "3PA": 0.14,
-            "RPG": 0.736,
-            "BLK": 0.704,
-            "STL": 0.309,
-            "FTA": 0.33
-          }
-        },
-        {
-          "slug": "carter-wendell",
-          "player": "Carter, Wendell",
+          "slug": "camara-toumani",
+          "player": "Camara, Toumani",
           "season": "24-25",
-          "team": "DET",
-          "dist": 0.2566,
+          "team": "MIN",
+          "dist": 0.1505,
           "pct": {
-            "PPG": 0.24,
-            "APG": 0.224,
-            "TOV": 0.169,
-            "TS%": 0.323,
-            "3PA": 0.215,
-            "RPG": 0.801,
-            "BLK": 0.721,
-            "STL": 0.229,
-            "FTA": 0.307
+            "PPG": 0.307,
+            "APG": 0.561,
+            "TOV": 0.669,
+            "TS%": 0.32,
+            "3PA": 0.326,
+            "RPG": 0.644,
+            "BLK": 0.646,
+            "STL": 0.749,
+            "FTA": 0.45
           }
         },
         {
-          "slug": "kuminga-jonathan",
-          "player": "Kuminga, Jonathan",
+          "slug": "mcdaniels-jaden",
+          "player": "Mcdaniels, Jaden",
+          "season": "24-25",
+          "team": "ATL",
+          "dist": 0.2101,
+          "pct": {
+            "PPG": 0.34,
+            "APG": 0.517,
+            "TOV": 0.696,
+            "TS%": 0.262,
+            "3PA": 0.47,
+            "RPG": 0.492,
+            "BLK": 0.724,
+            "STL": 0.848,
+            "FTA": 0.276
+          }
+        },
+        {
+          "slug": "tillman-xavier",
+          "player": "Tillman, Xavier",
+          "season": "21-22",
+          "team": "LAL",
+          "dist": 0.2485,
+          "pct": {
+            "PPG": 0.327,
+            "APG": 0.488,
+            "TOV": 0.48,
+            "TS%": 0.259,
+            "3PA": 0.293,
+            "RPG": 0.646,
+            "BLK": 0.728,
+            "STL": 0.681,
+            "FTA": 0.361
+          }
+        },
+        {
+          "slug": "anderson-kyle",
+          "player": "Anderson, Kyle",
           "season": "22-23",
           "team": "TOT",
-          "dist": 0.2623,
+          "dist": 0.2655,
           "pct": {
-            "PPG": 0.492,
-            "APG": 0.231,
-            "TOV": 0.301,
-            "TS%": 0.29,
-            "3PA": 0.386,
-            "RPG": 0.59,
-            "BLK": 0.596,
-            "STL": 0.388,
-            "FTA": 0.386
+            "PPG": 0.279,
+            "APG": 0.662,
+            "TOV": 0.537,
+            "TS%": 0.271,
+            "3PA": 0.245,
+            "RPG": 0.625,
+            "BLK": 0.779,
+            "STL": 0.755,
+            "FTA": 0.468
           }
         },
         {
-          "slug": "hernangomez-willy",
-          "player": "Hernangomez, Willy",
-          "season": "20-21",
-          "team": "TOT",
-          "dist": 0.2888,
-          "pct": {
-            "PPG": 0.273,
-            "APG": 0.135,
-            "TOV": 0.247,
-            "TS%": 0.125,
-            "3PA": 0.292,
-            "RPG": 0.794,
-            "BLK": 0.724,
-            "STL": 0.198,
-            "FTA": 0.448
-          }
-        },
-        {
-          "slug": "martin-kenyon",
-          "player": "Martin, Kenyon",
-          "season": "21-22",
-          "team": "ORL",
-          "dist": 0.2891,
-          "pct": {
-            "PPG": 0.319,
-            "APG": 0.135,
-            "TOV": 0.404,
-            "TS%": 0.462,
-            "3PA": 0.388,
-            "RPG": 0.575,
-            "BLK": 0.784,
-            "STL": 0.29,
-            "FTA": 0.359
-          }
-        },
-        {
-          "slug": "sharpe-dayron",
-          "player": "Sharpe, Dayron",
-          "season": "25-26",
-          "team": "ORL",
+          "slug": "payton-gary",
+          "player": "Payton, Gary",
+          "season": "23-24",
+          "team": "POR",
           "dist": 0.2918,
           "pct": {
-            "PPG": 0.355,
-            "APG": 0.336,
-            "TOV": 0.306,
-            "TS%": 0.376,
-            "3PA": 0.099,
-            "RPG": 0.71,
-            "BLK": 0.659,
-            "STL": 0.363,
-            "FTA": 0.282
-          }
-        },
-        {
-          "slug": "henson-john",
-          "player": "Henson, John",
-          "season": "20-21",
-          "team": "DEN",
-          "dist": 0.2953,
-          "pct": {
-            "PPG": 0.185,
-            "APG": 0.211,
-            "TOV": 0.182,
-            "TS%": 0.43,
-            "3PA": 0.185,
-            "RPG": 0.654,
-            "BLK": 0.792,
-            "STL": 0.341,
-            "FTA": 0.411
-          }
-        },
-        {
-          "slug": "collins-zach",
-          "player": "Collins, Zach",
-          "season": "25-26",
-          "team": "TOT",
-          "dist": 0.3221,
-          "pct": {
-            "PPG": 0.516,
-            "APG": 0.333,
-            "TOV": 0.349,
-            "TS%": 0.296,
-            "3PA": 0.481,
-            "RPG": 0.806,
-            "BLK": 0.632,
-            "STL": 0.234,
+            "PPG": 0.251,
+            "APG": 0.565,
+            "TOV": 0.752,
+            "TS%": 0.364,
+            "3PA": 0.209,
+            "RPG": 0.642,
+            "BLK": 0.482,
+            "STL": 0.862,
             "FTA": 0.32
           }
         },
         {
-          "slug": "lyles-trey",
-          "player": "Lyles, Trey",
-          "season": "24-25",
-          "team": "DEN",
-          "dist": 0.3222,
-          "pct": {
-            "PPG": 0.238,
-            "APG": 0.091,
-            "TOV": 0.157,
-            "TS%": 0.376,
-            "3PA": 0.417,
-            "RPG": 0.525,
-            "BLK": 0.699,
-            "STL": 0.312,
-            "FTA": 0.392
-          }
-        },
-        {
-          "slug": "watson-peyton",
-          "player": "Watson, Peyton",
-          "season": "24-25",
-          "team": "BOS",
-          "dist": 0.327,
-          "pct": {
-            "PPG": 0.356,
-            "APG": 0.232,
-            "TOV": 0.45,
-            "TS%": 0.293,
-            "3PA": 0.232,
-            "RPG": 0.522,
-            "BLK": 0.909,
-            "STL": 0.406,
-            "FTA": 0.434
-          }
-        },
-        {
-          "slug": "aldama-santi",
-          "player": "Aldama, Santi",
+          "slug": "brown-bruce",
+          "player": "Brown, Bruce",
           "season": "22-23",
-          "team": "MEM",
-          "dist": 0.3293,
-          "pct": {
-            "PPG": 0.346,
-            "APG": 0.221,
-            "TOV": 0.444,
-            "TS%": 0.426,
-            "3PA": 0.378,
-            "RPG": 0.686,
-            "BLK": 0.697,
-            "STL": 0.572,
-            "FTA": 0.348
-          }
-        },
-        {
-          "slug": "metu-chimezie",
-          "player": "Metu, Chimezie",
-          "season": "23-24",
-          "team": "WAS",
-          "dist": 0.3309,
-          "pct": {
-            "PPG": 0.284,
-            "APG": 0.129,
-            "TOV": 0.424,
-            "TS%": 0.477,
-            "3PA": 0.212,
-            "RPG": 0.62,
-            "BLK": 0.689,
-            "STL": 0.413,
-            "FTA": 0.298
-          }
-        },
-        {
-          "slug": "smith-jalen",
-          "player": "Smith, Jalen",
-          "season": "20-21",
           "team": "TOT",
-          "dist": 0.3347,
+          "dist": 0.3051,
           "pct": {
-            "PPG": 0.505,
-            "APG": 0.203,
-            "TOV": 0.286,
-            "TS%": 0.161,
-            "3PA": 0.422,
-            "RPG": 0.69,
-            "BLK": 0.906,
-            "STL": 0.464,
-            "FTA": 0.438
+            "PPG": 0.457,
+            "APG": 0.63,
+            "TOV": 0.67,
+            "TS%": 0.473,
+            "3PA": 0.255,
+            "RPG": 0.399,
+            "BLK": 0.715,
+            "STL": 0.816,
+            "FTA": 0.231
           }
         },
         {
-          "slug": "boucher-chris",
-          "player": "Boucher, Chris",
-          "season": "23-24",
-          "team": "GSW",
-          "dist": 0.3371,
-          "pct": {
-            "PPG": 0.253,
-            "APG": 0.107,
-            "TOV": 0.138,
-            "TS%": 0.427,
-            "3PA": 0.322,
-            "RPG": 0.623,
-            "BLK": 0.73,
-            "STL": 0.154,
-            "FTA": 0.364
-          }
-        }
-      ]
-    },
-    {
-      "id": 7,
-      "name": "",
-      "size": 208,
-      "centroid": {
-        "PPG": 0.2695,
-        "APG": 0.5506,
-        "TOV": 0.5028,
-        "TS%": 0.2742,
-        "3PA": 0.3662,
-        "RPG": 0.3151,
-        "BLK": 0.4293,
-        "STL": 0.6375,
-        "FTA": 0.2692
-      },
-      "top": [
-        {
-          "slug": "bazemore-kent",
-          "player": "Bazemore, Kent",
-          "season": "20-21",
-          "team": "TOT",
-          "dist": 0.2368,
-          "pct": {
-            "PPG": 0.227,
-            "APG": 0.471,
-            "TOV": 0.378,
-            "TS%": 0.214,
-            "3PA": 0.372,
-            "RPG": 0.357,
-            "BLK": 0.576,
-            "STL": 0.711,
-            "FTA": 0.263
-          }
-        },
-        {
-          "slug": "prince-taurean",
-          "player": "Prince, Taurean",
-          "season": "25-26",
-          "team": "NOP",
-          "dist": 0.3002,
-          "pct": {
-            "PPG": 0.172,
-            "APG": 0.489,
-            "TOV": 0.29,
-            "TS%": 0.349,
-            "3PA": 0.339,
-            "RPG": 0.218,
-            "BLK": 0.339,
-            "STL": 0.567,
-            "FTA": 0.218
-          }
-        },
-        {
-          "slug": "okoro-isaac",
-          "player": "Okoro, Isaac",
-          "season": "21-22",
-          "team": "CLE",
-          "dist": 0.3022,
-          "pct": {
-            "PPG": 0.459,
-            "APG": 0.388,
-            "TOV": 0.475,
-            "TS%": 0.33,
-            "3PA": 0.512,
-            "RPG": 0.343,
-            "BLK": 0.401,
-            "STL": 0.591,
-            "FTA": 0.261
-          }
-        },
-        {
-          "slug": "caruso-alex",
-          "player": "Caruso, Alex",
-          "season": "20-21",
-          "team": "BKN",
-          "dist": 0.3039,
-          "pct": {
-            "PPG": 0.18,
-            "APG": 0.701,
-            "TOV": 0.651,
-            "TS%": 0.281,
-            "3PA": 0.378,
-            "RPG": 0.18,
-            "BLK": 0.518,
-            "STL": 0.753,
-            "FTA": 0.255
-          }
-        },
-        {
-          "slug": "okoro-isaac",
-          "player": "Okoro, Isaac",
+          "slug": "tillman-xavier",
+          "player": "Tillman, Xavier",
           "season": "22-23",
           "team": "LAL",
-          "dist": 0.3072,
+          "dist": 0.3279,
           "pct": {
-            "PPG": 0.215,
-            "APG": 0.34,
-            "TOV": 0.529,
-            "TS%": 0.186,
-            "3PA": 0.311,
-            "RPG": 0.364,
-            "BLK": 0.404,
-            "STL": 0.519,
-            "FTA": 0.133
+            "PPG": 0.303,
+            "APG": 0.309,
+            "TOV": 0.503,
+            "TS%": 0.285,
+            "3PA": 0.287,
+            "RPG": 0.649,
+            "BLK": 0.699,
+            "STL": 0.864,
+            "FTA": 0.324
           }
         },
         {
@@ -2140,7 +1889,7 @@
           "player": "Martin, Caleb",
           "season": "22-23",
           "team": "TOT",
-          "dist": 0.3125,
+          "dist": 0.3457,
           "pct": {
             "PPG": 0.311,
             "APG": 0.415,
@@ -2154,165 +1903,417 @@
           }
         },
         {
-          "slug": "okoro-isaac",
-          "player": "Okoro, Isaac",
-          "season": "24-25",
-          "team": "TOT",
-          "dist": 0.3156,
-          "pct": {
-            "PPG": 0.412,
-            "APG": 0.425,
-            "TOV": 0.622,
-            "TS%": 0.298,
-            "3PA": 0.503,
-            "RPG": 0.323,
-            "BLK": 0.539,
-            "STL": 0.746,
-            "FTA": 0.188
-          }
-        },
-        {
-          "slug": "carter-devin",
-          "player": "Carter, Devin",
+          "slug": "holland-ron",
+          "player": "Holland, Ron",
           "season": "25-26",
-          "team": "BKN",
-          "dist": 0.3293,
+          "team": "PHI",
+          "dist": 0.3499,
           "pct": {
-            "PPG": 0.382,
-            "APG": 0.462,
-            "TOV": 0.53,
-            "TS%": 0.156,
-            "3PA": 0.32,
-            "RPG": 0.395,
-            "BLK": 0.288,
-            "STL": 0.478,
-            "FTA": 0.409
+            "PPG": 0.296,
+            "APG": 0.543,
+            "TOV": 0.573,
+            "TS%": 0.089,
+            "3PA": 0.401,
+            "RPG": 0.675,
+            "BLK": 0.556,
+            "STL": 0.602,
+            "FTA": 0.328
           }
         },
         {
-          "slug": "boston-brandon",
-          "player": "Boston, Brandon",
-          "season": "24-25",
-          "team": "CHA",
-          "dist": 0.3436,
-          "pct": {
-            "PPG": 0.445,
-            "APG": 0.378,
-            "TOV": 0.409,
-            "TS%": 0.155,
-            "3PA": 0.464,
-            "RPG": 0.21,
-            "BLK": 0.343,
-            "STL": 0.685,
-            "FTA": 0.204
-          }
-        },
-        {
-          "slug": "pippen-scotty",
-          "player": "Pippen, Scotty",
-          "season": "24-25",
-          "team": "TOT",
-          "dist": 0.3467,
-          "pct": {
-            "PPG": 0.271,
-            "APG": 0.663,
-            "TOV": 0.682,
-            "TS%": 0.028,
-            "3PA": 0.445,
-            "RPG": 0.229,
-            "BLK": 0.403,
-            "STL": 0.622,
-            "FTA": 0.26
-          }
-        },
-        {
-          "slug": "bledsoe-eric",
-          "player": "Bledsoe, Eric",
+          "slug": "finney-smith-dorian",
+          "player": "Finney-Smith, Dorian",
           "season": "22-23",
-          "team": "WAS",
-          "dist": 0.3493,
+          "team": "POR",
+          "dist": 0.3621,
           "pct": {
-            "PPG": 0.285,
-            "APG": 0.723,
-            "TOV": 0.46,
-            "TS%": 0.168,
-            "3PA": 0.375,
-            "RPG": 0.173,
-            "BLK": 0.548,
-            "STL": 0.79,
-            "FTA": 0.415
-          }
-        },
-        {
-          "slug": "bledsoe-eric",
-          "player": "Bledsoe, Eric",
-          "season": "21-22",
-          "team": "TOT",
-          "dist": 0.3494,
-          "pct": {
-            "PPG": 0.377,
-            "APG": 0.686,
+            "PPG": 0.274,
+            "APG": 0.657,
             "TOV": 0.612,
-            "TS%": 0.129,
-            "3PA": 0.522,
-            "RPG": 0.235,
-            "BLK": 0.359,
-            "STL": 0.731,
-            "FTA": 0.391
+            "TS%": 0.279,
+            "3PA": 0.553,
+            "RPG": 0.516,
+            "BLK": 0.638,
+            "STL": 0.705,
+            "FTA": 0.125
           }
         },
         {
-          "slug": "smith-dennis",
-          "player": "Smith, Dennis",
-          "season": "21-22",
-          "team": "WAS",
-          "dist": 0.3503,
+          "slug": "jones-herb",
+          "player": "Jones, Herb",
+          "season": "23-24",
+          "team": "CLE",
+          "dist": 0.3705,
           "pct": {
-            "PPG": 0.219,
-            "APG": 0.757,
-            "TOV": 0.609,
-            "TS%": 0.063,
-            "3PA": 0.393,
-            "RPG": 0.182,
-            "BLK": 0.43,
-            "STL": 0.694,
+            "PPG": 0.353,
+            "APG": 0.521,
+            "TOV": 0.876,
+            "TS%": 0.416,
+            "3PA": 0.273,
+            "RPG": 0.369,
+            "BLK": 0.796,
+            "STL": 0.871,
+            "FTA": 0.457
+          }
+        },
+        {
+          "slug": "brown-bruce",
+          "player": "Brown, Bruce",
+          "season": "23-24",
+          "team": "TOT",
+          "dist": 0.3743,
+          "pct": {
+            "PPG": 0.529,
+            "APG": 0.749,
+            "TOV": 0.702,
+            "TS%": 0.176,
+            "3PA": 0.507,
+            "RPG": 0.504,
+            "BLK": 0.634,
+            "STL": 0.873,
+            "FTA": 0.413
+          }
+        },
+        {
+          "slug": "payton-gary",
+          "player": "Payton, Gary",
+          "season": "22-23",
+          "team": "MIN",
+          "dist": 0.3801,
+          "pct": {
+            "PPG": 0.391,
+            "APG": 0.447,
+            "TOV": 0.875,
+            "TS%": 0.162,
+            "3PA": 0.394,
+            "RPG": 0.718,
+            "BLK": 0.598,
+            "STL": 0.957,
             "FTA": 0.277
           }
         },
         {
-          "slug": "carter-jevon",
-          "player": "Carter, Jevon",
-          "season": "23-24",
-          "team": "TOT",
-          "dist": 0.3525,
+          "slug": "wallace-cason",
+          "player": "Wallace, Cason",
+          "season": "24-25",
+          "team": "GSW",
+          "dist": 0.3809,
           "pct": {
-            "PPG": 0.278,
-            "APG": 0.634,
-            "TOV": 0.645,
-            "TS%": 0.201,
-            "3PA": 0.529,
-            "RPG": 0.124,
-            "BLK": 0.537,
-            "STL": 0.512,
-            "FTA": 0.309
+            "PPG": 0.417,
+            "APG": 0.602,
+            "TOV": 0.718,
+            "TS%": 0.285,
+            "3PA": 0.536,
+            "RPG": 0.34,
+            "BLK": 0.622,
+            "STL": 0.948,
+            "FTA": 0.395
           }
         },
         {
-          "slug": "davis-terence",
-          "player": "Davis, Terence",
-          "season": "23-24",
-          "team": "TOT",
-          "dist": 0.3586,
+          "slug": "black-anthony",
+          "player": "Black, Anthony",
+          "season": "25-26",
+          "team": "POR",
+          "dist": 0.3814,
           "pct": {
-            "PPG": 0.163,
-            "APG": 0.377,
-            "TOV": 0.273,
-            "TS%": 0.193,
-            "3PA": 0.391,
-            "RPG": 0.187,
-            "BLK": 0.364,
-            "STL": 0.628,
-            "FTA": 0.19
+            "PPG": 0.449,
+            "APG": 0.828,
+            "TOV": 0.796,
+            "TS%": 0.306,
+            "3PA": 0.452,
+            "RPG": 0.492,
+            "BLK": 0.79,
+            "STL": 0.887,
+            "FTA": 0.341
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "",
+      "size": 151,
+      "centroid": {
+        "PPG": 0.3078,
+        "APG": 0.2522,
+        "TOV": 0.2415,
+        "TS%": 0.2423,
+        "3PA": 0.3447,
+        "RPG": 0.6774,
+        "BLK": 0.717,
+        "STL": 0.2426,
+        "FTA": 0.3502
+      },
+      "top": [
+        {
+          "slug": "carter-wendell",
+          "player": "Carter, Wendell",
+          "season": "24-25",
+          "team": "DET",
+          "dist": 0.2266,
+          "pct": {
+            "PPG": 0.24,
+            "APG": 0.224,
+            "TOV": 0.169,
+            "TS%": 0.323,
+            "3PA": 0.215,
+            "RPG": 0.801,
+            "BLK": 0.721,
+            "STL": 0.229,
+            "FTA": 0.307
+          }
+        },
+        {
+          "slug": "bol-bol",
+          "player": "Bol, Bol",
+          "season": "25-26",
+          "team": "MIN",
+          "dist": 0.2314,
+          "pct": {
+            "PPG": 0.371,
+            "APG": 0.234,
+            "TOV": 0.306,
+            "TS%": 0.234,
+            "3PA": 0.349,
+            "RPG": 0.769,
+            "BLK": 0.866,
+            "STL": 0.261,
+            "FTA": 0.231
+          }
+        },
+        {
+          "slug": "hernangomez-willy",
+          "player": "Hernangomez, Willy",
+          "season": "20-21",
+          "team": "TOT",
+          "dist": 0.2381,
+          "pct": {
+            "PPG": 0.273,
+            "APG": 0.135,
+            "TOV": 0.247,
+            "TS%": 0.125,
+            "3PA": 0.292,
+            "RPG": 0.794,
+            "BLK": 0.724,
+            "STL": 0.198,
+            "FTA": 0.448
+          }
+        },
+        {
+          "slug": "birch-khem",
+          "player": "Birch, Khem",
+          "season": "21-22",
+          "team": "TOT",
+          "dist": 0.2461,
+          "pct": {
+            "PPG": 0.288,
+            "APG": 0.327,
+            "TOV": 0.232,
+            "TS%": 0.306,
+            "3PA": 0.14,
+            "RPG": 0.736,
+            "BLK": 0.704,
+            "STL": 0.309,
+            "FTA": 0.33
+          }
+        },
+        {
+          "slug": "boucher-chris",
+          "player": "Boucher, Chris",
+          "season": "23-24",
+          "team": "GSW",
+          "dist": 0.2836,
+          "pct": {
+            "PPG": 0.253,
+            "APG": 0.107,
+            "TOV": 0.138,
+            "TS%": 0.427,
+            "3PA": 0.322,
+            "RPG": 0.623,
+            "BLK": 0.73,
+            "STL": 0.154,
+            "FTA": 0.364
+          }
+        },
+        {
+          "slug": "little-nassir",
+          "player": "Little, Nassir",
+          "season": "21-22",
+          "team": "TOT",
+          "dist": 0.3023,
+          "pct": {
+            "PPG": 0.172,
+            "APG": 0.206,
+            "TOV": 0.19,
+            "TS%": 0.161,
+            "3PA": 0.322,
+            "RPG": 0.633,
+            "BLK": 0.522,
+            "STL": 0.145,
+            "FTA": 0.243
+          }
+        },
+        {
+          "slug": "bol-bol",
+          "player": "Bol, Bol",
+          "season": "23-24",
+          "team": "LAL",
+          "dist": 0.3123,
+          "pct": {
+            "PPG": 0.416,
+            "APG": 0.036,
+            "TOV": 0.182,
+            "TS%": 0.16,
+            "3PA": 0.388,
+            "RPG": 0.628,
+            "BLK": 0.832,
+            "STL": 0.165,
+            "FTA": 0.421
+          }
+        },
+        {
+          "slug": "landale-jock",
+          "player": "Landale, Jock",
+          "season": "25-26",
+          "team": "OKC",
+          "dist": 0.3131,
+          "pct": {
+            "PPG": 0.183,
+            "APG": 0.228,
+            "TOV": 0.188,
+            "TS%": 0.363,
+            "3PA": 0.145,
+            "RPG": 0.699,
+            "BLK": 0.761,
+            "STL": 0.137,
+            "FTA": 0.245
+          }
+        },
+        {
+          "slug": "collins-zach",
+          "player": "Collins, Zach",
+          "season": "25-26",
+          "team": "TOT",
+          "dist": 0.3287,
+          "pct": {
+            "PPG": 0.516,
+            "APG": 0.333,
+            "TOV": 0.349,
+            "TS%": 0.296,
+            "3PA": 0.481,
+            "RPG": 0.806,
+            "BLK": 0.632,
+            "STL": 0.234,
+            "FTA": 0.32
+          }
+        },
+        {
+          "slug": "bol-bol",
+          "player": "Bol, Bol",
+          "season": "24-25",
+          "team": "LAL",
+          "dist": 0.3325,
+          "pct": {
+            "PPG": 0.213,
+            "APG": 0.138,
+            "TOV": 0.193,
+            "TS%": 0.149,
+            "3PA": 0.304,
+            "RPG": 0.646,
+            "BLK": 0.87,
+            "STL": 0.086,
+            "FTA": 0.514
+          }
+        },
+        {
+          "slug": "sharpe-dayron",
+          "player": "Sharpe, Dayron",
+          "season": "25-26",
+          "team": "ORL",
+          "dist": 0.3393,
+          "pct": {
+            "PPG": 0.355,
+            "APG": 0.336,
+            "TOV": 0.306,
+            "TS%": 0.376,
+            "3PA": 0.099,
+            "RPG": 0.71,
+            "BLK": 0.659,
+            "STL": 0.363,
+            "FTA": 0.282
+          }
+        },
+        {
+          "slug": "bol-bol",
+          "player": "Bol, Bol",
+          "season": "22-23",
+          "team": "DEN",
+          "dist": 0.3394,
+          "pct": {
+            "PPG": 0.295,
+            "APG": 0.428,
+            "TOV": 0.141,
+            "TS%": 0.181,
+            "3PA": 0.197,
+            "RPG": 0.816,
+            "BLK": 0.856,
+            "STL": 0.239,
+            "FTA": 0.253
+          }
+        },
+        {
+          "slug": "yurtseven-omer",
+          "player": "Yurtseven, Omer",
+          "season": "23-24",
+          "team": "PHI",
+          "dist": 0.3413,
+          "pct": {
+            "PPG": 0.212,
+            "APG": 0.074,
+            "TOV": 0.129,
+            "TS%": 0.163,
+            "3PA": 0.201,
+            "RPG": 0.725,
+            "BLK": 0.675,
+            "STL": 0.099,
+            "FTA": 0.242
+          }
+        },
+        {
+          "slug": "sorber-thomas",
+          "player": "Sorber, Thomas",
+          "season": "25-26",
+          "team": "LAC",
+          "dist": 0.3488,
+          "pct": {
+            "PPG": 0.142,
+            "APG": 0.159,
+            "TOV": 0.266,
+            "TS%": 0.024,
+            "3PA": 0.298,
+            "RPG": 0.519,
+            "BLK": 0.694,
+            "STL": 0.25,
+            "FTA": 0.253
+          }
+        },
+        {
+          "slug": "ibaka-serge",
+          "player": "Ibaka, Serge",
+          "season": "22-23",
+          "team": "TOT",
+          "dist": 0.3588,
+          "pct": {
+            "PPG": 0.221,
+            "APG": 0.25,
+            "TOV": 0.186,
+            "TS%": 0.059,
+            "3PA": 0.335,
+            "RPG": 0.721,
+            "BLK": 0.84,
+            "STL": 0.051,
+            "FTA": 0.524
           }
         }
       ]
@@ -2320,179 +2321,143 @@
     {
       "id": 8,
       "name": "",
-      "size": 171,
+      "size": 267,
       "centroid": {
-        "PPG": 0.1685,
-        "APG": 0.1502,
-        "TOV": 0.1445,
-        "TS%": 0.6995,
-        "3PA": 0.1662,
-        "RPG": 0.4702,
-        "BLK": 0.6204,
-        "STL": 0.1918,
-        "FTA": 0.1979
+        "PPG": 0.2012,
+        "APG": 0.2067,
+        "TOV": 0.144,
+        "TS%": 0.7001,
+        "3PA": 0.2775,
+        "RPG": 0.2643,
+        "BLK": 0.3381,
+        "STL": 0.1614,
+        "FTA": 0.2152
       },
       "top": [
         {
-          "slug": "metu-chimezie",
-          "player": "Metu, Chimezie",
-          "season": "21-22",
-          "team": "UTA",
-          "dist": 0.1828,
+          "slug": "champagnie-julian",
+          "player": "Champagnie, Julian",
+          "season": "25-26",
+          "team": "CHI",
+          "dist": 0.1941,
           "pct": {
-            "PPG": 0.232,
-            "APG": 0.108,
-            "TOV": 0.23,
-            "TS%": 0.617,
-            "3PA": 0.216,
-            "RPG": 0.396,
-            "BLK": 0.554,
-            "STL": 0.193,
-            "FTA": 0.232
+            "PPG": 0.121,
+            "APG": 0.097,
+            "TOV": 0.175,
+            "TS%": 0.753,
+            "3PA": 0.341,
+            "RPG": 0.296,
+            "BLK": 0.347,
+            "STL": 0.062,
+            "FTA": 0.196
           }
         },
         {
-          "slug": "powell-dwight",
-          "player": "Powell, Dwight",
-          "season": "22-23",
-          "team": "GSW",
-          "dist": 0.1922,
+          "slug": "knox-kevin",
+          "player": "Knox, Kevin",
+          "season": "20-21",
+          "team": "CHA",
+          "dist": 0.1977,
           "pct": {
-            "PPG": 0.08,
-            "APG": 0.138,
-            "TOV": 0.08,
-            "TS%": 0.79,
-            "3PA": 0.109,
-            "RPG": 0.513,
-            "BLK": 0.641,
-            "STL": 0.168,
-            "FTA": 0.096
+            "PPG": 0.201,
+            "APG": 0.13,
+            "TOV": 0.099,
+            "TS%": 0.651,
+            "3PA": 0.424,
+            "RPG": 0.221,
+            "BLK": 0.409,
+            "STL": 0.151,
+            "FTA": 0.201
           }
         },
         {
-          "slug": "theis-daniel",
-          "player": "Theis, Daniel",
-          "season": "22-23",
-          "team": "GSW",
-          "dist": 0.1961,
-          "pct": {
-            "PPG": 0.141,
-            "APG": 0.194,
-            "TOV": 0.133,
-            "TS%": 0.689,
-            "3PA": 0.271,
-            "RPG": 0.447,
-            "BLK": 0.686,
-            "STL": 0.205,
-            "FTA": 0.059
-          }
-        },
-        {
-          "slug": "robinson-earl-jeremiah",
-          "player": "Robinson-Earl, Jeremiah",
-          "season": "22-23",
-          "team": "OKC",
-          "dist": 0.2241,
-          "pct": {
-            "PPG": 0.178,
-            "APG": 0.215,
-            "TOV": 0.202,
-            "TS%": 0.691,
-            "3PA": 0.309,
-            "RPG": 0.545,
-            "BLK": 0.519,
-            "STL": 0.114,
-            "FTA": 0.184
-          }
-        },
-        {
-          "slug": "hayes-jaxson",
-          "player": "Hayes, Jaxson",
-          "season": "24-25",
-          "team": "GSW",
-          "dist": 0.226,
-          "pct": {
-            "PPG": 0.155,
-            "APG": 0.008,
-            "TOV": 0.086,
-            "TS%": 0.757,
-            "3PA": 0.102,
-            "RPG": 0.586,
-            "BLK": 0.641,
-            "STL": 0.174,
-            "FTA": 0.122
-          }
-        },
-        {
-          "slug": "reed-paul",
-          "player": "Reed, Paul",
-          "season": "22-23",
-          "team": "LAL",
-          "dist": 0.2408,
-          "pct": {
-            "PPG": 0.053,
-            "APG": 0.011,
-            "TOV": 0.173,
-            "TS%": 0.718,
-            "3PA": 0.114,
-            "RPG": 0.391,
-            "BLK": 0.559,
-            "STL": 0.298,
-            "FTA": 0.194
-          }
-        },
-        {
-          "slug": "favors-derrick",
-          "player": "Favors, Derrick",
-          "season": "22-23",
-          "team": "POR",
-          "dist": 0.252,
-          "pct": {
-            "PPG": 0.13,
-            "APG": 0.093,
-            "TOV": 0.221,
-            "TS%": 0.782,
-            "3PA": 0.085,
-            "RPG": 0.66,
-            "BLK": 0.606,
-            "STL": 0.149,
-            "FTA": 0.157
-          }
-        },
-        {
-          "slug": "powell-dwight",
-          "player": "Powell, Dwight",
-          "season": "23-24",
-          "team": "DEN",
-          "dist": 0.2602,
-          "pct": {
-            "PPG": 0.168,
-            "APG": 0.204,
-            "TOV": 0.174,
-            "TS%": 0.686,
-            "3PA": 0.0,
-            "RPG": 0.592,
-            "BLK": 0.697,
-            "STL": 0.253,
-            "FTA": 0.306
-          }
-        },
-        {
-          "slug": "eubanks-drew",
-          "player": "Eubanks, Drew",
+          "slug": "finney-smith-dorian",
+          "player": "Finney-Smith, Dorian",
           "season": "21-22",
           "team": "TOT",
-          "dist": 0.291,
+          "dist": 0.2228,
           "pct": {
-            "PPG": 0.161,
-            "APG": 0.288,
-            "TOV": 0.069,
-            "TS%": 0.612,
-            "3PA": 0.0,
-            "RPG": 0.546,
-            "BLK": 0.625,
-            "STL": 0.095,
-            "FTA": 0.296
+            "PPG": 0.084,
+            "APG": 0.069,
+            "TOV": 0.111,
+            "TS%": 0.734,
+            "3PA": 0.369,
+            "RPG": 0.222,
+            "BLK": 0.351,
+            "STL": 0.169,
+            "FTA": 0.15
+          }
+        },
+        {
+          "slug": "murray-kris",
+          "player": "Murray, Kris",
+          "season": "24-25",
+          "team": "ATL",
+          "dist": 0.2354,
+          "pct": {
+            "PPG": 0.088,
+            "APG": 0.072,
+            "TOV": 0.171,
+            "TS%": 0.757,
+            "3PA": 0.232,
+            "RPG": 0.243,
+            "BLK": 0.318,
+            "STL": 0.265,
+            "FTA": 0.133
+          }
+        },
+        {
+          "slug": "green-jeff",
+          "player": "Green, Jeff",
+          "season": "22-23",
+          "team": "BOS",
+          "dist": 0.2423,
+          "pct": {
+            "PPG": 0.293,
+            "APG": 0.165,
+            "TOV": 0.181,
+            "TS%": 0.556,
+            "3PA": 0.266,
+            "RPG": 0.237,
+            "BLK": 0.303,
+            "STL": 0.059,
+            "FTA": 0.332
+          }
+        },
+        {
+          "slug": "windler-dylan",
+          "player": "Windler, Dylan",
+          "season": "20-21",
+          "team": "CLE",
+          "dist": 0.2517,
+          "pct": {
+            "PPG": 0.318,
+            "APG": 0.102,
+            "TOV": 0.208,
+            "TS%": 0.727,
+            "3PA": 0.336,
+            "RPG": 0.393,
+            "BLK": 0.451,
+            "STL": 0.159,
+            "FTA": 0.25
+          }
+        },
+        {
+          "slug": "jones-derrick",
+          "player": "Jones, Derrick",
+          "season": "24-25",
+          "team": "TOT",
+          "dist": 0.2525,
+          "pct": {
+            "PPG": 0.169,
+            "APG": 0.044,
+            "TOV": 0.221,
+            "TS%": 0.655,
+            "3PA": 0.238,
+            "RPG": 0.218,
+            "BLK": 0.39,
+            "STL": 0.309,
+            "FTA": 0.213
           }
         },
         {
@@ -2500,7 +2465,7 @@
           "player": "Little, Nassir",
           "season": "23-24",
           "team": "DAL",
-          "dist": 0.3023,
+          "dist": 0.2579,
           "pct": {
             "PPG": 0.245,
             "APG": 0.209,
@@ -2514,93 +2479,129 @@
           }
         },
         {
-          "slug": "craig-torrey",
-          "player": "Craig, Torrey",
-          "season": "25-26",
-          "team": "GSW",
-          "dist": 0.3029,
+          "slug": "jackson-justin",
+          "player": "Jackson, Justin",
+          "season": "20-21",
+          "team": "TOT",
+          "dist": 0.2726,
+          "pct": {
+            "PPG": 0.143,
+            "APG": 0.115,
+            "TOV": 0.128,
+            "TS%": 0.596,
+            "3PA": 0.339,
+            "RPG": 0.169,
+            "BLK": 0.156,
+            "STL": 0.169,
+            "FTA": 0.141
+          }
+        },
+        {
+          "slug": "murphy-trey",
+          "player": "Murphy, Trey",
+          "season": "21-22",
+          "team": "TOT",
+          "dist": 0.2781,
+          "pct": {
+            "PPG": 0.113,
+            "APG": 0.116,
+            "TOV": 0.061,
+            "TS%": 0.58,
+            "3PA": 0.346,
+            "RPG": 0.216,
+            "BLK": 0.256,
+            "STL": 0.016,
+            "FTA": 0.142
+          }
+        },
+        {
+          "slug": "green-jeff",
+          "player": "Green, Jeff",
+          "season": "21-22",
+          "team": "TOR",
+          "dist": 0.2838,
+          "pct": {
+            "PPG": 0.285,
+            "APG": 0.055,
+            "TOV": 0.124,
+            "TS%": 0.821,
+            "3PA": 0.314,
+            "RPG": 0.248,
+            "BLK": 0.351,
+            "STL": 0.113,
+            "FTA": 0.393
+          }
+        },
+        {
+          "slug": "trier-allonzo",
+          "player": "Trier, Allonzo",
+          "season": "20-21",
+          "team": "TOT",
+          "dist": 0.2889,
+          "pct": {
+            "PPG": 0.19,
+            "APG": 0.299,
+            "TOV": 0.078,
+            "TS%": 0.779,
+            "3PA": 0.234,
+            "RPG": 0.049,
+            "BLK": 0.258,
+            "STL": 0.062,
+            "FTA": 0.216
+          }
+        },
+        {
+          "slug": "ilyasova-ersan",
+          "player": "Ilyasova, Ersan",
+          "season": "20-21",
+          "team": "PHX",
+          "dist": 0.2944,
           "pct": {
             "PPG": 0.089,
-            "APG": 0.067,
-            "TOV": 0.134,
-            "TS%": 0.551,
-            "3PA": 0.258,
-            "RPG": 0.47,
-            "BLK": 0.427,
-            "STL": 0.288,
-            "FTA": 0.237
-          }
-        },
-        {
-          "slug": "collins-zach",
-          "player": "Collins, Zach",
-          "season": "21-22",
-          "team": "NYK",
-          "dist": 0.3064,
-          "pct": {
-            "PPG": 0.193,
-            "APG": 0.208,
-            "TOV": 0.15,
+            "APG": 0.026,
+            "TOV": 0.25,
             "TS%": 0.747,
-            "3PA": 0.285,
-            "RPG": 0.319,
-            "BLK": 0.678,
-            "STL": 0.042,
-            "FTA": 0.356
+            "3PA": 0.214,
+            "RPG": 0.341,
+            "BLK": 0.279,
+            "STL": 0.174,
+            "FTA": 0.096
           }
         },
         {
-          "slug": "kleber-maxi",
-          "player": "Kleber, Maxi",
-          "season": "20-21",
-          "team": "TOT",
-          "dist": 0.3085,
+          "slug": "metu-chimezie",
+          "player": "Metu, Chimezie",
+          "season": "21-22",
+          "team": "UTA",
+          "dist": 0.3062,
           "pct": {
-            "PPG": 0.198,
-            "APG": 0.258,
-            "TOV": 0.073,
-            "TS%": 0.904,
-            "3PA": 0.333,
-            "RPG": 0.458,
-            "BLK": 0.69,
-            "STL": 0.19,
-            "FTA": 0.253
+            "PPG": 0.232,
+            "APG": 0.108,
+            "TOV": 0.23,
+            "TS%": 0.617,
+            "3PA": 0.216,
+            "RPG": 0.396,
+            "BLK": 0.554,
+            "STL": 0.193,
+            "FTA": 0.232
           }
         },
         {
-          "slug": "kornet-luke",
-          "player": "Kornet, Luke",
-          "season": "23-24",
-          "team": "GSW",
-          "dist": 0.3095,
+          "slug": "da-silva-tristan",
+          "player": "Da Silva, Tristan",
+          "season": "25-26",
+          "team": "CLE",
+          "dist": 0.31,
           "pct": {
-            "PPG": 0.039,
-            "APG": 0.174,
-            "TOV": 0.107,
-            "TS%": 0.722,
-            "3PA": 0.099,
-            "RPG": 0.413,
-            "BLK": 0.733,
-            "STL": 0.017,
-            "FTA": 0.039
-          }
-        },
-        {
-          "slug": "gibson-taj",
-          "player": "Gibson, Taj",
-          "season": "20-21",
-          "team": "TOT",
-          "dist": 0.3104,
-          "pct": {
-            "PPG": 0.115,
-            "APG": 0.016,
-            "TOV": 0.052,
-            "TS%": 0.805,
-            "3PA": 0.086,
-            "RPG": 0.391,
-            "BLK": 0.656,
-            "STL": 0.01,
-            "FTA": 0.104
+            "PPG": 0.28,
+            "APG": 0.247,
+            "TOV": 0.21,
+            "TS%": 0.597,
+            "3PA": 0.476,
+            "RPG": 0.382,
+            "BLK": 0.333,
+            "STL": 0.293,
+            "FTA": 0.161
           }
         }
       ]
@@ -2608,259 +2609,25 @@
     {
       "id": 9,
       "name": "",
-      "size": 282,
+      "size": 300,
       "centroid": {
-        "PPG": 0.13,
-        "APG": 0.2167,
-        "TOV": 0.1273,
-        "TS%": 0.2996,
-        "3PA": 0.2994,
-        "RPG": 0.1404,
-        "BLK": 0.229,
-        "STL": 0.1551,
-        "FTA": 0.1364
+        "PPG": 0.1613,
+        "APG": 0.304,
+        "TOV": 0.2203,
+        "TS%": 0.1848,
+        "3PA": 0.3269,
+        "RPG": 0.1981,
+        "BLK": 0.314,
+        "STL": 0.2977,
+        "FTA": 0.1629
       },
       "top": [
-        {
-          "slug": "moore-etwaun",
-          "player": "Moore, Etwaun",
-          "season": "20-21",
-          "team": "LAL",
-          "dist": 0.1347,
-          "pct": {
-            "PPG": 0.193,
-            "APG": 0.292,
-            "TOV": 0.135,
-            "TS%": 0.276,
-            "3PA": 0.344,
-            "RPG": 0.112,
-            "BLK": 0.216,
-            "STL": 0.094,
-            "FTA": 0.172
-          }
-        },
-        {
-          "slug": "jovic-nikola",
-          "player": "Jovic, Nikola",
-          "season": "23-24",
-          "team": "NYK",
-          "dist": 0.1827,
-          "pct": {
-            "PPG": 0.174,
-            "APG": 0.066,
-            "TOV": 0.11,
-            "TS%": 0.3,
-            "3PA": 0.364,
-            "RPG": 0.129,
-            "BLK": 0.198,
-            "STL": 0.143,
-            "FTA": 0.193
-          }
-        },
-        {
-          "slug": "martin-cody",
-          "player": "Martin, Cody",
-          "season": "20-21",
-          "team": "CHA",
-          "dist": 0.1847,
-          "pct": {
-            "PPG": 0.06,
-            "APG": 0.216,
-            "TOV": 0.122,
-            "TS%": 0.219,
-            "3PA": 0.208,
-            "RPG": 0.229,
-            "BLK": 0.154,
-            "STL": 0.128,
-            "FTA": 0.133
-          }
-        },
-        {
-          "slug": "wagner-moritz",
-          "player": "Wagner, Moritz",
-          "season": "21-22",
-          "team": "WAS",
-          "dist": 0.1938,
-          "pct": {
-            "PPG": 0.098,
-            "APG": 0.237,
-            "TOV": 0.137,
-            "TS%": 0.372,
-            "3PA": 0.211,
-            "RPG": 0.19,
-            "BLK": 0.351,
-            "STL": 0.23,
-            "FTA": 0.129
-          }
-        },
-        {
-          "slug": "nesmith-aaron",
-          "player": "Nesmith, Aaron",
-          "season": "21-22",
-          "team": "TOT",
-          "dist": 0.2082,
-          "pct": {
-            "PPG": 0.074,
-            "APG": 0.135,
-            "TOV": 0.047,
-            "TS%": 0.166,
-            "3PA": 0.332,
-            "RPG": 0.195,
-            "BLK": 0.24,
-            "STL": 0.084,
-            "FTA": 0.145
-          }
-        },
-        {
-          "slug": "scheierman-baylor",
-          "player": "Scheierman, Baylor",
-          "season": "24-25",
-          "team": "POR",
-          "dist": 0.2196,
-          "pct": {
-            "PPG": 0.08,
-            "APG": 0.343,
-            "TOV": 0.047,
-            "TS%": 0.309,
-            "3PA": 0.401,
-            "RPG": 0.11,
-            "BLK": 0.13,
-            "STL": 0.116,
-            "FTA": 0.166
-          }
-        },
-        {
-          "slug": "knox-kevin",
-          "player": "Knox, Kevin",
-          "season": "24-25",
-          "team": "NOP",
-          "dist": 0.2312,
-          "pct": {
-            "PPG": 0.127,
-            "APG": 0.188,
-            "TOV": 0.094,
-            "TS%": 0.113,
-            "3PA": 0.359,
-            "RPG": 0.169,
-            "BLK": 0.265,
-            "STL": 0.099,
-            "FTA": 0.047
-          }
-        },
-        {
-          "slug": "sochan-jeremy",
-          "player": "Sochan, Jeremy",
-          "season": "25-26",
-          "team": "CLE",
-          "dist": 0.2358,
-          "pct": {
-            "PPG": 0.091,
-            "APG": 0.202,
-            "TOV": 0.019,
-            "TS%": 0.169,
-            "3PA": 0.183,
-            "RPG": 0.22,
-            "BLK": 0.266,
-            "STL": 0.094,
-            "FTA": 0.142
-          }
-        },
-        {
-          "slug": "edwards-justin",
-          "player": "Edwards, Justin",
-          "season": "25-26",
-          "team": "OKC",
-          "dist": 0.2386,
-          "pct": {
-            "PPG": 0.062,
-            "APG": 0.191,
-            "TOV": 0.142,
-            "TS%": 0.427,
-            "3PA": 0.159,
-            "RPG": 0.113,
-            "BLK": 0.261,
-            "STL": 0.255,
-            "FTA": 0.078
-          }
-        },
-        {
-          "slug": "kispert-corey",
-          "player": "Kispert, Corey",
-          "season": "21-22",
-          "team": "SAC",
-          "dist": 0.2396,
-          "pct": {
-            "PPG": 0.14,
-            "APG": 0.092,
-            "TOV": 0.113,
-            "TS%": 0.174,
-            "3PA": 0.406,
-            "RPG": 0.087,
-            "BLK": 0.282,
-            "STL": 0.166,
-            "FTA": 0.23
-          }
-        },
-        {
-          "slug": "mann-terance",
-          "player": "Mann, Terance",
-          "season": "24-25",
-          "team": "TOT",
-          "dist": 0.2567,
-          "pct": {
-            "PPG": 0.171,
-            "APG": 0.412,
-            "TOV": 0.108,
-            "TS%": 0.359,
-            "3PA": 0.257,
-            "RPG": 0.18,
-            "BLK": 0.224,
-            "STL": 0.144,
-            "FTA": 0.273
-          }
-        },
-        {
-          "slug": "livers-isaiah",
-          "player": "Livers, Isaiah",
-          "season": "23-24",
-          "team": "DAL",
-          "dist": 0.2582,
-          "pct": {
-            "PPG": 0.154,
-            "APG": 0.347,
-            "TOV": 0.149,
-            "TS%": 0.336,
-            "3PA": 0.477,
-            "RPG": 0.061,
-            "BLK": 0.322,
-            "STL": 0.135,
-            "FTA": 0.157
-          }
-        },
-        {
-          "slug": "bullock-reggie",
-          "player": "Bullock, Reggie",
-          "season": "20-21",
-          "team": "TOT",
-          "dist": 0.2649,
-          "pct": {
-            "PPG": 0.065,
-            "APG": 0.099,
-            "TOV": 0.018,
-            "TS%": 0.237,
-            "3PA": 0.268,
-            "RPG": 0.083,
-            "BLK": 0.091,
-            "STL": 0.242,
-            "FTA": 0.062
-          }
-        },
         {
           "slug": "clifford-nique",
           "player": "Clifford, Nique",
           "season": "25-26",
           "team": "MIA",
-          "dist": 0.2703,
+          "dist": 0.2609,
           "pct": {
             "PPG": 0.099,
             "APG": 0.266,
@@ -2874,21 +2641,255 @@
           }
         },
         {
-          "slug": "sasser-marcus",
-          "player": "Sasser, Marcus",
-          "season": "25-26",
-          "team": "OKC",
-          "dist": 0.2785,
+          "slug": "ennis-james",
+          "player": "Ennis, James",
+          "season": "20-21",
+          "team": "ORL",
+          "dist": 0.2646,
           "pct": {
-            "PPG": 0.116,
-            "APG": 0.272,
-            "TOV": 0.046,
-            "TS%": 0.261,
+            "PPG": 0.133,
+            "APG": 0.146,
+            "TOV": 0.227,
+            "TS%": 0.26,
+            "3PA": 0.341,
+            "RPG": 0.193,
+            "BLK": 0.167,
+            "STL": 0.424,
+            "FTA": 0.182
+          }
+        },
+        {
+          "slug": "nwaba-david",
+          "player": "Nwaba, David",
+          "season": "21-22",
+          "team": "DAL",
+          "dist": 0.2663,
+          "pct": {
+            "PPG": 0.166,
+            "APG": 0.153,
+            "TOV": 0.172,
+            "TS%": 0.201,
+            "3PA": 0.248,
+            "RPG": 0.179,
+            "BLK": 0.427,
+            "STL": 0.456,
+            "FTA": 0.135
+          }
+        },
+        {
+          "slug": "matthews-wesley",
+          "player": "Matthews, Wesley",
+          "season": "20-21",
+          "team": "TOT",
+          "dist": 0.2867,
+          "pct": {
+            "PPG": 0.151,
+            "APG": 0.43,
+            "TOV": 0.292,
+            "TS%": 0.354,
+            "3PA": 0.401,
+            "RPG": 0.13,
+            "BLK": 0.216,
+            "STL": 0.263,
+            "FTA": 0.271
+          }
+        },
+        {
+          "slug": "dieng-ousmane",
+          "player": "Dieng, Ousmane",
+          "season": "24-25",
+          "team": "HOU",
+          "dist": 0.3023,
+          "pct": {
+            "PPG": 0.077,
+            "APG": 0.18,
+            "TOV": 0.199,
+            "TS%": 0.058,
             "3PA": 0.285,
-            "RPG": 0.011,
-            "BLK": 0.078,
-            "STL": 0.04,
-            "FTA": 0.022
+            "RPG": 0.221,
+            "BLK": 0.461,
+            "STL": 0.135,
+            "FTA": 0.119
+          }
+        },
+        {
+          "slug": "tucker-pj",
+          "player": "Tucker, Pj",
+          "season": "22-23",
+          "team": "MIN",
+          "dist": 0.3041,
+          "pct": {
+            "PPG": 0.157,
+            "APG": 0.364,
+            "TOV": 0.388,
+            "TS%": 0.25,
+            "3PA": 0.426,
+            "RPG": 0.394,
+            "BLK": 0.295,
+            "STL": 0.245,
+            "FTA": 0.09
+          }
+        },
+        {
+          "slug": "knox-kevin",
+          "player": "Knox, Kevin",
+          "season": "24-25",
+          "team": "NOP",
+          "dist": 0.3046,
+          "pct": {
+            "PPG": 0.127,
+            "APG": 0.188,
+            "TOV": 0.094,
+            "TS%": 0.113,
+            "3PA": 0.359,
+            "RPG": 0.169,
+            "BLK": 0.265,
+            "STL": 0.099,
+            "FTA": 0.047
+          }
+        },
+        {
+          "slug": "gay-rudy",
+          "player": "Gay, Rudy",
+          "season": "22-23",
+          "team": "TOT",
+          "dist": 0.3106,
+          "pct": {
+            "PPG": 0.29,
+            "APG": 0.386,
+            "TOV": 0.17,
+            "TS%": 0.298,
+            "3PA": 0.42,
+            "RPG": 0.407,
+            "BLK": 0.354,
+            "STL": 0.362,
+            "FTA": 0.162
+          }
+        },
+        {
+          "slug": "jones-tre",
+          "player": "Jones, Tre",
+          "season": "20-21",
+          "team": "NYK",
+          "dist": 0.3115,
+          "pct": {
+            "PPG": 0.052,
+            "APG": 0.438,
+            "TOV": 0.174,
+            "TS%": 0.003,
+            "3PA": 0.232,
+            "RPG": 0.055,
+            "BLK": 0.289,
+            "STL": 0.315,
+            "FTA": 0.125
+          }
+        },
+        {
+          "slug": "livers-isaiah",
+          "player": "Livers, Isaiah",
+          "season": "23-24",
+          "team": "DAL",
+          "dist": 0.3127,
+          "pct": {
+            "PPG": 0.154,
+            "APG": 0.347,
+            "TOV": 0.149,
+            "TS%": 0.336,
+            "3PA": 0.477,
+            "RPG": 0.061,
+            "BLK": 0.322,
+            "STL": 0.135,
+            "FTA": 0.157
+          }
+        },
+        {
+          "slug": "williams-lou",
+          "player": "Williams, Lou",
+          "season": "22-23",
+          "team": "LAC",
+          "dist": 0.3132,
+          "pct": {
+            "PPG": 0.247,
+            "APG": 0.38,
+            "TOV": 0.08,
+            "TS%": 0.066,
+            "3PA": 0.231,
+            "RPG": 0.085,
+            "BLK": 0.287,
+            "STL": 0.136,
+            "FTA": 0.21
+          }
+        },
+        {
+          "slug": "kispert-corey",
+          "player": "Kispert, Corey",
+          "season": "21-22",
+          "team": "SAC",
+          "dist": 0.3133,
+          "pct": {
+            "PPG": 0.14,
+            "APG": 0.092,
+            "TOV": 0.113,
+            "TS%": 0.174,
+            "3PA": 0.406,
+            "RPG": 0.087,
+            "BLK": 0.282,
+            "STL": 0.166,
+            "FTA": 0.23
+          }
+        },
+        {
+          "slug": "martin-cody",
+          "player": "Martin, Cody",
+          "season": "20-21",
+          "team": "CHA",
+          "dist": 0.3152,
+          "pct": {
+            "PPG": 0.06,
+            "APG": 0.216,
+            "TOV": 0.122,
+            "TS%": 0.219,
+            "3PA": 0.208,
+            "RPG": 0.229,
+            "BLK": 0.154,
+            "STL": 0.128,
+            "FTA": 0.133
+          }
+        },
+        {
+          "slug": "ariza-trevor",
+          "player": "Ariza, Trevor",
+          "season": "20-21",
+          "team": "TOT",
+          "dist": 0.322,
+          "pct": {
+            "PPG": 0.073,
+            "APG": 0.086,
+            "TOV": 0.289,
+            "TS%": 0.312,
+            "3PA": 0.297,
+            "RPG": 0.281,
+            "BLK": 0.354,
+            "STL": 0.341,
+            "FTA": 0.036
+          }
+        },
+        {
+          "slug": "rollins-ryan",
+          "player": "Rollins, Ryan",
+          "season": "24-25",
+          "team": "TOT",
+          "dist": 0.325,
+          "pct": {
+            "PPG": 0.337,
+            "APG": 0.326,
+            "TOV": 0.246,
+            "TS%": 0.215,
+            "3PA": 0.144,
+            "RPG": 0.058,
+            "BLK": 0.318,
+            "STL": 0.265,
+            "FTA": 0.298
           }
         }
       ]
