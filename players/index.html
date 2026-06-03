@@ -2246,6 +2246,7 @@
       if (good('RPG') && good('BLK') && good('3PT')) return 'Stretch Big';
       if (elite('BLK') && elite('STL') && p.PPG < 0.50) return 'Defensive Anchor';
       if (elite('3PT') && high('TS%')) return 'Floor Spacer';
+      if (elite('BLK') && good('TS%')) return 'Rim Protector';
 
       const specialistMap = { PPG: 'Scoring Specialist', '3PT': 'Shooter', APG: 'Facilitator',
         RPG: 'Rebounding Specialist', BLK: 'Rim Protector', STL: 'Perimeter Defender', 'TS%': 'Efficient Scorer' };
