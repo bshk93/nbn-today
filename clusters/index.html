@@ -111,6 +111,19 @@
   .dim-fill { height: 5px; border-radius: 2px; }
   .dim-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
 
+  .show-more {
+    margin-top: 0.4rem;
+    background: none;
+    border: none;
+    color: #3b82f6;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.1rem 0;
+    font-family: inherit;
+  }
+  .show-more:hover { color: #60a5fa; }
+
   .loading { color: #6b7280; padding: 3rem; text-align: center; }
   .error   { color: #f87171; padding: 3rem; text-align: center; }
 
@@ -263,22 +276,42 @@ function buildCard(cluster) {
   title.textContent = 'Closest to centroid';
   playersList.appendChild(title);
 
-  cluster.top.slice(0, 8).forEach(p => {
+  const PAGE = 10;
+  let shown = PAGE;
+
+  function makeRow(p) {
     const row = document.createElement('div');
     row.className = 'player-row';
-    const nameEl = document.createElement('div');
-    nameEl.className = 'player-name';
     const parts = p.player.split(', ');
     const displayName = parts.length === 2 ? `${parts[1]} ${parts[0]}` : p.player;
-    const slug = p.slug;
-    nameEl.innerHTML = `<a href="/players/?p=${slug}">${displayName}</a>`;
-    const seasonEl = document.createElement('div');
-    seasonEl.className = 'player-season';
-    seasonEl.textContent = p.season;
-    row.appendChild(nameEl);
-    row.appendChild(seasonEl);
-    playersList.appendChild(row);
+    row.innerHTML = `<div class="player-name"><a href="/players/?p=${p.slug}">${displayName}</a></div>`
+                  + `<div class="player-season">${p.season}</div>`;
+    return row;
+  }
+
+  const rowContainer = document.createElement('div');
+  cluster.top.slice(0, PAGE).forEach(p => rowContainer.appendChild(makeRow(p)));
+  playersList.appendChild(rowContainer);
+
+  const total = cluster.top.length;
+  const btn = document.createElement('button');
+  btn.className = 'show-more';
+
+  function updateBtn() {
+    if (shown >= total) { btn.style.display = 'none'; return; }
+    btn.style.display = '';
+    btn.textContent = `Show more (${shown}/${total})`;
+  }
+
+  btn.addEventListener('click', () => {
+    const next = Math.min(shown + PAGE, total);
+    cluster.top.slice(shown, next).forEach(p => rowContainer.appendChild(makeRow(p)));
+    shown = next;
+    updateBtn();
   });
+
+  playersList.appendChild(btn);
+  updateBtn();
 
   body.appendChild(playersList);
   card.appendChild(body);

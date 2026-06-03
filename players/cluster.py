@@ -276,7 +276,7 @@ def build_output(player_seasons, vecs, labels, centers, k, method):
             'team':   ps['team'],
             'dist':   round(d, 4),
             'pct':    {dim: round(ps['pct'][dim], 3) for dim in DIMS},
-        } for d, ps in members[:15]]
+        } for d, ps in members]
 
         clusters.append({
             'id':       c,
