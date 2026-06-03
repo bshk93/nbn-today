@@ -2240,6 +2240,7 @@
       if (dims.filter(d => d.pct >= 0.75).length >= 6 && defAvg >= 0.50) return 'All-Around';
       if (offAvg >= 0.72 && defAvg >= 0.72) return 'Two-Way Star';
       if (elite('PPG') && high('FTA')) return 'Elite Scorer';
+      if (elite('APG') && elite('STL')) return 'Defensive Playmaker';
       if (elite('APG') && p.APG > p.PPG + 0.10) return 'Playmaker';
       if (elite('3PT') && (elite('STL') || elite('BLK'))) return '3-and-D';
       if (elite('RPG') && elite('BLK') && p['3PT'] < 0.35) return 'Paint Beast';
