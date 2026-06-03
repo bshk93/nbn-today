@@ -2237,7 +2237,7 @@
       const offAvg = (p.PPG + p['3PT'] + p['TS%'] + p.APG + p.FTA) / 5;
       const defAvg = (p.BLK + p.STL) / 2;
 
-      if (dims.filter(d => d.pct >= 0.75).length >= 5 && defAvg >= 0.50) return 'All-Around';
+      if (dims.filter(d => d.pct >= 0.75).length >= 6 && defAvg >= 0.50) return 'All-Around';
       if (offAvg >= 0.72 && defAvg >= 0.72) return 'Two-Way Star';
       if (elite('PPG') && high('FTA')) return 'Scorer';
       if (elite('APG') && p.APG > p.PPG + 0.10) return 'Playmaker';
