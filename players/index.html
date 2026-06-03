@@ -2239,7 +2239,7 @@
 
       if (dims.filter(d => d.pct >= 0.75).length >= 6 && defAvg >= 0.50) return 'All-Around';
       if (offAvg >= 0.72 && defAvg >= 0.72) return 'Two-Way Star';
-      if (elite('PPG') && high('FTA')) return 'Scorer';
+      if (elite('PPG') && high('FTA')) return 'Elite Scorer';
       if (elite('APG') && p.APG > p.PPG + 0.10) return 'Playmaker';
       if (elite('3PT') && (elite('STL') || elite('BLK'))) return '3-and-D';
       if (elite('RPG') && elite('BLK') && p['3PT'] < 0.35) return 'Paint Beast';
@@ -2258,7 +2258,7 @@
     function buildSvg(season) {
       const seasonRows = playerRows.filter(r => r.SEASON === season);
       const [agg] = aggregateBySeasonRows(seasonRows);
-      if (!agg || +agg.G < 10) return null;
+      if (!agg || +agg.G < 20) return null;
 
       const seasonMap = new Map();
       allRows.filter(r => r.SEASON === season).forEach(r => {
@@ -2368,7 +2368,7 @@
       .sort().reverse()
       .filter(s => {
         const [a] = aggregateBySeasonRows(playerRows.filter(r => r.SEASON === s));
-        return a && +a.G >= 10;
+        return a && +a.G >= 20;
       });
     if (!eligibleSeasons.length) return null;
 
