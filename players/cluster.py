@@ -18,7 +18,7 @@ from collections import defaultdict
 
 CSV_PATH  = 'players/player_seasons.csv'
 OUT_PATH  = 'players/player_clusters.json'
-K         = 10
+K         = 16
 MIN_GAMES = 20
 SEED      = 42
 MAX_ITER  = 300
