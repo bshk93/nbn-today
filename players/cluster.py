@@ -207,6 +207,49 @@ def hierarchical_ward(vecs, k):
 
     return final_labels.tolist(), centroids
 
+# ---------- dendrogram (meta-merge of k final clusters) ----------
+
+def build_dendrogram(centers, cluster_sizes):
+    """
+    Run k-1 Ward merges on the k final cluster centroids/sizes.
+    Returns linkage list: [{'a': id, 'b': id, 'dist': float}]
+    Leaf IDs are 0..k-1; internal node IDs are k, k+1, ...
+    """
+    import numpy as np
+
+    k     = len(centers)
+    cents = [np.array(c) for c in centers]
+    szs   = list(map(float, cluster_sizes))
+    ids   = list(range(k))      # current node ID for each active slot
+    next_id = k
+    linkage = []
+
+    while len(ids) > 1:
+        best_d, best_ii, best_jj = float('inf'), 0, 1
+        for ii in range(len(ids)):
+            for jj in range(ii + 1, len(ids)):
+                ni, nj = szs[ii], szs[jj]
+                sq_d   = float(np.sum((cents[ii] - cents[jj]) ** 2))
+                ward_d = (ni * nj) / (ni + nj) * sq_d
+                if ward_d < best_d:
+                    best_d, best_ii, best_jj = ward_d, ii, jj
+
+        ii, jj = best_ii, best_jj
+        na, nb = ids[ii], ids[jj]
+        ni, nj = szs[ii], szs[jj]
+
+        linkage.append({'a': na, 'b': nb, 'dist': round(best_d, 6)})
+
+        # Merge jj into ii
+        cents[ii] = (ni * cents[ii] + nj * cents[jj]) / (ni + nj)
+        szs[ii]   = ni + nj
+        ids[ii]   = next_id
+        next_id  += 1
+
+        cents.pop(jj); szs.pop(jj); ids.pop(jj)
+
+    return linkage
+
 # ---------- build output ----------
 
 def build_output(player_seasons, vecs, labels, centers, k, method):
@@ -247,12 +290,19 @@ def build_output(player_seasons, vecs, labels, centers, k, method):
     for i, c in enumerate(clusters):
         c['id'] = i
 
+    # Build dendrogram on the final k clusters
+    final_cents  = [c['centroid'] for c in clusters]
+    final_cents_arr = [[v for v in cent.values()] for cent in final_cents]
+    final_sizes  = [c['size'] for c in clusters]
+    linkage = build_dendrogram(final_cents_arr, final_sizes)
+
     return {
-        'dims':    DIMS,
-        'method':  method,
-        'k':       k,
-        'n':       len(player_seasons),
+        'dims':     DIMS,
+        'method':   method,
+        'k':        k,
+        'n':        len(player_seasons),
         'clusters': clusters,
+        'linkage':  linkage,
     }
 
 # ---------- main ----------

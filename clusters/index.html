@@ -113,12 +113,33 @@
 
   .loading { color: #6b7280; padding: 3rem; text-align: center; }
   .error   { color: #f87171; padding: 3rem; text-align: center; }
+
+  .dendrogram-section {
+    background: #161b27;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .dendrogram-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.75rem;
+  }
+  .dendrogram-wrap { overflow-x: auto; }
 </style>
 </head>
 <body>
 <div class="page">
   <h1>Player Archetypes</h1>
-  <p class="subtitle">K-means clustering (k=10) across <b id="n-seasons">—</b> player-seasons with ≥20 games, pooled across all NBN seasons. Axes are within-season percentile ranks.</p>
+  <p class="subtitle">Hierarchical Ward clustering (k=10) across <b id="n-seasons">—</b> player-seasons with ≥20 games, pooled across all NBN seasons. Axes are within-season percentile ranks.</p>
+  <div id="dendrogram-section" style="display:none" class="dendrogram-section">
+    <div class="dendrogram-title">Cluster hierarchy — height = Ward distance at merge</div>
+    <div class="dendrogram-wrap" id="dendrogram-wrap"></div>
+  </div>
   <div id="root" class="clusters-grid"><p class="loading">Loading…</p></div>
 </div>
 <script>
@@ -281,10 +302,151 @@ function buildCard(cluster) {
   return card;
 }
 
+function buildDendrogram(clusters, linkage) {
+  const NS  = 'http://www.w3.org/2000/svg';
+  const k   = clusters.length;
+  const W   = Math.max(700, k * 80);
+  const H   = 220;
+  const pad = { top: 16, bottom: 56, left: 28, right: 28 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top  - pad.bottom;
+
+  // Build node map: leaves 0..k-1, internals k..2k-2
+  const nodes = {};
+  clusters.forEach(c => {
+    nodes[c.id] = { id: c.id, isLeaf: true, label: NAMES[c.id] || `#${c.id}`, size: c.size };
+  });
+  linkage.forEach((m, i) => {
+    nodes[k + i] = { id: k + i, isLeaf: false, left: m.a, right: m.b, dist: m.dist };
+  });
+  const rootId = k + linkage.length - 1;
+
+  // Leaf order via in-order traversal
+  const leafOrder = [];
+  function traverse(id) {
+    const nd = nodes[id];
+    if (nd.isLeaf) { leafOrder.push(id); return; }
+    traverse(nd.left);
+    traverse(nd.right);
+  }
+  traverse(rootId);
+
+  // X position: leaves evenly spaced, internals = midpoint of children
+  const leafX = {};
+  leafOrder.forEach((id, i) => { leafX[id] = i; });
+  function getX(id) {
+    if (id in leafX) return leafX[id];
+    const nd = nodes[id];
+    return (getX(nd.left) + getX(nd.right)) / 2;
+  }
+
+  const maxDist = Math.max(...linkage.map(m => m.dist));
+
+  function svgX(xIdx) { return pad.left + (xIdx / (k - 1)) * plotW; }
+  function svgY(dist)  { return pad.top  + plotH * (1 - dist / maxDist); }
+  function leafSvgY()  { return pad.top  + plotH; }
+
+  // Cache node Y (leaves at bottom, internals at their merge height)
+  function nodeY(id) {
+    return nodes[id].isLeaf ? leafSvgY() : svgY(nodes[id].dist);
+  }
+
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  // Y-axis tick lines (subtle)
+  [0.25, 0.5, 0.75, 1].forEach(frac => {
+    const y = pad.top + plotH * (1 - frac);
+    const tick = document.createElementNS(NS, 'line');
+    tick.setAttribute('x1', pad.left - 4); tick.setAttribute('y1', y);
+    tick.setAttribute('x2', W - pad.right); tick.setAttribute('y2', y);
+    tick.setAttribute('stroke', '#1f2937'); tick.setAttribute('stroke-width', '1');
+    tick.setAttribute('stroke-dasharray', '3 4');
+    svg.appendChild(tick);
+    const lbl = document.createElementNS(NS, 'text');
+    lbl.setAttribute('x', pad.left - 6); lbl.setAttribute('y', y);
+    lbl.setAttribute('text-anchor', 'end'); lbl.setAttribute('dominant-baseline', 'middle');
+    lbl.setAttribute('font-size', '8'); lbl.setAttribute('fill', '#4b5563');
+    lbl.textContent = (maxDist * frac).toFixed(3);
+    svg.appendChild(lbl);
+  });
+
+  // Draw tree recursively
+  function drawNode(id) {
+    const nd = nodes[id];
+    if (nd.isLeaf) return;
+    const x  = svgX(getX(id));
+    const y  = svgY(nd.dist);
+    const xL = svgX(getX(nd.left));
+    const xR = svgX(getX(nd.right));
+    const yL = nodeY(nd.left);
+    const yR = nodeY(nd.right);
+
+    // Horizontal bar connecting children at this node's height
+    const hbar = document.createElementNS(NS, 'line');
+    hbar.setAttribute('x1', xL); hbar.setAttribute('y1', y);
+    hbar.setAttribute('x2', xR); hbar.setAttribute('y2', y);
+    hbar.setAttribute('stroke', '#374151'); hbar.setAttribute('stroke-width', '1.5');
+    svg.appendChild(hbar);
+
+    // Vertical drops to each child
+    [[xL, yL], [xR, yR]].forEach(([cx, cy]) => {
+      const vl = document.createElementNS(NS, 'line');
+      vl.setAttribute('x1', cx); vl.setAttribute('y1', y);
+      vl.setAttribute('x2', cx); vl.setAttribute('y2', cy);
+      vl.setAttribute('stroke', '#374151'); vl.setAttribute('stroke-width', '1.5');
+      svg.appendChild(vl);
+    });
+
+    drawNode(nd.left);
+    drawNode(nd.right);
+  }
+  drawNode(rootId);
+
+  // Leaf labels (cluster name + size)
+  leafOrder.forEach(id => {
+    const nd = nodes[id];
+    const x  = svgX(getX(id));
+    const y  = leafSvgY() + 5;
+
+    const nameTxt = document.createElementNS(NS, 'text');
+    nameTxt.setAttribute('x', x); nameTxt.setAttribute('y', y);
+    nameTxt.setAttribute('text-anchor', 'middle');
+    nameTxt.setAttribute('dominant-baseline', 'hanging');
+    nameTxt.setAttribute('font-size', '9');
+    nameTxt.setAttribute('font-weight', '600');
+    nameTxt.setAttribute('fill', '#d1d5db');
+    nameTxt.textContent = nd.label;
+    svg.appendChild(nameTxt);
+
+    const sizeTxt = document.createElementNS(NS, 'text');
+    sizeTxt.setAttribute('x', x); sizeTxt.setAttribute('y', y + 13);
+    sizeTxt.setAttribute('text-anchor', 'middle');
+    sizeTxt.setAttribute('dominant-baseline', 'hanging');
+    sizeTxt.setAttribute('font-size', '8');
+    sizeTxt.setAttribute('fill', '#4b5563');
+    sizeTxt.textContent = `n=${nd.size}`;
+    svg.appendChild(sizeTxt);
+  });
+
+  return svg;
+}
+
 fetch('/players/player_clusters.json')
   .then(r => r.json())
   .then(data => {
     document.getElementById('n-seasons').textContent = data.n.toLocaleString();
+
+    // Dendrogram
+    if (data.linkage && data.linkage.length) {
+      const sec = document.getElementById('dendrogram-section');
+      sec.style.display = '';
+      document.getElementById('dendrogram-wrap').appendChild(
+        buildDendrogram(data.clusters, data.linkage)
+      );
+    }
+
     const root = document.getElementById('root');
     root.innerHTML = '';
     data.clusters.forEach(c => root.appendChild(buildCard(c)));
