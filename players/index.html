@@ -2228,6 +2228,33 @@
       { label: 'STL', angle: 135, get: (r,g) => rowPG(r,'STL'), fmt: v => `${v.toFixed(2)} SPG` },
     ];
 
+    function detectArchetype(dims) {
+      const p = {};
+      dims.forEach(d => { p[d.label] = d.pct; });
+      const elite = k => p[k] >= 0.80;
+      const high  = k => p[k] >= 0.75;
+      const good  = k => p[k] >= 0.65;
+      const offAvg = (p.PPG + p['3PT'] + p['TS%'] + p.APG + p.FTA) / 5;
+      const defAvg = (p.BLK + p.STL) / 2;
+
+      if (dims.filter(d => d.pct >= 0.75).length >= 5 && defAvg >= 0.50) return 'All-Around';
+      if (offAvg >= 0.72 && defAvg >= 0.72) return 'Two-Way Star';
+      if (elite('PPG') && high('FTA')) return 'Scorer';
+      if (elite('APG') && p.APG > p.PPG + 0.10) return 'Playmaker';
+      if (elite('3PT') && (elite('STL') || elite('BLK'))) return '3-and-D';
+      if (elite('RPG') && elite('BLK') && p['3PT'] < 0.35) return 'Paint Beast';
+      if (good('RPG') && good('BLK') && good('3PT')) return 'Stretch Big';
+      if (elite('BLK') && elite('STL') && p.PPG < 0.50) return 'Defensive Anchor';
+      if (elite('3PT') && high('TS%')) return 'Floor Spacer';
+
+      const specialistMap = { PPG: 'Scoring Specialist', '3PT': 'Shooter', APG: 'Facilitator',
+        RPG: 'Rebounding Specialist', BLK: 'Rim Protector', STL: 'Perimeter Defender', 'TS%': 'Efficient Scorer' };
+      const top = [...dims].sort((a, b) => b.pct - a.pct)[0];
+      if (top.pct >= 0.75 && specialistMap[top.label]) return specialistMap[top.label];
+
+      return 'Role Player';
+    }
+
     function buildSvg(season) {
       const seasonRows = playerRows.filter(r => r.SEASON === season);
       const [agg] = aggregateBySeasonRows(seasonRows);
@@ -2246,7 +2273,9 @@
         return { ...d, playerVal, pct: pct(playerVal, peerVals) };
       });
 
-      const W = 260, H = 260, cx = 130, cy = 125, maxR = 80;
+      const archetype = detectArchetype(dims);
+
+      const W = 260, H = 278, cx = 130, cy = 125, maxR = 80;
       const ns = 'http://www.w3.org/2000/svg';
       const svg = document.createElementNS(ns, 'svg');
       svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -2312,9 +2341,19 @@
         svg.appendChild(text);
       });
 
+      const archetypeLbl = document.createElementNS(ns, 'text');
+      archetypeLbl.setAttribute('x', cx);
+      archetypeLbl.setAttribute('y', H - 18);
+      archetypeLbl.setAttribute('text-anchor', 'middle');
+      archetypeLbl.setAttribute('fill', '#d1d5db');
+      archetypeLbl.setAttribute('font-size', '10');
+      archetypeLbl.setAttribute('font-weight', '600');
+      archetypeLbl.textContent = archetype;
+      svg.appendChild(archetypeLbl);
+
       const seasonLbl = document.createElementNS(ns, 'text');
       seasonLbl.setAttribute('x', cx);
-      seasonLbl.setAttribute('y', H - 6);
+      seasonLbl.setAttribute('y', H - 5);
       seasonLbl.setAttribute('text-anchor', 'middle');
       seasonLbl.setAttribute('fill', '#6b7280');
       seasonLbl.setAttribute('font-size', '9');
