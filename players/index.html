@@ -2243,7 +2243,7 @@
     const ns = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    svg.style.cssText = 'width:200px;height:auto;display:block;';
+    svg.style.cssText = 'width:280px;height:auto;display:block;';
 
     const toXY = (angle, r) => {
       const rad = angle * Math.PI / 180;
@@ -2271,21 +2271,38 @@
       svg.appendChild(line);
     });
 
-    // Player polygon
+    function tierColor(p) {
+      if (p >= 0.95) return '#a855f7'; // purple
+      if (p >= 0.80) return '#eab308'; // gold
+      if (p >= 0.50) return '#94a3b8'; // silver
+      return '#b87333';                // bronze
+    }
+
+    // Player polygon (faint shape outline)
     const poly = document.createElementNS(ns, 'polygon');
     poly.setAttribute('points', dims.map(d => toXY(d.angle, maxR * d.pct).join(',')).join(' '));
-    poly.setAttribute('fill', 'rgba(59,130,246,0.2)');
-    poly.setAttribute('stroke', '#3b82f6');
-    poly.setAttribute('stroke-width', '1.5');
+    poly.setAttribute('fill', 'rgba(255,255,255,0.04)');
+    poly.setAttribute('stroke', 'rgba(255,255,255,0.12)');
+    poly.setAttribute('stroke-width', '1');
     poly.setAttribute('stroke-linejoin', 'round');
     svg.appendChild(poly);
 
-    // Dots + tooltips
+    // Colored axis segments (center → vertex) + dots + tooltips
     dims.forEach(d => {
-      const [dx, dy] = toXY(d.angle, maxR * d.pct);
+      const color = tierColor(d.pct);
+      const [vx, vy] = toXY(d.angle, maxR * d.pct);
+
+      const seg = document.createElementNS(ns, 'line');
+      seg.setAttribute('x1', cx); seg.setAttribute('y1', cy);
+      seg.setAttribute('x2', vx); seg.setAttribute('y2', vy);
+      seg.setAttribute('stroke', color);
+      seg.setAttribute('stroke-width', '2');
+      seg.setAttribute('opacity', '0.7');
+      svg.appendChild(seg);
+
       const dot = document.createElementNS(ns, 'circle');
-      dot.setAttribute('cx', dx); dot.setAttribute('cy', dy); dot.setAttribute('r', '3');
-      dot.setAttribute('fill', '#3b82f6');
+      dot.setAttribute('cx', vx); dot.setAttribute('cy', vy); dot.setAttribute('r', '4');
+      dot.setAttribute('fill', color);
       const tip = document.createElementNS(ns, 'title');
       tip.textContent = `${d.fmt(d.playerVal)} — ${Math.round(d.pct * 100)}th pct`;
       dot.appendChild(tip);
@@ -2301,9 +2318,9 @@
       text.setAttribute('x', lx);
       text.setAttribute('y', ly + yOff);
       text.setAttribute('text-anchor', lx < cx - 5 ? 'end' : lx > cx + 5 ? 'start' : 'middle');
-      text.setAttribute('fill', '#9ca3af');
+      text.setAttribute('fill', tierColor(d.pct));
       text.setAttribute('font-size', '8.5');
-      text.setAttribute('font-weight', '500');
+      text.setAttribute('font-weight', '600');
       text.textContent = d.label;
       svg.appendChild(text);
     });
