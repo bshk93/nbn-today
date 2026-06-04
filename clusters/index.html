@@ -229,7 +229,7 @@
     display: flex;
     align-items: baseline;
     gap: 0.75rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.75rem;
   }
   .journey-player-name {
     font-size: 1.2rem;
@@ -241,94 +241,152 @@
     color: #6b7280;
   }
 
-  .journey-timeline {
-    display: flex;
-    align-items: flex-start;
-    gap: 0;
-    overflow-x: auto;
-    padding-bottom: 1rem;
-  }
-
-  .journey-arrow {
-    display: flex;
-    align-items: center;
-    padding: 0 2px;
-    margin-top: 72px; /* align with middle of card */
-    flex-shrink: 0;
-  }
-
-  .journey-card {
-    flex-shrink: 0;
-    width: 155px;
+  /* Graph */
+  .journey-graph {
     background: #161b27;
     border: 1px solid #1f2937;
-    border-top: 3px solid var(--cluster-color, #374151);
-    border-radius: 8px;
-    padding: 0.75rem 0.75rem 0.9rem;
+    border-radius: 10px;
+    padding: 2rem 1.5rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .journey-track-scroll { overflow-x: auto; padding-bottom: 0.5rem; }
+
+  .journey-track {
+    display: flex;
+    align-items: flex-start;
+    min-width: max-content;
+  }
+
+  .journey-node-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-  }
-  .journey-card-changed {
-    border-color: var(--cluster-color, #374151);
+    cursor: pointer;
+    flex-shrink: 0;
+    width: 72px;
   }
 
-  .jc-season-row {
+  .journey-node {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 800;
+    border: 2px solid;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    z-index: 1;
+  }
+  .journey-node-wrap:hover .journey-node { transform: scale(1.1); }
+  .journey-node-wrap.active .journey-node {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
+  }
+
+  .journey-node-season {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #d1d5db;
+    text-align: center;
+  }
+  .journey-node-team {
+    font-size: 0.65rem;
+    color: #6b7280;
+    text-align: center;
+    margin-top: -0.3rem;
+  }
+
+  .journey-connector {
+    flex: 1;
+    min-width: 24px;
+    height: 2px;
+    background: #374151;
+    margin-top: 25px; /* align with node center (52px / 2 - 1px) */
+    flex-shrink: 1;
+  }
+  .journey-connector.changed { background: #f59e0b; }
+
+  /* Detail panel */
+  .journey-detail {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+  }
+  .journey-detail.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .journey-detail-card {
+    background: #161b27;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    padding: 1.25rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .jd-left { flex-shrink: 0; }
+
+  .jd-right { flex: 1; min-width: 0; }
+
+  .jd-season-row {
     display: flex;
     align-items: baseline;
-    gap: 0.4rem;
-    width: 100%;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
   }
-  .jc-season {
-    font-size: 0.8rem;
+  .jd-season {
+    font-size: 1rem;
     font-weight: 700;
     color: #f9fafb;
   }
-  .jc-team {
-    font-size: 0.7rem;
+  .jd-team {
+    font-size: 0.8rem;
     color: #6b7280;
     font-weight: 600;
-    margin-left: auto;
   }
 
-  .jc-badge {
+  .jd-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.2rem 0.55rem;
-    border-radius: 5px;
+    gap: 0.4rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
     border: 1px solid;
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    white-space: nowrap;
+    margin-bottom: 0.3rem;
   }
-  .jc-cluster-name {
-    font-size: 0.72rem;
+  .jd-cluster-name {
+    font-size: 0.85rem;
     color: #9ca3af;
-    text-align: center;
-    line-height: 1.3;
+    margin-bottom: 1rem;
   }
 
-  .jc-radar { display: block; }
-
-  .jc-bars {
-    width: 100%;
+  .jd-bars {
     display: flex;
     flex-direction: column;
-    gap: 0.18rem;
-    margin-top: 0.1rem;
+    gap: 0.22rem;
   }
-  .jc-bar-row {
+  .jd-bar-row {
     display: flex;
     align-items: center;
-    gap: 0.3rem;
-    font-size: 0.62rem;
+    gap: 0.4rem;
+    font-size: 0.72rem;
   }
-  .jc-bar-label { color: #6b7280; width: 2.4rem; flex-shrink: 0; text-align: right; font-weight: 600; }
-  .jc-bar-track { flex: 1; background: #1f2937; border-radius: 2px; height: 4px; }
-  .jc-bar-fill  { height: 4px; border-radius: 2px; }
-  .jc-bar-val   { color: #6b7280; width: 1.8rem; text-align: right; flex-shrink: 0; }
+  .jd-bar-label { color: #6b7280; width: 2.8rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+  .jd-bar-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; }
+  .jd-bar-fill  { height: 5px; border-radius: 2px; }
+  .jd-bar-val   { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -752,6 +810,74 @@ function buildPlayerIndex(data) {
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
+function renderDetail(panel, s) {
+  const color = clusterColor(s.cluster);
+
+  panel.innerHTML = '';
+  panel.classList.add('visible');
+
+  const card = document.createElement('div');
+  card.className = 'journey-detail-card';
+
+  // Left: radar
+  const left = document.createElement('div');
+  left.className = 'jd-left';
+  left.appendChild(buildRadar(s.pct, 150));
+  card.appendChild(left);
+
+  // Right: season info + bars
+  const right = document.createElement('div');
+  right.className = 'jd-right';
+
+  const seasonRow = document.createElement('div');
+  seasonRow.className = 'jd-season-row';
+  seasonRow.innerHTML = `<span class="jd-season">${s.season}</span>`
+    + (s.team ? `<span class="jd-team">${s.team}</span>` : '');
+  right.appendChild(seasonRow);
+
+  const badge = document.createElement('div');
+  badge.className = 'jd-badge';
+  badge.style.background = color + '22';
+  badge.style.color = color;
+  badge.style.borderColor = color + '55';
+  badge.textContent = s.cluster;
+  right.appendChild(badge);
+
+  const cname = document.createElement('div');
+  cname.className = 'jd-cluster-name';
+  cname.textContent = s.clusterName;
+  right.appendChild(cname);
+
+  const bars = document.createElement('div');
+  bars.className = 'jd-bars';
+  DIMS.forEach(d => {
+    const v = s.pct[d] || 0;
+    const row = document.createElement('div');
+    row.className = 'jd-bar-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'jd-bar-label';
+    lbl.textContent = d;
+    const track = document.createElement('div');
+    track.className = 'jd-bar-track';
+    const fill = document.createElement('div');
+    fill.className = 'jd-bar-fill';
+    fill.style.width = (v * 100).toFixed(1) + '%';
+    fill.style.background = DIM_COLOR[d];
+    track.appendChild(fill);
+    const val = document.createElement('div');
+    val.className = 'jd-bar-val';
+    val.textContent = (v * 100).toFixed(0) + 'th';
+    row.appendChild(lbl);
+    row.appendChild(track);
+    row.appendChild(val);
+    bars.appendChild(row);
+  });
+  right.appendChild(bars);
+
+  card.appendChild(right);
+  panel.appendChild(card);
+}
+
 function renderJourney(slug) {
   const seasons = playerIndex[slug];
   if (!seasons || !seasons.length) return;
@@ -761,10 +887,9 @@ function renderJourney(slug) {
 
   const hdr = document.createElement('div');
   hdr.className = 'journey-header';
-  const displayName = fmtName(playerNames[slug]);
   const label = document.createElement('span');
   label.className = 'journey-player-name';
-  label.textContent = displayName;
+  label.textContent = fmtName(playerNames[slug]);
   const count = document.createElement('span');
   count.className = 'journey-seasons-count';
   count.textContent = `${seasons.length} season${seasons.length !== 1 ? 's' : ''} tracked`;
@@ -772,105 +897,70 @@ function renderJourney(slug) {
   hdr.appendChild(count);
   container.appendChild(hdr);
 
-  const timeline = document.createElement('div');
-  timeline.className = 'journey-timeline';
+  // Graph card
+  const graph = document.createElement('div');
+  graph.className = 'journey-graph';
+
+  const scroll = document.createElement('div');
+  scroll.className = 'journey-track-scroll';
+  const track = document.createElement('div');
+  track.className = 'journey-track';
+  scroll.appendChild(track);
+  graph.appendChild(scroll);
+
+  const nodeWraps = [];
 
   seasons.forEach((s, i) => {
-    // Arrow between cards
     if (i > 0) {
-      const arrowWrap = document.createElement('div');
-      arrowWrap.className = 'journey-arrow';
-      const changed = seasons[i - 1].cluster !== s.cluster;
-      const arrowColor = changed ? '#f59e0b' : '#374151';
-      const NS = 'http://www.w3.org/2000/svg';
-      const svg = document.createElementNS(NS, 'svg');
-      svg.setAttribute('width', '20'); svg.setAttribute('height', '20');
-      svg.setAttribute('viewBox', '0 0 20 20');
-      const path = document.createElementNS(NS, 'path');
-      path.setAttribute('d', 'M3 10h14M12 5l5 5-5 5');
-      path.setAttribute('stroke', arrowColor);
-      path.setAttribute('stroke-width', '2');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'round');
-      path.setAttribute('fill', 'none');
-      svg.appendChild(path);
-      arrowWrap.appendChild(svg);
-      timeline.appendChild(arrowWrap);
+      const conn = document.createElement('div');
+      conn.className = 'journey-connector' + (seasons[i - 1].cluster !== s.cluster ? ' changed' : '');
+      track.appendChild(conn);
     }
 
     const color = clusterColor(s.cluster);
-    const changed = i > 0 && seasons[i - 1].cluster !== s.cluster;
+    const wrap = document.createElement('div');
+    wrap.className = 'journey-node-wrap';
+    wrap.style.setProperty('--node-color', color);
 
-    const card = document.createElement('div');
-    card.className = 'journey-card' + (changed ? ' journey-card-changed' : '');
-    card.style.setProperty('--cluster-color', color);
+    const node = document.createElement('div');
+    node.className = 'journey-node';
+    node.style.background = color + '1a';
+    node.style.borderColor = color;
+    node.style.color = color;
+    node.textContent = s.cluster;
+    wrap.appendChild(node);
 
-    // Season + team row
-    const seasonRow = document.createElement('div');
-    seasonRow.className = 'jc-season-row';
-    const seasonEl = document.createElement('span');
-    seasonEl.className = 'jc-season';
-    seasonEl.textContent = s.season;
-    seasonRow.appendChild(seasonEl);
+    const seasonLbl = document.createElement('div');
+    seasonLbl.className = 'journey-node-season';
+    seasonLbl.textContent = s.season;
+    wrap.appendChild(seasonLbl);
+
     if (s.team) {
-      const teamEl = document.createElement('span');
-      teamEl.className = 'jc-team';
-      teamEl.textContent = s.team;
-      seasonRow.appendChild(teamEl);
+      const teamLbl = document.createElement('div');
+      teamLbl.className = 'journey-node-team';
+      teamLbl.textContent = s.team;
+      wrap.appendChild(teamLbl);
     }
-    card.appendChild(seasonRow);
 
-    // Cluster badge
-    const badge = document.createElement('div');
-    badge.className = 'jc-badge';
-    badge.style.background = color + '22';
-    badge.style.color = color;
-    badge.style.borderColor = color + '55';
-    badge.textContent = s.cluster;
-    card.appendChild(badge);
-
-    // Cluster name
-    const cname = document.createElement('div');
-    cname.className = 'jc-cluster-name';
-    cname.textContent = s.clusterName;
-    card.appendChild(cname);
-
-    // Radar of actual player pct values
-    const radar = buildRadar(s.pct, 90);
-    radar.className = 'jc-radar';
-    card.appendChild(radar);
-
-    // Dim bars
-    const bars = document.createElement('div');
-    bars.className = 'jc-bars';
-    DIMS.forEach(d => {
-      const v = s.pct[d] || 0;
-      const row = document.createElement('div');
-      row.className = 'jc-bar-row';
-      const lbl = document.createElement('div');
-      lbl.className = 'jc-bar-label';
-      lbl.textContent = d;
-      const track = document.createElement('div');
-      track.className = 'jc-bar-track';
-      const fill = document.createElement('div');
-      fill.className = 'jc-bar-fill';
-      fill.style.width = (v * 100).toFixed(1) + '%';
-      fill.style.background = DIM_COLOR[d];
-      track.appendChild(fill);
-      const val = document.createElement('div');
-      val.className = 'jc-bar-val';
-      val.textContent = (v * 100).toFixed(0);
-      row.appendChild(lbl);
-      row.appendChild(track);
-      row.appendChild(val);
-      bars.appendChild(row);
+    wrap.addEventListener('click', () => {
+      nodeWraps.forEach(w => w.classList.remove('active'));
+      wrap.classList.add('active');
+      renderDetail(detail, s);
     });
-    card.appendChild(bars);
 
-    timeline.appendChild(card);
+    track.appendChild(wrap);
+    nodeWraps.push(wrap);
   });
 
-  container.appendChild(timeline);
+  container.appendChild(graph);
+
+  // Detail panel (outside the graph card, below it)
+  const detail = document.createElement('div');
+  detail.className = 'journey-detail';
+  container.appendChild(detail);
+
+  // Auto-select first node
+  nodeWraps[0]?.click();
 }
 
 // ── Search autocomplete ───────────────────────────────────────────────────────
