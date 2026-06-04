@@ -1,0 +1,2990 @@
+{
+  "dims": [
+    "PPG",
+    "DEF",
+    "TS%",
+    "3PA_RATE",
+    "FTA_RATE",
+    "PACE",
+    "ROT_DEPTH",
+    "STAR_SHARE"
+  ],
+  "method": "twostage",
+  "k": 12,
+  "n": 150,
+  "clusters": [
+    {
+      "id": 0,
+      "hier_name": "1A",
+      "name": "",
+      "size": 14,
+      "centroid": {
+        "PPG": 0.7833,
+        "DEF": 0.3429,
+        "TS%": 0.769,
+        "3PA_RATE": 0.1952,
+        "FTA_RATE": 0.3524,
+        "PACE": 0.6714,
+        "ROT_DEPTH": 0.419,
+        "STAR_SHARE": 0.5262
+      },
+      "top": [
+        {
+          "team": "PHX",
+          "season": "24-25",
+          "record": "52-30",
+          "seed": "West-5",
+          "playoff_result": "Champion",
+          "dist": 0.347,
+          "pct": {
+            "PPG": 0.667,
+            "DEF": 0.233,
+            "TS%": 0.733,
+            "3PA_RATE": 0.033,
+            "FTA_RATE": 0.433,
+            "PACE": 0.467,
+            "ROT_DEPTH": 0.333,
+            "STAR_SHARE": 0.633
+          }
+        },
+        {
+          "team": "NOP",
+          "season": "21-22",
+          "record": "54-28",
+          "seed": "West-2",
+          "playoff_result": "Runner-Up",
+          "dist": 0.3911,
+          "pct": {
+            "PPG": 0.767,
+            "DEF": 0.267,
+            "TS%": 0.633,
+            "3PA_RATE": 0.2,
+            "FTA_RATE": 0.2,
+            "PACE": 0.967,
+            "ROT_DEPTH": 0.5,
+            "STAR_SHARE": 0.633
+          }
+        },
+        {
+          "team": "PHX",
+          "season": "21-22",
+          "record": "53-29",
+          "seed": "West-3",
+          "playoff_result": "Second Round",
+          "dist": 0.4005,
+          "pct": {
+            "PPG": 0.633,
+            "DEF": 0.067,
+            "TS%": 0.6,
+            "3PA_RATE": 0.167,
+            "FTA_RATE": 0.5,
+            "PACE": 0.633,
+            "ROT_DEPTH": 0.333,
+            "STAR_SHARE": 0.567
+          }
+        },
+        {
+          "team": "PHX",
+          "season": "25-26",
+          "record": "64-18",
+          "seed": "West-1",
+          "playoff_result": "Runner-Up",
+          "dist": 0.4223,
+          "pct": {
+            "PPG": 0.867,
+            "DEF": 0.133,
+            "TS%": 0.8,
+            "3PA_RATE": 0.1,
+            "FTA_RATE": 0.467,
+            "PACE": 0.833,
+            "ROT_DEPTH": 0.2,
+            "STAR_SHARE": 0.7
+          }
+        },
+        {
+          "team": "SAC",
+          "season": "22-23",
+          "record": "53-29",
+          "seed": "West-2",
+          "playoff_result": "First Round",
+          "dist": 0.4969,
+          "pct": {
+            "PPG": 0.6,
+            "DEF": 0.133,
+            "TS%": 0.533,
+            "3PA_RATE": 0.267,
+            "FTA_RATE": 0.267,
+            "PACE": 0.767,
+            "ROT_DEPTH": 0.233,
+            "STAR_SHARE": 0.767
+          }
+        },
+        {
+          "team": "ATL",
+          "season": "21-22",
+          "record": "46-36",
+          "seed": "East-6",
+          "playoff_result": "Champion",
+          "dist": 0.5148,
+          "pct": {
+            "PPG": 0.833,
+            "DEF": 0.4,
+            "TS%": 0.867,
+            "3PA_RATE": 0.533,
+            "FTA_RATE": 0.3,
+            "PACE": 0.8,
+            "ROT_DEPTH": 0.7,
+            "STAR_SHARE": 0.333
+          }
+        },
+        {
+          "team": "HOU",
+          "season": "21-22",
+          "record": "48-34",
+          "seed": "West-4",
+          "playoff_result": "Second Round",
+          "dist": 0.5355,
+          "pct": {
+            "PPG": 0.933,
+            "DEF": 0.733,
+            "TS%": 0.833,
+            "3PA_RATE": 0.133,
+            "FTA_RATE": 0.433,
+            "PACE": 0.933,
+            "ROT_DEPTH": 0.267,
+            "STAR_SHARE": 0.6
+          }
+        },
+        {
+          "team": "MEM",
+          "season": "24-25",
+          "record": "58-24",
+          "seed": "West-2",
+          "playoff_result": "Second Round",
+          "dist": 0.5528,
+          "pct": {
+            "PPG": 0.9,
+            "DEF": 0.3,
+            "TS%": 0.867,
+            "3PA_RATE": 0.133,
+            "FTA_RATE": 0.667,
+            "PACE": 0.4,
+            "ROT_DEPTH": 0.7,
+            "STAR_SHARE": 0.367
+          }
+        },
+        {
+          "team": "IND",
+          "season": "21-22",
+          "record": "65-17",
+          "seed": "East-1",
+          "playoff_result": "First Round",
+          "dist": 0.5618,
+          "pct": {
+            "PPG": 0.867,
+            "DEF": 0.0,
+            "TS%": 0.933,
+            "3PA_RATE": 0.0,
+            "FTA_RATE": 0.067,
+            "PACE": 0.533,
+            "ROT_DEPTH": 0.567,
+            "STAR_SHARE": 0.467
+          }
+        },
+        {
+          "team": "IND",
+          "season": "22-23",
+          "record": "53-29",
+          "seed": "East-2",
+          "playoff_result": "First Round",
+          "dist": 0.6969,
+          "pct": {
+            "PPG": 0.533,
+            "DEF": 0.1,
+            "TS%": 0.8,
+            "3PA_RATE": 0.167,
+            "FTA_RATE": 0.233,
+            "PACE": 0.1,
+            "ROT_DEPTH": 0.533,
+            "STAR_SHARE": 0.433
+          }
+        },
+        {
+          "team": "ATL",
+          "season": "22-23",
+          "record": "48-34",
+          "seed": "East-7",
+          "playoff_result": "First Round",
+          "dist": 0.7292,
+          "pct": {
+            "PPG": 0.833,
+            "DEF": 0.667,
+            "TS%": 0.833,
+            "3PA_RATE": 0.433,
+            "FTA_RATE": 0.5,
+            "PACE": 0.667,
+            "ROT_DEPTH": 0.733,
+            "STAR_SHARE": 0.033
+          }
+        },
+        {
+          "team": "LAL",
+          "season": "25-26",
+          "record": "56-26",
+          "seed": "West-2",
+          "playoff_result": "First Round",
+          "dist": 0.7366,
+          "pct": {
+            "PPG": 0.667,
+            "DEF": 0.067,
+            "TS%": 0.433,
+            "3PA_RATE": 0.0,
+            "FTA_RATE": 0.333,
+            "PACE": 0.967,
+            "ROT_DEPTH": 0.6,
+            "STAR_SHARE": 0.1
+          }
+        },
+        {
+          "team": "CLE",
+          "season": "24-25",
+          "record": "49-33",
+          "seed": "East-7",
+          "playoff_result": "First Round",
+          "dist": 0.7692,
+          "pct": {
+            "PPG": 0.967,
+            "DEF": 0.833,
+            "TS%": 0.967,
+            "3PA_RATE": 0.167,
+            "FTA_RATE": 0.5,
+            "PACE": 0.433,
+            "ROT_DEPTH": 0.067,
+            "STAR_SHARE": 0.8
+          }
+        },
+        {
+          "team": "CLE",
+          "season": "25-26",
+          "record": "43-39",
+          "seed": "East-6",
+          "playoff_result": "Second Round",
+          "dist": 0.8823,
+          "pct": {
+            "PPG": 0.9,
+            "DEF": 0.867,
+            "TS%": 0.933,
+            "3PA_RATE": 0.4,
+            "FTA_RATE": 0.033,
+            "PACE": 0.9,
+            "ROT_DEPTH": 0.1,
+            "STAR_SHARE": 0.933
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "hier_name": "1B",
+      "name": "",
+      "size": 12,
+      "centroid": {
+        "PPG": 0.3472,
+        "DEF": 0.4917,
+        "TS%": 0.3333,
+        "3PA_RATE": 0.2556,
+        "FTA_RATE": 0.2972,
+        "PACE": 0.5306,
+        "ROT_DEPTH": 0.6833,
+        "STAR_SHARE": 0.3778
+      },
+      "top": [
+        {
+          "team": "PHX",
+          "season": "22-23",
+          "record": "48-34",
+          "seed": "West-8",
+          "playoff_result": "Champion",
+          "dist": 0.3552,
+          "pct": {
+            "PPG": 0.233,
+            "DEF": 0.233,
+            "TS%": 0.2,
+            "3PA_RATE": 0.133,
+            "FTA_RATE": 0.367,
+            "PACE": 0.533,
+            "ROT_DEPTH": 0.767,
+            "STAR_SHARE": 0.333
+          }
+        },
+        {
+          "team": "ATL",
+          "season": "24-25",
+          "record": "38-44",
+          "seed": "East-9",
+          "playoff_result": "Conf Finals",
+          "dist": 0.3637,
+          "pct": {
+            "PPG": 0.3,
+            "DEF": 0.433,
+            "TS%": 0.233,
+            "3PA_RATE": 0.433,
+            "FTA_RATE": 0.2,
+            "PACE": 0.733,
+            "ROT_DEPTH": 0.8,
+            "STAR_SHARE": 0.233
+          }
+        },
+        {
+          "team": "NYK",
+          "season": "25-26",
+          "record": "38-44",
+          "seed": "East-8",
+          "playoff_result": "First Round",
+          "dist": 0.4146,
+          "pct": {
+            "PPG": 0.433,
+            "DEF": 0.533,
+            "TS%": 0.467,
+            "3PA_RATE": 0.167,
+            "FTA_RATE": 0.567,
+            "PACE": 0.333,
+            "ROT_DEPTH": 0.533,
+            "STAR_SHARE": 0.433
+          }
+        },
+        {
+          "team": "LAL",
+          "season": "21-22",
+          "record": "45-37",
+          "seed": "West-6",
+          "playoff_result": "First Round",
+          "dist": 0.4295,
+          "pct": {
+            "PPG": 0.567,
+            "DEF": 0.5,
+            "TS%": 0.333,
+            "3PA_RATE": 0.267,
+            "FTA_RATE": 0.333,
+            "PACE": 0.867,
+            "ROT_DEPTH": 0.6,
+            "STAR_SHARE": 0.5
+          }
+        },
+        {
+          "team": "PHI",
+          "season": "22-23",
+          "record": "35-47",
+          "seed": "East-10",
+          "playoff_result": "Missed",
+          "dist": 0.476,
+          "pct": {
+            "PPG": 0.2,
+            "DEF": 0.567,
+            "TS%": 0.3,
+            "3PA_RATE": 0.067,
+            "FTA_RATE": 0.533,
+            "PACE": 0.333,
+            "ROT_DEPTH": 0.633,
+            "STAR_SHARE": 0.633
+          }
+        },
+        {
+          "team": "SAC",
+          "season": "25-26",
+          "record": "47-35",
+          "seed": "West-5",
+          "playoff_result": "Second Round",
+          "dist": 0.5081,
+          "pct": {
+            "PPG": 0.5,
+            "DEF": 0.367,
+            "TS%": 0.533,
+            "3PA_RATE": 0.133,
+            "FTA_RATE": 0.1,
+            "PACE": 0.433,
+            "ROT_DEPTH": 0.4,
+            "STAR_SHARE": 0.567
+          }
+        },
+        {
+          "team": "CLE",
+          "season": "21-22",
+          "record": "37-45",
+          "seed": "East-9",
+          "playoff_result": "Missed",
+          "dist": 0.5207,
+          "pct": {
+            "PPG": 0.433,
+            "DEF": 0.6,
+            "TS%": 0.167,
+            "3PA_RATE": 0.1,
+            "FTA_RATE": 0.133,
+            "PACE": 0.9,
+            "ROT_DEPTH": 0.867,
+            "STAR_SHARE": 0.433
+          }
+        },
+        {
+          "team": "PHI",
+          "season": "21-22",
+          "record": "29-53",
+          "seed": "East-13",
+          "playoff_result": "Missed",
+          "dist": 0.5701,
+          "pct": {
+            "PPG": 0.267,
+            "DEF": 0.7,
+            "TS%": 0.533,
+            "3PA_RATE": 0.367,
+            "FTA_RATE": 0.1,
+            "PACE": 0.167,
+            "ROT_DEPTH": 0.767,
+            "STAR_SHARE": 0.167
+          }
+        },
+        {
+          "team": "NOP",
+          "season": "25-26",
+          "record": "39-43",
+          "seed": "West-10",
+          "playoff_result": "Missed",
+          "dist": 0.5724,
+          "pct": {
+            "PPG": 0.533,
+            "DEF": 0.633,
+            "TS%": 0.667,
+            "3PA_RATE": 0.367,
+            "FTA_RATE": 0.267,
+            "PACE": 0.267,
+            "ROT_DEPTH": 0.567,
+            "STAR_SHARE": 0.633
+          }
+        },
+        {
+          "team": "SAS",
+          "season": "21-22",
+          "record": "22-60",
+          "seed": "West-15",
+          "playoff_result": "Missed",
+          "dist": 0.6192,
+          "pct": {
+            "PPG": 0.133,
+            "DEF": 0.833,
+            "TS%": 0.067,
+            "3PA_RATE": 0.333,
+            "FTA_RATE": 0.233,
+            "PACE": 0.667,
+            "ROT_DEPTH": 0.367,
+            "STAR_SHARE": 0.233
+          }
+        },
+        {
+          "team": "LAL",
+          "season": "23-24",
+          "record": "43-39",
+          "seed": "West-9",
+          "playoff_result": "Missed",
+          "dist": 0.7054,
+          "pct": {
+            "PPG": 0.5,
+            "DEF": 0.467,
+            "TS%": 0.367,
+            "3PA_RATE": 0.433,
+            "FTA_RATE": 0.533,
+            "PACE": 0.933,
+            "ROT_DEPTH": 0.967,
+            "STAR_SHARE": 0.0
+          }
+        },
+        {
+          "team": "UTA",
+          "season": "25-26",
+          "record": "37-45",
+          "seed": "West-11",
+          "playoff_result": "Missed",
+          "dist": 0.7143,
+          "pct": {
+            "PPG": 0.067,
+            "DEF": 0.033,
+            "TS%": 0.133,
+            "3PA_RATE": 0.267,
+            "FTA_RATE": 0.2,
+            "PACE": 0.2,
+            "ROT_DEPTH": 0.933,
+            "STAR_SHARE": 0.367
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "hier_name": "1C",
+      "name": "",
+      "size": 15,
+      "centroid": {
+        "PPG": 0.2867,
+        "DEF": 0.4778,
+        "TS%": 0.24,
+        "3PA_RATE": 0.3178,
+        "FTA_RATE": 0.3133,
+        "PACE": 0.6933,
+        "ROT_DEPTH": 0.1844,
+        "STAR_SHARE": 0.7667
+      },
+      "top": [
+        {
+          "team": "NYK",
+          "season": "23-24",
+          "record": "40-42",
+          "seed": "East-8",
+          "playoff_result": "Conf Finals",
+          "dist": 0.2863,
+          "pct": {
+            "PPG": 0.433,
+            "DEF": 0.5,
+            "TS%": 0.4,
+            "3PA_RATE": 0.167,
+            "FTA_RATE": 0.367,
+            "PACE": 0.733,
+            "ROT_DEPTH": 0.133,
+            "STAR_SHARE": 0.833
+          }
+        },
+        {
+          "team": "NOP",
+          "season": "22-23",
+          "record": "50-32",
+          "seed": "West-5",
+          "playoff_result": "First Round",
+          "dist": 0.3019,
+          "pct": {
+            "PPG": 0.4,
+            "DEF": 0.333,
+            "TS%": 0.367,
+            "3PA_RATE": 0.233,
+            "FTA_RATE": 0.4,
+            "PACE": 0.6,
+            "ROT_DEPTH": 0.2,
+            "STAR_SHARE": 0.9
+          }
+        },
+        {
+          "team": "MIN",
+          "season": "24-25",
+          "record": "39-43",
+          "seed": "West-10",
+          "playoff_result": "Missed",
+          "dist": 0.4038,
+          "pct": {
+            "PPG": 0.233,
+            "DEF": 0.367,
+            "TS%": 0.2,
+            "3PA_RATE": 0.4,
+            "FTA_RATE": 0.367,
+            "PACE": 0.633,
+            "ROT_DEPTH": 0.433,
+            "STAR_SHARE": 0.5
+          }
+        },
+        {
+          "team": "MIA",
+          "season": "25-26",
+          "record": "39-43",
+          "seed": "East-7",
+          "playoff_result": "First Round",
+          "dist": 0.4265,
+          "pct": {
+            "PPG": 0.467,
+            "DEF": 0.5,
+            "TS%": 0.167,
+            "3PA_RATE": 0.533,
+            "FTA_RATE": 0.167,
+            "PACE": 0.933,
+            "ROT_DEPTH": 0.167,
+            "STAR_SHARE": 0.9
+          }
+        },
+        {
+          "team": "CHI",
+          "season": "23-24",
+          "record": "44-38",
+          "seed": "East-6",
+          "playoff_result": "Second Round",
+          "dist": 0.4303,
+          "pct": {
+            "PPG": 0.233,
+            "DEF": 0.167,
+            "TS%": 0.133,
+            "3PA_RATE": 0.4,
+            "FTA_RATE": 0.4,
+            "PACE": 0.9,
+            "ROT_DEPTH": 0.1,
+            "STAR_SHARE": 0.667
+          }
+        },
+        {
+          "team": "CHI",
+          "season": "22-23",
+          "record": "25-57",
+          "seed": "East-12",
+          "playoff_result": "Missed",
+          "dist": 0.4418,
+          "pct": {
+            "PPG": 0.033,
+            "DEF": 0.433,
+            "TS%": 0.033,
+            "3PA_RATE": 0.467,
+            "FTA_RATE": 0.167,
+            "PACE": 0.867,
+            "ROT_DEPTH": 0.133,
+            "STAR_SHARE": 0.667
+          }
+        },
+        {
+          "team": "HOU",
+          "season": "23-24",
+          "record": "45-37",
+          "seed": "West-8",
+          "playoff_result": "First Round",
+          "dist": 0.458,
+          "pct": {
+            "PPG": 0.4,
+            "DEF": 0.333,
+            "TS%": 0.267,
+            "3PA_RATE": 0.1,
+            "FTA_RATE": 0.5,
+            "PACE": 0.833,
+            "ROT_DEPTH": 0.233,
+            "STAR_SHARE": 0.5
+          }
+        },
+        {
+          "team": "GSW",
+          "season": "21-22",
+          "record": "40-42",
+          "seed": "West-10",
+          "playoff_result": "Conf Finals",
+          "dist": 0.5245,
+          "pct": {
+            "PPG": 0.1,
+            "DEF": 0.133,
+            "TS%": 0.033,
+            "3PA_RATE": 0.467,
+            "FTA_RATE": 0.367,
+            "PACE": 0.7,
+            "ROT_DEPTH": 0.067,
+            "STAR_SHARE": 0.967
+          }
+        },
+        {
+          "team": "TOR",
+          "season": "23-24",
+          "record": "33-49",
+          "seed": "East-11",
+          "playoff_result": "Missed",
+          "dist": 0.5393,
+          "pct": {
+            "PPG": 0.067,
+            "DEF": 0.433,
+            "TS%": 0.033,
+            "3PA_RATE": 0.333,
+            "FTA_RATE": 0.1,
+            "PACE": 0.7,
+            "ROT_DEPTH": 0.433,
+            "STAR_SHARE": 0.467
+          }
+        },
+        {
+          "team": "ATL",
+          "season": "23-24",
+          "record": "24-58",
+          "seed": "East-13",
+          "playoff_result": "Missed",
+          "dist": 0.5908,
+          "pct": {
+            "PPG": 0.3,
+            "DEF": 0.933,
+            "TS%": 0.233,
+            "3PA_RATE": 0.2,
+            "FTA_RATE": 0.6,
+            "PACE": 0.5,
+            "ROT_DEPTH": 0.267,
+            "STAR_SHARE": 0.8
+          }
+        },
+        {
+          "team": "DAL",
+          "season": "23-24",
+          "record": "45-37",
+          "seed": "West-7",
+          "playoff_result": "First Round",
+          "dist": 0.6137,
+          "pct": {
+            "PPG": 0.6,
+            "DEF": 0.567,
+            "TS%": 0.567,
+            "3PA_RATE": 0.533,
+            "FTA_RATE": 0.133,
+            "PACE": 0.967,
+            "ROT_DEPTH": 0.167,
+            "STAR_SHARE": 0.867
+          }
+        },
+        {
+          "team": "SAC",
+          "season": "21-22",
+          "record": "40-42",
+          "seed": "West-11",
+          "playoff_result": "Missed",
+          "dist": 0.637,
+          "pct": {
+            "PPG": 0.367,
+            "DEF": 0.3,
+            "TS%": 0.467,
+            "3PA_RATE": 0.067,
+            "FTA_RATE": 0.567,
+            "PACE": 0.267,
+            "ROT_DEPTH": 0.1,
+            "STAR_SHARE": 0.767
+          }
+        },
+        {
+          "team": "WAS",
+          "season": "25-26",
+          "record": "16-66",
+          "seed": "East-15",
+          "playoff_result": "Missed",
+          "dist": 0.6402,
+          "pct": {
+            "PPG": 0.0,
+            "DEF": 0.833,
+            "TS%": 0.0,
+            "3PA_RATE": 0.5,
+            "FTA_RATE": 0.233,
+            "PACE": 0.867,
+            "ROT_DEPTH": 0.0,
+            "STAR_SHARE": 0.967
+          }
+        },
+        {
+          "team": "DEN",
+          "season": "23-24",
+          "record": "38-44",
+          "seed": "West-11",
+          "playoff_result": "Missed",
+          "dist": 0.7016,
+          "pct": {
+            "PPG": 0.667,
+            "DEF": 0.533,
+            "TS%": 0.7,
+            "3PA_RATE": 0.0,
+            "FTA_RATE": 0.3,
+            "PACE": 0.6,
+            "ROT_DEPTH": 0.333,
+            "STAR_SHARE": 0.733
+          }
+        },
+        {
+          "team": "ORL",
+          "season": "24-25",
+          "record": "11-71",
+          "seed": "East-15",
+          "playoff_result": "Missed",
+          "dist": 0.7437,
+          "pct": {
+            "PPG": 0.0,
+            "DEF": 0.8,
+            "TS%": 0.0,
+            "3PA_RATE": 0.367,
+            "FTA_RATE": 0.033,
+            "PACE": 0.3,
+            "ROT_DEPTH": 0.0,
+            "STAR_SHARE": 0.967
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "hier_name": "2A",
+      "name": "",
+      "size": 10,
+      "centroid": {
+        "PPG": 0.7733,
+        "DEF": 0.3933,
+        "TS%": 0.8333,
+        "3PA_RATE": 0.2133,
+        "FTA_RATE": 0.84,
+        "PACE": 0.1467,
+        "ROT_DEPTH": 0.6233,
+        "STAR_SHARE": 0.3567
+      },
+      "top": [
+        {
+          "team": "NYK",
+          "season": "24-25",
+          "record": "50-32",
+          "seed": "East-6",
+          "playoff_result": "First Round",
+          "dist": 0.3818,
+          "pct": {
+            "PPG": 0.7,
+            "DEF": 0.333,
+            "TS%": 0.767,
+            "3PA_RATE": 0.2,
+            "FTA_RATE": 0.733,
+            "PACE": 0.2,
+            "ROT_DEPTH": 0.633,
+            "STAR_SHARE": 0.7
+          }
+        },
+        {
+          "team": "BKN",
+          "season": "22-23",
+          "record": "53-29",
+          "seed": "East-1",
+          "playoff_result": "Conf Finals",
+          "dist": 0.3888,
+          "pct": {
+            "PPG": 0.933,
+            "DEF": 0.5,
+            "TS%": 0.933,
+            "3PA_RATE": 0.0,
+            "FTA_RATE": 0.9,
+            "PACE": 0.2,
+            "ROT_DEPTH": 0.833,
+            "STAR_SHARE": 0.267
+          }
+        },
+        {
+          "team": "MEM",
+          "season": "25-26",
+          "record": "40-42",
+          "seed": "West-9",
+          "playoff_result": "First Round",
+          "dist": 0.3913,
+          "pct": {
+            "PPG": 0.767,
+            "DEF": 0.767,
+            "TS%": 0.833,
+            "3PA_RATE": 0.233,
+            "FTA_RATE": 0.767,
+            "PACE": 0.2,
+            "ROT_DEPTH": 0.667,
+            "STAR_SHARE": 0.3
+          }
+        },
+        {
+          "team": "IND",
+          "season": "23-24",
+          "record": "60-22",
+          "seed": "East-2",
+          "playoff_result": "First Round",
+          "dist": 0.4017,
+          "pct": {
+            "PPG": 0.833,
+            "DEF": 0.133,
+            "TS%": 0.967,
+            "3PA_RATE": 0.3,
+            "FTA_RATE": 0.633,
+            "PACE": 0.0,
+            "ROT_DEPTH": 0.633,
+            "STAR_SHARE": 0.333
+          }
+        },
+        {
+          "team": "BKN",
+          "season": "23-24",
+          "record": "64-18",
+          "seed": "East-1",
+          "playoff_result": "Second Round",
+          "dist": 0.4402,
+          "pct": {
+            "PPG": 0.8,
+            "DEF": 0.067,
+            "TS%": 0.833,
+            "3PA_RATE": 0.067,
+            "FTA_RATE": 0.933,
+            "PACE": 0.167,
+            "ROT_DEPTH": 0.7,
+            "STAR_SHARE": 0.133
+          }
+        },
+        {
+          "team": "BKN",
+          "season": "21-22",
+          "record": "53-29",
+          "seed": "East-4",
+          "playoff_result": "Second Round",
+          "dist": 0.4971,
+          "pct": {
+            "PPG": 0.7,
+            "DEF": 0.367,
+            "TS%": 0.8,
+            "3PA_RATE": 0.7,
+            "FTA_RATE": 0.867,
+            "PACE": 0.1,
+            "ROT_DEPTH": 0.633,
+            "STAR_SHARE": 0.367
+          }
+        },
+        {
+          "team": "OKC",
+          "season": "25-26",
+          "record": "51-31",
+          "seed": "West-4",
+          "playoff_result": "First Round",
+          "dist": 0.5377,
+          "pct": {
+            "PPG": 0.933,
+            "DEF": 0.8,
+            "TS%": 0.967,
+            "3PA_RATE": 0.2,
+            "FTA_RATE": 0.933,
+            "PACE": 0.133,
+            "ROT_DEPTH": 0.733,
+            "STAR_SHARE": 0.6
+          }
+        },
+        {
+          "team": "DET",
+          "season": "22-23",
+          "record": "49-33",
+          "seed": "East-5",
+          "playoff_result": "First Round",
+          "dist": 0.5383,
+          "pct": {
+            "PPG": 0.733,
+            "DEF": 0.033,
+            "TS%": 0.867,
+            "3PA_RATE": 0.4,
+            "FTA_RATE": 0.867,
+            "PACE": 0.033,
+            "ROT_DEPTH": 0.4,
+            "STAR_SHARE": 0.6
+          }
+        },
+        {
+          "team": "BKN",
+          "season": "24-25",
+          "record": "57-25",
+          "seed": "East-1",
+          "playoff_result": "First Round",
+          "dist": 0.5657,
+          "pct": {
+            "PPG": 0.6,
+            "DEF": 0.033,
+            "TS%": 0.633,
+            "3PA_RATE": 0.0,
+            "FTA_RATE": 0.933,
+            "PACE": 0.133,
+            "ROT_DEPTH": 0.633,
+            "STAR_SHARE": 0.1
+          }
+        },
+        {
+          "team": "DEN",
+          "season": "25-26",
+          "record": "33-49",
+          "seed": "West-12",
+          "playoff_result": "Missed",
+          "dist": 0.6529,
+          "pct": {
+            "PPG": 0.733,
+            "DEF": 0.9,
+            "TS%": 0.733,
+            "3PA_RATE": 0.033,
+            "FTA_RATE": 0.833,
+            "PACE": 0.3,
+            "ROT_DEPTH": 0.367,
+            "STAR_SHARE": 0.167
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "hier_name": "2B",
+      "name": "",
+      "size": 11,
+      "centroid": {
+        "PPG": 0.697,
+        "DEF": 0.4364,
+        "TS%": 0.7909,
+        "3PA_RATE": 0.3424,
+        "FTA_RATE": 0.8121,
+        "PACE": 0.097,
+        "ROT_DEPTH": 0.1182,
+        "STAR_SHARE": 0.8455
+      },
+      "top": [
+        {
+          "team": "HOU",
+          "season": "22-23",
+          "record": "49-33",
+          "seed": "West-7",
+          "playoff_result": "Second Round",
+          "dist": 0.3767,
+          "pct": {
+            "PPG": 0.633,
+            "DEF": 0.267,
+            "TS%": 0.7,
+            "3PA_RATE": 0.1,
+            "FTA_RATE": 0.667,
+            "PACE": 0.233,
+            "ROT_DEPTH": 0.133,
+            "STAR_SHARE": 0.8
+          }
+        },
+        {
+          "team": "UTA",
+          "season": "23-24",
+          "record": "61-21",
+          "seed": "West-1",
+          "playoff_result": "Conf Finals",
+          "dist": 0.4329,
+          "pct": {
+            "PPG": 0.767,
+            "DEF": 0.033,
+            "TS%": 0.867,
+            "3PA_RATE": 0.367,
+            "FTA_RATE": 0.767,
+            "PACE": 0.133,
+            "ROT_DEPTH": 0.067,
+            "STAR_SHARE": 0.933
+          }
+        },
+        {
+          "team": "OKC",
+          "season": "23-24",
+          "record": "55-27",
+          "seed": "West-4",
+          "playoff_result": "Second Round",
+          "dist": 0.4482,
+          "pct": {
+            "PPG": 0.9,
+            "DEF": 0.2,
+            "TS%": 0.933,
+            "3PA_RATE": 0.6,
+            "FTA_RATE": 0.867,
+            "PACE": 0.033,
+            "ROT_DEPTH": 0.033,
+            "STAR_SHARE": 0.9
+          }
+        },
+        {
+          "team": "MEM",
+          "season": "22-23",
+          "record": "44-38",
+          "seed": "West-9",
+          "playoff_result": "Missed",
+          "dist": 0.4523,
+          "pct": {
+            "PPG": 0.9,
+            "DEF": 0.733,
+            "TS%": 0.9,
+            "3PA_RATE": 0.2,
+            "FTA_RATE": 0.967,
+            "PACE": 0.233,
+            "ROT_DEPTH": 0.1,
+            "STAR_SHARE": 0.833
+          }
+        },
+        {
+          "team": "OKC",
+          "season": "21-22",
+          "record": "55-27",
+          "seed": "West-1",
+          "playoff_result": "First Round",
+          "dist": 0.4778,
+          "pct": {
+            "PPG": 0.5,
+            "DEF": 0.033,
+            "TS%": 0.733,
+            "3PA_RATE": 0.233,
+            "FTA_RATE": 0.767,
+            "PACE": 0.0,
+            "ROT_DEPTH": 0.133,
+            "STAR_SHARE": 0.833
+          }
+        },
+        {
+          "team": "DET",
+          "season": "25-26",
+          "record": "37-45",
+          "seed": "East-12",
+          "playoff_result": "Missed",
+          "dist": 0.4975,
+          "pct": {
+            "PPG": 0.6,
+            "DEF": 0.667,
+            "TS%": 0.7,
+            "3PA_RATE": 0.733,
+            "FTA_RATE": 0.733,
+            "PACE": 0.033,
+            "ROT_DEPTH": 0.233,
+            "STAR_SHARE": 0.867
+          }
+        },
+        {
+          "team": "WAS",
+          "season": "22-23",
+          "record": "36-46",
+          "seed": "East-9",
+          "playoff_result": "Missed",
+          "dist": 0.5089,
+          "pct": {
+            "PPG": 0.7,
+            "DEF": 0.833,
+            "TS%": 0.767,
+            "3PA_RATE": 0.6,
+            "FTA_RATE": 0.933,
+            "PACE": 0.0,
+            "ROT_DEPTH": 0.067,
+            "STAR_SHARE": 0.933
+          }
+        },
+        {
+          "team": "IND",
+          "season": "24-25",
+          "record": "54-28",
+          "seed": "East-4",
+          "playoff_result": "First Round",
+          "dist": 0.5208,
+          "pct": {
+            "PPG": 0.5,
+            "DEF": 0.067,
+            "TS%": 0.8,
+            "3PA_RATE": 0.1,
+            "FTA_RATE": 0.7,
+            "PACE": 0.0,
+            "ROT_DEPTH": 0.033,
+            "STAR_SHARE": 0.933
+          }
+        },
+        {
+          "team": "DAL",
+          "season": "21-22",
+          "record": "41-41",
+          "seed": "West-9",
+          "playoff_result": "Missed",
+          "dist": 0.5685,
+          "pct": {
+            "PPG": 0.3,
+            "DEF": 0.233,
+            "TS%": 0.5,
+            "3PA_RATE": 0.4,
+            "FTA_RATE": 0.667,
+            "PACE": 0.067,
+            "ROT_DEPTH": 0.0,
+            "STAR_SHARE": 0.867
+          }
+        },
+        {
+          "team": "WAS",
+          "season": "21-22",
+          "record": "36-46",
+          "seed": "East-10",
+          "playoff_result": "Conf Finals",
+          "dist": 0.5875,
+          "pct": {
+            "PPG": 0.9,
+            "DEF": 0.933,
+            "TS%": 0.9,
+            "3PA_RATE": 0.3,
+            "FTA_RATE": 0.967,
+            "PACE": 0.033,
+            "ROT_DEPTH": 0.233,
+            "STAR_SHARE": 0.8
+          }
+        },
+        {
+          "team": "CLE",
+          "season": "23-24",
+          "record": "50-32",
+          "seed": "East-4",
+          "playoff_result": "Champion",
+          "dist": 0.626,
+          "pct": {
+            "PPG": 0.967,
+            "DEF": 0.8,
+            "TS%": 0.9,
+            "3PA_RATE": 0.133,
+            "FTA_RATE": 0.9,
+            "PACE": 0.3,
+            "ROT_DEPTH": 0.267,
+            "STAR_SHARE": 0.6
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "hier_name": "2C",
+      "name": "",
+      "size": 12,
+      "centroid": {
+        "PPG": 0.2306,
+        "DEF": 0.4639,
+        "TS%": 0.3139,
+        "3PA_RATE": 0.4083,
+        "FTA_RATE": 0.6694,
+        "PACE": 0.1333,
+        "ROT_DEPTH": 0.5194,
+        "STAR_SHARE": 0.4444
+      },
+      "top": [
+        {
+          "team": "SAC",
+          "season": "24-25",
+          "record": "46-36",
+          "seed": "West-7",
+          "playoff_result": "First Round",
+          "dist": 0.374,
+          "pct": {
+            "PPG": 0.167,
+            "DEF": 0.167,
+            "TS%": 0.4,
+            "3PA_RATE": 0.333,
+            "FTA_RATE": 0.633,
+            "PACE": 0.033,
+            "ROT_DEPTH": 0.567,
+            "STAR_SHARE": 0.3
+          }
+        },
+        {
+          "team": "IND",
+          "season": "25-26",
+          "record": "38-44",
+          "seed": "East-9",
+          "playoff_result": "Missed",
+          "dist": 0.3847,
+          "pct": {
+            "PPG": 0.333,
+            "DEF": 0.467,
+            "TS%": 0.5,
+            "3PA_RATE": 0.3,
+            "FTA_RATE": 0.867,
+            "PACE": 0.0,
+            "ROT_DEPTH": 0.467,
+            "STAR_SHARE": 0.267
+          }
+        },
+        {
+          "team": "POR",
+          "season": "25-26",
+          "record": "31-51",
+          "seed": "West-13",
+          "playoff_result": "Missed",
+          "dist": 0.4563,
+          "pct": {
+            "PPG": 0.3,
+            "DEF": 0.6,
+            "TS%": 0.367,
+            "3PA_RATE": 0.633,
+            "FTA_RATE": 0.7,
+            "PACE": 0.1,
+            "ROT_DEPTH": 0.7,
+            "STAR_SHARE": 0.133
+          }
+        },
+        {
+          "team": "OKC",
+          "season": "22-23",
+          "record": "28-54",
+          "seed": "West-14",
+          "playoff_result": "Missed",
+          "dist": 0.5464,
+          "pct": {
+            "PPG": 0.367,
+            "DEF": 0.933,
+            "TS%": 0.5,
+            "3PA_RATE": 0.533,
+            "FTA_RATE": 0.633,
+            "PACE": 0.167,
+            "ROT_DEPTH": 0.6,
+            "STAR_SHARE": 0.467
+          }
+        },
+        {
+          "team": "BOS",
+          "season": "24-25",
+          "record": "30-52",
+          "seed": "East-12",
+          "playoff_result": "Missed",
+          "dist": 0.5493,
+          "pct": {
+            "PPG": 0.267,
+            "DEF": 0.733,
+            "TS%": 0.267,
+            "3PA_RATE": 0.467,
+            "FTA_RATE": 0.567,
+            "PACE": 0.233,
+            "ROT_DEPTH": 0.367,
+            "STAR_SHARE": 0.867
+          }
+        },
+        {
+          "team": "NYK",
+          "season": "21-22",
+          "record": "19-63",
+          "seed": "East-14",
+          "playoff_result": "Missed",
+          "dist": 0.5777,
+          "pct": {
+            "PPG": 0.033,
+            "DEF": 0.767,
+            "TS%": 0.1,
+            "3PA_RATE": 0.633,
+            "FTA_RATE": 0.633,
+            "PACE": 0.133,
+            "ROT_DEPTH": 0.733,
+            "STAR_SHARE": 0.2
+          }
+        },
+        {
+          "team": "WAS",
+          "season": "23-24",
+          "record": "36-46",
+          "seed": "East-10",
+          "playoff_result": "Missed",
+          "dist": 0.6005,
+          "pct": {
+            "PPG": 0.367,
+            "DEF": 0.633,
+            "TS%": 0.433,
+            "3PA_RATE": 0.267,
+            "FTA_RATE": 0.967,
+            "PACE": 0.067,
+            "ROT_DEPTH": 0.933,
+            "STAR_SHARE": 0.567
+          }
+        },
+        {
+          "team": "MIN",
+          "season": "22-23",
+          "record": "38-44",
+          "seed": "West-10",
+          "playoff_result": "First Round",
+          "dist": 0.6257,
+          "pct": {
+            "PPG": 0.133,
+            "DEF": 0.067,
+            "TS%": 0.233,
+            "3PA_RATE": 0.367,
+            "FTA_RATE": 0.433,
+            "PACE": 0.067,
+            "ROT_DEPTH": 0.8,
+            "STAR_SHARE": 0.167
+          }
+        },
+        {
+          "team": "UTA",
+          "season": "24-25",
+          "record": "53-29",
+          "seed": "West-4",
+          "playoff_result": "First Round",
+          "dist": 0.6293,
+          "pct": {
+            "PPG": 0.433,
+            "DEF": 0.0,
+            "TS%": 0.567,
+            "3PA_RATE": 0.233,
+            "FTA_RATE": 0.533,
+            "PACE": 0.067,
+            "ROT_DEPTH": 0.4,
+            "STAR_SHARE": 0.533
+          }
+        },
+        {
+          "team": "CHI",
+          "season": "21-22",
+          "record": "30-52",
+          "seed": "East-12",
+          "playoff_result": "Missed",
+          "dist": 0.6493,
+          "pct": {
+            "PPG": 0.0,
+            "DEF": 0.433,
+            "TS%": 0.0,
+            "3PA_RATE": 0.6,
+            "FTA_RATE": 0.7,
+            "PACE": 0.233,
+            "ROT_DEPTH": 0.167,
+            "STAR_SHARE": 0.133
+          }
+        },
+        {
+          "team": "ORL",
+          "season": "25-26",
+          "record": "58-24",
+          "seed": "East-2",
+          "playoff_result": "Runner-Up",
+          "dist": 0.6781,
+          "pct": {
+            "PPG": 0.367,
+            "DEF": 0.0,
+            "TS%": 0.4,
+            "3PA_RATE": 0.067,
+            "FTA_RATE": 0.8,
+            "PACE": 0.167,
+            "ROT_DEPTH": 0.5,
+            "STAR_SHARE": 0.733
+          }
+        },
+        {
+          "team": "ORL",
+          "season": "23-24",
+          "record": "20-62",
+          "seed": "East-14",
+          "playoff_result": "Missed",
+          "dist": 0.9164,
+          "pct": {
+            "PPG": 0.0,
+            "DEF": 0.767,
+            "TS%": 0.0,
+            "3PA_RATE": 0.467,
+            "FTA_RATE": 0.567,
+            "PACE": 0.333,
+            "ROT_DEPTH": 0.0,
+            "STAR_SHARE": 0.967
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "hier_name": "3A",
+      "name": "",
+      "size": 25,
+      "centroid": {
+        "PPG": 0.7627,
+        "DEF": 0.4587,
+        "TS%": 0.7,
+        "3PA_RATE": 0.5427,
+        "FTA_RATE": 0.6987,
+        "PACE": 0.5747,
+        "ROT_DEPTH": 0.5373,
+        "STAR_SHARE": 0.4027
+      },
+      "top": [
+        {
+          "team": "MIL",
+          "season": "23-24",
+          "record": "53-29",
+          "seed": "East-3",
+          "playoff_result": "First Round",
+          "dist": 0.2749,
+          "pct": {
+            "PPG": 0.733,
+            "DEF": 0.267,
+            "TS%": 0.667,
+            "3PA_RATE": 0.5,
+            "FTA_RATE": 0.733,
+            "PACE": 0.467,
+            "ROT_DEPTH": 0.467,
+            "STAR_SHARE": 0.533
+          }
+        },
+        {
+          "team": "BOS",
+          "season": "22-23",
+          "record": "50-32",
+          "seed": "East-4",
+          "playoff_result": "Second Round",
+          "dist": 0.3796,
+          "pct": {
+            "PPG": 0.667,
+            "DEF": 0.167,
+            "TS%": 0.567,
+            "3PA_RATE": 0.5,
+            "FTA_RATE": 0.567,
+            "PACE": 0.533,
+            "ROT_DEPTH": 0.5,
+            "STAR_SHARE": 0.5
+          }
+        },
+        {
+          "team": "DAL",
+          "season": "22-23",
+          "record": "53-29",
+          "seed": "West-3",
+          "playoff_result": "First Round",
+          "dist": 0.393,
+          "pct": {
+            "PPG": 0.8,
+            "DEF": 0.2,
+            "TS%": 0.633,
+            "3PA_RATE": 0.567,
+            "FTA_RATE": 0.733,
+            "PACE": 0.8,
+            "ROT_DEPTH": 0.367,
+            "STAR_SHARE": 0.4
+          }
+        },
+        {
+          "team": "NOP",
+          "season": "24-25",
+          "record": "53-29",
+          "seed": "West-3",
+          "playoff_result": "First Round",
+          "dist": 0.4329,
+          "pct": {
+            "PPG": 0.867,
+            "DEF": 0.467,
+            "TS%": 0.833,
+            "3PA_RATE": 0.5,
+            "FTA_RATE": 0.833,
+            "PACE": 0.267,
+            "ROT_DEPTH": 0.467,
+            "STAR_SHARE": 0.6
+          }
+        },
+        {
+          "team": "DET",
+          "season": "24-25",
+          "record": "45-37",
+          "seed": "East-8",
+          "playoff_result": "Missed",
+          "dist": 0.4404,
+          "pct": {
+            "PPG": 0.8,
+            "DEF": 0.667,
+            "TS%": 0.7,
+            "3PA_RATE": 0.3,
+            "FTA_RATE": 0.767,
+            "PACE": 0.667,
+            "ROT_DEPTH": 0.267,
+            "STAR_SHARE": 0.467
+          }
+        },
+        {
+          "team": "MIA",
+          "season": "21-22",
+          "record": "54-28",
+          "seed": "East-3",
+          "playoff_result": "First Round",
+          "dist": 0.4419,
+          "pct": {
+            "PPG": 0.967,
+            "DEF": 0.533,
+            "TS%": 0.967,
+            "3PA_RATE": 0.433,
+            "FTA_RATE": 0.9,
+            "PACE": 0.5,
+            "ROT_DEPTH": 0.4,
+            "STAR_SHARE": 0.4
+          }
+        },
+        {
+          "team": "SAS",
+          "season": "25-26",
+          "record": "46-36",
+          "seed": "West-6",
+          "playoff_result": "First Round",
+          "dist": 0.4452,
+          "pct": {
+            "PPG": 0.633,
+            "DEF": 0.3,
+            "TS%": 0.567,
+            "3PA_RATE": 0.6,
+            "FTA_RATE": 0.433,
+            "PACE": 0.8,
+            "ROT_DEPTH": 0.633,
+            "STAR_SHARE": 0.333
+          }
+        },
+        {
+          "team": "OKC",
+          "season": "24-25",
+          "record": "48-34",
+          "seed": "West-6",
+          "playoff_result": "Conf Finals",
+          "dist": 0.4545,
+          "pct": {
+            "PPG": 0.933,
+            "DEF": 0.6,
+            "TS%": 0.933,
+            "3PA_RATE": 0.6,
+            "FTA_RATE": 0.867,
+            "PACE": 0.367,
+            "ROT_DEPTH": 0.5,
+            "STAR_SHARE": 0.567
+          }
+        },
+        {
+          "team": "SAS",
+          "season": "24-25",
+          "record": "59-23",
+          "seed": "West-1",
+          "playoff_result": "Second Round",
+          "dist": 0.4565,
+          "pct": {
+            "PPG": 0.833,
+            "DEF": 0.2,
+            "TS%": 0.667,
+            "3PA_RATE": 0.533,
+            "FTA_RATE": 0.9,
+            "PACE": 0.6,
+            "ROT_DEPTH": 0.733,
+            "STAR_SHARE": 0.167
+          }
+        },
+        {
+          "team": "MEM",
+          "season": "23-24",
+          "record": "39-43",
+          "seed": "West-10",
+          "playoff_result": "Missed",
+          "dist": 0.4825,
+          "pct": {
+            "PPG": 0.567,
+            "DEF": 0.667,
+            "TS%": 0.633,
+            "3PA_RATE": 0.233,
+            "FTA_RATE": 0.833,
+            "PACE": 0.4,
+            "ROT_DEPTH": 0.5,
+            "STAR_SHARE": 0.433
+          }
+        },
+        {
+          "team": "MIL",
+          "season": "25-26",
+          "record": "51-31",
+          "seed": "East-3",
+          "playoff_result": "First Round",
+          "dist": 0.488,
+          "pct": {
+            "PPG": 0.967,
+            "DEF": 0.567,
+            "TS%": 0.767,
+            "3PA_RATE": 0.333,
+            "FTA_RATE": 0.967,
+            "PACE": 0.667,
+            "ROT_DEPTH": 0.3,
+            "STAR_SHARE": 0.4
+          }
+        },
+        {
+          "team": "BOS",
+          "season": "23-24",
+          "record": "50-32",
+          "seed": "East-5",
+          "playoff_result": "First Round",
+          "dist": 0.5208,
+          "pct": {
+            "PPG": 0.7,
+            "DEF": 0.3,
+            "TS%": 0.6,
+            "3PA_RATE": 0.933,
+            "FTA_RATE": 0.7,
+            "PACE": 0.8,
+            "ROT_DEPTH": 0.533,
+            "STAR_SHARE": 0.233
+          }
+        },
+        {
+          "team": "PHX",
+          "season": "23-24",
+          "record": "51-31",
+          "seed": "West-6",
+          "playoff_result": "Runner-Up",
+          "dist": 0.5907,
+          "pct": {
+            "PPG": 0.867,
+            "DEF": 0.4,
+            "TS%": 0.767,
+            "3PA_RATE": 0.033,
+            "FTA_RATE": 0.8,
+            "PACE": 0.633,
+            "ROT_DEPTH": 0.6,
+            "STAR_SHARE": 0.633
+          }
+        },
+        {
+          "team": "DEN",
+          "season": "22-23",
+          "record": "50-32",
+          "seed": "West-4",
+          "playoff_result": "Conf Finals",
+          "dist": 0.5917,
+          "pct": {
+            "PPG": 0.867,
+            "DEF": 0.467,
+            "TS%": 0.733,
+            "3PA_RATE": 0.033,
+            "FTA_RATE": 0.767,
+            "PACE": 0.5,
+            "ROT_DEPTH": 0.333,
+            "STAR_SHARE": 0.567
+          }
+        },
+        {
+          "team": "LAC",
+          "season": "21-22",
+          "record": "43-39",
+          "seed": "West-7",
+          "playoff_result": "Missed",
+          "dist": 0.5937,
+          "pct": {
+            "PPG": 0.8,
+            "DEF": 0.8,
+            "TS%": 0.767,
+            "3PA_RATE": 0.8,
+            "FTA_RATE": 0.533,
+            "PACE": 0.833,
+            "ROT_DEPTH": 0.533,
+            "STAR_SHARE": 0.667
+          }
+        },
+        {
+          "team": "CHI",
+          "season": "25-26",
+          "record": "63-19",
+          "seed": "East-1",
+          "playoff_result": "Conf Finals",
+          "dist": 0.5977,
+          "pct": {
+            "PPG": 0.833,
+            "DEF": 0.1,
+            "TS%": 0.9,
+            "3PA_RATE": 0.7,
+            "FTA_RATE": 0.633,
+            "PACE": 0.467,
+            "ROT_DEPTH": 0.267,
+            "STAR_SHARE": 0.667
+          }
+        },
+        {
+          "team": "UTA",
+          "season": "22-23",
+          "record": "36-46",
+          "seed": "West-11",
+          "playoff_result": "Missed",
+          "dist": 0.6032,
+          "pct": {
+            "PPG": 0.433,
+            "DEF": 0.633,
+            "TS%": 0.433,
+            "3PA_RATE": 0.8,
+            "FTA_RATE": 0.7,
+            "PACE": 0.3,
+            "ROT_DEPTH": 0.433,
+            "STAR_SHARE": 0.367
+          }
+        },
+        {
+          "team": "GSW",
+          "season": "22-23",
+          "record": "49-33",
+          "seed": "West-6",
+          "playoff_result": "Missed",
+          "dist": 0.6054,
+          "pct": {
+            "PPG": 0.767,
+            "DEF": 0.3,
+            "TS%": 0.667,
+            "3PA_RATE": 0.667,
+            "FTA_RATE": 0.467,
+            "PACE": 0.833,
+            "ROT_DEPTH": 0.9,
+            "STAR_SHARE": 0.133
+          }
+        },
+        {
+          "team": "TOR",
+          "season": "25-26",
+          "record": "51-31",
+          "seed": "East-4",
+          "playoff_result": "Second Round",
+          "dist": 0.6088,
+          "pct": {
+            "PPG": 0.8,
+            "DEF": 0.267,
+            "TS%": 0.867,
+            "3PA_RATE": 0.767,
+            "FTA_RATE": 0.4,
+            "PACE": 0.7,
+            "ROT_DEPTH": 0.867,
+            "STAR_SHARE": 0.2
+          }
+        },
+        {
+          "team": "TOR",
+          "season": "21-22",
+          "record": "44-38",
+          "seed": "East-7",
+          "playoff_result": "First Round",
+          "dist": 0.612,
+          "pct": {
+            "PPG": 0.6,
+            "DEF": 0.633,
+            "TS%": 0.667,
+            "3PA_RATE": 0.733,
+            "FTA_RATE": 0.4,
+            "PACE": 0.467,
+            "ROT_DEPTH": 0.833,
+            "STAR_SHARE": 0.1
+          }
+        },
+        {
+          "team": "GSW",
+          "season": "23-24",
+          "record": "55-27",
+          "seed": "West-3",
+          "playoff_result": "First Round",
+          "dist": 0.6253,
+          "pct": {
+            "PPG": 0.933,
+            "DEF": 0.6,
+            "TS%": 0.8,
+            "3PA_RATE": 0.8,
+            "FTA_RATE": 0.433,
+            "PACE": 0.867,
+            "ROT_DEPTH": 0.8,
+            "STAR_SHARE": 0.2
+          }
+        },
+        {
+          "team": "LAC",
+          "season": "24-25",
+          "record": "31-51",
+          "seed": "West-12",
+          "playoff_result": "Missed",
+          "dist": 0.637,
+          "pct": {
+            "PPG": 0.367,
+            "DEF": 0.533,
+            "TS%": 0.367,
+            "3PA_RATE": 0.667,
+            "FTA_RATE": 0.467,
+            "PACE": 0.333,
+            "ROT_DEPTH": 0.533,
+            "STAR_SHARE": 0.333
+          }
+        },
+        {
+          "team": "MIL",
+          "season": "21-22",
+          "record": "58-24",
+          "seed": "East-2",
+          "playoff_result": "Second Round",
+          "dist": 0.6486,
+          "pct": {
+            "PPG": 0.667,
+            "DEF": 0.1,
+            "TS%": 0.4,
+            "3PA_RATE": 0.767,
+            "FTA_RATE": 0.933,
+            "PACE": 0.567,
+            "ROT_DEPTH": 0.8,
+            "STAR_SHARE": 0.267
+          }
+        },
+        {
+          "team": "ATL",
+          "season": "25-26",
+          "record": "29-53",
+          "seed": "East-13",
+          "playoff_result": "Missed",
+          "dist": 0.7167,
+          "pct": {
+            "PPG": 0.7,
+            "DEF": 0.933,
+            "TS%": 0.633,
+            "3PA_RATE": 0.433,
+            "FTA_RATE": 0.9,
+            "PACE": 0.633,
+            "ROT_DEPTH": 0.833,
+            "STAR_SHARE": 0.033
+          }
+        },
+        {
+          "team": "CLE",
+          "season": "22-23",
+          "record": "52-30",
+          "seed": "East-3",
+          "playoff_result": "Runner-Up",
+          "dist": 0.8799,
+          "pct": {
+            "PPG": 0.967,
+            "DEF": 0.767,
+            "TS%": 0.967,
+            "3PA_RATE": 0.333,
+            "FTA_RATE": 0.8,
+            "PACE": 0.367,
+            "ROT_DEPTH": 0.033,
+            "STAR_SHARE": 0.867
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "hier_name": "3B",
+      "name": "",
+      "size": 12,
+      "centroid": {
+        "PPG": 0.4028,
+        "DEF": 0.4944,
+        "TS%": 0.3167,
+        "3PA_RATE": 0.4639,
+        "FTA_RATE": 0.6444,
+        "PACE": 0.6472,
+        "ROT_DEPTH": 0.1861,
+        "STAR_SHARE": 0.7278
+      },
+      "top": [
+        {
+          "team": "NYK",
+          "season": "22-23",
+          "record": "46-36",
+          "seed": "East-8",
+          "playoff_result": "Second Round",
+          "dist": 0.2441,
+          "pct": {
+            "PPG": 0.333,
+            "DEF": 0.367,
+            "TS%": 0.333,
+            "3PA_RATE": 0.3,
+            "FTA_RATE": 0.6,
+            "PACE": 0.7,
+            "ROT_DEPTH": 0.267,
+            "STAR_SHARE": 0.733
+          }
+        },
+        {
+          "team": "POR",
+          "season": "21-22",
+          "record": "42-40",
+          "seed": "West-8",
+          "playoff_result": "First Round",
+          "dist": 0.3069,
+          "pct": {
+            "PPG": 0.367,
+            "DEF": 0.333,
+            "TS%": 0.3,
+            "3PA_RATE": 0.5,
+            "FTA_RATE": 0.6,
+            "PACE": 0.6,
+            "ROT_DEPTH": 0.433,
+            "STAR_SHARE": 0.733
+          }
+        },
+        {
+          "team": "DET",
+          "season": "23-24",
+          "record": "41-41",
+          "seed": "East-7",
+          "playoff_result": "First Round",
+          "dist": 0.3527,
+          "pct": {
+            "PPG": 0.533,
+            "DEF": 0.367,
+            "TS%": 0.5,
+            "3PA_RATE": 0.567,
+            "FTA_RATE": 0.467,
+            "PACE": 0.767,
+            "ROT_DEPTH": 0.2,
+            "STAR_SHARE": 0.7
+          }
+        },
+        {
+          "team": "MEM",
+          "season": "21-22",
+          "record": "37-45",
+          "seed": "West-12",
+          "playoff_result": "Missed",
+          "dist": 0.379,
+          "pct": {
+            "PPG": 0.533,
+            "DEF": 0.567,
+            "TS%": 0.2,
+            "3PA_RATE": 0.567,
+            "FTA_RATE": 0.8,
+            "PACE": 0.733,
+            "ROT_DEPTH": 0.033,
+            "STAR_SHARE": 0.933
+          }
+        },
+        {
+          "team": "HOU",
+          "season": "25-26",
+          "record": "44-38",
+          "seed": "West-7",
+          "playoff_result": "Missed",
+          "dist": 0.4222,
+          "pct": {
+            "PPG": 0.267,
+            "DEF": 0.167,
+            "TS%": 0.267,
+            "3PA_RATE": 0.467,
+            "FTA_RATE": 0.533,
+            "PACE": 0.5,
+            "ROT_DEPTH": 0.067,
+            "STAR_SHARE": 0.767
+          }
+        },
+        {
+          "team": "DAL",
+          "season": "25-26",
+          "record": "52-30",
+          "seed": "West-3",
+          "playoff_result": "Conf Finals",
+          "dist": 0.504,
+          "pct": {
+            "PPG": 0.4,
+            "DEF": 0.233,
+            "TS%": 0.3,
+            "3PA_RATE": 0.833,
+            "FTA_RATE": 0.5,
+            "PACE": 0.767,
+            "ROT_DEPTH": 0.133,
+            "STAR_SHARE": 0.833
+          }
+        },
+        {
+          "team": "DEN",
+          "season": "24-25",
+          "record": "38-44",
+          "seed": "West-11",
+          "playoff_result": "Missed",
+          "dist": 0.5095,
+          "pct": {
+            "PPG": 0.567,
+            "DEF": 0.633,
+            "TS%": 0.433,
+            "3PA_RATE": 0.067,
+            "FTA_RATE": 0.8,
+            "PACE": 0.567,
+            "ROT_DEPTH": 0.2,
+            "STAR_SHARE": 0.833
+          }
+        },
+        {
+          "team": "MIN",
+          "season": "25-26",
+          "record": "25-57",
+          "seed": "West-14",
+          "playoff_result": "Missed",
+          "dist": 0.5444,
+          "pct": {
+            "PPG": 0.133,
+            "DEF": 0.7,
+            "TS%": 0.067,
+            "3PA_RATE": 0.667,
+            "FTA_RATE": 0.667,
+            "PACE": 0.6,
+            "ROT_DEPTH": 0.033,
+            "STAR_SHARE": 0.5
+          }
+        },
+        {
+          "team": "MIL",
+          "season": "24-25",
+          "record": "55-27",
+          "seed": "East-3",
+          "playoff_result": "Runner-Up",
+          "dist": 0.5773,
+          "pct": {
+            "PPG": 0.733,
+            "DEF": 0.4,
+            "TS%": 0.467,
+            "3PA_RATE": 0.267,
+            "FTA_RATE": 0.967,
+            "PACE": 0.867,
+            "ROT_DEPTH": 0.2,
+            "STAR_SHARE": 0.767
+          }
+        },
+        {
+          "team": "HOU",
+          "season": "24-25",
+          "record": "8-74",
+          "seed": "West-15",
+          "playoff_result": "Missed",
+          "dist": 0.6994,
+          "pct": {
+            "PPG": 0.067,
+            "DEF": 0.967,
+            "TS%": 0.067,
+            "3PA_RATE": 0.567,
+            "FTA_RATE": 0.4,
+            "PACE": 0.533,
+            "ROT_DEPTH": 0.1,
+            "STAR_SHARE": 0.733
+          }
+        },
+        {
+          "team": "DEN",
+          "season": "21-22",
+          "record": "48-34",
+          "seed": "West-5",
+          "playoff_result": "First Round",
+          "dist": 0.7031,
+          "pct": {
+            "PPG": 0.733,
+            "DEF": 0.467,
+            "TS%": 0.7,
+            "3PA_RATE": 0.033,
+            "FTA_RATE": 0.733,
+            "PACE": 0.767,
+            "ROT_DEPTH": 0.2,
+            "STAR_SHARE": 0.9
+          }
+        },
+        {
+          "team": "MIN",
+          "season": "23-24",
+          "record": "27-55",
+          "seed": "West-12",
+          "playoff_result": "Missed",
+          "dist": 0.709,
+          "pct": {
+            "PPG": 0.167,
+            "DEF": 0.733,
+            "TS%": 0.167,
+            "3PA_RATE": 0.733,
+            "FTA_RATE": 0.667,
+            "PACE": 0.367,
+            "ROT_DEPTH": 0.367,
+            "STAR_SHARE": 0.3
+          }
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "hier_name": "3C",
+      "name": "",
+      "size": 5,
+      "centroid": {
+        "PPG": 0.28,
+        "DEF": 0.4933,
+        "TS%": 0.22,
+        "3PA_RATE": 0.8067,
+        "FTA_RATE": 0.6667,
+        "PACE": 0.5333,
+        "ROT_DEPTH": 0.8867,
+        "STAR_SHARE": 0.14
+      },
+      "top": [
+        {
+          "team": "ORL",
+          "season": "21-22",
+          "record": "34-48",
+          "seed": "East-11",
+          "playoff_result": "Missed",
+          "dist": 0.3429,
+          "pct": {
+            "PPG": 0.2,
+            "DEF": 0.667,
+            "TS%": 0.267,
+            "3PA_RATE": 0.867,
+            "FTA_RATE": 0.467,
+            "PACE": 0.367,
+            "ROT_DEPTH": 0.933,
+            "STAR_SHARE": 0.067
+          }
+        },
+        {
+          "team": "LAL",
+          "season": "24-25",
+          "record": "43-39",
+          "seed": "West-9",
+          "playoff_result": "Missed",
+          "dist": 0.4392,
+          "pct": {
+            "PPG": 0.2,
+            "DEF": 0.133,
+            "TS%": 0.133,
+            "3PA_RATE": 0.733,
+            "FTA_RATE": 0.6,
+            "PACE": 0.7,
+            "ROT_DEPTH": 0.867,
+            "STAR_SHARE": 0.033
+          }
+        },
+        {
+          "team": "BOS",
+          "season": "25-26",
+          "record": "37-45",
+          "seed": "East-11",
+          "playoff_result": "Missed",
+          "dist": 0.4749,
+          "pct": {
+            "PPG": 0.2,
+            "DEF": 0.4,
+            "TS%": 0.2,
+            "3PA_RATE": 0.9,
+            "FTA_RATE": 0.6,
+            "PACE": 0.367,
+            "ROT_DEPTH": 0.767,
+            "STAR_SHARE": 0.533
+          }
+        },
+        {
+          "team": "UTA",
+          "season": "21-22",
+          "record": "30-52",
+          "seed": "West-14",
+          "playoff_result": "Missed",
+          "dist": 0.486,
+          "pct": {
+            "PPG": 0.233,
+            "DEF": 0.867,
+            "TS%": 0.233,
+            "3PA_RATE": 0.833,
+            "FTA_RATE": 0.833,
+            "PACE": 0.333,
+            "ROT_DEPTH": 0.967,
+            "STAR_SHARE": 0.0
+          }
+        },
+        {
+          "team": "MIL",
+          "season": "22-23",
+          "record": "48-34",
+          "seed": "East-6",
+          "playoff_result": "First Round",
+          "dist": 0.5217,
+          "pct": {
+            "PPG": 0.567,
+            "DEF": 0.4,
+            "TS%": 0.267,
+            "3PA_RATE": 0.7,
+            "FTA_RATE": 0.833,
+            "PACE": 0.9,
+            "ROT_DEPTH": 0.9,
+            "STAR_SHARE": 0.067
+          }
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "hier_name": "4A",
+      "name": "",
+      "size": 13,
+      "centroid": {
+        "PPG": 0.4128,
+        "DEF": 0.2359,
+        "TS%": 0.5026,
+        "3PA_RATE": 0.7795,
+        "FTA_RATE": 0.1718,
+        "PACE": 0.4615,
+        "ROT_DEPTH": 0.6231,
+        "STAR_SHARE": 0.3718
+      },
+      "top": [
+        {
+          "team": "BOS",
+          "season": "21-22",
+          "record": "38-44",
+          "seed": "East-8",
+          "playoff_result": "Missed",
+          "dist": 0.2768,
+          "pct": {
+            "PPG": 0.333,
+            "DEF": 0.167,
+            "TS%": 0.433,
+            "3PA_RATE": 0.667,
+            "FTA_RATE": 0.033,
+            "PACE": 0.433,
+            "ROT_DEPTH": 0.667,
+            "STAR_SHARE": 0.533
+          }
+        },
+        {
+          "team": "PHI",
+          "season": "23-24",
+          "record": "38-44",
+          "seed": "East-9",
+          "playoff_result": "Missed",
+          "dist": 0.3196,
+          "pct": {
+            "PPG": 0.267,
+            "DEF": 0.233,
+            "TS%": 0.3,
+            "3PA_RATE": 0.667,
+            "FTA_RATE": 0.033,
+            "PACE": 0.533,
+            "ROT_DEPTH": 0.667,
+            "STAR_SHARE": 0.4
+          }
+        },
+        {
+          "team": "SAS",
+          "season": "22-23",
+          "record": "58-24",
+          "seed": "West-1",
+          "playoff_result": "Second Round",
+          "dist": 0.4036,
+          "pct": {
+            "PPG": 0.467,
+            "DEF": 0.0,
+            "TS%": 0.6,
+            "3PA_RATE": 0.9,
+            "FTA_RATE": 0.2,
+            "PACE": 0.4,
+            "ROT_DEPTH": 0.667,
+            "STAR_SHARE": 0.1
+          }
+        },
+        {
+          "team": "SAS",
+          "season": "23-24",
+          "record": "55-27",
+          "seed": "West-2",
+          "playoff_result": "Second Round",
+          "dist": 0.4238,
+          "pct": {
+            "PPG": 0.467,
+            "DEF": 0.0,
+            "TS%": 0.533,
+            "3PA_RATE": 0.767,
+            "FTA_RATE": 0.2,
+            "PACE": 0.667,
+            "ROT_DEPTH": 0.567,
+            "STAR_SHARE": 0.1
+          }
+        },
+        {
+          "team": "PHI",
+          "season": "25-26",
+          "record": "44-38",
+          "seed": "East-5",
+          "playoff_result": "First Round",
+          "dist": 0.463,
+          "pct": {
+            "PPG": 0.567,
+            "DEF": 0.333,
+            "TS%": 0.6,
+            "3PA_RATE": 0.933,
+            "FTA_RATE": 0.0,
+            "PACE": 0.533,
+            "ROT_DEPTH": 0.3,
+            "STAR_SHARE": 0.467
+          }
+        },
+        {
+          "team": "GSW",
+          "season": "24-25",
+          "record": "43-39",
+          "seed": "West-8",
+          "playoff_result": "First Round",
+          "dist": 0.5049,
+          "pct": {
+            "PPG": 0.533,
+            "DEF": 0.5,
+            "TS%": 0.5,
+            "3PA_RATE": 0.933,
+            "FTA_RATE": 0.233,
+            "PACE": 0.767,
+            "ROT_DEPTH": 0.767,
+            "STAR_SHARE": 0.2
+          }
+        },
+        {
+          "team": "BKN",
+          "season": "25-26",
+          "record": "37-45",
+          "seed": "East-10",
+          "playoff_result": "Missed",
+          "dist": 0.5648,
+          "pct": {
+            "PPG": 0.167,
+            "DEF": 0.433,
+            "TS%": 0.233,
+            "3PA_RATE": 0.8,
+            "FTA_RATE": 0.067,
+            "PACE": 0.567,
+            "ROT_DEPTH": 0.8,
+            "STAR_SHARE": 0.067
+          }
+        },
+        {
+          "team": "POR",
+          "season": "22-23",
+          "record": "36-46",
+          "seed": "West-12",
+          "playoff_result": "Missed",
+          "dist": 0.5881,
+          "pct": {
+            "PPG": 0.267,
+            "DEF": 0.533,
+            "TS%": 0.4,
+            "3PA_RATE": 0.833,
+            "FTA_RATE": 0.333,
+            "PACE": 0.133,
+            "ROT_DEPTH": 0.867,
+            "STAR_SHARE": 0.2
+          }
+        },
+        {
+          "team": "PHI",
+          "season": "24-25",
+          "record": "50-32",
+          "seed": "East-5",
+          "playoff_result": "Second Round",
+          "dist": 0.6189,
+          "pct": {
+            "PPG": 0.767,
+            "DEF": 0.267,
+            "TS%": 0.9,
+            "3PA_RATE": 0.8,
+            "FTA_RATE": 0.167,
+            "PACE": 0.5,
+            "ROT_DEPTH": 0.933,
+            "STAR_SHARE": 0.4
+          }
+        },
+        {
+          "team": "DET",
+          "season": "21-22",
+          "record": "47-35",
+          "seed": "East-5",
+          "playoff_result": "First Round",
+          "dist": 0.6451,
+          "pct": {
+            "PPG": 0.167,
+            "DEF": 0.2,
+            "TS%": 0.367,
+            "3PA_RATE": 0.933,
+            "FTA_RATE": 0.267,
+            "PACE": 0.2,
+            "ROT_DEPTH": 0.267,
+            "STAR_SHARE": 0.7
+          }
+        },
+        {
+          "team": "SAC",
+          "season": "23-24",
+          "record": "53-29",
+          "seed": "West-5",
+          "playoff_result": "First Round",
+          "dist": 0.6524,
+          "pct": {
+            "PPG": 0.633,
+            "DEF": 0.1,
+            "TS%": 0.733,
+            "3PA_RATE": 0.633,
+            "FTA_RATE": 0.333,
+            "PACE": 0.233,
+            "ROT_DEPTH": 0.4,
+            "STAR_SHARE": 0.767
+          }
+        },
+        {
+          "team": "GSW",
+          "season": "25-26",
+          "record": "43-39",
+          "seed": "West-8",
+          "playoff_result": "Second Round",
+          "dist": 0.6803,
+          "pct": {
+            "PPG": 0.1,
+            "DEF": 0.2,
+            "TS%": 0.333,
+            "3PA_RATE": 0.567,
+            "FTA_RATE": 0.367,
+            "PACE": 0.067,
+            "ROT_DEPTH": 0.9,
+            "STAR_SHARE": 0.233
+          }
+        },
+        {
+          "team": "CHI",
+          "season": "24-25",
+          "record": "57-25",
+          "seed": "East-2",
+          "playoff_result": "Second Round",
+          "dist": 0.7476,
+          "pct": {
+            "PPG": 0.633,
+            "DEF": 0.1,
+            "TS%": 0.6,
+            "3PA_RATE": 0.7,
+            "FTA_RATE": 0.0,
+            "PACE": 0.967,
+            "ROT_DEPTH": 0.3,
+            "STAR_SHARE": 0.667
+          }
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "hier_name": "4B",
+      "name": "",
+      "size": 7,
+      "centroid": {
+        "PPG": 0.281,
+        "DEF": 0.8619,
+        "TS%": 0.2476,
+        "3PA_RATE": 0.881,
+        "FTA_RATE": 0.1286,
+        "PACE": 0.7286,
+        "ROT_DEPTH": 0.2905,
+        "STAR_SHARE": 0.6619
+      },
+      "top": [
+        {
+          "team": "CHA",
+          "season": "22-23",
+          "record": "22-60",
+          "seed": "East-14",
+          "playoff_result": "Missed",
+          "dist": 0.2837,
+          "pct": {
+            "PPG": 0.3,
+            "DEF": 0.9,
+            "TS%": 0.133,
+            "3PA_RATE": 0.967,
+            "FTA_RATE": 0.133,
+            "PACE": 0.967,
+            "ROT_DEPTH": 0.3,
+            "STAR_SHARE": 0.7
+          }
+        },
+        {
+          "team": "TOR",
+          "season": "24-25",
+          "record": "28-54",
+          "seed": "East-13",
+          "playoff_result": "Missed",
+          "dist": 0.4086,
+          "pct": {
+            "PPG": 0.467,
+            "DEF": 0.9,
+            "TS%": 0.333,
+            "3PA_RATE": 0.9,
+            "FTA_RATE": 0.133,
+            "PACE": 0.933,
+            "ROT_DEPTH": 0.133,
+            "STAR_SHARE": 0.9
+          }
+        },
+        {
+          "team": "ORL",
+          "season": "22-23",
+          "record": "20-62",
+          "seed": "East-15",
+          "playoff_result": "Missed",
+          "dist": 0.4687,
+          "pct": {
+            "PPG": 0.167,
+            "DEF": 0.967,
+            "TS%": 0.167,
+            "3PA_RATE": 0.933,
+            "FTA_RATE": 0.033,
+            "PACE": 0.733,
+            "ROT_DEPTH": 0.0,
+            "STAR_SHARE": 0.967
+          }
+        },
+        {
+          "team": "DAL",
+          "season": "24-25",
+          "record": "24-58",
+          "seed": "West-14",
+          "playoff_result": "Missed",
+          "dist": 0.4738,
+          "pct": {
+            "PPG": 0.033,
+            "DEF": 0.767,
+            "TS%": 0.033,
+            "3PA_RATE": 0.867,
+            "FTA_RATE": 0.3,
+            "PACE": 0.833,
+            "ROT_DEPTH": 0.167,
+            "STAR_SHARE": 0.433
+          }
+        },
+        {
+          "team": "LAC",
+          "season": "25-26",
+          "record": "22-60",
+          "seed": "West-15",
+          "playoff_result": "Missed",
+          "dist": 0.5129,
+          "pct": {
+            "PPG": 0.033,
+            "DEF": 0.733,
+            "TS%": 0.033,
+            "3PA_RATE": 0.867,
+            "FTA_RATE": 0.133,
+            "PACE": 0.4,
+            "ROT_DEPTH": 0.4,
+            "STAR_SHARE": 0.8
+          }
+        },
+        {
+          "team": "MIA",
+          "season": "22-23",
+          "record": "27-55",
+          "seed": "East-11",
+          "playoff_result": "Missed",
+          "dist": 0.5187,
+          "pct": {
+            "PPG": 0.5,
+            "DEF": 0.867,
+            "TS%": 0.467,
+            "3PA_RATE": 0.733,
+            "FTA_RATE": 0.0,
+            "PACE": 0.933,
+            "ROT_DEPTH": 0.567,
+            "STAR_SHARE": 0.533
+          }
+        },
+        {
+          "team": "MIN",
+          "season": "21-22",
+          "record": "32-50",
+          "seed": "West-13",
+          "playoff_result": "Missed",
+          "dist": 0.6966,
+          "pct": {
+            "PPG": 0.467,
+            "DEF": 0.9,
+            "TS%": 0.567,
+            "3PA_RATE": 0.9,
+            "FTA_RATE": 0.167,
+            "PACE": 0.3,
+            "ROT_DEPTH": 0.467,
+            "STAR_SHARE": 0.3
+          }
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "hier_name": "4C",
+      "name": "",
+      "size": 14,
+      "centroid": {
+        "PPG": 0.1595,
+        "DEF": 0.8119,
+        "TS%": 0.1905,
+        "3PA_RATE": 0.8333,
+        "FTA_RATE": 0.1619,
+        "PACE": 0.4429,
+        "ROT_DEPTH": 0.8143,
+        "STAR_SHARE": 0.1381
+      },
+      "top": [
+        {
+          "team": "POR",
+          "season": "23-24",
+          "record": "23-59",
+          "seed": "West-13",
+          "playoff_result": "Missed",
+          "dist": 0.2545,
+          "pct": {
+            "PPG": 0.133,
+            "DEF": 0.867,
+            "TS%": 0.1,
+            "3PA_RATE": 0.833,
+            "FTA_RATE": 0.0,
+            "PACE": 0.567,
+            "ROT_DEPTH": 0.833,
+            "STAR_SHARE": 0.033
+          }
+        },
+        {
+          "team": "LAC",
+          "season": "22-23",
+          "record": "22-60",
+          "seed": "West-15",
+          "playoff_result": "Missed",
+          "dist": 0.3142,
+          "pct": {
+            "PPG": 0.1,
+            "DEF": 0.8,
+            "TS%": 0.1,
+            "3PA_RATE": 0.767,
+            "FTA_RATE": 0.1,
+            "PACE": 0.633,
+            "ROT_DEPTH": 0.967,
+            "STAR_SHARE": 0.0
+          }
+        },
+        {
+          "team": "CHA",
+          "season": "21-22",
+          "record": "10-72",
+          "seed": "East-15",
+          "playoff_result": "Missed",
+          "dist": 0.3162,
+          "pct": {
+            "PPG": 0.067,
+            "DEF": 0.967,
+            "TS%": 0.133,
+            "3PA_RATE": 0.967,
+            "FTA_RATE": 0.0,
+            "PACE": 0.4,
+            "ROT_DEPTH": 0.9,
+            "STAR_SHARE": 0.033
+          }
+        },
+        {
+          "team": "LAL",
+          "season": "22-23",
+          "record": "28-54",
+          "seed": "West-13",
+          "playoff_result": "Missed",
+          "dist": 0.3336,
+          "pct": {
+            "PPG": 0.067,
+            "DEF": 0.6,
+            "TS%": 0.067,
+            "3PA_RATE": 0.867,
+            "FTA_RATE": 0.3,
+            "PACE": 0.433,
+            "ROT_DEPTH": 0.7,
+            "STAR_SHARE": 0.233
+          }
+        },
+        {
+          "team": "CHA",
+          "season": "23-24",
+          "record": "18-64",
+          "seed": "East-15",
+          "playoff_result": "Missed",
+          "dist": 0.3373,
+          "pct": {
+            "PPG": 0.033,
+            "DEF": 0.967,
+            "TS%": 0.067,
+            "3PA_RATE": 0.9,
+            "FTA_RATE": 0.167,
+            "PACE": 0.267,
+            "ROT_DEPTH": 0.733,
+            "STAR_SHARE": 0.267
+          }
+        },
+        {
+          "team": "LAC",
+          "season": "23-24",
+          "record": "20-62",
+          "seed": "West-15",
+          "playoff_result": "Missed",
+          "dist": 0.3457,
+          "pct": {
+            "PPG": 0.2,
+            "DEF": 0.9,
+            "TS%": 0.333,
+            "3PA_RATE": 0.7,
+            "FTA_RATE": 0.233,
+            "PACE": 0.2,
+            "ROT_DEPTH": 0.867,
+            "STAR_SHARE": 0.067
+          }
+        },
+        {
+          "team": "MIA",
+          "season": "23-24",
+          "record": "29-53",
+          "seed": "East-12",
+          "playoff_result": "Missed",
+          "dist": 0.3701,
+          "pct": {
+            "PPG": 0.333,
+            "DEF": 0.833,
+            "TS%": 0.467,
+            "3PA_RATE": 0.967,
+            "FTA_RATE": 0.067,
+            "PACE": 0.433,
+            "ROT_DEPTH": 0.767,
+            "STAR_SHARE": 0.167
+          }
+        },
+        {
+          "team": "POR",
+          "season": "24-25",
+          "record": "25-57",
+          "seed": "West-13",
+          "playoff_result": "Missed",
+          "dist": 0.4096,
+          "pct": {
+            "PPG": 0.1,
+            "DEF": 0.7,
+            "TS%": 0.167,
+            "3PA_RATE": 0.633,
+            "FTA_RATE": 0.333,
+            "PACE": 0.167,
+            "ROT_DEPTH": 0.833,
+            "STAR_SHARE": 0.067
+          }
+        },
+        {
+          "team": "CHA",
+          "season": "25-26",
+          "record": "19-63",
+          "seed": "East-14",
+          "playoff_result": "Missed",
+          "dist": 0.4484,
+          "pct": {
+            "PPG": 0.233,
+            "DEF": 0.967,
+            "TS%": 0.1,
+            "3PA_RATE": 0.967,
+            "FTA_RATE": 0.3,
+            "PACE": 0.733,
+            "ROT_DEPTH": 0.967,
+            "STAR_SHARE": 0.0
+          }
+        },
+        {
+          "team": "NOP",
+          "season": "23-24",
+          "record": "20-62",
+          "seed": "West-14",
+          "playoff_result": "Missed",
+          "dist": 0.4532,
+          "pct": {
+            "PPG": 0.1,
+            "DEF": 0.7,
+            "TS%": 0.2,
+            "3PA_RATE": 0.867,
+            "FTA_RATE": 0.267,
+            "PACE": 0.1,
+            "ROT_DEPTH": 0.9,
+            "STAR_SHARE": 0.367
+          }
+        },
+        {
+          "team": "WAS",
+          "season": "24-25",
+          "record": "32-50",
+          "seed": "East-11",
+          "playoff_result": "Missed",
+          "dist": 0.5127,
+          "pct": {
+            "PPG": 0.133,
+            "DEF": 0.567,
+            "TS%": 0.1,
+            "3PA_RATE": 0.833,
+            "FTA_RATE": 0.1,
+            "PACE": 0.8,
+            "ROT_DEPTH": 0.6,
+            "STAR_SHARE": 0.267
+          }
+        },
+        {
+          "team": "TOR",
+          "season": "22-23",
+          "record": "24-58",
+          "seed": "East-13",
+          "playoff_result": "Missed",
+          "dist": 0.5205,
+          "pct": {
+            "PPG": 0.0,
+            "DEF": 0.7,
+            "TS%": 0.0,
+            "3PA_RATE": 0.633,
+            "FTA_RATE": 0.067,
+            "PACE": 0.467,
+            "ROT_DEPTH": 0.467,
+            "STAR_SHARE": 0.3
+          }
+        },
+        {
+          "team": "CHA",
+          "season": "24-25",
+          "record": "20-62",
+          "seed": "East-14",
+          "playoff_result": "Missed",
+          "dist": 0.5607,
+          "pct": {
+            "PPG": 0.4,
+            "DEF": 0.933,
+            "TS%": 0.3,
+            "3PA_RATE": 0.767,
+            "FTA_RATE": 0.067,
+            "PACE": 0.9,
+            "ROT_DEPTH": 0.9,
+            "STAR_SHARE": 0.133
+          }
+        },
+        {
+          "team": "MIA",
+          "season": "24-25",
+          "record": "34-48",
+          "seed": "East-10",
+          "playoff_result": "Missed",
+          "dist": 0.5825,
+          "pct": {
+            "PPG": 0.333,
+            "DEF": 0.867,
+            "TS%": 0.533,
+            "3PA_RATE": 0.967,
+            "FTA_RATE": 0.267,
+            "PACE": 0.1,
+            "ROT_DEPTH": 0.967,
+            "STAR_SHARE": 0.0
+          }
+        }
+      ]
+    }
+  ],
+  "linkage": [
+    {
+      "a": 2,
+      "b": 7,
+      "dist": 1.028343
+    },
+    {
+      "a": 8,
+      "b": 11,
+      "dist": 1.421533
+    },
+    {
+      "a": 1,
+      "b": 5,
+      "dist": 2.194446
+    },
+    {
+      "a": 3,
+      "b": 6,
+      "dist": 2.452318
+    },
+    {
+      "a": 12,
+      "b": 10,
+      "dist": 2.924888
+    },
+    {
+      "a": 0,
+      "b": 15,
+      "dist": 3.11453
+    },
+    {
+      "a": 14,
+      "b": 9,
+      "dist": 3.558839
+    },
+    {
+      "a": 17,
+      "b": 4,
+      "dist": 4.972965
+    },
+    {
+      "a": 18,
+      "b": 13,
+      "dist": 5.183154
+    },
+    {
+      "a": 20,
+      "b": 16,
+      "dist": 10.727086
+    },
+    {
+      "a": 19,
+      "b": 21,
+      "dist": 20.184043
+    }
+  ]
+}

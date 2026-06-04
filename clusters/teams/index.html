@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Archetypes — NBN</title>
+<script src="/nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f1117; color: #e5e7eb; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+  .page { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem; }
+  .subtitle { color: #6b7280; font-size: 0.85rem; margin-bottom: 0.75rem; }
+  .subtitle b { color: #9ca3af; }
+
+  /* Page nav */
+  .page-nav { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+  .page-nav-link {
+    font-size: 0.8rem; font-weight: 600; color: #4b5563;
+    text-decoration: none; padding: 0.25rem 0.65rem; border-radius: 5px;
+    border: 1px solid transparent; transition: color 0.15s, background 0.15s;
+  }
+  .page-nav-link:hover { color: #d1d5db; background: #1f2937; }
+  .page-nav-link.active { color: #f9fafb; background: #1f2937; border-color: #374151; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0.25rem; margin-bottom: 1.5rem;
+    border-bottom: 1px solid #1f2937; padding-bottom: 0;
+  }
+  .tab-btn {
+    background: none; border: none; color: #6b7280;
+    font-size: 0.85rem; font-weight: 600; font-family: inherit;
+    padding: 0.5rem 1rem; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color 0.15s;
+  }
+  .tab-btn:hover { color: #d1d5db; }
+  .tab-btn.active { color: #f9fafb; border-bottom-color: #3b82f6; }
+
+  /* Node grid */
+  .archetype-node-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem; margin-bottom: 1.5rem;
+  }
+  .archetype-node-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0.55rem; cursor: pointer; padding: 1rem 0.5rem;
+    border-radius: 10px; border: 1px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .archetype-node-wrap:hover { background: #161b27; border-color: #1f2937; }
+  .archetype-node-wrap.active { background: #161b27; border-color: var(--node-color, #3b82f6); }
+  .archetype-node {
+    width: 58px; height: 58px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.95rem; font-weight: 800; border: 2px solid;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .archetype-node-wrap:hover .archetype-node { transform: scale(1.07); }
+  .archetype-node-wrap.active .archetype-node {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
+  }
+  .archetype-node-name { font-size: 0.72rem; font-weight: 600; color: #9ca3af; text-align: center; line-height: 1.35; }
+  .archetype-node-wrap.active .archetype-node-name { color: #d1d5db; }
+
+  /* Detail panel */
+  .archetype-detail {
+    opacity: 0; transform: translateY(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+  }
+  .archetype-detail.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+  /* Cluster card */
+  .cluster-card {
+    background: #161b27; border: 1px solid #1f2937; border-radius: 10px;
+    padding: 1rem 1.25rem 1.25rem; display: flex; flex-direction: column; gap: 0.75rem;
+  }
+  .cluster-desc { font-size: 0.78rem; color: #9ca3af; line-height: 1.55; padding-bottom: 0.25rem; border-bottom: 1px solid #1f2937; }
+  .cluster-header { display: flex; align-items: center; gap: 0.75rem; }
+  .cluster-num { background: #1f2937; color: #6b7280; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; flex-shrink: 0; }
+  .cluster-name { font-size: 1rem; font-weight: 700; color: #f9fafb; flex: 1; }
+  .cluster-size { font-size: 0.75rem; color: #6b7280; flex-shrink: 0; }
+  .cluster-body { display: flex; gap: 1rem; align-items: flex-start; }
+  .radar-wrap { flex-shrink: 0; }
+
+  /* Team list (replaces player list) */
+  .teams-list { flex: 1; min-width: 0; }
+  .teams-list-title { font-size: 0.68rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
+  .team-row {
+    display: flex; align-items: baseline; gap: 0.4rem;
+    padding: 0.18rem 0; border-bottom: 1px solid #1f2937;
+    font-size: 0.78rem; white-space: nowrap; overflow: hidden;
+  }
+  .team-row:last-child { border-bottom: none; }
+  .team-abbr { font-weight: 700; color: #d1d5db; flex-shrink: 0; width: 2.6rem; }
+  .team-abbr a { color: inherit; text-decoration: none; }
+  .team-abbr a:hover { color: #93c5fd; }
+  .team-season { color: #6b7280; font-size: 0.72rem; flex-shrink: 0; }
+  .team-record { color: #6b7280; font-size: 0.72rem; flex-shrink: 0; margin-left: auto; padding-left: 0.4rem; }
+  .team-result { font-size: 0.72rem; font-weight: 600; flex-shrink: 0; padding-left: 0.4rem; }
+
+  /* Dim bars */
+  .dim-bars { display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.25rem; }
+  .dim-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; }
+  .dim-label { color: #6b7280; width: 3rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+  .dim-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; }
+  .dim-fill { height: 5px; border-radius: 2px; }
+  .dim-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
+
+  .show-more { margin-top: 0.4rem; background: none; border: none; color: #3b82f6; font-size: 0.72rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; font-family: inherit; }
+  .show-more:hover { color: #60a5fa; }
+
+  .loading { color: #6b7280; padding: 3rem; text-align: center; }
+  .error { color: #f87171; padding: 3rem; text-align: center; }
+
+  /* History tab */
+  .history-select-wrap { margin-bottom: 2rem; }
+  .history-select-wrap select {
+    background: #161b27; border: 1px solid #1f2937; border-radius: 8px;
+    color: #f9fafb; font-size: 0.9rem; font-family: inherit;
+    padding: 0.6rem 0.9rem; outline: none; cursor: pointer;
+    transition: border-color 0.15s; min-width: 180px;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 0.75rem center;
+    padding-right: 2rem;
+  }
+  .history-select-wrap select:focus { border-color: #3b82f6; }
+
+  .history-empty { color: #4b5563; font-size: 0.9rem; padding: 2rem 0; }
+
+  .history-header { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 1.75rem; }
+  .history-team-name { font-size: 1.2rem; font-weight: 700; color: #f9fafb; }
+  .history-seasons-count { font-size: 0.8rem; color: #6b7280; }
+
+  .history-graph {
+    background: #161b27; border: 1px solid #1f2937; border-radius: 10px;
+    padding: 2rem 1.5rem 1.5rem; margin-bottom: 1.5rem;
+  }
+  .history-track-scroll { overflow-x: auto; padding-bottom: 0.5rem; }
+  .history-track { display: flex; align-items: flex-start; min-width: max-content; }
+
+  .history-node-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; cursor: pointer; flex-shrink: 0; width: 80px; }
+  .history-node {
+    width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 800; border: 2px solid;
+    transition: transform 0.15s, box-shadow 0.15s; position: relative; z-index: 1;
+  }
+  .history-node-wrap:hover .history-node { transform: scale(1.1); }
+  .history-node-wrap.active .history-node {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
+  }
+  .history-node-season { font-size: 0.72rem; font-weight: 700; color: #d1d5db; text-align: center; }
+  .history-node-record { font-size: 0.65rem; color: #6b7280; text-align: center; margin-top: -0.3rem; }
+
+  .history-connector { flex: 1; min-width: 24px; height: 2px; background: #374151; margin-top: 25px; flex-shrink: 1; }
+  .history-connector.changed { background: #f59e0b; }
+
+  /* History detail panel */
+  .history-detail { opacity: 0; transform: translateY(6px); transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none; }
+  .history-detail.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+  .history-detail-card {
+    background: #161b27; border: 1px solid #1f2937; border-radius: 10px;
+    padding: 1.25rem; display: flex; gap: 1.5rem; align-items: flex-start;
+  }
+  .hd-left { flex-shrink: 0; }
+  .hd-right { flex: 1; min-width: 0; }
+
+  .hd-season-row { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
+  .hd-season { font-size: 1rem; font-weight: 700; color: #f9fafb; }
+  .hd-record { font-size: 0.85rem; color: #6b7280; font-weight: 600; }
+  .hd-seed { font-size: 0.8rem; color: #6b7280; }
+
+  .hd-result {
+    display: inline-block; padding: 0.2rem 0.6rem; border-radius: 5px;
+    font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem;
+  }
+  .hd-badge {
+    display: inline-flex; align-items: center; padding: 0.2rem 0.65rem;
+    border-radius: 6px; border: 1px solid; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.3rem;
+  }
+  .hd-cluster-name { font-size: 0.85rem; color: #9ca3af; margin-bottom: 1rem; }
+
+  .hd-bars { display: flex; flex-direction: column; gap: 0.22rem; }
+  .hd-bar-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; }
+  .hd-bar-label { color: #6b7280; width: 3rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+  .hd-bar-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; }
+  .hd-bar-fill { height: 5px; border-radius: 2px; }
+  .hd-bar-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Team Archetypes</h1>
+  <p class="subtitle">Two-stage clustering of <b id="n-seasons">—</b> team-seasons. Stage 1 groups by shot diet &amp; pace (3PA rate, FT rate, FGA/game). Stage 2 refines by efficiency, defense, and rotation depth.</p>
+
+  <div class="page-nav">
+    <a href="/clusters/players/" class="page-nav-link">Players</a>
+    <a href="/clusters/teams/" class="page-nav-link active">Teams</a>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="archetypes">Archetypes</button>
+    <button class="tab-btn" data-tab="history">Team History</button>
+  </div>
+
+  <div id="tab-archetypes" class="tab-content">
+    <div id="root"><p class="loading">Loading…</p></div>
+  </div>
+
+  <div id="tab-history" class="tab-content" style="display:none">
+    <div class="history-select-wrap">
+      <select id="team-select">
+        <option value="">Select a team…</option>
+      </select>
+    </div>
+    <div id="history-result"><p class="history-empty">Select a team to see their archetype history across seasons.</p></div>
+  </div>
+</div>
+<script>
+const DIMS = ['PPG','DEF','TS%','3PA_RATE','FTA_RATE','PACE','ROT_DEPTH','STAR_SHARE'];
+
+const DIM_COLOR = {
+  PPG:        '#3b82f6',
+  DEF:        '#22c55e',
+  'TS%':      '#06b6d4',
+  '3PA_RATE': '#8b5cf6',
+  'FTA_RATE': '#f97316',
+  PACE:       '#f59e0b',
+  ROT_DEPTH:  '#ec4899',
+  STAR_SHARE: '#ef4444',
+};
+
+const DIM_LABEL = {
+  PPG:        'PPG',
+  DEF:        'DEF',
+  'TS%':      'TS%',
+  '3PA_RATE': '3P%',
+  'FTA_RATE': 'FT%',
+  PACE:       'PACE',
+  ROT_DEPTH:  'DEPTH',
+  STAR_SHARE: 'STARS',
+};
+
+const NAMES = {
+  '1A': 'Efficient Interior Offenses',
+  '1B': 'Deep Inside-Oriented Units',
+  '1C': 'Star-Driven Pace Teams',
+  '2A': 'Foul-Drawing Halfcourt Grinders',
+  '2B': 'Star-Powered Deliberate Systems',
+  '2C': 'Slow Mediocre Foul-Drawers',
+  '3A': 'High-Volume Balanced Attacks',
+  '3B': 'Star-Led Frenetic Teams',
+  '3C': 'Egalitarian 3PT Rotations',
+  '4A': 'Perimeter-First Balanced Rosters',
+  '4B': '3PT-Heavy Defensive Tanks',
+  '4C': 'Full-Rebuild Depth Teams',
+};
+
+const DESCRIPTIONS = {
+  '1A': 'High-scoring, interior-focused offenses that convert efficiently without leaning on the 3-ball. They run a moderate pace and channel most production through their top players.',
+  '1B': 'Inside-oriented teams built for depth over star power. The whole rotation contributes meaningful minutes without relying heavily on the perimeter.',
+  '1C': 'Fast-paced teams shaped around one or two dominant stars who absorb most of the team\'s minutes. Their supporting cast plays a limited role.',
+  '2A': 'Methodical halfcourt teams that live at the free throw line. They play some of the slowest pace in the league, and are extremely efficient when they do score.',
+  '2B': 'A franchise superstar runs the show in a deliberate, patient system. The highest star concentration of any cluster — the offense lives and dies with one player.',
+  '2C': 'Below-average teams with no defining identity. They play slow, draw some fouls, and produce mediocre results across the board.',
+  '3A': 'The most complete offenses in the league — high scoring, efficient, and willing to attack from anywhere: paint, midrange, and the 3-ball.',
+  '3B': 'Star-centric teams that push pace and draw fouls but can\'t convert at a high rate. Their fortunes are tied directly to their top player\'s production.',
+  '3C': 'The most democratically distributed minutes in the league. Everyone shoots threes, nobody dominates, and the whole roster sees real time.',
+  '4A': 'Modern three-point offenses with even minute distribution and above-average efficiency. They pass on paint touches for perimeter looks and make it work.',
+  '4B': 'Perimeter-heavy teams that play decent defense but can\'t generate consistent offense. Typically young or rebuilding rosters firing from deep.',
+  '4C': 'Full rebuilds spreading time across the roster while hoisting the most threes. Strong defense by rating but almost no offensive output — lottery-bound.',
+};
+
+const CLUSTER_ORDER = ['1A','1B','1C','2A','2B','2C','3A','3B','3C','4A','4B','4C'];
+
+const GROUP_COLOR = { '1': '#3b82f6', '2': '#8b5cf6', '3': '#f59e0b', '4': '#22c55e' };
+
+function clusterColor(hierName) {
+  return GROUP_COLOR[hierName[0]] || '#6b7280';
+}
+
+function poColor(result) {
+  if (result === 'Champion')    return '#f59e0b';
+  if (result === 'Runner-Up')   return '#9ca3af';
+  if (result === 'Conf Finals') return '#3b82f6';
+  if (result === 'Second Round') return '#22c55e';
+  if (result === 'First Round') return '#f97316';
+  return '#4b5563';
+}
+
+// ── Radar ────────────────────────────────────────────────────────────────────
+
+function buildRadar(centroid, size = 110) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const cx = size / 2, cy = size / 2, maxR = size * 0.38;
+  const n = DIMS.length;
+
+  const pt = (angle_deg, r) => {
+    const rad = (angle_deg * Math.PI) / 180;
+    return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)];
+  };
+  const angles = DIMS.map((_, i) => 90 - (360 / n) * i);
+
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', size); svg.setAttribute('height', size);
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+
+  [0.33, 0.66, 1].forEach(frac => {
+    const pts = angles.map(a => pt(a, maxR * frac).join(',')).join(' ');
+    const poly = document.createElementNS(NS, 'polygon');
+    poly.setAttribute('points', pts);
+    poly.setAttribute('fill', 'none');
+    poly.setAttribute('stroke', '#1f2937');
+    poly.setAttribute('stroke-width', '1');
+    svg.appendChild(poly);
+  });
+
+  angles.forEach(a => {
+    const [x, y] = pt(a, maxR);
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+    line.setAttribute('x2', x); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#1f2937'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+  });
+
+  const polyPts = DIMS.map((d, i) => pt(angles[i], maxR * (centroid[d] || 0)).join(',')).join(' ');
+  const poly = document.createElementNS(NS, 'polygon');
+  poly.setAttribute('points', polyPts);
+  poly.setAttribute('fill', 'rgba(59,130,246,0.2)');
+  poly.setAttribute('stroke', '#3b82f6');
+  poly.setAttribute('stroke-width', '1.5');
+  svg.appendChild(poly);
+
+  DIMS.forEach((d, i) => {
+    const [x, y] = pt(angles[i], maxR * (centroid[d] || 0));
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '2.5');
+    dot.setAttribute('fill', DIM_COLOR[d]); dot.setAttribute('stroke', '#0f1117');
+    dot.setAttribute('stroke-width', '1');
+    dot.appendChild(Object.assign(document.createElementNS(NS, 'title'), {
+      textContent: `${DIM_LABEL[d] || d}: ${((centroid[d] || 0) * 100).toFixed(0)}th pct`
+    }));
+    svg.appendChild(dot);
+  });
+
+  const LABEL_R = maxR + 12;
+  DIMS.forEach((d, i) => {
+    const [x, y] = pt(angles[i], LABEL_R);
+    const txt = document.createElementNS(NS, 'text');
+    txt.setAttribute('x', x); txt.setAttribute('y', y);
+    txt.setAttribute('font-size', '7.5'); txt.setAttribute('fill', '#6b7280');
+    txt.setAttribute('font-family', 'Inter, system-ui, sans-serif');
+    txt.setAttribute('font-weight', '600');
+    const anchor = x < cx - 4 ? 'end' : x > cx + 4 ? 'start' : 'middle';
+    txt.setAttribute('text-anchor', anchor);
+    txt.setAttribute('dominant-baseline', 'middle');
+    txt.textContent = DIM_LABEL[d] || d;
+    svg.appendChild(txt);
+  });
+
+  return svg;
+}
+
+// ── Archetypes tab ────────────────────────────────────────────────────────────
+
+function buildCard(cluster) {
+  const card = document.createElement('div');
+  card.className = 'cluster-card';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'cluster-header';
+  hdr.innerHTML = `
+    <span class="cluster-num">${cluster.hier_name}</span>
+    <span class="cluster-name">${NAMES[cluster.hier_name] || cluster.hier_name}</span>
+    <span class="cluster-size">${cluster.size} seasons</span>
+  `;
+  card.appendChild(hdr);
+
+  const desc = DESCRIPTIONS[cluster.hier_name];
+  if (desc) {
+    const descEl = document.createElement('p');
+    descEl.className = 'cluster-desc';
+    descEl.textContent = desc;
+    card.appendChild(descEl);
+  }
+
+  const body = document.createElement('div');
+  body.className = 'cluster-body';
+
+  const radarWrap = document.createElement('div');
+  radarWrap.className = 'radar-wrap';
+  radarWrap.appendChild(buildRadar(cluster.centroid, 120));
+  body.appendChild(radarWrap);
+
+  const teamsList = document.createElement('div');
+  teamsList.className = 'teams-list';
+  const title = document.createElement('div');
+  title.className = 'teams-list-title';
+  title.textContent = 'Closest to centroid';
+  teamsList.appendChild(title);
+
+  const PAGE = 10;
+  let shown = PAGE;
+
+  function makeRow(e) {
+    const row = document.createElement('div');
+    row.className = 'team-row';
+
+    const abbrEl = document.createElement('div');
+    abbrEl.className = 'team-abbr';
+    const link = document.createElement('a');
+    link.href = `/teams/${e.team}/`;
+    link.textContent = e.team;
+    abbrEl.appendChild(link);
+
+    const seasonEl = document.createElement('div');
+    seasonEl.className = 'team-season';
+    seasonEl.textContent = e.season;
+
+    const recordEl = document.createElement('div');
+    recordEl.className = 'team-record';
+    recordEl.textContent = e.record;
+
+    const resultEl = document.createElement('div');
+    resultEl.className = 'team-result';
+    resultEl.style.color = poColor(e.playoff_result);
+    resultEl.textContent = e.playoff_result === 'Missed' ? '—' : e.playoff_result;
+
+    row.appendChild(abbrEl);
+    row.appendChild(seasonEl);
+    row.appendChild(recordEl);
+    row.appendChild(resultEl);
+    return row;
+  }
+
+  const rowContainer = document.createElement('div');
+  cluster.top.slice(0, PAGE).forEach(e => rowContainer.appendChild(makeRow(e)));
+  teamsList.appendChild(rowContainer);
+
+  const total = cluster.top.length;
+  const btn = document.createElement('button');
+  btn.className = 'show-more';
+
+  function updateBtn() {
+    if (shown >= total) { btn.style.display = 'none'; return; }
+    btn.style.display = '';
+    btn.textContent = `Show more (${shown}/${total})`;
+  }
+
+  btn.addEventListener('click', () => {
+    const next = Math.min(shown + PAGE, total);
+    cluster.top.slice(shown, next).forEach(e => rowContainer.appendChild(makeRow(e)));
+    shown = next;
+    updateBtn();
+  });
+
+  teamsList.appendChild(btn);
+  updateBtn();
+
+  body.appendChild(teamsList);
+  card.appendChild(body);
+
+  const bars = document.createElement('div');
+  bars.className = 'dim-bars';
+  DIMS.forEach(d => {
+    const v = cluster.centroid[d] || 0;
+    const row = document.createElement('div');
+    row.className = 'dim-row';
+    row.innerHTML = `
+      <div class="dim-label">${DIM_LABEL[d] || d}</div>
+      <div class="dim-track"><div class="dim-fill" style="width:${(v*100).toFixed(1)}%;background:${DIM_COLOR[d]}"></div></div>
+      <div class="dim-val">${(v*100).toFixed(0)}th</div>
+    `;
+    bars.appendChild(row);
+  });
+  card.appendChild(bars);
+
+  return card;
+}
+
+// ── Team History tab ──────────────────────────────────────────────────────────
+
+let teamIndex = {};    // abbr -> [{season, cluster, clusterName, pct, dist, record, seed, playoff_result}]
+let allTeams  = [];    // sorted abbrs
+
+function buildTeamIndex(data) {
+  data.clusters.forEach(c => {
+    c.top.forEach(e => {
+      if (!teamIndex[e.team]) teamIndex[e.team] = [];
+      teamIndex[e.team].push({
+        season:         e.season,
+        cluster:        c.hier_name,
+        clusterName:    NAMES[c.hier_name] || c.hier_name,
+        pct:            e.pct || {},
+        dist:           e.dist,
+        record:         e.record,
+        seed:           e.seed,
+        playoff_result: e.playoff_result,
+      });
+    });
+  });
+  Object.values(teamIndex).forEach(arr =>
+    arr.sort((a, b) => a.season.localeCompare(b.season))
+  );
+  allTeams = Object.keys(teamIndex).sort();
+}
+
+function setupTeamSelect() {
+  const sel = document.getElementById('team-select');
+  allTeams.forEach(abbr => {
+    const opt = document.createElement('option');
+    opt.value = abbr;
+    opt.textContent = abbr;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', () => {
+    if (sel.value) renderHistory(sel.value);
+  });
+}
+
+function renderHistoryDetail(panel, s) {
+  const color = clusterColor(s.cluster);
+  panel.innerHTML = '';
+  panel.classList.add('visible');
+
+  const card = document.createElement('div');
+  card.className = 'history-detail-card';
+
+  const left = document.createElement('div');
+  left.className = 'hd-left';
+  left.appendChild(buildRadar(s.pct, 150));
+  card.appendChild(left);
+
+  const right = document.createElement('div');
+  right.className = 'hd-right';
+
+  const seasonRow = document.createElement('div');
+  seasonRow.className = 'hd-season-row';
+  seasonRow.innerHTML = `<span class="hd-season">${s.season}</span>`
+    + `<span class="hd-record">${s.record}</span>`
+    + (s.seed ? `<span class="hd-seed">${s.seed}</span>` : '');
+  right.appendChild(seasonRow);
+
+  if (s.playoff_result && s.playoff_result !== 'Missed') {
+    const resultEl = document.createElement('div');
+    resultEl.className = 'hd-result';
+    resultEl.textContent = s.playoff_result;
+    const rc = poColor(s.playoff_result);
+    resultEl.style.background = rc + '22';
+    resultEl.style.color = rc;
+    right.appendChild(resultEl);
+  }
+
+  const badge = document.createElement('div');
+  badge.className = 'hd-badge';
+  badge.style.background = color + '22';
+  badge.style.color = color;
+  badge.style.borderColor = color + '55';
+  badge.textContent = s.cluster;
+  right.appendChild(badge);
+
+  const cname = document.createElement('div');
+  cname.className = 'hd-cluster-name';
+  cname.textContent = s.clusterName;
+  right.appendChild(cname);
+
+  const bars = document.createElement('div');
+  bars.className = 'hd-bars';
+  DIMS.forEach(d => {
+    const v = s.pct[d] || 0;
+    const row = document.createElement('div');
+    row.className = 'hd-bar-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'hd-bar-label';
+    lbl.textContent = DIM_LABEL[d] || d;
+    const track = document.createElement('div');
+    track.className = 'hd-bar-track';
+    const fill = document.createElement('div');
+    fill.className = 'hd-bar-fill';
+    fill.style.width = (v * 100).toFixed(1) + '%';
+    fill.style.background = DIM_COLOR[d];
+    track.appendChild(fill);
+    const val = document.createElement('div');
+    val.className = 'hd-bar-val';
+    val.textContent = (v * 100).toFixed(0) + 'th';
+    row.appendChild(lbl);
+    row.appendChild(track);
+    row.appendChild(val);
+    bars.appendChild(row);
+  });
+  right.appendChild(bars);
+
+  card.appendChild(right);
+  panel.appendChild(card);
+}
+
+function renderHistory(abbr) {
+  const seasons = teamIndex[abbr];
+  if (!seasons || !seasons.length) return;
+
+  const container = document.getElementById('history-result');
+  container.innerHTML = '';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'history-header';
+  const nameEl = document.createElement('span');
+  nameEl.className = 'history-team-name';
+  nameEl.textContent = abbr;
+  const countEl = document.createElement('span');
+  countEl.className = 'history-seasons-count';
+  countEl.textContent = `${seasons.length} season${seasons.length !== 1 ? 's' : ''} tracked`;
+  hdr.appendChild(nameEl);
+  hdr.appendChild(countEl);
+  container.appendChild(hdr);
+
+  const graph = document.createElement('div');
+  graph.className = 'history-graph';
+  const scroll = document.createElement('div');
+  scroll.className = 'history-track-scroll';
+  const track = document.createElement('div');
+  track.className = 'history-track';
+  scroll.appendChild(track);
+  graph.appendChild(scroll);
+
+  const nodeWraps = [];
+
+  seasons.forEach((s, i) => {
+    if (i > 0) {
+      const conn = document.createElement('div');
+      conn.className = 'history-connector' + (seasons[i-1].cluster !== s.cluster ? ' changed' : '');
+      track.appendChild(conn);
+    }
+
+    const color = clusterColor(s.cluster);
+    const wrap = document.createElement('div');
+    wrap.className = 'history-node-wrap';
+    wrap.style.setProperty('--node-color', color);
+
+    const node = document.createElement('div');
+    node.className = 'history-node';
+    node.style.background = color + '1a';
+    node.style.borderColor = color;
+    node.style.color = color;
+    node.textContent = s.cluster;
+    wrap.appendChild(node);
+
+    const seasonLbl = document.createElement('div');
+    seasonLbl.className = 'history-node-season';
+    seasonLbl.textContent = s.season;
+    wrap.appendChild(seasonLbl);
+
+    const recordLbl = document.createElement('div');
+    recordLbl.className = 'history-node-record';
+    recordLbl.textContent = s.record;
+    wrap.appendChild(recordLbl);
+
+    wrap.addEventListener('click', () => {
+      nodeWraps.forEach(w => w.classList.remove('active'));
+      wrap.classList.add('active');
+      renderHistoryDetail(detail, s);
+    });
+
+    track.appendChild(wrap);
+    nodeWraps.push(wrap);
+  });
+
+  container.appendChild(graph);
+
+  const detail = document.createElement('div');
+  detail.className = 'history-detail';
+  container.appendChild(detail);
+
+  nodeWraps[0]?.click();
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+
+function showTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === name)
+  );
+  document.querySelectorAll('.tab-content').forEach(t =>
+    t.style.display = t.id === 'tab-' + name ? '' : 'none'
+  );
+  history.replaceState(null, '', '#' + name);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab));
+});
+
+const initTab = ['archetypes', 'history'].includes(location.hash.slice(1))
+  ? location.hash.slice(1) : 'archetypes';
+showTab(initTab);
+
+// ── Data load ─────────────────────────────────────────────────────────────────
+
+fetch('/clusters/team_clusters.json')
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('n-seasons').textContent = data.n.toLocaleString();
+
+    const root = document.getElementById('root');
+    root.innerHTML = '';
+
+    const sorted = [...data.clusters].sort((a, b) => {
+      const ai = CLUSTER_ORDER.indexOf(a.hier_name);
+      const bi = CLUSTER_ORDER.indexOf(b.hier_name);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+
+    const nodeGrid = document.createElement('div');
+    nodeGrid.className = 'archetype-node-grid';
+
+    const archetypeDetail = document.createElement('div');
+    archetypeDetail.className = 'archetype-detail';
+
+    const nodeWraps = [];
+
+    sorted.forEach(c => {
+      const color = clusterColor(c.hier_name);
+      const wrap = document.createElement('div');
+      wrap.className = 'archetype-node-wrap';
+      wrap.style.setProperty('--node-color', color);
+
+      const node = document.createElement('div');
+      node.className = 'archetype-node';
+      node.style.background = color + '1a';
+      node.style.borderColor = color;
+      node.style.color = color;
+      node.textContent = c.hier_name;
+      wrap.appendChild(node);
+
+      const nameLbl = document.createElement('div');
+      nameLbl.className = 'archetype-node-name';
+      nameLbl.textContent = NAMES[c.hier_name] || c.hier_name;
+      wrap.appendChild(nameLbl);
+
+      wrap.addEventListener('click', () => {
+        nodeWraps.forEach(w => w.classList.remove('active'));
+        wrap.classList.add('active');
+        archetypeDetail.innerHTML = '';
+        archetypeDetail.classList.add('visible');
+        archetypeDetail.appendChild(buildCard(c));
+      });
+
+      nodeGrid.appendChild(wrap);
+      nodeWraps.push(wrap);
+    });
+
+    root.appendChild(nodeGrid);
+    root.appendChild(archetypeDetail);
+    nodeWraps[0]?.click();
+
+    buildTeamIndex(data);
+    setupTeamSelect();
+  })
+  .catch(err => {
+    document.getElementById('root').innerHTML =
+      `<p class="error">Failed to load cluster data: ${err.message}</p>`;
+  });
+</script>
+</body>
+</html>

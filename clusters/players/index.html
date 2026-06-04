@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Player Archetypes — NBN</title>
+<script src="/nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f1117; color: #e5e7eb; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+  .page { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem; }
+  .subtitle { color: #6b7280; font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .subtitle b { color: #9ca3af; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #1f2937;
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s;
+  }
+  .tab-btn:hover { color: #d1d5db; }
+  .tab-btn.active { color: #f9fafb; border-bottom-color: #3b82f6; }
+
+  /* Archetypes tab — node grid */
+  .archetype-node-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .archetype-node-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    cursor: pointer;
+    padding: 1rem 0.5rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .archetype-node-wrap:hover { background: #161b27; border-color: #1f2937; }
+  .archetype-node-wrap.active {
+    background: #161b27;
+    border-color: var(--node-color, #3b82f6);
+  }
+
+  .archetype-node {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    font-weight: 800;
+    border: 2px solid;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .archetype-node-wrap:hover .archetype-node { transform: scale(1.07); }
+  .archetype-node-wrap.active .archetype-node {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
+  }
+
+  .archetype-node-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #9ca3af;
+    text-align: center;
+    line-height: 1.35;
+  }
+  .archetype-node-wrap.active .archetype-node-name { color: #d1d5db; }
+
+  /* Archetype detail panel */
+  .archetype-detail {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+  }
+  .archetype-detail.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* Cluster card (used in detail panel) */
+  .cluster-card {
+    background: #161b27;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    padding: 1rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .cluster-desc {
+    font-size: 0.78rem;
+    color: #9ca3af;
+    line-height: 1.55;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #1f2937;
+  }
+
+  .cluster-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .cluster-num {
+    background: #1f2937;
+    color: #6b7280;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .cluster-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f9fafb;
+    flex: 1;
+  }
+  .cluster-size {
+    font-size: 0.75rem;
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+
+  .cluster-body {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .radar-wrap { flex-shrink: 0; }
+
+  .players-list { flex: 1; min-width: 0; }
+  .players-list-title {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.4rem;
+  }
+  .player-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.18rem 0;
+    border-bottom: 1px solid #1f2937;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .player-row:last-child { border-bottom: none; }
+  .player-name {
+    color: #d1d5db;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+  }
+  .player-name a { color: inherit; text-decoration: none; }
+  .player-name a:hover { color: #93c5fd; }
+  .player-season { color: #6b7280; font-size: 0.72rem; flex-shrink: 0; }
+
+  .dim-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-top: 0.25rem;
+  }
+  .dim-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+  }
+  .dim-label { color: #6b7280; width: 2.8rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+  .dim-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; }
+  .dim-fill { height: 5px; border-radius: 2px; }
+  .dim-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
+
+  .show-more {
+    margin-top: 0.4rem;
+    background: none;
+    border: none;
+    color: #3b82f6;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.1rem 0;
+    font-family: inherit;
+  }
+  .show-more:hover { color: #60a5fa; }
+
+  .loading { color: #6b7280; padding: 3rem; text-align: center; }
+  .error   { color: #f87171; padding: 3rem; text-align: center; }
+
+  .dendrogram-section {
+    background: #161b27;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .dendrogram-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.75rem;
+  }
+  .dendrogram-wrap { overflow-x: auto; }
+
+  /* Page nav */
+  .page-nav { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+  .page-nav-link {
+    font-size: 0.8rem; font-weight: 600; color: #4b5563;
+    text-decoration: none; padding: 0.25rem 0.65rem; border-radius: 5px;
+    border: 1px solid transparent; transition: color 0.15s, background 0.15s;
+  }
+  .page-nav-link:hover { color: #d1d5db; background: #1f2937; }
+  .page-nav-link.active { color: #f9fafb; background: #1f2937; border-color: #374151; }
+
+  /* Journey tab */
+  .journey-search-wrap {
+    position: relative;
+    max-width: 360px;
+    margin-bottom: 2rem;
+  }
+  .journey-search-wrap input {
+    width: 100%;
+    background: #161b27;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    color: #f9fafb;
+    font-size: 0.9rem;
+    font-family: inherit;
+    padding: 0.6rem 0.9rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .journey-search-wrap input:focus { border-color: #3b82f6; }
+  .journey-search-wrap input::placeholder { color: #4b5563; }
+
+  .suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: #1c2333;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .suggestion-item {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.85rem;
+    color: #d1d5db;
+    cursor: pointer;
+    border-bottom: 1px solid #1f2937;
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover, .suggestion-item.focused { background: #1f2937; color: #f9fafb; }
+
+  .journey-empty {
+    color: #4b5563;
+    font-size: 0.9rem;
+    padding: 2rem 0;
+  }
+
+  .journey-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+  }
+  .journey-player-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f9fafb;
+  }
+  .journey-seasons-count {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  /* Graph */
+  .journey-graph {
+    background: #161b27;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    padding: 2rem 1.5rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .journey-track-scroll { overflow-x: auto; padding-bottom: 0.5rem; }
+
+  .journey-track {
+    display: flex;
+    align-items: flex-start;
+    min-width: max-content;
+  }
+
+  .journey-node-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    width: 72px;
+  }
+
+  .journey-node {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 800;
+    border: 2px solid;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    z-index: 1;
+  }
+  .journey-node-wrap:hover .journey-node { transform: scale(1.1); }
+  .journey-node-wrap.active .journey-node {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
+  }
+
+  .journey-node-season {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #d1d5db;
+    text-align: center;
+  }
+  .journey-node-team {
+    font-size: 0.65rem;
+    color: #6b7280;
+    text-align: center;
+    margin-top: -0.3rem;
+  }
+
+  .journey-connector {
+    flex: 1;
+    min-width: 24px;
+    height: 2px;
+    background: #374151;
+    margin-top: 25px; /* align with node center (52px / 2 - 1px) */
+    flex-shrink: 1;
+  }
+  .journey-connector.changed { background: #f59e0b; }
+
+  /* Detail panel */
+  .journey-detail {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+  }
+  .journey-detail.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .journey-detail-card {
+    background: #161b27;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    padding: 1.25rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .jd-left { flex-shrink: 0; }
+
+  .jd-right { flex: 1; min-width: 0; }
+
+  .jd-season-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+  .jd-season {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f9fafb;
+  }
+  .jd-team {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: 600;
+  }
+
+  .jd-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+  .jd-cluster-name {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+  }
+
+  .jd-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.22rem;
+  }
+  .jd-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+  }
+  .jd-bar-label { color: #6b7280; width: 2.8rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+  .jd-bar-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; }
+  .jd-bar-fill  { height: 5px; border-radius: 2px; }
+  .jd-bar-val   { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Player Archetypes</h1>
+  <p class="subtitle">Two-stage hierarchical clustering across <b id="n-seasons">—</b> player-seasons (≥20G). Stage 1 groups by shot diet (3pt rate, FT rate, volume) → top-level number. Stage 2 refines by efficiency, playmaking &amp; defense → letter suffix.</p>
+
+  <div class="page-nav">
+    <a href="/clusters/players/" class="page-nav-link active">Players</a>
+    <a href="/clusters/teams/" class="page-nav-link">Teams</a>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="archetypes">Archetypes</button>
+    <button class="tab-btn" data-tab="journey">Player Journey</button>
+  </div>
+
+  <div id="tab-archetypes" class="tab-content">
+    <div id="dendrogram-section" style="display:none" class="dendrogram-section">
+      <div class="dendrogram-title">Cluster hierarchy — height = Ward distance at merge</div>
+      <div class="dendrogram-wrap" id="dendrogram-wrap"></div>
+    </div>
+    <div id="root"><p class="loading">Loading…</p></div>
+  </div>
+
+  <div id="tab-journey" class="tab-content" style="display:none">
+    <div class="journey-search-wrap">
+      <input type="text" id="player-search" placeholder="Search for a player…" autocomplete="off" spellcheck="false">
+      <div id="suggestions" class="suggestions" style="display:none"></div>
+    </div>
+    <div id="journey-result"><p class="journey-empty">Search for a player to see their archetype journey across seasons.</p></div>
+  </div>
+</div>
+<script>
+const DIMS = ['PPG','3PA','FTA','TS%','APG','TOV','RPG','BLK','STL'];
+const DIM_COLOR = {
+  PPG: '#3b82f6', APG: '#8b5cf6', TOV: '#ef4444',
+  'TS%': '#22c55e', '3PA': '#06b6d4', RPG: '#f59e0b',
+  BLK: '#6366f1',  STL: '#ec4899',   FTA: '#f97316',
+};
+
+const NAMES = {
+  '1A': 'Inside-First Two-Way Stars',
+  '1B': 'Perimeter Disruptors',
+  '1C': 'Two-Way Paint Protectors',
+  '1D': 'Inefficient Fringe Stars',
+  '2A': 'Rim-Running Backup Bigs',
+  '2B': 'Athletic Defensive Specialists',
+  '2C': 'Backup Pure Playmakers',
+  '2D': 'Scrubs Part 1',
+  '3A': 'Defensive Bigs',
+  '3B': 'End-of-Bench Backups',
+  '3C': 'On-Ball Defenders',
+  '3D': 'Scrubs Part 2',
+  '4A': 'Elite Perimeter Stars',
+  '4B': 'Secondary Perimeter Scorers',
+  '4C': 'Stretch Forwards',
+  '4D': 'Shot Chuckers',
+};
+
+const DESCRIPTIONS = {
+  '1A': 'Some of the best players in the league on both sides of the ball. They prefer to score inside the perimeter and get to the free throw line, but are still capable from the outside.',
+  '1B': 'High-energy players who force turnovers and get to the free throw line, while being able to act as secondary facilitators for their teams.',
+  '1C': 'Specialists in keeping the paint clean of easy points who can rack up double-digit scoring. Some even extend their range to the perimeter, but typically not at volume.',
+  '1D': 'High scorers who collectively tend to score with low efficiency and struggle to stretch the floor. Still very valuable, high-end starters thanks to their usefulness as rebounders, defenders, and facilitators.',
+  '2A': 'Almost exclusively paint players who don\'t carry big offensive roles — but the offense they do provide is very efficient thanks to their shot diet.',
+  '2B': 'Bench-caliber players who specialize in grabbing boards and helping their team with defensive versatility. They can\'t stretch the floor and aren\'t elite paint protectors, but they\'re often fast and/or strong for their size.',
+  '2C': 'Come off the bench to lead the second unit.',
+  '2D': 'The absolute garbage bin of players in the league.',
+  '3A': 'Your bread-and-butter, blue-collar, rebounding defensive big.',
+  '3B': 'Kind of bad at everything. They get playing time, but typically at the end of team rotations because the team has nobody better.',
+  '3C': 'The players coaches are talking about when they say you need one of these on your team.',
+  '3D': 'Also bad — but differently so.',
+  '4A': 'The top echelon of perimeter scorers in the league. They also tend to be the primary or secondary ballhandler on their team.',
+  '4B': 'Come off the bench and provide an offensive spark with their outside shooting.',
+  '4C': 'Not exactly formidable defenders for their size, but make up for it by being serviceable on that end while having the range to pull an opposing big out of the paint.',
+  '4D': 'Come off the bench and put up points — but tend to do it on low efficiency.',
+};
+
+const CLUSTER_ORDER = ['1A','1D','1B','4A','1C','4C','2B','3A','2C','3C','4B','4D','2A','3B','2D','3D'];
+
+const GROUP_COLOR = { '1': '#3b82f6', '2': '#8b5cf6', '3': '#f59e0b', '4': '#22c55e' };
+
+function clusterColor(hierName) {
+  return GROUP_COLOR[hierName[0]] || '#6b7280';
+}
+
+function fmtName(raw) {
+  const p = raw.split(', ');
+  return p.length === 2 ? `${p[1]} ${p[0]}` : raw;
+}
+
+// ── Radar ────────────────────────────────────────────────────────────────────
+
+function buildRadar(centroid, size = 110) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const cx = size / 2, cy = size / 2, maxR = size * 0.38;
+  const n = DIMS.length;
+
+  const pt = (angle_deg, r) => {
+    const rad = (angle_deg * Math.PI) / 180;
+    return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)];
+  };
+  const angles = DIMS.map((_, i) => 90 - (360 / n) * i);
+
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', size); svg.setAttribute('height', size);
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+
+  [0.33, 0.66, 1].forEach(frac => {
+    const pts = angles.map(a => pt(a, maxR * frac).join(',')).join(' ');
+    const poly = document.createElementNS(NS, 'polygon');
+    poly.setAttribute('points', pts);
+    poly.setAttribute('fill', 'none');
+    poly.setAttribute('stroke', '#1f2937');
+    poly.setAttribute('stroke-width', '1');
+    svg.appendChild(poly);
+  });
+
+  angles.forEach(a => {
+    const [x, y] = pt(a, maxR);
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+    line.setAttribute('x2', x); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#1f2937'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+  });
+
+  const polyPts = DIMS.map((d, i) => pt(angles[i], maxR * (centroid[d] || 0)).join(',')).join(' ');
+  const poly = document.createElementNS(NS, 'polygon');
+  poly.setAttribute('points', polyPts);
+  poly.setAttribute('fill', 'rgba(59,130,246,0.2)');
+  poly.setAttribute('stroke', '#3b82f6');
+  poly.setAttribute('stroke-width', '1.5');
+  svg.appendChild(poly);
+
+  DIMS.forEach((d, i) => {
+    const [x, y] = pt(angles[i], maxR * (centroid[d] || 0));
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '2.5');
+    dot.setAttribute('fill', DIM_COLOR[d]); dot.setAttribute('stroke', '#0f1117');
+    dot.setAttribute('stroke-width', '1');
+    dot.appendChild(Object.assign(document.createElementNS(NS, 'title'), {
+      textContent: `${d}: ${((centroid[d] || 0) * 100).toFixed(0)}th pct`
+    }));
+    svg.appendChild(dot);
+  });
+
+  const LABEL_R = maxR + 11;
+  DIMS.forEach((d, i) => {
+    const [x, y] = pt(angles[i], LABEL_R);
+    const txt = document.createElementNS(NS, 'text');
+    txt.setAttribute('x', x); txt.setAttribute('y', y);
+    txt.setAttribute('font-size', '7.5'); txt.setAttribute('fill', '#6b7280');
+    txt.setAttribute('font-family', 'Inter, system-ui, sans-serif');
+    txt.setAttribute('font-weight', '600');
+    const anchor = x < cx - 4 ? 'end' : x > cx + 4 ? 'start' : 'middle';
+    txt.setAttribute('text-anchor', anchor);
+    txt.setAttribute('dominant-baseline', 'middle');
+    txt.textContent = d;
+    svg.appendChild(txt);
+  });
+
+  return svg;
+}
+
+// ── Archetypes tab ────────────────────────────────────────────────────────────
+
+function buildCard(cluster) {
+  const card = document.createElement('div');
+  card.className = 'cluster-card';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'cluster-header';
+  const displayName = NAMES[cluster.hier_name] || cluster.hier_name;
+  hdr.innerHTML = `
+    <span class="cluster-num">${cluster.hier_name}</span>
+    <span class="cluster-name">${displayName}</span>
+    <span class="cluster-size">${cluster.size} seasons</span>
+  `;
+  card.appendChild(hdr);
+
+  const desc = DESCRIPTIONS[cluster.hier_name];
+  if (desc) {
+    const descEl = document.createElement('p');
+    descEl.className = 'cluster-desc';
+    descEl.textContent = desc;
+    card.appendChild(descEl);
+  }
+
+  const body = document.createElement('div');
+  body.className = 'cluster-body';
+
+  const radarWrap = document.createElement('div');
+  radarWrap.className = 'radar-wrap';
+  radarWrap.appendChild(buildRadar(cluster.centroid, 120));
+  body.appendChild(radarWrap);
+
+  const playersList = document.createElement('div');
+  playersList.className = 'players-list';
+  const title = document.createElement('div');
+  title.className = 'players-list-title';
+  title.textContent = 'Closest to centroid';
+  playersList.appendChild(title);
+
+  const PAGE = 10;
+  let shown = PAGE;
+
+  function makeRow(p) {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    const parts = p.player.split(', ');
+    const name = parts.length === 2 ? `${parts[1]} ${parts[0]}` : p.player;
+    row.innerHTML = `<div class="player-name"><a href="/players/?p=${p.slug}">${name}</a></div>`
+                  + `<div class="player-season">${p.season}</div>`;
+    return row;
+  }
+
+  const rowContainer = document.createElement('div');
+  cluster.top.slice(0, PAGE).forEach(p => rowContainer.appendChild(makeRow(p)));
+  playersList.appendChild(rowContainer);
+
+  const total = cluster.top.length;
+  const btn = document.createElement('button');
+  btn.className = 'show-more';
+
+  function updateBtn() {
+    if (shown >= total) { btn.style.display = 'none'; return; }
+    btn.style.display = '';
+    btn.textContent = `Show more (${shown}/${total})`;
+  }
+
+  btn.addEventListener('click', () => {
+    const next = Math.min(shown + PAGE, total);
+    cluster.top.slice(shown, next).forEach(p => rowContainer.appendChild(makeRow(p)));
+    shown = next;
+    updateBtn();
+  });
+
+  playersList.appendChild(btn);
+  updateBtn();
+
+  body.appendChild(playersList);
+  card.appendChild(body);
+
+  const bars = document.createElement('div');
+  bars.className = 'dim-bars';
+  DIMS.forEach(d => {
+    const v = cluster.centroid[d];
+    const row = document.createElement('div');
+    row.className = 'dim-row';
+    row.innerHTML = `
+      <div class="dim-label">${d}</div>
+      <div class="dim-track"><div class="dim-fill" style="width:${(v*100).toFixed(1)}%;background:${DIM_COLOR[d]}"></div></div>
+      <div class="dim-val">${(v*100).toFixed(0)}th</div>
+    `;
+    bars.appendChild(row);
+  });
+  card.appendChild(bars);
+
+  return card;
+}
+
+// ── Dendrogram ────────────────────────────────────────────────────────────────
+
+function buildDendrogram(clusters, linkage) {
+  const NS  = 'http://www.w3.org/2000/svg';
+  const k   = clusters.length;
+  const W   = Math.max(700, k * 80);
+  const H   = 240;
+  const pad = { top: 16, bottom: 72, left: 28, right: 28 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top  - pad.bottom;
+
+  const nodes = {};
+  clusters.forEach(c => {
+    nodes[c.id] = { id: c.id, isLeaf: true, label: c.hier_name,
+                    name: NAMES[c.hier_name] || '', size: c.size };
+  });
+  linkage.forEach((m, i) => {
+    nodes[k + i] = { id: k + i, isLeaf: false, left: m.a, right: m.b, dist: m.dist };
+  });
+  const rootId = k + linkage.length - 1;
+
+  const leafOrder = [];
+  function traverse(id) {
+    const nd = nodes[id];
+    if (nd.isLeaf) { leafOrder.push(id); return; }
+    traverse(nd.left);
+    traverse(nd.right);
+  }
+  traverse(rootId);
+
+  const leafX = {};
+  leafOrder.forEach((id, i) => { leafX[id] = i; });
+  function getX(id) {
+    if (id in leafX) return leafX[id];
+    const nd = nodes[id];
+    return (getX(nd.left) + getX(nd.right)) / 2;
+  }
+
+  const maxDist = Math.max(...linkage.map(m => m.dist));
+
+  function svgX(xIdx) { return pad.left + (xIdx / (k - 1)) * plotW; }
+  function svgY(dist)  { return pad.top  + plotH * (1 - dist / maxDist); }
+  function leafSvgY()  { return pad.top  + plotH; }
+
+  function nodeY(id) {
+    return nodes[id].isLeaf ? leafSvgY() : svgY(nodes[id].dist);
+  }
+
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  [0.25, 0.5, 0.75, 1].forEach(frac => {
+    const y = pad.top + plotH * (1 - frac);
+    const tick = document.createElementNS(NS, 'line');
+    tick.setAttribute('x1', pad.left - 4); tick.setAttribute('y1', y);
+    tick.setAttribute('x2', W - pad.right); tick.setAttribute('y2', y);
+    tick.setAttribute('stroke', '#1f2937'); tick.setAttribute('stroke-width', '1');
+    tick.setAttribute('stroke-dasharray', '3 4');
+    svg.appendChild(tick);
+    const lbl = document.createElementNS(NS, 'text');
+    lbl.setAttribute('x', pad.left - 6); lbl.setAttribute('y', y);
+    lbl.setAttribute('text-anchor', 'end'); lbl.setAttribute('dominant-baseline', 'middle');
+    lbl.setAttribute('font-size', '8'); lbl.setAttribute('fill', '#4b5563');
+    lbl.textContent = (maxDist * frac).toFixed(3);
+    svg.appendChild(lbl);
+  });
+
+  function drawNode(id) {
+    const nd = nodes[id];
+    if (nd.isLeaf) return;
+    const x  = svgX(getX(id));
+    const y  = svgY(nd.dist);
+    const xL = svgX(getX(nd.left));
+    const xR = svgX(getX(nd.right));
+    const yL = nodeY(nd.left);
+    const yR = nodeY(nd.right);
+
+    const hbar = document.createElementNS(NS, 'line');
+    hbar.setAttribute('x1', xL); hbar.setAttribute('y1', y);
+    hbar.setAttribute('x2', xR); hbar.setAttribute('y2', y);
+    hbar.setAttribute('stroke', '#374151'); hbar.setAttribute('stroke-width', '1.5');
+    svg.appendChild(hbar);
+
+    [[xL, yL], [xR, yR]].forEach(([cx, cy]) => {
+      const vl = document.createElementNS(NS, 'line');
+      vl.setAttribute('x1', cx); vl.setAttribute('y1', y);
+      vl.setAttribute('x2', cx); vl.setAttribute('y2', cy);
+      vl.setAttribute('stroke', '#374151'); vl.setAttribute('stroke-width', '1.5');
+      svg.appendChild(vl);
+    });
+
+    drawNode(nd.left);
+    drawNode(nd.right);
+  }
+  drawNode(rootId);
+
+  leafOrder.forEach(id => {
+    const nd = nodes[id];
+    const x  = svgX(getX(id));
+    const y  = leafSvgY() + 5;
+
+    const hierTxt = document.createElementNS(NS, 'text');
+    hierTxt.setAttribute('x', x); hierTxt.setAttribute('y', y);
+    hierTxt.setAttribute('text-anchor', 'middle');
+    hierTxt.setAttribute('dominant-baseline', 'hanging');
+    hierTxt.setAttribute('font-size', '9');
+    hierTxt.setAttribute('font-weight', '700');
+    hierTxt.setAttribute('fill', '#d1d5db');
+    hierTxt.textContent = nd.label;
+    svg.appendChild(hierTxt);
+
+    if (nd.name) {
+      const nameTxt = document.createElementNS(NS, 'text');
+      nameTxt.setAttribute('x', x); nameTxt.setAttribute('y', y + 12);
+      nameTxt.setAttribute('text-anchor', 'middle');
+      nameTxt.setAttribute('dominant-baseline', 'hanging');
+      nameTxt.setAttribute('font-size', '7.5');
+      nameTxt.setAttribute('fill', '#6b7280');
+      nameTxt.textContent = nd.name;
+      svg.appendChild(nameTxt);
+    }
+
+    const sizeTxt = document.createElementNS(NS, 'text');
+    sizeTxt.setAttribute('x', x); sizeTxt.setAttribute('y', y + 24);
+    sizeTxt.setAttribute('text-anchor', 'middle');
+    sizeTxt.setAttribute('dominant-baseline', 'hanging');
+    sizeTxt.setAttribute('font-size', '7.5');
+    sizeTxt.setAttribute('fill', '#374151');
+    sizeTxt.textContent = `n=${nd.size}`;
+    svg.appendChild(sizeTxt);
+  });
+
+  return svg;
+}
+
+// ── Player Journey tab ────────────────────────────────────────────────────────
+
+let playerIndex = {};   // slug -> [{season, cluster, clusterName, pct, dist, team}]
+let playerNames = {};   // slug -> "Last, First"
+let sortedPlayers = []; // [{slug, displayName}]
+
+function buildPlayerIndex(data) {
+  data.clusters.forEach(c => {
+    c.top.forEach(entry => {
+      if (!playerIndex[entry.slug]) playerIndex[entry.slug] = [];
+      playerIndex[entry.slug].push({
+        season:      entry.season,
+        cluster:     c.hier_name,
+        clusterName: NAMES[c.hier_name] || c.hier_name,
+        pct:         entry.pct || {},
+        dist:        entry.dist,
+        team:        entry.team || '',
+      });
+      playerNames[entry.slug] = entry.player;
+    });
+  });
+  Object.values(playerIndex).forEach(arr =>
+    arr.sort((a, b) => a.season.localeCompare(b.season))
+  );
+  sortedPlayers = Object.keys(playerNames)
+    .map(slug => ({ slug, displayName: fmtName(playerNames[slug]) }))
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
+function renderDetail(panel, s) {
+  const color = clusterColor(s.cluster);
+
+  panel.innerHTML = '';
+  panel.classList.add('visible');
+
+  const card = document.createElement('div');
+  card.className = 'journey-detail-card';
+
+  // Left: radar
+  const left = document.createElement('div');
+  left.className = 'jd-left';
+  left.appendChild(buildRadar(s.pct, 150));
+  card.appendChild(left);
+
+  // Right: season info + bars
+  const right = document.createElement('div');
+  right.className = 'jd-right';
+
+  const seasonRow = document.createElement('div');
+  seasonRow.className = 'jd-season-row';
+  seasonRow.innerHTML = `<span class="jd-season">${s.season}</span>`
+    + (s.team ? `<span class="jd-team">${s.team}</span>` : '');
+  right.appendChild(seasonRow);
+
+  const badge = document.createElement('div');
+  badge.className = 'jd-badge';
+  badge.style.background = color + '22';
+  badge.style.color = color;
+  badge.style.borderColor = color + '55';
+  badge.textContent = s.cluster;
+  right.appendChild(badge);
+
+  const cname = document.createElement('div');
+  cname.className = 'jd-cluster-name';
+  cname.textContent = s.clusterName;
+  right.appendChild(cname);
+
+  const bars = document.createElement('div');
+  bars.className = 'jd-bars';
+  DIMS.forEach(d => {
+    const v = s.pct[d] || 0;
+    const row = document.createElement('div');
+    row.className = 'jd-bar-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'jd-bar-label';
+    lbl.textContent = d;
+    const track = document.createElement('div');
+    track.className = 'jd-bar-track';
+    const fill = document.createElement('div');
+    fill.className = 'jd-bar-fill';
+    fill.style.width = (v * 100).toFixed(1) + '%';
+    fill.style.background = DIM_COLOR[d];
+    track.appendChild(fill);
+    const val = document.createElement('div');
+    val.className = 'jd-bar-val';
+    val.textContent = (v * 100).toFixed(0) + 'th';
+    row.appendChild(lbl);
+    row.appendChild(track);
+    row.appendChild(val);
+    bars.appendChild(row);
+  });
+  right.appendChild(bars);
+
+  card.appendChild(right);
+  panel.appendChild(card);
+}
+
+function renderJourney(slug) {
+  const seasons = playerIndex[slug];
+  if (!seasons || !seasons.length) return;
+
+  const container = document.getElementById('journey-result');
+  container.innerHTML = '';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'journey-header';
+  const label = document.createElement('span');
+  label.className = 'journey-player-name';
+  label.textContent = fmtName(playerNames[slug]);
+  const count = document.createElement('span');
+  count.className = 'journey-seasons-count';
+  count.textContent = `${seasons.length} season${seasons.length !== 1 ? 's' : ''} tracked`;
+  hdr.appendChild(label);
+  hdr.appendChild(count);
+  container.appendChild(hdr);
+
+  // Graph card
+  const graph = document.createElement('div');
+  graph.className = 'journey-graph';
+
+  const scroll = document.createElement('div');
+  scroll.className = 'journey-track-scroll';
+  const track = document.createElement('div');
+  track.className = 'journey-track';
+  scroll.appendChild(track);
+  graph.appendChild(scroll);
+
+  const nodeWraps = [];
+
+  seasons.forEach((s, i) => {
+    if (i > 0) {
+      const conn = document.createElement('div');
+      conn.className = 'journey-connector' + (seasons[i - 1].cluster !== s.cluster ? ' changed' : '');
+      track.appendChild(conn);
+    }
+
+    const color = clusterColor(s.cluster);
+    const wrap = document.createElement('div');
+    wrap.className = 'journey-node-wrap';
+    wrap.style.setProperty('--node-color', color);
+
+    const node = document.createElement('div');
+    node.className = 'journey-node';
+    node.style.background = color + '1a';
+    node.style.borderColor = color;
+    node.style.color = color;
+    node.textContent = s.cluster;
+    wrap.appendChild(node);
+
+    const seasonLbl = document.createElement('div');
+    seasonLbl.className = 'journey-node-season';
+    seasonLbl.textContent = s.season;
+    wrap.appendChild(seasonLbl);
+
+    if (s.team) {
+      const teamLbl = document.createElement('div');
+      teamLbl.className = 'journey-node-team';
+      teamLbl.textContent = s.team;
+      wrap.appendChild(teamLbl);
+    }
+
+    wrap.addEventListener('click', () => {
+      nodeWraps.forEach(w => w.classList.remove('active'));
+      wrap.classList.add('active');
+      renderDetail(detail, s);
+    });
+
+    track.appendChild(wrap);
+    nodeWraps.push(wrap);
+  });
+
+  container.appendChild(graph);
+
+  // Detail panel (outside the graph card, below it)
+  const detail = document.createElement('div');
+  detail.className = 'journey-detail';
+  container.appendChild(detail);
+
+  // Auto-select first node
+  nodeWraps[0]?.click();
+}
+
+// ── Search autocomplete ───────────────────────────────────────────────────────
+
+let focusedIdx = -1;
+
+function setupSearch() {
+  const input = document.getElementById('player-search');
+  const suggestionsEl = document.getElementById('suggestions');
+  let currentMatches = [];
+
+  function showSuggestions(matches) {
+    currentMatches = matches;
+    focusedIdx = -1;
+    if (!matches.length) { suggestionsEl.style.display = 'none'; return; }
+    suggestionsEl.innerHTML = '';
+    matches.forEach((p, i) => {
+      const item = document.createElement('div');
+      item.className = 'suggestion-item';
+      item.textContent = p.displayName;
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        selectPlayer(p);
+      });
+      suggestionsEl.appendChild(item);
+    });
+    suggestionsEl.style.display = '';
+  }
+
+  function selectPlayer(p) {
+    input.value = p.displayName;
+    suggestionsEl.style.display = 'none';
+    suggestionsEl.innerHTML = '';
+    renderJourney(p.slug);
+  }
+
+  function updateFocus() {
+    const items = suggestionsEl.querySelectorAll('.suggestion-item');
+    items.forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
+  }
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    if (!q) { suggestionsEl.style.display = 'none'; return; }
+    const matches = sortedPlayers.filter(p =>
+      p.displayName.toLowerCase().includes(q)
+    ).slice(0, 8);
+    showSuggestions(matches);
+  });
+
+  input.addEventListener('keydown', e => {
+    const items = suggestionsEl.querySelectorAll('.suggestion-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
+      updateFocus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusedIdx = Math.max(focusedIdx - 1, -1);
+      updateFocus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (focusedIdx >= 0 && currentMatches[focusedIdx]) {
+        selectPlayer(currentMatches[focusedIdx]);
+      } else if (currentMatches.length === 1) {
+        selectPlayer(currentMatches[0]);
+      }
+    } else if (e.key === 'Escape') {
+      suggestionsEl.style.display = 'none';
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => { suggestionsEl.style.display = 'none'; }, 150);
+  });
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+
+function showTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === name)
+  );
+  document.querySelectorAll('.tab-content').forEach(t =>
+    t.style.display = t.id === 'tab-' + name ? '' : 'none'
+  );
+  history.replaceState(null, '', '#' + name);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab));
+});
+
+const initTab = ['archetypes', 'journey'].includes(location.hash.slice(1))
+  ? location.hash.slice(1) : 'archetypes';
+showTab(initTab);
+
+// ── Data load ─────────────────────────────────────────────────────────────────
+
+fetch('/players/player_clusters.json')
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('n-seasons').textContent = data.n.toLocaleString();
+
+    if (data.linkage && data.linkage.length) {
+      const sec = document.getElementById('dendrogram-section');
+      sec.style.display = '';
+      document.getElementById('dendrogram-wrap').appendChild(
+        buildDendrogram(data.clusters, data.linkage)
+      );
+    }
+
+    const root = document.getElementById('root');
+    root.innerHTML = '';
+
+    const sorted = [...data.clusters].sort((a, b) => {
+      const ai = CLUSTER_ORDER.indexOf(a.hier_name);
+      const bi = CLUSTER_ORDER.indexOf(b.hier_name);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+
+    // Node grid
+    const nodeGrid = document.createElement('div');
+    nodeGrid.className = 'archetype-node-grid';
+
+    const archetypeDetail = document.createElement('div');
+    archetypeDetail.className = 'archetype-detail';
+
+    const nodeWraps = [];
+
+    sorted.forEach(c => {
+      const color = clusterColor(c.hier_name);
+      const wrap = document.createElement('div');
+      wrap.className = 'archetype-node-wrap';
+      wrap.style.setProperty('--node-color', color);
+
+      const node = document.createElement('div');
+      node.className = 'archetype-node';
+      node.style.background = color + '1a';
+      node.style.borderColor = color;
+      node.style.color = color;
+      node.textContent = c.hier_name;
+      wrap.appendChild(node);
+
+      const nameLbl = document.createElement('div');
+      nameLbl.className = 'archetype-node-name';
+      nameLbl.textContent = NAMES[c.hier_name] || c.hier_name;
+      wrap.appendChild(nameLbl);
+
+      wrap.addEventListener('click', () => {
+        nodeWraps.forEach(w => w.classList.remove('active'));
+        wrap.classList.add('active');
+        archetypeDetail.innerHTML = '';
+        archetypeDetail.classList.add('visible');
+        archetypeDetail.appendChild(buildCard(c));
+      });
+
+      nodeGrid.appendChild(wrap);
+      nodeWraps.push(wrap);
+    });
+
+    root.appendChild(nodeGrid);
+    root.appendChild(archetypeDetail);
+
+    // Auto-select first node
+    nodeWraps[0]?.click();
+
+    buildPlayerIndex(data);
+    setupSearch();
+  })
+  .catch(err => {
+    document.getElementById('root').innerHTML =
+      `<p class="error">Failed to load cluster data: ${err.message}</p>`;
+  });
+</script>
+</body>
+</html>

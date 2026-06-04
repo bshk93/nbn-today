@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.208",
+    "date": "2026-06-04",
+    "changes": [
+      "clusters: split into /clusters/players/ and /clusters/teams/; /clusters/ redirects to players",
+      "clusters/teams: two-stage hierarchical clustering of 150 team-seasons across 12 archetypes (8 dims: PPG, DEF, TS%, 3PA rate, FTA rate, pace, rotation depth, star share)",
+      "clusters/teams: Team History tab \u2014 select a team, see their archetype across all tracked seasons"
+    ]
+  },
+  {
     "version": "0.0.206",
     "date": "2026-06-04",
     "changes": [
