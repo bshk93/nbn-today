@@ -113,6 +113,9 @@
   .show-more { margin-top: 0.4rem; background: none; border: none; color: #3b82f6; font-size: 0.72rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; font-family: inherit; }
   .show-more:hover { color: #60a5fa; }
 
+  .cluster-avg-stats { display: flex; gap: 1.25rem; font-size: 0.72rem; color: #6b7280; padding-bottom: 0.5rem; border-bottom: 1px solid #1f2937; }
+  .cluster-avg-stat-val { color: #d1d5db; font-weight: 700; }
+
   .loading { color: #6b7280; padding: 3rem; text-align: center; }
   .error { color: #f87171; padding: 3rem; text-align: center; }
 
@@ -286,6 +289,11 @@ function clusterColor(hierName) {
   return GROUP_COLOR[hierName[0]] || '#6b7280';
 }
 
+function poSeriesWins(result) {
+  const m = { 'Missed': 0, 'First Round': 0, 'Second Round': 1, 'Conf Finals': 2, 'Runner-Up': 3, 'Champion': 4 };
+  return m[result] ?? 0;
+}
+
 function poColor(result) {
   if (result === 'Champion')    return '#f59e0b';
   if (result === 'Runner-Up')   return '#9ca3af';
@@ -383,6 +391,17 @@ function buildCard(cluster) {
     <span class="cluster-size">${cluster.size} seasons</span>
   `;
   card.appendChild(hdr);
+
+  const n = cluster.top.length;
+  const avgRegW = cluster.top.reduce((s, e) => s + parseInt(e.record), 0) / n;
+  const avgPoW  = cluster.top.reduce((s, e) => s + poSeriesWins(e.playoff_result), 0) / n;
+
+  const statsRow = document.createElement('div');
+  statsRow.className = 'cluster-avg-stats';
+  statsRow.innerHTML =
+    `<span>avg reg W <span class="cluster-avg-stat-val">${avgRegW.toFixed(1)}</span></span>` +
+    `<span>avg PO wins <span class="cluster-avg-stat-val">${avgPoW.toFixed(1)}</span></span>`;
+  card.appendChild(statsRow);
 
   const desc = DESCRIPTIONS[cluster.hier_name];
   if (desc) {
