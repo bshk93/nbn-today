@@ -163,8 +163,24 @@ const DIM_COLOR = {
   BLK: '#6366f1',  STL: '#ec4899',   FTA: '#f97316',
 };
 
-// Optional display names — fill in after exploring the clusters
-const NAMES = {};
+const NAMES = {
+  '1A': 'All-Around Stars',
+  '1B': 'Attacking Wings',
+  '1C': 'Interior Forwards',
+  '1D': 'Active Bigs',
+  '2A': 'Rim-Running Bigs',
+  '2B': 'Athletic Bench Fwds',
+  '2C': 'Backup Playmakers',
+  '2D': 'End-of-Rotation',
+  '3A': 'Defensive Bigs',
+  '3B': 'Journeyman Wings',
+  '3C': 'Defensive Guards',
+  '3D': 'Fringe Guards',
+  '4A': 'Elite Perimeter Scorers',
+  '4B': 'Secondary Scorers',
+  '4C': 'Stretch Forwards',
+  '4D': 'Volume Guards',
+};
 
 function buildRadar(centroid, size = 110) {
   const NS = 'http://www.w3.org/2000/svg';
@@ -250,7 +266,7 @@ function buildCard(cluster) {
   // header
   const hdr = document.createElement('div');
   hdr.className = 'cluster-header';
-  const displayName = NAMES[cluster.id] || cluster.hier_name;
+  const displayName = NAMES[cluster.hier_name] || cluster.hier_name;
   hdr.innerHTML = `
     <span class="cluster-num">${cluster.hier_name}</span>
     <span class="cluster-name">${displayName}</span>
@@ -337,15 +353,16 @@ function buildDendrogram(clusters, linkage) {
   const NS  = 'http://www.w3.org/2000/svg';
   const k   = clusters.length;
   const W   = Math.max(700, k * 80);
-  const H   = 220;
-  const pad = { top: 16, bottom: 56, left: 28, right: 28 };
+  const H   = 240;
+  const pad = { top: 16, bottom: 72, left: 28, right: 28 };
   const plotW = W - pad.left - pad.right;
   const plotH = H - pad.top  - pad.bottom;
 
   // Build node map: leaves 0..k-1, internals k..2k-2
   const nodes = {};
   clusters.forEach(c => {
-    nodes[c.id] = { id: c.id, isLeaf: true, label: c.hier_name, size: c.size };
+    nodes[c.id] = { id: c.id, isLeaf: true, label: c.hier_name,
+                    name: NAMES[c.hier_name] || '', size: c.size };
   });
   linkage.forEach((m, i) => {
     nodes[k + i] = { id: k + i, isLeaf: false, left: m.a, right: m.b, dist: m.dist };
@@ -441,22 +458,33 @@ function buildDendrogram(clusters, linkage) {
     const x  = svgX(getX(id));
     const y  = leafSvgY() + 5;
 
-    const nameTxt = document.createElementNS(NS, 'text');
-    nameTxt.setAttribute('x', x); nameTxt.setAttribute('y', y);
-    nameTxt.setAttribute('text-anchor', 'middle');
-    nameTxt.setAttribute('dominant-baseline', 'hanging');
-    nameTxt.setAttribute('font-size', '9');
-    nameTxt.setAttribute('font-weight', '600');
-    nameTxt.setAttribute('fill', '#d1d5db');
-    nameTxt.textContent = nd.label;
-    svg.appendChild(nameTxt);
+    const hierTxt = document.createElementNS(NS, 'text');
+    hierTxt.setAttribute('x', x); hierTxt.setAttribute('y', y);
+    hierTxt.setAttribute('text-anchor', 'middle');
+    hierTxt.setAttribute('dominant-baseline', 'hanging');
+    hierTxt.setAttribute('font-size', '9');
+    hierTxt.setAttribute('font-weight', '700');
+    hierTxt.setAttribute('fill', '#d1d5db');
+    hierTxt.textContent = nd.label;
+    svg.appendChild(hierTxt);
+
+    if (nd.name) {
+      const nameTxt = document.createElementNS(NS, 'text');
+      nameTxt.setAttribute('x', x); nameTxt.setAttribute('y', y + 12);
+      nameTxt.setAttribute('text-anchor', 'middle');
+      nameTxt.setAttribute('dominant-baseline', 'hanging');
+      nameTxt.setAttribute('font-size', '7.5');
+      nameTxt.setAttribute('fill', '#6b7280');
+      nameTxt.textContent = nd.name;
+      svg.appendChild(nameTxt);
+    }
 
     const sizeTxt = document.createElementNS(NS, 'text');
-    sizeTxt.setAttribute('x', x); sizeTxt.setAttribute('y', y + 13);
+    sizeTxt.setAttribute('x', x); sizeTxt.setAttribute('y', y + 24);
     sizeTxt.setAttribute('text-anchor', 'middle');
     sizeTxt.setAttribute('dominant-baseline', 'hanging');
-    sizeTxt.setAttribute('font-size', '8');
-    sizeTxt.setAttribute('fill', '#4b5563');
+    sizeTxt.setAttribute('font-size', '7.5');
+    sizeTxt.setAttribute('fill', '#374151');
     sizeTxt.textContent = `n=${nd.size}`;
     svg.appendChild(sizeTxt);
   });
