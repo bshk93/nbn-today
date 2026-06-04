@@ -37,13 +37,72 @@
   .tab-btn:hover { color: #d1d5db; }
   .tab-btn.active { color: #f9fafb; border-bottom-color: #3b82f6; }
 
-  /* Archetypes tab */
-  .clusters-grid {
+  /* Archetypes tab — node grid */
+  .archetype-node-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
   }
 
+  .archetype-node-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    cursor: pointer;
+    padding: 1rem 0.5rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .archetype-node-wrap:hover { background: #161b27; border-color: #1f2937; }
+  .archetype-node-wrap.active {
+    background: #161b27;
+    border-color: var(--node-color, #3b82f6);
+  }
+
+  .archetype-node {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    font-weight: 800;
+    border: 2px solid;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .archetype-node-wrap:hover .archetype-node { transform: scale(1.07); }
+  .archetype-node-wrap.active .archetype-node {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
+  }
+
+  .archetype-node-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #9ca3af;
+    text-align: center;
+    line-height: 1.35;
+  }
+  .archetype-node-wrap.active .archetype-node-name { color: #d1d5db; }
+
+  /* Archetype detail panel */
+  .archetype-detail {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+  }
+  .archetype-detail.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* Cluster card (used in detail panel) */
   .cluster-card {
     background: #161b27;
     border: 1px solid #1f2937;
@@ -404,7 +463,7 @@
       <div class="dendrogram-title">Cluster hierarchy — height = Ward distance at merge</div>
       <div class="dendrogram-wrap" id="dendrogram-wrap"></div>
     </div>
-    <div id="root" class="clusters-grid"><p class="loading">Loading…</p></div>
+    <div id="root"><p class="loading">Loading…</p></div>
   </div>
 
   <div id="tab-journey" class="tab-content" style="display:none">
@@ -1075,12 +1134,58 @@ fetch('/players/player_clusters.json')
 
     const root = document.getElementById('root');
     root.innerHTML = '';
+
     const sorted = [...data.clusters].sort((a, b) => {
       const ai = CLUSTER_ORDER.indexOf(a.hier_name);
       const bi = CLUSTER_ORDER.indexOf(b.hier_name);
       return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
     });
-    sorted.forEach(c => root.appendChild(buildCard(c)));
+
+    // Node grid
+    const nodeGrid = document.createElement('div');
+    nodeGrid.className = 'archetype-node-grid';
+
+    const archetypeDetail = document.createElement('div');
+    archetypeDetail.className = 'archetype-detail';
+
+    const nodeWraps = [];
+
+    sorted.forEach(c => {
+      const color = clusterColor(c.hier_name);
+      const wrap = document.createElement('div');
+      wrap.className = 'archetype-node-wrap';
+      wrap.style.setProperty('--node-color', color);
+
+      const node = document.createElement('div');
+      node.className = 'archetype-node';
+      node.style.background = color + '1a';
+      node.style.borderColor = color;
+      node.style.color = color;
+      node.textContent = c.hier_name;
+      wrap.appendChild(node);
+
+      const nameLbl = document.createElement('div');
+      nameLbl.className = 'archetype-node-name';
+      nameLbl.textContent = NAMES[c.hier_name] || c.hier_name;
+      wrap.appendChild(nameLbl);
+
+      wrap.addEventListener('click', () => {
+        nodeWraps.forEach(w => w.classList.remove('active'));
+        wrap.classList.add('active');
+        archetypeDetail.innerHTML = '';
+        archetypeDetail.classList.add('visible');
+        archetypeDetail.appendChild(buildCard(c));
+      });
+
+      nodeGrid.appendChild(wrap);
+      nodeWraps.push(wrap);
+    });
+
+    root.appendChild(nodeGrid);
+    root.appendChild(archetypeDetail);
+
+    // Auto-select first node
+    nodeWraps[0]?.click();
 
     buildPlayerIndex(data);
     setupSearch();
