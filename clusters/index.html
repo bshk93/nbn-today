@@ -54,6 +54,14 @@
     gap: 0.75rem;
   }
 
+  .cluster-desc {
+    font-size: 0.78rem;
+    color: #9ca3af;
+    line-height: 1.55;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #1f2937;
+  }
+
   .cluster-header {
     display: flex;
     align-items: center;
@@ -358,23 +366,44 @@ const DIM_COLOR = {
 };
 
 const NAMES = {
-  '1A': 'All-Around Stars',
-  '1B': 'Attacking Wings',
-  '1C': 'Interior Forwards',
-  '1D': 'Active Bigs',
-  '2A': 'Rim-Running Bigs',
-  '2B': 'Athletic Bench Fwds',
-  '2C': 'Backup Playmakers',
-  '2D': 'End-of-Rotation',
+  '1A': 'Inside-First Two-Way Stars',
+  '1B': 'Perimeter Disruptors',
+  '1C': 'Two-Way Paint Protectors',
+  '1D': 'Inefficient Fringe Stars',
+  '2A': 'Rim-Running Backup Bigs',
+  '2B': 'Athletic Defensive Specialists',
+  '2C': 'Backup Pure Playmakers',
+  '2D': 'Scrubs Part 1',
   '3A': 'Defensive Bigs',
-  '3B': 'Journeyman Wings',
-  '3C': 'Defensive Guards',
-  '3D': 'Fringe Guards',
-  '4A': 'Elite Perimeter Scorers',
-  '4B': 'Secondary Scorers',
+  '3B': 'End-of-Bench Backups',
+  '3C': 'On-Ball Defenders',
+  '3D': 'Scrubs Part 2',
+  '4A': 'Elite Perimeter Stars',
+  '4B': 'Secondary Perimeter Scorers',
   '4C': 'Stretch Forwards',
-  '4D': 'Volume Guards',
+  '4D': 'Shot Chuckers',
 };
+
+const DESCRIPTIONS = {
+  '1A': 'Some of the best players in the league on both sides of the ball. They prefer to score inside the perimeter and get to the free throw line, but are still capable from the outside.',
+  '1B': 'High-energy players who force turnovers and get to the free throw line, while being able to act as secondary facilitators for their teams.',
+  '1C': 'Specialists in keeping the paint clean of easy points who can rack up double-digit scoring. Some even extend their range to the perimeter, but typically not at volume.',
+  '1D': 'High scorers who collectively tend to score with low efficiency and struggle to stretch the floor. Still very valuable, high-end starters thanks to their usefulness as rebounders, defenders, and facilitators.',
+  '2A': 'Almost exclusively paint players who don\'t carry big offensive roles — but the offense they do provide is very efficient thanks to their shot diet.',
+  '2B': 'Bench-caliber players who specialize in grabbing boards and helping their team with defensive versatility. They can\'t stretch the floor and aren\'t elite paint protectors, but they\'re often fast and/or strong for their size.',
+  '2C': 'Come off the bench to lead the second unit.',
+  '2D': 'The absolute garbage bin of players in the league.',
+  '3A': 'Your bread-and-butter, blue-collar, rebounding defensive big.',
+  '3B': 'Kind of bad at everything. They get playing time, but typically at the end of team rotations because the team has nobody better.',
+  '3C': 'The players coaches are talking about when they say you need one of these on your team.',
+  '3D': 'Also bad — but differently so.',
+  '4A': 'The top echelon of perimeter scorers in the league. They also tend to be the primary or secondary ballhandler on their team.',
+  '4B': 'Come off the bench and provide an offensive spark with their outside shooting.',
+  '4C': 'Not exactly formidable defenders for their size, but make up for it by being serviceable on that end while having the range to pull an opposing big out of the paint.',
+  '4D': 'Come off the bench and put up points — but tend to do it on low efficiency.',
+};
+
+const CLUSTER_ORDER = ['1A','1D','1B','4A','1C','4C','2B','3A','2C','3C','4B','4D','2A','3B','2D','3D'];
 
 const GROUP_COLOR = { '1': '#3b82f6', '2': '#8b5cf6', '3': '#f59e0b', '4': '#22c55e' };
 
@@ -476,6 +505,14 @@ function buildCard(cluster) {
     <span class="cluster-size">${cluster.size} seasons</span>
   `;
   card.appendChild(hdr);
+
+  const desc = DESCRIPTIONS[cluster.hier_name];
+  if (desc) {
+    const descEl = document.createElement('p');
+    descEl.className = 'cluster-desc';
+    descEl.textContent = desc;
+    card.appendChild(descEl);
+  }
 
   const body = document.createElement('div');
   body.className = 'cluster-body';
@@ -948,7 +985,12 @@ fetch('/players/player_clusters.json')
 
     const root = document.getElementById('root');
     root.innerHTML = '';
-    data.clusters.forEach(c => root.appendChild(buildCard(c)));
+    const sorted = [...data.clusters].sort((a, b) => {
+      const ai = CLUSTER_ORDER.indexOf(a.hier_name);
+      const bi = CLUSTER_ORDER.indexOf(b.hier_name);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+    sorted.forEach(c => root.appendChild(buildCard(c)));
 
     buildPlayerIndex(data);
     setupSearch();
