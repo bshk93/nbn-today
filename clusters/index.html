@@ -10,9 +10,34 @@
   body { background: #0f1117; color: #e5e7eb; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
   .page { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
   h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem; }
-  .subtitle { color: #6b7280; font-size: 0.85rem; margin-bottom: 2rem; }
+  .subtitle { color: #6b7280; font-size: 0.85rem; margin-bottom: 1.5rem; }
   .subtitle b { color: #9ca3af; }
 
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #1f2937;
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s;
+  }
+  .tab-btn:hover { color: #d1d5db; }
+  .tab-btn.active { color: #f9fafb; border-bottom-color: #3b82f6; }
+
+  /* Archetypes tab */
   .clusters-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -143,17 +168,186 @@
     margin-bottom: 0.75rem;
   }
   .dendrogram-wrap { overflow-x: auto; }
+
+  /* Journey tab */
+  .journey-search-wrap {
+    position: relative;
+    max-width: 360px;
+    margin-bottom: 2rem;
+  }
+  .journey-search-wrap input {
+    width: 100%;
+    background: #161b27;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    color: #f9fafb;
+    font-size: 0.9rem;
+    font-family: inherit;
+    padding: 0.6rem 0.9rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .journey-search-wrap input:focus { border-color: #3b82f6; }
+  .journey-search-wrap input::placeholder { color: #4b5563; }
+
+  .suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: #1c2333;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .suggestion-item {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.85rem;
+    color: #d1d5db;
+    cursor: pointer;
+    border-bottom: 1px solid #1f2937;
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover, .suggestion-item.focused { background: #1f2937; color: #f9fafb; }
+
+  .journey-empty {
+    color: #4b5563;
+    font-size: 0.9rem;
+    padding: 2rem 0;
+  }
+
+  .journey-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .journey-player-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f9fafb;
+  }
+  .journey-seasons-count {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  .journey-timeline {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+  }
+
+  .journey-arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 2px;
+    margin-top: 72px; /* align with middle of card */
+    flex-shrink: 0;
+  }
+
+  .journey-card {
+    flex-shrink: 0;
+    width: 155px;
+    background: #161b27;
+    border: 1px solid #1f2937;
+    border-top: 3px solid var(--cluster-color, #374151);
+    border-radius: 8px;
+    padding: 0.75rem 0.75rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .journey-card-changed {
+    border-color: var(--cluster-color, #374151);
+  }
+
+  .jc-season-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    width: 100%;
+  }
+  .jc-season {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #f9fafb;
+  }
+  .jc-team {
+    font-size: 0.7rem;
+    color: #6b7280;
+    font-weight: 600;
+    margin-left: auto;
+  }
+
+  .jc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 5px;
+    border: 1px solid;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .jc-cluster-name {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .jc-radar { display: block; }
+
+  .jc-bars {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+    margin-top: 0.1rem;
+  }
+  .jc-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.62rem;
+  }
+  .jc-bar-label { color: #6b7280; width: 2.4rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+  .jc-bar-track { flex: 1; background: #1f2937; border-radius: 2px; height: 4px; }
+  .jc-bar-fill  { height: 4px; border-radius: 2px; }
+  .jc-bar-val   { color: #6b7280; width: 1.8rem; text-align: right; flex-shrink: 0; }
 </style>
 </head>
 <body>
 <div class="page">
   <h1>Player Archetypes</h1>
   <p class="subtitle">Two-stage hierarchical clustering across <b id="n-seasons">—</b> player-seasons (≥20G). Stage 1 groups by shot diet (3pt rate, FT rate, volume) → top-level number. Stage 2 refines by efficiency, playmaking &amp; defense → letter suffix.</p>
-  <div id="dendrogram-section" style="display:none" class="dendrogram-section">
-    <div class="dendrogram-title">Cluster hierarchy — height = Ward distance at merge</div>
-    <div class="dendrogram-wrap" id="dendrogram-wrap"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="archetypes">Archetypes</button>
+    <button class="tab-btn" data-tab="journey">Player Journey</button>
   </div>
-  <div id="root" class="clusters-grid"><p class="loading">Loading…</p></div>
+
+  <div id="tab-archetypes" class="tab-content">
+    <div id="dendrogram-section" style="display:none" class="dendrogram-section">
+      <div class="dendrogram-title">Cluster hierarchy — height = Ward distance at merge</div>
+      <div class="dendrogram-wrap" id="dendrogram-wrap"></div>
+    </div>
+    <div id="root" class="clusters-grid"><p class="loading">Loading…</p></div>
+  </div>
+
+  <div id="tab-journey" class="tab-content" style="display:none">
+    <div class="journey-search-wrap">
+      <input type="text" id="player-search" placeholder="Search for a player…" autocomplete="off" spellcheck="false">
+      <div id="suggestions" class="suggestions" style="display:none"></div>
+    </div>
+    <div id="journey-result"><p class="journey-empty">Search for a player to see their archetype journey across seasons.</p></div>
+  </div>
 </div>
 <script>
 const DIMS = ['PPG','3PA','FTA','TS%','APG','TOV','RPG','BLK','STL'];
@@ -182,6 +376,19 @@ const NAMES = {
   '4D': 'Volume Guards',
 };
 
+const GROUP_COLOR = { '1': '#3b82f6', '2': '#8b5cf6', '3': '#f59e0b', '4': '#22c55e' };
+
+function clusterColor(hierName) {
+  return GROUP_COLOR[hierName[0]] || '#6b7280';
+}
+
+function fmtName(raw) {
+  const p = raw.split(', ');
+  return p.length === 2 ? `${p[1]} ${p[0]}` : raw;
+}
+
+// ── Radar ────────────────────────────────────────────────────────────────────
+
 function buildRadar(centroid, size = 110) {
   const NS = 'http://www.w3.org/2000/svg';
   const cx = size / 2, cy = size / 2, maxR = size * 0.38;
@@ -197,7 +404,6 @@ function buildRadar(centroid, size = 110) {
   svg.setAttribute('width', size); svg.setAttribute('height', size);
   svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
 
-  // guide rings
   [0.33, 0.66, 1].forEach(frac => {
     const pts = angles.map(a => pt(a, maxR * frac).join(',')).join(' ');
     const poly = document.createElementNS(NS, 'polygon');
@@ -208,7 +414,6 @@ function buildRadar(centroid, size = 110) {
     svg.appendChild(poly);
   });
 
-  // axes
   angles.forEach(a => {
     const [x, y] = pt(a, maxR);
     const line = document.createElementNS(NS, 'line');
@@ -218,8 +423,7 @@ function buildRadar(centroid, size = 110) {
     svg.appendChild(line);
   });
 
-  // filled polygon
-  const polyPts = DIMS.map((d, i) => pt(angles[i], maxR * centroid[d]).join(',')).join(' ');
+  const polyPts = DIMS.map((d, i) => pt(angles[i], maxR * (centroid[d] || 0)).join(',')).join(' ');
   const poly = document.createElementNS(NS, 'polygon');
   poly.setAttribute('points', polyPts);
   poly.setAttribute('fill', 'rgba(59,130,246,0.2)');
@@ -227,20 +431,18 @@ function buildRadar(centroid, size = 110) {
   poly.setAttribute('stroke-width', '1.5');
   svg.appendChild(poly);
 
-  // dots
   DIMS.forEach((d, i) => {
-    const [x, y] = pt(angles[i], maxR * centroid[d]);
+    const [x, y] = pt(angles[i], maxR * (centroid[d] || 0));
     const dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '2.5');
     dot.setAttribute('fill', DIM_COLOR[d]); dot.setAttribute('stroke', '#0f1117');
     dot.setAttribute('stroke-width', '1');
     dot.appendChild(Object.assign(document.createElementNS(NS, 'title'), {
-      textContent: `${d}: ${(centroid[d] * 100).toFixed(0)}th pct`
+      textContent: `${d}: ${((centroid[d] || 0) * 100).toFixed(0)}th pct`
     }));
     svg.appendChild(dot);
   });
 
-  // labels
   const LABEL_R = maxR + 11;
   DIMS.forEach((d, i) => {
     const [x, y] = pt(angles[i], LABEL_R);
@@ -259,11 +461,12 @@ function buildRadar(centroid, size = 110) {
   return svg;
 }
 
+// ── Archetypes tab ────────────────────────────────────────────────────────────
+
 function buildCard(cluster) {
   const card = document.createElement('div');
   card.className = 'cluster-card';
 
-  // header
   const hdr = document.createElement('div');
   hdr.className = 'cluster-header';
   const displayName = NAMES[cluster.hier_name] || cluster.hier_name;
@@ -274,7 +477,6 @@ function buildCard(cluster) {
   `;
   card.appendChild(hdr);
 
-  // body: radar + players
   const body = document.createElement('div');
   body.className = 'cluster-body';
 
@@ -297,8 +499,8 @@ function buildCard(cluster) {
     const row = document.createElement('div');
     row.className = 'player-row';
     const parts = p.player.split(', ');
-    const displayName = parts.length === 2 ? `${parts[1]} ${parts[0]}` : p.player;
-    row.innerHTML = `<div class="player-name"><a href="/players/?p=${p.slug}">${displayName}</a></div>`
+    const name = parts.length === 2 ? `${parts[1]} ${parts[0]}` : p.player;
+    row.innerHTML = `<div class="player-name"><a href="/players/?p=${p.slug}">${name}</a></div>`
                   + `<div class="player-season">${p.season}</div>`;
     return row;
   }
@@ -330,7 +532,6 @@ function buildCard(cluster) {
   body.appendChild(playersList);
   card.appendChild(body);
 
-  // dim bars
   const bars = document.createElement('div');
   bars.className = 'dim-bars';
   DIMS.forEach(d => {
@@ -349,6 +550,8 @@ function buildCard(cluster) {
   return card;
 }
 
+// ── Dendrogram ────────────────────────────────────────────────────────────────
+
 function buildDendrogram(clusters, linkage) {
   const NS  = 'http://www.w3.org/2000/svg';
   const k   = clusters.length;
@@ -358,7 +561,6 @@ function buildDendrogram(clusters, linkage) {
   const plotW = W - pad.left - pad.right;
   const plotH = H - pad.top  - pad.bottom;
 
-  // Build node map: leaves 0..k-1, internals k..2k-2
   const nodes = {};
   clusters.forEach(c => {
     nodes[c.id] = { id: c.id, isLeaf: true, label: c.hier_name,
@@ -369,7 +571,6 @@ function buildDendrogram(clusters, linkage) {
   });
   const rootId = k + linkage.length - 1;
 
-  // Leaf order via in-order traversal
   const leafOrder = [];
   function traverse(id) {
     const nd = nodes[id];
@@ -379,7 +580,6 @@ function buildDendrogram(clusters, linkage) {
   }
   traverse(rootId);
 
-  // X position: leaves evenly spaced, internals = midpoint of children
   const leafX = {};
   leafOrder.forEach((id, i) => { leafX[id] = i; });
   function getX(id) {
@@ -394,7 +594,6 @@ function buildDendrogram(clusters, linkage) {
   function svgY(dist)  { return pad.top  + plotH * (1 - dist / maxDist); }
   function leafSvgY()  { return pad.top  + plotH; }
 
-  // Cache node Y (leaves at bottom, internals at their merge height)
   function nodeY(id) {
     return nodes[id].isLeaf ? leafSvgY() : svgY(nodes[id].dist);
   }
@@ -403,7 +602,6 @@ function buildDendrogram(clusters, linkage) {
   svg.setAttribute('width', W); svg.setAttribute('height', H);
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
 
-  // Y-axis tick lines (subtle)
   [0.25, 0.5, 0.75, 1].forEach(frac => {
     const y = pad.top + plotH * (1 - frac);
     const tick = document.createElementNS(NS, 'line');
@@ -420,7 +618,6 @@ function buildDendrogram(clusters, linkage) {
     svg.appendChild(lbl);
   });
 
-  // Draw tree recursively
   function drawNode(id) {
     const nd = nodes[id];
     if (nd.isLeaf) return;
@@ -431,14 +628,12 @@ function buildDendrogram(clusters, linkage) {
     const yL = nodeY(nd.left);
     const yR = nodeY(nd.right);
 
-    // Horizontal bar connecting children at this node's height
     const hbar = document.createElementNS(NS, 'line');
     hbar.setAttribute('x1', xL); hbar.setAttribute('y1', y);
     hbar.setAttribute('x2', xR); hbar.setAttribute('y2', y);
     hbar.setAttribute('stroke', '#374151'); hbar.setAttribute('stroke-width', '1.5');
     svg.appendChild(hbar);
 
-    // Vertical drops to each child
     [[xL, yL], [xR, yR]].forEach(([cx, cy]) => {
       const vl = document.createElementNS(NS, 'line');
       vl.setAttribute('x1', cx); vl.setAttribute('y1', y);
@@ -452,7 +647,6 @@ function buildDendrogram(clusters, linkage) {
   }
   drawNode(rootId);
 
-  // Leaf labels (cluster name + size)
   leafOrder.forEach(id => {
     const nd = nodes[id];
     const x  = svgX(getX(id));
@@ -492,12 +686,258 @@ function buildDendrogram(clusters, linkage) {
   return svg;
 }
 
+// ── Player Journey tab ────────────────────────────────────────────────────────
+
+let playerIndex = {};   // slug -> [{season, cluster, clusterName, pct, dist, team}]
+let playerNames = {};   // slug -> "Last, First"
+let sortedPlayers = []; // [{slug, displayName}]
+
+function buildPlayerIndex(data) {
+  data.clusters.forEach(c => {
+    c.top.forEach(entry => {
+      if (!playerIndex[entry.slug]) playerIndex[entry.slug] = [];
+      playerIndex[entry.slug].push({
+        season:      entry.season,
+        cluster:     c.hier_name,
+        clusterName: NAMES[c.hier_name] || c.hier_name,
+        pct:         entry.pct || {},
+        dist:        entry.dist,
+        team:        entry.team || '',
+      });
+      playerNames[entry.slug] = entry.player;
+    });
+  });
+  Object.values(playerIndex).forEach(arr =>
+    arr.sort((a, b) => a.season.localeCompare(b.season))
+  );
+  sortedPlayers = Object.keys(playerNames)
+    .map(slug => ({ slug, displayName: fmtName(playerNames[slug]) }))
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
+function renderJourney(slug) {
+  const seasons = playerIndex[slug];
+  if (!seasons || !seasons.length) return;
+
+  const container = document.getElementById('journey-result');
+  container.innerHTML = '';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'journey-header';
+  const displayName = fmtName(playerNames[slug]);
+  const label = document.createElement('span');
+  label.className = 'journey-player-name';
+  label.textContent = displayName;
+  const count = document.createElement('span');
+  count.className = 'journey-seasons-count';
+  count.textContent = `${seasons.length} season${seasons.length !== 1 ? 's' : ''} tracked`;
+  hdr.appendChild(label);
+  hdr.appendChild(count);
+  container.appendChild(hdr);
+
+  const timeline = document.createElement('div');
+  timeline.className = 'journey-timeline';
+
+  seasons.forEach((s, i) => {
+    // Arrow between cards
+    if (i > 0) {
+      const arrowWrap = document.createElement('div');
+      arrowWrap.className = 'journey-arrow';
+      const changed = seasons[i - 1].cluster !== s.cluster;
+      const arrowColor = changed ? '#f59e0b' : '#374151';
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('width', '20'); svg.setAttribute('height', '20');
+      svg.setAttribute('viewBox', '0 0 20 20');
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', 'M3 10h14M12 5l5 5-5 5');
+      path.setAttribute('stroke', arrowColor);
+      path.setAttribute('stroke-width', '2');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('fill', 'none');
+      svg.appendChild(path);
+      arrowWrap.appendChild(svg);
+      timeline.appendChild(arrowWrap);
+    }
+
+    const color = clusterColor(s.cluster);
+    const changed = i > 0 && seasons[i - 1].cluster !== s.cluster;
+
+    const card = document.createElement('div');
+    card.className = 'journey-card' + (changed ? ' journey-card-changed' : '');
+    card.style.setProperty('--cluster-color', color);
+
+    // Season + team row
+    const seasonRow = document.createElement('div');
+    seasonRow.className = 'jc-season-row';
+    const seasonEl = document.createElement('span');
+    seasonEl.className = 'jc-season';
+    seasonEl.textContent = s.season;
+    seasonRow.appendChild(seasonEl);
+    if (s.team) {
+      const teamEl = document.createElement('span');
+      teamEl.className = 'jc-team';
+      teamEl.textContent = s.team;
+      seasonRow.appendChild(teamEl);
+    }
+    card.appendChild(seasonRow);
+
+    // Cluster badge
+    const badge = document.createElement('div');
+    badge.className = 'jc-badge';
+    badge.style.background = color + '22';
+    badge.style.color = color;
+    badge.style.borderColor = color + '55';
+    badge.textContent = s.cluster;
+    card.appendChild(badge);
+
+    // Cluster name
+    const cname = document.createElement('div');
+    cname.className = 'jc-cluster-name';
+    cname.textContent = s.clusterName;
+    card.appendChild(cname);
+
+    // Radar of actual player pct values
+    const radar = buildRadar(s.pct, 90);
+    radar.className = 'jc-radar';
+    card.appendChild(radar);
+
+    // Dim bars
+    const bars = document.createElement('div');
+    bars.className = 'jc-bars';
+    DIMS.forEach(d => {
+      const v = s.pct[d] || 0;
+      const row = document.createElement('div');
+      row.className = 'jc-bar-row';
+      const lbl = document.createElement('div');
+      lbl.className = 'jc-bar-label';
+      lbl.textContent = d;
+      const track = document.createElement('div');
+      track.className = 'jc-bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'jc-bar-fill';
+      fill.style.width = (v * 100).toFixed(1) + '%';
+      fill.style.background = DIM_COLOR[d];
+      track.appendChild(fill);
+      const val = document.createElement('div');
+      val.className = 'jc-bar-val';
+      val.textContent = (v * 100).toFixed(0);
+      row.appendChild(lbl);
+      row.appendChild(track);
+      row.appendChild(val);
+      bars.appendChild(row);
+    });
+    card.appendChild(bars);
+
+    timeline.appendChild(card);
+  });
+
+  container.appendChild(timeline);
+}
+
+// ── Search autocomplete ───────────────────────────────────────────────────────
+
+let focusedIdx = -1;
+
+function setupSearch() {
+  const input = document.getElementById('player-search');
+  const suggestionsEl = document.getElementById('suggestions');
+  let currentMatches = [];
+
+  function showSuggestions(matches) {
+    currentMatches = matches;
+    focusedIdx = -1;
+    if (!matches.length) { suggestionsEl.style.display = 'none'; return; }
+    suggestionsEl.innerHTML = '';
+    matches.forEach((p, i) => {
+      const item = document.createElement('div');
+      item.className = 'suggestion-item';
+      item.textContent = p.displayName;
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        selectPlayer(p);
+      });
+      suggestionsEl.appendChild(item);
+    });
+    suggestionsEl.style.display = '';
+  }
+
+  function selectPlayer(p) {
+    input.value = p.displayName;
+    suggestionsEl.style.display = 'none';
+    suggestionsEl.innerHTML = '';
+    renderJourney(p.slug);
+  }
+
+  function updateFocus() {
+    const items = suggestionsEl.querySelectorAll('.suggestion-item');
+    items.forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
+  }
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    if (!q) { suggestionsEl.style.display = 'none'; return; }
+    const matches = sortedPlayers.filter(p =>
+      p.displayName.toLowerCase().includes(q)
+    ).slice(0, 8);
+    showSuggestions(matches);
+  });
+
+  input.addEventListener('keydown', e => {
+    const items = suggestionsEl.querySelectorAll('.suggestion-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
+      updateFocus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusedIdx = Math.max(focusedIdx - 1, -1);
+      updateFocus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (focusedIdx >= 0 && currentMatches[focusedIdx]) {
+        selectPlayer(currentMatches[focusedIdx]);
+      } else if (currentMatches.length === 1) {
+        selectPlayer(currentMatches[0]);
+      }
+    } else if (e.key === 'Escape') {
+      suggestionsEl.style.display = 'none';
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => { suggestionsEl.style.display = 'none'; }, 150);
+  });
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+
+function showTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === name)
+  );
+  document.querySelectorAll('.tab-content').forEach(t =>
+    t.style.display = t.id === 'tab-' + name ? '' : 'none'
+  );
+  history.replaceState(null, '', '#' + name);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab));
+});
+
+const initTab = ['archetypes', 'journey'].includes(location.hash.slice(1))
+  ? location.hash.slice(1) : 'archetypes';
+showTab(initTab);
+
+// ── Data load ─────────────────────────────────────────────────────────────────
+
 fetch('/players/player_clusters.json')
   .then(r => r.json())
   .then(data => {
     document.getElementById('n-seasons').textContent = data.n.toLocaleString();
 
-    // Dendrogram
     if (data.linkage && data.linkage.length) {
       const sec = document.getElementById('dendrogram-section');
       sec.style.display = '';
@@ -509,9 +949,13 @@ fetch('/players/player_clusters.json')
     const root = document.getElementById('root');
     root.innerHTML = '';
     data.clusters.forEach(c => root.appendChild(buildCard(c)));
+
+    buildPlayerIndex(data);
+    setupSearch();
   })
   .catch(err => {
-    document.getElementById('root').innerHTML = `<p class="error">Failed to load cluster data: ${err.message}</p>`;
+    document.getElementById('root').innerHTML =
+      `<p class="error">Failed to load cluster data: ${err.message}</p>`;
   });
 </script>
 </body>
