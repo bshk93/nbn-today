@@ -289,11 +289,6 @@ function clusterColor(hierName) {
   return GROUP_COLOR[hierName[0]] || '#6b7280';
 }
 
-function poSeriesWins(result) {
-  const m = { 'Missed': 0, 'First Round': 0, 'Second Round': 1, 'Conf Finals': 2, 'Runner-Up': 3, 'Champion': 4 };
-  return m[result] ?? 0;
-}
-
 function poColor(result) {
   if (result === 'Champion')    return '#f59e0b';
   if (result === 'Runner-Up')   return '#9ca3af';
@@ -379,7 +374,7 @@ function buildRadar(centroid, size = 110) {
 
 // ── Archetypes tab ────────────────────────────────────────────────────────────
 
-function buildCard(cluster) {
+function buildCard(cluster, gameWins) {
   const card = document.createElement('div');
   card.className = 'cluster-card';
 
@@ -394,13 +389,13 @@ function buildCard(cluster) {
 
   const n = cluster.top.length;
   const avgRegW = cluster.top.reduce((s, e) => s + parseInt(e.record), 0) / n;
-  const avgPoW  = cluster.top.reduce((s, e) => s + poSeriesWins(e.playoff_result), 0) / n;
+  const avgPoW  = cluster.top.reduce((s, e) => s + (gameWins[e.team + '|' + e.season] || 0), 0) / n;
 
   const statsRow = document.createElement('div');
   statsRow.className = 'cluster-avg-stats';
   statsRow.innerHTML =
     `<span>avg reg W <span class="cluster-avg-stat-val">${avgRegW.toFixed(1)}</span></span>` +
-    `<span>avg PO wins <span class="cluster-avg-stat-val">${avgPoW.toFixed(1)}</span></span>`;
+    `<span>avg PO W <span class="cluster-avg-stat-val">${avgPoW.toFixed(1)}</span></span>`;
   card.appendChild(statsRow);
 
   const desc = DESCRIPTIONS[cluster.hier_name];
@@ -722,9 +717,30 @@ showTab(initTab);
 
 // ── Data load ─────────────────────────────────────────────────────────────────
 
-fetch('/clusters/team_clusters.json')
-  .then(r => r.json())
-  .then(data => {
+function parseCSVRows(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => { obj[h.trim()] = (vals[i] || '').trim(); });
+    return obj;
+  });
+}
+
+Promise.all([
+  fetch('/clusters/team_clusters.json').then(r => r.json()),
+  fetch('/standings/playoff-brackets.csv').then(r => r.text()),
+])
+  .then(([data, bracketText]) => {
+    const gameWins = {};
+    parseCSVRows(bracketText).forEach(row => {
+      const key1 = row.T1 + '|' + row.SEASON;
+      const key2 = row.T2 + '|' + row.SEASON;
+      gameWins[key1] = (gameWins[key1] || 0) + parseInt(row.T1_W || 0);
+      gameWins[key2] = (gameWins[key2] || 0) + parseInt(row.T2_W || 0);
+    });
+
     document.getElementById('n-seasons').textContent = data.n.toLocaleString();
 
     const root = document.getElementById('root');
@@ -768,7 +784,7 @@ fetch('/clusters/team_clusters.json')
         wrap.classList.add('active');
         archetypeDetail.innerHTML = '';
         archetypeDetail.classList.add('visible');
-        archetypeDetail.appendChild(buildCard(c));
+        archetypeDetail.appendChild(buildCard(c, gameWins));
       });
 
       nodeGrid.appendChild(wrap);
@@ -784,7 +800,7 @@ fetch('/clusters/team_clusters.json')
   })
   .catch(err => {
     document.getElementById('root').innerHTML =
-      `<p class="error">Failed to load cluster data: ${err.message}</p>`;
+      `<p class="error">Failed to load data: ${err.message}</p>`;
   });
 </script>
 </body>
