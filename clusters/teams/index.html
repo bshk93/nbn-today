@@ -40,7 +40,7 @@
 
   /* Bubble chart */
   .bubble-wrap { margin-bottom: 2.5rem; }
-  .bubble-chart { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; border-radius: 10px; overflow: visible; }
+  .bubble-chart { width: 100%; max-width: 560px; height: auto; aspect-ratio: 1; display: block; margin: 0 auto; border-radius: 10px; }
   .bubble-legend {
     display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem;
     justify-content: center; margin-top: 0.9rem;
@@ -286,6 +286,22 @@ const CLUSTER_ORDER = ['1A','1B','1C','2A','2B','2C','3A','3B','3C','4A','4B','4
 
 const GROUP_COLOR = { '1': '#3b82f6', '2': '#8b5cf6', '3': '#f59e0b', '4': '#22c55e' };
 
+// PCA-derived 2D positions for each archetype (normalized 0–1)
+const CLUSTER_POS = {
+  '1A': { x: 0.264, y: 0.454 },
+  '1B': { x: 0.591, y: 0.604 },
+  '1C': { x: 0.536, y: 0.050 },
+  '2A': { x: 0.124, y: 0.945 },
+  '2B': { x: 0.050, y: 0.392 },
+  '2C': { x: 0.483, y: 0.686 },
+  '3A': { x: 0.332, y: 0.699 },
+  '3B': { x: 0.442, y: 0.194 },
+  '3C': { x: 0.757, y: 0.950 },
+  '4A': { x: 0.640, y: 0.655 },
+  '4B': { x: 0.816, y: 0.106 },
+  '4C': { x: 0.950, y: 0.767 },
+};
+
 const GROUP_META = {
   '1': { name: 'Inside-Out Offenses',   desc: 'Interior-focused systems, from efficient star-driven units to deep rotation teams with low reliance on the 3-ball.' },
   '2': { name: 'Halfcourt Grinders',    desc: 'The slowest pace in the league. Patient, deliberate systems that live at the free throw line.' },
@@ -398,18 +414,20 @@ function buildBubbleChart(clusters) {
   // Lines connecting same-group clusters
   const byGroup = {};
   clusters.forEach(c => {
-    const g = c.hier_name[0];
-    (byGroup[g] = byGroup[g] || []).push(c);
+    const grp = c.hier_name[0];
+    (byGroup[grp] = byGroup[grp] || []).push(c);
   });
-  Object.entries(byGroup).forEach(([g, cs]) => {
-    const color = GROUP_COLOR[g];
+  Object.entries(byGroup).forEach(([grp, cs]) => {
+    const color = GROUP_COLOR[grp];
     for (let i = 0; i < cs.length; i++) {
       for (let j = i + 1; j < cs.length; j++) {
+        const pi = CLUSTER_POS[cs[i].hier_name], pj = CLUSTER_POS[cs[j].hier_name];
+        if (!pi || !pj) return;
         const ln = document.createElementNS(NS, 'line');
-        ln.setAttribute('x1', cs[i].x * W); ln.setAttribute('y1', cs[i].y * H);
-        ln.setAttribute('x2', cs[j].x * W); ln.setAttribute('y2', cs[j].y * H);
+        ln.setAttribute('x1', pi.x * W); ln.setAttribute('y1', pi.y * H);
+        ln.setAttribute('x2', pj.x * W); ln.setAttribute('y2', pj.y * H);
         ln.setAttribute('stroke', color); ln.setAttribute('stroke-width', '1.5');
-        ln.setAttribute('stroke-opacity', '0.2');
+        ln.setAttribute('stroke-opacity', '0.22');
         svg.appendChild(ln);
       }
     }
@@ -417,8 +435,10 @@ function buildBubbleChart(clusters) {
 
   // Bubbles + labels
   clusters.forEach(c => {
+    const pos = CLUSTER_POS[c.hier_name];
+    if (!pos) return;
     const color = GROUP_COLOR[c.hier_name[0]] || '#6b7280';
-    const cx = c.x * W, cy = c.y * H;
+    const cx = pos.x * W, cy = pos.y * H;
     const r = Math.max(18, Math.sqrt(c.size) * 5);
 
     const g = document.createElementNS(NS, 'g');
