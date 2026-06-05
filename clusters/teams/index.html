@@ -79,7 +79,7 @@
     border-radius: 10px; padding: 1rem 1.25rem 1.25rem;
     display: flex; flex-direction: column; gap: 0.75rem;
   }
-  .cluster-desc { font-size: 0.78rem; color: #9ca3af; line-height: 1.55; padding-bottom: 0.25rem; border-bottom: 1px solid #1f2937; }
+  .cluster-desc { font-size: 0.78rem; color: #9ca3af; line-height: 1.55; }
   .cluster-header { display: flex; align-items: center; gap: 0.75rem; }
   .cluster-num { background: #1f2937; color: #6b7280; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; flex-shrink: 0; }
   .cluster-name { font-size: 1rem; font-weight: 700; color: #f9fafb; flex: 1; }
@@ -114,8 +114,14 @@
   .show-more { margin-top: 0.4rem; background: none; border: none; color: #3b82f6; font-size: 0.72rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; font-family: inherit; }
   .show-more:hover { color: #60a5fa; }
 
-  .cluster-avg-stats { display: flex; gap: 1.25rem; font-size: 0.72rem; color: #6b7280; padding-bottom: 0.5rem; border-bottom: 1px solid #1f2937; }
+  .cluster-avg-stats { display: flex; gap: 1.25rem; font-size: 0.72rem; color: #6b7280; }
   .cluster-avg-stat-val { color: #d1d5db; font-weight: 700; }
+
+  .card-summary { cursor: pointer; display: flex; flex-direction: column; gap: 0.75rem; }
+  .card-chevron { color: #4b5563; font-size: 0.65rem; flex-shrink: 0; transition: transform 0.18s; line-height: 1; margin-top: 2px; }
+  .cluster-card.open .card-chevron { transform: rotate(90deg); color: #9ca3af; }
+  .card-expand { display: none; padding-top: 0.75rem; border-top: 1px solid #1f2937; display: flex; flex-direction: column; gap: 0.75rem; }
+  .cluster-card:not(.open) .card-expand { display: none; }
 
   .loading { color: #6b7280; padding: 3rem; text-align: center; }
   .error { color: #f87171; padding: 3rem; text-align: center; }
@@ -484,14 +490,19 @@ function buildCard(cluster, gameWins) {
   card.className = 'cluster-card';
   card.style.setProperty('--cc', color);
 
+  const summary = document.createElement('div');
+  summary.className = 'card-summary';
+  summary.addEventListener('click', () => card.classList.toggle('open'));
+
   const hdr = document.createElement('div');
   hdr.className = 'cluster-header';
   hdr.innerHTML = `
     <span class="cluster-num">${cluster.hier_name}</span>
     <span class="cluster-name">${NAMES[cluster.hier_name] || cluster.hier_name}</span>
     <span class="cluster-size">${cluster.size} seasons</span>
+    <span class="card-chevron">▶</span>
   `;
-  card.appendChild(hdr);
+  summary.appendChild(hdr);
 
   const n = cluster.top.length;
   const avgRegW = cluster.top.reduce((s, e) => s + parseInt(e.record), 0) / n;
@@ -502,15 +513,20 @@ function buildCard(cluster, gameWins) {
   statsRow.innerHTML =
     `<span>avg reg W <span class="cluster-avg-stat-val">${avgRegW.toFixed(1)}</span></span>` +
     `<span>avg PO W <span class="cluster-avg-stat-val">${avgPoW.toFixed(1)}</span></span>`;
-  card.appendChild(statsRow);
+  summary.appendChild(statsRow);
 
   const desc = DESCRIPTIONS[cluster.hier_name];
   if (desc) {
     const descEl = document.createElement('p');
     descEl.className = 'cluster-desc';
     descEl.textContent = desc;
-    card.appendChild(descEl);
+    summary.appendChild(descEl);
   }
+
+  card.appendChild(summary);
+
+  const expand = document.createElement('div');
+  expand.className = 'card-expand';
 
   const body = document.createElement('div');
   body.className = 'cluster-body';
@@ -575,7 +591,8 @@ function buildCard(cluster, gameWins) {
     btn.textContent = `Show more (${shown}/${total})`;
   }
 
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
     const next = Math.min(shown + PAGE, total);
     cluster.top.slice(shown, next).forEach(e => rowContainer.appendChild(makeRow(e)));
     shown = next;
@@ -586,7 +603,7 @@ function buildCard(cluster, gameWins) {
   updateBtn();
 
   body.appendChild(teamsList);
-  card.appendChild(body);
+  expand.appendChild(body);
 
   const bars = document.createElement('div');
   bars.className = 'dim-bars';
@@ -601,8 +618,9 @@ function buildCard(cluster, gameWins) {
     `;
     bars.appendChild(row);
   });
-  card.appendChild(bars);
+  expand.appendChild(bars);
 
+  card.appendChild(expand);
   return card;
 }
 
