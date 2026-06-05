@@ -125,6 +125,25 @@
   .loading { color: #6b7280; padding: 3rem; text-align: center; }
   .error { color: #f87171; padding: 3rem; text-align: center; }
 
+  /* Dot info strip */
+  .dot-info {
+    display: none; margin-top: 0.65rem;
+    background: #161b27; border: 1px solid #1f2937; border-radius: 8px;
+    padding: 0.65rem 1rem; max-width: 560px; margin-left: auto; margin-right: auto;
+  }
+  .dot-info-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .dot-info-team { font-weight: 700; color: #f9fafb; font-size: 0.88rem; }
+  .dot-info-team a { color: inherit; text-decoration: none; }
+  .dot-info-team a:hover { color: #93c5fd; }
+  .dot-info-record { color: #6b7280; font-size: 0.8rem; }
+  .dot-info-badge {
+    padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
+  }
+  .dot-info-cluster {
+    padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.72rem;
+    font-weight: 600; border: 1px solid;
+  }
+
   /* History tab */
   .history-select-wrap { margin-bottom: 2rem; }
   .history-select-wrap select {
@@ -403,7 +422,7 @@ function buildRadar(centroid, size = 110) {
 
 // ── Bubble chart ──────────────────────────────────────────────────────────────
 
-function buildBubbleChart(clusters) {
+function buildBubbleChart(clusters, onDotClick) {
   const NS = 'http://www.w3.org/2000/svg';
   const W = 500, H = 500;
 
@@ -428,6 +447,10 @@ function buildBubbleChart(clusters) {
       dot.setAttribute('cx', e.x * W); dot.setAttribute('cy', e.y * H); dot.setAttribute('r', '5');
       dot.setAttribute('fill', color + '70'); dot.setAttribute('stroke', color);
       dot.setAttribute('stroke-width', '1');
+      if (onDotClick) {
+        dot.style.cursor = 'pointer';
+        dot.addEventListener('click', ev => { ev.stopPropagation(); onDotClick(e, c.hier_name, color); });
+      }
       const t = document.createElementNS(NS, 'title');
       t.textContent = `${e.team} ${e.season} · ${e.record} · ${e.playoff_result}`;
       dot.appendChild(t);
@@ -924,7 +947,22 @@ Promise.all([
     // Bubble chart
     const bubbleWrap = document.createElement('div');
     bubbleWrap.className = 'bubble-wrap';
-    bubbleWrap.appendChild(buildBubbleChart(data.clusters));
+
+    const dotInfo = document.createElement('div');
+    dotInfo.className = 'dot-info';
+
+    bubbleWrap.appendChild(buildBubbleChart(data.clusters, (e, hierName, color) => {
+      const rc = poColor(e.playoff_result);
+      dotInfo.style.display = '';
+      dotInfo.innerHTML = `<div class="dot-info-row">
+        <span class="dot-info-team"><a href="/teams/${e.team}/">${e.season} ${e.team}</a></span>
+        <span class="dot-info-record">${e.record}</span>
+        ${e.playoff_result && e.playoff_result !== 'Missed'
+          ? `<span class="dot-info-badge" style="background:${rc}22;color:${rc}">${e.playoff_result}</span>`
+          : ''}
+        <span class="dot-info-cluster" style="color:${color};border-color:${color}55;background:${color}22">${hierName} · ${NAMES[hierName] || hierName}</span>
+      </div>`;
+    }));
 
     const legend = document.createElement('div');
     legend.className = 'bubble-legend';
@@ -935,6 +973,7 @@ Promise.all([
       legend.appendChild(item);
     });
     bubbleWrap.appendChild(legend);
+    bubbleWrap.appendChild(dotInfo);
     root.appendChild(bubbleWrap);
 
     // Grouped cards
