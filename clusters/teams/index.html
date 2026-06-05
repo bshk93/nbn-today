@@ -448,8 +448,9 @@ function buildBubbleChart(clusters) {
   // Expose toggle function on the svg element
   svg._toggleDots = () => {
     const hidden = dotsLayer.getAttribute('display') === 'none';
-    dotsLayer.setAttribute('display', hidden ? '' : 'none');
-    return !hidden; // returns new state (true = now hidden)
+    if (hidden) dotsLayer.removeAttribute('display');
+    else dotsLayer.setAttribute('display', 'none');
+    return !hidden; // true = now hidden
   };
 
   // Lines connecting same-group clusters
