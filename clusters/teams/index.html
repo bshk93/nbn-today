@@ -41,15 +41,6 @@
   /* Bubble chart */
   .bubble-wrap { margin-bottom: 2.5rem; }
   .bubble-chart { width: 100%; max-width: 560px; height: auto; aspect-ratio: 1; display: block; margin: 0 auto; border-radius: 10px; }
-  .bubble-toggle {
-    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
-    margin: 0.7rem auto 0; width: fit-content;
-    background: none; border: 1px solid #374151; border-radius: 6px;
-    color: #6b7280; font-size: 0.72rem; font-weight: 600; font-family: inherit;
-    padding: 0.3rem 0.75rem; cursor: pointer; transition: color 0.15s, border-color 0.15s;
-  }
-  .bubble-toggle:hover { color: #d1d5db; border-color: #4b5563; }
-  .bubble-toggle.active { color: #f9fafb; border-color: #6b7280; }
   .bubble-legend {
     display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem;
     justify-content: center; margin-top: 0.9rem;
@@ -426,11 +417,12 @@ function buildBubbleChart(clusters) {
   bg.setAttribute('rx', '10'); bg.setAttribute('fill', '#161b27');
   svg.appendChild(bg);
 
-  // Dots layer (individual team-seasons) — hidden until toggled
-  const dotsLayer = document.createElementNS(NS, 'g');
-  dotsLayer.setAttribute('display', 'none');
+  // Per-cluster dot layers — all hidden until their bubble is clicked
+  const dotLayers = {};
   clusters.forEach(c => {
     const color = GROUP_COLOR[c.hier_name[0]] || '#6b7280';
+    const layer = document.createElementNS(NS, 'g');
+    layer.setAttribute('display', 'none');
     c.top.forEach(e => {
       if (e.x == null || e.y == null) return;
       const dot = document.createElementNS(NS, 'circle');
@@ -440,18 +432,11 @@ function buildBubbleChart(clusters) {
       const t = document.createElementNS(NS, 'title');
       t.textContent = `${e.team} ${e.season} · ${e.record} · ${e.playoff_result}`;
       dot.appendChild(t);
-      dotsLayer.appendChild(dot);
+      layer.appendChild(dot);
     });
+    dotLayers[c.hier_name] = layer;
+    svg.appendChild(layer);
   });
-  svg.appendChild(dotsLayer);
-
-  // Expose toggle function on the svg element
-  svg._toggleDots = () => {
-    const hidden = dotsLayer.getAttribute('display') === 'none';
-    if (hidden) dotsLayer.removeAttribute('display');
-    else dotsLayer.setAttribute('display', 'none');
-    return !hidden; // true = now hidden
-  };
 
   // Lines connecting same-group clusters
   const byGroup = {};
@@ -476,6 +461,9 @@ function buildBubbleChart(clusters) {
   });
 
   // Bubbles + labels
+  let selected = null;
+  const circleEls = {};
+
   clusters.forEach(c => {
     const pos = CLUSTER_POS[c.hier_name];
     if (!pos) return;
@@ -485,10 +473,6 @@ function buildBubbleChart(clusters) {
 
     const g = document.createElementNS(NS, 'g');
     g.style.cursor = 'pointer';
-    g.addEventListener('click', () => {
-      document.getElementById('archetype-' + c.hier_name)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
 
     const circle = document.createElementNS(NS, 'circle');
     circle.setAttribute('cx', cx); circle.setAttribute('cy', cy); circle.setAttribute('r', r);
@@ -498,6 +482,7 @@ function buildBubbleChart(clusters) {
     t.textContent = NAMES[c.hier_name] || c.hier_name;
     circle.appendChild(t);
     g.appendChild(circle);
+    circleEls[c.hier_name] = circle;
 
     const lbl = document.createElementNS(NS, 'text');
     lbl.setAttribute('x', cx); lbl.setAttribute('y', cy);
@@ -508,9 +493,41 @@ function buildBubbleChart(clusters) {
     lbl.textContent = c.hier_name;
     g.appendChild(lbl);
 
-    // Hover highlight
-    g.addEventListener('mouseenter', () => { circle.setAttribute('fill', color + '50'); });
-    g.addEventListener('mouseleave', () => { circle.setAttribute('fill', color + '28'); });
+    g.addEventListener('click', () => {
+      const deselecting = selected === c.hier_name;
+
+      // Clear previous selection
+      if (selected) {
+        dotLayers[selected].setAttribute('display', 'none');
+        const prev = circleEls[selected];
+        if (prev) { prev.setAttribute('stroke-width', '2'); prev.setAttribute('fill', GROUP_COLOR[selected[0]] + '28'); }
+      }
+
+      if (deselecting) {
+        selected = null;
+        return;
+      }
+
+      // Select this cluster
+      selected = c.hier_name;
+      dotLayers[c.hier_name].removeAttribute('display');
+      circle.setAttribute('stroke-width', '3.5');
+      circle.setAttribute('fill', color + '50');
+
+      // Open and scroll to the card
+      const card = document.getElementById('archetype-' + c.hier_name);
+      if (card) {
+        card.classList.add('open');
+        setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+      }
+    });
+
+    g.addEventListener('mouseenter', () => {
+      if (selected !== c.hier_name) circle.setAttribute('fill', color + '50');
+    });
+    g.addEventListener('mouseleave', () => {
+      if (selected !== c.hier_name) circle.setAttribute('fill', color + '28');
+    });
 
     svg.appendChild(g);
   });
@@ -912,18 +929,7 @@ Promise.all([
     // Bubble chart
     const bubbleWrap = document.createElement('div');
     bubbleWrap.className = 'bubble-wrap';
-    const chartSvg = buildBubbleChart(data.clusters);
-    bubbleWrap.appendChild(chartSvg);
-
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'bubble-toggle';
-    toggleBtn.textContent = 'Show team seasons';
-    toggleBtn.addEventListener('click', () => {
-      const nowHidden = chartSvg._toggleDots();
-      toggleBtn.textContent = nowHidden ? 'Show team seasons' : 'Hide team seasons';
-      toggleBtn.classList.toggle('active', !nowHidden);
-    });
-    bubbleWrap.appendChild(toggleBtn);
+    bubbleWrap.appendChild(buildBubbleChart(data.clusters));
 
     const legend = document.createElement('div');
     legend.className = 'bubble-legend';
