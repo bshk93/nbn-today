@@ -41,6 +41,15 @@
   /* Bubble chart */
   .bubble-wrap { margin-bottom: 2.5rem; }
   .bubble-chart { width: 100%; max-width: 560px; height: auto; aspect-ratio: 1; display: block; margin: 0 auto; border-radius: 10px; }
+  .bubble-toggle {
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    margin: 0.7rem auto 0; width: fit-content;
+    background: none; border: 1px solid #374151; border-radius: 6px;
+    color: #6b7280; font-size: 0.72rem; font-weight: 600; font-family: inherit;
+    padding: 0.3rem 0.75rem; cursor: pointer; transition: color 0.15s, border-color 0.15s;
+  }
+  .bubble-toggle:hover { color: #d1d5db; border-color: #4b5563; }
+  .bubble-toggle.active { color: #f9fafb; border-color: #6b7280; }
   .bubble-legend {
     display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem;
     justify-content: center; margin-top: 0.9rem;
@@ -416,6 +425,32 @@ function buildBubbleChart(clusters) {
   bg.setAttribute('width', W); bg.setAttribute('height', H);
   bg.setAttribute('rx', '10'); bg.setAttribute('fill', '#161b27');
   svg.appendChild(bg);
+
+  // Dots layer (individual team-seasons) — hidden until toggled
+  const dotsLayer = document.createElementNS(NS, 'g');
+  dotsLayer.setAttribute('display', 'none');
+  clusters.forEach(c => {
+    const color = GROUP_COLOR[c.hier_name[0]] || '#6b7280';
+    c.top.forEach(e => {
+      if (e.x == null || e.y == null) return;
+      const dot = document.createElementNS(NS, 'circle');
+      dot.setAttribute('cx', e.x * W); dot.setAttribute('cy', e.y * H); dot.setAttribute('r', '5');
+      dot.setAttribute('fill', color + '70'); dot.setAttribute('stroke', color);
+      dot.setAttribute('stroke-width', '1');
+      const t = document.createElementNS(NS, 'title');
+      t.textContent = `${e.team} ${e.season} · ${e.record} · ${e.playoff_result}`;
+      dot.appendChild(t);
+      dotsLayer.appendChild(dot);
+    });
+  });
+  svg.appendChild(dotsLayer);
+
+  // Expose toggle function on the svg element
+  svg._toggleDots = () => {
+    const hidden = dotsLayer.getAttribute('display') === 'none';
+    dotsLayer.setAttribute('display', hidden ? '' : 'none');
+    return !hidden; // returns new state (true = now hidden)
+  };
 
   // Lines connecting same-group clusters
   const byGroup = {};
@@ -876,7 +911,19 @@ Promise.all([
     // Bubble chart
     const bubbleWrap = document.createElement('div');
     bubbleWrap.className = 'bubble-wrap';
-    bubbleWrap.appendChild(buildBubbleChart(data.clusters));
+    const chartSvg = buildBubbleChart(data.clusters);
+    bubbleWrap.appendChild(chartSvg);
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'bubble-toggle';
+    toggleBtn.textContent = 'Show team seasons';
+    toggleBtn.addEventListener('click', () => {
+      const nowHidden = chartSvg._toggleDots();
+      toggleBtn.textContent = nowHidden ? 'Show team seasons' : 'Hide team seasons';
+      toggleBtn.classList.toggle('active', !nowHidden);
+    });
+    bubbleWrap.appendChild(toggleBtn);
+
     const legend = document.createElement('div');
     legend.className = 'bubble-legend';
     ['1','2','3','4'].forEach(g => {
