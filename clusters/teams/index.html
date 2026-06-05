@@ -542,7 +542,11 @@ function buildCard(cluster, gameWins) {
 
   const summary = document.createElement('div');
   summary.className = 'card-summary';
-  summary.addEventListener('click', () => card.classList.toggle('open'));
+  summary.addEventListener('click', () => {
+    const opening = !card.classList.contains('open');
+    document.querySelectorAll('.cluster-card.open').forEach(c => c.classList.remove('open'));
+    if (opening) card.classList.add('open');
+  });
 
   const hdr = document.createElement('div');
   hdr.className = 'cluster-header';
