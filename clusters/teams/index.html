@@ -514,12 +514,9 @@ function buildBubbleChart(clusters) {
       circle.setAttribute('stroke-width', '3.5');
       circle.setAttribute('fill', color + '50');
 
-      // Open and scroll to the card
+      // Open the card (no scroll — stay on chart to see dots)
       const card = document.getElementById('archetype-' + c.hier_name);
-      if (card) {
-        card.classList.add('open');
-        setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-      }
+      if (card) card.classList.add('open');
     });
 
     g.addEventListener('mouseenter', () => {
