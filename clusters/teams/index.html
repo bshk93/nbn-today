@@ -38,45 +38,46 @@
   .tab-btn:hover { color: #d1d5db; }
   .tab-btn.active { color: #f9fafb; border-bottom-color: #3b82f6; }
 
-  /* Node grid */
-  .archetype-node-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 0.75rem; margin-bottom: 1.5rem;
+  /* Bubble chart */
+  .bubble-wrap { margin-bottom: 2.5rem; }
+  .bubble-chart { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; border-radius: 10px; overflow: visible; }
+  .bubble-legend {
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem;
+    justify-content: center; margin-top: 0.9rem;
   }
-  .archetype-node-wrap {
-    display: flex; flex-direction: column; align-items: center;
-    gap: 0.55rem; cursor: pointer; padding: 1rem 0.5rem;
-    border-radius: 10px; border: 1px solid transparent;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .archetype-node-wrap:hover { background: #161b27; border-color: #1f2937; }
-  .archetype-node-wrap.active { background: #161b27; border-color: var(--node-color, #3b82f6); }
-  .archetype-node {
-    width: 58px; height: 58px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.95rem; font-weight: 800; border: 2px solid;
-    transition: transform 0.15s, box-shadow 0.15s;
-  }
-  .archetype-node-wrap:hover .archetype-node { transform: scale(1.07); }
-  .archetype-node-wrap.active .archetype-node {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
-  }
-  .archetype-node-name { font-size: 0.72rem; font-weight: 600; color: #9ca3af; text-align: center; line-height: 1.35; }
-  .archetype-node-wrap.active .archetype-node-name { color: #d1d5db; }
+  .bubble-legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: #9ca3af; }
+  .bubble-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-  /* Detail panel */
-  .archetype-detail {
-    opacity: 0; transform: translateY(6px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    pointer-events: none;
+  /* Group sections */
+  .archetype-groups { display: flex; flex-direction: column; gap: 2.75rem; }
+
+  .group-header {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    margin-bottom: 1rem; padding-bottom: 0.85rem;
+    border-bottom: 2px solid var(--gc, #3b82f6);
   }
-  .archetype-detail.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .group-badge {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    background: var(--gc, #3b82f6); color: #0f1117;
+    font-size: 0.8rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .group-title { font-size: 1rem; font-weight: 700; color: #f9fafb; line-height: 1.3; }
+  .group-subtitle { font-size: 0.75rem; color: #6b7280; margin-top: 0.2rem; }
+  .group-title-wrap { display: flex; flex-direction: column; }
+
+  .group-cards {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
+  }
+  @media (max-width: 860px) { .group-cards { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 540px) { .group-cards { grid-template-columns: 1fr; } }
 
   /* Cluster card */
   .cluster-card {
-    background: #161b27; border: 1px solid #1f2937; border-radius: 10px;
-    padding: 1rem 1.25rem 1.25rem; display: flex; flex-direction: column; gap: 0.75rem;
+    background: #161b27; border: 1px solid #1f2937; border-left: 3px solid var(--cc, #1f2937);
+    border-radius: 10px; padding: 1rem 1.25rem 1.25rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
   }
   .cluster-desc { font-size: 0.78rem; color: #9ca3af; line-height: 1.55; padding-bottom: 0.25rem; border-bottom: 1px solid #1f2937; }
   .cluster-header { display: flex; align-items: center; gap: 0.75rem; }
@@ -285,6 +286,13 @@ const CLUSTER_ORDER = ['1A','1B','1C','2A','2B','2C','3A','3B','3C','4A','4B','4
 
 const GROUP_COLOR = { '1': '#3b82f6', '2': '#8b5cf6', '3': '#f59e0b', '4': '#22c55e' };
 
+const GROUP_META = {
+  '1': { name: 'Inside-Out Offenses',   desc: 'Interior-focused systems, from efficient star-driven units to deep rotation teams with low reliance on the 3-ball.' },
+  '2': { name: 'Halfcourt Grinders',    desc: 'The slowest pace in the league. Patient, deliberate systems that live at the free throw line.' },
+  '3': { name: 'High-Octane Attacks',   desc: 'High-volume offenses that push pace, draw fouls, and score from everywhere. The most prolific teams in the league.' },
+  '4': { name: '3PT-First Systems',     desc: 'Perimeter-oriented teams built around the three-ball — from balanced floor-spacers to full rebuilds hoisting volume threes.' },
+};
+
 function clusterColor(hierName) {
   return GROUP_COLOR[hierName[0]] || '#6b7280';
 }
@@ -372,11 +380,89 @@ function buildRadar(centroid, size = 110) {
   return svg;
 }
 
+// ── Bubble chart ──────────────────────────────────────────────────────────────
+
+function buildBubbleChart(clusters) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const W = 500, H = 500;
+
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.classList.add('bubble-chart');
+
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('width', W); bg.setAttribute('height', H);
+  bg.setAttribute('rx', '10'); bg.setAttribute('fill', '#161b27');
+  svg.appendChild(bg);
+
+  // Lines connecting same-group clusters
+  const byGroup = {};
+  clusters.forEach(c => {
+    const g = c.hier_name[0];
+    (byGroup[g] = byGroup[g] || []).push(c);
+  });
+  Object.entries(byGroup).forEach(([g, cs]) => {
+    const color = GROUP_COLOR[g];
+    for (let i = 0; i < cs.length; i++) {
+      for (let j = i + 1; j < cs.length; j++) {
+        const ln = document.createElementNS(NS, 'line');
+        ln.setAttribute('x1', cs[i].x * W); ln.setAttribute('y1', cs[i].y * H);
+        ln.setAttribute('x2', cs[j].x * W); ln.setAttribute('y2', cs[j].y * H);
+        ln.setAttribute('stroke', color); ln.setAttribute('stroke-width', '1.5');
+        ln.setAttribute('stroke-opacity', '0.2');
+        svg.appendChild(ln);
+      }
+    }
+  });
+
+  // Bubbles + labels
+  clusters.forEach(c => {
+    const color = GROUP_COLOR[c.hier_name[0]] || '#6b7280';
+    const cx = c.x * W, cy = c.y * H;
+    const r = Math.max(18, Math.sqrt(c.size) * 5);
+
+    const g = document.createElementNS(NS, 'g');
+    g.style.cursor = 'pointer';
+    g.addEventListener('click', () => {
+      document.getElementById('archetype-' + c.hier_name)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    const circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', cx); circle.setAttribute('cy', cy); circle.setAttribute('r', r);
+    circle.setAttribute('fill', color + '28'); circle.setAttribute('stroke', color);
+    circle.setAttribute('stroke-width', '2');
+    const t = document.createElementNS(NS, 'title');
+    t.textContent = NAMES[c.hier_name] || c.hier_name;
+    circle.appendChild(t);
+    g.appendChild(circle);
+
+    const lbl = document.createElementNS(NS, 'text');
+    lbl.setAttribute('x', cx); lbl.setAttribute('y', cy);
+    lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('dominant-baseline', 'middle');
+    lbl.setAttribute('font-size', '10'); lbl.setAttribute('font-weight', '800');
+    lbl.setAttribute('fill', color); lbl.setAttribute('font-family', 'Inter, system-ui, sans-serif');
+    lbl.setAttribute('pointer-events', 'none');
+    lbl.textContent = c.hier_name;
+    g.appendChild(lbl);
+
+    // Hover highlight
+    g.addEventListener('mouseenter', () => { circle.setAttribute('fill', color + '50'); });
+    g.addEventListener('mouseleave', () => { circle.setAttribute('fill', color + '28'); });
+
+    svg.appendChild(g);
+  });
+
+  return svg;
+}
+
 // ── Archetypes tab ────────────────────────────────────────────────────────────
 
 function buildCard(cluster, gameWins) {
+  const color = clusterColor(cluster.hier_name);
   const card = document.createElement('div');
   card.className = 'cluster-card';
+  card.style.setProperty('--cc', color);
 
   const hdr = document.createElement('div');
   hdr.className = 'cluster-header';
@@ -743,57 +829,63 @@ Promise.all([
 
     document.getElementById('n-seasons').textContent = data.n.toLocaleString();
 
+    const clusterMap = {};
+    data.clusters.forEach(c => { clusterMap[c.hier_name] = c; });
+
     const root = document.getElementById('root');
     root.innerHTML = '';
 
-    const sorted = [...data.clusters].sort((a, b) => {
-      const ai = CLUSTER_ORDER.indexOf(a.hier_name);
-      const bi = CLUSTER_ORDER.indexOf(b.hier_name);
-      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    // Bubble chart
+    const bubbleWrap = document.createElement('div');
+    bubbleWrap.className = 'bubble-wrap';
+    bubbleWrap.appendChild(buildBubbleChart(data.clusters));
+    const legend = document.createElement('div');
+    legend.className = 'bubble-legend';
+    ['1','2','3','4'].forEach(g => {
+      const item = document.createElement('div');
+      item.className = 'bubble-legend-item';
+      item.innerHTML = `<div class="bubble-legend-dot" style="background:${GROUP_COLOR[g]}"></div><span>${GROUP_META[g].name}</span>`;
+      legend.appendChild(item);
     });
+    bubbleWrap.appendChild(legend);
+    root.appendChild(bubbleWrap);
 
-    const nodeGrid = document.createElement('div');
-    nodeGrid.className = 'archetype-node-grid';
+    // Grouped cards
+    const groupsEl = document.createElement('div');
+    groupsEl.className = 'archetype-groups';
 
-    const archetypeDetail = document.createElement('div');
-    archetypeDetail.className = 'archetype-detail';
+    ['1','2','3','4'].forEach(g => {
+      const color = GROUP_COLOR[g];
+      const meta  = GROUP_META[g];
+      const section = document.createElement('section');
+      section.className = 'archetype-group';
+      section.id = 'group-' + g;
+      section.style.setProperty('--gc', color);
 
-    const nodeWraps = [];
+      const hdr = document.createElement('div');
+      hdr.className = 'group-header';
+      hdr.innerHTML = `
+        <div class="group-badge">${g}</div>
+        <div class="group-title-wrap">
+          <div class="group-title">${meta.name}</div>
+          <div class="group-subtitle">${meta.desc}</div>
+        </div>`;
+      section.appendChild(hdr);
 
-    sorted.forEach(c => {
-      const color = clusterColor(c.hier_name);
-      const wrap = document.createElement('div');
-      wrap.className = 'archetype-node-wrap';
-      wrap.style.setProperty('--node-color', color);
-
-      const node = document.createElement('div');
-      node.className = 'archetype-node';
-      node.style.background = color + '1a';
-      node.style.borderColor = color;
-      node.style.color = color;
-      node.textContent = c.hier_name;
-      wrap.appendChild(node);
-
-      const nameLbl = document.createElement('div');
-      nameLbl.className = 'archetype-node-name';
-      nameLbl.textContent = NAMES[c.hier_name] || c.hier_name;
-      wrap.appendChild(nameLbl);
-
-      wrap.addEventListener('click', () => {
-        nodeWraps.forEach(w => w.classList.remove('active'));
-        wrap.classList.add('active');
-        archetypeDetail.innerHTML = '';
-        archetypeDetail.classList.add('visible');
-        archetypeDetail.appendChild(buildCard(c, gameWins));
+      const grid = document.createElement('div');
+      grid.className = 'group-cards';
+      CLUSTER_ORDER.filter(n => n[0] === g).forEach(name => {
+        const c = clusterMap[name];
+        if (!c) return;
+        const card = buildCard(c, gameWins);
+        card.id = 'archetype-' + name;
+        grid.appendChild(card);
       });
-
-      nodeGrid.appendChild(wrap);
-      nodeWraps.push(wrap);
+      section.appendChild(grid);
+      groupsEl.appendChild(section);
     });
 
-    root.appendChild(nodeGrid);
-    root.appendChild(archetypeDetail);
-    nodeWraps[0]?.click();
+    root.appendChild(groupsEl);
 
     buildTeamIndex(data);
     setupTeamSelect();
