@@ -457,7 +457,7 @@ function buildBubbleChart(clusters, onDotClick) {
       layer.appendChild(dot);
     });
     dotLayers[c.hier_name] = layer;
-    svg.appendChild(layer);
+    // layer appended after bubbles so dots sit on top and receive clicks
   });
 
   // Lines connecting same-group clusters
@@ -550,6 +550,9 @@ function buildBubbleChart(clusters, onDotClick) {
 
     svg.appendChild(g);
   });
+
+  // Append dot layers last so they sit above bubbles and receive pointer events
+  Object.values(dotLayers).forEach(layer => svg.appendChild(layer));
 
   return svg;
 }
