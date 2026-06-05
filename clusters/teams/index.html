@@ -444,7 +444,7 @@ function buildBubbleChart(clusters, onDotClick) {
     c.top.forEach(e => {
       if (e.x == null || e.y == null) return;
       const dot = document.createElementNS(NS, 'circle');
-      dot.setAttribute('cx', e.x * W); dot.setAttribute('cy', e.y * H); dot.setAttribute('r', '5');
+      dot.setAttribute('cx', e.x * W); dot.setAttribute('cy', e.y * H); dot.setAttribute('r', '7');
       dot.setAttribute('fill', color + '70'); dot.setAttribute('stroke', color);
       dot.setAttribute('stroke-width', '1');
       if (onDotClick) {
@@ -956,7 +956,7 @@ Promise.all([
 
     bubbleWrap.appendChild(buildBubbleChart(data.clusters, (e, hierName, color) => {
       const rc = poColor(e.playoff_result);
-      dotInfo.style.display = '';
+      dotInfo.style.display = 'block';
       dotInfo.innerHTML = `<div class="dot-info-row">
         <span class="dot-info-team"><a href="/teams/${e.team}/">${e.season} ${e.team}</a></span>
         <span class="dot-info-record">${e.record}</span>
