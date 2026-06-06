@@ -86,7 +86,7 @@
   .radar-wrap { flex-shrink: 0; }
 
   /* Team list (replaces player list) */
-  .teams-list { flex: 1; min-width: 0; }
+  .teams-list { width: 360px; flex-shrink: 0; }
   .teams-list-title { font-size: 0.68rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
   .team-row {
     padding: 0.18rem 0; border-bottom: 1px solid #1f2937;
@@ -593,7 +593,7 @@ function buildCard(cluster, gameWins) {
 
   const radarWrap = document.createElement('div');
   radarWrap.className = 'radar-wrap';
-  radarWrap.appendChild(buildRadar(cluster.centroid, 120));
+  radarWrap.appendChild(buildRadar(cluster.centroid, 200));
   body.appendChild(radarWrap);
 
   const teamsList = document.createElement('div');
