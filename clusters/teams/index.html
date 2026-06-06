@@ -101,7 +101,7 @@
   .team-result { font-size: 0.72rem; font-weight: 600; text-align: right; }
 
   /* Dim bars */
-  .dim-bars { display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.25rem; }
+  .dim-bars { display: flex; flex-direction: column; gap: 0.2rem; flex: 1; min-width: 0; justify-content: center; }
   .dim-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; }
   .dim-label { color: #6b7280; width: 3rem; flex-shrink: 0; text-align: right; font-weight: 600; }
   .dim-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; }
@@ -658,7 +658,6 @@ function buildCard(cluster, gameWins) {
   updateBtn();
 
   body.appendChild(teamsList);
-  expand.appendChild(body);
 
   const bars = document.createElement('div');
   bars.className = 'dim-bars';
@@ -673,7 +672,8 @@ function buildCard(cluster, gameWins) {
     `;
     bars.appendChild(row);
   });
-  expand.appendChild(bars);
+  body.appendChild(bars);
+  expand.appendChild(body);
 
   card.appendChild(expand);
   return card;
