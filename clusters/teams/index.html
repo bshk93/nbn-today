@@ -226,7 +226,7 @@
 <body>
 <div class="page">
   <h1>Team Archetypes</h1>
-  <p class="subtitle">Two-stage clustering of <b id="n-seasons">—</b> team-seasons. Stage 1 groups by shot diet &amp; pace (3PA rate, FT rate, FGA/game). Stage 2 refines by efficiency, defense, and rotation depth.</p>
+  <p class="subtitle">Two-stage clustering of <b id="n-seasons">—</b> team-seasons. Stage 1 groups by shot diet, pace, and ball movement (3PA rate, FT rate, possessions/game, assist rate). Stage 2 refines by offensive/defensive ratings and roster structure.</p>
 
   <div class="page-nav">
     <a href="/clusters/players/" class="page-nav-link">Players</a>
@@ -252,85 +252,71 @@
   </div>
 </div>
 <script>
-const DIMS = ['PPG','DEF','TS%','3PA_RATE','FTA_RATE','PACE','ROT_DEPTH','STAR_SHARE'];
+const DIMS = ['OFF_RTG','DEF','ASSIST_RATE','3PA_RATE','FTA_RATE','PACE','ROT_DEPTH','STAR_SHARE'];
 
 const DIM_COLOR = {
-  PPG:        '#3b82f6',
-  DEF:        '#22c55e',
-  'TS%':      '#06b6d4',
-  '3PA_RATE': '#8b5cf6',
-  'FTA_RATE': '#f97316',
-  PACE:       '#f59e0b',
-  ROT_DEPTH:  '#ec4899',
-  STAR_SHARE: '#ef4444',
+  OFF_RTG:      '#3b82f6',
+  DEF:          '#22c55e',
+  ASSIST_RATE:  '#06b6d4',
+  '3PA_RATE':   '#8b5cf6',
+  'FTA_RATE':   '#f97316',
+  PACE:         '#f59e0b',
+  ROT_DEPTH:    '#ec4899',
+  STAR_SHARE:   '#ef4444',
 };
 
 const DIM_LABEL = {
-  PPG:        'PPG',
-  DEF:        'DEF',
-  'TS%':      'TS%',
-  '3PA_RATE': '3P%',
-  'FTA_RATE': 'FT%',
-  PACE:       'PACE',
-  ROT_DEPTH:  'DEPTH',
-  STAR_SHARE: 'STARS',
+  OFF_RTG:      'O-RTG',
+  DEF:          'D-RTG',
+  ASSIST_RATE:  'AST%',
+  '3PA_RATE':   '3P%',
+  'FTA_RATE':   'FT%',
+  PACE:         'PACE',
+  ROT_DEPTH:    'DEPTH',
+  STAR_SHARE:   'STARS',
 };
 
 const NAMES = {
-  '1A': 'Efficient Interior Offenses',
-  '1B': 'Deep Inside-Oriented Units',
-  '1C': 'Star-Driven Pace Teams',
-  '2A': 'Foul-Drawing Halfcourt Grinders',
-  '2B': 'Star-Powered Deliberate Systems',
-  '2C': 'Slow Mediocre Foul-Drawers',
-  '3A': 'High-Volume Balanced Attacks',
-  '3B': 'Star-Led Frenetic Teams',
-  '3C': 'Egalitarian 3PT Rotations',
-  '4A': 'Perimeter-First Balanced Rosters',
-  '4B': '3PT-Heavy Defensive Tanks',
-  '4C': 'Full-Rebuild Depth Teams',
+  '1A': 'High-Powered Inside Attacks',
+  '1B': 'Efficient Inside Rotations',
+  '1C': 'Defensive Fast Inside Teams',
+  '2A': 'Elite Two-Way Halfcourt Units',
+  '2B': 'Star-Led Halfcourt Systems',
+  '2C': 'Halfcourt Defensive Grinders',
+  '3A': 'High-Performing Modern Offenses',
+  '3B': 'Middle-of-the-Pack ISO Teams',
+  '3C': 'Star-Centric ISO Systems',
+  '4A': '3PT-Heavy Depth Squads',
+  '4B': 'Star-Led Perimeter Attacks',
+  '4C': '3PT Rebuild Teams',
 };
 
 const DESCRIPTIONS = {
-  '1A': 'High-scoring, interior-focused offenses that convert efficiently without leaning on the 3-ball. They run a moderate pace and channel most production through their top players.',
-  '1B': 'Inside-oriented teams built for depth over star power. The whole rotation contributes meaningful minutes without relying heavily on the perimeter.',
-  '1C': 'Fast-paced teams shaped around one or two dominant stars who absorb most of the team\'s minutes. Their supporting cast plays a limited role.',
-  '2A': 'Methodical halfcourt teams that live at the free throw line. They play some of the slowest pace in the league, and are extremely efficient when they do score.',
-  '2B': 'A franchise superstar runs the show in a deliberate, patient system. The highest star concentration of any cluster — the offense lives and dies with one player.',
-  '2C': 'Below-average teams with no defining identity. They play slow, draw some fouls, and produce mediocre results across the board.',
-  '3A': 'The most complete offenses in the league — high scoring, efficient, and willing to attack from anywhere: paint, midrange, and the 3-ball.',
-  '3B': 'Star-centric teams that push pace and draw fouls but can\'t convert at a high rate. Their fortunes are tied directly to their top player\'s production.',
-  '3C': 'The most democratically distributed minutes in the league. Everyone shoots threes, nobody dominates, and the whole roster sees real time.',
-  '4A': 'Modern three-point offenses with even minute distribution and above-average efficiency. They pass on paint touches for perimeter looks and make it work.',
-  '4B': 'Perimeter-heavy teams that play decent defense but can\'t generate consistent offense. Typically young or rebuilding rosters firing from deep.',
-  '4C': 'Full rebuilds spreading time across the roster while hoisting the most threes. Strong defense by rating but almost no offensive output — lottery-bound.',
+  '1A': 'Fast-paced inside attacks with elite offensive output (88th percentile) and active ball movement. Stars dominate usage but the ball moves — high assist rate generating high-quality inside looks at pace.',
+  '1B': 'Inside teams with solid offensive output distributed across a deeper rotation. Good assist rate, moderate star concentration — ball movement rather than one-player domination drives the offense.',
+  '1C': 'A small cluster of fast-paced inside teams that play real defense (63rd percentile) but struggle to score. Good assist rates can\'t compensate for limited offensive firepower.',
+  '2A': 'The most complete teams in the league — deliberate halfcourt pace, elite offense, and the best defensive ratings in the data. High assist rates through patient halfcourt execution. The highest average win total of any cluster.',
+  '2B': 'One star runs the halfcourt show in a ball-movement system with solid defensive output. Slow, interior-focused, and effective — results hold up even with concentrated usage.',
+  '2C': 'Strong defensive halfcourt teams (73rd percentile) that can\'t generate offense (31st). Some of the slowest pace in the league with active ball movement but limited scoring ability.',
+  '3A': 'The league\'s better modern teams running a moderate ISO offense. Solid offensive ratings (79th), above-average defense (67th), and respectable win totals without a dominant stylistic identity.',
+  '3B': 'The largest cluster by far — average modern teams running ISO-driven offenses at moderate pace. Nothing stands out positively or negatively. The league\'s default archetype.',
+  '3C': 'Stars-over-system ISO offenses. One creator dominates the minutes while the rotation stays thin and results stay mediocre despite the individual talent concentration.',
+  '4A': 'Perimeter-focused teams with strong depth and serviceable defense (62nd). High 3-point volume distributed across a well-developed rotation — well above-average results for 3PT teams.',
+  '4B': 'One creator launches threes in a system that can\'t generate offense (26th percentile). Star-centric 3PT attack with below-average results and thin supporting cast.',
+  '4C': 'Full rebuilds with deep rotations and 3-point-heavy schemes. Poor offense (21st), poor defense (17th), and the worst average win total. Lottery teams stockpiling young minutes.',
 };
 
 const CLUSTER_ORDER = ['1A','1B','1C','2A','2B','2C','3A','3B','3C','4A','4B','4C'];
 
 const GROUP_COLOR = { '1': '#3b82f6', '2': '#8b5cf6', '3': '#f59e0b', '4': '#22c55e' };
 
-// PCA-derived 2D positions for each archetype (normalized 0–1)
-const CLUSTER_POS = {
-  '1A': { x: 0.264, y: 0.454 },
-  '1B': { x: 0.591, y: 0.604 },
-  '1C': { x: 0.536, y: 0.050 },
-  '2A': { x: 0.124, y: 0.945 },
-  '2B': { x: 0.050, y: 0.392 },
-  '2C': { x: 0.483, y: 0.686 },
-  '3A': { x: 0.332, y: 0.699 },
-  '3B': { x: 0.442, y: 0.194 },
-  '3C': { x: 0.757, y: 0.950 },
-  '4A': { x: 0.640, y: 0.655 },
-  '4B': { x: 0.816, y: 0.106 },
-  '4C': { x: 0.950, y: 0.767 },
-};
+// Cluster positions come from the JSON (c.x, c.y) — no hardcoded map needed.
 
 const GROUP_META = {
-  '1': { name: 'Inside-Out Offenses',   desc: 'Interior-focused systems, from efficient star-driven units to deep rotation teams with low reliance on the 3-ball.' },
-  '2': { name: 'Halfcourt Grinders',    desc: 'The slowest pace in the league. Patient, deliberate systems that live at the free throw line.' },
-  '3': { name: 'High-Octane Attacks',   desc: 'High-volume offenses that push pace, draw fouls, and score from everywhere. The most prolific teams in the league.' },
-  '4': { name: '3PT-First Systems',     desc: 'Perimeter-oriented teams built around the three-ball — from balanced floor-spacers to full rebuilds hoisting volume threes.' },
+  '1': { name: 'Fast Inside Ball-Movers',         desc: 'Fast pace, interior-focused shot diet, and high assist rates. These teams attack through the paint with active ball movement. Ranges from elite offenses to limited scoring squads.' },
+  '2': { name: 'Halfcourt Inside Ball-Movers',    desc: 'Deliberate halfcourt pace with interior shot diets and high assist rates. From the league\'s most complete two-way units to strong defensive teams that can\'t score.' },
+  '3': { name: 'ISO-Driven Modern Offenses',      desc: 'Moderate pace and shot diet with low assist rates. Individual creation over ball movement — the dominant league archetype, ranging from contenders to rebuilds.' },
+  '4': { name: 'Perimeter-First ISO Systems',     desc: '3-point-heavy with minimal free throws and low assist rates. From efficient floor-spacing depth squads to star-led attacks to full rebuilds.' },
 };
 
 function clusterColor(hierName) {
@@ -470,8 +456,8 @@ function buildBubbleChart(clusters, onDotClick) {
     const color = GROUP_COLOR[grp];
     for (let i = 0; i < cs.length; i++) {
       for (let j = i + 1; j < cs.length; j++) {
-        const pi = CLUSTER_POS[cs[i].hier_name], pj = CLUSTER_POS[cs[j].hier_name];
-        if (!pi || !pj) return;
+        const pi = cs[i], pj = cs[j];
+        if (pi.x == null || pj.x == null) return;
         const ln = document.createElementNS(NS, 'line');
         ln.setAttribute('x1', pi.x * W); ln.setAttribute('y1', pi.y * H);
         ln.setAttribute('x2', pj.x * W); ln.setAttribute('y2', pj.y * H);
@@ -487,10 +473,9 @@ function buildBubbleChart(clusters, onDotClick) {
   const circleEls = {};
 
   clusters.forEach(c => {
-    const pos = CLUSTER_POS[c.hier_name];
-    if (!pos) return;
+    if (c.x == null) return;
     const color = GROUP_COLOR[c.hier_name[0]] || '#6b7280';
-    const cx = pos.x * W, cy = pos.y * H;
+    const cx = c.x * W, cy = c.y * H;
     const r = Math.max(18, Math.sqrt(c.size) * 5);
 
     const g = document.createElementNS(NS, 'g');

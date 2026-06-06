@@ -3,17 +3,17 @@
 Two-stage hierarchical clustering of NBN team-seasons.
 
 Dimensions:
-  PPG        – team points per game
-  DEF        – defense quality (inverted DEF_RTG percentile: lower is better)
-  TS%        – team true shooting %
+  OFF_RTG    – opponent-adjusted offensive differential (from standings)
+  DEF        – opponent-adjusted defensive differential (from standings; higher = better)
+  ASSIST_RATE– assists per FGM (ball movement vs isolation)
   3PA_RATE   – 3-point attempts per FGA (shot diet)
   FTA_RATE   – free throw attempts per FGA (paint aggression)
-  PACE       – FGA per game (tempo proxy)
+  PACE       – possessions per game (FGA + 0.44·FTA − OREB + TO)
   ROT_DEPTH  – avg players with ≥10 min per game (rotation breadth)
   STAR_SHARE – avg share of minutes for top-2 players (star concentration)
 
-Stage 1: shot diet + tempo (3PA_RATE, FTA_RATE, PACE) → top-level groups
-Stage 2: efficiency, defense, depth (TS%, DEF, PPG, ROT_DEPTH, STAR_SHARE) → sub-groups
+Stage 1: shot diet + tempo + ball movement (3PA_RATE, FTA_RATE, PACE, ASSIST_RATE)
+Stage 2: execution quality + depth (OFF_RTG, DEF, ROT_DEPTH, STAR_SHARE)
 
 Output: clusters/team_clusters.json
 """
@@ -31,9 +31,9 @@ K_SUB     = 3     # 4×3 = 12 clusters
 SEED      = 42
 MAX_ITER  = 300
 
-DISPLAY_DIMS = ['PPG', 'DEF', 'TS%', '3PA_RATE', 'FTA_RATE', 'PACE', 'ROT_DEPTH', 'STAR_SHARE']
-STAGE1_DIMS  = ['3PA_RATE', 'FTA_RATE', 'PACE']
-STAGE2_DIMS  = ['TS%', 'DEF', 'PPG', 'ROT_DEPTH', 'STAR_SHARE']
+DISPLAY_DIMS = ['OFF_RTG', 'DEF', 'ASSIST_RATE', '3PA_RATE', 'FTA_RATE', 'PACE', 'ROT_DEPTH', 'STAR_SHARE']
+STAGE1_DIMS  = ['3PA_RATE', 'FTA_RATE', 'PACE', 'ASSIST_RATE']
+STAGE2_DIMS  = ['OFF_RTG', 'DEF', 'ROT_DEPTH', 'STAR_SHARE']
 ALL_DIMS     = list(dict.fromkeys(DISPLAY_DIMS + STAGE1_DIMS + STAGE2_DIMS))
 
 # ── Load data ─────────────────────────────────────────────────────────────────
@@ -83,21 +83,27 @@ def compute_team_features(team_games, standings):
         if len(games) < MIN_GAMES:
             continue
 
-        total_pts = total_fga = total_3pa = total_fta = 0
+        total_fga = total_fgm = total_3pa = total_fta = total_poss = total_ast = 0
         rot_sizes = []
         star_shares = []
 
         for date, players in games.items():
             # Game totals (sum across players)
-            game_pts  = sum(f(r, 'P')   for r in players)
             game_fga  = sum(f(r, 'FGA') for r in players)
+            game_fgm  = sum(f(r, 'FGM') for r in players)
             game_3pa  = sum(f(r, '3PA') for r in players)
             game_fta  = sum(f(r, 'FTA') for r in players)
+            game_oreb = sum(f(r, 'OR')  for r in players)
+            game_to   = sum(f(r, 'TO')  for r in players)
+            game_ast  = sum(f(r, 'A')   for r in players)
 
-            total_pts += game_pts
-            total_fga += game_fga
-            total_3pa += game_3pa
-            total_fta += game_fta
+            total_fga  += game_fga
+            total_fgm  += game_fgm
+            total_3pa  += game_3pa
+            total_fta  += game_fta
+            total_ast  += game_ast
+            # Possessions: FGA + 0.44·FTA − OREB + TO
+            total_poss += game_fga + 0.44 * game_fta - game_oreb + game_to
 
             # Per-player minutes this game (combine split rows for same player+date)
             min_by_player = defaultdict(float)
@@ -113,23 +119,22 @@ def compute_team_features(team_games, standings):
                 star_shares.append(top2_min / team_min)
 
         n_games = len(games)
-        ts_denom = 2 * (total_fga + 0.44 * total_fta)
-        ts_pct   = total_pts / ts_denom if ts_denom > 0 else 0
 
-        # DEF: from standings (will invert for percentile later)
+        # OFF_RTG and DEF_RTG from standings (opponent-adjusted differentials)
         standing = standings.get((team, season), {})
         def_rtg  = standing.get('def_rtg')
-        if def_rtg is None:
+        off_rtg  = standing.get('off_rtg')
+        if def_rtg is None or off_rtg is None:
             continue  # skip if no standings data
 
         raw = {
-            'PPG':       total_pts / n_games,
-            'DEF':       -def_rtg,          # negated so higher percentile = better defense
-            'TS%':       ts_pct,
-            '3PA_RATE':  total_3pa / max(total_fga, 1),
-            'FTA_RATE':  total_fta / max(total_fga, 1),
-            'PACE':      total_fga / n_games,
-            'ROT_DEPTH': sum(rot_sizes) / len(rot_sizes) if rot_sizes else 0,
+            'OFF_RTG':    off_rtg,
+            'DEF':        def_rtg,
+            'ASSIST_RATE': total_ast / max(total_fgm, 1),
+            '3PA_RATE':   total_3pa / max(total_fga, 1),
+            'FTA_RATE':   total_fta / max(total_fga, 1),
+            'PACE':       total_poss / n_games,
+            'ROT_DEPTH':  sum(rot_sizes) / len(rot_sizes) if rot_sizes else 0,
             'STAR_SHARE': sum(star_shares) / len(star_shares) if star_shares else 0,
         }
 
@@ -240,11 +245,11 @@ def two_stage(team_seasons, n_top=N_TOP, k_sub=K_SUB):
         group_s2 = s2_vecs[idxs]
         sub_labels, _ = hierarchical_ward(group_s2, k_actual)
 
-        # Sort sub-groups: high TS% first
+        # Sort sub-groups: high OFF_RTG first
         sub_ts = {}
         for sg in range(k_actual):
             sub_idxs = [idxs[i] for i, l in enumerate(sub_labels) if l == sg]
-            sub_ts[sg] = float(np.mean([team_seasons[i]['pct']['TS%'] for i in sub_idxs]))
+            sub_ts[sg] = float(np.mean([team_seasons[i]['pct']['OFF_RTG'] for i in sub_idxs]))
         sorted_subs = sorted(range(k_actual), key=lambda sg: -sub_ts[sg])
         sub_remap   = {old: new for new, old in enumerate(sorted_subs)}
 
@@ -291,11 +296,30 @@ def build_dendrogram(centers, cluster_sizes):
 
     return linkage
 
+# ── PCA 2D projection ─────────────────────────────────────────────────────────
+
+def pca_2d(vecs):
+    """Return (n,2) array of 2D PCA projections normalized to [0.05, 0.95]."""
+    import numpy as np
+    X = vecs - vecs.mean(axis=0)
+    cov = X.T @ X / (len(X) - 1)
+    vals, vecs2 = np.linalg.eigh(cov)
+    # eigh returns ascending order; take top 2
+    pc = vecs2[:, -2:][:, ::-1]
+    proj = X @ pc
+    lo, hi = proj.min(axis=0), proj.max(axis=0)
+    span = hi - lo
+    span[span == 0] = 1
+    return 0.05 + 0.90 * (proj - lo) / span
+
 # ── Build output ──────────────────────────────────────────────────────────────
 
 def build_output(team_seasons, vecs_display, labels, k_total, group_structure):
     import numpy as np
     letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+    # PCA positions for individual team-seasons
+    coords_2d = pca_2d(vecs_display)
 
     clusters = []
     for c in range(k_total):
@@ -309,7 +333,8 @@ def build_output(team_seasons, vecs_display, labels, k_total, group_structure):
 
         top = []
         for i in order:
-            ts = team_seasons[mask[i]]
+            ts  = team_seasons[mask[i]]
+            idx = mask[i]
             top.append({
                 'team':           ts['team'],
                 'season':         ts['season'],
@@ -318,12 +343,18 @@ def build_output(team_seasons, vecs_display, labels, k_total, group_structure):
                 'playoff_result': ts['playoff_result'],
                 'dist':           round(float(dists[i]), 4),
                 'pct':            {d: round(ts['pct'][d], 3) for d in DISPLAY_DIMS},
+                'x':              round(float(coords_2d[idx, 0]), 4),
+                'y':              round(float(coords_2d[idx, 1]), 4),
             })
 
         hier = ''
         if group_structure and c in group_structure:
             top_idx, sub_idx = group_structure[c]
             hier = f'{top_idx + 1}{letters[sub_idx]}'
+
+        # Cluster centroid PCA position (mean of member coords)
+        cx = float(np.mean([coords_2d[i, 0] for i in mask]))
+        cy = float(np.mean([coords_2d[i, 1] for i in mask]))
 
         clusters.append({
             'id':        c,
@@ -332,6 +363,8 @@ def build_output(team_seasons, vecs_display, labels, k_total, group_structure):
             'size':      len(mask),
             'centroid':  centroid_dict,
             'top':       top,
+            'x':         round(cx, 4),
+            'y':         round(cy, 4),
         })
 
     clusters.sort(key=lambda c: c['hier_name'])
