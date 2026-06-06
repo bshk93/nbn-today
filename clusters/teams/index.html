@@ -593,8 +593,7 @@ function buildCard(cluster, gameWins) {
 
   const radarWrap = document.createElement('div');
   radarWrap.className = 'radar-wrap';
-  radarWrap.appendChild(buildRadar(cluster.centroid, 200));
-  body.appendChild(radarWrap);
+  radarWrap.appendChild(buildRadar(cluster.centroid, 300));
 
   const teamsList = document.createElement('div');
   teamsList.className = 'teams-list';
@@ -657,8 +656,6 @@ function buildCard(cluster, gameWins) {
   teamsList.appendChild(btn);
   updateBtn();
 
-  body.appendChild(teamsList);
-
   const bars = document.createElement('div');
   bars.className = 'dim-bars';
   DIMS.forEach(d => {
@@ -672,7 +669,10 @@ function buildCard(cluster, gameWins) {
     `;
     bars.appendChild(row);
   });
+
   body.appendChild(bars);
+  body.appendChild(radarWrap);
+  body.appendChild(teamsList);
   expand.appendChild(body);
 
   card.appendChild(expand);
