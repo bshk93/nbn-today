@@ -170,6 +170,21 @@ h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem
 .loading { color: #6b7280; padding: 3rem; text-align: center; }
 .error { color: #f87171; padding: 3rem; text-align: center; }
 
+/* ── Filter bar ── */
+.filter-bar {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.45rem 0.75rem; border-bottom: 1px solid #1f2937;
+}
+.filter-bar-label { font-size: 0.63rem; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.07em; margin-right: 0.1rem; }
+.filter-btn {
+  background: none; border: 1px solid #1f2937; border-radius: 5px;
+  color: #6b7280; font-size: 0.7rem; font-weight: 700; font-family: inherit;
+  padding: 0.18rem 0.6rem; cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.filter-btn:hover { color: #d1d5db; border-color: #374151; }
+.filter-btn.active-champ { background: #f59e0b22; border-color: #f59e0b; color: #f59e0b; }
+.filter-btn.active-playoff { background: #3b82f622; border-color: #3b82f6; color: #93c5fd; }
+
 /* ── History tab ── */
 .history-select-wrap { margin-bottom: 2rem; }
 .history-select-wrap select {
@@ -741,6 +756,10 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
     svg.appendChild(layer);
   });
 
+  // Overlay layer — drawn above all cluster dots, used by filter mode
+  const overlayG = document.createElementNS(NS, 'g');
+  svg.appendChild(overlayG);
+
   bg.style.cursor = 'default';
 
   // Tooltip
@@ -821,6 +840,32 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
   return {
     element: outer,
     applySelection,
+    applyOverlay(items) {
+      while (overlayG.firstChild) overlayG.removeChild(overlayG.firstChild);
+      const active = items != null;
+      Object.values(clusterGs).forEach(({g}) => g.setAttribute('opacity', active ? '0.12' : '1'));
+      linesG.setAttribute('opacity', active ? '0.04' : '1');
+      Object.values(dotLayers).forEach(l => l.setAttribute('display', 'none'));
+      if (!active) return;
+      animateViewBox([0, 0, W, H]);
+      items.forEach(({entry: e, cluster: c}) => {
+        if (e.x == null || e.y == null) return;
+        const col = poColor(e.playoff_result);
+        const dot = document.createElementNS(NS, 'circle');
+        dot.setAttribute('cx', e.x * W); dot.setAttribute('cy', e.y * H); dot.setAttribute('r', '6');
+        dot.setAttribute('fill', col + 'cc'); dot.setAttribute('stroke', col);
+        dot.setAttribute('stroke-width', '1.5'); dot.setAttribute('pointer-events', 'none');
+        overlayG.appendChild(dot);
+        const hit = document.createElementNS(NS, 'circle');
+        hit.setAttribute('cx', e.x * W); hit.setAttribute('cy', e.y * H); hit.setAttribute('r', '18');
+        hit.setAttribute('fill', 'transparent'); hit.style.cursor = 'pointer';
+        hit.addEventListener('mouseenter', ev => { dot.setAttribute('r', '8'); onDotHover(e, ev); });
+        hit.addEventListener('mousemove', ev => onDotHover(e, ev));
+        hit.addEventListener('mouseleave', () => { dot.setAttribute('r', '6'); onDotHover(null, null); });
+        hit.addEventListener('click', ev => { ev.stopPropagation(); onDotClick(e, c); });
+        overlayG.appendChild(hit);
+      });
+    },
     showTooltip(entry, ev) {
       if (!entry) { tooltip.style.display = 'none'; return; }
       const rect = wrap.getBoundingClientRect();
@@ -832,12 +877,59 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
   };
 }
 
+// ── Filter bar ────────────────────────────────────────────────────────────────
+
+const FILTER_DEFS = [
+  { key: 'champions', label: '★ Champions', cls: 'active-champ',  fn: e => e.playoff_result === 'Champion' },
+  { key: 'playoffs',  label: 'Playoff Teams', cls: 'active-playoff', fn: e => e.playoff_result !== 'Missed' },
+];
+
+function buildFilterBar(allClusters, onFilter) {
+  const bar = document.createElement('div');
+  bar.className = 'filter-bar';
+  const lbl = document.createElement('span');
+  lbl.className = 'filter-bar-label';
+  lbl.textContent = 'Show';
+  bar.appendChild(lbl);
+
+  let activeKey = null;
+  const btns = {};
+
+  FILTER_DEFS.forEach(f => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.textContent = f.label;
+    btn.addEventListener('click', () => {
+      if (activeKey === f.key) {
+        activeKey = null;
+        Object.values(btns).forEach(b => b.className = 'filter-btn');
+        onFilter(null);
+      } else {
+        activeKey = f.key;
+        Object.entries(btns).forEach(([k, b]) => b.className = 'filter-btn' + (k === f.key ? ' ' + f.cls : ''));
+        const items = [];
+        allClusters.forEach(c => c.top.forEach(e => { if (f.fn(e)) items.push({entry: e, cluster: c}); }));
+        onFilter(items);
+      }
+    });
+    btns[f.key] = btn;
+    bar.appendChild(btn);
+  });
+
+  return {
+    element: bar,
+    clear() { activeKey = null; Object.values(btns).forEach(b => b.className = 'filter-btn'); },
+  };
+}
+
 // ── Selection state ───────────────────────────────────────────────────────────
 
 let selectedCluster = null;
 let chart = null;
+let filterBarCtrl = null;
 
 function selectCluster(cluster) {
+  if (filterBarCtrl) { filterBarCtrl.clear(); chart.applyOverlay(null); }
   if (cluster == null || (selectedCluster === cluster.hier_name)) {
     selectedCluster = null;
     chart.applySelection(null);
@@ -1042,6 +1134,15 @@ Promise.all([
   );
 
   chart.element.insertBefore(buildLegend(data.clusters), chart.element.firstChild);
+
+  filterBarCtrl = buildFilterBar(data.clusters, items => {
+    selectedCluster = null;
+    chart.applySelection(null);
+    chart.applyOverlay(items);
+    if (items == null) renderEmpty();
+  });
+  chart.element.insertBefore(filterBarCtrl.element, chart.element.querySelector('.chart-wrap'));
+
   chartCol.appendChild(chart.element);
 
   layout.appendChild(chartCol);
