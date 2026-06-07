@@ -193,6 +193,13 @@ h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem
 }
 .filter-select:hover, .filter-select:focus { border-color: #374151; color: #d1d5db; }
 .filter-select.active { border-color: #8b5cf6; color: #a78bfa; background: #8b5cf622; }
+.po-legend {
+  display: none; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  padding: 0.3rem 0.75rem; border-bottom: 1px solid #1f2937;
+}
+.po-legend.visible { display: flex; }
+.po-legend-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.65rem; color: #6b7280; }
+.po-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 /* ── History tab ── */
 .history-select-wrap { margin-bottom: 2rem; }
@@ -1015,9 +1022,10 @@ function buildFilterBar(allClusters, onFilter) {
 let selectedCluster = null;
 let chart = null;
 let filterBarCtrl = null;
+let poLegend = null;
 
 function selectCluster(cluster) {
-  if (filterBarCtrl) { filterBarCtrl.clear(); chart.applyOverlay(null); }
+  if (filterBarCtrl) { filterBarCtrl.clear(); chart.applyOverlay(null); poLegend.classList.remove('visible'); }
   if (cluster == null || (selectedCluster === cluster.hier_name)) {
     selectedCluster = null;
     chart.applySelection(null);
@@ -1223,13 +1231,25 @@ Promise.all([
 
   chart.element.insertBefore(buildLegend(data.clusters), chart.element.firstChild);
 
+  // Playoff result color legend (shown when any overlay is active)
+  poLegend = document.createElement('div');
+  poLegend.className = 'po-legend';
+  [['Champion','#f59e0b'],['Runner-Up','#9ca3af'],['Conf Finals','#3b82f6'],['Second Round','#22c55e'],['First Round','#f97316'],['Missed','#4b5563']].forEach(([label, col]) => {
+    const item = document.createElement('div'); item.className = 'po-legend-item';
+    const dot = document.createElement('div'); dot.className = 'po-legend-dot'; dot.style.background = col;
+    item.appendChild(dot); item.appendChild(document.createTextNode(label));
+    poLegend.appendChild(item);
+  });
+
   filterBarCtrl = buildFilterBar(data.clusters, (items, opts) => {
     selectedCluster = null;
     chart.applySelection(null);
     chart.applyOverlay(items, opts);
+    poLegend.classList.toggle('visible', items != null);
     if (items == null) renderEmpty();
   });
   chart.element.insertBefore(filterBarCtrl.element, chart.element.querySelector('.chart-wrap'));
+  chart.element.insertBefore(poLegend, chart.element.querySelector('.chart-wrap'));
 
   chartCol.appendChild(chart.element);
 
