@@ -184,6 +184,15 @@ h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem
 .filter-btn:hover { color: #d1d5db; border-color: #374151; }
 .filter-btn.active-champ { background: #f59e0b22; border-color: #f59e0b; color: #f59e0b; }
 .filter-btn.active-playoff { background: #3b82f622; border-color: #3b82f6; color: #93c5fd; }
+.filter-sep { width: 1px; height: 14px; background: #1f2937; margin: 0 0.1rem; flex-shrink: 0; }
+.filter-select {
+  background: #0f1117; border: 1px solid #1f2937; border-radius: 5px;
+  color: #6b7280; font-size: 0.7rem; font-weight: 600; font-family: inherit;
+  padding: 0.18rem 0.4rem; cursor: pointer; outline: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.filter-select:hover, .filter-select:focus { border-color: #374151; color: #d1d5db; }
+.filter-select.active { border-color: #8b5cf6; color: #a78bfa; background: #8b5cf622; }
 
 /* ── History tab ── */
 .history-select-wrap { margin-bottom: 2rem; }
@@ -900,6 +909,8 @@ function buildFilterBar(allClusters, onFilter) {
     btn.className = 'filter-btn';
     btn.textContent = f.label;
     btn.addEventListener('click', () => {
+      sel.value = '';
+      sel.className = 'filter-select';
       if (activeKey === f.key) {
         activeKey = null;
         Object.values(btns).forEach(b => b.className = 'filter-btn');
@@ -916,9 +927,44 @@ function buildFilterBar(allClusters, onFilter) {
     bar.appendChild(btn);
   });
 
+  // Team picker
+  const sep = document.createElement('div');
+  sep.className = 'filter-sep';
+  bar.appendChild(sep);
+
+  const teams = [...new Set(allClusters.flatMap(c => c.top.map(e => e.team)))].sort();
+  const sel = document.createElement('select');
+  sel.className = 'filter-select';
+  const defOpt = document.createElement('option');
+  defOpt.value = ''; defOpt.textContent = 'Franchise…';
+  sel.appendChild(defOpt);
+  teams.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', () => {
+    activeKey = null;
+    Object.values(btns).forEach(b => b.className = 'filter-btn');
+    if (!sel.value) {
+      sel.className = 'filter-select';
+      onFilter(null);
+    } else {
+      sel.className = 'filter-select active';
+      const items = [];
+      allClusters.forEach(c => c.top.forEach(e => { if (e.team === sel.value) items.push({entry: e, cluster: c}); }));
+      onFilter(items);
+    }
+  });
+  bar.appendChild(sel);
+
   return {
     element: bar,
-    clear() { activeKey = null; Object.values(btns).forEach(b => b.className = 'filter-btn'); },
+    clear() {
+      activeKey = null;
+      Object.values(btns).forEach(b => b.className = 'filter-btn');
+      sel.value = ''; sel.className = 'filter-select';
+    },
   };
 }
 
