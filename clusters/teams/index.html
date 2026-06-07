@@ -645,7 +645,7 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
     svg.appendChild(el);
   };
   mkTxt('Offense →', W / 2, H - 7, 'middle', null);
-  mkTxt('↑ Defense', 9, H / 2, 'middle', -90);
+  mkTxt('Defense →', 9, H / 2, 'middle', -90);
 
   // Lines layer
   const linesG = document.createElementNS(NS, 'g');
@@ -1010,7 +1010,7 @@ showTab(initTab);
 // ── Data load ─────────────────────────────────────────────────────────────────
 
 Promise.all([
-  fetch('/clusters/team_clusters.json').then(r => r.json()),
+  fetch('/clusters/team_clusters.json', {cache: 'no-cache'}).then(r => r.json()),
   fetch('/players/player_seasons.csv').then(r => r.text()),
   fetch('/standings/playoff-brackets.csv').then(r => r.text()),
 ]).then(([data, rosterCsv, bracketCsv]) => {

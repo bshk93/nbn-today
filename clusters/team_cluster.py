@@ -420,6 +420,8 @@ def main():
     k_total = max(labels) + 1
 
     output = build_output(team_seasons, vecs_display, labels, k_total, group_structure)
+    import time as _time
+    output['generated'] = int(_time.time())
 
     with open(OUT_PATH, 'w') as f:
         json.dump(output, f, indent=2)
