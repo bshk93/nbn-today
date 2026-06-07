@@ -6,225 +6,236 @@
 <title>Team Archetypes — NBN</title>
 <script src="/nav.js" defer></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0f1117; color: #e5e7eb; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
-  .page { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
-  h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem; }
-  .subtitle { color: #6b7280; font-size: 0.85rem; margin-bottom: 0.75rem; }
-  .subtitle b { color: #9ca3af; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1117; color: #e5e7eb; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+.page { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem; }
+.subtitle { color: #6b7280; font-size: 0.85rem; margin-bottom: 0.75rem; }
+.subtitle b { color: #9ca3af; }
 
-  /* Page nav */
-  .page-nav { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
-  .page-nav-link {
-    font-size: 0.8rem; font-weight: 600; color: #4b5563;
-    text-decoration: none; padding: 0.25rem 0.65rem; border-radius: 5px;
-    border: 1px solid transparent; transition: color 0.15s, background 0.15s;
-  }
-  .page-nav-link:hover { color: #d1d5db; background: #1f2937; }
-  .page-nav-link.active { color: #f9fafb; background: #1f2937; border-color: #374151; }
+.page-nav { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+.page-nav-link {
+  font-size: 0.8rem; font-weight: 600; color: #4b5563;
+  text-decoration: none; padding: 0.25rem 0.65rem; border-radius: 5px;
+  border: 1px solid transparent; transition: color 0.15s, background 0.15s;
+}
+.page-nav-link:hover { color: #d1d5db; background: #1f2937; }
+.page-nav-link.active { color: #f9fafb; background: #1f2937; border-color: #374151; }
 
-  /* Tabs */
-  .tabs {
-    display: flex; gap: 0.25rem; margin-bottom: 1.5rem;
-    border-bottom: 1px solid #1f2937; padding-bottom: 0;
-  }
-  .tab-btn {
-    background: none; border: none; color: #6b7280;
-    font-size: 0.85rem; font-weight: 600; font-family: inherit;
-    padding: 0.5rem 1rem; cursor: pointer;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-    transition: color 0.15s;
-  }
-  .tab-btn:hover { color: #d1d5db; }
-  .tab-btn.active { color: #f9fafb; border-bottom-color: #3b82f6; }
+.tabs {
+  display: flex; gap: 0.25rem; margin-bottom: 1.5rem;
+  border-bottom: 1px solid #1f2937;
+}
+.tab-btn {
+  background: none; border: none; color: #6b7280;
+  font-size: 0.85rem; font-weight: 600; font-family: inherit;
+  padding: 0.5rem 1rem; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color 0.15s;
+}
+.tab-btn:hover { color: #d1d5db; }
+.tab-btn.active { color: #f9fafb; border-bottom-color: #3b82f6; }
 
-  /* Bubble chart */
-  .bubble-wrap { margin-bottom: 2.5rem; }
-  .bubble-chart { width: 100%; max-width: 560px; height: auto; aspect-ratio: 1; display: block; margin: 0 auto; border-radius: 10px; }
-  .bubble-legend {
-    display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem;
-    justify-content: center; margin-top: 0.9rem;
-  }
-  .bubble-legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: #9ca3af; }
-  .bubble-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+/* ── Two-column layout ── */
+.main-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
+.chart-col { flex: 0 0 56%; }
+.detail-col { flex: 1; min-width: 0; }
+@media (max-width: 720px) {
+  .main-layout { flex-direction: column; }
+  .chart-col { flex: none; width: 100%; }
+}
 
-  /* Group sections */
-  .archetype-groups { display: flex; flex-direction: column; gap: 2.75rem; }
+/* ── Chart ── */
+.chart-outer {
+  background: #161b27; border: 1px solid #1f2937; border-radius: 12px; overflow: hidden;
+}
+.chart-wrap { position: relative; }
+.cluster-svg { width: 100%; height: auto; aspect-ratio: 1; display: block; cursor: default; }
 
-  .group-header {
-    display: flex; align-items: flex-start; gap: 0.75rem;
-    margin-bottom: 1rem; padding-bottom: 0.85rem;
-    border-bottom: 2px solid var(--gc, #3b82f6);
-  }
-  .group-badge {
-    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
-    background: var(--gc, #3b82f6); color: #0f1117;
-    font-size: 0.8rem; font-weight: 800;
-    display: flex; align-items: center; justify-content: center;
-    margin-top: 1px;
-  }
-  .group-title { font-size: 1rem; font-weight: 700; color: #f9fafb; line-height: 1.3; }
-  .group-subtitle { font-size: 0.75rem; color: #6b7280; margin-top: 0.2rem; }
-  .group-title-wrap { display: flex; flex-direction: column; }
+.dot-tooltip {
+  position: absolute; pointer-events: none;
+  background: #0f1117cc; border: 1px solid #374151; backdrop-filter: blur(4px);
+  color: #f9fafb; font-size: 0.72rem; font-weight: 700;
+  padding: 0.2rem 0.5rem; border-radius: 5px; white-space: nowrap;
+  transform: translate(-50%, -100%); margin-top: -6px;
+  z-index: 10; display: none;
+}
 
-  .group-cards {
-    display: flex; flex-direction: column; gap: 0.75rem;
-  }
+.chart-legend {
+  display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem;
+  justify-content: center; padding: 0.65rem 1rem;
+  border-bottom: 1px solid #1f2937;
+}
+.legend-item { display: flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; color: #9ca3af; cursor: pointer; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-  /* Cluster card */
-  .cluster-card {
-    background: #161b27; border: 1px solid #1f2937; border-left: 3px solid var(--cc, #1f2937);
-    border-radius: 10px; padding: 1rem 1.25rem 1.25rem;
-    display: flex; flex-direction: column; gap: 0.75rem;
-  }
-  .cluster-desc { font-size: 0.78rem; color: #9ca3af; line-height: 1.55; }
-  .cluster-header { display: flex; align-items: center; gap: 0.75rem; }
-  .cluster-num { background: #1f2937; color: #6b7280; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; flex-shrink: 0; }
-  .cluster-name { font-size: 1rem; font-weight: 700; color: #f9fafb; flex: 1; }
-  .cluster-size { font-size: 0.75rem; color: #6b7280; flex-shrink: 0; }
-  .cluster-body { display: flex; gap: 1rem; align-items: flex-start; }
-  .radar-wrap { flex-shrink: 0; }
+/* ── Detail panel ── */
+.detail-panel {
+  background: #161b27; border: 1px solid #1f2937; border-radius: 12px;
+  padding: 1.25rem; min-height: 320px;
+}
 
-  /* Team list (replaces player list) */
-  .teams-list { flex: 1; min-width: 0; }
-  .teams-list-title { font-size: 0.68rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
-  .team-row {
-    padding: 0.18rem 0; border-bottom: 1px solid #1f2937;
-    font-size: 0.72rem; white-space: nowrap; overflow: hidden;
-  }
-  .team-row:last-child { border-bottom: none; }
-  .team-row { display: grid; grid-template-columns: 1fr 3.5rem 7rem; align-items: center; gap: 0 0.75rem; }
-  .team-id { font-weight: 700; color: #d1d5db; font-size: 0.72rem; }
-  .team-id a { color: inherit; text-decoration: none; }
-  .team-id a:hover { color: #93c5fd; }
-  .team-record { color: #6b7280; font-size: 0.72rem; }
-  .team-result { font-size: 0.72rem; font-weight: 600; text-align: right; }
+.panel-empty {
+  min-height: 300px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 0.5rem; text-align: center;
+}
+.panel-empty-label { font-size: 0.8rem; color: #374151; font-weight: 600; }
+.panel-empty-sub { font-size: 0.72rem; color: #1f2937; }
 
-  /* Dim bars */
-  .dim-bars { display: flex; flex-direction: column; gap: 0.2rem; }
-  .dim-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; }
-  .dim-label { color: #6b7280; width: 3rem; flex-shrink: 0; text-align: right; font-weight: 600; }
-  .dim-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; }
-  .dim-fill { height: 5px; border-radius: 2px; }
-  .dim-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
+/* Cluster panel */
+.cluster-panel-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; }
+.cluster-badge {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 800; color: #0f1117;
+}
+.cluster-panel-name { font-size: 1rem; font-weight: 700; color: #f9fafb; line-height: 1.25; }
+.cluster-panel-meta { font-size: 0.72rem; color: #6b7280; margin-top: 0.1rem; }
+.cluster-panel-desc { font-size: 0.78rem; color: #9ca3af; line-height: 1.6; margin-bottom: 1.1rem; }
 
-  .show-more { margin-top: 0.4rem; background: none; border: none; color: #3b82f6; font-size: 0.72rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; font-family: inherit; }
-  .show-more:hover { color: #60a5fa; }
+.panel-section-label {
+  font-size: 0.63rem; font-weight: 700; color: #374151;
+  text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.5rem;
+}
 
-  .cluster-avg-stats { display: flex; gap: 1.25rem; font-size: 0.72rem; color: #6b7280; }
-  .cluster-avg-stat-val { color: #d1d5db; font-weight: 700; }
+/* Dim bars */
+.dim-bars { display: flex; flex-direction: column; gap: 0.25rem; }
+.dim-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; }
+.dim-label { color: #6b7280; width: 2.8rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+.dim-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; position: relative; overflow: visible; }
+.dim-fill { height: 5px; border-radius: 2px; position: absolute; top: 0; left: 0; }
+.dim-centroid-tick {
+  position: absolute; top: -3px; width: 2px; height: 11px;
+  background: rgba(249,250,251,0.55); border-radius: 1px;
+}
+.dim-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
 
-  .card-summary { cursor: pointer; display: flex; flex-direction: column; gap: 0.75rem; }
-  .card-chevron { color: #4b5563; font-size: 0.65rem; flex-shrink: 0; transition: transform 0.18s; line-height: 1; margin-top: 2px; }
-  .cluster-card.open .card-chevron { transform: rotate(90deg); color: #9ca3af; }
-  .card-expand { display: none; padding-top: 0.75rem; border-top: 1px solid #1f2937; display: flex; flex-direction: column; gap: 0.75rem; }
-  .cluster-card:not(.open) .card-expand { display: none; }
+/* Team panel */
+.panel-back {
+  background: none; border: none; font-family: inherit; cursor: pointer;
+  color: #4b5563; font-size: 0.75rem; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 0.3rem; padding: 0;
+  margin-bottom: 1rem; transition: color 0.15s;
+}
+.panel-back:hover { color: #9ca3af; }
 
-  .loading { color: #6b7280; padding: 3rem; text-align: center; }
-  .error { color: #f87171; padding: 3rem; text-align: center; }
+.team-panel-name { font-size: 1.05rem; font-weight: 700; color: #f9fafb; }
+.team-panel-name a { color: inherit; text-decoration: none; }
+.team-panel-name a:hover { color: #93c5fd; }
+.team-panel-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.3rem; margin-bottom: 1.1rem; }
+.team-meta-record { font-size: 0.82rem; color: #6b7280; font-weight: 600; }
+.team-meta-seed { font-size: 0.78rem; color: #6b7280; }
+.team-meta-result {
+  padding: 0.15rem 0.5rem; border-radius: 4px;
+  font-size: 0.7rem; font-weight: 700;
+}
 
-  /* Dot info strip */
-  .dot-info {
-    display: none; margin-top: 0.65rem;
-    background: #161b27; border: 1px solid #1f2937; border-radius: 8px;
-    padding: 0.65rem 1rem; max-width: 560px; margin-left: auto; margin-right: auto;
-  }
-  .dot-info-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-  .dot-info-team { font-weight: 700; color: #f9fafb; font-size: 0.88rem; }
-  .dot-info-team a { color: inherit; text-decoration: none; }
-  .dot-info-team a:hover { color: #93c5fd; }
-  .dot-info-record { color: #6b7280; font-size: 0.8rem; }
-  .dot-info-badge {
-    padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
-  }
-  .dot-info-cluster {
-    padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.72rem;
-    font-weight: 600; border: 1px solid;
-  }
+.dim-legend-row {
+  display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; font-size: 0.67rem; color: #4b5563;
+}
+.dim-legend-row span { display: flex; align-items: center; gap: 0.3rem; }
+.dim-legend-fill { width: 20px; height: 5px; border-radius: 2px; background: #3b82f6; }
+.dim-legend-tick { width: 2px; height: 11px; background: rgba(249,250,251,0.55); border-radius: 1px; }
 
-  /* History tab */
-  .history-select-wrap { margin-bottom: 2rem; }
-  .history-select-wrap select {
-    background: #161b27; border: 1px solid #1f2937; border-radius: 8px;
-    color: #f9fafb; font-size: 0.9rem; font-family: inherit;
-    padding: 0.6rem 0.9rem; outline: none; cursor: pointer;
-    transition: border-color 0.15s; min-width: 180px;
-    appearance: none; -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 0.75rem center;
-    padding-right: 2rem;
-  }
-  .history-select-wrap select:focus { border-color: #3b82f6; }
+.roster-grid { display: flex; flex-direction: column; }
+.roster-row {
+  display: grid; grid-template-columns: 1fr 2.2rem 3rem 3rem;
+  align-items: center; gap: 0 0.4rem;
+  padding: 0.22rem 0; border-bottom: 1px solid #1f2937; font-size: 0.7rem;
+}
+.roster-row:last-child { border-bottom: none; }
+.roster-row.hdr { margin-bottom: 0.1rem; }
+.roster-name { color: #d1d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.roster-name a { color: inherit; text-decoration: none; }
+.roster-name a:hover { color: #93c5fd; }
+.roster-stat { color: #6b7280; text-align: right; }
+.roster-hdr-stat { color: #374151; text-align: right; font-size: 0.63rem; font-weight: 700; }
 
-  .history-empty { color: #4b5563; font-size: 0.9rem; padding: 2rem 0; }
+.seasons-list { display: flex; flex-direction: column; }
+.season-row {
+  display: grid; grid-template-columns: 1fr 4rem 7rem;
+  align-items: center; gap: 0 0.4rem;
+  padding: 0.22rem 0; border-bottom: 1px solid #1f2937; font-size: 0.7rem;
+  cursor: pointer;
+}
+.season-row:last-child { border-bottom: none; }
+.season-row.hdr { cursor: default; }
+.season-row-name { color: #d1d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.season-row:not(.hdr):hover .season-row-name { color: #93c5fd; }
+.season-row-record { color: #6b7280; text-align: right; }
+.season-row-result { text-align: right; font-weight: 600; font-size: 0.68rem; }
+.show-more { margin-top: 0.4rem; background: none; border: none; color: #3b82f6; font-size: 0.72rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; font-family: inherit; }
+.show-more:hover { color: #60a5fa; }
 
-  .history-header { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 1.75rem; }
-  .history-team-name { font-size: 1.2rem; font-weight: 700; color: #f9fafb; }
-  .history-seasons-count { font-size: 0.8rem; color: #6b7280; }
+.loading { color: #6b7280; padding: 3rem; text-align: center; }
+.error { color: #f87171; padding: 3rem; text-align: center; }
 
-  .history-graph {
-    background: #161b27; border: 1px solid #1f2937; border-radius: 10px;
-    padding: 2rem 1.5rem 1.5rem; margin-bottom: 1.5rem;
-  }
-  .history-track-scroll { overflow-x: auto; padding-bottom: 0.5rem; }
-  .history-track { display: flex; align-items: flex-start; min-width: max-content; }
-
-  .history-node-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; cursor: pointer; flex-shrink: 0; width: 80px; }
-  .history-node {
-    width: 52px; height: 52px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.85rem; font-weight: 800; border: 2px solid;
-    transition: transform 0.15s, box-shadow 0.15s; position: relative; z-index: 1;
-  }
-  .history-node-wrap:hover .history-node { transform: scale(1.1); }
-  .history-node-wrap.active .history-node {
-    transform: scale(1.12);
-    box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
-  }
-  .history-node-season { font-size: 0.72rem; font-weight: 700; color: #d1d5db; text-align: center; }
-  .history-node-record { font-size: 0.65rem; color: #6b7280; text-align: center; margin-top: -0.3rem; }
-
-  .history-connector { flex: 1; min-width: 24px; height: 2px; background: #374151; margin-top: 25px; flex-shrink: 1; }
-  .history-connector.changed { background: #f59e0b; }
-
-  /* History detail panel */
-  .history-detail { opacity: 0; transform: translateY(6px); transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none; }
-  .history-detail.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
-
-  .history-detail-card {
-    background: #161b27; border: 1px solid #1f2937; border-radius: 10px;
-    padding: 1.25rem; display: flex; gap: 1.5rem; align-items: flex-start;
-  }
-  .hd-left { flex-shrink: 0; }
-  .hd-right { flex: 1; min-width: 0; }
-
-  .hd-season-row { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
-  .hd-season { font-size: 1rem; font-weight: 700; color: #f9fafb; }
-  .hd-record { font-size: 0.85rem; color: #6b7280; font-weight: 600; }
-  .hd-seed { font-size: 0.8rem; color: #6b7280; }
-
-  .hd-result {
-    display: inline-block; padding: 0.2rem 0.6rem; border-radius: 5px;
-    font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem;
-  }
-  .hd-badge {
-    display: inline-flex; align-items: center; padding: 0.2rem 0.65rem;
-    border-radius: 6px; border: 1px solid; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.3rem;
-  }
-  .hd-cluster-name { font-size: 0.85rem; color: #9ca3af; margin-bottom: 1rem; }
-
-  .hd-bars { display: flex; flex-direction: column; gap: 0.22rem; }
-  .hd-bar-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; }
-  .hd-bar-label { color: #6b7280; width: 3rem; flex-shrink: 0; text-align: right; font-weight: 600; }
-  .hd-bar-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; }
-  .hd-bar-fill { height: 5px; border-radius: 2px; }
-  .hd-bar-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
+/* ── History tab ── */
+.history-select-wrap { margin-bottom: 2rem; }
+.history-select-wrap select {
+  background: #161b27; border: 1px solid #1f2937; border-radius: 8px;
+  color: #f9fafb; font-size: 0.9rem; font-family: inherit;
+  padding: 0.6rem 0.9rem; outline: none; cursor: pointer;
+  transition: border-color 0.15s; min-width: 180px;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.75rem center;
+  padding-right: 2rem;
+}
+.history-select-wrap select:focus { border-color: #3b82f6; }
+.history-empty { color: #4b5563; font-size: 0.9rem; padding: 2rem 0; }
+.history-header { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 1.75rem; }
+.history-team-name { font-size: 1.2rem; font-weight: 700; color: #f9fafb; }
+.history-seasons-count { font-size: 0.8rem; color: #6b7280; }
+.history-graph {
+  background: #161b27; border: 1px solid #1f2937; border-radius: 10px;
+  padding: 2rem 1.5rem 1.5rem; margin-bottom: 1.5rem;
+}
+.history-track-scroll { overflow-x: auto; padding-bottom: 0.5rem; }
+.history-track { display: flex; align-items: flex-start; min-width: max-content; }
+.history-node-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; cursor: pointer; flex-shrink: 0; width: 80px; }
+.history-node {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 800; border: 2px solid;
+  transition: transform 0.15s, box-shadow 0.15s; position: relative; z-index: 1;
+}
+.history-node-wrap:hover .history-node { transform: scale(1.1); }
+.history-node-wrap.active .history-node {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
+}
+.history-node-season { font-size: 0.72rem; font-weight: 700; color: #d1d5db; text-align: center; }
+.history-node-record { font-size: 0.65rem; color: #6b7280; text-align: center; margin-top: -0.3rem; }
+.history-connector { flex: 1; min-width: 24px; height: 2px; background: #374151; margin-top: 25px; flex-shrink: 1; }
+.history-connector.changed { background: #f59e0b; }
+.history-detail { opacity: 0; transform: translateY(6px); transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none; }
+.history-detail.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.history-detail-card {
+  background: #161b27; border: 1px solid #1f2937; border-radius: 10px;
+  padding: 1.25rem;
+}
+.hd-left { flex-shrink: 0; }
+.hd-right { flex: 1; min-width: 0; }
+.hd-season-row { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
+.hd-season { font-size: 1rem; font-weight: 700; color: #f9fafb; }
+.hd-record { font-size: 0.85rem; color: #6b7280; font-weight: 600; }
+.hd-seed { font-size: 0.8rem; color: #6b7280; }
+.hd-result { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 5px; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+.hd-badge { display: inline-flex; align-items: center; padding: 0.2rem 0.65rem; border-radius: 6px; border: 1px solid; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.3rem; }
+.hd-cluster-name { font-size: 0.85rem; color: #9ca3af; margin-bottom: 1rem; }
+.hd-bars { display: flex; flex-direction: column; gap: 0.22rem; }
+.hd-bar-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; }
+.hd-bar-label { color: #6b7280; width: 3rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+.hd-bar-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; position: relative; }
+.hd-bar-fill { height: 5px; border-radius: 2px; position: absolute; top: 0; left: 0; }
+.hd-bar-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
 </style>
 </head>
 <body>
 <div class="page">
   <h1>Team Archetypes</h1>
-  <p class="subtitle">Two-stage clustering of <b id="n-seasons">—</b> team-seasons. Stage 1 groups by shot diet, pace, and ball movement (3PA rate, FT rate, possessions/game, assist rate). Stage 2 refines by offensive/defensive ratings and roster structure.</p>
+  <p class="subtitle">Two-stage clustering of <b id="n-seasons">—</b> team-seasons by shot diet, pace, ball movement, and roster structure. Scatter position shows offensive vs. defensive rating — upper-right is best.</p>
 
   <div class="page-nav">
     <a href="/clusters/players/" class="page-nav-link">Players</a>
@@ -242,121 +253,123 @@
 
   <div id="tab-history" class="tab-content" style="display:none">
     <div class="history-select-wrap">
-      <select id="team-select">
-        <option value="">Select a team…</option>
-      </select>
+      <select id="team-select"><option value="">Select a team…</option></select>
     </div>
     <div id="history-result"><p class="history-empty">Select a team to see their archetype history across seasons.</p></div>
   </div>
 </div>
+
 <script>
 const DIMS = ['OFF_RTG','DEF','ASSIST_RATE','3PA_RATE','FTA_RATE','PACE','ROT_DEPTH','STAR_SHARE'];
-
 const DIM_COLOR = {
-  OFF_RTG:      '#3b82f6',
-  DEF:          '#22c55e',
-  ASSIST_RATE:  '#06b6d4',
-  '3PA_RATE':   '#8b5cf6',
-  'FTA_RATE':   '#f97316',
-  PACE:         '#f59e0b',
-  ROT_DEPTH:    '#ec4899',
-  STAR_SHARE:   '#ef4444',
+  OFF_RTG:'#3b82f6', DEF:'#22c55e', ASSIST_RATE:'#06b6d4',
+  '3PA_RATE':'#8b5cf6', 'FTA_RATE':'#f97316', PACE:'#f59e0b',
+  ROT_DEPTH:'#ec4899', STAR_SHARE:'#ef4444',
 };
-
 const DIM_LABEL = {
-  OFF_RTG:      'O-RTG',
-  DEF:          'D-RTG',
-  ASSIST_RATE:  'AST%',
-  '3PA_RATE':   '3P%',
-  'FTA_RATE':   'FT%',
-  PACE:         'PACE',
-  ROT_DEPTH:    'DEPTH',
-  STAR_SHARE:   'STARS',
+  OFF_RTG:'O-RTG', DEF:'D-RTG', ASSIST_RATE:'AST%',
+  '3PA_RATE':'3P%', 'FTA_RATE':'FT%', PACE:'PACE',
+  ROT_DEPTH:'DEPTH', STAR_SHARE:'STARS',
 };
-
 const NAMES = {
-  '1A': 'High-Powered Inside Attacks',
-  '1B': 'Efficient Inside Rotations',
-  '1C': 'Defensive Fast Inside Teams',
-  '2A': 'Elite Two-Way Halfcourt Units',
-  '2B': 'Star-Led Halfcourt Systems',
-  '2C': 'Halfcourt Defensive Grinders',
-  '3A': 'High-Performing Modern Offenses',
-  '3B': 'Middle-of-the-Pack ISO Teams',
-  '3C': 'Star-Centric ISO Systems',
-  '4A': '3PT-Heavy Depth Squads',
-  '4B': 'Star-Led Perimeter Attacks',
-  '4C': '3PT Rebuild Teams',
+  '1A':'Elite Two-Way Halfcourt Units',
+  '1B':'Star-Led Halfcourt Inside Systems',
+  '1C':'Defensive Halfcourt Grinders',
+  '2A':'Fast-Paced Inside Attacks',
+  '2B':'Star-Led Fast Inside Systems',
+  '2C':'Deep Balanced Inside Teams',
+  '3A':'Competitive Balanced ISO Teams',
+  '3B':'Star-Dominated ISO Systems',
+  '3C':'Low-Efficiency ISO Teams',
+  '4A':'3PT-Heavy Depth Squads',
+  '4B':'Star-Led Perimeter Attacks',
+  '4C':'3PT Rebuild Teams',
 };
-
 const DESCRIPTIONS = {
-  '1A': 'Fast-paced inside attacks with elite offensive output (88th percentile) and active ball movement. Stars dominate usage but the ball moves — high assist rate generating high-quality inside looks at pace.',
-  '1B': 'Inside teams with solid offensive output distributed across a deeper rotation. Good assist rate, moderate star concentration — ball movement rather than one-player domination drives the offense.',
-  '1C': 'A small cluster of fast-paced inside teams that play real defense (63rd percentile) but struggle to score. Good assist rates can\'t compensate for limited offensive firepower.',
-  '2A': 'The most complete teams in the league — deliberate halfcourt pace, elite offense, and the best defensive ratings in the data. High assist rates through patient halfcourt execution. The highest average win total of any cluster.',
-  '2B': 'One star runs the halfcourt show in a ball-movement system with solid defensive output. Slow, interior-focused, and effective — results hold up even with concentrated usage.',
-  '2C': 'Strong defensive halfcourt teams (73rd percentile) that can\'t generate offense (31st). Some of the slowest pace in the league with active ball movement but limited scoring ability.',
-  '3A': 'The league\'s better modern teams running a moderate ISO offense. Solid offensive ratings (79th), above-average defense (67th), and respectable win totals without a dominant stylistic identity.',
-  '3B': 'The largest cluster by far — average modern teams running ISO-driven offenses at moderate pace. Nothing stands out positively or negatively. The league\'s default archetype.',
-  '3C': 'Stars-over-system ISO offenses. One creator dominates the minutes while the rotation stays thin and results stay mediocre despite the individual talent concentration.',
-  '4A': 'Perimeter-focused teams with strong depth and serviceable defense (62nd). High 3-point volume distributed across a well-developed rotation — well above-average results for 3PT teams.',
-  '4B': 'One creator launches threes in a system that can\'t generate offense (26th percentile). Star-centric 3PT attack with below-average results and thin supporting cast.',
-  '4C': 'Full rebuilds with deep rotations and 3-point-heavy schemes. Poor offense (21st), poor defense (17th), and the worst average win total. Lottery teams stockpiling young minutes.',
+  '1A':'Elite offense (81st) and defense (86th) in a patient halfcourt system — the most complete profile in the data. Yet playoff results don\'t match: IND 21-22 went 65-17 and lost in the first round; IND 23-24 went 60-22 and did the same. The two teams that escaped (BKN, MEM) both fell in the second. Dominant in the regular season, but something about the playoff game engine hasn\'t clicked for this archetype.',
+  '1B':'Star-led halfcourt inside teams (78th star share, 13th rotation depth) where the playoffs expose the thin bench. SAC 20-21 (60-22) and OKC 21-22 (55-27) both exited in the first round. The one champion, PHX 24-25, did it at just 52-30 — fewer regular season wins than any playoff team in the cluster. In the playoffs, the star matters more than the win total.',
+  '1C':'The slowest pace (2nd percentile) and elite defense (86th) with limited offensive output (30th). ORL 25-26 went 58-24 and reached the Finals — the best playoff run in the cluster by far. IND 20-21 (57-25) reached the second round. The other four seasons all exited in the first round or missed entirely, suggesting the grinding style works for some teams but isn\'t reliably translatable.',
+  '2A':'The cluster most likely to produce deep playoff runs — two champions (ATL 20-21, CLE 23-24), two runner-ups (NOP 21-22, PHX 23-24), and three conf finals appearances. Fast pace (75th) and paint aggression create problems that compound in the playoffs. The standout: DEN 20-21 went 41-41 in the regular season and still reached the conf finals.',
+  '2B':'Fast-paced inside attacks with stars driving offense and thin rotations (19th depth) underneath. The 64-18 PHX 25-26 season — the best regular season record in this cluster — reached the Finals but came up short. The strangest result: WAS 21-22 went 36-46 and made the conf finals. The same WAS team the next season (22-23, 36-46) missed entirely. Below-.500 teams can go deep; dominant regular seasons don\'t guarantee it.',
+  '2C':'Deep rotations (77th), minimal star concentration (14th), and an inside shot diet that doesn\'t rely on one player. But the correlation between regular season record and playoff result breaks down here — SAS 24-25 went 59-23 and lost in the second round; BKN 24-25 went 57-25 and lost in the first. PHX 22-23 won the championship at 48-34. Four of the top five regular season records in this cluster exited before the conf finals.',
+  '3A':'Solid but not elite on both ends (61st offense, 53rd defense) with a balanced, ISO-driven attack and no strong perimeter identity. MIL 20-21 went 62-20 — the best record in the cluster — and reached the conf finals but no further. No team in this cluster has won a championship. The regular season results look respectable; the playoff ceiling has been the conf finals.',
+  '3B':'Star-dominated ISO systems with the worst team-level offense (25th) of any Group 3 cluster and thin rotations (13th). Two below-.500 teams — NYK 23-24 (40-42) and GSW 21-22 (40-42) — both reached the conf finals, the two best playoff results in the cluster. Stars carry in the playoffs even when the regular season was mediocre. The flip side: DAL 25-26 (52-30) matched those conf finals runs and ORL 24-25 went 11-71.',
+  '3C':'ISO-heavy (16th AST%), low-efficiency offense (15th) with deep but ineffective rotations. ATL 24-25 is the outlier: 38-44 in the regular season, conf finals appearance — the biggest regular-season-to-playoff overperformance in the dataset. Outside that one run, teams in this cluster rarely make the playoffs and rarely go deep when they do.',
+  '4A':'High 3-point volume (76th) distributed across deep rotations (74th) with solid defense (60th) and minimal star dependency. ATL 21-22 won the championship here. The cluster also has two SAS seasons (58-24 and 55-27) that reached only the second round — suggesting the committee-driven perimeter style produces deep playoff runs inconsistently.',
+  '4B':'Star-heavy perimeter attacks (72nd star share) with thin rotations (26th) and low paint presence (19th FT%). CHI 24-25 went 57-25 — the best regular season in the cluster — and lost in the second round. No team in this cluster has won a championship or reached the Finals. The star-plus-perimeter combination hasn\'t broken through when the playoff game slows down.',
+  '4C':'Full rebuilds: fast pace (73rd), extreme 3-point volume (84th), worst defense (7th) and near-worst offense (28th). Zero playoff appearances across all 12 seasons in the cluster. Lottery teams spreading minutes across developing rosters — this is what the bottom of the standings looks like stylistically.',
 };
-
-const CLUSTER_ORDER = ['1A','1B','1C','2A','2B','2C','3A','3B','3C','4A','4B','4C'];
-
-const GROUP_COLOR = { '1': '#3b82f6', '2': '#8b5cf6', '3': '#f59e0b', '4': '#22c55e' };
-
-// Cluster positions come from the JSON (c.x, c.y) — no hardcoded map needed.
-
+const GROUP_COLOR = {'1':'#3b82f6','2':'#8b5cf6','3':'#f59e0b','4':'#22c55e'};
 const GROUP_META = {
-  '1': { name: 'Fast Inside Ball-Movers',         desc: 'Fast pace, interior-focused shot diet, and high assist rates. These teams attack through the paint with active ball movement. Ranges from elite offenses to limited scoring squads.' },
-  '2': { name: 'Halfcourt Inside Ball-Movers',    desc: 'Deliberate halfcourt pace with interior shot diets and high assist rates. From the league\'s most complete two-way units to strong defensive teams that can\'t score.' },
-  '3': { name: 'ISO-Driven Modern Offenses',      desc: 'Moderate pace and shot diet with low assist rates. Individual creation over ball movement — the dominant league archetype, ranging from contenders to rebuilds.' },
-  '4': { name: 'Perimeter-First ISO Systems',     desc: '3-point-heavy with minimal free throws and low assist rates. From efficient floor-spacing depth squads to star-led attacks to full rebuilds.' },
+  '1':{name:'Fast Inside Ball-Movers'},
+  '2':{name:'Halfcourt Inside Ball-Movers'},
+  '3':{name:'ISO-Driven Modern Offenses'},
+  '4':{name:'Perimeter-First ISO Systems'},
 };
 
-function clusterColor(hierName) {
-  return GROUP_COLOR[hierName[0]] || '#6b7280';
-}
-
-function poColor(result) {
-  if (result === 'Champion')    return '#f59e0b';
-  if (result === 'Runner-Up')   return '#9ca3af';
-  if (result === 'Conf Finals') return '#3b82f6';
-  if (result === 'Second Round') return '#22c55e';
-  if (result === 'First Round') return '#f97316';
+function clusterColor(hierName) { return GROUP_COLOR[hierName[0]] || '#6b7280'; }
+function poColor(r) {
+  if (r === 'Champion')    return '#f59e0b';
+  if (r === 'Runner-Up')   return '#9ca3af';
+  if (r === 'Conf Finals') return '#3b82f6';
+  if (r === 'Second Round') return '#22c55e';
+  if (r === 'First Round') return '#f97316';
   return '#4b5563';
 }
 
-// ── Radar ────────────────────────────────────────────────────────────────────
+// ── Dim bars ─────────────────────────────────────────────────────────────────
+
+function buildDimBars(pct, centroid) {
+  const wrap = document.createElement('div');
+  wrap.className = 'dim-bars';
+  DIMS.forEach(d => {
+    const v = pct[d] || 0;
+    const row = document.createElement('div');
+    row.className = 'dim-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'dim-label';
+    lbl.textContent = DIM_LABEL[d] || d;
+    const track = document.createElement('div');
+    track.className = 'dim-track';
+    const fill = document.createElement('div');
+    fill.className = 'dim-fill';
+    fill.style.width = (v * 100).toFixed(1) + '%';
+    fill.style.background = DIM_COLOR[d];
+    track.appendChild(fill);
+    if (centroid) {
+      const tick = document.createElement('div');
+      tick.className = 'dim-centroid-tick';
+      tick.style.left = ((centroid[d] || 0) * 100).toFixed(1) + '%';
+      track.appendChild(tick);
+    }
+    const val = document.createElement('div');
+    val.className = 'dim-val';
+    val.textContent = (v * 100).toFixed(0) + 'th';
+    row.appendChild(lbl);
+    row.appendChild(track);
+    row.appendChild(val);
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+
+// ── Radar (used in history tab) ───────────────────────────────────────────────
 
 function buildRadar(centroid, size = 110) {
   const NS = 'http://www.w3.org/2000/svg';
   const cx = size / 2, cy = size / 2, maxR = size * 0.38;
   const n = DIMS.length;
-
-  const pt = (angle_deg, r) => {
-    const rad = (angle_deg * Math.PI) / 180;
-    return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)];
-  };
+  const pt = (a, r) => [cx + r * Math.cos(a * Math.PI / 180), cy - r * Math.sin(a * Math.PI / 180)];
   const angles = DIMS.map((_, i) => 90 - (360 / n) * i);
-
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('width', size); svg.setAttribute('height', size);
   svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
-
-  [0.33, 0.66, 1].forEach(frac => {
-    const pts = angles.map(a => pt(a, maxR * frac).join(',')).join(' ');
+  [0.33, 0.66, 1].forEach(f => {
     const poly = document.createElementNS(NS, 'polygon');
-    poly.setAttribute('points', pts);
-    poly.setAttribute('fill', 'none');
-    poly.setAttribute('stroke', '#1f2937');
-    poly.setAttribute('stroke-width', '1');
+    poly.setAttribute('points', angles.map(a => pt(a, maxR * f).join(',')).join(' '));
+    poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', '#1f2937'); poly.setAttribute('stroke-width', '1');
     svg.appendChild(poly);
   });
-
   angles.forEach(a => {
     const [x, y] = pt(a, maxR);
     const line = document.createElementNS(NS, 'line');
@@ -365,114 +378,300 @@ function buildRadar(centroid, size = 110) {
     line.setAttribute('stroke', '#1f2937'); line.setAttribute('stroke-width', '1');
     svg.appendChild(line);
   });
-
-  const polyPts = DIMS.map((d, i) => pt(angles[i], maxR * (centroid[d] || 0)).join(',')).join(' ');
   const poly = document.createElementNS(NS, 'polygon');
-  poly.setAttribute('points', polyPts);
-  poly.setAttribute('fill', 'rgba(59,130,246,0.2)');
-  poly.setAttribute('stroke', '#3b82f6');
-  poly.setAttribute('stroke-width', '1.5');
+  poly.setAttribute('points', DIMS.map((d, i) => pt(angles[i], maxR * (centroid[d] || 0)).join(',')).join(' '));
+  poly.setAttribute('fill', 'rgba(59,130,246,0.2)'); poly.setAttribute('stroke', '#3b82f6'); poly.setAttribute('stroke-width', '1.5');
   svg.appendChild(poly);
-
   DIMS.forEach((d, i) => {
     const [x, y] = pt(angles[i], maxR * (centroid[d] || 0));
     const dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '2.5');
-    dot.setAttribute('fill', DIM_COLOR[d]); dot.setAttribute('stroke', '#0f1117');
-    dot.setAttribute('stroke-width', '1');
-    dot.appendChild(Object.assign(document.createElementNS(NS, 'title'), {
-      textContent: `${DIM_LABEL[d] || d}: ${((centroid[d] || 0) * 100).toFixed(0)}th pct`
-    }));
+    dot.setAttribute('fill', DIM_COLOR[d]); dot.setAttribute('stroke', '#0f1117'); dot.setAttribute('stroke-width', '1');
     svg.appendChild(dot);
   });
-
   const LABEL_R = maxR + 12;
   DIMS.forEach((d, i) => {
     const [x, y] = pt(angles[i], LABEL_R);
     const txt = document.createElementNS(NS, 'text');
     txt.setAttribute('x', x); txt.setAttribute('y', y);
     txt.setAttribute('font-size', '7.5'); txt.setAttribute('fill', '#6b7280');
-    txt.setAttribute('font-family', 'Inter, system-ui, sans-serif');
-    txt.setAttribute('font-weight', '600');
-    const anchor = x < cx - 4 ? 'end' : x > cx + 4 ? 'start' : 'middle';
-    txt.setAttribute('text-anchor', anchor);
+    txt.setAttribute('font-family', 'Inter, system-ui, sans-serif'); txt.setAttribute('font-weight', '600');
+    txt.setAttribute('text-anchor', x < cx - 4 ? 'end' : x > cx + 4 ? 'start' : 'middle');
     txt.setAttribute('dominant-baseline', 'middle');
     txt.textContent = DIM_LABEL[d] || d;
     svg.appendChild(txt);
   });
-
   return svg;
 }
 
-// ── Bubble chart ──────────────────────────────────────────────────────────────
+// ── Detail panel ──────────────────────────────────────────────────────────────
 
-function buildBubbleChart(clusters, onDotClick) {
+let panel = null;
+
+function renderEmpty() {
+  panel.innerHTML = `
+    <div class="panel-empty">
+      <div class="panel-empty-label">Click a cluster to explore</div>
+      <div class="panel-empty-sub">or hover dots to identify teams</div>
+    </div>`;
+}
+
+function renderClusterPanel(cluster) {
+  const color = clusterColor(cluster.hier_name);
+  const group = cluster.hier_name[0];
+  const avgW   = cluster.top.reduce((s, e) => s + parseInt(e.record), 0) / cluster.top.length;
+  const avgPoW = cluster.top.reduce((s, e) => s + (gameWins[`${e.team}|${e.season}`] || 0), 0) / cluster.top.length;
+
+  panel.innerHTML = '';
+
+  const allBack = document.createElement('button');
+  allBack.className = 'panel-back';
+  allBack.textContent = '← All clusters';
+  allBack.addEventListener('click', () => {
+    selectedCluster = null;
+    chart.applySelection(null);
+    renderEmpty();
+  });
+  panel.appendChild(allBack);
+
+  const head = document.createElement('div');
+  head.className = 'cluster-panel-head';
+  const badge = document.createElement('div');
+  badge.className = 'cluster-badge';
+  badge.style.background = color;
+  badge.textContent = cluster.hier_name;
+  head.appendChild(badge);
+  const titleWrap = document.createElement('div');
+  titleWrap.innerHTML = `
+    <div class="cluster-panel-name">${NAMES[cluster.hier_name] || cluster.hier_name}</div>
+    <div class="cluster-panel-meta">${GROUP_META[group].name} · ${cluster.size} seasons</div>
+    <div class="cluster-panel-meta">avg ${avgW.toFixed(1)} reg W · avg ${avgPoW.toFixed(1)} PO W</div>`;
+  head.appendChild(titleWrap);
+  panel.appendChild(head);
+
+  const desc = DESCRIPTIONS[cluster.hier_name];
+  if (desc) {
+    const p = document.createElement('p');
+    p.className = 'cluster-panel-desc';
+    p.textContent = desc;
+    panel.appendChild(p);
+  }
+
+  const sectionLabel = document.createElement('div');
+  sectionLabel.className = 'panel-section-label';
+  sectionLabel.textContent = 'Attribute Profile (cluster centroid)';
+  panel.appendChild(sectionLabel);
+  panel.appendChild(buildDimBars(cluster.centroid));
+
+  const teamsLabel = document.createElement('div');
+  teamsLabel.className = 'panel-section-label';
+  teamsLabel.style.marginTop = '1.1rem';
+  teamsLabel.textContent = 'Team-Seasons (closest fit first)';
+  panel.appendChild(teamsLabel);
+
+  const list = document.createElement('div');
+  list.className = 'seasons-list';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'season-row hdr';
+  hdr.innerHTML = `<div class="roster-hdr-stat" style="text-align:left">Team</div><div class="roster-hdr-stat">Record</div><div class="roster-hdr-stat" style="text-align:right">Result</div>`;
+  list.appendChild(hdr);
+
+  const PAGE = 10;
+  let shown = PAGE;
+
+  function makeSeasonRow(e) {
+    const rc = poColor(e.playoff_result);
+    const row = document.createElement('div');
+    row.className = 'season-row';
+    row.addEventListener('click', () => renderTeamPanel(e, cluster));
+    const nameCell = document.createElement('div');
+    nameCell.className = 'season-row-name';
+    nameCell.textContent = `${e.season} ${e.team}`;
+    const recordCell = document.createElement('div');
+    recordCell.className = 'season-row-record';
+    recordCell.textContent = e.record;
+    const resultCell = document.createElement('div');
+    resultCell.className = 'season-row-result';
+    resultCell.style.color = e.playoff_result === 'Missed' ? '#4b5563' : rc;
+    resultCell.textContent = e.playoff_result === 'Missed' ? '—' : e.playoff_result;
+    row.appendChild(nameCell);
+    row.appendChild(recordCell);
+    row.appendChild(resultCell);
+    return row;
+  }
+
+  cluster.top.slice(0, PAGE).forEach(e => list.appendChild(makeSeasonRow(e)));
+
+  const btn = document.createElement('button');
+  btn.className = 'show-more';
+  function updateBtn() {
+    if (shown >= cluster.top.length) { btn.style.display = 'none'; return; }
+    btn.style.display = '';
+    btn.textContent = `Show more (${shown} of ${cluster.top.length})`;
+  }
+  btn.addEventListener('click', () => {
+    cluster.top.slice(shown, shown + PAGE).forEach(e => list.appendChild(makeSeasonRow(e)));
+    shown = Math.min(shown + PAGE, cluster.top.length);
+    updateBtn();
+  });
+  panel.appendChild(list);
+  panel.appendChild(btn);
+  updateBtn();
+}
+
+function buildTeamCard(container, entry, cluster) {
+  const rc = poColor(entry.playoff_result);
+  const color = clusterColor(cluster.hier_name);
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'team-panel-name';
+  nameEl.innerHTML = `<a href="/teams/${entry.team}/">${entry.season} ${entry.team}</a>`;
+  container.appendChild(nameEl);
+
+  const meta = document.createElement('div');
+  meta.className = 'team-panel-meta';
+  meta.innerHTML = `<span class="team-meta-record">${entry.record}</span>`;
+  if (entry.seed) meta.innerHTML += `<span class="team-meta-seed">${entry.seed}</span>`;
+  if (entry.playoff_result && entry.playoff_result !== 'Missed')
+    meta.innerHTML += `<span class="team-meta-result" style="background:${rc}22;color:${rc}">${entry.playoff_result}</span>`;
+  meta.innerHTML += `<span style="padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:700;background:${color}22;color:${color}">${cluster.hier_name}</span>`;
+  container.appendChild(meta);
+
+  const clusterName = document.createElement('div');
+  clusterName.style.cssText = 'font-size:0.72rem;color:#6b7280;margin-bottom:0.75rem;';
+  clusterName.textContent = NAMES[cluster.hier_name] || '';
+  container.appendChild(clusterName);
+
+  const sectionLabel = document.createElement('div');
+  sectionLabel.className = 'panel-section-label';
+  sectionLabel.textContent = 'vs. Cluster Archetype';
+  container.appendChild(sectionLabel);
+
+  container.appendChild(buildDimBars(entry.pct, cluster.centroid));
+
+  const legend = document.createElement('div');
+  legend.className = 'dim-legend-row';
+  legend.innerHTML = `
+    <span><div class="dim-legend-fill"></div> This team</span>
+    <span><div class="dim-legend-tick"></div> Cluster avg</span>`;
+  container.appendChild(legend);
+
+  const players = seasonRosters[`${entry.team}|${entry.season}`] || [];
+  if (players.length) {
+    const rosterLabel = document.createElement('div');
+    rosterLabel.className = 'panel-section-label';
+    rosterLabel.style.marginTop = '1.1rem';
+    rosterLabel.textContent = 'Rotation (by minutes)';
+    container.appendChild(rosterLabel);
+
+    const grid = document.createElement('div');
+    grid.className = 'roster-grid';
+    const hdr = document.createElement('div');
+    hdr.className = 'roster-row hdr';
+    hdr.innerHTML = `<div class="roster-name"></div><div class="roster-hdr-stat">G</div><div class="roster-hdr-stat">MPG</div><div class="roster-hdr-stat">PPG</div>`;
+    grid.appendChild(hdr);
+    players.slice(0, 10).forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'roster-row';
+      const nameCell = document.createElement('div');
+      nameCell.className = 'roster-name';
+      nameCell.innerHTML = p.slug ? `<a href="/players/?p=${p.slug}">${p.name}</a>` : p.name;
+      row.appendChild(nameCell);
+      [p.g, p.mpg.toFixed(1), p.ppg.toFixed(1)].forEach(val => {
+        const cell = document.createElement('div');
+        cell.className = 'roster-stat';
+        cell.textContent = val;
+        row.appendChild(cell);
+      });
+      grid.appendChild(row);
+    });
+    container.appendChild(grid);
+  }
+}
+
+function renderTeamPanel(entry, cluster) {
+  panel.innerHTML = '';
+  const back = document.createElement('button');
+  back.className = 'panel-back';
+  back.innerHTML = `← ${cluster.hier_name} · ${NAMES[cluster.hier_name] || cluster.hier_name}`;
+  back.addEventListener('click', () => renderClusterPanel(cluster));
+  panel.appendChild(back);
+  buildTeamCard(panel, entry, cluster);
+}
+
+// ── Chart ─────────────────────────────────────────────────────────────────────
+
+function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
   const NS = 'http://www.w3.org/2000/svg';
   const W = 500, H = 500;
 
+  const outer = document.createElement('div');
+  outer.className = 'chart-outer';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'chart-wrap';
+  outer.appendChild(wrap);
+
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.classList.add('bubble-chart');
+  svg.classList.add('cluster-svg');
 
   const bg = document.createElementNS(NS, 'rect');
   bg.setAttribute('width', W); bg.setAttribute('height', H);
-  bg.setAttribute('rx', '10'); bg.setAttribute('fill', '#161b27');
+  bg.setAttribute('rx', '12'); bg.setAttribute('fill', '#161b27');
   svg.appendChild(bg);
 
-  // Per-cluster dot layers — all hidden until their bubble is clicked
-  const dotLayers = {};
-  clusters.forEach(c => {
-    const color = GROUP_COLOR[c.hier_name[0]] || '#6b7280';
-    const layer = document.createElementNS(NS, 'g');
-    layer.setAttribute('display', 'none');
-    c.top.forEach(e => {
-      if (e.x == null || e.y == null) return;
-      const dot = document.createElementNS(NS, 'circle');
-      dot.setAttribute('cx', e.x * W); dot.setAttribute('cy', e.y * H); dot.setAttribute('r', '7');
-      dot.setAttribute('fill', color + '70'); dot.setAttribute('stroke', color);
-      dot.setAttribute('stroke-width', '1');
-      if (onDotClick) {
-        dot.style.cursor = 'pointer';
-        dot.addEventListener('click', ev => { ev.stopPropagation(); onDotClick(e, c.hier_name, color); });
-      }
-      const t = document.createElementNS(NS, 'title');
-      t.textContent = `${e.team} ${e.season} · ${e.record} · ${e.playoff_result}`;
-      dot.appendChild(t);
-      layer.appendChild(dot);
-    });
-    dotLayers[c.hier_name] = layer;
-    // layer appended after bubbles so dots sit on top and receive clicks
+  // Midpoint crosshairs (50th pct in both dims)
+  const MID = 0.5 * W;
+  [[MID, 0.05*H, MID, 0.95*H], [0.05*W, MID, 0.95*W, MID]].forEach(([x1,y1,x2,y2]) => {
+    const ln = document.createElementNS(NS, 'line');
+    ln.setAttribute('x1', x1); ln.setAttribute('y1', y1);
+    ln.setAttribute('x2', x2); ln.setAttribute('y2', y2);
+    ln.setAttribute('stroke', '#1f2937'); ln.setAttribute('stroke-width', '1');
+    ln.setAttribute('stroke-dasharray', '4,4');
+    svg.appendChild(ln);
   });
 
-  // Lines connecting same-group clusters
+  // Axis labels
+  const mkTxt = (txt, x, y, anchor, rotate) => {
+    const el = document.createElementNS(NS, 'text');
+    el.setAttribute('x', x); el.setAttribute('y', y);
+    el.setAttribute('text-anchor', anchor); el.setAttribute('dominant-baseline', 'middle');
+    el.setAttribute('font-size', '9'); el.setAttribute('font-weight', '700');
+    el.setAttribute('fill', '#374151'); el.setAttribute('font-family', 'Inter, system-ui, sans-serif');
+    if (rotate) el.setAttribute('transform', `rotate(${rotate},${x},${y})`);
+    el.textContent = txt;
+    svg.appendChild(el);
+  };
+  mkTxt('Offense →', W / 2, H - 7, 'middle', null);
+  mkTxt('↑ Defense', 9, H / 2, 'middle', -90);
+
+  // Lines layer
+  const linesG = document.createElementNS(NS, 'g');
+  linesG.setAttribute('opacity', '1');
   const byGroup = {};
-  clusters.forEach(c => {
-    const grp = c.hier_name[0];
-    (byGroup[grp] = byGroup[grp] || []).push(c);
-  });
-  Object.entries(byGroup).forEach(([grp, cs]) => {
-    const color = GROUP_COLOR[grp];
-    for (let i = 0; i < cs.length; i++) {
-      for (let j = i + 1; j < cs.length; j++) {
-        const pi = cs[i], pj = cs[j];
-        if (pi.x == null || pj.x == null) return;
-        const ln = document.createElementNS(NS, 'line');
-        ln.setAttribute('x1', pi.x * W); ln.setAttribute('y1', pi.y * H);
-        ln.setAttribute('x2', pj.x * W); ln.setAttribute('y2', pj.y * H);
-        ln.setAttribute('stroke', color); ln.setAttribute('stroke-width', '1.5');
-        ln.setAttribute('stroke-opacity', '0.22');
-        svg.appendChild(ln);
-      }
+  clusters.forEach(c => { const g = c.hier_name[0]; (byGroup[g] = byGroup[g] || []).push(c); });
+  Object.entries(byGroup).forEach(([g, cs]) => {
+    const col = GROUP_COLOR[g];
+    for (let i = 0; i < cs.length; i++) for (let j = i+1; j < cs.length; j++) {
+      const pi = cs[i], pj = cs[j];
+      const ln = document.createElementNS(NS, 'line');
+      ln.setAttribute('x1', pi.x * W); ln.setAttribute('y1', pi.y * H);
+      ln.setAttribute('x2', pj.x * W); ln.setAttribute('y2', pj.y * H);
+      ln.setAttribute('stroke', col); ln.setAttribute('stroke-width', '1.5');
+      ln.setAttribute('stroke-opacity', '0.2');
+      linesG.appendChild(ln);
     }
   });
+  svg.appendChild(linesG);
 
-  // Bubbles + labels
-  let selected = null;
-  const circleEls = {};
+  // Cluster groups and dot layers
+  const clusterGs = {};
+  const dotLayers = {};
 
   clusters.forEach(c => {
-    if (c.x == null) return;
-    const color = GROUP_COLOR[c.hier_name[0]] || '#6b7280';
+    const color = clusterColor(c.hier_name);
     const cx = c.x * W, cy = c.y * H;
     const r = Math.max(18, Math.sqrt(c.size) * 5);
 
@@ -487,7 +686,6 @@ function buildBubbleChart(clusters, onDotClick) {
     t.textContent = NAMES[c.hier_name] || c.hier_name;
     circle.appendChild(t);
     g.appendChild(circle);
-    circleEls[c.hier_name] = circle;
 
     const lbl = document.createElementNS(NS, 'text');
     lbl.setAttribute('x', cx); lbl.setAttribute('y', cy);
@@ -498,214 +696,235 @@ function buildBubbleChart(clusters, onDotClick) {
     lbl.textContent = c.hier_name;
     g.appendChild(lbl);
 
-    g.addEventListener('click', () => {
-      const deselecting = selected === c.hier_name;
+    g.addEventListener('mouseenter', () => { if (selectedCluster !== c.hier_name) circle.setAttribute('fill', color + '50'); });
+    g.addEventListener('mouseleave', () => { if (selectedCluster !== c.hier_name) circle.setAttribute('fill', color + '28'); });
+    g.addEventListener('click', ev => { ev.stopPropagation(); onClusterClick(c); });
 
-      // Clear previous selection
-      if (selected) {
-        dotLayers[selected].setAttribute('display', 'none');
-        const prev = circleEls[selected];
-        if (prev) { prev.setAttribute('stroke-width', '2'); prev.setAttribute('fill', GROUP_COLOR[selected[0]] + '28'); }
-      }
-
-      if (deselecting) {
-        selected = null;
-        return;
-      }
-
-      // Select this cluster
-      selected = c.hier_name;
-      dotLayers[c.hier_name].removeAttribute('display');
-      circle.setAttribute('stroke-width', '3.5');
-      circle.setAttribute('fill', color + '50');
-
-      // Open the card (no scroll — stay on chart to see dots)
-      const card = document.getElementById('archetype-' + c.hier_name);
-      if (card) card.classList.add('open');
-    });
-
-    g.addEventListener('mouseenter', () => {
-      if (selected !== c.hier_name) circle.setAttribute('fill', color + '50');
-    });
-    g.addEventListener('mouseleave', () => {
-      if (selected !== c.hier_name) circle.setAttribute('fill', color + '28');
-    });
-
+    clusterGs[c.hier_name] = { g, circle };
     svg.appendChild(g);
   });
 
-  // Append dot layers last so they sit above bubbles and receive pointer events
-  Object.values(dotLayers).forEach(layer => svg.appendChild(layer));
+  // Dot layers (appended after cluster groups so they receive clicks)
+  clusters.forEach(c => {
+    const color = clusterColor(c.hier_name);
+    const layer = document.createElementNS(NS, 'g');
+    layer.setAttribute('display', 'none');
 
-  return svg;
+    c.top.forEach(e => {
+      if (e.x == null || e.y == null) return;
+      const dot = document.createElementNS(NS, 'circle');
+      dot.setAttribute('cx', e.x * W); dot.setAttribute('cy', e.y * H); dot.setAttribute('r', '5');
+      dot.setAttribute('fill', color + '80'); dot.setAttribute('stroke', color);
+      dot.setAttribute('stroke-width', '1.2');
+      dot.setAttribute('pointer-events', 'none');
+      layer.appendChild(dot);
+
+      // Transparent hit area — much larger than the visual dot for fat-finger tolerance
+      const hit = document.createElementNS(NS, 'circle');
+      hit.setAttribute('cx', e.x * W); hit.setAttribute('cy', e.y * H); hit.setAttribute('r', '18');
+      hit.setAttribute('fill', 'transparent');
+      hit.style.cursor = 'pointer';
+      hit.addEventListener('mouseenter', ev => {
+        dot.setAttribute('fill', color + 'cc'); dot.setAttribute('r', '7');
+        onDotHover(e, ev);
+      });
+      hit.addEventListener('mousemove', ev => onDotHover(e, ev));
+      hit.addEventListener('mouseleave', () => {
+        dot.setAttribute('fill', color + '80'); dot.setAttribute('r', '5');
+        onDotHover(null, null);
+      });
+      hit.addEventListener('click', ev => { ev.stopPropagation(); onDotClick(e, c); });
+      layer.appendChild(hit);
+    });
+
+    dotLayers[c.hier_name] = layer;
+    svg.appendChild(layer);
+  });
+
+  bg.style.cursor = 'default';
+
+  // Tooltip
+  const tooltip = document.createElement('div');
+  tooltip.className = 'dot-tooltip';
+  wrap.appendChild(tooltip);
+  wrap.appendChild(svg);
+
+  // ViewBox animation
+  let vbCur = [0, 0, W, H];
+  let rafId = null;
+
+  function animateViewBox(target) {
+    if (rafId) cancelAnimationFrame(rafId);
+    const start = [...vbCur];
+    const t0 = performance.now();
+    const dur = 380;
+    function ease(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+    function frame(now) {
+      const t = Math.min((now - t0) / dur, 1);
+      const e = ease(t);
+      vbCur = start.map((v, i) => v + (target[i] - v) * e);
+      svg.setAttribute('viewBox', vbCur.join(' '));
+      if (t < 1) rafId = requestAnimationFrame(frame);
+      else { vbCur = [...target]; rafId = null; }
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function clusterViewBox(cluster) {
+    const pts = cluster.top.filter(e => e.x != null);
+    if (!pts.length) return [0, 0, W, H];
+    const xs = [cluster.x * W, ...pts.map(e => e.x * W)];
+    const ys = [cluster.y * H, ...pts.map(e => e.y * H)];
+    const pad = 55;
+    const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad;
+    const minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
+    const cX = (minX + maxX) / 2, cY = (minY + maxY) / 2;
+    const side = Math.min(Math.max(maxX - minX, maxY - minY, 160), W);
+    const vx = Math.max(0, Math.min(cX - side / 2, W - side));
+    const vy = Math.max(0, Math.min(cY - side / 2, H - side));
+    return [vx, vy, side, side];
+  }
+
+  // Selection state
+  function applySelection(hierName) {
+    // Cluster visuals
+    Object.entries(clusterGs).forEach(([name, {g, circle}]) => {
+      if (hierName == null) {
+        g.setAttribute('opacity', '1');
+        circle.setAttribute('fill', clusterColor(name) + '28');
+        circle.setAttribute('stroke-width', '2');
+      } else if (name === hierName) {
+        g.setAttribute('opacity', '0.45');
+        circle.setAttribute('stroke-width', '2.5');
+      } else {
+        g.setAttribute('opacity', '0.12');
+        circle.setAttribute('fill', clusterColor(name) + '28');
+        circle.setAttribute('stroke-width', '2');
+      }
+    });
+    // Dot layers
+    Object.entries(dotLayers).forEach(([name, layer]) => {
+      layer.setAttribute('display', name === hierName ? '' : 'none');
+    });
+    // Lines
+    linesG.setAttribute('opacity', hierName == null ? '1' : '0.1');
+    // ViewBox
+    if (hierName == null) {
+      animateViewBox([0, 0, W, H]);
+    } else {
+      const c = clusters.find(x => x.hier_name === hierName);
+      if (c) animateViewBox(clusterViewBox(c));
+    }
+  }
+
+  // Expose tooltip control and selection
+  return {
+    element: outer,
+    applySelection,
+    showTooltip(entry, ev) {
+      if (!entry) { tooltip.style.display = 'none'; return; }
+      const rect = wrap.getBoundingClientRect();
+      tooltip.textContent = `${entry.season} ${entry.team}`;
+      tooltip.style.left = (ev.clientX - rect.left) + 'px';
+      tooltip.style.top = (ev.clientY - rect.top - 8) + 'px';
+      tooltip.style.display = 'block';
+    },
+  };
 }
 
-// ── Archetypes tab ────────────────────────────────────────────────────────────
+// ── Selection state ───────────────────────────────────────────────────────────
 
-function buildCard(cluster, gameWins) {
-  const color = clusterColor(cluster.hier_name);
-  const card = document.createElement('div');
-  card.className = 'cluster-card';
-  card.style.setProperty('--cc', color);
+let selectedCluster = null;
+let chart = null;
 
-  const summary = document.createElement('div');
-  summary.className = 'card-summary';
-  summary.addEventListener('click', () => {
-    card.classList.toggle('open');
-  });
-
-  const hdr = document.createElement('div');
-  hdr.className = 'cluster-header';
-  hdr.innerHTML = `
-    <span class="cluster-num">${cluster.hier_name}</span>
-    <span class="cluster-name">${NAMES[cluster.hier_name] || cluster.hier_name}</span>
-    <span class="cluster-size">${cluster.size} seasons</span>
-    <span class="card-chevron">▶</span>
-  `;
-  summary.appendChild(hdr);
-
-  const n = cluster.top.length;
-  const avgRegW = cluster.top.reduce((s, e) => s + parseInt(e.record), 0) / n;
-  const avgPoW  = cluster.top.reduce((s, e) => s + (gameWins[e.team + '|' + e.season] || 0), 0) / n;
-
-  const statsRow = document.createElement('div');
-  statsRow.className = 'cluster-avg-stats';
-  statsRow.innerHTML =
-    `<span>avg reg W <span class="cluster-avg-stat-val">${avgRegW.toFixed(1)}</span></span>` +
-    `<span>avg PO W <span class="cluster-avg-stat-val">${avgPoW.toFixed(1)}</span></span>`;
-  summary.appendChild(statsRow);
-
-  const desc = DESCRIPTIONS[cluster.hier_name];
-  if (desc) {
-    const descEl = document.createElement('p');
-    descEl.className = 'cluster-desc';
-    descEl.textContent = desc;
-    summary.appendChild(descEl);
+function selectCluster(cluster) {
+  if (cluster == null || (selectedCluster === cluster.hier_name)) {
+    selectedCluster = null;
+    chart.applySelection(null);
+    renderEmpty();
+  } else {
+    selectedCluster = cluster.hier_name;
+    chart.applySelection(cluster.hier_name);
+    renderClusterPanel(cluster);
   }
+}
 
-  card.appendChild(summary);
+// ── Legend click ──────────────────────────────────────────────────────────────
 
-  const expand = document.createElement('div');
-  expand.className = 'card-expand';
-
-  const body = document.createElement('div');
-  body.className = 'cluster-body';
-
-  const radarWrap = document.createElement('div');
-  radarWrap.className = 'radar-wrap';
-  radarWrap.appendChild(buildRadar(cluster.centroid, 300));
-
-  const teamsList = document.createElement('div');
-  teamsList.className = 'teams-list';
-  const title = document.createElement('div');
-  title.className = 'teams-list-title';
-  title.textContent = 'Closest to centroid';
-  teamsList.appendChild(title);
-
-  const PAGE = 10;
-  let shown = PAGE;
-
-  function makeRow(e) {
-    const row = document.createElement('div');
-    row.className = 'team-row';
-
-    const idEl = document.createElement('div');
-    idEl.className = 'team-id';
-    const link = document.createElement('a');
-    link.href = `/teams/${e.team}/`;
-    link.textContent = `${e.season} ${e.team}`;
-    idEl.appendChild(link);
-
-    const recordEl = document.createElement('div');
-    recordEl.className = 'team-record';
-    recordEl.textContent = e.record;
-
-    const resultEl = document.createElement('div');
-    resultEl.className = 'team-result';
-    resultEl.style.color = poColor(e.playoff_result);
-    resultEl.textContent = e.playoff_result === 'Missed' ? '—' : e.playoff_result;
-
-    row.appendChild(idEl);
-    row.appendChild(recordEl);
-    row.appendChild(resultEl);
-    return row;
-  }
-
-  const rowContainer = document.createElement('div');
-  cluster.top.slice(0, PAGE).forEach(e => rowContainer.appendChild(makeRow(e)));
-  teamsList.appendChild(rowContainer);
-
-  const total = cluster.top.length;
-  const btn = document.createElement('button');
-  btn.className = 'show-more';
-
-  function updateBtn() {
-    if (shown >= total) { btn.style.display = 'none'; return; }
-    btn.style.display = '';
-    btn.textContent = `Show more (${shown}/${total})`;
-  }
-
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    const next = Math.min(shown + PAGE, total);
-    cluster.top.slice(shown, next).forEach(e => rowContainer.appendChild(makeRow(e)));
-    shown = next;
-    updateBtn();
+function buildLegend(clusters) {
+  const wrap = document.createElement('div');
+  wrap.className = 'chart-legend';
+  ['1','2','3','4'].forEach(g => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${GROUP_COLOR[g]}"></div><span>${GROUP_META[g].name}</span>`;
+    wrap.appendChild(item);
   });
+  return wrap;
+}
 
-  teamsList.appendChild(btn);
-  updateBtn();
+let clusterMap = {};
 
-  const bars = document.createElement('div');
-  bars.className = 'dim-bars';
-  DIMS.forEach(d => {
-    const v = cluster.centroid[d] || 0;
-    const row = document.createElement('div');
-    row.className = 'dim-row';
-    row.innerHTML = `
-      <div class="dim-label">${DIM_LABEL[d] || d}</div>
-      <div class="dim-track"><div class="dim-fill" style="width:${(v*100).toFixed(1)}%;background:${DIM_COLOR[d]}"></div></div>
-      <div class="dim-val">${(v*100).toFixed(0)}th</div>
-    `;
-    bars.appendChild(row);
+// ── Season rosters (minutes leaders) ─────────────────────────────────────────
+
+let seasonRosters = {}; // "TEAM|SEASON" → [{name, slug, g, mpg, ppg}] sorted by mpg desc
+let gameWins = {};     // "TEAM|SEASON" → total playoff wins
+
+function parseCSV(text) {
+  const rows = [];
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  for (let i = 1; i < lines.length; i++) {
+    const vals = [];
+    let cur = '', inQ = false;
+    for (const ch of lines[i]) {
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h, j) => { obj[h] = vals[j] || ''; });
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function buildSeasonRosters(csvText) {
+  parseCSV(csvText).forEach(r => {
+    const key = `${r.TEAM}|${r.SEASON}`;
+    const g = parseInt(r.G) || 0;
+    if (g === 0) return;
+    if (!seasonRosters[key]) seasonRosters[key] = [];
+    seasonRosters[key].push({
+      name: r.PLAYER,
+      slug: r.SLUG,
+      g,
+      mpg: (parseFloat(r.MIN) || 0) / g,
+      ppg: (parseFloat(r.PTS) || 0) / g,
+    });
   });
-
-  const leftCol = document.createElement('div');
-  leftCol.style.cssText = 'display:flex;flex-direction:column;gap:0.75rem;flex-shrink:0;';
-  leftCol.appendChild(radarWrap);
-  leftCol.appendChild(bars);
-  body.appendChild(leftCol);
-  body.appendChild(teamsList);
-  expand.appendChild(body);
-
-  card.appendChild(expand);
-  return card;
+  Object.values(seasonRosters).forEach(arr => arr.sort((a, b) => b.mpg - a.mpg));
 }
 
 // ── Team History tab ──────────────────────────────────────────────────────────
 
-let teamIndex = {};    // abbr -> [{season, cluster, clusterName, pct, dist, record, seed, playoff_result}]
-let allTeams  = [];    // sorted abbrs
+let teamIndex = {};
+let allTeams  = [];
 
 function buildTeamIndex(data) {
   data.clusters.forEach(c => {
     c.top.forEach(e => {
       if (!teamIndex[e.team]) teamIndex[e.team] = [];
       teamIndex[e.team].push({
-        season:         e.season,
-        cluster:        c.hier_name,
-        clusterName:    NAMES[c.hier_name] || c.hier_name,
-        pct:            e.pct || {},
-        dist:           e.dist,
-        record:         e.record,
-        seed:           e.seed,
-        playoff_result: e.playoff_result,
+        season: e.season, cluster: c.hier_name,
+        clusterName: NAMES[c.hier_name] || c.hier_name,
+        pct: e.pct || {}, dist: e.dist,
+        record: e.record, seed: e.seed, playoff_result: e.playoff_result,
       });
     });
   });
-  Object.values(teamIndex).forEach(arr =>
-    arr.sort((a, b) => a.season.localeCompare(b.season))
-  );
+  Object.values(teamIndex).forEach(arr => arr.sort((a, b) => a.season.localeCompare(b.season)));
   allTeams = Object.keys(teamIndex).sort();
 }
 
@@ -713,110 +932,32 @@ function setupTeamSelect() {
   const sel = document.getElementById('team-select');
   allTeams.forEach(abbr => {
     const opt = document.createElement('option');
-    opt.value = abbr;
-    opt.textContent = abbr;
+    opt.value = abbr; opt.textContent = abbr;
     sel.appendChild(opt);
   });
-  sel.addEventListener('change', () => {
-    if (sel.value) renderHistory(sel.value);
-  });
+  sel.addEventListener('change', () => { if (sel.value) renderHistory(sel.value); });
 }
 
-function renderHistoryDetail(panel, s) {
-  const color = clusterColor(s.cluster);
-  panel.innerHTML = '';
-  panel.classList.add('visible');
-
+function renderHistoryDetail(detailEl, s, abbr) {
+  detailEl.innerHTML = '';
+  detailEl.classList.add('visible');
+  const cluster = clusterMap[s.cluster];
+  if (!cluster) return;
   const card = document.createElement('div');
   card.className = 'history-detail-card';
-
-  const left = document.createElement('div');
-  left.className = 'hd-left';
-  left.appendChild(buildRadar(s.pct, 150));
-  card.appendChild(left);
-
-  const right = document.createElement('div');
-  right.className = 'hd-right';
-
-  const seasonRow = document.createElement('div');
-  seasonRow.className = 'hd-season-row';
-  seasonRow.innerHTML = `<span class="hd-season">${s.season}</span>`
-    + `<span class="hd-record">${s.record}</span>`
-    + (s.seed ? `<span class="hd-seed">${s.seed}</span>` : '');
-  right.appendChild(seasonRow);
-
-  if (s.playoff_result && s.playoff_result !== 'Missed') {
-    const resultEl = document.createElement('div');
-    resultEl.className = 'hd-result';
-    resultEl.textContent = s.playoff_result;
-    const rc = poColor(s.playoff_result);
-    resultEl.style.background = rc + '22';
-    resultEl.style.color = rc;
-    right.appendChild(resultEl);
-  }
-
-  const badge = document.createElement('div');
-  badge.className = 'hd-badge';
-  badge.style.background = color + '22';
-  badge.style.color = color;
-  badge.style.borderColor = color + '55';
-  badge.textContent = s.cluster;
-  right.appendChild(badge);
-
-  const cname = document.createElement('div');
-  cname.className = 'hd-cluster-name';
-  cname.textContent = s.clusterName;
-  right.appendChild(cname);
-
-  const bars = document.createElement('div');
-  bars.className = 'hd-bars';
-  DIMS.forEach(d => {
-    const v = s.pct[d] || 0;
-    const row = document.createElement('div');
-    row.className = 'hd-bar-row';
-    const lbl = document.createElement('div');
-    lbl.className = 'hd-bar-label';
-    lbl.textContent = DIM_LABEL[d] || d;
-    const track = document.createElement('div');
-    track.className = 'hd-bar-track';
-    const fill = document.createElement('div');
-    fill.className = 'hd-bar-fill';
-    fill.style.width = (v * 100).toFixed(1) + '%';
-    fill.style.background = DIM_COLOR[d];
-    track.appendChild(fill);
-    const val = document.createElement('div');
-    val.className = 'hd-bar-val';
-    val.textContent = (v * 100).toFixed(0) + 'th';
-    row.appendChild(lbl);
-    row.appendChild(track);
-    row.appendChild(val);
-    bars.appendChild(row);
-  });
-  right.appendChild(bars);
-
-  card.appendChild(right);
-  panel.appendChild(card);
+  buildTeamCard(card, { team: abbr, season: s.season, record: s.record, seed: s.seed, playoff_result: s.playoff_result, pct: s.pct }, cluster);
+  detailEl.appendChild(card);
 }
 
 function renderHistory(abbr) {
   const seasons = teamIndex[abbr];
   if (!seasons || !seasons.length) return;
-
   const container = document.getElementById('history-result');
   container.innerHTML = '';
-
   const hdr = document.createElement('div');
   hdr.className = 'history-header';
-  const nameEl = document.createElement('span');
-  nameEl.className = 'history-team-name';
-  nameEl.textContent = abbr;
-  const countEl = document.createElement('span');
-  countEl.className = 'history-seasons-count';
-  countEl.textContent = `${seasons.length} season${seasons.length !== 1 ? 's' : ''} tracked`;
-  hdr.appendChild(nameEl);
-  hdr.appendChild(countEl);
+  hdr.innerHTML = `<span class="history-team-name">${abbr}</span><span class="history-seasons-count">${seasons.length} season${seasons.length !== 1 ? 's' : ''} tracked</span>`;
   container.appendChild(hdr);
-
   const graph = document.createElement('div');
   graph.className = 'history-graph';
   const scroll = document.createElement('div');
@@ -825,188 +966,102 @@ function renderHistory(abbr) {
   track.className = 'history-track';
   scroll.appendChild(track);
   graph.appendChild(scroll);
-
   const nodeWraps = [];
-
   seasons.forEach((s, i) => {
     if (i > 0) {
       const conn = document.createElement('div');
       conn.className = 'history-connector' + (seasons[i-1].cluster !== s.cluster ? ' changed' : '');
       track.appendChild(conn);
     }
-
     const color = clusterColor(s.cluster);
     const wrap = document.createElement('div');
     wrap.className = 'history-node-wrap';
     wrap.style.setProperty('--node-color', color);
-
-    const node = document.createElement('div');
-    node.className = 'history-node';
-    node.style.background = color + '1a';
-    node.style.borderColor = color;
-    node.style.color = color;
-    node.textContent = s.cluster;
-    wrap.appendChild(node);
-
-    const seasonLbl = document.createElement('div');
-    seasonLbl.className = 'history-node-season';
-    seasonLbl.textContent = s.season;
-    wrap.appendChild(seasonLbl);
-
-    const recordLbl = document.createElement('div');
-    recordLbl.className = 'history-node-record';
-    recordLbl.textContent = s.record;
-    wrap.appendChild(recordLbl);
-
+    wrap.innerHTML = `
+      <div class="history-node" style="background:${color}1a;border-color:${color};color:${color}">${s.cluster}</div>
+      <div class="history-node-season">${s.season}</div>
+      <div class="history-node-record">${s.record}</div>`;
     wrap.addEventListener('click', () => {
       nodeWraps.forEach(w => w.classList.remove('active'));
       wrap.classList.add('active');
-      renderHistoryDetail(detail, s);
+      renderHistoryDetail(detail, s, abbr);
     });
-
     track.appendChild(wrap);
     nodeWraps.push(wrap);
   });
-
   container.appendChild(graph);
-
   const detail = document.createElement('div');
   detail.className = 'history-detail';
   container.appendChild(detail);
-
   nodeWraps[0]?.click();
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 
 function showTab(name) {
-  document.querySelectorAll('.tab-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.tab === name)
-  );
-  document.querySelectorAll('.tab-content').forEach(t =>
-    t.style.display = t.id === 'tab-' + name ? '' : 'none'
-  );
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(t => { t.style.display = t.id === 'tab-' + name ? '' : 'none'; });
   history.replaceState(null, '', '#' + name);
 }
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => showTab(btn.dataset.tab));
-});
-
-const initTab = ['archetypes', 'history'].includes(location.hash.slice(1))
-  ? location.hash.slice(1) : 'archetypes';
+document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
+const initTab = ['archetypes','history'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'archetypes';
 showTab(initTab);
 
 // ── Data load ─────────────────────────────────────────────────────────────────
 
-function parseCSVRows(text) {
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',');
-  return lines.slice(1).map(line => {
-    const vals = line.split(',');
-    const obj = {};
-    headers.forEach((h, i) => { obj[h.trim()] = (vals[i] || '').trim(); });
-    return obj;
-  });
-}
-
 Promise.all([
   fetch('/clusters/team_clusters.json').then(r => r.json()),
+  fetch('/players/player_seasons.csv').then(r => r.text()),
   fetch('/standings/playoff-brackets.csv').then(r => r.text()),
-])
-  .then(([data, bracketText]) => {
-    const gameWins = {};
-    parseCSVRows(bracketText).forEach(row => {
-      const key1 = row.T1 + '|' + row.SEASON;
-      const key2 = row.T2 + '|' + row.SEASON;
-      gameWins[key1] = (gameWins[key1] || 0) + parseInt(row.T1_W || 0);
-      gameWins[key2] = (gameWins[key2] || 0) + parseInt(row.T2_W || 0);
-    });
-
-    document.getElementById('n-seasons').textContent = data.n.toLocaleString();
-
-    const clusterMap = {};
-    data.clusters.forEach(c => { clusterMap[c.hier_name] = c; });
-
-    const root = document.getElementById('root');
-    root.innerHTML = '';
-
-    // Bubble chart
-    const bubbleWrap = document.createElement('div');
-    bubbleWrap.className = 'bubble-wrap';
-
-    const dotInfo = document.createElement('div');
-    dotInfo.className = 'dot-info';
-
-    bubbleWrap.appendChild(buildBubbleChart(data.clusters, (e, hierName, color) => {
-      const rc = poColor(e.playoff_result);
-      dotInfo.style.display = 'block';
-      dotInfo.innerHTML = `<div class="dot-info-row">
-        <span class="dot-info-team"><a href="/teams/${e.team}/">${e.season} ${e.team}</a></span>
-        <span class="dot-info-record">${e.record}</span>
-        ${e.playoff_result && e.playoff_result !== 'Missed'
-          ? `<span class="dot-info-badge" style="background:${rc}22;color:${rc}">${e.playoff_result}</span>`
-          : ''}
-        <span class="dot-info-cluster" style="color:${color};border-color:${color}55;background:${color}22">${hierName} · ${NAMES[hierName] || hierName}</span>
-      </div>`;
-    }));
-
-    const legend = document.createElement('div');
-    legend.className = 'bubble-legend';
-    ['1','2','3','4'].forEach(g => {
-      const item = document.createElement('div');
-      item.className = 'bubble-legend-item';
-      item.innerHTML = `<div class="bubble-legend-dot" style="background:${GROUP_COLOR[g]}"></div><span>${GROUP_META[g].name}</span>`;
-      legend.appendChild(item);
-    });
-    bubbleWrap.appendChild(legend);
-    bubbleWrap.appendChild(dotInfo);
-    root.appendChild(bubbleWrap);
-
-    // Grouped cards
-    const groupsEl = document.createElement('div');
-    groupsEl.className = 'archetype-groups';
-
-    ['1','2','3','4'].forEach(g => {
-      const color = GROUP_COLOR[g];
-      const meta  = GROUP_META[g];
-      const section = document.createElement('section');
-      section.className = 'archetype-group';
-      section.id = 'group-' + g;
-      section.style.setProperty('--gc', color);
-
-      const hdr = document.createElement('div');
-      hdr.className = 'group-header';
-      hdr.innerHTML = `
-        <div class="group-badge">${g}</div>
-        <div class="group-title-wrap">
-          <div class="group-title">${meta.name}</div>
-          <div class="group-subtitle">${meta.desc}</div>
-        </div>`;
-      section.appendChild(hdr);
-
-      const grid = document.createElement('div');
-      grid.className = 'group-cards';
-      CLUSTER_ORDER.filter(n => n[0] === g).forEach(name => {
-        const c = clusterMap[name];
-        if (!c) return;
-        const card = buildCard(c, gameWins);
-        card.id = 'archetype-' + name;
-        grid.appendChild(card);
-      });
-      section.appendChild(grid);
-      groupsEl.appendChild(section);
-    });
-
-    root.appendChild(groupsEl);
-
-    buildTeamIndex(data);
-    setupTeamSelect();
-  })
-  .catch(err => {
-    document.getElementById('root').innerHTML =
-      `<p class="error">Failed to load data: ${err.message}</p>`;
+]).then(([data, rosterCsv, bracketCsv]) => {
+  buildSeasonRosters(rosterCsv);
+  parseCSV(bracketCsv).forEach(row => {
+    const key1 = `${row.T1}|${row.SEASON}`;
+    const key2 = `${row.T2}|${row.SEASON}`;
+    gameWins[key1] = (gameWins[key1] || 0) + parseInt(row.T1_W || 0);
+    gameWins[key2] = (gameWins[key2] || 0) + parseInt(row.T2_W || 0);
   });
+  data.clusters.forEach(c => { clusterMap[c.hier_name] = c; });
+  document.getElementById('n-seasons').textContent = data.n.toLocaleString();
+
+  const root = document.getElementById('root');
+  root.innerHTML = '';
+
+  const layout = document.createElement('div');
+  layout.className = 'main-layout';
+
+  // Chart column
+  const chartCol = document.createElement('div');
+  chartCol.className = 'chart-col';
+
+  chart = buildChart(
+    data.clusters,
+    cluster => selectCluster(cluster),
+    (entry, ev) => chart.showTooltip(entry, ev),
+    (entry, cluster) => renderTeamPanel(entry, cluster),
+  );
+
+  chart.element.insertBefore(buildLegend(data.clusters), chart.element.firstChild);
+  chartCol.appendChild(chart.element);
+
+  layout.appendChild(chartCol);
+
+  // Detail column
+  const detailCol = document.createElement('div');
+  detailCol.className = 'detail-col';
+  panel = document.createElement('div');
+  panel.className = 'detail-panel';
+  renderEmpty();
+  detailCol.appendChild(panel);
+  layout.appendChild(detailCol);
+
+  root.appendChild(layout);
+
+  buildTeamIndex(data);
+  setupTeamSelect();
+}).catch(err => {
+  document.getElementById('root').innerHTML = `<p class="error">Failed to load data: ${err.message}</p>`;
+});
 </script>
 </body>
 </html>

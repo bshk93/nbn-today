@@ -48,7 +48,8 @@ def load_allstats():
         season = basename.replace('allstats-', '').replace('.csv', '')
         with open(path, newline='', encoding='utf-8') as f:
             for r in csv.DictReader(f):
-                if r.get('gametype', '').strip() != 'REG':
+                gt = r.get('gametype', '').strip()
+                if gt and gt != 'REG':
                     continue
                 team_games[(r['TEAM'], season)][r['DATE']].append(r)
     return team_games
@@ -153,7 +154,10 @@ def compute_team_features(team_games, standings):
 # ── Percentiles ───────────────────────────────────────────────────────────────
 
 def percentile_rank(val, sorted_vals):
-    return sum(1 for v in sorted_vals if v < val) / len(sorted_vals)
+    n = len(sorted_vals)
+    below = sum(1 for v in sorted_vals if v < val)
+    tied  = sum(1 for v in sorted_vals if v == val)
+    return (below + 0.5 * tied) / n
 
 def compute_percentiles(team_seasons):
     by_season = defaultdict(lambda: defaultdict(list))
@@ -314,12 +318,16 @@ def pca_2d(vecs):
 
 # ── Build output ──────────────────────────────────────────────────────────────
 
+def perf_xy(ts):
+    """x = OFF_RTG pct, y = 1 - DEF pct (higher DEF → lower y → top of chart).
+    5% padding on all sides so dots don't crowd the SVG edges."""
+    x = 0.05 + 0.90 * ts['pct']['OFF_RTG']
+    y = 0.05 + 0.90 * (1.0 - ts['pct']['DEF'])
+    return round(x, 4), round(y, 4)
+
 def build_output(team_seasons, vecs_display, labels, k_total, group_structure):
     import numpy as np
     letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-    # PCA positions for individual team-seasons
-    coords_2d = pca_2d(vecs_display)
 
     clusters = []
     for c in range(k_total):
@@ -334,7 +342,7 @@ def build_output(team_seasons, vecs_display, labels, k_total, group_structure):
         top = []
         for i in order:
             ts  = team_seasons[mask[i]]
-            idx = mask[i]
+            ex, ey = perf_xy(ts)
             top.append({
                 'team':           ts['team'],
                 'season':         ts['season'],
@@ -343,8 +351,8 @@ def build_output(team_seasons, vecs_display, labels, k_total, group_structure):
                 'playoff_result': ts['playoff_result'],
                 'dist':           round(float(dists[i]), 4),
                 'pct':            {d: round(ts['pct'][d], 3) for d in DISPLAY_DIMS},
-                'x':              round(float(coords_2d[idx, 0]), 4),
-                'y':              round(float(coords_2d[idx, 1]), 4),
+                'x':              ex,
+                'y':              ey,
             })
 
         hier = ''
@@ -352,9 +360,11 @@ def build_output(team_seasons, vecs_display, labels, k_total, group_structure):
             top_idx, sub_idx = group_structure[c]
             hier = f'{top_idx + 1}{letters[sub_idx]}'
 
-        # Cluster centroid PCA position (mean of member coords)
-        cx = float(np.mean([coords_2d[i, 0] for i in mask]))
-        cy = float(np.mean([coords_2d[i, 1] for i in mask]))
+        # Cluster centroid: mean of member performance coords
+        cxs = [perf_xy(team_seasons[i])[0] for i in mask]
+        cys = [perf_xy(team_seasons[i])[1] for i in mask]
+        cx = float(np.mean(cxs))
+        cy = float(np.mean(cys))
 
         clusters.append({
             'id':        c,
