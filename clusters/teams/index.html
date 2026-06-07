@@ -769,6 +769,15 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
   const overlayG = document.createElementNS(NS, 'g');
   svg.appendChild(overlayG);
 
+  // Arrowhead marker for franchise path
+  const defs = document.createElementNS(NS, 'defs');
+  const mkr = document.createElementNS(NS, 'marker');
+  mkr.setAttribute('id', 'arr'); mkr.setAttribute('markerWidth', '8'); mkr.setAttribute('markerHeight', '6');
+  mkr.setAttribute('refX', '8'); mkr.setAttribute('refY', '3'); mkr.setAttribute('orient', 'auto');
+  const arrowPoly = document.createElementNS(NS, 'polygon');
+  arrowPoly.setAttribute('points', '0,0 8,3 0,6'); arrowPoly.setAttribute('fill', '#9ca3af'); arrowPoly.setAttribute('fill-opacity', '0.7');
+  mkr.appendChild(arrowPoly); defs.appendChild(mkr); svg.insertBefore(defs, svg.firstChild);
+
   bg.style.cursor = 'default';
 
   // Tooltip
@@ -849,7 +858,7 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
   return {
     element: outer,
     applySelection,
-    applyOverlay(items) {
+    applyOverlay(items, opts = {}) {
       while (overlayG.firstChild) overlayG.removeChild(overlayG.firstChild);
       const active = items != null;
       Object.values(clusterGs).forEach(({g}) => g.setAttribute('opacity', active ? '0.12' : '1'));
@@ -857,23 +866,55 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
       Object.values(dotLayers).forEach(l => l.setAttribute('display', 'none'));
       if (!active) return;
       animateViewBox([0, 0, W, H]);
+      const arrows = opts.arrows && items.length > 1;
+
+      // 1. Arrow lines (behind everything)
+      if (arrows) {
+        for (let i = 0; i < items.length - 1; i++) {
+          const a = items[i].entry, b = items[i+1].entry;
+          if (a.x == null || b.x == null) continue;
+          const ln = document.createElementNS(NS, 'line');
+          ln.setAttribute('x1', a.x * W); ln.setAttribute('y1', a.y * H);
+          ln.setAttribute('x2', b.x * W); ln.setAttribute('y2', b.y * H);
+          ln.setAttribute('stroke', '#6b7280'); ln.setAttribute('stroke-width', '1.2');
+          ln.setAttribute('stroke-opacity', '0.55'); ln.setAttribute('marker-end', 'url(#arr)');
+          ln.setAttribute('pointer-events', 'none');
+          overlayG.appendChild(ln);
+        }
+      }
+
+      // 2. Dots + season labels (drawn second, on top of lines)
+      const hitEls = [];
       items.forEach(({entry: e, cluster: c}) => {
         if (e.x == null || e.y == null) return;
         const col = poColor(e.playoff_result);
+        const cx = e.x * W, cy = e.y * H;
         const dot = document.createElementNS(NS, 'circle');
-        dot.setAttribute('cx', e.x * W); dot.setAttribute('cy', e.y * H); dot.setAttribute('r', '6');
+        dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', '6');
         dot.setAttribute('fill', col + 'cc'); dot.setAttribute('stroke', col);
         dot.setAttribute('stroke-width', '1.5'); dot.setAttribute('pointer-events', 'none');
         overlayG.appendChild(dot);
+        if (arrows) {
+          const lbl = document.createElementNS(NS, 'text');
+          lbl.setAttribute('x', cx + 9); lbl.setAttribute('y', cy - 5);
+          lbl.setAttribute('font-size', '8'); lbl.setAttribute('font-weight', '700');
+          lbl.setAttribute('fill', '#9ca3af'); lbl.setAttribute('pointer-events', 'none');
+          lbl.setAttribute('font-family', 'Inter, system-ui, sans-serif');
+          lbl.textContent = e.season;
+          overlayG.appendChild(lbl);
+        }
         const hit = document.createElementNS(NS, 'circle');
-        hit.setAttribute('cx', e.x * W); hit.setAttribute('cy', e.y * H); hit.setAttribute('r', '18');
+        hit.setAttribute('cx', cx); hit.setAttribute('cy', cy); hit.setAttribute('r', '18');
         hit.setAttribute('fill', 'transparent'); hit.style.cursor = 'pointer';
         hit.addEventListener('mouseenter', ev => { dot.setAttribute('r', '8'); onDotHover(e, ev); });
         hit.addEventListener('mousemove', ev => onDotHover(e, ev));
         hit.addEventListener('mouseleave', () => { dot.setAttribute('r', '6'); onDotHover(null, null); });
         hit.addEventListener('click', ev => { ev.stopPropagation(); onDotClick(e, c); });
-        overlayG.appendChild(hit);
+        hitEls.push(hit);
       });
+
+      // 3. Hit areas last (top z-order so they receive mouse events)
+      hitEls.forEach(h => overlayG.appendChild(h));
     },
     showTooltip(entry, ev) {
       if (!entry) { tooltip.style.display = 'none'; return; }
@@ -953,7 +994,8 @@ function buildFilterBar(allClusters, onFilter) {
       sel.className = 'filter-select active';
       const items = [];
       allClusters.forEach(c => c.top.forEach(e => { if (e.team === sel.value) items.push({entry: e, cluster: c}); }));
-      onFilter(items);
+      items.sort((a, b) => a.entry.season.localeCompare(b.entry.season));
+      onFilter(items, {arrows: true});
     }
   });
   bar.appendChild(sel);
@@ -1181,10 +1223,10 @@ Promise.all([
 
   chart.element.insertBefore(buildLegend(data.clusters), chart.element.firstChild);
 
-  filterBarCtrl = buildFilterBar(data.clusters, items => {
+  filterBarCtrl = buildFilterBar(data.clusters, (items, opts) => {
     selectedCluster = null;
     chart.applySelection(null);
-    chart.applyOverlay(items);
+    chart.applyOverlay(items, opts);
     if (items == null) renderEmpty();
   });
   chart.element.insertBefore(filterBarCtrl.element, chart.element.querySelector('.chart-wrap'));
