@@ -411,17 +411,19 @@
         <button class="btn btn-primary btn-sm" id="admin-save" style="margin-bottom:1px">Save</button>
         <span id="admin-status"></span>
       </div>
-      <div class="admin-form" style="border-top:1px solid #1f2937">
-        <div class="admin-field" style="flex:1">
-          <label>Make Pick</label>
-          <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
-            <span id="admin-pick-label" style="font-size:0.8rem;color:#9ca3af">—</span>
-            <select id="admin-pick-player" class="player-select" style="max-width:220px"></select>
-            <button class="btn btn-primary btn-sm" id="admin-submit-pick">Submit Pick</button>
-            <span id="admin-pick-status" style="font-size:0.75rem;color:#6b7280"></span>
+      <details style="border-top:1px solid #1f2937">
+        <summary style="padding:0.5rem 0.75rem;cursor:pointer;color:#6b7280;font-size:0.75rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;user-select:none">Make Pick</summary>
+        <div class="admin-form">
+          <div class="admin-field" style="flex:1">
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+              <span id="admin-pick-label" style="font-size:0.8rem;color:#9ca3af">—</span>
+              <select id="admin-pick-player" class="player-select" style="max-width:220px"></select>
+              <button class="btn btn-primary btn-sm" id="admin-submit-pick">Submit Pick</button>
+              <span id="admin-pick-status" style="font-size:0.75rem;color:#6b7280"></span>
+            </div>
           </div>
         </div>
-      </div>
+      </details>
     </details>
 
     <!-- Status bar -->
