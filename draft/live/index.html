@@ -388,43 +388,176 @@
     .name-btn-team { color: #d1d5db; }
     .name-btn-team:hover { color: #f3f4f6; }
 
-    /* ── Player pool section ──────────────────────────── */
-    #pool-section table thead th { }
+    /* ── Control drawer ───────────────────────────────── */
+    #control-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 600;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(17, 24, 39, 0.85);
+      border: 1px solid #374151;
+      color: #4b5563;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(6px);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #control-toggle:hover { color: #9ca3af; border-color: #6b7280; }
+    #control-toggle.has-pending { border-color: #facc15; color: #facc15; }
+
+    #drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 610;
+      background: rgba(0,0,0,0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    #drawer-backdrop.open { opacity: 1; pointer-events: all; }
+
+    #control-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 360px;
+      max-width: 95vw;
+      background: #0d1117;
+      border-left: 1px solid #374151;
+      z-index: 620;
+      transform: translateX(100%);
+      transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    #control-drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #1f2937;
+      flex-shrink: 0;
+    }
+    .drawer-header h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #4b5563;
+    }
+    .drawer-close {
+      background: none;
+      border: none;
+      color: #4b5563;
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0.1rem 0.3rem;
+    }
+    .drawer-close:hover { color: #9ca3af; }
+    .drawer-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 1.25rem; }
+
+    /* Restyle admin panel inside drawer */
+    #control-drawer #admin-panel {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      margin-bottom: 0;
+    }
+    #control-drawer #admin-panel summary { padding: 0; margin-bottom: 0.5rem; }
+    #control-drawer .admin-form {
+      border-top: none;
+      padding: 0;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    #control-drawer .admin-field input[type="text"],
+    #control-drawer .admin-field input[type="date"],
+    #control-drawer .admin-field input[type="number"] { width: 100%; box-sizing: border-box; }
+    #control-drawer .admin-toggle { margin-top: 0; }
   </style>
 </head>
 <body>
-  <div class="page">
-    <nav class="nav"></nav>
+  <!-- Gear toggle (fixed top-right) -->
+  <button id="control-toggle" title="Controls" onclick="toggleDrawer()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
 
-    <!-- BOD/admin panel -->
-    <details id="admin-panel" style="display:none">
-      <summary>BOD Controls</summary>
-      <div class="admin-form">
-        <div class="admin-field">
-          <label>Year</label>
-          <input type="number" id="admin-year" style="width:80px" min="2020" max="2040" />
+  <!-- Backdrop -->
+  <div id="drawer-backdrop" onclick="closeDrawer()"></div>
+
+  <!-- Control drawer -->
+  <div id="control-drawer">
+    <div class="drawer-header">
+      <h2>Controls</h2>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+
+      <!-- BOD admin panel (inside drawer) -->
+      <details id="admin-panel" style="display:none">
+        <summary>BOD Controls</summary>
+        <div class="admin-form" style="margin-top:0.5rem">
+          <div class="admin-field">
+            <label>Year</label>
+            <input type="number" id="admin-year" style="width:80px" min="2020" max="2040" />
+          </div>
+          <div class="admin-field">
+            <label>Round 1 Date</label>
+            <input type="date" id="admin-date" />
+          </div>
+          <button class="btn btn-primary btn-sm" id="admin-save">Save</button>
+          <span id="admin-status"></span>
         </div>
-        <div class="admin-field">
-          <label>Round 1 Date</label>
-          <input type="date" id="admin-date" />
-        </div>
-        <button class="btn btn-primary btn-sm" id="admin-save" style="margin-bottom:1px">Save</button>
-        <span id="admin-status"></span>
-      </div>
-      <details style="border-top:1px solid #1f2937">
-        <summary style="padding:0.5rem 0.75rem;cursor:pointer;color:#6b7280;font-size:0.75rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;user-select:none">Make Pick</summary>
-        <div class="admin-form">
-          <div class="admin-field" style="flex:1">
-            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
-              <span id="admin-pick-label" style="font-size:0.8rem;color:#9ca3af">—</span>
-              <select id="admin-pick-player" class="player-select" style="max-width:220px"></select>
+        <details style="margin-top:0.75rem;border-top:1px solid #1f2937;padding-top:0.5rem">
+          <summary style="cursor:pointer;color:#6b7280;font-size:0.75rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;user-select:none">Make Pick</summary>
+          <div class="admin-form" style="margin-top:0.5rem">
+            <span id="admin-pick-label" style="font-size:0.8rem;color:#9ca3af">—</span>
+            <select id="admin-pick-player" class="player-select" style="width:100%;max-width:none"></select>
+            <div style="display:flex;gap:0.5rem;align-items:center">
               <button class="btn btn-primary btn-sm" id="admin-submit-pick">Submit Pick</button>
               <span id="admin-pick-status" style="font-size:0.75rem;color:#6b7280"></span>
             </div>
           </div>
-        </div>
+        </details>
       </details>
-    </details>
+
+      <!-- My Picks panel -->
+      <div id="my-picks-section" style="display:none">
+        <div class="my-picks-card">
+          <div class="my-picks-header">
+            <h2 id="my-picks-title">My Picks</h2>
+          </div>
+          <div class="my-picks-body" id="my-picks-body"></div>
+        </div>
+      </div>
+
+      <!-- Sign-in prompt -->
+      <div id="signin-section" style="display:none">
+        <div class="my-picks-card" style="border-color:#374151">
+          <div class="sign-in-prompt">
+            <div>Sign in to see your picks and queue a player.</div>
+            <button class="btn btn-ghost btn-sm" onclick="promptSignIn()" style="margin-top:0.5rem">Sign In</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="page">
+    <nav class="nav"></nav>
 
     <!-- Status bar -->
     <div class="status-bar" id="status-bar">
@@ -433,26 +566,6 @@
         <div class="status-sub" id="status-sub"></div>
       </div>
       <div class="countdown" id="countdown" style="display:none"></div>
-    </div>
-
-    <!-- My Picks panel -->
-    <div id="my-picks-section" style="display:none">
-      <div class="my-picks-card">
-        <div class="my-picks-header">
-          <h2 id="my-picks-title">My Picks</h2>
-        </div>
-        <div class="my-picks-body" id="my-picks-body"></div>
-      </div>
-    </div>
-
-    <!-- Sign-in prompt (shown when not logged in and draft is live) -->
-    <div id="signin-section" style="display:none">
-      <div class="my-picks-card" style="border-color:#374151">
-        <div class="sign-in-prompt">
-          <div>Sign in to see your picks and queue a player.</div>
-          <button class="btn btn-ghost btn-sm" onclick="promptSignIn()" style="margin-top:0.5rem">Sign In</button>
-        </div>
-      </div>
     </div>
 
     <!-- View tab bar -->
@@ -674,6 +787,21 @@
 
     function isAdmin() { return myRoles.includes('admin'); }
     function isBod() { return myRoles.includes('bod') || isAdmin(); }
+
+    // ── Drawer ─────────────────────────────────────────────────────────────────────
+
+    function toggleDrawer() {
+      const open = document.getElementById('control-drawer').classList.contains('open');
+      open ? closeDrawer() : openDrawer();
+    }
+    function openDrawer() {
+      document.getElementById('control-drawer').classList.add('open');
+      document.getElementById('drawer-backdrop').classList.add('open');
+    }
+    function closeDrawer() {
+      document.getElementById('control-drawer').classList.remove('open');
+      document.getElementById('drawer-backdrop').classList.remove('open');
+    }
 
     function promptSignIn() {
       const tok = prompt('Enter your NBN access token:');
@@ -1648,11 +1776,21 @@
       // Show/hide tab bar
       document.getElementById('view-tab-bar').style.display = state ? '' : 'none';
 
+      // Gear icon: visible whenever user is logged in (BOD or team owner)
+      const toggle = document.getElementById('control-toggle');
+      const loggedIn = !!getToken();
+      toggle.style.display = loggedIn ? 'flex' : 'none';
+
       if (isBod()) {
         const panel = document.getElementById('admin-panel');
         panel.style.display = '';
         initAdminPanel(state || {});
       }
+
+      // Pulse gear icon amber when a pick is submitted but not yet revealed
+      const hasPending = state && isBod() && yearPicks(state.year)
+        .some(p => p.player && !state.revealed.includes(`${p.round}-${p.pick}`));
+      toggle.classList.toggle('has-pending', !!hasPending);
 
       renderStatus(state);
       renderMyPicks(state);
