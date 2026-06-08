@@ -1761,9 +1761,9 @@
       const state = draftState;
       _swapTakesFrom = buildSwapTakesFrom(state ? yearPicks(state.year) : []);
 
-      // Sync highlights and pool order from state
+      // Sync highlights from state; pool order only on initial load (not on interval ticks)
       highlights = (state && state.highlights) || {};
-      poolOrder = (state && state.pool_order) || [];
+      if (!poolOrder.length) poolOrder = (state && state.pool_order) || [];
 
       // Auto-jump to the active pick's round — only once on initial load, never again
       if (state && !roundAutoJumped) {
