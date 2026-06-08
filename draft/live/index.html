@@ -375,6 +375,16 @@
       background: #0d1117; padding: 0.3rem 0.75rem;
       border-bottom: 1px solid #1a2336;
     }
+    .cap-hold-tag {
+      display: inline-block; font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.05em; padding: 0.1rem 0.35rem;
+      border-radius: 3px; vertical-align: middle; margin-left: 0.4rem;
+    }
+    .ch-ufa   { background: #3f3f46; color: #a1a1aa; }
+    .ch-rfa   { background: #422006; color: #fbbf24; }
+    .ch-popt  { background: #1e3a5f; color: #93c5fd; }
+    .ch-topt  { background: #14352a; color: #6ee7b7; }
+    .ch-ngtd  { background: #3b1919; color: #f87171; }
 
     /* ── Clickable name buttons ───────────────────────── */
     .name-btn {
@@ -1327,8 +1337,15 @@
         if (!players.length) return;
         tableBody += `<tr><td colspan="3" class="depth-pos-label">${pos}</td></tr>`;
         players.forEach(r => {
+          const holdBadge = r.capHold ? (() => {
+            const map = { UFA: ['ch-ufa','UFA'], RFA: ['ch-rfa','RFA'],
+                          PLAYER_OPT: ['ch-popt','P.OPT'], TEAM_OPT: ['ch-topt','T.OPT'],
+                          NON_GTD: ['ch-ngtd','NGD'] };
+            const [cls, label] = map[r.capHold] || ['ch-ufa', r.capHold];
+            return `<span class="cap-hold-tag ${cls}">${label}</span>`;
+          })() : '';
           tableBody += `<tr style="border-bottom:1px solid #1a2336">
-            <td style="padding:0.45rem 0.75rem;color:#f3f4f6;font-weight:600">${r.name}</td>
+            <td style="padding:0.45rem 0.75rem;color:#f3f4f6;font-weight:600">${r.name}${holdBadge}</td>
             <td style="padding:0.45rem 0.75rem;color:#9ca3af;font-size:0.82rem">${r.pos.join('/')}</td>
             <td style="padding:0.45rem 0.75rem;color:#d1d5db;font-variant-numeric:tabular-nums">${r.ovr || '—'}</td>
           </tr>`;
@@ -1341,7 +1358,7 @@
           <div class="depth-modal-header">
             <img class="depth-team-logo" src="/logos/logo-${abbr.toLowerCase()}.png" alt="${abbr}"
                  onerror="this.style.display='none'">
-            <div class="depth-team-name">${teamName}</div>
+            <div class="depth-team-name">${teamName} Depth Chart</div>
           </div>
           <div class="depth-table-wrap">
             <table style="width:100%;border-collapse:collapse;font-size:0.88rem;white-space:nowrap">
@@ -1385,10 +1402,11 @@
         const name = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
         const csvOvr = ovrIdx !== -1 ? parseInt(cols[ovrIdx]) : NaN;
         const ovr = isNaN(csvOvr) ? (ovrCurrent[slug] || 0) : csvOvr;
+        const capHold = (bio.cap_holds && bio.cap_holds['26-27']) || null;
         result.push({
           slug, name,
           pos: Array.isArray(bio.pos) ? bio.pos : [bio.pos || '?'],
-          ovr,
+          ovr, capHold,
         });
       }
       return result;
