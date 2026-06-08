@@ -1361,14 +1361,27 @@
         return `<span class="cap-hold-tag ${cls}">${label}</span>`;
       }
 
+      function ovrStyle(n) {
+        if (!n) return '';
+        const t = Math.min(1, Math.max(0, (n - 60) / (99 - 60)));
+        const hue = Math.round(t * 120);
+        return `background:hsl(${hue},55%,18%);color:hsl(${hue},80%,72%);border-radius:3px;padding:0.1rem 0.35rem;`;
+      }
+
       // 6-col grid: PG/SG each span 2 cols centered (cols 2-3, 4-5); SF/C/PF span 2 cols each (cols 1-2, 3-4, 5-6)
       function buildGroup(pos, colStart, row) {
         const players = (byPos[pos] || []).sort((a, b) => b.ovr - a.ovr);
         const rows = players.length
-          ? players.map(r => `<div class="depth-player-row">
+          ? players.map(r => {
+              const ovr = r.ovr || '—';
+              const ovrSpan = r.ovr
+                ? `<span style="${ovrStyle(r.ovr)}">${ovr}</span>`
+                : `<span class="depth-player-ovr">—</span>`;
+              return `<div class="depth-player-row">
               <span class="depth-player-name">${r.name}${holdBadge(r)}</span>
-              <span class="depth-player-ovr">${r.ovr || '—'}</span>
-            </div>`).join('')
+              ${ovrSpan}
+            </div>`;
+            }).join('')
           : `<div class="depth-player-row" style="color:#374151;font-style:italic">—</div>`;
         const style = `grid-column:${colStart}/${colStart+2};grid-row:${row}`;
         return `<div class="depth-pos-group" style="${style}"><div class="depth-pos-group-hdr">${pos}</div>${rows}</div>`;
