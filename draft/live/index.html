@@ -1280,6 +1280,7 @@
 
     let highlights = {};
     let rosterCache = {};
+    let ovrCurrent = {};  // slug → current OVR from /api/ovr/current
     let activeTab = 'board';
     // revealState: 0=closed, 1=player modal, 2=depth chart
     let revealState = 0;
@@ -1499,10 +1500,12 @@
         if (!bio) continue;
         const parts = bio.name.split(',');
         const name = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+        const csvOvr = ovrIdx !== -1 ? parseInt(cols[ovrIdx]) : NaN;
+        const ovr = isNaN(csvOvr) ? (ovrCurrent[slug] || 0) : csvOvr;
         result.push({
           slug, name,
           pos: Array.isArray(bio.pos) ? bio.pos : [bio.pos || '?'],
-          ovr: parseInt(cols[ovrIdx]) || 0,
+          ovr,
         });
       }
       return result;
@@ -1602,12 +1605,14 @@
     }
 
     async function init() {
-      // Load bios and auth in parallel
-      const [biosRes] = await Promise.all([
+      // Load bios, OVR, and auth in parallel
+      const [biosRes, ovrRes] = await Promise.all([
         fetch('/api/players'),
+        fetch('/api/ovr/current'),
         loadAuth(),
       ]);
       if (biosRes.ok) bios = await biosRes.json();
+      if (ovrRes.ok) ovrCurrent = await ovrRes.json();
 
       await refreshState();
       render();
