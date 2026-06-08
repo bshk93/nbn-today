@@ -161,10 +161,9 @@
 
     /* ── Draft board ──────────────────────────────────── */
     .section { margin-bottom: 2rem; }
-    body.pool-view { overflow: hidden; }
-    body.pool-view .page { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    body.pool-view #pool-section { flex: 1; min-height: 0; flex-direction: column; overflow: hidden; margin-bottom: 0; }
-    body.pool-view #pool-section .table-wrap { flex: 1; overflow-y: auto; min-height: 0; }
+    /* 80vh = 100vh / zoom(1.25) — gives the actual visible height in CSS px;
+       subtract ~140px for nav + status bar + view tabs above the table */
+    body.pool-view #pool-section .table-wrap { overflow-y: auto; max-height: calc(80vh - 140px); }
     body.pool-view #pool-section thead th { position: sticky; top: 0; background: #1f2937; z-index: 1; }
     .section-title {
       font-size: 0.72rem;
@@ -1271,7 +1270,7 @@
       document.getElementById('tab-fullboard-btn').classList.toggle('active', tab === 'fullboard');
       document.getElementById('tab-pool-btn').classList.toggle('active', tab === 'pool');
       document.getElementById('fullboard-section').style.display = tab === 'fullboard' ? 'block' : 'none';
-      document.getElementById('pool-section').style.display = tab === 'pool' ? 'flex' : 'none';
+      document.getElementById('pool-section').style.display = tab === 'pool' ? 'block' : 'none';
       if (tab === 'fullboard') renderFullBoard(draftState);
       if (tab === 'pool') renderPool(draftState);
     }
