@@ -279,6 +279,28 @@
     .view-tab-btn:hover { color: #f3f4f6; border-color: #6b7280; }
     .view-tab-btn.active { background: #1f2937; color: #f3f4f6; border-color: #6b7280; }
 
+    /* ── Round sub-tabs ───────────────────────────────── */
+    .round-tabs {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 0.6rem;
+      align-items: center;
+    }
+    .round-tab-btn {
+      padding: 0.28rem 0.85rem;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      border: 1px solid #374151;
+      background: transparent;
+      color: #6b7280;
+    }
+    .round-tab-btn:hover { color: #d1d5db; border-color: #4b5563; }
+    .round-tab-btn.active { background: #1f2937; color: #f3f4f6; border-color: #6b7280; }
+    .round-tab-hint { font-size: 0.65rem; color: #374151; margin-left: 0.4rem; }
+
     /* ── Show modal overlay ───────────────────────────── */
     #show-overlay {
       position: fixed;
@@ -608,6 +630,11 @@
 
     <!-- Full draft board (Draft Board tab) -->
     <div class="section" id="fullboard-section">
+      <div class="round-tabs">
+        <button class="round-tab-btn active" id="round-tab-1" onclick="switchRound(1)">Round 1</button>
+        <button class="round-tab-btn" id="round-tab-2" onclick="switchRound(2)">Round 2</button>
+        <span class="round-tab-hint">← → to switch</span>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -661,6 +688,7 @@
     let myName = null;
     let countdownTimer = null;
     let activeTab = 'fullboard';
+    let activeRound = 1;
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -1223,9 +1251,24 @@
       if (tab === 'pool') renderPool(draftState);
     }
 
+    function switchRound(round) {
+      activeRound = round;
+      document.getElementById('round-tab-1').classList.toggle('active', round === 1);
+      document.getElementById('round-tab-2').classList.toggle('active', round === 2);
+      renderFullBoard(draftState);
+    }
+
     // ── Enter key reveal sequence ──────────────────────────────────────────────────
 
     document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (revealState === 0 && activeTab === 'fullboard') {
+          switchRound(e.key === 'ArrowLeft' ? 1 : 2);
+          e.preventDefault();
+        }
+        return;
+      }
+
       if (e.key !== 'Enter') return;
 
       if (revealState === 1) { advanceToDepth(); return; }
@@ -1476,19 +1519,17 @@
       tbody.innerHTML = '';
 
       const year = state.year;
-      const picks = yearPicks(year);
+      const allPicks = yearPicks(year);
+      if (!allPicks.length) return;
+
+      // Auto-jump to the round with the active pick on first render
+      const slot = currentSlot(state);
+      if (slot && slot.pick.round !== activeRound) switchRound(slot.pick.round);
+
+      const picks = allPicks.filter(p => p.round === activeRound);
       if (!picks.length) return;
 
-      const slot = currentSlot(state);
-      let lastRound = null;
-
       picks.forEach(p => {
-        if (p.round !== lastRound) {
-          const sep = document.createElement('tr');
-          sep.innerHTML = `<td colspan="5" class="round-separator">Round ${p.round}</td>`;
-          tbody.appendChild(sep);
-          lastRound = p.round;
-        }
 
         const revealed = p.player && state.revealed.includes(`${p.round}-${p.pick}`);
         const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick;
