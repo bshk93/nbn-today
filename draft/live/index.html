@@ -457,11 +457,12 @@
 
     <!-- View tab bar -->
     <div class="view-tabs" id="view-tab-bar" style="display:none">
-      <button class="view-tab-btn active" id="tab-board-btn" onclick="switchTab('board')">Draft Board</button>
+      <button class="view-tab-btn active" id="tab-board-btn" onclick="switchTab('board')">Next Up</button>
+      <button class="view-tab-btn" id="tab-fullboard-btn" onclick="switchTab('fullboard')">Draft Board</button>
       <button class="view-tab-btn" id="tab-pool-btn" onclick="switchTab('pool')">Player Pool</button>
     </div>
 
-    <!-- Draft board (Board tab) -->
+    <!-- Next Up (Board tab) -->
     <div class="section" id="board-section" style="display:none">
       <div class="table-wrap">
         <table>
@@ -476,6 +477,24 @@
             </tr>
           </thead>
           <tbody id="board-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Full draft board (Draft Board tab) -->
+    <div class="section" id="fullboard-section" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pick</th>
+              <th>Team</th>
+              <th>Player</th>
+              <th>Pos</th>
+              <th class="muted">College / Country</th>
+            </tr>
+          </thead>
+          <tbody id="fullboard-body"></tbody>
         </table>
       </div>
     </div>
@@ -1243,9 +1262,12 @@
     function switchTab(tab) {
       activeTab = tab;
       document.getElementById('tab-board-btn').classList.toggle('active', tab === 'board');
+      document.getElementById('tab-fullboard-btn').classList.toggle('active', tab === 'fullboard');
       document.getElementById('tab-pool-btn').classList.toggle('active', tab === 'pool');
       document.getElementById('board-section').style.display = tab === 'board' ? '' : 'none';
+      document.getElementById('fullboard-section').style.display = tab === 'fullboard' ? '' : 'none';
       renderPool(draftState);
+      if (tab === 'fullboard') renderFullBoard(draftState);
     }
 
     // ── Enter key reveal sequence ──────────────────────────────────────────────────
@@ -1451,6 +1473,114 @@
       return result;
     }
 
+    // ── Full draft board render ────────────────────────────────────────────────────
+
+    function renderFullBoard(state) {
+      const section = document.getElementById('fullboard-section');
+      const tbody = document.getElementById('fullboard-body');
+      if (!state || activeTab !== 'fullboard') { section.style.display = 'none'; return; }
+      section.style.display = '';
+      tbody.innerHTML = '';
+
+      const year = state.year;
+      const picks = yearPicks(year);
+      if (!picks.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No picks configured.</td></tr>`;
+        return;
+      }
+
+      const slot = currentSlot(state);
+      let lastRound = null;
+
+      picks.forEach(p => {
+        if (p.round !== lastRound) {
+          const sep = document.createElement('tr');
+          sep.innerHTML = `<td colspan="5" class="round-separator">Round ${p.round}</td>`;
+          tbody.appendChild(sep);
+          lastRound = p.round;
+        }
+
+        const revealed = p.player && state.revealed.includes(`${p.round}-${p.pick}`);
+        const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick;
+        const bio = revealed ? (bios[p.player] || {}) : {};
+        const name = revealed ? bioName(p.player) : '';
+        const pos = revealed ? (Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '—')) : '';
+        const school = revealed
+          ? ((bio.college && bio.college !== 'NA') ? bio.college : (bio.country && bio.country !== 'NA') ? bio.country : '—')
+          : '';
+        const owners = pickOwners(p);
+        const primaryTeam = owners[0];
+
+        const tr = document.createElement('tr');
+        if (isOnClock) tr.style.background = '#0d1f3c';
+
+        // Pick number
+        const tdNum = document.createElement('td');
+        tdNum.className = 'num';
+        tdNum.textContent = p.pick;
+        tr.appendChild(tdNum);
+
+        // Team — always clickable for depth chart
+        const tdTeam = document.createElement('td');
+        tdTeam.className = 'team';
+        const teamBtn = document.createElement('button');
+        teamBtn.className = 'name-btn name-btn-team';
+        if (isOnClock) teamBtn.style.color = '#93c5fd';
+        teamBtn.innerHTML = pickTeamHtml(p);
+        teamBtn.addEventListener('click', () => {
+          revealState = 2; revealTeam = primaryTeam;
+          renderDepthModal(primaryTeam);
+        });
+        tdTeam.appendChild(teamBtn);
+        tr.appendChild(tdTeam);
+
+        // Player
+        const tdPlayer = document.createElement('td');
+        if (revealed) {
+          const cell = document.createElement('div');
+          cell.className = 'player-cell';
+          if (bio.photo_url) {
+            const img = document.createElement('img');
+            img.className = 'player-photo'; img.src = bio.photo_url; img.alt = '';
+            img.onerror = function() { this.replaceWith(Object.assign(document.createElement('div'), {className:'player-ph'})); };
+            cell.appendChild(img);
+          } else {
+            cell.appendChild(Object.assign(document.createElement('div'), {className:'player-ph'}));
+          }
+          const hasVideo = !!highlights[p.player];
+          const nameBtn = document.createElement('button');
+          nameBtn.className = `name-btn name-btn-player${hasVideo ? ' has-video' : ''}`;
+          nameBtn.textContent = name;
+          nameBtn.addEventListener('click', () => {
+            revealSlug = p.player; revealTeam = primaryTeam; revealPick = p; revealState = 1;
+            renderPlayerModal();
+          });
+          cell.appendChild(nameBtn);
+          tdPlayer.appendChild(cell);
+        } else if (p.player) {
+          const cell = document.createElement('div');
+          cell.className = 'pick-in-cell';
+          cell.innerHTML = `<span class="pick-in-dot"></span> The pick is in`;
+          tdPlayer.appendChild(cell);
+        } else if (isOnClock) {
+          tdPlayer.innerHTML = `<span style="color:#facc15;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em">⏱ On the Clock</span>`;
+        } else {
+          tdPlayer.innerHTML = `<span style="color:#374151">—</span>`;
+        }
+        tr.appendChild(tdPlayer);
+
+        const tdPos = document.createElement('td');
+        tdPos.className = 'muted'; tdPos.textContent = pos;
+        tr.appendChild(tdPos);
+
+        const tdSchool = document.createElement('td');
+        tdSchool.className = 'muted'; tdSchool.textContent = school;
+        tr.appendChild(tdSchool);
+
+        tbody.appendChild(tr);
+      });
+    }
+
     // ── Player pool render ─────────────────────────────────────────────────────────
 
     function renderPool(state) {
@@ -1527,6 +1657,7 @@
       renderStatus(state);
       renderMyPicks(state);
       renderBoard(state);
+      renderFullBoard(state);
       renderPool(state);
       // Invalidate roster cache whenever state updates (picks may have changed depth charts)
       rosterCache = {};
