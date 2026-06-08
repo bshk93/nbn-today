@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.0.267",
+    "date": "2026-06-08",
+    "changes": [
+      "draft/live: fix arrow keys \u2014 revealState was never declared so started as undefined, making revealState === 0 always false until after first modal open/close"
+    ]
+  },
+  {
     "version": "0.0.266",
     "date": "2026-06-08",
     "changes": [
