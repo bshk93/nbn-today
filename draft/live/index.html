@@ -575,7 +575,7 @@
     </div>
 
     <!-- Full draft board (Draft Board tab) -->
-    <div class="section" id="fullboard-section" style="display:none">
+    <div class="section" id="fullboard-section">
       <div class="table-wrap">
         <table>
           <thead>
@@ -1590,8 +1590,6 @@
 
       renderStatus(state);
       renderMyPicks(state);
-      document.getElementById('fullboard-section').style.display = (state && activeTab === 'fullboard') ? 'block' : 'none';
-      document.getElementById('pool-section').style.display = (state && activeTab === 'pool') ? 'block' : 'none';
       renderFullBoard(state);
       renderPool(state);
       // Invalidate roster cache whenever state updates (picks may have changed depth charts)
