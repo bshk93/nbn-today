@@ -369,34 +369,34 @@
     .depth-team-logo { width: 44px; height: 44px; object-fit: contain; }
     .depth-team-name { font-size: 1.2rem; font-weight: 800; color: #f3f4f6; }
     .depth-court-wrap {
-      position: relative; padding: 1rem; background: #090f1c; overflow: hidden;
+      position: relative; padding: 0.6rem; background: #090f1c; overflow: hidden;
     }
     .depth-court-svg {
       position: absolute; inset: 0; width: 100%; height: 100%;
-      opacity: 0.1; pointer-events: none;
+      opacity: 0.15; pointer-events: none;
     }
-    .depth-pos-row {
-      position: relative; display: grid; gap: 0.6rem; margin-bottom: 0.6rem;
+    .depth-pos-grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.45rem;
     }
-    .depth-pos-row:last-child { margin-bottom: 0; }
-    .depth-pos-row-2 { grid-template-columns: 1fr 1fr; }
-    .depth-pos-row-3 { grid-template-columns: 1fr 1fr 1fr; }
     .depth-pos-group {
-      background: rgba(13, 20, 38, 0.9); border: 1px solid #1f2937; border-radius: 7px; overflow: hidden;
+      background: rgba(13, 20, 38, 0.72); border: 1px solid #1f2937; border-radius: 6px; overflow: hidden;
     }
     .depth-pos-group-hdr {
-      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.09em;
+      font-size: 0.58rem; font-weight: 700; letter-spacing: 0.09em;
       text-transform: uppercase; color: #6b7280;
-      background: rgba(0,0,0,0.35); padding: 0.28rem 0.65rem;
+      background: rgba(0,0,0,0.3); padding: 0.2rem 0.55rem;
       border-bottom: 1px solid #1a2336;
     }
     .depth-player-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.32rem 0.65rem; border-bottom: 1px solid #0f1a28; font-size: 0.82rem;
+      padding: 0.2rem 0.55rem; border-bottom: 1px solid #0f1a28; font-size: 0.78rem;
     }
     .depth-player-row:last-child { border-bottom: none; }
     .depth-player-name { color: #f3f4f6; font-weight: 600; }
-    .depth-player-ovr { color: #9ca3af; font-variant-numeric: tabular-nums; font-size: 0.78rem; margin-left: 0.5rem; flex-shrink: 0; }
+    .depth-player-ovr { color: #9ca3af; font-variant-numeric: tabular-nums; font-size: 0.74rem; margin-left: 0.5rem; flex-shrink: 0; }
     .cap-hold-tag {
       display: inline-block; font-size: 0.6rem; font-weight: 700;
       letter-spacing: 0.05em; padding: 0.1rem 0.35rem;
@@ -1361,7 +1361,8 @@
         return `<span class="cap-hold-tag ${cls}">${label}</span>`;
       }
 
-      function buildGroup(pos) {
+      // 6-col grid: PG/SG each span 2 cols centered (cols 2-3, 4-5); SF/C/PF span 2 cols each (cols 1-2, 3-4, 5-6)
+      function buildGroup(pos, colStart, row) {
         const players = (byPos[pos] || []).sort((a, b) => b.ovr - a.ovr);
         const rows = players.length
           ? players.map(r => `<div class="depth-player-row">
@@ -1369,17 +1370,12 @@
               <span class="depth-player-ovr">${r.ovr || '—'}</span>
             </div>`).join('')
           : `<div class="depth-player-row" style="color:#374151;font-style:italic">—</div>`;
-        return `<div class="depth-pos-group"><div class="depth-pos-group-hdr">${pos}</div>${rows}</div>`;
+        const style = `grid-column:${colStart}/${colStart+2};grid-row:${row}`;
+        return `<div class="depth-pos-group" style="${style}"><div class="depth-pos-group-hdr">${pos}</div>${rows}</div>`;
       }
 
-      const row1Pos = ['PG', 'SG'];
-      const row2Pos = ['SF', 'C', 'PF'];
-      const knownPos = new Set([...row1Pos, ...row2Pos]);
+      const knownPos = new Set(['PG','SG','SF','C','PF']);
       const extraPos = Object.keys(byPos).filter(p => !knownPos.has(p));
-
-      const extraRow = extraPos.length
-        ? `<div class="depth-pos-row" style="grid-template-columns:repeat(${Math.min(extraPos.length,4)},1fr)">${extraPos.map(buildGroup).join('')}</div>`
-        : '';
 
       // Half-court SVG (bird's-eye, basket at bottom; 50ft×47ft at 10px/ft)
       const courtSvg = `<svg class="depth-court-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
@@ -1405,9 +1401,14 @@
           </div>
           <div class="depth-court-wrap">
             ${courtSvg}
-            <div class="depth-pos-row depth-pos-row-2">${row1Pos.map(buildGroup).join('')}</div>
-            <div class="depth-pos-row depth-pos-row-3">${row2Pos.map(buildGroup).join('')}</div>
-            ${extraRow}
+            <div class="depth-pos-grid">
+              ${buildGroup('PG', 2, 1)}
+              ${buildGroup('SG', 4, 1)}
+              ${buildGroup('SF', 1, 2)}
+              ${buildGroup('C',  3, 2)}
+              ${buildGroup('PF', 5, 2)}
+              ${extraPos.map((p,i) => buildGroup(p, 1 + (i%3)*2, 3)).join('')}
+            </div>
           </div>
           <div class="show-modal-footer">
             <div class="show-modal-hint"><kbd>Enter</kbd> to close</div>
