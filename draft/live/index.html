@@ -689,6 +689,7 @@
     let countdownTimer = null;
     let activeTab = 'fullboard';
     let activeRound = 1;
+    let roundAutoJumped = false;
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -1263,7 +1264,8 @@
     document.addEventListener('keydown', e => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         if (revealState === 0 && activeTab === 'fullboard') {
-          switchRound(e.key === 'ArrowLeft' ? 1 : 2);
+          const next = e.key === 'ArrowRight' ? Math.min(2, activeRound + 1) : Math.max(1, activeRound - 1);
+          if (next !== activeRound) switchRound(next);
           e.preventDefault();
         }
         return;
@@ -1679,8 +1681,9 @@
       // Sync highlights from state
       highlights = (state && state.highlights) || {};
 
-      // Auto-jump to the round with the active on-clock pick (once per state change)
-      if (state) {
+      // Auto-jump to the active pick's round — only once on initial load, never again
+      if (state && !roundAutoJumped) {
+        roundAutoJumped = true;
         const slot = currentSlot(state);
         if (slot && slot.pick.round !== activeRound) {
           activeRound = slot.pick.round;
