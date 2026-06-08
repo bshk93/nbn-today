@@ -368,13 +368,35 @@
     }
     .depth-team-logo { width: 44px; height: 44px; object-fit: contain; }
     .depth-team-name { font-size: 1.2rem; font-weight: 800; color: #f3f4f6; }
-    .depth-table-wrap { max-height: 620px; overflow-y: auto; }
-    .depth-pos-label {
+    .depth-court-wrap {
+      position: relative; padding: 1rem; background: #090f1c; overflow: hidden;
+    }
+    .depth-court-svg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      opacity: 0.1; pointer-events: none;
+    }
+    .depth-pos-row {
+      position: relative; display: grid; gap: 0.6rem; margin-bottom: 0.6rem;
+    }
+    .depth-pos-row:last-child { margin-bottom: 0; }
+    .depth-pos-row-2 { grid-template-columns: 1fr 1fr; }
+    .depth-pos-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .depth-pos-group {
+      background: rgba(13, 20, 38, 0.9); border: 1px solid #1f2937; border-radius: 7px; overflow: hidden;
+    }
+    .depth-pos-group-hdr {
       font-size: 0.62rem; font-weight: 700; letter-spacing: 0.09em;
-      text-transform: uppercase; color: #4b5563;
-      background: #0d1117; padding: 0.3rem 0.75rem;
+      text-transform: uppercase; color: #6b7280;
+      background: rgba(0,0,0,0.35); padding: 0.28rem 0.65rem;
       border-bottom: 1px solid #1a2336;
     }
+    .depth-player-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.32rem 0.65rem; border-bottom: 1px solid #0f1a28; font-size: 0.82rem;
+    }
+    .depth-player-row:last-child { border-bottom: none; }
+    .depth-player-name { color: #f3f4f6; font-weight: 600; }
+    .depth-player-ovr { color: #9ca3af; font-variant-numeric: tabular-nums; font-size: 0.78rem; margin-left: 0.5rem; flex-shrink: 0; }
     .cap-hold-tag {
       display: inline-block; font-size: 0.6rem; font-weight: 700;
       letter-spacing: 0.05em; padding: 0.1rem 0.35rem;
@@ -1330,27 +1352,48 @@
         byPos[p].push(r);
       });
 
-      let tableBody = '';
-      const allPos = [...POS_ORDER, ...Object.keys(byPos).filter(p => !POS_ORDER.includes(p))];
-      allPos.forEach(pos => {
+      function holdBadge(r) {
+        if (!r.capHold) return '';
+        const map = { UFA: ['ch-ufa','UFA'], RFA: ['ch-rfa','RFA'],
+                      PLAYER_OPT: ['ch-popt','P.OPT'], TEAM_OPT: ['ch-topt','T.OPT'],
+                      NON_GTD: ['ch-ngtd','NGD'] };
+        const [cls, label] = map[r.capHold] || ['ch-ufa', r.capHold];
+        return `<span class="cap-hold-tag ${cls}">${label}</span>`;
+      }
+
+      function buildGroup(pos) {
         const players = (byPos[pos] || []).sort((a, b) => b.ovr - a.ovr);
-        if (!players.length) return;
-        tableBody += `<tr><td colspan="3" class="depth-pos-label">${pos}</td></tr>`;
-        players.forEach(r => {
-          const holdBadge = r.capHold ? (() => {
-            const map = { UFA: ['ch-ufa','UFA'], RFA: ['ch-rfa','RFA'],
-                          PLAYER_OPT: ['ch-popt','P.OPT'], TEAM_OPT: ['ch-topt','T.OPT'],
-                          NON_GTD: ['ch-ngtd','NGD'] };
-            const [cls, label] = map[r.capHold] || ['ch-ufa', r.capHold];
-            return `<span class="cap-hold-tag ${cls}">${label}</span>`;
-          })() : '';
-          tableBody += `<tr style="border-bottom:1px solid #1a2336">
-            <td style="padding:0.45rem 0.75rem;color:#f3f4f6;font-weight:600">${r.name}${holdBadge}</td>
-            <td style="padding:0.45rem 0.75rem;color:#9ca3af;font-size:0.82rem">${r.pos.join('/')}</td>
-            <td style="padding:0.45rem 0.75rem;color:#d1d5db;font-variant-numeric:tabular-nums">${r.ovr || '—'}</td>
-          </tr>`;
-        });
-      });
+        const rows = players.length
+          ? players.map(r => `<div class="depth-player-row">
+              <span class="depth-player-name">${r.name}${holdBadge(r)}</span>
+              <span class="depth-player-ovr">${r.ovr || '—'}</span>
+            </div>`).join('')
+          : `<div class="depth-player-row" style="color:#374151;font-style:italic">—</div>`;
+        return `<div class="depth-pos-group"><div class="depth-pos-group-hdr">${pos}</div>${rows}</div>`;
+      }
+
+      const row1Pos = ['PG', 'SG'];
+      const row2Pos = ['SF', 'C', 'PF'];
+      const knownPos = new Set([...row1Pos, ...row2Pos]);
+      const extraPos = Object.keys(byPos).filter(p => !knownPos.has(p));
+
+      const extraRow = extraPos.length
+        ? `<div class="depth-pos-row" style="grid-template-columns:repeat(${Math.min(extraPos.length,4)},1fr)">${extraPos.map(buildGroup).join('')}</div>`
+        : '';
+
+      // Half-court SVG (bird's-eye, basket at bottom; 50ft×47ft at 10px/ft)
+      const courtSvg = `<svg class="depth-court-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="498" height="468" fill="none" stroke="#fff" stroke-width="2"/>
+        <rect x="170" y="280" width="160" height="190" fill="none" stroke="#fff" stroke-width="2"/>
+        <path d="M 190,280 A 60,60 0 0,0 310,280" fill="none" stroke="#fff" stroke-width="2"/>
+        <path d="M 190,280 A 60,60 0 0,1 310,280" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="6,5"/>
+        <line x1="30" y1="330" x2="30" y2="469" stroke="#fff" stroke-width="2"/>
+        <line x1="470" y1="330" x2="470" y2="469" stroke="#fff" stroke-width="2"/>
+        <path d="M 30,330 A 237,237 0 0,0 470,330" fill="none" stroke="#fff" stroke-width="2"/>
+        <circle cx="250" cy="418" r="10" fill="none" stroke="#fff" stroke-width="2"/>
+        <path d="M 210,418 A 40,40 0 0,0 290,418" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="218" y1="453" x2="282" y2="453" stroke="#fff" stroke-width="3"/>
+      </svg>`;
 
       const overlay = document.getElementById('show-overlay');
       overlay.innerHTML = `
@@ -1360,15 +1403,11 @@
                  onerror="this.style.display='none'">
             <div class="depth-team-name">${teamName} Depth Chart</div>
           </div>
-          <div class="depth-table-wrap">
-            <table style="width:100%;border-collapse:collapse;font-size:0.88rem;white-space:nowrap">
-              <thead><tr style="border-bottom:1px solid #1f2937">
-                <th style="padding:0.4rem 0.75rem;text-align:left;font-size:0.65rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#4b5563">Player</th>
-                <th style="padding:0.4rem 0.75rem;text-align:left;font-size:0.65rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#4b5563">Pos</th>
-                <th style="padding:0.4rem 0.75rem;text-align:left;font-size:0.65rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#4b5563">OVR</th>
-              </tr></thead>
-              <tbody>${tableBody}</tbody>
-            </table>
+          <div class="depth-court-wrap">
+            ${courtSvg}
+            <div class="depth-pos-row depth-pos-row-2">${row1Pos.map(buildGroup).join('')}</div>
+            <div class="depth-pos-row depth-pos-row-3">${row2Pos.map(buildGroup).join('')}</div>
+            ${extraRow}
           </div>
           <div class="show-modal-footer">
             <div class="show-modal-hint"><kbd>Enter</kbd> to close</div>
