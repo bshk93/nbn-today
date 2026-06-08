@@ -714,10 +714,12 @@
 
     function pickWindowStart(round1Date, roundNum, pickNum) {
       // round1Date: "YYYY-MM-DD"; noon Eastern (EDT = UTC-4 in June)
+      // pickNum may be globally numbered (31-60 for round 2); normalize to within-round offset
       const [yr, mo, da] = round1Date.split('-').map(Number);
       const day = da + (roundNum - 1);
+      const withinRound = (pickNum - 1) % 30;
       return new Date(`${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}T12:00:00-04:00`)
-        .getTime() + (pickNum - 1) * 10 * 60 * 1000;
+        .getTime() + withinRound * 10 * 60 * 1000;
     }
 
     function pickWindowEnd(round1Date, roundNum, pickNum) {
@@ -1483,6 +1485,7 @@
       revealState = 0;
       revealSlug = null; revealTeam = null; revealPick = null;
       document.getElementById('show-overlay').style.display = 'none';
+      document.body.focus();
     }
 
     function parseRosterCSV(text) {
@@ -1743,6 +1746,9 @@
       if (biosRes.ok) bios = await biosRes.json();
       if (ovrRes.ok) ovrCurrent = await ovrRes.json();
       render();
+
+      // Ensure keyboard events reach the document from the start
+      document.body.focus();
 
       setInterval(async () => {
         await refreshState();
