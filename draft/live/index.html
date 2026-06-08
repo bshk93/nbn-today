@@ -1263,20 +1263,25 @@
 
     // ── Enter key reveal sequence ──────────────────────────────────────────────────
 
-    document.addEventListener('keydown', e => {
+    // Capture phase on window — fires before any element processes the event,
+    // ensuring arrow keys and Enter work regardless of what element has focus.
+    window.addEventListener('keydown', e => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         if (revealState === 0 && activeTab === 'fullboard') {
+          const tag = (e.target.tagName || '').toUpperCase();
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
           const next = e.key === 'ArrowRight' ? Math.min(2, activeRound + 1) : Math.max(1, activeRound - 1);
           if (next !== activeRound) switchRound(next);
           e.preventDefault();
+          e.stopPropagation();
         }
         return;
       }
 
       if (e.key !== 'Enter') return;
 
-      if (revealState === 1) { advanceToDepth(); return; }
-      if (revealState === 2) { closeModal(); return; }
+      if (revealState === 1) { advanceToDepth(); e.stopPropagation(); return; }
+      if (revealState === 2) { closeModal(); e.stopPropagation(); return; }
 
       const tag = (e.target.tagName || '').toUpperCase();
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return;
@@ -1286,7 +1291,7 @@
       const picks = yearPicks(draftState.year);
       const pending = picks.find(p => p.player && !draftState.revealed.includes(`${p.round}-${p.pick}`));
       if (pending) doReveal(pending);
-    });
+    }, { capture: true });
 
     async function doReveal(p) {
       const res = await apiPost('/api/draft/reveal', { round: p.round, pick: p.pick });
@@ -1746,9 +1751,6 @@
       if (biosRes.ok) bios = await biosRes.json();
       if (ovrRes.ok) ovrCurrent = await ovrRes.json();
       render();
-
-      // Ensure keyboard events reach the document from the start
-      document.body.focus();
 
       setInterval(async () => {
         await refreshState();
