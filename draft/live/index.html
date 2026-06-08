@@ -1412,6 +1412,7 @@
       let lastRound = null;
 
       picks.forEach(p => {
+        try {
         if (p.round !== lastRound) {
           const sep = document.createElement('tr');
           sep.innerHTML = `<td colspan="5" class="round-separator">Round ${p.round}</td>`;
@@ -1505,6 +1506,11 @@
         tr.appendChild(tdSchool);
 
         tbody.appendChild(tr);
+        } catch(e) {
+          const errRow = document.createElement('tr');
+          errRow.innerHTML = `<td colspan="5" style="color:#f87171;padding:0.5rem">pick loop error: ${e.message} — ${JSON.stringify(p)}</td>`;
+          tbody.appendChild(errRow);
+        }
       });
     }
 
@@ -1622,7 +1628,7 @@
       ]);
       if (biosRes.ok) bios = await biosRes.json();
       if (ovrRes.ok) ovrCurrent = await ovrRes.json();
-      render();
+      try { render(); } catch(e) { document.getElementById('status-text').textContent = 'render2 error: ' + e; }
 
       setInterval(async () => {
         await refreshState();
