@@ -300,6 +300,33 @@
     .round-tab-btn:hover { color: #d1d5db; border-color: #4b5563; }
     .round-tab-btn.active { background: #1f2937; color: #f3f4f6; border-color: #6b7280; }
     .round-tab-hint { font-size: 0.65rem; color: #374151; margin-left: 0.4rem; }
+    .pick-grid {
+      display: grid;
+      grid-template-columns: repeat(15, 1fr);
+      gap: 4px;
+      padding: 6px;
+    }
+    .pick-card {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 6px 7px;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .pick-card.on-clock { background: #0d1f3c; border-color: #3b82f6; }
+    .pc-top {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+    .pc-num { font-size: 0.6rem; color: #4b5563; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .pc-team { font-size: 0.72rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+    .pc-player { margin-bottom: 2px; overflow: hidden; }
+    .pc-name { font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; }
+    .pc-clock { color: #facc15; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .pc-meta { font-size: 0.6rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* ── Show modal overlay ───────────────────────────── */
     #show-overlay {
@@ -638,20 +665,7 @@
         <button class="round-tab-btn" id="round-tab-2" onclick="switchRound(2)">Round 2</button>
         <span class="round-tab-hint">← → to switch</span>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Pick</th>
-              <th>Team</th>
-              <th>Player</th>
-              <th>Pos</th>
-              <th class="muted">College / Country</th>
-            </tr>
-          </thead>
-          <tbody id="fullboard-body"></tbody>
-        </table>
-      </div>
+      <div id="fullboard-grid" class="pick-grid"></div>
     </div>
 
     <!-- Player pool (Pool tab) -->
@@ -1528,9 +1542,9 @@
     // ── Full draft board render ────────────────────────────────────────────────────
 
     function renderFullBoard(state) {
-      const tbody = document.getElementById('fullboard-body');
+      const grid = document.getElementById('fullboard-grid');
       if (!state || activeTab !== 'fullboard') return;
-      tbody.innerHTML = '';
+      grid.innerHTML = '';
 
       const year = state.year;
       const allPicks = yearPicks(year);
@@ -1541,93 +1555,69 @@
       if (!picks.length) return;
 
       picks.forEach(p => {
-
         const revealed = p.player && state.revealed.includes(`${p.round}-${p.pick}`);
         const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick;
         const bio = revealed ? (bios[p.player] || {}) : {};
         const name = revealed ? bioName(p.player) : '';
-        const pos = revealed ? (Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '—')) : '';
-        const school = revealed
-          ? ((bio.college && bio.college !== 'NA') ? bio.college : (bio.country && bio.country !== 'NA') ? bio.country : '—')
-          : '';
+        const pos = revealed ? (Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '')) : '';
         const owners = pickOwners(p);
         const primaryTeam = owners[0];
 
-        const tr = document.createElement('tr');
-        if (isOnClock) tr.style.background = '#0d1f3c';
+        const card = document.createElement('div');
+        card.className = `pick-card${isOnClock ? ' on-clock' : ''}`;
 
-        // Pick number
-        const tdNum = document.createElement('td');
-        tdNum.className = 'num';
-        tdNum.textContent = p.pick;
-        tr.appendChild(tdNum);
-
-        // Team — always clickable for depth chart
-        const tdTeam = document.createElement('td');
-        tdTeam.className = 'team';
+        // Top row: pick number + team
+        const topRow = document.createElement('div');
+        topRow.className = 'pc-top';
+        const numEl = document.createElement('span');
+        numEl.className = 'pc-num';
+        numEl.textContent = `#${p.pick}`;
+        topRow.appendChild(numEl);
         const teamBtn = document.createElement('button');
-        teamBtn.className = 'name-btn name-btn-team';
+        teamBtn.className = 'name-btn name-btn-team pc-team';
         if (isOnClock) teamBtn.style.color = '#93c5fd';
-        teamBtn.innerHTML = pickTeamHtml(p);
+        teamBtn.textContent = owners.join('/');
         teamBtn.addEventListener('click', () => {
           revealState = 2; revealTeam = primaryTeam;
           renderDepthModal(primaryTeam);
         });
-        tdTeam.appendChild(teamBtn);
-        tr.appendChild(tdTeam);
+        topRow.appendChild(teamBtn);
+        card.appendChild(topRow);
 
-        // Player
-        const tdPlayer = document.createElement('td');
+        // Player row
+        const playerEl = document.createElement('div');
+        playerEl.className = 'pc-player';
         if (revealed) {
-          const cell = document.createElement('div');
-          cell.className = 'player-cell';
-          if (bio.photo_url) {
-            const img = document.createElement('img');
-            img.className = 'player-photo'; img.src = bio.photo_url; img.alt = '';
-            img.onerror = function() { this.replaceWith(Object.assign(document.createElement('div'), {className:'player-ph'})); };
-            cell.appendChild(img);
-          } else {
-            cell.appendChild(Object.assign(document.createElement('div'), {className:'player-ph'}));
-          }
           const hasVideo = !!highlights[p.player];
           const nameBtn = document.createElement('button');
-          nameBtn.className = `name-btn name-btn-player${hasVideo ? ' has-video' : ''}`;
+          nameBtn.className = `name-btn name-btn-player pc-name${hasVideo ? ' has-video' : ''}`;
           nameBtn.textContent = name;
           nameBtn.addEventListener('click', () => {
             revealSlug = p.player; revealTeam = primaryTeam; revealPick = p; revealState = 1;
             renderPlayerModal();
           });
-          cell.appendChild(nameBtn);
-          tdPlayer.appendChild(cell);
+          playerEl.appendChild(nameBtn);
         } else if (p.player) {
-          const cell = document.createElement('div');
-          cell.className = 'pick-in-cell';
-          cell.innerHTML = `<span class="pick-in-dot"></span> The pick is in`;
-          tdPlayer.appendChild(cell);
+          playerEl.innerHTML = `<span class="pick-in-cell"><span class="pick-in-dot"></span> In</span>`;
         } else if (isOnClock) {
-          tdPlayer.innerHTML = `<span style="color:#facc15;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em">⏱ On the Clock</span>`;
+          playerEl.innerHTML = `<span class="pc-clock">⏱ On Clock</span>`;
         } else {
-          tdPlayer.innerHTML = `<span style="color:#374151">—</span>`;
+          playerEl.innerHTML = `<span style="color:#374151">—</span>`;
         }
-        tr.appendChild(tdPlayer);
+        card.appendChild(playerEl);
 
-        const tdPos = document.createElement('td');
-        tdPos.className = 'muted'; tdPos.textContent = pos;
-        tr.appendChild(tdPos);
-
-        const tdSchool = document.createElement('td');
-        tdSchool.className = 'muted';
+        // Meta row: pos (revealed) or pick window time
+        const metaEl = document.createElement('div');
+        metaEl.className = 'pc-meta';
         if (revealed) {
-          tdSchool.textContent = school;
+          metaEl.textContent = pos;
         } else if (state.round1_date) {
           const sMs = pickWindowStart(state.round1_date, p.round, p.pick);
-          tdSchool.textContent = `${formatET(sMs)} ET`;
-        } else {
-          tdSchool.textContent = '—';
+          metaEl.textContent = `${formatET(sMs)} ET`;
         }
-        tr.appendChild(tdSchool);
+        card.appendChild(metaEl);
 
-        tbody.appendChild(tr);
+        grid.appendChild(card);
       });
     }
 
