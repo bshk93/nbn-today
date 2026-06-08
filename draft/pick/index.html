@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Make a Pick — NBN Draft</title>
+  <style>
+    body { background: #0f1117; color: #f3f4f6; font-family: system-ui, sans-serif; margin: 0; }
+
+    /* ── Page header ─────────────────────────────────────── */
+    .page-header {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: #111827;
+    }
+    .page-header a { color: #6b7280; font-size: 0.8rem; text-decoration: none; }
+    .page-header a:hover { color: #f3f4f6; }
+    .page-header h1 { font-size: 0.95rem; font-weight: 700; margin: 0; color: #f3f4f6; flex: 1; }
+    .signed-in-as { font-size: 0.75rem; color: #4b5563; }
+
+    /* ── Status bar ──────────────────────────────────────── */
+    .status-bar {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .status-text { font-size: 0.85rem; font-weight: 600; color: #f3f4f6; }
+    .status-sub  { font-size: 0.75rem; color: #6b7280; margin-top: 0.1rem; }
+    .countdown   { font-size: 1.1rem; font-weight: 700; color: #facc15; font-variant-numeric: tabular-nums; }
+    .live-badge  { display: inline-flex; align-items: center; gap: 0.3rem; background: #7f1d1d; color: #fca5a5; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.4rem; }
+    .live-dot    { width: 6px; height: 6px; border-radius: 50%; background: #f87171; animation: pulse 1.4s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── Layout ──────────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 90px);
+    }
+    .left-panel {
+      border-right: 1px solid #1f2937;
+      overflow-y: auto;
+      max-height: calc(100vh - 90px);
+      position: sticky;
+      top: 0;
+    }
+    .right-panel {
+      overflow-y: auto;
+    }
+
+    /* ── Cards / sections ────────────────────────────────── */
+    .panel-section {
+      border-bottom: 1px solid #1f2937;
+      padding: 0.9rem 1rem;
+    }
+    .panel-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #4b5563;
+      margin-bottom: 0.65rem;
+    }
+
+    /* ── Pick slots ──────────────────────────────────────── */
+    .pick-slot {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 6px;
+      border: 1px solid #1f2937;
+      background: #111827;
+      margin-bottom: 0.4rem;
+      font-size: 0.82rem;
+    }
+    .pick-slot.on-clock { border-color: #3b82f6; background: #0d1f3c; }
+    .pick-slot.submitted { opacity: 0.6; }
+    .pick-slot-info { flex: 1; min-width: 0; }
+    .pick-slot-num  { font-weight: 700; color: #f3f4f6; }
+    .pick-slot-time { font-size: 0.72rem; color: #6b7280; }
+    .pick-slot-status { font-size: 0.78rem; }
+    .pick-slot-queued { color: #93c5fd; font-weight: 600; }
+    .pick-slot-done   { color: #4ade80; }
+    .pick-slot-none   { color: #4b5563; font-style: italic; }
+
+    /* ── Queue ───────────────────────────────────────────── */
+    .queue-list { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.5rem; }
+    .queue-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.5rem;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 5px;
+      font-size: 0.82rem;
+    }
+    .queue-rank  { color: #4b5563; font-size: 0.72rem; min-width: 1.2rem; font-variant-numeric: tabular-nums; }
+    .queue-name  { flex: 1; color: #f3f4f6; }
+    .queue-empty { color: #374151; font-size: 0.8rem; font-style: italic; padding: 0.4rem 0; }
+    .queue-add   { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.4rem; }
+
+    /* ── Make Pick (BOD) ─────────────────────────────────── */
+    .make-pick-form { display: flex; flex-direction: column; gap: 0.5rem; }
+    .make-pick-label { font-size: 0.8rem; color: #9ca3af; }
+
+    /* ── Available players table ─────────────────────────── */
+    .available-wrap { padding: 0.9rem 1rem; }
+    .available-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #4b5563;
+      margin-bottom: 0.65rem;
+    }
+    table.pool-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    table.pool-table thead th {
+      text-align: left;
+      padding: 0.4rem 0.6rem;
+      color: #6b7280;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #1f2937;
+      background: #111827;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    table.pool-table td {
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid #111827;
+      color: #f3f4f6;
+      vertical-align: middle;
+    }
+    table.pool-table tr:hover td { background: #1f2937; }
+    table.pool-table td.muted { color: #6b7280; font-size: 0.75rem; }
+    table.pool-table td.num { color: #4b5563; font-variant-numeric: tabular-nums; width: 2rem; }
+    .in-queue-badge {
+      font-size: 0.7rem;
+      color: #60a5fa;
+      font-weight: 600;
+      padding: 0.15rem 0.4rem;
+      background: #172554;
+      border-radius: 4px;
+    }
+    .btn-add-queue {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.5rem;
+      background: transparent;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      color: #9ca3af;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-add-queue:hover { border-color: #6b7280; color: #f3f4f6; }
+
+    /* ── Shared buttons ──────────────────────────────────── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 0.82rem; font-weight: 600; cursor: pointer; border: none; padding: 0.35rem 0.75rem; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-ghost   { background: transparent; border: 1px solid #374151; color: #9ca3af; }
+    .btn-ghost:hover:not(:disabled)  { border-color: #6b7280; color: #f3f4f6; }
+    .btn-danger  { background: transparent; border: 1px solid #7f1d1d; color: #f87171; }
+    .btn-danger:hover:not(:disabled) { background: #7f1d1d33; }
+    .btn-sm { font-size: 0.72rem; padding: 0.2rem 0.45rem; }
+
+    .player-select {
+      background: #1f2937; border: 1px solid #374151; color: #f3f4f6;
+      border-radius: 5px; padding: 0.3rem 0.5rem; font-size: 0.8rem; width: 100%;
+    }
+
+    /* ── Auth / empty states ─────────────────────────────── */
+    .auth-wall {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 0.75rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+    .auth-wall p { margin: 0; }
+
+    @media (max-width: 700px) {
+      .layout { grid-template-columns: 1fr; }
+      .left-panel { max-height: none; position: static; border-right: none; border-bottom: 1px solid #1f2937; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <a href="/draft/">← Draft</a>
+    <h1>Make a Pick</h1>
+    <span class="signed-in-as" id="signed-in-as"></span>
+  </div>
+
+  <div class="status-bar" id="status-bar">
+    <div>
+      <div class="status-text" id="status-text">Loading…</div>
+      <div class="status-sub"  id="status-sub"></div>
+    </div>
+    <div class="countdown" id="countdown" style="display:none"></div>
+  </div>
+
+  <div id="auth-wall" class="auth-wall" style="display:none">
+    <p id="auth-msg">Sign in to manage your picks.</p>
+    <button class="btn btn-ghost" onclick="promptSignIn()">Sign In</button>
+  </div>
+
+  <div id="main-layout" class="layout" style="display:none">
+
+    <!-- ── Left panel ─────────────────────────────────────── -->
+    <div class="left-panel">
+
+      <!-- My Picks -->
+      <div class="panel-section" id="my-picks-section" style="display:none">
+        <div class="panel-title" id="my-picks-title">My Picks</div>
+        <div id="my-picks-body"></div>
+      </div>
+
+      <!-- Queue -->
+      <div class="panel-section" id="queue-section" style="display:none">
+        <div class="panel-title">Player Queue</div>
+        <div id="queue-body"></div>
+      </div>
+
+      <!-- BOD: Make Pick -->
+      <div class="panel-section" id="make-pick-section" style="display:none">
+        <div class="panel-title">Make Pick (BOD)</div>
+        <div class="make-pick-form">
+          <div class="make-pick-label" id="make-pick-label">—</div>
+          <select id="make-pick-player" class="player-select" style="display:none"></select>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-primary btn-sm" id="make-pick-btn" disabled>Submit Pick</button>
+            <span id="make-pick-status" style="font-size:0.75rem;color:#6b7280"></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Right panel: Available players ─────────────────── -->
+    <div class="right-panel">
+      <div class="available-wrap">
+        <div class="available-title">Available Players</div>
+        <table class="pool-table">
+          <thead>
+            <tr>
+              <th class="num">#</th>
+              <th>Player</th>
+              <th>Pos</th>
+              <th>Age</th>
+              <th>College / Country</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="available-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const TOKEN_KEY = 'nbn_token';
+    const TEAM_ABBRS = new Set([
+      'ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
+      'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+      'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS',
+    ]);
+
+    let draftState = null;
+    let allPicks   = [];
+    let bios       = {};
+    let myRoles    = [];
+    let myTeams    = [];
+    let myName     = null;
+    let poolOrder  = [];
+    let countdownTimer = null;
+
+    // ── Helpers (mirrors draft/live) ───────────────────────
+
+    function getToken() { return localStorage.getItem(TOKEN_KEY); }
+
+    function bioName(slug) {
+      const bio = bios[slug];
+      if (!bio) return slug;
+      const parts = bio.name.split(',');
+      return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+    }
+
+    function calcAge(dob) {
+      if (!dob) return '—';
+      const birth = new Date(dob + 'T00:00:00');
+      const now = new Date();
+      let age = now.getFullYear() - birth.getFullYear();
+      if (now.getMonth() < birth.getMonth() ||
+          (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
+      return age;
+    }
+
+    function yearPicks(year) {
+      return allPicks.filter(p => p.year === year && p.pick != null)
+        .sort((a, b) => a.round - b.round || a.pick - b.pick);
+    }
+
+    function pickedSlugs(year) {
+      return new Set(allPicks.filter(p => p.year === year && p.player).map(p => p.player));
+    }
+
+    let _swapTakesFrom = {};
+
+    function buildSwapTakesFrom(picks) {
+      const map = {};
+      picks.forEach(p => {
+        if (p.swap_conveys === true && p.swap_owner) map[p.swap_owner] = p.owner;
+      });
+      return map;
+    }
+
+    function pickOwners(p) {
+      let raw;
+      if (p.swap_conveys === true) raw = p.swap_owner;
+      else raw = _swapTakesFrom[p.orig] ?? p.owner;
+      if (!raw || raw === '?') return [(p.orig || '').toUpperCase()];
+      return raw.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
+    }
+
+    function pickWindowStart(round1Date, roundNum, pickNum) {
+      const [yr, mo, da] = round1Date.split('-').map(Number);
+      const day = da + (roundNum - 1);
+      const withinRound = (pickNum - 1) % 30;
+      return new Date(`${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}T12:00:00-04:00`)
+        .getTime() + withinRound * 10 * 60 * 1000;
+    }
+
+    function formatET(ms) {
+      return new Date(ms).toLocaleTimeString('en-US', {
+        timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true,
+      });
+    }
+
+    function currentSlot(state) {
+      if (!state.round1_date) return null;
+      const now = Date.now();
+      for (const p of yearPicks(state.year)) {
+        if (p.player) continue;
+        const start = pickWindowStart(state.round1_date, p.round, p.pick);
+        const end = start + 10 * 60 * 1000;
+        if (now < end) return { pick: p, start, end };
+      }
+      return null;
+    }
+
+    function isAdmin() { return myRoles.includes('admin'); }
+    function isBod()   { return myRoles.includes('bod') || isAdmin(); }
+    function hasAccess() { return myTeams.length > 0 || isBod(); }
+
+    function getTeamQueue(team) {
+      const q = (draftState && draftState.queue && draftState.queue[team]) || [];
+      return Array.isArray(q) ? [...q] : [q];
+    }
+
+    // ── API calls ──────────────────────────────────────────
+
+    async function apiPost(path, body) {
+      return fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify(body),
+      });
+    }
+
+    async function apiPut(path, body) {
+      return fetch(path, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify(body),
+      });
+    }
+
+    async function saveQueue(team, players) {
+      const res = await apiPut(`/api/draft/queue/${team}`, { players });
+      if (res.ok) { await refreshState(); render(); }
+      else { const e = await res.json().catch(() => ({})); alert(e.detail || `Error ${res.status}`); }
+    }
+
+    // ── Auth ───────────────────────────────────────────────
+
+    async function loadAuth() {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) { if (res.status === 401) localStorage.removeItem(TOKEN_KEY); return; }
+        const data = await res.json();
+        myName  = data.name;
+        myRoles = data.roles || [];
+        myTeams = myRoles.map(r => r.toUpperCase()).filter(r => TEAM_ABBRS.has(r));
+      } catch {}
+    }
+
+    function promptSignIn() {
+      const tok = prompt('Enter your NBN access token:');
+      if (!tok) return;
+      localStorage.setItem(TOKEN_KEY, tok);
+      loadAuth().then(render);
+    }
+
+    // ── Data fetching ──────────────────────────────────────
+
+    async function refreshState() {
+      const [stateRes, picksRes] = await Promise.all([
+        fetch('/api/draft/live'),
+        fetch('/api/picks'),
+      ]);
+      if (stateRes.ok) {
+        const newState = await stateRes.json();
+        if (!poolOrder.length) poolOrder = (newState && newState.pool_order) || [];
+        draftState = newState;
+      }
+      if (picksRes.ok) {
+        allPicks = await picksRes.json();
+        if (draftState) _swapTakesFrom = buildSwapTakesFrom(yearPicks(draftState.year));
+      }
+    }
+
+    // ── Render ─────────────────────────────────────────────
+
+    function render() {
+      const hasToken = !!getToken();
+      const wall = document.getElementById('auth-wall');
+      const layout = document.getElementById('main-layout');
+
+      if (!hasToken) {
+        wall.style.display = 'flex';
+        layout.style.display = 'none';
+        document.getElementById('auth-msg').textContent = 'Sign in to manage your picks.';
+        renderStatus();
+        return;
+      }
+
+      if (hasToken && myTeams.length === 0 && !isBod()) {
+        wall.style.display = 'flex';
+        layout.style.display = 'none';
+        document.getElementById('auth-msg').textContent = 'Your account doesn\'t have a team role for this draft.';
+        renderStatus();
+        return;
+      }
+
+      wall.style.display = 'none';
+      layout.style.display = 'grid';
+
+      document.getElementById('signed-in-as').textContent =
+        myName ? `Signed in as ${myName}${myTeams.length ? ` · ${myTeams.join(', ')}` : ''}` : '';
+
+      renderStatus();
+      renderMyPicks();
+      renderQueue();
+      renderMakePick();
+      renderAvailable();
+    }
+
+    function renderStatus() {
+      const textEl = document.getElementById('status-text');
+      const subEl  = document.getElementById('status-sub');
+      const cdEl   = document.getElementById('countdown');
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+      cdEl.style.display = 'none';
+
+      if (!draftState) { textEl.textContent = 'Loading…'; subEl.textContent = ''; return; }
+
+      const picks = yearPicks(draftState.year);
+      if (picks.length > 0 && picks.every(p => p.player)) {
+        textEl.textContent = `${draftState.year} Draft concluded`;
+        subEl.textContent = 'All picks submitted.';
+        return;
+      }
+      if (!draftState.round1_date) {
+        textEl.textContent = 'Draft date TBD'; subEl.textContent = ''; return;
+      }
+
+      const slot = currentSlot(draftState);
+      const liveBadge = `<span class="live-badge"><span class="live-dot"></span>Live</span>`;
+
+      if (!slot) {
+        textEl.innerHTML = `${liveBadge} Draft underway`; subEl.textContent = ''; return;
+      }
+
+      const p = slot.pick;
+      const owners = pickOwners(p);
+      const isMyPick = myTeams.some(t => owners.includes(t));
+
+      textEl.innerHTML = `${liveBadge} On the Clock: <strong>${owners.join('/')}</strong>${isMyPick ? ' <span style="color:#4ade80">(You!)</span>' : ''}`;
+      subEl.textContent = `R${p.round} · Pick ${p.pick}`;
+
+      cdEl.style.display = '';
+      function tick() {
+        const rem = Math.max(0, slot.end - Date.now());
+        const m = Math.floor(rem / 60000);
+        const s = Math.floor((rem % 60000) / 1000);
+        cdEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+        if (rem === 0 && countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+      }
+      tick();
+      countdownTimer = setInterval(tick, 1000);
+    }
+
+    function renderMyPicks() {
+      const section = document.getElementById('my-picks-section');
+      const titleEl = document.getElementById('my-picks-title');
+      const body    = document.getElementById('my-picks-body');
+
+      if (!draftState || myTeams.length === 0) { section.style.display = 'none'; return; }
+
+      const year = draftState.year;
+      const picks = yearPicks(year);
+      const myPicks = picks.filter(p => pickOwners(p).some(t => myTeams.includes(t)));
+      if (!myPicks.length) { section.style.display = 'none'; return; }
+
+      section.style.display = '';
+      titleEl.textContent = `My Picks (${myTeams.join(', ')})`;
+      body.innerHTML = '';
+
+      const slot    = currentSlot(draftState);
+      const team    = myTeams[0];
+      const rawQueue = getTeamQueue(team);
+      const drafted  = pickedSlugs(year);
+      const queue    = rawQueue.filter(s => !drafted.has(s));
+
+      myPicks.forEach(p => {
+        const owners = pickOwners(p);
+        const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick && Date.now() >= slot.start;
+        const isSubmitted = !!p.player;
+        const nextUp = queue[0] || null;
+
+        const startMs = draftState.round1_date ? pickWindowStart(draftState.round1_date, p.round, p.pick) : null;
+        const endMs   = startMs ? startMs + 10 * 60 * 1000 : null;
+        const timeStr = startMs ? `${formatET(startMs)} – ${formatET(endMs)}` : 'Time TBD';
+
+        const div = document.createElement('div');
+        div.className = `pick-slot${isOnClock ? ' on-clock' : ''}${isSubmitted ? ' submitted' : ''}`;
+
+        let statusHtml;
+        if (isSubmitted) {
+          statusHtml = `<span class="pick-slot-done">✓ ${bioName(p.player)}</span>`;
+        } else if (isOnClock && nextUp) {
+          statusHtml = `<span class="pick-slot-queued">Auto-pick: ${bioName(nextUp)}</span>`;
+        } else if (isOnClock) {
+          statusHtml = `<span class="pick-slot-none">Queue a player first</span>`;
+        } else if (nextUp) {
+          statusHtml = `<span class="pick-slot-queued">#1 queued: ${bioName(nextUp)}</span>`;
+        } else {
+          statusHtml = `<span class="pick-slot-none">No player queued</span>`;
+        }
+
+        div.innerHTML = `
+          <div class="pick-slot-info">
+            <div class="pick-slot-num">R${p.round} · Pick ${p.pick}${owners.join('/') !== team ? ` <span style="color:#4b5563;font-size:0.72rem">(via ${owners.join('/')})</span>` : ''}</div>
+            <div class="pick-slot-time">${timeStr}</div>
+          </div>
+          <div class="pick-slot-status">${statusHtml}</div>
+          <div class="pick-slot-actions" style="flex-shrink:0"></div>
+        `;
+
+        if (!isSubmitted && isOnClock) {
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-primary btn-sm';
+          btn.textContent = nextUp ? `Submit →` : 'No queue';
+          btn.disabled = !nextUp;
+          btn.addEventListener('click', async () => {
+            btn.disabled = true; btn.textContent = '…';
+            const res = await apiPost('/api/draft/pick', { year, round: p.round, orig: p.orig, player: nextUp });
+            if (res.ok) { await refreshState(); render(); }
+            else {
+              const err = await res.json().catch(() => ({}));
+              alert(err.detail || `Error ${res.status}`);
+              btn.disabled = false; btn.textContent = 'Submit →';
+            }
+          });
+          div.querySelector('.pick-slot-actions').appendChild(btn);
+        }
+
+        body.appendChild(div);
+      });
+    }
+
+    function renderQueue() {
+      const section = document.getElementById('queue-section');
+      const body    = document.getElementById('queue-body');
+
+      if (!draftState || myTeams.length === 0) { section.style.display = 'none'; return; }
+
+      section.style.display = '';
+      body.innerHTML = '';
+
+      const year    = draftState.year;
+      const team    = myTeams[0];
+      const drafted = pickedSlugs(year);
+      const rawQueue = getTeamQueue(team);
+      const queue   = rawQueue.filter(s => !drafted.has(s));
+      const queueSet = new Set(queue);
+
+      const listEl = document.createElement('div');
+      listEl.className = 'queue-list';
+
+      if (!queue.length) {
+        listEl.innerHTML = '<div class="queue-empty">No players queued. Add from the list →</div>';
+      }
+
+      queue.forEach((slug, i) => {
+        const item = document.createElement('div');
+        item.className = 'queue-item';
+
+        const rank = document.createElement('span');
+        rank.className = 'queue-rank';
+        rank.textContent = `${i + 1}.`;
+        item.appendChild(rank);
+
+        const name = document.createElement('span');
+        name.className = 'queue-name';
+        name.textContent = bioName(slug);
+        item.appendChild(name);
+
+        const upBtn = document.createElement('button');
+        upBtn.className = 'btn btn-ghost btn-sm'; upBtn.textContent = '↑'; upBtn.disabled = i === 0;
+        upBtn.addEventListener('click', () => {
+          const q = [...queue]; [q[i-1], q[i]] = [q[i], q[i-1]]; saveQueue(team, q);
+        });
+        item.appendChild(upBtn);
+
+        const downBtn = document.createElement('button');
+        downBtn.className = 'btn btn-ghost btn-sm'; downBtn.textContent = '↓'; downBtn.disabled = i === queue.length - 1;
+        downBtn.addEventListener('click', () => {
+          const q = [...queue]; [q[i], q[i+1]] = [q[i+1], q[i]]; saveQueue(team, q);
+        });
+        item.appendChild(downBtn);
+
+        const rmBtn = document.createElement('button');
+        rmBtn.className = 'btn btn-danger btn-sm'; rmBtn.textContent = '✕';
+        rmBtn.addEventListener('click', () => saveQueue(team, queue.filter((_, j) => j !== i)));
+        item.appendChild(rmBtn);
+
+        listEl.appendChild(item);
+      });
+
+      body.appendChild(listEl);
+    }
+
+    function renderMakePick() {
+      const section  = document.getElementById('make-pick-section');
+      if (!isBod()) { section.style.display = 'none'; return; }
+
+      section.style.display = '';
+      const labelEl  = document.getElementById('make-pick-label');
+      const selEl    = document.getElementById('make-pick-player');
+      const btn      = document.getElementById('make-pick-btn');
+
+      if (!draftState) { labelEl.textContent = 'Loading…'; selEl.style.display = 'none'; btn.disabled = true; return; }
+
+      const slot = currentSlot(draftState);
+      if (!slot || slot.pick.player) {
+        labelEl.textContent = slot ? 'Pick already submitted' : 'No active pick';
+        selEl.style.display = 'none'; btn.disabled = true; return;
+      }
+
+      const p = slot.pick;
+      const owners = pickOwners(p);
+      labelEl.textContent = `R${p.round} · Pick ${p.pick} · ${owners.join('/')}`;
+      selEl.style.display = '';
+      btn.disabled = false;
+
+      const drafted = pickedSlugs(draftState.year);
+      const available = Object.entries(bios)
+        .filter(([slug, bio]) => bio.draft_year === draftState.year && !drafted.has(slug))
+        .map(([slug]) => ({ slug, name: bioName(slug) }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      selEl.innerHTML = `<option value="">Select player…</option>` +
+        available.map(({ slug, name }) => `<option value="${slug}">${name}</option>`).join('');
+
+      btn._pickData = { year: draftState.year, round: p.round, orig: p.orig };
+    }
+
+    function renderAvailable() {
+      const tbody = document.getElementById('available-body');
+      if (!draftState) { tbody.innerHTML = ''; return; }
+
+      const year    = draftState.year;
+      const drafted = pickedSlugs(year);
+      const team    = myTeams[0] || null;
+      const rawQueue = team ? getTeamQueue(team) : [];
+      const queueSet = new Set(rawQueue.filter(s => !drafted.has(s)));
+
+      const orderMap = new Map(poolOrder.map((slug, i) => [slug, i]));
+      const available = Object.entries(bios)
+        .filter(([slug, bio]) => bio.draft_year === year && !drafted.has(slug))
+        .map(([slug, bio]) => ({ slug, bio }))
+        .sort((a, b) => {
+          const ia = orderMap.has(a.slug) ? orderMap.get(a.slug) : Infinity;
+          const ib = orderMap.has(b.slug) ? orderMap.get(b.slug) : Infinity;
+          if (ia !== ib) return ia - ib;
+          return a.bio.name.localeCompare(b.bio.name);
+        });
+
+      tbody.innerHTML = '';
+      if (!available.length) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:#4b5563;font-style:italic;padding:1rem">All players drafted.</td></tr>`;
+        return;
+      }
+
+      available.forEach(({ slug, bio }, idx) => {
+        const name   = bioName(slug);
+        const pos    = Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '—');
+        const age    = calcAge(bio.dob);
+        const school = bio.college || bio.country || '—';
+        const inQueue = queueSet.has(slug);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="num">${idx + 1}</td>
+          <td style="font-weight:600">${name}</td>
+          <td class="muted">${pos}</td>
+          <td class="muted">${age}</td>
+          <td class="muted">${school}</td>
+          <td style="text-align:right"></td>
+        `;
+
+        const actionCell = tr.querySelector('td:last-child');
+        if (team) {
+          if (inQueue) {
+            actionCell.innerHTML = '<span class="in-queue-badge">In Queue</span>';
+          } else {
+            const addBtn = document.createElement('button');
+            addBtn.className = 'btn-add-queue';
+            addBtn.textContent = '+ Queue';
+            addBtn.addEventListener('click', () => {
+              const currentQueue = getTeamQueue(team).filter(s => !drafted.has(s));
+              saveQueue(team, [...currentQueue, slug]);
+            });
+            actionCell.appendChild(addBtn);
+          }
+        }
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ── Make Pick button handler ───────────────────────────
+
+    document.getElementById('make-pick-btn').addEventListener('click', async () => {
+      const selEl    = document.getElementById('make-pick-player');
+      const statusEl = document.getElementById('make-pick-status');
+      const btn      = document.getElementById('make-pick-btn');
+      if (!selEl.value) return;
+      const pd = btn._pickData;
+      if (!pd) return;
+      btn.disabled = true; statusEl.textContent = 'Submitting…';
+      const res = await apiPost('/api/draft/pick', { ...pd, player: selEl.value });
+      if (res.ok) {
+        statusEl.textContent = 'Done!';
+        await refreshState(); render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+        btn.disabled = false;
+      }
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    // ── Init ───────────────────────────────────────────────
+
+    async function init() {
+      await Promise.all([refreshState(), loadAuth()]);
+      if (!Object.keys(bios).length) {
+        const biosRes = await fetch('/api/players');
+        if (biosRes.ok) bios = await biosRes.json();
+      }
+      render();
+      setInterval(async () => { await refreshState(); render(); }, 10_000);
+    }
+
+    // Load bios in parallel with state, then render
+    (async () => {
+      const [, , biosRes] = await Promise.all([
+        refreshState(),
+        loadAuth(),
+        fetch('/api/players'),
+      ]);
+      if (biosRes.ok) bios = await biosRes.json();
+      render();
+      setInterval(async () => { await refreshState(); render(); }, 10_000);
+    })();
+  </script>
+</body>
+</html>
