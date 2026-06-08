@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.0.287",
+    "date": "2026-06-08",
+    "changes": [
+      "draft/live: Event Log tab \u2014 chronological record of picks and mid-draft pick reassignments",
+      "draft/live: BOD Reassign Pick \u2014 instantly swap pick ownership mid-draft",
+      "draft/live: BOD Dry Run \u2014 Save Snapshot / Restore to rehearse the draft and revert",
+      "api: POST /api/draft/pick/reassign \u2014 reassign pick owner, appends to event log",
+      "api: snapshot save/get/restore endpoints for dry-run rehearsals",
+      "api: pick events (manual and auto-submit) appended to draft state events array"
+    ]
+  },
+  {
     "version": "0.0.286",
     "date": "2026-06-08",
     "changes": [

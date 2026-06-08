@@ -511,6 +511,24 @@
     #control-drawer .admin-field input[type="date"],
     #control-drawer .admin-field input[type="number"] { width: 100%; box-sizing: border-box; }
     #control-drawer .admin-toggle { margin-top: 0; }
+
+    /* ── Event log ─────────────────────────────── */
+    .log-entry {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid #111827;
+      font-size: 0.82rem;
+    }
+    .log-entry:hover { background: #111827; }
+    .log-time { font-size: 0.7rem; color: #4b5563; flex-shrink: 0; font-variant-numeric: tabular-nums; min-width: 4.5rem; }
+    .log-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.15rem 0.45rem; border-radius: 4px; flex-shrink: 0; }
+    .log-badge-pick     { background: #172554; color: #60a5fa; }
+    .log-badge-reassign { background: #2d1b00; color: #fb923c; }
+    .log-badge-auto     { background: #14532d; color: #4ade80; }
+    .log-desc { flex: 1; color: #d1d5db; }
+    .log-empty { padding: 2rem 1rem; text-align: center; color: #374151; font-size: 0.85rem; }
   </style>
 </head>
 <body>
@@ -547,6 +565,36 @@
           <button class="btn btn-primary btn-sm" id="admin-save">Save</button>
           <span id="admin-status"></span>
         </div>
+
+        <!-- Reassign pick -->
+        <div style="border-top:1px solid #1f2937;margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Reassign Pick</div>
+          <select id="reassign-pick-sel" class="player-select"><option value="">Select pick…</option></select>
+          <select id="reassign-owner-sel" class="player-select">
+            <option value="">New owner…</option>
+            <option>ATL</option><option>BKN</option><option>BOS</option><option>CHA</option><option>CHI</option>
+            <option>CLE</option><option>DAL</option><option>DEN</option><option>DET</option><option>GSW</option>
+            <option>HOU</option><option>IND</option><option>LAC</option><option>LAL</option><option>MEM</option>
+            <option>MIA</option><option>MIL</option><option>MIN</option><option>NOP</option><option>NYK</option>
+            <option>OKC</option><option>ORL</option><option>PHI</option><option>PHX</option><option>POR</option>
+            <option>SAC</option><option>SAS</option><option>TOR</option><option>UTA</option><option>WAS</option>
+          </select>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-primary btn-sm" id="reassign-btn">Reassign</button>
+            <span id="reassign-status" style="font-size:0.75rem;color:#6b7280"></span>
+          </div>
+        </div>
+
+        <!-- Snapshot / restore -->
+        <div style="border-top:1px solid #1f2937;margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Dry Run</div>
+          <div style="font-size:0.75rem;color:#6b7280" id="snapshot-meta">No snapshot saved.</div>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-ghost btn-sm" id="snapshot-save-btn">Save Snapshot</button>
+            <button class="btn btn-danger btn-sm" id="snapshot-restore-btn" disabled>Restore</button>
+          </div>
+          <span id="snapshot-status" style="font-size:0.75rem;color:#6b7280"></span>
+        </div>
       </details>
 
     </div>
@@ -569,6 +617,7 @@
     <div class="view-tabs" id="view-tab-bar" style="display:none">
       <button class="view-tab-btn active" id="tab-fullboard-btn" onclick="switchTab('fullboard')">Draft Board</button>
       <button class="view-tab-btn" id="tab-pool-btn" onclick="switchTab('pool')">Best Available</button>
+      <button class="view-tab-btn" id="tab-log-btn" onclick="switchTab('log')">Event Log</button>
     </div>
 
     <!-- Full draft board (Draft Board tab) -->
@@ -579,6 +628,11 @@
         <span class="round-tab-hint">← → to switch</span>
       </div>
       <div id="fullboard-grid" class="pick-grid"></div>
+    </div>
+
+    <!-- Event log tab -->
+    <div class="section" id="log-section" style="display:none">
+      <div id="log-body"></div>
     </div>
 
     <!-- Player pool (Pool tab) -->
@@ -816,6 +870,8 @@
     function initAdminPanel(state) {
       document.getElementById('admin-year').value = state.year || 2026;
       document.getElementById('admin-date').value = state.round1_date || '';
+      initReassignPicker(state);
+      loadSnapshotMeta();
     }
 
     document.getElementById('admin-save').addEventListener('click', async () => {
@@ -931,10 +987,13 @@
       document.body.classList.toggle('pool-view', tab === 'pool');
       document.getElementById('tab-fullboard-btn').classList.toggle('active', tab === 'fullboard');
       document.getElementById('tab-pool-btn').classList.toggle('active', tab === 'pool');
+      document.getElementById('tab-log-btn').classList.toggle('active', tab === 'log');
       document.getElementById('fullboard-section').style.display = tab === 'fullboard' ? 'block' : 'none';
       document.getElementById('pool-section').style.display = tab === 'pool' ? 'block' : 'none';
+      document.getElementById('log-section').style.display = tab === 'log' ? 'block' : 'none';
       if (tab === 'fullboard') renderFullBoard(draftState);
       if (tab === 'pool') renderPool(draftState);
+      if (tab === 'log') renderLog(draftState);
     }
 
     function switchRound(round) {
@@ -943,6 +1002,130 @@
       document.getElementById('round-tab-2').classList.toggle('active', round === 2);
       renderFullBoard(draftState);
     }
+
+    // ── Event log ──────────────────────────────────────────────────────────────────
+
+    function renderLog(state) {
+      const body = document.getElementById('log-body');
+      if (!state) { body.innerHTML = ''; return; }
+      const events = (state.events || []).slice().reverse(); // newest first
+      if (!events.length) {
+        body.innerHTML = '<div class="log-empty">No events yet.</div>';
+        return;
+      }
+      body.innerHTML = '';
+      events.forEach(ev => {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        const timeStr = new Date(ev.ts).toLocaleTimeString('en-US', {
+          timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true,
+        });
+        let badge, desc;
+        if (ev.type === 'pick') {
+          badge = ev.auto
+            ? '<span class="log-badge log-badge-auto">Auto</span>'
+            : '<span class="log-badge log-badge-pick">Pick</span>';
+          const name = bioName(ev.player) || ev.player;
+          desc = `R${ev.round} · #${ev.pick} · <strong>${ev.owner || ev.orig}</strong> selects <strong>${name}</strong>`;
+        } else if (ev.type === 'reassign') {
+          badge = '<span class="log-badge log-badge-reassign">Trade</span>';
+          desc = `R${ev.round} · #${ev.pick ?? '?'} (${ev.orig}) reassigned <strong>${ev.from_owner}</strong> → <strong>${ev.to_owner}</strong>`;
+        } else {
+          badge = `<span class="log-badge log-badge-pick">${ev.type}</span>`;
+          desc = JSON.stringify(ev);
+        }
+        div.innerHTML = `<span class="log-time">${timeStr}</span>${badge}<span class="log-desc">${desc}</span>`;
+        body.appendChild(div);
+      });
+    }
+
+    // ── Reassign pick ──────────────────────────────────────────────────────────────
+
+    function initReassignPicker(state) {
+      const sel = document.getElementById('reassign-pick-sel');
+      if (!state) return;
+      const year = state.year;
+      const picks = yearPicks(year).filter(p => !p.player);
+      const prev = sel.value;
+      sel.innerHTML = '<option value="">Select pick…</option>' +
+        picks.map(p => {
+          const owners = pickOwners(p);
+          const val = `${p.round}|${p.orig}`;
+          return `<option value="${val}">R${p.round} #${p.pick} — ${owners.join('/')}</option>`;
+        }).join('');
+      if (prev) sel.value = prev;
+    }
+
+    document.getElementById('reassign-btn').addEventListener('click', async () => {
+      const pickSel  = document.getElementById('reassign-pick-sel');
+      const ownerSel = document.getElementById('reassign-owner-sel');
+      const statusEl = document.getElementById('reassign-status');
+      const btn      = document.getElementById('reassign-btn');
+      if (!pickSel.value || !ownerSel.value) { statusEl.textContent = 'Select pick and new owner.'; return; }
+      const [round, orig] = pickSel.value.split('|');
+      btn.disabled = true; statusEl.textContent = 'Saving…';
+      const res = await apiPost('/api/draft/pick/reassign', {
+        year: draftState.year, round: parseInt(round), orig, new_owner: ownerSel.value,
+      });
+      if (res.ok) {
+        statusEl.textContent = 'Done!';
+        await refreshState(); render();
+        initReassignPicker(draftState);
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+      }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    // ── Snapshot / restore ─────────────────────────────────────────────────────────
+
+    async function loadSnapshotMeta() {
+      const res = await fetch('/api/draft/snapshot', {
+        headers: { 'Authorization': `Bearer ${getToken()}` },
+      });
+      const metaEl  = document.getElementById('snapshot-meta');
+      const restBtn = document.getElementById('snapshot-restore-btn');
+      if (res.ok) {
+        const { saved_at } = await res.json();
+        const dt = new Date(saved_at).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+        metaEl.textContent  = `Snapshot: ${dt} ET`;
+        restBtn.disabled    = false;
+      } else {
+        metaEl.textContent  = 'No snapshot saved.';
+        restBtn.disabled    = true;
+      }
+    }
+
+    document.getElementById('snapshot-save-btn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('snapshot-status');
+      const btn      = document.getElementById('snapshot-save-btn');
+      btn.disabled = true; statusEl.textContent = 'Saving…';
+      const res = await apiPost('/api/draft/snapshot', {});
+      if (res.ok) { statusEl.textContent = 'Snapshot saved!'; await loadSnapshotMeta(); }
+      else { const e = await res.json().catch(() => ({})); statusEl.textContent = e.detail || `Error ${res.status}`; }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    document.getElementById('snapshot-restore-btn').addEventListener('click', async () => {
+      if (!confirm('Restore snapshot? This will revert all picks and draft state to the saved point.')) return;
+      const statusEl = document.getElementById('snapshot-status');
+      const btn      = document.getElementById('snapshot-restore-btn');
+      btn.disabled = true; statusEl.textContent = 'Restoring…';
+      const res = await apiPost('/api/draft/snapshot/restore', {});
+      if (res.ok) {
+        statusEl.textContent = 'Restored!';
+        poolOrder = []; // force re-sync from server
+        await refreshState(); render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+      }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
 
     // ── Enter key reveal sequence ──────────────────────────────────────────────────
 
@@ -1461,6 +1644,7 @@
       renderStatus(state);
       renderFullBoard(state);
       renderPool(state);
+      if (activeTab === 'log') renderLog(state);
       // Invalidate roster cache whenever state updates (picks may have changed depth charts)
       rosterCache = {};
     }
