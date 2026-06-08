@@ -110,55 +110,6 @@
     }
     .countdown.urgent { color: #f87171; }
 
-    /* ── My Picks panel ───────────────────────────────── */
-    .my-picks-card {
-      background: #1f2937;
-      border: 1px solid #3b82f6;
-      border-radius: 10px;
-      margin-bottom: 1.5rem;
-    }
-    .my-picks-header {
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #374151;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-    .my-picks-header h2 { font-size: 0.85rem; font-weight: 700; color: #93c5fd; }
-    .my-picks-body { padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
-    .pick-slot {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      padding: 0.6rem 0.75rem;
-      background: #111827;
-      border-radius: 8px;
-      border: 1px solid #374151;
-    }
-    .pick-slot.on-clock {
-      border-color: #3b82f6;
-      background: #0d1f3c;
-    }
-    .pick-slot-num {
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      min-width: 60px;
-    }
-    .pick-slot-time { font-size: 0.78rem; color: #9ca3af; flex-shrink: 0; }
-    .pick-slot-queue { font-size: 0.82rem; color: #93c5fd; font-weight: 600; }
-    .pick-slot-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-left: auto; }
-    .sign-in-prompt {
-      padding: 1rem;
-      text-align: center;
-      color: #6b7280;
-      font-size: 0.85rem;
-    }
-    .sign-in-prompt button { margin-top: 0.5rem; }
-
     /* ── Draft board ──────────────────────────────────── */
     .section { margin-bottom: 2rem; }
     /* 80vh = 100vh / zoom(1.25) — gives the actual visible height in CSS px;
@@ -251,22 +202,6 @@
       max-width: 200px;
     }
     select.player-select:focus { outline: none; border-color: #60a5fa; }
-
-    .queue-editor { padding: 0.75rem 1rem; border-bottom: 1px solid #1f2937; }
-    .queue-editor-label {
-      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em;
-      text-transform: uppercase; color: #4b5563; margin-bottom: 0.5rem;
-    }
-    .queue-list { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.5rem; }
-    .queue-item {
-      display: flex; align-items: center; gap: 0.5rem;
-      background: #111827; border: 1px solid #1f2937; border-radius: 6px;
-      padding: 0.35rem 0.6rem; font-size: 0.82rem;
-    }
-    .queue-rank { color: #4b5563; font-size: 0.72rem; min-width: 1.1rem; font-variant-numeric: tabular-nums; }
-    .queue-name { flex: 1; color: #f3f4f6; }
-    .queue-empty { color: #374151; font-size: 0.8rem; font-style: italic; padding: 0.3rem 0; }
-    .queue-add { display: flex; gap: 0.4rem; align-items: center; }
 
     /* ── View tabs ────────────────────────────────────── */
     .view-tabs {
@@ -609,38 +544,7 @@
           <button class="btn btn-primary btn-sm" id="admin-save">Save</button>
           <span id="admin-status"></span>
         </div>
-        <details style="margin-top:0.75rem;border-top:1px solid #1f2937;padding-top:0.5rem">
-          <summary style="cursor:pointer;color:#6b7280;font-size:0.75rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;user-select:none">Make Pick</summary>
-          <div class="admin-form" style="margin-top:0.5rem">
-            <span id="admin-pick-label" style="font-size:0.8rem;color:#9ca3af">—</span>
-            <select id="admin-pick-player" class="player-select" style="width:100%;max-width:none"></select>
-            <div style="display:flex;gap:0.5rem;align-items:center">
-              <button class="btn btn-primary btn-sm" id="admin-submit-pick">Submit Pick</button>
-              <span id="admin-pick-status" style="font-size:0.75rem;color:#6b7280"></span>
-            </div>
-          </div>
-        </details>
       </details>
-
-      <!-- My Picks panel -->
-      <div id="my-picks-section" style="display:none">
-        <div class="my-picks-card">
-          <div class="my-picks-header">
-            <h2 id="my-picks-title">My Picks</h2>
-          </div>
-          <div class="my-picks-body" id="my-picks-body"></div>
-        </div>
-      </div>
-
-      <!-- Sign-in prompt -->
-      <div id="signin-section" style="display:none">
-        <div class="my-picks-card" style="border-color:#374151">
-          <div class="sign-in-prompt">
-            <div>Sign in to see your picks and queue a player.</div>
-            <button class="btn btn-ghost btn-sm" onclick="promptSignIn()" style="margin-top:0.5rem">Sign In</button>
-          </div>
-        </div>
-      </div>
 
     </div>
   </div>
@@ -708,7 +612,6 @@
     let allPicks = [];
     let bios = {};
     let myRoles = [];
-    let myTeams = [];
     let myName = null;
     let countdownTimer = null;
     let activeTab = 'fullboard';
@@ -827,19 +730,6 @@
       return yearPicks(state.year).find(p => !p.player) || null;
     }
 
-    // ── Queue helpers ──────────────────────────────────────────────────────────
-
-    function getTeamQueue(team) {
-      const q = (draftState && draftState.queue && draftState.queue[team]) || [];
-      return Array.isArray(q) ? [...q] : [q];
-    }
-
-    async function saveQueue(team, players) {
-      const res = await apiPut(`/api/draft/queue/${team}`, { players });
-      if (res.ok) { await refreshState(); render(); }
-      else { const e = await res.json().catch(() => ({})); alert(e.detail || `Error ${res.status}`); }
-    }
-
     // ── Auth ───────────────────────────────────────────────────────────────────
 
     async function loadAuth() {
@@ -851,7 +741,6 @@
         const data = await res.json();
         myName = data.name;
         myRoles = data.roles || [];
-        myTeams = myRoles.map(r => r.toUpperCase()).filter(r => TEAM_ABBRS.has(r));
       } catch {}
     }
 
@@ -924,60 +813,7 @@
     function initAdminPanel(state) {
       document.getElementById('admin-year').value = state.year || 2026;
       document.getElementById('admin-date').value = state.round1_date || '';
-
-
-      // Make Pick section
-      const slot = currentSlot(state);
-      const labelEl = document.getElementById('admin-pick-label');
-      const selEl = document.getElementById('admin-pick-player');
-      const submitEl = document.getElementById('admin-submit-pick');
-
-      if (!slot || slot.pick.player) {
-        labelEl.textContent = slot ? 'Pick already submitted' : 'No active pick';
-        selEl.style.display = 'none';
-        submitEl.disabled = true;
-        return;
-      }
-
-      const p = slot.pick;
-      const owners = pickOwners(p);
-      labelEl.textContent = `R${p.round} · Pick ${p.pick} · ${owners.join('/')}`;
-      selEl.style.display = '';
-      submitEl.disabled = false;
-
-      const drafted = pickedSlugs(state.year);
-      const available = Object.entries(bios)
-        .filter(([slug, bio]) => bio.draft_year === state.year && !drafted.has(slug))
-        .map(([slug, bio]) => ({ slug, name: bioName(slug) }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-      selEl.innerHTML = `<option value="">Select player…</option>` +
-        available.map(({ slug, name }) => `<option value="${slug}">${name}</option>`).join('');
-
-      submitEl._pickData = { year: state.year, round: p.round, orig: p.orig };
     }
-
-    document.getElementById('admin-submit-pick').addEventListener('click', async () => {
-      const sel = document.getElementById('admin-pick-player');
-      const statusEl = document.getElementById('admin-pick-status');
-      const btn = document.getElementById('admin-submit-pick');
-      if (!sel.value) return;
-      const pd = btn._pickData;
-      if (!pd) return;
-      btn.disabled = true;
-      statusEl.textContent = 'Submitting…';
-      const res = await apiPost('/api/draft/pick', { ...pd, player: sel.value });
-      if (res.ok) {
-        statusEl.textContent = 'Done!';
-        await refreshState();
-        render();
-      } else {
-        const e = await res.json().catch(() => ({}));
-        statusEl.textContent = e.detail || `Error ${res.status}`;
-        btn.disabled = false;
-      }
-      setTimeout(() => { statusEl.textContent = ''; }, 3000);
-    });
 
     document.getElementById('admin-save').addEventListener('click', async () => {
       const btn = document.getElementById('admin-save');
@@ -1074,199 +910,6 @@
         countdownTimer = setInterval(tick, 1000);
       }
     }
-
-    function renderMyPicks(state) {
-      const section = document.getElementById('my-picks-section');
-      const signinSection = document.getElementById('signin-section');
-      const body = document.getElementById('my-picks-body');
-      const title = document.getElementById('my-picks-title');
-
-      signinSection.style.display = 'none';
-      section.style.display = 'none';
-
-      if (!state) return;
-
-      const token = getToken();
-      if (!token) {
-        signinSection.style.display = '';
-        return;
-      }
-      // Logged in but no team role — nothing to show in My Picks
-      if (myTeams.length === 0) return;
-
-      const year = state.year;
-      const picks = yearPicks(year);
-      const myPicks = picks.filter(p => pickOwners(p).some(o => myTeams.includes(o)));
-
-      if (!myPicks.length) return;
-
-      title.textContent = `My Picks (${myTeams.join(', ')})`;
-      section.style.display = '';
-      body.innerHTML = '';
-
-      const myOwner = myTeams[0];
-      const slot = currentSlot(state);
-      const drafted = pickedSlugs(year);
-
-      // Current queue, filtered to available players only
-      const rawQueue = getTeamQueue(myOwner);
-      const queue = rawQueue.filter(s => !drafted.has(s));
-      const queueSet = new Set(queue);
-
-      // Players available to add (not drafted, not already in queue)
-      const addable = Object.entries(bios)
-        .filter(([slug, bio]) => bio.draft_year === year && !drafted.has(slug) && !queueSet.has(slug))
-        .map(([slug, bio]) => ({ slug, name: bioName(slug) }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-      // ── Queue editor ──────────────────────────────────────────────────────
-      const queueDiv = document.createElement('div');
-      queueDiv.className = 'queue-editor';
-
-      const queueLabel = document.createElement('div');
-      queueLabel.className = 'queue-editor-label';
-      queueLabel.textContent = 'Player Queue (in order of preference)';
-      queueDiv.appendChild(queueLabel);
-
-      const listEl = document.createElement('div');
-      listEl.className = 'queue-list';
-
-      if (!queue.length) {
-        const empty = document.createElement('div');
-        empty.className = 'queue-empty';
-        empty.textContent = 'No players queued yet.';
-        listEl.appendChild(empty);
-      }
-
-      queue.forEach((slug, i) => {
-        const item = document.createElement('div');
-        item.className = 'queue-item';
-
-        const rank = document.createElement('span');
-        rank.className = 'queue-rank';
-        rank.textContent = `${i + 1}.`;
-        item.appendChild(rank);
-
-        const name = document.createElement('span');
-        name.className = 'queue-name';
-        name.textContent = bioName(slug);
-        item.appendChild(name);
-
-        const upBtn = document.createElement('button');
-        upBtn.className = 'btn btn-ghost btn-sm';
-        upBtn.textContent = '↑';
-        upBtn.disabled = i === 0;
-        upBtn.addEventListener('click', () => {
-          const q = [...queue];
-          [q[i - 1], q[i]] = [q[i], q[i - 1]];
-          saveQueue(myOwner, q);
-        });
-        item.appendChild(upBtn);
-
-        const downBtn = document.createElement('button');
-        downBtn.className = 'btn btn-ghost btn-sm';
-        downBtn.textContent = '↓';
-        downBtn.disabled = i === queue.length - 1;
-        downBtn.addEventListener('click', () => {
-          const q = [...queue];
-          [q[i], q[i + 1]] = [q[i + 1], q[i]];
-          saveQueue(myOwner, q);
-        });
-        item.appendChild(downBtn);
-
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'btn btn-danger btn-sm';
-        removeBtn.textContent = '✕';
-        removeBtn.addEventListener('click', () => {
-          saveQueue(myOwner, queue.filter((_, j) => j !== i));
-        });
-        item.appendChild(removeBtn);
-
-        listEl.appendChild(item);
-      });
-
-      queueDiv.appendChild(listEl);
-
-      // Add player control
-      const addRow = document.createElement('div');
-      addRow.className = 'queue-add';
-      const sel = document.createElement('select');
-      sel.className = 'player-select';
-      sel.style.maxWidth = '260px';
-      sel.innerHTML = `<option value="">Add player to queue…</option>` +
-        addable.map(({ slug, name }) => `<option value="${slug}">${name}</option>`).join('');
-      const addBtn = document.createElement('button');
-      addBtn.className = 'btn btn-ghost btn-sm';
-      addBtn.textContent = '+ Add';
-      addBtn.addEventListener('click', () => {
-        if (!sel.value) return;
-        saveQueue(myOwner, [...queue, sel.value]);
-      });
-      addRow.appendChild(sel);
-      addRow.appendChild(addBtn);
-      queueDiv.appendChild(addRow);
-      body.appendChild(queueDiv);
-
-      // ── Pick slots ────────────────────────────────────────────────────────
-      myPicks.forEach(p => {
-        const owners = pickOwners(p);
-        const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick && Date.now() >= slot.start;
-        const isSubmitted = !!p.player;
-
-        // First available player from queue for this pick
-        const nextUp = queue[0] || null;
-
-        const div = document.createElement('div');
-        div.className = `pick-slot${isOnClock ? ' on-clock' : ''}`;
-
-        const startMs = state.round1_date ? pickWindowStart(state.round1_date, p.round, p.pick) : null;
-        const endMs = startMs ? startMs + 10 * 60 * 1000 : null;
-        const timeStr = startMs ? `${formatET(startMs)} – ${formatET(endMs)}` : 'Time TBD';
-
-        let statusHtml;
-        if (isSubmitted) {
-          statusHtml = `<div style="color:#4ade80;font-size:0.8rem">✓ ${bioName(p.player)}</div>`;
-        } else if (nextUp) {
-          statusHtml = `<div class="pick-slot-queue">Auto-pick: ${bioName(nextUp)}</div>`;
-        } else {
-          statusHtml = `<div style="color:#4b5563;font-size:0.8rem">No player queued</div>`;
-        }
-
-        div.innerHTML = `
-          <div>
-            <div class="pick-slot-num">R${p.round} · Pick ${p.pick}</div>
-            <div class="pick-slot-time">${timeStr}</div>
-          </div>
-          <div style="flex:1">${statusHtml}</div>
-          <div class="pick-slot-actions"></div>
-        `;
-
-        if (!isSubmitted && isOnClock) {
-          const confirmBtn = document.createElement('button');
-          confirmBtn.className = 'btn btn-primary btn-sm';
-          confirmBtn.textContent = nextUp ? `Submit: ${bioName(nextUp)} →` : 'Queue a player first';
-          confirmBtn.disabled = !nextUp;
-          confirmBtn.addEventListener('click', async () => {
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = 'Submitting…';
-            const res = await apiPost('/api/draft/pick', {
-              year, round: p.round, orig: p.orig, player: nextUp,
-            });
-            if (res.ok) { await refreshState(); render(); }
-            else {
-              const err = await res.json().catch(() => ({}));
-              alert(err.detail || `Error ${res.status}`);
-              confirmBtn.disabled = false;
-              confirmBtn.textContent = nextUp ? `Submit: ${bioName(nextUp)} →` : 'Queue a player first';
-            }
-          });
-          div.querySelector('.pick-slot-actions').appendChild(confirmBtn);
-        }
-
-        body.appendChild(div);
-      });
-    }
-
 
     const TEAM_NAMES = {
       ATL:'Atlanta',BKN:'Brooklyn',BOS:'Boston',CHA:'Charlotte',CHI:'Chicago',
@@ -1797,10 +1440,9 @@
       // Show/hide tab bar
       document.getElementById('view-tab-bar').style.display = state ? '' : 'none';
 
-      // Gear icon: visible whenever user is logged in (BOD or team owner)
+      // Gear icon: visible for BOD only (live page is presentation-only for everyone else)
       const toggle = document.getElementById('control-toggle');
-      const loggedIn = !!getToken();
-      toggle.style.display = loggedIn ? 'flex' : 'none';
+      toggle.style.display = isBod() ? 'flex' : 'none';
 
       if (isBod()) {
         const panel = document.getElementById('admin-panel');
@@ -1814,7 +1456,6 @@
       toggle.classList.toggle('has-pending', !!hasPending);
 
       renderStatus(state);
-      renderMyPicks(state);
       renderFullBoard(state);
       renderPool(state);
       // Invalidate roster cache whenever state updates (picks may have changed depth charts)
