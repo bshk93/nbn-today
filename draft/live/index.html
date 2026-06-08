@@ -1397,13 +1397,14 @@
 
     function renderFullBoard(state) {
       const tbody = document.getElementById('fullboard-body');
-      if (!state || activeTab !== 'fullboard') return;
+      if (!state) { tbody.innerHTML = `<tr><td colspan="5" style="color:#f87171;padding:0.5rem">DEBUG: state null</td></tr>`; return; }
+      if (activeTab !== 'fullboard') { tbody.innerHTML = `<tr><td colspan="5" style="color:#f87171;padding:0.5rem">DEBUG: tab=${activeTab}</td></tr>`; return; }
       tbody.innerHTML = '';
 
       const year = state.year;
       const picks = yearPicks(year);
       if (!picks.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No picks configured.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="color:#f87171;padding:0.5rem">DEBUG: 0 picks for year ${year} (allPicks.length=${allPicks.length})</td></tr>`;
         return;
       }
 
@@ -1608,11 +1609,10 @@
     }
 
     async function init() {
-      // Load bios, OVR, and auth in parallel
       // Fetch draft state first so the board renders immediately
-      await refreshState();
-      render();
-      switchTab(activeTab);
+      try { await refreshState(); } catch(e) { document.getElementById('status-text').textContent = 'refreshState error: ' + e; }
+      try { render(); } catch(e) { document.getElementById('status-text').textContent = 'render error: ' + e; }
+      try { switchTab(activeTab); } catch(e) { document.getElementById('status-text').textContent = 'switchTab error: ' + e; }
 
       // Load bios/ovr/auth in the background, re-render when ready
       const [biosRes, ovrRes] = await Promise.all([
