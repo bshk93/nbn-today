@@ -328,7 +328,9 @@
     }
     .pick-card.on-clock { background: #0d1f3c; border-color: #3b82f6; }
     .pc-num { font-size: 0.7rem; color: #4b5563; font-variant-numeric: tabular-nums; flex-shrink: 0; width: 2rem; }
-    .pc-team { font-size: 0.8rem; font-weight: 700; flex-shrink: 0; width: 3rem; }
+    .pc-team-wrap { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; width: 4.2rem; }
+    .pc-team-logo { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
+    .pc-team { font-size: 0.8rem; font-weight: 700; }
     .pc-player-wrap { flex: 1; display: flex; align-items: center; gap: 0.45rem; min-width: 0; overflow: hidden; }
     .pc-name { font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pc-clock { color: #facc15; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
@@ -1594,7 +1596,17 @@
         numEl.textContent = `#${p.pick}`;
         card.appendChild(numEl);
 
-        // Team
+        // Team (logo + abbr)
+        const teamWrap = document.createElement('div');
+        teamWrap.className = 'pc-team-wrap';
+        if (primaryTeam) {
+          const logo = document.createElement('img');
+          logo.className = 'pc-team-logo';
+          logo.src = `/logos/logo-${primaryTeam.toLowerCase()}.png`;
+          logo.alt = '';
+          logo.onerror = function() { this.style.display = 'none'; };
+          teamWrap.appendChild(logo);
+        }
         const teamBtn = document.createElement('button');
         teamBtn.className = 'name-btn name-btn-team pc-team';
         if (isOnClock) teamBtn.style.color = '#93c5fd';
@@ -1603,7 +1615,8 @@
           revealState = 2; revealTeam = primaryTeam;
           renderDepthModal(primaryTeam);
         });
-        card.appendChild(teamBtn);
+        teamWrap.appendChild(teamBtn);
+        card.appendChild(teamWrap);
 
         // Player (photo + name, or status)
         const playerWrap = document.createElement('div');
