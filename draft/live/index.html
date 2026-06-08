@@ -643,7 +643,7 @@
   </div>
 
   <!-- Reveal / depth chart modal overlay -->
-  <div id="show-overlay" style="display:none"></div>
+  <div id="show-overlay" style="display:none" tabindex="-1"></div>
 
   <script>
     const TOKEN_KEY = 'nbn_token';
@@ -1227,11 +1227,12 @@
 
     document.addEventListener('keydown', e => {
       if (e.key !== 'Enter') return;
-      const tag = (e.target.tagName || '').toUpperCase();
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return;
 
       if (revealState === 1) { advanceToDepth(); return; }
       if (revealState === 2) { closeModal(); return; }
+
+      const tag = (e.target.tagName || '').toUpperCase();
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return;
 
       // State 0 — look for next unrevealed submitted pick (BOD only)
       if (!isBod() || !draftState) return;
@@ -1309,6 +1310,7 @@
           </div>
         </div>`;
       overlay.style.display = 'flex';
+      overlay.focus();
 
       if (isBod()) {
         document.getElementById('hl-url-save').addEventListener('click', async () => {
@@ -1429,6 +1431,7 @@
           </div>
         </div>`;
       overlay.style.display = 'flex';
+      overlay.focus();
     }
 
     function closeModal() {
