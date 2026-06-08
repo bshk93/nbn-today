@@ -1184,9 +1184,10 @@
       activeTab = tab;
       document.getElementById('tab-fullboard-btn').classList.toggle('active', tab === 'fullboard');
       document.getElementById('tab-pool-btn').classList.toggle('active', tab === 'pool');
-      document.getElementById('fullboard-section').style.display = tab === 'fullboard' ? '' : 'none';
-      renderPool(draftState);
+      document.getElementById('fullboard-section').style.display = tab === 'fullboard' ? 'block' : 'none';
+      document.getElementById('pool-section').style.display = tab === 'pool' ? 'block' : 'none';
       if (tab === 'fullboard') renderFullBoard(draftState);
+      if (tab === 'pool') renderPool(draftState);
     }
 
     // ── Enter key reveal sequence ──────────────────────────────────────────────────
@@ -1395,10 +1396,8 @@
     // ── Full draft board render ────────────────────────────────────────────────────
 
     function renderFullBoard(state) {
-      const section = document.getElementById('fullboard-section');
       const tbody = document.getElementById('fullboard-body');
-      if (!state || activeTab !== 'fullboard') { section.style.display = 'none'; return; }
-      section.style.display = '';
+      if (!state || activeTab !== 'fullboard') return;
       tbody.innerHTML = '';
 
       const year = state.year;
@@ -1493,7 +1492,15 @@
         tr.appendChild(tdPos);
 
         const tdSchool = document.createElement('td');
-        tdSchool.className = 'muted'; tdSchool.textContent = school;
+        tdSchool.className = 'muted';
+        if (revealed) {
+          tdSchool.textContent = school;
+        } else if (state.round1_date) {
+          const sMs = pickWindowStart(state.round1_date, p.round, p.pick);
+          tdSchool.textContent = `${formatET(sMs)} – ${formatET(sMs + 10 * 60 * 1000)} ET`;
+        } else {
+          tdSchool.textContent = '—';
+        }
         tr.appendChild(tdSchool);
 
         tbody.appendChild(tr);
@@ -1503,9 +1510,7 @@
     // ── Player pool render ─────────────────────────────────────────────────────────
 
     function renderPool(state) {
-      const section = document.getElementById('pool-section');
-      if (!state || activeTab !== 'pool') { section.style.display = 'none'; return; }
-      section.style.display = '';
+      if (!state || activeTab !== 'pool') return;
 
       const year = state.year;
       const drafted = pickedSlugs(year);
@@ -1585,6 +1590,8 @@
 
       renderStatus(state);
       renderMyPicks(state);
+      document.getElementById('fullboard-section').style.display = (state && activeTab === 'fullboard') ? 'block' : 'none';
+      document.getElementById('pool-section').style.display = (state && activeTab === 'pool') ? 'block' : 'none';
       renderFullBoard(state);
       renderPool(state);
       // Invalidate roster cache whenever state updates (picks may have changed depth charts)
