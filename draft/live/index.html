@@ -302,31 +302,28 @@
     .round-tab-hint { font-size: 0.65rem; color: #374151; margin-left: 0.4rem; }
     .pick-grid {
       display: grid;
-      grid-template-columns: repeat(15, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 4px;
       padding: 6px;
     }
     .pick-card {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
       background: #111827;
       border: 1px solid #374151;
       border-radius: 6px;
-      padding: 6px 7px;
+      padding: 0.45rem 0.75rem;
       min-width: 0;
       overflow: hidden;
     }
     .pick-card.on-clock { background: #0d1f3c; border-color: #3b82f6; }
-    .pc-top {
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
-      margin-bottom: 2px;
-    }
-    .pc-num { font-size: 0.6rem; color: #4b5563; font-variant-numeric: tabular-nums; flex-shrink: 0; }
-    .pc-team { font-size: 0.72rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-    .pc-player { margin-bottom: 2px; overflow: hidden; }
-    .pc-name { font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; }
-    .pc-clock { color: #facc15; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.03em; }
-    .pc-meta { font-size: 0.6rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pc-num { font-size: 0.7rem; color: #4b5563; font-variant-numeric: tabular-nums; flex-shrink: 0; width: 2rem; }
+    .pc-team { font-size: 0.8rem; font-weight: 700; flex-shrink: 0; width: 3rem; }
+    .pc-player-wrap { flex: 1; display: flex; align-items: center; gap: 0.45rem; min-width: 0; overflow: hidden; }
+    .pc-name { font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pc-clock { color: #facc15; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .pc-meta { font-size: 0.72rem; color: #6b7280; flex-shrink: 0; white-space: nowrap; margin-left: auto; }
 
     /* ── Show modal overlay ───────────────────────────── */
     #show-overlay {
@@ -1566,13 +1563,13 @@
         const card = document.createElement('div');
         card.className = `pick-card${isOnClock ? ' on-clock' : ''}`;
 
-        // Top row: pick number + team
-        const topRow = document.createElement('div');
-        topRow.className = 'pc-top';
+        // Pick number
         const numEl = document.createElement('span');
         numEl.className = 'pc-num';
         numEl.textContent = `#${p.pick}`;
-        topRow.appendChild(numEl);
+        card.appendChild(numEl);
+
+        // Team
         const teamBtn = document.createElement('button');
         teamBtn.className = 'name-btn name-btn-team pc-team';
         if (isOnClock) teamBtn.style.color = '#93c5fd';
@@ -1581,13 +1578,20 @@
           revealState = 2; revealTeam = primaryTeam;
           renderDepthModal(primaryTeam);
         });
-        topRow.appendChild(teamBtn);
-        card.appendChild(topRow);
+        card.appendChild(teamBtn);
 
-        // Player row
-        const playerEl = document.createElement('div');
-        playerEl.className = 'pc-player';
+        // Player (photo + name, or status)
+        const playerWrap = document.createElement('div');
+        playerWrap.className = 'pc-player-wrap';
         if (revealed) {
+          if (bio.photo_url) {
+            const img = document.createElement('img');
+            img.className = 'player-photo'; img.src = bio.photo_url; img.alt = '';
+            img.onerror = function() { this.replaceWith(Object.assign(document.createElement('div'), {className:'player-ph'})); };
+            playerWrap.appendChild(img);
+          } else {
+            playerWrap.appendChild(Object.assign(document.createElement('div'), {className:'player-ph'}));
+          }
           const hasVideo = !!highlights[p.player];
           const nameBtn = document.createElement('button');
           nameBtn.className = `name-btn name-btn-player pc-name${hasVideo ? ' has-video' : ''}`;
@@ -1596,17 +1600,17 @@
             revealSlug = p.player; revealTeam = primaryTeam; revealPick = p; revealState = 1;
             renderPlayerModal();
           });
-          playerEl.appendChild(nameBtn);
+          playerWrap.appendChild(nameBtn);
         } else if (p.player) {
-          playerEl.innerHTML = `<span class="pick-in-cell"><span class="pick-in-dot"></span> In</span>`;
+          playerWrap.innerHTML = `<span class="pick-in-cell"><span class="pick-in-dot"></span> The pick is in</span>`;
         } else if (isOnClock) {
-          playerEl.innerHTML = `<span class="pc-clock">⏱ On Clock</span>`;
+          playerWrap.innerHTML = `<span class="pc-clock">⏱ On the Clock</span>`;
         } else {
-          playerEl.innerHTML = `<span style="color:#374151">—</span>`;
+          playerWrap.innerHTML = `<span style="color:#374151">—</span>`;
         }
-        card.appendChild(playerEl);
+        card.appendChild(playerWrap);
 
-        // Meta row: pos (revealed) or pick window time
+        // Meta: pos (revealed) or pick window time
         const metaEl = document.createElement('div');
         metaEl.className = 'pc-meta';
         if (revealed) {
