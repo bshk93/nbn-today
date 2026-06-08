@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.238",
+    "date": "2026-06-08",
+    "changes": [
+      "draft/live: Draft Show mode \u2014 Enter key drives reveal sequence (player highlights popup \u2192 team depth chart \u2192 back to board)",
+      "draft/live: Board and Player Pool view tabs; team/player names clickable to open depth charts and highlight videos",
+      "draft/live: BOD can configure per-player YouTube highlight URLs inline in the reveal popup",
+      "nbn-api: PATCH /api/draft/live now accepts highlights dict (slug \u2192 embed URL), merged into state"
+    ]
+  },
+  {
     "version": "0.0.235",
     "date": "2026-06-07",
     "changes": [

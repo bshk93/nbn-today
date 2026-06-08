@@ -288,6 +288,138 @@
     .queue-name { flex: 1; color: #f3f4f6; }
     .queue-empty { color: #374151; font-size: 0.8rem; font-style: italic; padding: 0.3rem 0; }
     .queue-add { display: flex; gap: 0.4rem; align-items: center; }
+
+    /* ── View tabs ────────────────────────────────────── */
+    .view-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .view-tab-btn {
+      padding: 0.45rem 1.1rem;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      border: 1px solid #374151;
+      background: transparent;
+      color: #9ca3af;
+    }
+    .view-tab-btn:hover { color: #f3f4f6; border-color: #6b7280; }
+    .view-tab-btn.active { background: #1f2937; color: #f3f4f6; border-color: #6b7280; }
+
+    /* ── Show modal overlay ───────────────────────────── */
+    #show-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .show-modal {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 740px;
+      overflow: hidden;
+    }
+    .show-modal-header {
+      padding: 1.25rem 1.5rem 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .show-modal-player-photo {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      object-fit: cover; object-position: top center;
+      flex-shrink: 0;
+    }
+    .show-modal-player-ph {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: #374151;
+      flex-shrink: 0;
+    }
+    .show-modal-pick-badge {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: #facc15;
+      background: #292308; border: 1px solid #713f12;
+      border-radius: 4px; padding: 0.15rem 0.45rem;
+      display: inline-block; margin-bottom: 0.35rem;
+    }
+    .show-modal-title { font-size: 1.6rem; font-weight: 800; color: #f3f4f6; letter-spacing: -0.02em; }
+    .show-modal-sub { font-size: 0.9rem; color: #9ca3af; margin-top: 0.15rem; }
+    .show-embed-wrap { position: relative; width: 100%; padding-top: 56.25%; background: #0f0f0f; }
+    .show-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+    .show-no-video {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0.5rem; color: #4b5563; font-size: 0.85rem;
+    }
+    .show-modal-footer {
+      padding: 0.75rem 1.5rem;
+      display: flex; align-items: center; gap: 0.75rem;
+      border-top: 1px solid #1f2937;
+    }
+    .show-modal-hint { font-size: 0.75rem; color: #4b5563; flex: 1; }
+    .show-modal-hint kbd {
+      display: inline-block;
+      background: #1f2937; border: 1px solid #374151; border-radius: 4px;
+      padding: 0.1rem 0.4rem; font-family: inherit; font-size: 0.72rem; color: #9ca3af;
+    }
+    .highlight-url-form {
+      display: flex; gap: 0.5rem;
+      padding: 0.6rem 1.5rem;
+      border-top: 1px solid #1f2937;
+      background: #0d1117;
+    }
+    .highlight-url-form input {
+      flex: 1;
+      background: #1f2937; border: 1px solid #374151; border-radius: 5px;
+      color: #f3f4f6; font-size: 0.8rem; padding: 0.3rem 0.5rem; font-family: inherit;
+    }
+    .highlight-url-label {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: #4b5563; align-self: center; white-space: nowrap;
+    }
+
+    /* ── Depth chart modal ────────────────────────────── */
+    .depth-modal-header {
+      padding: 1.25rem 1.5rem 1rem;
+      display: flex; align-items: center; gap: 0.85rem;
+      border-bottom: 1px solid #1f2937;
+    }
+    .depth-team-logo { width: 44px; height: 44px; object-fit: contain; }
+    .depth-team-name { font-size: 1.2rem; font-weight: 800; color: #f3f4f6; }
+    .depth-table-wrap { max-height: 420px; overflow-y: auto; }
+    .depth-pos-label {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.09em;
+      text-transform: uppercase; color: #4b5563;
+      background: #0d1117; padding: 0.3rem 0.75rem;
+      border-bottom: 1px solid #1a2336;
+    }
+
+    /* ── Clickable name buttons ───────────────────────── */
+    .name-btn {
+      background: none; border: none; padding: 0;
+      font-family: inherit; font-size: inherit; font-weight: inherit;
+      color: inherit; cursor: pointer; text-align: left;
+    }
+    .name-btn:hover { text-decoration: underline; }
+    .name-btn-player.has-video { color: #93c5fd; }
+    .name-btn-player.has-video:hover { color: #60a5fa; }
+    .name-btn-team { color: #d1d5db; }
+    .name-btn-team:hover { color: #f3f4f6; }
+
+    /* ── Player pool section ──────────────────────────── */
+    #pool-section table thead th { }
   </style>
 </head>
 <body>
@@ -367,9 +499,14 @@
       </div>
     </div>
 
-    <!-- Draft board -->
+    <!-- View tab bar -->
+    <div class="view-tabs" id="view-tab-bar" style="display:none">
+      <button class="view-tab-btn active" id="tab-board-btn" onclick="switchTab('board')">Draft Board</button>
+      <button class="view-tab-btn" id="tab-pool-btn" onclick="switchTab('pool')">Player Pool</button>
+    </div>
+
+    <!-- Draft board (Board tab) -->
     <div class="section" id="board-section" style="display:none">
-      <div class="section-title">Draft Board</div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -387,9 +524,8 @@
       </div>
     </div>
 
-    <!-- Available players -->
-    <div class="section" id="available-section">
-      <div class="section-title" id="available-title">2026 Draft Class</div>
+    <!-- Player pool (Pool tab) -->
+    <div class="section" id="pool-section" style="display:none">
       <div class="table-wrap">
         <table>
           <thead>
@@ -398,14 +534,16 @@
               <th>Pos</th>
               <th class="muted">Age</th>
               <th class="muted">College / Country</th>
-              <th></th>
             </tr>
           </thead>
-          <tbody id="available-body"></tbody>
+          <tbody id="pool-body"></tbody>
         </table>
       </div>
     </div>
   </div>
+
+  <!-- Reveal / depth chart modal overlay -->
+  <div id="show-overlay" style="display:none"></div>
 
   <script>
     const TOKEN_KEY = 'nbn_token';
@@ -965,7 +1103,7 @@
     function renderBoard(state) {
       const section = document.getElementById('board-section');
       const tbody = document.getElementById('board-body');
-      if (!state) { section.style.display = 'none'; return; }
+      if (!state || activeTab !== 'board') { section.style.display = 'none'; return; }
 
       const year = state.year;
       const picks = yearPicks(year);
@@ -1002,8 +1140,16 @@
 
           const tdTeam = document.createElement('td');
           tdTeam.className = 'team';
-          tdTeam.style.color = isOnClock ? '#93c5fd' : '#d1d5db';
-          tdTeam.innerHTML = pickTeamHtml(p);
+          const upNextOwners = pickOwners(p);
+          const upNextBtn = document.createElement('button');
+          upNextBtn.className = 'name-btn name-btn-team';
+          upNextBtn.style.color = isOnClock ? '#93c5fd' : '#d1d5db';
+          upNextBtn.innerHTML = pickTeamHtml(p);
+          upNextBtn.addEventListener('click', () => {
+            revealState = 2; revealTeam = upNextOwners[0];
+            renderDepthModal(upNextOwners[0]);
+          });
+          tdTeam.appendChild(upNextBtn);
           tr.appendChild(tdTeam);
 
           const tdStatus = document.createElement('td');
@@ -1049,11 +1195,23 @@
         tdNum.textContent = p.pick;
         tr.appendChild(tdNum);
 
+        // Team cell — clickable to show depth chart
         const tdTeam = document.createElement('td');
         tdTeam.className = 'team';
-        tdTeam.innerHTML = pickTeamHtml(p);
+        const owners = pickOwners(p);
+        const primaryTeam = owners[0];
+        const teamBtn = document.createElement('button');
+        teamBtn.className = 'name-btn name-btn-team';
+        teamBtn.innerHTML = pickTeamHtml(p);
+        teamBtn.addEventListener('click', () => {
+          revealState = 2;
+          revealTeam = primaryTeam;
+          renderDepthModal(primaryTeam);
+        });
+        tdTeam.appendChild(teamBtn);
         tr.appendChild(tdTeam);
 
+        // Player cell — revealed: clickable name; unrevealed: "The pick is in"
         const tdPlayer = document.createElement('td');
         if (revealed) {
           const cell = document.createElement('div');
@@ -1074,10 +1232,15 @@
             ph.className = 'player-ph';
             cell.appendChild(ph);
           }
-          const nameSpan = document.createElement('span');
-          nameSpan.className = 'player-name';
-          nameSpan.textContent = name;
-          cell.appendChild(nameSpan);
+          const hasVideo = !!highlights[p.player];
+          const nameBtn = document.createElement('button');
+          nameBtn.className = `name-btn name-btn-player${hasVideo ? ' has-video' : ''}`;
+          nameBtn.textContent = name;
+          nameBtn.addEventListener('click', () => {
+            revealSlug = p.player; revealTeam = primaryTeam; revealPick = p; revealState = 1;
+            renderPlayerModal();
+          });
+          cell.appendChild(nameBtn);
           tdPlayer.appendChild(cell);
         } else {
           const cell = document.createElement('div');
@@ -1097,17 +1260,14 @@
         tdSchool.textContent = revealed ? school : '';
         tr.appendChild(tdSchool);
 
+        // Action cell — BOD sees Reveal button (mouse fallback; Enter is primary)
         const tdAction = document.createElement('td');
         if (!revealed && isBod()) {
           const revealBtn = document.createElement('button');
           revealBtn.className = 'btn btn-ghost btn-sm';
           revealBtn.textContent = 'Reveal';
-          revealBtn.addEventListener('click', async () => {
-            revealBtn.disabled = true;
-            const res = await apiPost('/api/draft/reveal', { round: p.round, pick: p.pick });
-            if (res.ok) { await refreshState(); render(); }
-            else { revealBtn.disabled = false; }
-          });
+          revealBtn.title = 'Press Enter to reveal';
+          revealBtn.addEventListener('click', () => doReveal(p));
           tdAction.appendChild(revealBtn);
         }
         tr.appendChild(tdAction);
@@ -1116,12 +1276,243 @@
       });
     }
 
-    function renderAvailable(state) {
-      const section = document.getElementById('available-section');
-      const title = document.getElementById('available-title');
-      const tbody = document.getElementById('available-body');
+    // ── Show mode state ────────────────────────────────────────────────────────────
 
-      if (!state) { section.style.display = 'none'; return; }
+    let highlights = {};
+    let rosterCache = {};
+    let activeTab = 'board';
+    // revealState: 0=closed, 1=player modal, 2=depth chart
+    let revealState = 0;
+    let revealSlug = null;
+    let revealTeam = null;
+    let revealPick = null;
+
+    const TEAM_NAMES = {
+      ATL:'Atlanta',BKN:'Brooklyn',BOS:'Boston',CHA:'Charlotte',CHI:'Chicago',
+      CLE:'Cleveland',DAL:'Dallas',DEN:'Denver',DET:'Detroit',GSW:'Golden State',
+      HOU:'Houston',IND:'Indiana',LAC:'LA Clippers',LAL:'LA Lakers',MEM:'Memphis',
+      MIA:'Miami',MIL:'Milwaukee',MIN:'Minnesota',NOP:'New Orleans',NYK:'New York',
+      OKC:'Oklahoma City',ORL:'Orlando',PHI:'Philadelphia',PHX:'Phoenix',POR:'Portland',
+      SAC:'Sacramento',SAS:'San Antonio',TOR:'Toronto',UTA:'Utah',WAS:'Washington',
+    };
+    const POS_ORDER = ['PG','SG','SF','PF','C'];
+
+    // ── Tab switching ──────────────────────────────────────────────────────────────
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.getElementById('tab-board-btn').classList.toggle('active', tab === 'board');
+      document.getElementById('tab-pool-btn').classList.toggle('active', tab === 'pool');
+      document.getElementById('board-section').style.display = tab === 'board' ? '' : 'none';
+      renderPool(draftState);
+    }
+
+    // ── Enter key reveal sequence ──────────────────────────────────────────────────
+
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const tag = (e.target.tagName || '').toUpperCase();
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return;
+
+      if (revealState === 1) { advanceToDepth(); return; }
+      if (revealState === 2) { closeModal(); return; }
+
+      // State 0 — look for next unrevealed submitted pick (BOD only)
+      if (!isBod() || !draftState) return;
+      const picks = yearPicks(draftState.year);
+      const pending = picks.find(p => p.player && !draftState.revealed.includes(`${p.round}-${p.pick}`));
+      if (pending) doReveal(pending);
+    });
+
+    async function doReveal(p) {
+      const res = await apiPost('/api/draft/reveal', { round: p.round, pick: p.pick });
+      if (!res.ok) return;
+      await refreshState();
+      render();
+      revealSlug = p.player;
+      revealTeam = pickOwners(p)[0];
+      revealPick = p;
+      revealState = 1;
+      renderPlayerModal();
+    }
+
+    function renderPlayerModal() {
+      const bio = bios[revealSlug] || {};
+      const name = bioName(revealSlug);
+      const pos = Array.isArray(bio.pos) ? bio.pos.join(' / ') : (bio.pos || '—');
+      const school = (bio.college && bio.college !== 'NA') ? bio.college
+                   : (bio.country && bio.country !== 'NA') ? bio.country : '';
+      const embedUrl = highlights[revealSlug];
+      const p = revealPick;
+
+      const pickBadge = p
+        ? `<div class="show-modal-pick-badge">Round ${p.round} · Pick ${p.pick} · ${pickOwners(p).join(' / ')}</div>`
+        : '';
+
+      const photoHtml = bio.photo_url
+        ? `<img class="show-modal-player-photo" src="${bio.photo_url}" alt=""
+             onerror="this.outerHTML='<div class=\\'show-modal-player-ph\\'></div>'">`
+        : `<div class="show-modal-player-ph"></div>`;
+
+      const embedHtml = embedUrl
+        ? `<div class="show-embed-wrap"><iframe src="${embedUrl}?autoplay=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>`
+        : `<div class="show-embed-wrap"><div class="show-no-video">
+             <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" opacity="0.3">
+               <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+             </svg>
+             <span>No highlights configured</span>
+           </div></div>`;
+
+      const urlFormHtml = isBod() ? `
+        <div class="highlight-url-form">
+          <span class="highlight-url-label">Highlights URL</span>
+          <input type="text" id="hl-url-input" placeholder="https://www.youtube.com/embed/…" value="${embedUrl || ''}" />
+          <button class="btn btn-ghost btn-sm" id="hl-url-save">Save</button>
+        </div>` : '';
+
+      const hintText = revealTeam
+        ? `<kbd>Enter</kbd> &rarr; ${revealTeam} depth chart`
+        : `<kbd>Enter</kbd> to close`;
+
+      const overlay = document.getElementById('show-overlay');
+      overlay.innerHTML = `
+        <div class="show-modal">
+          <div class="show-modal-header">
+            ${photoHtml}
+            <div>
+              ${pickBadge}
+              <div class="show-modal-title">${name}</div>
+              <div class="show-modal-sub">${pos}${school ? ' · ' + school : ''}</div>
+            </div>
+          </div>
+          ${embedHtml}
+          ${urlFormHtml}
+          <div class="show-modal-footer">
+            <div class="show-modal-hint">${hintText}</div>
+            <button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button>
+          </div>
+        </div>`;
+      overlay.style.display = 'flex';
+
+      if (isBod()) {
+        document.getElementById('hl-url-save').addEventListener('click', async () => {
+          const url = document.getElementById('hl-url-input').value.trim();
+          const btn = document.getElementById('hl-url-save');
+          btn.disabled = true; btn.textContent = 'Saving…';
+          const res = await apiPatch('/api/draft/live', { highlights: { [revealSlug]: url } });
+          if (res.ok) {
+            const newState = await res.json();
+            draftState = newState;
+            highlights = newState.highlights || {};
+            btn.textContent = 'Saved!';
+            setTimeout(renderPlayerModal, 500);
+          } else {
+            btn.textContent = 'Error'; btn.disabled = false;
+          }
+        });
+      }
+    }
+
+    async function advanceToDepth() {
+      if (!revealTeam) { closeModal(); return; }
+      revealState = 2;
+      await renderDepthModal(revealTeam);
+    }
+
+    async function renderDepthModal(abbr) {
+      abbr = abbr.toUpperCase();
+      let roster = rosterCache[abbr];
+      if (!roster) {
+        const res = await fetch(`/data/${abbr.toLowerCase()}-roster.csv`);
+        roster = res.ok ? parseRosterCSV(await res.text()) : [];
+        rosterCache[abbr] = roster;
+      }
+
+      const teamName = TEAM_NAMES[abbr] || abbr;
+      const byPos = {};
+      roster.forEach(r => {
+        const p = r.pos[0] || '?';
+        if (!byPos[p]) byPos[p] = [];
+        byPos[p].push(r);
+      });
+
+      let tableBody = '';
+      const allPos = [...POS_ORDER, ...Object.keys(byPos).filter(p => !POS_ORDER.includes(p))];
+      allPos.forEach(pos => {
+        const players = (byPos[pos] || []).sort((a, b) => b.ovr - a.ovr);
+        if (!players.length) return;
+        tableBody += `<tr><td colspan="3" class="depth-pos-label">${pos}</td></tr>`;
+        players.forEach(r => {
+          tableBody += `<tr style="border-bottom:1px solid #1a2336">
+            <td style="padding:0.45rem 0.75rem;color:#f3f4f6;font-weight:600">${r.name}</td>
+            <td style="padding:0.45rem 0.75rem;color:#9ca3af;font-size:0.82rem">${r.pos.join('/')}</td>
+            <td style="padding:0.45rem 0.75rem;color:#d1d5db;font-variant-numeric:tabular-nums">${r.ovr || '—'}</td>
+          </tr>`;
+        });
+      });
+
+      const overlay = document.getElementById('show-overlay');
+      overlay.innerHTML = `
+        <div class="show-modal">
+          <div class="depth-modal-header">
+            <img class="depth-team-logo" src="/logos/logo-${abbr.toLowerCase()}.png" alt="${abbr}"
+                 onerror="this.style.display='none'">
+            <div class="depth-team-name">${teamName}</div>
+          </div>
+          <div class="depth-table-wrap">
+            <table style="width:100%;border-collapse:collapse;font-size:0.88rem;white-space:nowrap">
+              <thead><tr style="border-bottom:1px solid #1f2937">
+                <th style="padding:0.4rem 0.75rem;text-align:left;font-size:0.65rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#4b5563">Player</th>
+                <th style="padding:0.4rem 0.75rem;text-align:left;font-size:0.65rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#4b5563">Pos</th>
+                <th style="padding:0.4rem 0.75rem;text-align:left;font-size:0.65rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#4b5563">OVR</th>
+              </tr></thead>
+              <tbody>${tableBody}</tbody>
+            </table>
+          </div>
+          <div class="show-modal-footer">
+            <div class="show-modal-hint"><kbd>Enter</kbd> to close</div>
+            <button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button>
+          </div>
+        </div>`;
+      overlay.style.display = 'flex';
+    }
+
+    function closeModal() {
+      revealState = 0;
+      revealSlug = null; revealTeam = null; revealPick = null;
+      document.getElementById('show-overlay').style.display = 'none';
+    }
+
+    function parseRosterCSV(text) {
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) return [];
+      const headers = lines[0].split(',').map(h => h.trim());
+      const slugIdx = headers.indexOf('SLUG');
+      const ovrIdx = headers.indexOf('OVR');
+      if (slugIdx === -1) return [];
+      const result = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(c => c.trim());
+        const slug = cols[slugIdx];
+        if (!slug) continue;
+        const bio = bios[slug];
+        if (!bio) continue;
+        const parts = bio.name.split(',');
+        const name = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+        result.push({
+          slug, name,
+          pos: Array.isArray(bio.pos) ? bio.pos : [bio.pos || '?'],
+          ovr: parseInt(cols[ovrIdx]) || 0,
+        });
+      }
+      return result;
+    }
+
+    // ── Player pool render ─────────────────────────────────────────────────────────
+
+    function renderPool(state) {
+      const section = document.getElementById('pool-section');
+      if (!state || activeTab !== 'pool') { section.style.display = 'none'; return; }
       section.style.display = '';
 
       const year = state.year;
@@ -1131,60 +1522,42 @@
         .map(([slug, bio]) => ({ slug, bio }))
         .sort((a, b) => a.bio.name.localeCompare(b.bio.name));
 
-      title.textContent = `${year} Draft Class (${available.length} available)`;
+      const tbody = document.getElementById('pool-body');
       tbody.innerHTML = '';
 
       if (!available.length) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="5" class="empty-state">All players drafted.</td>`;
-        tbody.appendChild(tr);
+        tbody.innerHTML = `<tr><td colspan="4" class="empty-state">All players drafted.</td></tr>`;
         return;
       }
 
-      const showQueueBtn = myTeams.length > 0;
-      const myOwnerAvail = myTeams[0] || null;
-      const myQueueSet = myOwnerAvail ? new Set(getTeamQueue(myOwnerAvail)) : new Set();
-
       available.forEach(({ slug, bio }) => {
-        const name = bioName(slug);
+        const nameParts = bio.name.split(',');
+        const name = nameParts.length === 2 ? `${nameParts[1].trim()} ${nameParts[0].trim()}` : bio.name;
         const pos = Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '—');
         const school = (bio.college && bio.college !== 'NA') ? bio.college
                      : (bio.country && bio.country !== 'NA') ? bio.country : '—';
         const age = calcAge(bio.dob);
+        const hasVideo = !!highlights[slug];
 
         const tr = document.createElement('tr');
 
         const tdName = document.createElement('td');
-        const a = document.createElement('a');
-        a.href = `/players/?p=${slug}`;
-        a.textContent = name;
-        tdName.appendChild(a);
+        const btn = document.createElement('button');
+        btn.className = `name-btn name-btn-player${hasVideo ? ' has-video' : ''}`;
+        btn.textContent = name;
+        btn.addEventListener('click', () => {
+          revealSlug = slug; revealTeam = null; revealPick = null; revealState = 1;
+          renderPlayerModal();
+        });
+        tdName.appendChild(btn);
         tr.appendChild(tdName);
 
-        ['pos', 'age', 'school'].forEach((key, i) => {
+        ['pos','age','school'].forEach((key, i) => {
           const td = document.createElement('td');
           td.className = 'muted';
           td.textContent = [pos, age, school][i];
           tr.appendChild(td);
         });
-
-        const tdAction = document.createElement('td');
-        if (showQueueBtn) {
-          const inQueue = myQueueSet.has(slug);
-          const btn = document.createElement('button');
-          btn.className = 'btn btn-ghost btn-sm';
-          btn.textContent = inQueue ? 'Queued ✓' : '+ Queue';
-          btn.style.opacity = inQueue ? '0.5' : '1';
-          if (!inQueue) {
-            btn.addEventListener('click', async () => {
-              btn.disabled = true;
-              const currentQ = getTeamQueue(myOwnerAvail);
-              await saveQueue(myOwnerAvail, [...currentQ, slug]);
-            });
-          }
-          tdAction.appendChild(btn);
-        }
-        tr.appendChild(tdAction);
 
         tbody.appendChild(tr);
       });
@@ -1196,6 +1569,12 @@
       const state = draftState;
       _swapTakesFrom = buildSwapTakesFrom(state ? yearPicks(state.year) : []);
 
+      // Sync highlights from state
+      highlights = (state && state.highlights) || {};
+
+      // Show/hide tab bar
+      document.getElementById('view-tab-bar').style.display = state ? '' : 'none';
+
       if (isBod()) {
         const panel = document.getElementById('admin-panel');
         panel.style.display = '';
@@ -1206,7 +1585,9 @@
       renderStatus(state);
       renderMyPicks(state);
       renderBoard(state);
-      renderAvailable(state);
+      renderPool(state);
+      // Invalidate roster cache whenever state updates (picks may have changed depth charts)
+      rosterCache = {};
     }
 
     // ── Data fetching ──────────────────────────────────────────────────────────
