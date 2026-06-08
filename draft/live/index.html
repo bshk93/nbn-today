@@ -909,6 +909,7 @@
 
     async function savePoolOrder(slugs) {
       poolOrder = slugs;
+      if (draftState) draftState.pool_order = slugs; // optimistic — prevents interval render from reverting
       const res = await apiPatch('/api/draft/live', { pool_order: slugs });
       if (res && res.ok) {
         const newState = await res.json();

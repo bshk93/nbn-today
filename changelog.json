@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.0.279",
+    "date": "2026-06-08",
+    "changes": [
+      "draft/live: fix pool order resetting \u2014 optimistically update draftState.pool_order so interval renders don't revert drag changes before PATCH completes"
+    ]
+  },
+  {
     "version": "0.0.278",
     "date": "2026-06-08",
     "changes": [
