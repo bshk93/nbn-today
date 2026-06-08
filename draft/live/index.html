@@ -1497,7 +1497,7 @@
           tdSchool.textContent = school;
         } else if (state.round1_date) {
           const sMs = pickWindowStart(state.round1_date, p.round, p.pick);
-          tdSchool.textContent = `${formatET(sMs)} – ${formatET(sMs + 10 * 60 * 1000)} ET`;
+          tdSchool.textContent = `${formatET(sMs)} ET`;
         } else {
           tdSchool.textContent = '—';
         }
@@ -1621,6 +1621,7 @@
 
       await refreshState();
       render();
+      switchTab(activeTab);
 
       setInterval(async () => {
         await refreshState();
