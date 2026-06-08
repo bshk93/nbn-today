@@ -1313,6 +1313,11 @@
         return;
       }
 
+      if (e.key === 'Escape') {
+        if (revealState === 1 || revealState === 2) { closeModal(); e.stopPropagation(); }
+        return;
+      }
+
       if (e.key !== 'Enter') return;
 
       if (revealState === 1) { advanceToDepth(); e.stopPropagation(); return; }
