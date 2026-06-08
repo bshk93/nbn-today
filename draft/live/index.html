@@ -1609,6 +1609,12 @@
 
     async function init() {
       // Load bios, OVR, and auth in parallel
+      // Fetch draft state first so the board renders immediately
+      await refreshState();
+      render();
+      switchTab(activeTab);
+
+      // Load bios/ovr/auth in the background, re-render when ready
       const [biosRes, ovrRes] = await Promise.all([
         fetch('/api/players'),
         fetch('/api/ovr/current'),
@@ -1616,10 +1622,7 @@
       ]);
       if (biosRes.ok) bios = await biosRes.json();
       if (ovrRes.ok) ovrCurrent = await ovrRes.json();
-
-      await refreshState();
       render();
-      switchTab(activeTab);
 
       setInterval(async () => {
         await refreshState();
