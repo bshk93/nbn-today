@@ -570,28 +570,8 @@
 
     <!-- View tab bar -->
     <div class="view-tabs" id="view-tab-bar" style="display:none">
-      <button class="view-tab-btn active" id="tab-board-btn" onclick="switchTab('board')">Next Up</button>
-      <button class="view-tab-btn" id="tab-fullboard-btn" onclick="switchTab('fullboard')">Draft Board</button>
+      <button class="view-tab-btn active" id="tab-fullboard-btn" onclick="switchTab('fullboard')">Draft Board</button>
       <button class="view-tab-btn" id="tab-pool-btn" onclick="switchTab('pool')">Player Pool</button>
-    </div>
-
-    <!-- Next Up (Board tab) -->
-    <div class="section" id="board-section" style="display:none">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Pick</th>
-              <th>Team</th>
-              <th>Player</th>
-              <th>Pos</th>
-              <th class="muted">College / Country</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="board-body"></tbody>
-        </table>
-      </div>
     </div>
 
     <!-- Full draft board (Draft Board tab) -->
@@ -1187,193 +1167,6 @@
       });
     }
 
-    function renderBoard(state) {
-      const section = document.getElementById('board-section');
-      const tbody = document.getElementById('board-body');
-      if (!state || activeTab !== 'board') { section.style.display = 'none'; return; }
-
-      const year = state.year;
-      const picks = yearPicks(year);
-      const submitted = picks.filter(p => p.player);
-      const upcoming = picks.filter(p => !p.player).slice(0, 5);
-
-      section.style.display = '';
-      tbody.innerHTML = '';
-
-      // Up-next block
-      if (upcoming.length) {
-        const sepRow = document.createElement('tr');
-        sepRow.innerHTML = `<td colspan="6" class="round-separator">On the Clock / Up Next</td>`;
-        tbody.appendChild(sepRow);
-
-        const slot = currentSlot(state);
-        const now = Date.now();
-        upcoming.forEach((p, i) => {
-          const owners = pickOwners(p);
-          const teamDisplay = owners.join('/');
-          const startMs = state.round1_date ? pickWindowStart(state.round1_date, p.round, p.pick) : null;
-          const endMs = startMs ? startMs + 10 * 60 * 1000 : null;
-          const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick;
-          const isQueued = owners.some(o => { const q = state.queue[o]; return Array.isArray(q) ? q.length > 0 : !!q; });
-
-          const tr = document.createElement('tr');
-          tr.style.background = isOnClock ? '#0d1f3c' : '#141e2e';
-          tr.style.opacity = i === 0 ? '1' : `${1 - i * 0.12}`;
-
-          const tdNum = document.createElement('td');
-          tdNum.className = 'num';
-          tdNum.textContent = `R${p.round}·${p.pick}`;
-          tr.appendChild(tdNum);
-
-          const tdTeam = document.createElement('td');
-          tdTeam.className = 'team';
-          const upNextOwners = pickOwners(p);
-          const upNextBtn = document.createElement('button');
-          upNextBtn.className = 'name-btn name-btn-team';
-          upNextBtn.style.color = isOnClock ? '#93c5fd' : '#d1d5db';
-          upNextBtn.innerHTML = pickTeamHtml(p);
-          upNextBtn.addEventListener('click', () => {
-            revealState = 2; revealTeam = upNextOwners[0];
-            renderDepthModal(upNextOwners[0]);
-          });
-          tdTeam.appendChild(upNextBtn);
-          tr.appendChild(tdTeam);
-
-          const tdStatus = document.createElement('td');
-          tdStatus.colSpan = 3;
-          if (isOnClock && now >= slot.start) {
-            tdStatus.innerHTML = `<span style="color:#facc15;font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em">⏱ On the Clock</span>`;
-          } else if (isOnClock) {
-            tdStatus.innerHTML = `<span style="color:#60a5fa;font-size:0.78rem">Picking first</span>`;
-          } else if (isQueued) {
-            tdStatus.innerHTML = `<span style="color:#4ade80;font-size:0.78rem">Pick queued</span>`;
-          } else {
-            tdStatus.innerHTML = `<span style="color:#4b5563;font-size:0.78rem">${startMs ? `${formatET(startMs)} ET` : 'Up next'}</span>`;
-          }
-          tr.appendChild(tdStatus);
-
-          tr.appendChild(document.createElement('td')); // action col
-          tbody.appendChild(tr);
-        });
-      }
-
-      if (!submitted.length) return;
-
-      let lastRound = null;
-      submitted.forEach(p => {
-        if (p.round !== lastRound) {
-          const sep = document.createElement('tr');
-          sep.innerHTML = `<td colspan="6" class="round-separator">Round ${p.round}</td>`;
-          tbody.appendChild(sep);
-          lastRound = p.round;
-        }
-
-        const revealed = state.revealed.includes(`${p.round}-${p.pick}`);
-        const bio = bios[p.player] || {};
-        const name = bioName(p.player);
-        const pos = Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '—');
-        const school = (bio.college && bio.college !== 'NA') ? bio.college
-                     : (bio.country && bio.country !== 'NA') ? bio.country : '—';
-
-        const tr = document.createElement('tr');
-
-        const tdNum = document.createElement('td');
-        tdNum.className = 'num';
-        tdNum.textContent = p.pick;
-        tr.appendChild(tdNum);
-
-        // Team cell — clickable to show depth chart
-        const tdTeam = document.createElement('td');
-        tdTeam.className = 'team';
-        const owners = pickOwners(p);
-        const primaryTeam = owners[0];
-        const teamBtn = document.createElement('button');
-        teamBtn.className = 'name-btn name-btn-team';
-        teamBtn.innerHTML = pickTeamHtml(p);
-        teamBtn.addEventListener('click', () => {
-          revealState = 2;
-          revealTeam = primaryTeam;
-          renderDepthModal(primaryTeam);
-        });
-        tdTeam.appendChild(teamBtn);
-        tr.appendChild(tdTeam);
-
-        // Player cell — revealed: clickable name; unrevealed: "The pick is in"
-        const tdPlayer = document.createElement('td');
-        if (revealed) {
-          const cell = document.createElement('div');
-          cell.className = 'player-cell';
-          if (bio.photo_url) {
-            const img = document.createElement('img');
-            img.className = 'player-photo';
-            img.src = bio.photo_url;
-            img.alt = '';
-            img.onerror = function() {
-              const ph = document.createElement('div');
-              ph.className = 'player-ph';
-              this.replaceWith(ph);
-            };
-            cell.appendChild(img);
-          } else {
-            const ph = document.createElement('div');
-            ph.className = 'player-ph';
-            cell.appendChild(ph);
-          }
-          const hasVideo = !!highlights[p.player];
-          const nameBtn = document.createElement('button');
-          nameBtn.className = `name-btn name-btn-player${hasVideo ? ' has-video' : ''}`;
-          nameBtn.textContent = name;
-          nameBtn.addEventListener('click', () => {
-            revealSlug = p.player; revealTeam = primaryTeam; revealPick = p; revealState = 1;
-            renderPlayerModal();
-          });
-          cell.appendChild(nameBtn);
-          tdPlayer.appendChild(cell);
-        } else {
-          const cell = document.createElement('div');
-          cell.className = 'pick-in-cell';
-          cell.innerHTML = `<span class="pick-in-dot"></span> The pick is in`;
-          tdPlayer.appendChild(cell);
-        }
-        tr.appendChild(tdPlayer);
-
-        const tdPos = document.createElement('td');
-        tdPos.className = 'muted';
-        tdPos.textContent = revealed ? pos : '';
-        tr.appendChild(tdPos);
-
-        const tdSchool = document.createElement('td');
-        tdSchool.className = 'muted';
-        tdSchool.textContent = revealed ? school : '';
-        tr.appendChild(tdSchool);
-
-        // Action cell — BOD sees Reveal button (mouse fallback; Enter is primary)
-        const tdAction = document.createElement('td');
-        if (!revealed && isBod()) {
-          const revealBtn = document.createElement('button');
-          revealBtn.className = 'btn btn-ghost btn-sm';
-          revealBtn.textContent = 'Reveal';
-          revealBtn.title = 'Press Enter to reveal';
-          revealBtn.addEventListener('click', () => doReveal(p));
-          tdAction.appendChild(revealBtn);
-        }
-        tr.appendChild(tdAction);
-
-        tbody.appendChild(tr);
-      });
-    }
-
-    // ── Show mode state ────────────────────────────────────────────────────────────
-
-    let highlights = {};
-    let rosterCache = {};
-    let ovrCurrent = {};  // slug → current OVR from /api/ovr/current
-    let activeTab = 'board';
-    // revealState: 0=closed, 1=player modal, 2=depth chart
-    let revealState = 0;
-    let revealSlug = null;
-    let revealTeam = null;
-    let revealPick = null;
 
     const TEAM_NAMES = {
       ATL:'Atlanta',BKN:'Brooklyn',BOS:'Boston',CHA:'Charlotte',CHI:'Chicago',
@@ -1389,10 +1182,8 @@
 
     function switchTab(tab) {
       activeTab = tab;
-      document.getElementById('tab-board-btn').classList.toggle('active', tab === 'board');
       document.getElementById('tab-fullboard-btn').classList.toggle('active', tab === 'fullboard');
       document.getElementById('tab-pool-btn').classList.toggle('active', tab === 'pool');
-      document.getElementById('board-section').style.display = tab === 'board' ? '' : 'none';
       document.getElementById('fullboard-section').style.display = tab === 'fullboard' ? '' : 'none';
       renderPool(draftState);
       if (tab === 'fullboard') renderFullBoard(draftState);
@@ -1794,7 +1585,6 @@
 
       renderStatus(state);
       renderMyPicks(state);
-      renderBoard(state);
       renderFullBoard(state);
       renderPool(state);
       // Invalidate roster cache whenever state updates (picks may have changed depth charts)
