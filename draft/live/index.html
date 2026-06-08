@@ -1522,10 +1522,7 @@
       const allPicks = yearPicks(year);
       if (!allPicks.length) return;
 
-      // Auto-jump to the round with the active pick on first render
       const slot = currentSlot(state);
-      if (slot && slot.pick.round !== activeRound) switchRound(slot.pick.round);
-
       const picks = allPicks.filter(p => p.round === activeRound);
       if (!picks.length) return;
 
@@ -1681,6 +1678,16 @@
 
       // Sync highlights from state
       highlights = (state && state.highlights) || {};
+
+      // Auto-jump to the round with the active on-clock pick (once per state change)
+      if (state) {
+        const slot = currentSlot(state);
+        if (slot && slot.pick.round !== activeRound) {
+          activeRound = slot.pick.round;
+          document.getElementById('round-tab-1').classList.toggle('active', activeRound === 1);
+          document.getElementById('round-tab-2').classList.toggle('active', activeRound === 2);
+        }
+      }
 
       // Show/hide tab bar
       document.getElementById('view-tab-bar').style.display = state ? '' : 'none';
