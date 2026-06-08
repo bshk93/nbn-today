@@ -628,6 +628,7 @@
     let myTeams = [];
     let myName = null;
     let countdownTimer = null;
+    let activeTab = 'fullboard';
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -1397,22 +1398,17 @@
 
     function renderFullBoard(state) {
       const tbody = document.getElementById('fullboard-body');
-      if (!state) { tbody.innerHTML = `<tr><td colspan="5" style="color:#f87171;padding:0.5rem">DEBUG: state null</td></tr>`; return; }
-      if (activeTab !== 'fullboard') { tbody.innerHTML = `<tr><td colspan="5" style="color:#f87171;padding:0.5rem">DEBUG: tab=${activeTab}</td></tr>`; return; }
+      if (!state || activeTab !== 'fullboard') return;
       tbody.innerHTML = '';
 
       const year = state.year;
       const picks = yearPicks(year);
-      if (!picks.length) {
-        tbody.innerHTML = `<tr><td colspan="5" style="color:#f87171;padding:0.5rem">DEBUG: 0 picks for year ${year} (allPicks.length=${allPicks.length})</td></tr>`;
-        return;
-      }
+      if (!picks.length) return;
 
       const slot = currentSlot(state);
       let lastRound = null;
 
       picks.forEach(p => {
-        try {
         if (p.round !== lastRound) {
           const sep = document.createElement('tr');
           sep.innerHTML = `<td colspan="5" class="round-separator">Round ${p.round}</td>`;
@@ -1506,11 +1502,6 @@
         tr.appendChild(tdSchool);
 
         tbody.appendChild(tr);
-        } catch(e) {
-          const errRow = document.createElement('tr');
-          errRow.innerHTML = `<td colspan="5" style="color:#f87171;padding:0.5rem">pick loop error: ${e.message} — ${JSON.stringify(p)}</td>`;
-          tbody.appendChild(errRow);
-        }
       });
     }
 
@@ -1615,12 +1606,10 @@
     }
 
     async function init() {
-      // Fetch draft state first so the board renders immediately
-      try { await refreshState(); } catch(e) { document.getElementById('status-text').textContent = 'refreshState error: ' + e; }
-      try { render(); } catch(e) { document.getElementById('status-text').textContent = 'render error: ' + e; }
-      try { switchTab(activeTab); } catch(e) { document.getElementById('status-text').textContent = 'switchTab error: ' + e; }
+      await refreshState();
+      render();
+      switchTab(activeTab);
 
-      // Load bios/ovr/auth in the background, re-render when ready
       const [biosRes, ovrRes] = await Promise.all([
         fetch('/api/players'),
         fetch('/api/ovr/current'),
@@ -1628,7 +1617,7 @@
       ]);
       if (biosRes.ok) bios = await biosRes.json();
       if (ovrRes.ok) ovrCurrent = await ovrRes.json();
-      try { render(); } catch(e) { document.getElementById('status-text').textContent = 'render2 error: ' + e; }
+      render();
 
       setInterval(async () => {
         await refreshState();
