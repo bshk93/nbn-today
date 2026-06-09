@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.290",
+    "date": "2026-06-09",
+    "changes": [
+      "poeltl: new Daily NBN Poeltl game at /poeltl \u2014 guess the mystery player in 7 tries with stat comparison clues (team, height, age, PPG, RPG, APG, 3P%)",
+      "poeltl: server-side guess persistence, 5-minute anti-cheat timer, Discord webhook on completion and daily reset",
+      "poeltl: NB\u00a550 reward for correct solve; leaderboard ranked by guess count",
+      "api: GET/POST /api/poeltl/today, /api/poeltl/guess, /api/poeltl/history, /api/poeltl/admin/reset"
+    ]
+  },
+  {
     "version": "0.0.289",
     "date": "2026-06-09",
     "changes": [

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Daily NBN Poeltl — Nothing But Net</title>
+  <style>
+    .page { max-width: 760px; margin: 0 auto; }
+
+    header { margin-bottom: 1.75rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .loading { color: #9ca3af; text-align: center; padding: 3rem; }
+
+    /* Auth */
+    .auth-gate { text-align: center; padding: 2.5rem 1rem; }
+    .auth-gate p { color: #9ca3af; margin-bottom: 1.25rem; font-size: 0.9rem; }
+    .token-row { display: flex; gap: 0.5rem; max-width: 380px; margin: 0 auto; }
+    .token-row input {
+      flex: 1; background: #111827; border: 1px solid #374151; border-radius: 8px;
+      color: #f3f4f6; padding: 0.55rem 0.75rem; font-size: 0.875rem; font-family: monospace;
+    }
+    .token-row input:focus { outline: none; border-color: #3b82f6; }
+    .token-err { color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; text-align: center; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.55rem 1.1rem; border-radius: 8px; border: none;
+      font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; }
+    .btn-secondary { background: #374151; color: #d1d5db; }
+    .btn-secondary:hover:not(:disabled) { background: #4b5563; }
+
+    /* Timer */
+    .timer-bar {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .timer-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; }
+    .timer-value { font-size: 1rem; font-weight: 700; font-family: monospace; color: #f3f4f6; }
+    .timer-value.warning { color: #f59e0b; }
+    .timer-value.danger { color: #f87171; }
+    .timer-track { flex: 1; height: 4px; background: #374151; border-radius: 2px; }
+    .timer-fill { height: 100%; border-radius: 2px; background: #3b82f6; transition: width 1s linear; }
+    .timer-fill.warning { background: #f59e0b; }
+    .timer-fill.danger { background: #f87171; }
+
+    /* Guess counter */
+    .guess-dots { display: flex; gap: 0.35rem; align-items: center; margin-bottom: 1.25rem; }
+    .guess-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #374151; border: 1px solid #4b5563;
+    }
+    .guess-dot.used { background: #6b7280; border-color: #6b7280; }
+    .guess-dot.solved { background: #34d399; border-color: #34d399; }
+    .guess-dot.failed { background: #f87171; border-color: #f87171; }
+
+    /* Search */
+    .search-wrap { position: relative; margin-bottom: 1rem; }
+    .search-wrap input {
+      width: 100%; background: #111827; border: 1px solid #374151; border-radius: 8px;
+      color: #f3f4f6; padding: 0.65rem 0.9rem; font-size: 0.9rem;
+    }
+    .search-wrap input:focus { outline: none; border-color: #3b82f6; }
+    .search-wrap input::placeholder { color: #4b5563; }
+    .search-wrap input:disabled { opacity: 0.5; cursor: not-allowed; }
+    .autocomplete-list {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+      max-height: 240px; overflow-y: auto; z-index: 100;
+    }
+    .autocomplete-item {
+      padding: 0.55rem 0.9rem; cursor: pointer; font-size: 0.875rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .autocomplete-item:hover, .autocomplete-item.focused { background: #374151; }
+    .autocomplete-item .pos-tag {
+      font-size: 0.68rem; font-weight: 700; color: #6b7280;
+      background: #111827; border-radius: 4px; padding: 0.15rem 0.4rem;
+    }
+
+    /* Guess table */
+    .guess-table-wrap { overflow-x: auto; margin-bottom: 0; }
+    .guess-table {
+      width: 100%; border-collapse: separate; border-spacing: 0 4px;
+      font-size: 0.82rem;
+    }
+    .guess-table thead th {
+      font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #6b7280; padding: 0 0.5rem 0.5rem;
+      text-align: center; white-space: nowrap;
+    }
+    .guess-table thead th:first-child { text-align: left; padding-left: 0.75rem; }
+    .guess-table tbody tr { }
+    .guess-table td {
+      padding: 0.45rem 0.5rem; text-align: center; vertical-align: middle;
+      background: #111827; border-top: 1px solid #1f2937;
+      border-bottom: 1px solid #1f2937;
+    }
+    .guess-table td:first-child {
+      text-align: left; padding-left: 0.75rem; border-radius: 8px 0 0 8px;
+      border-left: 1px solid #1f2937; font-weight: 600; white-space: nowrap;
+    }
+    .guess-table td:last-child { border-radius: 0 8px 8px 0; border-right: 1px solid #1f2937; }
+
+    /* Stat cell color variants */
+    .cell-green  { background: #064e3b !important; border-color: #065f46 !important; }
+    .cell-yellow { background: #78350f !important; border-color: #92400e !important; }
+    .cell-orange { background: #7c2d12 !important; border-color: #9a3412 !important; }
+    .cell-grey   { background: #1f2937 !important; border-color: #374151 !important; }
+
+    .stat-val  { font-weight: 700; font-size: 0.85rem; }
+    .stat-dir  { font-size: 0.75rem; margin-top: 0.1rem; opacity: 0.8; }
+    .team-match { font-size: 0.62rem; color: #9ca3af; margin-top: 0.1rem; line-height: 1.2; }
+
+    /* Section title */
+    .section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #6b7280; margin-bottom: 0.75rem;
+    }
+
+    /* Result screen */
+    .result-wrap { text-align: center; margin-bottom: 1.5rem; }
+    .result-big { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.03em; }
+    .result-big.solved { color: #34d399; }
+    .result-big.failed { color: #f87171; }
+    .result-sub { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+
+    /* Grid display */
+    .emoji-grid {
+      font-size: 1.1rem; line-height: 1.6; letter-spacing: 0.05em;
+      font-family: monospace; text-align: center; margin: 0.75rem 0;
+    }
+
+    /* Solution card */
+    .solution-card {
+      display: flex; align-items: center; gap: 1rem;
+      background: #111827; border: 1px solid #374151;
+      border-radius: 10px; padding: 1rem; margin-top: 0.75rem;
+    }
+    .solution-photo {
+      width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
+      background: #374151; flex-shrink: 0;
+    }
+    .solution-info { flex: 1; min-width: 0; }
+    .solution-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.2rem; }
+    .solution-meta { font-size: 0.78rem; color: #9ca3af; }
+    .solution-stats {
+      display: flex; flex-wrap: wrap; gap: 0.5rem 1rem;
+      margin-top: 0.6rem; font-size: 0.78rem;
+    }
+    .solution-stat { text-align: center; }
+    .solution-stat-val { font-weight: 700; color: #f3f4f6; }
+    .solution-stat-lbl { color: #6b7280; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* Leaderboard */
+    .lb-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .lb-table th {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #6b7280;
+      padding: 0.4rem 0.6rem; border-bottom: 1px solid #374151; text-align: left;
+    }
+    .lb-table th:last-child { text-align: right; }
+    .lb-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #1f2937; }
+    .lb-table tr:last-child td { border-bottom: none; }
+    .lb-table td:last-child { text-align: right; font-weight: 700; }
+    .lb-rank { font-weight: 700; color: #6b7280; }
+    .lb-rank.top1 { color: #fbbf24; }
+    .lb-rank.top2 { color: #9ca3af; }
+    .lb-rank.top3 { color: #d97706; }
+    .lb-me { background: #1e3a5f22; }
+    .lb-me td:nth-child(2) { font-weight: 700; color: #93c5fd; }
+    .empty-lb { color: #6b7280; text-align: center; padding: 1rem; font-size: 0.85rem; }
+
+    .date-chip {
+      display: inline-block; font-size: 0.72rem; font-weight: 700;
+      background: #374151; color: #9ca3af; border-radius: 6px;
+      padding: 0.2rem 0.55rem; margin-left: 0.6rem; vertical-align: middle;
+    }
+
+    /* History */
+    .history-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.6rem 0; border-bottom: 1px solid #1f2937;
+      cursor: pointer; font-size: 0.875rem;
+    }
+    .history-row:last-child { border-bottom: none; }
+    .history-row:hover { background: #ffffff08; border-radius: 6px; padding-left: 0.25rem; }
+    .history-date { font-weight: 700; min-width: 90px; }
+    .history-answer { color: #d1d5db; font-size: 0.8rem; }
+    .history-meta { color: #6b7280; font-size: 0.78rem; flex: 1; }
+    .history-chevron { color: #4b5563; margin-left: auto; transition: transform 0.15s; }
+    .history-chevron.open { transform: rotate(90deg); }
+    .history-detail {
+      background: #111827; border-radius: 8px;
+      padding: 1rem; margin-bottom: 0.5rem; font-size: 0.82rem;
+    }
+
+    @media (max-width: 480px) {
+      .result-big { font-size: 1.75rem; }
+      .guess-table { font-size: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"></nav>
+
+    <header>
+      <h1>Daily NBN Poeltl</h1>
+      <p>Guess the mystery player in 7 tries. Each guess reveals how close you are.</p>
+    </header>
+
+    <div id="root"><div class="loading">Loading…</div></div>
+    <div id="history-wrap"></div>
+  </div>
+
+  <script>
+    const API = '';
+    const TOKEN_KEY = 'nbn_token';
+    const STAT_KEYS = ['team', 'height', 'age', 'ppg', 'rpg', 'apg', 'fg3pct'];
+    const STAT_LABELS = { team: 'Team', height: 'Height', age: 'Age', ppg: 'PPG', rpg: 'RPG', apg: 'APG', fg3pct: '3P%' };
+    const MEDALS = ['🥇', '🥈', '🥉'];
+
+    let token = localStorage.getItem(TOKEN_KEY) || '';
+    let currentMember = null;
+    let gameData = null;    // GET /api/poeltl/today response
+    let state = 'loading';  // loading | auth | playing | done
+    let guesses = [];       // [{slug, name, result}]
+    let guessesRemaining = 7;
+    let searchQuery = '';
+    let acFocusIdx = -1;
+    let timerInterval = null;
+    let remainingSec = 0;
+    let timeLimit = 300;
+    let submitting = false;
+
+    const root = document.getElementById('root');
+
+    // ── Render dispatch ──────────────────────────────────────────────────────
+
+    function render() {
+      if (state === 'loading') {
+        root.innerHTML = '<div class="loading">Loading…</div>';
+      } else if (state === 'auth') {
+        renderAuth();
+      } else if (state === 'playing') {
+        renderPlaying();
+      } else if (state === 'done') {
+        renderDone();
+      }
+    }
+
+    // ── Auth ─────────────────────────────────────────────────────────────────
+
+    function renderAuth() {
+      root.innerHTML = `
+        <div class="card">
+          <div class="auth-gate">
+            <p>Enter your league token to play the Daily NBN Poeltl.</p>
+            <div class="token-row">
+              <input id="token-input" type="password" placeholder="Your league token" autocomplete="off">
+              <button class="btn btn-primary" onclick="submitToken()">Play</button>
+            </div>
+            <div id="token-err" class="token-err"></div>
+          </div>
+        </div>`;
+      const inp = document.getElementById('token-input');
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitToken(); });
+      inp.focus();
+    }
+
+    async function submitToken() {
+      const input = document.getElementById('token-input');
+      const err = document.getElementById('token-err');
+      const val = input.value.trim();
+      if (!val) return;
+      err.textContent = 'Checking…';
+      try {
+        const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${val}` } });
+        if (!res.ok) { err.textContent = 'Invalid token.'; return; }
+        const me = await res.json();
+        token = val;
+        currentMember = me.name || me.username || null;
+        localStorage.setItem(TOKEN_KEY, token);
+        await loadGame();
+      } catch {
+        err.textContent = 'Network error.';
+      }
+    }
+
+    // ── Load game ────────────────────────────────────────────────────────────
+
+    async function loadGame() {
+      state = 'loading';
+      render();
+      stopTimer();
+      try {
+        if (token && !currentMember) {
+          const me = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null);
+          if (me) {
+            currentMember = me.name || me.username || null;
+          } else {
+            token = ''; localStorage.removeItem(TOKEN_KEY); state = 'auth'; render(); return;
+          }
+        }
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch('/api/poeltl/today', { headers });
+        if (res.status === 401 || res.status === 403) { state = 'auth'; render(); return; }
+        gameData = await res.json();
+        if (!token) { state = 'auth'; render(); return; }
+
+        timeLimit = gameData.time_limit || 300;
+
+        if (gameData.your_entry) {
+          state = 'done';
+          // Restore guess history from entry if available (for display)
+          render();
+        } else if (gameData.your_progress) {
+          // Restore in-progress guesses from server
+          guesses = gameData.your_progress.guesses || [];
+          guessesRemaining = 7 - guesses.length;
+          remainingSec = gameData.your_progress.remaining_sec || 0;
+          if (remainingSec <= 0) {
+            // Time expired — show expiry state (no more guesses possible)
+            state = 'playing';
+            render();
+          } else {
+            state = 'playing';
+            startTimer(remainingSec);
+            render();
+          }
+        } else {
+          guesses = [];
+          guessesRemaining = 7;
+          remainingSec = timeLimit;
+          state = 'playing';
+          startTimer(timeLimit);
+          render();
+        }
+      } catch {
+        root.innerHTML = '<div class="loading">Failed to load. <a href="" onclick="location.reload()">Retry</a></div>';
+      }
+    }
+
+    // ── Timer ────────────────────────────────────────────────────────────────
+
+    function startTimer(sec) {
+      stopTimer();
+      remainingSec = sec;
+      timerInterval = setInterval(() => {
+        remainingSec = Math.max(0, remainingSec - 1);
+        updateTimerDisplay();
+        if (remainingSec <= 0) {
+          stopTimer();
+          // Disable input — time's up
+          const inp = document.getElementById('player-search');
+          if (inp) inp.disabled = true;
+          const status = document.getElementById('timer-value');
+          if (status) { status.textContent = "Time's up!"; status.className = 'timer-value danger'; }
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
+
+    function updateTimerDisplay() {
+      const el = document.getElementById('timer-value');
+      const fill = document.getElementById('timer-fill');
+      if (!el) return;
+      const m = Math.floor(remainingSec / 60);
+      const s = remainingSec % 60;
+      el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+      const pct = Math.round(remainingSec / timeLimit * 100);
+      const cls = remainingSec <= 30 ? 'danger' : (remainingSec <= 90 ? 'warning' : '');
+      el.className = 'timer-value' + (cls ? ' ' + cls : '');
+      if (fill) {
+        fill.style.width = pct + '%';
+        fill.className = 'timer-fill' + (cls ? ' ' + cls : '');
+      }
+    }
+
+    function timerHtml() {
+      const m = Math.floor(remainingSec / 60);
+      const s = remainingSec % 60;
+      const timeStr = `${m}:${s.toString().padStart(2, '0')}`;
+      const pct = Math.round(remainingSec / timeLimit * 100);
+      const cls = remainingSec <= 30 ? 'danger' : (remainingSec <= 90 ? 'warning' : '');
+      const valCls = 'timer-value' + (cls ? ' ' + cls : '');
+      const fillCls = 'timer-fill' + (cls ? ' ' + cls : '');
+      return `<div class="timer-bar">
+        <span class="timer-label">Time</span>
+        <span id="timer-value" class="${valCls}">${timeStr}</span>
+        <div class="timer-track"><div id="timer-fill" class="${fillCls}" style="width:${pct}%"></div></div>
+      </div>`;
+    }
+
+    // ── Playing ──────────────────────────────────────────────────────────────
+
+    function renderPlaying() {
+      const expired = remainingSec <= 0 && guesses.length > 0 && state === 'playing';
+      let html = '<div class="card">';
+
+      // Timer
+      html += timerHtml();
+
+      // Guess dots
+      html += '<div class="guess-dots">';
+      for (let i = 0; i < 7; i++) {
+        if (i < guesses.length) html += '<div class="guess-dot used"></div>';
+        else html += '<div class="guess-dot"></div>';
+      }
+      html += '</div>';
+
+      // Guess table (previous guesses)
+      if (guesses.length > 0) {
+        html += guessTableHtml(guesses);
+      }
+
+      // Search input
+      if (!expired) {
+        const pool = gameData ? gameData.player_pool : [];
+        const usedSlugs = new Set(guesses.map(g => g.slug));
+        const filtered = searchQuery
+          ? pool.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) && !usedSlugs.has(p.slug))
+          : [];
+
+        html += `<div class="search-wrap">
+          <input id="player-search" type="text" placeholder="Search player name…"
+            value="${escHtml(searchQuery)}"
+            oninput="onSearch(this.value)"
+            onkeydown="onSearchKey(event)"
+            autocomplete="off"
+            ${submitting ? 'disabled' : ''}>`;
+        if (searchQuery && filtered.length > 0) {
+          html += '<div class="autocomplete-list" id="ac-list">';
+          filtered.slice(0, 20).forEach((p, i) => {
+            const posStr = (p.pos || []).join('/') || '—';
+            html += `<div class="autocomplete-item${i === acFocusIdx ? ' focused' : ''}"
+              onmousedown="event.preventDefault(); submitGuess(${escJson(p.slug)})">
+              <span>${escHtml(formatName(p.name))}</span>
+              <span class="pos-tag">${escHtml(posStr)}</span>
+            </div>`;
+          });
+          html += '</div>';
+        }
+        html += '</div>';
+        if (submitting) html += '<div style="color:#9ca3af;font-size:0.85rem;margin-top:0.5rem">Submitting…</div>';
+      } else if (expired) {
+        html += '<div style="color:#f87171;font-size:0.9rem;margin-top:0.5rem;text-align:center">⏱ Time\'s up — no more guesses.</div>';
+      }
+
+      html += '</div>';
+      root.innerHTML = html;
+
+      if (!submitting && !expired) {
+        const inp = document.getElementById('player-search');
+        if (inp && !searchQuery) { /* don't auto-focus if already typing */ }
+        else if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+      }
+    }
+
+    function guessTableHtml(rows) {
+      let html = `<div class="guess-table-wrap" style="margin-bottom:1rem">
+        <table class="guess-table">
+          <thead><tr>
+            <th>Player</th>`;
+      for (const k of STAT_KEYS) html += `<th>${STAT_LABELS[k]}</th>`;
+      html += '</tr></thead><tbody>';
+      for (const g of rows) {
+        const r = g.result;
+        html += `<tr><td>${escHtml(formatName(g.name))}</td>`;
+        for (const k of STAT_KEYS) {
+          html += statCellHtml(k, r[k]);
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+      return html;
+    }
+
+    function statCellHtml(key, stat) {
+      if (key === 'team') {
+        const match = stat.match;
+        const cls = match === 'exact' ? 'cell-green'
+                  : match === 'division' ? 'cell-yellow'
+                  : match === 'conference' ? 'cell-orange'
+                  : 'cell-grey';
+        const hint = match === 'exact' ? 'Correct!'
+                   : match === 'division' ? 'Same div'
+                   : match === 'conference' ? 'Same conf'
+                   : 'Wrong conf';
+        return `<td class="${cls}">
+          <div class="stat-val">${escHtml(stat.value)}</div>
+          <div class="team-match">${hint}</div>
+        </td>`;
+      }
+      const color = stat.color;
+      const cls = color === 'green' ? 'cell-green' : (color === 'yellow' ? 'cell-yellow' : 'cell-grey');
+      const dir = stat.direction === '=' ? '✓' : stat.direction;
+      const valStr = key === 'fg3pct' ? stat.value.toFixed(1) + '%'
+                   : key === 'height' ? escHtml(stat.value)
+                   : typeof stat.value === 'number' ? stat.value.toFixed(key === 'age' ? 0 : 1)
+                   : escHtml(String(stat.value));
+      return `<td class="${cls}">
+        <div class="stat-val">${valStr}</div>
+        <div class="stat-dir">${dir}</div>
+      </td>`;
+    }
+
+    function onSearch(val) {
+      searchQuery = val;
+      acFocusIdx = -1;
+      renderPlaying();
+    }
+
+    function onSearchKey(e) {
+      const pool = gameData ? gameData.player_pool : [];
+      const usedSlugs = new Set(guesses.map(g => g.slug));
+      const filtered = searchQuery
+        ? pool.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) && !usedSlugs.has(p.slug))
+        : [];
+      const visible = filtered.slice(0, 20);
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        acFocusIdx = Math.min(acFocusIdx + 1, visible.length - 1);
+        renderAcList(visible);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        acFocusIdx = Math.max(acFocusIdx - 1, 0);
+        renderAcList(visible);
+      } else if (e.key === 'Enter' && acFocusIdx >= 0 && visible[acFocusIdx]) {
+        submitGuess(visible[acFocusIdx].slug);
+      }
+    }
+
+    function renderAcList(items) {
+      const list = document.getElementById('ac-list');
+      if (!list) return;
+      list.innerHTML = items.map((p, i) => {
+        const posStr = (p.pos || []).join('/') || '—';
+        return `<div class="autocomplete-item${i === acFocusIdx ? ' focused' : ''}"
+          onmousedown="event.preventDefault(); submitGuess(${escJson(p.slug)})">
+          <span>${escHtml(formatName(p.name))}</span>
+          <span class="pos-tag">${escHtml(posStr)}</span>
+        </div>`;
+      }).join('');
+    }
+
+    async function submitGuess(slug) {
+      if (submitting || remainingSec <= 0) return;
+      submitting = true;
+      searchQuery = '';
+      acFocusIdx = -1;
+      renderPlaying();
+      try {
+        const res = await fetch('/api/poeltl/guess', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ slug }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          submitting = false;
+          if (res.status === 410) {
+            // Time expired server-side
+            remainingSec = 0;
+            stopTimer();
+          }
+          renderPlaying();
+          return;
+        }
+
+        guesses.push({ slug, name: data.result ? (gameData.player_pool.find(p => p.slug === slug) || {}).name || slug : slug, result: data.result });
+        guessesRemaining = data.guesses_remaining;
+
+        if (data.done) {
+          stopTimer();
+          state = 'done';
+          // Attach result data for done screen
+          gameData._doneData = data;
+        }
+
+        submitting = false;
+        render();
+      } catch {
+        submitting = false;
+        renderPlaying();
+      }
+    }
+
+    // ── Done ─────────────────────────────────────────────────────────────────
+
+    function renderDone() {
+      const doneData = gameData._doneData;
+      const entry = gameData.your_entry;
+      const solution = (doneData && doneData.solution) || gameData.solution;
+      const lb = (doneData && doneData.leaderboard) || gameData.leaderboard || [];
+
+      const solved = doneData ? doneData.solved : (entry && entry.solved);
+      const guessCount = doneData ? doneData.guesses_used : (entry && entry.guess_count);
+      const grid = entry ? entry.grid : _buildGridFromGuesses(guesses);
+
+      let html = '<div class="card">';
+
+      // Result summary
+      html += '<div class="result-wrap">';
+      if (solved) {
+        html += `<div class="result-big solved">${guessCount}/7</div>`;
+        html += `<div class="result-sub">Solved! ${doneData && doneData.nbyen_reward ? `+NB¥${doneData.nbyen_reward} earned` : ''}</div>`;
+      } else {
+        html += `<div class="result-big failed">X/7</div>`;
+        html += `<div class="result-sub">Better luck tomorrow.</div>`;
+      }
+      html += '</div>';
+
+      // Emoji grid
+      if (grid) {
+        html += `<div class="emoji-grid">${escHtml(grid).replace(/\n/g, '<br>')}</div>`;
+      }
+
+      html += '</div>';
+
+      // Guesses table (if we have them from this session)
+      if (guesses.length > 0) {
+        html += '<div class="card">';
+        html += '<div class="section-title">Your Guesses</div>';
+        html += guessTableHtml(guesses);
+        html += '</div>';
+      }
+
+      // Solution reveal
+      if (solution) {
+        html += '<div class="card">';
+        html += '<div class="section-title">Answer</div>';
+        html += solutionCardHtml(solution);
+        html += '</div>';
+      }
+
+      // Leaderboard
+      html += `<div class="card">
+        <div class="section-title">Today's Leaderboard <span class="date-chip">${gameData.date || ''}</span></div>
+        ${lbTableHtml(lb)}
+      </div>`;
+
+      root.innerHTML = html;
+    }
+
+    function solutionCardHtml(s) {
+      const nameFmt = formatName(s.name);
+      const photoUrl = ''; // player photo not in pool data
+      const stats = [
+        { val: s.team,              lbl: 'Team'   },
+        { val: s.height_str,        lbl: 'Height' },
+        { val: s.age,               lbl: 'Age'    },
+        { val: s.ppg.toFixed(1),    lbl: 'PPG'    },
+        { val: s.rpg.toFixed(1),    lbl: 'RPG'    },
+        { val: s.apg.toFixed(1),    lbl: 'APG'    },
+        { val: s.fg3pct.toFixed(1) + '%', lbl: '3P%' },
+      ];
+      return `<div class="solution-card">
+        <div class="solution-info">
+          <div class="solution-name">${escHtml(nameFmt)}</div>
+          <div class="solution-meta">${escHtml(s.team)} · ${(s.pos || []).join('/')}</div>
+          <div class="solution-stats">
+            ${stats.map(st => `<div class="solution-stat">
+              <div class="solution-stat-val">${escHtml(String(st.val))}</div>
+              <div class="solution-stat-lbl">${st.lbl}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function lbTableHtml(lb) {
+      if (!lb || lb.length === 0) return '<div class="empty-lb">No entries yet today.</div>';
+      const me = currentMember;
+      let html = `<table class="lb-table">
+        <thead><tr><th>#</th><th>Member</th><th style="text-align:right">Result</th></tr></thead>
+        <tbody>`;
+      lb.forEach((e, i) => {
+        const rankCls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+        const meCls = e.member === me ? ' lb-me' : '';
+        const medal = i < 3 && e.solved ? MEDALS[i] : '';
+        const rankStr = e.rank ? (medal || e.rank) : '—';
+        const result = e.solved ? `${e.guess_count}/7` : `✗`;
+        html += `<tr class="${meCls}">
+          <td class="lb-rank ${rankCls}">${rankStr}</td>
+          <td>${escHtml(e.member)}</td>
+          <td>${result}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      return html;
+    }
+
+    function _buildGridFromGuesses(gs) {
+      if (!gs || gs.length === 0) return '';
+      const KEYS = ['team', 'height', 'age', 'ppg', 'rpg', 'apg', 'fg3pct'];
+      return gs.map(g => {
+        const r = g.result;
+        return KEYS.map(k => {
+          if (k === 'team') {
+            const m = r.team.match;
+            return m === 'exact' ? '🟩' : m === 'division' ? '🟨' : '⬛';
+          }
+          const c = r[k].color;
+          return c === 'green' ? '🟩' : c === 'yellow' ? '🟨' : '⬛';
+        }).join('');
+      }).join('\n');
+    }
+
+    // ── Utils ─────────────────────────────────────────────────────────────────
+
+    function formatName(n) {
+      // "CURRY, STEPHEN" → "Stephen Curry"
+      if (!n) return '';
+      const parts = n.split(',');
+      if (parts.length === 2) {
+        const last = parts[0].trim();
+        const first = parts[1].trim();
+        const cap = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+        return cap(first) + ' ' + cap(last);
+      }
+      return n;
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function escJson(v) { return escHtml(JSON.stringify(v)); }
+
+    // ── History ───────────────────────────────────────────────────────────────
+
+    let historyList = null;
+    let historyOpen = {};
+    let historyCache = {};
+
+    async function loadHistory() {
+      const wrap = document.getElementById('history-wrap');
+      if (!wrap) return;
+      try {
+        historyList = await fetch('/api/poeltl/history').then(r => r.json());
+        renderHistory();
+      } catch { wrap.innerHTML = ''; }
+    }
+
+    function renderHistory() {
+      const wrap = document.getElementById('history-wrap');
+      if (!wrap || !historyList || historyList.length === 0) { if (wrap) wrap.innerHTML = ''; return; }
+      let html = `<div class="card" style="margin-top:1.25rem">
+        <div class="section-title">Past Results</div>`;
+      for (const day of historyList) {
+        const isOpen = !!historyOpen[day.date];
+        const meta = `${day.solved}/${day.entries} solved`;
+        html += `<div>
+          <div class="history-row" onclick="toggleHistory('${day.date}')">
+            <span class="history-date">${escHtml(day.date)}</span>
+            <span class="history-answer">${escHtml(formatName(day.answer_name))} (${escHtml(day.answer_team)})</span>
+            <span class="history-meta">${meta}</span>
+            <span class="history-chevron${isOpen ? ' open' : ''}">&#8250;</span>
+          </div>
+          <div id="hd-${day.date}" style="display:${isOpen ? 'block' : 'none'}">
+            ${isOpen ? renderHistoryDetail(day.date) : ''}
+          </div>
+        </div>`;
+      }
+      html += '</div>';
+      wrap.innerHTML = html;
+    }
+
+    function renderHistoryDetail(date) {
+      const data = historyCache[date];
+      if (!data) return '<div style="color:#6b7280;font-size:0.82rem;padding:0.5rem 0">Loading…</div>';
+      const lb = data.leaderboard || [];
+      let html = '<div class="history-detail">';
+      html += '<div class="section-title" style="margin-bottom:0.5rem">Leaderboard</div>';
+      if (lb.length === 0) {
+        html += '<div style="color:#6b7280;font-size:0.82rem;margin-bottom:0.75rem">No entries that day.</div>';
+      } else {
+        html += `<table class="lb-table" style="margin-bottom:0.75rem">
+          <thead><tr><th>#</th><th>Member</th><th style="text-align:right">Result</th></tr></thead><tbody>`;
+        lb.forEach((e, i) => {
+          const rankCls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+          const medal = i < 3 && e.solved ? MEDALS[i] : '';
+          html += `<tr><td class="lb-rank ${rankCls}">${medal || (e.rank || '—')}</td>
+            <td>${escHtml(e.member)}</td>
+            <td>${e.solved ? `${e.guess_count}/7` : '✗'}</td></tr>`;
+        });
+        html += '</tbody></table>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    async function toggleHistory(date) {
+      historyOpen[date] = !historyOpen[date];
+      if (historyOpen[date] && !historyCache[date]) {
+        renderHistory();
+        try {
+          historyCache[date] = await fetch(`/api/poeltl/history/${date}`).then(r => r.json());
+        } catch { historyOpen[date] = false; }
+      }
+      renderHistory();
+    }
+
+    // ── Boot ─────────────────────────────────────────────────────────────────
+
+    async function init() {
+      if (!token) { state = 'auth'; render(); loadHistory(); return; }
+      await loadGame();
+      loadHistory();
+    }
+
+    init();
+  </script>
+  <script src="/nav.js"></script>
+</body>
+</html>
