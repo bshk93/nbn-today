@@ -329,6 +329,28 @@
     let acFocusIdx = -1;
     let lastConfirmedPick = null; // revealed after each confirm
 
+    // ── Progress persistence ──────────────────────────────────────────────────
+
+    function saveProgress() {
+      if (!gameData || !currentMember) return;
+      localStorage.setItem('perry_progress', JSON.stringify({
+        date: gameData.date, member: currentMember, stepIdx, picks,
+      }));
+    }
+
+    function clearProgress() {
+      localStorage.removeItem('perry_progress');
+    }
+
+    function loadProgress(today) {
+      try {
+        const saved = JSON.parse(localStorage.getItem('perry_progress') || 'null');
+        if (!saved || saved.date !== today || saved.member !== currentMember) return null;
+        if (!saved.picks || Object.keys(saved.picks).length === 0) return null;
+        return saved;
+      } catch { return null; }
+    }
+
     const root = document.getElementById('root');
 
     // ── Main render ───────────────────────────────────────────────────────────
@@ -408,10 +430,18 @@
         if (!token) { state = 'auth'; render(); return; }
         if (gameData.your_entry) {
           state = 'done';
+          clearProgress();
           renderDone(gameData.your_entry, gameData.solution, gameData.leaderboard);
         } else {
+          const prog = loadProgress(gameData.date);
+          if (prog) {
+            stepIdx = prog.stepIdx;
+            picks = prog.picks;
+          } else {
+            stepIdx = 0; picks = {};
+          }
+          selectedPlayer = null; selectedSlot = null; searchQuery = '';
           state = 'playing';
-          stepIdx = 0; picks = {}; selectedPlayer = null; selectedSlot = null; searchQuery = '';
           render();
         }
       } catch {
@@ -626,6 +656,7 @@
       if (stepIdx < 5) {
         stepIdx++;
         state = 'playing';
+        saveProgress();
         render();
       } else {
         submitLineup();
@@ -700,6 +731,7 @@
           root.innerHTML = `<div class="card"><p style="color:#f87171">Error: ${escHtml(data.detail || 'Submission failed')}</p></div>`;
           return;
         }
+        clearProgress();
         state = 'done';
         renderDone(
           { score: data.score, lineup: data.lineup },
