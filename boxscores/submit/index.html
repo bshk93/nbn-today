@@ -224,6 +224,7 @@
       padding: 0.5rem 0; border-bottom: 1px solid #374151; font-size: 0.84rem;
     }
     .queue-item:last-of-type { border-bottom: none; }
+    .queue-item-orphan { background: rgba(245,158,11,0.07); }
     .queue-item-label { flex: 1; font-weight: 600; color: #e5e7eb; }
     .queue-item-meta { color: #9ca3af; font-size: 0.78rem; }
     .queue-actions {
@@ -510,6 +511,7 @@
       document.getElementById("token-modal").classList.remove("open");
       updateAuthBar();
       checkUploadReady();
+      syncServerQueue();
     };
 
     // ── Default form values ──────────────────────────────────────
@@ -1013,17 +1015,37 @@
       document.getElementById("add-to-queue-btn").disabled = !ready;
     }
 
+    // Server-side queue entries whose stats aren't in localStorage
+    let orphanedServerEntries = [];
+
+    async function syncServerQueue() {
+      if (!token) return;
+      try {
+        const res = await fetch("/api/boxscore/queue", {
+          headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const serverQueue = await res.json();
+        const localIds = new Set(gameQueue.map(g => g._queue_id));
+        orphanedServerEntries = serverQueue.filter(s => !localIds.has(s.id));
+        renderQueue();
+      } catch {}
+    }
+
     function renderQueue() {
       const list  = document.getElementById("queue-list");
       const badge = document.getElementById("queue-count");
       const commitBtn = document.getElementById("commit-queue-btn");
-      badge.textContent = gameQueue.length;
+      const total = gameQueue.length + orphanedServerEntries.length;
+      badge.textContent = total;
       commitBtn.disabled = !(gameQueue.length > 0 && token);
-      if (gameQueue.length === 0) {
+      if (total === 0) {
         list.innerHTML = '<span class="queue-empty">No games queued.</span>';
         return;
       }
       list.innerHTML = "";
+
+      // Normal (local) queue items
       gameQueue.forEach((g, idx) => {
         const item = document.createElement("div");
         item.className = "queue-item";
@@ -1037,6 +1059,32 @@
         rm.textContent = "×";
         rm.title = "Remove from queue";
         rm.onclick = () => { gameQueue.splice(idx, 1); saveQueue(); renderQueue(); };
+        item.appendChild(rm);
+        list.appendChild(item);
+      });
+
+      // Orphaned server entries (registered on server, stats lost)
+      orphanedServerEntries.forEach(s => {
+        const item = document.createElement("div");
+        item.className = "queue-item queue-item-orphan";
+        const typeLabel = s.game_type === "PLAYOFF" ? " · PO" : "";
+        item.innerHTML = `
+          <span class="queue-item-label">${s.home_team} vs ${s.away_team}</span>
+          <span class="queue-item-meta">${s.date} · ${s.season}${typeLabel} · ⚠ stats not saved — re-enter then remove this</span>`;
+        const rm = document.createElement("button");
+        rm.className = "btn-remove-row";
+        rm.textContent = "×";
+        rm.title = "Remove server registration so you can re-add this game";
+        rm.onclick = async () => {
+          try {
+            await fetch(`/api/boxscore/queue/${s.id}`, {
+              method: "DELETE",
+              headers: { "Authorization": `Bearer ${token}` },
+            });
+            orphanedServerEntries = orphanedServerEntries.filter(e => e.id !== s.id);
+            renderQueue();
+          } catch (e) { alert("Failed to remove: " + e.message); }
+        };
         item.appendChild(rm);
         list.appendChild(item);
       });
@@ -1414,6 +1462,7 @@
     }
 
     renderQueue();
+    syncServerQueue();
     checkBuildStatus();
 
     window.addEventListener("beforeunload", e => {

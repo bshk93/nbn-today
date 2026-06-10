@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.296",
+    "date": "2026-06-10",
+    "changes": [
+      "boxscores/submit: surface server-side queue entries on page load \u2014 orphaned registrations (stats lost) shown in amber with a remove button so the game can be re-entered",
+      "api: GET /api/boxscore/queue \u2014 list pending manual queue entries",
+      "api: DELETE /api/boxscore/queue/{id} \u2014 remove a manual queue registration"
+    ]
+  },
+  {
     "version": "0.0.295",
     "date": "2026-06-10",
     "changes": [
