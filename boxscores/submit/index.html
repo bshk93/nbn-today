@@ -1248,6 +1248,13 @@
     }
 
     checkBuildStatus();
+
+    window.addEventListener("beforeunload", e => {
+      if (gameQueue.length > 0) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
   </script>
   <script src="/nav.js"></script>
 </body>
