@@ -136,6 +136,20 @@
       background: rgba(59,130,246,0.12); border-radius: 6px;
       padding: 0.15rem 0.6rem; margin-left: 0.25rem;
     }
+    .min-live-wrap { font-size: 0.8rem; color: #9ca3af; }
+    .min-live {
+      font-size: 1.125rem; font-weight: 800; color: #10b981;
+      background: rgba(16,185,129,0.12); border-radius: 6px;
+      padding: 0.15rem 0.6rem; margin-left: 0.25rem;
+    }
+
+    /* Drag handle */
+    .drag-handle {
+      cursor: grab; color: #4b5563; font-size: 0.9rem; padding: 0 0.3rem;
+      user-select: none;
+    }
+    tr.dragging { opacity: 0.4; }
+    tr.drag-over-row { border-top: 2px solid #3b82f6; }
 
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
@@ -363,6 +377,7 @@
             <div class="team-entry-header">
               <h3 id="home-entry-label">Home</h3>
               <span class="score-live-wrap">Score: <span class="score-live" id="home-score-live">0</span></span>
+              <span class="min-live-wrap">Min: <span class="min-live" id="home-min-live">0</span></span>
             </div>
             <div class="table-wrap">
               <table id="home-entry-table">
@@ -378,6 +393,7 @@
             <div class="team-entry-header">
               <h3 id="away-entry-label">Away</h3>
               <span class="score-live-wrap">Score: <span class="score-live" id="away-score-live">0</span></span>
+              <span class="min-live-wrap">Min: <span class="min-live" id="away-min-live">0</span></span>
             </div>
             <div class="table-wrap">
               <table id="away-entry-table">
@@ -739,6 +755,8 @@
       const tbody = document.getElementById(tbodyId);
       const thead = tbody.previousElementSibling;
       const tr = document.createElement("tr");
+      // Drag handle col
+      tr.appendChild(document.createElement("th"));
       // Player col
       const thP = document.createElement("th");
       thP.className = "player-col";
@@ -766,7 +784,7 @@
       roster.forEach(player => {
         tbody.appendChild(makePlayerRow(side, player, roster, homeRoster, awayRoster));
       });
-      updateScore(side);
+      updateTotals(side);
     }
 
     function makePlayerSelect(currentSlug, teamRoster, homeRoster, awayRoster) {
@@ -807,6 +825,15 @@
 
     function makePlayerRow(side, player, teamRoster, homeRoster, awayRoster) {
       const tr = document.createElement("tr");
+      tr.draggable = true;
+
+      // Drag handle cell
+      const handleTd = document.createElement("td");
+      const handle = document.createElement("span");
+      handle.className = "drag-handle";
+      handle.textContent = "⠿";
+      handleTd.appendChild(handle);
+      tr.appendChild(handleTd);
 
       // Player select cell
       const playerTd = document.createElement("td");
@@ -826,7 +853,7 @@
         inp.value = "";
         inp.placeholder = "0";
         inp.setAttribute("data-key", key);
-        if (key === "pts") inp.addEventListener("input", () => updateScore(side));
+        if (key === "pts" || key === "min") inp.addEventListener("input", () => updateTotals(side));
         td.appendChild(inp);
         tr.appendChild(td);
       });
@@ -837,21 +864,47 @@
       removeBtn.className = "btn-remove-row";
       removeBtn.textContent = "×";
       removeBtn.title = "Remove row";
-      removeBtn.onclick = () => { tr.remove(); updateScore(side); checkCommitReady(); };
+      removeBtn.onclick = () => { tr.remove(); updateTotals(side); checkCommitReady(); };
       removeTd.appendChild(removeBtn);
       tr.appendChild(removeTd);
+
+      // Drag-and-drop reordering
+      tr.addEventListener("dragstart", e => {
+        tr.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+      tr.addEventListener("dragend", () => {
+        tr.classList.remove("dragging");
+        tr.closest("tbody").querySelectorAll("tr").forEach(r => r.classList.remove("drag-over-row"));
+      });
+      tr.addEventListener("dragover", e => {
+        e.preventDefault();
+        const dragging = tr.closest("tbody").querySelector(".dragging");
+        if (dragging && dragging !== tr) {
+          tr.classList.add("drag-over-row");
+          const rect = tr.getBoundingClientRect();
+          const mid = rect.top + rect.height / 2;
+          if (e.clientY < mid) tr.before(dragging);
+          else tr.after(dragging);
+        }
+      });
+      tr.addEventListener("dragleave", () => tr.classList.remove("drag-over-row"));
+      tr.addEventListener("drop", e => { e.preventDefault(); tr.classList.remove("drag-over-row"); });
 
       return tr;
     }
 
-    function updateScore(side) {
+    function updateTotals(side) {
       const tbody = document.getElementById(`${side}-entry-tbody`);
-      let total = 0;
+      let pts = 0, min = 0;
       tbody.querySelectorAll("tr").forEach(tr => {
-        const inp = tr.querySelector('[data-key="pts"]');
-        if (inp) total += parseInt(inp.value || "0", 10);
+        const ptsInp = tr.querySelector('[data-key="pts"]');
+        const minInp = tr.querySelector('[data-key="min"]');
+        if (ptsInp) pts += parseInt(ptsInp.value || "0", 10);
+        if (minInp) min += parseInt(minInp.value || "0", 10);
       });
-      document.getElementById(`${side}-score-live`).textContent = total;
+      document.getElementById(`${side}-score-live`).textContent = pts;
+      document.getElementById(`${side}-min-live`).textContent = min;
     }
 
     // ── Game queue ───────────────────────────────────────────────
