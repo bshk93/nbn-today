@@ -143,6 +143,22 @@
       padding: 0.15rem 0.6rem; margin-left: 0.25rem;
     }
 
+    /* Row focus highlight */
+    tr.row-active td { background: rgba(59,130,246,0.07); }
+
+    /* Cell error */
+    td.cell-error { background: rgba(239,68,68,0.18) !important; }
+    td.cell-error .cell-input { color: #fca5a5; }
+
+    /* Totals footer */
+    tfoot tr { border-top: 2px solid #374151; }
+    tfoot td { padding: 0.35rem 0.35rem; font-size: 0.75rem; font-weight: 700;
+      color: #9ca3af; text-align: center; }
+    tfoot td.totals-label { text-align: left; color: #6b7280; font-size: 0.7rem; text-transform: uppercase; }
+
+    /* Min live error state */
+    .min-live.stat-error { background: rgba(239,68,68,0.18); color: #fca5a5; }
+
     /* Drag handle */
     .drag-handle {
       cursor: grab; color: #4b5563; font-size: 0.9rem; padding: 0 0.3rem;
@@ -383,6 +399,7 @@
               <table id="home-entry-table">
                 <thead id="home-entry-thead"></thead>
                 <tbody id="home-entry-tbody"></tbody>
+                <tfoot id="home-entry-tfoot"></tfoot>
               </table>
             </div>
             <button class="btn-add-row" id="home-add-row">+ Add Player</button>
@@ -399,6 +416,7 @@
               <table id="away-entry-table">
                 <thead id="away-entry-thead"></thead>
                 <tbody id="away-entry-tbody"></tbody>
+                <tfoot id="away-entry-tfoot"></tfoot>
               </table>
             </div>
             <button class="btn-add-row" id="away-add-row">+ Add Player</button>
@@ -751,29 +769,42 @@
     }
 
     function buildTableHeader(tbodyId) {
-      // thead is the sibling before tbody
       const tbody = document.getElementById(tbodyId);
       const thead = tbody.previousElementSibling;
+      const tfoot = tbody.nextElementSibling;
+
+      // Header row
       const tr = document.createElement("tr");
-      // Drag handle col
-      tr.appendChild(document.createElement("th"));
-      // Player col
+      tr.appendChild(document.createElement("th")); // drag handle
       const thP = document.createElement("th");
       thP.className = "player-col";
       thP.textContent = "Player";
       tr.appendChild(thP);
-      // Stat cols
       STAT_COLS.forEach(col => {
         const th = document.createElement("th");
         th.textContent = col;
         tr.appendChild(th);
       });
-      // Remove col
-      const thX = document.createElement("th");
-      thX.textContent = "";
-      tr.appendChild(thX);
+      tr.appendChild(document.createElement("th")); // remove col
       thead.innerHTML = "";
       thead.appendChild(tr);
+
+      // Totals footer row
+      const tfr = document.createElement("tr");
+      tfr.appendChild(document.createElement("td")); // drag handle
+      const tdLabel = document.createElement("td");
+      tdLabel.className = "player-col totals-label";
+      tdLabel.textContent = "Total";
+      tfr.appendChild(tdLabel);
+      STAT_KEYS.forEach(key => {
+        const td = document.createElement("td");
+        td.setAttribute("data-total-key", key);
+        td.textContent = "—";
+        tfr.appendChild(td);
+      });
+      tfr.appendChild(document.createElement("td")); // remove col
+      tfoot.innerHTML = "";
+      tfoot.appendChild(tfr);
     }
 
     function buildEntryTable(side, abbr, roster, homeRoster, awayRoster) {
@@ -785,6 +816,7 @@
         tbody.appendChild(makePlayerRow(side, player, roster, homeRoster, awayRoster));
       });
       updateTotals(side);
+      validateTable(side, {});
     }
 
     function makePlayerSelect(currentSlug, teamRoster, homeRoster, awayRoster) {
@@ -853,7 +885,11 @@
         inp.value = "";
         inp.placeholder = "0";
         inp.setAttribute("data-key", key);
-        if (key === "pts" || key === "min") inp.addEventListener("input", () => updateTotals(side));
+        inp.addEventListener("input", () => updateTotals(side));
+        inp.addEventListener("focus", () => tr.classList.add("row-active"));
+        inp.addEventListener("blur", () => {
+          setTimeout(() => { if (!tr.contains(document.activeElement)) tr.classList.remove("row-active"); }, 0);
+        });
         td.appendChild(inp);
         tr.appendChild(td);
       });
@@ -864,7 +900,7 @@
       removeBtn.className = "btn-remove-row";
       removeBtn.textContent = "×";
       removeBtn.title = "Remove row";
-      removeBtn.onclick = () => { tr.remove(); updateTotals(side); checkCommitReady(); };
+      removeBtn.onclick = () => { tr.remove(); updateTotals(side); validateTable(side); checkCommitReady(); };
       removeTd.appendChild(removeBtn);
       tr.appendChild(removeTd);
 
@@ -896,15 +932,63 @@
 
     function updateTotals(side) {
       const tbody = document.getElementById(`${side}-entry-tbody`);
-      let pts = 0, min = 0;
+      const tfoot = tbody.nextElementSibling;
+      const sums = {};
+      STAT_KEYS.forEach(k => sums[k] = 0);
       tbody.querySelectorAll("tr").forEach(tr => {
-        const ptsInp = tr.querySelector('[data-key="pts"]');
-        const minInp = tr.querySelector('[data-key="min"]');
-        if (ptsInp) pts += parseInt(ptsInp.value || "0", 10);
-        if (minInp) min += parseInt(minInp.value || "0", 10);
+        STAT_KEYS.forEach(key => {
+          const inp = tr.querySelector(`[data-key="${key}"]`);
+          if (inp) sums[key] += parseInt(inp.value || "0", 10);
+        });
       });
-      document.getElementById(`${side}-score-live`).textContent = pts;
-      document.getElementById(`${side}-min-live`).textContent = min;
+      document.getElementById(`${side}-score-live`).textContent = sums.pts;
+      document.getElementById(`${side}-min-live`).textContent = sums.min;
+      STAT_KEYS.forEach(key => {
+        const cell = tfoot.querySelector(`[data-total-key="${key}"]`);
+        if (cell) cell.textContent = sums[key] || "—";
+      });
+      validateTable(side, sums);
+    }
+
+    // Valid team-minute totals: regulation (240) + each OT adds 25
+    const VALID_MIN_TOTALS = new Set([240, 265, 290, 315]);
+
+    function validateTable(side, sums) {
+      const tbody = document.getElementById(`${side}-entry-tbody`);
+
+      // Clear existing errors
+      tbody.querySelectorAll("td.cell-error").forEach(td => td.classList.remove("cell-error"));
+
+      tbody.querySelectorAll("tr").forEach(tr => {
+        const v = key => parseInt(tr.querySelector(`[data-key="${key}"]`)?.value || "0", 10);
+        const td = key => tr.querySelector(`[data-key="${key}"]`)?.closest("td");
+        const flag = (...keys) => keys.forEach(k => td(k)?.classList.add("cell-error"));
+
+        const oreb = v("oreb"), reb = v("reb");
+        const fgm = v("fgm"), fga = v("fga");
+        const tpm = v("tpm"), tpa = v("tpa");
+        const ftm = v("ftm"), fta = v("fta");
+        const pts = v("pts");
+
+        if (oreb > reb)  flag("oreb", "reb");
+        if (fgm > fga)   flag("fgm", "fga");
+        if (tpm > tpa)   flag("tpm", "tpa");
+        if (tpm > fgm)   flag("tpm", "fgm");
+        if (ftm > fta)   flag("ftm", "fta");
+        // PTS check only once shooting stats are touched
+        if (fgm > 0 || ftm > 0) {
+          if (pts !== 2 * fgm + tpm + ftm) flag("pts");
+        }
+      });
+
+      // Team minutes
+      const minEl = document.getElementById(`${side}-min-live`);
+      const minTotal = sums ? sums.min : 0;
+      if (minTotal > 0 && !VALID_MIN_TOTALS.has(minTotal)) {
+        minEl.classList.add("stat-error");
+      } else {
+        minEl.classList.remove("stat-error");
+      }
     }
 
     // ── Game queue ───────────────────────────────────────────────
