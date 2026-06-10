@@ -1142,17 +1142,34 @@
             game_type: game.game_type,
           }),
         });
-        if (!res.ok) {
+        let queueId, rewardStr = '';
+        if (res.status === 409) {
+          // Already registered server-side — recover the existing ID and proceed
+          const serverQueue = await fetch("/api/boxscore/queue", {
+            headers: { "Authorization": `Bearer ${token}` },
+          }).then(r => r.json()).catch(() => []);
+          const existing = serverQueue.find(q =>
+            q.date === game.date &&
+            q.home_team === game.home_team.toUpperCase() &&
+            q.away_team === game.away_team.toUpperCase()
+          );
+          if (!existing) throw new Error("Game is registered on the server but couldn't recover its ID.");
+          queueId = existing.id;
+          // Remove from orphaned list if present
+          orphanedServerEntries = orphanedServerEntries.filter(e => e.id !== queueId);
+        } else if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.detail || `HTTP ${res.status}`);
+        } else {
+          const data = await res.json();
+          queueId = data.id;
+          rewardStr = data.nbyen_reward ? ` · +NB¥${data.nbyen_reward} earned` : '';
         }
-        const data = await res.json();
-        game._queue_id = data.id;  // track server-assigned ID
+        game._queue_id = queueId;
         gameQueue.push(game);
         saveQueue();
         renderQueue();
         status.className = "form-status ok";
-        const rewardStr = data.nbyen_reward ? ` · +NB¥${data.nbyen_reward} earned` : '';
         status.textContent = `Added to queue (${game.home_team} vs ${game.away_team})${rewardStr}.`;
       } catch (e) {
         status.className = "form-status err";
