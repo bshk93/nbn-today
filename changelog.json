@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.293",
+    "date": "2026-06-10",
+    "changes": [
+      "boxscores/submit: persist game queue to localStorage \u2014 survives reload until committed",
+      "boxscores/submit: drain committed games from queue as they succeed, so a mid-commit reload doesn't re-submit them",
+      "boxscores/submit: show sticky warning banner during commit \u2014 do not leave or refresh"
+    ]
+  },
+  {
     "version": "0.0.292",
     "date": "2026-06-10",
     "changes": [

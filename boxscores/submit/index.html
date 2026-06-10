@@ -167,6 +167,15 @@
     }
     select.player-select:focus { outline: none; border-color: #3b82f6; }
 
+    /* Commit-in-progress banner */
+    #commit-warning {
+      display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+      background: #92400e; color: #fef3c7; text-align: center;
+      padding: 0.6rem 1rem; font-size: 0.88rem; font-weight: 600;
+      border-bottom: 2px solid #d97706;
+    }
+    #commit-warning.visible { display: block; }
+
     /* Game queue */
     .queue-section {
       margin-top: 2rem; border-top: 1px solid #374151; padding-top: 1.25rem;
@@ -248,6 +257,7 @@
   </style>
 </head>
 <body>
+  <div id="commit-warning">⚠ Committing games — do not leave or refresh this page.</div>
   <main>
     <nav class="nav"></nav>
     <h1>Box Score Import</h1>
@@ -845,7 +855,18 @@
     }
 
     // ── Game queue ───────────────────────────────────────────────
-    let gameQueue = [];
+    const QUEUE_KEY = "nbn_submit_queue";
+    let gameQueue = (() => {
+      try { return JSON.parse(localStorage.getItem(QUEUE_KEY)) || []; } catch { return []; }
+    })();
+
+    function saveQueue() {
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(gameQueue));
+    }
+
+    function setCommitting(active) {
+      document.getElementById("commit-warning").classList.toggle("visible", active);
+    }
 
     function checkCommitReady() {
       const homeRows = document.getElementById("home-entry-tbody").querySelectorAll("tr").length;
@@ -878,7 +899,7 @@
         rm.className = "btn-remove-row";
         rm.textContent = "×";
         rm.title = "Remove from queue";
-        rm.onclick = () => { gameQueue.splice(idx, 1); renderQueue(); };
+        rm.onclick = () => { gameQueue.splice(idx, 1); saveQueue(); renderQueue(); };
         item.appendChild(rm);
         list.appendChild(item);
       });
@@ -943,6 +964,7 @@
         const data = await res.json();
         game._queue_id = data.id;  // track server-assigned ID
         gameQueue.push(game);
+        saveQueue();
         renderQueue();
         status.className = "form-status ok";
         const rewardStr = data.nbyen_reward ? ` · +NB¥${data.nbyen_reward} earned` : '';
@@ -960,14 +982,16 @@
       const status = document.getElementById("queue-status");
       if (!gameQueue.length) return;
       btn.disabled = true;
+      setCommitting(true);
       status.className = "form-status";
       let totalRows = 0;
       let totalReward = 0;
       const failed = [];
+      const total = gameQueue.length;
 
-      for (let i = 0; i < gameQueue.length; i++) {
-        const g = gameQueue[i];
-        status.textContent = `Committing game ${i + 1} of ${gameQueue.length}…`;
+      while (gameQueue.length > 0) {
+        const g = gameQueue[0];
+        status.textContent = `Committing game ${total - gameQueue.length + 1} of ${total}…`;
         try {
           const res = await fetch("/api/boxscore/commit", {
             method: "POST",
@@ -977,17 +1001,23 @@
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             failed.push(`${g.home_team} vs ${g.away_team}: ${err.detail || `HTTP ${res.status}`}`);
+            break;
           } else {
             const data = await res.json();
             totalRows += data.rows_added || 0;
             totalReward += data.nbyen_reward || 0;
+            gameQueue.shift();
+            saveQueue();
+            renderQueue();
           }
         } catch (e) {
           failed.push(`${g.home_team} vs ${g.away_team}: ${e.message}`);
+          break;
         }
       }
 
       if (failed.length) {
+        setCommitting(false);
         status.className = "form-status err";
         status.textContent = `${failed.length} game(s) failed: ${failed[0]}`;
         btn.disabled = false;
@@ -1004,14 +1034,13 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         status.className = "form-status ok";
         const rewardStr = totalReward > 0 ? ` · +NB¥${totalReward} earned` : '';
-        status.textContent = `✓ ${gameQueue.length} game(s) committed (${totalRows} rows). Rebuilding stats…${rewardStr}`;
-        gameQueue = [];
-        renderQueue();
+        status.textContent = `✓ ${total} game(s) committed (${totalRows} rows). Rebuilding stats…${rewardStr}`;
         startBuildPoll();
       } catch (e) {
         status.className = "form-status err";
         status.textContent = `Games committed but build trigger failed: ${e.message}`;
       }
+      setCommitting(false);
       btn.disabled = false;
     };
 
@@ -1247,6 +1276,7 @@
       if (buildPollInterval) { clearInterval(buildPollInterval); buildPollInterval = null; }
     }
 
+    renderQueue();
     checkBuildStatus();
 
     window.addEventListener("beforeunload", e => {
