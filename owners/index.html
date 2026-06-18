@@ -332,7 +332,13 @@
           col.cls.split(' ').forEach(c => c && td.classList.add(c));
 
           if (col.key === 'owner') {
-            td.appendChild(document.createTextNode(row.owner ?? ''));
+            const ownerLink = document.createElement('a');
+            ownerLink.href = `/members/${encodeURIComponent(row.owner)}/`;
+            ownerLink.textContent = row.owner ?? '';
+            ownerLink.style.cssText = 'color:inherit;text-decoration:none;';
+            ownerLink.onmouseover = () => ownerLink.style.textDecoration = 'underline';
+            ownerLink.onmouseout  = () => ownerLink.style.textDecoration = 'none';
+            td.appendChild(ownerLink);
             (ownerAchievements.get(row.owner) ?? []).forEach(a => {
               const span = document.createElement('span');
               span.className = a.large ? 'achievement achievement--lg' : 'achievement';

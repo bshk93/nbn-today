@@ -382,6 +382,7 @@
     }
     .delete-txn-btn:hover { color: #f87171; }
     .badge-release        { background: #450a0a; color: #f87171; }
+    .badge-renounce       { background: #3b2f0a; color: #fcd34d; }
     .badge-convert_twoway { background: #1c1917; color: #a8a29e; }
     .badge-callup  { background: #451a03; color: #fb923c; }
     .badge-calldown { background: #451a03; color: #fb923c; }
@@ -482,6 +483,7 @@
           <option value="pick">Draft Pick</option>
           <option value="option">Option Decision</option>
           <option value="release">Release</option>
+          <option value="renounce">Renounce</option>
           <option value="trade">Trade</option>
           <option value="convert_twoway">Convert Two-Way</option>
         </select>
@@ -663,6 +665,7 @@
     <span class="chip" data-filter="type" data-value="pick">Draft Picks</span>
     <span class="chip" data-filter="type" data-value="option">Options</span>
     <span class="chip" data-filter="type" data-value="release">Releases</span>
+    <span class="chip" data-filter="type" data-value="renounce">Renounces</span>
     <span class="chip" data-filter="type" data-value="trade">Trades</span>
   </div>
 
@@ -930,6 +933,18 @@ function nextSeasonStr(s) {
   return `${m[2]}-${String(nextEnd).padStart(2, '0')}`;
 }
 
+// A rostered player is a renounceable free-agent hold when their earliest cap hold
+// is a UFA/RFA for the upcoming FA season (their contract has lapsed). Players under
+// contract (hold years further out) or with an unresolved option are excluded.
+function isFreeAgentHold(bio) {
+  const holds = bio.cap_holds || {};
+  const years = Object.keys(holds).sort();
+  if (!years.length) return false;
+  const earliest = years[0];
+  const faSeason = nextSeasonStr(currentSeasonStr());
+  return (holds[earliest] === 'UFA' || holds[earliest] === 'RFA') && earliest <= faSeason;
+}
+
 function buildTwowayContract(years, startSeason) {
   const salaries = {}, guaranteed = {}, cap_holds = {};
   let s = startSeason;
@@ -1066,6 +1081,8 @@ function setupPlayerSearch() {
       });
     } else if (txnType === 'release') {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'player' || bio.type === 'two-way');
+    } else if (txnType === 'renounce') {
+      pool = Object.entries(bios).filter(([slug, bio]) => teamMap[slug] && isFreeAgentHold(bio));
     } else if (txnType === 'convert_twoway') {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'two-way');
     } else if (txnType === 'sign') {
@@ -1623,6 +1640,10 @@ async function submitTransaction() {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     details = { player: playerSlug };
+  } else if (type === 'renounce') {
+    date = document.getElementById('f-date').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
+    details = { player: playerSlug };
   } else if (type === 'convert_twoway') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -1918,6 +1939,9 @@ function renderDetailsCell(t) {
     const years = entries.map(([yr]) => yr).join(', ');
     return `Dead cap: $${(total / 1e6).toFixed(1)}M (${escHtml(years)})`;
   }
+  if (t.type === 'renounce') {
+    return 'Renounced — free agent, no dead cap';
+  }
   if (t.type === 'trade') {
     const transfers = d.transfers || [];
     return transfers.map(tr => {
@@ -1966,7 +1990,7 @@ function fmtDate(iso) {
 }
 
 function typeLabel(type) {
-  const labels = { sign: 'Signing', pick: 'Draft Pick', option: 'Option', release: 'Release', trade: 'Trade', convert_twoway: 'Two-Way Conversion' };
+  const labels = { sign: 'Signing', pick: 'Draft Pick', option: 'Option', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion' };
   return labels[type] || type;
 }
 

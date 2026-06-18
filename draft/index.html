@@ -752,10 +752,22 @@
         Object.entries(players).filter(([, p]) => p.NBN_DFT_YR && p.NBN_DFT_YR !== 'NA')
       );
 
-      const pastYears = new Set(Object.values(drafted).map(p => p.NBN_DFT_YR));
-      const futureYears = [...new Set(allPicks.map(p => String(p.year)))]
-        .filter(y => !pastYears.has(y))
+      // A year tracked in the picks system stays "future" (unfinished) until every
+      // pick has a player assigned — NBN_DFT_YR alone isn't enough, since the build
+      // seeds placeholder season rows for the whole draft class before picks happen.
+      const picksByYear = {};
+      allPicks.forEach(p => {
+        const y = String(p.year);
+        (picksByYear[y] ||= []).push(p);
+      });
+      const futureYears = Object.keys(picksByYear)
+        .filter(y => picksByYear[y].some(p => !p.player))
         .sort();
+
+      const pastYears = new Set(
+        [...new Set(Object.values(drafted).map(p => p.NBN_DFT_YR))]
+          .filter(y => !futureYears.includes(y))
+      );
 
       const sel = document.getElementById('year-select');
 

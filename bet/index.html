@@ -248,6 +248,7 @@
     let currentUser     = null;   // {name, roles}
     let allBets         = [];
     let balancesList    = [];
+    let investHoldingsMap = {};  // member → {equity, liquid, net_worth, pl, realized_pnl}
     let formerMembers   = new Set();  // names with no active tenure
     let ledgerEntries   = [];
     let currentTab      = 'open';
@@ -292,10 +293,11 @@
     // ── Data ─────────────────────────────────────────────────────────────────
 
     async function loadData() {
-      const [betsRes, balsRes, membersRes] = await Promise.allSettled([
+      const [betsRes, balsRes, membersRes, holdingsRes] = await Promise.allSettled([
         fetch('/api/bets').then(r => r.json()),
         fetch('/api/bets/balances').then(r => r.json()),
         fetch('/api/members/public').then(r => r.json()),
+        fetch('/api/invest/holdings/all').then(r => r.json()),
       ]);
       if (betsRes.status === 'fulfilled')    allBets      = betsRes.value;
       if (balsRes.status === 'fulfilled')    balancesList = balsRes.value;
@@ -305,6 +307,9 @@
             .filter(m => !m.tenures.some(t => !t.end))
             .map(m => m.name)
         );
+      }
+      if (holdingsRes.status === 'fulfilled') {
+        investHoldingsMap = Object.fromEntries(holdingsRes.value.map(r => [r.member, r]));
       }
     }
 
@@ -657,13 +662,23 @@
         return;
       }
 
-      const formerCount  = balancesList.filter(r => formerMembers.has(r.name)).length;
-      const visibleRows  = showFormerBals
-        ? balancesList
-        : balancesList.filter(r => !formerMembers.has(r.name));
+      // Merge bets balances with invest holdings; sort by net worth descending
+      const merged = balancesList.map(row => {
+        const inv = investHoldingsMap[row.name] || {};
+        const equity    = inv.equity    ?? 0;
+        const netWorth  = inv.net_worth ?? row.balance;
+        const overallPl = inv.pl        ?? (row.balance - 1000);
+        const invPnl    = inv.realized_pnl ?? 0;
+        return { ...row, equity, net_worth: netWorth, overall_pl: overallPl, inv_pnl: invPnl };
+      });
+      merged.sort((a, b) => b.net_worth - a.net_worth || a.name.localeCompare(b.name));
 
-      const wrap = document.createElement('div');
+      const formerCount = merged.filter(r => formerMembers.has(r.name)).length;
+      const visibleRows = showFormerBals
+        ? merged
+        : merged.filter(r => !formerMembers.has(r.name));
 
+      const wrap   = document.createElement('div');
       const scroll = document.createElement('div');
       scroll.className = 'balances-scroll';
 
@@ -671,18 +686,18 @@
       table.className = 'balances-table';
       const thead = table.createTHead();
       const hrow  = thead.insertRow();
-      // [label, numClass, dimClass]
+      // [label, isNum, isDim]
       const COLS = [
-        ['#',          false, false],
-        ['Member',     false, false],
-        ['NB¥ Balance',true,  false],
-        ['P/L',        true,  false],
-        ['Bet Won',    true,  true ],
-        ['Bet Lost',   true,  true ],
-        ['Bet Outstanding', true,  true ],
-        ['Stats',      true,  true ],
-        ['Trivia',     true,  true ],
-        ['Bio',        true,  true ],
+        ['#',           false, false],
+        ['Member',      false, false],
+        ['Net Worth',   true,  false],
+        ['P/L',         true,  false],
+        ['Liquid',      true,  true ],
+        ['Equity',      true,  true ],
+        ['Bet P/L',     true,  true ],
+        ['Inv P/L',     true,  true ],
+        ['Earned',      true,  true ],
+        ['Outstanding', true,  true ],
       ];
       COLS.forEach(([label, isNum, isDim]) => {
         const th = document.createElement('th');
@@ -693,18 +708,25 @@
 
       const tbody = table.createTBody();
       visibleRows.forEach((row, idx) => {
-        const tr = tbody.insertRow();
+        const tr       = tbody.insertRow();
         const isMe     = currentUser && row.name === currentUser.name;
         const isFormer = formerMembers.has(row.name);
-        if (isMe) tr.className = 'me';
+        if (isMe)     tr.className    = 'me';
         if (isFormer) tr.style.opacity = '0.45';
 
-        const pl = row.balance - 1000;
-        const plClass = pl > 0 ? 'pl-pos' : pl < 0 ? 'pl-neg' : 'pl-zero';
-        const plSign  = pl > 0 ? '+' : pl < 0 ? '-' : '';
+        const plSign  = v => v > 0 ? '+' : v < 0 ? '-' : '';
+        const plClass = v => v > 0 ? 'pl-pos' : v < 0 ? 'pl-neg' : 'pl-zero';
+        const signedNby = v => `${plSign(v)}${nby(Math.abs(v))}`;
 
         const rankTd = tr.insertCell(); rankTd.className = 'rank-cell num'; rankTd.textContent = idx + 1;
-        const nameTd = tr.insertCell(); nameTd.className = 'name-cell'; nameTd.textContent = row.name;
+        const nameTd = tr.insertCell(); nameTd.className = 'name-cell';
+        const nameLink = document.createElement('a');
+        nameLink.href = `/members/${encodeURIComponent(row.name)}/`;
+        nameLink.textContent = row.name;
+        nameLink.style.cssText = 'color:inherit;text-decoration:none;';
+        nameLink.onmouseover = () => nameLink.style.textDecoration = 'underline';
+        nameLink.onmouseout  = () => nameLink.style.textDecoration = 'none';
+        nameTd.appendChild(nameLink);
         if (isMe) {
           const you = document.createElement('span');
           you.style.cssText = 'font-size:0.68rem;color:#6b7280;margin-left:0.4rem';
@@ -718,22 +740,43 @@
           nameTd.appendChild(tag);
         }
 
-        const balTd = tr.insertCell(); balTd.className = 'bal-cell num'; balTd.textContent = nby(row.balance);
-        const plTd  = tr.insertCell(); plTd.className  = `${plClass} num`; plTd.textContent = `${plSign}${nby(Math.abs(pl))}`;
+        const nwTd = tr.insertCell(); nwTd.className = 'num'; nwTd.textContent = nby(row.net_worth);
+        const plTd = tr.insertCell(); plTd.className = `${plClass(row.overall_pl)} num`; plTd.textContent = signedNby(row.overall_pl);
 
-        // Breakdown columns — dim when zero
-        const betWon     = row.bet_won      ?? 0;
-        const betLost    = row.bet_lost     ?? 0;
-        const betPlaced  = row.bet_placed   ?? 0;
-        const stats      = row.stats_earned  ?? 0;
-        const trivia     = row.trivia_earned ?? 0;
-        const bio        = row.bio_earned   ?? 0;
+        const liquid      = row.balance          ?? 0;
+        const equity      = row.equity           ?? 0;
+        const betPnl      = row.bet_pnl          ?? 0;
+        const invPnl      = row.inv_pnl          ?? 0;
+        const earned      = (row.stats_earned ?? 0) + (row.trivia_earned ?? 0) + (row.bio_earned ?? 0);
+        const outstanding = row.bet_placed       ?? 0;
 
-        [[betWon, 'pl-pos'], [betLost, 'pl-neg'], [betPlaced, ''], [stats, ''], [trivia, ''], [bio, '']].forEach(([val, colorClass]) => {
-          const td = tr.insertCell();
-          td.className = ['num', val === 0 ? 'dim' : colorClass].filter(Boolean).join(' ');
-          td.textContent = val === 0 ? '—' : nby(val);
-        });
+        // liquid — neutral
+        const liqTd = tr.insertCell(); liqTd.className = 'num dim'; liqTd.textContent = nby(liquid);
+
+        // equity — neutral, dim if zero
+        const eqTd = tr.insertCell();
+        eqTd.className = equity === 0 ? 'num dim' : 'num';
+        eqTd.textContent = equity === 0 ? '—' : nby(equity);
+
+        // bet P/L — colored, dim if zero
+        const bpTd = tr.insertCell();
+        bpTd.className = betPnl === 0 ? 'num dim' : `${plClass(betPnl)} num`;
+        bpTd.textContent = betPnl === 0 ? '—' : signedNby(betPnl);
+
+        // invest P/L — colored, dim if zero
+        const ipTd = tr.insertCell();
+        ipTd.className = invPnl === 0 ? 'num dim' : `${plClass(invPnl)} num`;
+        ipTd.textContent = invPnl === 0 ? '—' : signedNby(invPnl);
+
+        // earned — positive or dim
+        const erTd = tr.insertCell();
+        erTd.className = earned === 0 ? 'num dim' : 'pl-pos num';
+        erTd.textContent = earned === 0 ? '—' : nby(earned);
+
+        // outstanding — neutral, dim if zero
+        const ouTd = tr.insertCell();
+        ouTd.className = outstanding === 0 ? 'num dim' : 'num';
+        ouTd.textContent = outstanding === 0 ? '—' : nby(outstanding);
       });
 
       scroll.appendChild(table);
@@ -744,7 +787,7 @@
         const toggle = document.createElement('button');
         toggle.style.cssText = 'margin-top:0.75rem;background:none;border:none;color:#4b5563;font-size:0.75rem;cursor:pointer;padding:0;font-family:inherit;';
         toggle.textContent = showFormerBals
-          ? `Hide former members`
+          ? 'Hide former members'
           : `Show ${formerCount} former member${formerCount !== 1 ? 's' : ''}`;
         toggle.onclick = () => { showFormerBals = !showFormerBals; renderBalances(); };
         wrap.appendChild(toggle);
@@ -1283,6 +1326,11 @@
           row.append(nameEl, amtEl);
           sec.appendChild(row);
         });
+      } else if (bet.bet_type === 'fixed_odds') {
+        const notice = document.createElement('div');
+        notice.className = 'voided-notice';
+        notice.textContent = '⚠️ No one picked the winning option — all stakes forfeit to house.';
+        sec.appendChild(notice);
       }
 
       // My payout highlight

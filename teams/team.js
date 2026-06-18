@@ -380,6 +380,46 @@ document.title = `${abbr} — NBN`;
     z-index: 20; font-weight: normal; line-height: 1.6;
   }
   .sal-tip:hover::after { opacity: 1; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid #374151;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.6rem 1.25rem;
+    font-family: inherit;
+    transition: color 0.12s;
+    margin-bottom: -1px;
+    white-space: nowrap;
+  }
+  .tab:hover { color: #d1d5db; }
+  .tab.active { color: #f3f4f6; border-bottom-color: #3b82f6; font-weight: 600; }
+  .tab-panel.hidden { display: none; }
+  .hist-controls { margin-bottom: 1.5rem; }
+  .hist-controls select {
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    color: #f3f4f6;
+    font-size: 0.875rem;
+    padding: 0.4rem 0.75rem;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+  }
+  .hist-controls select:focus { border-color: #3b82f6; }
 `; document.head.appendChild(_s); }
 
 document.body.innerHTML = `
@@ -390,44 +430,64 @@ document.body.innerHTML = `
       <h1>${name}</h1>
       <span class="abbr">${abbr}</span>
     </div>
-    <section>
-      <h2 class="section-title">Season History</h2>
-      <div class="timeline" id="timeline-wrap"></div>
-      <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
-    </section>
-    <section id="personnel-section" style="display:none">
-      <h2 class="section-title">Franchise Personnel</h2>
-      <div class="table-wrap" id="personnel-wrap"></div>
-    </section>
-    <section id="retired-section" style="display:none">
-      <h2 class="section-title">Retired Numbers</h2>
-      <div class="retired-banners" id="retired-banners"></div>
-    </section>
-    <div id="hard-cap-banner" style="display:none"></div>
-    <section>
-      <h2 class="section-title" id="roster-title">Roster</h2>
-      <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
-      <div id="cap-edit-wrap"></div>
-      <div id="dead-cap-edit-wrap"></div>
-    </section>
-    <section id="exceptions-section" style="display:none">
-      <h2 class="section-title">Cap Exceptions</h2>
-      <div id="exceptions-wrap" class="exceptions-card"></div>
-    </section>
-    <section>
-      <h2 class="section-title" id="picks-title">Draft Picks</h2>
-      <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
-    </section>
-    <section>
-      <h2 class="section-title">Draft History</h2>
-      <p class="section-sub">Players drafted by this franchise</p>
-      <div class="table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
-    </section>
-    <section>
-      <h2 class="section-title">All-Time Top Players</h2>
-      <p class="section-sub">Regular season · ranked by total Game Score</p>
-      <div class="table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
-    </section>
+    <div class="tabs">
+      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="draft">Draft History</button>
+      <button class="tab" data-tab="alltime">All-Time Players</button>
+      <button class="tab" data-tab="history">Historical Rosters</button>
+    </div>
+    <div class="tab-panel" id="tab-overview">
+      <section>
+        <h2 class="section-title">Season History</h2>
+        <div class="timeline" id="timeline-wrap"></div>
+        <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
+      </section>
+      <section id="personnel-section" style="display:none">
+        <h2 class="section-title">Franchise Personnel</h2>
+        <div class="table-wrap" id="personnel-wrap"></div>
+      </section>
+      <section id="retired-section" style="display:none">
+        <h2 class="section-title">Retired Numbers</h2>
+        <div class="retired-banners" id="retired-banners"></div>
+      </section>
+      <div id="hard-cap-banner" style="display:none"></div>
+      <section>
+        <h2 class="section-title" id="roster-title">Roster</h2>
+        <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
+        <div id="cap-edit-wrap"></div>
+        <div id="dead-cap-edit-wrap"></div>
+      </section>
+      <section id="exceptions-section" style="display:none">
+        <h2 class="section-title">Cap Exceptions</h2>
+        <div id="exceptions-wrap" class="exceptions-card"></div>
+      </section>
+      <section>
+        <h2 class="section-title" id="picks-title">Draft Picks</h2>
+        <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-draft">
+      <section>
+        <h2 class="section-title">Draft History</h2>
+        <p class="section-sub">Players drafted by this franchise</p>
+        <div class="table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-alltime">
+      <section>
+        <h2 class="section-title">All-Time Top Players</h2>
+        <p class="section-sub">Regular season · ranked by total Game Score</p>
+        <div class="table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-history">
+      <section>
+        <h2 class="section-title">Historical Rosters</h2>
+        <p class="section-sub">Per-season stats for this franchise</p>
+        <div class="hist-controls" id="hist-controls"></div>
+        <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
+      </section>
+    </div>
   </div>
 `;
 
@@ -439,6 +499,15 @@ const _badgeScript = document.createElement('script');
 _badgeScript.src = '/token-badge.js';
 _badgeScript.onload = function () { window.__nbnBadge && window.__nbnBadge(); };
 document.head.appendChild(_badgeScript);
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+  });
+});
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');
@@ -2381,6 +2450,56 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   attachEditBtn(rows);
 }
 
+function buildHistoricalRoster(allSeasons, teamAbbr, season) {
+  const rows = allSeasons.filter(r => r.TEAM === teamAbbr && r.SEASON === season);
+  if (!rows.length) return null;
+
+  const augmented = rows.map(r => {
+    const g   = Math.max(1, parseInt(r.G) || 1);
+    const pg  = k => +(parseFloat(r[k]) || 0) / g;
+    const fmt = k => Math.round(pg(k) * 10) / 10;
+    return {
+      ...r,
+      _mpg:    fmt('MIN'),
+      _ppg:    fmt('PTS'),
+      _rpg:    fmt('REB'),
+      _apg:    fmt('AST'),
+      _spg:    fmt('STL'),
+      _bpg:    fmt('BLK'),
+      _3pmpg:  fmt('3PM'),
+      _gmscpg: fmt('GMSC'),
+    };
+  });
+
+  const HIST_COLS = [
+    { key: 'PLAYER',  label: 'Player',  cls: 'bold',        sortField: 'PLAYER',  defaultDir:  1 },
+    { key: 'G',       label: 'G',       cls: 'right',       sortField: 'G',       defaultDir: -1 },
+    { key: '_mpg',    label: 'MPG',     cls: 'right muted', sortField: '_mpg',    defaultDir: -1 },
+    { key: '_ppg',    label: 'PPG',     cls: 'right',       sortField: '_ppg',    defaultDir: -1 },
+    { key: '_rpg',    label: 'RPG',     cls: 'right',       sortField: '_rpg',    defaultDir: -1 },
+    { key: '_apg',    label: 'APG',     cls: 'right',       sortField: '_apg',    defaultDir: -1 },
+    { key: '_spg',    label: 'SPG',     cls: 'right muted', sortField: '_spg',    defaultDir: -1 },
+    { key: '_bpg',    label: 'BPG',     cls: 'right muted', sortField: '_bpg',    defaultDir: -1 },
+    { key: '_3pmpg',  label: '3PM/G',   cls: 'right muted', sortField: '_3pmpg',  defaultDir: -1 },
+    { key: '_gmscpg', label: 'GMSC/G',  cls: 'right',       sortField: '_gmscpg', defaultDir: -1 },
+  ];
+
+  return buildTable(HIST_COLS, augmented, '_gmscpg', -1, (td, col, row) => {
+    if (col.key === 'PLAYER') {
+      if (row.SLUG) {
+        const a = document.createElement('a');
+        a.href = `/players/?p=${row.SLUG}`;
+        a.textContent = row.PLAYER;
+        td.appendChild(a);
+      } else {
+        td.textContent = row.PLAYER || '—';
+      }
+    } else {
+      td.textContent = row[col.key] ?? '—';
+    }
+  });
+}
+
 (async () => {
   const seasonsWrap  = document.getElementById('seasons-wrap');
   const playersWrap  = document.getElementById('players-wrap');
@@ -2431,72 +2550,110 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     playersWrap.innerHTML = '<div class="status">Failed to load player data.</div>';
   }
 
-  if (psr.status === 'fulfilled') {
-    draftedWrap.innerHTML = '';
-    const allSeasons = parseCSV(psr.value);
-    const draftTag = `(${abbr})`;
-    const bySlug = {};
-    for (const row of allSeasons) {
-      if (!row.NBN_DFT_P.includes(draftTag)) continue;
-      const s = row.SLUG.trim();
-      if (!s) continue;
-      if (!bySlug[s]) {
-        const pickMatch = row.NBN_DFT_P.match(/Pick (\d+)/);
-        const roundNum  = row.NBN_DFT_R === 'Round 2' ? 2 : 1;
-        bySlug[s] = {
-          SLUG:    s,
-          PLAYER:  row.PLAYER,
-          YEAR:    parseInt(row.NBN_DFT_YR) || 0,
-          ROUND:   roundNum,
-          PICK:    pickMatch ? parseInt(pickMatch[1]) : 0,
-          PICK_LABEL: `R${roundNum} · #${pickMatch ? pickMatch[1] : '?'}`,
-          _G:   0, _PTS: 0, _REB: 0, _AST: 0, _GMSC: 0,
-        };
-      }
-      const g = parseInt(row.G) || 0;
-      bySlug[s]._G    += g;
-      bySlug[s]._PTS  += parseFloat(row.PTS)  || 0;
-      bySlug[s]._REB  += parseFloat(row.REB)  || 0;
-      bySlug[s]._AST  += parseFloat(row.AST)  || 0;
-      bySlug[s]._GMSC += parseFloat(row.GMSC) || 0;
-    }
-    const draftedRows = Object.values(bySlug).map(p => ({
-      ...p,
-      GP:      p._G,
-      GMSC_TOT: Math.round(p._GMSC * 10) / 10,
-      PPG:     p._G ? Math.round(p._PTS  / p._G * 10) / 10 : 0,
-      RPG:     p._G ? Math.round(p._REB  / p._G * 10) / 10 : 0,
-      APG:     p._G ? Math.round(p._AST  / p._G * 10) / 10 : 0,
-    }));
-    draftedRows.sort((a, b) => a.YEAR - b.YEAR || a.PICK - b.PICK);
+  const allSeasons = psr.status === 'fulfilled' ? parseCSV(psr.value) : [];
 
-    const DRAFTED_COLS = [
-      { key: 'PLAYER',    label: 'Player', cls: 'bold',        sortField: 'PLAYER',    defaultDir:  1 },
-      { key: 'YEAR',      label: 'Year',   cls: 'right',       sortField: 'YEAR',      defaultDir:  1 },
-      { key: 'PICK_LABEL',label: 'Pick',   cls: 'right muted', sortField: 'PICK',      defaultDir:  1 },
-      { key: 'GP',        label: 'GP',     cls: 'right',       sortField: 'GP',        defaultDir: -1 },
-      { key: 'GMSC_TOT',  label: 'GMSC',   cls: 'right',       sortField: 'GMSC_TOT',  defaultDir: -1 },
-      { key: 'PPG',       label: 'PPG',    cls: 'right',       sortField: 'PPG',       defaultDir: -1 },
-      { key: 'RPG',       label: 'RPG',    cls: 'right',       sortField: 'RPG',       defaultDir: -1 },
-      { key: 'APG',       label: 'APG',    cls: 'right',       sortField: 'APG',       defaultDir: -1 },
-    ];
-    const renderDraftedCell = (td, col, row) => {
-      if (col.key === 'PLAYER') {
-        const a = document.createElement('a');
-        a.href = `/players/?p=${row.SLUG}`;
-        a.textContent = row.PLAYER;
-        td.appendChild(a);
-      } else {
-        td.textContent = row[col.key] ?? '—';
+  // Draft History tab
+  {
+    draftedWrap.innerHTML = '';
+    if (allSeasons.length) {
+      const draftTag = `(${abbr})`;
+      const bySlug = {};
+      for (const row of allSeasons) {
+        if (!row.NBN_DFT_P.includes(draftTag)) continue;
+        const s = row.SLUG.trim();
+        if (!s) continue;
+        if (!bySlug[s]) {
+          const pickMatch = row.NBN_DFT_P.match(/Pick (\d+)/);
+          const roundNum  = row.NBN_DFT_R === 'Round 2' ? 2 : 1;
+          bySlug[s] = {
+            SLUG:    s,
+            PLAYER:  row.PLAYER,
+            YEAR:    parseInt(row.NBN_DFT_YR) || 0,
+            ROUND:   roundNum,
+            PICK:    pickMatch ? parseInt(pickMatch[1]) : 0,
+            PICK_LABEL: `R${roundNum} · #${pickMatch ? pickMatch[1] : '?'}`,
+            _G:   0, _PTS: 0, _REB: 0, _AST: 0, _GMSC: 0,
+          };
+        }
+        const g = parseInt(row.G) || 0;
+        bySlug[s]._G    += g;
+        bySlug[s]._PTS  += parseFloat(row.PTS)  || 0;
+        bySlug[s]._REB  += parseFloat(row.REB)  || 0;
+        bySlug[s]._AST  += parseFloat(row.AST)  || 0;
+        bySlug[s]._GMSC += parseFloat(row.GMSC) || 0;
       }
-    };
-    if (draftedRows.length) {
-      draftedWrap.appendChild(buildTable(DRAFTED_COLS, draftedRows, 'YEAR', 1, renderDraftedCell));
+      const draftedRows = Object.values(bySlug).map(p => ({
+        ...p,
+        GP:      p._G,
+        GMSC_TOT: Math.round(p._GMSC * 10) / 10,
+        PPG:     p._G ? Math.round(p._PTS  / p._G * 10) / 10 : 0,
+        RPG:     p._G ? Math.round(p._REB  / p._G * 10) / 10 : 0,
+        APG:     p._G ? Math.round(p._AST  / p._G * 10) / 10 : 0,
+      }));
+      draftedRows.sort((a, b) => a.YEAR - b.YEAR || a.PICK - b.PICK);
+
+      const DRAFTED_COLS = [
+        { key: 'PLAYER',    label: 'Player', cls: 'bold',        sortField: 'PLAYER',    defaultDir:  1 },
+        { key: 'YEAR',      label: 'Year',   cls: 'right',       sortField: 'YEAR',      defaultDir:  1 },
+        { key: 'PICK_LABEL',label: 'Pick',   cls: 'right muted', sortField: 'PICK',      defaultDir:  1 },
+        { key: 'GP',        label: 'GP',     cls: 'right',       sortField: 'GP',        defaultDir: -1 },
+        { key: 'GMSC_TOT',  label: 'GMSC',   cls: 'right',       sortField: 'GMSC_TOT',  defaultDir: -1 },
+        { key: 'PPG',       label: 'PPG',    cls: 'right',       sortField: 'PPG',       defaultDir: -1 },
+        { key: 'RPG',       label: 'RPG',    cls: 'right',       sortField: 'RPG',       defaultDir: -1 },
+        { key: 'APG',       label: 'APG',    cls: 'right',       sortField: 'APG',       defaultDir: -1 },
+      ];
+      const renderDraftedCell = (td, col, row) => {
+        if (col.key === 'PLAYER') {
+          const a = document.createElement('a');
+          a.href = `/players/?p=${row.SLUG}`;
+          a.textContent = row.PLAYER;
+          td.appendChild(a);
+        } else {
+          td.textContent = row[col.key] ?? '—';
+        }
+      };
+      if (draftedRows.length) {
+        draftedWrap.appendChild(buildTable(DRAFTED_COLS, draftedRows, 'YEAR', 1, renderDraftedCell));
+      } else {
+        draftedWrap.innerHTML = '<div class="status">No draft history found.</div>';
+      }
     } else {
-      draftedWrap.innerHTML = '<div class="status">No draft history found.</div>';
+      draftedWrap.innerHTML = '<div class="status">Failed to load draft history.</div>';
     }
-  } else {
-    draftedWrap.innerHTML = '<div class="status">Failed to load draft history.</div>';
+  }
+
+  // Historical Rosters tab
+  {
+    const histWrap     = document.getElementById('hist-roster-wrap');
+    const histControls = document.getElementById('hist-controls');
+    const availableSeasons = [...new Set(allSeasons.filter(r => r.TEAM === abbr).map(r => r.SEASON))]
+      .sort((a, b) => b.localeCompare(a));
+    if (availableSeasons.length) {
+      const sel = document.createElement('select');
+      availableSeasons.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s; o.textContent = s;
+        sel.appendChild(o);
+      });
+      histControls.appendChild(sel);
+      const renderHistSeason = season => {
+        histWrap.innerHTML = '';
+        const t = buildHistoricalRoster(allSeasons, abbr, season);
+        if (t) {
+          const wrap = document.createElement('div');
+          wrap.className = 'table-wrap';
+          wrap.appendChild(t);
+          histWrap.appendChild(wrap);
+        } else {
+          histWrap.innerHTML = '<div class="status">No stats found for this season.</div>';
+        }
+      };
+      sel.addEventListener('change', () => renderHistSeason(sel.value));
+      renderHistSeason(availableSeasons[0]);
+    } else {
+      const histWrap = document.getElementById('hist-roster-wrap');
+      histWrap.innerHTML = '<div class="status">No historical data available.</div>';
+    }
   }
 
   const capEditWrap = document.getElementById('cap-edit-wrap');

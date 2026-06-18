@@ -37,6 +37,7 @@ Read the relevant article before making or validating any transaction:
 | Extension | § 6.2 |
 | Option exercise / decline | § 6.1 |
 | Release / waiver | Article V (§ 5.1 – § 5.2) |
+| Renounce (free-agent hold) | § 3.10 |
 | Two-way conversion | § 6.1 |
 | Draft pick signing | Article VII (§ 7.1 – § 7.3) |
 

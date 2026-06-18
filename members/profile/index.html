@@ -40,6 +40,41 @@
     .tenure-table td:last-child { color: #6b7280; font-size: 0.82rem; }
     .ongoing { color: #86efac; }
 
+    /* Achievements */
+    .ach-cat { margin-bottom: 1.25rem; }
+    .ach-cat-label {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #4b5563; margin-bottom: 0.6rem;
+    }
+    .ach-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+      gap: 0.6rem;
+    }
+    .ach-card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+      padding: 0.75rem 0.4rem 0.65rem; text-align: center;
+      cursor: default; transition: border-color 0.12s;
+    }
+    .ach-card:not(.locked):hover { border-color: #4b5563; }
+    .ach-card.locked { opacity: 0.35; filter: grayscale(1); }
+    .ach-icon { font-size: 1.6rem; line-height: 1; display: block; margin-bottom: 0.35rem; }
+    .ach-name {
+      font-size: 0.7rem; font-weight: 600; color: #d1d5db;
+      line-height: 1.3; margin-bottom: 0.3rem;
+    }
+    .ach-tier {
+      display: inline-block; font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.1rem 0.4rem; border-radius: 3px;
+    }
+    .tier-bronze  { background: #431407; color: #fb923c; }
+    .tier-silver  { background: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+    .tier-gold    { background: #422006; color: #fbbf24; }
+    .tier-on      { background: #14532d; color: #86efac; }
+    .tier-locked  { background: #111827; color: #4b5563; }
+
+    /* Tips */
     .tip-form {
       background: #1f2937; border: 1px solid #374151; border-radius: 10px;
       padding: 1.25rem; margin-bottom: 1.25rem;
@@ -140,6 +175,260 @@ function displayPos(p) {
   return p === 'owner' ? 'Owner' : p === 'gm' ? 'GM' : p === 'coach' ? 'Coach' : p || '—';
 }
 
+function seasonDateRange(season) {
+  // "25-26" → {start: 2025-10-01, end: 2026-09-30}
+  const [yy1, yy2] = season.split('-').map(y => 2000 + parseInt(y, 10));
+  return { start: new Date(`${yy1}-10-01`), end: new Date(`${yy2}-09-30`) };
+}
+
+function memberWasAtTeamInSeason(tenures, team, season) {
+  const { start: sStart, end: sEnd } = seasonDateRange(season);
+  return (tenures || []).some(t => {
+    if (t.team !== team) return false;
+    const tStart = new Date(t.start);
+    const tEnd   = t.end ? new Date(t.end) : new Date('9999-12-31');
+    return tStart <= sEnd && tEnd >= sStart;
+  });
+}
+
+function parseCSV(text) {
+  const lines = (text || '').trim().split('\n').filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || '').trim(); });
+    return obj;
+  });
+}
+
+// ── Achievement definitions ───────────────────────────────────────────────────
+// Each achievement has: id, name, icon, cat, desc, tiers[]
+// Each tier: label (display name), tierClass (CSS), sub (sub-label), unlock(d)
+// Tiers are ordered lowest→highest; the highest unlocked tier is displayed.
+// Single-tier achievements use tiers with length 1.
+
+const ACHIEVEMENTS = [
+  // === GM Performance ===
+  {
+    id: 'champion', name: 'Champion', icon: '🏆', cat: 'gm',
+    desc: 'Win an NBN championship',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '1× Champion',    unlock: d => d.champSeasons >= 1 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '2× Champion',    unlock: d => d.champSeasons >= 2 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '3× Champion',    unlock: d => d.champSeasons >= 3 },
+    ],
+  },
+  {
+    id: 'finals', name: 'Finals Run', icon: '🎖️', cat: 'gm',
+    desc: 'Reach the NBN Finals',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '1× Finals',      unlock: d => d.finalsSeasons >= 1 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '3× Finals',      unlock: d => d.finalsSeasons >= 3 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '5× Finals',      unlock: d => d.finalsSeasons >= 5 },
+    ],
+  },
+  {
+    id: 'conf', name: 'Conf Royalty', icon: '👑', cat: 'gm',
+    desc: 'Win a Conference Finals',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '1× Conf Finals', unlock: d => d.confSeasons >= 1 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '3× Conf Finals', unlock: d => d.confSeasons >= 3 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '5× Conf Finals', unlock: d => d.confSeasons >= 5 },
+    ],
+  },
+  {
+    id: 'playoff', name: 'Postseason', icon: '🏟️', cat: 'gm',
+    desc: 'Qualify for the playoffs',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '3 appearances',  unlock: d => d.playoffSeasons >= 3 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '5 appearances',  unlock: d => d.playoffSeasons >= 5 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '7 appearances',  unlock: d => d.playoffSeasons >= 7 },
+    ],
+  },
+  {
+    id: 'top_dog', name: 'Top Dog', icon: '1️⃣', cat: 'gm',
+    desc: 'Finish as the #1 overall seed',
+    tiers: [
+      { label: '#1 Seed', tierClass: 'tier-on', sub: '#1 Overall Seed',   unlock: d => d.seasons.some(s => +s.SEED_NUM === 1) },
+    ],
+  },
+  {
+    id: 'foty', name: 'FOTY', icon: '🏢', cat: 'gm',
+    desc: 'Win Franchise of the Year',
+    tiers: [
+      { label: 'FOTY', tierClass: 'tier-on', sub: 'Franchise of the Year', unlock: d => d.seasons.some(s => s.FOTY === 'TRUE') },
+    ],
+  },
+  {
+    id: 'coty', name: 'COTY', icon: '📋', cat: 'gm',
+    desc: 'Win Coach of the Year',
+    tiers: [
+      { label: 'COTY', tierClass: 'tier-on', sub: 'Coach of the Year',    unlock: d => d.seasons.some(s => s.COTY === 'TRUE') },
+    ],
+  },
+  {
+    id: 'off_guru', name: 'Juggernaut', icon: '⚡', cat: 'gm',
+    desc: 'Best offensive rating in a season',
+    tiers: [
+      { label: 'Best OFF', tierClass: 'tier-on', sub: 'League-best OFF_RTG', unlock: d => d.hadBestOffRtg },
+    ],
+  },
+  {
+    id: 'def_guru', name: 'Lockdown', icon: '🛡️', cat: 'gm',
+    desc: 'Best defensive rating in a season',
+    tiers: [
+      { label: 'Best DEF', tierClass: 'tier-on', sub: 'League-best DEF_RTG', unlock: d => d.hadBestDefRtg },
+    ],
+  },
+  {
+    id: 'bridesmaid', name: 'Bridesmaid', icon: '💔', cat: 'gm',
+    desc: 'Lost in the Finals 2+ times without winning',
+    tiers: [
+      { label: 'Cursed', tierClass: 'tier-on', sub: '2+ Finals, 0 rings', unlock: d => d.finalsSeasons >= 2 && d.champSeasons === 0 },
+    ],
+  },
+
+  // === Longevity ===
+  {
+    id: 'seasoned', name: 'Seasoned GM', icon: '📅', cat: 'longevity',
+    desc: 'Seasons managed',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '2 seasons',      unlock: d => d.seasons.length >= 2 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '4 seasons',      unlock: d => d.seasons.length >= 4 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '6+ seasons',     unlock: d => d.seasons.length >= 6 },
+    ],
+  },
+
+  // === Betting ===
+  {
+    id: 'high_roller', name: 'High Roller', icon: '🎰', cat: 'betting',
+    desc: 'Total bets placed',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '10 bets',        unlock: d => (d.bets.wager_count || 0) >= 10 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '25 bets',        unlock: d => (d.bets.wager_count || 0) >= 25 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '50 bets',        unlock: d => (d.bets.wager_count || 0) >= 50 },
+    ],
+  },
+  {
+    id: 'up_big', name: 'Up Big', icon: '💰', cat: 'betting',
+    desc: 'Lifetime net NB¥ profit from bets',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: 'NB¥5k profit',   unlock: d => (d.bets.net_pnl || 0) >= 5000 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: 'NB¥15k profit',  unlock: d => (d.bets.net_pnl || 0) >= 15000 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: 'NB¥40k profit',  unlock: d => (d.bets.net_pnl || 0) >= 40000 },
+    ],
+  },
+  {
+    id: 'hot_streak', name: 'Hot Streak', icon: '🔥', cat: 'betting',
+    desc: 'Most consecutive bet wins',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '3 in a row',     unlock: d => (d.bets.best_streak || 0) >= 3 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '5 in a row',     unlock: d => (d.bets.best_streak || 0) >= 5 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '7 in a row',     unlock: d => (d.bets.best_streak || 0) >= 7 },
+    ],
+  },
+  {
+    id: 'odds', name: 'Against All Odds', icon: '🍀', cat: 'betting',
+    desc: 'Win a fixed-odds bet at 3× payout or higher',
+    tiers: [
+      { label: 'Lucky', tierClass: 'tier-on', sub: '3× fixed-odds win',  unlock: d => (d.bets.max_odds_win || 0) >= 3 },
+    ],
+  },
+  {
+    id: 'tipper', name: 'Big Tipper', icon: '💸', cat: 'betting',
+    desc: 'Total NB¥ sent in tips',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: 'NB¥500 sent',    unlock: d => (d.bets.tips_sent || 0) >= 500 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: 'NB¥2k sent',     unlock: d => (d.bets.tips_sent || 0) >= 2000 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: 'NB¥5k sent',     unlock: d => (d.bets.tips_sent || 0) >= 5000 },
+    ],
+  },
+  {
+    id: 'beloved', name: 'Crowd Favorite', icon: '❤️', cat: 'betting',
+    desc: 'Total NB¥ received in tips',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: 'NB¥500 received', unlock: d => d.tipsReceived >= 500 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: 'NB¥2k received',  unlock: d => d.tipsReceived >= 2000 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: 'NB¥5k received',  unlock: d => d.tipsReceived >= 5000 },
+    ],
+  },
+
+  // === Investing ===
+  {
+    id: 'floor_trader', name: 'Floor Trader', icon: '📊', cat: 'investing',
+    desc: 'Total investment trades made',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '5 trades',       unlock: d => (d.invest.trade_count || 0) >= 5 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '25 trades',      unlock: d => (d.invest.trade_count || 0) >= 25 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '75 trades',      unlock: d => (d.invest.trade_count || 0) >= 75 },
+    ],
+  },
+  {
+    id: 'in_the_green', name: 'In the Green', icon: '📈', cat: 'investing',
+    desc: 'Achieve a positive lifetime realized return',
+    tiers: [
+      { label: 'Profitable', tierClass: 'tier-on', sub: 'Positive P&L',   unlock: d => (d.invest.realized_pnl || 0) > 0 },
+    ],
+  },
+  {
+    id: 'moonshot', name: 'Moonshot', icon: '🚀', cat: 'investing',
+    desc: 'Best single trade profit',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: 'NB¥250 profit',  unlock: d => (d.invest.best_single_trade || 0) >= 250 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: 'NB¥1k profit',   unlock: d => (d.invest.best_single_trade || 0) >= 1000 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: 'NB¥2.5k profit', unlock: d => (d.invest.best_single_trade || 0) >= 2500 },
+    ],
+  },
+  {
+    id: 'bear_raider', name: 'Bear Raider', icon: '🐻', cat: 'investing',
+    desc: 'Profit from a short position',
+    tiers: [
+      { label: 'Shorted', tierClass: 'tier-on', sub: 'Profitable short',  unlock: d => !!d.invest.ever_shorted_profitably },
+    ],
+  },
+];
+
+const CAT_LABELS = {
+  gm:        'GM Performance',
+  longevity: 'Longevity',
+  betting:   'Betting',
+  investing: 'Investing',
+};
+
+function renderAchievements(achData) {
+  const cats = ['gm', 'longevity', 'betting', 'investing'];
+  let html = '';
+
+  for (const cat of cats) {
+    const group = ACHIEVEMENTS.filter(a => a.cat === cat);
+    html += `<div class="ach-cat"><div class="ach-cat-label">${CAT_LABELS[cat]}</div><div class="ach-grid">`;
+    for (const ach of group) {
+      // Find highest unlocked tier
+      let unlockedTier = null;
+      for (const tier of [...ach.tiers].reverse()) {
+        try {
+          if (tier.unlock(achData)) { unlockedTier = tier; break; }
+        } catch(e) { /* skip */ }
+      }
+      const locked = !unlockedTier;
+      const displayTier = unlockedTier || ach.tiers[0];
+      const tierClass = locked ? 'tier-locked' : displayTier.tierClass;
+      const tierLabel = locked ? 'Locked' : displayTier.label;
+      const tierSub   = locked ? ach.desc : displayTier.sub;
+
+      html += `<div class="ach-card${locked ? ' locked' : ''}" title="${esc(tierSub)}">
+        <span class="ach-icon">${ach.icon}</span>
+        <div class="ach-name">${esc(ach.name)}</div>
+        <span class="ach-tier ${tierClass}">${esc(tierLabel)}</span>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+  return html;
+}
+
 const parts = location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
 const memberName = decodeURIComponent(parts[1] || '');
 const token = localStorage.getItem(TOKEN_KEY) || '';
@@ -151,14 +440,23 @@ async function init() {
   }
   document.title = `${memberName} — NBN`;
 
-  const reqs = [
+  const req1 = [
     fetch('/api/members/public').then(r => r.json()).catch(() => []),
     fetch(`/api/tips/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : []).catch(() => []),
     fetch(`/api/bets/balance/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : null).catch(() => null),
   ];
-  if (token) reqs.push(fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null).catch(() => null));
+  if (token) req1.push(fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null).catch(() => null));
 
-  const [allMembers, tips, balData, me] = await Promise.all(reqs);
+  const req2 = [
+    fetch('/data/owner_stats.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+    fetch('/standings/standings-history.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+    fetch(`/api/bets/stats/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(`/api/invest/stats/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : null).catch(() => null),
+  ];
+
+  const [results1, results2] = await Promise.all([Promise.all(req1), Promise.all(req2)]);
+  const [allMembers, tips, balData, me] = results1;
+  const [ownerStatsCsv, standingsCsv, betsStats, investStats] = results2;
 
   const member = allMembers.find(m => m.name === memberName);
   if (!member) {
@@ -171,6 +469,51 @@ async function init() {
   const balance = balData?.balance ?? null;
   const isOwn = me && me.name === memberName;
   const canTip = me && !isOwn;
+
+  // Build achievement data
+  const ownerRows   = parseCSV(ownerStatsCsv);
+  const ownerRow    = ownerRows.find(r => r.owner === memberName) || null;
+  const allSeasons  = parseCSV(standingsCsv);
+  const memberSeasons = allSeasons.filter(r =>
+    memberWasAtTeamInSeason(member.tenures, r.TEAM, r.SEASON)
+  );
+
+  const seasonBests = {};
+  for (const row of allSeasons) {
+    if (!seasonBests[row.SEASON]) seasonBests[row.SEASON] = { maxOff: -Infinity, maxDef: -Infinity };
+    seasonBests[row.SEASON].maxOff = Math.max(seasonBests[row.SEASON].maxOff, +row.OFF_RTG);
+    seasonBests[row.SEASON].maxDef = Math.max(seasonBests[row.SEASON].maxDef, +row.DEF_RTG);
+  }
+
+  const hadBestOffRtg = memberSeasons.some(ms => {
+    const b = seasonBests[ms.SEASON];
+    return b && +ms.OFF_RTG >= b.maxOff - 0.001;
+  });
+  const hadBestDefRtg = memberSeasons.some(ms => {
+    const b = seasonBests[ms.SEASON];
+    return b && +ms.DEF_RTG >= b.maxDef - 0.001;
+  });
+
+  const tipsReceived = tips.reduce((sum, t) => sum + (+t.amount || 0), 0);
+
+  const champSeasons   = memberSeasons.filter(s => s.PLAYOFF_RESULT === 'Champion').length;
+  const finalsSeasons  = memberSeasons.filter(s => ['Champion','Runner-Up'].includes(s.PLAYOFF_RESULT)).length;
+  const confSeasons    = memberSeasons.filter(s => ['Champion','Runner-Up','Conf Finals'].includes(s.PLAYOFF_RESULT)).length;
+  const playoffSeasons = memberSeasons.filter(s => s.PLAYOFF_RESULT !== 'Missed').length;
+
+  const achData = {
+    owner: ownerRow,
+    seasons: memberSeasons,
+    champSeasons,
+    finalsSeasons,
+    confSeasons,
+    playoffSeasons,
+    hadBestOffRtg,
+    hadBestDefRtg,
+    bets: betsStats || {},
+    invest: investStats || {},
+    tipsReceived,
+  };
 
   let html = '';
 
@@ -205,6 +548,15 @@ async function init() {
     }
     html += `</table></div>`;
   }
+
+  // Achievements
+  const unlockedCount = ACHIEVEMENTS.reduce((n, ach) => {
+    return n + (ach.tiers.some(tier => { try { return tier.unlock(achData); } catch(e) { return false; } }) ? 1 : 0);
+  }, 0);
+  html += `<div class="section">
+    <div class="section-title">Achievements (${unlockedCount}/${ACHIEVEMENTS.length})</div>
+    ${renderAchievements(achData)}
+  </div>`;
 
   // Tips section
   const tipCount = tips.length;

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Wall Street — Algorithm Preview</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    .page { max-width: 960px; margin: 0 auto; }
+
+    header { margin-bottom: 1.5rem; }
+    header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
+    .subtitle { font-size: 0.82rem; color: #6b7280; margin-top: 0.3rem; }
+
+    .algo-box { background: #1a1a2e; border: 1px solid #2d2d54; border-radius: 8px;
+                padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.82rem; color: #a5b4fc; }
+    .algo-box code { background: #111827; border-radius: 4px; padding: 0.1rem 0.35rem;
+                     font-size: 0.8rem; color: #c4b5fd; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    thead th { padding: 0.55rem 0.75rem; text-align: left; font-size: 0.7rem; font-weight: 600;
+               letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280;
+               border-bottom: 1px solid #374151; }
+    thead th.right { text-align: right; }
+    tbody tr { border-bottom: 1px solid #1f2937; cursor: pointer; }
+    tbody tr:hover { background: #1a2233; }
+    tbody tr.expanded { background: #182030; }
+    td { padding: 0.6rem 0.75rem; vertical-align: middle; }
+    td.right { text-align: right; font-family: monospace; }
+
+    .team-cell { display: flex; align-items: center; gap: 0.55rem; }
+    .team-logo { width: 22px; height: 22px; object-fit: contain; }
+    .team-abbr { font-weight: 700; }
+
+    /* colour helpers */
+    .pos { color: #34d399; }
+    .neg { color: #f87171; }
+    .neu { color: #9ca3af; }
+    .dim { color: #6b7280; }
+
+    /* delta pill */
+    .delta { display: inline-block; font-size: 0.72rem; font-weight: 700;
+             border-radius: 4px; padding: 0.1rem 0.4rem; }
+    .delta.pos { background: #064e3b; color: #34d399; }
+    .delta.neg { background: #450a0a; color: #f87171; }
+    .delta.neu { background: #1f2937; color: #6b7280; }
+
+    /* chart row */
+    .chart-row { display: none; }
+    .chart-row.visible { display: table-row; }
+    .chart-row td { padding: 0 0.75rem 1rem; }
+    .chart-wrap { background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 0.75rem; }
+    .chart-wrap canvas { max-height: 220px; }
+    .chart-legend { display: flex; gap: 1.25rem; margin-bottom: 0.5rem; font-size: 0.75rem; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+                  margin-right: 0.3rem; vertical-align: middle; }
+
+    .loading { text-align: center; color: #6b7280; padding: 3rem; }
+    .sort-note { font-size: 0.72rem; color: #4b5563; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav"><a href="/invest">← Wall Street</a></nav>
+
+  <header>
+    <h1>Algorithm Preview</h1>
+    <div class="subtitle">Comparing current vs. proposed price formula across all 30 teams</div>
+  </header>
+
+  <div class="algo-box">
+    <strong>Current:</strong> <code>DIFF_DIFF = DIFF + OPP_AVG_DIFF</code>
+    &nbsp;·&nbsp;
+    <strong>Preview:</strong> <code>DIFF_DIFF = DIFF + OPP_AVG_DIFF − OWN_AVG_DIFF</code>
+    <br><br>
+    Preview measures performance vs. expectation. Upsets are amplified; routine wins/losses
+    for dominant or weak teams are dampened. Both formulas use a 2× multiplier for playoff games.
+    <br><br>
+    Click any row to compare price charts.
+  </div>
+
+  <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;flex-wrap:wrap">
+    <div class="sort-note" style="margin:0">Sorted by largest absolute price change (current → preview).</div>
+    <label style="font-size:0.78rem;color:#9ca3af;display:flex;align-items:center;gap:0.4rem;cursor:pointer;margin-left:auto">
+      <input type="checkbox" id="toggle-current" checked onchange="toggleCurrentLine(this.checked)">
+      Show current line
+    </label>
+  </div>
+
+  <div id="table-wrap"><div class="loading">Loading…</div></div>
+</div>
+
+<script>
+const API = 'https://nbn.today/api';
+const charts = {};
+
+async function init() {
+  const [r1, r2] = await Promise.all([
+    fetch(`${API}/invest/market?algo=current`).then(r => r.json()),
+    fetch(`${API}/invest/market?algo=preview`).then(r => r.json()),
+  ]);
+
+  const current = Object.fromEntries(r1.teams.map(t => [t.team, t]));
+  const preview = Object.fromEntries(r2.teams.map(t => [t.team, t]));
+  const teams   = Object.keys(current);
+
+  const rows = teams.map(team => {
+    const c = current[team];
+    const p = preview[team];
+    return {
+      team,
+      cur:   c.price,
+      prev:  p.price,
+      delta: p.price - c.price,
+      deltaPct: ((p.price - c.price) / c.price * 100),
+    };
+  }).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+
+  render(rows);
+}
+
+function fmtP(v) { return '¥' + v.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}); }
+function cc(v)   { return v > 0.01 ? 'pos' : v < -0.01 ? 'neg' : 'neu'; }
+
+function render(rows) {
+  let html = `<table><thead><tr>
+    <th style="width:160px">Team</th>
+    <th class="right">Current</th>
+    <th class="right">Preview</th>
+    <th class="right">Change</th>
+    <th class="right">Change %</th>
+  </tr></thead><tbody>`;
+
+  rows.forEach(r => {
+    const dc = cc(r.delta);
+    const sign = r.delta >= 0 ? '+' : '';
+    html += `
+      <tr id="row-${r.team}" onclick="toggleChart('${r.team}')">
+        <td><div class="team-cell">
+          <img class="team-logo" src="/logos/logo-${r.team.toLowerCase()}.png" onerror="this.style.display='none'">
+          <span class="team-abbr">${r.team}</span>
+        </div></td>
+        <td class="right dim">${fmtP(r.cur)}</td>
+        <td class="right" style="font-weight:600">${fmtP(r.prev)}</td>
+        <td class="right"><span class="delta ${dc}">${sign}${fmtP(r.delta)}</span></td>
+        <td class="right"><span class="${dc}">${sign}${r.deltaPct.toFixed(1)}%</span></td>
+      </tr>
+      <tr class="chart-row" id="chart-row-${r.team}">
+        <td colspan="5">
+          <div class="chart-wrap">
+            <div class="chart-legend">
+              <span><span class="legend-dot" style="background:#60a5fa"></span>Current</span>
+              <span><span class="legend-dot" style="background:#f59e0b"></span>Preview</span>
+            </div>
+            <canvas id="canvas-${r.team}"></canvas>
+          </div>
+        </td>
+      </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('table-wrap').innerHTML = html;
+}
+
+async function toggleChart(team) {
+  const cRow   = document.getElementById(`chart-row-${team}`);
+  const mainRow = document.getElementById(`row-${team}`);
+  if (cRow.classList.contains('visible')) {
+    cRow.classList.remove('visible');
+    mainRow.classList.remove('expanded');
+    return;
+  }
+  cRow.classList.add('visible');
+  mainRow.classList.add('expanded');
+  if (charts[team]) return;
+
+  const [r1, r2] = await Promise.all([
+    fetch(`${API}/invest/prices/${team}?algo=current`).then(r => r.json()),
+    fetch(`${API}/invest/prices/${team}?algo=preview`).then(r => r.json()),
+  ]);
+
+  const h1 = r1.history;
+  const h2 = r2.history;
+  // Align on dates present in both
+  const dates = h1.map(p => p.date);
+
+  charts[team] = new Chart(document.getElementById(`canvas-${team}`), {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [
+        {
+          label: 'Current',
+          data: h1.map(p => p.price),
+          borderColor: '#60a5fa',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.1,
+        },
+        {
+          label: 'Preview',
+          data: h2.map(p => p.price),
+          borderColor: '#f59e0b',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ¥${ctx.parsed.y.toFixed(2)}`,
+          },
+        },
+      },
+      scales: {
+        x: { display: false },
+        y: {
+          ticks: { color: '#6b7280', font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
+          grid:  { color: '#1f2937' },
+        },
+      },
+    },
+  });
+}
+
+function toggleCurrentLine(visible) {
+  Object.values(charts).forEach(chart => {
+    chart.data.datasets[0].hidden = !visible;
+    chart.update();
+  });
+}
+
+init();
+</script>
+</body>
+</html>

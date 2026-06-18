@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Draft Guide — NBN</title>
+  <style>
+    .page { max-width: 760px; margin: 0 auto; padding-bottom: 4rem; }
+
+    .page-header {
+      padding: 0.6rem 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid #1f2937;
+    }
+    .page-header a { color: #6b7280; font-size: 0.85rem; text-decoration: none; }
+    .page-header a:hover { color: #f3f4f6; }
+    .page-header h1 { font-size: 1rem; font-weight: 700; margin: 0; color: #f3f4f6; flex: 1; }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #f3f4f6;
+      letter-spacing: -0.01em;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #1f2937;
+    }
+    h2:first-of-type { margin-top: 0; }
+
+    h3 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #6b7280;
+      margin: 1.75rem 0 0.5rem;
+    }
+
+    p { font-size: 0.9rem; color: #d1d5db; line-height: 1.65; margin: 0 0 0.75rem; }
+
+    ul { margin: 0 0 0.75rem 0; padding-left: 1.4rem; }
+    li { font-size: 0.9rem; color: #d1d5db; line-height: 1.65; margin-bottom: 0.2rem; }
+
+    .card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      vertical-align: middle;
+      margin-right: 0.3rem;
+    }
+    .badge-pick     { background: #172554; color: #60a5fa; }
+    .badge-auto     { background: #14532d; color: #4ade80; }
+    .badge-trade    { background: #2d1b00; color: #fb923c; }
+
+    kbd {
+      display: inline-block;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: inherit;
+      font-size: 0.78rem;
+      color: #9ca3af;
+    }
+
+    .warning {
+      background: #2d1b00;
+      border: 1px solid #713f12;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      color: #fdba74;
+      margin: 0.75rem 0;
+    }
+    .warning strong { color: #fb923c; }
+
+    .tip {
+      background: #0a1628;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      color: #93c5fd;
+      margin: 0.75rem 0;
+    }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 0.2rem 1rem;
+      font-size: 0.85rem;
+      margin: 0.5rem 0 0.75rem;
+    }
+    .schedule-label { color: #6b7280; white-space: nowrap; }
+    .schedule-val   { color: #d1d5db; }
+
+    .step {
+      display: flex;
+      gap: 0.85rem;
+      margin-bottom: 0.75rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background: #1f2937;
+      border: 1px solid #374151;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.05rem;
+    }
+    .step-body { flex: 1; font-size: 0.9rem; color: #d1d5db; line-height: 1.6; }
+    .step-body strong { color: #f3f4f6; }
+
+    #bod-section { display: none; }
+    .section-eyebrow {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #4b5563;
+      margin-bottom: 0.25rem;
+    }
+    .divider { border: none; border-top: 1px solid #1f2937; margin: 3rem 0 0; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="page-header">
+      <a href="/draft/">← Draft</a>
+      <h1>Draft Guide</h1>
+    </div>
+
+    <!-- ── For All Members ───────────────────────────────── -->
+
+    <h2>For League Members</h2>
+
+    <h3>How the draft works</h3>
+    <p>
+      The NBN draft runs asynchronously over two days. Each pick gets a
+      <strong>10-minute submission window</strong>. You do not need to be online at
+      your exact window — if you have a player queued, the system auto-submits for
+      you when your window opens.
+    </p>
+
+    <div class="card">
+      <div class="schedule-grid">
+        <span class="schedule-label">Round 1</span>
+        <span class="schedule-val">Day 1 starting at noon ET · picks 1–30, one every 10 min</span>
+        <span class="schedule-label">Round 2</span>
+        <span class="schedule-val">Day 2 starting at noon ET · picks 31–60, same cadence</span>
+      </div>
+      <p style="margin:0;font-size:0.8rem;color:#6b7280">
+        Pick #1 window: 12:00–12:10 ET.&ensp;Pick #2: 12:10–12:20 ET.&ensp;And so on.
+      </p>
+    </div>
+
+    <h3>Watching the draft — /draft/live</h3>
+    <p>
+      The live board at <a href="/draft/live/" style="color:#60a5fa">/draft/live</a> is public.
+      No sign-in required to watch.
+    </p>
+    <ul>
+      <li><strong>Draft Board</strong> — pick grid by round. Shows which team is on the clock, pick windows, and revealed players. Use Round 1 / Round 2 tabs (or <kbd>←</kbd><kbd>→</kbd>) to switch rounds.</li>
+      <li><strong>Best Available</strong> — ranked pool of undrafted players with position, age, and college/country.</li>
+      <li><strong>Event Log</strong> — chronological record of every pick and trade during the draft.</li>
+    </ul>
+    <p>
+      The status bar at the top shows who is on the clock and a live countdown.
+      When a pick is submitted but not yet announced, you'll see <em>"The pick is in"</em> on that slot.
+    </p>
+
+    <h3>Making your pick — /draft/pick</h3>
+    <p>
+      Go to <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> to manage
+      your picks. You need to sign in with your NBN token — you'll be prompted on first
+      visit and the token is saved in your browser. Don't have a token yet? Reach out to
+      bryn to get one. If you see an error about your account not having a team role,
+      contact BOD.
+    </p>
+
+    <h3>The queue</h3>
+    <p>
+      The queue is how you submit picks without being online at your exact window.
+      Build it before the draft starts and keep it updated as players get taken.
+    </p>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        Browse the <strong>Available Players</strong> panel on the right side of the page.
+        Players are ranked in the consensus pool order set by BOD.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        Click <strong>+ Queue</strong> next to any player to add them to your queue.
+        Players already in your queue show an <em>In Queue</em> badge instead.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        Use <strong>↑ ↓</strong> to reorder your queue and <strong>✕</strong> to remove a
+        player. The player at position #1 is your auto-pick.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        When your pick window opens, the server automatically submits your #1 queued player
+        (within about 30 seconds). Players already drafted by someone else are skipped
+        automatically — your #2 becomes the pick if #1 was just taken.
+      </div>
+    </div>
+
+    <h3>Submitting manually</h3>
+    <p>
+      If you're online when your window opens, a <strong>Submit →</strong> button appears
+      on your pick slot. Clicking it submits your #1 queued player immediately rather than
+      waiting for auto-submit. You can update your queue right up to the moment you submit.
+    </p>
+    <p>
+      Non-BOD members cannot submit outside their active window — the server enforces the
+      10-minute window boundary.
+    </p>
+
+    <h3>If you miss your window</h3>
+    <p>
+      The draft does not stall. If your window closes without a submission, the next team
+      goes on the clock automatically. You can still submit your pick from
+      <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> — missed picks are
+      ordered by submission time, so whoever submits first selects first.
+    </p>
+    <div class="tip">
+      Keep your queue stocked to avoid missing your window. Any player in your queue
+      when your window opens will be auto-submitted automatically — you only miss if your
+      queue is empty at that moment.
+    </div>
+    <p>
+      If you have multiple picks (e.g., you acquired an extra pick), each pick has its own
+      queue window. Keep your queue stocked with more players than you have picks.
+    </p>
+
+    <!-- ── BOD Section (auth-gated) ──────────────────────── -->
+
+    <hr class="divider">
+
+    <div id="bod-signin-prompt" style="padding:1.5rem 0;text-align:center;display:none">
+      <button onclick="signInAndCheck()" style="background:transparent;border:1px solid #374151;border-radius:6px;color:#6b7280;font-size:0.8rem;font-family:inherit;padding:0.4rem 1rem;cursor:pointer" onmouseover="this.style.color='#9ca3af';this.style.borderColor='#6b7280'" onmouseout="this.style.color='#6b7280';this.style.borderColor='#374151'">BOD? Sign in to see BOD guide</button>
+    </div>
+
+    <div id="bod-section">
+      <div class="section-eyebrow">BOD only</div>
+      <h2 style="margin-top:0.5rem">For BOD</h2>
+
+      <h3>Before the draft</h3>
+      <p>
+        Open <a href="/draft/live/" style="color:#60a5fa">/draft/live</a> and sign in.
+        The gear icon <strong>⚙</strong> in the top-right corner is visible only to BOD
+        — click it to open the Controls drawer.
+      </p>
+      <ul>
+        <li>Set <strong>Year</strong> to the current draft year.</li>
+        <li>Set <strong>Round 1 Date</strong> to the calendar date of Round 1. This single date drives the entire pick schedule — every window derives from noon ET on that day.</li>
+        <li>Save. The schedule is immediately live on the page.</li>
+      </ul>
+      <div class="tip">
+        Do a dry run before the real draft: set the date to today, save a
+        <strong>Snapshot</strong>, walk through the full reveal sequence, then hit
+        <strong>Restore</strong> to reset. This confirms the reveal flow works without
+        any permanent changes.
+      </div>
+
+      <h3>The reveal sequence</h3>
+      <p>
+        Picks are submitted silently. Only BOD can reveal them — this is the "TV moment"
+        where you announce each selection. The gear icon turns <span style="color:#facc15;font-weight:700">amber</span> when at least one pick is submitted but not yet revealed.
+      </p>
+      <p>Press <kbd>Enter</kbd> (with no input field focused) to begin. The sequence:</p>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Player modal</strong> — shows the selected player's photo, name, position,
+          pick badge, and highlights video (if configured). For BOD: a
+          <em>Highlights URL</em> field lets you paste a YouTube embed URL right here.
+          Paste it and click <strong>Save</strong> before pressing Enter again.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Depth chart</strong> — the selecting team's full roster by position, with
+          OVR ratings and cap hold tags. Press <kbd>Enter</kbd> to advance.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Close</strong> — press <kbd>Enter</kbd> or <kbd>Esc</kbd> to dismiss.
+          The board updates and the next pick is ready to reveal.
+        </div>
+      </div>
+      <p style="margin-top:0.5rem;font-size:0.85rem;color:#6b7280">
+        Clicking a team name on the Draft Board also opens their depth chart directly.
+        Clicking a revealed player name opens their modal (useful for re-showing highlights).
+        Player names shown in <span style="color:#93c5fd">blue</span> have a highlights video attached.
+      </p>
+
+      <h3>Draft-day trades</h3>
+      <p>
+        If a pick changes hands mid-draft, use <strong>Reassign Pick</strong> in the
+        Controls drawer. Select the pick (by round and original team) and set the new
+        owner. Click <strong>Reassign</strong>.
+      </p>
+      <ul>
+        <li>Only unsubmitted picks can be reassigned — submitted picks are final.</li>
+        <li>The pick stays at the same slot number; only the owning team changes.</li>
+        <li>A <span class="badge badge-trade">Trade</span> entry appears in the Event Log immediately.</li>
+        <li>The new owner's team token will be authorized to submit that pick.</li>
+      </ul>
+
+      <h3>If a GM misses their window</h3>
+      <p>
+        The draft continues automatically — the next team goes on the clock. The missed GM
+        can submit their pick from
+        <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> at any time; missed
+        picks are ordered by submission time, so whoever submits first selects first.
+        If you need to force a pick for them, use <strong>Make Pick (BOD)</strong>
+        on /draft/pick — it handles both active and missed slots.
+      </p>
+
+      <h3>Best Available pool order</h3>
+      <p>
+        On the <strong>Best Available</strong> tab of /draft/live, BOD can drag rows to
+        set the consensus ranking. This order is shared — GMs see the same ranking on
+        their /draft/pick page. Update it during the draft as players are taken to keep
+        the board current.
+      </p>
+
+      <h3>Snapshot / restore</h3>
+      <div class="warning">
+        <strong>Do not restore during a live draft.</strong> Restoring overwrites all
+        submitted picks and resets draft state to the snapshot point — real picks will
+        be lost.
+      </div>
+      <p>
+        The snapshot tool is for pre-draft rehearsals only. Save a snapshot before a
+        dry run, walk through the full flow, then restore to undo everything. During the
+        actual draft, leave the snapshot controls alone.
+      </p>
+
+      <h3>Post-draft: transactions</h3>
+      <p>
+        The draft tool records picks in the event log but does not update rosters or
+        transaction history. After the draft concludes, all draft selections and any
+        draft-day trades must be recorded using the <strong>Transactions</strong> feature.
+      </p>
+
+      <h3>Event log badge guide</h3>
+      <div class="card" style="display:flex;flex-direction:column;gap:0.6rem">
+        <div><span class="badge badge-pick">Pick</span> GM submitted manually during their window.</div>
+        <div><span class="badge badge-auto">Auto</span> Server auto-submitted from the GM's queue when the window expired.</div>
+        <div><span class="badge badge-trade">Trade</span> A pick was reassigned to a new owner mid-draft.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const TOKEN_KEY = 'nbn_token';
+
+    async function checkBodAuth() {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return false;
+      try {
+        const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return false;
+        const data = await res.json();
+        const roles = data.roles || [];
+        return roles.includes('bod') || roles.includes('admin');
+      } catch { return false; }
+    }
+
+    function showBodSection() {
+      document.getElementById('bod-section').style.display = 'block';
+      document.getElementById('bod-signin-prompt').style.display = 'none';
+    }
+
+    async function signInAndCheck() {
+      const existing = localStorage.getItem(TOKEN_KEY);
+      if (existing) {
+        const ok = await checkBodAuth();
+        if (ok) { showBodSection(); return; }
+      }
+      const tok = prompt('Enter your NBN access token:');
+      if (!tok) return;
+      localStorage.setItem(TOKEN_KEY, tok);
+      const ok = await checkBodAuth();
+      if (ok) { showBodSection(); }
+      else { alert('Token accepted but this account does not have BOD access.'); }
+    }
+
+    // Auto-check on load; show sign-in prompt only if check fails
+    checkBodAuth().then(ok => {
+      if (ok) showBodSection();
+      else document.getElementById('bod-signin-prompt').style.display = 'block';
+    });
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

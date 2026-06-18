@@ -214,6 +214,7 @@
     <a href="/draft/">← Draft</a>
     <h1>Make a Pick</h1>
     <span class="signed-in-as" id="signed-in-as"></span>
+    <a href="/draft/guide/" style="font-size:0.75rem;color:#4b5563;text-decoration:none" onmouseover="this.style.color='#9ca3af'" onmouseout="this.style.color='#4b5563'">Guide</a>
   </div>
 
   <div class="status-bar" id="status-bar">
@@ -250,7 +251,7 @@
       <div class="panel-section" id="make-pick-section" style="display:none">
         <div class="panel-title">Make Pick (BOD)</div>
         <div class="make-pick-form">
-          <div class="make-pick-label" id="make-pick-label">—</div>
+          <select id="make-pick-slot" class="player-select" style="display:none"></select>
           <select id="make-pick-player" class="player-select" style="display:none"></select>
           <div style="display:flex;gap:0.5rem;align-items:center">
             <button class="btn btn-primary btn-sm" id="make-pick-btn" disabled>Submit Pick</button>
@@ -558,6 +559,7 @@
 
         const startMs = draftState.round1_date ? pickWindowStart(draftState.round1_date, p.round, p.pick) : null;
         const endMs   = startMs ? startMs + 10 * 60 * 1000 : null;
+        const isPastWindow = !isSubmitted && endMs !== null && Date.now() > endMs;
         const timeStr = startMs ? `${formatET(startMs)} – ${formatET(endMs)}` : 'Time TBD';
 
         const div = document.createElement('div');
@@ -570,6 +572,10 @@
           statusHtml = `<span class="pick-slot-queued">Auto-pick: ${bioName(nextUp)}</span>`;
         } else if (isOnClock) {
           statusHtml = `<span class="pick-slot-none">Queue a player first</span>`;
+        } else if (isPastWindow && nextUp) {
+          statusHtml = `<span style="color:#fb923c;font-weight:600">Window missed — submit now: ${bioName(nextUp)}</span>`;
+        } else if (isPastWindow) {
+          statusHtml = `<span style="color:#fb923c">Window missed — queue a player to submit late</span>`;
         } else if (nextUp) {
           statusHtml = `<span class="pick-slot-queued">#1 queued: ${bioName(nextUp)}</span>`;
         } else {
@@ -585,7 +591,7 @@
           <div class="pick-slot-actions" style="flex-shrink:0"></div>
         `;
 
-        if (!isSubmitted && isOnClock) {
+        if (!isSubmitted && (isOnClock || isPastWindow)) {
           const btn = document.createElement('button');
           btn.className = 'btn btn-primary btn-sm';
           btn.textContent = nextUp ? `Submit →` : 'No queue';
@@ -670,27 +676,58 @@
     }
 
     function renderMakePick() {
-      const section  = document.getElementById('make-pick-section');
+      const section    = document.getElementById('make-pick-section');
       if (!isBod()) { section.style.display = 'none'; return; }
 
       section.style.display = '';
-      const labelEl  = document.getElementById('make-pick-label');
-      const selEl    = document.getElementById('make-pick-player');
-      const btn      = document.getElementById('make-pick-btn');
+      const slotSelEl = document.getElementById('make-pick-slot');
+      const selEl     = document.getElementById('make-pick-player');
+      const btn       = document.getElementById('make-pick-btn');
 
-      if (!draftState) { labelEl.textContent = 'Loading…'; selEl.style.display = 'none'; btn.disabled = true; return; }
-
-      const slot = currentSlot(draftState);
-      if (!slot || slot.pick.player) {
-        labelEl.textContent = slot ? 'Pick already submitted' : 'No active pick';
-        selEl.style.display = 'none'; btn.disabled = true; return;
+      if (!draftState || !draftState.round1_date) {
+        slotSelEl.style.display = 'none'; selEl.style.display = 'none'; btn.disabled = true; return;
       }
 
-      const p = slot.pick;
-      const owners = pickOwners(p);
-      labelEl.textContent = `R${p.round} · Pick ${p.pick} · ${owners.join('/')}`;
-      selEl.style.display = '';
-      btn.disabled = false;
+      // All unsubmitted picks whose windows have opened (active on-clock + missed)
+      const now = Date.now();
+      const submittable = yearPicks(draftState.year).filter(pk => {
+        if (pk.player) return false;
+        const start = pickWindowStart(draftState.round1_date, pk.round, pk.pick);
+        return now >= start;
+      });
+
+      if (!submittable.length) {
+        slotSelEl.style.display = 'none'; selEl.style.display = 'none'; btn.disabled = true; return;
+      }
+
+      const slot = currentSlot(draftState);
+
+      // Repopulate slot selector, preserving selection if still valid
+      const prevVal = slotSelEl.value;
+      slotSelEl.innerHTML = submittable.map(pk => {
+        const owners = pickOwners(pk);
+        const isActive = slot && slot.pick.round === pk.round && slot.pick.pick === pk.pick;
+        const label = `R${pk.round} · #${pk.pick} · ${owners.join('/')}${!isActive ? ' (missed)' : ''}`;
+        return `<option value="${pk.round}|${pk.pick}">${label}</option>`;
+      }).join('');
+
+      if (prevVal && submittable.some(pk => `${pk.round}|${pk.pick}` === prevVal)) {
+        slotSelEl.value = prevVal;
+      } else if (slot) {
+        slotSelEl.value = `${slot.pick.round}|${slot.pick.pick}`;
+      }
+
+      slotSelEl.style.display = '';
+
+      function syncPickData() {
+        const [r, pn] = slotSelEl.value.split('|');
+        const pk = submittable.find(p => p.round === parseInt(r) && p.pick === parseInt(pn));
+        btn._pickData = pk ? { year: draftState.year, round: pk.round, orig: pk.orig } : null;
+        btn.disabled = !pk;
+      }
+
+      slotSelEl.onchange = syncPickData;
+      syncPickData();
 
       const drafted = pickedSlugs(draftState.year);
       const available = Object.entries(bios)
@@ -700,8 +737,7 @@
 
       selEl.innerHTML = `<option value="">Select player…</option>` +
         available.map(({ slug, name }) => `<option value="${slug}">${name}</option>`).join('');
-
-      btn._pickData = { year: draftState.year, round: p.round, orig: p.orig };
+      selEl.style.display = '';
     }
 
     function renderAvailable() {
