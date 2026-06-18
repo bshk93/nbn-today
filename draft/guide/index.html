@@ -290,10 +290,12 @@
         <li>Save. The schedule is immediately live on the page.</li>
       </ul>
       <div class="tip">
-        Do a dry run before the real draft: set the date to today, save a
-        <strong>Snapshot</strong>, walk through the full reveal sequence, then hit
-        <strong>Restore</strong> to reset. This confirms the reveal flow works without
-        any permanent changes.
+        Do a dry run before the real draft: set the date to today and walk through the
+        full reveal sequence. The live show writes to its own isolated picks file, so
+        nothing you do here touches the permanent draft order or rosters. When you're
+        done rehearsing, hit <strong>Reset to Clean Slate</strong> in the Controls drawer
+        to clear the rehearsal picks, event log and reveals and re-seed the board from
+        the real draft order.
       </div>
 
       <h3>The reveal sequence</h3>
@@ -342,6 +344,7 @@
         <li>The pick stays at the same slot number; only the owning team changes.</li>
         <li>A <span class="badge badge-trade">Trade</span> entry appears in the Event Log immediately.</li>
         <li>The new owner's team token will be authorized to submit that pick.</li>
+        <li>After the draft, each reassignment must be recorded as a formal trade — see <strong>Post-draft: transactions</strong> below.</li>
       </ul>
 
       <h3>If a GM misses their window</h3>
@@ -362,24 +365,38 @@
         the board current.
       </p>
 
-      <h3>Snapshot / restore</h3>
-      <div class="warning">
-        <strong>Do not restore during a live draft.</strong> Restoring overwrites all
-        submitted picks and resets draft state to the snapshot point — real picks will
-        be lost.
-      </div>
+      <h3>Rehearsing: snapshot, restore &amp; reset</h3>
       <p>
-        The snapshot tool is for pre-draft rehearsals only. Save a snapshot before a
-        dry run, walk through the full flow, then restore to undo everything. During the
-        actual draft, leave the snapshot controls alone.
+        The live show reads and writes its own isolated picks file, seeded from the real
+        draft order. Nothing you do on /draft/live — reassigns, selections, reveals —
+        ever changes the permanent draft picks or rosters, so it's safe to rehearse
+        freely. You just need to wipe the rehearsal data before going live. Two tools in
+        the Controls drawer do this:
       </p>
+      <ul>
+        <li><strong>Save Snapshot / Restore</strong> — capture the current state, rehearse, then Restore to revert picks and state to that exact point.</li>
+        <li><strong>Reset to Clean Slate</strong> — clear all picks, the event log, reveals and queues, and re-seed the board from the current permanent draft order. This is the cleanest reset before going live: it picks up any last-minute order changes, whereas a snapshot can be stale.</li>
+      </ul>
+      <div class="warning">
+        <strong>Do not Restore or Reset during a live draft.</strong> Both wipe the
+        picks already made on the live board — the broadcast's picks will disappear.
+        These are rehearsal tools only; once the real draft starts, leave them alone.
+      </div>
 
       <h3>Post-draft: transactions</h3>
       <p>
-        The draft tool records picks in the event log but does not update rosters or
+        The live draft is isolated from permanent data — it records picks in its own feed
+        and the event log, but does not update rosters, the permanent draft order, or
         transaction history. After the draft concludes, all draft selections and any
         draft-day trades must be recorded using the <strong>Transactions</strong> feature.
       </p>
+      <div class="warning">
+        <strong>Enter draft-day trades before the pick selections.</strong> A trade only
+        validates while the pick is still owned by the original team, so record the
+        reassignment as a formal trade <em>first</em>, then record the selection (which
+        assigns the drafted player and stamps the pick). Doing it in the other order
+        blocks the trade.
+      </div>
 
       <h3>Event log badge guide</h3>
       <div class="card" style="display:flex;flex-direction:column;gap:0.6rem">
