@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.0.299",
+    "date": "2026-06-18",
+    "changes": [
+      "draft/live + draft/pick: read picks from the isolated live-draft feed (/api/draft/picks) so the broadcast is divorced from the permanent draft order",
+      "draft/live: add BOD 'Reset to Clean Slate' control to clear rehearsal picks, event log, reveals and queues and re-seed from the permanent draft order"
+    ]
+  },
+  {
     "version": "0.0.298",
     "date": "2026-06-18",
     "changes": [

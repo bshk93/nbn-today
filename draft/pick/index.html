@@ -435,7 +435,7 @@
     async function refreshState() {
       const [stateRes, picksRes] = await Promise.all([
         fetch('/api/draft/live'),
-        fetch('/api/picks'),
+        fetch('/api/draft/picks'),
       ]);
       if (stateRes.ok) {
         const newState = await stateRes.json();

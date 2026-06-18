@@ -602,6 +602,16 @@
           </div>
           <span id="snapshot-status" style="font-size:0.75rem;color:#6b7280"></span>
         </div>
+
+        <!-- Reset to clean slate -->
+        <div style="border-top:1px solid #1f2937;margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Reset Live Draft</div>
+          <div style="font-size:0.75rem;color:#6b7280">Clears rehearsal picks, event log, reveals &amp; queues; re-seeds the board from the permanent draft order. Keeps date, highlights &amp; Best Available order.</div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-danger btn-sm" id="reset-btn">Reset to Clean Slate</button>
+            <span id="reset-status" style="font-size:0.75rem;color:#6b7280"></span>
+          </div>
+        </div>
       </details>
 
     </div>
@@ -1125,6 +1135,24 @@
       const res = await apiPost('/api/draft/snapshot/restore', {});
       if (res.ok) {
         statusEl.textContent = 'Restored!';
+        poolOrder = []; // force re-sync from server
+        await refreshState(); render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+      }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', async () => {
+      if (!confirm('Reset the live draft to a clean slate?\n\nThis clears all picks, the event log, reveals, and queues, and re-seeds the board from the permanent draft order. Keeps date, highlights, and Best Available order.')) return;
+      const statusEl = document.getElementById('reset-status');
+      const btn      = document.getElementById('reset-btn');
+      btn.disabled = true; statusEl.textContent = 'Resetting…';
+      const res = await apiPost('/api/draft/reset', {});
+      if (res.ok) {
+        statusEl.textContent = 'Reset!';
         poolOrder = []; // force re-sync from server
         await refreshState(); render();
       } else {
@@ -1662,7 +1690,7 @@
     async function refreshState() {
       const [stateRes, picksRes] = await Promise.all([
         fetch('/api/draft/live'),
-        fetch('/api/picks'),
+        fetch('/api/draft/picks'),
       ]);
       if (stateRes.ok) draftState = await stateRes.json();
       if (picksRes.ok) allPicks = await picksRes.json();
