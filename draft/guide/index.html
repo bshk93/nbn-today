@@ -162,9 +162,10 @@
     <h3>How the draft works</h3>
     <p>
       The NBN draft runs asynchronously over two days. Each pick gets a
-      <strong>10-minute submission window</strong>. You do not need to be online at
-      your exact window — if you have a player queued, the system auto-submits for
-      you when your window opens.
+      <strong>10-minute submission window</strong> on a fixed schedule. Windows never
+      shift — if a pick comes in late, it only affects that slot; the next team's
+      window still runs at its scheduled time. Queue your players in advance so that
+      when your window opens, submitting is a single click.
     </p>
 
     <div class="card">
@@ -226,40 +227,43 @@
       <div class="step-num">3</div>
       <div class="step-body">
         Use <strong>↑ ↓</strong> to reorder your queue and <strong>✕</strong> to remove a
-        player. The player at position #1 is your auto-pick.
+        player. The player at position #1 is what the Submit button sends.
       </div>
     </div>
     <div class="step">
       <div class="step-num">4</div>
       <div class="step-body">
-        When your pick window opens, the server automatically submits your #1 queued player
-        (within about 30 seconds). Players already drafted by someone else are skipped
-        automatically — your #2 becomes the pick if #1 was just taken.
+        When your pick window opens, press <strong>Submit</strong> to select your #1 queued
+        player. Players already drafted by someone else are skipped automatically — your #2
+        becomes the pick if #1 was just taken.
       </div>
     </div>
 
-    <h3>Submitting manually</h3>
+    <h3>Submitting your pick</h3>
     <p>
-      If you're online when your window opens, a <strong>Submit →</strong> button appears
-      on your pick slot. Clicking it submits your #1 queued player immediately rather than
-      waiting for auto-submit. You can update your queue right up to the moment you submit.
+      When your window opens, a <strong>Submit →</strong> button appears on your pick slot.
+      Click it to submit your #1 queued player. You can update your queue right up to the
+      moment you submit. If you're online, just press Submit when you're on the clock.
     </p>
     <p>
-      Non-BOD members cannot submit outside their active window — the server enforces the
-      10-minute window boundary.
+      Non-BOD members cannot submit before their window opens — the server enforces the
+      window's start.
     </p>
 
     <h3>If you miss your window</h3>
     <p>
-      The draft does not stall. If your window closes without a submission, the next team
-      goes on the clock automatically. You can still submit your pick from
-      <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> — missed picks are
-      ordered by submission time, so whoever submits first selects first.
+      The draft does not stall — the clock runs on a fixed schedule, so the next team goes
+      on the clock at its scheduled time whether or not you've picked. If you have a player
+      queued, <strong>BOD will submit your #1 queued player for you</strong> — so as long as
+      your queue is stocked, you're covered even if you can't make your window. You can also
+      submit a missed pick yourself from
+      <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> at any time. Missed picks
+      are ordered by submission time, so whoever submits first selects first.
     </p>
     <div class="tip">
-      Keep your queue stocked to avoid missing your window. Any player in your queue
-      when your window opens will be auto-submitted automatically — you only miss if your
-      queue is empty at that moment.
+      Bottom line: keep your queue stocked. If you're online, press Submit when you're on the
+      clock; if you're not, BOD submits your top queued player for you. The one case to avoid
+      is missing your window with an <em>empty</em> queue.
     </div>
     <p>
       If you have multiple picks (e.g., you acquired an extra pick), each pick has its own
@@ -284,18 +288,42 @@
         The gear icon <strong>⚙</strong> in the top-right corner is visible only to BOD
         — click it to open the Controls drawer.
       </p>
-      <ul>
-        <li>Set <strong>Year</strong> to the current draft year.</li>
-        <li>Set <strong>Round 1 Date</strong> to the calendar date of Round 1. This single date drives the entire pick schedule — every window derives from noon ET on that day.</li>
-        <li>Save. The schedule is immediately live on the page.</li>
-      </ul>
       <div class="tip">
-        Do a dry run before the real draft: set the date to today and walk through the
-        full reveal sequence. The live show writes to its own isolated picks file, so
-        nothing you do here touches the permanent draft order or rosters. When you're
-        done rehearsing, hit <strong>Reset to Clean Slate</strong> in the Controls drawer
-        to clear the rehearsal picks, event log and reveals and re-seed the board from
-        the real draft order.
+        Do a dry run before the real draft: walk through the full reveal sequence together.
+        The live show writes to its own isolated picks file, so nothing you do here touches
+        the permanent draft order or rosters. When you're done rehearsing, hit
+        <strong>Reset to Clean Slate</strong> in the Controls drawer to clear the rehearsal
+        picks, event log and reveals and re-seed the board from the real draft order.
+      </div>
+
+      <h3>Roles on draft day</h3>
+      <p>
+        Run the draft with two distinct roles. One BOD member is the
+        <strong>presenter</strong> — they drive the reveal sequence on screen and narrate
+        each pick. One or more other BOD members work the <strong>panel</strong> alongside
+        them, handling everything else so the presenter never has to break flow.
+      </p>
+      <div class="card" style="display:flex;flex-direction:column;gap:0.75rem">
+        <div>
+          <strong style="color:#f3f4f6">Presenter</strong>
+          <p style="margin:0.25rem 0 0">
+            Owns the on-screen reveal: pressing <kbd>Enter</kbd> through the player modal,
+            depth chart, and close steps, and pasting in highlights URLs. Should not need to
+            touch the Controls drawer, reassign picks, or chase down a missing GM mid-show.
+          </p>
+        </div>
+        <div>
+          <strong style="color:#f3f4f6">Panel</strong>
+          <p style="margin:0.25rem 0 0">
+            Watches the queue, backlog and event log in the background. Stages draft-day
+            trades via <strong>Submit Trade</strong> in the Controls drawer (the presenter
+            announces them on screen), submits picks on /draft/pick for a GM who's missed
+            their window or can't be reached, and fields any other logistics — so the
+            presenter can stay heads-down on the show. Since nothing auto-submits, the panel
+            keeps an eye on the board for any pick marked
+            <span style="color:#fb923c">⚠ Awaiting pick</span>.
+          </p>
+        </div>
       </div>
 
       <h3>The reveal sequence</h3>
@@ -335,26 +363,49 @@
 
       <h3>Draft-day trades</h3>
       <p>
-        If a pick changes hands mid-draft, use <strong>Reassign Pick</strong> in the
-        Controls drawer. Select the pick (by round and original team) and set the new
-        owner. Click <strong>Reassign</strong>.
+        When a trade is reported mid-draft, the panel stages it with <strong>Submit
+        Trade</strong> in the Controls drawer, and the presenter reveals it on screen with
+        <strong>Announce Trade</strong>. This gives trades the same "TV moment" as pick
+        reveals.
       </p>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Stage it (panel).</strong> In <strong>Submit Trade</strong>, add one row
+          per pick changing hands (pick → new owner) — a trade can move multiple picks. Add
+          a free-form <em>announcement</em> line, then click <strong>Stage Trade</strong>.
+          Ownership flips immediately under the hood (so the on-the-clock order and queues
+          stay correct), but the board keeps showing the old owner and a
+          <span class="badge badge-trade">Trade to Announce</span> banner appears.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Announce it (presenter).</strong> Click <strong>Announce Trade</strong> on
+          the banner. A modal shows your announcement text, the board updates to the new
+          owner(s), and a <span class="badge badge-trade">Trade</span> entry is logged.
+        </div>
+      </div>
       <ul>
-        <li>Only unsubmitted picks can be reassigned — submitted picks are final.</li>
-        <li>The pick stays at the same slot number; only the owning team changes.</li>
-        <li>A <span class="badge badge-trade">Trade</span> entry appears in the Event Log immediately.</li>
-        <li>The new owner's team token will be authorized to submit that pick.</li>
-        <li>After the draft, each reassignment must be recorded as a formal trade — see <strong>Post-draft: transactions</strong> below.</li>
+        <li>Only unsubmitted picks can be traded — submitted picks are final.</li>
+        <li>Picks stay at the same slot number; only the owning team changes.</li>
+        <li>The new owner's team token is authorized to submit that pick as soon as it's staged.</li>
+        <li>Made a mistake? <strong>Cancel</strong> a not-yet-announced trade on the banner to revert ownership.</li>
+        <li><strong>Reassign Pick</strong> is still available as a silent fix — it changes ownership immediately with no announcement (use it for corrections, not for on-air trades).</li>
+        <li>After the draft, each trade must be recorded as a formal transaction — see <strong>Post-draft: transactions</strong> below.</li>
       </ul>
 
       <h3>If a GM misses their window</h3>
       <p>
-        The draft continues automatically — the next team goes on the clock. The missed GM
-        can submit their pick from
-        <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> at any time; missed
-        picks are ordered by submission time, so whoever submits first selects first.
-        If you need to force a pick for them, use <strong>Make Pick (BOD)</strong>
-        on /draft/pick — it handles both active and missed slots.
+        The clock runs on a fixed schedule — the next team goes on the clock at its
+        scheduled time regardless. Nothing auto-submits, so the missed slot shows
+        <span style="color:#fb923c">⚠ Awaiting pick</span> on the board and stays open until
+        someone submits it. The missed GM can submit from
+        <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> at any time, or a BOD
+        member (with a privileged token) can submit on their behalf there — BOD can submit
+        for any slot, active or missed. Missed picks are ordered by submission time, so
+        whoever submits first selects first.
       </p>
 
       <h3>Best Available pool order</h3>
@@ -400,9 +451,8 @@
 
       <h3>Event log badge guide</h3>
       <div class="card" style="display:flex;flex-direction:column;gap:0.6rem">
-        <div><span class="badge badge-pick">Pick</span> GM submitted manually during their window.</div>
-        <div><span class="badge badge-auto">Auto</span> Server auto-submitted from the GM's queue when the window expired.</div>
-        <div><span class="badge badge-trade">Trade</span> A pick was reassigned to a new owner mid-draft.</div>
+        <div><span class="badge badge-pick">Pick</span> A pick was submitted (by the GM or by BOD on their behalf).</div>
+        <div><span class="badge badge-trade">Trade</span> A trade was announced — one or more picks changed owner.</div>
       </div>
     </div>
 

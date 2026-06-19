@@ -211,7 +211,7 @@
 <body>
 
   <div class="page-header">
-    <a href="/draft/">← Draft</a>
+    <a href="/draft/live/">← Draft</a>
     <h1>Make a Pick</h1>
     <span class="signed-in-as" id="signed-in-as"></span>
     <a href="/draft/guide/" style="font-size:0.75rem;color:#4b5563;text-decoration:none" onmouseover="this.style.color='#9ca3af'" onmouseout="this.style.color='#4b5563'">Guide</a>
@@ -363,14 +363,20 @@
       });
     }
 
+    // Time-based: the pick whose fixed window contains *now* (matches /draft/live).
+    // The clock marches on schedule — a late/blank pick never holds up the next team.
     function currentSlot(state) {
       if (!state.round1_date) return null;
+      const picks = yearPicks(state.year);
+      if (!picks.length) return null;
       const now = Date.now();
-      for (const p of yearPicks(state.year)) {
-        if (p.player) continue;
+      const first = picks[0];
+      const firstStart = pickWindowStart(state.round1_date, first.round, first.pick);
+      if (now < firstStart) return { pick: first, start: firstStart, end: firstStart + 10 * 60 * 1000 };
+      for (const p of picks) {
         const start = pickWindowStart(state.round1_date, p.round, p.pick);
         const end = start + 10 * 60 * 1000;
-        if (now < end) return { pick: p, start, end };
+        if (now >= start && now < end) return { pick: p, start, end };
       }
       return null;
     }
@@ -514,7 +520,8 @@
       const owners = pickOwners(p);
       const isMyPick = myTeams.some(t => owners.includes(t));
 
-      textEl.innerHTML = `${liveBadge} On the Clock: <strong>${owners.join('/')}</strong>${isMyPick ? ' <span style="color:#4ade80">(You!)</span>' : ''}`;
+      const clockLabel = p.player ? 'Pick is in' : 'On the Clock';
+      textEl.innerHTML = `${liveBadge} ${clockLabel}: <strong>${owners.join('/')}</strong>${isMyPick ? ' <span style="color:#4ade80">(You!)</span>' : ''}`;
       subEl.textContent = `R${p.round} · Pick ${p.pick}`;
 
       cdEl.style.display = '';
@@ -569,7 +576,7 @@
         if (isSubmitted) {
           statusHtml = `<span class="pick-slot-done">✓ ${bioName(p.player)}</span>`;
         } else if (isOnClock && nextUp) {
-          statusHtml = `<span class="pick-slot-queued">Auto-pick: ${bioName(nextUp)}</span>`;
+          statusHtml = `<span class="pick-slot-queued">On the clock — press Submit to pick ${bioName(nextUp)}</span>`;
         } else if (isOnClock) {
           statusHtml = `<span class="pick-slot-none">Queue a player first</span>`;
         } else if (isPastWindow && nextUp) {

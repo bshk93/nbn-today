@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.301",
+    "date": "2026-06-19",
+    "changes": [
+      "draft/live: add draft-day trades \u2014 BOD stages a multi-pick trade (Submit Trade), the board shows 'Trade to Announce' while ownership stays masked, and the presenter reveals it with Announce Trade",
+      "draft/live + draft/pick: remove auto-submit \u2014 picks are now fully manual (press Submit); the clock is time-based and runs on a fixed schedule so a late pick never delays the next team's window",
+      "draft/live: mark expired-but-unfilled picks as 'Awaiting pick' and flag outstanding BOD work on the gear icon",
+      "draft/guide: document the trade announce flow, full-manual advancement, and the fixed-schedule clock"
+    ]
+  },
+  {
     "version": "0.0.300",
     "date": "2026-06-18",
     "changes": [

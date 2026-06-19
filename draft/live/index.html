@@ -272,7 +272,57 @@
     .pc-player-wrap { flex: 1; display: flex; align-items: center; gap: 0.45rem; min-width: 0; overflow: hidden; }
     .pc-name { font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pc-clock { color: #facc15; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+    .pc-late { color: #fb923c; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
     .pc-meta { font-size: 0.72rem; color: #6b7280; flex-shrink: 0; white-space: nowrap; margin-left: auto; }
+
+    /* ── Trade-to-announce banner ─────────────────────── */
+    #trade-banner { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .trade-card {
+      background: #2d1b00;
+      border: 1px solid #713f12;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+    .trade-card-badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+      color: #fb923c; flex-shrink: 0;
+    }
+    .trade-card-dot { width: 7px; height: 7px; background: #fb923c; border-radius: 50%; animation: pulse 1.2s infinite; }
+    .trade-card-detail { flex: 1; min-width: 0; font-size: 0.85rem; color: #fdba74; }
+    .trade-card-detail .swap { color: #fed7aa; font-weight: 600; white-space: nowrap; }
+    .trade-card-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+    .btn-announce { background: #ea580c; color: #fff; }
+    .btn-announce:hover { background: #c2410c; }
+
+    /* ── Trade builder rows (BOD drawer) ──────────────── */
+    .trade-row { display: flex; gap: 0.4rem; align-items: center; }
+    .trade-row .player-select { flex: 1; max-width: none; }
+    .trade-row-remove {
+      background: none; border: none; color: #6b7280; cursor: pointer;
+      font-size: 1rem; line-height: 1; padding: 0 0.2rem; flex-shrink: 0;
+    }
+    .trade-row-remove:hover { color: #f87171; }
+    #trade-text {
+      background: #1f2937; border: 1px solid #374151; border-radius: 5px;
+      color: #f3f4f6; font-size: 0.8rem; padding: 0.4rem 0.5rem; font-family: inherit;
+      width: 100%; box-sizing: border-box; resize: vertical; min-height: 3rem;
+    }
+
+    /* Trade announce modal */
+    .trade-announce-body { padding: 2rem 1.75rem; }
+    .trade-announce-eyebrow {
+      font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #fb923c; margin-bottom: 0.6rem;
+    }
+    .trade-announce-text { font-size: 1.25rem; font-weight: 700; color: #f3f4f6; line-height: 1.5; white-space: pre-wrap; }
+    .trade-announce-swaps { margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .trade-announce-swap { font-size: 0.95rem; color: #d1d5db; }
+    .trade-announce-swap .arrow { color: #fb923c; margin: 0 0.4rem; }
 
     /* ── Show modal overlay ───────────────────────────── */
     #show-overlay {
@@ -590,6 +640,20 @@
             <button class="btn btn-primary btn-sm" id="reassign-btn">Reassign</button>
             <span id="reassign-status" style="font-size:0.75rem;color:#6b7280"></span>
           </div>
+          <div style="font-size:0.7rem;color:#4b5563">Silent fix — changes ownership immediately, no announcement.</div>
+        </div>
+
+        <!-- Submit trade -->
+        <div style="border-top:1px solid #1f2937;margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Submit Trade</div>
+          <div style="font-size:0.7rem;color:#4b5563">Ownership flips now (hidden on the board) — shows as “Trade to Announce” until you announce it.</div>
+          <div id="trade-rows"></div>
+          <button class="btn btn-ghost btn-sm" id="trade-add-row" style="align-self:flex-start">+ Add pick</button>
+          <textarea id="trade-text" placeholder="Announcement text (e.g. “Phoenix acquires the 5th pick from New York for…”)"></textarea>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-primary btn-sm" id="trade-submit-btn">Stage Trade</button>
+            <span id="trade-status" style="font-size:0.75rem;color:#6b7280"></span>
+          </div>
         </div>
 
         <!-- Snapshot / restore -->
@@ -629,6 +693,9 @@
       </div>
       <div class="countdown" id="countdown" style="display:none"></div>
     </div>
+
+    <!-- Trade-to-announce banner -->
+    <div id="trade-banner"></div>
 
     <!-- View tab bar -->
     <div class="view-tabs" id="view-tab-bar" style="display:none">
@@ -777,8 +844,32 @@
       return raw.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
     }
 
+    // Un-announced trades flip OWNER in the picks file immediately (mechanical-on-entry),
+    // but the board must keep showing the *old* owner until the presenter announces.
+    // This map of "round-orig" → from_owner re-masks those picks at display time.
+    let _tradeMask = {};
+
+    function buildTradeMask(state) {
+      const map = {};
+      ((state && state.trades) || []).forEach(t => {
+        if (t.announced) return;
+        (t.reassignments || []).forEach(r => {
+          map[`${r.round}-${(r.orig || '').toUpperCase()}`] = r.from_owner;
+        });
+      });
+      return map;
+    }
+
+    // Owners as shown on the broadcast board — same as pickOwners, but masked back to
+    // the pre-trade owner for any pick in a not-yet-announced trade.
+    function displayOwners(p) {
+      const masked = _tradeMask[`${p.round}-${(p.orig || '').toUpperCase()}`];
+      if (masked) return masked.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
+      return pickOwners(p);
+    }
+
     function pickTeamHtml(p) {
-      const owners = pickOwners(p);
+      const owners = displayOwners(p);
       const owner = owners.join('/');
       const orig = (p.orig || '').toUpperCase();
       if (orig && !owners.includes(orig)) {
@@ -787,15 +878,22 @@
       return owner;
     }
 
-    // First unsubmitted pick whose window hasn't ended yet — includes pre-draft period
+    // The pick whose fixed window contains *now* — time-based, independent of whether
+    // it's been submitted. The clock marches on schedule: a late/blank pick never holds
+    // up the next team's window. Before the draft opens, the first pick is upcoming;
+    // past the last window, returns null (draft underway/concluded).
     function currentSlot(state) {
       if (!state.round1_date) return null;
+      const picks = yearPicks(state.year);
+      if (!picks.length) return null;
       const now = Date.now();
-      for (const p of yearPicks(state.year)) {
-        if (p.player) continue;
+      const first = picks[0];
+      const firstStart = pickWindowStart(state.round1_date, first.round, first.pick);
+      if (now < firstStart) return { pick: first, start: firstStart, end: firstStart + 10 * 60 * 1000 };
+      for (const p of picks) {
         const start = pickWindowStart(state.round1_date, p.round, p.pick);
         const end = start + 10 * 60 * 1000;
-        if (now < end) return { pick: p, start, end };
+        if (now >= start && now < end) return { pick: p, start, end };
       }
       return null;
     }
@@ -889,6 +987,7 @@
       document.getElementById('admin-year').value = state.year || 2026;
       document.getElementById('admin-date').value = state.round1_date || '';
       initReassignPicker(state);
+      initTradeBuilder(state);
       loadSnapshotMeta();
     }
 
@@ -949,7 +1048,7 @@
       }
 
       const p = slot.pick;
-      const owners = pickOwners(p);
+      const owners = displayOwners(p);
       const teamDisplay = owners.join(' / ');
       const isSubmitted = !!p.player;
       const isRevealed = state.revealed.includes(`${p.round}-${p.pick}`);
@@ -1048,6 +1147,12 @@
         } else if (ev.type === 'reassign') {
           badge = '<span class="log-badge log-badge-reassign">Trade</span>';
           desc = `R${ev.round} · #${ev.pick ?? '?'} (${ev.orig}) reassigned <strong>${ev.from_owner}</strong> → <strong>${ev.to_owner}</strong>`;
+        } else if (ev.type === 'trade') {
+          badge = '<span class="log-badge log-badge-reassign">Trade</span>';
+          const swaps = (ev.reassignments || [])
+            .map(r => `<strong>${r.from_owner}</strong> → <strong>${r.to_owner}</strong> (R${r.round}${r.pick != null ? ' #' + r.pick : ''})`)
+            .join(', ');
+          desc = ev.text ? `${ev.text} <span style="color:#6b7280">— ${swaps}</span>` : swaps;
         } else {
           badge = `<span class="log-badge log-badge-pick">${ev.type}</span>`;
           desc = JSON.stringify(ev);
@@ -1096,6 +1201,175 @@
       btn.disabled = false;
       setTimeout(() => { statusEl.textContent = ''; }, 3000);
     });
+
+    // ── Submit trade (multi-pick) ────────────────────────────────────────────────────
+
+    function pickOptionsHtml(state) {
+      const picks = yearPicks(state.year).filter(p => !p.player);
+      return '<option value="">Select pick…</option>' +
+        picks.map(p => {
+          const owners = pickOwners(p);
+          return `<option value="${p.round}|${p.orig}">R${p.round} #${p.pick} — ${owners.join('/')}</option>`;
+        }).join('');
+    }
+
+    function ownerOptionsHtml() {
+      return '<option value="">New owner…</option>' +
+        [...TEAM_ABBRS].sort().map(t => `<option>${t}</option>`).join('');
+    }
+
+    function addTradeRow(state) {
+      const rows = document.getElementById('trade-rows');
+      const row = document.createElement('div');
+      row.className = 'trade-row';
+      row.innerHTML =
+        `<select class="player-select trade-pick-sel">${pickOptionsHtml(state || draftState || {})}</select>` +
+        `<span style="color:#4b5563">→</span>` +
+        `<select class="player-select trade-owner-sel">${ownerOptionsHtml()}</select>` +
+        `<button class="trade-row-remove" title="Remove">✕</button>`;
+      row.querySelector('.trade-row-remove').addEventListener('click', () => {
+        row.remove();
+        if (!document.querySelectorAll('#trade-rows .trade-row').length) addTradeRow(draftState);
+      });
+      rows.appendChild(row);
+    }
+
+    // Ensure at least one row; refresh pick options (preserving selections) on state changes.
+    function initTradeBuilder(state) {
+      const rows = document.getElementById('trade-rows');
+      const existing = rows.querySelectorAll('.trade-row');
+      if (!existing.length) { addTradeRow(state); return; }
+      existing.forEach(row => {
+        const sel = row.querySelector('.trade-pick-sel');
+        const prev = sel.value;
+        sel.innerHTML = pickOptionsHtml(state);
+        if (prev) sel.value = prev;
+      });
+    }
+
+    document.getElementById('trade-add-row').addEventListener('click', () => addTradeRow(draftState));
+
+    document.getElementById('trade-submit-btn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('trade-status');
+      const btn      = document.getElementById('trade-submit-btn');
+      const reassignments = [];
+      document.querySelectorAll('#trade-rows .trade-row').forEach(row => {
+        const pickVal = row.querySelector('.trade-pick-sel').value;
+        const owner   = row.querySelector('.trade-owner-sel').value;
+        if (!pickVal || !owner) return;
+        const [round, orig] = pickVal.split('|');
+        reassignments.push({ round: parseInt(round), orig, new_owner: owner });
+      });
+      if (!reassignments.length) { statusEl.textContent = 'Add at least one pick → owner.'; return; }
+      btn.disabled = true; statusEl.textContent = 'Staging…';
+      const res = await apiPost('/api/draft/trade', {
+        year: draftState.year,
+        text: document.getElementById('trade-text').value.trim(),
+        reassignments,
+      });
+      if (res.ok) {
+        statusEl.textContent = 'Staged — ready to announce.';
+        // Reset the builder
+        document.getElementById('trade-rows').innerHTML = '';
+        document.getElementById('trade-text').value = '';
+        await refreshState(); render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+      }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 4000);
+    });
+
+    // ── Trade-to-announce banner ─────────────────────────────────────────────────────
+
+    function swapSummary(r) {
+      return `R${r.round}${r.pick != null ? ' #' + r.pick : ''} ${r.from_owner} → ${r.to_owner}`;
+    }
+
+    function renderTradeBanner(state) {
+      const banner = document.getElementById('trade-banner');
+      const pending = ((state && state.trades) || []).filter(t => !t.announced);
+      if (!pending.length) { banner.innerHTML = ''; return; }
+      const bod = isBod();
+      banner.innerHTML = '';
+      pending.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'trade-card';
+        // Audience sees only the teaser; BOD sees the reassignment detail + controls.
+        const detail = bod
+          ? (t.reassignments || []).map(r => `<span class="swap">${swapSummary(r)}</span>`).join('&ensp;·&ensp;')
+          : 'Details to be revealed by the presenter.';
+        card.innerHTML =
+          `<span class="trade-card-badge"><span class="trade-card-dot"></span>Trade to Announce</span>` +
+          `<span class="trade-card-detail">${detail}</span>`;
+        if (bod) {
+          const actions = document.createElement('div');
+          actions.className = 'trade-card-actions';
+          const announceBtn = document.createElement('button');
+          announceBtn.className = 'btn btn-announce btn-sm';
+          announceBtn.textContent = 'Announce Trade';
+          announceBtn.addEventListener('click', () => announceTrade(t));
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'btn btn-danger btn-sm';
+          cancelBtn.textContent = 'Cancel';
+          cancelBtn.addEventListener('click', () => cancelTrade(t.id));
+          actions.appendChild(announceBtn);
+          actions.appendChild(cancelBtn);
+          card.appendChild(actions);
+        }
+        banner.appendChild(card);
+      });
+    }
+
+    async function announceTrade(trade) {
+      const res = await apiPost(`/api/draft/trade/${trade.id}/announce`, {});
+      if (!res.ok) return;
+      await refreshState(); render();
+      renderTradeAnnounceModal(trade);
+    }
+
+    async function cancelTrade(id) {
+      if (!confirm('Cancel this trade? Pick ownership reverts to the original team.')) return;
+      const del = await fetch(`/api/draft/trade/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${getToken()}` },
+      });
+      if (del.ok) { await refreshState(); render(); }
+    }
+
+    function renderTradeAnnounceModal(trade) {
+      revealState = 3; // trade-announce modal state
+      const swaps = (trade.reassignments || [])
+        .map(r => `<div class="trade-announce-swap">${r.from_owner}<span class="arrow">→</span>${r.to_owner} <span style="color:#6b7280">(R${r.round}${r.pick != null ? ' #' + r.pick : ''})</span></div>`)
+        .join('');
+      const overlay = document.getElementById('show-overlay');
+      overlay.innerHTML = `
+        <div class="show-modal">
+          <div class="trade-announce-body">
+            <div class="trade-announce-eyebrow">Trade</div>
+            <div class="trade-announce-text">${trade.text ? escapeHtml(trade.text) : 'Trade announced.'}</div>
+            <div class="trade-announce-swaps">${swaps}</div>
+          </div>
+          <div class="show-modal-footer">
+            <div class="show-modal-hint"><kbd>Enter</kbd> or <kbd>Esc</kbd> to close</div>
+            <button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button>
+          </div>
+        </div>`;
+      overlay.style.display = 'flex';
+      overlay.focus();
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    function expiredBlankPicks(state) {
+      if (!state || !state.round1_date) return [];
+      const now = Date.now();
+      return yearPicks(state.year).filter(p =>
+        !p.player && now >= pickWindowEnd(state.round1_date, p.round, p.pick));
+    }
 
     // ── Snapshot / restore ─────────────────────────────────────────────────────────
 
@@ -1181,7 +1455,7 @@
       }
 
       if (e.key === 'Escape') {
-        if (revealState === 1 || revealState === 2) { closeModal(); e.stopPropagation(); }
+        if (revealState === 1 || revealState === 2 || revealState === 3) { closeModal(); e.stopPropagation(); }
         return;
       }
 
@@ -1189,6 +1463,7 @@
 
       if (revealState === 1) { advanceToDepth(); e.stopPropagation(); return; }
       if (revealState === 2) { closeModal(); e.stopPropagation(); return; }
+      if (revealState === 3) { closeModal(); e.stopPropagation(); return; }
 
       const tag = (e.target.tagName || '').toUpperCase();
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return;
@@ -1449,7 +1724,7 @@
         const bio = revealed ? (bios[p.player] || {}) : {};
         const name = revealed ? bioName(p.player) : '';
         const pos = revealed ? (Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '')) : '';
-        const owners = pickOwners(p);
+        const owners = displayOwners(p);
         const primaryTeam = owners[0];
 
         const card = document.createElement('div');
@@ -1508,6 +1783,8 @@
           playerWrap.innerHTML = `<span class="pick-in-cell"><span class="pick-in-dot"></span> The pick is in</span>`;
         } else if (isOnClock) {
           playerWrap.innerHTML = `<span class="pc-clock">⏱ On the Clock</span>`;
+        } else if (state.round1_date && Date.now() >= pickWindowEnd(state.round1_date, p.round, p.pick)) {
+          playerWrap.innerHTML = `<span class="pc-late">⚠ Awaiting pick</span>`;
         } else {
           playerWrap.innerHTML = `<span style="color:#374151">—</span>`;
         }
@@ -1643,6 +1920,7 @@
     function render() {
       const state = draftState;
       _swapTakesFrom = buildSwapTakesFrom(state ? yearPicks(state.year) : []);
+      _tradeMask = buildTradeMask(state);
 
       // Sync highlights from state; pool order only on initial load (not on interval ticks)
       highlights = (state && state.highlights) || {};
@@ -1672,12 +1950,18 @@
         initAdminPanel(state || {});
       }
 
-      // Pulse gear icon amber when a pick is submitted but not yet revealed
-      const hasPending = state && isBod() && yearPicks(state.year)
-        .some(p => p.player && !state.revealed.includes(`${p.round}-${p.pick}`));
+      // Pulse gear icon amber when there's BOD work outstanding: a pick submitted but
+      // not yet revealed, an un-announced trade, or an expired-but-still-blank pick
+      // (no auto-fire safety net, so a dropped pick must stay visible to BOD).
+      const hasPending = state && isBod() && (
+        yearPicks(state.year).some(p => p.player && !state.revealed.includes(`${p.round}-${p.pick}`))
+        || (state.trades || []).some(t => !t.announced)
+        || expiredBlankPicks(state).length > 0
+      );
       toggle.classList.toggle('has-pending', !!hasPending);
 
       renderStatus(state);
+      renderTradeBanner(state);
       renderFullBoard(state);
       renderPool(state);
       if (activeTab === 'log') renderLog(state);
