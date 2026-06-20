@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.302",
+    "date": "2026-06-20",
+    "changes": [
+      "draft: hide the Edit button from users whose token lacks pick-edit permission (rosters/bod/admin) \u2014 team-role accounts could open the editable grid client-side even though saves were always rejected server-side; entering a non-editor token now shows a clear message instead of the editor",
+      "draft/pick: owners can submit as soon as they're genuinely on the clock \u2014 either every pick ahead of them is in (so the draft can run ahead of schedule) or their scheduled window has arrived. The fixed window is now a backstop rather than the gate",
+      "draft/pick: picks submitted ahead of schedule can be taken back with a new Unstage button (returns the player to the top of your queue); once your scheduled window arrives the pick is final",
+      "draft/live + draft/pick: the status banner and board highlight now follow the reveal sequence instead of the wall clock \u2014 they track the first pick not yet revealed, showing 'the pick is in \u00b7 awaiting reveal' for a staged team or 'on the clock' for one still picking, and advance to the next team the instant the presenter reveals. The draft can run arbitrarily ahead of schedule and the banner stays accurate; the countdown shows only during a pick's live window"
+    ]
+  },
+  {
     "version": "0.0.301",
     "date": "2026-06-19",
     "changes": [

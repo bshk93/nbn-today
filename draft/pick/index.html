@@ -363,22 +363,20 @@
       });
     }
 
-    // Time-based: the pick whose fixed window contains *now* (matches /draft/live).
-    // The clock marches on schedule — a late/blank pick never holds up the next team.
+    // The pick the broadcast is currently on — the first one not yet revealed, in
+    // draft order (matches /draft/live). Advances as the presenter reveals each
+    // pick, regardless of the wall clock. A staged pick reads "pick is in", an
+    // unmade one "on the clock". `start`/`end` carry its scheduled window. Null
+    // once every pick has been revealed.
     function currentSlot(state) {
       if (!state.round1_date) return null;
       const picks = yearPicks(state.year);
       if (!picks.length) return null;
-      const now = Date.now();
-      const first = picks[0];
-      const firstStart = pickWindowStart(state.round1_date, first.round, first.pick);
-      if (now < firstStart) return { pick: first, start: firstStart, end: firstStart + 10 * 60 * 1000 };
-      for (const p of picks) {
-        const start = pickWindowStart(state.round1_date, p.round, p.pick);
-        const end = start + 10 * 60 * 1000;
-        if (now >= start && now < end) return { pick: p, start, end };
-      }
-      return null;
+      const revealed = state.revealed || [];
+      const p = picks.find(pk => !revealed.includes(`${pk.round}-${pk.pick}`));
+      if (!p) return null;
+      const start = pickWindowStart(state.round1_date, p.round, p.pick);
+      return { pick: p, start, end: start + 10 * 60 * 1000 };
     }
 
     function isAdmin() { return myRoles.includes('admin'); }
@@ -500,9 +498,10 @@
       if (!draftState) { textEl.textContent = 'Loading…'; subEl.textContent = ''; return; }
 
       const picks = yearPicks(draftState.year);
-      if (picks.length > 0 && picks.every(p => p.player)) {
+      const revealedSet = draftState.revealed || [];
+      if (picks.length > 0 && picks.every(p => revealedSet.includes(`${p.round}-${p.pick}`))) {
         textEl.textContent = `${draftState.year} Draft concluded`;
-        subEl.textContent = 'All picks submitted.';
+        subEl.textContent = 'All picks are in.';
         return;
       }
       if (!draftState.round1_date) {
@@ -519,21 +518,34 @@
       const p = slot.pick;
       const owners = pickOwners(p);
       const isMyPick = myTeams.some(t => owners.includes(t));
+      const now = Date.now();
+      const youBadge = isMyPick ? ' <span style="color:#4ade80">(You!)</span>' : '';
 
-      const clockLabel = p.player ? 'Pick is in' : 'On the Clock';
-      textEl.innerHTML = `${liveBadge} ${clockLabel}: <strong>${owners.join('/')}</strong>${isMyPick ? ' <span style="color:#4ade80">(You!)</span>' : ''}`;
-      subEl.textContent = `R${p.round} · Pick ${p.pick}`;
-
-      cdEl.style.display = '';
-      function tick() {
-        const rem = Math.max(0, slot.end - Date.now());
-        const m = Math.floor(rem / 60000);
-        const s = Math.floor((rem % 60000) / 1000);
-        cdEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
-        if (rem === 0 && countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+      if (p.player) {
+        // Staged but not yet revealed — the presenter is up next
+        textEl.innerHTML = `${liveBadge} The pick is in: <strong>${owners.join('/')}</strong>${youBadge}`;
+        subEl.textContent = `R${p.round} · Pick ${p.pick} · awaiting reveal`;
+        return;
       }
-      tick();
-      countdownTimer = setInterval(tick, 1000);
+
+      textEl.innerHTML = `${liveBadge} On the Clock: <strong>${owners.join('/')}</strong>${youBadge}`;
+
+      if (now < slot.start) {
+        // On the clock ahead of schedule — show the scheduled window, no countdown
+        subEl.textContent = `R${p.round} · Pick ${p.pick} · window ${formatET(slot.start)} – ${formatET(slot.end)} ET`;
+      } else {
+        subEl.textContent = `R${p.round} · Pick ${p.pick}`;
+        cdEl.style.display = '';
+        function tick() {
+          const rem = Math.max(0, slot.end - Date.now());
+          const m = Math.floor(rem / 60000);
+          const s = Math.floor((rem % 60000) / 1000);
+          cdEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+          if (rem === 0 && countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+        }
+        tick();
+        countdownTimer = setInterval(tick, 1000);
+      }
     }
 
     function renderMyPicks() {
@@ -552,7 +564,10 @@
       titleEl.textContent = `My Picks (${myTeams.join(', ')})`;
       body.innerHTML = '';
 
-      const slot    = currentSlot(draftState);
+      const draftLive = draftState.round1_date &&
+        Date.now() >= pickWindowStart(draftState.round1_date, 1, 1);
+      const orderOf  = x => x.round * 1000 + x.pick;
+      const revealed = new Set(draftState.revealed || []);
       const team    = myTeams[0];
       const rawQueue = getTeamQueue(team);
       const drafted  = pickedSlugs(year);
@@ -560,29 +575,33 @@
 
       myPicks.forEach(p => {
         const owners = pickOwners(p);
-        const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick && Date.now() >= slot.start;
         const isSubmitted = !!p.player;
+        const isRevealed  = revealed.has(`${p.round}-${p.pick}`);
         const nextUp = queue[0] || null;
 
         const startMs = draftState.round1_date ? pickWindowStart(draftState.round1_date, p.round, p.pick) : null;
         const endMs   = startMs ? startMs + 10 * 60 * 1000 : null;
-        const isPastWindow = !isSubmitted && endMs !== null && Date.now() > endMs;
         const timeStr = startMs ? `${formatET(startMs)} – ${formatET(endMs)}` : 'Time TBD';
 
+        // You're "up" once every pick ahead of you is in (run ahead of
+        // schedule) OR your own window has arrived (safety valve).
+        const windowOpen = startMs !== null && Date.now() >= startMs;
+        const earlierIn  = picks.every(q => orderOf(q) >= orderOf(p) || !!q.player);
+        const isUp = draftLive && !isSubmitted && (windowOpen || earlierIn);
+        const aheadOfSchedule = isUp && !windowOpen;
+        // An early lock-in (window not yet open, not revealed) can be undone.
+        const canUnstage = isSubmitted && !windowOpen && !isRevealed;
+
         const div = document.createElement('div');
-        div.className = `pick-slot${isOnClock ? ' on-clock' : ''}${isSubmitted ? ' submitted' : ''}`;
+        div.className = `pick-slot${isUp ? ' on-clock' : ''}${isSubmitted ? ' submitted' : ''}`;
 
         let statusHtml;
         if (isSubmitted) {
-          statusHtml = `<span class="pick-slot-done">✓ ${bioName(p.player)}</span>`;
-        } else if (isOnClock && nextUp) {
-          statusHtml = `<span class="pick-slot-queued">On the clock — press Submit to pick ${bioName(nextUp)}</span>`;
-        } else if (isOnClock) {
-          statusHtml = `<span class="pick-slot-none">Queue a player first</span>`;
-        } else if (isPastWindow && nextUp) {
-          statusHtml = `<span style="color:#fb923c;font-weight:600">Window missed — submit now: ${bioName(nextUp)}</span>`;
-        } else if (isPastWindow) {
-          statusHtml = `<span style="color:#fb923c">Window missed — queue a player to submit late</span>`;
+          statusHtml = `<span class="pick-slot-done">✓ ${bioName(p.player)}${canUnstage ? ` <span style="color:#9ca3af;font-weight:400">— locked in early</span>` : ''}</span>`;
+        } else if (isUp && nextUp) {
+          statusHtml = `<span class="pick-slot-queued">You're up${aheadOfSchedule ? ' early' : ''} — press Submit to pick ${bioName(nextUp)}</span>`;
+        } else if (isUp) {
+          statusHtml = `<span class="pick-slot-none">You're up — queue a player to submit</span>`;
         } else if (nextUp) {
           statusHtml = `<span class="pick-slot-queued">#1 queued: ${bioName(nextUp)}</span>`;
         } else {
@@ -597,8 +616,9 @@
           <div class="pick-slot-status">${statusHtml}</div>
           <div class="pick-slot-actions" style="flex-shrink:0"></div>
         `;
+        const actions = div.querySelector('.pick-slot-actions');
 
-        if (!isSubmitted && (isOnClock || isPastWindow)) {
+        if (isUp) {
           const btn = document.createElement('button');
           btn.className = 'btn btn-primary btn-sm';
           btn.textContent = nextUp ? `Submit →` : 'No queue';
@@ -613,7 +633,23 @@
               btn.disabled = false; btn.textContent = 'Submit →';
             }
           });
-          div.querySelector('.pick-slot-actions').appendChild(btn);
+          actions.appendChild(btn);
+        } else if (canUnstage) {
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-ghost btn-sm';
+          btn.textContent = 'Unstage';
+          btn.addEventListener('click', async () => {
+            if (!confirm(`Unstage ${bioName(p.player)} from R${p.round} Pick ${p.pick}? It returns to the top of your queue and you can re-submit.`)) return;
+            btn.disabled = true; btn.textContent = '…';
+            const res = await apiPost('/api/draft/pick/unstage', { year, round: p.round, orig: p.orig });
+            if (res.ok) { await refreshState(); render(); }
+            else {
+              const err = await res.json().catch(() => ({}));
+              alert(err.detail || `Error ${res.status}`);
+              btn.disabled = false; btn.textContent = 'Unstage';
+            }
+          });
+          actions.appendChild(btn);
         }
 
         body.appendChild(div);
@@ -695,33 +731,37 @@
         slotSelEl.style.display = 'none'; selEl.style.display = 'none'; btn.disabled = true; return;
       }
 
-      // All unsubmitted picks whose windows have opened (active on-clock + missed)
+      // All unsubmitted picks that are "up": window has opened, or every pick
+      // ahead of them in draft order is already in (running ahead of schedule).
       const now = Date.now();
-      const submittable = yearPicks(draftState.year).filter(pk => {
+      const allPicks = yearPicks(draftState.year);
+      const orderOf  = x => x.round * 1000 + x.pick;
+      const submittable = allPicks.filter(pk => {
         if (pk.player) return false;
         const start = pickWindowStart(draftState.round1_date, pk.round, pk.pick);
-        return now >= start;
+        if (now >= start) return true;
+        return allPicks.every(q => orderOf(q) >= orderOf(pk) || !!q.player);
       });
 
       if (!submittable.length) {
         slotSelEl.style.display = 'none'; selEl.style.display = 'none'; btn.disabled = true; return;
       }
 
-      const slot = currentSlot(draftState);
-
       // Repopulate slot selector, preserving selection if still valid
       const prevVal = slotSelEl.value;
       slotSelEl.innerHTML = submittable.map(pk => {
         const owners = pickOwners(pk);
-        const isActive = slot && slot.pick.round === pk.round && slot.pick.pick === pk.pick;
-        const label = `R${pk.round} · #${pk.pick} · ${owners.join('/')}${!isActive ? ' (missed)' : ''}`;
+        const start = pickWindowStart(draftState.round1_date, pk.round, pk.pick);
+        const tag = now >= start + 10 * 60 * 1000 ? ' (missed)'
+                  : now < start ? ' (early)' : '';
+        const label = `R${pk.round} · #${pk.pick} · ${owners.join('/')}${tag}`;
         return `<option value="${pk.round}|${pk.pick}">${label}</option>`;
       }).join('');
 
       if (prevVal && submittable.some(pk => `${pk.round}|${pk.pick}` === prevVal)) {
         slotSelEl.value = prevVal;
-      } else if (slot) {
-        slotSelEl.value = `${slot.pick.round}|${slot.pick.pick}`;
+      } else {
+        slotSelEl.value = `${submittable[0].round}|${submittable[0].pick}`;
       }
 
       slotSelEl.style.display = '';

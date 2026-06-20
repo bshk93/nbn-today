@@ -878,24 +878,21 @@
       return owner;
     }
 
-    // The pick whose fixed window contains *now* — time-based, independent of whether
-    // it's been submitted. The clock marches on schedule: a late/blank pick never holds
-    // up the next team's window. Before the draft opens, the first pick is upcoming;
-    // past the last window, returns null (draft underway/concluded).
+    // The pick the broadcast is currently on — the first one not yet revealed, in
+    // draft order. As the presenter reveals each pick the cursor advances to the
+    // next team immediately, so the banner/board walk the reveal sequence regardless
+    // of the wall clock. Its state drives the label: a staged pick reads "pick is
+    // in", an unmade one "on the clock". `start`/`end` carry that pick's scheduled
+    // window. Returns null once every pick has been revealed.
     function currentSlot(state) {
       if (!state.round1_date) return null;
       const picks = yearPicks(state.year);
       if (!picks.length) return null;
-      const now = Date.now();
-      const first = picks[0];
-      const firstStart = pickWindowStart(state.round1_date, first.round, first.pick);
-      if (now < firstStart) return { pick: first, start: firstStart, end: firstStart + 10 * 60 * 1000 };
-      for (const p of picks) {
-        const start = pickWindowStart(state.round1_date, p.round, p.pick);
-        const end = start + 10 * 60 * 1000;
-        if (now >= start && now < end) return { pick: p, start, end };
-      }
-      return null;
+      const revealed = state.revealed || [];
+      const p = picks.find(pk => !revealed.includes(`${pk.round}-${pk.pick}`));
+      if (!p) return null;
+      const start = pickWindowStart(state.round1_date, p.round, p.pick);
+      return { pick: p, start, end: start + 10 * 60 * 1000 };
     }
 
     // First unsubmitted pick (by schedule order)
@@ -1023,11 +1020,13 @@
       if (!state) { textEl.textContent = 'Loading…'; subEl.textContent = ''; return; }
 
       const picks = yearPicks(state.year);
-      const allDone = picks.length > 0 && picks.every(p => p.player);
+      const revealedSet = state.revealed || [];
+      const allRevealed = picks.length > 0 &&
+        picks.every(p => revealedSet.includes(`${p.round}-${p.pick}`));
 
-      if (allDone) {
+      if (allRevealed) {
         textEl.innerHTML = `${state.year} Draft concluded`;
-        subEl.textContent = 'All picks have been submitted.';
+        subEl.textContent = 'All picks are in.';
         return;
       }
 
@@ -1041,7 +1040,6 @@
       const liveBadge = `<span class="live-badge"><span class="live-dot"></span>Live</span>`;
 
       if (!slot) {
-        // All picks submitted or no date set
         textEl.innerHTML = `${liveBadge} Draft underway`;
         subEl.textContent = '';
         return;
@@ -1050,40 +1048,39 @@
       const p = slot.pick;
       const owners = displayOwners(p);
       const teamDisplay = owners.join(' / ');
-      const isSubmitted = !!p.player;
-      const isRevealed = state.revealed.includes(`${p.round}-${p.pick}`);
+      const now = Date.now();
+      const head = `${liveBadge} Round ${p.round}, Pick ${p.pick} · `;
 
-      if (isSubmitted && isRevealed) {
-        textEl.innerHTML = `${liveBadge} Round ${p.round}, Pick ${p.pick} · ${teamDisplay} · ${bioName(p.player)}`;
-        subEl.textContent = 'Pick revealed';
-      } else if (isSubmitted) {
-        textEl.innerHTML = `${liveBadge} Round ${p.round}, Pick ${p.pick} · ${teamDisplay} · Pick is in`;
+      if (p.player) {
+        // Staged but not yet revealed — the presenter is up next
+        textEl.innerHTML = `${head}<strong style="color:#fff">${teamDisplay}</strong> · the pick is in`;
         subEl.textContent = 'Awaiting reveal…';
-      } else {
-        textEl.innerHTML = `${liveBadge} Round ${p.round}, Pick ${p.pick} · <strong style="color:#fff">${teamDisplay}</strong> on the clock`;
-        const beforeWindow = Date.now() < slot.start;
-        if (beforeWindow) {
-          subEl.textContent = `Pick window opens ${formatDateET(slot.start)} at ${formatET(slot.start)} ET`;
-        } else {
-          subEl.textContent = `Window: ${formatET(slot.start)} – ${formatET(slot.end)} ET`;
-        }
+        return;
+      }
+
+      // Not yet submitted — this team is on the clock
+      textEl.innerHTML = `${head}<strong style="color:#fff">${teamDisplay}</strong> on the clock`;
+      if (now < slot.start) {
+        // On the clock ahead of schedule — no window-end deadline yet
+        subEl.textContent = `On the clock early · scheduled window ${formatET(slot.start)} – ${formatET(slot.end)} ET`;
+      } else if (now < slot.end) {
+        subEl.textContent = `Window: ${formatET(slot.start)} – ${formatET(slot.end)} ET`;
         cdEl.style.display = '';
         function tick() {
           const rem = slot.end - Date.now();
           if (rem <= 0) { cdEl.textContent = '0:00'; cdEl.className = 'countdown urgent'; return; }
-          const d = Math.floor(rem / 86400000);
-          const h = Math.floor((rem % 86400000) / 3600000);
+          const h = Math.floor(rem / 3600000);
           const m = Math.floor((rem % 3600000) / 60000);
           const s = Math.floor((rem % 60000) / 1000);
-          let display;
-          if (d > 0) display = `${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-          else if (h > 0) display = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-          else display = `${m}:${String(s).padStart(2,'0')}`;
-          cdEl.textContent = display;
+          cdEl.textContent = h > 0
+            ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+            : `${m}:${String(s).padStart(2,'0')}`;
           cdEl.className = rem < 60000 ? 'countdown urgent' : 'countdown';
         }
         tick();
         countdownTimer = setInterval(tick, 1000);
+      } else {
+        subEl.textContent = `Scheduled window passed (${formatET(slot.start)} – ${formatET(slot.end)} ET) · BOD may submit a queued pick`;
       }
     }
 
