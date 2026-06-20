@@ -106,23 +106,10 @@
     "date": "2026-06-09",
     "changes": [
       "boxscores/submit: increase NBYen reward for box score submission from 10 to 200",
-      "boxscores/submit: hide screenshot upload tab; manual entry is now the only import method"
-    ]
-  },
-  {
-    "version": "pending",
-    "date": "2026-06-09",
-    "changes": [
+      "boxscores/submit: hide screenshot upload tab; manual entry is now the only import method",
       "draft/guide: missed window no longer stalls \u2014 draft continues, picks ordered by submission time",
       "draft/guide: token note (reach out to bryn), BOD post-draft transactions note",
       "draft/pick: Submit button appears for missed (expired-window) picks; BOD Make Pick shows all open slots (active + missed) in a dropdown"
-    ]
-  },
-  {
-    "version": "pending",
-    "date": "2026-06-08",
-    "changes": [
-      "draft/guide: new draft guide page for GMs and BOD (BOD section auth-gated)"
     ]
   },
   {
@@ -134,7 +121,8 @@
       "draft/live: BOD Dry Run \u2014 Save Snapshot / Restore to rehearse the draft and revert",
       "api: POST /api/draft/pick/reassign \u2014 reassign pick owner, appends to event log",
       "api: snapshot save/get/restore endpoints for dry-run rehearsals",
-      "api: pick events (manual and auto-submit) appended to draft state events array"
+      "api: pick events (manual and auto-submit) appended to draft state events array",
+      "draft/guide: new draft guide page for GMs and BOD (BOD section auth-gated)"
     ]
   },
   {
@@ -667,20 +655,15 @@
     "version": "0.0.183",
     "date": "2026-06-03",
     "changes": [
-      "players: radar chart on player profiles showing 8 per-game percentile dimensions (PPG, 3PT, TS%, APG, FTA, RPG, BLK, STL) vs same-season peers"
-    ]
-  },
-  {
-    "version": "pending",
-    "date": "2026-06-03",
-    "changes": [
+      "players: radar chart on player profiles showing 8 per-game percentile dimensions (PPG, 3PT, TS%, APG, FTA, RPG, BLK, STL) vs same-season peers",
       "teams: reorganize team pages into tabs \u2014 Overview (season history, personnel, roster, cap exceptions, picks), Draft History, All-Time Players, Historical Rosters (per-season stats by season selector)"
     ]
   },
   {
-    "version": "pending",
+    "version": "0.0.182",
     "date": "2026-06-02",
     "changes": [
+      "Season Stats: add team roster filter \u2014 select a team to show only players currently on that roster",
       "invest: market summary section at top of Wall Street page \u2014 top 3 risers and fallers by price % change; toggle between 10G, 20G (default), and 82G windows",
       "bet: fixed odds bets no longer void when nobody picks the winner \u2014 losers still lose; house keeps the stakes",
       "bet/balances: redesigned table \u2014 ranked by Net Worth (liquid + equity), new Bet P/L and Inv P/L columns, Equity column for open positions, Earned collapsed from 3 columns to 1",
@@ -690,26 +673,13 @@
       "Locked achievements shown as greyed-out cards; tiered badges (Bronze/Silver/Gold) reflect milestone level",
       "New API: GET /api/bets/stats/{member} \u2014 wager count, net P&L, win streak, odds, tips sent",
       "New API: GET /api/invest/stats/{member} \u2014 trade count, realized P&L, best trade, short profit flag",
-      "members/{name}: GM performance achievements (Champion, Finals, Conf Finals, Postseason, Bridesmaid, Seasoned GM) now derived from tenure history + standings data instead of owner_stats.csv \u2014 credits any staff role present during a season"
-    ]
-  },
-  {
-    "version": "pending",
-    "date": "2026-06-02",
-    "changes": [
+      "members/{name}: GM performance achievements (Champion, Finals, Conf Finals, Postseason, Bridesmaid, Seasoned GM) now derived from tenure history + standings data instead of owner_stats.csv \u2014 credits any staff role present during a season",
       "New page: NBN Wall Street (/invest) \u2014 buy and sell fractional team shares with NB\u00a5",
       "Share prices compound all-time using SOS-adjusted point differential algorithm (2\u00d7 multiplier for playoff games)",
       "Portfolio page shows equity, liquid balance, net worth, per-holding P/L, and equity chart over time",
       "Leaderboard ranks all members by total net worth (equity + liquid)",
       "Bookie/admin can lock and unlock the market",
       "All trades logged to NB\u00a5 ledger; homepage card added next to Bets"
-    ]
-  },
-  {
-    "version": "0.0.182",
-    "date": "2026-06-02",
-    "changes": [
-      "Season Stats: add team roster filter \u2014 select a team to show only players currently on that roster"
     ]
   },
   {
@@ -760,25 +730,10 @@
     "version": "0.0.164",
     "date": "2026-06-02",
     "changes": [
-      "Migrate build pipeline to nbn-today/build/: strip Shiny/RDS/Sheets cruft, write CSVs directly to repo, rewire nbn-api trigger"
-    ]
-  },
-  {
-    "version": "pending",
-    "date": "2026-06-02",
-    "changes": [
+      "Migrate build pipeline to nbn-today/build/: strip Shiny/RDS/Sheets cruft, write CSVs directly to repo, rewire nbn-api trigger",
       "Awards results: BOD members see full ballot on hover for any team chip in the ballot tracker",
       "Players: game log pagination and playoff-round badges on game log entries",
       "Team pages: Franchise Personnel section \u2014 full tenure history with per-tenure W/L record"
-    ]
-  },
-  {
-    "version": "pending",
-    "date": "2026-05-31",
-    "changes": [
-      "Players index: add career G column (after OVR, before Age)",
-      "Players index: add Missing OVR filter button",
-      "Awards results: ballot tracker distinguishes complete vs incomplete vs pending ballots; hover incomplete chips to see which awards are missing"
     ]
   },
   {
@@ -788,7 +743,10 @@
       "Add /strikes page (BOD-gated): issue, view, and delete member strikes with date and reason",
       "Members page: show strike count badge next to names of members with active strikes",
       "Homepage: Strikes card visible to BOD members under League Office",
-      "API: GET/POST /api/strikes, GET/POST/DELETE /api/strikes/{member}/{id}"
+      "API: GET/POST /api/strikes, GET/POST/DELETE /api/strikes/{member}/{id}",
+      "Players index: add career G column (after OVR, before Age)",
+      "Players index: add Missing OVR filter button",
+      "Awards results: ballot tracker distinguishes complete vs incomplete vs pending ballots; hover incomplete chips to see which awards are missing"
     ]
   },
   {
@@ -1442,13 +1400,7 @@
     "version": "0.0.24",
     "date": "2026-05-22",
     "changes": [
-      "Add NBN Trivia game (/trivia): guess the player from their season-by-season averages; player pool is anyone with 100+ career games; three of eight stat categories revealed per round; streak-based scoring; leaderboard stored server-side via GET/POST /api/trivia/scores (best score per person, auth required to submit)"
-    ]
-  },
-  {
-    "version": "pending",
-    "date": "2026-05-22",
-    "changes": [
+      "Add NBN Trivia game (/trivia): guess the player from their season-by-season averages; player pool is anyone with 100+ career games; three of eight stat categories revealed per round; streak-based scoring; leaderboard stored server-side via GET/POST /api/trivia/scores (best score per person, auth required to submit)",
       "Clarify Roster OVRs average label to show it's top-6 average",
       "Rename /compare to /frivolities to match nav label; old URL redirects",
       "Add Traded Away picks section to team draft picks page",
