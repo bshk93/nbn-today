@@ -11,14 +11,14 @@
     .page { max-width: 960px; margin: 0 auto; }
 
     /* ── Admin panel ──────────────────────────────────── */
-    #admin-panel {
+    #admin-panel, #bod-panel {
       background: #111;
       border: 1px solid #374151;
       border-radius: 8px;
       margin-bottom: 1.5rem;
       font-size: 0.85rem;
     }
-    #admin-panel summary {
+    #admin-panel summary, #bod-panel summary {
       padding: 0.5rem 0.75rem;
       cursor: pointer;
       color: #6b7280;
@@ -28,7 +28,7 @@
       text-transform: uppercase;
       user-select: none;
     }
-    #admin-panel summary:hover { color: #9ca3af; }
+    #admin-panel summary:hover, #bod-panel summary:hover { color: #9ca3af; }
     .admin-form {
       padding: 0.75rem;
       display: flex;
@@ -551,13 +551,13 @@
     .drawer-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 1.25rem; }
 
     /* Restyle admin panel inside drawer */
-    #control-drawer #admin-panel {
+    #control-drawer #admin-panel, #control-drawer #bod-panel {
       background: transparent;
       border: none;
       border-radius: 0;
       margin-bottom: 0;
     }
-    #control-drawer #admin-panel summary { padding: 0; margin-bottom: 0.5rem; }
+    #control-drawer #admin-panel summary, #control-drawer #bod-panel summary { padding: 0; margin-bottom: 0.5rem; }
     #control-drawer .admin-form {
       border-top: none;
       padding: 0;
@@ -607,24 +607,30 @@
     </div>
     <div class="drawer-body">
 
-      <!-- BOD admin panel (inside drawer) -->
-      <details id="admin-panel" style="display:none">
+      <!-- BOD controls (inside drawer) — visible to BOD + admin -->
+      <details id="bod-panel" style="display:none" open>
         <summary>BOD Controls</summary>
-        <div class="admin-form" style="margin-top:0.5rem">
-          <div class="admin-field">
-            <label>Year</label>
-            <input type="number" id="admin-year" style="width:80px" min="2020" max="2040" />
+
+        <!-- Submit trade -->
+        <div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Submit Trade</div>
+          <div style="font-size:0.7rem;color:#4b5563">Ownership flips now (hidden on the board) — shows as “Trade to Announce” until you announce it.</div>
+          <div id="trade-rows"></div>
+          <button class="btn btn-ghost btn-sm" id="trade-add-row" style="align-self:flex-start">+ Add pick</button>
+          <textarea id="trade-text" placeholder="Announcement text (e.g. “Phoenix acquires the 5th pick from New York for…”)"></textarea>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-primary btn-sm" id="trade-submit-btn">Stage Trade</button>
+            <span id="trade-status" style="font-size:0.75rem;color:#6b7280"></span>
           </div>
-          <div class="admin-field">
-            <label>Round 1 Date</label>
-            <input type="date" id="admin-date" />
-          </div>
-          <button class="btn btn-primary btn-sm" id="admin-save">Save</button>
-          <span id="admin-status"></span>
         </div>
+      </details>
+
+      <!-- Admin controls (inside drawer) — visible to admin only -->
+      <details id="admin-panel" style="display:none">
+        <summary>Admin Controls</summary>
 
         <!-- Reassign pick -->
-        <div style="border-top:1px solid #1f2937;margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+        <div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem">
           <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Reassign Pick</div>
           <select id="reassign-pick-sel" class="player-select"><option value="">Select pick…</option></select>
           <select id="reassign-owner-sel" class="player-select">
@@ -643,17 +649,17 @@
           <div style="font-size:0.7rem;color:#4b5563">Silent fix — changes ownership immediately, no announcement.</div>
         </div>
 
-        <!-- Submit trade -->
-        <div style="border-top:1px solid #1f2937;margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
-          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Submit Trade</div>
-          <div style="font-size:0.7rem;color:#4b5563">Ownership flips now (hidden on the board) — shows as “Trade to Announce” until you announce it.</div>
-          <div id="trade-rows"></div>
-          <button class="btn btn-ghost btn-sm" id="trade-add-row" style="align-self:flex-start">+ Add pick</button>
-          <textarea id="trade-text" placeholder="Announcement text (e.g. “Phoenix acquires the 5th pick from New York for…”)"></textarea>
-          <div style="display:flex;gap:0.5rem;align-items:center">
-            <button class="btn btn-primary btn-sm" id="trade-submit-btn">Stage Trade</button>
-            <span id="trade-status" style="font-size:0.75rem;color:#6b7280"></span>
+        <div class="admin-form" style="border-top:1px solid #1f2937;margin-top:0.75rem;padding-top:0.75rem">
+          <div class="admin-field">
+            <label>Year</label>
+            <input type="number" id="admin-year" style="width:80px" min="2020" max="2040" />
           </div>
+          <div class="admin-field">
+            <label>Round 1 Date</label>
+            <input type="date" id="admin-date" />
+          </div>
+          <button class="btn btn-primary btn-sm" id="admin-save">Save</button>
+          <span id="admin-status"></span>
         </div>
 
         <!-- Snapshot / restore -->
@@ -1942,8 +1948,9 @@
       toggle.style.display = isBod() ? 'flex' : 'none';
 
       if (isBod()) {
-        const panel = document.getElementById('admin-panel');
-        panel.style.display = '';
+        document.getElementById('bod-panel').style.display = '';
+        // Admin-only controls (year/date, snapshots, reset, reassign pick) stay hidden for plain BOD.
+        if (isAdmin()) document.getElementById('admin-panel').style.display = '';
         initAdminPanel(state || {});
       }
 

@@ -297,6 +297,14 @@
       Only unsubmitted picks can be traded — once a pick has been submitted, it's final.
     </p>
 
+    <h3>Picking someone who isn't in the pool</h3>
+    <p>
+      The <strong>Available Players</strong> pool covers this year's expected draftees, but
+      you're not limited to it. If you'd like to select someone who isn't listed,
+      <strong>DM your pick directly to BOD</strong> — they'll add the player to the pool and
+      submit the selection for you.
+    </p>
+
     <!-- ── BOD Section (auth-gated) ──────────────────────── -->
 
     <hr class="divider">
@@ -318,9 +326,48 @@
       <div class="tip">
         Do a dry run before the real draft: walk through the full reveal sequence together.
         The live show writes to its own isolated picks file, so nothing you do here touches
-        the permanent draft order or rosters. When you're done rehearsing, hit
-        <strong>Reset to Clean Slate</strong> in the Controls drawer to clear the rehearsal
-        picks, event log and reveals and re-seed the board from the real draft order.
+        the permanent draft order or rosters. When you're done rehearsing, <strong>ask bryn
+        to reset the board to a clean slate</strong> before going live — that wipes the
+        rehearsal picks, event log and reveals and re-seeds from the real draft order.
+      </div>
+
+      <h3>Two places picks live: permanent order vs. live board</h3>
+      <p>
+        Pick ownership exists in <strong>two separate files</strong>, and which one you
+        edit depends entirely on <em>when</em>. Getting this right is the most important
+        thing to understand before going live.
+      </p>
+      <div class="card" style="display:flex;flex-direction:column;gap:0.75rem">
+        <div>
+          <strong style="color:#f3f4f6">Permanent draft order — the
+          <a href="/draft/" style="color:#60a5fa">/draft/</a> page (Edit)</strong>
+          <p style="margin:0.25rem 0 0">
+            This is the canonical draft order — the same picks the team pages and the real
+            picks API read, and what the live board <em>seeds from</em>. Edit it here (sign
+            in, open a future draft year, click <strong>Edit</strong>) to set up the order
+            and fix pre-draft trades. <strong>Do all of this before the show.</strong>
+          </p>
+        </div>
+        <div>
+          <strong style="color:#f3f4f6">Live board — the Controls drawer on
+          <a href="/draft/live/" style="color:#60a5fa">/draft/live</a></strong>
+          <p style="margin:0.25rem 0 0">
+            <strong>Submit Trade</strong> changes ownership on the broadcast's own isolated
+            copy only — it's your <strong>during-the-show</strong> tool, carrying the
+            announce/mask flow and event log the broadcast needs. (<strong>Reassign Pick</strong>,
+            an admin-only silent fix, lives here too.)
+          </p>
+        </div>
+      </div>
+      <div class="warning">
+        <strong>The two files fork once the show starts writing.</strong> The live board
+        copies the permanent order on its <em>first</em> pick, trade, or reassign of the
+        night — after that the two are independent. So once you're live, editing the
+        <a href="/draft/" style="color:#fb923c">/draft/</a> page will <strong>not</strong>
+        change the broadcast, and Controls-drawer changes won't touch the permanent order.
+        Lock the permanent order in <em>before</em> going live; route every on-air change
+        through the Controls drawer. (Reset is what re-merges them — never during a live
+        draft.)
       </div>
 
       <h3>Roles on draft day</h3>
@@ -419,7 +466,7 @@
         <li>Picks stay at the same slot number; only the owning team changes.</li>
         <li>The new owner's team token is authorized to submit that pick as soon as it's staged.</li>
         <li>Made a mistake? <strong>Cancel</strong> a not-yet-announced trade on the banner to revert ownership.</li>
-        <li><strong>Reassign Pick</strong> is still available as a silent fix — it changes ownership immediately with no announcement (use it for corrections, not for on-air trades).</li>
+        <li><strong>Reassign Pick</strong> (admin-only) is still available as a silent fix — it changes ownership immediately with no announcement (use it for corrections, not for on-air trades). Ask the admin if you need one.</li>
         <li>After the draft, each trade must be recorded as a formal transaction — see <strong>Post-draft: transactions</strong> below.</li>
       </ul>
 
@@ -443,22 +490,46 @@
         the board current.
       </p>
 
-      <h3>Rehearsing: snapshot, restore &amp; reset</h3>
+      <h3>Drafting someone who isn't in the pool</h3>
+      <p>
+        A GM may want to select a player who isn't in the draft pool. To make them
+        draftable:
+      </p>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          Create the player on the <a href="/players/" style="color:#60a5fa">/players</a>
+          page.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          Set their <strong>Draft Year</strong> to <strong>2026</strong> — that draft class
+          is what puts them in this year's pool.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          They'll now appear in the <strong>Available Players</strong> pool — draft them for
+          the team on <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> like any
+          other selection.
+        </div>
+      </div>
+
+      <h3>Rehearsing</h3>
       <p>
         The live show reads and writes its own isolated picks file, seeded from the real
         draft order. Nothing you do on /draft/live — reassigns, selections, reveals —
         ever changes the permanent draft picks or rosters, so it's safe to rehearse
-        freely. You just need to wipe the rehearsal data before going live. Two tools in
-        the Controls drawer do this:
+        freely. You just need the board wiped clean before going live.
       </p>
-      <ul>
-        <li><strong>Save Snapshot / Restore</strong> — capture the current state, rehearse, then Restore to revert picks and state to that exact point.</li>
-        <li><strong>Reset to Clean Slate</strong> — clear all picks, the event log, reveals and queues, and re-seed the board from the current permanent draft order. This is the cleanest reset before going live: it picks up any last-minute order changes, whereas a snapshot can be stale.</li>
-      </ul>
-      <div class="warning">
-        <strong>Do not Restore or Reset during a live draft.</strong> Both wipe the
-        picks already made on the live board — the broadcast's picks will disappear.
-        These are rehearsal tools only; once the real draft starts, leave them alone.
+      <div class="tip">
+        A few setup actions are handled by the admin — just ask <strong>bryn</strong> if you
+        need one: resetting the board to a clean slate (after a rehearsal), saving or
+        restoring a snapshot, reassigning a pick as a silent fix, and setting the draft
+        year and Round 1 date.
       </div>
 
       <h3>Post-draft: transactions</h3>

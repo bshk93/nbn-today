@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.0.303",
+    "date": "2026-06-20",
+    "changes": [
+      "draft/live: moved the Reassign Pick control from the BOD panel into the admin-only Admin Controls panel \u2014 it's a silent ownership fix, so it now sits with the other admin tools and is hidden from plain BOD members (the API endpoint remains ungated). Updated the draft guide to match",
+      "draft/guide: documented how to draft a player who isn't in the pool \u2014 members DM their pick to BOD; BOD creates the player on /players, sets their Draft Year to 2026 so they appear in the pool, then drafts them on /draft/pick"
+    ]
+  },
+  {
     "version": "0.0.302",
     "date": "2026-06-20",
     "changes": [

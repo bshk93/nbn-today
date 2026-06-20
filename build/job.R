@@ -515,7 +515,7 @@ inform(" * DONE")
 
 inform("Writing game high CSVs....")
 game_highs_base <- dfs_all %>%
-  select(DATE, SEASON, PLAYER, TEAM, OPP, gametype, P, R, A, S, B, `3PM`)
+  select(DATE, SEASON, PLAYER, TEAM, OPP, gametype, ROUND, GAME, P, R, A, S, B, `3PM`)
 
 list(
   "game-highs-p"   = "P",
@@ -528,9 +528,9 @@ list(
   iwalk(function(col, name) {
     game_highs_base %>%
       arrange(desc(.data[[col]]), DATE) %>%
-      slice_head(n = 20) %>%
+      slice_head(n = 50) %>%
       mutate(RANK = row_number()) %>%
-      select(RANK, DATE, SEASON, PLAYER, TEAM, OPP, gametype, P, R, A, S, B, `3PM`) %>%
+      select(RANK, DATE, SEASON, PLAYER, TEAM, OPP, gametype, ROUND, GAME, P, R, A, S, B, `3PM`) %>%
       write_csv(file.path(REPO_ROOT, "data", glue("{name}.csv")))
   })
 inform(" * DONE")

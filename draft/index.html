@@ -325,6 +325,21 @@
       fn(tok);
     }
 
+    // Only the `rosters` role (and bod/admin, which subsume it) can persist pick
+    // edits via PUT /api/picks. Team roles cannot — so don't show them the Edit
+    // button just to have the save 403. Mirrors the isBod() gating on /draft/live.
+    const EDIT_ROLES = ['rosters', 'bod', 'admin'];
+    async function loadCanEditPicks() {
+      const t = getToken();
+      if (!t) return false;
+      try {
+        const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${t}` } });
+        if (!res.ok) return false;
+        const roles = (await res.json()).roles || [];
+        return roles.some(r => EDIT_ROLES.includes(r));
+      } catch { return false; }
+    }
+
     const TEAM_ABBRS = [
       'ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
       'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
@@ -721,10 +736,11 @@
     }
 
     async function init() {
-      const [seasonsRes, picksRes, biosRes] = await Promise.all([
+      const [seasonsRes, picksRes, biosRes, canEditPicks] = await Promise.all([
         fetch('/players/player_seasons.csv'),
         fetch('/api/picks'),
         fetch('/api/players'),
+        loadCanEditPicks(),
       ]);
 
       if (!seasonsRes.ok) { document.getElementById('status').textContent = 'Failed to load data.'; return; }
@@ -804,11 +820,23 @@
           document.querySelector('header h1').appendChild(b);
         }
 
-        editBtn.style.display = isFuture ? '' : 'none';
-        editBtn.onclick = () => withToken(() => renderFutureEditable(picks, y, bios, fresh => {
-          currentAllPicks = fresh;
-          renderYear(y, fresh);
-        }));
+        // Show Edit for future drafts when the user either can already edit
+        // (token carries rosters/bod/admin) or has no token yet (cold start —
+        // the click prompts for one, matching the rest of the site). A token
+        // that lacks edit roles hides the button outright.
+        editBtn.style.display = (isFuture && (canEditPicks || !getToken())) ? '' : 'none';
+        editBtn.onclick = () => withToken(async () => {
+          // Re-verify after a freshly entered token so a team-only token can't
+          // open the (non-persistable) editor and look like real access.
+          if (!await loadCanEditPicks()) {
+            alert('Your token does not have permission to edit draft picks.');
+            return;
+          }
+          renderFutureEditable(picks, y, bios, fresh => {
+            currentAllPicks = fresh;
+            renderYear(y, fresh);
+          });
+        });
 
         if (isFuture) renderFuture(picks, y, bios);
         else render(drafted, y);

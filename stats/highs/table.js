@@ -15,12 +15,21 @@
 
   const STAT_KEYS = new Set(STAT_COLS.map(s => s.key));
 
+  const ROUND_NAMES = { '1': 'R1', '2': 'R2', '3': 'Conf Finals', '4': 'Finals' };
+
+  function roundGameLabel(row) {
+    if (row.gametype !== 'PLAYOFF' || !row.ROUND || row.ROUND === 'NA') return '';
+    const r = ROUND_NAMES[row.ROUND] || `R${row.ROUND}`;
+    return `${r} · G${row.GAME}`;
+  }
+
   const COLS = [
     { key: 'RANK',   label: '#',      cls: 'right muted', numeric: true,  defaultDir:  1 },
     { key: 'PLAYER', label: 'Player', cls: 'player-name', numeric: false, defaultDir:  1 },
     { key: 'TEAM',   label: 'Tm',     cls: 'center',      numeric: false, defaultDir:  1 },
     { key: 'OPP',    label: 'Opp',    cls: 'center muted',numeric: false, defaultDir:  1 },
     { key: 'SEASON', label: 'Season', cls: 'muted',       numeric: false, defaultDir:  1 },
+    { key: 'ROUND_GAME', label: 'Round', cls: 'center muted', numeric: false, defaultDir: 1 },
     { key: 'DATE',   label: 'Date',   cls: 'muted',       numeric: false, defaultDir:  1 },
     ...STAT_COLS.map(s => ({
       key: s.key,
@@ -59,6 +68,11 @@
   }
 
   function sortVal(row, field) {
+    if (field === 'ROUND_GAME') {
+      const round = parseInt(row.ROUND, 10);
+      const game = parseInt(row.GAME, 10);
+      return (row.gametype === 'PLAYOFF' && !isNaN(round) && !isNaN(game)) ? round * 100 + game : -Infinity;
+    }
     const v = row[field];
     if (v === undefined || v === '' || v === 'NA') {
       return (STAT_KEYS.has(field) || field === 'RANK') ? -Infinity : '';
@@ -102,6 +116,8 @@
           a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
           a.textContent = row.PLAYER;
           td.appendChild(a);
+        } else if (col.key === 'ROUND_GAME') {
+          td.textContent = roundGameLabel(row);
         } else {
           td.textContent = row[col.key] ?? '';
         }
