@@ -171,6 +171,14 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
+    button.pick-in-btn {
+      border: none; background: none; font-family: inherit; cursor: pointer;
+    }
+    .pick-in-btn .pick-in-tap {
+      font-size: 0.6rem; font-weight: 600; color: #a16207;
+      letter-spacing: 0.03em; text-transform: none;
+    }
+    .pick-in-btn:active { opacity: 0.65; }
     .pick-in-dot {
       width: 7px; height: 7px;
       background: #facc15;
@@ -1543,11 +1551,18 @@
           ${urlFormHtml}
           <div class="show-modal-footer">
             <div class="show-modal-hint">${hintText}</div>
-            <button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button>
+            <div style="display:flex;gap:0.5rem">
+              <button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button>
+              ${revealTeam ? `<button class="btn btn-primary btn-sm" id="modal-advance-btn">${revealTeam} depth chart &rarr;</button>` : ''}
+            </div>
           </div>
         </div>`;
       overlay.style.display = 'flex';
       overlay.focus();
+
+      if (revealTeam) {
+        document.getElementById('modal-advance-btn').addEventListener('click', () => advanceToDepth());
+      }
 
       if (isBod()) {
         document.getElementById('hl-url-save').addEventListener('click', async () => {
@@ -1783,7 +1798,16 @@
           });
           playerWrap.appendChild(nameBtn);
         } else if (p.player) {
-          playerWrap.innerHTML = `<span class="pick-in-cell"><span class="pick-in-dot"></span> The pick is in</span>`;
+          if (isBod()) {
+            // Tap-to-reveal: mobile equivalent of the Enter keystroke.
+            const revealBtn = document.createElement('button');
+            revealBtn.className = 'pick-in-cell pick-in-btn';
+            revealBtn.innerHTML = `<span class="pick-in-dot"></span> The pick is in <span class="pick-in-tap">· tap to reveal</span>`;
+            revealBtn.addEventListener('click', () => doReveal(p));
+            playerWrap.appendChild(revealBtn);
+          } else {
+            playerWrap.innerHTML = `<span class="pick-in-cell"><span class="pick-in-dot"></span> The pick is in</span>`;
+          }
         } else if (isOnClock) {
           playerWrap.innerHTML = `<span class="pc-clock">⏱ On the Clock</span>`;
         } else if (state.round1_date && Date.now() >= pickWindowEnd(state.round1_date, p.round, p.pick)) {

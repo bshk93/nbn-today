@@ -291,6 +291,10 @@ document.title = `${abbr} — NBN`;
   tfoot tr.tfoot-cap.under .tfoot-diff { color: #4ade80; }
   tfoot td.tfoot-label { color: #6b7280; }
   tfoot td.tfoot-count { color: #374151; font-size: 0.72rem; text-align: right; }
+  tfoot tr.tfoot-hardcap td { padding-top: 0.4rem; }
+  .hardcap-chip { display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.02em;
+    padding: 0.05rem 0.35rem; border-radius: 3px; background: #422006; color: #fbbf24; border: 1px solid #854d0e; }
+  .hardcap-chip.apron2 { background: #450a0a; color: #fca5a5; border-color: #991b1b; }
   .cap-edit-form {
     display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
     margin-top: 0.75rem; padding: 0.6rem 0.75rem;
@@ -777,7 +781,7 @@ function renderExceptionsSection(teamState, capLevels, teamSalary, season) {
   section.style.display = wrap.children.length ? '' : 'none';
 }
 
-function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = []) {
+function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}) {
   if (!rows.length) return null;
   const curYr = currentSeasonYr();
   const hasSlug = 'SLUG' in rows[0] && !('PLAYER' in rows[0]);
@@ -1149,6 +1153,25 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
               : `-${formatSalary(Math.abs(diff))}`;
             td.appendChild(diffSpan);
           });
+        });
+      }
+
+      // per-season hard-cap status row
+      const anyHardCap = salaryKeys.some(k => seasonStates[k]?.hard_cap);
+      if (anyHardCap) {
+        const tr = tfRow('tfoot-cap tfoot-hardcap');
+        tfCell(tr, 'Hard-Capped', 'tfoot-label', nonSalCols);
+        salaryKeys.forEach(k => {
+          const hc = seasonStates[k]?.hard_cap;
+          if (!hc) { tfCell(tr, '—', 'right'); return; }
+          const td = tr.insertCell();
+          td.className = 'right';
+          const chip = document.createElement('span');
+          chip.className = 'hardcap-chip' + (hc === 'second_apron' ? ' apron2' : '');
+          chip.textContent = hc === 'second_apron' ? '2nd Apron' : '1st Apron';
+          const reason = seasonStates[k]?.hard_cap_reason;
+          if (reason) chip.title = reason;
+          td.appendChild(chip);
         });
       }
     }
@@ -2527,6 +2550,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const capLevels   = capr.status === 'fulfilled'  ? capr.value  : {};
   const currentOvr  = ovrr.status === 'fulfilled'  ? ovrr.value  : {};
   const teamState   = tsr.status  === 'fulfilled'  ? tsr.value   : null;
+  const seasonStates = teamState?.seasons || {};
   const deadCapRows = dcr.status  === 'fulfilled'  ? dcr.value : [];
   const membersData = memr.status  === 'fulfilled' ? memr.value  : [];
   const allGames    = gamesr.status === 'fulfilled' ? gamesr.value : [];
@@ -2662,7 +2686,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     rosterWrap.innerHTML = '';
     const rosterRows = parseCSV(rr.value);
     const rosterHeaders = parseLine(rr.value.trim().split('\n')[0]);
-    const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows);
+    const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows, seasonStates);
     if (t) rosterWrap.appendChild(t);
     else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
 
@@ -2679,11 +2703,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     renderHardCapBanner(teamState);
     renderExceptionsSection(teamState, capLevels, teamSalaryTotal, curYr);
 
-    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels, currentOvr, deadCapRows), rosterCellConfig(rosterHeaders, biosData));
+    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels, currentOvr, deadCapRows, seasonStates), rosterCellConfig(rosterHeaders, biosData));
     setupJerseyEditable('roster-title', 'roster-wrap', rosterRows, biosData, () => {
       const wrapEl = document.getElementById('roster-wrap');
       wrapEl.innerHTML = '';
-      const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows);
+      const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows, seasonStates);
       if (t) wrapEl.appendChild(t);
       else wrapEl.innerHTML = '<div class="status">No roster data.</div>';
     });
@@ -2695,7 +2719,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         deadCapRows.length = 0;
         newRows.forEach(r => deadCapRows.push(r));
         rosterWrap.innerHTML = '';
-        const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows);
+        const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows, seasonStates);
         if (t) rosterWrap.appendChild(t);
         else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
       }
@@ -2719,26 +2743,52 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
         const curState = teamState || {};
 
-        const fHardCapLbl = document.createElement('label');
-        fHardCapLbl.textContent = 'Hard Cap';
-        const fHardCap = document.createElement('select');
-        [['', 'None'], ['first_apron', 'First Apron'], ['second_apron', 'Second Apron']].forEach(([v, l]) => {
-          const o = document.createElement('option');
-          o.value = v; o.textContent = l;
-          if (v === (curState.hard_cap || '')) o.selected = true;
-          fHardCap.appendChild(o);
+        // ── Per-season hard cap controls ──────────────────────────────────────
+        // Seasons displayed in the roster table: any salary season >= current.
+        const capSeasonSet = new Set([season]);
+        rosterRows.forEach(r => {
+          const bio = biosData[r.SLUG] || {};
+          Object.keys(bio.salaries || {}).forEach(k => {
+            if (/^\d{2}-\d{2}$/.test(k) && k >= season) capSeasonSet.add(k);
+          });
         });
-        fHardCapLbl.appendChild(fHardCap);
-        capFormEl.appendChild(fHardCapLbl);
+        deadCapRows.forEach(r => Object.keys(r).forEach(k => {
+          if (/^\d{2}-\d{2}$/.test(k) && k >= season) capSeasonSet.add(k);
+        }));
+        const capSeasons = [...capSeasonSet].sort();
 
-        const fReasonLbl = document.createElement('label');
-        fReasonLbl.textContent = 'Reason';
-        const fReason = document.createElement('input');
-        fReason.type = 'text'; fReason.placeholder = 'e.g. NTMLE signing';
-        fReason.value = curState.hard_cap_reason || '';
-        fReason.style.width = '14rem';
-        fReasonLbl.appendChild(fReason);
-        capFormEl.appendChild(fReasonLbl);
+        const hcBlock = document.createElement('div');
+        hcBlock.style.cssText = 'display:flex;flex-direction:column;gap:0.35rem;width:100%';
+        const hcTitle = document.createElement('div');
+        hcTitle.textContent = 'Hard Cap (per season)';
+        hcTitle.style.cssText = 'font-size:0.72rem;color:#9ca3af;font-weight:600';
+        hcBlock.appendChild(hcTitle);
+
+        // season → { sel, reason } controls, for diffing on save
+        const hcControls = {};
+        capSeasons.forEach(s => {
+          const st = seasonStates[s] || {};
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;gap:0.4rem;align-items:center';
+          const lbl = document.createElement('span');
+          lbl.textContent = s;
+          lbl.style.cssText = 'font-size:0.72rem;color:#6b7280;width:3.2rem';
+          const sel = document.createElement('select');
+          [['', 'None'], ['first_apron', 'First Apron'], ['second_apron', 'Second Apron']].forEach(([v, l]) => {
+            const o = document.createElement('option');
+            o.value = v; o.textContent = l;
+            if (v === (st.hard_cap || '')) o.selected = true;
+            sel.appendChild(o);
+          });
+          const reason = document.createElement('input');
+          reason.type = 'text'; reason.placeholder = 'reason';
+          reason.value = st.hard_cap_reason || '';
+          reason.style.width = '12rem';
+          row.appendChild(lbl); row.appendChild(sel); row.appendChild(reason);
+          hcBlock.appendChild(row);
+          hcControls[s] = { sel, reason };
+        });
+        capFormEl.appendChild(hcBlock);
 
         const fMleTypeLbl = document.createElement('label');
         fMleTypeLbl.textContent = 'MLE Type';
@@ -2779,20 +2829,40 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
         saveBtn.addEventListener('click', async () => {
           saveBtn.disabled = true; statusEl.textContent = 'Saving…';
-          try {
-            const stateResp = await fetch(`/api/team-state/${abbr}`, {
-              method: 'PUT',
-              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                hard_cap: fHardCap.value || null,
-                hard_cap_reason: fReason.value.trim(),
-                mle_type: fMleType.value || null,
-                mle_used: +fMleUsed.value || 0,
-                bae_used: fBaeUsed.checked,
-              }),
+
+          // One PUT per season that needs writing. Each season's MLE/BAE state is
+          // preserved from its existing slot; only the current season's MLE/BAE
+          // fields are editable here.
+          const puts = [];
+          capSeasons.forEach(s => {
+            const st = seasonStates[s] || {};
+            const newCap = hcControls[s].sel.value || null;
+            const newReason = hcControls[s].reason.value.trim();
+            const isCur = s === season;
+            const capChanged = (st.hard_cap || null) !== newCap || (st.hard_cap_reason || '') !== newReason;
+            if (!isCur && !capChanged) return;  // nothing to write for this season
+            puts.push({
+              season: s,
+              body: {
+                hard_cap: newCap,
+                hard_cap_reason: newReason,
+                mle_type: isCur ? (fMleType.value || null) : (st.mle_type || null),
+                mle_used: isCur ? (+fMleUsed.value || 0) : (st.mle_used || 0),
+                bae_used: isCur ? fBaeUsed.checked : !!st.bae_used,
+              },
             });
-            if (stateResp.status === 403) { statusEl.textContent = 'Not authorized.'; saveBtn.disabled = false; return; }
-            if (!stateResp.ok) throw new Error('State save failed.');
+          });
+
+          try {
+            for (const { season: s, body } of puts) {
+              const resp = await fetch(`/api/team-state/${abbr}?season=${encodeURIComponent(s)}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+              });
+              if (resp.status === 403) { statusEl.textContent = 'Not authorized.'; saveBtn.disabled = false; return; }
+              if (!resp.ok) throw new Error(`Save failed for ${s}.`);
+            }
             location.reload();
           } catch (e) {
             statusEl.textContent = e.message; saveBtn.disabled = false;

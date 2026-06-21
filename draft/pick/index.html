@@ -336,7 +336,9 @@
     function buildSwapTakesFrom(picks) {
       const map = {};
       picks.forEach(p => {
-        if (p.swap_conveys === true && p.swap_owner) map[p.swap_owner] = p.owner;
+        // Key by round+team: a conveyed swap only moves picks in that same round,
+        // so it must not bleed into a same-team pick in another round.
+        if (p.swap_conveys === true && p.swap_owner) map[`${p.round}-${p.swap_owner}`] = p.owner;
       });
       return map;
     }
@@ -344,7 +346,7 @@
     function pickOwners(p) {
       let raw;
       if (p.swap_conveys === true) raw = p.swap_owner;
-      else raw = _swapTakesFrom[p.orig] ?? p.owner;
+      else raw = _swapTakesFrom[`${p.round}-${p.orig}`] ?? p.owner;
       if (!raw || raw === '?') return [(p.orig || '').toUpperCase()];
       return raw.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
     }

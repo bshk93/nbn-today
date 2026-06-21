@@ -1652,7 +1652,7 @@ async function submitTransaction() {
   } else if (type === 'trade') {
     const trade = collectTrade();
     if (!trade.date) { setStatus('err', 'Date is required.'); return; }
-    if (trade.transfers.length < 2) { setStatus('err', 'A trade needs at least 2 legs with assets.'); return; }
+    if (trade.transfers.length < 1) { setStatus('err', 'A trade needs at least one leg with assets.'); return; }
     date = trade.date;
     details = { transfers: trade.transfers, legality: 'tbd' };
   } else {

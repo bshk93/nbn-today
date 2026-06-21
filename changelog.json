@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.304",
+    "date": "2026-06-21",
+    "changes": [
+      "draft/live: added mobile tap targets for the reveal flow, which was previously driven only by the Enter key. BOD/admins can now tap the \"The pick is in\" label on the board to reveal that pick, and the player-reveal modal has a \"{TEAM} depth chart \u2192\" button to advance to the depth chart. Desktop keyboard shortcuts are unchanged",
+      "draft/pick: fixed pick-swap ownership resolution to key by round+team, so a conveyed swap only moves picks in its own round and no longer bleeds into a same-team pick in another round",
+      "teams: hard-cap status is now tracked per season instead of team-wide \u2014 the cap editor shows a hard-cap dropdown and reason per displayed season, the roster table renders a per-season \"Hard-Capped\" footer row with 1st/2nd Apron chips, and saves write one team-state PUT per changed season",
+      "transactions: allow submitting a single-leg trade (e.g. a one-sided asset transfer) instead of requiring at least two legs"
+    ]
+  },
+  {
     "version": "0.0.303",
     "date": "2026-06-20",
     "changes": [
