@@ -60,6 +60,37 @@
     .status.ok  { color: #22c55e; }
     .status.err { color: #ef4444; }
 
+    .ly-card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
+    }
+    .ly-card h2 {
+      font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem;
+    }
+    .ly-current {
+      font-size: 0.85rem; color: #9ca3af; margin-bottom: 1rem;
+    }
+    .ly-current b {
+      color: #60a5fa; font-family: ui-monospace, 'Cascadia Code', monospace; font-weight: 700;
+    }
+    .ly-row {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      padding: 0.5rem 0; border-top: 1px solid #2b3544; font-size: 0.85rem;
+    }
+    .ly-row .ly-season {
+      font-family: ui-monospace, 'Cascadia Code', monospace; font-weight: 700;
+      color: #f3f4f6; width: 3.5rem;
+    }
+    .ly-row .ly-note { color: #6b7280; font-size: 0.75rem; }
+    .ly-row input[type="date"] {
+      background: #111827; border: 1px solid #374151; border-radius: 6px;
+      color: #f3f4f6; font-size: 0.82rem; font-family: inherit;
+      padding: 0.3rem 0.45rem; outline: none;
+    }
+    .ly-row input[type="date"]:focus { border-color: #3b82f6; }
+    .btn-ghost { background: transparent; color: #9ca3af; border: 1px solid #374151; }
+    .btn-ghost:hover { color: #f3f4f6; border-color: #4b5563; }
+
     @media (max-width: 540px) {
       .fields { grid-template-columns: repeat(2, 1fr); }
     }
@@ -77,6 +108,8 @@
       <p id="auth-msg">A committee token is required to edit these values.</p>
       <button class="btn btn-primary" id="auth-btn">Enter Token</button>
     </div>
+
+    <div id="league-year"></div>
 
     <div class="seasons" id="seasons">
       <p style="color:#6b7280;font-size:0.875rem;">Loading…</p>
@@ -109,6 +142,11 @@
       return `${String((a + 1) % 100).padStart(2, '0')}-${String((b + 1) % 100).padStart(2, '0')}`;
     }
 
+    // Default rollover for a season: July 1 of its first calendar year ('26-27' -> '2026-07-01').
+    function defaultStart(season) {
+      return `20${season.split('-')[0]}-07-01`;
+    }
+
     function fmtDollars(v) {
       return v ? '$' + Number(v).toLocaleString('en-US') : '';
     }
@@ -121,8 +159,111 @@
       if (t && t.trim()) { setToken(t.trim()); cb(t.trim()); }
     }
 
-    function renderSeasons(capLevels, canEdit) {
-      const cur  = currentSeason();
+    function renderLeagueYear(leagueData, canAdvance) {
+      const cur = leagueData.current_season;
+      const rollovers = leagueData.rollovers || {};
+      const container = document.getElementById('league-year');
+      container.innerHTML = '';
+
+      const card = document.createElement('div');
+      card.className = 'ly-card';
+      card.innerHTML = `
+        <h2>League Year</h2>
+        <p class="ly-current">The cap/contract clock. Current league year: <b>${cur}</b>.
+        Default rollover is July 1; set an earlier date to advance the league year now.</p>`;
+
+      if (!canAdvance) {
+        if (getToken()) {
+          const note = document.createElement('p');
+          note.className = 'ly-note';
+          note.textContent = 'BOD or admin role required to change the rollover date.';
+          card.appendChild(note);
+        }
+        container.appendChild(card);
+        return;
+      }
+
+      // Rows for: current season, next season, and any season with an override set.
+      const seasons = [...new Set([cur, nextSeason(cur), ...Object.keys(rollovers)])]
+        .sort((a, b) => a.localeCompare(b));
+
+      seasons.forEach(season => {
+        const override = rollovers[season];
+        const row = document.createElement('div');
+        row.className = 'ly-row';
+
+        const label = document.createElement('span');
+        label.className = 'ly-season';
+        label.textContent = season;
+
+        const begins = document.createElement('span');
+        begins.style.color = '#9ca3af';
+        begins.textContent = 'begins';
+
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.value = override || defaultStart(season);
+
+        const save = document.createElement('button');
+        save.className = 'btn btn-primary';
+        save.textContent = 'Save';
+
+        const status = document.createElement('span');
+        status.className = 'status';
+
+        row.appendChild(label);
+        row.appendChild(begins);
+        row.appendChild(input);
+        row.appendChild(save);
+
+        const note = document.createElement('span');
+        note.className = 'ly-note';
+        note.textContent = override ? `overridden (default ${defaultStart(season)})` : 'default';
+        row.appendChild(note);
+
+        if (override) {
+          const reset = document.createElement('button');
+          reset.className = 'btn btn-ghost';
+          reset.textContent = 'Reset to Jul 1';
+          reset.addEventListener('click', async () => {
+            reset.disabled = true; status.textContent = 'Resetting…'; status.className = 'status';
+            try {
+              const r = await fetch(`/api/league-year/${season}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${getToken()}` },
+              });
+              if (!r.ok) throw new Error();
+              location.reload();
+            } catch { status.textContent = 'Error.'; status.className = 'status err'; reset.disabled = false; }
+          });
+          row.appendChild(reset);
+        }
+
+        row.appendChild(status);
+
+        save.addEventListener('click', async () => {
+          save.disabled = true; status.textContent = 'Saving…'; status.className = 'status';
+          try {
+            const r = await fetch(`/api/league-year/${season}`, {
+              method: 'PUT',
+              headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ effective: input.value }),
+            });
+            if (r.status === 403) {
+              status.textContent = 'Not authorized.'; status.className = 'status err'; save.disabled = false; return;
+            }
+            if (!r.ok) throw new Error();
+            location.reload();
+          } catch { status.textContent = 'Error saving.'; status.className = 'status err'; save.disabled = false; }
+        });
+
+        card.appendChild(row);
+      });
+
+      container.appendChild(card);
+    }
+
+    function renderSeasons(capLevels, canEdit, cur) {
       const next = nextSeason(cur);
       const all  = new Set([...Object.keys(capLevels), cur, next]);
       const seasons = [...all].sort((a, b) => b.localeCompare(a));
@@ -219,7 +360,8 @@
       const authMsg    = document.getElementById('auth-msg');
       const authBtn    = document.getElementById('auth-btn');
 
-      let canEdit = false;
+      let canEdit = false;     // rosters/admin — edit cap numbers
+      let canAdvance = false;  // bod/admin — change the league-year rollover
 
       if (!token) {
         authMsg.textContent = 'A committee token is required to edit these values.';
@@ -238,7 +380,8 @@
         } else {
           const me = await meResp.json();
           canEdit = me.roles.some(r => r === 'rosters' || r === 'admin');
-          if (!canEdit) {
+          canAdvance = me.roles.some(r => r === 'bod' || r === 'admin');
+          if (!canEdit && !canAdvance) {
             authMsg.textContent = `Signed in as ${me.name}, but this role cannot edit league settings.`;
             authBanner.style.display = '';
             authBtn.style.display = 'none';
@@ -246,9 +389,17 @@
         }
       }
 
-      const capResp = await fetch('/api/cap-levels').catch(() => null);
+      const [capResp, lyResp] = await Promise.all([
+        fetch('/api/cap-levels').catch(() => null),
+        fetch('/api/league-year').catch(() => null),
+      ]);
       const capLevels = (capResp && capResp.ok) ? await capResp.json() : {};
-      renderSeasons(capLevels, canEdit);
+      const leagueData = (lyResp && lyResp.ok)
+        ? await lyResp.json()
+        : { current_season: currentSeason(), rollovers: {} };
+
+      renderLeagueYear(leagueData, canAdvance);
+      renderSeasons(capLevels, canEdit, leagueData.current_season);
     }
 
     init();

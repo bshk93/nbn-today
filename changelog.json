@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.0.305",
+    "date": "2026-06-21",
+    "changes": [
+      "league year: introduced a manual, BOD-controlled \"league year\" (the cap/contract clock) modeled as a date \u2192 season function. Each season defaults to a July 1 rollover; BOD can set an earlier (or later) effective date from Cap Settings to advance the league year ahead of the calendar",
+      "cap settings: added a \"League Year\" panel showing the current league year, with per-season rollover-date controls (Save / Reset to Jul 1), gated to BOD and admin",
+      "teams: the hard-cap banner and the roster table's first salary column now follow the league year. Advancing the year hides the prior season's column from view while its salary and hard-cap/total snapshot are preserved in player bios and team-state",
+      "transactions: signings, releases, renounces, draft-pick signings, and two-way conversions now derive their season from the transaction's own date (via the league-year rollover map) instead of today's date, so backdated transactions and pre-rollover edits file into the correct season",
+      "box scores remain on the calendar-based stats clock, unchanged \u2014 the league year only governs cap/contract logic"
+    ]
+  },
+  {
     "version": "0.0.304",
     "date": "2026-06-21",
     "changes": [

@@ -698,7 +698,14 @@ function parseCapHolds(val) {
   return map;
 }
 
+// The current league year (cap/contract clock). Set from GET /api/league-year at
+// page load; falls back to the date-based season if that fetch fails. BOD advances
+// it from Cap Settings; once set it drives every "current season" use on this page
+// (roster first column, total salary, hard-cap banner, exceptions, trades).
+let LEAGUE_YEAR = null;
+
 function currentSeasonYr() {
+  if (LEAGUE_YEAR) return LEAGUE_YEAR;
   const now = new Date();
   const y = now.getFullYear() % 100;
   const m = now.getMonth() + 1;
@@ -2530,7 +2537,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -2544,7 +2551,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/picks').then(r => r.ok ? r.json() : []),
     fetch('/api/members/public').then(r => r.ok ? r.json() : []),
     fetch('/api/boxscores/games').then(r => r.ok ? r.json() : []),
+    fetch('/api/league-year').then(r => r.ok ? r.json() : null),
   ]);
+
+  // Set the league year before any render so currentSeasonYr() is consistent everywhere.
+  if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
 
   const biosData    = biosr.status === 'fulfilled' ? biosr.value : {};
   const capLevels   = capr.status === 'fulfilled'  ? capr.value  : {};
