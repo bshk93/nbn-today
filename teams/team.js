@@ -2587,44 +2587,49 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
   const allSeasons = psr.status === 'fulfilled' ? parseCSV(psr.value) : [];
 
-  // Draft History tab
+  // Draft History tab — sourced from player bios (/api/players via biosData),
+  // the canonical per-player draft record: draft_team (who made the pick) plus
+  // draft_year / draft_round / draft_pick (the slot). This covers every season,
+  // pre- and post- the live draft shows; draft_team is stamped on the bio when a
+  // pick is entered "for real" (transactions / Article VII). Career stats are
+  // joined from player_seasons by SLUG; a just-drafted rookie with no games yet
+  // still appears (with zeroed stats).
   {
     draftedWrap.innerHTML = '';
-    if (allSeasons.length) {
-      const draftTag = `(${abbr})`;
-      const bySlug = {};
+    {
+      // Career totals per drafted player, keyed by slug.
+      const careerBySlug = {};
       for (const row of allSeasons) {
-        if (!row.NBN_DFT_P.includes(draftTag)) continue;
-        const s = row.SLUG.trim();
+        const s = (row.SLUG || '').trim();
         if (!s) continue;
-        if (!bySlug[s]) {
-          const pickMatch = row.NBN_DFT_P.match(/Pick (\d+)/);
-          const roundNum  = row.NBN_DFT_R === 'Round 2' ? 2 : 1;
-          bySlug[s] = {
-            SLUG:    s,
-            PLAYER:  row.PLAYER,
-            YEAR:    parseInt(row.NBN_DFT_YR) || 0,
-            ROUND:   roundNum,
-            PICK:    pickMatch ? parseInt(pickMatch[1]) : 0,
-            PICK_LABEL: `R${roundNum} · #${pickMatch ? pickMatch[1] : '?'}`,
-            _G:   0, _PTS: 0, _REB: 0, _AST: 0, _GMSC: 0,
-          };
-        }
-        const g = parseInt(row.G) || 0;
-        bySlug[s]._G    += g;
-        bySlug[s]._PTS  += parseFloat(row.PTS)  || 0;
-        bySlug[s]._REB  += parseFloat(row.REB)  || 0;
-        bySlug[s]._AST  += parseFloat(row.AST)  || 0;
-        bySlug[s]._GMSC += parseFloat(row.GMSC) || 0;
+        const c = careerBySlug[s] || (careerBySlug[s] = { G: 0, PTS: 0, REB: 0, AST: 0, GMSC: 0, name: row.PLAYER });
+        c.G    += parseInt(row.G) || 0;
+        c.PTS  += parseFloat(row.PTS)  || 0;
+        c.REB  += parseFloat(row.REB)  || 0;
+        c.AST  += parseFloat(row.AST)  || 0;
+        c.GMSC += parseFloat(row.GMSC) || 0;
       }
-      const draftedRows = Object.values(bySlug).map(p => ({
-        ...p,
-        GP:      p._G,
-        GMSC_TOT: Math.round(p._GMSC * 10) / 10,
-        PPG:     p._G ? Math.round(p._PTS  / p._G * 10) / 10 : 0,
-        RPG:     p._G ? Math.round(p._REB  / p._G * 10) / 10 : 0,
-        APG:     p._G ? Math.round(p._AST  / p._G * 10) / 10 : 0,
-      }));
+
+      const draftedRows = Object.entries(biosData)
+        .filter(([, bio]) => (bio.draft_team || '').toUpperCase() === abbr)
+        .map(([slug, bio]) => {
+          const c = careerBySlug[slug] || { G: 0, PTS: 0, REB: 0, AST: 0, GMSC: 0, name: '' };
+          const round = parseInt(bio.draft_round) || 0;
+          const pick  = bio.draft_pick != null && bio.draft_pick !== '' ? parseInt(bio.draft_pick) : null;
+          return {
+            SLUG:    slug,
+            PLAYER:  displayNameFromBio(bio.name || '') || c.name || slug,
+            YEAR:    parseInt(bio.draft_year) || 0,
+            ROUND:   round,
+            PICK:    pick ?? 0,
+            PICK_LABEL: `R${round || '?'} · #${pick ?? '?'}`,
+            GP:      c.G,
+            GMSC_TOT: Math.round(c.GMSC * 10) / 10,
+            PPG:     c.G ? Math.round(c.PTS / c.G * 10) / 10 : 0,
+            RPG:     c.G ? Math.round(c.REB / c.G * 10) / 10 : 0,
+            APG:     c.G ? Math.round(c.AST / c.G * 10) / 10 : 0,
+          };
+        });
       draftedRows.sort((a, b) => a.YEAR - b.YEAR || a.PICK - b.PICK);
 
       const DRAFTED_COLS = [
@@ -2652,8 +2657,6 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       } else {
         draftedWrap.innerHTML = '<div class="status">No draft history found.</div>';
       }
-    } else {
-      draftedWrap.innerHTML = '<div class="status">Failed to load draft history.</div>';
     }
   }
 

@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.0.308",
+    "date": "2026-06-21",
+    "changes": [
+      "draft/pick: an owner can now submit their pick as soon as they're on the clock \u2014 i.e. once every earlier pick is resolved (submitted or skipped), even if their own scheduled window hasn't opened yet. Previously a skip ahead of you forced you to wait for your own window. This brings the owner Submit gate in line with the BOD Make Pick panel",
+      "draft history restored: a new canonical `draft_team` field on each player bio records who drafted them. The team Draft History tab and the /draft board now read draft year/round/pick/team from bios (the all-years source of truth) instead of the build's NBN_DFT_* columns, which lost the drafting team when the pick became a bare number. Fixes empty team Draft History tabs and the /draft board showing every pick as #999 with a blank From column",
+      "draft history backfill: restored the drafting team for 357 historical (pre-2026) players from the legacy bio spreadsheet's \"Pick N (TEAM)\" column; live-draft-era (2026+) picks get `draft_team` stamped automatically when entered via transactions (Article VII pick)",
+      "teams: Draft History lists every player a team has drafted across all seasons, joined to career stats by slug; just-drafted rookies with no games yet appear with zeroed stats",
+      "transactions: draft pick (Article VII) transactions now expose an editable Date field (defaulting to today) instead of silently stamping the current date, so a pick signed retroactively can be backdated to the actual draft day"
+    ]
+  },
+  {
     "version": "0.0.307",
     "date": "2026-06-21",
     "changes": [

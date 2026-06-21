@@ -178,10 +178,6 @@
       return img;
     }
 
-    function parsePick(pickStr) {
-      const m = pickStr.match(/Pick (\d+)(?:\s*\((\w+)\))?/);
-      return m ? { num: +m[1], from: m[2] || '' } : { num: 999, from: '' };
-    }
 
     function pg(val, g) {
       const n = +val, games = +g;
@@ -292,9 +288,9 @@
 
       const byRound = {};
       classPlayers.forEach(p => {
-        const round = p.NBN_DFT_R || 'Unknown';
+        const round = p._draft_round ? `Round ${p._draft_round}` : 'Unknown';
         if (!byRound[round]) byRound[round] = [];
-        const pick = parsePick(p.NBN_DFT_P || '');
+        const pick = { num: p._draft_pick ?? 999, from: p._draft_team || '' };
         byRound[round].push({ pick, player: p });
       });
 
@@ -762,6 +758,18 @@
         if (r.PHOTO_URL) players[r.SLUG].PHOTO_URL = r.PHOTO_URL;
         if (r.COUNTRY && r.COUNTRY !== 'NA') players[r.SLUG].COUNTRY = r.COUNTRY;
         if (r.COLLEGE && r.COLLEGE !== 'NA') players[r.SLUG].COLLEGE = r.COLLEGE;
+      });
+
+      // Merge the canonical draft record from bios. The build's NBN_DFT_* columns
+      // lost the drafting team (NBN_DFT_P is now a bare pick number), so round/
+      // pick/team come from player-bios.json (draft_round / draft_pick /
+      // draft_team), which is the all-years source of truth.
+      Object.entries(players).forEach(([slug, p]) => {
+        const bio = bios[slug] || {};
+        p._draft_round = parseInt(bio.draft_round) || null;
+        p._draft_pick  = (bio.draft_pick != null && bio.draft_pick !== '') ? parseInt(bio.draft_pick) : null;
+        p._draft_team  = bio.draft_team || '';
+        if (bio.draft_year != null && bio.draft_year !== '') p.NBN_DFT_YR = String(bio.draft_year);
       });
 
       const drafted = Object.fromEntries(

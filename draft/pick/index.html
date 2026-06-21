@@ -608,10 +608,16 @@
         const endMs   = startMs ? startMs + 10 * 60 * 1000 : null;
         const timeStr = startMs ? `${formatET(startMs)} – ${formatET(endMs)}` : 'Time TBD';
 
-        // You're "up" once every pick ahead of you is in (run ahead of
-        // schedule) OR your own window has arrived (safety valve).
+        // You're "up" once every pick ahead of you is resolved — either
+        // submitted (running ahead of schedule) or skipped (its 10-min window
+        // elapsed without a pick) — OR your own window has arrived (safety
+        // valve). The skip case lets the on-the-clock team submit even before
+        // their own scheduled window opens. Mirrors the BOD submittable filter.
+        const windowEndOf = q => draftState.round1_date
+          ? pickWindowStart(draftState.round1_date, q.round, q.pick) + 10 * 60 * 1000
+          : Infinity;
         const windowOpen = startMs !== null && Date.now() >= startMs;
-        const earlierIn  = picks.every(q => orderOf(q) >= orderOf(p) || !!q.player);
+        const earlierIn  = picks.every(q => orderOf(q) >= orderOf(p) || !!q.player || Date.now() >= windowEndOf(q));
         const isUp = draftLive && !isSubmitted && (windowOpen || earlierIn);
         const aheadOfSchedule = isUp && !windowOpen;
         // An early lock-in (window not yet open, not revealed) can be undone.

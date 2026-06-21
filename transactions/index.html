@@ -492,7 +492,7 @@
 
     <div class="form-grid" id="form-grid-fields">
 
-      <!-- sign-only -->
+      <!-- all non-trade types -->
       <div class="form-field" id="f-date-field">
         <label>Date</label>
         <input type="date" id="f-date">
@@ -870,7 +870,7 @@ function setupTypeSwitch() {
     document.getElementById('form-grid-fields').style.display = isTrade ? 'none' : '';
 
     if (!isTrade) {
-      document.getElementById('f-date-field').style.display          = isPick ? 'none' : '';
+      document.getElementById('f-date-field').style.display          = '';
       document.getElementById('f-team-field').style.display          = isSign ? '' : 'none';
       document.getElementById('f-signing-method-field').style.display = isSign ? '' : 'none';
       if (!isSign) {
@@ -1615,7 +1615,8 @@ async function submitTransaction() {
       ...(birdRightsType ? { bird_rights_type: birdRightsType } : {}),
     };
   } else if (type === 'pick') {
-    date = new Date().toISOString().slice(0, 10);
+    date = document.getElementById('f-date').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
     const pickVal = document.getElementById('f-pick-sel').value;
     if (!pickVal) { setStatus('err', 'Select a pick.'); return; }
     const pick = JSON.parse(pickVal);

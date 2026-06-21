@@ -369,6 +369,7 @@ Canonical player data lives in `/var/lib/nothing-but-stats/player-bios.json`, se
 | `dob` | ISO date `"YYYY-MM-DD"` |
 | `college`, `country` | Strings |
 | `draft_year`, `draft_round`, `draft_pick` | Integers or null |
+| `draft_team` | Abbr of drafting team (`"ATL"`) or null — canonical "who drafted this player" |
 | `photo_url` | String |
 | `type` | `"player"`, `"two-way"`, `"dead"`, or `""` |
 | `cap_holds` | Object keyed by season string: `{"27-28": "PLAYER_OPT", "28-29": "UFA"}` |
@@ -411,6 +412,7 @@ These are historical facts about the player. Correct a typo if you must, but the
 | `college` | string | |
 | `country` | string | |
 | `draft_year`, `draft_round`, `draft_pick` | int or null | NBN draft position, not NBA — null if undrafted |
+| `draft_team` | string or null | Abbr of the team that made the pick (e.g. `"ATL"`); null if undrafted. Canonical source for "who drafted this player" across the site — team Draft History and `/draft` read it. Stamped by the `pick` transaction (Article VII); the picks ledger (`/api/picks`) only covers the live-draft era (2026+), so the bio is the all-years source. |
 | `height`, `wingspan` | string | e.g. `"6'8\""`, `"7'1\""` |
 | `weight` | int | lbs |
 
