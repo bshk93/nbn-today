@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.0.307",
+    "date": "2026-06-21",
+    "changes": [
+      "draft/live: picks no longer spoil before the presenter reveals them. The Best Available pool (live show and owner pick pages) now drops a prospect only when the pick is revealed on-air, not the moment it's submitted",
+      "draft/live: the 30-second stream-delay buffer now applies to every reveal surface together \u2014 board, Best Available pool, event log, and Discord announcement all become public 30s after the presenter triggers the reveal, instead of only the Discord post being delayed",
+      "draft/live: the presenter's own console still shows the reveal modal immediately; only the public-facing surfaces wait out the stream delay",
+      "draft/live: queueing a prospect who has been picked but not yet revealed no longer pops an 'already drafted' error (which leaked the unrevealed pick); the queue add is silently ignored and the player drops off the board when the pick is revealed",
+      "draft/pick: BOD Make Pick now has a one-click 'submit top of queue' button that submits the owning team's top queued (non-drafted) player, alongside the existing manual player picker",
+      "draft/pick: BOD can now submit for the next team up even when an earlier pick was skipped (its window elapsed) and the next team's own window hasn't opened yet"
+    ]
+  },
+  {
     "version": "0.0.306",
     "date": "2026-06-21",
     "changes": [

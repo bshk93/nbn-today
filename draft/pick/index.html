@@ -252,9 +252,11 @@
         <div class="panel-title">Make Pick (BOD)</div>
         <div class="make-pick-form">
           <select id="make-pick-slot" class="player-select" style="display:none"></select>
+          <button class="btn btn-primary btn-sm" id="make-pick-queue-btn" style="display:none"></button>
+          <div class="make-pick-label" id="make-pick-or" style="display:none">— or pick a specific player —</div>
           <select id="make-pick-player" class="player-select" style="display:none"></select>
           <div style="display:flex;gap:0.5rem;align-items:center">
-            <button class="btn btn-primary btn-sm" id="make-pick-btn" disabled>Submit Pick</button>
+            <button class="btn btn-ghost btn-sm" id="make-pick-btn" disabled>Submit Pick</button>
             <span id="make-pick-status" style="font-size:0.75rem;color:#6b7280"></span>
           </div>
         </div>
@@ -329,6 +331,19 @@
 
     function pickedSlugs(year) {
       return new Set(allPicks.filter(p => p.year === year && p.player).map(p => p.player));
+    }
+
+    // Players whose pick has actually been revealed on-air. The Available Players
+    // pool keys off this (not pickedSlugs) so a submitted-but-unrevealed pick never
+    // drops a prospect from the pool before the presenter announces it. Pick-validity
+    // controls (the make-pick dropdown, queue dedup) still use pickedSlugs.
+    function revealedSlugs(year) {
+      const revealed = new Set((draftState && draftState.revealed) || []);
+      return new Set(
+        allPicks
+          .filter(p => p.year === year && p.player && revealed.has(`${p.round}-${p.pick}`))
+          .map(p => p.player)
+      );
     }
 
     let _swapTakesFrom = {};
@@ -410,8 +425,16 @@
 
     async function saveQueue(team, players) {
       const res = await apiPut(`/api/draft/queue/${team}`, { players });
-      if (res.ok) { await refreshState(); render(); }
-      else { const e = await res.json().catch(() => ({})); alert(e.detail || `Error ${res.status}`); }
+      if (res.ok) { await refreshState(); render(); return; }
+      const e = await res.json().catch(() => ({}));
+      // A queued player may be one that's been submitted but not yet revealed on-air.
+      // The server rejects it as "already drafted" — surfacing that would spoil the
+      // unrevealed pick. Swallow it silently and just re-sync; the player stays in the
+      // pool until the pick is revealed, at which point it drops off the board.
+      if (res.status === 422 && /already drafted/i.test(e.detail || '')) {
+        await refreshState(); render(); return;
+      }
+      alert(e.detail || `Error ${res.status}`);
     }
 
     // ── Auth ───────────────────────────────────────────────
@@ -728,25 +751,34 @@
       const slotSelEl = document.getElementById('make-pick-slot');
       const selEl     = document.getElementById('make-pick-player');
       const btn       = document.getElementById('make-pick-btn');
+      const hideExtras = () => {
+        const qb = document.getElementById('make-pick-queue-btn');
+        qb.style.display = 'none'; qb._data = null;
+        document.getElementById('make-pick-or').style.display = 'none';
+      };
 
       if (!draftState || !draftState.round1_date) {
-        slotSelEl.style.display = 'none'; selEl.style.display = 'none'; btn.disabled = true; return;
+        slotSelEl.style.display = 'none'; selEl.style.display = 'none'; btn.disabled = true; hideExtras(); return;
       }
 
-      // All unsubmitted picks that are "up": window has opened, or every pick
-      // ahead of them in draft order is already in (running ahead of schedule).
+      // All unsubmitted picks that are "up". A pick is up when its own window has
+      // opened, or every pick ahead of it in draft order is resolved — either
+      // submitted (running ahead of schedule) or skipped (its 10-min window has
+      // elapsed without a pick). The skipped case lets BOD submit for the next
+      // team up even before that team's own window opens.
       const now = Date.now();
       const allPicks = yearPicks(draftState.year);
-      const orderOf  = x => x.round * 1000 + x.pick;
+      const orderOf   = x => x.round * 1000 + x.pick;
+      const windowEnd = pk => pickWindowStart(draftState.round1_date, pk.round, pk.pick) + 10 * 60 * 1000;
       const submittable = allPicks.filter(pk => {
         if (pk.player) return false;
         const start = pickWindowStart(draftState.round1_date, pk.round, pk.pick);
         if (now >= start) return true;
-        return allPicks.every(q => orderOf(q) >= orderOf(pk) || !!q.player);
+        return allPicks.every(q => orderOf(q) >= orderOf(pk) || !!q.player || now >= windowEnd(q));
       });
 
       if (!submittable.length) {
-        slotSelEl.style.display = 'none'; selEl.style.display = 'none'; btn.disabled = true; return;
+        slotSelEl.style.display = 'none'; selEl.style.display = 'none'; btn.disabled = true; hideExtras(); return;
       }
 
       // Repopulate slot selector, preserving selection if still valid
@@ -768,11 +800,35 @@
 
       slotSelEl.style.display = '';
 
+      const queueBtn = document.getElementById('make-pick-queue-btn');
+      const orEl     = document.getElementById('make-pick-or');
+
       function syncPickData() {
         const [r, pn] = slotSelEl.value.split('|');
         const pk = submittable.find(p => p.round === parseInt(r) && p.pick === parseInt(pn));
         btn._pickData = pk ? { year: draftState.year, round: pk.round, orig: pk.orig } : null;
         btn.disabled = !pk;
+
+        // Shortcut: submit the top of the owning team's queue. Find the first
+        // owner (swap-aware) with a non-drafted player queued.
+        let queuedSlug = null, queueTeam = null;
+        if (pk) {
+          const drafted = pickedSlugs(draftState.year);
+          for (const t of pickOwners(pk)) {
+            const top = getTeamQueue(t).filter(s => !drafted.has(s))[0];
+            if (top) { queuedSlug = top; queueTeam = t; break; }
+          }
+        }
+        if (queuedSlug) {
+          queueBtn.style.display = '';
+          queueBtn.textContent = `Submit ${queueTeam} queue → ${bioName(queuedSlug)}`;
+          queueBtn._data = { year: draftState.year, round: pk.round, orig: pk.orig, player: queuedSlug };
+          orEl.style.display = '';
+        } else {
+          queueBtn.style.display = 'none';
+          queueBtn._data = null;
+          orEl.style.display = 'none';
+        }
       }
 
       slotSelEl.onchange = syncPickData;
@@ -794,14 +850,15 @@
       if (!draftState) { tbody.innerHTML = ''; return; }
 
       const year    = draftState.year;
-      const drafted = pickedSlugs(year);
+      const drafted  = pickedSlugs(year);   // submitted — for pick-validity (queue dedup)
+      const revealed = revealedSlugs(year); // revealed on-air — for what the pool shows
       const team    = myTeams[0] || null;
       const rawQueue = team ? getTeamQueue(team) : [];
       const queueSet = new Set(rawQueue.filter(s => !drafted.has(s)));
 
       const orderMap = new Map(poolOrder.map((slug, i) => [slug, i]));
       const available = Object.entries(bios)
-        .filter(([slug, bio]) => bio.draft_year === year && !drafted.has(slug))
+        .filter(([slug, bio]) => bio.draft_year === year && !revealed.has(slug))
         .map(([slug, bio]) => ({ slug, bio }))
         .sort((a, b) => {
           const ia = orderMap.has(a.slug) ? orderMap.get(a.slug) : Infinity;
@@ -853,7 +910,25 @@
       });
     }
 
-    // ── Make Pick button handler ───────────────────────────
+    // ── Make Pick button handlers ──────────────────────────
+
+    document.getElementById('make-pick-queue-btn').addEventListener('click', async () => {
+      const btn      = document.getElementById('make-pick-queue-btn');
+      const statusEl = document.getElementById('make-pick-status');
+      const d = btn._data;
+      if (!d) return;
+      btn.disabled = true; statusEl.textContent = 'Submitting…';
+      const res = await apiPost('/api/draft/pick', d);
+      if (res.ok) {
+        statusEl.textContent = 'Done!';
+        await refreshState(); render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+        btn.disabled = false;
+      }
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
 
     document.getElementById('make-pick-btn').addEventListener('click', async () => {
       const selEl    = document.getElementById('make-pick-player');

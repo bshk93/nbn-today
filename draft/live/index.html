@@ -834,6 +834,18 @@
       return new Set(allPicks.filter(p => p.year === year && p.player).map(p => p.player));
     }
 
+    // Players whose pick has actually been revealed on-air. The Best Available pool
+    // keys off this (not pickedSlugs) so a submitted-but-unrevealed pick never drops
+    // a prospect from the board before the presenter announces it.
+    function revealedSlugs(year) {
+      const revealed = new Set((draftState && draftState.revealed) || []);
+      return new Set(
+        allPicks
+          .filter(p => p.year === year && p.player && revealed.has(`${p.round}-${p.pick}`))
+          .map(p => p.player)
+      );
+    }
+
     // Exact same effectiveOwner logic as draft/index.html — rebuilt each render.
     let _swapTakesFrom = {};
 
@@ -1838,7 +1850,7 @@
       if (!state || activeTab !== 'pool') return;
 
       const year = state.year;
-      const drafted = pickedSlugs(year);
+      const drafted = revealedSlugs(year);
 
       // Sort available players by poolOrder, unknowns appended alphabetically
       const orderMap = new Map(poolOrder.map((slug, i) => [slug, i]));
