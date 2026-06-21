@@ -2550,7 +2550,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/picks').then(r => r.ok ? r.json() : []),
     fetch('/api/members/public').then(r => r.ok ? r.json() : []),
-    fetch('/api/boxscores/games').then(r => r.ok ? r.json() : []),
+    fetch(`/api/boxscores/games?team=${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/league-year').then(r => r.ok ? r.json() : null),
   ]);
 

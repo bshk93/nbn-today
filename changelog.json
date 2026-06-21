@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.0.306",
+    "date": "2026-06-21",
+    "changes": [
+      "performance: team pages now load in well under a second. The personnel win/loss records previously pulled the entire league's game history (~960KB, ~2.7s) on every page load; the page now requests only the team's own games and the index is cached server-side, keyed by box-score file mtime so it stays fresh automatically"
+    ]
+  },
+  {
     "version": "0.0.305",
     "date": "2026-06-21",
     "changes": [
