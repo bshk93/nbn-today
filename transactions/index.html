@@ -481,6 +481,7 @@
         <select id="f-type">
           <option value="sign">Free Agency Signing</option>
           <option value="pick">Draft Pick</option>
+          <option value="sign_pick">Sign Draft Pick</option>
           <option value="option">Option Decision</option>
           <option value="release">Release</option>
           <option value="renounce">Renounce</option>
@@ -663,6 +664,7 @@
     <span class="chip active" data-filter="type" data-value="">All</span>
     <span class="chip" data-filter="type" data-value="sign">Signings</span>
     <span class="chip" data-filter="type" data-value="pick">Draft Picks</span>
+    <span class="chip" data-filter="type" data-value="sign_pick">Pick Signings</span>
     <span class="chip" data-filter="type" data-value="option">Options</span>
     <span class="chip" data-filter="type" data-value="release">Releases</span>
     <span class="chip" data-filter="type" data-value="renounce">Renounces</span>
@@ -859,7 +861,11 @@ function setupTypeSwitch() {
     const isTrade = v === 'trade';
     const isSign = v === 'sign', isPick = v === 'pick', isOpt = v === 'option', isRelease = v === 'release';
     const isConvertTwoWay = v === 'convert_twoway';
-    const needsContract = isSign || isPick || isConvertTwoWay;
+    const isSignPick = v === 'sign_pick';
+    // A draft pick conveys rights only — no contract at pick time (it's attached
+    // later via the separate Sign Draft Pick step), so picks don't show the
+    // contract section but sign_pick does.
+    const needsContract = isSign || isConvertTwoWay || isSignPick;
 
     // Reset contract-type to player whenever transaction type changes
     const playerRadio = document.querySelector('input[name="contract-type"][value="player"]');
@@ -904,7 +910,7 @@ function setupTypeSwitch() {
   document.querySelectorAll('input[name="contract-type"]').forEach(r => {
     r.addEventListener('change', () => {
       const v = document.getElementById('f-type').value;
-      const needsContract = v === 'sign' || v === 'pick' || v === 'convert_twoway';
+      const needsContract = v === 'sign' || v === 'convert_twoway' || v === 'sign_pick';
       applyContractTypeVisibility(needsContract, v === 'convert_twoway');
       // Pre-fill starting season when switching to two-way
       if (r.value === 'two-way') {
@@ -1021,16 +1027,23 @@ function populatePickYears() {
   sel.innerHTML = years.length
     ? years.map(y => `<option value="${y}">${y}</option>`).join('')
     : '<option value="">No picks available</option>';
-  if (years.length) populatePickSel(years[0]);
+  if (years.length) {
+    const curYear = new Date().getFullYear();
+    const def = years.includes(curYear) ? curYear : years[0];
+    sel.value = def;
+    populatePickSel(def);
+  }
 }
 
 function effectivePickOwner(p, yearPicks) {
-  // Mirrors the draft page's effectiveOwner logic
+  // Mirrors the draft page's effectiveOwner logic.
+  // Key by round+team: a conveyed swap only moves picks in that same round,
+  // so it must not bleed into a same-team pick in another round.
   const swapTakesFrom = {};
   yearPicks.forEach(q => {
-    if (q.swap_conveys === true && q.swap_owner) swapTakesFrom[q.swap_owner] = q.owner;
+    if (q.swap_conveys === true && q.swap_owner) swapTakesFrom[`${q.round}-${q.swap_owner}`] = q.owner;
   });
-  return p.swap_conveys === true ? p.swap_owner : (swapTakesFrom[p.orig] ?? p.owner);
+  return p.swap_conveys === true ? p.swap_owner : (swapTakesFrom[`${p.round}-${p.orig}`] ?? p.owner);
 }
 
 function populatePickSel(year) {
@@ -1085,6 +1098,8 @@ function setupPlayerSearch() {
       pool = Object.entries(bios).filter(([slug, bio]) => teamMap[slug] && isFreeAgentHold(bio));
     } else if (txnType === 'convert_twoway') {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'two-way');
+    } else if (txnType === 'sign_pick') {
+      pool = Object.entries(bios).filter(([slug, bio]) => bio.type === 'draft-rights' && teamMap[slug]);
     } else if (txnType === 'sign') {
       pool = Object.entries(bios).filter(([slug, bio]) => !teamMap[slug] && !bio.retired && bio.type !== 'dead');
     } else if (txnType === 'pick') {
@@ -1620,11 +1635,11 @@ async function submitTransaction() {
     const pickVal = document.getElementById('f-pick-sel').value;
     if (!pickVal) { setStatus('err', 'Select a pick.'); return; }
     const pick = JSON.parse(pickVal);
+    // Draft rights only — no contract at pick time (signed later, separately).
     details = {
       player: playerSlug,
       team: pick.owner,
       pick: { year: pick.year, round: pick.round, orig: pick.orig, pick_number: pick.pick_number },
-      contract,
     };
   } else if (type === 'option') {
     date = document.getElementById('f-date').value;
@@ -1648,8 +1663,15 @@ async function submitTransaction() {
   } else if (type === 'convert_twoway') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
-    if (!Object.keys(salaries).length) { setStatus('err', 'At least one salary year is required.'); return; }
-    details = { player: playerSlug, contract: { type: 'player', salaries, cap_holds } };
+    if (!Object.keys(contract.salaries || {}).length) { setStatus('err', 'At least one salary year is required.'); return; }
+    details = { player: playerSlug, contract: { type: 'player', salaries: contract.salaries, cap_holds: contract.cap_holds } };
+  } else if (type === 'sign_pick') {
+    date = document.getElementById('f-date').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
+    if (contractType !== 'two-way' && !Object.keys(contract.salaries || {}).length) {
+      setStatus('err', 'At least one salary year is required.'); return;
+    }
+    details = { player: playerSlug, contract };
   } else if (type === 'trade') {
     const trade = collectTrade();
     if (!trade.date) { setStatus('err', 'Date is required.'); return; }
@@ -1923,14 +1945,15 @@ function renderDetailsCell(t) {
       return `${yearStr} ${escHtml(optLabel)} — declined → ${escHtml(d.cap_hold_type || 'UFA')} hold`;
     }
   }
-  if (t.type === 'convert_twoway') {
+  if (t.type === 'convert_twoway' || t.type === 'sign_pick') {
     const c = d.contract || {};
     const years = Object.keys(c.salaries || {}).length;
     const total = Object.values(c.salaries || {}).reduce((sum, v) => {
       const n = parseInt(v.replace(/[^0-9]/g, ''), 10) || 0;
       return sum + n;
     }, 0);
-    return years ? escHtml(`${years}yr / $${(total / 1e6).toFixed(1)}M`) : '';
+    if (years) return escHtml(`${years}yr / $${(total / 1e6).toFixed(1)}M`);
+    return c.type === 'two-way' ? 'Two-Way' : '';
   }
   if (t.type === 'release') {
     const dc = d.dead_cap || {};
@@ -1991,7 +2014,7 @@ function fmtDate(iso) {
 }
 
 function typeLabel(type) {
-  const labels = { sign: 'Signing', pick: 'Draft Pick', option: 'Option', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion' };
+  const labels = { sign: 'Signing', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion' };
   return labels[type] || type;
 }
 

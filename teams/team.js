@@ -237,6 +237,7 @@ document.title = `${abbr} — NBN`;
     border-top: 1px solid #374151;
   }
   .row-twoway td { opacity: 0.6; }
+  .row-draft-rights td { opacity: 0.7; font-style: italic; }
   .row-dead td   { opacity: 0.45; font-style: italic; text-decoration: line-through; }
   .picks-acquired td   { color: #60a5fa; }
   .picks-traded td     { color: #6b7280; font-style: italic; }
@@ -809,9 +810,9 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       })),
     ];
 
-    const typeOrder = { player: 0, 'two-way': 1, dead: 2 };
+    const typeOrder = { player: 0, 'two-way': 1, 'draft-rights': 2, dead: 3 };
     const sorted = [...rows].sort((a, b) => {
-      const ta = typeOrder[a.TYPE] ?? 3, tb = typeOrder[b.TYPE] ?? 3;
+      const ta = typeOrder[a.TYPE] ?? 4, tb = typeOrder[b.TYPE] ?? 4;
       if (ta !== tb) return ta - tb;
       return (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
     });
@@ -828,7 +829,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
 
     const tbody = table.createTBody();
     let lastType = null;
-    const LABELS = { 'two-way': 'Two-Way Contracts', dead: 'Dead Cap' };
+    const LABELS = { 'two-way': 'Two-Way Contracts', 'draft-rights': 'Draft Rights', dead: 'Dead Cap' };
 
     sorted.forEach(row => {
       if (row.TYPE !== lastType && LABELS[row.TYPE]) {
@@ -843,8 +844,9 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       }
 
       const tr = tbody.insertRow();
-      if (row.TYPE === 'two-way') tr.className = 'row-twoway';
-      if (row.TYPE === 'dead')    tr.className = 'row-dead';
+      if (row.TYPE === 'two-way')      tr.className = 'row-twoway';
+      if (row.TYPE === 'draft-rights') tr.className = 'row-draft-rights';
+      if (row.TYPE === 'dead')         tr.className = 'row-dead';
 
       const capMap = parseCapHolds(row.CAP_HOLDS);
 
@@ -970,9 +972,9 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     })),
   ];
 
-  const typeOrder = { player: 0, 'two-way': 1, dead: 2 };
+  const typeOrder = { player: 0, 'two-way': 1, 'draft-rights': 2, dead: 3 };
   const sorted = [...augmented].sort((a, b) => {
-    const ta = typeOrder[a._type] ?? 3, tb = typeOrder[b._type] ?? 3;
+    const ta = typeOrder[a._type] ?? 4, tb = typeOrder[b._type] ?? 4;
     if (ta !== tb) return ta - tb;
     return (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
   });
@@ -989,7 +991,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
 
   const tbody = table.createTBody();
   let lastType = null;
-  const LABELS = { 'two-way': 'Two-Way Contracts', dead: 'Dead Cap' };
+  const LABELS = { 'two-way': 'Two-Way Contracts', 'draft-rights': 'Draft Rights', dead: 'Dead Cap' };
 
   sorted.forEach(row => {
     if (row._type !== lastType && LABELS[row._type]) {
@@ -1004,8 +1006,9 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     }
 
     const tr = tbody.insertRow();
-    if (row._type === 'two-way') tr.className = 'row-twoway';
-    if (row._type === 'dead')    tr.className = 'row-dead';
+    if (row._type === 'two-way')      tr.className = 'row-twoway';
+    if (row._type === 'draft-rights') tr.className = 'row-draft-rights';
+    if (row._type === 'dead')         tr.className = 'row-dead';
 
     const capMap = parseCapHolds(row._cap_holds);
 
@@ -1489,6 +1492,22 @@ const TOKEN_KEY = 'nbn_token';
 const getToken = () => localStorage.getItem(TOKEN_KEY);
 const setToken = t => localStorage.setItem(TOKEN_KEY, t);
 
+// Roles for the current token, populated once on load from GET /api/auth/me.
+// Used to decide whether to render edit buttons at all — the API still enforces
+// permissions on write, this only hides affordances the user can't actually use.
+let AUTH_ROLES = [];
+// Mirror the server's has_role logic: admin satisfies anything; bod implies rosters.
+function hasAuthRole(role) {
+  if (AUTH_ROLES.includes('admin')) return true;
+  if (AUTH_ROLES.includes(role)) return true;
+  if (role === 'rosters' && AUTH_ROLES.includes('bod')) return true;
+  return false;
+}
+// Roster, picks, dead cap, and team state all gate on the 'rosters' role.
+const canEditRosters = () => hasAuthRole('rosters');
+// Jersey numbers can also be set by the team's own owner role (e.g. 'phx' on /teams/PHX).
+const canEditJersey = abbr => canEditRosters() || AUTH_ROLES.includes(abbr.toLowerCase());
+
 const SEL_STYLE = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;cursor:pointer;outline:none';
 
 const CAP_OPTIONS = [
@@ -1824,9 +1843,10 @@ function rosterCellConfig(headers, biosData = {}) {
   const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
   const config = {
     TYPE: { type: 'select', options: [
-      { value: 'player',   label: 'Player'   },
-      { value: 'two-way',  label: 'Two-Way'  },
-      { value: 'dead',     label: 'Dead Cap' },
+      { value: 'player',       label: 'Player'       },
+      { value: 'two-way',      label: 'Two-Way'      },
+      { value: 'draft-rights', label: 'Draft Rights' },
+      { value: 'dead',         label: 'Dead Cap'     },
     ]},
     CAP_HOLDS: { type: 'cap-holds', years: salaryYears },
   };
@@ -1961,6 +1981,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
   }
 
   function attachBtn(currentPicks) {
+    if (!canEditRosters()) return;
     const titleEl = document.getElementById(titleId);
     titleEl.querySelector('.section-edit-btn')?.remove();
     const btn = document.createElement('button');
@@ -2139,6 +2160,8 @@ function setupJerseyEditable(titleId, wrapId, rosterRows, biosData, restoreView)
   const activeRows = rosterRows.filter(r => r.SLUG);
   if (!activeRows.length) return;
 
+  if (!canEditJersey(abbr)) return;
+
   const titleEl = document.getElementById(titleId);
   const btn = document.createElement('button');
   btn.className = 'jersey-edit-btn';
@@ -2266,7 +2289,7 @@ function setupJerseyEditable(titleId, wrapId, rosterRows, biosData, restoreView)
 }
 
 function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
-  if (!localStorage.getItem('nbn_token')) return;
+  if (!canEditRosters()) return;
 
   // Seasons to show: curYr + next 2, plus any already in data
   const seasons = new Set([curYr, nextSalaryYear(curYr), nextSalaryYear(nextSalaryYear(curYr))]);
@@ -2460,6 +2483,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   }
 
   function attachEditBtn(currentRows) {
+    if (!canEditRosters()) return;
     const titleEl = document.getElementById(titleId);
     titleEl.querySelector('.section-edit-btn')?.remove();
     const btn = document.createElement('button');
@@ -2537,7 +2561,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -2552,10 +2576,14 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/members/public').then(r => r.ok ? r.json() : []),
     fetch(`/api/boxscores/games?team=${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/league-year').then(r => r.ok ? r.json() : null),
+    fetch('/api/auth/me', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : null),
   ]);
 
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
   if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
+
+  // Roles drive which edit buttons render below; default to none if the call failed.
+  AUTH_ROLES = (authr.status === 'fulfilled' && Array.isArray(authr.value?.roles)) ? authr.value.roles : [];
 
   const biosData    = biosr.status === 'fulfilled' ? biosr.value : {};
   const capLevels   = capr.status === 'fulfilled'  ? capr.value  : {};
@@ -2741,7 +2769,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
     // Cap numbers edit button (rosters role)
     const token = localStorage.getItem('nbn_token');
-    if (token) {
+    if (canEditRosters()) {
       const season = currentSeasonYr();
       const editCapBtn = document.createElement('button');
       editCapBtn.className = 'edit-toggle-btn';

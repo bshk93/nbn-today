@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.0.309",
+    "date": "2026-06-22",
+    "changes": [
+      "rulebook \u00a7 3.12: documented UDFA signings \u2014 a UDFA signed via the minimum exception to a standard contract is non-guaranteed until July 31 (waivable with no dead cap before then), or may be signed to a Two-Way with no cap hit",
+      "Edit affordances on team and player pages now appear only for tokens that can actually use them, instead of for anyone with any token. Team pages fetch the current token's roles (GET /api/auth/me) and show the roster, draft-picks, dead-cap, and team-state edit buttons only with the rosters role (bod/admin included), and the jersey edit button only with rosters or that team's own owner role. Player pages show Edit Bio, OVR-history editing, and the Missing-bio filters only with the rosters or curator role, and the + Add Player button only with rosters. The API already enforced these permissions on save; this just stops showing buttons that would have been rejected",
+      "transactions: the draft-pick year dropdown now defaults to the current year when picks exist for it (instead of the furthest-out year)",
+      "transactions: fixed pick swaps bleeding across rounds \u2014 effectivePickOwner now keys conveyed swaps by round+team like the draft pages, so a R1 swap no longer mislabels a same-team R2 pick (e.g. R2 #31 showing as BOS \u2190 WAS)",
+      "team rosters: drafted-but-unsigned players (player type \"draft-rights\") now group into their own \"Draft Rights\" sub-section below Two-Way and above Dead Cap, instead of mixing into the main roster with $0 salaries",
+      "transactions: submitting a draft pick now conveys draft rights only \u2014 the player lands on the roster as \"draft-rights\" with no contract, and the contract section is hidden for picks. Signing (attaching a contract) is a separate step taken later once the cap is final",
+      "transactions: new \"Sign Draft Pick\" transaction signs a held draft-rights player to their first contract (player or two-way), flipping them out of the Draft Rights bucket into the main roster",
+      "transactions: fixed a crash when submitting a Convert Two-Way \u2014 the handler referenced out-of-scope salary variables, throwing before the request was sent"
+    ]
+  },
+  {
     "version": "0.0.308",
     "date": "2026-06-21",
     "changes": [
