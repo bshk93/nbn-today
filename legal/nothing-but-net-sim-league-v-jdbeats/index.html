@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>NBN Sim League v. JDBeats — Disciplinary Findings</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #d1d5db;
+      min-height: 100vh;
+      font-size: 0.925rem;
+      line-height: 1.7;
+    }
+    .page { max-width: 920px; margin: 0 auto; padding: 2rem 1rem 6rem; }
+
+    .breadcrumb { font-size: 0.8rem; color: #6b7280; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #6b7280; text-decoration: none; }
+    .breadcrumb a:hover { color: #d1d5db; }
+
+    .doc-header { margin-bottom: 1.75rem; border-bottom: 1px solid #374151; padding-bottom: 1.25rem; text-align: center; }
+    .court { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: #6b7280; }
+    .caption { font-size: 1.7rem; font-weight: 800; color: #f3f4f6; letter-spacing: -0.02em; margin: 0.6rem 0 0.2rem; }
+    .caption .v { color: #f59e0b; font-style: italic; font-weight: 700; }
+    .docket { font-size: 0.78rem; color: #6b7280; margin-top: 0.5rem; }
+    .verdict-chip {
+      display: inline-block; margin-top: 0.9rem;
+      background: #3f1d1d; border: 1px solid #b91c1c; color: #fca5a5;
+      padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
+    }
+
+    h2 { font-size: 1.05rem; font-weight: 800; color: #f3f4f6; margin: 2.2rem 0 0.4rem; letter-spacing: -0.01em; }
+    h2 .num { color: #f59e0b; margin-right: 0.5rem; }
+    h3 { font-size: 0.95rem; font-weight: 700; color: #e5e7eb; margin: 1.4rem 0 0.3rem; }
+    p { margin: 0.5rem 0; }
+    .lead { color: #9ca3af; }
+    strong { color: #f3f4f6; }
+
+    .count {
+      border: 1px solid #374151; border-left: 3px solid #f59e0b;
+      border-radius: 8px; padding: 0.6rem 1.1rem 1rem; margin: 1.1rem 0;
+      background: #161e2e;
+    }
+    .count.dismissed { border-left-color: #4b5563; opacity: 0.92; }
+    .count .verdict { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+    .v-proven { color: #34d399; }
+    .v-pattern { color: #fbbf24; }
+    .v-dismissed { color: #9ca3af; }
+
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.82rem; }
+    th, td { padding: 0.35rem 0.55rem; text-align: left; border-bottom: 1px solid #1f2937; }
+    th { color: #9ca3af; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #374151; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.flag td { background: #2a1c10; }
+    .mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.82em; }
+    .hot { color: #fca5a5; font-weight: 700; }
+
+    .callout {
+      background: #1a2335; border: 1px solid #2563eb; border-radius: 8px;
+      padding: 0.7rem 1rem; margin: 1rem 0; font-size: 0.87rem; color: #bfdbfe;
+    }
+    .callout.warn { background: #2a1c10; border-color: #b45309; color: #fcd34d; }
+
+    ul { margin: 0.4rem 0; padding-left: 1.3rem; }
+    li { margin: 0.25rem 0; }
+    .exhibit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #f59e0b; margin-top: 1.2rem; }
+    footer.sig { margin-top: 3rem; border-top: 1px solid #374151; padding-top: 1.2rem; font-size: 0.82rem; color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="breadcrumb"><a href="/">← Home</a> / <a href="/legal/">Legal</a> / NBN Sim League v. JDBeats</div>
+
+    <header class="doc-header">
+      <div class="court">Before the Nothing But Net Competition Committee</div>
+      <div class="caption">Nothing But Net Sim League <span class="v">v.</span> JDBeats</div>
+      <div class="docket">Docket No. NBN-2026-0622 &nbsp;·&nbsp; Daily-Games Integrity Inquiry &nbsp;·&nbsp; Filed June 22, 2026</div>
+      <div class="verdict-chip">FINDINGS &amp; CHARGING DOCUMENT</div>
+    </header>
+
+    <h2><span class="num">I.</span> Statement of the Case</h2>
+    <p class="lead">The Respondent, the league member known as <strong>JDBeats</strong>, is charged with a sustained
+      scheme to defraud the NBN daily games. The conduct falls in two families: (1) <strong>consulting live
+      player and team statistics during the Perry Game</strong>, a game premised on unaided recall; and (2)
+      <strong>looking up the answers to run a 30-question Trivia streak</strong>, harvesting NB¥11,271 in the
+      process. The Perry conduct is proven conclusively for two dates by token-authenticated session records and
+      shown as a fourteen-day pattern by server logs; the Trivia conduct is proven for its single date by
+      token-authenticated records and a coincident desktop lookup session.</p>
+
+    <h2><span class="num">II.</span> Evidentiary Basis</h2>
+    <table>
+      <thead><tr><th>Source</th><th>What it establishes</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">perry-activity.json</td><td>Bearer-token records binding <strong>member=JDBeats → IP 64.185.37.35 → timestamp</strong> for each Perry session (capture live since Jun 20).</td></tr>
+        <tr><td class="mono">bets-ledger.json</td><td>Token-authenticated NB¥ ledger; records each Perry daily prize and Trivia reward credited to <strong>member=JDBeats</strong> with timestamp and running balance.</td></tr>
+        <tr><td class="mono">nginx access.log*</td><td>Every HTTP request — IP, timestamp, path, User-Agent. Retained to Jun 8.</td></tr>
+        <tr><td class="mono">perry-archive.json</td><td>Submitted lineups, scores, ranks, and submit timestamps.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Device fingerprint.</strong> Every gameplay request from <span class="mono">64.185.37.35</span>
+      carries one identical User-Agent (iPhone, iOS&nbsp;18_7, Safari&nbsp;26.5, <span class="mono">Mobile/15E148</span>;
+      1,459 hits). Respondent's authenticated sessions on Jun 20–21 came from exactly this device, allowing the
+      same fingerprint to identify his traffic on earlier dates that predate token–IP capture. A second device — a
+      desktop Mac Chrome browser — is also tied to Respondent on Jun 19, because it submitted a Trivia answer under
+      his bearer token (Count V).</p>
+
+    <div class="callout warn">
+      <strong>Evidentiary caveats (stated against the League's interest).</strong>
+      <ul>
+        <li>IP <span class="mono">64.185.37.35</span> is a shared carrier NAT — it also served link-preview bots. The iPhone-Safari device is attributed to Respondent throughout; the desktop Mac Chrome browser is attributed only on Jun 19, where it acted under his token. Unrelated-UA traffic on Jun 12 and 14 is expressly excluded.</li>
+        <li>No server logs exist before Jun 8. Earlier first-place Perry finishes (Jun 5, Jun 7) are <strong>not charged</strong> — absence of logs is not evidence.</li>
+        <li>Counts I, II, and V rest on token-bound records and require no inference.</li>
+      </ul>
+    </div>
+
+    <h2><span class="num">III.</span> Counts — The Perry Game</h2>
+
+    <div class="count">
+      <div class="verdict v-proven">Count I — Computer-Assisted Play · June 21, 2026 · PROVEN</div>
+      <p>While his Perry session was open and authenticated as <strong>JDBeats</strong>, IP 64.185.37.35 logged
+        <strong>29 lookup hits</strong> from <span class="mono">04:20:10–04:24:07Z</span>, opening the player pages
+        of williamson-zion, maxey-tyrese, ingram-brandon, allen-jarrett, embiid-joel, and beal-bradley, plus team
+        pages MIN / NOP / WAS. He submitted a first-place lineup (rank 1/5) at 05:28:54Z. Two players he had just
+        looked up — <strong>Ingram (NOP)</strong> and <strong>Beal (WAS)</strong> — appear in that lineup; the
+        others were viewed and rejected (comparison-shopping).</p>
+    </div>
+
+    <div class="count">
+      <div class="verdict v-proven">Count II — Computer-Assisted Play, Optimal Result · June 20, 2026 · PROVEN</div>
+      <p>Authenticated JDBeats session; 24 lookups <span class="mono">06:07:39–06:12:34Z</span> (butler-jimmy,
+        jackson-jaren, banchero-paolo, sengun-alperen…); submit 06:22:01Z, rank 1/5. His lineup scored
+        <strong class="hot">10,957.5 — the mathematically optimal lineup, 100.0% of best possible.</strong>
+        Butler, Jackson, and Banchero were each looked up minutes prior.</p>
+    </div>
+
+    <div class="count">
+      <div class="verdict v-pattern">Count III — Sustained Scheme · June 8–18, 2026 · PATTERN EVIDENCE</div>
+      <p>On the attributed device, lookup clusters terminate seconds before each Perry submission, day after day:</p>
+      <table>
+        <thead><tr><th>Date</th><th>Lookups</th><th>Cluster (UTC)</th><th>Submit (UTC)</th><th class="num">Gap</th><th class="num">Rank</th></tr></thead>
+        <tbody>
+          <tr><td>Jun 09</td><td class="num">33</td><td class="mono">12:18:33–12:27:48</td><td class="mono">12:28:47</td><td class="num">59 s</td><td class="num">2/8</td></tr>
+          <tr><td>Jun 10</td><td class="num">31</td><td class="mono">12:47:07–12:53:50</td><td class="mono">12:54:21</td><td class="num">31 s</td><td class="num">2/7</td></tr>
+          <tr><td>Jun 15</td><td class="num">16</td><td class="mono">12:27:13–12:28:52</td><td class="mono">12:29:17</td><td class="num">25 s</td><td class="num">2/4</td></tr>
+          <tr><td>Jun 17</td><td class="num">20</td><td class="mono">04:19:22–04:23:23</td><td class="mono">04:23:43</td><td class="num">20 s</td><td class="num">1/4</td></tr>
+          <tr class="flag"><td>Jun 18</td><td class="num">38</td><td class="mono">04:34:58–04:41:10</td><td class="mono">04:41:23</td><td class="num hot">13 s</td><td class="num">1/3</td></tr>
+        </tbody>
+      </table>
+      <p>On <strong>Jun 18</strong>, five of his six submitted players (Jackson, Brunson, Banchero, James, Morant)
+        were looked up in the preceding six minutes; he scored <strong class="hot">10,657.9 vs. optimal 10,679.3 —
+        99.8%.</strong> (Jun 8, 11, and 16 follow the same pattern with smaller clusters.)</p>
+    </div>
+
+    <div class="count">
+      <div class="verdict v-pattern">Count IV — Corroborating Performance Correlation · PATTERN EVIDENCE</div>
+      <p>Within the logged window, on <strong>every</strong> day his device shows a lookup cluster before his Perry
+        submission he finished 1st or 2nd; on logged days with <strong>no</strong> Perry-session lookups (Jun 12,
+        13, 14, and Jun 19 — when his lookups targeted Trivia, not Perry) he finished 2nd or 3rd and
+        <strong>never won</strong>. Assistance produced victories; unaided play did not.</p>
+    </div>
+
+    <h2><span class="num">IV.</span> Count — The Trivia Game</h2>
+
+    <div class="count">
+      <div class="verdict v-proven">Count V — Looking Up Answers During Live Play · June 19, 2026 · PROVEN</div>
+      <p>The Trivia Game tests players on NBN player statistics, drawn from the same
+        <span class="mono">/players/player_seasons.csv</span> dataset the rest of the site is built on. Respondent
+        cheated it exactly as he cheated Perry — by looking the answers up while playing — using a
+        <strong>two-screen setup</strong>.</p>
+      <p>Between <span class="mono">03:23–03:46Z</span>, while answering on his iPhone, his
+        <strong>desktop browser made 174 stat-lookup hits</strong> — team pages (DEN, SAS, PHX, MIN, ATL, BKN,
+        BOS…) and repeated pulls of <span class="mono">player_seasons.csv</span>, the exact answer key — riding an
+        unbroken streak to <strong class="hot">30 in a row</strong>. The desktop is affirmatively his: at
+        03:25:56Z it submitted a Trivia answer under his own bearer token. The reward ledger records each correct
+        step, crediting <strong class="hot">NB¥11,271</strong> across the run.</p>
+      <p><strong>Concealment.</strong> Most tellingly, Respondent <strong>never submitted his score</strong> to the
+        public Trivia leaderboard. A real 30-game run would headline that board; his name does not appear on it at
+        all. He took the winnings while keeping the suspicious result off the visible board — conduct evidencing
+        consciousness of guilt and intent to conceal.</p>
+      <table>
+        <thead><tr><th>Time (UTC)</th><th>Device</th><th>Activity</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">03:23–03:46</td><td>Desktop (Mac Chrome)</td><td>174 stat-lookup hits — team pages + player_seasons.csv (the answer key)</td></tr>
+          <tr><td class="mono">03:25:56</td><td>Desktop (Mac Chrome)</td><td>Trivia answer submitted under JDBeats' token — ties the desktop to Respondent</td></tr>
+          <tr class="flag"><td class="mono">03:25–03:46</td><td>iPhone</td><td>Streak driven 1 → <span class="hot">30</span>, NB¥11,271 credited</td></tr>
+          <tr><td class="mono">—</td><td>—</td><td>No score ever posted to the public leaderboard</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2><span class="num">V.</span> Charges Reviewed and Not Brought</h2>
+    <div class="count dismissed">
+      <div class="verdict v-dismissed">Poeltl — NO CHARGE</div>
+      <p>Respondent participated only on Jun 12 (7 guesses) and Jun 13 (5 guesses), both legitimate solves with
+        valid guess-progression grids and no correlated lookups. An apparent "0 guesses" reading was an
+        archive-schema artifact (the archive stores a guess <em>count</em>, not the guess list — a normal player
+        showed the same) and is <strong>not</strong> treated as misconduct.</p>
+    </div>
+
+    <h2><span class="num">VI.</span> Monetary Damages</h2>
+    <p>Respondent's cheating was paid out in NB¥ — daily Perry prizes and Trivia rewards credited directly to his
+      account. Tallied across the charged conduct:</p>
+    <table>
+      <thead><tr><th>Source</th><th>Period</th><th class="num">Ill-gotten NB¥</th></tr></thead>
+      <tbody>
+        <tr><td>Perry Game daily prizes (charged days)</td><td>June 8–21, 2026</td><td class="num">800</td></tr>
+        <tr><td>Trivia Game streak rewards</td><td>June 19, 2026</td><td class="num">11,271</td></tr>
+        <tr class="flag"><td><strong>Total</strong></td><td></td><td class="num hot"><strong>12,071</strong></td></tr>
+      </tbody>
+    </table>
+    <p>For reference, Respondent's <strong>entire current balance is NB¥12,696</strong> — meaning roughly
+      <strong>95% of his bankroll is traceable to the charged conduct.</strong> (His all-time Perry winnings total
+      NB¥1,225; the NB¥800 above counts only days with affirmative lookup evidence. Pre-log Perry winnings and
+      no-lookup days are excluded.)</p>
+
+    <h2><span class="num">VII.</span> Recommended Sanctions</h2>
+    <ul>
+      <li>Vacatur of all Perry Game results from June 8–21, 2026, and removal from those leaderboards.</li>
+      <li>Removal of the 30-question Trivia streak and any associated leaderboard recognition.</li>
+      <li>Clawback of the <strong>NB¥12,071</strong> in ill-gotten Perry and Trivia winnings.</li>
+      <li>Suspension from all NBN daily games pending Committee disposition.</li>
+    </ul>
+    <p>Counts I, II, and V are independently dispositive.</p>
+
+    <footer class="sig">
+      Respectfully submitted,<br>
+      <strong>NBN Competition Committee — Office of the Commissioner</strong><br>
+      June 22, 2026
+    </footer>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

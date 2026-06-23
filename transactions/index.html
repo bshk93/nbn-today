@@ -412,6 +412,12 @@
     .legality-header { background: #1a2535; padding: 0.45rem 0.75rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; border-bottom: 1px solid #374151; }
     .legality-row { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; font-size: 0.82rem; color: #9ca3af; border-bottom: 1px solid #283141; }
     .legality-row:last-child { border-bottom: none; }
+    .rubric-body { padding: 0.4rem 0.75rem 0.55rem; }
+    .rubric-empty { font-size: 0.8rem; color: #6b7280; padding: 0.35rem 0; }
+    .rubric-empty.err { color: #f87171; }
+    .rubric-verdict { font-size: 0.82rem; font-weight: 700; padding: 0.3rem 0 0.45rem; }
+    .rubric-verdict.ok { color: #4ade80; }
+    .rubric-verdict.bad { color: #f87171; }
 
     .empty-state {
       text-align: center;
@@ -642,12 +648,11 @@
       </div>
       <div id="trade-legs"></div>
       <button type="button" id="add-leg-btn" class="trade-add-main-btn">+ Add Leg</button>
-      <div class="legality-section">
-        <div class="legality-header">Legality</div>
-        <div class="legality-row"><span>Salary matching</span><span class="badge badge-tbd">TBD</span></div>
-        <div class="legality-row"><span>Roster sizes</span><span class="badge badge-tbd">TBD</span></div>
-        <div class="legality-row"><span>Pick sending rules</span><span class="badge badge-tbd">TBD</span></div>
-        <div class="legality-row"><span>Apron restrictions</span><span class="badge badge-tbd">TBD</span></div>
+      <div class="legality-section" id="trade-rubric">
+        <div class="legality-header">Trade rubric · live</div>
+        <div class="rubric-body" id="trade-rubric-body">
+          <div class="rubric-empty">Add teams and assets to evaluate this trade.</div>
+        </div>
       </div>
     </div>
 
@@ -1319,10 +1324,70 @@ function collectSalaries() {
 
 // ── Trade builder ──────────────────────────────────────────────────────────
 function setupTrade() {
-  document.getElementById('add-leg-btn').addEventListener('click', () => addTradeLeg());
+  document.getElementById('add-leg-btn').addEventListener('click', () => { addTradeLeg(); scheduleRubric(); });
   addTradeLeg();
   addTradeLeg();
   document.getElementById('f-trade-date').value = new Date().toISOString().slice(0, 10);
+
+  // Live rubric: any change inside the builder (team/asset selects, pick protection
+  // inputs) re-runs the shared validator. Add/remove of legs and rows call
+  // scheduleRubric() directly since those don't bubble a change event.
+  const builder = document.getElementById('trade-builder');
+  builder.addEventListener('change', scheduleRubric);
+  builder.addEventListener('input', scheduleRubric);
+}
+
+// ── Live trade rubric (same validator the submit path runs) ──────────────────
+let rubricTimer = null;
+let rubricSeq = 0;
+
+function scheduleRubric() {
+  clearTimeout(rubricTimer);
+  rubricTimer = setTimeout(runTradeRubric, 300);
+}
+
+async function runTradeRubric() {
+  const body = document.getElementById('trade-rubric-body');
+  if (!body) return;
+  const { transfers } = collectTrade();
+  if (!transfers.length) {
+    body.innerHTML = '<div class="rubric-empty">Add teams and assets to evaluate this trade.</div>';
+    return;
+  }
+  const seq = ++rubricSeq;
+  try {
+    const res = await fetch('/api/validate/trade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transfers }),
+    });
+    if (seq !== rubricSeq) return;   // superseded by a newer edit
+    if (!res.ok) {
+      body.innerHTML = `<div class="rubric-empty err">Validation error (HTTP ${res.status}).</div>`;
+      return;
+    }
+    renderTradeRubric(await res.json());
+  } catch (e) {
+    if (seq !== rubricSeq) return;
+    body.innerHTML = '<div class="rubric-empty err">Could not reach the validator.</div>';
+  }
+}
+
+function renderTradeRubric(data) {
+  const body = document.getElementById('trade-rubric-body');
+  const { legal, checks = [] } = data;
+  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+
+  const verdict = `<div class="rubric-verdict ${legal ? 'ok' : 'bad'}">${
+    legal ? '✓ Legal as currently built' : '✗ Not legal yet — resolve the errors below'
+  }</div>`;
+
+  const rows = checks.map(c => {
+    const kind = c.passed ? 'pass' : (c.level || 'error');
+    return `<div class="check-row ${kind}"><span class="check-icon">${ICON[kind] || '?'}</span><span class="check-msg">${c.message}</span></div>`;
+  }).join('');
+
+  body.innerHTML = verdict + rows;
 }
 
 function addTradeLeg(fromTeam, toTeam) {
@@ -1367,7 +1432,7 @@ function addTradeLeg(fromTeam, toTeam) {
   removeLegBtn.title = 'Remove leg';
   removeLegBtn.textContent = '×';
   removeLegBtn.style.marginLeft = 'auto';
-  removeLegBtn.addEventListener('click', () => leg.remove());
+  removeLegBtn.addEventListener('click', () => { leg.remove(); scheduleRubric(); });
 
   header.append(fromSel, arrow, toSel, removeLegBtn);
 
@@ -1421,7 +1486,7 @@ function addPlayerRow(leg) {
   removeBtn.type = 'button';
   removeBtn.className = 'remove-asset-btn';
   removeBtn.textContent = '×';
-  removeBtn.addEventListener('click', () => row.remove());
+  removeBtn.addEventListener('click', () => { row.remove(); scheduleRubric(); });
 
   row.append(sel, removeBtn);
   section.appendChild(row);
@@ -1481,7 +1546,7 @@ function addPickRow(leg) {
   removeBtn.type = 'button';
   removeBtn.className = 'remove-asset-btn';
   removeBtn.textContent = '×';
-  removeBtn.addEventListener('click', () => row.remove());
+  removeBtn.addEventListener('click', () => { row.remove(); scheduleRubric(); });
 
   row.append(sel, protLabel, protInp, swapLabel, swapSel, removeBtn);
   section.appendChild(row);
@@ -1757,6 +1822,8 @@ function resetForm() {
   addTradeLeg();
   document.getElementById('f-trade-date').value = new Date().toISOString().slice(0, 10);
   document.getElementById('f-trade-description').value = '';
+  const rubricBody = document.getElementById('trade-rubric-body');
+  if (rubricBody) rubricBody.innerHTML = '<div class="rubric-empty">Add teams and assets to evaluate this trade.</div>';
 }
 
 function setStatus(cls, msg) {

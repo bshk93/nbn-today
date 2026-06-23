@@ -562,6 +562,7 @@
   <div id="content"><div id="status">Loading...</div></div>
 </div>
 
+<script src="/country-iso.js"></script>
 <script>
 (function () {
   const slug = new URLSearchParams(location.search).get('p');
@@ -888,72 +889,8 @@
     return (!v || v === 'NA' || v === 'None' || v === 'N/A') ? null : v;
   }
 
-  const COUNTRY_ISO = {
-    'Antigua and Barbuda':              'AG',
-    'Argentina':                        'AR',
-    'Australia':                        'AU',
-    'Austria':                          'AT',
-    'Bahamas':                          'BS',
-    'Belgium':                          'BE',
-    'Benin':                            'BJ',
-    'Bosnia and Herzegovina':           'BA',
-    'Brazil':                           'BR',
-    'Cameroon':                         'CM',
-    'Canada':                           'CA',
-    'China':                            'CN',
-    'Croatia':                          'HR',
-    'Czech Republic':                   'CZ',
-    'Democratic Republic of the Congo': 'CD',
-    'Denmark':                          'DK',
-    'Dominican Republic':               'DO',
-    'Egypt':                            'EG',
-    'Finland':                          'FI',
-    'France':                           'FR',
-    'Gabon':                            'GA',
-    'Georgia':                          'GE',
-    'Germany':                          'DE',
-    'Greece':                           'GR',
-    'Guinea':                           'GN',
-    'Haiti':                            'HT',
-    'Israel':                           'IL',
-    'Italy':                            'IT',
-    'Jamaica':                          'JM',
-    'Japan':                            'JP',
-    'Latvia':                           'LV',
-    'Lithuania':                        'LT',
-    'Mali':                             'ML',
-    'Mexico':                           'MX',
-    'Montenegro':                       'ME',
-    'New Zealand':                      'NZ',
-    'Nigeria':                          'NG',
-    'Poland':                           'PL',
-    'Portugal':                         'PT',
-    'Puerto Rico':                      'PR',
-    'Russia':                           'RU',
-    'Senegal':                          'SN',
-    'Serbia':                           'RS',
-    'Slovenia':                         'SI',
-    'South Sudan':                      'SS',
-    'Spain':                            'ES',
-    'Sudan':                            'SD',
-    'Sweden':                           'SE',
-    'Switzerland':                      'CH',
-    'Turkey':                           'TR',
-    'USA':                              'US',
-    'Ukraine':                          'UA',
-    'United Kingdom':                   'GB',
-  };
-
-  function countryFlag(name) {
-    const iso = COUNTRY_ISO[name];
-    if (!iso) return null;
-    const img = document.createElement('img');
-    img.src = `https://flagcdn.com/16x12/${iso.toLowerCase()}.png`;
-    img.alt = name;
-    img.title = name;
-    img.style.cssText = 'vertical-align:middle;border-radius:1px';
-    return img;
-  }
+  // COUNTRY_ISO + flag helper come from /country-iso.js (shared with /draft).
+  const countryFlag = window.countryFlagImg;
 
   // ── Bio edit form ────────────────────────────────────────────────────────────
 
@@ -3355,9 +3292,13 @@
         return;
       }
 
-      const playerRows = rows.filter(r => r.SLUG === slug);
+      // Only rows for seasons actually played count as stats. The build emits a
+      // bio-snapshot row (SEASON/G all NA) for any drafted player so draft info
+      // flows through, but a player who hasn't played yet should render as a
+      // clean bio-only page, not an empty season table.
+      const playerRows = rows.filter(r => r.SLUG === slug && +r.G > 0);
       if (!playerRows.length) {
-        // Player exists in bios but has no stats yet
+        // Player exists in bios but has no played seasons yet
         const bio = biosData[slug];
         if (bio) {
           renderBioOnlyPlayer(slug, bio);

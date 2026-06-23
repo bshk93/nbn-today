@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.0.310",
+    "date": "2026-06-23",
+    "changes": [
+      "Country flags now resolve for the full 2026 draft class. Added an Estonia lookup (was missing everywhere), corrected two bios (Tobi Lawal: England \u2192 United Kingdom; Corey Camper: blank \u2192 USA), and merged the two divergent per-page country\u2192ISO tables into a single shared /country-iso.js used by both /draft and /players, so Mexico and Benin (and any future additions) resolve consistently on both pages",
+      "draft: added \u2039/\u203a prev/next buttons flanking the Draft Class selector to step through draft years chronologically, defaulting to the most recently completed draft; picks with no round now group under \"Undrafted\" instead of \"Unknown\"",
+      "players: a player with bio data but no played seasons (all-NA snapshot rows, G=0) now renders as a clean bio-only page instead of an empty season table",
+      "rulebook: documented roster-size limits for trades (Article II / IV) \u2014 15-player in-season maximum with mandatory release before an over-15 trade processes, a 20-player offseason ceiling that flags 16\u201320 as a trim warning and blocks anything above 20, and a simultaneous-waiver restriction (a roster spot must exist before an acquisition)",
+      "trade-sim: added a live validation checklist that runs the same checks the API returns (pass/warning/error rows) plus a collapsible \"what this checks\" documentation panel",
+      "transactions: added a live trade rubric that re-evaluates legality on every change to teams, assets, and pick protections in the trade builder",
+      "frivolities: added an animated \"Cheating is not allowed\" banner to the Perry, Poeltl, and Trivia daily games",
+      "legal: new /legal disciplinary record section \u2014 a Competition Committee findings index plus the NBN Sim League v. JDBeats daily-games integrity findings page (Docket NBN-2026-0622)"
+    ]
+  },
+  {
     "version": "0.0.309",
     "date": "2026-06-22",
     "changes": [

@@ -34,11 +34,10 @@
     .panel-empty { padding: 1.25rem 1rem; font-size: 0.82rem; color: #6b7280; text-align: center; }
     .panel-loading { padding: 1.25rem 1rem; font-size: 0.82rem; color: #6b7280; text-align: center; }
 
-    /* Check button */
-    .check-row { display: flex; justify-content: center; margin-bottom: 1.5rem; }
-    .check-btn { background: #059669; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 0.95rem; font-weight: 600; padding: 0.6rem 2rem; }
-    .check-btn:hover { background: #047857; }
-    .check-btn:disabled { background: #374151; color: #6b7280; cursor: default; }
+    /* Live status line */
+    .check-status { text-align: center; font-size: 0.8rem; color: #6b7280; margin-bottom: 1.25rem; min-height: 1.1rem; }
+    .check-status.evaluating { color: #9ca3af; }
+    .check-status.err { color: #f87171; }
 
     /* Results */
     .results { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow: hidden; }
@@ -57,6 +56,30 @@
     .result-note { font-size: 0.75rem; color: #9ca3af; margin-top: 0.4rem; line-height: 1.5; }
     .results-summary { padding: 0.75rem 1.25rem; border-top: 1px solid #374151; font-size: 0.82rem; color: #9ca3af; }
     .results-summary strong { color: #f3f4f6; }
+
+    /* Validation checklist (rendered from the same checks the API returns) */
+    .vc-list { border-top: 1px solid #374151; padding: 0.7rem 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .vc-row { display: flex; gap: 0.5rem; font-size: 0.82rem; line-height: 1.45; align-items: flex-start; }
+    .vc-icon { flex-shrink: 0; font-weight: 700; width: 1rem; text-align: center; }
+    .vc-row.pass { color: #d1d5db; }    .vc-row.pass .vc-icon { color: #4ade80; }
+    .vc-row.warning { color: #fcd34d; } .vc-row.warning .vc-icon { color: #fbbf24; }
+    .vc-row.error { color: #fca5a5; }   .vc-row.error .vc-icon { color: #f87171; }
+
+    /* "What this checks" documentation panel */
+    .checks-doc { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 0.4rem 1.1rem; margin-bottom: 1.25rem; }
+    .checks-doc summary { cursor: pointer; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #9ca3af; padding: 0.45rem 0; list-style: none; }
+    .checks-doc summary::-webkit-details-marker { display: none; }
+    .checks-doc summary::before { content: '▸ '; color: #4b5563; }
+    .checks-doc[open] summary::before { content: '▾ '; }
+    .checks-doc ul { margin: 0.3rem 0 0.5rem 1.1rem; padding: 0; }
+    .checks-doc li { font-size: 0.82rem; color: #d1d5db; line-height: 1.55; margin-bottom: 0.35rem; }
+    .checks-doc li strong { color: #f3f4f6; }
+    .checks-doc ul ul { margin: 0.3rem 0 0.4rem 1rem; }
+    .checks-doc ul ul li { font-size: 0.8rem; color: #9ca3af; }
+    .checks-doc h4 { font-size: 0.8rem; font-weight: 700; color: #e5e7eb; margin: 0.9rem 0 0.3rem; }
+    .checks-doc em { color: #cbd5e1; font-style: italic; }
+    .checks-doc .doc-note { font-size: 0.75rem; color: #6b7280; line-height: 1.55; margin: 0.2rem 0 0.5rem; }
+    .checks-doc code { background: #111827; padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.72rem; color: #9ca3af; }
   </style>
 </head>
 <body>
@@ -64,7 +87,7 @@
   <nav class="nav"></nav>
   <header>
     <h1>Trade Simulator</h1>
-    <p>Model a trade and check salary matching, apron status, and cap implications.</p>
+    <p>Model a trade and run it through the league's real validation rules.</p>
   </header>
 
   <div class="trade-grid">
@@ -85,11 +108,35 @@
     </div>
   </div>
 
-  <div class="check-row">
-    <button class="check-btn" id="check-btn" disabled>Check Trade</button>
-  </div>
+  <div class="check-status" id="check-status">Select two teams and pick assets — the rubric evaluates live.</div>
 
   <div class="results" id="results" style="display:none"></div>
+
+  <details class="checks-doc" open>
+    <summary>How trade validation works</summary>
+    <p class="doc-note">The simulator and the league's transaction system run the <em>same</em> rubric: the page calls <code>POST /api/validate/trade</code>, which shares its validator with <code>POST /api/transactions</code>. A "legal" result here is what the office will accept. Picks are tracked but carry no cap or roster weight.</p>
+
+    <h4>Salary matching — max incoming salary by team type</h4>
+    <ul>
+      <li><strong>Below the 1st Apron (§ 4.2)</strong> — tiered on the salary you send out:
+        <ul>
+          <li>outgoing ≤ $8,527,000 → max incoming = <strong>2 × outgoing + $250,000</strong></li>
+          <li>$8,527,000 &lt; outgoing ≤ $29,000,000 → max incoming = <strong>outgoing + $8,527,000</strong></li>
+          <li>outgoing &gt; $29,000,000 → max incoming = <strong>1.25 × outgoing + $250,000</strong></li>
+        </ul>
+      </li>
+      <li><strong>At/above the 1st Apron (§ 4.3)</strong> — no tiers: max incoming = <strong>outgoing + $250,000</strong>.</li>
+      <li><strong>At/above the 2nd Apron (§ 4.4)</strong> — same outgoing + $250,000 limit, <em>and</em> the team may not <strong>aggregate</strong> (combine two or more outgoing salaries) to match incoming. Flagged as a warning for the office to verify.</li>
+    </ul>
+    <p class="doc-note">A team's tier is set by its salary <em>before</em> the trade. Incoming ≤ outgoing always matches.</p>
+
+    <h4>Other checks</h4>
+    <ul>
+      <li><strong>Hard cap</strong> — a team hard-capped at an apron (per its team-state) can't exceed that apron after the trade; a league-wide hard cap, if set, applies to everyone.</li>
+      <li><strong>Roster size (Article II)</strong> — 15 standard players in-season; the offseason ceiling is 20. Ending at 16–20 is a warning (trim to 15 before the season); above 20 is a hard block.</li>
+      <li><strong>Leg count (§ 4.1)</strong> — a normal trade has two or more legs. Single-sided legs are allowed (e.g. a draft-show split) but flagged.</li>
+    </ul>
+  </details>
 </div>
 
 <script>
@@ -104,17 +151,12 @@ const TEAMS = {
   UTA:"Utah Jazz",WAS:"Washington Wizards",
 };
 
-// § 4.2 salary matching tiers (below First Apron)
-const TIERS = [
-  { max: 8527000,   fn: out => out * 2 + 250000 },
-  { max: 29000000,  fn: out => out + 8527000 },
-  { max: Infinity,  fn: out => out * 1.25 + 250000 },
-];
-const APRON1_MATCH = out => out + 250000; // § 4.3 — at/above First Apron
+// Salary-matching, apron, hard-cap, and roster-size rules all live server-side
+// in POST /api/validate/trade (shared with the transaction submit path). This
+// page sends the selected assets there and renders whatever checks come back —
+// no cap math is duplicated in the client.
 
-let allBios = {};        // slug → bio
-let capLevels = {};      // season → { cap, apron1, apron2 }
-let teamState = {};      // abbr → state (hard_cap, etc.)
+let allBios = {};        // slug → bio (for roster display + salary labels in the picker)
 let rosterData = {};     // abbr → [{slug, ovr, name, salary, type}]
 let picksData = {};      // abbr → [{year, round, team, type}]
 let selections = { a: { players: new Set(), picks: new Set() }, b: { players: new Set(), picks: new Set() } };
@@ -145,10 +187,7 @@ function curYr() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  [allBios, capLevels] = await Promise.all([
-    fetch('/api/players').then(r => r.ok ? r.json() : {}),
-    fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
-  ]);
+  allBios = await fetch('/api/players').then(r => r.ok ? r.json() : {});
 
   ['a', 'b'].forEach(side => {
     const sel = document.getElementById(`sel-${side}`);
@@ -177,13 +216,10 @@ async function loadTeam(side, abbr) {
   selections[side] = { players: new Set(), picks: new Set() };
 
   const yr = curYr();
-  const [rosterText, picksText, stateJson] = await Promise.all([
+  const [rosterText, picksText] = await Promise.all([
     fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : '').catch(() => ''),
     fetch(`/data/${abbr.toLowerCase()}-picks.csv`).then(r => r.ok ? r.text() : '').catch(() => ''),
-    fetch(`/api/team-state/${abbr}`).then(r => r.ok ? r.json() : null).catch(() => null),
   ]);
-
-  teamState[abbr] = stateJson;
 
   // Parse roster
   const roster = rosterText ? parseCSV(rosterText) : [];
@@ -247,137 +283,131 @@ function renderPanel(side, abbr, yr) {
   }
 }
 
+// ── Live trade check (delegates to the shared server-side validator) ──────────
+
+let validateTimer = null;
+let validateSeq = 0;   // guards against out-of-order responses
+
+// Called on every team/selection change — debounces a live revalidation.
 function updateCheckBtn() {
-  const abbA = document.getElementById('sel-a').value;
-  const abbB = document.getElementById('sel-b').value;
-  const hasSelection = selections.a.players.size + selections.a.picks.size + selections.b.players.size + selections.b.picks.size > 0;
-  document.getElementById('check-btn').disabled = !(abbA && abbB && abbA !== abbB);
+  clearTimeout(validateTimer);
+  validateTimer = setTimeout(runCheck, 250);
 }
 
-// ── Cap check ─────────────────────────────────────────────────────────────────
-
-document.getElementById('check-btn').addEventListener('click', runCheck);
-
-function runCheck() {
-  const abbA = document.getElementById('sel-a').value;
-  const abbB = document.getElementById('sel-b').value;
-  if (!abbA || !abbB) return;
-
-  const yr = curYr();
-  const cl = capLevels[yr] || {};
-  const CAP = cl.cap || 154647000;
-  const APRON1 = cl.apron1 || 195945000;
-  const APRON2 = cl.apron2 || 207824000;
-
-  function teamSalary(abbr) {
-    return (rosterData[abbr] || []).reduce((s, p) => s + p.salary, 0);
-  }
-
-  function selectedSalary(abbr, side) {
-    return [...selections[side].players].reduce((s, slug) => {
-      const p = (rosterData[abbr] || []).find(r => r.slug === slug);
-      return s + (p ? p.salary : 0);
-    }, 0);
-  }
-
-  const curA = teamSalary(abbA), curB = teamSalary(abbB);
-  const outA = selectedSalary(abbA, 'a'), outB = selectedSalary(abbB, 'b');
-  const inA = outB, inB = outA;  // Team A receives what B sends, and vice versa
-  const newA = curA - outA + inA, newB = curB - outB + inB;
-  const stA = teamState[abbA], stB = teamState[abbB];
-
-  function matchCheck(abbr, currentSal, outgoing, incoming, state) {
-    const notes = [];
-    let valid = true;
-
-    if (!outgoing && !incoming) return { valid: true, notes: ['No salary exchanged.'] };
-
-    // Determine if team is at/above First Apron (before trade)
-    const aboveApron1 = currentSal >= APRON1 || state?.hard_cap;
-    const aboveApron2 = currentSal >= APRON2;
-
-    let maxIncoming;
-    if (aboveApron1) {
-      maxIncoming = APRON1_MATCH(outgoing);
-      notes.push(`Above 1st Apron: max incoming = outgoing + $250K = ${fmtM(maxIncoming)}`);
-    } else {
-      const tier = TIERS.find(t => outgoing <= t.max);
-      maxIncoming = tier.fn(outgoing);
-      notes.push(`Salary match: max incoming = ${fmtM(maxIncoming)}`);
-    }
-
-    if (incoming > maxIncoming) {
-      valid = false;
-      notes.push(`⚠ Match exceeded by ${fmtM(incoming - maxIncoming)}`);
-    }
-
-    // Apron checks post-trade
-    const newSal = currentSal - outgoing + incoming;
-    if (newSal >= APRON2) notes.push(`New salary ${fmtM(newSal)} — at/above 2nd Apron`);
-    else if (newSal >= APRON1) notes.push(`New salary ${fmtM(newSal)} — at/above 1st Apron`);
-    else if (newSal >= CAP) notes.push(`New salary ${fmtM(newSal)} — over cap`);
-    else notes.push(`New salary ${fmtM(newSal)} — under cap`);
-
-    // Hard cap warning
-    if (state?.hard_cap && newSal > (state.hard_cap === 'second_apron' ? APRON2 : APRON1)) {
-      valid = false;
-      notes.push(`⚠ Hard capped at ${state.hard_cap === 'second_apron' ? '2nd Apron' : '1st Apron'} — trade invalid`);
-    }
-
-    return { valid, maxIncoming, notes };
-  }
-
-  const resA = matchCheck(abbA, curA, outA, inA, stA);
-  const resB = matchCheck(abbB, curB, outB, inB, stB);
-  const overallValid = resA.valid && resB.valid;
-
-  renderResults(abbA, abbB, outA, outB, inA, inB, curA, curB, resA, resB, overallValid);
+function setStatus(msg, cls) {
+  const el = document.getElementById('check-status');
+  el.className = 'check-status' + (cls ? ' ' + cls : '');
+  el.textContent = msg;
 }
 
-function renderResults(abbA, abbB, outA, outB, inA, inB, curA, curB, resA, resB, valid) {
+// Build one trade leg (from → to) from the current selections on one side.
+function buildTransfer(from, to, side) {
+  const assets = [];
+  selections[side].players.forEach(slug => assets.push({ type: 'player', slug }));
+  selections[side].picks.forEach(key => {
+    const p = (picksData[from] || []).find(x => `${x.YEAR}-${x.ROUND}-${x.TEAM}` === key);
+    if (p) assets.push({ type: 'pick', year: +p.YEAR, round: String(p.ROUND).startsWith('1') ? 1 : 2, orig: from });
+  });
+  return { from_team: from, to_team: to, assets };
+}
+
+async function runCheck() {
+  const abbA = document.getElementById('sel-a').value;
+  const abbB = document.getElementById('sel-b').value;
+  const el = document.getElementById('results');
+
+  if (!abbA || !abbB || abbA === abbB) {
+    el.style.display = 'none';
+    setStatus('Select two teams to evaluate a trade.');
+    return;
+  }
+
+  // Team A sends what's selected on side A to B, and vice versa.
+  const transfers = [
+    buildTransfer(abbA, abbB, 'a'),
+    buildTransfer(abbB, abbA, 'b'),
+  ].filter(t => t.assets.length);
+
+  if (!transfers.length) {
+    el.style.display = 'none';
+    setStatus('Pick at least one player or pick to move.');
+    return;
+  }
+
+  const seq = ++validateSeq;
+  setStatus('Evaluating…', 'evaluating');
+
+  try {
+    const res = await fetch('/api/validate/trade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transfers }),
+    });
+    if (seq !== validateSeq) return;   // a newer change superseded this one
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      el.style.display = 'none';
+      setStatus(`Validation error — ${d.detail || ('HTTP ' + res.status)}`, 'err');
+      return;
+    }
+    setStatus('');
+    renderResults(abbA, abbB, await res.json());
+  } catch (e) {
+    if (seq !== validateSeq) return;
+    el.style.display = 'none';
+    setStatus('Network error — could not reach the validator.', 'err');
+  }
+}
+
+function renderResults(abbA, abbB, data) {
   const el = document.getElementById('results');
   el.style.display = '';
 
-  const picksAtoB = [...selections.a.picks].join(', ') || '—';
-  const picksBtoA = [...selections.b.picks].join(', ') || '—';
+  const { legal, checks = [], fact_sheet = {} } = data;
+  const cl = fact_sheet.cap_levels || {};
+  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+
+  const cols = [abbA, abbB].map(ab => factCol(ab, fact_sheet, cl)).join('');
+
+  const checkRows = checks.map(c => {
+    const kind = c.passed ? 'pass' : (c.level || 'error');
+    return `<div class="vc-row ${kind}"><span class="vc-icon">${ICON[kind] || '?'}</span><span>${c.message}</span></div>`;
+  }).join('') || '<div class="vc-row pass"><span class="vc-icon">✓</span><span>No constraints triggered.</span></div>';
 
   el.innerHTML = `
-    <div class="results-header">Trade Analysis</div>
-    <div class="results-grid">
-      ${resultCol(abbA, TEAMS[abbA], outA, inA, curA, picksAtoB, resA)}
-      ${resultCol(abbB, TEAMS[abbB], outB, inB, curB, picksBtoA, resB)}
-    </div>
+    <div class="results-header">Trade Analysis · season ${fact_sheet.season || curYr()}</div>
+    <div class="results-grid">${cols}</div>
+    <div class="vc-list">${checkRows}</div>
     <div class="results-summary">
-      ${valid
-        ? '<strong style="color:#4ade80">✓ Trade appears valid</strong> — salary matching and hard cap constraints satisfied.'
-        : '<strong style="color:#f87171">✗ Trade has issues</strong> — see details above.'}
-      &nbsp; Salary data based on current season (${curYr()}). Always verify with the rulebook.
+      ${legal
+        ? '<strong style="color:#4ade80">✓ Trade is legal</strong> — every check the league office runs at submission passes.'
+        : '<strong style="color:#f87171">✗ Trade is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.'}
     </div>`;
 }
 
-function resultCol(abbr, name, outgoing, incoming, current, picks, res) {
-  const yr = curYr();
-  const cl = capLevels[yr] || {};
-  const APRON1 = cl.apron1 || 195945000;
-  const newSal = current - outgoing + incoming;
-  const statusCls = res.valid ? 'status-ok' : 'status-err';
-  const statusText = res.valid ? '✓ Valid' : '✗ Issue';
-
-  const playersOut = [...selections[abbr === document.getElementById('sel-a').value ? 'a' : 'b'].players]
-    .map(slug => { const p = (rosterData[abbr] || []).find(r => r.slug === slug); return p ? displayName(p.name) : slug; })
-    .join(', ') || '—';
+function factCol(abbr, fs, cl) {
+  const name = TEAMS[abbr] || abbr;
+  const t = (fs.teams || {})[abbr];
+  if (!t) {
+    return `<div class="result-col"><div class="result-team">${name}</div>
+      <div class="result-note">No assets moving for this team.</div></div>`;
+  }
+  const apron1 = cl.apron1 || 0;
+  const proj = t.projected_salary;
+  const overApron = apron1 && proj >= apron1;
+  const apronRow = apron1
+    ? `<div class="result-row"><span class="label">vs 1st Apron</span><span style="color:${overApron ? '#f87171' : '#6b7280'}">${overApron ? 'OVER by ' + fmtM(proj - apron1) : fmtM(apron1 - proj) + ' room'}</span></div>`
+    : '';
 
   return `<div class="result-col">
     <div class="result-team">${name}</div>
-    <div class="result-row"><span class="label">Current salary</span><span>${fmtM(current)}</span></div>
-    <div class="result-row"><span class="label">Sending (players)</span><span>${outgoing ? fmtM(outgoing) : '—'}</span></div>
-    <div class="result-row"><span class="label">Sending (picks)</span><span style="font-size:0.75rem">${picks}</span></div>
-    <div class="result-row"><span class="label">Receiving</span><span>${incoming ? fmtM(incoming) : '—'}</span></div>
+    <div class="result-row"><span class="label">Current salary</span><span>${fmtM(t.current_salary)}</span></div>
+    <div class="result-row"><span class="label">Sending</span><span>${t.outgoing_salary ? fmtM(t.outgoing_salary) : '—'}</span></div>
+    <div class="result-row"><span class="label">Receiving</span><span>${t.incoming_salary ? fmtM(t.incoming_salary) : '—'}</span></div>
     <hr class="result-divider">
-    <div class="result-row"><span class="label">New salary</span><span><strong>${fmtM(newSal)}</strong></span></div>
-    <div class="result-row"><span class="label">vs 1st Apron</span><span style="color:${newSal >= APRON1 ? '#f87171' : '#6b7280'}">${fmtM(APRON1)} (${newSal >= APRON1 ? 'OVER' : fmtM(APRON1 - newSal) + ' room'})</span></div>
-    <span class="result-status ${statusCls}">${statusText}</span>
-    <div class="result-note">${res.notes.join('<br>')}</div>
+    <div class="result-row"><span class="label">New salary</span><span><strong>${fmtM(proj)}</strong></span></div>
+    ${apronRow}
+    <div class="result-row"><span class="label">Roster after</span><span>${t.standard_count_after} / 15</span></div>
   </div>`;
 }
 

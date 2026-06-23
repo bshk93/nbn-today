@@ -35,6 +35,24 @@
 
     select:focus { outline: none; border-color: #60a5fa; }
 
+    .year-nav {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #f3f4f6;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .year-nav:hover:not(:disabled) { border-color: #60a5fa; }
+    .year-nav:disabled { opacity: 0.35; cursor: default; }
+
     .round-block { margin-bottom: 1.25rem; }
 
     .round-block h2 {
@@ -142,41 +160,20 @@
     </header>
 
     <div class="controls">
+      <button id="prev-year" class="year-nav" title="Older draft">‹</button>
       <label for="year-select">Draft Class</label>
       <select id="year-select"></select>
+      <button id="next-year" class="year-nav" title="Newer draft">›</button>
       <button id="edit-btn" style="display:none;margin-left:auto;padding:0.3rem 0.7rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#6b7280;font-family:inherit">Edit</button>
     </div>
 
     <div id="content"><div id="status">Loading…</div></div>
   </div>
 
+  <script src="/country-iso.js"></script>
   <script>
-    const COUNTRY_ISO = {
-      'Antigua and Barbuda': 'AG', 'Argentina': 'AR', 'Australia': 'AU', 'Austria': 'AT',
-      'Bahamas': 'BS', 'Belgium': 'BE', 'Bosnia and Herzegovina': 'BA', 'Brazil': 'BR',
-      'Cameroon': 'CM', 'Canada': 'CA', 'China': 'CN', 'Croatia': 'HR',
-      'Czech Republic': 'CZ', 'Democratic Republic of the Congo': 'CD', 'Denmark': 'DK',
-      'Dominican Republic': 'DO', 'Egypt': 'EG', 'Finland': 'FI', 'France': 'FR',
-      'Gabon': 'GA', 'Georgia': 'GE', 'Germany': 'DE', 'Greece': 'GR', 'Guinea': 'GN',
-      'Haiti': 'HT', 'Israel': 'IL', 'Italy': 'IT', 'Jamaica': 'JM', 'Japan': 'JP',
-      'Latvia': 'LV', 'Lithuania': 'LT', 'Montenegro': 'ME', 'New Zealand': 'NZ',
-      'Nigeria': 'NG', 'Poland': 'PL', 'Portugal': 'PT', 'Puerto Rico': 'PR',
-      'Russia': 'RU', 'Senegal': 'SN', 'Serbia': 'RS', 'Slovenia': 'SI',
-      'South Sudan': 'SS', 'Spain': 'ES', 'Sudan': 'SD', 'Sweden': 'SE',
-      'Switzerland': 'CH', 'Turkey': 'TR', 'USA': 'US', 'Ukraine': 'UA',
-      'United Kingdom': 'GB',
-    };
-
-    function flagImg(country) {
-      const iso = COUNTRY_ISO[country];
-      if (!iso) return null;
-      const img = document.createElement('img');
-      img.src = `https://flagcdn.com/16x12/${iso.toLowerCase()}.png`;
-      img.alt = country;
-      img.title = country;
-      img.style.cssText = 'vertical-align:middle;border-radius:1px';
-      return img;
-    }
+    // COUNTRY_ISO + flag helper come from /country-iso.js (shared with /players).
+    const flagImg = window.countryFlagImg;
 
 
     function pg(val, g) {
@@ -288,7 +285,7 @@
 
       const byRound = {};
       classPlayers.forEach(p => {
-        const round = p._draft_round ? `Round ${p._draft_round}` : 'Unknown';
+        const round = p._draft_round ? `Round ${p._draft_round}` : 'Undrafted';
         if (!byRound[round]) byRound[round] = [];
         const pick = { num: p._draft_pick ?? 999, from: p._draft_team || '' };
         byRound[round].push({ pick, player: p });
@@ -810,7 +807,12 @@
         sel.appendChild(opt);
       });
 
-      const allYears = [...futureYears, ...[...pastYears].sort().reverse()];
+      // Chronological (ascending) order, used for prev/next navigation.
+      const yearsChrono = [...futureYears, ...pastYears].sort((a, b) => +a - +b);
+
+      // Default to the most recently completed draft, falling back to the
+      // earliest upcoming year if no past drafts exist yet.
+      const defaultYear = [...pastYears].sort().reverse()[0] ?? yearsChrono[0];
 
       const editBtn = document.getElementById('edit-btn');
       let currentAllPicks = allPicks;
@@ -850,8 +852,33 @@
         else render(drafted, y);
       }
 
-      renderYear(allYears[0]);
-      sel.addEventListener('change', () => renderYear(sel.value));
+      const prevBtn = document.getElementById('prev-year');
+      const nextBtn = document.getElementById('next-year');
+
+      function updateNav(y) {
+        const idx = yearsChrono.indexOf(y);
+        prevBtn.disabled = idx <= 0;
+        nextBtn.disabled = idx === -1 || idx >= yearsChrono.length - 1;
+      }
+
+      function selectYear(y) {
+        sel.value = y;
+        updateNav(y);
+        renderYear(y);
+      }
+
+      // prev = older (back a year), next = newer (forward a year)
+      prevBtn.addEventListener('click', () => {
+        const idx = yearsChrono.indexOf(sel.value);
+        if (idx > 0) selectYear(yearsChrono[idx - 1]);
+      });
+      nextBtn.addEventListener('click', () => {
+        const idx = yearsChrono.indexOf(sel.value);
+        if (idx !== -1 && idx < yearsChrono.length - 1) selectYear(yearsChrono[idx + 1]);
+      });
+
+      selectYear(defaultYear);
+      sel.addEventListener('change', () => { updateNav(sel.value); renderYear(sel.value); });
     }
 
     init();

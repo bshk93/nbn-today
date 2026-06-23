@@ -218,6 +218,58 @@
   </style>
 </head>
 <body>
+  <style>
+    @keyframes cheatPulse {
+      0%, 100% { transform: scale(1) rotate(-1deg); }
+      50%      { transform: scale(1.04) rotate(1deg); }
+    }
+    @keyframes cheatFlash {
+      0%, 100% { background: #c8102e; }
+      50%      { background: #ff1f44; }
+    }
+    @keyframes cheatStripes {
+      from { background-position: 0 0; }
+      to   { background-position: 80px 0; }
+    }
+    .cheat-banner {
+      position: relative;
+      margin: 0 0 18px;
+      padding: 22px 16px;
+      text-align: center;
+      color: #fff;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      line-height: 1.05;
+      font-size: clamp(28px, 7vw, 64px);
+      text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 0 0 18px rgba(0,0,0,0.6);
+      border-top: 6px dashed #ffe600;
+      border-bottom: 6px dashed #ffe600;
+      box-shadow: 0 0 40px rgba(255,31,68,0.7);
+      animation: cheatFlash 0.8s steps(1) infinite, cheatPulse 1.4s ease-in-out infinite;
+      overflow: hidden;
+    }
+    .cheat-banner::before {
+      content: "";
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(45deg, transparent 0 20px, rgba(255,230,0,0.18) 20px 40px);
+      animation: cheatStripes 0.6s linear infinite;
+      pointer-events: none;
+    }
+    .cheat-banner .siren { font-size: 1.1em; vertical-align: middle; }
+    .cheat-banner small {
+      display: block;
+      margin-top: 6px;
+      font-size: 0.32em;
+      letter-spacing: 0.25em;
+      color: #ffe600;
+      text-shadow: 2px 2px 0 #000;
+    }
+  </style>
+  <div class="cheat-banner">
+    <span class="siren">🚨</span> Cheating is not allowed <span class="siren">🚨</span>
+    <small>★ this means you ★</small>
+  </div>
   <div class="page">
     <nav class="nav"></nav>
 
