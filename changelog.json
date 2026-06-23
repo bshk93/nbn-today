@@ -1,5 +1,26 @@
 [
   {
+    "version": "0.0.313",
+    "date": "2026-06-23",
+    "changes": [
+      "Hall of Champions: new page under History (/champions) enshrining every NBN title team \u2014 banner, season record/seed/ratings, round-by-round playoff run, front office at the time of the title, and the championship roster with each player's ring count earned to date; flip between years via the year chips or arrow keys",
+      "Hall of Champions: tapping a series in the playoff run expands it to show the game-by-game scores (result, home/away, final, date)",
+      "Member profiles: new 'Winning Ways' achievement under Longevity \u2014 bronze/silver/gold at 100/250/400 career regular-season wins, with the exact win total shown on hover",
+      "Member profiles: eight new achievements \u2014 Wire to Wire (#1 seed + title same season) and tiered Win Machine (50/60/70-win season) and Mr. Consistent (3/4/5+ straight playoff trips) under GM Performance; a new Draft category with Draft Whisperer (drafted an All-NBN 1st/2nd/3rd Teamer), Draft Architect (title with 3/5/7 homegrown players), and Lottery Darling (3/4/5+ straight top-4 picks); and a new Trades category with All-In (3/4/5+ firsts sent in one trade) and Fleecer (3/4/5+ firsts acquired in one trade)",
+      "Member profiles: more achievements \u2014 Cinderella (deep run as a 6+ seed), Dynasty (consecutive titles), and Tankathon (league-worst record) under GM Performance; Steal of the Draft (drafted an All-Star outside the top 14/30/45) under Draft; a new Player Development category with MVP Maker and Star Factory (3/8/15 All-Star selections); Wheeler Dealer (5/15/30 career trades), Polyamorous (3/4/5-team trades), and Blank Check ($100M/$200M/$300M signing) under Front Office (formerly Trades); and a new Rivalries category with Nemesis and Punching Bag (lopsided all-time head-to-head records, min. 10 games)",
+      "Member profiles: achievement detail tooltips now tap-to-reveal on mobile (tap a card to show its info line), since hover tooltips never fire on touch",
+      "homepage: reorganized the landing-page card sections \u2014 new order is League, History, Stats, NBYen Corner, Miscellaneous, About, League Office",
+      "homepage: split the old League section into League and a new History section (Season Summary, Hall of Fame, Awards, Draft)",
+      "homepage: renamed the League History page to Season Summary and moved its route from /history to /season-summary",
+      "homepage: added a new NBYen Corner section (Bets, Daily Perry Game, Daily Poeltl, Trivia, Wall Street); the remaining items stay under Miscellaneous (NBNTV Classics, YouTube, News)",
+      "homepage: moved Proposals from the League section into League Office (now always visible)",
+      "homepage: removed the Full Stats Dashboard card",
+      "players index: A\u2013D/E\u2013K/L\u2013P/Q\u2013Z tabs now paginate by last name instead of first name, and the Player column sorts alphabetically by surname",
+      "players index: visiting the page now defaults to the All tab with the Rostered filter on, and the Rostered filter now persists across letter-tab switches until explicitly turned off",
+      "roles page: documented newsroom editorial powers under the Curator role, noted that BOD now inherits Curator, and added a note that any signed-in member can write and submit news"
+    ]
+  },
+  {
     "version": "0.0.312",
     "date": "2026-06-23",
     "changes": [

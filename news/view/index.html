@@ -189,6 +189,14 @@ function render(a) {
     actions.appendChild(edit);
   }
   if (isAuthor && a.status === 'draft') {
+    // Authors can publish their own drafts directly (no editorial approval).
+    // The editor panel only renders for non-draft articles, so there's no
+    // duplicate Publish button for editors viewing their own draft.
+    const pub = document.createElement('button');
+    pub.className = 'btn-success';
+    pub.textContent = 'Publish';
+    pub.onclick = doPublish;
+    actions.appendChild(pub);
     const del = document.createElement('button');
     del.className = 'btn-danger';
     del.textContent = 'Delete Draft';

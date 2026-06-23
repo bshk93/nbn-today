@@ -54,10 +54,19 @@
     .ach-card {
       background: #1f2937; border: 1px solid #374151; border-radius: 8px;
       padding: 0.75rem 0.4rem 0.65rem; text-align: center;
-      cursor: default; transition: border-color 0.12s;
+      cursor: pointer; transition: border-color 0.12s;
+      -webkit-tap-highlight-color: transparent;
     }
     .ach-card:not(.locked):hover { border-color: #4b5563; }
+    .ach-card:focus-visible { outline: none; border-color: #4b5563; }
     .ach-card.locked { opacity: 0.35; filter: grayscale(1); }
+    /* Tap/click to reveal detail (mobile has no hover for the title tooltip) */
+    .ach-info {
+      font-size: 0.62rem; color: #9ca3af; line-height: 1.35;
+      max-height: 0; opacity: 0; overflow: hidden;
+      transition: max-height 0.18s ease, opacity 0.18s ease, margin-top 0.18s ease;
+    }
+    .ach-card.open .ach-info { max-height: 6rem; opacity: 1; margin-top: 0.45rem; }
     .ach-icon { font-size: 1.6rem; line-height: 1; display: block; margin-bottom: 0.35rem; }
     .ach-name {
       font-size: 0.7rem; font-weight: 600; color: #d1d5db;
@@ -203,6 +212,66 @@ function parseCSV(text) {
   });
 }
 
+// Quote-aware CSV parser — needed for files with commas inside quoted fields
+// (e.g. PLAYER = "Last, First" in player_seasons.csv / player_awards.csv).
+function splitCSVLine(line) {
+  const out = []; let cur = ''; let q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) {
+      if (c === '"') { if (line[i+1] === '"') { cur += '"'; i++; } else q = false; }
+      else cur += c;
+    } else {
+      if (c === '"') q = true;
+      else if (c === ',') { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+function parseCSVQuoted(text) {
+  const lines = (text || '').replace(/\r/g, '').trim().split('\n').filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = splitCSVLine(lines[0]).map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = splitCSVLine(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || '').trim(); });
+    return obj;
+  });
+}
+
+function memberAtTeamOnDate(tenures, team, iso) {
+  const d = new Date(iso);
+  return (tenures || []).some(t => {
+    if (t.team !== team) return false;
+    const ts = new Date(t.start);
+    const te = t.end ? new Date(t.end) : new Date('9999-12-31');
+    return ts <= d && te >= d;
+  });
+}
+
+function seasonStartYear(season) { return 2000 + parseInt(season.split('-')[0], 10); }
+
+// A draft in calendar year Y feeds the season that starts that same year ("Y-(Y+1)").
+function draftSeasonStr(year) {
+  const a = year - 2000;
+  return `${String(a).padStart(2, '0')}-${String(a + 1).padStart(2, '0')}`;
+}
+
+// Longest run of consecutive integers present in a Set<number>.
+function longestConsecutiveRun(yearSet) {
+  let best = 0;
+  for (const y of yearSet) {
+    if (yearSet.has(y - 1)) continue;       // only count from the start of a run
+    let len = 1;
+    while (yearSet.has(y + len)) len++;
+    best = Math.max(best, len);
+  }
+  return best;
+}
+
 // ── Achievement definitions ───────────────────────────────────────────────────
 // Each achievement has: id, name, icon, cat, desc, tiers[]
 // Each tier: label (display name), tierClass (CSS), sub (sub-label), unlock(d)
@@ -289,6 +358,58 @@ const ACHIEVEMENTS = [
       { label: 'Cursed', tierClass: 'tier-on', sub: '2+ Finals, 0 rings', unlock: d => d.finalsSeasons >= 2 && d.champSeasons === 0 },
     ],
   },
+  {
+    id: 'wire_to_wire', name: 'Wire to Wire', icon: '🥇', cat: 'gm',
+    desc: 'Hold the #1 overall seed and win the title in the same season',
+    tiers: [
+      { label: 'Wire to Wire', tierClass: 'tier-on', sub: '#1 Seed → Champion',
+        unlock: d => d.seasons.some(s => +s.SEED_NUM === 1 && s.PLAYOFF_RESULT === 'Champion') },
+    ],
+  },
+  {
+    id: 'big_season', name: 'Win Machine', icon: '💪', cat: 'gm',
+    desc: 'Wins in a single regular season',
+    value: d => `${d.maxSeasonWins}-win best season`,
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '50-win season', unlock: d => d.maxSeasonWins >= 50 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '60-win season', unlock: d => d.maxSeasonWins >= 60 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '70-win season', unlock: d => d.maxSeasonWins >= 70 },
+    ],
+  },
+  {
+    id: 'mr_consistent', name: 'Mr. Consistent', icon: '📏', cat: 'gm',
+    desc: 'Consecutive playoff appearances',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '3 straight playoffs',  unlock: d => d.maxPlayoffStreak >= 3 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '4 straight playoffs',  unlock: d => d.maxPlayoffStreak >= 4 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '5+ straight playoffs', unlock: d => d.maxPlayoffStreak >= 5 },
+    ],
+  },
+  {
+    id: 'cinderella', name: 'Cinderella', icon: '🩴', cat: 'gm',
+    desc: 'Make a deep playoff run as a #6 seed or lower',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: 'Conf Finals as a 6+ seed', unlock: d => d.cinderellaConf },
+      { label: 'Silver', tierClass: 'tier-silver', sub: 'Finals as a 6+ seed',      unlock: d => d.cinderellaFinals },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: 'Champion as a 6+ seed',    unlock: d => d.cinderellaTitle },
+    ],
+  },
+  {
+    id: 'dynasty', name: 'Dynasty', icon: '🏛️', cat: 'gm',
+    desc: 'Win championships in consecutive seasons',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: 'Back-to-back titles', unlock: d => d.dynastyStreak >= 2 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: 'Three-peat',          unlock: d => d.dynastyStreak >= 3 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: 'Four-peat',           unlock: d => d.dynastyStreak >= 4 },
+    ],
+  },
+  {
+    id: 'tankathon', name: 'Tankathon', icon: '🪣', cat: 'gm',
+    desc: 'Finish a season with the league\'s worst record',
+    tiers: [
+      { label: 'Tankathon', tierClass: 'tier-on', sub: 'League-worst record', unlock: d => d.tankathon },
+    ],
+  },
 
   // === Longevity ===
   {
@@ -298,6 +419,143 @@ const ACHIEVEMENTS = [
       { label: 'Bronze', tierClass: 'tier-bronze', sub: '2 seasons',      unlock: d => d.seasons.length >= 2 },
       { label: 'Silver', tierClass: 'tier-silver', sub: '4 seasons',      unlock: d => d.seasons.length >= 4 },
       { label: 'Gold',   tierClass: 'tier-gold',   sub: '6+ seasons',     unlock: d => d.seasons.length >= 6 },
+    ],
+  },
+  {
+    id: 'wins', name: 'Winning Ways', icon: '🏀', cat: 'longevity',
+    desc: 'Career regular-season wins',
+    value: d => `${d.regWins} regular-season wins`,
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '', unlock: d => d.regWins >= 100 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '', unlock: d => d.regWins >= 250 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '', unlock: d => d.regWins >= 400 },
+    ],
+  },
+
+  // === Draft ===
+  {
+    id: 'draft_whisperer', name: 'Draft Whisperer', icon: '🔮', cat: 'draft',
+    desc: 'Draft a player who later makes an All-NBN team',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: 'Drafted an All-NBN 3rd Teamer', unlock: d => d.bestDrafteeAllNbn <= 3 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: 'Drafted an All-NBN 2nd Teamer', unlock: d => d.bestDrafteeAllNbn <= 2 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: 'Drafted an All-NBN 1st Teamer', unlock: d => d.bestDrafteeAllNbn <= 1 },
+    ],
+  },
+  {
+    id: 'draft_architect', name: 'Draft Architect', icon: '🏗️', cat: 'draft',
+    desc: 'Win a title with homegrown (self-drafted) players on the roster',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: 'Champion w/ 3 homegrown', unlock: d => d.maxHomegrown >= 3 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: 'Champion w/ 5 homegrown', unlock: d => d.maxHomegrown >= 5 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: 'Champion w/ 7 homegrown', unlock: d => d.maxHomegrown >= 7 },
+    ],
+  },
+  {
+    id: 'lottery_darling', name: 'Lottery Darling', icon: '🎱', cat: 'draft',
+    desc: 'Make a top-4 draft selection in consecutive years',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '3 straight top-4 picks',  unlock: d => d.lotteryStreak >= 3 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '4 straight top-4 picks',  unlock: d => d.lotteryStreak >= 4 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '5+ straight top-4 picks', unlock: d => d.lotteryStreak >= 5 },
+    ],
+  },
+  {
+    id: 'steal', name: 'Steal of the Draft', icon: '💎', cat: 'draft',
+    desc: 'Draft a future All-Star outside the lottery',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: 'All-Star picked outside top 14', unlock: d => d.stealPick > 14 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: 'All-Star picked outside top 30', unlock: d => d.stealPick > 30 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: 'All-Star picked outside top 45', unlock: d => d.stealPick > 45 },
+    ],
+  },
+
+  // === Player Development ===
+  {
+    id: 'mvp_maker', name: 'MVP Maker', icon: '👑', cat: 'development',
+    desc: 'Have a player win MVP on your roster',
+    tiers: [
+      { label: 'MVP Maker', tierClass: 'tier-on', sub: 'Rostered an MVP winner', unlock: d => d.mvpMaker },
+    ],
+  },
+  {
+    id: 'star_factory', name: 'Star Factory', icon: '⭐', cat: 'development',
+    desc: 'All-Star selections by your players',
+    value: d => `${d.allStarCount} All-Star selection${d.allStarCount === 1 ? '' : 's'}`,
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '3 All-Star selections',   unlock: d => d.allStarCount >= 3 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '8 All-Star selections',   unlock: d => d.allStarCount >= 8 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '15 All-Star selections',  unlock: d => d.allStarCount >= 15 },
+    ],
+  },
+
+  // === Trades ===
+  {
+    id: 'all_in', name: 'All-In', icon: '🃏', cat: 'trades',
+    desc: 'First-round picks sent in a single trade',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '3 firsts in one trade',  unlock: d => d.maxFirstsSent >= 3 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '4 firsts in one trade',  unlock: d => d.maxFirstsSent >= 4 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '5+ firsts in one trade', unlock: d => d.maxFirstsSent >= 5 },
+    ],
+  },
+  {
+    id: 'fleecer', name: 'Fleecer', icon: '🦊', cat: 'trades',
+    desc: 'First-round picks acquired in a single trade',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '3 firsts in one trade',  unlock: d => d.maxFirstsRecv >= 3 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '4 firsts in one trade',  unlock: d => d.maxFirstsRecv >= 4 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '5+ firsts in one trade', unlock: d => d.maxFirstsRecv >= 5 },
+    ],
+  },
+  {
+    id: 'wheeler_dealer', name: 'Wheeler Dealer', icon: '🤝', cat: 'trades',
+    desc: 'Career trades completed',
+    value: d => `${d.tradeCount} trade${d.tradeCount === 1 ? '' : 's'} completed`,
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '5 trades',  unlock: d => d.tradeCount >= 5 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '15 trades', unlock: d => d.tradeCount >= 15 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '30 trades', unlock: d => d.tradeCount >= 30 },
+    ],
+  },
+  {
+    id: 'polyamorous', name: 'Polyamorous', icon: '♻️', cat: 'trades',
+    desc: 'Pull off a multi-team trade',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '3-team trade',  unlock: d => d.maxTradeTeams >= 3 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '4-team trade',  unlock: d => d.maxTradeTeams >= 4 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '5+-team trade', unlock: d => d.maxTradeTeams >= 5 },
+    ],
+  },
+  {
+    id: 'blank_check', name: 'Blank Check', icon: '💸', cat: 'trades',
+    desc: 'Total value of your biggest free-agent signing',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '$100M contract', unlock: d => d.maxSignValue >= 100e6 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '$200M contract', unlock: d => d.maxSignValue >= 200e6 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '$300M contract', unlock: d => d.maxSignValue >= 300e6 },
+    ],
+  },
+
+  // === Rivalries ===
+  {
+    id: 'nemesis', name: 'Nemesis', icon: '😈', cat: 'rivalries',
+    desc: 'Dominate an opponent head-to-head (min. 10 games)',
+    value: d => d.nemesis ? `${d.nemesis.w}-${d.nemesis.l} vs ${d.nemesis.team}` : '',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '70%+ win rate vs a team', unlock: d => d.nemesis && d.nemesis.pct >= 0.70 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '80%+ win rate vs a team', unlock: d => d.nemesis && d.nemesis.pct >= 0.80 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '90%+ win rate vs a team', unlock: d => d.nemesis && d.nemesis.pct >= 0.90 },
+    ],
+  },
+  {
+    id: 'punching_bag', name: 'Punching Bag', icon: '🥊', cat: 'rivalries',
+    desc: 'An opponent owns you head-to-head (min. 10 games)',
+    value: d => d.punchingBag ? `${d.punchingBag.w}-${d.punchingBag.l} vs ${d.punchingBag.team}` : '',
+    tiers: [
+      { label: 'Bronze', tierClass: 'tier-bronze', sub: '≤30% win rate vs a team', unlock: d => d.punchingBag && d.punchingBag.pct <= 0.30 },
+      { label: 'Silver', tierClass: 'tier-silver', sub: '≤20% win rate vs a team', unlock: d => d.punchingBag && d.punchingBag.pct <= 0.20 },
+      { label: 'Gold',   tierClass: 'tier-gold',   sub: '≤10% win rate vs a team', unlock: d => d.punchingBag && d.punchingBag.pct <= 0.10 },
     ],
   },
 
@@ -391,14 +649,18 @@ const ACHIEVEMENTS = [
 ];
 
 const CAT_LABELS = {
-  gm:        'GM Performance',
-  longevity: 'Longevity',
-  betting:   'Betting',
-  investing: 'Investing',
+  gm:          'GM Performance',
+  longevity:   'Longevity',
+  draft:       'Draft',
+  development: 'Player Development',
+  trades:      'Front Office',
+  rivalries:   'Rivalries',
+  betting:     'Betting',
+  investing:   'Investing',
 };
 
 function renderAchievements(achData) {
-  const cats = ['gm', 'longevity', 'betting', 'investing'];
+  const cats = ['gm', 'longevity', 'draft', 'development', 'trades', 'rivalries', 'betting', 'investing'];
   let html = '';
 
   for (const cat of cats) {
@@ -417,11 +679,15 @@ function renderAchievements(achData) {
       const tierClass = locked ? 'tier-locked' : displayTier.tierClass;
       const tierLabel = locked ? 'Locked' : displayTier.label;
       const tierSub   = locked ? ach.desc : displayTier.sub;
+      let valStr = '';
+      if (ach.value) { try { valStr = ach.value(achData); } catch(e) { /* skip */ } }
+      const titleText = valStr ? (tierSub ? `${tierSub} — ${valStr}` : valStr) : tierSub;
 
-      html += `<div class="ach-card${locked ? ' locked' : ''}" title="${esc(tierSub)}">
+      html += `<div class="ach-card${locked ? ' locked' : ''}" title="${esc(titleText)}" tabindex="0">
         <span class="ach-icon">${ach.icon}</span>
         <div class="ach-name">${esc(ach.name)}</div>
         <span class="ach-tier ${tierClass}">${esc(tierLabel)}</span>
+        <div class="ach-info">${esc(titleText)}</div>
       </div>`;
     }
     html += `</div></div>`;
@@ -452,11 +718,16 @@ async function init() {
     fetch('/standings/standings-history.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
     fetch(`/api/bets/stats/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch(`/api/invest/stats/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/players/player_awards.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+    fetch('/api/transactions?limit=2000').then(r => r.ok ? r.json() : { transactions: [] }).catch(() => ({ transactions: [] })),
+    fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+    fetch('/data/h2h-owners.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
   ];
 
   const [results1, results2] = await Promise.all([Promise.all(req1), Promise.all(req2)]);
   const [allMembers, tips, balData, me] = results1;
-  const [ownerStatsCsv, standingsCsv, betsStats, investStats] = results2;
+  const [ownerStatsCsv, standingsCsv, betsStats, investStats, bios, awardsCsv, txnResp, playerSeasonsCsv, h2hOwnersCsv] = results2;
 
   const member = allMembers.find(m => m.name === memberName);
   if (!member) {
@@ -496,20 +767,189 @@ async function init() {
 
   const tipsReceived = tips.reduce((sum, t) => sum + (+t.amount || 0), 0);
 
+  const regWins = memberSeasons.reduce((sum, s) => sum + (+s.W || 0), 0);
+
   const champSeasons   = memberSeasons.filter(s => s.PLAYOFF_RESULT === 'Champion').length;
   const finalsSeasons  = memberSeasons.filter(s => ['Champion','Runner-Up'].includes(s.PLAYOFF_RESULT)).length;
   const confSeasons    = memberSeasons.filter(s => ['Champion','Runner-Up','Conf Finals'].includes(s.PLAYOFF_RESULT)).length;
   const playoffSeasons = memberSeasons.filter(s => s.PLAYOFF_RESULT !== 'Missed').length;
 
+  // Best single regular season (raw wins)
+  const maxSeasonWins = memberSeasons.reduce((m, s) => Math.max(m, +s.W || 0), 0);
+
+  // Longest streak of consecutive playoff appearances
+  const playoffYears = new Set(
+    memberSeasons.filter(s => s.PLAYOFF_RESULT !== 'Missed').map(s => seasonStartYear(s.SEASON))
+  );
+  const maxPlayoffStreak = longestConsecutiveRun(playoffYears);
+
+  // Shared inputs for award / draft / trade attribution
+  const allTxns    = (txnResp && txnResp.transactions) || [];
+  const trades     = allTxns.filter(t => t.type === 'trade');
+  const signs      = allTxns.filter(t => t.type === 'sign');
+  const seasonRows = parseCSVQuoted(playerSeasonsCsv);
+  const awardRows  = parseCSVQuoted(awardsCsv);
+
+  // slug|season -> team (a player's roster home that regular season, for award attribution)
+  const teamBySlugSeason = {};
+  for (const r of seasonRows) teamBySlugSeason[`${r.SLUG}|${r.SEASON}`] = r.TEAM;
+
+  // --- Draft-based achievements ---
+  // Attribute a draftee to this member if they managed the drafting team in the
+  // season that draft feeds (draft year Y → season "Y-(Y+1)").
+  const myDraftees = [];
+  for (const slug in bios) {
+    const p = bios[slug];
+    if (!p || !p.draft_team || !p.draft_year) continue;
+    if (!memberWasAtTeamInSeason(member.tenures, p.draft_team, draftSeasonStr(+p.draft_year))) continue;
+    myDraftees.push({ slug, year: +p.draft_year, round: +p.draft_round || null, pick: +p.draft_pick || null, team: p.draft_team });
+  }
+
+  // Award lookups (one pass over the awards table)
+  const allNbnLevel = {};            // slug -> best All-NBN team level (1/2/3)
+  const allStarSlugs = new Set();    // every player who ever made an All-Star team
+  for (const a of awardRows) {
+    if (a.AWARD === 'All-Star') allStarSlugs.add(a.SLUG);
+    const m = /All-NBN (First|Second|Third) Team/.exec(a.AWARD || '');
+    if (m) {
+      const lvl = m[1] === 'First' ? 1 : m[1] === 'Second' ? 2 : 3;
+      if (!(a.SLUG in allNbnLevel) || lvl < allNbnLevel[a.SLUG]) allNbnLevel[a.SLUG] = lvl;
+    }
+  }
+
+  // Draft Whisperer: best All-NBN team level reached by any of my draftees
+  let bestDrafteeAllNbn = 99;
+  for (const d of myDraftees) {
+    if (d.slug in allNbnLevel) bestDrafteeAllNbn = Math.min(bestDrafteeAllNbn, allNbnLevel[d.slug]);
+  }
+
+  // Steal of the Draft: latest draft slot (#) among my draftees who became All-Stars
+  let stealPick = 0;
+  for (const d of myDraftees) {
+    if (d.pick && allStarSlugs.has(d.slug)) stealPick = Math.max(stealPick, d.pick);
+  }
+
+  // Lottery Darling: consecutive years with a top-4 (1st round, pick ≤ 4) selection
+  const top4Years = new Set(myDraftees.filter(d => d.round === 1 && d.pick && d.pick <= 4).map(d => d.year));
+  const lotteryStreak = longestConsecutiveRun(top4Years);
+
+  // --- Player development: awards earned by players while on this member's team ---
+  let mvpMaker = false, allStarCount = 0;
+  for (const a of awardRows) {
+    const baseSeason = (a.SEASON || '').split(' ')[0];   // "20-21 Playoffs" -> "20-21"
+    const team = teamBySlugSeason[`${a.SLUG}|${baseSeason}`];
+    if (!team || !memberWasAtTeamInSeason(member.tenures, team, baseSeason)) continue;
+    if (a.AWARD === 'Most Valuable Player') mvpMaker = true;
+    if (a.AWARD === 'All-Star') allStarCount++;
+  }
+
+  // Draft Architect: most homegrown (self-drafted) players on a championship roster
+  let maxHomegrown = 0;
+  for (const c of memberSeasons.filter(s => s.PLAYOFF_RESULT === 'Champion')) {
+    let n = 0;
+    for (const r of seasonRows) {
+      if (r.SEASON !== c.SEASON || r.TEAM !== c.TEAM) continue;
+      const bio = bios[r.SLUG];
+      if (bio && bio.draft_team === c.TEAM) n++;
+    }
+    maxHomegrown = Math.max(maxHomegrown, n);
+  }
+
+  // Cinderella: deep playoff run as a #6 seed or lower
+  const lowSeed = memberSeasons.filter(s => +s.SEED_NUM >= 6);
+  const cinderellaConf   = lowSeed.some(s => ['Conf Finals', 'Runner-Up', 'Champion'].includes(s.PLAYOFF_RESULT));
+  const cinderellaFinals = lowSeed.some(s => ['Runner-Up', 'Champion'].includes(s.PLAYOFF_RESULT));
+  const cinderellaTitle  = lowSeed.some(s => s.PLAYOFF_RESULT === 'Champion');
+
+  // Dynasty: consecutive championship seasons
+  const champYears = new Set(memberSeasons.filter(s => s.PLAYOFF_RESULT === 'Champion').map(s => seasonStartYear(s.SEASON)));
+  const dynastyStreak = longestConsecutiveRun(champYears);
+
+  // Tankathon: finished with the league's worst record in a season
+  const seasonWorstPct = {};
+  for (const r of allSeasons) {
+    const p = +r.PCT;
+    if (!(r.SEASON in seasonWorstPct) || p < seasonWorstPct[r.SEASON]) seasonWorstPct[r.SEASON] = p;
+  }
+  const tankathon = memberSeasons.some(s => +s.PCT <= seasonWorstPct[s.SEASON] + 1e-9);
+
+  // --- Trade / front-office achievements ---
+  const parseMoney = v => Number(String(v).replace(/[^0-9.]/g, '')) || 0;
+  let maxFirstsSent = 0, maxFirstsRecv = 0, tradeCount = 0, maxTradeTeams = 0;
+  for (const txn of trades) {
+    const teamsInvolved = (txn.details && txn.details.teams) || [];
+    if (teamsInvolved.some(t => memberAtTeamOnDate(member.tenures, t, txn.date))) {
+      tradeCount++;
+      maxTradeTeams = Math.max(maxTradeTeams, teamsInvolved.length);
+    }
+    let sent = 0, recv = 0;
+    for (const tr of (txn.details && txn.details.transfers) || []) {
+      const firsts = (tr.assets || []).filter(a => a.type === 'pick' && a.round === 1).length;
+      if (!firsts) continue;
+      if (memberAtTeamOnDate(member.tenures, tr.from_team, txn.date)) sent += firsts;
+      if (memberAtTeamOnDate(member.tenures, tr.to_team, txn.date)) recv += firsts;
+    }
+    maxFirstsSent = Math.max(maxFirstsSent, sent);
+    maxFirstsRecv = Math.max(maxFirstsRecv, recv);
+  }
+
+  // Blank Check: largest total-value free-agent signing
+  let maxSignValue = 0;
+  for (const txn of signs) {
+    const d = txn.details || {};
+    if (!memberAtTeamOnDate(member.tenures, d.team, txn.date)) continue;
+    const sals = (d.contract && d.contract.salaries) || {};
+    let total = 0;
+    for (const k in sals) total += parseMoney(sals[k]);
+    maxSignValue = Math.max(maxSignValue, total);
+  }
+
+  // --- Rivalries: best / worst all-time head-to-head (min 10 games) ---
+  const myH2H = parseCSV(h2hOwnersCsv).find(r => r.OWNER === memberName);
+  let nemesis = null, punchingBag = null;
+  if (myH2H) {
+    for (const k in myH2H) {
+      if (k === 'OWNER') continue;
+      const m = /^(\d+)-(\d+)$/.exec(myH2H[k] || '');
+      if (!m) continue;
+      const w = +m[1], l = +m[2], g = w + l;
+      if (g < 10) continue;
+      const pct = w / g;
+      if (!nemesis || pct > nemesis.pct) nemesis = { team: k, w, l, pct };
+      if (!punchingBag || pct < punchingBag.pct) punchingBag = { team: k, w, l, pct };
+    }
+  }
+
   const achData = {
     owner: ownerRow,
     seasons: memberSeasons,
+    regWins,
     champSeasons,
     finalsSeasons,
     confSeasons,
     playoffSeasons,
     hadBestOffRtg,
     hadBestDefRtg,
+    maxSeasonWins,
+    maxPlayoffStreak,
+    bestDrafteeAllNbn,
+    stealPick,
+    lotteryStreak,
+    maxHomegrown,
+    mvpMaker,
+    allStarCount,
+    cinderellaConf,
+    cinderellaFinals,
+    cinderellaTitle,
+    dynastyStreak,
+    tankathon,
+    maxFirstsSent,
+    maxFirstsRecv,
+    tradeCount,
+    maxTradeTeams,
+    maxSignValue,
+    nemesis,
+    punchingBag,
     bets: betsStats || {},
     invest: investStats || {},
     tipsReceived,
@@ -603,6 +1043,19 @@ async function init() {
 
   html += `</div>`; // end tips section
   document.getElementById('root').innerHTML = html;
+
+  // Tap/click (or Enter/Space) an achievement card to reveal its detail line.
+  document.querySelectorAll('.ach-card').forEach(card => {
+    const toggle = () => {
+      const wasOpen = card.classList.contains('open');
+      document.querySelectorAll('.ach-card.open').forEach(c => c.classList.remove('open'));
+      if (!wasOpen) card.classList.add('open');
+    };
+    card.addEventListener('click', toggle);
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
 
   if (canTip) {
     const amtEl  = document.getElementById('tip-amount');

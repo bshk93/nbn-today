@@ -2532,9 +2532,14 @@
       const dftYr = bio.draft_year  ? String(bio.draft_year)  : r.NBN_DFT_YR;
       const dftR  = bio.draft_round ? String(bio.draft_round) : r.NBN_DFT_R;
       const dftP  = bio.draft_pick  ? String(bio.draft_pick)  : r.NBN_DFT_P;
+      const canonical = bio.name || r.PLAYER || '';
+      const lastName = canonical.indexOf(',') > 0
+        ? canonical.slice(0, canonical.indexOf(',')).trim()
+        : (canonical.trim().split(/\s+/).pop() || '');
       return {
         SLUG:       r.SLUG,
         PLAYER:     bio.name ? displayName(bio.name) : r.PLAYER,
+        LAST:       lastName,
         POS:        Array.isArray(bio.pos) ? bio.pos : [],
         PHOTO_URL:  bio.photo_url || r.PHOTO_URL,
         RINGS:      r.RINGS,
@@ -2567,7 +2572,7 @@
       { id: 'all', label: 'All', all: true },
     ];
     const tabParam = new URLSearchParams(location.search).get('tab');
-    let activePage = PAGES.find(p => p.id === tabParam) || PAGES[0];
+    let activePage = PAGES.find(p => p.id === tabParam) || PAGES.find(p => p.id === 'all');
 
     const content = document.getElementById('content');
     content.innerHTML = '';
@@ -2580,11 +2585,9 @@
       btn.className = 'page-tab' + (pg === activePage ? ' active' : '');
       btn.textContent = pg.label;
       btn.addEventListener('click', () => {
-        if (activePage === pg && activeFilters.size === 0 && !filterRostered) return;
+        if (activePage === pg && activeFilters.size === 0) return;
         activePage = pg;
         activeFilters.clear();
-        filterRostered = false;
-        rosteredBtn.classList.remove('active');
         content.querySelectorAll('.missing-btn').forEach(b => b.classList.remove('active'));
         tabBtns.forEach((b, i) => b.classList.toggle('active', PAGES[i] === pg));
         history.replaceState(null, '', `?tab=${pg.id}`);
@@ -2676,7 +2679,7 @@
     // Table
     const IDX_COLS = [
       { label: '#',       field: 'JERSEY',     defaultDir:  1, cls: 'right muted', display: p => p.JERSEY != null ? `#${p.JERSEY}` : '—' },
-      { label: 'Player',  field: 'PLAYER',     defaultDir:  1 },
+      { label: 'Player',  field: 'LAST',       defaultDir:  1 },
       { label: 'Pos',     field: null,          display: p => p.POS.length ? p.POS.join(' · ') : '—', cls: 'muted' },
       { label: 'OVR',     field: 'OVR',         defaultDir: -1, cls: 'right', display: p => p.OVR ?? '—' },
       { label: 'G',       field: 'G',           defaultDir: -1, cls: 'right', display: p => p.G ?? '—' },
@@ -2711,7 +2714,7 @@
       { label: 'Ret', field: 'RETIRED',  defaultDir:-1, cls: 'center muted', display: p => p.RETIRED ? '✓' : '—' },
     ];
 
-    let sortField = 'PLAYER', sortDir = 1;
+    let sortField = 'LAST', sortDir = 1;
 
     function idxSortVal(p, field) {
       const v = p[field];
@@ -2827,7 +2830,8 @@
       return tr;
     }
 
-    let filterQ = '', filterTeam = '', filterRostered = false;
+    let filterQ = '', filterTeam = '', filterRostered = true;
+    rosteredBtn.classList.toggle('active', filterRostered);
 
     rosteredBtn.addEventListener('click', () => {
       filterRostered = !filterRostered;
@@ -2846,7 +2850,7 @@
         ? players.filter(p => MISSING_FILTERS.some(f => activeFilters.has(f.id) && f.test(p)))
         : players.filter(p => {
             if (activePage.all) return true;
-            const l = (p.PLAYER[0] || '').toUpperCase();
+            const l = (p.LAST[0] || '').toUpperCase();
             return l >= activePage.from && l <= activePage.to;
           });
       const sorted = [...pagePlayers].sort((a, b) => {

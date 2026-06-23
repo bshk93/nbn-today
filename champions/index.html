@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Hall of Champions — NBN</title>
+  <style>
+    .page { max-width: 1000px; margin: 0 auto; }
+
+    .hoc-head { text-align: center; margin-bottom: 1.5rem; }
+    .hoc-head h1 {
+      font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;
+      background: linear-gradient(180deg,#fde68a 0%,#f59e0b 60%,#b45309 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hoc-head p { color: #9ca3af; margin-top: 0.35rem; font-size: 0.9rem; }
+
+    /* Year timeline */
+    .timeline {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center;
+      margin: 0 auto 1.75rem; max-width: 900px;
+    }
+    .tl-pill {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      background: #1f2937; border: 1px solid #374151; border-radius: 999px;
+      padding: 0.3rem 0.7rem; font-size: 0.78rem; color: #9ca3af; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .tl-pill:hover { border-color: #f59e0b; color: #fde68a; }
+    .tl-pill.active {
+      background: linear-gradient(180deg,#f59e0b,#b45309);
+      border-color: #fbbf24; color: #fff; font-weight: 700;
+    }
+    .tl-pill img { height: 16px; width: 16px; object-fit: contain; }
+
+    /* Hero banner */
+    .banner {
+      position: relative; border-radius: 16px; overflow: hidden;
+      border: 1px solid #374151; margin-bottom: 1.5rem;
+      background: #1a2231;
+    }
+    .banner-glow { position: absolute; inset: 0; opacity: 0.22; pointer-events: none; }
+    .banner-inner {
+      position: relative; display: flex; align-items: center; gap: 1.5rem;
+      padding: 2rem 2rem; flex-wrap: wrap; justify-content: center; text-align: center;
+    }
+    .banner-logo {
+      height: 130px; width: 130px; object-fit: contain;
+      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.5));
+      flex-shrink: 0;
+    }
+    .banner-text { display: flex; flex-direction: column; gap: 0.3rem; align-items: center; }
+    .banner-season {
+      font-size: 0.8rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: #fbbf24; font-weight: 700;
+    }
+    .banner-team { font-size: 2.1rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+    .banner-sub { font-size: 0.95rem; color: #cbd5e1; }
+    .banner-sub a { color: #93c5fd; }
+    .banner-clinch { font-size: 0.82rem; color: #9ca3af; margin-top: 0.2rem; }
+    .crown { font-size: 1.4rem; }
+    .repeat-tag {
+      display: inline-block; margin-top: 0.4rem; font-size: 0.72rem; font-weight: 700;
+      color: #fde68a; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);
+      border-radius: 999px; padding: 0.15rem 0.6rem; letter-spacing: 0.04em;
+    }
+
+    /* Section */
+    .sec { margin-bottom: 1.5rem; }
+    .sec-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      color: #6b7280; margin-bottom: 0.7rem; padding-bottom: 0.35rem; border-bottom: 1px solid #374151;
+    }
+
+    /* Stat strip */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 0.6rem;
+    }
+    .stat-box {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 0.7rem 0.5rem; text-align: center;
+    }
+    .stat-box .v { font-size: 1.25rem; font-weight: 700; color: #f3f4f6; }
+    .stat-box .l { font-size: 0.68rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.15rem; }
+    .badge-foty, .badge-coty {
+      display: inline-block; font-size: 0.62rem; font-weight: 700; border-radius: 4px;
+      padding: 0.05rem 0.3rem; margin-top: 0.3rem;
+    }
+    .badge-foty { background: #422006; color: #fbbf24; border: 1px solid #92400e; }
+
+    /* Playoff run */
+    .run { display: flex; flex-direction: column; gap: 0.4rem; }
+    .run-series {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px; overflow: hidden;
+    }
+    .run-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.55rem 0.85rem; font-size: 0.88rem;
+    }
+    .run-series.expandable .run-row { cursor: pointer; }
+    .run-series.expandable:hover { border-color: #4b6a9b; }
+    .run-round { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; width: 105px; flex-shrink: 0; }
+    .run-opp { display: flex; align-items: center; gap: 0.5rem; flex: 1; }
+    .run-opp img { height: 22px; width: 22px; object-fit: contain; }
+    .run-opp .seed { color: #6b7280; font-size: 0.78rem; }
+    .run-score { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .run-score .swept { color: #34d399; }
+    .run-chev { color: #6b7280; font-size: 0.7rem; width: 0.9rem; text-align: center; transition: transform 0.15s; }
+    .run-series.open .run-chev { transform: rotate(180deg); color: #93c5fd; }
+    .run-games { border-top: 1px solid #283344; background: #19212e; padding: 0.3rem 0.85rem 0.5rem; }
+    .run-games[hidden] { display: none; }
+    .game-line {
+      display: flex; align-items: center; gap: 0.6rem; padding: 0.32rem 0;
+      font-size: 0.82rem; border-bottom: 1px solid #232f42;
+    }
+    .game-line:last-child { border-bottom: none; }
+    .game-no { color: #6b7280; width: 3.6rem; flex-shrink: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .game-res { font-weight: 700; width: 1.1rem; flex-shrink: 0; }
+    .game-res.w { color: #34d399; } .game-res.l { color: #f87171; }
+    .game-loc { color: #9ca3af; width: 1.6rem; flex-shrink: 0; }
+    .game-pts { font-variant-numeric: tabular-nums; color: #e5e7eb; }
+    .game-date { margin-left: auto; color: #6b7280; font-size: 0.74rem; }
+
+    /* Front office */
+    .fo-grid { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+    .fo-card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      padding: 0.7rem 1rem; display: flex; flex-direction: column; gap: 0.15rem; min-width: 150px;
+      text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s;
+    }
+    .fo-card:hover { border-color: #4b6a9b; background: #232f42; text-decoration: none; }
+    .fo-card .pos { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: #fbbf24; font-weight: 700; }
+    .fo-card .nm { font-size: 1rem; font-weight: 600; }
+    .fo-card:hover .nm { color: #93c5fd; }
+
+    /* Roster table */
+    .table-wrap { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    thead th { white-space: nowrap; }
+    tbody td { padding: 0.55rem 1rem; border-bottom: 1px solid #283344; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #232f42; }
+    th.right, td.right { text-align: right; }
+    th.center, td.center { text-align: center; }
+    .ply { display: flex; align-items: center; gap: 0.6rem; }
+    .ply img { height: 34px; width: 34px; border-radius: 50%; object-fit: cover; background: #374151; flex-shrink: 0; }
+    .ply a { font-weight: 600; color: #f3f4f6; }
+    .ply a:hover { color: #93c5fd; }
+    .rings { color: #fbbf24; font-weight: 700; white-space: nowrap; }
+    .rings .first { color: #34d399; font-size: 0.7rem; font-weight: 700; margin-left: 0.25rem; }
+    .lead-tag { font-size: 0.62rem; font-weight: 700; color: #fca5a5; background: rgba(220,38,38,0.12); border:1px solid rgba(220,38,38,0.35); border-radius: 4px; padding: 0.05rem 0.3rem; margin-left: 0.4rem; vertical-align: middle; }
+    .num { font-variant-numeric: tabular-nums; }
+
+    .loading, .err { text-align: center; color: #9ca3af; padding: 3rem 1rem; }
+    .err { color: #f87171; }
+
+    @media (max-width: 560px) {
+      .banner-team { font-size: 1.6rem; }
+      .banner-logo { height: 100px; width: 100px; }
+      .run-round { width: 80px; }
+      .ply img { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"></nav>
+
+    <div class="hoc-head">
+      <h1>🏆 Hall of Champions</h1>
+    </div>
+
+    <div class="timeline" id="timeline"></div>
+
+    <div id="content"><div class="loading">Loading the trophy case…</div></div>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script>
+  const TEAMS = {
+    ATL:"Atlanta Hawks", BKN:"Brooklyn Nets", BOS:"Boston Celtics", CHA:"Charlotte Hornets",
+    CHI:"Chicago Bulls", CLE:"Cleveland Cavaliers", DAL:"Dallas Mavericks", DEN:"Denver Nuggets",
+    DET:"Detroit Pistons", GSW:"Golden State Warriors", HOU:"Houston Rockets", IND:"Indiana Pacers",
+    LAC:"LA Clippers", LAL:"Los Angeles Lakers", MEM:"Memphis Grizzlies", MIA:"Miami Heat",
+    MIL:"Milwaukee Bucks", MIN:"Minnesota Timberwolves", NOP:"New Orleans Pelicans", NYK:"New York Knicks",
+    OKC:"Oklahoma City Thunder", ORL:"Orlando Magic", PHI:"Philadelphia 76ers", PHX:"Phoenix Suns",
+    POR:"Portland Trail Blazers", SAC:"Sacramento Kings", SAS:"San Antonio Spurs", TOR:"Toronto Raptors",
+    UTA:"Utah Jazz", WAS:"Washington Wizards",
+  };
+  const TEAM_COLORS = {
+    ATL:"#E03A3E", BKN:"#7a7f87", BOS:"#007A33", CHA:"#1D1160", CHI:"#CE1141", CLE:"#860038",
+    DAL:"#00538C", DEN:"#418FDE", DET:"#C8102E", GSW:"#1D428A", HOU:"#CE1141", IND:"#FDBB30",
+    LAC:"#C8102E", LAL:"#552583", MEM:"#5D76A9", MIA:"#98002E", MIL:"#00471B", MIN:"#236192",
+    NOP:"#85714D", NYK:"#F58426", OKC:"#007AC1", ORL:"#0077C0", PHI:"#006BB6", PHX:"#E56020",
+    POR:"#E03A3E", SAC:"#5A2D81", SAS:"#C4CED4", TOR:"#CE1141", UTA:"#F9A01B", WAS:"#E31837",
+  };
+  const ROUND_NAMES = { "1":"First Round", "2":"Conf. Semifinals", "3":"Conf. Finals", "4":"NBN Finals" };
+
+  const logo = abbr => `/logos/logo-${abbr.toLowerCase()}.png`;
+  const seasonLabel = s => { const [a,b] = s.split('-'); return `20${a}–${b}`; };
+  const fmtDate = iso => {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  };
+  const num = v => parseFloat(v) || 0;
+  const per = (tot, g) => g ? (num(tot)/g) : 0;
+  const fix1 = n => n.toFixed(1);
+
+  let CHAMPS = [];   // [{season, team, runnerUp, w, l, run:[...], ...}] ascending by season
+  let idx = 0;
+
+  (async () => {
+    const content = document.getElementById('content');
+    try {
+      const [brkRes, stdRes, poRes, memRes] = await Promise.all([
+        fetch('/standings/playoff-brackets.csv'),
+        fetch('/standings/standings-history.csv'),
+        fetch('/players/player_seasons_playoffs.csv'),
+        fetch('/api/members/public').catch(() => null),
+      ]);
+      const brackets = parseCSV(await brkRes.text());
+      const standings = parseCSV(await stdRes.text());
+      const poRows = parseCSV(await poRes.text());
+      const members = memRes && memRes.ok ? await memRes.json() : [];
+
+      // ── Champions from finals (round 4, a team reached 4 wins) ──
+      const finals = brackets.filter(b => b.ROUND === '4' && (parseInt(b.T1_W) === 4 || parseInt(b.T2_W) === 4));
+      finals.sort((a, b) => a.SEASON.localeCompare(b.SEASON));
+
+      // playoff roster index: key `${season}|${team}`
+      const poByTeam = {};
+      poRows.forEach(r => {
+        const s = r.SEASON.replace(' Playoffs', '');
+        (poByTeam[`${s}|${r.TEAM}`] ||= []).push(r);
+      });
+      // standings index
+      const stdByKey = {};
+      standings.forEach(r => { stdByKey[`${r.SEASON}|${r.TEAM}`] = r; });
+
+      // titles per team, chronologically, for "rings at the time"
+      const titleCount = {};
+
+      CHAMPS = finals.map(f => {
+        const season = f.SEASON;
+        const team = f.WINNER;
+        const loser = f.T1 === team ? f.T2 : f.T1;
+        const wins = f.T1 === team ? f.T1_W : f.T2_W;
+        const losses = f.T1 === team ? f.T2_W : f.T1_W;
+        const loserSeed = f.T1 === team ? f.T2_SEED : f.T1_SEED;
+
+        titleCount[team] = (titleCount[team] || 0) + 1;
+
+        // playoff path
+        const run = brackets
+          .filter(b => b.SEASON === season && (b.T1 === team || b.T2 === team))
+          .sort((a, b) => parseInt(a.ROUND) - parseInt(b.ROUND))
+          .map(b => {
+            const opp = b.T1 === team ? b.T2 : b.T1;
+            const oppSeed = b.T1 === team ? b.T2_SEED : b.T1_SEED;
+            const w = b.T1 === team ? b.T1_W : b.T2_W;
+            const l = b.T1 === team ? b.T2_W : b.T1_W;
+            return { round: b.ROUND, opp, oppSeed, w: parseInt(w), l: parseInt(l) };
+          });
+
+        const roster = (poByTeam[`${season}|${team}`] || []).filter(r => num(r.G) > 0);
+        const clinch = roster.reduce((mx, r) => r.LAST_DATE > mx ? r.LAST_DATE : mx, '');
+
+        return {
+          season, team, loser, wins, losses, loserSeed, run, roster, clinch,
+          std: stdByKey[`${season}|${team}`] || null,
+          titleNo: titleCount[team],
+        };
+      });
+
+      // attach "rings at the time" per player slug for each champ season
+      const ringsSoFar = {}; // slug -> count, accumulated in season order
+      CHAMPS.forEach(c => {
+        c.roster.forEach(r => { ringsSoFar[r.SLUG] = (ringsSoFar[r.SLUG] || 0) + 1; });
+        c._ringsAtTime = {};
+        c.roster.forEach(r => { c._ringsAtTime[r.SLUG] = ringsSoFar[r.SLUG]; });
+      });
+
+      MEMBERS = members;
+      if (!CHAMPS.length) { content.innerHTML = '<div class="err">No champions on record yet.</div>'; return; }
+
+      // start at most recent, or from ?season= hash
+      const want = new URLSearchParams(location.search).get('season');
+      const found = CHAMPS.findIndex(c => c.season === want);
+      idx = found >= 0 ? found : CHAMPS.length - 1;
+
+      renderTimeline();
+      render();
+    } catch (e) {
+      content.innerHTML = `<div class="err">Failed to load championship data: ${e.message}</div>`;
+    }
+  })();
+
+  let MEMBERS = [];
+
+  function frontOffice(team, clinch) {
+    if (!clinch) return [];
+    const order = { owner: 0, gm: 1, coach: 2 };
+    const out = [];
+    MEMBERS.forEach(m => {
+      (m.tenures || []).forEach(t => {
+        if (t.team !== team) return;
+        const end = t.end || '9999-99-99';
+        if (t.start <= clinch && clinch <= end && t.position && t.position !== 'none') {
+          out.push({ name: m.name, position: t.position });
+        }
+      });
+    });
+    out.sort((a, b) => (order[a.position] ?? 9) - (order[b.position] ?? 9));
+    return out;
+  }
+
+  function renderTimeline() {
+    const tl = document.getElementById('timeline');
+    tl.innerHTML = '';
+    CHAMPS.forEach((c, i) => {
+      const pill = document.createElement('div');
+      pill.className = 'tl-pill' + (i === idx ? ' active' : '');
+      pill.innerHTML = `<img src="${logo(c.team)}" alt=""><span>${seasonLabel(c.season)}</span>`;
+      pill.title = `${seasonLabel(c.season)} — ${TEAMS[c.team]}`;
+      pill.addEventListener('click', () => { idx = i; update(); });
+      tl.appendChild(pill);
+    });
+  }
+
+  function update() {
+    history.replaceState(null, '', `?season=${CHAMPS[idx].season}`);
+    renderTimeline();
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowLeft' && idx > 0) { idx--; update(); }
+    if (e.key === 'ArrowRight' && idx < CHAMPS.length - 1) { idx++; update(); }
+  });
+
+  // Expand/collapse a playoff series to reveal game-by-game scores.
+  document.getElementById('content').addEventListener('click', e => {
+    if (e.target.closest('a')) return; // let team links navigate
+    const series = e.target.closest('.run-series.expandable');
+    if (!series) return;
+    const panel = series.querySelector('.run-games');
+    if (!panel) return;
+    const open = panel.hasAttribute('hidden');
+    panel.toggleAttribute('hidden', !open);
+    series.classList.toggle('open', open);
+  });
+
+  const gamesCache = {};
+  async function loadSeriesGames(c) {
+    const key = `${c.season}|${c.team}`;
+    if (gamesCache[key]) return gamesCache[key];
+    let byOpp = {};
+    try {
+      const res = await fetch(`/api/boxscores/games?season=${c.season}&team=${c.team}`);
+      const all = res.ok ? await res.json() : [];
+      all.filter(g => g.gametype === 'PLAYOFF').forEach(g => {
+        const opp = g.home_team === c.team ? g.away_team : g.home_team;
+        (byOpp[opp] ||= []).push(g);
+      });
+      Object.values(byOpp).forEach(list => list.sort((a, b) => a.date.localeCompare(b.date)));
+    } catch (e) { byOpp = {}; }
+    gamesCache[key] = byOpp;
+    return byOpp;
+  }
+
+  async function render() {
+    const c = CHAMPS[idx];
+    const color = TEAM_COLORS[c.team] || '#f59e0b';
+    const seriesGames = await loadSeriesGames(c);
+    if (CHAMPS[idx] !== c) return; // navigated away while fetching
+
+    const fo = frontOffice(c.team, c.clinch);
+    const std = c.std;
+
+    // roster sorted by minutes; flag playoff scoring leader
+    const roster = [...c.roster].sort((a, b) => num(b.MIN) - num(a.MIN));
+    let leadSlug = null, leadPts = -1;
+    roster.forEach(r => { if (num(r.PTS) > leadPts) { leadPts = num(r.PTS); leadSlug = r.SLUG; } });
+
+    const repeatTag = c.titleNo > 1
+      ? `<div class="repeat-tag">${TEAMS[c.team]} title #${c.titleNo} · ${ordinalRepeat(c)}</div>` : '';
+
+    document.getElementById('content').innerHTML = `
+      <div class="banner">
+        <div class="banner-glow" style="background: radial-gradient(circle at 30% 30%, ${color} 0%, transparent 60%);"></div>
+        <div class="banner-inner">
+          <img class="banner-logo" src="${logo(c.team)}" alt="${c.team}">
+          <div class="banner-text">
+            <div class="banner-season"><span class="crown">👑</span> ${seasonLabel(c.season)} NBN Champions</div>
+            <div class="banner-team">${TEAMS[c.team]}</div>
+            <div class="banner-sub">def. <a href="/teams/${c.loser}/">${TEAMS[c.loser]}</a> in the Finals, <strong>${c.wins}–${c.losses}</strong></div>
+            ${c.clinch ? `<div class="banner-clinch">Clinched ${fmtDate(c.clinch)}</div>` : ''}
+            ${repeatTag}
+          </div>
+        </div>
+      </div>
+
+      ${std ? `
+      <div class="sec">
+        <div class="sec-title">Season at a Glance</div>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="v">${std.W}–${std.L}</div><div class="l">Record</div></div>
+          <div class="stat-box"><div class="v">${std.SEED || '—'}</div><div class="l">Seed</div></div>
+          <div class="stat-box"><div class="v">${fix1(num(std.PPG))}</div><div class="l">PPG</div></div>
+          <div class="stat-box"><div class="v">${fix1(num(std.OPPG))}</div><div class="l">Opp PPG</div></div>
+          <div class="stat-box"><div class="v">${signed(num(std.DIFF))}</div><div class="l">Net</div></div>
+          <div class="stat-box"><div class="v">${signed(num(std.OFF_RTG))}</div><div class="l">Off Rtg</div></div>
+          <div class="stat-box"><div class="v">${signed(num(std.DEF_RTG))}</div><div class="l">Def Rtg</div></div>
+          ${std.FOTY === 'TRUE' ? `<div class="stat-box"><div class="v">🏅</div><div class="l">Franchise of the Year</div></div>` : ''}
+        </div>
+      </div>` : ''}
+
+      <div class="sec">
+        <div class="sec-title">Road to the Title <span style="color:#4b5563;font-weight:400;text-transform:none;letter-spacing:0">· tap a series for game scores</span></div>
+        <div class="run">
+          ${c.run.map((r, i) => {
+            const games = seriesGames[r.opp] || [];
+            const canExpand = games.length > 0;
+            return `
+            <div class="run-series${canExpand ? ' expandable' : ''}" data-series="${i}">
+              <div class="run-row">
+                <span class="run-round">${ROUND_NAMES[r.round] || 'Round ' + r.round}</span>
+                <span class="run-opp">
+                  <img src="${logo(r.opp)}" alt="">
+                  <a href="/teams/${r.opp}/">${TEAMS[r.opp]}</a>
+                  <span class="seed">(${r.oppSeed || '—'})</span>
+                </span>
+                <span class="run-score">${r.w}–${r.l}${r.l === 0 ? ' <span class="swept">SWEEP</span>' : ''}</span>
+                <span class="run-chev">${canExpand ? '▾' : ''}</span>
+              </div>
+              ${canExpand ? `
+              <div class="run-games" id="series-${i}" hidden>
+                ${games.map((g, gi) => {
+                  const home = g.home_team === c.team;
+                  const us = home ? g.home_score : g.away_score;
+                  const them = home ? g.away_score : g.home_score;
+                  const win = us > them;
+                  return `
+                  <div class="game-line">
+                    <span class="game-no">Game ${gi + 1}</span>
+                    <span class="game-res ${win ? 'w' : 'l'}">${win ? 'W' : 'L'}</span>
+                    <span class="game-loc">${home ? 'vs' : '@'}</span>
+                    <span class="game-pts">${us}–${them}</span>
+                    <span class="game-date">${fmtDate(g.date)}</span>
+                  </div>`;
+                }).join('')}
+              </div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      ${fo.length ? `
+      <div class="sec">
+        <div class="sec-title">Front Office</div>
+        <div class="fo-grid">
+          ${fo.map(m => `
+            <a class="fo-card" href="/members/${encodeURIComponent(m.name)}/">
+              <span class="pos">${posLabel(m.position)}</span>
+              <span class="nm">${m.name}</span>
+            </a>`).join('')}
+        </div>
+      </div>` : ''}
+
+      <div class="sec">
+        <div class="sec-title">Championship Roster · ${roster.length} played · per-game playoff stats</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th class="center">Rings</th>
+                <th class="right">GP</th>
+                <th class="right">MPG</th>
+                <th class="right">PPG</th>
+                <th class="right">RPG</th>
+                <th class="right">APG</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${roster.map(r => {
+                const g = num(r.G);
+                const rings = c._ringsAtTime[r.SLUG] || 1;
+                const isFirst = rings === 1;
+                const lead = r.SLUG === leadSlug ? '<span class="lead-tag" title="Led the team in playoff points">SCORING LEADER</span>' : '';
+                return `
+                <tr>
+                  <td>
+                    <span class="ply">
+                      ${r.PHOTO_URL ? `<img src="${r.PHOTO_URL}" alt="" loading="lazy">` : '<img alt="">'}
+                      <span><a href="/players?p=${r.SLUG}">${r.PLAYER}</a>${lead}</span>
+                    </span>
+                  </td>
+                  <td class="center rings">${'💍'.repeat(Math.min(rings, 6))}${rings > 6 ? '×' + rings : ''}${isFirst ? '<span class="first">1st!</span>' : ''}</td>
+                  <td class="right num">${g}</td>
+                  <td class="right num">${fix1(per(r.MIN, g))}</td>
+                  <td class="right num">${fix1(per(r.PTS, g))}</td>
+                  <td class="right num">${fix1(per(r.REB, g))}</td>
+                  <td class="right num">${fix1(per(r.AST, g))}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function signed(n) { return (n > 0 ? '+' : '') + n.toFixed(1); }
+  function posLabel(p) { return { owner:'Owner', gm:'General Manager', coach:'Head Coach' }[p] || p; }
+  function ordinalRepeat(c) {
+    // count consecutive prior titles for a "repeat / X-peat" flourish
+    let streak = 1;
+    for (let i = idx - 1; i >= 0; i--) {
+      if (CHAMPS[i].team === c.team) streak++; else break;
+    }
+    if (streak >= 3) return `${streak}-peat`;
+    if (streak === 2) return 'back-to-back';
+    return 'returns to the throne';
+  }
+  </script>
+</body>
+</html>
