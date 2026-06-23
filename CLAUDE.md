@@ -343,6 +343,29 @@ journalctl -u nbn-api -f          # live logs
 journalctl -u nbn-api -n 50       # last 50 log lines
 ```
 
+### Achievement notifications (background job)
+
+`build/achievement-notify.js` (Node) posts a Discord message to the newsroom
+webhook whenever a member unlocks or upgrades an achievement. Achievements are
+computed statelessly in the browser, so this job recomputes them server-side
+using the **same** engine the site uses (`members/achievements.js`, which is
+`require()`-able under Node), diffs against the snapshot
+`achievement-state.json` in NBS_DATA_DIR, and fires on every tier upgrade.
+Betting/investing achievements are excluded; the first run (no snapshot) seeds
+silently to avoid a flood.
+
+Run by a systemd timer every 10 min. `DRY_RUN=1` prints instead of posting,
+`NBN_ACH_STATE` overrides the snapshot path (for testing).
+
+```bash
+systemctl list-timers nbn-achievements.timer   # next run
+journalctl -u nbn-achievements.service -n 20    # recent runs
+DRY_RUN=1 node build/achievement-notify.js       # preview pending notifications
+```
+
+To re-baseline (e.g. after editing the achievement list), delete the snapshot
+and let the next run seed it: `rm $NBS_DATA_DIR/achievement-state.json`.
+
 ### Roster CSV columns
 
 **Post-migration (new format):**

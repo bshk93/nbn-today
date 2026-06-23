@@ -65,6 +65,8 @@
     }
     .team-badge a { color: inherit; }
     .pos-text { font-size: 0.85rem; color: #d1d5db; }
+    .ach-count { font-size: 0.85rem; color: #9ca3af; text-decoration: none; font-variant-numeric: tabular-nums; }
+    .ach-count:hover { color: #d1d5db; }
     .role-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
     .rbadge {
       font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
@@ -187,6 +189,7 @@
 </head>
 <body>
 <script src="/nav.js"></script>
+<script src="/members/achievements.js"></script>
 
 <div class="page">
   <nav class="nav"></nav>
@@ -213,12 +216,13 @@
           <th>Member</th>
           <th>Team</th>
           <th>Position</th>
+          <th>Achievements</th>
           <th>Roles</th>
           <th id="actions-th" style="display:none"></th>
         </tr>
       </thead>
       <tbody id="members-tbody">
-        <tr><td colspan="4" class="empty-state">Loading…</td></tr>
+        <tr><td colspan="6" class="empty-state">Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -354,6 +358,7 @@ let currentToken = localStorage.getItem(TOKEN_KEY) || '';
 let myName = '', myRoles = [], isAdmin = false, isBod = false;
 let allMembers = [];
 let strikeMap = {}; // member name -> count
+let achCount = {};  // member name -> number of achievements unlocked (undefined while loading)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -418,7 +423,7 @@ function populatePosSel(id) {
 function renderTable() {
   const tbody = document.getElementById('members-tbody');
   if (!allMembers.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No members found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No members found.</td></tr>';
     return;
   }
   const sorted = [...allMembers].sort((a, b) => {
@@ -463,6 +468,14 @@ function renderTable() {
     } else {
       tdPos.innerHTML = '<span style="color:#4b5563">—</span>';
     }
+
+    // Achievements
+    const tdAch = tr.insertCell();
+    const cnt = achCount[m.name];
+    const total = window.NBNAch ? NBNAch.total : '';
+    tdAch.innerHTML = cnt === undefined
+      ? '<span style="color:#4b5563">…</span>'
+      : `<a class="ach-count" href="/members/${encodeURIComponent(m.name)}/">${cnt}/${total}</a>`;
 
     // Roles
     const tdRoles = tr.insertCell();
@@ -902,6 +915,41 @@ populateSel('tf-team', TEAM_ABBRS, '— Team —');
 populatePosSel('tf-pos');
 updateAuthBar();
 
+// Score every member's achievement completion (X/N) via the shared engine.
+// Loads the heavy shared data + bulk bet/invest/tip stats once, then re-renders.
+async function loadAchievements() {
+  if (!window.NBNAch) return;
+  try {
+    const [ownerStatsCsv, standingsCsv, bios, awardsCsv, txnResp,
+           playerSeasonsCsv, h2hOwnersCsv, betsAll, investAll, tipsAll] = await Promise.all([
+      fetch('/data/owner_stats.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+      fetch('/standings/standings-history.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+      fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      fetch('/players/player_awards.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+      fetch('/api/transactions?limit=2000').then(r => r.ok ? r.json() : { transactions: [] }).catch(() => ({ transactions: [] })),
+      fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+      fetch('/data/h2h-owners.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+      fetch('/api/bets/stats').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      fetch('/api/invest/stats').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      fetch('/api/tips/totals').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    ]);
+    const shared = NBNAch.prepare({
+      ownerStatsCsv, standingsCsv, bios, awardsCsv,
+      allTxns: (txnResp && txnResp.transactions) || [],
+      playerSeasonsCsv, h2hOwnersCsv,
+    });
+    const map = {};
+    for (const m of allMembers) {
+      const ad = NBNAch.computeAchData(m, shared, {
+        betsStats: betsAll[m.name], investStats: investAll[m.name], tipsReceived: tipsAll[m.name] || 0,
+      });
+      map[m.name] = NBNAch.countUnlocked(ad);
+    }
+    achCount = map;
+    renderTable();
+  } catch { /* leave the column blank on failure */ }
+}
+
 async function init() {
   try {
     const [membersRes, strikesRes] = await Promise.all([
@@ -912,9 +960,10 @@ async function init() {
     allMembers = await membersRes.json();
     if (strikesRes.ok) strikeMap = await strikesRes.json();
     renderTable();
+    loadAchievements();   // fills in the Achievements column asynchronously
   } catch {
     document.getElementById('members-tbody').innerHTML =
-      '<tr><td colspan="4" class="empty-state">Failed to load members.</td></tr>';
+      '<tr><td colspan="6" class="empty-state">Failed to load members.</td></tr>';
   }
   if (currentToken) await initAuth();
 }

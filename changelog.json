@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.314",
+    "date": "2026-06-23",
+    "changes": [
+      "Members list: new Achievements column (before Roles) showing each member's completion count (e.g. 11/41), linking to their profile; computed by a shared achievement engine so the list and profile pages can't drift",
+      "Members: extracted the achievement engine into members/achievements.js shared by the profile and list pages; added bulk API endpoints (/api/bets/stats, /api/invest/stats, /api/tips/totals) so the list scores all members without a per-member request fan-out",
+      "Achievements: Discord notifications when a member unlocks or upgrades an achievement (posted to the newsroom webhook) \u2014 a systemd timer reuses the same achievement engine server-side, diffs against a stored snapshot, and fires on every tier upgrade; betting/investing achievements are excluded and the first run seeds silently"
+    ]
+  },
+  {
     "version": "0.0.313",
     "date": "2026-06-23",
     "changes": [
