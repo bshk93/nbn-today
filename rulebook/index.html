@@ -284,8 +284,13 @@
                   <td>Room Exception</td>
                   <td><span data-cap="room_amount">—</span></td>
                 </tr>
+                <tr class="divider">
+                  <td>Est. Avg. Player Salary (EAPS)</td>
+                  <td><span data-cap="eaps">—</span></td>
+                </tr>
               </table>
             </div>
+            <p>The <strong>Estimated Average Player Salary (EAPS)</strong> is the projected league-average salary for the season. It is not a cap threshold — it is the dividing line used by the cap-hold table in § 3.10 (it decides whether a free agent's hold is set at the lower or higher tier).</p>
             <p>Thresholds are updated via the league administration panel at the start of each salary cap year.</p>
           </div>
 
@@ -528,22 +533,71 @@
 
           <div class="doc-section" id="s3-10">
             <h3 class="sec-title"><span class="sec-num">§ 3.10</span> Cap Holds <span class="badge badge-manual">👁 manual review</span></h3>
-            <p>A cap hold appears on a team's books whenever a player's contract ends and the player has not yet been re-signed, renounced, or signed elsewhere. The hold amount depends on Bird Rights status:</p>
+            <p>A <strong>cap hold</strong> is a placeholder salary charged against a team's books to reserve a player's spot before a new contract is signed. It exists only while the player is unsigned: the moment the player signs a contract (or is renounced, or signs elsewhere), the hold is removed. A signed contract is <strong>not</strong> a hold — once a player signs, the contract's actual Year&nbsp;1 cap figure counts, never the hold.</p>
+
+            <h4 class="sub-title">Veteran free-agent holds — amount by Bird Rights</h4>
+            <p>When a player's contract <strong>expires</strong> and they become a free agent, the hold is a multiple of their <strong>previous salary</strong> (the salary of the most recently completed contract year), determined by Bird Rights status. <strong>Which tier a player falls into is set by years of continuous service with the team — Full Bird (QVFA) at 3+ seasons, Early Bird (EQVFA) at 2, Non-Bird (Non-QVFA) at 0–1; see § 3.8 for the qualification rules.</strong> These figures mirror the real NBA CBA exactly. The "above / at or below" split is measured against the <strong>Estimated Average Player Salary (EAPS)</strong> for the <em>upcoming</em> season — the projected league-average salary, not last year's actual average (the live figure is a per-season constant shown in § 1.1 and set in Cap Settings):</p>
             <table class="rule-table">
               <thead>
                 <tr><th>Situation</th><th>Cap Hold Amount</th></tr>
               </thead>
               <tbody>
-                <tr><td>Full Bird Rights (QVFA), salary above league average</td><td>150% of previous salary</td></tr>
-                <tr><td>Full Bird Rights (QVFA), salary at or below league average</td><td>190% of previous salary</td></tr>
+                <tr><td>Full Bird Rights (QVFA), previous salary above EAPS</td><td>150% of previous salary</td></tr>
+                <tr><td>Full Bird Rights (QVFA), previous salary at or below EAPS</td><td>190% of previous salary</td></tr>
                 <tr><td>Early Bird Rights (EQVFA)</td><td>130% of previous salary</td></tr>
                 <tr><td>Non-Bird Rights (Non-QVFA)</td><td>120% of previous salary</td></tr>
-                <tr><td>Coming off Rookie Contract, salary above league average</td><td>250% of previous salary</td></tr>
-                <tr><td>Coming off Rookie Contract, salary at or below league average</td><td>300% of previous salary</td></tr>
-                <tr><td>Coming off a minimum contract</td><td>Minimum salary</td></tr>
+                <tr><td>Off the final (4th) year of a rookie-scale contract, previous salary above EAPS</td><td>250% of previous salary</td></tr>
+                <tr><td>Off the final (4th) year of a rookie-scale contract, previous salary at or below EAPS</td><td>300% of previous salary</td></tr>
+                <tr><td>Coming off a minimum contract</td><td>Minimum salary, capped at the 2-year veteran minimum</td></tr>
               </tbody>
             </table>
-            <p>Cap holds are capped at the player's applicable <strong>maximum salary</strong>. A team may <strong>renounce</strong> a cap hold to remove it from their books, forfeiting any associated Bird Rights.</p>
+            <p>Two bounds and a mid-rookie-deal carve-out, all per the NBA CBA:</p>
+            <ul>
+              <li>A cap hold is never larger than the player's applicable <strong>maximum salary</strong>, nor smaller than the applicable <strong>minimum salary</strong> — the percentage is clamped to that range.</li>
+              <li>The 250% / 300% rows apply only to a player completing the <strong>final year</strong> of a rookie-scale deal. A first-round pick still inside their rookie deal (after Year 1, 2, or 3) is not a free agent in NBN — those option years are carried as <code>TEAM_OPT</code> holds under § 6.1, equal to the next year's rookie-scale amount, not a percentage of prior salary.</li>
+            </ul>
+            <p>A team may <strong>renounce</strong> a cap hold to remove it from their books, forfeiting any associated Bird Rights.</p>
+
+            <h4 class="sub-title">Holds by situation</h4>
+            <p>The table above gives the <em>amount</em> for a veteran free agent. The following summarizes <strong>which</strong> hold applies in each situation that puts a player on the books without a signed contract:</p>
+            <table class="rule-table">
+              <thead>
+                <tr><th>Situation</th><th>Hold type</th><th>Hold amount</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Expiring veteran contract</strong> — contract runs out and the player is not re-signed</td>
+                  <td>UFA or RFA</td>
+                  <td>Bird-tier multiple of previous salary (table above)</td>
+                </tr>
+                <tr>
+                  <td><strong>Declined option</strong> — a player or team option (§ 6.1) is declined, sending the player to free agency</td>
+                  <td>UFA or RFA</td>
+                  <td>Same as an expiring veteran contract: the Bird-tier multiple of the player's previous salary (the last contract year actually played, <em>not</em> the declined option amount). Declining an option does not forfeit Bird Rights.</td>
+                </tr>
+                <tr>
+                  <td><strong>RFA offer sheet outstanding</strong> — the player's own team holds them as an RFA while an offer sheet is pending (§ 3.15)</td>
+                  <td>RFA</td>
+                  <td>For the <em>offering</em> team: a hold equal to the full offer-sheet value until the match period concludes. For the retaining team: the RFA hold from the table above.</td>
+                </tr>
+                <tr>
+                  <td><strong>Unsigned first-round draft pick</strong> — rights held, player not yet signed (§ 7.1)</td>
+                  <td>—</td>
+                  <td>120% of the pick slot's rookie scale amount. Does <strong>not</strong> count as outgoing salary for trade matching.</td>
+                </tr>
+                <tr>
+                  <td><strong>Unsigned second-round pick / UDFA rights</strong> — rights held, player not yet signed (§ 7.1)</td>
+                  <td>—</td>
+                  <td>No standalone cap hold. Second-round picks are signed via the Second Round Exception (§ 7.1) and do not occupy a hold beforehand.</td>
+                </tr>
+                <tr>
+                  <td><strong>Incomplete roster</strong> — fewer than 14 players one week into the league year (Article II, § 5.1)</td>
+                  <td>—</td>
+                  <td>An <strong>empty-slot charge</strong> of the rookie minimum ($1,620,564) per open slot below 14, removed once the roster reaches 14.</td>
+                </tr>
+              </tbody>
+            </table>
+            <p><strong>New contracts (draft pick or FA signing) carry no hold.</strong> The "hold for a new contract via a draft pick or free-agent signing" is just the placeholder above that the unsigned player occupies. Once the team actually signs the player — a drafted player via the sign-pick transaction (§ 7.1), or a free agent via a signing (§§ 3.1–3.8) — the hold drops off entirely and only the contract's real Year&nbsp;1 salary counts against the cap.</p>
             <p><strong>Renounce (transaction):</strong> Renouncing is a tracked roster transaction — submit it from the Transactions page rather than editing a roster by hand. It removes the player's cap hold, takes them off the roster, and turns them into an unsigned free agent free to sign with any team. Because a player carrying only a cap hold is under no contract, a renounce creates <strong>no dead cap</strong> — this is what distinguishes it from a release (Article V). The team forfeits any Bird Rights to the player, and the player's prior-season earnings are retained as career history. Renounce applies only to a player whose contract has expired and who sits as a <strong>UFA or RFA hold</strong>: a player still under contract must instead be released (§ 5.1), and a player with an unexercised option must have that option declined (§ 6.1) before the resulting hold can be renounced.</p>
             <p><strong>Rescission after offer sheet:</strong> A team that renounces cap holds to create space for an RFA offer sheet may <strong>rescind</strong> (restore) those renouncements if the original team matches — except: (a) rescinding would move the team from below the cap to above it; or (b) the team is already above the cap and rescinding increases their cap figure further.</p>
           </div>
@@ -914,7 +968,7 @@
         const cl = levels[cur] || {};
         document.querySelectorAll('[data-cap]').forEach(el => {
           const v = cl[el.dataset.cap];
-          if (v != null) el.textContent = '$' + Number(v).toLocaleString('en-US');
+          if (v) el.textContent = '$' + Number(v).toLocaleString('en-US');
         });
       } catch {
         // Silent fail — placeholders remain

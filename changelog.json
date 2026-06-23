@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.312",
+    "date": "2026-06-23",
+    "changes": [
+      "rulebook: expanded \u00a7 3.10 Cap Holds into a situation-by-situation reference \u2014 clarified that a cap hold is only a pre-signing placeholder (a signed contract is never a hold), defined \"previous salary\" as the most recently completed contract year, and added a Holds-by-situation table covering expiring veteran contracts, declined options (Bird-tier hold on the last salary played, not the declined option amount; Bird Rights retained), RFA offer sheets, unsigned first-round picks (120% rookie scale), unsigned second-round/UDFA rights (no standalone hold), and incomplete-roster empty-slot charges",
+      "rulebook: aligned \u00a7 3.10 cap-hold amounts with the real NBA CBA (all existing percentages already matched) \u2014 the above/below threshold is the Estimated Average Player Salary (EAPS) for the upcoming season, the 250%/300% rookie rows apply only to the final year of a rookie-scale deal (mid-deal option years are TEAM_OPT holds equal to the rookie-scale amount), the minimum-salary hold is capped at the 2-year veteran minimum, and holds are clamped to the range between the player's applicable minimum and maximum salary; also cross-referenced \u00a7 3.8 for which players are Full Bird / Early Bird / Non-Bird",
+      "cap settings: added Estimated Average Player Salary (EAPS) as a per-season constant \u2014 new field on the cap-levels API and the Cap Settings editor, plus a live EAPS row in rulebook \u00a7 1.1. EAPS is the dividing line for the \u00a7 3.10 cap-hold tiers (150% vs 190%, 250% vs 300%). Unset cap fields now render as \u2014 instead of $0"
+    ]
+  },
+  {
     "version": "0.0.311",
     "date": "2026-06-23",
     "changes": [
