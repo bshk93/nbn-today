@@ -148,6 +148,39 @@
     td.owner-cell { font-weight: 500; }
     td.notes-cell { color: #6b7280; font-size: 0.8rem; font-style: italic; }
     td.picknum-cell { color: #6b7280; font-size: 0.78rem; width: 2.5rem; font-variant-numeric: tabular-nums; }
+
+    /* Draft-pick grades */
+    td.grade-cell { width: 1%; white-space: nowrap; cursor: default; }
+    .grade-vote { display: flex; gap: 0.2rem; }
+    .grade-btn {
+      width: 1.55rem; height: 1.55rem; padding: 0;
+      border: 1px solid #374151; border-radius: 5px;
+      background: #111827; color: #9ca3af;
+      font-family: inherit; font-size: 0.78rem; font-weight: 700;
+      cursor: pointer; transition: border-color 0.1s, color 0.1s;
+    }
+    .grade-btn:hover { border-color: var(--gc); color: var(--gc); }
+    .grade-btn.selected { border-color: var(--gc); color: var(--gc); background: #1f2937; }
+
+    .grade-results { display: flex; align-items: flex-end; gap: 0.5rem; }
+    .grade-avg { font-size: 1.05rem; font-weight: 800; line-height: 1.4; }
+    .grade-dist { display: flex; align-items: flex-end; gap: 0.15rem; height: 1.7rem; }
+    .grade-tick {
+      position: relative; width: 1.15rem; height: 100%; padding: 0;
+      border: none; background: transparent; cursor: pointer;
+      display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+    }
+    .grade-bar {
+      width: 100%; min-height: 2px; border-radius: 2px 2px 0 0;
+      background: var(--gc); opacity: 0.45; transition: opacity 0.1s;
+    }
+    .grade-tick:hover .grade-bar { opacity: 0.85; }
+    .grade-tick.mine .grade-bar { opacity: 1; }
+    .grade-tick-label {
+      font-size: 0.62rem; font-weight: 700; color: #6b7280; margin-top: 1px;
+    }
+    .grade-tick.mine .grade-tick-label { color: var(--gc); }
+    .grade-count { font-size: 0.7rem; color: #6b7280; line-height: 1.9; }
   </style>
 </head>
 <body>
@@ -182,7 +215,7 @@
       return (n / games).toFixed(1);
     }
 
-    function renderRound(picks, roundLabel) {
+    function renderRound(picks, roundLabel, gradeable, year) {
       const block = document.createElement('div');
       block.className = 'round-block';
       const h2 = document.createElement('h2');
@@ -201,6 +234,7 @@
         <th class="right">PPG</th>
         <th class="right">RPG</th>
         <th class="right">APG</th>
+        ${gradeable ? '<th>Grade</th>' : ''}
       </tr></thead>`;
       const tbody = document.createElement('tbody');
       picks.forEach(({ pick, player }) => {
@@ -269,6 +303,8 @@
           tr.appendChild(td);
         });
 
+        if (gradeable) tr.appendChild(buildGradeCell(player.SLUG, year));
+
         tbody.appendChild(tr);
       });
       tbl.appendChild(tbody);
@@ -299,9 +335,128 @@
         return;
       }
 
+      const gradeable = (year === GRADEABLE_YEAR);
       allRounds.forEach(round => {
         const picks = byRound[round].sort((a, b) => a.pick.num - b.pick.num);
-        content.appendChild(renderRound(picks, round));
+        content.appendChild(renderRound(picks, round, gradeable, year));
+      });
+    }
+
+    // ── Draft-pick grades ──────────────────────────────────────────────────────
+    // Members grade picks of the most recent completed draft A–F. Results for a
+    // pick are revealed only after the member has graded that pick themselves.
+    const GRADES = ['A', 'B', 'C', 'D', 'F'];
+    const GRADE_COLORS = { A: '#4ade80', B: '#a3e635', C: '#fbbf24', D: '#fb923c', F: '#f87171' };
+    let GRADEABLE_YEAR = null;
+    let gradeData = {};   // slug -> { my, count, avg, dist }
+
+    async function loadGrades(year) {
+      gradeData = {};
+      if (!year) return;
+      try {
+        const t = getToken();
+        const res = await fetch(`/api/draft/grades?year=${year}`,
+          t ? { headers: { Authorization: `Bearer ${t}` } } : {});
+        if (res.ok) gradeData = (await res.json()).picks || {};
+      } catch { /* leave gradeData empty */ }
+    }
+
+    // avg is 0–4 (A=4 … F=0); map to the nearest letter.
+    function avgLetter(avg) {
+      if (avg == null) return '—';
+      return GRADES[Math.min(4, Math.max(0, Math.round(4 - avg)))];
+    }
+
+    function buildGradeCell(slug, year) {
+      const td = document.createElement('td');
+      td.className = 'grade-cell';
+      td.addEventListener('click', e => e.stopPropagation());  // don't navigate to the player page
+      renderGradeCell(td, slug, year);
+      return td;
+    }
+
+    function renderGradeCell(td, slug, year) {
+      td.innerHTML = '';
+      const entry = gradeData[slug];
+      td.appendChild(entry && entry.my
+        ? buildGradeResults(slug, year, entry)
+        : buildGradeVote(slug, year));
+    }
+
+    function buildGradeVote(slug, year) {
+      const wrap = document.createElement('div');
+      wrap.className = 'grade-vote';
+      GRADES.forEach(g => {
+        const b = document.createElement('button');
+        b.className = 'grade-btn';
+        b.textContent = g;
+        b.style.setProperty('--gc', GRADE_COLORS[g]);
+        b.onclick = () => submitGrade(slug, year, g, b);
+        wrap.appendChild(b);
+      });
+      return wrap;
+    }
+
+    function buildGradeResults(slug, year, entry) {
+      const wrap = document.createElement('div');
+      wrap.className = 'grade-results';
+
+      const L = avgLetter(entry.avg);
+      const avg = document.createElement('span');
+      avg.className = 'grade-avg';
+      avg.textContent = L;
+      avg.style.color = GRADE_COLORS[L] || '#d1d5db';
+      avg.title = `Average ${entry.avg != null ? entry.avg.toFixed(2) : '—'} · ${entry.count} vote${entry.count === 1 ? '' : 's'}`;
+      wrap.appendChild(avg);
+
+      const dist = document.createElement('div');
+      dist.className = 'grade-dist';
+      const max = Math.max(1, ...GRADES.map(g => entry.dist[g] || 0));
+      GRADES.forEach(g => {
+        const n = entry.dist[g] || 0;
+        const tick = document.createElement('button');
+        tick.className = 'grade-tick' + (g === entry.my ? ' mine' : '');
+        tick.style.setProperty('--gc', GRADE_COLORS[g]);
+        tick.title = `${g}: ${n} vote${n === 1 ? '' : 's'}${g === entry.my ? ' (yours)' : ''} — click to change your grade`;
+        const bar = document.createElement('span');
+        bar.className = 'grade-bar';
+        bar.style.height = `${Math.round((n / max) * 100)}%`;
+        const lab = document.createElement('span');
+        lab.className = 'grade-tick-label';
+        lab.textContent = g;
+        tick.appendChild(bar);
+        tick.appendChild(lab);
+        tick.onclick = () => submitGrade(slug, year, g, tick);
+        dist.appendChild(tick);
+      });
+      wrap.appendChild(dist);
+
+      const cnt = document.createElement('span');
+      cnt.className = 'grade-count';
+      cnt.textContent = entry.count;
+      wrap.appendChild(cnt);
+
+      return wrap;
+    }
+
+    function submitGrade(slug, year, grade, btnEl) {
+      const td = btnEl.closest('.grade-cell');
+      withToken(async token => {
+        try {
+          const res = await fetch('/api/draft/grades', {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ year: +year, slug, grade }),
+          });
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem(TOKEN_KEY);
+            alert('Your access token is missing or invalid. Try grading again to re-enter it.');
+            return;
+          }
+          if (!res.ok) { alert('Could not save your grade.'); return; }
+          gradeData[slug] = await res.json();
+          if (td) renderGradeCell(td, slug, year);
+        } catch { alert('Could not save your grade.'); }
       });
     }
 
@@ -812,7 +967,13 @@
 
       // Default to the most recently completed draft, falling back to the
       // earliest upcoming year if no past drafts exist yet.
-      const defaultYear = [...pastYears].sort().reverse()[0] ?? yearsChrono[0];
+      const mostRecentCompleted = [...pastYears].sort().reverse()[0];
+      const defaultYear = mostRecentCompleted ?? yearsChrono[0];
+
+      // Only the most recent completed draft is gradeable. Preload its grades so
+      // the column renders synchronously on first paint.
+      GRADEABLE_YEAR = mostRecentCompleted ?? null;
+      await loadGrades(GRADEABLE_YEAR);
 
       const editBtn = document.getElementById('edit-btn');
       let currentAllPicks = allPicks;

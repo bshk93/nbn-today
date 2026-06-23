@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.311",
+    "date": "2026-06-23",
+    "changes": [
+      "transactions: added a Guarantee Year transaction type \u2014 fully guarantee a single NON_GTD contract year (sets the full salary as guaranteed, clears the non-guaranteed hold, and drops any guarantee date/step schedule for that year). Pick a player and the year dropdown lists their non-guaranteed years; recorded as a dated ledger entry like every other transaction",
+      "rulebook: documented guaranteeing a non-guaranteed year under \u00a7 6.1 \u2014 distinct from an option (no decline path, no free-agent hold), and clarified that letting a guarantee date pass still owes full salary on a later release but leaves the contract reading NON_GTD until explicitly guaranteed",
+      "news: launched a member-written news section at /news (news.nbn.today redirects there) with cover images, inline images, and tags. Any signed-in member can draft and submit articles in a Markdown editor with live preview; BOD and curator-role members approve and publish from a submission queue (with an editable publish date), send drafts back to authors, or unpublish. Authors can edit their own articles at any stage including after publishing (edits go live without changing status); published articles support member comments"
+    ]
+  },
+  {
     "version": "0.0.310",
     "date": "2026-06-23",
     "changes": [

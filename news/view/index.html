@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Article — NBN News</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+  <style>
+    .page { max-width: 760px; margin: 0 auto; }
+
+    .badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.55rem; border-radius: 4px; }
+    .badge-draft { background: #1f2937; border: 1px solid #374151; color: #6b7280; }
+    .badge-submitted { background: #3b1f00; border: 1px solid #b45309; color: #fbbf24; }
+    .badge-published { background: #14532d; border: 1px solid #16a34a; color: #4ade80; }
+
+    .cover { width: 100%; max-height: 380px; object-fit: cover; border-radius: 12px; margin-bottom: 1.5rem; display: block; }
+
+    .article-header { margin-bottom: 1.5rem; }
+    .article-header .badge { margin-bottom: 0.7rem; }
+    .article-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+    .tag-pill { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #93c5fd; background: #1e3a5f; border: 1px solid #1d4ed8; border-radius: 4px; padding: 0.12rem 0.45rem; }
+    .article-header h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.6rem; line-height: 1.2; }
+    .byline { font-size: 0.85rem; color: #9ca3af; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .byline .sep { color: #374151; }
+    .byline strong { color: #d1d5db; }
+
+    .header-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.85rem; border: 1px solid transparent; }
+    .btn-primary { background: #2563eb; border-color: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-success { background: #14532d; border-color: #16a34a; color: #4ade80; }
+    .btn-success:hover { background: #166534; }
+    .btn-secondary { background: #1f2937; border-color: #374151; color: #d1d5db; }
+    .btn-secondary:hover { background: #263244; border-color: #4b5563; }
+    .btn-ghost { background: transparent; border-color: #374151; color: #9ca3af; text-decoration: none; display: inline-block; padding: 0.35rem 0.85rem; border-radius: 6px; }
+    .btn-ghost:hover { background: #1f2937; color: #f3f4f6; }
+    .btn-danger { background: transparent; border-color: #374151; color: #f87171; }
+    .btn-danger:hover { background: #3b1f1f; border-color: #ef4444; }
+
+    .divider { border: none; border-top: 1px solid #374151; margin: 1.75rem 0; }
+
+    /* Editor panel */
+    .editor-panel { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+    .editor-panel .section-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #4b5563; margin-bottom: 0.75rem; }
+    .editor-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .pub-date { background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.35rem 0.5rem; font-size: 0.8rem; font-family: inherit; }
+    .editor-note { font-size: 0.73rem; color: #6b7280; margin-top: 0.55rem; }
+
+    .md-body { line-height: 1.75; color: #d7dce3; font-size: 1.02rem; }
+    .md-body h1, .md-body h2, .md-body h3, .md-body h4 { color: #f3f4f6; margin: 1.6rem 0 0.6rem; font-weight: 700; line-height: 1.3; }
+    .md-body h1 { font-size: 1.5rem; } .md-body h2 { font-size: 1.25rem; } .md-body h3 { font-size: 1.05rem; }
+    .md-body p { margin-bottom: 1rem; }
+    .md-body img { max-width: 100%; border-radius: 8px; margin: 0.5rem 0; display: block; }
+    .md-body ul, .md-body ol { margin: 0.5rem 0 1rem 1.5rem; }
+    .md-body li { margin-bottom: 0.3rem; }
+    .md-body blockquote { border-left: 3px solid #4b5563; padding-left: 1rem; color: #9ca3af; margin: 1rem 0; font-style: italic; }
+    .md-body code { background: #1f2937; border: 1px solid #374151; border-radius: 3px; padding: 0.1rem 0.35rem; font-size: 0.85em; font-family: monospace; color: #f3f4f6; }
+    .md-body pre { background: #1f2937; border: 1px solid #374151; border-radius: 6px; padding: 1rem; overflow-x: auto; margin-bottom: 1rem; }
+    .md-body pre code { background: none; border: none; padding: 0; }
+    .md-body a { color: #60a5fa; }
+    .md-body hr { border: none; border-top: 1px solid #374151; margin: 1.5rem 0; }
+    .md-body table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }
+    .md-body th, .md-body td { border: 1px solid #374151; padding: 0.4rem 0.7rem; }
+    .md-body th { background: #1f2937; font-weight: 600; }
+
+    .section-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #4b5563; margin-bottom: 1rem; }
+
+    /* Comments */
+    .comment { border-top: 1px solid #1f2937; padding: 1rem 0; }
+    .comment:first-child { border-top: none; }
+    .comment-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.5rem; }
+    .comment-author { font-size: 0.8rem; font-weight: 700; color: #d1d5db; }
+    .comment-date { font-size: 0.75rem; color: #4b5563; margin-left: 0.5rem; }
+    .comment-delete { font-size: 0.7rem; color: #4b5563; background: none; border: none; cursor: pointer; }
+    .comment-delete:hover { color: #f87171; }
+    .comment-body { font-size: 0.9rem; }
+    .add-comment { margin-top: 1.25rem; }
+    .add-comment textarea { width: 100%; background: #1f2937; border: 1px solid #374151; color: #f3f4f6; border-radius: 8px; padding: 0.65rem 0.85rem; font-size: 0.9rem; font-family: inherit; resize: vertical; min-height: 90px; }
+    .add-comment textarea:focus { outline: none; border-color: #3b82f6; }
+    .comment-form-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
+    .comment-auth { font-size: 0.75rem; color: #6b7280; }
+    .status-msg { font-size: 0.75rem; }
+    .status-msg.ok { color: #4ade80; } .status-msg.err { color: #f87171; }
+    .empty { color: #4b5563; font-size: 0.875rem; padding: 1rem 0; }
+    a.signin-link { cursor: pointer; color: #60a5fa; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="nav"><a href="/news/">← News</a></div>
+
+  <div id="loading" style="color:#6b7280;font-size:0.9rem;">Loading…</div>
+  <div id="content" style="display:none;">
+    <img class="cover" id="cover-img" style="display:none;" alt="" referrerpolicy="no-referrer">
+
+    <div class="article-header">
+      <div id="status-badge"></div>
+      <div class="article-tags" id="article-tags"></div>
+      <h1 id="article-title"></h1>
+      <div class="byline" id="byline"></div>
+      <div class="header-actions" id="header-actions"></div>
+    </div>
+
+    <!-- Editor panel -->
+    <div class="editor-panel" id="editor-panel" style="display:none;">
+      <div class="section-title">Editorial Controls</div>
+      <div class="editor-actions" id="editor-actions"></div>
+      <div class="editor-note" id="editor-note"></div>
+    </div>
+
+    <hr class="divider">
+    <div class="md-body" id="article-body"></div>
+    <hr class="divider">
+
+    <div>
+      <div class="section-title" id="comments-title">Comments</div>
+      <div id="comments-list"></div>
+      <div class="add-comment" id="add-comment-section" style="display:none;">
+        <textarea id="comment-textarea" placeholder="Write a comment… (Markdown supported)"></textarea>
+        <div class="comment-form-footer">
+          <span class="comment-auth" id="comment-auth-msg"></span>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span class="status-msg" id="comment-status"></span>
+            <button class="btn-primary" id="btn-comment-submit" onclick="submitComment()">Post Comment</button>
+          </div>
+        </div>
+      </div>
+      <div id="comment-signin-prompt" style="display:none;margin-top:1rem;">
+        <span style="font-size:0.85rem;color:#6b7280;"><a class="signin-link" onclick="openTokenPrompt()">Sign in</a> to leave a comment.</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="error-msg" style="display:none;color:#f87171;font-size:0.9rem;"></div>
+</div>
+
+<script>
+const API = '/api';
+const params = new URLSearchParams(location.search);
+const ARTICLE_ID = params.get('id');
+let article = null;
+let me = null;
+let isEditor = false;
+let isAuthor = false;
+
+marked.use({ gfm: true, breaks: true });
+function getToken() { return localStorage.getItem('nbn_token'); }
+function fmtDate(iso) { if (!iso) return ''; return new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); }
+function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function badgeHtml(s) { const l = { draft: 'Draft', submitted: 'In Queue', published: 'Published' }; return `<span class="badge badge-${s}">${l[s] || s}</span>`; }
+
+function computeFlags(a) {
+  isAuthor = me && me.name === a.author;
+  isEditor = me && (me.roles || []).some(r => r === 'curator' || r === 'bod' || r === 'admin');
+}
+
+function render(a) {
+  article = a;
+  computeFlags(a);
+
+  // Cover
+  const cover = document.getElementById('cover-img');
+  if (a.cover_image) { cover.src = a.cover_image; cover.style.display = 'block'; cover.onerror = () => { cover.style.display = 'none'; }; }
+  else cover.style.display = 'none';
+
+  document.getElementById('status-badge').innerHTML = a.status !== 'published' ? badgeHtml(a.status) : '';
+  const tagsEl = document.getElementById('article-tags');
+  tagsEl.innerHTML = (a.tags || []).map(t => `<span class="tag-pill">${escHtml(t)}</span>`).join('');
+  document.getElementById('article-title').textContent = a.title;
+  document.title = `${a.title} — NBN News`;
+
+  const dateLabel = a.status === 'published' ? fmtDate(a.published_at)
+    : a.status === 'submitted' ? `Submitted ${fmtDate(a.submitted_at)}`
+    : `Draft · edited ${fmtDate(a.updated_at || a.created_at)}`;
+  document.getElementById('byline').innerHTML =
+    `<span>By <strong>${escHtml(a.author)}</strong></span><span class="sep">•</span><span>${dateLabel}</span>`;
+
+  // Author edit link
+  const actions = document.getElementById('header-actions');
+  actions.innerHTML = '';
+  const canEdit = isAuthor || isEditor;
+  if (canEdit) {
+    const edit = document.createElement('a');
+    edit.href = `/news/new/?id=${a.id}`;
+    edit.className = 'btn-ghost';
+    edit.textContent = 'Edit';
+    actions.appendChild(edit);
+  }
+  if (isAuthor && a.status === 'draft') {
+    const del = document.createElement('button');
+    del.className = 'btn-danger';
+    del.textContent = 'Delete Draft';
+    del.onclick = doDelete;
+    actions.appendChild(del);
+  }
+
+  // Editor panel
+  const panel = document.getElementById('editor-panel');
+  const eActions = document.getElementById('editor-actions');
+  const eNote = document.getElementById('editor-note');
+  if (isEditor && a.status !== 'draft') {
+    panel.style.display = 'block';
+    eActions.innerHTML = '';
+    if (a.status === 'submitted') {
+      const dateInput = document.createElement('input');
+      dateInput.type = 'date'; dateInput.className = 'pub-date'; dateInput.id = 'pub-date';
+      dateInput.value = new Date().toISOString().slice(0, 10);
+      const pub = document.createElement('button');
+      pub.className = 'btn-success'; pub.textContent = 'Publish';
+      pub.onclick = doPublish;
+      const reject = document.createElement('button');
+      reject.className = 'btn-secondary'; reject.textContent = 'Send back to author';
+      reject.onclick = doReject;
+      eActions.append(dateInput, pub, reject);
+      eNote.textContent = `Submitted by ${a.author}. Set the publish date and publish, or send it back as a draft.`;
+    } else if (a.status === 'published') {
+      const unpub = document.createElement('button');
+      unpub.className = 'btn-secondary'; unpub.textContent = 'Unpublish';
+      unpub.onclick = doUnpublish;
+      const del = document.createElement('button');
+      del.className = 'btn-danger'; del.textContent = 'Delete';
+      del.onclick = doDelete;
+      eActions.append(unpub, del);
+      eNote.textContent = `Published ${fmtDate(a.published_at)}${a.published_by ? ' by ' + a.published_by : ''}.`;
+    }
+  } else { panel.style.display = 'none'; }
+
+  document.getElementById('article-body').innerHTML = marked.parse(a.body || '');
+  renderComments(a);
+}
+
+function renderComments(a) {
+  const comments = a.comments || [];
+  document.getElementById('comments-title').textContent = `Comments (${comments.length})`;
+  const list = document.getElementById('comments-list');
+  list.innerHTML = '';
+  if (!comments.length) {
+    const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'No comments yet.';
+    list.appendChild(e);
+  } else {
+    comments.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'comment';
+      const canDelete = me && (me.name === c.author || isEditor);
+      div.innerHTML = `
+        <div class="comment-header">
+          <div><span class="comment-author">${escHtml(c.author)}</span><span class="comment-date">${fmtDate(c.created_at)}</span></div>
+          ${canDelete ? `<button class="comment-delete" onclick="deleteComment('${c.id}')">Delete</button>` : ''}
+        </div>
+        <div class="comment-body md-body">${marked.parse(c.body || '')}</div>`;
+      list.appendChild(div);
+    });
+  }
+  const addSection = document.getElementById('add-comment-section');
+  const prompt = document.getElementById('comment-signin-prompt');
+  if (a.status !== 'published') { addSection.style.display = 'none'; prompt.style.display = 'none'; }
+  else if (me) { addSection.style.display = 'block'; prompt.style.display = 'none'; document.getElementById('comment-auth-msg').textContent = `Commenting as ${me.name}`; }
+  else { addSection.style.display = 'none'; prompt.style.display = 'block'; }
+}
+
+async function doPublish() {
+  const token = getToken();
+  const date = document.getElementById('pub-date')?.value || null;
+  if (!confirm('Publish this article? It will be visible to everyone.')) return;
+  try {
+    const res = await fetch(`${API}/news/${ARTICLE_ID}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ publish_date: date }),
+    });
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    await reload();
+  } catch { alert('Failed. Please try again.'); }
+}
+async function doReject() {
+  if (!confirm('Send this article back to the author as a draft?')) return;
+  await editorAction('reject');
+}
+async function doUnpublish() {
+  if (!confirm('Unpublish this article and return it to the queue?')) return;
+  await editorAction('unpublish');
+}
+async function editorAction(action) {
+  const token = getToken();
+  try {
+    const res = await fetch(`${API}/news/${ARTICLE_ID}/${action}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    await reload();
+  } catch { alert('Failed. Please try again.'); }
+}
+async function doDelete() {
+  if (!confirm('Delete this article? This cannot be undone.')) return;
+  const token = getToken();
+  try {
+    const res = await fetch(`${API}/news/${ARTICLE_ID}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    location.href = '/news/';
+  } catch { alert('Failed. Please try again.'); }
+}
+
+async function submitComment() {
+  const body = document.getElementById('comment-textarea').value.trim();
+  if (!body) return;
+  const token = getToken();
+  if (!token) return;
+  const btn = document.getElementById('btn-comment-submit'), statusEl = document.getElementById('comment-status');
+  btn.disabled = true; statusEl.textContent = '';
+  try {
+    const res = await fetch(`${API}/news/${ARTICLE_ID}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ body }),
+    });
+    if (!res.ok) { const e = await res.json(); statusEl.textContent = e.detail || 'Failed'; statusEl.className = 'status-msg err'; return; }
+    document.getElementById('comment-textarea').value = '';
+    await reload();
+  } catch { statusEl.textContent = 'Failed. Try again.'; statusEl.className = 'status-msg err'; }
+  finally { btn.disabled = false; }
+}
+async function deleteComment(id) {
+  if (!confirm('Delete this comment?')) return;
+  const token = getToken();
+  try {
+    const res = await fetch(`${API}/news/${ARTICLE_ID}/comments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    await reload();
+  } catch { alert('Failed. Please try again.'); }
+}
+
+function openTokenPrompt() {
+  const token = prompt('Enter your member token:');
+  if (!token) return;
+  fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } })
+    .then(r => r.ok ? r.json() : null)
+    .then(info => {
+      if (!info) { alert('Invalid token.'); return; }
+      localStorage.setItem('nbn_token', token);
+      me = info;
+      render(article);
+    });
+}
+
+async function reload() {
+  const token = getToken();
+  const res = await fetch(`${API}/news/${ARTICLE_ID}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) return;
+  render(await res.json());
+}
+
+async function init() {
+  if (!ARTICLE_ID) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'block';
+    document.getElementById('error-msg').textContent = 'No article specified.';
+    return;
+  }
+  const token = getToken();
+  if (token) {
+    try {
+      const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) me = await res.json(); else localStorage.removeItem('nbn_token');
+    } catch {}
+  }
+  try {
+    const res = await fetch(`${API}/news/${ARTICLE_ID}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) {
+      const e = await res.json();
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error-msg').style.display = 'block';
+      document.getElementById('error-msg').textContent = e.detail || 'Article not found.';
+      return;
+    }
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    render(await res.json());
+  } catch {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'block';
+    document.getElementById('error-msg').textContent = 'Failed to load article.';
+  }
+}
+
+init();
+</script>
+  <script src="/nav.js"></script>
+</body>
+</html>

@@ -373,6 +373,7 @@
     .badge-sign    { background: #064e3b; color: #34d399; }
     .badge-pick    { background: #1e3a5f; color: #93c5fd; }
     .badge-option  { background: #431407; color: #fb923c; }
+    .badge-guarantee { background: #052e2b; color: #2dd4bf; }
 
     .del-col { display: none; width: 1px; }
     .txn-table.admin-mode .del-col { display: table-cell; }
@@ -489,6 +490,7 @@
           <option value="pick">Draft Pick</option>
           <option value="sign_pick">Sign Draft Pick</option>
           <option value="option">Option Decision</option>
+          <option value="guarantee">Guarantee Year</option>
           <option value="release">Release</option>
           <option value="renounce">Renounce</option>
           <option value="trade">Trade</option>
@@ -603,6 +605,14 @@
         <input type="text" id="f-opt-hold-amount" placeholder="$0,000,000">
       </div>
 
+      <!-- guarantee-only -->
+      <div class="form-field" id="f-gtd-year-field" style="display:none">
+        <label>Guarantee Year</label>
+        <select id="f-gtd-year">
+          <option value="">— select a player —</option>
+        </select>
+      </div>
+
       <div class="form-field" id="f-contract-type-field">
         <label>Contract Type</label>
         <div class="radio-group">
@@ -671,6 +681,7 @@
     <span class="chip" data-filter="type" data-value="pick">Draft Picks</span>
     <span class="chip" data-filter="type" data-value="sign_pick">Pick Signings</span>
     <span class="chip" data-filter="type" data-value="option">Options</span>
+    <span class="chip" data-filter="type" data-value="guarantee">Guarantees</span>
     <span class="chip" data-filter="type" data-value="release">Releases</span>
     <span class="chip" data-filter="type" data-value="renounce">Renounces</span>
     <span class="chip" data-filter="type" data-value="trade">Trades</span>
@@ -865,6 +876,7 @@ function setupTypeSwitch() {
     const v = document.getElementById('f-type').value;
     const isTrade = v === 'trade';
     const isSign = v === 'sign', isPick = v === 'pick', isOpt = v === 'option', isRelease = v === 'release';
+    const isGtd = v === 'guarantee';
     const isConvertTwoWay = v === 'convert_twoway';
     const isSignPick = v === 'sign_pick';
     // A draft pick conveys rights only — no contract at pick time (it's attached
@@ -895,6 +907,7 @@ function setupTypeSwitch() {
       document.getElementById('f-opt-decision-field').style.display  = isOpt ? '' : 'none';
       document.getElementById('f-opt-hold-field').style.display        = 'none';
       document.getElementById('f-opt-hold-amount-field').style.display = 'none';
+      document.getElementById('f-gtd-year-field').style.display        = isGtd ? '' : 'none';
       document.getElementById('f-contract-type-field').style.display   = (needsContract && !isConvertTwoWay) ? '' : 'none';
       applyContractTypeVisibility(needsContract, isConvertTwoWay);
     }
@@ -905,6 +918,9 @@ function setupTypeSwitch() {
       document.getElementById('f-opt-year').value = '';
       document.getElementById('f-opt-type').value = '';
       document.getElementById('f-opt-type-display').value = '';
+    }
+    if (!isGtd) {
+      document.getElementById('f-gtd-year').innerHTML = '<option value="">— select a player —</option>';
     }
     document.getElementById('submit-btn').textContent = isTrade ? 'Submit Trade' : 'Submit Transaction';
   }
@@ -1179,7 +1195,9 @@ function seasonStart(s) {
 }
 
 function onPlayerSelected(slug) {
-  if (document.getElementById('f-type').value !== 'option') return;
+  const type = document.getElementById('f-type').value;
+  if (type === 'guarantee') { populateGuaranteeYears(slug); return; }
+  if (type !== 'option') return;
   const bio = bios[slug];
   if (!bio) return;
   const optHolds = parseCapHolds(bio.cap_holds || '')
@@ -1193,6 +1211,25 @@ function onPlayerSelected(slug) {
     earliest.type === 'PLAYER_OPT' ? 'Player Option' : 'Team Option';
   const optSalary = bio.salaries && bio.salaries[earliest.year] ? bio.salaries[earliest.year] : '';
   document.getElementById('f-opt-hold-amount').value = optSalary;
+}
+
+// Populate the guarantee year dropdown with the player's NON_GTD years (the only
+// years a guarantee transaction can touch). One option per NON_GTD year, showing
+// the salary that becomes fully guaranteed.
+function populateGuaranteeYears(slug) {
+  const sel = document.getElementById('f-gtd-year');
+  const bio = bios[slug];
+  const holds = bio ? parseCapHolds(bio.cap_holds || '')
+    .filter(h => h.type === 'NON_GTD')
+    .sort((a, b) => seasonStart(a.year) - seasonStart(b.year)) : [];
+  if (!holds.length) {
+    sel.innerHTML = '<option value="">No non-guaranteed years</option>';
+    return;
+  }
+  sel.innerHTML = holds.map(h => {
+    const sal = bio.salaries && bio.salaries[h.year] ? bio.salaries[h.year] : '';
+    return `<option value="${h.year}">${h.year}${sal ? ' — ' + sal : ''}</option>`;
+  }).join('');
 }
 
 // ── Salary rows ────────────────────────────────────────────────────────────
@@ -1717,6 +1754,13 @@ async function submitTransaction() {
     if (!year || !option_type) { setStatus('err', 'Select a player with an option year.'); return; }
     if (decision === 'decline' && !cap_hold_amount) { setStatus('err', 'Cap hold amount is required for a decline.'); return; }
     details = { player: playerSlug, decision, option_type, year, cap_hold_type, cap_hold_amount };
+  } else if (type === 'guarantee') {
+    date = document.getElementById('f-date').value;
+    const year = document.getElementById('f-gtd-year').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
+    if (!playerSlug) { setStatus('err', 'Select a player.'); return; }
+    if (!year) { setStatus('err', 'Select a non-guaranteed year to guarantee.'); return; }
+    details = { player: playerSlug, year };
   } else if (type === 'release') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -1812,6 +1856,7 @@ function resetForm() {
   document.getElementById('f-opt-hold-field').style.display        = 'none';
   document.getElementById('f-opt-hold-amount-field').style.display = 'none';
   document.getElementById('f-opt-hold-amount').value = '';
+  document.getElementById('f-gtd-year').innerHTML = '<option value="">— select a player —</option>';
   // Re-populate pick selector to reflect newly assigned pick
   const yearSel = document.getElementById('f-pick-year-sel');
   if (yearSel.value) populatePickSel(+yearSel.value);
@@ -2012,6 +2057,9 @@ function renderDetailsCell(t) {
       return `${yearStr} ${escHtml(optLabel)} — declined → ${escHtml(d.cap_hold_type || 'UFA')} hold`;
     }
   }
+  if (t.type === 'guarantee') {
+    return `${escHtml(d.year || '')} fully guaranteed`;
+  }
   if (t.type === 'convert_twoway' || t.type === 'sign_pick') {
     const c = d.contract || {};
     const years = Object.keys(c.salaries || {}).length;
@@ -2081,7 +2129,7 @@ function fmtDate(iso) {
 }
 
 function typeLabel(type) {
-  const labels = { sign: 'Signing', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion' };
+  const labels = { sign: 'Signing', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', guarantee: 'Guarantee', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion' };
   return labels[type] || type;
 }
 

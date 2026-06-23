@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>News — NBN</title>
+  <style>
+    .page { max-width: 960px; margin: 0 auto; }
+
+    .top-bar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
+    .top-bar h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    .top-bar p { color: #9ca3af; margin-top: 0.35rem; font-size: 0.9rem; }
+
+    .right-bar { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    .auth-label { font-size: 0.8rem; color: #6b7280; }
+    .auth-name { font-size: 0.8rem; color: #9ca3af; font-weight: 600; }
+
+    button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.8rem; border: 1px solid transparent; transition: background 0.1s; }
+    .btn-primary { background: #2563eb; border-color: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-ghost { background: transparent; border-color: #374151; color: #9ca3af; }
+    .btn-ghost:hover { background: #1f2937; color: #f3f4f6; }
+    a.btn-primary { display: none; padding: 0.35rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 500; background: #2563eb; border: 1px solid #3b82f6; color: #fff; text-decoration: none; }
+
+    .section { margin-bottom: 2.75rem; }
+    .section-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #4b5563; margin-bottom: 0.9rem; }
+
+    /* Tag filter */
+    .tag-filter { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .tag-chip {
+      background: transparent; border: 1px solid #374151; border-radius: 20px;
+      color: #9ca3af; cursor: pointer; font-family: inherit; font-size: 0.73rem;
+      font-weight: 600; padding: 0.22rem 0.7rem; letter-spacing: 0.02em;
+    }
+    .tag-chip:hover { border-color: #6b7280; color: #d1d5db; }
+    .tag-chip.active { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+
+    /* Feed grid */
+    .feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.1rem; }
+    .article-card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow: hidden;
+      display: flex; flex-direction: column; text-decoration: none; color: inherit;
+      transition: border-color 0.12s, transform 0.12s;
+    }
+    .article-card:hover { border-color: #4b5563; transform: translateY(-2px); text-decoration: none; }
+    .card-cover { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #111827; display: block; }
+    .card-cover.placeholder { display: flex; align-items: center; justify-content: center; color: #374151; font-size: 2rem; font-weight: 800; letter-spacing: 0.1em; }
+    .card-inner { padding: 1rem 1.1rem 1.15rem; flex: 1; display: flex; flex-direction: column; }
+    .card-tags { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.55rem; }
+    .tag-pill { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #93c5fd; background: #1e3a5f; border: 1px solid #1d4ed8; border-radius: 4px; padding: 0.1rem 0.4rem; }
+    .card-title { font-size: 1.05rem; font-weight: 700; line-height: 1.3; margin-bottom: 0.5rem; }
+    .card-excerpt { font-size: 0.83rem; color: #9ca3af; line-height: 1.5; flex: 1; }
+    .card-meta { font-size: 0.73rem; color: #6b7280; margin-top: 0.8rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .card-meta .sep { color: #374151; }
+
+    /* Queue / draft rows */
+    .row-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .row-card {
+      background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 0.85rem 1.1rem;
+      display: flex; align-items: center; gap: 1rem; text-decoration: none; color: inherit;
+      transition: border-color 0.1s, background 0.1s;
+    }
+    .row-card:hover { border-color: #4b5563; background: #263244; text-decoration: none; }
+    .row-body { flex: 1; min-width: 0; }
+    .row-title { font-size: 0.92rem; font-weight: 600; margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row-meta { font-size: 0.73rem; color: #6b7280; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .badge { display: inline-block; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 0.13rem 0.45rem; border-radius: 4px; flex-shrink: 0; }
+    .badge-draft { background: #1f2937; border: 1px solid #374151; color: #6b7280; }
+    .badge-submitted { background: #3b1f00; border: 1px solid #b45309; color: #fbbf24; }
+    .row-arrow { color: #374151; font-size: 1.1rem; }
+    .row-card:hover .row-arrow { color: #6b7280; }
+
+    .empty { text-align: center; padding: 2.5rem 1rem; color: #4b5563; font-size: 0.9rem; }
+
+    /* Auth modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 380px; margin: 1rem; }
+    .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .modal input { width: 100%; background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem; font-family: monospace; margin-bottom: 0.75rem; }
+    .modal input:focus { outline: none; border-color: #3b82f6; }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .modal p.note { font-size: 0.75rem; color: #6b7280; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav"></nav>
+
+  <div class="top-bar">
+    <div>
+      <h1>NBN News</h1>
+      <p>League dispatches, recaps, and opinion — written by the members.</p>
+    </div>
+    <div class="right-bar">
+      <span class="auth-label" id="auth-label">Not signed in</span>
+      <span class="auth-name" id="auth-name"></span>
+      <button class="btn-ghost" id="btn-auth" onclick="openAuthModal()">Sign in</button>
+      <a href="/news/new/" class="btn-primary" id="btn-new">+ Write</a>
+    </div>
+  </div>
+
+  <!-- Submission queue (editors only) -->
+  <div class="section" id="queue-section" style="display:none;">
+    <div class="section-label">Submission Queue · awaiting review</div>
+    <div class="row-list" id="queue-list"></div>
+  </div>
+
+  <!-- My drafts -->
+  <div class="section" id="drafts-section" style="display:none;">
+    <div class="section-label">My Drafts &amp; Submissions</div>
+    <div class="row-list" id="drafts-list"></div>
+  </div>
+
+  <!-- Published feed -->
+  <div class="section">
+    <div class="section-label">Latest</div>
+    <div class="tag-filter" id="tag-filter"></div>
+    <div class="feed" id="feed"><div class="empty">Loading…</div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeAuthModal(event)">
+  <div class="modal">
+    <h2>Sign in with your token</h2>
+    <p class="note">Your token is provided by the league admin. It's stored locally in your browser.</p>
+    <input type="password" id="token-input" placeholder="Paste your token" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeAuthModal()">Cancel</button>
+      <button class="btn-primary" onclick="doSignIn()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let articles = [];
+let activeTag = null;
+let me = null;
+
+function getToken() { return localStorage.getItem('nbn_token'); }
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function excerpt(md, n = 140) {
+  const plain = String(md || '')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')        // images
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')      // links -> text
+    .replace(/[#>*_`~\-]+/g, ' ')                 // md punctuation
+    .replace(/\s+/g, ' ').trim();
+  return plain.length > n ? plain.slice(0, n).trim() + '…' : plain;
+}
+
+function renderArticleCard(a) {
+  const el = document.createElement('a');
+  el.className = 'article-card';
+  el.href = `/news/view/?id=${a.id}`;
+  const cover = a.cover_image
+    ? `<img class="card-cover" src="${escHtml(a.cover_image)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'card-cover placeholder',textContent:'NBN'}))">`
+    : `<div class="card-cover placeholder">NBN</div>`;
+  const tags = (a.tags || []).map(t => `<span class="tag-pill">${escHtml(t)}</span>`).join('');
+  const commentPart = a.comment_count > 0 ? `<span class="sep">•</span> 💬 ${a.comment_count}` : '';
+  el.innerHTML = `
+    ${cover}
+    <div class="card-inner">
+      ${tags ? `<div class="card-tags">${tags}</div>` : ''}
+      <div class="card-title">${escHtml(a.title)}</div>
+      <div class="card-excerpt">${escHtml(excerpt(a.body))}</div>
+      <div class="card-meta">
+        <span>${escHtml(a.author)}</span>
+        <span class="sep">•</span>
+        <span>${fmtDate(a.published_at)}</span>
+        ${commentPart}
+      </div>
+    </div>`;
+  return el;
+}
+
+function renderRow(a, hrefBase, badgeKind) {
+  const el = document.createElement('a');
+  el.className = 'row-card';
+  el.href = `${hrefBase}?id=${a.id}`;
+  const labels = { draft: 'Draft', submitted: 'In Queue' };
+  el.innerHTML = `
+    <span class="badge badge-${badgeKind}">${labels[badgeKind] || badgeKind}</span>
+    <div class="row-body">
+      <div class="row-title">${escHtml(a.title || '(untitled)')}</div>
+      <div class="row-meta">
+        <span>${escHtml(a.author)}</span>
+        <span class="sep">•</span>
+        <span>${badgeKind === 'submitted' ? 'Submitted ' + fmtDate(a.submitted_at) : 'Edited ' + fmtDate(a.updated_at || a.created_at)}</span>
+      </div>
+    </div>
+    <span class="row-arrow">›</span>`;
+  return el;
+}
+
+function renderTagFilter() {
+  const counts = {};
+  articles.forEach(a => (a.tags || []).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+  const tags = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  const wrap = document.getElementById('tag-filter');
+  wrap.innerHTML = '';
+  if (!tags.length) return;
+  const allChip = document.createElement('button');
+  allChip.className = 'tag-chip' + (activeTag === null ? ' active' : '');
+  allChip.textContent = 'All';
+  allChip.onclick = () => { activeTag = null; renderFeed(); renderTagFilter(); };
+  wrap.appendChild(allChip);
+  tags.forEach(t => {
+    const chip = document.createElement('button');
+    chip.className = 'tag-chip' + (activeTag === t ? ' active' : '');
+    chip.textContent = t;
+    chip.onclick = () => { activeTag = t; renderFeed(); renderTagFilter(); };
+    wrap.appendChild(chip);
+  });
+}
+
+function renderFeed() {
+  const feed = document.getElementById('feed');
+  let list = articles;
+  if (activeTag) list = articles.filter(a => (a.tags || []).includes(activeTag));
+  feed.innerHTML = '';
+  if (!list.length) { feed.innerHTML = '<div class="empty">No articles published yet.</div>'; return; }
+  list.forEach(a => feed.appendChild(renderArticleCard(a)));
+}
+
+async function loadNews() {
+  const token = getToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  try {
+    const res = await fetch(`${API}/news`, { headers });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    articles = data.articles || [];
+    renderTagFilter();
+    renderFeed();
+
+    const queue = data.queue || [];
+    const queueSection = document.getElementById('queue-section');
+    const queueList = document.getElementById('queue-list');
+    if (queue.length) {
+      queueSection.style.display = 'block';
+      queueList.innerHTML = '';
+      queue.forEach(a => queueList.appendChild(renderRow(a, '/news/view/', 'submitted')));
+    } else { queueSection.style.display = 'none'; }
+
+    const drafts = data.drafts || [];
+    const draftsSection = document.getElementById('drafts-section');
+    const draftsList = document.getElementById('drafts-list');
+    if (drafts.length && me) {
+      draftsSection.style.display = 'block';
+      draftsList.innerHTML = '';
+      drafts.forEach(a => {
+        // Drafts are editable; submitted-but-own go to view page.
+        const isDraft = a.status === 'draft';
+        draftsList.appendChild(renderRow(a, isDraft ? '/news/new/' : '/news/view/', a.status));
+      });
+    } else { draftsSection.style.display = 'none'; }
+  } catch {
+    document.getElementById('feed').innerHTML = '<div class="empty">Failed to load news.</div>';
+  }
+}
+
+function updateAuthUI(info) {
+  const label = document.getElementById('auth-label');
+  const name = document.getElementById('auth-name');
+  const btn = document.getElementById('btn-auth');
+  const btnNew = document.getElementById('btn-new');
+  if (info) {
+    label.textContent = 'Signed in as';
+    name.textContent = info.name;
+    btn.textContent = 'Sign out';
+    btn.onclick = doSignOut;
+    btnNew.style.display = 'inline-block';
+  } else {
+    label.textContent = 'Not signed in';
+    name.textContent = '';
+    btn.textContent = 'Sign in';
+    btn.onclick = openAuthModal;
+    btnNew.style.display = 'none';
+  }
+}
+
+function openAuthModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('token-input').focus(), 50);
+}
+function closeAuthModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('token-input').value = '';
+}
+async function doSignIn() {
+  const token = document.getElementById('token-input').value.trim();
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { alert('Invalid token.'); return; }
+    me = await res.json();
+    localStorage.setItem('nbn_token', token);
+    closeAuthModal();
+    updateAuthUI(me);
+    loadNews();
+  } catch { alert('Could not sign in. Check your connection.'); }
+}
+function doSignOut() {
+  localStorage.removeItem('nbn_token');
+  me = null;
+  updateAuthUI(null);
+  loadNews();
+}
+
+document.getElementById('token-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSignIn();
+  if (e.key === 'Escape') closeAuthModal();
+});
+
+async function initAuth() {
+  const token = getToken();
+  if (!token) { updateAuthUI(null); return; }
+  try {
+    const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) { me = await res.json(); updateAuthUI(me); }
+    else { localStorage.removeItem('nbn_token'); updateAuthUI(null); }
+  } catch { me = { name: '…', roles: [] }; updateAuthUI(me); }
+}
+
+(async () => { await initAuth(); await loadNews(); })();
+</script>
+  <script src="/nav.js"></script>
+</body>
+</html>
