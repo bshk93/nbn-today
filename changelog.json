@@ -1,5 +1,21 @@
 [
   {
+    "version": "0.0.315",
+    "date": "2026-06-24",
+    "changes": [
+      "Tradeblock: added a \"Show all rostered players\" toggle (off by default) that expands the table from just players/picks on the block to every rostered player across all 30 teams, preserving tradeblock notes for those still listed.",
+      "Tradeblock: salary columns now sort numerically instead of as text.",
+      "Achievements: fixed tenure date filtering \u2014 draft credit now requires the member was at the team on the actual draft date (July 1 proxy) rather than any overlap with the feeding season; playoff outcome achievements (champion, finals, conf finals, playoff appearances, cinderella, dynasty, wire-to-wire) now require the member was still with the team at playoff start (April 15 proxy), so members who departed before the playoffs or joined after no longer receive those credits."
+    ]
+  },
+  {
+    "version": "pending",
+    "date": "2026-06-23",
+    "changes": [
+      "Achievements now award NB\u00a5 on every unlock or tier upgrade (bronze/silver/gold = 250/500/1000, single-tier = 500), credited via the balance ledger with an \"Achievement: \u2026\" entry; the background job that previously posted Discord notifications now does the awarding instead (Discord output removed \u2014 too noisy). Existing achievements are not awarded retroactively."
+    ]
+  },
+  {
     "version": "0.0.314",
     "date": "2026-06-23",
     "changes": [

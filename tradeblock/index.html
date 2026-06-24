@@ -14,13 +14,37 @@
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
 
+    /* Controls row: position filter + show-all toggle */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+      margin-bottom: 1rem;
+    }
+
     /* Position filter chips */
     .pos-filter {
       display: flex;
       flex-wrap: wrap;
       gap: 0.4rem;
-      margin-bottom: 1rem;
     }
+
+    .show-all-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #9ca3af;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .show-all-toggle:hover { color: #d1d5db; }
+    .show-all-toggle input { accent-color: #3b82f6; cursor: pointer; }
+    .show-all-toggle input:disabled { cursor: default; }
     .pos-chip {
       background: transparent;
       border: 1px solid #374151;
@@ -278,7 +302,13 @@
       Team member? <button id="signin-btn">Enter your token</button> to manage your tradeblock.
     </div>
 
-    <div id="pos-filter" class="pos-filter" style="display:none"></div>
+    <div id="controls-row" class="controls-row" style="display:none">
+      <div id="pos-filter" class="pos-filter"></div>
+      <label id="show-all-wrap" class="show-all-toggle">
+        <input type="checkbox" id="show-all-toggle">
+        <span>Show all rostered players</span>
+      </label>
+    </div>
 
     <div class="table-wrap" id="table-wrap">
       <div id="status">Loading…</div>
@@ -432,7 +462,7 @@
         });
         container.appendChild(btn);
       });
-      container.style.display = '';
+      document.getElementById('controls-row').style.display = '';
     }
 
     // ── Table state ───────────────────────────────────────────────────────────
@@ -449,6 +479,11 @@
     let panelCollapsed = true;
     // OVR color scale is fixed 60–99 (see renderCell)
     let tbData = {};
+    let rosterData = {};      // team abbr → parsed roster CSV rows
+    let picksApiMap = {};     // team abbr → { "year|round|orig": {notes, pick} }
+    let ovrCurrent = {};      // slug → current OVR
+    let showAllRostered = false;
+    let allRostersFetched = false;
 
     function buildCols() {
       COLS = [
@@ -459,7 +494,7 @@
         { key: 'age',    label: 'AGE',    sortField: 'age',    cls: 'right',        defaultDir:  1, numeric: true  },
       ];
       salaryYears.forEach(yr => {
-        COLS.push({ key: yr, label: yr, sortField: yr, cls: 'right', defaultDir: -1, numeric: false });
+        COLS.push({ key: yr, label: yr, sortField: yr, cls: 'right', defaultDir: -1, numeric: true });
       });
       COLS.push({ key: 'notes', label: 'Notes', sortField: 'notes', cls: 'notes-cell', defaultDir: 1, numeric: false });
     }
@@ -469,8 +504,9 @@
         let av = a[sortField], bv = b[sortField];
         const col = COLS.find(c => c.sortField === sortField);
         if (col && col.numeric) {
-          av = parseFloat(av) || 0;
-          bv = parseFloat(bv) || 0;
+          // Strip currency formatting ($, commas) so salary cells sort numerically.
+          av = parseFloat(String(av).replace(/[$,]/g, '')) || 0;
+          bv = parseFloat(String(bv).replace(/[$,]/g, '')) || 0;
         } else {
           av = (av || '').toLowerCase();
           bv = (bv || '').toLowerCase();
@@ -844,7 +880,7 @@
 
     let myPicks = [];   // picks owned by myTeam from /api/picks/{team}
 
-    async function activateEditPanel(rosterData) {
+    async function activateEditPanel() {
       if (!myRoster.length && myTeam) {
         const r = await fetch(`/data/${myTeam.toLowerCase()}-roster.csv`);
         if (r.ok) { myRoster = parseCSV(await r.text()); rosterData[myTeam] = myRoster; }
@@ -862,6 +898,150 @@
       renderEditPanel();
     }
 
+    // ── Row building ────────────────────────────────────────────────────────
+
+    // Determine which salary-year columns to show. In "show all" mode we scan
+    // every loaded roster; otherwise only players on the block.
+    function computeSalaryYears() {
+      const set = new Set();
+      // Legacy-format rosters carry salary columns inline.
+      Object.values(rosterData).forEach(rows => {
+        if (rows.length > 0 && 'PLAYER' in rows[0]) {
+          Object.keys(rows[0]).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= CUR_YR).forEach(k => set.add(k));
+        }
+      });
+      const addBioYears = slug => {
+        const bio = slug ? biosData[slug] : null;
+        if (bio && bio.salaries) Object.keys(bio.salaries).filter(k => k >= CUR_YR).forEach(k => set.add(k));
+      };
+      if (showAllRostered) {
+        Object.values(rosterData).forEach(rows => rows.forEach(r => { if (r.SLUG) addBioYears(r.SLUG); }));
+      } else {
+        Object.values(tbData).forEach(block => (block.players || []).forEach(({ player }) => addBioYears(rosterNameToSlug(player))));
+      }
+      salaryYears = [...set].sort();
+    }
+
+    function makePlayerRow(team, player, notes, rosterRows, isNewFormat, knownSlug) {
+      let row;
+      if (isNewFormat) {
+        const slug = knownSlug || rosterNameToSlug(player);
+        const bio = slug ? biosData[slug] : null;
+        row = {
+          team, player, isPick: false,
+          pos: bio ? ((bio.pos || []).join('/') || '—') : '—',
+          ovr: slug ? (ovrCurrent[slug] || '') : '',
+          age: bio ? calcAgeFromDob(bio.dob) : '',
+          notes: notes || '',
+          cap_holds: bio ? (bio.cap_holds || {}) : {},
+        };
+        salaryYears.forEach(yr => { row[yr] = (bio && bio.salaries && bio.salaries[yr]) || '—'; });
+      } else {
+        const pr = rosterRows.find(r => r.PLAYER === player) || {};
+        const legacyHolds = {};
+        (pr.CAP_HOLDS || '').split(',').forEach(p => { const [y, t] = p.split(':'); if (y && t) legacyHolds[y.trim()] = t.trim(); });
+        row = { team, player, isPick: false, pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '', cap_holds: legacyHolds };
+        salaryYears.forEach(yr => { row[yr] = pr[yr] || '—'; });
+      }
+      return row;
+    }
+
+    function makePickRow(team, { year, round, team: origin = 'Own', notes }) {
+      const isOwnPick = !origin || origin === 'Own' || origin.toUpperCase() === team.toUpperCase();
+      const originKey = isOwnPick ? team : (origin || team);
+      const pickApiData  = (picksApiMap[team] || {})[`${year}|${round}|${originKey}`] || {};
+      const pickApiNotes = pickApiData.notes || '';
+      const pickNum      = pickApiData.pick ?? null;
+      const numSuffix    = pickNum ? ` · #${pickNum}` : '';
+      const pickLabel    = isOwnPick ? `${year} ${round}${numSuffix}` : `${year} ${round} (${origin})${numSuffix}`;
+      const row = { team, isPick: true, player: pickLabel, pos: 'Pick', ovr: '', age: '', notes: notes || '', pickApiNotes, cap_holds: {} };
+      salaryYears.forEach(yr => { row[yr] = '—'; });
+      return row;
+    }
+
+    function buildTableRows() {
+      tableRows = [];
+      if (showAllRostered) {
+        // Every rostered player across all teams, plus picks on the block.
+        Object.entries(rosterData).forEach(([team, rosterRows]) => {
+          if (!VALID_TEAMS_LC.has(team.toLowerCase())) return;
+          const block = tbData[team] || {};
+          const notesByPlayer = {};
+          (block.players || []).forEach(({ player, notes }) => { notesByPlayer[player] = notes || ''; });
+          const isNewFormat = rosterRows.length > 0 && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
+          rosterRows.forEach(r => {
+            let player, isDead, slug;
+            if (isNewFormat) {
+              slug = r.SLUG;
+              const bio = biosData[slug];
+              isDead = bio && bio.type === 'dead';
+              player = displayNameFromBio((bio && bio.name) || '') || slug;
+            } else {
+              isDead = r.TYPE === 'dead';
+              player = r.PLAYER;
+            }
+            if (isDead) return;
+            tableRows.push(makePlayerRow(team, player, notesByPlayer[player], rosterRows, isNewFormat, slug));
+          });
+          (block.picks || []).forEach(p => tableRows.push(makePickRow(team, p)));
+        });
+      } else {
+        // Only players/picks explicitly placed on the block.
+        Object.entries(tbData).forEach(([team, block]) => {
+          const rosterRows = rosterData[team] || [];
+          const isNewFormat = rosterRows.length > 0 && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
+          (block.players || []).forEach(({ player, notes }) => {
+            tableRows.push(makePlayerRow(team, player, notes, rosterRows, isNewFormat));
+          });
+          (block.picks || []).forEach(p => tableRows.push(makePickRow(team, p)));
+        });
+      }
+    }
+
+    async function fetchAllRosters() {
+      const teams = [...VALID_TEAMS_LC].map(t => t.toUpperCase()).filter(t => !rosterData[t]);
+      const results = await Promise.allSettled(
+        teams.map(t => fetch(`/data/${t.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : null))
+      );
+      teams.forEach((t, i) => {
+        const res = results[i];
+        if (res.status === 'fulfilled' && res.value) rosterData[t] = parseCSV(res.value);
+      });
+    }
+
+    function renderTableAndLegend() {
+      const wrap = document.getElementById('table-wrap');
+      wrap.innerHTML = '';
+      wrap.appendChild(buildTable());
+
+      const allCapTypes = new Set();
+      tableRows.forEach(r => Object.values(r.cap_holds || {}).forEach(t => allCapTypes.add(t)));
+      if (allCapTypes.size > 0) {
+        const legend = document.createElement('div');
+        legend.className = 'cap-legend';
+        ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
+          if (!allCapTypes.has(type)) return;
+          const item = document.createElement('span');
+          item.className = 'cap-legend-item';
+          const swatch = document.createElement('span');
+          swatch.className = 'cap-swatch';
+          swatch.style.background = CAP_SWATCH_COLORS[type];
+          item.appendChild(swatch);
+          item.appendChild(document.createTextNode(CAP_HOLD_LABELS[type]));
+          legend.appendChild(item);
+        });
+        wrap.appendChild(legend);
+      }
+    }
+
+    // Recompute columns + rows + table after a mode change (e.g. show-all toggle).
+    function refreshTable() {
+      computeSalaryYears();
+      buildTableRows();
+      buildCols();
+      renderTableAndLegend();
+    }
+
     // ── Main ──────────────────────────────────────────────────────────────────
 
     (async () => {
@@ -870,7 +1050,7 @@
       const signinPrompt = document.getElementById('signin-prompt');
 
       try {
-        const [tb, userInfo, biosJson, playerSeasonsTxt, ovrCurrent] = await Promise.all([
+        const [tb, userInfo, biosJson, playerSeasonsTxt, ovrJson] = await Promise.all([
           fetch('/api/trading-block').then(r => { if (!r.ok) throw r; return r.json(); }),
           checkAuth(),
           fetch('/api/players').then(r => r.ok ? r.json() : {}),
@@ -878,6 +1058,7 @@
           fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
         ]);
         tbData = tb;
+        ovrCurrent = ovrJson;
 
         buildNameMap(biosJson);
         if (playerSeasonsTxt) buildSlugMap(parseCSV(playerSeasonsTxt));
@@ -890,7 +1071,6 @@
         const teamsWithPicks   = Object.keys(tb).filter(t => tb[t].picks?.length);
         const teamsToFetch = [...new Set([...teamsWithEntries, ...(myTeam ? [myTeam] : [])])];
 
-        const rosterData = {};
         if (teamsToFetch.length > 0) {
           const results = await Promise.allSettled(
             teamsToFetch.map(t =>
@@ -905,7 +1085,6 @@
 
         // Fetch picks API for teams that have picks on the block, to get pick notes (protection etc.)
         // Map: team → Map of "year|round|orig" → notes string
-        const picksApiMap = {};
         if (teamsWithPicks.length > 0) {
           const results = await Promise.allSettled(
             teamsWithPicks.map(t => fetch(`/api/picks/${t}`).then(r => r.ok ? r.json() : []))
@@ -922,86 +1101,12 @@
           });
         }
 
-        // Detect salary year columns from old-format rosters and biosData
-        const salaryYearSet = new Set();
-        Object.values(rosterData).forEach(rows => {
-          if (rows.length > 0 && 'PLAYER' in rows[0]) {
-            Object.keys(rows[0])
-              .filter(k => /^\d{2}-\d{2}$/.test(k) && k >= CUR_YR)
-              .forEach(k => salaryYearSet.add(k));
-          }
-        });
-        // Also collect from biosData salaries for players on the block
-        Object.values(tb).forEach(block => {
-          (block.players || []).forEach(({ player }) => {
-            const slug = rosterNameToSlug(player);
-            const bio = slug ? biosData[slug] : null;
-            if (bio && bio.salaries) {
-              Object.keys(bio.salaries).filter(k => k >= CUR_YR).forEach(k => salaryYearSet.add(k));
-            }
-          });
-        });
-        salaryYears = [...salaryYearSet].sort();
-
-        // Build flat table rows
-        tableRows = [];
-        Object.entries(tb).forEach(([team, block]) => {
-          const rosterRows = rosterData[team] || [];
-          const isNewFormat = rosterRows.length > 0 && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
-
-          // Player rows
-          (block.players || []).forEach(({ player, notes }) => {
-            let row;
-            if (isNewFormat) {
-              const slug = rosterNameToSlug(player);
-              const bio = slug ? biosData[slug] : null;
-              row = {
-                team, player, isPick: false,
-                pos: bio ? ((bio.pos || []).join('/') || '—') : '—',
-                ovr: slug ? (ovrCurrent[slug] || '') : '',
-                age: bio ? calcAgeFromDob(bio.dob) : '',
-                notes: notes || '',
-                cap_holds: bio ? (bio.cap_holds || {}) : {},
-              };
-              salaryYears.forEach(yr => { row[yr] = (bio && bio.salaries && bio.salaries[yr]) || '—'; });
-            } else {
-              const pr = rosterRows.find(r => r.PLAYER === player) || {};
-              const legacyHolds = {};
-              (pr.CAP_HOLDS || '').split(',').forEach(p => { const [y, t] = p.split(':'); if (y && t) legacyHolds[y.trim()] = t.trim(); });
-              row = { team, player, isPick: false, pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '', cap_holds: legacyHolds };
-              salaryYears.forEach(yr => { row[yr] = pr[yr] || '—'; });
-            }
-            tableRows.push(row);
-          });
-
-          // Pick rows
-          (block.picks || []).forEach(({ year, round, team: origin = 'Own', notes }) => {
-            const isOwnPick = !origin || origin === 'Own' || origin.toUpperCase() === team.toUpperCase();
-            const originKey = isOwnPick ? team : (origin || team);
-            const pickApiData  = (picksApiMap[team] || {})[`${year}|${round}|${originKey}`] || {};
-            const pickApiNotes = pickApiData.notes || '';
-            const pickNum      = pickApiData.pick ?? null;
-            const numSuffix    = pickNum ? ` · #${pickNum}` : '';
-            const pickLabel    = isOwnPick ? `${year} ${round}${numSuffix}` : `${year} ${round} (${origin})${numSuffix}`;
-            const row = {
-              team, isPick: true,
-              player: pickLabel,
-              pos: 'Pick', ovr: '', age: '',
-              notes: notes || '', pickApiNotes,
-              cap_holds: {},
-            };
-            salaryYears.forEach(yr => { row[yr] = '—'; });
-            tableRows.push(row);
-          });
-        });
-
-        buildCols();
         buildFilterChips();
 
         // Set up edit panel or sign-in prompt
         if (myTeam) {
           myRoster = rosterData[myTeam] || [];
-          await activateEditPanel(rosterData);
+          await activateEditPanel();
         } else if (!userInfo) {
           signinPrompt.style.display = '';
           document.getElementById('signin-btn').addEventListener('click', () => {
@@ -1012,7 +1117,7 @@
                 signinPrompt.style.display = 'none';
                 myTeam = role.toUpperCase();
                 myRoster = rosterData[myTeam] || [];
-                await activateEditPanel(rosterData);
+                await activateEditPanel();
               } else {
                 signinPrompt.innerHTML = 'No team role found for this token.';
               }
@@ -1020,28 +1125,21 @@
           });
         }
 
-        statusEl.remove();
-        wrap.appendChild(buildTable());
+        // "Show all rostered players" toggle — lazily fetches every roster.
+        const showAllInput = document.getElementById('show-all-toggle');
+        showAllInput.addEventListener('change', async () => {
+          showAllRostered = showAllInput.checked;
+          if (showAllRostered && !allRostersFetched) {
+            showAllInput.disabled = true;
+            await fetchAllRosters();
+            allRostersFetched = true;
+            showAllInput.disabled = false;
+          }
+          refreshTable();
+        });
 
-        // Cap hold legend
-        const allCapTypes = new Set();
-        tableRows.forEach(r => Object.values(r.cap_holds || {}).forEach(t => allCapTypes.add(t)));
-        if (allCapTypes.size > 0) {
-          const legend = document.createElement('div');
-          legend.className = 'cap-legend';
-          ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
-            if (!allCapTypes.has(type)) return;
-            const item = document.createElement('span');
-            item.className = 'cap-legend-item';
-            const swatch = document.createElement('span');
-            swatch.className = 'cap-swatch';
-            swatch.style.background = CAP_SWATCH_COLORS[type];
-            item.appendChild(swatch);
-            item.appendChild(document.createTextNode(CAP_HOLD_LABELS[type]));
-            legend.appendChild(item);
-          });
-          wrap.appendChild(legend);
-        }
+        statusEl.remove();
+        refreshTable();
       } catch {
         statusEl.textContent = 'Failed to load tradeblock.';
       }

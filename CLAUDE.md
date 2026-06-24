@@ -343,24 +343,30 @@ journalctl -u nbn-api -f          # live logs
 journalctl -u nbn-api -n 50       # last 50 log lines
 ```
 
-### Achievement notifications (background job)
+### Achievement NB¥ awards (background job)
 
-`build/achievement-notify.js` (Node) posts a Discord message to the newsroom
-webhook whenever a member unlocks or upgrades an achievement. Achievements are
-computed statelessly in the browser, so this job recomputes them server-side
-using the **same** engine the site uses (`members/achievements.js`, which is
-`require()`-able under Node), diffs against the snapshot
-`achievement-state.json` in NBS_DATA_DIR, and fires on every tier upgrade.
-Betting/investing achievements are excluded; the first run (no snapshot) seeds
-silently to avoid a flood.
+`build/achievement-notify.js` (Node) awards NB¥ whenever a member unlocks or
+upgrades an achievement. Achievements are computed statelessly in the browser,
+so this job recomputes them server-side using the **same** engine the site uses
+(`members/achievements.js`, which is `require()`-able under Node), diffs against
+the snapshot `achievement-state.json` in NBS_DATA_DIR, and awards on every tier
+upgrade by calling `POST /api/bets/admin/adjust` (which writes the balance +
+ledger under the API lock). It uses an admin token read from members.json.
 
-Run by a systemd timer every 10 min. `DRY_RUN=1` prints instead of posting,
-`NBN_ACH_STATE` overrides the snapshot path (for testing).
+Reward scale (by tier): bronze 250, silver 500, gold 1000, single-tier 500.
+Betting/investing achievements are excluded. The snapshot is **monotonic** — an
+entry only advances after a successful award, so awards can't double-fire and a
+failed award retries next run. The first run (no snapshot) seeds silently, so
+existing achievements are **not** awarded retroactively. No Discord/webhook
+output — the ledger entry (`Achievement: …`) is the record.
+
+Run by a systemd timer every 10 min. `DRY_RUN=1` previews without granting,
+`NBN_ACH_STATE` overrides the snapshot path, `NBN_API_BASE` the API URL.
 
 ```bash
 systemctl list-timers nbn-achievements.timer   # next run
-journalctl -u nbn-achievements.service -n 20    # recent runs
-DRY_RUN=1 node build/achievement-notify.js       # preview pending notifications
+journalctl -u nbn-achievements.service -n 20    # recent runs / awards
+DRY_RUN=1 node build/achievement-notify.js       # preview pending awards
 ```
 
 To re-baseline (e.g. after editing the achievement list), delete the snapshot

@@ -1,25 +1,29 @@
 #!/usr/bin/env node
 'use strict';
 
-// Achievement unlock/upgrade notifier.
+// Achievement NB¥ awarder.
 //
 // Achievements are computed statelessly (in the browser) from the underlying
 // data, so there's no server-side "unlock event". This job recomputes every
 // member's achievement tiers using the SAME engine the site uses
 // (members/achievements.js — single source of truth, run here under Node),
-// diffs against a stored snapshot, and posts a Discord message for each newly
-// unlocked achievement or tier upgrade.
+// diffs against a stored snapshot, and awards NB¥ for each newly unlocked
+// achievement or tier upgrade by calling the admin balance-adjust endpoint
+// (which writes the balance + ledger under the API's lock).
 //
 // Design notes:
-//   • Betting/investing achievements are excluded from notifications.
-//   • First run (no snapshot yet) seeds the baseline silently — no flood.
-//   • Only forward transitions fire (new unlock or higher tier); data
-//     corrections that drop a tier are absorbed silently.
-//   • Posts go to the same Discord webhook the newsroom uses.
+//   • Betting/investing achievements are excluded.
+//   • First run (no snapshot yet) seeds the baseline silently — no awards.
+//   • The snapshot is MONOTONIC: a member/achievement entry only advances after
+//     a successful award, so awards can't double-fire and a failed award just
+//     retries next run. Data corrections that drop a tier are absorbed silently
+//     (never re-awarded if the tier is later regained).
+//   • No Discord/webhook output — the ledger ("Achievement: …") is the record.
 //
 // Env:
-//   DRY_RUN=1            print would-be messages instead of posting
-//   NBN_NEWS_WEBHOOK     override the Discord webhook URL
+//   DRY_RUN=1            print would-be awards instead of granting
+//   NBN_ACH_STATE        override the snapshot path (for testing)
+//   NBN_API_BASE         override the API base URL (default http://127.0.0.1:8001)
 //
 // Run on a timer (see nbn-achievements.timer). Cheap: ~1s, all from disk.
 
@@ -29,24 +33,22 @@ const NBNAch = require('/home/skim/projects/nbn-today/members/achievements.js');
 const DATA = '/var/lib/nothing-but-stats';
 const REPO = '/home/skim/projects/nbn-today';
 const STATE_FILE = process.env.NBN_ACH_STATE || `${DATA}/achievement-state.json`;
+const API_BASE = process.env.NBN_API_BASE || 'http://127.0.0.1:8001';
 const EXCLUDE_CATS = new Set(['betting', 'investing']);
 const DRY_RUN = process.env.DRY_RUN === '1';
 
-// Mirrors NEWS_WEBHOOK in nbn-api/routers/news.py.
-const WEBHOOK = process.env.NBN_NEWS_WEBHOOK || (
-  'https://discord.com/api/webhooks/1518995213979488406/' +
-  'Uc1p3aAUOWhIkO7ToP26P02B0NJenZXQ06uDQwAKyXlPImV6J5ZbU6664wHc2UaE3srC'
-);
-
-const TIER_COLOR = {
-  'tier-bronze': 0xcd7f32,
-  'tier-silver': 0xc0c0c0,
-  'tier-gold': 0xffd700,
-  'tier-on': 0x22c55e,
+// NB¥ awarded per tier (scale: "Larger"), keyed by the tier's CSS class.
+// Single-tier achievements use tier-on.
+const REWARD = {
+  'tier-bronze': 250,
+  'tier-silver': 500,
+  'tier-gold': 1000,
+  'tier-on': 500,
 };
 
 const rd = p => fs.readFileSync(p, 'utf8');
 const rj = p => JSON.parse(rd(p));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function buildShared() {
   const txns = rj(`${DATA}/transactions.json`);
@@ -62,9 +64,8 @@ function buildShared() {
 }
 
 // Current highest tier index per included achievement, per member with a tenure.
-function scoreAll(shared) {
+function scoreAll(shared, members) {
   const included = new Set(NBNAch.ACHIEVEMENTS.filter(a => !EXCLUDE_CATS.has(a.cat)).map(a => a.id));
-  const members = rj(`${DATA}/members.json`);
   const out = {};
   for (const name in members) {
     const tenures = members[name].tenures || [];
@@ -78,66 +79,79 @@ function scoreAll(shared) {
   return out;
 }
 
-function diff(prev, cur) {
+function adminToken(members) {
+  for (const name in members) {
+    const v = members[name];
+    if ((v.roles || []).includes('admin') && v.token) return v.token;
+  }
+  return null;
+}
+
+async function award(token, member, delta, reason) {
+  const res = await fetch(`${API_BASE}/api/bets/admin/adjust`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ member, delta, reason }),
+  });
+  if (!res.ok) throw new Error(`adjust ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  return res.json();   // { member, old_balance, new_balance, delta, reason }
+}
+
+function label(ev) {
+  const ach = NBNAch.ACHIEVEMENTS.find(a => a.id === ev.id);
+  const tier = ach.tiers[ev.tier];
+  const tiered = ach.tiers.length > 1;
+  return `${ach.name}${tiered ? ` (${tier.label})` : ''}`;
+}
+
+(async () => {
+  const members = rj(`${DATA}/members.json`);
+  const seedOnly = !fs.existsSync(STATE_FILE);
+  const cur = scoreAll(buildShared(), members);
+
+  if (seedOnly) {
+    if (!DRY_RUN) fs.writeFileSync(STATE_FILE, JSON.stringify(cur));
+    console.log(`Seeded baseline for ${Object.keys(cur).length} members; no awards.`);
+    return;
+  }
+
+  const state = rj(STATE_FILE);
   const events = [];
   for (const name in cur) {
-    const old = prev[name] || {};
+    const old = state[name] || {};
     for (const id in cur[name]) {
       const oldIdx = (id in old) ? old[id] : -1;
       if (cur[name][id] > oldIdx) events.push({ name, id, tier: cur[name][id], from: oldIdx });
     }
   }
-  return events;
-}
-
-function embedFor(ev) {
-  const ach = NBNAch.ACHIEVEMENTS.find(a => a.id === ev.id);
-  const tier = ach.tiers[ev.tier];
-  const tiered = ach.tiers.length > 1;
-  const first = ev.from < 0;
-  const sub = tier.sub ? ` _(${tier.sub})_` : '';
-  const desc = first
-    ? `**${ev.name}** unlocked **${ach.name}**${tiered ? ` — ${tier.label}` : ''}${sub}`
-    : `**${ev.name}** leveled up **${ach.name}** to **${tier.label}**${sub}`;
-  return {
-    title: `${ach.icon} Achievement ${first ? 'Unlocked' : 'Upgraded'}`,
-    url: `https://nbn.today/members/${encodeURIComponent(ev.name)}/`,
-    color: TIER_COLOR[tier.tierClass] || 0x3b82f6,
-    description: desc,
-    footer: { text: 'Nothing But Net · nbn.today/members' },
-  };
-}
-
-async function post(embed) {
-  const res = await fetch(WEBHOOK, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'NBN Achievements', avatar_url: 'https://nbn.today/logo.png', embeds: [embed] }),
-  });
-  if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 200)}`);
-}
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-(async () => {
-  const seedOnly = !fs.existsSync(STATE_FILE);
-  const cur = scoreAll(buildShared());
-  const prev = seedOnly ? {} : rj(STATE_FILE);
-  const events = seedOnly ? [] : diff(prev, cur);
-
-  if (!DRY_RUN) fs.writeFileSync(STATE_FILE, JSON.stringify(cur));
-
-  if (seedOnly) {
-    console.log(`Seeded baseline for ${Object.keys(cur).length} members; no notifications.`);
-    return;
-  }
   if (!events.length) { console.log('No new achievement upgrades.'); return; }
 
+  const token = adminToken(members);
+  if (!token && !DRY_RUN) { console.error('No admin token available to award NB¥; aborting.'); process.exit(1); }
+
+  let granted = 0;
   for (const ev of events) {
-    const embed = embedFor(ev);
-    if (DRY_RUN) { console.log('[dry-run]', embed.description); continue; }
-    try { await post(embed); } catch (e) { console.error('webhook failed:', e.message); }
-    await sleep(1100);   // stay under Discord webhook rate limits
+    const ach = NBNAch.ACHIEVEMENTS.find(a => a.id === ev.id);
+    const amount = REWARD[ach.tiers[ev.tier].tierClass] || 0;
+    const reason = `Achievement: ${label(ev)}`;
+
+    if (DRY_RUN) { console.log(`[dry-run] +NB¥${amount} ${ev.name} — ${label(ev)}`); continue; }
+
+    let newBal;
+    try {
+      const r = await award(token, ev.name, amount, reason);
+      newBal = r.new_balance;
+    } catch (e) {
+      console.error(`award failed for ${ev.name}/${ev.id}:`, e.message);
+      continue;   // snapshot NOT advanced → retry next run
+    }
+    // Advance the snapshot immediately so a crash can't re-award.
+    state[ev.name] = state[ev.name] || {};
+    state[ev.name][ev.id] = ev.tier;
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state));
+    granted++;
+    console.log(`Awarded NB¥${amount} to ${ev.name} — ${label(ev)} (balance NB¥${newBal})`);
+    await sleep(150);   // gentle pacing on the local API
   }
-  console.log(`${DRY_RUN ? '[dry-run] ' : ''}Processed ${events.length} achievement event(s).`);
-})().catch(e => { console.error('achievement-notify failed:', e); process.exit(1); });
+  console.log(`${DRY_RUN ? '[dry-run] ' : ''}Processed ${events.length} event(s), ${granted} awarded.`);
+})().catch(e => { console.error('achievement-award failed:', e); process.exit(1); });

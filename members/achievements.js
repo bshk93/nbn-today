@@ -89,10 +89,11 @@
     });
   }
   function seasonStartYear(season) { return 2000 + parseInt(season.split('-')[0], 10); }
-  // A draft in calendar year Y feeds the season that starts that same year ("Y-(Y+1)").
-  function draftSeasonStr(year) {
-    const a = year - 2000;
-    return `${String(a).padStart(2, '0')}-${String(a + 1).padStart(2, '0')}`;
+  // Returns a proxy date for the start of playoffs in a given season (April 15 of the closing year).
+  // Used to distinguish members who left before the playoffs from those who stayed through them.
+  function playoffProxyDate(season) {
+    const closeYY = 2000 + parseInt(season.split('-')[1], 10);
+    return `${closeYY}-04-15`;
   }
   // Longest run of consecutive integers present in a Set<number>.
   function longestConsecutiveRun(yearSet) {
@@ -196,7 +197,7 @@
       desc: 'Hold the #1 overall seed and win the title in the same season',
       tiers: [
         { label: 'Wire to Wire', tierClass: 'tier-on', sub: '#1 Seed → Champion',
-          unlock: d => d.seasons.some(s => +s.SEED_NUM === 1 && s.PLAYOFF_RESULT === 'Champion') },
+          unlock: d => d.playoffSeasonsList.some(s => +s.SEED_NUM === 1 && s.PLAYOFF_RESULT === 'Champion') },
       ],
     },
     {
@@ -550,6 +551,13 @@
     const memberSeasons = shared.allSeasons.filter(r =>
       memberWasAtTeamInSeason(tenures, r.TEAM, r.SEASON));
 
+    // Playoff outcomes require the member to still be with the team at the playoff start
+    // (proxied as April 15 of the closing year). Avoids crediting members who departed
+    // before the playoffs began, or who joined after the playoffs ended.
+    const memberPlayoffSeasons = memberSeasons.filter(s =>
+      s.PLAYOFF_RESULT !== 'Missed' &&
+      memberAtTeamOnDate(tenures, s.TEAM, playoffProxyDate(s.SEASON)));
+
     const hadBestOffRtg = memberSeasons.some(ms => {
       const b = shared.seasonBests[ms.SEASON];
       return b && +ms.OFF_RTG >= b.maxOff - 0.001;
@@ -560,13 +568,13 @@
     });
 
     const regWins = memberSeasons.reduce((sum, s) => sum + (+s.W || 0), 0);
-    const champSeasons = memberSeasons.filter(s => s.PLAYOFF_RESULT === 'Champion').length;
-    const finalsSeasons = memberSeasons.filter(s => ['Champion', 'Runner-Up'].includes(s.PLAYOFF_RESULT)).length;
-    const confSeasons = memberSeasons.filter(s => ['Champion', 'Runner-Up', 'Conf Finals'].includes(s.PLAYOFF_RESULT)).length;
-    const playoffSeasons = memberSeasons.filter(s => s.PLAYOFF_RESULT !== 'Missed').length;
+    const champSeasons = memberPlayoffSeasons.filter(s => s.PLAYOFF_RESULT === 'Champion').length;
+    const finalsSeasons = memberPlayoffSeasons.filter(s => ['Champion', 'Runner-Up'].includes(s.PLAYOFF_RESULT)).length;
+    const confSeasons = memberPlayoffSeasons.filter(s => ['Champion', 'Runner-Up', 'Conf Finals'].includes(s.PLAYOFF_RESULT)).length;
+    const playoffSeasons = memberPlayoffSeasons.length;
 
     const maxSeasonWins = memberSeasons.reduce((m, s) => Math.max(m, +s.W || 0), 0);
-    const playoffYears = new Set(memberSeasons.filter(s => s.PLAYOFF_RESULT !== 'Missed').map(s => seasonStartYear(s.SEASON)));
+    const playoffYears = new Set(memberPlayoffSeasons.map(s => seasonStartYear(s.SEASON)));
     const maxPlayoffStreak = longestConsecutiveRun(playoffYears);
 
     // Draftees: attribute to whoever managed the drafting team the season the draft feeds.
@@ -574,7 +582,7 @@
     for (const slug in bios) {
       const p = bios[slug];
       if (!p || !p.draft_team || !p.draft_year) continue;
-      if (!memberWasAtTeamInSeason(tenures, p.draft_team, draftSeasonStr(+p.draft_year))) continue;
+      if (!memberAtTeamOnDate(tenures, p.draft_team, `${p.draft_year}-07-01`)) continue;
       myDraftees.push({ slug, year: +p.draft_year, round: +p.draft_round || null, pick: +p.draft_pick || null });
     }
     let bestDrafteeAllNbn = 99, stealPick = 0;
@@ -597,7 +605,7 @@
 
     // Draft Architect: homegrown players on a championship roster.
     let maxHomegrown = 0;
-    for (const c of memberSeasons.filter(s => s.PLAYOFF_RESULT === 'Champion')) {
+    for (const c of memberPlayoffSeasons.filter(s => s.PLAYOFF_RESULT === 'Champion')) {
       let n = 0;
       for (const r of shared.seasonRows) {
         if (r.SEASON !== c.SEASON || r.TEAM !== c.TEAM) continue;
@@ -607,12 +615,12 @@
       maxHomegrown = Math.max(maxHomegrown, n);
     }
 
-    const lowSeed = memberSeasons.filter(s => +s.SEED_NUM >= 6);
+    const lowSeed = memberPlayoffSeasons.filter(s => +s.SEED_NUM >= 6);
     const cinderellaConf = lowSeed.some(s => ['Conf Finals', 'Runner-Up', 'Champion'].includes(s.PLAYOFF_RESULT));
     const cinderellaFinals = lowSeed.some(s => ['Runner-Up', 'Champion'].includes(s.PLAYOFF_RESULT));
     const cinderellaTitle = lowSeed.some(s => s.PLAYOFF_RESULT === 'Champion');
 
-    const champYears = new Set(memberSeasons.filter(s => s.PLAYOFF_RESULT === 'Champion').map(s => seasonStartYear(s.SEASON)));
+    const champYears = new Set(memberPlayoffSeasons.filter(s => s.PLAYOFF_RESULT === 'Champion').map(s => seasonStartYear(s.SEASON)));
     const dynastyStreak = longestConsecutiveRun(champYears);
 
     const tankathon = memberSeasons.some(s => +s.PCT <= shared.seasonWorstPct[s.SEASON] + 1e-9);
@@ -665,6 +673,7 @@
     return {
       owner: shared.ownerRows.find(r => r.owner === member.name) || null,
       seasons: memberSeasons,
+      playoffSeasonsList: memberPlayoffSeasons,
       regWins, champSeasons, finalsSeasons, confSeasons, playoffSeasons,
       hadBestOffRtg, hadBestDefRtg,
       maxSeasonWins, maxPlayoffStreak,
