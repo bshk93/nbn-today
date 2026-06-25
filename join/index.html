@@ -68,13 +68,7 @@
       margin-bottom: 0.4rem;
     }
 
-    label .opt {
-      font-weight: 400;
-      color: #6b7280;
-      margin-left: 0.3em;
-    }
-
-    input[type="text"],
+input[type="text"],
     select,
     textarea {
       width: 100%;
@@ -191,15 +185,15 @@
     </div>
 
     <div class="field">
-      <label for="reddit">Reddit username <span class="opt">(optional)</span></label>
+      <label for="reddit">Reddit username</label>
       <input type="text" id="reddit" placeholder="u/yourname" autocomplete="off" maxlength="100">
     </div>
 
     <div class="field">
-      <label>Other social <span class="opt">(optional)</span></label>
+      <label>Other social</label>
       <div class="social-row">
         <select id="social-platform">
-          <option value="">Platform</option>
+          <option value="" disabled selected>Platform</option>
           <option value="Instagram">Instagram</option>
           <option value="Twitter/X">Twitter/X</option>
           <option value="Facebook">Facebook</option>
@@ -263,6 +257,9 @@
       const handle       = val('social-handle');
 
       if (!discord)       return showError('Please enter your Discord username.');
+      if (!val('reddit')) return showError('Please enter your Reddit username.');
+      if (!platform)      return showError('Please select a social platform.');
+      if (!handle)        return showError('Please enter your handle for that platform.');
       if (!location)      return showError('Please enter your location.');
       if (!howFound)      return showError('Please answer how you found the league.');
       if (!teamsInterest) return showError('Please tell us which teams interest you.');
@@ -274,9 +271,9 @@
 
       const body = {
         discord,
-        reddit:          val('reddit') || null,
-        social_platform: platform || null,
-        social_handle:   handle   || null,
+        reddit:          val('reddit'),
+        social_platform: platform,
+        social_handle:   handle,
         location,
         how_found:       howFound,
         teams_interest:  teamsInterest,
