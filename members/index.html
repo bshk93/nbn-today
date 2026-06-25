@@ -92,6 +92,16 @@
 
     .empty-state { text-align: center; color: #6b7280; padding: 2rem; }
 
+    .cosm-swatches { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+    .cosm-swatch {
+      width: 1.15rem; height: 1.15rem; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: border-color 0.1s; flex-shrink: 0;
+    }
+    .cosm-swatch:hover { border-color: #9ca3af; }
+    .cosm-swatch.selected { border-color: #f3f4f6; }
+    .cosm-swatch.swatch-none { background: #374151; }
+    .cosm-divider { border: none; border-top: 1px solid #374151; margin: 0.5rem 0; }
+
     /* ── Modals ── */
     .modal-backdrop {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
@@ -205,14 +215,25 @@
   </div>
 
   <div id="my-profile-bar" style="display:none;margin-bottom:1.25rem">
-    <div style="background:#1f2937;border:1px solid #374151;border-radius:8px;padding:0.75rem 1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-      <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">My Profile</span>
-      <label style="color:#d1d5db;font-size:0.875rem;display:flex;align-items:center;gap:0.5rem">
-        Birthday
-        <input type="date" id="my-dob-input" style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit">
-      </label>
-      <button class="btn-sm" id="my-profile-save">Save</button>
-      <span id="my-profile-msg" style="display:none;font-size:0.8rem"></span>
+    <div style="background:#1f2937;border:1px solid #374151;border-radius:8px;padding:0.75rem 1rem">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">My Profile</span>
+        <label style="color:#d1d5db;font-size:0.875rem;display:flex;align-items:center;gap:0.5rem">
+          Birthday
+          <input type="date" id="my-dob-input" style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit">
+        </label>
+        <button class="btn-sm" id="my-profile-save">Save</button>
+        <span id="my-profile-msg" style="display:none;font-size:0.8rem"></span>
+      </div>
+      <hr class="cosm-divider">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Cosmetics</span>
+        <div class="cosm-swatches" id="cosm-swatches"></div>
+        <input type="text" id="cosm-status" maxlength="40" placeholder="Short tagline…"
+          style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit;width:12rem">
+        <button class="btn-sm" id="cosm-save">Save · 500 NB¥</button>
+        <span id="cosm-msg" style="display:none;font-size:0.8rem"></span>
+      </div>
     </div>
   </div>
 
@@ -372,6 +393,36 @@ let allMembers = [];
 let strikeMap = {}; // member name -> count
 let achCount = {};  // member name -> number of achievements unlocked (undefined while loading)
 
+const COSM_PALETTE = ['#f59e0b','#ef4444','#a855f7','#60a5fa','#34d399','#f472b6','#fb923c','#2dd4bf'];
+let selectedColor = ''; // '' means "none"
+
+function buildSwatches() {
+  const wrap = document.getElementById('cosm-swatches');
+  // "none" swatch
+  const none = document.createElement('div');
+  none.className = 'cosm-swatch swatch-none' + (selectedColor === '' ? ' selected' : '');
+  none.title = 'No color';
+  none.addEventListener('click', () => selectSwatch(''));
+  wrap.appendChild(none);
+  // color swatches
+  for (const hex of COSM_PALETTE) {
+    const s = document.createElement('div');
+    s.className = 'cosm-swatch' + (selectedColor === hex ? ' selected' : '');
+    s.style.background = hex;
+    s.title = hex;
+    s.dataset.color = hex;
+    s.addEventListener('click', () => selectSwatch(hex));
+    wrap.appendChild(s);
+  }
+}
+
+function selectSwatch(hex) {
+  selectedColor = hex;
+  document.querySelectorAll('.cosm-swatch').forEach(s => {
+    s.classList.toggle('selected', (s.dataset.color || '') === hex);
+  });
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function displayPos(p) {
@@ -459,7 +510,13 @@ function renderTable() {
     const strikeBadge = strikeCnt > 0
       ? `<span class="strike-icon" title="${strikeCnt} strike${strikeCnt > 1 ? 's' : ''}">${strikeCnt}</span>`
       : '';
-    tdName.innerHTML = `<span class="member-name"><a href="/members/${encodeURIComponent(m.name)}/">${m.name}</a>${strikeBadge}</span>`;
+    const nameColor = m.cosmetics?.name_color;
+    const nameStyle = nameColor ? ` style="color:${nameColor}"` : '';
+    const statusText = m.cosmetics?.status_text;
+    const statusHtml = statusText
+      ? `<div style="font-size:0.72rem;color:#9ca3af;font-weight:400;margin-top:2px">${statusText.replace(/</g,'&lt;')}</div>`
+      : '';
+    tdName.innerHTML = `<span class="member-name"><a href="/members/${encodeURIComponent(m.name)}/"${nameStyle}>${m.name}</a>${strikeBadge}</span>${statusHtml}`;
 
     // Team
     const tdTeam = tr.insertCell();
@@ -579,7 +636,11 @@ async function initAuth() {
     if (profileRes.ok) {
       const profile = await profileRes.json();
       document.getElementById('my-dob-input').value = profile.dob || '';
+      const cosm = profile.cosmetics || {};
+      selectedColor = cosm.name_color || '';
+      document.getElementById('cosm-status').value = cosm.status_text || '';
     }
+    buildSwatches();
     document.getElementById('my-profile-bar').style.display = '';
     renderTable();
   } catch { signOut(); }
@@ -936,6 +997,32 @@ document.getElementById('my-profile-save').addEventListener('click', async () =>
   } catch (err) {
     msg.textContent = 'Error: ' + err.message; msg.style.color = '#f87171'; msg.style.display = '';
   } finally { btn.disabled = false; btn.textContent = 'Save'; }
+});
+
+document.getElementById('cosm-save').addEventListener('click', async () => {
+  const btn = document.getElementById('cosm-save');
+  const msg = document.getElementById('cosm-msg');
+  const statusText = document.getElementById('cosm-status').value;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  msg.style.display = 'none';
+  try {
+    const res = await fetch('/api/members/me/cosmetics', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name_color: selectedColor || '', status_text: statusText }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    const data = await res.json();
+    msg.textContent = `Saved! NB¥ balance: ${data.new_balance.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    msg.style.color = '#86efac'; msg.style.display = '';
+    // patch allMembers in-place so re-render reflects new cosmetics immediately
+    const idx = allMembers.findIndex(m => m.name === myName);
+    if (idx >= 0) allMembers[idx].cosmetics = data.cosmetics;
+    renderTable();
+    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+  } catch (err) {
+    msg.textContent = 'Error: ' + err.message; msg.style.color = '#f87171'; msg.style.display = '';
+  } finally { btn.disabled = false; btn.textContent = 'Save · 500 NB¥'; }
 });
 
 // ── Clipboard helper ──────────────────────────────────────────────────────────
