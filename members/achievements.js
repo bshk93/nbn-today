@@ -265,6 +265,13 @@
         { label: 'Gold', tierClass: 'tier-gold', sub: '', unlock: d => d.regWins >= 400 },
       ],
     },
+    {
+      id: 'birthday', name: 'Birthday', icon: '🎂', cat: 'longevity',
+      desc: 'Add your birthday to your profile',
+      tiers: [
+        { label: 'Registered', tierClass: 'tier-on', sub: 'Birthday on file', unlock: d => d.hasDob },
+      ],
+    },
 
     // === Draft ===
     {
@@ -683,6 +690,7 @@
       dynastyStreak, tankathon,
       maxFirstsSent, maxFirstsRecv, tradeCount, maxTradeTeams, maxSignValue,
       nemesis, punchingBag,
+      hasDob: !!member.dob,
       bets: perMember.betsStats || {},
       invest: perMember.investStats || {},
       tipsReceived: perMember.tipsReceived || 0,
