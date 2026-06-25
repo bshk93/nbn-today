@@ -273,6 +273,9 @@ async function init() {
   let html = '';
 
   // Header
+  if (member.avatar_url) {
+    html += `<img src="${member.avatar_url}" alt="${esc(member.name)}" style="width:5rem;height:5rem;border-radius:50%;object-fit:cover;margin-bottom:0.75rem;display:block">`;
+  }
   html += `<h1 class="profile-name">${esc(member.name)}</h1>`;
   html += `<div class="profile-meta">`;
   if (cur) {
@@ -283,6 +286,9 @@ async function init() {
   if (member.dob) {
     const sign = starSign(member.dob);
     html += ` · <span title="${esc(member.dob)}">Born ${fmtDate(member.dob)} · Age ${calcAge(member.dob)} · <span title="${esc(sign.name)}">${sign.icon} ${esc(sign.name)}</span></span>`;
+  }
+  if (member.cosmetics?.status_text) {
+    html += `<div style="width:100%;margin-top:0.25rem;color:#9ca3af;font-size:0.85rem">${esc(member.cosmetics.status_text)}</div>`;
   }
   html += `</div>`;
 

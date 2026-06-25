@@ -102,6 +102,25 @@
     .cosm-swatch.swatch-none { background: #374151; }
     .cosm-divider { border: none; border-top: 1px solid #374151; margin: 0.5rem 0; }
 
+    .member-avatar {
+      width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover;
+      flex-shrink: 0; vertical-align: middle;
+    }
+    .member-avatar-placeholder {
+      width: 2rem; height: 2rem; border-radius: 50%; background: #374151;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: #9ca3af; flex-shrink: 0;
+    }
+    .avatar-upload-circle {
+      width: 3rem; height: 3rem; border-radius: 50%; cursor: pointer;
+      border: 2px dashed #4b5563; display: flex; align-items: center;
+      justify-content: center; overflow: hidden; flex-shrink: 0;
+      transition: border-color 0.1s;
+    }
+    .avatar-upload-circle:hover { border-color: #9ca3af; }
+    .avatar-upload-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-upload-circle .avatar-plus { font-size: 1.25rem; color: #6b7280; line-height: 1; }
+
     /* ── Modals ── */
     .modal-backdrop {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
@@ -233,6 +252,17 @@
           style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit;width:12rem">
         <button class="btn-sm" id="cosm-save">Save · 500 NB¥</button>
         <span id="cosm-msg" style="display:none;font-size:0.8rem"></span>
+      </div>
+      <hr class="cosm-divider">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Avatar</span>
+        <div class="avatar-upload-circle" id="avatar-upload-circle" title="Click to choose image">
+          <span class="avatar-plus">+</span>
+        </div>
+        <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+        <div style="font-size:0.78rem;color:#9ca3af">JPEG / PNG / WebP · max 512 KB</div>
+        <button class="btn-sm" id="avatar-save" style="display:none">Upload · 5,000 NB¥</button>
+        <span id="avatar-msg" style="display:none;font-size:0.8rem"></span>
       </div>
     </div>
   </div>
@@ -423,6 +453,64 @@ function selectSwatch(hex) {
   });
 }
 
+let pendingAvatarFile = null;
+
+function setAvatarPreview(src) {
+  const circle = document.getElementById('avatar-upload-circle');
+  circle.innerHTML = src
+    ? `<img src="${src}" alt="preview" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+    : '<span class="avatar-plus">+</span>';
+}
+
+document.getElementById('avatar-upload-circle').addEventListener('click', () => {
+  document.getElementById('avatar-file-input').click();
+});
+
+document.getElementById('avatar-file-input').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (f.size > 512 * 1024) {
+    const msg = document.getElementById('avatar-msg');
+    msg.textContent = 'File too large (max 512 KB)'; msg.style.color = '#f87171'; msg.style.display = '';
+    return;
+  }
+  pendingAvatarFile = f;
+  document.getElementById('avatar-msg').style.display = 'none';
+  document.getElementById('avatar-save').style.display = '';
+  const reader = new FileReader();
+  reader.onload = ev => setAvatarPreview(ev.target.result);
+  reader.readAsDataURL(f);
+});
+
+document.getElementById('avatar-save').addEventListener('click', async () => {
+  if (!pendingAvatarFile) return;
+  const btn = document.getElementById('avatar-save');
+  const msg = document.getElementById('avatar-msg');
+  btn.disabled = true; btn.textContent = 'Uploading…';
+  msg.style.display = 'none';
+  try {
+    const fd = new FormData();
+    fd.append('file', pendingAvatarFile);
+    const res = await fetch('/api/members/me/avatar', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${currentToken}` },
+      body: fd,
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    const data = await res.json();
+    msg.textContent = `Uploaded! NB¥ balance: ${data.new_balance.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    msg.style.color = '#86efac'; msg.style.display = '';
+    pendingAvatarFile = null;
+    btn.style.display = 'none';
+    const idx = allMembers.findIndex(m => m.name === myName);
+    if (idx >= 0) allMembers[idx].avatar_url = data.avatar_url;
+    renderTable();
+    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+  } catch (err) {
+    msg.textContent = 'Error: ' + err.message; msg.style.color = '#f87171'; msg.style.display = '';
+  } finally { btn.disabled = false; btn.textContent = 'Upload · 5,000 NB¥'; }
+});
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function displayPos(p) {
@@ -516,7 +604,10 @@ function renderTable() {
     const statusHtml = statusText
       ? `<div style="font-size:0.72rem;color:#9ca3af;font-weight:400;margin-top:2px">${statusText.replace(/</g,'&lt;')}</div>`
       : '';
-    tdName.innerHTML = `<span class="member-name"><a href="/members/${encodeURIComponent(m.name)}/"${nameStyle}>${m.name}</a>${strikeBadge}</span>${statusHtml}`;
+    const avatarHtml = m.avatar_url
+      ? `<img class="member-avatar" src="${m.avatar_url}?v=${Date.now()}" alt="" loading="lazy">`
+      : `<span class="member-avatar-placeholder">${m.name.charAt(0).toUpperCase()}</span>`;
+    tdName.innerHTML = `<div style="display:flex;align-items:center;gap:0.6rem">${avatarHtml}<div><span class="member-name"><a href="/members/${encodeURIComponent(m.name)}/"${nameStyle}>${m.name}</a>${strikeBadge}</span>${statusHtml}</div></div>`;
 
     // Team
     const tdTeam = tr.insertCell();
@@ -639,6 +730,7 @@ async function initAuth() {
       const cosm = profile.cosmetics || {};
       selectedColor = cosm.name_color || '';
       document.getElementById('cosm-status').value = cosm.status_text || '';
+      if (profile.avatar_url) setAvatarPreview(profile.avatar_url + '?v=' + Date.now());
     }
     buildSwatches();
     document.getElementById('my-profile-bar').style.display = '';
