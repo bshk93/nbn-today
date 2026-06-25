@@ -176,6 +176,28 @@ function fmtDate(s) {
   return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1] + ` ${+d}, ${y}`;
 }
 
+const SIGNS = [
+  { name: 'Capricorn',   icon: '♑', m: 1,  d: 1  },
+  { name: 'Aquarius',    icon: '♒', m: 1,  d: 20 },
+  { name: 'Pisces',      icon: '♓', m: 2,  d: 19 },
+  { name: 'Aries',       icon: '♈', m: 3,  d: 21 },
+  { name: 'Taurus',      icon: '♉', m: 4,  d: 20 },
+  { name: 'Gemini',      icon: '♊', m: 5,  d: 21 },
+  { name: 'Cancer',      icon: '♋', m: 6,  d: 21 },
+  { name: 'Leo',         icon: '♌', m: 7,  d: 23 },
+  { name: 'Virgo',       icon: '♍', m: 8,  d: 23 },
+  { name: 'Libra',       icon: '♎', m: 9,  d: 23 },
+  { name: 'Scorpio',     icon: '♏', m: 10, d: 23 },
+  { name: 'Sagittarius', icon: '♐', m: 11, d: 22 },
+  { name: 'Capricorn',   icon: '♑', m: 12, d: 22 },
+];
+function starSign(dob) {
+  const [, m, d] = dob.split('-').map(Number);
+  let sign = SIGNS[0];
+  for (const s of SIGNS) { if (m > s.m || (m === s.m && d >= s.d)) sign = s; }
+  return sign;
+}
+
 function calcAge(dob) {
   const [y, m, d] = dob.split('-').map(Number);
   const today = new Date();
@@ -259,7 +281,8 @@ async function init() {
     html += `<span style="color:#6b7280">No active tenure</span>`;
   }
   if (member.dob) {
-    html += ` · <span title="${esc(member.dob)}">Born ${fmtDate(member.dob)} · Age ${calcAge(member.dob)}</span>`;
+    const sign = starSign(member.dob);
+    html += ` · <span title="${esc(member.dob)}">Born ${fmtDate(member.dob)} · Age ${calcAge(member.dob)} · <span title="${esc(sign.name)}">${sign.icon} ${esc(sign.name)}</span></span>`;
   }
   html += `</div>`;
 
