@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>Join NBN — Nothing But Net</title>
   <style>
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #111827;
@@ -16,8 +15,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 2rem 1rem;
+      padding: 3rem 1rem;
       text-align: center;
     }
 
@@ -25,14 +23,14 @@
       font-size: 2rem;
       font-weight: 700;
       letter-spacing: -0.02em;
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
     }
 
     .subtitle {
       color: #9ca3af;
       font-size: 1rem;
       line-height: 1.7;
-      max-width: 480px;
+      max-width: 520px;
       margin-bottom: 2rem;
     }
 
@@ -42,9 +40,25 @@
       border-radius: 12px;
       padding: 2rem;
       width: 100%;
-      max-width: 400px;
+      max-width: 560px;
       text-align: left;
     }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin: 1.75rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #374151;
+    }
+
+    .section-label:first-child { margin-top: 0; }
+
+    .field { margin-bottom: 1.25rem; }
+    .field:last-of-type { margin-bottom: 0; }
 
     label {
       display: block;
@@ -54,21 +68,55 @@
       margin-bottom: 0.4rem;
     }
 
-    input[type="text"] {
+    label .opt {
+      font-weight: 400;
+      color: #6b7280;
+      margin-left: 0.3em;
+    }
+
+    input[type="text"],
+    select,
+    textarea {
       width: 100%;
       box-sizing: border-box;
       background: #111827;
       border: 1px solid #374151;
       border-radius: 6px;
       color: #f3f4f6;
-      font-size: 1rem;
+      font-size: 0.95rem;
       padding: 0.6rem 0.75rem;
       outline: none;
       transition: border-color 0.15s;
+      font-family: inherit;
     }
 
-    input[type="text"]:focus {
+    input[type="text"]:focus,
+    select:focus,
+    textarea:focus {
       border-color: #2563eb;
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2.25rem;
+      cursor: pointer;
+    }
+
+    select option { background: #1f2937; }
+
+    .social-row {
+      display: grid;
+      grid-template-columns: 9rem 1fr;
+      gap: 0.5rem;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+      line-height: 1.5;
     }
 
     .hint {
@@ -78,7 +126,7 @@
     }
 
     .submit-btn {
-      margin-top: 1.5rem;
+      margin-top: 1.75rem;
       width: 100%;
       background: #2563eb;
       color: #fff;
@@ -101,8 +149,7 @@
       min-height: 1.2em;
     }
 
-    .status.success { color: #34d399; }
-    .status.error   { color: #f87171; }
+    .status.error { color: #f87171; }
 
     .success-state {
       display: none;
@@ -111,13 +158,11 @@
       gap: 0.75rem;
     }
 
-    .success-state .check {
-      font-size: 2.5rem;
-    }
+    .success-state .check { font-size: 2.5rem; }
 
     .success-state p {
       color: #9ca3af;
-      max-width: 340px;
+      max-width: 380px;
       font-size: 0.95rem;
       line-height: 1.6;
       margin: 0;
@@ -128,22 +173,68 @@
       font-size: 0.85rem;
     }
 
-    .back a {
-      color: #6b7280;
-      text-decoration: none;
-    }
-
+    .back a { color: #6b7280; text-decoration: none; }
     .back a:hover { color: #9ca3af; }
   </style>
 </head>
 <body>
   <h1>Join Nothing But Net</h1>
-  <p class="subtitle">Interested in becoming part of the NBN? Drop your Discord name and we'll be in touch.</p>
+  <p class="subtitle">Interested in becoming part of the NBN? Fill out the form below and we'll be in touch.</p>
 
   <div class="form-card" id="form-card">
-    <label for="discord">Discord username</label>
-    <input type="text" id="discord" placeholder="yourname" autocomplete="off" maxlength="100">
-    <p class="hint">Your Discord username (e.g. <code>yourname</code> or <code>yourname#1234</code>)</p>
+
+    <div class="section-label">Contact</div>
+
+    <div class="field">
+      <label for="discord">Discord username</label>
+      <input type="text" id="discord" placeholder="yourname" autocomplete="off" maxlength="100">
+    </div>
+
+    <div class="field">
+      <label for="reddit">Reddit username <span class="opt">(optional)</span></label>
+      <input type="text" id="reddit" placeholder="u/yourname" autocomplete="off" maxlength="100">
+    </div>
+
+    <div class="field">
+      <label>Other social <span class="opt">(optional)</span></label>
+      <div class="social-row">
+        <select id="social-platform">
+          <option value="">Platform</option>
+          <option value="Instagram">Instagram</option>
+          <option value="Twitter/X">Twitter/X</option>
+          <option value="Facebook">Facebook</option>
+          <option value="TikTok">TikTok</option>
+          <option value="YouTube">YouTube</option>
+          <option value="Twitch">Twitch</option>
+          <option value="Other">Other</option>
+        </select>
+        <input type="text" id="social-handle" placeholder="handle or profile URL" maxlength="200">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="location">Where are you located?</label>
+      <input type="text" id="location" placeholder="City, State/Province, Country" autocomplete="off" maxlength="200">
+      <p class="hint">Helps us with scheduling and time zones.</p>
+    </div>
+
+    <div class="section-label">About You</div>
+
+    <div class="field">
+      <label for="how-found">How did you find the league, and what made you want to join?</label>
+      <textarea id="how-found" placeholder="Tell us how you heard about NBN and what drew you to apply..."></textarea>
+    </div>
+
+    <div class="field">
+      <label for="teams-interest">What team(s) are you interested in?</label>
+      <textarea id="teams-interest" placeholder="List any teams you'd want to manage and why..."></textarea>
+    </div>
+
+    <div class="field">
+      <label for="team-plan">What would your plan be for the team(s) you chose?</label>
+      <textarea id="team-plan" placeholder="Rebuild, contend, trade, develop — walk us through your approach..."></textarea>
+    </div>
+
     <button class="submit-btn" id="submit-btn">Submit Interest</button>
     <div class="status" id="status"></div>
   </div>
@@ -151,7 +242,7 @@
   <div class="success-state" id="success-state">
     <div class="check">&#10003;</div>
     <h2 style="margin:0;font-size:1.3rem;">We got you!</h2>
-    <p>Thanks for your interest. We'll reach out to you on Discord soon.</p>
+    <p>Thanks for your interest. We'll review your application and reach out on Discord soon.</p>
   </div>
 
   <div class="back"><a href="/">← Home</a></div>
@@ -159,23 +250,44 @@
   <script>
     const btn    = document.getElementById('submit-btn');
     const status = document.getElementById('status');
-    const input  = document.getElementById('discord');
 
-    document.getElementById('submit-btn').addEventListener('click', async () => {
-      const discord = input.value.trim();
-      if (!discord) {
-        status.className = 'status error';
-        status.textContent = 'Please enter your Discord username.';
-        return;
-      }
+    function val(id) { return document.getElementById(id).value.trim(); }
+
+    btn.addEventListener('click', async () => {
+      const discord      = val('discord');
+      const location     = val('location');
+      const howFound     = val('how-found');
+      const teamsInterest = val('teams-interest');
+      const teamPlan     = val('team-plan');
+      const platform     = val('social-platform');
+      const handle       = val('social-handle');
+
+      if (!discord)       return showError('Please enter your Discord username.');
+      if (!location)      return showError('Please enter your location.');
+      if (!howFound)      return showError('Please answer how you found the league.');
+      if (!teamsInterest) return showError('Please tell us which teams interest you.');
+      if (!teamPlan)      return showError('Please describe your plan for the team(s).');
+
       btn.disabled = true;
       status.className = 'status';
       status.textContent = '';
+
+      const body = {
+        discord,
+        reddit:          val('reddit') || null,
+        social_platform: platform || null,
+        social_handle:   handle   || null,
+        location,
+        how_found:       howFound,
+        teams_interest:  teamsInterest,
+        team_plan:       teamPlan,
+      };
+
       try {
         const res = await fetch('/api/join', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ discord }),
+          body: JSON.stringify(body),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -184,15 +296,15 @@
         document.getElementById('form-card').style.display = 'none';
         document.getElementById('success-state').style.display = 'flex';
       } catch (e) {
-        status.className = 'status error';
-        status.textContent = e.message || 'Something went wrong. Please try again.';
+        showError(e.message || 'Something went wrong. Please try again.');
         btn.disabled = false;
       }
     });
 
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') btn.click();
-    });
+    function showError(msg) {
+      status.className = 'status error';
+      status.textContent = msg;
+    }
   </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
