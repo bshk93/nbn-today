@@ -204,6 +204,18 @@
     <button id="auth-btn">Sign in</button>
   </div>
 
+  <div id="my-profile-bar" style="display:none;margin-bottom:1.25rem">
+    <div style="background:#1f2937;border:1px solid #374151;border-radius:8px;padding:0.75rem 1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">My Profile</span>
+      <label style="color:#d1d5db;font-size:0.875rem;display:flex;align-items:center;gap:0.5rem">
+        Birthday
+        <input type="date" id="my-dob-input" style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit">
+      </label>
+      <button class="btn-sm" id="my-profile-save">Save</button>
+      <span id="my-profile-msg" style="display:none;font-size:0.8rem"></span>
+    </div>
+  </div>
+
   <div class="create-bar" id="create-bar" style="display:none">
     <div class="section-heading">All Members</div>
     <button class="btn-create" id="create-btn">+ Create Member</button>
@@ -546,9 +558,12 @@ function updateAuthBar() {
 
 async function initAuth() {
   try {
-    const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${currentToken}` } });
-    if (!res.ok) { signOut(); return; }
-    const me = await res.json();
+    const [meRes, profileRes] = await Promise.all([
+      fetch('/api/me', { headers: { Authorization: `Bearer ${currentToken}` } }),
+      fetch('/api/members/me', { headers: { Authorization: `Bearer ${currentToken}` } }),
+    ]);
+    if (!meRes.ok) { signOut(); return; }
+    const me = await meRes.json();
     myName = me.name; myRoles = me.roles || [];
     isAdmin = myRoles.includes('admin');
     isBod   = myRoles.includes('bod') || isAdmin;
@@ -561,6 +576,11 @@ async function initAuth() {
       const r2 = await fetch('/api/members', { headers: { Authorization: `Bearer ${currentToken}` } });
       if (r2.ok) { allMembers = await r2.json(); }
     }
+    if (profileRes.ok) {
+      const profile = await profileRes.json();
+      document.getElementById('my-dob-input').value = profile.dob || '';
+    }
+    document.getElementById('my-profile-bar').style.display = '';
     renderTable();
   } catch { signOut(); }
 }
@@ -570,6 +590,7 @@ function signOut() {
   localStorage.removeItem(TOKEN_KEY);
   document.getElementById('actions-th').style.display = 'none';
   document.getElementById('create-bar').style.display = 'none';
+  document.getElementById('my-profile-bar').style.display = 'none';
   updateAuthBar();
   renderTable();
 }
@@ -893,6 +914,28 @@ document.getElementById('tenure-save').addEventListener('click', async () => {
     const el = document.getElementById('tenure-error');
     el.textContent = 'Error: ' + err.message; el.style.display = '';
   } finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
+});
+
+// ── My Profile ────────────────────────────────────────────────────────────────
+
+document.getElementById('my-profile-save').addEventListener('click', async () => {
+  const btn = document.getElementById('my-profile-save');
+  const msg = document.getElementById('my-profile-msg');
+  const dob = document.getElementById('my-dob-input').value;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  msg.style.display = 'none';
+  try {
+    const res = await fetch('/api/members/me/profile', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dob: dob || '' }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    msg.textContent = 'Saved!'; msg.style.color = '#86efac'; msg.style.display = '';
+    setTimeout(() => { msg.style.display = 'none'; }, 2000);
+  } catch (err) {
+    msg.textContent = 'Error: ' + err.message; msg.style.color = '#f87171'; msg.style.display = '';
+  } finally { btn.disabled = false; btn.textContent = 'Save'; }
 });
 
 // ── Clipboard helper ──────────────────────────────────────────────────────────
