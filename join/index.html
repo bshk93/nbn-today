@@ -28,7 +28,7 @@
       margin-bottom: 1rem;
     }
 
-    p {
+    .subtitle {
       color: #9ca3af;
       font-size: 1rem;
       line-height: 1.7;
@@ -36,19 +36,92 @@
       margin-bottom: 2rem;
     }
 
-    .btn {
-      display: inline-block;
+    .form-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #d1d5db;
+      margin-bottom: 0.4rem;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #f3f4f6;
+      font-size: 1rem;
+      padding: 0.6rem 0.75rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #2563eb;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: #6b7280;
+      margin-top: 0.35rem;
+    }
+
+    .submit-btn {
+      margin-top: 1.5rem;
+      width: 100%;
       background: #2563eb;
       color: #fff;
-      text-decoration: none;
+      border: none;
       font-size: 1rem;
       font-weight: 600;
       padding: 0.75rem 2rem;
       border-radius: 8px;
+      cursor: pointer;
       transition: background 0.15s;
     }
 
-    .btn:hover { background: #1d4ed8; }
+    .submit-btn:hover:not(:disabled) { background: #1d4ed8; }
+    .submit-btn:disabled { opacity: 0.6; cursor: default; }
+
+    .status {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      text-align: center;
+      min-height: 1.2em;
+    }
+
+    .status.success { color: #34d399; }
+    .status.error   { color: #f87171; }
+
+    .success-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .success-state .check {
+      font-size: 2.5rem;
+    }
+
+    .success-state p {
+      color: #9ca3af;
+      max-width: 340px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin: 0;
+    }
 
     .back {
       margin-top: 2.5rem;
@@ -65,9 +138,62 @@
 </head>
 <body>
   <h1>Join Nothing But Net</h1>
-  <p>Interested in becoming part of the NBN? Fill out the interest form below and we'll be in touch.</p>
-  <a class="btn" href="https://www.surveymonkey.com/r/5WMQ59X" target="_blank" rel="noopener">Open Interest Form</a>
+  <p class="subtitle">Interested in becoming part of the NBN? Drop your Discord name and we'll be in touch.</p>
+
+  <div class="form-card" id="form-card">
+    <label for="discord">Discord username</label>
+    <input type="text" id="discord" placeholder="yourname" autocomplete="off" maxlength="100">
+    <p class="hint">Your Discord username (e.g. <code>yourname</code> or <code>yourname#1234</code>)</p>
+    <button class="submit-btn" id="submit-btn">Submit Interest</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="success-state" id="success-state">
+    <div class="check">&#10003;</div>
+    <h2 style="margin:0;font-size:1.3rem;">We got you!</h2>
+    <p>Thanks for your interest. We'll reach out to you on Discord soon.</p>
+  </div>
+
   <div class="back"><a href="/">← Home</a></div>
+
+  <script>
+    const btn    = document.getElementById('submit-btn');
+    const status = document.getElementById('status');
+    const input  = document.getElementById('discord');
+
+    document.getElementById('submit-btn').addEventListener('click', async () => {
+      const discord = input.value.trim();
+      if (!discord) {
+        status.className = 'status error';
+        status.textContent = 'Please enter your Discord username.';
+        return;
+      }
+      btn.disabled = true;
+      status.className = 'status';
+      status.textContent = '';
+      try {
+        const res = await fetch('/api/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ discord }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `Error ${res.status}`);
+        }
+        document.getElementById('form-card').style.display = 'none';
+        document.getElementById('success-state').style.display = 'flex';
+      } catch (e) {
+        status.className = 'status error';
+        status.textContent = e.message || 'Something went wrong. Please try again.';
+        btn.disabled = false;
+      }
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') btn.click();
+    });
+  </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
 </body>
