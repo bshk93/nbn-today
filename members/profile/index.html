@@ -176,6 +176,14 @@ function fmtDate(s) {
   return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1] + ` ${+d}, ${y}`;
 }
 
+function calcAge(dob) {
+  const [y, m, d] = dob.split('-').map(Number);
+  const today = new Date();
+  let age = today.getFullYear() - y;
+  if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age--;
+  return age;
+}
+
 function activeTenure(tenures) {
   const active = (tenures || []).filter(t => !t.end);
   return active.length ? active.sort((a,b) => b.start.localeCompare(a.start))[0] : null;
@@ -249,6 +257,9 @@ async function init() {
     html += `${displayPos(cur.position)} · <span class="team-badge"><a href="/teams/${cur.team.toLowerCase()}/">${cur.team}</a></span>`;
   } else {
     html += `<span style="color:#6b7280">No active tenure</span>`;
+  }
+  if (member.dob) {
+    html += ` · <span title="${esc(member.dob)}">Born ${fmtDate(member.dob)} · Age ${calcAge(member.dob)}</span>`;
   }
   html += `</div>`;
 
