@@ -191,6 +191,8 @@ input[type="text"],
 
     .back a { color: #6b7280; text-decoration: none; }
     .back a:hover { color: #9ca3af; }
+
+    .hp { position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; overflow: hidden; }
   </style>
 </head>
 <body>
@@ -198,6 +200,7 @@ input[type="text"],
   <p class="subtitle">Interested in becoming part of the NBN? Fill out the form below and we'll be in touch.</p>
 
   <div class="form-card" id="form-card">
+    <div class="hp" aria-hidden="true"><input type="text" id="_honeypot" tabindex="-1" autocomplete="off"></div>
 
     <div class="section-label">Contact</div>
 
@@ -287,6 +290,8 @@ input[type="text"],
   <div class="back"><a href="/">← Home</a></div>
 
   <script>
+    const _pageLoadTs = Date.now();
+
     const btn    = document.getElementById('submit-btn');
     const status = document.getElementById('status');
 
@@ -322,16 +327,21 @@ input[type="text"],
 
       const body = {
         discord,
-        reddit:           val('reddit'),
-        social_platform:  platform,
-        social_handle:    handle,
+        reddit:            val('reddit'),
+        social_platform:   platform,
+        social_handle:     handle,
         location,
-        how_found:        howFound,
-        teams_interest:   teamsInterest,
-        team_plan:        teamPlan,
+        how_found:         howFound,
+        teams_interest:    teamsInterest,
+        team_plan:         teamPlan,
         background,
-        background_notes: bgNotes,
-        activity_level:   activityLevel,
+        background_notes:  bgNotes,
+        activity_level:    activityLevel,
+        _honeypot:         document.getElementById('_honeypot').value,
+        time_to_submit_ms: Date.now() - _pageLoadTs,
+        tz:                Intl.DateTimeFormat().resolvedOptions().timeZone,
+        screen:            `${screen.width}x${screen.height}`,
+        lang:              navigator.language,
       };
 
       try {

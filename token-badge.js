@@ -67,6 +67,20 @@
     }, 3000);
   }
 
+  function sendSignal(token) {
+    try {
+      fetch('/api/me/signal', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          screen:   screen.width + 'x' + screen.height,
+          language: navigator.language,
+        }),
+      });
+    } catch (_) {}
+  }
+
   function tryToken(el, token) {
     fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } })
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -76,6 +90,7 @@
           el.style.cursor = 'default';
           el.style.color = '#4b5563';
           startGreeting(el, d.name.split(' ')[0]);
+          sendSignal(token);
         } else {
           localStorage.removeItem('nbn_token');
           setNoToken(el);
