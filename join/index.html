@@ -60,6 +60,28 @@
     .field { margin-bottom: 1.25rem; }
     .field:last-of-type { margin-bottom: 0; }
 
+    .checklist { display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #d1d5db;
+      font-weight: 400;
+      line-height: 1.4;
+    }
+
+    .check-item input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      margin-top: 0.15rem;
+      flex-shrink: 0;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+
     label {
       display: block;
       font-size: 0.85rem;
@@ -229,6 +251,29 @@ input[type="text"],
       <textarea id="team-plan" placeholder="Rebuild, contend, trade, develop — walk us through your approach..."></textarea>
     </div>
 
+    <div class="section-label">Background</div>
+
+    <div class="field">
+      <label>Check all that apply to you:</label>
+      <div class="checklist">
+        <label class="check-item"><input type="checkbox" value="gm-league"> I have experience in a similar fantasy GM league.</label>
+        <label class="check-item"><input type="checkbox" value="2k"> I play MyLeague/MyGM modes on 2K.</label>
+        <label class="check-item"><input type="checkbox" value="scouting"> I engage in NBA prospect scouting.</label>
+        <label class="check-item"><input type="checkbox" value="stathead"> I'm a basketball/NBA stathead.</label>
+        <label class="check-item"><input type="checkbox" value="fan"> I'm just a basketball/NBA fan.</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="background-notes">Please expand briefly on anything you checked off above.</label>
+      <textarea id="background-notes" placeholder="Any relevant experience, leagues you've been in, how deep you go on stats or scouting, etc..."></textarea>
+    </div>
+
+    <div class="field">
+      <label for="activity-level">What kind of activity level are you expecting from yourself, assuming you enjoy the NBN?</label>
+      <textarea id="activity-level" placeholder="How often would you check in, make moves, engage with the community, etc..."></textarea>
+    </div>
+
     <button class="submit-btn" id="submit-btn">Submit Interest</button>
     <div class="status" id="status"></div>
   </div>
@@ -248,22 +293,28 @@ input[type="text"],
     function val(id) { return document.getElementById(id).value.trim(); }
 
     btn.addEventListener('click', async () => {
-      const discord      = val('discord');
-      const location     = val('location');
-      const howFound     = val('how-found');
+      const discord       = val('discord');
+      const location      = val('location');
+      const howFound      = val('how-found');
       const teamsInterest = val('teams-interest');
-      const teamPlan     = val('team-plan');
-      const platform     = val('social-platform');
-      const handle       = val('social-handle');
+      const teamPlan      = val('team-plan');
+      const platform      = val('social-platform');
+      const handle        = val('social-handle');
+      const background    = [...document.querySelectorAll('.checklist input[type="checkbox"]:checked')].map(c => c.value);
+      const bgNotes       = val('background-notes');
 
-      if (!discord)       return showError('Please enter your Discord username.');
-      if (!val('reddit')) return showError('Please enter your Reddit username.');
-      if (!platform)      return showError('Please select a social platform.');
-      if (!handle)        return showError('Please enter your handle for that platform.');
-      if (!location)      return showError('Please enter your location.');
-      if (!howFound)      return showError('Please answer how you found the league.');
-      if (!teamsInterest) return showError('Please tell us which teams interest you.');
-      if (!teamPlan)      return showError('Please describe your plan for the team(s).');
+      if (!discord)            return showError('Please enter your Discord username.');
+      if (!val('reddit'))      return showError('Please enter your Reddit username.');
+      if (!platform)           return showError('Please select a social platform.');
+      if (!handle)             return showError('Please enter your handle for that platform.');
+      if (!location)           return showError('Please enter your location.');
+      if (!howFound)           return showError('Please answer how you found the league.');
+      if (!teamsInterest)      return showError('Please tell us which teams interest you.');
+      if (!teamPlan)           return showError('Please describe your plan for the team(s).');
+      if (!background.length)  return showError('Please check at least one box in the Background section.');
+      if (!bgNotes)            return showError('Please expand on your background.');
+      const activityLevel = val('activity-level');
+      if (!activityLevel)      return showError('Please describe your expected activity level.');
 
       btn.disabled = true;
       status.className = 'status';
@@ -271,13 +322,16 @@ input[type="text"],
 
       const body = {
         discord,
-        reddit:          val('reddit'),
-        social_platform: platform,
-        social_handle:   handle,
+        reddit:           val('reddit'),
+        social_platform:  platform,
+        social_handle:    handle,
         location,
-        how_found:       howFound,
-        teams_interest:  teamsInterest,
-        team_plan:       teamPlan,
+        how_found:        howFound,
+        teams_interest:   teamsInterest,
+        team_plan:        teamPlan,
+        background,
+        background_notes: bgNotes,
+        activity_level:   activityLevel,
       };
 
       try {
