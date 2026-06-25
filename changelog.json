@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.0.321",
+    "date": "2026-06-25",
+    "changes": [
+      "join: only flag ip_match when exactly one member shares the IP (multiple matches = shared NAT/VPN, not suspicious)"
+    ]
+  },
+  {
     "version": "0.0.316",
     "date": "2026-06-25",
     "changes": [
