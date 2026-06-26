@@ -9,7 +9,8 @@
   <style>
     .page { max-width: 700px; margin: 0 auto; }
 
-    .profile-name { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+    :root { --accent: #f3f4f6; }
+    .profile-name { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; color: var(--accent); }
     .profile-meta { color: #9ca3af; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .team-badge {
       display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
@@ -30,7 +31,7 @@
     .section-title {
       font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.75rem;
-      padding-bottom: 0.5rem; border-bottom: 1px solid #1f2937;
+      padding-bottom: 0.5rem; border-bottom: 1px solid var(--accent-muted, #1f2937);
     }
 
     .tenure-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
@@ -38,7 +39,7 @@
     .tenure-table td:first-child { width: 70px; }
     .tenure-table td:nth-child(2) { width: 70px; color: #9ca3af; }
     .tenure-table td:last-child { color: #6b7280; font-size: 0.82rem; }
-    .ongoing { color: #86efac; }
+    .ongoing { color: var(--accent); }
 
     /* Achievements */
     .ach-cat { margin-bottom: 1.25rem; }
@@ -260,6 +261,13 @@ async function init() {
   const balance = balData?.balance ?? null;
   const isOwn = me && me.name === memberName;
   const canTip = me && !isOwn;
+
+  // Apply member's chosen name color as the page accent theme
+  const accentColor = member.cosmetics?.name_color;
+  if (accentColor) {
+    document.documentElement.style.setProperty('--accent', accentColor);
+    document.documentElement.style.setProperty('--accent-muted', accentColor + '33');
+  }
 
   // Build achievement data via the shared engine (members/achievements.js)
   const tipsReceived = tips.reduce((sum, t) => sum + (+t.amount || 0), 0);
