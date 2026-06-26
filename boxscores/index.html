@@ -29,6 +29,7 @@
     .game-header:hover { background: #263244; }
     .matchup { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
     .team-block { display: flex; align-items: center; gap: 0.5rem; }
+    .team-block-logo { width: 32px; height: 32px; object-fit: contain; }
     .team-abbr { font-size: 1rem; font-weight: 700; color: inherit; text-decoration: none; }
     .team-abbr:hover { text-decoration: underline; }
     .team-score { font-size: 1.25rem; font-weight: 700; }
@@ -152,11 +153,13 @@
       hdr.innerHTML = `
         <div class="matchup">
           <div class="team-block">
+            <img class="team-block-logo" src="/logos/logo-${g.away_team.toLowerCase()}.png" alt="" onerror="this.style.display='none'">
             <a class="team-abbr" href="/teams/${g.away_team.toLowerCase()}/">${g.away_team}</a>
             <span class="team-score ${homeWin ? "loss" : "win"}">${g.away_score ?? "—"}</span>
           </div>
           <span class="at">@</span>
           <div class="team-block">
+            <img class="team-block-logo" src="/logos/logo-${g.home_team.toLowerCase()}.png" alt="" onerror="this.style.display='none'">
             <a class="team-abbr" href="/teams/${g.home_team.toLowerCase()}/">${g.home_team}</a>
             <span class="team-score ${homeWin ? "win" : "loss"}">${g.home_score ?? "—"}</span>
           </div>

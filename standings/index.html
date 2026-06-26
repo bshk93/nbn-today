@@ -112,6 +112,8 @@
     td { padding: 0.55rem 0.75rem; color: #d1d5db; }
     td.seed { color: #6b7280; font-size: 0.78rem; width: 2rem; }
     td.team { font-weight: 600; color: #f3f4f6; }
+    td.team a { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .team-logo { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
     td.right { text-align: right; font-variant-numeric: tabular-nums; }
     td.muted { color: #9ca3af; }
     td.result { padding-right: 0.75rem; }
@@ -204,7 +206,10 @@
     .series-team .seed-badge {
       font-size: 0.68rem;
       color: #4b5563;
-      margin-right: 0.4rem;
+      margin-right: 0.3rem;
+    }
+    .series-team .bracket-logo {
+      width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; margin-right: 0.3rem;
     }
 
     .series-team.winner .seed-badge { color: #6b7280; }
@@ -318,7 +323,7 @@
         const pct = (+row.PCT).toFixed(3).replace(/^0/, '');
         tr.innerHTML = `
           <td class="seed">${seedNum}</td>
-          <td class="team"><a href="/teams/${row.TEAM.toLowerCase()}/">${row.TEAM}</a></td>
+          <td class="team"><a href="/teams/${row.TEAM.toLowerCase()}/"><img class="team-logo" src="/logos/logo-${row.TEAM.toLowerCase()}.png" alt="" onerror="this.style.display='none'">${row.TEAM}</a></td>
           <td class="right">${row.W}</td>
           <td class="right">${row.L}</td>
           <td class="right">${pct}</td>
@@ -388,7 +393,14 @@
         winsSpan.className = 'wins';
         winsSpan.textContent = wins;
 
+        const logoImg = document.createElement('img');
+        logoImg.className = 'bracket-logo';
+        logoImg.src = `/logos/logo-${team.toLowerCase()}.png`;
+        logoImg.alt = '';
+        logoImg.onerror = function() { this.style.display = 'none'; };
+
         row.appendChild(seedSpan);
+        row.appendChild(logoImg);
         row.appendChild(nameSpan);
         row.appendChild(winsSpan);
         card.appendChild(row);
