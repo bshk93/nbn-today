@@ -566,9 +566,9 @@
       <div class="form-field" id="f-bird-rights-field" style="display:none">
         <label>Bird Rights Type</label>
         <select id="f-bird-rights-type">
-          <option value="QVFA">QVFA (Qualifying Veteran)</option>
-          <option value="EQVFA">EQVFA (Early Qualifying Veteran)</option>
-          <option value="Non-QVFA">Non-QVFA</option>
+          <option value="QVFA">Bird (Full Bird Rights)</option>
+          <option value="EQVFA">Early Bird</option>
+          <option value="Non-QVFA">Non-Bird</option>
         </select>
       </div>
 
@@ -1122,7 +1122,7 @@ function setupPlayerSearch() {
     } else if (txnType === 'sign_pick') {
       pool = Object.entries(bios).filter(([slug, bio]) => bio.type === 'draft-rights' && teamMap[slug]);
     } else if (txnType === 'sign') {
-      pool = Object.entries(bios).filter(([slug, bio]) => !teamMap[slug] && !bio.retired && bio.type !== 'dead');
+      pool = Object.entries(bios).filter(([slug, bio]) => !bio.retired && bio.type !== 'dead' && (!teamMap[slug] || isFreeAgentHold(bio)));
     } else if (txnType === 'pick') {
       const draftYear = +document.getElementById('f-pick-year-sel').value;
       pool = Object.entries(bios).filter(([slug, bio]) => bio.draft_year === draftYear && !teamMap[slug]);
