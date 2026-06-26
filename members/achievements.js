@@ -272,6 +272,13 @@
         { label: 'Registered', tierClass: 'tier-on', sub: 'Birthday on file', unlock: d => d.hasDob },
       ],
     },
+    {
+      id: 'avatar', name: 'Face of the Franchise', icon: '📸', cat: 'longevity',
+      desc: 'Upload a profile picture',
+      tiers: [
+        { label: 'Uploaded', tierClass: 'tier-on', sub: 'Profile picture on file', unlock: d => d.hasAvatar },
+      ],
+    },
 
     // === Draft ===
     {
@@ -691,6 +698,7 @@
       maxFirstsSent, maxFirstsRecv, tradeCount, maxTradeTeams, maxSignValue,
       nemesis, punchingBag,
       hasDob: !!member.dob,
+      hasAvatar: !!(member.has_avatar || member.avatar_url),
       bets: perMember.betsStats || {},
       invest: perMember.investStats || {},
       tipsReceived: perMember.tipsReceived || 0,

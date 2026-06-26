@@ -70,7 +70,7 @@ function scoreAll(shared, members) {
   for (const name in members) {
     const tenures = members[name].tenures || [];
     if (!tenures.length) continue;                       // skip non-GMs
-    const ad = NBNAch.computeAchData({ name, tenures }, shared, {});
+    const ad = NBNAch.computeAchData({ name, ...members[name] }, shared, {});
     const ts = NBNAch.tierStatus(ad);
     const unlocked = {};
     for (const id in ts) if (included.has(id) && ts[id] >= 0) unlocked[id] = ts[id];
