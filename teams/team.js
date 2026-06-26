@@ -1430,7 +1430,11 @@ function buildPersonnelSection(members, allGames) {
   rows.forEach(row => {
     const tr = tbody.insertRow();
 
-    const tdN = tr.insertCell(); tdN.className = 'bold';  tdN.textContent = row.name;
+    const tdN = tr.insertCell(); tdN.className = 'bold';
+    const nameLink = document.createElement('a');
+    nameLink.href = `/members/${encodeURIComponent(row.name)}/`;
+    nameLink.textContent = row.name;
+    tdN.appendChild(nameLink);
     const tdP = tr.insertCell(); tdP.className = 'muted'; tdP.textContent = row.posLabel;
 
     const tdS = tr.insertCell();
