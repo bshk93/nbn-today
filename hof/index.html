@@ -342,6 +342,14 @@
               dot.title = 'Active';
               td.appendChild(dot);
             }
+          } else if (col.key === 'TEAMS' && row.TEAMS) {
+            row.TEAMS.split(',').forEach((t, i) => {
+              if (i) td.appendChild(document.createTextNode(', '));
+              const a = document.createElement('a');
+              a.href = `/teams/${t.trim().toLowerCase()}/`;
+              a.textContent = t.trim();
+              td.appendChild(a);
+            });
           } else {
             td.textContent = col.display ? col.display(row) : (row[col.key] ?? '');
           }

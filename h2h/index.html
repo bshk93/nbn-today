@@ -202,7 +202,10 @@
 
         // Row label
         const label = tr.insertCell();
-        label.textContent = row.TEAM;
+        const teamLink = document.createElement('a');
+        teamLink.href = `/teams/${row.TEAM.toLowerCase()}/`;
+        teamLink.textContent = row.TEAM;
+        label.appendChild(teamLink);
 
         teams.forEach(colTeam => {
           const td = tr.insertCell();
@@ -266,7 +269,10 @@
       rows.forEach(row => {
         const tr = tbody.insertRow();
         const label = tr.insertCell();
-        label.textContent = row.OWNER;
+        const ownerLink = document.createElement('a');
+        ownerLink.href = `/members/${encodeURIComponent(row.OWNER)}/`;
+        ownerLink.textContent = row.OWNER;
+        label.appendChild(ownerLink);
 
         teams.forEach(colTeam => {
           const td = tr.insertCell();

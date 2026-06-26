@@ -619,7 +619,7 @@ function renderTable() {
     if (cur) {
       tdTeam.innerHTML = `<span class="team-badge"><a href="/teams/${cur.team.toLowerCase()}/">${cur.team}</a></span>`;
     } else if (last) {
-      tdTeam.innerHTML = `<span class="team-badge" style="opacity:0.6">${last.team}</span>`;
+      tdTeam.innerHTML = `<span class="team-badge" style="opacity:0.6"><a href="/teams/${last.team.toLowerCase()}/">${last.team}</a></span>`;
     } else {
       tdTeam.innerHTML = '<span style="color:#4b5563">—</span>';
     }
