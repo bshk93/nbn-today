@@ -234,35 +234,40 @@
   </div>
 
   <div id="my-profile-bar" style="display:none;margin-bottom:1.25rem">
-    <div style="background:#1f2937;border:1px solid #374151;border-radius:8px;padding:0.75rem 1rem">
-      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <div style="background:#1f2937;border:1px solid #374151;border-radius:8px;overflow:hidden">
+      <button id="my-profile-toggle" onclick="(function(){var c=document.getElementById('my-profile-content'),ch=document.getElementById('my-profile-chevron'),open=c.style.display!=='none';c.style.display=open?'none':'';ch.style.transform=open?'':'rotate(90deg)';})()" style="width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left">
+        <span id="my-profile-chevron" style="color:#6b7280;font-size:0.65rem;transition:transform 0.15s">&#9654;</span>
         <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">My Profile</span>
-        <label style="color:#d1d5db;font-size:0.875rem;display:flex;align-items:center;gap:0.5rem">
-          Birthday
-          <input type="date" id="my-dob-input" style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit">
-        </label>
-        <button class="btn-sm" id="my-profile-save">Save</button>
-        <span id="my-profile-msg" style="display:none;font-size:0.8rem"></span>
-      </div>
-      <hr class="cosm-divider">
-      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-        <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Cosmetics</span>
-        <div class="cosm-swatches" id="cosm-swatches"></div>
-        <input type="text" id="cosm-status" maxlength="40" placeholder="Short tagline…"
-          style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit;width:12rem">
-        <button class="btn-sm" id="cosm-save">Save · 500 NB¥</button>
-        <span id="cosm-msg" style="display:none;font-size:0.8rem"></span>
-      </div>
-      <hr class="cosm-divider">
-      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-        <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Avatar</span>
-        <div class="avatar-upload-circle" id="avatar-upload-circle" title="Click to choose image">
-          <span class="avatar-plus">+</span>
+      </button>
+      <div id="my-profile-content" style="display:none;padding:0 1rem 0.75rem">
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding-top:0.1rem">
+          <label style="color:#d1d5db;font-size:0.875rem;display:flex;align-items:center;gap:0.5rem">
+            Birthday
+            <input type="date" id="my-dob-input" style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit">
+          </label>
+          <button class="btn-sm" id="my-profile-save">Save</button>
+          <span id="my-profile-msg" style="display:none;font-size:0.8rem"></span>
         </div>
-        <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-        <div style="font-size:0.78rem;color:#9ca3af">JPEG / PNG / WebP · max 512 KB</div>
-        <button class="btn-sm" id="avatar-save" style="display:none">Upload · 5,000 NB¥</button>
-        <span id="avatar-msg" style="display:none;font-size:0.8rem"></span>
+        <hr class="cosm-divider">
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Cosmetics</span>
+          <div class="cosm-swatches" id="cosm-swatches"></div>
+          <input type="text" id="cosm-status" maxlength="40" placeholder="Short tagline…"
+            style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit;width:12rem">
+          <button class="btn-sm" id="cosm-save">Save · 500 NB¥</button>
+          <span id="cosm-msg" style="display:none;font-size:0.8rem"></span>
+        </div>
+        <hr class="cosm-divider">
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Avatar</span>
+          <div class="avatar-upload-circle" id="avatar-upload-circle" title="Click to choose image">
+            <span class="avatar-plus">+</span>
+          </div>
+          <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+          <div style="font-size:0.78rem;color:#9ca3af">JPEG / PNG / WebP · max 512 KB</div>
+          <button class="btn-sm" id="avatar-save" style="display:none">Upload · 5,000 NB¥</button>
+          <span id="avatar-msg" style="display:none;font-size:0.8rem"></span>
+        </div>
       </div>
     </div>
   </div>
