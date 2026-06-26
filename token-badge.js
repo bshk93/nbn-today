@@ -54,15 +54,15 @@
     });
   }
 
-  function startGreeting(el, name) {
+  function startGreeting(greetEl, name) {
     var idx = Math.floor(Math.random() * GREETINGS.length);
-    el.textContent = GREETINGS[idx] + ', ' + name + '!';
+    greetEl.textContent = GREETINGS[idx] + ', ' + name + '!';
     setInterval(function () {
-      el.style.opacity = '0';
+      greetEl.style.opacity = '0';
       setTimeout(function () {
         idx = (idx + 1) % GREETINGS.length;
-        el.textContent = GREETINGS[idx] + ', ' + name + '!';
-        el.style.opacity = '1';
+        greetEl.textContent = GREETINGS[idx] + ', ' + name + '!';
+        greetEl.style.opacity = '1';
       }, 400);
     }, 3000);
   }
@@ -88,8 +88,26 @@
         if (d && d.name) {
           el.style.pointerEvents = 'none';
           el.style.cursor = 'default';
-          el.style.color = '#4b5563';
-          startGreeting(el, d.name.split(' ')[0]);
+          el.innerHTML = '';
+
+          var greetEl = document.createElement('span');
+          greetEl.style.cssText = 'display:block;color:#4b5563;transition:opacity 0.4s;text-align:right';
+          el.appendChild(greetEl);
+          startGreeting(greetEl, d.name.split(' ')[0]);
+
+          var balEl = document.createElement('span');
+          balEl.style.cssText = 'display:block;color:#78350f;text-align:right';
+          el.appendChild(balEl);
+
+          fetch('/api/bets/balance/' + encodeURIComponent(d.name))
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (b) {
+              if (b && b.balance != null) {
+                balEl.textContent = 'NB¥ ' + (+b.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              }
+            })
+            .catch(function () {});
+
           sendSignal(token);
         } else {
           localStorage.removeItem('nbn_token');
@@ -100,10 +118,11 @@
   }
 
   function setNoToken(el) {
-    el.textContent = 'enter token';
+    el.innerHTML = '';
     el.style.color = '#3b82f6';
     el.style.pointerEvents = 'auto';
     el.style.cursor = 'pointer';
+    el.textContent = 'enter token';
     el.onclick = function () {
       showModal(function (token) { tryToken(el, token); });
     };
@@ -117,7 +136,6 @@
       'position:fixed', 'bottom:0.6rem', 'right:0.8rem',
       'font-size:0.65rem', 'z-index:9999',
       'font-family:monospace', 'letter-spacing:0.02em',
-      'transition:opacity 0.4s',
     ].join(';');
     document.body.appendChild(el);
 
