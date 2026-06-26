@@ -484,6 +484,7 @@
           state = 'done';
           clearProgress();
           renderDone(gameData.your_entry, gameData.solution, gameData.leaderboard);
+          loadHistory();
         } else {
           const prog = loadProgress(gameData.date);
           if (prog) {
@@ -792,6 +793,7 @@
           data.pct_of_solution,
           data.solution_score,
         );
+        loadHistory();
       } catch {
         root.innerHTML = `<div class="card"><p style="color:#f87171">Network error. Please try again.</p></div>`;
       }
@@ -999,11 +1001,9 @@
       if (!token) {
         state = 'auth';
         render();
-        loadHistory();
         return;
       }
       await loadGame();
-      loadHistory();
     }
 
     init();
