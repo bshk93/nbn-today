@@ -187,6 +187,80 @@
 
     .add-salary-btn:hover { border-color: #4b5563; color: #9ca3af; }
 
+    /* ── Contract helper ── */
+    .contract-helper {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      margin-bottom: 0.6rem;
+    }
+
+    .contract-helper-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #9ca3af;
+      user-select: none;
+    }
+
+    .contract-helper-header:hover { color: #d1d5db; }
+
+    .contract-helper-header .chevron { transition: transform 0.15s; font-size: 0.7rem; }
+    .contract-helper.open .chevron { transform: rotate(180deg); }
+
+    .contract-helper-body {
+      display: none;
+      flex-direction: column;
+      gap: 0.6rem;
+      padding: 0 0.75rem 0.75rem;
+    }
+
+    .contract-helper.open .contract-helper-body { display: flex; }
+
+    .ch-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+    .ch-row label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9ca3af;
+      flex: 1 1 8rem;
+    }
+
+    .ch-row input, .ch-row select {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #f3f4f6;
+      border-radius: 6px;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.85rem;
+      font-family: inherit;
+    }
+
+    .ch-generate-btn {
+      align-self: flex-start;
+      background: #1e3a8a;
+      border: 1px solid #3b82f6;
+      color: #dbeafe;
+      border-radius: 6px;
+      padding: 0.4rem 0.9rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .ch-generate-btn:hover { background: #1e40af; }
+
+    .ch-hint { font-size: 0.72rem; color: #6b7280; }
+
     /* ── Pick fields ── */
     #pick-fields { display: none; }
     #pick-fields.visible { display: contents; }
@@ -463,6 +537,21 @@
     @media (max-width: 640px) {
       .form-grid { grid-template-columns: 1fr; }
       .form-field.full { grid-column: 1; }
+
+      /* Salary row fields (year, amount, hold type) no longer fit on one
+         line at phone widths — stack amount and hold-select onto their own
+         full-width lines so the amount value is actually readable/editable. */
+      .salary-row-main { flex-wrap: wrap; }
+      .salary-row-main .year-input { order: 1; }
+      .salary-row-main button { order: 2; margin-left: auto; }
+      .salary-row-main .amount-input { order: 3; flex: 1 1 100%; }
+      .salary-row-main .hold-select { order: 4; flex: 1 1 100%; width: 100%; }
+
+      .gtd-step { flex-wrap: wrap; }
+      .gtd-step .gtd-step-amount { max-width: none; flex: 1 1 100%; }
+      .gtd-step .gtd-step-date { max-width: none; flex: 1 1 auto; }
+
+      .ch-row label { flex: 1 1 100%; }
     }
   </style>
 </head>
@@ -633,6 +722,44 @@
 
       <div class="form-field full" id="f-salaries-field">
         <label>Salaries</label>
+
+        <div class="contract-helper" id="contract-helper">
+          <div class="contract-helper-header" id="contract-helper-toggle">
+            <span>Contract helper (generate rows from terms)</span>
+            <span class="chevron">▾</span>
+          </div>
+          <div class="contract-helper-body">
+            <div class="ch-row">
+              <label>Start season
+                <input type="text" id="ch-start-season" placeholder="25-26" maxlength="5">
+              </label>
+              <label>Year 1 salary
+                <input type="text" id="ch-year1" placeholder="$25,000,000">
+              </label>
+              <label>Raise % <span style="text-transform:none;font-weight:normal">(of Yr 1, per yr)</span>
+                <input type="number" id="ch-raise" value="5" step="0.5">
+              </label>
+            </div>
+            <div class="ch-row">
+              <label>Guaranteed years
+                <input type="number" id="ch-gtd-years" value="2" min="1" max="7">
+              </label>
+              <label>Option type
+                <select id="ch-opt-type">
+                  <option value="">None</option>
+                  <option value="PLAYER_OPT">Player Option</option>
+                  <option value="TEAM_OPT">Team Option</option>
+                </select>
+              </label>
+              <label id="ch-opt-years-field" style="display:none">Option years
+                <input type="number" id="ch-opt-years" value="1" min="1" max="3">
+              </label>
+            </div>
+            <button type="button" class="ch-generate-btn" id="ch-generate-btn">Generate rows</button>
+            <div class="ch-hint">Replaces the rows below. Raises are flat — each year adds raise% × Year 1 salary (not compounded on the prior year), matching rulebook § 3.9. Doesn't check max/min salary or cap rules — verify against the rulebook before submitting.</div>
+          </div>
+        </div>
+
         <div class="salary-rows" id="salary-rows"></div>
         <button class="add-salary-btn" id="add-salary-btn" type="button">+ Add season</button>
       </div>
@@ -754,6 +881,7 @@ const TEAM_ABBRS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
   setupTypeSwitch();
   setupPlayerSearch();
   setupSalaryRows();
+  setupContractHelper();
   setupOptionDecision();
   setupFilters();
   setupModal();
@@ -1319,13 +1447,51 @@ function addSalaryRow(year, amount, holdType, steps) {
   container.appendChild(row);
 }
 
+// ── Contract helper ────────────────────────────────────────────────────────
+// Convenience generator only: turns (Year 1 salary, flat raise %, guaranteed
+// years, trailing option years) into salary rows. It does not validate against
+// max/min salary, MLE amounts, or hard cap rules — that's still on the user.
+function setupContractHelper() {
+  const helper = document.getElementById('contract-helper');
+  document.getElementById('contract-helper-toggle').addEventListener('click', () => {
+    helper.classList.toggle('open');
+  });
+  document.getElementById('ch-opt-type').addEventListener('change', e => {
+    document.getElementById('ch-opt-years-field').style.display = e.target.value ? '' : 'none';
+  });
+  document.getElementById('ch-generate-btn').addEventListener('click', generateContractRows);
+}
+
+function generateContractRows() {
+  const startSeason = document.getElementById('ch-start-season').value.trim() || nextSalaryYear();
+  const year1 = parseInt((document.getElementById('ch-year1').value || '').replace(/[^0-9]/g, ''), 10);
+  const raisePct = parseFloat(document.getElementById('ch-raise').value) || 0;
+  const gtdYears = parseInt(document.getElementById('ch-gtd-years').value, 10) || 0;
+  const optType = document.getElementById('ch-opt-type').value;
+  const optYears = optType ? (parseInt(document.getElementById('ch-opt-years').value, 10) || 0) : 0;
+
+  if (!/^\d{2}-\d{2}$/.test(startSeason)) { setStatus('err', 'Contract helper: start season must be like 25-26.'); return; }
+  if (!year1) { setStatus('err', 'Contract helper: enter a Year 1 salary.'); return; }
+  if (gtdYears < 1) { setStatus('err', 'Contract helper: at least 1 guaranteed year is required.'); return; }
+
+  const totalYears = gtdYears + optYears;
+  const existingRows = document.querySelectorAll('.salary-row').length;
+  if (existingRows && !confirm(`This replaces the ${existingRows} salary row(s) below with ${totalYears} generated row(s). Continue?`)) return;
+
+  document.getElementById('salary-rows').innerHTML = '';
+  let season = startSeason;
+  for (let i = 0; i < totalYears; i++) {
+    const amount = Math.round(year1 * (1 + (raisePct / 100) * i));
+    const holdType = i >= gtdYears ? optType : '';
+    addSalaryRow(season, `$${amount.toLocaleString('en-US')}`, holdType);
+    season = nextSeasonStr(season);
+  }
+  setStatus('ok', `Generated ${totalYears} salary row(s).`);
+}
+
 function nextSalaryYear() {
   const rows = document.querySelectorAll('.salary-row .year-input');
-  if (!rows.length) {
-    const now = new Date();
-    const yr = now.getMonth() >= 7 ? now.getFullYear() + 1 : now.getFullYear();
-    return `${String(yr).slice(-2)}-${String(yr + 1).slice(-2)}`;
-  }
+  if (!rows.length) return currentSeasonStr();
   const last = rows[rows.length - 1].value;
   const m = last.match(/^(\d{2})-(\d{2})$/);
   if (!m) return '';
@@ -1848,6 +2014,13 @@ function resetForm() {
   document.getElementById('f-description').value = '';
   document.getElementById('salary-rows').innerHTML = '';
   addSalaryRow();
+  document.getElementById('ch-start-season').value = '';
+  document.getElementById('ch-year1').value = '';
+  document.getElementById('ch-raise').value = '5';
+  document.getElementById('ch-gtd-years').value = '2';
+  document.getElementById('ch-opt-type').value = '';
+  document.getElementById('ch-opt-years-field').style.display = 'none';
+  document.getElementById('contract-helper').classList.remove('open');
   setDefaultDate();
   document.getElementById('f-opt-year').value = '';
   document.getElementById('f-opt-type').value = '';

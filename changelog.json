@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.338",
+    "date": "2026-07-01",
+    "changes": [
+      "transactions: fix cramped mobile layout for salary amount/hold-type/guarantee-step fields on FA signings",
+      "transactions: add contract helper to generate salary rows from starting salary, flat raise %, and guaranteed+option years",
+      "transactions: fix salary row default start-season being off by up to a year outside of July, which caused new signings to silently miss the hard-cap check"
+    ]
+  },
+  {
     "version": "0.0.337",
     "date": "2026-06-26",
     "changes": [
