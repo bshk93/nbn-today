@@ -155,6 +155,13 @@ document.title = `${abbr} — NBN`;
   tbody tr { border-bottom: 1px solid #283141; transition: background 0.1s; }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: #263244; }
+  tr.personnel-active td { background: #0e1f14; }
+  tr.personnel-active:hover td { background: #132a1b; }
+  tr.personnel-former { opacity: 0.45; }
+  tr.personnel-former:hover { opacity: 0.8; }
+  tr.personnel-divider td { padding: 0.2rem 1rem; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #4b5563; background: #111827; border-top: 1px solid #283141; }
+  .cur-role { color: #86efac; }
+  .cur-since { color: #86efac; }
   td { padding: 0.65rem 1rem; color: #d1d5db; }
   td.right { text-align: right; font-variant-numeric: tabular-nums; }
   td.muted { color: #6b7280; }
@@ -1407,12 +1414,21 @@ function buildPersonnelSection(members, allGames) {
   }
 
   if (!rows.length) return;
-  rows.sort((a, b) => a.startDate.localeCompare(b.startDate));
 
   function fmtTenureDate(iso) {
-    const [y, m] = iso.split('-');
     return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   }
+
+  const POS_ORDER = { owner: 0, gm: 1, coach: 2 };
+  rows.sort((a, b) => {
+    if (a.active !== b.active) return a.active ? -1 : 1;
+    if (a.active) {
+      const pa = POS_ORDER[a.posLabel.toLowerCase()] ?? 9;
+      const pb = POS_ORDER[b.posLabel.toLowerCase()] ?? 9;
+      if (pa !== pb) return pa - pb;
+    }
+    return b.startDate.localeCompare(a.startDate);
+  });
 
   const section = document.getElementById('personnel-section');
   const wrap    = document.getElementById('personnel-wrap');
@@ -1427,18 +1443,39 @@ function buildPersonnelSection(members, allGames) {
   });
 
   const tbody = table.createTBody();
+  let shownDivider = false;
   rows.forEach(row => {
+    if (!row.active && !shownDivider) {
+      shownDivider = true;
+      const divTr = tbody.insertRow();
+      divTr.className = 'personnel-divider';
+      const divTd = divTr.insertCell();
+      divTd.colSpan = 6;
+      divTd.textContent = 'Former';
+    }
+
     const tr = tbody.insertRow();
+    tr.className = row.active ? 'personnel-active' : 'personnel-former';
 
     const tdN = tr.insertCell(); tdN.className = 'bold';
     const nameLink = document.createElement('a');
     nameLink.href = `/members/${encodeURIComponent(row.name)}/`;
     nameLink.textContent = row.name;
     tdN.appendChild(nameLink);
-    const tdP = tr.insertCell(); tdP.className = 'muted'; tdP.textContent = row.posLabel;
+
+    const tdP = tr.insertCell();
+    if (row.active) {
+      tdP.innerHTML = `<span class="cur-role">${row.posLabel}</span>`;
+    } else {
+      tdP.className = 'muted'; tdP.textContent = row.posLabel;
+    }
 
     const tdS = tr.insertCell();
-    tdS.textContent = fmtTenureDate(row.startDate) + ' – ' + (row.active ? 'Present' : fmtTenureDate(row.endDate));
+    if (row.active) {
+      tdS.innerHTML = `<span class="cur-since">Since ${fmtTenureDate(row.startDate)}</span>`;
+    } else {
+      tdS.textContent = fmtTenureDate(row.startDate) + ' – ' + fmtTenureDate(row.endDate);
+    }
 
     const tdW   = tr.insertCell(); tdW.className   = 'right'; tdW.textContent   = row.n ? row.W   : '—';
     const tdL   = tr.insertCell(); tdL.className   = 'right'; tdL.textContent   = row.n ? row.L   : '—';
@@ -2565,7 +2602,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -2581,6 +2618,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch(`/api/boxscores/games?team=${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/league-year').then(r => r.ok ? r.json() : null),
     fetch('/api/auth/me', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : null),
+    fetch('/api/transactions?limit=500').then(r => r.ok ? r.json() : { transactions: [] }),
   ]);
 
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
@@ -2595,6 +2633,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const teamState   = tsr.status  === 'fulfilled'  ? tsr.value   : null;
   const seasonStates = teamState?.seasons || {};
   const deadCapRows = dcr.status  === 'fulfilled'  ? dcr.value : [];
+  const allTxns     = txnsr.status === 'fulfilled' ? (txnsr.value.transactions || []) : [];
   const membersData = memr.status  === 'fulfilled' ? memr.value  : [];
   const allGames    = gamesr.status === 'fulfilled' ? gamesr.value : [];
 
@@ -2629,6 +2668,35 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   {
     draftedWrap.innerHTML = '';
     {
+      // Build rights-trade map from transactions (same logic as /draft page):
+      // a player's rights were traded if a trade txn moved them as an asset
+      // after their pick txn and before their first sign txn.
+      const draftPickTxnTime = {}, signTxnTime = {}, rightsHolder = {};
+      for (const t of allTxns) {
+        if (t.type === 'pick') {
+          const s = t.details?.player;
+          if (s) draftPickTxnTime[s] = t.created_at;
+        }
+        if (t.type === 'sign') {
+          const s = t.details?.player;
+          if (s && !signTxnTime[s]) signTxnTime[s] = t.created_at;
+        }
+      }
+      for (const t of [...allTxns].sort((a, b) => a.created_at.localeCompare(b.created_at))) {
+        if (t.type === 'trade') {
+          for (const transfer of t.details?.transfers || []) {
+            for (const asset of transfer.assets || []) {
+              const s = asset.type === 'player' && asset.slug;
+              if (s && draftPickTxnTime[s]) {
+                const afterPick = t.created_at > draftPickTxnTime[s];
+                const beforeSign = !signTxnTime[s] || t.created_at < signTxnTime[s];
+                if (afterPick && beforeSign) rightsHolder[s] = transfer.to_team;
+              }
+            }
+          }
+        }
+      }
+
       // Career totals per drafted player, keyed by slug.
       const careerBySlug = {};
       for (const row of allSeasons) {
@@ -2642,37 +2710,49 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         c.GMSC += parseFloat(row.GMSC) || 0;
       }
 
+      const makeDraftRow = (slug, bio) => {
+        const c = careerBySlug[slug] || { G: 0, PTS: 0, REB: 0, AST: 0, GMSC: 0, name: '' };
+        const round = parseInt(bio.draft_round) || 0;
+        const pick  = bio.draft_pick != null && bio.draft_pick !== '' ? parseInt(bio.draft_pick) : null;
+        const draftTeam = (bio.draft_team || '').toUpperCase();
+        return {
+          SLUG:        slug,
+          PLAYER:      displayNameFromBio(bio.name || '') || c.name || slug,
+          YEAR:        parseInt(bio.draft_year) || 0,
+          ROUND:       round,
+          PICK:        pick ?? 0,
+          PICK_LABEL:  `R${round || '?'} · #${pick ?? '?'}`,
+          // RIGHTS_TO: rights traded away from this team to another
+          // RIGHTS_FROM: rights acquired by this team (drafted by another team)
+          RIGHTS_TO:   (draftTeam === abbr && rightsHolder[slug]) ? rightsHolder[slug] : null,
+          RIGHTS_FROM: (draftTeam !== abbr) ? draftTeam : null,
+          GP:          c.G,
+          GMSC_TOT:    Math.round(c.GMSC * 10) / 10,
+          PPG:         c.G ? Math.round(c.PTS / c.G * 10) / 10 : 0,
+          RPG:         c.G ? Math.round(c.REB / c.G * 10) / 10 : 0,
+          APG:         c.G ? Math.round(c.AST / c.G * 10) / 10 : 0,
+        };
+      };
+
       const draftedRows = Object.entries(biosData)
-        .filter(([, bio]) => (bio.draft_team || '').toUpperCase() === abbr)
-        .map(([slug, bio]) => {
-          const c = careerBySlug[slug] || { G: 0, PTS: 0, REB: 0, AST: 0, GMSC: 0, name: '' };
-          const round = parseInt(bio.draft_round) || 0;
-          const pick  = bio.draft_pick != null && bio.draft_pick !== '' ? parseInt(bio.draft_pick) : null;
-          return {
-            SLUG:    slug,
-            PLAYER:  displayNameFromBio(bio.name || '') || c.name || slug,
-            YEAR:    parseInt(bio.draft_year) || 0,
-            ROUND:   round,
-            PICK:    pick ?? 0,
-            PICK_LABEL: `R${round || '?'} · #${pick ?? '?'}`,
-            GP:      c.G,
-            GMSC_TOT: Math.round(c.GMSC * 10) / 10,
-            PPG:     c.G ? Math.round(c.PTS / c.G * 10) / 10 : 0,
-            RPG:     c.G ? Math.round(c.REB / c.G * 10) / 10 : 0,
-            APG:     c.G ? Math.round(c.AST / c.G * 10) / 10 : 0,
-          };
-        });
+        .filter(([slug, bio]) => {
+          const draftTeam = (bio.draft_team || '').toUpperCase();
+          // Players this team drafted, plus players whose rights were acquired by this team
+          return draftTeam === abbr || (rightsHolder[slug] || '').toUpperCase() === abbr;
+        })
+        .map(([slug, bio]) => makeDraftRow(slug, bio));
       draftedRows.sort((a, b) => a.YEAR - b.YEAR || a.PICK - b.PICK);
 
       const DRAFTED_COLS = [
-        { key: 'PLAYER',    label: 'Player', cls: 'bold',        sortField: 'PLAYER',    defaultDir:  1 },
-        { key: 'YEAR',      label: 'Year',   cls: 'right',       sortField: 'YEAR',      defaultDir:  1 },
-        { key: 'PICK_LABEL',label: 'Pick',   cls: 'right muted', sortField: 'PICK',      defaultDir:  1 },
-        { key: 'GP',        label: 'GP',     cls: 'right',       sortField: 'GP',        defaultDir: -1 },
-        { key: 'GMSC_TOT',  label: 'GMSC',   cls: 'right',       sortField: 'GMSC_TOT',  defaultDir: -1 },
-        { key: 'PPG',       label: 'PPG',    cls: 'right',       sortField: 'PPG',       defaultDir: -1 },
-        { key: 'RPG',       label: 'RPG',    cls: 'right',       sortField: 'RPG',       defaultDir: -1 },
-        { key: 'APG',       label: 'APG',    cls: 'right',       sortField: 'APG',       defaultDir: -1 },
+        { key: 'PLAYER',    label: 'Player',  cls: 'bold',        sortField: 'PLAYER',    defaultDir:  1 },
+        { key: 'YEAR',      label: 'Year',    cls: 'right',       sortField: 'YEAR',      defaultDir:  1 },
+        { key: 'PICK_LABEL',label: 'Pick',    cls: 'right muted', sortField: 'PICK',      defaultDir:  1 },
+        { key: 'RIGHTS_TO', label: 'Rights',  cls: 'muted',       sortField: 'RIGHTS_TO', defaultDir:  1 },
+        { key: 'GP',        label: 'GP',      cls: 'right',       sortField: 'GP',        defaultDir: -1 },
+        { key: 'GMSC_TOT',  label: 'GMSC',    cls: 'right',       sortField: 'GMSC_TOT',  defaultDir: -1 },
+        { key: 'PPG',       label: 'PPG',     cls: 'right',       sortField: 'PPG',       defaultDir: -1 },
+        { key: 'RPG',       label: 'RPG',     cls: 'right',       sortField: 'RPG',       defaultDir: -1 },
+        { key: 'APG',       label: 'APG',     cls: 'right',       sortField: 'APG',       defaultDir: -1 },
       ];
       const renderDraftedCell = (td, col, row) => {
         if (col.key === 'PLAYER') {
@@ -2680,6 +2760,22 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
           a.href = `/players/?p=${row.SLUG}`;
           a.textContent = row.PLAYER;
           td.appendChild(a);
+        } else if (col.key === 'RIGHTS_TO') {
+          if (row.RIGHTS_TO) {
+            const arrow = document.createElement('span');
+            arrow.style.cssText = 'color:#60a5fa;font-style:italic';
+            arrow.title = 'Draft rights traded away';
+            arrow.textContent = `→ ${row.RIGHTS_TO}`;
+            td.appendChild(arrow);
+          } else if (row.RIGHTS_FROM) {
+            const arrow = document.createElement('span');
+            arrow.style.cssText = 'color:#60a5fa;font-style:italic';
+            arrow.title = 'Draft rights acquired from another team';
+            arrow.textContent = `← ${row.RIGHTS_FROM}`;
+            td.appendChild(arrow);
+          } else {
+            td.textContent = '—';
+          }
         } else {
           td.textContent = row[col.key] ?? '—';
         }

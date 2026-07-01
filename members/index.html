@@ -214,6 +214,59 @@
       .roles-check-group.teams-group { grid-template-columns: repeat(4, 1fr); }
       .tenure-form-grid { grid-template-columns: 1fr 1fr; }
     }
+
+    .member-stat-row {
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+      font-size: 0.82rem; color: #9ca3af; margin-bottom: 0.9rem;
+    }
+    .stat-num { color: #f3f4f6; font-weight: 700; }
+    .stat-sep { color: #4b5563; }
+    .stat-divider { width: 1px; height: 0.9rem; background: #374151; margin: 0 0.25rem; }
+    .stat-chip.muted .stat-num { color: #6b7280; }
+    .stat-chip.pos-owner .stat-num { color: #86efac; }
+    .stat-chip.pos-gm    .stat-num { color: #93c5fd; }
+    .stat-chip.pos-coach .stat-num { color: #c4b5fd; }
+
+    .staffing-toggle-btn {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      color: #6b7280; font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      padding: 0; margin-bottom: 0.55rem;
+    }
+    .staffing-toggle-btn:hover { color: #9ca3af; }
+    .staffing-chevron { font-size: 0.55rem; transition: transform 0.15s; display: inline-block; }
+
+    .staffing-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+    .team-staff-card {
+      background: #111827; border: 1px solid #1f2937; border-radius: 6px;
+      padding: 0.35rem 0.4rem; display: flex; flex-direction: column;
+      align-items: center; gap: 0.22rem;
+    }
+    .ts-abbr {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;
+      color: #d1d5db; text-decoration: none;
+    }
+    .ts-abbr:hover { color: #f3f4f6; }
+    .ts-dots { display: flex; gap: 0.15rem; }
+    .ts-dot {
+      font-size: 0.52rem; font-weight: 800; letter-spacing: 0;
+      width: 1.05rem; height: 1.05rem; border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: default;
+    }
+    .ts-dot-owner { background: #14532d; color: #86efac; }
+    .ts-dot-gm    { background: #1e3a5f; color: #93c5fd; }
+    .ts-dot-coach { background: #2e1065; color: #c4b5fd; }
+    .ts-dot.ts-dot-empty { background: #1a1f2e; color: #2d3748; }
+
+    @media (max-width: 640px) {
+      .staffing-grid { grid-template-columns: repeat(5, 1fr); }
+      .stat-divider { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -271,6 +324,16 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div id="member-counts"></div>
+
+  <div id="team-staffing-wrap" style="margin-bottom:0.25rem">
+    <button class="staffing-toggle-btn" id="staffing-toggle">
+      <span class="staffing-chevron" id="staffing-chevron">&#9654;</span>
+      At A Glance
+    </button>
+    <div id="team-staffing-content" class="staffing-grid" style="display:none"></div>
   </div>
 
   <div class="create-bar" id="create-bar" style="display:none">
@@ -575,9 +638,79 @@ function populatePosSel(id) {
   });
 }
 
+// ── Summary stats + team staffing ────────────────────────────────────────────
+
+let staffingOpen = false;
+
+document.getElementById('staffing-toggle').addEventListener('click', () => {
+  staffingOpen = !staffingOpen;
+  document.getElementById('team-staffing-content').style.display = staffingOpen ? '' : 'none';
+  document.getElementById('staffing-chevron').style.transform = staffingOpen ? 'rotate(90deg)' : '';
+});
+
+function renderSummary() {
+  const total = allMembers.length;
+  const activeList = allMembers.filter(m => !!activeTenure(m.tenures));
+  const former = total - activeList.length;
+
+  const posCounts = { owner: 0, gm: 0, coach: 0 };
+  for (const m of activeList) {
+    const t = activeTenure(m.tenures);
+    if (t && t.position in posCounts) posCounts[t.position]++;
+  }
+
+  const countsEl = document.getElementById('member-counts');
+  if (countsEl) {
+    countsEl.innerHTML = `<div class="member-stat-row">
+      <span class="stat-chip"><span class="stat-num">${total}</span> total</span>
+      <span class="stat-sep">·</span>
+      <span class="stat-chip"><span class="stat-num">${activeList.length}</span> active</span>
+      <span class="stat-sep">·</span>
+      <span class="stat-chip muted"><span class="stat-num">${former}</span> former</span>
+      <span class="stat-divider"></span>
+      <span class="stat-chip pos-owner"><span class="stat-num">${posCounts.owner}</span> Owner${posCounts.owner !== 1 ? 's' : ''}</span>
+      <span class="stat-sep">·</span>
+      <span class="stat-chip pos-gm"><span class="stat-num">${posCounts.gm}</span> GM${posCounts.gm !== 1 ? 's' : ''}</span>
+      <span class="stat-sep">·</span>
+      <span class="stat-chip pos-coach"><span class="stat-num">${posCounts.coach}</span> Coach${posCounts.coach !== 1 ? 'es' : ''}</span>
+    </div>`;
+  }
+
+  const teamStaff = {};
+  for (const abbr of TEAM_ABBRS) teamStaff[abbr] = { owner: [], gm: [], coach: [] };
+  for (const m of activeList) {
+    const t = activeTenure(m.tenures);
+    if (!t || !(t.position in (teamStaff[t.team] || {}))) continue;
+    teamStaff[t.team][t.position].push(m.name);
+  }
+
+  const gridEl = document.getElementById('team-staffing-content');
+  if (gridEl) {
+    gridEl.innerHTML = TEAM_ABBRS.map(abbr => {
+      const s = teamStaff[abbr];
+      return `<div class="team-staff-card">
+        <a class="ts-abbr" href="/teams/${abbr.toLowerCase()}/">${abbr}</a>
+        <div class="ts-dots">
+          ${staffDot('O', s.owner, 'owner')}
+          ${staffDot('G', s.gm, 'gm')}
+          ${staffDot('C', s.coach, 'coach')}
+        </div>
+      </div>`;
+    }).join('');
+    gridEl.style.display = staffingOpen ? '' : 'none';
+  }
+}
+
+function staffDot(label, members, pos) {
+  const filled = members.length > 0;
+  const tip = filled ? members.join(', ') : `No ${pos}`;
+  return `<span class="ts-dot ts-dot-${pos}${filled ? '' : ' ts-dot-empty'}" title="${tip}">${label}</span>`;
+}
+
 // ── Table ─────────────────────────────────────────────────────────────────────
 
 function renderTable() {
+  renderSummary();
   const tbody = document.getElementById('members-tbody');
   if (!allMembers.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No members found.</td></tr>';

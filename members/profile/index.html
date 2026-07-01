@@ -141,6 +141,23 @@
     }
     .empty-state { color: #6b7280; font-size: 0.875rem; }
     .error-state { color: #fca5a5; font-size: 0.9rem; padding: 2rem 0; }
+
+    .career-stats {
+      display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem;
+    }
+    .cs-box {
+      background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+      padding: 0.65rem 0.9rem; flex: 1 1 100px;
+    }
+    .cs-label {
+      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.25rem;
+    }
+    .cs-value {
+      font-size: 1.15rem; font-weight: 700; color: #f3f4f6; line-height: 1;
+    }
+    .cs-sub { font-size: 0.72rem; color: #9ca3af; margin-top: 0.2rem; }
+    .cs-ring { color: #fbbf24; }
   </style>
 </head>
 <body>
@@ -216,6 +233,45 @@ function displayPos(p) {
   return p === 'owner' ? 'Owner' : p === 'gm' ? 'GM' : p === 'coach' ? 'Coach' : p || '—';
 }
 
+function parseCSV(text) {
+  const lines = (text || '').trim().split('\n').filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const row = {};
+    headers.forEach((h, i) => { row[h] = (vals[i] || '').trim(); });
+    return row;
+  });
+}
+
+function renderCareerStats(ownerRow) {
+  if (!ownerRow) return '';
+  const w   = +ownerRow.reg_w || 0;
+  const l   = +ownerRow.reg_l || 0;
+  const pct = (w + l) > 0 ? (w / (w + l) * 100).toFixed(1) : '—';
+  const pw  = +ownerRow.playoff_w || 0;
+  const pl  = +ownerRow.playoff_l || 0;
+  const ppa = +ownerRow.playoff_appearances || 0;
+  const rings = +ownerRow.championships || 0;
+  const finals = +ownerRow.po_finals || 0;
+  const offRtg = ownerRow.off_rtg ? (+ownerRow.off_rtg).toFixed(1) : '—';
+  const defRtg = ownerRow.def_rtg ? (+ownerRow.def_rtg).toFixed(1) : '—';
+
+  const ringsHtml = rings > 0
+    ? `<span class="cs-ring">${'★'.repeat(rings)}</span> ${rings}`
+    : '0';
+
+  return `<div class="career-stats">
+    <div class="cs-box"><div class="cs-label">Seasons</div><div class="cs-value">${ownerRow.seasons || 0}</div><div class="cs-sub">${w + l} games</div></div>
+    <div class="cs-box"><div class="cs-label">Reg Season</div><div class="cs-value">${w}–${l}</div><div class="cs-sub">${pct}% win rate</div></div>
+    <div class="cs-box"><div class="cs-label">Championships</div><div class="cs-value">${ringsHtml}</div><div class="cs-sub">${finals} finals app${finals !== 1 ? 's' : ''}</div></div>
+    <div class="cs-box"><div class="cs-label">Playoffs</div><div class="cs-value">${ppa}</div><div class="cs-sub">appearance${ppa !== 1 ? 's' : ''}</div></div>
+    <div class="cs-box"><div class="cs-label">Playoff W–L</div><div class="cs-value">${pw}–${pl}</div><div class="cs-sub">series</div></div>
+    <div class="cs-box"><div class="cs-label">Rtg</div><div class="cs-value">${offRtg}</div><div class="cs-sub">off · ${defRtg} def</div></div>
+  </div>`;
+}
+
 const parts = location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
 const memberName = decodeURIComponent(parts[1] || '');
 const token = localStorage.getItem(TOKEN_KEY) || '';
@@ -249,6 +305,8 @@ async function init() {
   const [results1, results2] = await Promise.all([Promise.all(req1), Promise.all(req2)]);
   const [allMembers, tips, balData, me] = results1;
   const [ownerStatsCsv, standingsCsv, betsStats, investStats, bios, awardsCsv, txnResp, playerSeasonsCsv, h2hOwnersCsv] = results2;
+  const nameLower = memberName.toLowerCase();
+  const ownerRow = parseCSV(ownerStatsCsv).find(r => r.owner.toLowerCase() === nameLower) || null;
 
   const member = allMembers.find(m => m.name === memberName);
   if (!member) {
@@ -307,6 +365,9 @@ async function init() {
       <span class="balance-amount">NB¥${balance.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2})}</span>
     </div>`;
   }
+
+  // Career stats
+  html += renderCareerStats(ownerRow);
 
   // Tenure history
   if (sortedTenures.length) {

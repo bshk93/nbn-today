@@ -287,6 +287,13 @@
         const tdFrom = document.createElement('td');
         tdFrom.className = 'from';
         tdFrom.textContent = pick.from || '—';
+        if (pick.from && pick.tradedTo) {
+          const arrow = document.createElement('span');
+          arrow.style.cssText = 'color:#60a5fa;margin-left:0.3rem';
+          arrow.title = 'Draft rights traded';
+          arrow.textContent = `→ ${pick.tradedTo}`;
+          tdFrom.appendChild(arrow);
+        }
         tr.appendChild(tdFrom);
 
         const tdCollege = document.createElement('td');
@@ -313,7 +320,7 @@
       return block;
     }
 
-    function render(players, year) {
+    function render(players, year, draftedBy, rightsHolder) {
       const content = document.getElementById('content');
       content.innerHTML = '';
 
@@ -323,7 +330,9 @@
       classPlayers.forEach(p => {
         const round = p._draft_round ? `Round ${p._draft_round}` : 'Undrafted';
         if (!byRound[round]) byRound[round] = [];
-        const pick = { num: p._draft_pick ?? 999, from: p._draft_team || '' };
+        const draftTeam = (draftedBy && draftedBy[p.SLUG]) || p._draft_team || '';
+        const tradedTo = (rightsHolder && rightsHolder[p.SLUG]) || null;
+        const pick = { num: p._draft_pick ?? 999, from: draftTeam, tradedTo };
         byRound[round].push({ pick, player: p });
       });
 
@@ -884,10 +893,11 @@
     }
 
     async function init() {
-      const [seasonsRes, picksRes, biosRes, canEditPicks] = await Promise.all([
+      const [seasonsRes, picksRes, biosRes, txnsRes, canEditPicks] = await Promise.all([
         fetch('/players/player_seasons.csv'),
         fetch('/api/picks'),
         fetch('/api/players'),
+        fetch('/api/transactions?limit=500'),
         loadCanEditPicks(),
       ]);
 
@@ -895,13 +905,43 @@
       const rows = parseCSV(await seasonsRes.text());
       const allPicks = picksRes.ok ? await picksRes.json() : [];
       const bios = biosRes.ok ? await biosRes.json() : {};
+      const txns = txnsRes.ok ? ((await txnsRes.json()).transactions || []) : [];
+
+      // Build rights maps from transactions:
+      // draftedBy: slug → team who selected them (pick txn)
+      // rightsHolder: slug → rights holder after post-draft, pre-signing trades only
+      const draftedBy = {}, pickTxnTime = {}, signTxnTime = {}, rightsHolder = {};
+      for (const t of txns) {
+        if (t.type === 'pick') {
+          const slug = t.details?.player;
+          if (slug) { draftedBy[slug] = t.details.team; pickTxnTime[slug] = t.created_at; }
+        }
+        if (t.type === 'sign') {
+          const slug = t.details?.player;
+          if (slug && !signTxnTime[slug]) signTxnTime[slug] = t.created_at;
+        }
+      }
+      for (const t of [...txns].sort((a, b) => a.created_at.localeCompare(b.created_at))) {
+        if (t.type === 'trade') {
+          for (const transfer of t.details?.transfers || []) {
+            for (const asset of transfer.assets || []) {
+              const slug = asset.type === 'player' && asset.slug;
+              if (slug && draftedBy[slug]) {
+                const afterPick = !pickTxnTime[slug] || t.created_at > pickTxnTime[slug];
+                const beforeSign = !signTxnTime[slug] || t.created_at < signTxnTime[slug];
+                if (afterPick && beforeSign) rightsHolder[slug] = transfer.to_team;
+              }
+            }
+          }
+        }
+      }
 
       // Aggregate career totals and deduplicate by slug
       const players = {};
       rows.forEach(r => {
         if (!r.SLUG) return;
         if (!players[r.SLUG]) {
-          players[r.SLUG] = { ...r, _career_G: 0, _career_PTS: 0, _career_REB: 0, _career_AST: 0 };
+          players[r.SLUG] = { ...r, _career_G: 0, _career_PTS: 0, _career_REB: 0, _career_AST: 0, _first_season_num: null, _first_team: null };
         }
         players[r.SLUG]._career_G   += +r.G   || 0;
         players[r.SLUG]._career_PTS += +r.PTS  || 0;
@@ -910,6 +950,11 @@
         if (r.PHOTO_URL) players[r.SLUG].PHOTO_URL = r.PHOTO_URL;
         if (r.COUNTRY && r.COUNTRY !== 'NA') players[r.SLUG].COUNTRY = r.COUNTRY;
         if (r.COLLEGE && r.COLLEGE !== 'NA') players[r.SLUG].COLLEGE = r.COLLEGE;
+        const seasonNum = r.SEASON ? parseInt(r.SEASON.split('-')[0]) : NaN;
+        if (!isNaN(seasonNum) && r.TEAM && r.TEAM !== 'NA' && (players[r.SLUG]._first_season_num == null || seasonNum < players[r.SLUG]._first_season_num)) {
+          players[r.SLUG]._first_season_num = seasonNum;
+          players[r.SLUG]._first_team = r.TEAM;
+        }
       });
 
       // Merge the canonical draft record from bios. The build's NBN_DFT_* columns
@@ -1010,7 +1055,7 @@
         });
 
         if (isFuture) renderFuture(picks, y, bios);
-        else render(drafted, y);
+        else render(drafted, y, draftedBy, rightsHolder);
       }
 
       const prevBtn = document.getElementById('prev-year');
