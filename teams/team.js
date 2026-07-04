@@ -1242,11 +1242,11 @@ function buildPicksTable(picks, teamAbbr, bios = {}, allPicks = []) {
   const table = document.createElement('table');
   const thead = table.createTHead();
   const hr = thead.insertRow();
-  ['Year', 'Rnd', 'Team', 'Pick', 'Player', 'Protection', 'Swap', 'Notes'].forEach(label => {
+  ['Year', 'Rnd', 'Team', 'Pick', 'Player', 'Protection', 'Swap', 'Notes', 'Frozen'].forEach(label => {
     const th = document.createElement('th');
     th.textContent = label;
     if (label === 'Pick' || label === 'Year' || label === 'Rnd') th.classList.add('right');
-    if (label === 'Team' || label === 'Player' || label === 'Protection' || label === 'Swap' || label === 'Notes') th.classList.add('muted');
+    if (label === 'Team' || label === 'Player' || label === 'Protection' || label === 'Swap' || label === 'Notes' || label === 'Frozen') th.classList.add('muted');
     hr.appendChild(th);
   });
 
@@ -1257,7 +1257,7 @@ function buildPicksTable(picks, teamAbbr, bios = {}, allPicks = []) {
     const sep = tbody.insertRow();
     sep.className = 'subheader';
     const td = sep.insertCell();
-    td.colSpan = 8;
+    td.colSpan = 9;
     td.textContent = label;
 
     rows.forEach(p => {
@@ -1274,12 +1274,19 @@ function buildPicksTable(picks, teamAbbr, bios = {}, allPicks = []) {
         [protLabel,                            'muted',        ],
         [p.swap_owner || '',                   'muted',        ],
         [p.notes || '',                        'muted',        ],
+        [p.frozen ? 'FROZEN' : '',             'muted',        ],
       ];
       cells.forEach(([text, cls]) => {
         const td = tr.insertCell();
         if (cls) cls.split(' ').forEach(c => td.classList.add(c));
         td.textContent = text;
       });
+      if (p.frozen) {
+        const frozenTd = tr.cells[tr.cells.length - 1];
+        frozenTd.style.color = '#f87171';
+        frozenTd.style.fontWeight = '700';
+        if (p.frozen_reason) frozenTd.title = p.frozen_reason;
+      }
     });
   };
 
@@ -2064,7 +2071,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
     const table = document.createElement('table');
     const thead = table.createTHead();
     const hr = thead.insertRow();
-    ['Year', 'Rnd', 'Orig', 'Owner', 'Pick #', 'Player', 'Top-N Prot.', 'Swap Owner', 'Notes'].forEach(label => {
+    ['Year', 'Rnd', 'Orig', 'Owner', 'Pick #', 'Player', 'Top-N Prot.', 'Swap Owner', 'Notes', 'Frozen'].forEach(label => {
       const th = document.createElement('th');
       th.textContent = label;
       hr.appendChild(th);
@@ -2142,6 +2149,20 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
       inpNotes.value = p.notes || '';
       tdNotes.appendChild(inpNotes);
 
+      // frozen
+      const tdFrozen = tr.insertCell();
+      tdFrozen.style.cssText = 'display:flex;gap:0.35rem;align-items:center';
+      const chkFrozen = document.createElement('input');
+      chkFrozen.type = 'checkbox';
+      chkFrozen.checked = !!p.frozen;
+      const inpFrozenReason = document.createElement('input');
+      inpFrozenReason.type = 'text';
+      inpFrozenReason.placeholder = 'reason';
+      inpFrozenReason.style.cssText = INP + ';width:8rem';
+      inpFrozenReason.value = p.frozen_reason || '';
+      tdFrozen.appendChild(chkFrozen);
+      tdFrozen.appendChild(inpFrozenReason);
+
       rowGetters.push(() => ({
         year: p.year, round: p.round, orig: p.orig,
         owner:      inpOwner.value.trim().toUpperCase() || p.orig,
@@ -2150,6 +2171,8 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
         protected:  inpProt.value  ? parseInt(inpProt.value)  : null,
         swap_owner: selSwap.value  || null,
         notes:      inpNotes.value.trim(),
+        frozen:        chkFrozen.checked,
+        frozen_reason: inpFrozenReason.value.trim(),
       }));
     });
 
@@ -2170,7 +2193,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
           const r = await fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ owner: p.owner, pick: p.pick, player: p.player, protected: p.protected, swap_owner: p.swap_owner, notes: p.notes }),
+            body: JSON.stringify({ owner: p.owner, pick: p.pick, player: p.player, protected: p.protected, swap_owner: p.swap_owner, notes: p.notes, frozen: p.frozen, frozen_reason: p.frozen_reason }),
           });
           if (!r.ok) { failed = r; break; }
         }

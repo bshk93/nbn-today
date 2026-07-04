@@ -547,7 +547,7 @@
 
         const tbl = document.createElement('table');
         tbl.innerHTML = `<thead><tr>
-          <th>Owner</th><th>Orig</th><th>Pick #</th><th>Selection</th><th>Top-N Prot.</th><th>Swap Owner</th><th>Notes</th>
+          <th>Owner</th><th>Orig</th><th>Pick #</th><th>Selection</th><th>Top-N Prot.</th><th>Swap Owner</th><th>Notes</th><th>Frozen</th>
         </tr></thead>`;
         const tbody = document.createElement('tbody');
 
@@ -629,7 +629,20 @@
           tdNotes.appendChild(inpNotes);
           tr.appendChild(tdNotes);
 
-          p._inputs = { selOwner, inpPick, selPlayer, inpProt, selSwap, inpNotes };
+          const tdFrozen = document.createElement('td');
+          tdFrozen.style.cssText = 'display:flex;gap:0.35rem;align-items:center';
+          const chkFrozen = document.createElement('input');
+          chkFrozen.type = 'checkbox';
+          chkFrozen.checked = !!p.frozen;
+          const inpFrozenReason = document.createElement('input');
+          inpFrozenReason.type = 'text'; inpFrozenReason.placeholder = 'reason';
+          inpFrozenReason.style.cssText = INP + ';width:8rem';
+          inpFrozenReason.value = p.frozen_reason || '';
+          tdFrozen.appendChild(chkFrozen);
+          tdFrozen.appendChild(inpFrozenReason);
+          tr.appendChild(tdFrozen);
+
+          p._inputs = { selOwner, inpPick, selPlayer, inpProt, selSwap, inpNotes, chkFrozen, inpFrozenReason };
           tbody.appendChild(tr);
         });
 
@@ -647,7 +660,7 @@
         try {
           let failed = null;
           for (const p of yearPicks) {
-            const { selOwner, inpPick, selPlayer, inpProt, selSwap, inpNotes } = p._inputs;
+            const { selOwner, inpPick, selPlayer, inpProt, selSwap, inpNotes, chkFrozen, inpFrozenReason } = p._inputs;
             const r = await fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -658,6 +671,8 @@
                 protected:  inpProt.value  ? parseInt(inpProt.value)  : null,
                 swap_owner: selSwap.value  || null,
                 notes:      inpNotes.value.trim(),
+                frozen:        chkFrozen.checked,
+                frozen_reason: inpFrozenReason.value.trim(),
               }),
             });
             if (!r.ok) { failed = r; break; }
@@ -856,22 +871,31 @@
           tr.appendChild(tdSwap);
 
           const tdStatus = document.createElement('td');
+          const statusText = document.createElement('span');
           if (p.conveys === true) {
-            tdStatus.textContent = 'Conveys';
-            tdStatus.style.color = '#4ade80';
+            statusText.textContent = 'Conveys';
+            statusText.style.color = '#4ade80';
           } else if (p.conveys === false) {
-            tdStatus.textContent = 'Does not convey';
-            tdStatus.style.color = '#f87171';
+            statusText.textContent = 'Does not convey';
+            statusText.style.color = '#f87171';
           } else if (p.swap_conveys === true) {
-            tdStatus.textContent = 'Swap conveys';
-            tdStatus.style.color = '#4ade80';
+            statusText.textContent = 'Swap conveys';
+            statusText.style.color = '#4ade80';
           } else if (p.swap_conveys === false) {
-            tdStatus.textContent = 'Swap does not convey';
-            tdStatus.style.color = '#f87171';
+            statusText.textContent = 'Swap does not convey';
+            statusText.style.color = '#f87171';
           } else {
-            tdStatus.textContent = '—';
-            tdStatus.className = 'muted';
+            statusText.textContent = '—';
+            statusText.className = 'muted';
           }
+          if (p.frozen) {
+            const badge = document.createElement('span');
+            badge.textContent = 'FROZEN';
+            badge.title = p.frozen_reason || '';
+            badge.style.cssText = 'color:#f87171;font-weight:700;margin-right:0.4rem';
+            tdStatus.appendChild(badge);
+          }
+          tdStatus.appendChild(statusText);
           tr.appendChild(tdStatus);
 
           const tdNotes = document.createElement('td');
