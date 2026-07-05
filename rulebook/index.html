@@ -685,7 +685,7 @@
             <p>Trades may include <strong>players</strong> and <strong>draft picks</strong> only.</p>
             <ul>
               <li><strong>Cash is not a tradeable asset in NBN.</strong> No cash considerations may be attached to any trade.</li>
-              <li><strong>Traded Player Exceptions (TPEs) do not exist in NBN.</strong> When a player is traded, no exception is generated for the sending team. Salary matching must be satisfied with real outgoing salary at the time of the trade.</li>
+              <li><strong>Traded Player Exceptions (TPEs) do not exist in NBN.</strong> When a player is traded, no exception is generated for the sending team, and none is banked for later use. A team's ability to absorb incoming salary is evaluated live, using only that trade's own numbers — either standard tiered matching (§ 4.2) or cap-room absorption (see below).</li>
             </ul>
           </div>
 
@@ -704,6 +704,7 @@
             </table>
             <p><strong>Minimum contract exception:</strong> A player on a minimum contract of 2 seasons or fewer does <strong>not</strong> count as incoming salary for matching purposes. A minimum contract of more than 2 seasons does count.</p>
             <p><strong>Base Year Compensation (BYC):</strong> Applies when a player is sent out in a sign-and-trade and meets all four criteria: Bird/Early Bird FA of the sending team; salary above minimum; raise greater than 20%; signing team at or above the cap after signing. When BYC applies, the sending team's outgoing credit is the greater of the player's previous salary or 50% of his new salary. The receiving team still counts the full new salary as incoming.</p>
+            <p><strong>Cap-room absorption:</strong> A team whose Team Salary is <strong>below the Salary Cap</strong> may instead acquire a player using its own cap room, without regard to the tiers above — no outgoing salary is required. This applies whenever the team's Team Salary, after the trade (outgoing removed, incoming added), remains at or below the Cap. This is evaluated fresh for each trade off the team's actual room at that moment — it is a live substitute for matching, not a stored exception (see § 4.1). If room alone isn't enough to cover the incoming salary, the standard tiered limit (using any outgoing salary sent) is checked as a fallback.</p>
           </div>
 
           <div class="doc-section" id="s4-3">
