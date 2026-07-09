@@ -732,12 +732,14 @@ function fmtDollars(v) {
   return v ? '$' + Math.round(v).toLocaleString('en-US') : '$0';
 }
 
-function computeMleType(teamSalary, capLevels, season, teamState) {
+function computeMleType(teamSalaryFull, teamSalaryExHolds, capLevels, season, teamState) {
   if (teamState?.mle_type) return teamState.mle_type;
   const cl = capLevels?.[season];
   if (!cl?.ntmle_amount) return null;
-  if (cl.cap - teamSalary > cl.ntmle_amount) return 'room';
-  if (cl.apron1 - teamSalary >= cl.ntmle_amount) return 'ntmle';
+  // Room Exception eligibility is Cap-based and still counts holds (§ 3.2);
+  // NTMLE/TMLE eligibility is apron-based and excludes pure FA holds (§ 1.3/1.4).
+  if (cl.cap - teamSalaryFull > cl.ntmle_amount) return 'room';
+  if (cl.apron1 - teamSalaryExHolds >= cl.ntmle_amount) return 'ntmle';
   return 'tmle';
 }
 
@@ -755,13 +757,13 @@ function renderHardCapBanner(teamState) {
   el.textContent = `⚠ Hard-Capped: ${isApron2 ? 'Second' : 'First'} Apron${reason}`;
 }
 
-function renderExceptionsSection(teamState, capLevels, teamSalary, season) {
+function renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, season) {
   const section = document.getElementById('exceptions-section');
   const wrap = document.getElementById('exceptions-wrap');
   const cl = capLevels?.[season];
   if (!cl?.ntmle_amount && !cl?.bae_amount) { section.style.display = 'none'; return; }
 
-  const mleType = computeMleType(teamSalary, capLevels, season, teamState);
+  const mleType = computeMleType(teamSalaryFull, teamSalaryExHolds, capLevels, season, teamState);
   const mleTotal = mleType === 'tmle' ? (cl.tmle_amount || 0) : mleType === 'room' ? (cl.room_amount || 0) : (cl.ntmle_amount || 0);
   const mleUsed = teamState?.mle_used || 0;
   const mleRemaining = Math.max(0, mleTotal - mleUsed);
@@ -2855,18 +2857,26 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     if (t) rosterWrap.appendChild(t);
     else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
 
-    // Hard cap banner + exceptions section
+    // Hard cap banner + exceptions section. Apron-level (NTMLE/TMLE) comparisons
+    // exclude pure free-agent cap holds (UFA/RFA) — rulebook § 1.3/1.4 — while
+    // Room Exception eligibility stays Cap-based and still counts them (§ 3.2).
+    // Mirror both figures from the backend's _compute_team_salary(_ex_holds).
     const curYr = currentSeasonYr();
-    let teamSalaryTotal = 0;
+    const FA_HOLD_TYPES = ['UFA', 'RFA'];
+    let teamSalaryFull = 0, teamSalaryExHolds = 0;
     rosterRows.forEach(row => {
       const bio = biosData[row.SLUG] || {};
-      teamSalaryTotal += parseSalaryNum((bio.salaries || {})[curYr]);
+      const sal = parseSalaryNum((bio.salaries || {})[curYr]);
+      teamSalaryFull += sal;
+      if (!FA_HOLD_TYPES.includes((bio.cap_holds || {})[curYr])) teamSalaryExHolds += sal;
     });
     deadCapRows.forEach(row => {
-      teamSalaryTotal += parseSalaryNum(row[curYr] || '');
+      const sal = parseSalaryNum(row[curYr] || '');
+      teamSalaryFull += sal;
+      teamSalaryExHolds += sal;
     });
     renderHardCapBanner(teamState);
-    renderExceptionsSection(teamState, capLevels, teamSalaryTotal, curYr);
+    renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, curYr);
 
     setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels, currentOvr, deadCapRows, seasonStates), rosterCellConfig(rosterHeaders, biosData));
     setupJerseyEditable('roster-title', 'roster-wrap', rosterRows, biosData, () => {

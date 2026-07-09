@@ -10,6 +10,8 @@ This replaces manually using the `/transactions` page. Nothing is ever submitted
 
 Extract `DATE` (first token, must match `\d{4}-\d{2}-\d{2}`) and `TEXT` (everything after).
 
+**`DATE` and `TEXT` are the source of truth for this transaction — preserve them verbatim, don't work from your own paraphrase of them.** If resolving this takes multiple turns (ambiguities to clarify, blockers to research with the user) or gets deferred and picked up again in a later session, carry the *exact* original `TEXT` forward — quote it in full in any note, memory entry, or scratchpad you write about the task, not just your interpretation of it. A paraphrase can drop or scramble details a literal quote can't (e.g. which team receives which asset in a multi-team trade) — this has caused real resubmission errors before.
+
 ### 2. Load context (parallel)
 
 ```bash
@@ -78,8 +80,10 @@ convert_twoway:  { player, contract }
 trade:           { transfers: [ { from_team, to_team, assets: [
                      { type: "player", slug },
                      { type: "pick", year, round, orig, protection?, swap_with? }
-                   ] } ], legality: "tbd" }
+                   ] } ], legality: "tbd", exceptions?: { TEAM: "ntmle"|"tmle"|"room_exception" } }
 ```
+
+`exceptions` (trade only, optional): maps a team abbr to the MLE-type exception it's using to absorb *that team's* incoming salary in this trade, in lieu of matching outgoing salary (rulebook § 4.2a). Only set this when the text explicitly says a team is using its MLE/room exception to make a trade work — don't infer it just because a trade would otherwise fail salary matching; ask the user if it's ambiguous. Omit a team's key (or use `null`) for teams matching normally.
 
 `contract` (used by `sign`/`sign_pick`/`convert_twoway`):
 ```
@@ -106,7 +110,7 @@ Show the user, plainly:
 
 ### 8. Get the token
 
-Check `echo $NBN_TOKEN`. If non-empty, use it as the Bearer token. Otherwise ask the user to paste a token with the `rosters` role (or `bod`/`admin`).
+Check for an env var holding a usable token — `NBN_TOKEN` or `NBN_ADMIN_TOKEN` (admin satisfies any role check) — **without printing its value** (that leaks the credential into the transcript). List names only, e.g. `env | cut -d= -f1 | grep -iE "nbn|token"`, then reference whichever var exists directly in the curl command (`Bearer $NBN_ADMIN_TOKEN`) rather than echoing it. If neither var is set, ask the user to paste a token with the `rosters` role (or `bod`/`admin`).
 
 ### 9. Submit
 
@@ -116,6 +120,8 @@ curl -s -X POST http://localhost:8001/api/transactions \
   -H "Content-Type: application/json" \
   -d '{"type": "<type>", "date": "<DATE>", "description": "<description>", "details": <details>, "force": false}'
 ```
+
+Set `description` to include (or closely paraphrase) the original `TEXT`, especially for `trade` — this makes the transaction log itself the durable source of truth for the deal, so a future lookup isn't relying on someone's memory of it.
 
 - **Success**: the transaction is applied. Move to step 10.
 - **422 with `{"validation": true, "checks": [...], "can_force": true}`**: present each check's `check` name, `level` (`error`/`warning`), and `message`. Ask the user whether to fix the inputs and resubmit, or override. Only resubmit with `"force": true` spliced into the same body if they explicitly say to override — never force automatically.

@@ -785,6 +785,10 @@
       </div>
       <div id="trade-legs"></div>
       <button type="button" id="add-leg-btn" class="trade-add-main-btn">+ Add Leg</button>
+      <div class="legality-section" id="trade-exceptions" style="display:none">
+        <div class="legality-header">Exceptions used (optional) · § 4.2a</div>
+        <div class="rubric-body" id="trade-exceptions-body"></div>
+      </div>
       <div class="legality-section" id="trade-rubric">
         <div class="legality-header">Trade rubric · live</div>
         <div class="rubric-body" id="trade-rubric-body">
@@ -1527,16 +1531,18 @@ function collectSalaries() {
 
 // ── Trade builder ──────────────────────────────────────────────────────────
 function setupTrade() {
-  document.getElementById('add-leg-btn').addEventListener('click', () => { addTradeLeg(); scheduleRubric(); });
+  document.getElementById('add-leg-btn').addEventListener('click', () => { addTradeLeg(); refreshExceptionsSection(); scheduleRubric(); });
   addTradeLeg();
   addTradeLeg();
   document.getElementById('f-trade-date').value = new Date().toISOString().slice(0, 10);
 
   // Live rubric: any change inside the builder (team/asset selects, pick protection
   // inputs) re-runs the shared validator. Add/remove of legs and rows call
-  // scheduleRubric() directly since those don't bubble a change event.
+  // scheduleRubric() directly since those don't bubble a change event. A team
+  // select change also needs the exceptions picker rebuilt, since it changes
+  // which teams are eligible to declare one.
   const builder = document.getElementById('trade-builder');
-  builder.addEventListener('change', scheduleRubric);
+  builder.addEventListener('change', () => { refreshExceptionsSection(); scheduleRubric(); });
   builder.addEventListener('input', scheduleRubric);
 }
 
@@ -1552,7 +1558,7 @@ function scheduleRubric() {
 async function runTradeRubric() {
   const body = document.getElementById('trade-rubric-body');
   if (!body) return;
-  const { transfers } = collectTrade();
+  const { transfers, exceptions } = collectTrade();
   if (!transfers.length) {
     body.innerHTML = '<div class="rubric-empty">Add teams and assets to evaluate this trade.</div>';
     return;
@@ -1562,7 +1568,7 @@ async function runTradeRubric() {
     const res = await fetch('/api/validate/trade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transfers }),
+      body: JSON.stringify({ transfers, exceptions }),
     });
     if (seq !== rubricSeq) return;   // superseded by a newer edit
     if (!res.ok) {
@@ -1591,6 +1597,45 @@ function renderTradeRubric(data) {
   }).join('');
 
   body.innerHTML = verdict + rows;
+}
+
+// Rebuilds the per-team exception picker to match the teams currently
+// referenced by trade legs. Adds/removes rows without touching selects for
+// teams still present, so an in-progress selection survives unrelated edits
+// (e.g. adding another leg for a different team pair).
+function refreshExceptionsSection() {
+  const section = document.getElementById('trade-exceptions');
+  const body = document.getElementById('trade-exceptions-body');
+  const teams = new Set();
+  document.querySelectorAll('#trade-legs .trade-leg').forEach(leg => {
+    const from = leg.querySelector('[data-role="from"]').value;
+    const to = leg.querySelector('[data-role="to"]').value;
+    if (from) teams.add(from);
+    if (to) teams.add(to);
+  });
+
+  if (!teams.size) { section.style.display = 'none'; body.innerHTML = ''; return; }
+  section.style.display = '';
+
+  body.querySelectorAll('[data-exc-team]').forEach(row => {
+    if (!teams.has(row.dataset.excTeam)) row.remove();
+  });
+
+  Array.from(teams).sort().forEach(abbr => {
+    if (body.querySelector(`[data-exc-team="${abbr}"]`)) return;
+    const row = document.createElement('div');
+    row.className = 'legality-row';
+    row.dataset.excTeam = abbr;
+    const label = document.createElement('span');
+    label.textContent = abbr;
+    const sel = document.createElement('select');
+    sel.className = 'trade-team-sel';
+    sel.dataset.excSelect = abbr;
+    [['', 'No exception'], ['ntmle', 'Non-Taxpayer MLE'], ['tmle', 'Taxpayer MLE'], ['room_exception', 'Room Exception']]
+      .forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; sel.appendChild(o); });
+    row.append(label, sel);
+    body.appendChild(row);
+  });
 }
 
 function addTradeLeg(fromTeam, toTeam) {
@@ -1635,7 +1680,7 @@ function addTradeLeg(fromTeam, toTeam) {
   removeLegBtn.title = 'Remove leg';
   removeLegBtn.textContent = '×';
   removeLegBtn.style.marginLeft = 'auto';
-  removeLegBtn.addEventListener('click', () => { leg.remove(); scheduleRubric(); });
+  removeLegBtn.addEventListener('click', () => { leg.remove(); refreshExceptionsSection(); scheduleRubric(); });
 
   header.append(fromSel, arrow, toSel, removeLegBtn);
 
@@ -1835,7 +1880,11 @@ function collectTrade() {
     });
     if (assets.length) transfers.push({ from_team, to_team, assets });
   });
-  return { date, description, transfers };
+  const exceptions = {};
+  document.querySelectorAll('#trade-exceptions-body [data-exc-select]').forEach(sel => {
+    if (sel.value) exceptions[sel.dataset.excSelect] = sel.value;
+  });
+  return { date, description, transfers, exceptions };
 }
 
 // ── Filters ────────────────────────────────────────────────────────────────
@@ -1952,7 +2001,7 @@ async function submitTransaction() {
     if (!trade.date) { setStatus('err', 'Date is required.'); return; }
     if (trade.transfers.length < 1) { setStatus('err', 'A trade needs at least one leg with assets.'); return; }
     date = trade.date;
-    details = { transfers: trade.transfers, legality: 'tbd' };
+    details = { transfers: trade.transfers, legality: 'tbd', exceptions: trade.exceptions };
   } else {
     setStatus('err', 'Unsupported transaction type.'); return;
   }
@@ -2038,6 +2087,7 @@ function resetForm() {
   legCounter = 0;
   addTradeLeg();
   addTradeLeg();
+  refreshExceptionsSection();
   document.getElementById('f-trade-date').value = new Date().toISOString().slice(0, 10);
   document.getElementById('f-trade-description').value = '';
   const rubricBody = document.getElementById('trade-rubric-body');

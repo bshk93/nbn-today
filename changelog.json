@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.343",
+    "date": "2026-07-09",
+    "changes": [
+      "Add MLE trade absorption (rulebook \u00a7 4.2a): a team may absorb incoming trade salary against its remaining NTMLE/TMLE/Room Exception balance instead of matching outgoing salary, with matching support in Transactions and Trade Simulator",
+      "Fix roster-size counts wrongly including draft-rights and dead-cap entries toward the standard roster limit",
+      "Apron and league Hard Cap comparisons now exclude free-agent (UFA/RFA) cap holds, matching the Hard Cap definition's \"active player salaries\" \u2014 Room Exception eligibility still counts holds",
+      "Fix team page MLE-remaining display showing $0 after a trade used a team's MLE, by persisting the exception type on team-state instead of re-inferring it from raw salary"
+    ]
+  },
+  {
     "version": "0.0.342",
     "date": "2026-07-07",
     "changes": [

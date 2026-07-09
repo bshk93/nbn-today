@@ -22,6 +22,9 @@
     .team-sel { flex: 1; background: #111827; border: 1px solid #374151; border-radius: 6px; color: #f3f4f6; font-size: 0.9rem; padding: 0.35rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; }
     .team-sel:focus { border-color: #3b82f6; }
     .team-logo { width: 24px; height: 24px; object-fit: contain; }
+    .exc-sel { width: 100%; margin-top: 0.5rem; background: #111827; border: 1px solid #374151; border-radius: 6px; color: #9ca3af; font-size: 0.78rem; padding: 0.3rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; display: none; }
+    .exc-sel:focus { border-color: #3b82f6; }
+    .exc-sel option { color: #f3f4f6; }
     .panel-body { padding: 0.5rem 0; max-height: 400px; overflow-y: auto; }
     .panel-section-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #4b5563; padding: 0.5rem 1rem 0.2rem; }
     .trade-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 1rem; cursor: pointer; border-radius: 0; transition: background 0.08s; }
@@ -96,6 +99,12 @@
         <img class="team-logo" id="logo-a" src="" alt="" style="display:none">
         <select class="team-sel" id="sel-a"><option value="">— Select Team A —</option></select>
       </div>
+      <select class="exc-sel" id="exc-a">
+        <option value="">No exception used</option>
+        <option value="ntmle">Non-Taxpayer MLE</option>
+        <option value="tmle">Taxpayer MLE</option>
+        <option value="room_exception">Room Exception</option>
+      </select>
       <div class="panel-body" id="body-a"><div class="panel-empty">Select a team to see their roster.</div></div>
     </div>
     <div class="trade-arrow">⇄</div>
@@ -104,6 +113,12 @@
         <img class="team-logo" id="logo-b" src="" alt="" style="display:none">
         <select class="team-sel" id="sel-b"><option value="">— Select Team B —</option></select>
       </div>
+      <select class="exc-sel" id="exc-b">
+        <option value="">No exception used</option>
+        <option value="ntmle">Non-Taxpayer MLE</option>
+        <option value="tmle">Taxpayer MLE</option>
+        <option value="room_exception">Room Exception</option>
+      </select>
       <div class="panel-body" id="body-b"><div class="panel-empty">Select a team to see their roster.</div></div>
     </div>
   </div>
@@ -129,6 +144,9 @@
       <li><strong>At/above the 2nd Apron (§ 4.4)</strong> — same outgoing + $250,000 limit, <em>and</em> the team may not <strong>aggregate</strong> (combine two or more outgoing salaries) to match incoming. Flagged as a warning for the office to verify.</li>
     </ul>
     <p class="doc-note">A team's tier is set by its salary <em>before</em> the trade. Incoming ≤ outgoing always matches.</p>
+
+    <h4>MLE trade absorption (§ 4.2a)</h4>
+    <p class="doc-note">Pick an exception under a team's selector to absorb that team's incoming salary against its remaining season MLE balance instead of matching outgoing salary — outgoing sent back doesn't matter under this path. Eligibility mirrors free-agent use of the same exception: NTMLE is blocked at/above the 1st Apron, TMLE at/above the 2nd Apron, and the Room Exception requires Team Salary more than a full NTMLE below the Cap. Using the NTMLE or TMLE this way triggers the same hard-cap-at-apron effect as a signing.</p>
 
     <h4>Other checks</h4>
     <ul>
@@ -197,6 +215,7 @@ async function init() {
       sel.appendChild(opt);
     });
     sel.addEventListener('change', () => loadTeam(side, sel.value));
+    document.getElementById(`exc-${side}`).addEventListener('change', updateCheckBtn);
   });
 
   // URL params for pre-loading
@@ -208,10 +227,13 @@ async function init() {
 async function loadTeam(side, abbr) {
   const body = document.getElementById(`body-${side}`);
   const logo = document.getElementById(`logo-${side}`);
-  if (!abbr) { body.innerHTML = '<div class="panel-empty">Select a team to see their roster.</div>'; logo.style.display = 'none'; selections[side] = { players: new Set(), picks: new Set() }; updateCheckBtn(); return; }
+  const exc = document.getElementById(`exc-${side}`);
+  exc.value = '';
+  if (!abbr) { body.innerHTML = '<div class="panel-empty">Select a team to see their roster.</div>'; logo.style.display = 'none'; exc.style.display = 'none'; selections[side] = { players: new Set(), picks: new Set() }; updateCheckBtn(); return; }
 
   logo.src = `/logos/logo-${abbr.toLowerCase()}.png`;
   logo.alt = abbr; logo.style.display = '';
+  exc.style.display = 'block';
   body.innerHTML = '<div class="panel-loading">Loading…</div>';
   selections[side] = { players: new Set(), picks: new Set() };
 
@@ -334,6 +356,12 @@ async function runCheck() {
     return;
   }
 
+  const exceptions = {};
+  const excA = document.getElementById('exc-a').value;
+  const excB = document.getElementById('exc-b').value;
+  if (excA) exceptions[abbA] = excA;
+  if (excB) exceptions[abbB] = excB;
+
   const seq = ++validateSeq;
   setStatus('Evaluating…', 'evaluating');
 
@@ -341,7 +369,7 @@ async function runCheck() {
     const res = await fetch('/api/validate/trade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transfers }),
+      body: JSON.stringify({ transfers, exceptions }),
     });
     if (seq !== validateSeq) return;   // a newer change superseded this one
     if (!res.ok) {
@@ -393,7 +421,9 @@ function factCol(abbr, fs, cl) {
       <div class="result-note">No assets moving for this team.</div></div>`;
   }
   const apron1 = cl.apron1 || 0;
-  const proj = t.projected_salary;
+  // Apron comparisons exclude pure free-agent cap holds (§ 1.3/1.4) — use the
+  // ex-holds projected figure so this matches what the checks below actually judge.
+  const proj = t.projected_salary_ex_holds ?? t.projected_salary;
   const overApron = apron1 && proj >= apron1;
   const apronRow = apron1
     ? `<div class="result-row"><span class="label">vs 1st Apron</span><span style="color:${overApron ? '#f87171' : '#6b7280'}">${overApron ? 'OVER by ' + fmtM(proj - apron1) : fmtM(apron1 - proj) + ' room'}</span></div>`
