@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.0.345",
+    "date": "2026-07-09",
+    "changes": [
+      "enter-transaction skill: ask plain-text (not multiple-choice) when the transaction date is missing, derive trade from_team via current-ownership lookup for receives-only phrasing, prefer a team's already-used MLE type when absorbing trade salary, and document the roster API's {headers,rows} response shape"
+    ]
+  },
+  {
     "version": "0.0.344",
     "date": "2026-07-09",
     "changes": [

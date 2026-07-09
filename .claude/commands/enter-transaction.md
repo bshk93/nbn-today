@@ -10,6 +10,8 @@ This replaces manually using the `/transactions` page. Nothing is ever submitted
 
 Extract `DATE` (first token, must match `\d{4}-\d{2}-\d{2}`) and `TEXT` (everything after).
 
+If the input doesn't start with a valid `YYYY-MM-DD` token (e.g. it was invoked with only a freeform description and no date), don't guess a default or offer multiple-choice options like "today vs. other" — just ask directly, as a plain open-ended question, what date the transaction should be logged under. A date is unbounded free text, not a choice among a few options, so it doesn't fit a multiple-choice prompt.
+
 **`DATE` and `TEXT` are the source of truth for this transaction — preserve them verbatim, don't work from your own paraphrase of them.** If resolving this takes multiple turns (ambiguities to clarify, blockers to research with the user) or gets deferred and picked up again in a later session, carry the *exact* original `TEXT` forward — quote it in full in any note, memory entry, or scratchpad you write about the task, not just your interpretation of it. A paraphrase can drop or scramble details a literal quote can't (e.g. which team receives which asset in a multi-team trade) — this has caused real resubmission errors before.
 
 ### 2. Load context (parallel)
@@ -52,6 +54,8 @@ For `sign`/`release`/`renounce`/`convert_twoway`/`option`/`guarantee`, cross-che
 
 Map city/nickname/owner references to the 30 team abbreviations (`atl bkn bos cha chi cle dal den det gsw hou ind lac lal mem mia mil min nop nyk okc orl phi phx por sac sas tor uta was`, uppercased for the API).
 
+For a `trade`, freeform text often states only the **receiving** side per team (e.g. "MIA receives X", "HOU receives Y") and leaves the sending team implicit — this is especially common in 3+-team trades. Don't assume adjacency in the text implies a from/to pair. Derive each asset's `from_team` by looking up its *current* owner — `/api/team-map` for players, `/api/picks/{team}` for picks (see 4c) — then pair that with whichever team the text says receives it. Do this per-asset, not per-team-block, since a single receiving team's assets in a multi-team deal can come from different senders.
+
 #### 4c. Draft picks — resolve via team ownership, not the raw CSV
 
 **Do not** try to match picks by reading `draft-picks.csv` directly or by naive string equality on `OWNER`. That field can be a pipe-separated multi-team string (`"LAL|BOS"`, meaning contingent/unresolved ownership) or the literal placeholder `"?"` (meaning "not yet determined, defaults to the original team"). Use `GET /api/picks/{team}` for the team the text says currently holds the pick — it applies the correct resolution (`owner == "?"` → falls back to the original team; otherwise `team in owner.split("|")`) — and match on `year`/`round`/`orig` from there.
@@ -83,7 +87,9 @@ trade:           { transfers: [ { from_team, to_team, assets: [
                    ] } ], legality: "tbd", exceptions?: { TEAM: "ntmle"|"tmle"|"room_exception" } }
 ```
 
-`exceptions` (trade only, optional): maps a team abbr to the MLE-type exception it's using to absorb *that team's* incoming salary in this trade, in lieu of matching outgoing salary (rulebook § 4.2a). Only set this when the text explicitly says a team is using its MLE/room exception to make a trade work — don't infer it just because a trade would otherwise fail salary matching; ask the user if it's ambiguous. Omit a team's key (or use `null`) for teams matching normally.
+`exceptions` (trade only, optional): maps a team abbr to the MLE-type exception it's using to absorb *that team's* incoming salary in this trade, in lieu of matching outgoing salary (rulebook § 4.2a). Only set this when the text explicitly says a team is using its MLE/room exception to make a trade work — don't infer it just because a trade would otherwise fail salary matching. Omit a team's key (or use `null`) for teams matching normally.
+
+If the text just says "MLE" without specifying NTMLE vs. TMLE, don't immediately ask the user to disambiguate — check `GET /api/team-state/{team}` first. If the team already has an `mle_type` set for the current season (from a prior signing/trade this year), default to that type and confirm the remaining balance (full amount from `/api/cap-levels` minus `mle_used`) covers the incoming salary — MLE usage is a single season-long pool, so a team already committed to NTMLE this season is almost always still using NTMLE, not switching to TMLE mid-year. Only ask the user if `team-state` shows no prior usage this season (genuinely ambiguous which one they mean) or the remaining balance doesn't cover the incoming salary. Present whichever type you land on as a flagged assumption in step 7 either way.
 
 `contract` (used by `sign`/`sign_pick`/`convert_twoway`):
 ```
@@ -136,6 +142,8 @@ curl -s http://localhost:8001/api/roster/{team}
 curl -s http://localhost:8001/api/picks/{team}
 curl -s http://localhost:8001/api/players    # re-check the touched slugs' bio fields (type, salaries, cap_holds)
 ```
+
+`GET /api/roster/{team}` returns `{"headers": [...], "rows": [{"SLUG": ..., "OVR": ...}, ...]}`, not a bare list — index into `["rows"]` before scanning for a slug. `GET /api/picks` (all) is a flat list of pick objects; `/api/players` is a dict keyed by slug.
 
 - For a `trade`, confirm the traded player(s) now appear on the receiving team's roster and no longer on the sending team's, and any traded picks now resolve to the new owner via `GET /api/picks/{team}` for the receiving team specifically (not just absence from the old owner's list — a pick can vanish from view for either team if its `OWNER` ends up in an unexpected compound state).
 - For a `sign`/`convert_twoway`/`sign_pick`, confirm `player-bios.json`'s `type` field changed as expected — **that field, not the roster CSV's second column, is the authoritative source for two-way/standard/dead status** (the roster CSV's `OVR` column is the only thing reliably persisted there).
