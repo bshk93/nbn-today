@@ -62,6 +62,30 @@
     .team-chart { width: 100%; }
     .no-data { color: #4b5563; font-size: 0.75rem; padding: 1rem 0; text-align: center; }
 
+    .salary-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .salary-controls label { font-size: 0.75rem; color: #9ca3af; }
+    .salary-controls select {
+      background: #111827;
+      color: #f3f4f6;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.8rem;
+    }
+    .salary-check {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-left: 0.75rem;
+      cursor: pointer;
+    }
+    .salary-check input { cursor: pointer; }
+
     .league-card {
       background: #1f2937;
       border: 1px solid #374151;
@@ -128,6 +152,12 @@
 
     <div id="tab-salaries" class="tab-panel">
       <div class="league-card">
+        <div class="salary-controls">
+          <label for="salary-season">Season</label>
+          <select id="salary-season"></select>
+          <label class="salary-check"><input type="checkbox" id="salary-show-holds"> Show cap holds</label>
+          <label class="salary-check"><input type="checkbox" id="salary-order-type"> Order by type</label>
+        </div>
         <div id="salary-chart"><div class="loading">Loading...</div></div>
       </div>
     </div>
@@ -180,10 +210,11 @@
     async function loadData() {
       if (_cache) return _cache;
       const abbrs = Object.keys(TEAMS);
-      const [ovrRes, playersRes, capLevelsRes, ...rosterAndDcResults] = await Promise.allSettled([
+      const [ovrRes, playersRes, capLevelsRes, leagueYearRes, ...rosterAndDcResults] = await Promise.allSettled([
         fetch('/api/ovr').then(r => r.json()),
         fetch('/api/players').then(r => r.json()),
         fetch('/api/cap-levels').then(r => r.json()),
+        fetch('/api/league-year').then(r => r.json()),
         ...abbrs.map(abbr => fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.text())),
         ...abbrs.map(abbr => fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : [])),
       ]);
@@ -200,6 +231,9 @@
 
       const playersData = playersRes.status === 'fulfilled' ? playersRes.value : {};
       const capLevels   = capLevelsRes.status === 'fulfilled' ? capLevelsRes.value : {};
+      const currentSeason = leagueYearRes.status === 'fulfilled' && leagueYearRes.value.current_season
+        ? leagueYearRes.value.current_season
+        : '25-26';
 
       const nameMap = {};
       for (const [slug, bio] of Object.entries(playersData)) {
@@ -219,7 +253,21 @@
         deadCapData[abbr] = dcResults[i].status === 'fulfilled' ? dcResults[i].value : [];
       });
 
-      _cache = { teamData, rosterRows, playersData, capLevels, deadCapData };
+      // Union of every season that appears anywhere (bio salaries + dead cap rows),
+      // restricted to the current league year and later — matches what team roster
+      // pages are able to show.
+      const seasons = new Set([currentSeason]);
+      for (const bio of Object.values(playersData)) {
+        Object.keys(bio.salaries || {}).forEach(s => { if (s >= currentSeason) seasons.add(s); });
+      }
+      for (const rows of Object.values(deadCapData)) {
+        rows.forEach(r => Object.keys(r).forEach(k => {
+          if (/^\d{2}-\d{2}$/.test(k) && k >= currentSeason) seasons.add(k);
+        }));
+      }
+      const seasonList = [...seasons].sort();
+
+      _cache = { teamData, rosterRows, playersData, capLevels, deadCapData, currentSeason, seasonList };
       return _cache;
     }
 
@@ -343,8 +391,48 @@
 
     // ── viz: salaries ─────────────────────────────────────────────────────────
 
-    function renderSalaryTab({ rosterRows, playersData, capLevels, deadCapData }) {
-      const SEASON = '25-26';
+    let salarySeason = null;
+
+    // Same hues as the "cap hold" swatches on team roster pages (teams/team.js
+    // SWATCH_COLORS) — kept in sync so a hold reads as the same color everywhere.
+    const CAP_HOLD_COLORS = {
+      nongtd:     '#374151',
+      player_opt: 'hsl(120, 50%, 30%)',
+      team_opt:   'hsl(210, 55%, 35%)',
+      rfa:        'hsl(25,  60%, 35%)',
+      ufa:        'hsl(45,  60%, 35%)',
+    };
+
+    // Segment stacking order when "Order by type" is on: dead cap first, then
+    // guaranteed money, then progressively less-certain money, cap holds last.
+    const TYPE_ORDER = ['dead', 'regular', 'nongtd', 'twoway', 'player_opt', 'team_opt', 'rfa', 'ufa'];
+
+    function renderSalaryTab(data, season) {
+      const { rosterRows, playersData, capLevels, deadCapData, currentSeason, seasonList } = data;
+      const SEASON = season || salarySeason || currentSeason;
+      salarySeason = SEASON;
+
+      const sel = document.getElementById('salary-season');
+      if (!sel.dataset.populated) {
+        sel.innerHTML = seasonList.map(s => `<option value="${s}">${s}</option>`).join('');
+        sel.value = SEASON;
+        sel.dataset.populated = '1';
+        sel.addEventListener('change', () => renderSalaryTab(data, sel.value));
+      }
+
+      const showHoldsEl  = document.getElementById('salary-show-holds');
+      const orderTypeEl  = document.getElementById('salary-order-type');
+      if (!showHoldsEl.dataset.wired) {
+        showHoldsEl.dataset.wired = '1';
+        showHoldsEl.addEventListener('change', () => renderSalaryTab(data, salarySeason));
+      }
+      if (!orderTypeEl.dataset.wired) {
+        orderTypeEl.dataset.wired = '1';
+        orderTypeEl.addEventListener('change', () => renderSalaryTab(data, salarySeason));
+      }
+      const showHolds = showHoldsEl.checked;
+      const orderByType = orderTypeEl.checked;
+
       const levels = capLevels?.[SEASON] || {};
 
       function parseSalary(s) {
@@ -353,15 +441,14 @@
       }
 
       const SEG_COLORS = {
-        dead:       '#4b5563',
-        twoway:     '#0891b2',
-        nongtd:     '#d97706',
-        player_opt: '#7c3aed',
-        team_opt:   '#059669',
+        dead:    '#4b5563',
+        regular: '#3b82f6',
+        twoway:  '#0891b2',
+        ...(showHolds ? CAP_HOLD_COLORS : {}),
       };
       const SEG_LABELS = {
         dead: 'Dead cap', twoway: 'Two-way', nongtd: 'Non-gtd',
-        player_opt: 'Player opt', team_opt: 'Team opt',
+        player_opt: 'Player opt', team_opt: 'Team opt', rfa: 'RFA hold', ufa: 'UFA hold',
       };
 
       function classify(bio) {
@@ -371,6 +458,8 @@
         const hold = bio.cap_holds?.[SEASON];
         if (hold === 'PLAYER_OPT')   return 'player_opt';
         if (hold === 'TEAM_OPT')     return 'team_opt';
+        if (hold === 'RFA')          return 'rfa';
+        if (hold === 'UFA')          return 'ufa';
         return 'regular';
       }
 
@@ -384,7 +473,8 @@
             if (!bio) return null;
             const salary = parseSalary(bio.salaries?.[SEASON]);
             if (!salary) return null;
-            const cls    = classify(bio);
+            let cls = classify(bio);
+            if (!showHolds && cls !== 'twoway') cls = 'regular';
             const name   = formatName(bio.name || r.SLUG);
             const salStr = '$' + (salary / 1e6).toFixed(1) + 'M';
             const note   = SEG_LABELS[cls];
@@ -406,7 +496,9 @@
           })
           .filter(Boolean);
 
-        const segments = [...rosterSegs, ...dcSegs].sort((a, b) => b.salary - a.salary);
+        const segments = [...rosterSegs, ...dcSegs].sort((a, b) => orderByType
+          ? (TYPE_ORDER.indexOf(a.cls) - TYPE_ORDER.indexOf(b.cls)) || (b.salary - a.salary)
+          : b.salary - a.salary);
         teamSal[abbr] = { segments, total: segments.reduce((s, p) => s + p.salary, 0) };
       }
 
@@ -467,12 +559,16 @@
 
       // Legend
       const legendDefs = [
-        { label: 'Guaranteed',    color: '#3b82f6'            },
-        { label: 'Non-gtd',       color: SEG_COLORS.nongtd },
-        { label: 'Player opt',    color: SEG_COLORS.player_opt },
-        { label: 'Team opt',      color: SEG_COLORS.team_opt },
-        { label: 'Dead cap',      color: SEG_COLORS.dead },
+        { label: 'Guaranteed',    color: SEG_COLORS.regular },
         { label: 'Two-way',       color: SEG_COLORS.twoway },
+        { label: 'Dead cap',      color: SEG_COLORS.dead },
+        ...(showHolds ? [
+          { label: 'Non-gtd',    color: SEG_COLORS.nongtd },
+          { label: 'Player opt', color: SEG_COLORS.player_opt },
+          { label: 'Team opt',   color: SEG_COLORS.team_opt },
+          { label: 'RFA hold',   color: SEG_COLORS.rfa },
+          { label: 'UFA hold',   color: SEG_COLORS.ufa },
+        ] : []),
       ];
       const LEG_COL_W = 100;
       const legItems = legendDefs.map((d, i) =>

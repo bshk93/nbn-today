@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Cap Summary — NBN</title>
+  <style>
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: #9ca3af;
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .thresholds {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    .thresholds b { color: #e5e7eb; }
+
+    .table-wrap {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    thead th {
+      padding: 0.7rem 0.85rem;
+      text-align: right;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th.left { text-align: left; }
+
+    thead th .sort-arrow {
+      margin-left: 3px;
+      opacity: 0;
+      font-size: 0.62rem;
+    }
+
+    thead th .th-short { display: none; }
+
+    thead th[data-active="true"] .sort-arrow { opacity: 1; }
+
+    tbody tr {
+      border-bottom: 1px solid #283141;
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody tr:hover { background: #263244; }
+
+    tbody tr.row-expanded,
+    tbody tr.row-expanded:hover { background: #212c3d; }
+
+    td {
+      padding: 0.55rem 0.85rem;
+      color: #d1d5db;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.left {
+      text-align: left;
+    }
+
+    td.zero { color: #4b5563; }
+
+    td.total-col {
+      font-weight: 700;
+      color: #f3f4f6;
+    }
+
+    td.hoverable {
+      cursor: default;
+    }
+
+    td.hoverable:hover {
+      background: #2d3a4d;
+    }
+
+    td.room-pos { color: #34d399; }
+    td.room-neg { color: #f87171; }
+
+    .hc-tag {
+      display: inline-block;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .hc-none  { color: #4b5563; }
+    .hc-first { background: #78350f; color: #fbbf24; }
+    .hc-second { background: #7f1d1d; color: #fca5a5; }
+
+    .expand-chevron {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.6rem;
+      height: 1.6rem;
+      margin-right: 0.1rem;
+      padding: 0;
+      background: none;
+      border: none;
+      border-radius: 4px;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      font-family: inherit;
+      cursor: pointer;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    .expand-chevron:hover { background: #374151; color: #e5e7eb; }
+
+    td.total-col.has-edit,
+    td.cat-edited {
+      color: #fbbf24;
+    }
+
+    td.cat-edited {
+      text-decoration: underline dotted #fbbf24;
+      text-underline-offset: 3px;
+    }
+
+    tr.edit-panel-row:hover { background: none; }
+
+    td.edit-panel-cell {
+      background: #161f2c;
+      padding: 0;
+      cursor: default;
+    }
+
+    /* width:1px + min-width:100% is the standard fix for wide/flexible content
+       inside a colspan table cell: it stops the browser's table auto-layout
+       algorithm from treating this element's natural content width as the
+       column's preferred width (which is what shoved the panel content off the
+       visible edge before), while still letting it fill whatever width the
+       table naturally settles on from the rest of its (unrelated, numeric)
+       columns. */
+    .edit-panel {
+      width: 1px;
+      min-width: 100%;
+      box-sizing: border-box;
+      white-space: normal;
+      padding: 0.9rem 1.1rem 1.1rem;
+    }
+
+    .edit-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .edit-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      color: #f3f4f6;
+      font-size: 0.9rem;
+    }
+
+    .edit-panel-title img { width: 20px; height: 20px; object-fit: contain; }
+
+    .edit-panel-note {
+      font-size: 0.78rem;
+      color: #9ca3af;
+      margin-bottom: 0.75rem;
+    }
+
+    .edit-panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .edit-reset-btn, .edit-close-btn {
+      background: #374151;
+      color: #f3f4f6;
+      border: none;
+      border-radius: 6px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.72rem;
+      cursor: pointer;
+    }
+
+    .edit-reset-btn:hover, .edit-close-btn:hover { background: #4b5563; }
+
+    .edit-cats {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem 1.5rem;
+    }
+
+    .edit-cat-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 0.35rem;
+    }
+
+    .edit-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.2rem 0;
+      font-size: 0.8rem;
+      color: #d1d5db;
+      cursor: pointer;
+    }
+
+    .edit-item input { cursor: pointer; flex-shrink: 0; }
+
+    .edit-item-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .edit-item-amt {
+      color: #9ca3af;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .edit-item:has(input:not(:checked)) .edit-item-name,
+    .edit-item:has(input:not(:checked)) .edit-item-amt {
+      text-decoration: line-through;
+      color: #6b7280;
+    }
+
+    .team-cell {
+      position: sticky;
+      left: 0;
+      background: #1f2937;
+      z-index: 1;
+      box-shadow: 1px 0 0 #374151;
+    }
+
+    tbody tr:hover .team-cell { background: #263244; }
+    tbody tr.row-expanded .team-cell { background: #212c3d; }
+
+    /* A plain `display: flex` on .team-link is a *block-level* flex container,
+       which forces a line break before it — stacking it under the chevron
+       button on its own line instead of sitting beside it. Wrapping both in one
+       flex row here keeps them on a single line regardless of that. */
+    .team-cell-inner {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .team-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .team-link:hover .team-abbr { text-decoration: underline; }
+
+    .team-link img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .team-abbr {
+      font-weight: 700;
+      color: #f3f4f6;
+      font-size: 0.85rem;
+      letter-spacing: 0.02em;
+    }
+
+    #status {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    #cap-tooltip {
+      position: fixed;
+      background: #111827;
+      border: 1px solid #4b5563;
+      border-radius: 8px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.78rem;
+      color: #e5e7eb;
+      pointer-events: none;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+      line-height: 1.5;
+      max-width: min(280px, calc(100vw - 24px));
+    }
+
+    #cap-tooltip .tt-title {
+      font-weight: 700;
+      color: #f3f4f6;
+      margin-bottom: 0.2rem;
+      display: block;
+    }
+
+    #cap-tooltip .tt-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    #cap-tooltip .tt-row span:first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    #cap-tooltip .tt-row .tt-amt {
+      color: #9ca3af;
+      flex-shrink: 0;
+    }
+
+    #cap-tooltip .tt-empty {
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    #cap-tooltip .tt-excluded {
+      text-decoration: line-through;
+      color: #6b7280;
+    }
+
+    #cap-tooltip .tt-divider {
+      border-top: 1px solid #374151;
+      margin: 0.35rem 0;
+    }
+
+    @media (max-width: 640px) {
+      table { font-size: 0.78rem; }
+      thead th, td { padding: 0.55rem 0.5rem; }
+      thead th .th-full { display: none; }
+      thead th .th-short { display: inline; }
+
+      /* Drop everything but Team/Total/Cap Room/Hard Cap so the table itself is
+         narrow on a phone instead of needing wide horizontal scroll — full
+         category detail is still a tap away via the Total cell's tooltip or a
+         row's expand panel. */
+      .mobile-hide { display: none; }
+
+      .edit-panel { padding: 0.85rem; }
+      .edit-panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+      }
+      .edit-reset-btn, .edit-close-btn { padding: 0.4rem 0.8rem; }
+      .edit-cats { grid-template-columns: 1fr; gap: 0.9rem; }
+      .edit-item { padding: 0.35rem 0; font-size: 0.85rem; }
+      .edit-item input {
+        width: 1.05rem;
+        height: 1.05rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div id="cap-tooltip"></div>
+    <nav class="nav"></nav>
+
+    <header>
+      <h1>Cap Summary</h1>
+      <p>Every team's cap sheet by category. Sort a column, tap a cell for detail, tap the arrow to test exclusions.</p>
+    </header>
+
+    <div class="thresholds" id="thresholds"></div>
+
+    <div class="table-wrap" id="table-wrap">
+      <div id="status">Loading…</div>
+    </div>
+  </div>
+
+  <script>
+    const TEAMS = {
+      ATL: "Atlanta Hawks",     BKN: "Brooklyn Nets",       BOS: "Boston Celtics",
+      CHA: "Charlotte Hornets", CHI: "Chicago Bulls",        CLE: "Cleveland Cavaliers",
+      DAL: "Dallas Mavericks",  DEN: "Denver Nuggets",       DET: "Detroit Pistons",
+      GSW: "Golden State Warriors", HOU: "Houston Rockets",  IND: "Indiana Pacers",
+      LAC: "LA Clippers",       LAL: "Los Angeles Lakers",   MEM: "Memphis Grizzlies",
+      MIA: "Miami Heat",        MIL: "Milwaukee Bucks",      MIN: "Minnesota Timberwolves",
+      NOP: "New Orleans Pelicans", NYK: "New York Knicks",   OKC: "Oklahoma City Thunder",
+      ORL: "Orlando Magic",     PHI: "Philadelphia 76ers",   PHX: "Phoenix Suns",
+      POR: "Portland Trail Blazers", SAC: "Sacramento Kings", SAS: "San Antonio Spurs",
+      TOR: "Toronto Raptors",   UTA: "Utah Jazz",            WAS: "Washington Wizards",
+    };
+
+    // Cap-usage categories, in display order. Keyed to match the classification
+    // buckets used elsewhere on the site (teams/team.js BUCKET_ORDER, frivolities
+    // salary tab classify()) so a dollar always lands in the same bucket everywhere.
+    // Extend this array (plus classify()/buildTeamRow()) to add roster-spot-hold or
+    // unsigned-pick-hold columns once those are tracked as real data.
+    const CATEGORIES = [
+      { key: 'guaranteed', label: 'Guaranteed', short: 'Gtd' },
+      { key: 'dead',       label: 'Dead Cap',   short: 'Dead' },
+      { key: 'nongtd',     label: 'Non-Gtd',    short: 'NonGtd' },
+      { key: 'team_opt',   label: 'Team Opt',   short: 'TmOpt' },
+      { key: 'player_opt', label: 'Player Opt', short: 'PlOpt' },
+      { key: 'rfa',        label: 'RFA Hold',   short: 'RFA' },
+      { key: 'ufa',        label: 'UFA Hold',   short: 'UFA' },
+    ];
+
+    function formatName(raw) {
+      if (!raw) return raw;
+      const [last, first] = raw.split(', ');
+      if (!first) return raw;
+      const cap = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+      return `${cap(first)} ${cap(last)}`;
+    }
+
+    function parseSalary(s) {
+      if (!s) return 0;
+      return parseInt(String(s).replace(/[$,]/g, '')) || 0;
+    }
+
+    function fmtMoney(n) {
+      if (!n) return '—';
+      return '$' + (n / 1e6).toFixed(1) + 'M';
+    }
+
+    function fmtRoom(n) {
+      const sign = n < 0 ? '−' : '+';
+      return sign + '$' + (Math.abs(n) / 1e6).toFixed(1) + 'M';
+    }
+
+    // Same guaranteed/hold-type classification as the roster table & salary viz
+    // elsewhere on the site — two-way players are $0 so folding them into
+    // "guaranteed" here is a no-op on the totals.
+    function classify(bio, season) {
+      const g = bio.guaranteed?.[season];
+      if (g === '0' || g === 0) return 'nongtd';
+      const hold = bio.cap_holds?.[season];
+      if (hold === 'PLAYER_OPT') return 'player_opt';
+      if (hold === 'TEAM_OPT')   return 'team_opt';
+      if (hold === 'RFA')        return 'rfa';
+      if (hold === 'UFA')        return 'ufa';
+      return 'guaranteed';
+    }
+
+    function emptyCats() {
+      const cats = {};
+      CATEGORIES.forEach(c => { cats[c.key] = { total: 0, players: [] }; });
+      return cats;
+    }
+
+    async function loadData() {
+      const abbrs = Object.keys(TEAMS);
+      const [playersRes, capLevelsRes, leagueYearRes, teamStateRes, ...rest] = await Promise.allSettled([
+        fetch('/api/players').then(r => r.json()),
+        fetch('/api/cap-levels').then(r => r.json()),
+        fetch('/api/league-year').then(r => r.json()),
+        fetch('/api/team-state').then(r => r.json()),
+        ...abbrs.map(abbr => fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : '')),
+        ...abbrs.map(abbr => fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : [])),
+      ]);
+
+      const rosterResults = rest.slice(0, abbrs.length);
+      const dcResults     = rest.slice(abbrs.length);
+
+      const playersData = playersRes.status === 'fulfilled' ? playersRes.value : {};
+      const capLevels   = capLevelsRes.status === 'fulfilled' ? capLevelsRes.value : {};
+      const teamState   = teamStateRes.status === 'fulfilled' ? teamStateRes.value : {};
+      const season = leagueYearRes.status === 'fulfilled' && leagueYearRes.value.current_season
+        ? leagueYearRes.value.current_season
+        : '25-26';
+      const levels = capLevels[season] || {};
+
+      const rows = abbrs.map((abbr, i) => {
+        const rosterRes = rosterResults[i];
+        const rosterRows = rosterRes.status === 'fulfilled' && rosterRes.value
+          ? parseCSV(rosterRes.value).filter(r => r.SLUG)
+          : [];
+        const dcRows = dcResults[i].status === 'fulfilled' ? dcResults[i].value : [];
+
+        const cats = emptyCats();
+
+        rosterRows.forEach(r => {
+          const bio = playersData[r.SLUG];
+          if (!bio) return;
+          if (bio.type === 'dead' || r.TYPE === 'dead') return; // dead cap comes from the deadcap endpoint below
+          const salary = parseSalary(bio.salaries?.[season]);
+          if (!salary) return;
+          const cls = classify(bio, season);
+          cats[cls].total += salary;
+          cats[cls].players.push({ name: formatName(bio.name || r.SLUG), amount: salary });
+        });
+
+        dcRows.forEach(r => {
+          const salary = parseSalary(r[season]);
+          if (!salary) return;
+          const bio = playersData[r.SLUG];
+          cats.dead.total += salary;
+          cats.dead.players.push({ name: formatName(bio?.name || r.SLUG), amount: salary });
+        });
+
+        CATEGORIES.forEach(c => cats[c.key].players.sort((a, b) => b.amount - a.amount));
+
+        const total = CATEGORIES.reduce((s, c) => s + cats[c.key].total, 0);
+        const ts = teamState[abbr]?.current || {};
+
+        return {
+          abbr, teamName: TEAMS[abbr], cats, total,
+          roomCap:    (levels.cap    || 0) - total,
+          roomApron1: (levels.apron1 || 0) - total,
+          roomApron2: (levels.apron2 || 0) - total,
+          hardCap: ts.hard_cap || null,
+        };
+      });
+
+      return { rows, levels, season };
+    }
+
+    // ── edit state (client-side only, "what if I exclude this contract" scratchpad) ─
+    // Keyed by team abbr → Set of "catKey:idx" identifying an excluded player within
+    // that team's cats[catKey].players array (a stable list, sorted once at load time
+    // and never reordered afterward, so the idx stays valid across re-renders).
+    // Nothing here is persisted — a full page reload wipes it, by design.
+
+    const editState = {};
+    let expandedAbbr = null;
+    let ROWS = [];
+    let TBODY = null;
+    let levels = {};
+
+    function excludedKey(catKey, idx) { return catKey + ':' + idx; }
+
+    function isExcluded(abbr, catKey, idx) {
+      return !!editState[abbr]?.has(excludedKey(catKey, idx));
+    }
+
+    function toggleExcluded(abbr, catKey, idx) {
+      if (!editState[abbr]) editState[abbr] = new Set();
+      const set = editState[abbr];
+      const key = excludedKey(catKey, idx);
+      if (set.has(key)) set.delete(key); else set.add(key);
+      if (!set.size) delete editState[abbr];
+    }
+
+    // Recomputes a team's category/total figures with any excluded contracts
+    // subtracted out. row.cats / row.total themselves are never mutated — they
+    // stay the real, unedited numbers so sorting is unaffected by the scratchpad.
+    function computeEdited(row) {
+      const set = editState[row.abbr];
+      const catTotals = {};
+      let total = 0;
+      CATEGORIES.forEach(c => {
+        let t = row.cats[c.key].total;
+        if (set) {
+          row.cats[c.key].players.forEach((p, idx) => {
+            if (set.has(excludedKey(c.key, idx))) t -= p.amount;
+          });
+        }
+        catTotals[c.key] = t;
+        total += t;
+      });
+      return { catTotals, total };
+    }
+
+    // Only one team's edit panel is open at a time, inserted as its own <tr>
+    // directly under the row that opened it — see the width:1px/min-width:100%
+    // trick on .edit-panel above for how it avoids blowing out the table's
+    // column widths.
+    function toggleExpand(abbr) {
+      const opening = expandedAbbr !== abbr;
+      expandedAbbr = opening ? abbr : null;
+      refresh();
+      if (opening) {
+        TBODY.querySelector('.edit-panel-row')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function refresh() {
+      rebuildBody(ROWS, TBODY);
+    }
+
+    function buildEditPanel(row) {
+      const wrap = document.createElement('div');
+      wrap.className = 'edit-panel';
+      const activeCats = CATEGORIES.filter(c => row.cats[c.key].players.length);
+      const hasEdit = !!editState[row.abbr];
+
+      wrap.innerHTML = `
+        <div class="edit-panel-header">
+          <span class="edit-panel-title">
+            <img src="/logos/logo-${row.abbr.toLowerCase()}.png" alt="">
+            Editing ${row.teamName}
+          </span>
+          <span class="edit-panel-actions">
+            ${hasEdit ? '<button type="button" class="edit-reset-btn">Reset edits</button>' : ''}
+            <button type="button" class="edit-close-btn">Close</button>
+          </span>
+        </div>
+        <div class="edit-panel-note">Uncheck a contract to exclude it from ${row.abbr}'s totals in the table above — for scenario-testing only, resets on refresh.</div>
+        <div class="edit-cats">
+          ${activeCats.map(c => `
+            <div class="edit-cat">
+              <div class="edit-cat-title">${c.label}</div>
+              ${row.cats[c.key].players.map((p, idx) => `
+                <label class="edit-item">
+                  <input type="checkbox" data-cat="${c.key}" data-idx="${idx}" ${isExcluded(row.abbr, c.key, idx) ? '' : 'checked'}>
+                  <span class="edit-item-name">${p.name}</span>
+                  <span class="edit-item-amt">${fmtMoney(p.amount)}</span>
+                </label>
+              `).join('')}
+            </div>
+          `).join('')}
+        </div>`;
+
+      wrap.querySelectorAll('input[type=checkbox]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          toggleExcluded(row.abbr, cb.dataset.cat, parseInt(cb.dataset.idx, 10));
+          refresh();
+        });
+      });
+      const resetBtn = wrap.querySelector('.edit-reset-btn');
+      if (resetBtn) resetBtn.addEventListener('click', () => {
+        delete editState[row.abbr];
+        refresh();
+      });
+      wrap.querySelector('.edit-close-btn').addEventListener('click', () => toggleExpand(row.abbr));
+
+      return wrap;
+    }
+
+    // ── tooltip ──────────────────────────────────────────────────────────────
+
+    const tooltip = document.getElementById('cap-tooltip');
+
+    function tooltipHtmlForCategory(label, players, abbr, catKey) {
+      if (!players.length) return `<span class="tt-title">${label}</span><span class="tt-empty">No players</span>`;
+      const rows = players.map((p, idx) => {
+        const excluded = isExcluded(abbr, catKey, idx);
+        return `<div class="tt-row${excluded ? ' tt-excluded' : ''}"><span>${p.name}${excluded ? ' (excluded)' : ''}</span><span class="tt-amt">${fmtMoney(p.amount)}</span></div>`;
+      }).join('');
+      return `<span class="tt-title">${label}</span>${rows}`;
+    }
+
+    function tooltipHtmlForTotal(row, edited, hasEdit) {
+      const parts = CATEGORIES
+        .map(c => ({ label: c.label, total: edited.catTotals[c.key] }))
+        .filter(c => c.total > 0)
+        .sort((a, b) => b.total - a.total);
+      const breakdown = parts.length
+        ? parts.map(p => `<div class="tt-row"><span>${p.label}</span><span class="tt-amt">${fmtMoney(p.total)}</span></div>`).join('')
+        : `<span class="tt-empty">No cap charges</span>`;
+
+      let editNote = '';
+      if (hasEdit) {
+        const removed = [];
+        CATEGORIES.forEach(c => {
+          row.cats[c.key].players.forEach((p, idx) => {
+            if (isExcluded(row.abbr, c.key, idx)) removed.push(p);
+          });
+        });
+        editNote = `<div class="tt-divider"></div>
+          <div class="tt-row"><span>Original total</span><span class="tt-amt">${fmtMoney(row.total)}</span></div>
+          <div class="tt-row"><span>Excluded</span><span class="tt-amt">-${fmtMoney(row.total - edited.total)}</span></div>
+          ${removed.map(p => `<div class="tt-row tt-excluded"><span>${p.name}</span><span class="tt-amt">${fmtMoney(p.amount)}</span></div>`).join('')}`;
+      }
+
+      return `<span class="tt-title">Total — ${row.abbr}${hasEdit ? ' (edited)' : ''}</span>${breakdown}${editNote}`;
+    }
+
+    function positionTooltip(cell) {
+      tooltip.style.display = 'block';
+      const rect = cell.getBoundingClientRect();
+      const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+      let x = rect.left + rect.width / 2 - tw / 2;
+      x = Math.max(8, Math.min(x, window.innerWidth - tw - 8));
+      let y = rect.top - th - 8;
+      if (y < 8) y = rect.bottom + 8;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    }
+
+    function attachCellTooltip(td, htmlFn) {
+      td.classList.add('hoverable');
+      const show = () => { tooltip.innerHTML = htmlFn(); positionTooltip(td); };
+      td.addEventListener('mouseenter', show);
+      td.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+      td.addEventListener('click', e => { e.stopPropagation(); show(); });
+    }
+
+    document.addEventListener('click', () => { tooltip.style.display = 'none'; });
+
+    // ── table ────────────────────────────────────────────────────────────────
+
+    // mobileHide columns are dropped below 640px so the table itself is only 4
+    // columns wide there (Team/Total/Cap Room/Hard Cap) instead of needing wide
+    // horizontal scroll — the category breakdown is still one tap away via the
+    // Total cell's tooltip or the row's expand panel.
+    const COLS = [
+      { key: 'team',  label: 'Team',  cls: 'left', sortVal: r => r.teamName, defaultDir: 1 },
+      ...CATEGORIES.map(c => ({
+        key: c.key, label: c.label, shortLabel: c.short, cls: '', mobileHide: true,
+        sortVal: r => r.cats[c.key].total, defaultDir: -1,
+      })),
+      { key: 'total', label: 'Total', cls: 'total-col', sortVal: r => r.total, defaultDir: -1 },
+      { key: 'roomCap',    label: 'Cap Room',       shortLabel: 'Cap Rm', cls: '', sortVal: r => r.roomCap,    defaultDir: 1 },
+      { key: 'roomApron1', label: '1st Apron Room', shortLabel: 'Ap1 Rm', cls: '', mobileHide: true, sortVal: r => r.roomApron1, defaultDir: 1 },
+      { key: 'roomApron2', label: '2nd Apron Room', shortLabel: 'Ap2 Rm', cls: '', mobileHide: true, sortVal: r => r.roomApron2, defaultDir: 1 },
+      { key: 'hardCap',    label: 'Hard Cap',       shortLabel: 'HCap',   cls: '', sortVal: r => r.hardCap === 'second_apron' ? 2 : r.hardCap === 'first_apron' ? 1 : 0, defaultDir: -1 },
+    ];
+
+    let sortField = 'total';
+    let sortDir = -1;
+
+    function sortRows(rows) {
+      const col = COLS.find(c => c.key === sortField);
+      return [...rows].sort((a, b) => {
+        const va = col.sortVal(a), vb = col.sortVal(b);
+        if (va < vb) return -sortDir;
+        if (va > vb) return sortDir;
+        return 0;
+      });
+    }
+
+    function buildTable(rows) {
+      const table = document.createElement('table');
+      const thead = table.createTHead();
+      const hr = thead.insertRow();
+
+      COLS.forEach(col => {
+        const th = document.createElement('th');
+        if (col.cls) th.classList.add(col.cls);
+        if (col.mobileHide) th.classList.add('mobile-hide');
+        const isActive = col.key === sortField;
+        const fullSpan = document.createElement('span');
+        fullSpan.className = 'th-full';
+        fullSpan.textContent = col.label;
+        th.appendChild(fullSpan);
+        const shortSpan = document.createElement('span');
+        shortSpan.className = 'th-short';
+        shortSpan.textContent = col.shortLabel || col.label;
+        th.appendChild(shortSpan);
+        const arrow = document.createElement('span');
+        arrow.className = 'sort-arrow';
+        arrow.textContent = sortDir === -1 ? '↓' : '↑';
+        th.appendChild(arrow);
+        th.dataset.active = isActive;
+        th.addEventListener('click', () => {
+          if (sortField === col.key) sortDir *= -1;
+          else { sortField = col.key; sortDir = col.defaultDir; }
+          rebuildBody(rows, tbody);
+          thead.querySelectorAll('th').forEach(t => {
+            t.dataset.active = false;
+            t.querySelector('.sort-arrow').textContent = '↓';
+          });
+          th.dataset.active = true;
+          th.querySelector('.sort-arrow').textContent = sortDir === -1 ? '↓' : '↑';
+        });
+        hr.appendChild(th);
+      });
+
+      const tbody = table.createTBody();
+      rebuildBody(rows, tbody);
+      return table;
+    }
+
+    function rebuildBody(rows, tbody) {
+      ROWS = rows;
+      TBODY = tbody;
+      tbody.innerHTML = '';
+      sortRows(rows).forEach(row => {
+        const edited = computeEdited(row);
+        const hasEdit = edited.total !== row.total;
+        const expanded = row.abbr === expandedAbbr;
+
+        const tr = tbody.insertRow();
+        if (expanded) tr.classList.add('row-expanded');
+
+        // Team cell — the sole click target for expand/collapse. (Category/Total
+        // cells intercept their own click for the tooltip via stopPropagation, so
+        // a row-wide listener never actually fired for most of the row. The
+        // expand toggle is its own real <button> (not a delegated click on a
+        // tiny inline span) so it's a reliable, adequately-sized tap target on
+        // touchscreens, and a sibling of — not nested inside — the team link,
+        // so there's no closest('a') delegation guesswork.
+        const teamTd = tr.insertCell();
+        teamTd.classList.add('left', 'team-cell');
+        teamTd.innerHTML = `<div class="team-cell-inner">
+          <button type="button" class="expand-chevron" aria-label="Toggle ${row.abbr} cap detail">${expanded ? '▾' : '▸'}</button>
+          <a class="team-link" href="/teams/${row.abbr}/">
+            <img src="/logos/logo-${row.abbr.toLowerCase()}.png" alt="">
+            <span class="team-abbr">${row.abbr}</span>
+          </a>
+        </div>`;
+        teamTd.querySelector('.expand-chevron').addEventListener('click', () => toggleExpand(row.abbr));
+        tr.appendChild(teamTd);
+
+        // Category cells
+        CATEGORIES.forEach(c => {
+          const td = tr.insertCell();
+          td.classList.add('mobile-hide');
+          const val = edited.catTotals[c.key];
+          td.textContent = fmtMoney(val);
+          if (!val) td.classList.add('zero');
+          if (val !== row.cats[c.key].total) td.classList.add('cat-edited');
+          if (row.cats[c.key].total > 0) attachCellTooltip(td, () => tooltipHtmlForCategory(c.label, row.cats[c.key].players, row.abbr, c.key));
+        });
+
+        // Total
+        const totalTd = tr.insertCell();
+        totalTd.classList.add('total-col');
+        if (hasEdit) totalTd.classList.add('has-edit');
+        totalTd.textContent = fmtMoney(edited.total);
+        if (row.total > 0) attachCellTooltip(totalTd, () => tooltipHtmlForTotal(row, edited, hasEdit));
+
+        // Room columns (reflect the edited total)
+        const roomCap    = (levels.cap    || 0) - edited.total;
+        const roomApron1 = (levels.apron1 || 0) - edited.total;
+        const roomApron2 = (levels.apron2 || 0) - edited.total;
+        [[roomCap, false], [roomApron1, true], [roomApron2, true]].forEach(([v, hideOnMobile]) => {
+          const td = tr.insertCell();
+          td.textContent = fmtRoom(v);
+          td.classList.add(v < 0 ? 'room-neg' : 'room-pos');
+          if (hideOnMobile) td.classList.add('mobile-hide');
+        });
+
+        // Hard cap status (server-recorded, not affected by the edit scratchpad)
+        const hcTd = tr.insertCell();
+        const hcLabel = row.hardCap === 'second_apron' ? '2nd Apron' : row.hardCap === 'first_apron' ? '1st Apron' : '—';
+        const hcCls = row.hardCap === 'second_apron' ? 'hc-second' : row.hardCap === 'first_apron' ? 'hc-first' : 'hc-none';
+        hcTd.innerHTML = `<span class="hc-tag ${hcCls}">${hcLabel}</span>`;
+
+        if (expanded) {
+          const panelTr = tbody.insertRow();
+          panelTr.className = 'edit-panel-row';
+          const panelTd = panelTr.insertCell();
+          panelTd.colSpan = COLS.length;
+          panelTd.className = 'edit-panel-cell';
+          panelTd.appendChild(buildEditPanel(row));
+        }
+      });
+    }
+
+    function renderThresholds(levels, season) {
+      const el = document.getElementById('thresholds');
+      const parts = [
+        ['Season', season],
+        ['Salary Cap', fmtMoney(levels.cap)],
+        ['1st Apron', fmtMoney(levels.apron1)],
+        ['2nd Apron', fmtMoney(levels.apron2)],
+      ];
+      if (levels.hard_cap) parts.push(['Hard Cap', fmtMoney(levels.hard_cap)]);
+      el.innerHTML = parts.map(([label, val]) => `<span>${label}: <b>${val}</b></span>`).join('');
+    }
+
+    (async () => {
+      const status = document.getElementById('status');
+      const wrap = document.getElementById('table-wrap');
+      try {
+        const data = await loadData();
+        levels = data.levels;
+        renderThresholds(levels, data.season);
+        status.remove();
+        wrap.appendChild(buildTable(data.rows));
+      } catch (e) {
+        status.textContent = 'Failed to load cap summary.';
+      }
+    })();
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>
