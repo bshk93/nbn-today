@@ -501,6 +501,30 @@
       font-size: 0.9rem;
     }
 
+    /* ── Pagination ── */
+    .txn-pagination {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 0;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+    .txn-page-btn {
+      padding: 0.3rem 0.7rem;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.12s, color 0.12s;
+    }
+    .txn-page-btn:hover:not(:disabled) { background: #263244; color: #d1d5db; }
+    .txn-page-btn:disabled { opacity: 0.35; cursor: default; }
+
     /* ── Player autocomplete ── */
     .player-wrap { position: relative; }
 
@@ -837,6 +861,7 @@
       </tbody>
     </table>
   </div>
+  <div class="txn-pagination" id="txn-pagination" style="display:none"></div>
 </main>
 
 <!-- Token modal -->
@@ -872,6 +897,8 @@ let teamStates = {};   // abbr → { hard_cap, mle_used, bae_used, bae_available
 let capLevelsData = {}; // season → { cap, apron1, ntmle_amount, ... }
 let legCounter = 0;
 let activeTypeFilter = '';
+let currentPage = 0;
+const TXN_PAGE_SIZE = 25;
 let currentToken = localStorage.getItem(TOKEN_KEY) || '';
 let isAdmin = false;
 
@@ -1894,6 +1921,7 @@ function setupFilters() {
       document.querySelectorAll('.chip[data-filter="type"]').forEach(c => c.classList.remove('active'));
       this.classList.add('active');
       activeTypeFilter = this.dataset.value;
+      currentPage = 0;
       renderTable();
     });
   });
@@ -2043,6 +2071,7 @@ async function submitTransaction() {
 
     // Prepend to local list and re-render
     allTransactions.unshift(data);
+    currentPage = 0;
     renderTable();
     setStatus('ok', 'Transaction recorded.');
     resetForm();
@@ -2204,6 +2233,7 @@ document.getElementById('txn-tbody').addEventListener('click', async function(e)
 // ── Table rendering ────────────────────────────────────────────────────────
 function renderTable() {
   const tbody = document.getElementById('txn-tbody');
+  const pagination = document.getElementById('txn-pagination');
   let txns = allTransactions;
 
   if (activeTypeFilter) {
@@ -2212,10 +2242,30 @@ function renderTable() {
 
   if (!txns.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No transactions yet.</td></tr>';
+    pagination.style.display = 'none';
     return;
   }
 
-  tbody.innerHTML = txns.map(renderRow).join('');
+  const totalPages = Math.ceil(txns.length / TXN_PAGE_SIZE);
+  currentPage = Math.max(0, Math.min(currentPage, totalPages - 1));
+  const start = currentPage * TXN_PAGE_SIZE;
+  const pageTxns = txns.slice(start, start + TXN_PAGE_SIZE);
+
+  tbody.innerHTML = pageTxns.map(renderRow).join('');
+  renderPagination(pagination, txns.length, start, totalPages);
+}
+
+function renderPagination(pagination, totalCount, start, totalPages) {
+  if (totalPages <= 1) { pagination.style.display = 'none'; return; }
+  pagination.style.display = '';
+  const end = Math.min(start + TXN_PAGE_SIZE, totalCount);
+  pagination.innerHTML = `
+    <button class="txn-page-btn" id="txn-prev-btn" ${currentPage === 0 ? 'disabled' : ''}>&larr; Prev</button>
+    <span>${start + 1}&ndash;${end} of ${totalCount}</span>
+    <button class="txn-page-btn" id="txn-next-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next &rarr;</button>
+  `;
+  document.getElementById('txn-prev-btn').addEventListener('click', () => { currentPage--; renderTable(); });
+  document.getElementById('txn-next-btn').addEventListener('click', () => { currentPage++; renderTable(); });
 }
 
 function renderRow(t) {
