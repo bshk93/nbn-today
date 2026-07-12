@@ -118,6 +118,7 @@ These are fetched from nbn-api at runtime, not from flat files in the repo.
 | `GET /api/players/{slug}/gamelog` | player profiles | `allstats-{YY-YY}.csv` in NBS_DATA_DIR |
 | `GET /api/deadcap/{team}` | `teams/{ABB}/index.html` | `team-state.json` in NBS_DATA_DIR |
 | `GET /api/members/public` | `members/index.html` | `members.json` in NBS_DATA_DIR |
+| `GET /api/trade-exceptions` / `GET /api/trade-exceptions/{team}` | `teams/{ABB}/index.html` | `trade-exceptions.json` in NBS_DATA_DIR |
 
 ## Stats pipeline
 

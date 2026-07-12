@@ -473,6 +473,10 @@ document.body.innerHTML = `
         <h2 class="section-title">Cap Exceptions</h2>
         <div id="exceptions-wrap" class="exceptions-card"></div>
       </section>
+      <section id="trade-exceptions-section" style="display:none">
+        <h2 class="section-title">Trade Exceptions</h2>
+        <div id="trade-exceptions-wrap" class="exceptions-card"></div>
+      </section>
       <section>
         <h2 class="section-title" id="picks-title">Draft Picks</h2>
         <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
@@ -796,6 +800,42 @@ function renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalar
   }
 
   section.style.display = wrap.children.length ? '' : 'none';
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// Rulebook § 4.1a — banked when a team sends out more salary than it receives
+// in a trade; not itself tradeable. Read-only for now: creation/consumption is
+// manual (ported from the league's roster/cap spreadsheet), not computed from
+// trade transactions.
+function renderTradeExceptionsSection(exceptions) {
+  const section = document.getElementById('trade-exceptions-section');
+  const wrap = document.getElementById('trade-exceptions-wrap');
+  wrap.innerHTML = '';
+
+  const list = (exceptions || []).slice().sort((a, b) => a.expires_date.localeCompare(b.expires_date));
+  if (!list.length) { section.style.display = 'none'; return; }
+
+  list.forEach(exc => {
+    const row = document.createElement('div');
+    row.className = 'exceptions-row';
+    if (exc.expired) row.style.opacity = '0.5';
+    const remCls = !exc.expired && exc.remaining > 0 ? 'exc-remaining' : 'exc-used';
+    const noteHtml = exc.note ? `<span class="exc-mle-type">(${exc.note})</span>` : '';
+    row.innerHTML = `
+      <span class="exc-label">TPE ${noteHtml}</span>
+      <span>
+        <span class="${remCls}">${fmtDollars(exc.remaining)} remaining</span>
+        <span style="color:#4b5563;font-size:0.75rem"> / ${fmtDollars(exc.amount)}</span>
+        <span style="color:#6b7280;font-size:0.72rem"> · ${exc.expired ? 'expired' : 'expires'} ${fmtDate(exc.expires_date)}</span>
+      </span>`;
+    wrap.appendChild(row);
+  });
+
+  section.style.display = '';
 }
 
 function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}) {
@@ -1126,7 +1166,14 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         const hasAny = salaryKeys.some(k => totals[name][k].count > 0);
         if (!hasAny) return;
         const tr = tfRow('tfoot-bucket');
-        tfCell(tr, name, 'tfoot-label', nonSalCols);
+        const labelTd = tfCell(tr, name, 'tfoot-label', nonSalCols);
+        if (name === 'Guaranteed') {
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          badge.dataset.tip = 'Salary with no player/team option, non-guaranteed flag, or free-agent hold — owed regardless of roster moves.';
+          badge.textContent = 'ⓘ';
+          labelTd.appendChild(badge);
+        }
         salaryKeys.forEach(k => {
           const { amt, count } = totals[name][k];
           const td = tfCell(tr, amt ? formatSalary(amt) : '—', 'right');
@@ -2627,7 +2674,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -2644,6 +2691,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/league-year').then(r => r.ok ? r.json() : null),
     fetch('/api/auth/me', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : null),
     fetch('/api/transactions?limit=500').then(r => r.ok ? r.json() : { transactions: [] }),
+    fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []),
   ]);
 
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
@@ -2661,6 +2709,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const allTxns     = txnsr.status === 'fulfilled' ? (txnsr.value.transactions || []) : [];
   const membersData = memr.status  === 'fulfilled' ? memr.value  : [];
   const allGames    = gamesr.status === 'fulfilled' ? gamesr.value : [];
+  const tradeExceptions = ter.status === 'fulfilled' ? ter.value : [];
 
   let seasonRows = [];
   if (sr.status === 'fulfilled') {
@@ -2877,6 +2926,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     });
     renderHardCapBanner(teamState);
     renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, curYr);
+    renderTradeExceptionsSection(tradeExceptions);
 
     setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels, currentOvr, deadCapRows, seasonStates), rosterCellConfig(rosterHeaders, biosData));
     setupJerseyEditable('roster-title', 'roster-wrap', rosterRows, biosData, () => {

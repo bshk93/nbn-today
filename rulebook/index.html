@@ -213,6 +213,7 @@
 
         <a class="art-link" href="#art4"><span class="art-num">Article IV</span><span class="art-ttl">Trades</span></a>
         <a class="sec-link" href="#s4-1">§ 4.1 Assets</a>
+        <a class="sec-link" href="#s4-1a">§ 4.1a Trade Exceptions (TPE)</a>
         <a class="sec-link" href="#s4-2">§ 4.2 Salary Matching</a>
         <a class="sec-link" href="#s4-2a">§ 4.2a MLE Trade Absorption</a>
         <a class="sec-link" href="#s4-3">§ 4.3 First Apron</a>
@@ -689,8 +690,16 @@
             <p>Trades may include <strong>players</strong> and <strong>draft picks</strong> only.</p>
             <ul>
               <li><strong>Cash is not a tradeable asset in NBN.</strong> No cash considerations may be attached to any trade.</li>
-              <li><strong>Traded Player Exceptions (TPEs) do not exist in NBN.</strong> When a player is traded, no exception is generated for the sending team, and none is banked for later use. A team's ability to absorb incoming salary is evaluated live, using only that trade's own numbers — standard tiered matching (§ 4.2), cap-room absorption (see below), or MLE trade absorption (§ 4.2a).</li>
+              <li><strong>Trade Exceptions (TPEs) are not themselves tradeable.</strong> A TPE is banked by the team that sends out more salary than it receives in a trade — see § 4.1a. It belongs solely to the banking team and cannot be included as an asset in a subsequent trade.</li>
             </ul>
+          </div>
+
+          <div class="doc-section" id="s4-1a">
+            <h3 class="sec-title"><span class="sec-num">§ 4.1a</span> Trade Exceptions (TPE) <span class="badge badge-manual">👁 manual review</span></h3>
+            <p>When a team sends out more salary than it receives in a trade, it is credited with a <strong>Trade Exception</strong> equal to the difference (outgoing salary − incoming salary). The exception <strong>expires one year (365 days)</strong> from the date of the trade that created it; any unused balance is forfeited at expiration.</p>
+            <p>A TPE may be used to acquire a player — via trade or waiver claim — whose salary is at or below the exception's <strong>remaining</strong> balance, without sending matching salary back. It cannot be combined with other exceptions, or with outgoing salary, in the same acquisition. Using a TPE does not itself trigger a hard cap.</p>
+            <p><strong>Not itself tradeable</strong> (see § 4.1): a TPE stays with the team that banked it and cannot be packaged into another trade.</p>
+            <p>Creation and balance tracking are currently <strong>manual</strong> — entered from the league's roster/cap spreadsheet rather than computed automatically from trade transactions. The trade builder does not yet let a team draw on a TPE to absorb salary; that integration is planned but not yet built.</p>
           </div>
 
           <div class="doc-section" id="s4-2">
@@ -708,7 +717,7 @@
             </table>
             <p><strong>Minimum contract exception:</strong> A player on a minimum contract of 2 seasons or fewer does <strong>not</strong> count as incoming salary for matching purposes. A minimum contract of more than 2 seasons does count.</p>
             <p><strong>Base Year Compensation (BYC):</strong> Applies when a player is sent out in a sign-and-trade and meets all four criteria: Bird/Early Bird FA of the sending team; salary above minimum; raise greater than 20%; signing team at or above the cap after signing. When BYC applies, the sending team's outgoing credit is the greater of the player's previous salary or 50% of his new salary. The receiving team still counts the full new salary as incoming.</p>
-            <p><strong>Cap-room absorption:</strong> A team whose Team Salary is <strong>below the Salary Cap</strong> may instead acquire a player using its own cap room, without regard to the tiers above — no outgoing salary is required. This applies whenever the team's Team Salary, after the trade (outgoing removed, incoming added), remains at or below the Cap. This is evaluated fresh for each trade off the team's actual room at that moment — it is a live substitute for matching, not a stored exception (see § 4.1). If room alone isn't enough to cover the incoming salary, the standard tiered limit (using any outgoing salary sent) is checked as a fallback.</p>
+            <p><strong>Cap-room absorption:</strong> A team whose Team Salary is <strong>below the Salary Cap</strong> may instead acquire a player using its own cap room, without regard to the tiers above — no outgoing salary is required. This applies whenever the team's Team Salary, after the trade (outgoing removed, incoming added), remains at or below the Cap. This is evaluated fresh for each trade off the team's actual room at that moment — it is a live substitute for matching, not a stored exception (unlike the TPE, § 4.1a). If room alone isn't enough to cover the incoming salary, the standard tiered limit (using any outgoing salary sent) is checked as a fallback.</p>
           </div>
 
           <div class="doc-section" id="s4-2a">
@@ -716,7 +725,7 @@
             <p>A team may absorb incoming trade salary using its <strong>remaining season MLE balance</strong> (Non-Taxpayer MLE, Taxpayer MLE, or Room Exception) in lieu of matching outgoing salary. Under this path, incoming salary must not exceed the exception's <strong>remaining</strong> amount for the season (full amount minus any already used, from signings or prior trades) — outgoing salary sent back is not a factor.</p>
             <p><strong>Eligibility mirrors free-agent use of the same exception</strong> (§§ 3.2–3.4): the Non-Taxpayer MLE is unavailable to a team at or above the First Apron (§ 1.5); the Taxpayer MLE is unavailable to a team at or above the Second Apron (§ 1.6, § 3.4); the Room Exception is available only to a team whose Team Salary is more than the full NTMLE amount below the Cap (§ 3.2). Eligibility is checked against the team's Team Salary <em>before</em> the trade.</p>
             <p><strong>Hard-cap trigger:</strong> Using the NTMLE this way hard-caps the team at the <strong>First Apron</strong> for the remainder of the season, same as an NTMLE signing (§ 3.3). Using the TMLE hard-caps the team at the <strong>Second Apron</strong> (§ 3.4). The Room Exception triggers no hard cap.</p>
-            <p>This is distinct from cap-room absorption above — a team uses one or the other for a given incoming player, not both, and (like all NBN exceptions) the amount is not banked as a Traded Player Exception; it is drawn from the team's shared season MLE balance, the same balance signings draw from (§ 3.1).</p>
+            <p>This is distinct from cap-room absorption above and from using a TPE (§ 4.1a) — a team uses exactly one of the three for a given incoming player. MLE trade absorption draws from the team's shared season MLE balance, the same balance signings draw from (§ 3.1); it does not create or consume a Trade Exception.</p>
           </div>
 
           <div class="doc-section" id="s4-3">
