@@ -26,21 +26,24 @@ Also read `/home/skim/projects/nbn-today/rulebook/index.html` sections as needed
 
 ### 3. Classify the transaction type
 
-Read `TEXT` and decide which of the 9 types it describes:
+Read `TEXT` and decide which of the 11 types it describes:
 
 | Type | Cues in freeform text |
 |---|---|
 | `trade` | Two or more teams exchanging players/picks ("trades X for Y", "sends ... to ... for ...") |
+| `sign` + `trade` (sign-and-trade) | "sign-and-trades X to Y", or a pending free agent being re-signed by their own team and immediately moved elsewhere. Not a distinct API type — see the note under step 5's shape reference. |
 | `sign` | A free agent signing a new contract with a team |
 | `sign_pick` | Signing a player to their **rookie-scale** contract after their draft rights were awarded (distinct from `pick` — see below) |
 | `pick` | Awarding a drafted player's rights to the team that picked them (no contract yet — that's a separate later `sign_pick`) |
-| `release` | Waiving/cutting a player currently on a roster |
+| `release` | Waiving/cutting a player currently on a roster (team remains on the hook for some/all dead cap) |
 | `renounce` | Giving up a free-agent cap hold (UFA/RFA) without releasing an active contract |
 | `option` | A player or team exercising or declining a `PLAYER_OPT`/`TEAM_OPT` |
 | `guarantee` | A non-guaranteed salary year becoming guaranteed |
 | `convert_twoway` | Converting a player between a standard and two-way contract |
+| `void_player` | Dropping a player with **zero** remaining cap obligation — real-life retirement/death, the player not existing in the current 2K build, or an unwanted 2nd-rounder/UDFA voided by the rulebook's deadline (§5.1). Cue words: "retires", "voids", "dies", "not in the game", cut with no dead cap mentioned at all. **Never use this for an ordinary cut** — if there's any dead cap owed, it's `release`, not `void_player`. |
+| `set_hard_cap_level` | Manually setting or clearing a team's hard-cap status (First Apron / Second Apron / back to default). Cue words: "hard-capped at the apron", "clears their hard cap", "sets X to the first apron". This type has **no automatic triggers wired up yet** (sign-and-trade, buyout re-sign, trade contagion are all still manual per rulebook §1.4 rows C/D) — it exists so a manual BOD decision gets a reason and an author in the transaction log instead of a silent `PUT /api/team-state` edit. |
 
-If the text is genuinely ambiguous between two types (e.g. "signs their draft pick" could be `pick` or `sign_pick` depending on whether this is the initial rights-award or the rookie contract), ask the user to disambiguate rather than guessing — say what you think it is and why, and let them correct it in the confirmation step (7) if you're wrong.
+If the text is genuinely ambiguous between two types (e.g. "signs their draft pick" could be `pick` or `sign_pick` depending on whether this is the initial rights-award or the rookie contract, or a cut could be `release` vs `void_player` depending on whether any money is still owed), ask the user to disambiguate rather than guessing — say what you think it is and why, and let them correct it in the confirmation step (7) if you're wrong.
 
 ### 4. Resolve entities
 
@@ -48,11 +51,15 @@ If the text is genuinely ambiguous between two types (e.g. "signs their draft pi
 
 For each player named in `TEXT`, match against `/api/players` the same way as other skills in this repo: build a `lowercase "first last" -> slug` map from each bio's `name` field (`"LAST, FIRST"`), then fuzzy-match with `difflib.get_close_matches`. Confirm uncertain matches with the user in step 7 rather than silently picking the top match if the text used an ambiguous short name (e.g. just a last name shared by multiple players).
 
-For `sign`/`release`/`renounce`/`convert_twoway`/`option`/`guarantee`, cross-check the resolved player is actually in the state the text implies (e.g. don't resolve a `release` against a player who isn't currently on that team's roster per `/api/team-map`) — flag a mismatch instead of proceeding.
+For `sign`/`release`/`renounce`/`convert_twoway`/`option`/`guarantee`/`void_player`, cross-check the resolved player is actually in the state the text implies (e.g. don't resolve a `release` or `void_player` against a player who isn't currently on that team's roster per `/api/team-map`) — flag a mismatch instead of proceeding.
+
+`set_hard_cap_level` names no player at all — it's a team-only transaction. Don't try to resolve a player for it.
 
 #### 4b. Teams
 
 Map city/nickname/owner references to the 30 team abbreviations (`atl bkn bos cha chi cle dal den det gsw hou ind lac lal mem mia mil min nop nyk okc orl phi phx por sac sas tor uta was`, uppercased for the API).
+
+For `set_hard_cap_level`, resolve the one named team the same way. For `void_player`, don't ask the user for a team at all — the API resolves it from the player's current roster (`/api/team-map`); just confirm in step 7 which team that lookup found, so a stale roster doesn't silently attribute the void to the wrong team.
 
 For a `trade`, freeform text often states only the **receiving** side per team (e.g. "MIA receives X", "HOU receives Y") and leaves the sending team implicit — this is especially common in 3+-team trades. Don't assume adjacency in the text implies a from/to pair. Derive each asset's `from_team` by looking up its *current* owner — `/api/team-map` for players, `/api/picks/{team}` for picks (see 4c) — then pair that with whichever team the text says receives it. Do this per-asset, not per-team-block, since a single receiving team's assets in a multi-team deal can come from different senders.
 
@@ -81,11 +88,18 @@ renounce:        { player }
 option:          { player, decision: "accept"|"decline", option_type: "PLAYER_OPT"|"TEAM_OPT", year, cap_hold_type?, cap_hold_amount?, bird_tier? }
 guarantee:       { player, year }
 convert_twoway:  { player, contract }
+void_player:     { player, reason? }
+set_hard_cap_level: { team, level: "first_apron"|"second_apron"|"default", reason? }
 trade:           { transfers: [ { from_team, to_team, assets: [
                      { type: "player", slug },
                      { type: "pick", year, round, orig, protection?, swap_with? }
-                   ] } ], legality: "tbd", exceptions?: { TEAM: "ntmle"|"tmle"|"room_exception" } }
+                   ] } ], legality: "tbd", exceptions?: { TEAM: "ntmle"|"tmle"|"room_exception" },
+                   is_sign_and_trade?: bool, sign_and_trade_txn_id?: string }
 ```
+
+**Sign-and-trade** is not its own transaction type — submit it as two separate calls: a `sign` (set `signing_method: "sign_and_trade"`) for the re-signing team, immediately followed by a `trade` moving the player to the acquiring team. Nothing links these automatically; if `TEXT` describes a sign-and-trade, set `is_sign_and_trade: true` on the trade step yourself (this hard-caps every team receiving a player in that trade at First Apron — rulebook §1.4 row C) and pass the `sign` transaction's returned `id` as `sign_and_trade_txn_id` so the log stays traceable. Submit the `sign` first and wait for its response before building the `trade` payload — you need its `id`.
+
+`reason` (`void_player`/`set_hard_cap_level`, optional but strongly encouraged): free text — for `void_player`, why there's no dead cap (e.g. "retired", "not in 2K26"); for `set_hard_cap_level`, why the level is being set (e.g. "NTMLE trade absorption", "sign-and-trade"). This is the whole point of routing these through the transaction log instead of a silent CSV/team-state edit — don't leave it blank if the text gives you a reason. `level: "default"` clears the team back to no team-specific cap (only the league-wide absolute hard cap still applies).
 
 `exceptions` (trade only, optional): maps a team abbr to the MLE-type exception it's using to absorb *that team's* incoming salary in this trade, in lieu of matching outgoing salary (rulebook § 4.2a). Only set this when the text explicitly says a team is using its MLE/room exception to make a trade work — don't infer it just because a trade would otherwise fail salary matching. Omit a team's key (or use `null`) for teams matching normally.
 
@@ -102,7 +116,9 @@ Only include optional fields the text actually implies — don't invent salary n
 
 ### 6. Check against the rulebook
 
-Look up the relevant article per the table in this project's CLAUDE.md (Article IV for trades, III for signings, § 6.2 extensions, § 6.1 options, Article V releases, § 3.10 renounce, Article VII draft pick signings). **Only `sign`, `trade`, and `convert_twoway` have real automated validators in the API** (`_validate_sign`, `_validate_trade`, `_validate_convert_twoway` in `transactions.py`) — every other type (`release`, `renounce`, `option`, `guarantee`, `pick`) returns no checks at all from the API regardless of legality. The rulebook itself flags which sections are "🔒 system-enforced" vs "👁 manual review" — for anything marked manual review, you are the check: read the section and reason about whether the described transaction is legal before presenting it, and flag any concern even though the API won't block it.
+Look up the relevant article per the table in this project's CLAUDE.md (Article IV for trades, III for signings, § 6.2 extensions, § 6.1 options, Article V releases, § 3.10 renounce, Article VII draft pick signings; § 5.1's "contract voiding" carve-out for `void_player`; Article I §§ 1.3–1.4 for `set_hard_cap_level`). **Only `sign`, `trade`, and `convert_twoway` have real automated validators in the API** (`_validate_sign`, `_validate_trade`, `_validate_convert_twoway` in `transactions.py`) — every other type (`release`, `renounce`, `option`, `guarantee`, `pick`, `void_player`, `set_hard_cap_level`) returns no checks at all from the API regardless of legality. The rulebook itself flags which sections are "🔒 system-enforced" vs "👁 manual review" — for anything marked manual review, you are the check: read the section and reason about whether the described transaction is legal before presenting it, and flag any concern even though the API won't block it.
+
+For `void_player` specifically, §5.1 limits voiding-with-no-payment to three circumstances (real-life/medical retirement, player not present in the current 2K build, or an unwanted 2nd-round pick/UDFA voided by the July 31 deadline). If `TEXT` describes an ordinary cut where the team is on the hook for anything, that's `release`, not `void_player` — say so and don't let the user route real dead cap around the dead-cap calculation by mislabeling the type.
 
 ### 7. Present your interpretation and wait for confirmation
 

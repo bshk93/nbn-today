@@ -508,9 +508,15 @@
     .txn-badge-release { background: #450a0a; color: #f87171; }
     .txn-badge-convert_twoway { background: #1c1917; color: #a8a29e; }
     .txn-badge-trade   { background: #2e1065; color: #c084fc; }
+    .txn-badge-recap   { background: #422006; color: #fbbf24; }
     .txn-table-details { color: #9ca3af; font-size: 0.8rem; }
     .txn-table-details a { color: #93c5fd; text-decoration: none; }
     .txn-table-details a:hover { text-decoration: underline; }
+    .txn-pagination { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0 0.25rem; font-size: 0.8rem; color: #9ca3af; }
+    .txn-page-btn { padding: 0.28rem 0.65rem; background: #1f2937; border: 1px solid #374151; border-radius: 6px;
+      color: #9ca3af; font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.12s, color 0.12s; }
+    .txn-page-btn:hover:not(:disabled) { background: #263244; color: #d1d5db; }
+    .txn-page-btn:disabled { opacity: 0.35; cursor: default; }
 
     .gamelog-pagination {
       display: flex;
@@ -1671,12 +1677,16 @@
     rebuild();
   }
 
-  function renderTransactionHistory(container, playerSlug) {
+  function renderTransactionHistory(container, playerSlug, playerAwards = [], seasonLeaders = {}, seasonRows = []) {
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     function fmtDate(iso) {
       if (!iso) return '—';
       const [y, m, d] = iso.split('-').map(Number);
       return `${MONTHS[m - 1]} ${d}, ${y}`;
+    }
+    function fmtSeason(season) {
+      const m = /^(\d{2})-(\d{2})$/.exec(season || '');
+      return m ? `20${m[1]}-${m[2]}` : (season || '—');
     }
     function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1728,36 +1738,105 @@
       }
       if (t.type === 'trade') {
         const transfers = d.transfers || [];
-        // Find the leg this player is in
+        // Find the leg this player is in, to identify "their side" of the trade
         const myLeg = transfers.find(tr =>
           (tr.assets || []).some(a => a.type === 'player' && a.slug === playerSlug));
-        // Other assets in my leg (exclude this player)
-        const myOtherAssets = myLeg
-          ? (myLeg.assets || []).filter(a => !(a.type === 'player' && a.slug === playerSlug))
-          : [];
-        // Other legs
-        const otherLegs = transfers.filter(tr => tr !== myLeg);
+        const myTeam = myLeg ? myLeg.from_team : null;
 
-        const parts = [];
-        myOtherAssets.forEach(a => {
-          if (a.type === 'player') parts.push(playerLink(a.slug));
-          else if (a.type === 'pick') {
+        const assetLabel = a => {
+          if (a.type === 'player') return playerLink(a.slug);
+          if (a.type === 'pick') {
             let s = `${a.year} R${a.round} ${a.orig}`;
             if (a.protection) s += ` (top-${a.protection})`;
-            parts.push(esc(s));
+            return esc(s);
+          }
+          return '';
+        };
+
+        // Group by "their team" gave / got, rather than raw leg text — same
+        // give/get convention used in the main transactions log.
+        const sent = [];
+        const received = [];
+        const otherLegStrs = [];
+        transfers.forEach(tr => {
+          if (tr.from_team === myTeam) {
+            (tr.assets || []).forEach(a => {
+              if (a.type === 'player' && a.slug === playerSlug) return; // this player themself
+              const label = assetLabel(a);
+              if (label) sent.push(label);
+            });
+          } else if (tr.to_team === myTeam) {
+            (tr.assets || []).forEach(a => {
+              const label = assetLabel(a);
+              if (label) received.push(label);
+            });
+          } else {
+            const assetStrs = (tr.assets || []).map(assetLabel).filter(Boolean);
+            otherLegStrs.push(esc(`${tr.from_team}→${tr.to_team}`) + (assetStrs.length ? ': ' + assetStrs.join(', ') : ''));
           }
         });
-        if (otherLegs.length) {
-          otherLegs.forEach(tr => {
-            const assetStrs = (tr.assets || []).map(a =>
-              a.type === 'player' ? playerLink(a.slug) : esc(`${a.year} R${a.round} ${a.orig}`)
-            ).filter(Boolean);
-            parts.push(esc(`${tr.from_team}→${tr.to_team}`) + (assetStrs.length ? ': ' + assetStrs.join(', ') : ''));
-          });
-        }
+
+        const parts = [];
+        if (sent.length) parts.push(`<span style="color:#fca5a5">Also sent: ${sent.join(', ')}</span>`);
+        if (received.length) parts.push(`<span style="color:#86efac">Received: ${received.join(', ')}</span>`);
+        parts.push(...otherLegStrs);
         return parts.join(' · ') || '—';
       }
       return '';
+    }
+
+    const LEADER_LABELS = { PTS: 'scoring', REB: 'rebounding', AST: 'assists', STL: 'steals', BLK: 'blocks', '3PM': '3-pointers made', GMSC: 'game score' };
+    const HIGH_FIELDS = [
+      { key: 'HIGH_P',   label: 'PTS', threshold: 40 },
+      { key: 'HIGH_R',   label: 'REB', threshold: 20 },
+      { key: 'HIGH_A',   label: 'AST', threshold: 15 },
+      { key: 'HIGH_S',   label: 'STL', threshold: 8 },
+      { key: 'HIGH_B',   label: 'BLK', threshold: 8 },
+      { key: 'HIGH_3PM', label: '3PM', threshold: 8 },
+    ];
+
+    // One recap row per season played: a baseline per-game stat line, plus
+    // awards, league-leader finishes, and notable/career-high games when
+    // applicable — not transactions, but part of the same story.
+    function buildSeasonRecaps() {
+      const asc = seasonRows
+        .filter(r => r.SEASON && r.SEASON !== 'NA' && r.LAST_DATE && r.LAST_DATE !== 'NA')
+        .sort((a, b) => parseFloat(a.SEASON) - parseFloat(b.SEASON));
+      const careerBest = {};
+      const recaps = [];
+      asc.forEach(row => {
+        const bullets = [];
+        const g = +row.G || 0;
+        if (g > 0) {
+          const ppg = (+row.PTS / g).toFixed(1);
+          const rpg = (+row.REB / g).toFixed(1);
+          const apg = (+row.AST / g).toFixed(1);
+          bullets.push(`${ppg} PPG, ${rpg} RPG, ${apg} APG (${g} GP)`);
+        }
+
+        const seasonAwards = playerAwards.filter(a => a.SEASON === row.SEASON || a.SEASON === row.SEASON + ' Playoffs');
+        const awardCounts = {};
+        seasonAwards.forEach(a => { awardCounts[a.AWARD] = (awardCounts[a.AWARD] || 0) + 1; });
+        Object.keys(awardCounts).forEach(award => bullets.push(award));
+
+        const leaders = seasonLeaders[row.SEASON] || {};
+        Object.entries(leaders).forEach(([stat, info]) => {
+          if (info.slug === playerSlug && LEADER_LABELS[stat]) bullets.push(`Led the league in ${LEADER_LABELS[stat]}`);
+        });
+
+        HIGH_FIELDS.forEach(({ key, label, threshold }) => {
+          const val = +row[key];
+          if (!val) return;
+          const hadPrior = Object.prototype.hasOwnProperty.call(careerBest, key);
+          const prevBest = careerBest[key] || 0;
+          if (hadPrior && val > prevBest) bullets.push(`New career high: ${val} ${label}`);
+          else if (val >= threshold) bullets.push(`${val}-${label} game`);
+          careerBest[key] = Math.max(prevBest, val);
+        });
+
+        recaps.push({ kind: 'recap', date: row.LAST_DATE, season: row.SEASON, team: row.TEAM, bullets });
+      });
+      return recaps;
     }
 
     function teamHtml(t) {
@@ -1775,11 +1854,16 @@
     fetch(`/api/transactions?player=${encodeURIComponent(playerSlug)}`)
       .then(r => r.ok ? r.json() : { transactions: [] })
       .then(({ transactions }) => {
-        if (!transactions.length) return;
+        const entries = [
+          ...transactions.map(t => ({ kind: 'txn', date: t.date, t })),
+          ...buildSeasonRecaps(),
+        ].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+        if (!entries.length) return;
 
         const h2 = document.createElement('h2');
         h2.className = 'section-heading';
-        h2.textContent = 'Transaction History';
+        h2.textContent = 'Player History';
         container.appendChild(h2);
 
         const table = document.createElement('table');
@@ -1793,10 +1877,29 @@
           if (i >= 2) th.style.width = i === 2 ? '10%' : 'auto';
           hr.appendChild(th);
         });
-
         const tbody = table.createTBody();
-        transactions.forEach(t => {
+        container.appendChild(table);
+
+        const pagination = document.createElement('div');
+        pagination.className = 'txn-pagination';
+        container.appendChild(pagination);
+
+        const PAGE_SIZE = 15;
+        let currentPage = 0;
+
+        function renderEntryRow(entry) {
           const tr = tbody.insertRow();
+          if (entry.kind === 'recap') {
+            tr.innerHTML = `
+              <td style="white-space:nowrap;color:#9ca3af">${esc(fmtSeason(entry.season))}</td>
+              <td><span class="txn-badge txn-badge-recap">Season Recap</span></td>
+              <td style="white-space:nowrap" class="txn-table-details">${entry.team ? `<a href="/teams/${esc(entry.team)}">${esc(entry.team)}</a>` : '—'}</td>
+              <td class="txn-table-details">${entry.bullets.map(esc).join(' &middot; ')}</td>
+              <td></td>
+            `;
+            return;
+          }
+          const t = entry.t;
           const label = TYPE_LABEL[t.type] || t.type;
           tr.innerHTML = `
             <td style="white-space:nowrap;color:#9ca3af">${esc(fmtDate(t.date))}</td>
@@ -1805,10 +1908,28 @@
             <td class="txn-table-details">${detailsHtml(t)}</td>
             <td style="color:#6b7280;font-size:0.75rem">${esc(t.description || '')}</td>
           `;
-        });
+        }
 
-        table.appendChild(tbody);
-        container.appendChild(table);
+        function renderPage() {
+          tbody.innerHTML = '';
+          const totalPages = Math.ceil(entries.length / PAGE_SIZE);
+          currentPage = Math.max(0, Math.min(currentPage, totalPages - 1));
+          const start = currentPage * PAGE_SIZE;
+          entries.slice(start, start + PAGE_SIZE).forEach(renderEntryRow);
+
+          if (totalPages <= 1) { pagination.style.display = 'none'; return; }
+          pagination.style.display = '';
+          const end = Math.min(start + PAGE_SIZE, entries.length);
+          pagination.innerHTML = `
+            <button class="txn-page-btn" id="ph-prev-btn" ${currentPage === 0 ? 'disabled' : ''}>&larr; Prev</button>
+            <span>${start + 1}&ndash;${end} of ${entries.length}</span>
+            <button class="txn-page-btn" id="ph-next-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next &rarr;</button>
+          `;
+          pagination.querySelector('#ph-prev-btn').addEventListener('click', () => { currentPage--; renderPage(); });
+          pagination.querySelector('#ph-next-btn').addEventListener('click', () => { currentPage++; renderPage(); });
+        }
+
+        renderPage();
       })
       .catch(() => {});
   }
@@ -3031,7 +3152,7 @@
     content.appendChild(sections);
     renderSalaryTable(content, bio);
     renderOvrHistory(content, slug);
-    renderTransactionHistory(content, slug);
+    renderTransactionHistory(content, slug, playerAwards[slug] || [], seasonLeaders, rows);
 
     let bySeasonMode = false;
     let showPlayoffs = false;

@@ -20,6 +20,8 @@
     .badge-voting    { background: #3b1f00; border: 1px solid #b45309; color: #fbbf24; }
     .badge-closed    { background: #1a1f2e; border: 1px solid #374151; color: #4b5563; }
     .badge-draft     { background: #1f2937; border: 1px solid #374151; color: #6b7280; }
+    .badge-passed    { background: #14532d; border: 1px solid #16a34a; color: #4ade80; }
+    .badge-failed    { background: #3b1f1f; border: 1px solid #991b1b; color: #f87171; }
 
     /* Proposal header */
     .proposal-header { margin-bottom: 1.5rem; }
@@ -130,6 +132,12 @@
     .mv-no      { background: #3b1f1f; color: #f87171; }
     .mv-abstain { background: #1f2937; color: #9ca3af; }
 
+    .voter-table { border-collapse: collapse; width: 100%; }
+    .voter-table th, .voter-table td { padding: 0.35rem 0.65rem; text-align: left; border-bottom: 1px solid #1f2937; }
+    .voter-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; font-weight: 600; }
+    .voter-table td { color: #d1d5db; }
+    .voter-table tr:last-child td { border-bottom: none; }
+
     /* Comments */
     .comment {
       border-top: 1px solid #1f2937; padding: 1rem 0;
@@ -191,6 +199,8 @@
       <div class="section-title">BOD Controls</div>
       <div class="bod-actions" id="bod-actions"></div>
       <div class="bod-note" id="bod-note"></div>
+      <div id="bod-live-results"></div>
+      <div id="admin-voter-breakdown"></div>
     </div>
 
     <!-- Vote panel -->
@@ -233,6 +243,7 @@ const PROPOSAL_ID = params.get('id');
 let proposal = null;
 let me = null; // { name, roles }
 let isBod = false;
+let isAdmin = false;
 let isAuthor = false;
 let canEdit = false;
 let isEligibleVoter = false;
@@ -251,9 +262,10 @@ function escHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function badgeHtml(status) {
-  const labels = { draft: 'Draft', submitted: 'Submitted', voting: 'Voting Open', closed: 'Closed' };
-  return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
+function badgeHtml(p) {
+  const key = p.outcome || p.status;
+  const labels = { draft: 'Draft', submitted: 'Submitted', voting: 'Voting Open', closed: 'Closed', passed: 'Passed', failed: 'Failed' };
+  return `<span class="badge badge-${key}">${labels[key] || key}</span>`;
 }
 
 function eligibleLabel(p) {
@@ -294,12 +306,13 @@ function render(p) {
 
   isAuthor = me && me.name === p.author;
   isBod = me && (me.roles || []).some(r => r === 'bod' || r === 'admin');
+  isAdmin = me && (me.roles || []).some(r => r === 'admin');
   canEdit = (p.status === 'draft' && isAuthor) || (p.status === 'submitted' && (isAuthor || isBod));
   isEligibleVoter = checkEligibility(p);
 
   // Header
-  document.getElementById('status-badge').innerHTML = badgeHtml(p.status);
-  document.getElementById('proposal-title').textContent = p.title;
+  document.getElementById('status-badge').innerHTML = badgeHtml(p);
+  document.getElementById('proposal-title').textContent = p.number ? `#${p.number} — ${p.title}` : p.title;
 
   const votingDatePart = p.voting_opened_at ? ` <span class="sep">•</span> Voting opened ${fmtDate(p.voting_opened_at)}` : '';
   const closedDatePart = p.voting_closed_at ? ` <span class="sep">•</span> Closed ${fmtDate(p.voting_closed_at)}` : '';
@@ -330,13 +343,16 @@ function render(p) {
     bodPanel.style.display = 'block';
     const bodActions = document.getElementById('bod-actions');
     const bodNote = document.getElementById('bod-note');
+    const liveResults = document.getElementById('bod-live-results');
     bodActions.innerHTML = '';
+    liveResults.innerHTML = '';
     if (p.status === 'submitted') {
       const btn = document.createElement('button');
       btn.className = 'btn-warning';
       btn.textContent = 'Open Voting';
       btn.onclick = doOpenVoting;
       bodActions.appendChild(btn);
+      bodActions.appendChild(abstainToggleBtn(p));
       bodNote.textContent = eligibleLabel(p);
     } else if (p.status === 'voting') {
       const btn = document.createElement('button');
@@ -344,10 +360,33 @@ function render(p) {
       btn.textContent = 'Close Voting';
       btn.onclick = doCloseVoting;
       bodActions.appendChild(btn);
+      bodActions.appendChild(abstainToggleBtn(p));
       bodNote.textContent = `${p.vote_count || 0} vote${p.vote_count !== 1 ? 's' : ''} cast so far. ${eligibleLabel(p)}`;
+      if (p.live_results) {
+        const r = p.live_results;
+        liveResults.style.cssText = 'margin-top:0.75rem;font-size:0.8rem;color:#9ca3af;';
+        const parts = [`<span style="color:#4ade80;">${r.yes} yes</span>`, `<span style="color:#f87171;">${r.no} no</span>`];
+        if (p.allow_abstain !== false) parts.push(`${r.abstain} abstain`);
+        liveResults.innerHTML = `Live results (visible to BOD only): ${parts.join(' · ')}`;
+      }
     } else if (p.status === 'closed') {
-      bodNote.textContent = 'Voting is closed.';
+      if (p.outcome) {
+        bodNote.textContent = `Marked ${p.outcome} by ${p.decided_by} on ${fmtDate(p.decided_at)}.`;
+        const changeBtn = document.createElement('button');
+        changeBtn.className = 'btn-ghost';
+        changeBtn.textContent = 'Change Decision';
+        changeBtn.onclick = () => {
+          bodActions.innerHTML = '';
+          bodActions.appendChild(decideButtons(p));
+          bodNote.textContent = eligibleLabel(p);
+        };
+        bodActions.appendChild(changeBtn);
+      } else {
+        bodActions.appendChild(decideButtons(p));
+        bodNote.textContent = `${p.vote_count || 0} vote${p.vote_count !== 1 ? 's' : ''} were cast. Mark the outcome below.`;
+      }
     }
+    renderVoterBreakdown(p);
   }
 
   // Vote panel
@@ -355,6 +394,101 @@ function render(p) {
 
   // Comments
   renderComments(p);
+}
+
+function abstainToggleBtn(p) {
+  const btn = document.createElement('button');
+  btn.className = 'btn-ghost';
+  const enabled = p.allow_abstain !== false;
+  btn.textContent = enabled ? 'Remove Abstain Option' : 'Re-enable Abstain Option';
+  btn.onclick = () => doSetAllowAbstain(!enabled);
+  return btn;
+}
+
+function decideButtons(p) {
+  const wrap = document.createElement('span');
+  wrap.style.cssText = 'display:inline-flex;gap:0.5rem;';
+  const passBtn = document.createElement('button');
+  passBtn.className = 'btn-success';
+  passBtn.textContent = 'Mark Passed';
+  passBtn.onclick = () => doDecide('passed');
+  const failBtn = document.createElement('button');
+  failBtn.className = 'btn-danger';
+  failBtn.textContent = 'Mark Failed';
+  failBtn.onclick = () => doDecide('failed');
+  wrap.appendChild(passBtn);
+  wrap.appendChild(failBtn);
+  return wrap;
+}
+
+async function doDecide(outcome) {
+  if (!confirm(`Mark this proposal as ${outcome}? This will be visible to everyone.`)) return;
+  const token = getToken();
+  try {
+    const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/decide`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ outcome }),
+    });
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    await reload();
+  } catch { alert('Failed. Please try again.'); }
+}
+
+async function doSetAllowAbstain(allow) {
+  const msg = allow
+    ? 'Re-enable "Abstain" as a vote choice?'
+    : 'Remove "Abstain" as a vote choice? Anyone who already voted Abstain will have that vote cleared so they can vote Yes or No instead.';
+  if (!confirm(msg)) return;
+  const token = getToken();
+  try {
+    const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/allow-abstain`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ allow_abstain: allow }),
+    });
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    const result = await res.json();
+    if (result.refunded) alert(`${result.refunded} abstain vote${result.refunded !== 1 ? 's' : ''} cleared.`);
+    await reload();
+  } catch { alert('Failed. Please try again.'); }
+}
+
+function renderVoterBreakdown(p) {
+  const el = document.getElementById('admin-voter-breakdown');
+  el.innerHTML = '';
+  if (!isAdmin) return;
+  if (p.status !== 'voting' && p.status !== 'closed') return;
+  const breakdown = p.voter_breakdown || {};
+  const names = Object.keys(breakdown);
+  if (!names.length) return;
+
+  const rows = names.map(name => {
+    const entry = breakdown[name];
+    const isObj = entry && typeof entry === 'object';
+    return { name, vote: isObj ? entry.vote : entry, team: isObj ? entry.team : null };
+  });
+  rows.sort((a, b) => (a.team || 'zzz').localeCompare(b.team || 'zzz') || a.name.localeCompare(b.name));
+
+  el.style.cssText = 'margin-top:0.75rem;font-size:0.8rem;';
+  const label = document.createElement('div');
+  label.style.cssText = 'color:#6b7280;margin-bottom:0.5rem;';
+  label.textContent = 'Voter breakdown (visible to admin only):';
+  el.appendChild(label);
+
+  const table = document.createElement('table');
+  table.className = 'voter-table';
+  table.innerHTML = `
+    <thead><tr><th>Team</th><th>Voter</th><th>Vote</th></tr></thead>
+    <tbody>
+      ${rows.map(r => `
+        <tr>
+          <td>${r.team ? escHtml(r.team) : '<span style="color:#4b5563;">—</span>'}</td>
+          <td>${escHtml(r.name)}</td>
+          <td><span class="my-vote-chip mv-${r.vote}">${escHtml(r.vote)}</span></td>
+        </tr>`).join('')}
+    </tbody>`;
+  el.appendChild(table);
 }
 
 function renderVotePanel(p) {
@@ -383,7 +517,8 @@ function renderVotePanel(p) {
 
     const btns = document.createElement('div');
     btns.className = 'vote-buttons';
-    ['yes','no','abstain'].forEach(v => {
+    const voteChoices = p.allow_abstain === false ? ['yes','no'] : ['yes','no','abstain'];
+    voteChoices.forEach(v => {
       const btn = document.createElement('button');
       btn.className = `vote-btn vote-btn-${v}${myVote === v ? ' active' : ''}`;
       btn.textContent = v.charAt(0).toUpperCase() + v.slice(1);
@@ -425,8 +560,8 @@ function renderVotePanel(p) {
     const items = [
       { key: 'yes', label: 'Yes' },
       { key: 'no', label: 'No' },
-      { key: 'abstain', label: 'Abstain' },
     ];
+    if (p.allow_abstain !== false) items.push({ key: 'abstain', label: 'Abstain' });
     items.forEach(({ key, label }) => {
       const div = document.createElement('div');
       div.className = `result-item result-${key}`;
@@ -583,6 +718,7 @@ function openTokenPrompt() {
       localStorage.setItem('nbn_token', token);
       me = info;
       isBod = (me.roles || []).some(r => r === 'bod' || r === 'admin');
+      isAdmin = (me.roles || []).some(r => r === 'admin');
       isEligibleVoter = checkEligibility(proposal);
       render(proposal);
     });

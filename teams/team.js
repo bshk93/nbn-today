@@ -966,7 +966,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       const _type = row.TYPE || bio.type || '';
       return {
         SLUG:       row.SLUG,
-        OVR:        currentOvr[row.SLUG] ?? row.OVR ?? '',
+        OVR:        currentOvr[row.SLUG] ?? '',
         _name:      displayNameFromBio(bio.name || '') || row.SLUG || '—',
         _pos:       (bio.pos || []).join(' · ') || '—',
         _age:       calcAge(bio.dob),

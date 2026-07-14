@@ -175,6 +175,7 @@ const TEAMS = {
 // no cap math is duplicated in the client.
 
 let allBios = {};        // slug → bio (for roster display + salary labels in the picker)
+let allOvr = {};         // slug → current OVR (from ovr-history.json, the single source of truth)
 let rosterData = {};     // abbr → [{slug, ovr, name, salary, type}]
 let picksData = {};      // abbr → [{year, round, team, type}]
 let selections = { a: { players: new Set(), picks: new Set() }, b: { players: new Set(), picks: new Set() } };
@@ -205,7 +206,10 @@ function curYr() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  allBios = await fetch('/api/players').then(r => r.ok ? r.json() : {});
+  [allBios, allOvr] = await Promise.all([
+    fetch('/api/players').then(r => r.ok ? r.json() : {}),
+    fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
+  ]);
 
   ['a', 'b'].forEach(side => {
     const sel = document.getElementById(`sel-${side}`);
@@ -248,7 +252,7 @@ async function loadTeam(side, abbr) {
   rosterData[abbr] = roster.map(r => {
     const bio = allBios[r.SLUG] || {};
     const sal = parseSalaryNum((bio.salaries || {})[yr]);
-    return { slug: r.SLUG, ovr: parseInt(r.OVR) || 0, name: bio.name || r.SLUG, salary: sal, type: bio.type || 'player', pos: (bio.pos || []).join('/') };
+    return { slug: r.SLUG, ovr: allOvr[r.SLUG] || 0, name: bio.name || r.SLUG, salary: sal, type: bio.type || 'player', pos: (bio.pos || []).join('/') };
   }).filter(r => r.type !== 'dead').sort((a, b) => b.ovr - a.ovr);
 
   // Parse picks

@@ -40,6 +40,8 @@ Read the relevant article before making or validating any transaction:
 | Renounce (free-agent hold) | § 3.10 |
 | Two-way conversion | § 6.1 |
 | Draft pick signing | Article VII (§ 7.1 – § 7.3) |
+| Void player (no cap hit) | § 5.1 (contract voiding) |
+| Set hard cap level | Article I (§ 1.3 – § 1.4) |
 
 League-wide constants (cap thresholds, roster limits, apron triggers) are in Article I and Article II. `rules/` has been retired — `rulebook/index.html` is the single source of truth.
 
@@ -101,7 +103,7 @@ Updated whenever a team owner saves changes in the team page edit mode (`PUT /ap
 
 | File | Used by | What it contains |
 |---|---|---|
-| `data/{abbr}-roster.csv` | `teams/{ABB}/index.html` | Current roster: `SLUG, OVR` per player (joined with player-bios.json at render time) |
+| `data/{abbr}-roster.csv` | `teams/{ABB}/index.html` | Current roster: `SLUG` per player (name/OVR/salary etc. joined from player-bios.json and ovr-history.json at render time) |
 | `data/{abbr}-picks.csv` | `teams/{ABB}/index.html` | Draft pick inventory: `YEAR, ROUND, TEAM, TYPE` |
 
 ---
@@ -283,7 +285,7 @@ Valid roles are enforced at member creation time — `POST /api/members` rejects
 | `GET /api/trading-block` | Public | Returns `{ "ATL": [{player, notes}], … }` for all 30 teams |
 | `PUT /api/trading-block/{team}` | Team role or admin | Replaces that team's list; body is `[{player, notes}]` |
 
-Data stored in `/var/lib/nothing-but-stats/trading-block.json`. The page at `tradeblock/index.html` fetches this API plus the relevant teams' roster CSVs to join player metadata (POS, OVR, AGE, salary columns).
+Data stored in `/var/lib/nothing-but-stats/trading-block.json`. The page at `tradeblock/index.html` fetches this API plus the relevant teams' roster CSVs (for team membership) and `player-bios.json`/`GET /api/ovr/current` to join player metadata (POS, OVR, AGE, salary columns).
 
 ### Member management
 
@@ -380,9 +382,8 @@ and let the next run seed it: `rm $NBS_DATA_DIR/achievement-state.json`.
 | Column | Description | Example |
 |---|---|---|
 | `SLUG` | Player slug (key into player-bios.json) | `barnes-scottie` |
-| `OVR` | Overall rating | `86` |
 
-All other player data (name, pos, age, type, cap holds, salaries) lives in `player-bios.json` and is joined at render time.
+All other player data (name, pos, age, type, cap holds, salaries) lives in `player-bios.json` and is joined at render time. **OVR is not a roster CSV column** — it lives exclusively in `ovr-history.json` (see below) and is joined in at render time via `GET /api/ovr/current`. The roster CSV briefly carried its own `OVR` column as a denormalized convenience copy; that column was dropped (all 30 `{abbr}-roster.csv` files migrated to `SLUG`-only) because nothing kept it in sync with `ovr-history.json` — transaction handlers silently blanked it on every roster-row rewrite, and it had drifted to empty for every player in the league. `ovr-history.json` is now the single source of truth end-to-end; don't reintroduce an OVR column to the roster CSV.
 
 **Legacy format (pre-migration):** columns were `PLAYER, POS, AGE, OVR, TYPE, CAP_HOLDS, 25-26, 26-27, …`. `team.js` handles both formats transparently — if the CSV has a `SLUG` column (and no `PLAYER`), it uses the new path; otherwise falls back to the legacy path.
 
@@ -503,9 +504,8 @@ One row in `{abbr}-roster.csv`. Links a player to a team for the current season.
 | Column | Notes |
 |---|---|
 | `SLUG` | Foreign key into `player-bios.json` |
-| `OVR` | Overall rating (integer, e.g. `86`) |
 
-All other display data (name, position, age, salary, cap holds) is joined from `player-bios.json` at render time.
+All other display data (name, position, age, salary, cap holds) is joined from `player-bios.json` at render time. OVR is joined from `ovr-history.json` (via `GET /api/ovr/current`) — it is not a roster CSV column (see "OVR" under Player fields above).
 
 ### Draft pick
 

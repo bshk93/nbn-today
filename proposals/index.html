@@ -33,15 +33,25 @@
     }
 
     /* Tabs */
-    .tabs { display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 1px solid #374151; }
+    .tabs {
+      display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 1px solid #374151;
+      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
     .tab {
       background: none; border: none; border-bottom: 2px solid transparent;
       color: #6b7280; padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 600;
       cursor: pointer; font-family: inherit; margin-bottom: -1px;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.02em; white-space: nowrap; flex-shrink: 0;
     }
     .tab:hover { color: #d1d5db; }
     .tab.active { color: #f3f4f6; border-bottom-color: #3b82f6; }
+    .tab-count { color: #4b5563; font-weight: 500; }
+    .tab.active .tab-count { color: #9ca3af; }
+
+    @media (max-width: 480px) {
+      .tab { padding: 0.5rem 0.6rem; font-size: 0.75rem; }
+    }
 
     /* Proposal cards */
     .proposal-list { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -66,6 +76,8 @@
     .badge-submitted { background: #1e3a5f; border: 1px solid #1d4ed8; color: #93c5fd; }
     .badge-voting   { background: #3b1f00; border: 1px solid #b45309; color: #fbbf24; }
     .badge-closed   { background: #1a1f2e; border: 1px solid #374151; color: #4b5563; }
+    .badge-passed   { background: #14532d; border: 1px solid #16a34a; color: #4ade80; }
+    .badge-failed   { background: #3b1f1f; border: 1px solid #991b1b; color: #f87171; }
 
     .card-arrow { color: #374151; font-size: 1.1rem; flex-shrink: 0; }
     .proposal-card:hover .card-arrow { color: #6b7280; }
@@ -120,10 +132,12 @@
   <!-- Proposals -->
   <div class="section">
     <div class="tabs">
-      <button class="tab active" onclick="setTab('all')">All</button>
-      <button class="tab" onclick="setTab('voting')">Voting</button>
-      <button class="tab" onclick="setTab('submitted')">Submitted</button>
-      <button class="tab" onclick="setTab('closed')">Closed</button>
+      <button class="tab active" data-tab="submitted" onclick="setTab('submitted')">Submitted <span class="tab-count" id="count-submitted"></span></button>
+      <button class="tab" data-tab="voting" onclick="setTab('voting')">Voting <span class="tab-count" id="count-voting"></span></button>
+      <button class="tab" data-tab="passed" onclick="setTab('passed')">Passed <span class="tab-count" id="count-passed"></span></button>
+      <button class="tab" data-tab="failed" onclick="setTab('failed')">Failed <span class="tab-count" id="count-failed"></span></button>
+      <button class="tab" data-tab="closed" onclick="setTab('closed')">Closed <span class="tab-count" id="count-closed"></span></button>
+      <button class="tab" data-tab="all" onclick="setTab('all')">All <span class="tab-count" id="count-all"></span></button>
     </div>
     <div class="proposal-list" id="proposals-list">
       <div class="empty">Loading…</div>
@@ -147,7 +161,7 @@
 <script>
 const API = '/api';
 let allProposals = [];
-let currentTab = 'all';
+let currentTab = 'submitted';
 let me = null; // { name, roles }
 
 function fmtDate(iso) {
@@ -156,9 +170,10 @@ function fmtDate(iso) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function badge(status) {
-  const labels = { draft: 'Draft', submitted: 'Submitted', voting: 'Voting', closed: 'Closed' };
-  return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
+function badge(p) {
+  const key = p.outcome || p.status;
+  const labels = { draft: 'Draft', submitted: 'Submitted', voting: 'Voting', closed: 'Closed', passed: 'Passed', failed: 'Failed' };
+  return `<span class="badge badge-${key}">${labels[key] || key}</span>`;
 }
 
 function renderCard(p) {
@@ -171,9 +186,9 @@ function renderCard(p) {
     : '';
   el.innerHTML = `
     <div class="card-body">
-      <div class="card-title">${escHtml(p.title)}</div>
+      <div class="card-title">${p.number ? `#${p.number} — ` : ''}${escHtml(p.title)}</div>
       <div class="card-meta">
-        ${badge(p.status)}
+        ${badge(p)}
         <span class="sep">•</span>
         <span>${escHtml(p.author)}</span>
         <span class="sep">•</span>
@@ -194,7 +209,7 @@ function renderDraftCard(p) {
     <div class="card-body">
       <div class="card-title">${escHtml(p.title || '(untitled draft)')}</div>
       <div class="card-meta">
-        ${badge('draft')}
+        ${badge({status: 'draft'})}
         <span class="sep">•</span>
         <span>Last edited ${fmtDate(p.updated_at || p.created_at)}</span>
       </div>
@@ -210,23 +225,34 @@ function escHtml(s) {
 function setTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => {
-    t.classList.toggle('active', t.textContent.toLowerCase() === tab || (tab === 'all' && t.textContent === 'All'));
+    t.classList.toggle('active', t.dataset.tab === tab);
   });
   renderProposals();
 }
 
+function matchesTab(p, tab) {
+  if (tab === 'all') return true;
+  if (tab === 'passed' || tab === 'failed') return p.outcome === tab;
+  if (tab === 'closed') return p.status === 'closed' && !p.outcome;
+  return p.status === tab;
+}
+
 function renderProposals() {
   const list = document.getElementById('proposals-list');
-  let filtered = allProposals;
-  if (currentTab !== 'all') {
-    filtered = allProposals.filter(p => p.status === currentTab);
-  }
+  const filtered = allProposals.filter(p => matchesTab(p, currentTab));
   list.innerHTML = '';
   if (!filtered.length) {
     list.innerHTML = `<div class="empty">No ${currentTab === 'all' ? '' : currentTab + ' '}proposals yet.</div>`;
     return;
   }
   filtered.forEach(p => list.appendChild(renderCard(p)));
+}
+
+function updateTabCounts() {
+  ['submitted', 'voting', 'passed', 'failed', 'closed', 'all'].forEach(tab => {
+    const el = document.getElementById(`count-${tab}`);
+    if (el) el.textContent = `(${allProposals.filter(p => matchesTab(p, tab)).length})`;
+  });
 }
 
 async function loadProposals() {
@@ -237,6 +263,7 @@ async function loadProposals() {
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
     allProposals = data.proposals || [];
+    updateTabCounts();
     renderProposals();
 
     const drafts = data.drafts || [];

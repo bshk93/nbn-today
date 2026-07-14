@@ -215,6 +215,14 @@
       <div class="roles-hint" id="roles-hint">Any member with a team role can vote.</div>
     </div>
 
+    <div class="field">
+      <label>Vote options</label>
+      <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;text-transform:none;letter-spacing:normal;color:#d1d5db;font-size:0.85rem;cursor:pointer;">
+        <input type="checkbox" id="allow-abstain-input" style="width:auto;">
+        Allow "Abstain" as a vote choice
+      </label>
+    </div>
+
     <div class="action-bar">
       <div class="action-left">
         <button class="btn-danger" id="btn-delete" onclick="doDelete()" style="display:none;">Delete Draft</button>
@@ -316,6 +324,10 @@ function eligibleRolesPayload() {
   return { eligible_roles: [], eligible_positions: [] }; // all_gms default
 }
 
+function allowAbstainPayload() {
+  return { allow_abstain: document.getElementById('allow-abstain-input').checked };
+}
+
 function setStatus(msg, cls) {
   const el = document.getElementById('status-msg');
   el.textContent = msg;
@@ -366,6 +378,7 @@ async function loadExisting(id) {
     else if (positions.length === 1) chipValue = `pos:${positions[0]}`;
     const chip = document.querySelector(`[data-value="${chipValue}"]`);
     if (chip) setVoters(chip);
+    document.getElementById('allow-abstain-input').checked = p.allow_abstain !== false;
     // Show/hide elements based on status
     isSubmitted = p.status !== 'draft';
     if (isSubmitted) {
@@ -396,7 +409,7 @@ async function doSave() {
       const res = await fetch(`${API}/proposals/${proposalId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title, body, ...eligibleRolesPayload() }),
+        body: JSON.stringify({ title, body, ...eligibleRolesPayload(), ...allowAbstainPayload() }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Save failed'); }
       setStatus('Saved.', 'ok');
@@ -405,7 +418,7 @@ async function doSave() {
       const res = await fetch(`${API}/proposals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title, body, ...eligibleRolesPayload() }),
+        body: JSON.stringify({ title, body, ...eligibleRolesPayload(), ...allowAbstainPayload() }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Create failed'); }
       const p = await res.json();
