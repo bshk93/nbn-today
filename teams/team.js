@@ -1501,9 +1501,27 @@ function cleanNotes(p) {
 
 // Team-cell text + row class per pick "kind" — replaces the old subheader
 // grouping now that all kinds share one year/round-sorted table.
+// A swap/binary-chain group can collapse two or more PHYSICALLY DISTINCT
+// picks (e.g. DEN's own natural 1st and OKC's own natural 1st) into one
+// displayed row (dedupeByGroup, above) — at that point "BOS | OKC" alone
+// (today's *candidate* owners) silently drops which pick(s) are actually in
+// play, which reads as "OKC traded its pick to BOS" rather than the real
+// "the more favorable of DEN's-or-OKC's own pick goes to BOS, the other
+// stays put." `_groupOrigs` (set only when a group was actually collapsed —
+// dedupeByGroup) carries the ORIGINAL orig team(s); show both, original
+// first since that's the pick's real identity, current second since that's
+// who might end up with it.
+function teamCellText(p) {
+  const current = p.owner === '?' ? '?' : p.owner.split('|').join(' | ');
+  if (p._groupOrigs && p._groupOrigs.length > 1) {
+    return `${p._groupOrigs.join('/')} → ${current}`;
+  }
+  return current;
+}
+
 const PICK_KIND_DISPLAY = {
   own:       { cls: null,               teamCell: () => 'Own' },
-  uncertain: { cls: 'picks-uncertain',   teamCell: p => p.owner === '?' ? '?' : p.owner.split('|').join(' | ') },
+  uncertain: { cls: 'picks-uncertain',   teamCell: teamCellText },
   acquired:  { cls: 'picks-acquired',    teamCell: p => `from ${p.orig}` },
   traded:    { cls: 'picks-traded',      teamCell: p => `to ${p.owner}` },
 };
