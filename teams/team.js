@@ -277,6 +277,8 @@ const ratingsPopupReady = new Promise(resolve => {
   .picks-acquired td   { color: #60a5fa; }
   .picks-traded td     { color: #6b7280; font-style: italic; }
   .picks-uncertain td  { color: #f59e0b; font-style: italic; }
+  .picks-legacy td     { color: #f87171; font-style: italic; }
+  .picks-legacy td:nth-child(6) { color: #e5e7eb; font-style: normal; }
   .picks-legend {
     display: flex;
     flex-wrap: wrap;
@@ -1524,6 +1526,15 @@ const PICK_KIND_DISPLAY = {
   uncertain: { cls: 'picks-uncertain',   teamCell: teamCellText },
   acquired:  { cls: 'picks-acquired',    teamCell: p => `from ${p.orig}` },
   traded:    { cls: 'picks-traded',      teamCell: p => `to ${p.owner}` },
+  // A `legacy` pick is a real historical deal too tangled to model
+  // structurally — its flat owner/orig look exactly like a plain settled
+  // pick (single team, nothing flagged), but the real terms live only in
+  // its notes prose and can name entirely different teams (e.g. OKC's own
+  // 2027 1st shows owner "OKC" while its notes say Phoenix and the Clippers
+  // are the real parties). Without a distinct kind this silently renders as
+  // confident "Own" — same failure shape the Swap-column fix addressed,
+  // just for a different node type.
+  legacy:    { cls: 'picks-legacy',     teamCell: p => `${p.owner} · unmodeled` },
 };
 
 function buildPicksTable(picks, teamAbbr, allPicks = []) {
@@ -1532,17 +1543,25 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
   // the air (no player attached yet).
   const notDrafted = p => !p.player;
   const isTBD      = p => p.owner === '?' || p.owner.includes('|');
+  const isLegacy   = p => !!p.legacy;
 
   const tag = (arr, kind) => arr.map(p => ({ ...p, _kind: kind }));
-  const own       = tag(picks.filter(p => notDrafted(p) && p.orig === teamAbbr && p.owner === teamAbbr), 'own');
-  const uncertain = tag(dedupeByGroup(picks.filter(p => notDrafted(p) && isTBD(p)), teamAbbr), 'uncertain');
-  const acquired  = tag(picks.filter(p => notDrafted(p) && p.orig !== teamAbbr && !isTBD(p)), 'acquired');
+  const legacy    = tag(picks.filter(p => notDrafted(p) && isLegacy(p)
+                        && (p.orig === teamAbbr || p.owner === teamAbbr)), 'legacy');
+  const own       = tag(picks.filter(p => notDrafted(p) && !isLegacy(p) && p.orig === teamAbbr && p.owner === teamAbbr), 'own');
+  const uncertain = tag(dedupeByGroup(picks.filter(p => notDrafted(p) && !isLegacy(p) && isTBD(p)), teamAbbr), 'uncertain');
+  const acquired  = tag(picks.filter(p => notDrafted(p) && !isLegacy(p) && p.orig !== teamAbbr && !isTBD(p)), 'acquired');
   // Traded-away picks aren't picks this team has — kept out of the merged,
   // sorted "picks I hold" list below and shown as its own section instead.
-  const traded    = tag(allPicks.filter(p => notDrafted(p) && p.orig === teamAbbr && p.owner !== teamAbbr && !isTBD(p)), 'traded')
-                       .sort((a, b) => a.year - b.year || a.round - b.round);
+  const legacyTraded = tag(allPicks.filter(p => notDrafted(p) && isLegacy(p)
+                           && p.orig === teamAbbr && p.owner !== teamAbbr), 'legacy');
+  const traded    = [
+                       ...tag(allPicks.filter(p => notDrafted(p) && !isLegacy(p)
+                             && p.orig === teamAbbr && p.owner !== teamAbbr && !isTBD(p)), 'traded'),
+                       ...legacyTraded,
+                     ].sort((a, b) => a.year - b.year || a.round - b.round);
 
-  const rows = [...own, ...uncertain, ...acquired]
+  const rows = [...own, ...uncertain, ...legacy, ...acquired]
     .sort((a, b) => a.year - b.year || a.round - b.round);
 
   if (!rows.length && !traded.length) return null;
@@ -1573,14 +1592,25 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
       [protLabel,                      'muted',        ],
       [formatSwapLeaves(p),            'muted',        ],
       [cleanNotes(p),                  'muted',        ],
-      [p.frozen ? 'FROZEN' : '',       'muted',        ],
+      [p.legacy ? 'LEGACY' : (p.frozen ? 'FROZEN' : ''), 'muted', ],
     ];
     cells.forEach(([text, cellCls]) => {
       const td = tr.insertCell();
       if (cellCls) cellCls.split(' ').forEach(c => td.classList.add(c));
       td.textContent = text;
     });
-    if (p.frozen) {
+    // A `legacy` pick is ALWAYS frozen from re-trade by design (until someone
+    // manually converts its notes into real structure) regardless of the
+    // flat FROZEN column, which was never set for it — so this can't just
+    // reuse the `p.frozen` check above.
+    if (p.legacy) {
+      const legacyTd = tr.cells[tr.cells.length - 1];
+      legacyTd.style.color = '#f87171';
+      legacyTd.style.fontWeight = '700';
+      attachTooltip(legacyTd, 'This pick predates the site\'s conveyance model and '
+        + 'isn’t tracked automatically — the real terms are whatever Notes says. '
+        + 'Frozen from re-trade until manually converted to real structure.');
+    } else if (p.frozen) {
       const frozenTd = tr.cells[tr.cells.length - 1];
       frozenTd.style.color = '#f87171';
       frozenTd.style.fontWeight = '700';
@@ -1610,6 +1640,7 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     ['Acquired',      'picks-acquired',   '#60a5fa'],
     ['Traded away',   'picks-traded',     '#6b7280'],
     ['Uncertain owner', 'picks-uncertain', '#f59e0b'],
+    ['Legacy — unmodeled, see Notes', 'picks-legacy', '#f87171'],
   ].forEach(([label, , color]) => {
     const item = document.createElement('span');
     item.className = 'picks-legend-item';
