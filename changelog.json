@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.353",
+    "date": "2026-07-19",
+    "changes": [
+      "Draft Picks tables: a contingent pick's Team cell now shows a tooltip linking to the real trade(s) that created it, instead of no context at all",
+      "Draft Picks tables: the Swap column now shows a clear \"TEAM (better) \u00b7 TEAM (worse)\" description built from the pick's real priority order, instead of a single raw team abbreviation that could misread as \"this team holds swap rights\" when it doesn't",
+      "Draft Picks tables: stale leftover \"protected\"/\"conditional: ...\" placeholder text is no longer shown in Notes once a pick has real modeled structure (it now duplicates or contradicts the Protection/Swap columns) \u2014 genuine free-text notes are untouched",
+      "A swap group spanning multiple picks (e.g. a 2-team best-of-1st swap) now collapses to one row per team instead of listing every pick in the group separately"
+    ]
+  },
+  {
     "version": "0.0.352",
     "date": "2026-07-16",
     "changes": [

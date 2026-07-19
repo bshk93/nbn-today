@@ -42,8 +42,7 @@
 // Table builders
 //   buildTable                  673   generic sortable table (used by owners page too)
 //   buildRosterTable            893   renders the Roster section with salary/cap data
-//   bioPlayerName              1357   slug → display name from bios
-//   buildPicksTable            1365   renders the Draft Picks section
+//   buildPicksTable            1365   renders the Draft Picks section (future picks only, no player yet)
 //   makeSeasonRenderCell       1478   season history cell renderer (badges, playoff coloring)
 //   buildTimeline              1631   season timeline component
 //   buildPersonnelSection      1526   franchise personnel history (tenures + records)
@@ -278,6 +277,22 @@ const ratingsPopupReady = new Promise(resolve => {
   .picks-acquired td   { color: #60a5fa; }
   .picks-traded td     { color: #6b7280; font-style: italic; }
   .picks-uncertain td  { color: #f59e0b; font-style: italic; }
+  .picks-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    padding: 0.6rem 1rem 0.75rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    border-top: 1px solid #283141;
+  }
+  .picks-legend-item { display: flex; align-items: center; gap: 0.35rem; }
+  .picks-swatch {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
   .retired-banners {
     display: flex;
     flex-wrap: wrap;
@@ -1379,81 +1394,219 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   return wrap;
 }
 
-function bioPlayerName(slug, bios) {
-  if (!slug || !bios) return null;
-  const bio = bios[slug];
-  if (!bio) return null;
-  const parts = bio.name.split(',');
-  return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+// Cache of resolved "{date}: {description}" strings for GET /api/transactions/{id},
+// keyed by txn id, shared across every picks table on the page.
+const _txnDescCache = new Map();
+async function _fetchTxnDesc(id) {
+  if (_txnDescCache.has(id)) return _txnDescCache.get(id);
+  _txnDescCache.set(id, null);
+  try {
+    const res = await fetch(`/api/transactions/${id}`);
+    if (!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    _txnDescCache.set(id, `${data.date}: ${data.description}`);
+  } catch {
+    // leave cached as null (not found / not yet backfilled) — tooltip falls back
+  }
 }
 
-function buildPicksTable(picks, teamAbbr, bios = {}, allPicks = []) {
-  const sortPicks  = arr => [...arr].sort((a, b) => a.year - b.year || a.round - b.round);
-  const isTBD      = p => p.owner === '?' || p.owner.includes('|');
-  const own        = sortPicks(picks.filter(p => p.orig === teamAbbr && p.owner === teamAbbr));
-  const uncertain  = sortPicks(picks.filter(p => isTBD(p)));
-  const acquired   = sortPicks(picks.filter(p => p.orig !== teamAbbr && !isTBD(p)));
-  const traded     = sortPicks(allPicks.filter(p => p.orig === teamAbbr && p.owner !== teamAbbr && !isTBD(p)));
+// Contingent picks (protected/swap/binary chain) carry a `leaves` array from
+// GET /api/picks describing every possible final owner, each optionally tagged
+// with the real trade(s) that created that leg. Builds the tooltip text for
+// the pick's Team cell so "Owner TBD" isn't a dead end for the reader.
+function buildLeavesTooltip(p) {
+  const uniq = [];
+  const seen = new Set();
+  (p.leaves || []).forEach(l => (l.txn_ids || []).forEach(t => {
+    if (!seen.has(t.id)) { seen.add(t.id); uniq.push(t); }
+  }));
+  uniq.sort((a, b) => a.date.localeCompare(b.date));
+  const body = uniq.length
+    ? uniq.map(t => _txnDescCache.get(t.id) || `${t.date}: (loading…)`).join('\n\n')
+    : 'Originating trade(s) not yet linked.';
+  const rnd = p.round === 1 ? '1st' : '2nd';
+  const header = p._groupOrigs && p._groupOrigs.length > 1
+    ? `One ${rnd} conveys here — originally ${p._groupOrigs.join('/')}'s own pick, exact origin TBD.\n\n`
+    : '';
+  return header + body;
+}
 
-  if (!own.length && !uncertain.length && !acquired.length && !traded.length) return null;
+// A swap group / binary chain spans N distinct real picks (one per member
+// team). In every case checked live (2026-07-19 audit: 0 of 19 groups), a team
+// occupies at most one leaf of the shared `leaves` list, so it ends up with
+// exactly one of the N — showing all N as separate rows on one team's page
+// overstates that team's haul, hence the collapse below. But the model does
+// NOT guarantee that (a swap priority list or nested leaf could in principle
+// assign the same team twice), so this checks actual leaf occupancy per group
+// rather than assuming it: only collapses down to `myCount` rows when this
+// team's own leaf count for the group is <= 1. If a team ever does occupy 2+
+// leaves of the same group, this leaves all N member rows un-collapsed rather
+// than guessing which ones to hide — never drop a real claim to keep the
+// display tidy.
+function dedupeByGroup(rows, teamAbbr) {
+  const groups = new Map();
+  const out = [];
+  rows.forEach(p => {
+    if (!p.group_id) { out.push(p); return; }
+    if (!groups.has(p.group_id)) groups.set(p.group_id, []);
+    groups.get(p.group_id).push(p);
+  });
+  groups.forEach(members => {
+    const leaves = members[0].leaves || [];
+    const myLeafCount = leaves.filter(l => l.team === teamAbbr).length;
+    if (myLeafCount > 1) {
+      out.push(...members);   // ambiguous which of the N is "ours" -- show them all
+      return;
+    }
+    const rep = members.find(p => p.orig === teamAbbr) || members[0];
+    rep._groupOrigs = [...new Set(members.map(p => p.orig))].sort();
+    out.push(rep);
+  });
+  return out;
+}
+
+// The flat `swap_owner` field is just "the other pick's ORIG team" for a
+// 2-member swap group — accurate but reads like that team holds a right
+// over THIS pick, when the real right-holder is whoever's first in the
+// group's priority order (often a third team, e.g. BOS holding the swap
+// right over OKC's and DEN's own picks — `swap_owner: DEN` on OKC's own row
+// badly misreads as "DEN has swap rights"). `leaves` already carries the
+// real, self-describing priority order ("swap priority (better pick)" /
+// "(worse pick)"), so build the column from that instead of the raw field.
+function formatSwapLeaves(p) {
+  const swapLeaves = (p.leaves || []).filter(l => (l.description || '').startsWith('swap priority'));
+  if (!swapLeaves.length) return '';
+  return swapLeaves.map(l => {
+    const m = l.description.match(/\(([^)]+)\)/);
+    const label = m ? m[1].replace(/ pick$/, '') : '';
+    return label ? `${l.team} (${label})` : l.team;
+  }).join(' · ');
+}
+
+// Historical NOTES rows in the flat CSV predate the conveyance model and
+// carry a leftover one-word marker ("protected") or a stale
+// "conditional: X/Y" string for picks that have since been fully modeled as
+// real structure (`leaves` non-empty) — now redundant with, and sometimes
+// flatly contradicted by, the Protection/Swap columns (e.g. a `swap`-type
+// pick whose NOTES still says "protected"). Only suppress those two known
+// stale shapes, and only once the pick actually has modeled structure to
+// stand in for them — anything else in NOTES (genuine prose, a real
+// unmigrated pick with no structure yet) is left exactly as-is.
+function cleanNotes(p) {
+  const notes = (p.notes || '').trim();
+  const hasStructure = (p.leaves || []).length > 0;
+  if (hasStructure && (notes === 'protected' || /^conditional:/i.test(notes))) return '';
+  return notes;
+}
+
+// Team-cell text + row class per pick "kind" — replaces the old subheader
+// grouping now that all kinds share one year/round-sorted table.
+const PICK_KIND_DISPLAY = {
+  own:       { cls: null,               teamCell: () => 'Own' },
+  uncertain: { cls: 'picks-uncertain',   teamCell: p => p.owner === '?' ? '?' : p.owner.split('|').join(' | ') },
+  acquired:  { cls: 'picks-acquired',    teamCell: p => `from ${p.orig}` },
+  traded:    { cls: 'picks-traded',      teamCell: p => `to ${p.owner}` },
+};
+
+function buildPicksTable(picks, teamAbbr, allPicks = []) {
+  // Once a pick is used, it's a historical fact that belongs in Draft
+  // History, not this panel — this panel is only future picks still up in
+  // the air (no player attached yet).
+  const notDrafted = p => !p.player;
+  const isTBD      = p => p.owner === '?' || p.owner.includes('|');
+
+  const tag = (arr, kind) => arr.map(p => ({ ...p, _kind: kind }));
+  const own       = tag(picks.filter(p => notDrafted(p) && p.orig === teamAbbr && p.owner === teamAbbr), 'own');
+  const uncertain = tag(dedupeByGroup(picks.filter(p => notDrafted(p) && isTBD(p)), teamAbbr), 'uncertain');
+  const acquired  = tag(picks.filter(p => notDrafted(p) && p.orig !== teamAbbr && !isTBD(p)), 'acquired');
+  // Traded-away picks aren't picks this team has — kept out of the merged,
+  // sorted "picks I hold" list below and shown as its own section instead.
+  const traded    = tag(allPicks.filter(p => notDrafted(p) && p.orig === teamAbbr && p.owner !== teamAbbr && !isTBD(p)), 'traded')
+                       .sort((a, b) => a.year - b.year || a.round - b.round);
+
+  const rows = [...own, ...uncertain, ...acquired]
+    .sort((a, b) => a.year - b.year || a.round - b.round);
+
+  if (!rows.length && !traded.length) return null;
 
   const table = document.createElement('table');
   const thead = table.createTHead();
   const hr = thead.insertRow();
-  ['Year', 'Rnd', 'Team', 'Pick', 'Player', 'Protection', 'Swap', 'Notes', 'Frozen'].forEach(label => {
+  ['Year', 'Rnd', 'Team', 'Protection', 'Swap', 'Notes', 'Frozen'].forEach(label => {
     const th = document.createElement('th');
     th.textContent = label;
-    if (label === 'Pick' || label === 'Year' || label === 'Rnd') th.classList.add('right');
-    if (label === 'Team' || label === 'Player' || label === 'Protection' || label === 'Swap' || label === 'Notes' || label === 'Frozen') th.classList.add('muted');
+    if (label === 'Year' || label === 'Rnd') th.classList.add('right');
+    if (label === 'Team' || label === 'Protection' || label === 'Swap' || label === 'Notes' || label === 'Frozen') th.classList.add('muted');
     hr.appendChild(th);
   });
 
   const tbody = table.createTBody();
 
-  const addSection = (label, rows, rowClass, teamCell) => {
-    if (!rows.length) return;
+  const renderRow = p => {
+    const { cls, teamCell } = PICK_KIND_DISPLAY[p._kind];
+    const tr = tbody.insertRow();
+    if (cls) tr.className = cls;
+
+    const protLabel = p.protected != null ? `Top-${p.protected}` : '';
+    const cells = [
+      [String(p.year),                'right',        ],
+      [p.round === 1 ? '1st' : '2nd', 'right',        ],
+      [teamCell(p),                    'muted center', ],
+      [protLabel,                      'muted',        ],
+      [formatSwapLeaves(p),            'muted',        ],
+      [cleanNotes(p),                  'muted',        ],
+      [p.frozen ? 'FROZEN' : '',       'muted',        ],
+    ];
+    cells.forEach(([text, cellCls]) => {
+      const td = tr.insertCell();
+      if (cellCls) cellCls.split(' ').forEach(c => td.classList.add(c));
+      td.textContent = text;
+    });
+    if (p.frozen) {
+      const frozenTd = tr.cells[tr.cells.length - 1];
+      frozenTd.style.color = '#f87171';
+      frozenTd.style.fontWeight = '700';
+      if (p.frozen_reason) attachTooltip(frozenTd, p.frozen_reason);
+    }
+    if (p.leaves && p.leaves.length) {
+      p.leaves.forEach(l => (l.txn_ids || []).forEach(t => _fetchTxnDesc(t.id)));
+      attachTooltip(tr.cells[2], () => buildLeavesTooltip(p));
+    }
+  };
+
+  rows.forEach(renderRow);
+
+  if (traded.length) {
     const sep = tbody.insertRow();
     sep.className = 'subheader';
     const td = sep.insertCell();
-    td.colSpan = 9;
-    td.textContent = label;
+    td.colSpan = 7;
+    td.textContent = 'Traded Away';
+    traded.forEach(renderRow);
+  }
 
-    rows.forEach(p => {
-      const tr = tbody.insertRow();
-      if (rowClass) tr.className = rowClass;
+  const legend = document.createElement('div');
+  legend.className = 'picks-legend';
+  [
+    ['Own',           null,               '#d1d5db'],
+    ['Acquired',      'picks-acquired',   '#60a5fa'],
+    ['Traded away',   'picks-traded',     '#6b7280'],
+    ['Uncertain owner', 'picks-uncertain', '#f59e0b'],
+  ].forEach(([label, , color]) => {
+    const item = document.createElement('span');
+    item.className = 'picks-legend-item';
+    const swatch = document.createElement('span');
+    swatch.className = 'picks-swatch';
+    swatch.style.background = color;
+    item.appendChild(swatch);
+    item.appendChild(document.createTextNode(label));
+    legend.appendChild(item);
+  });
 
-      const protLabel = p.protected != null ? `Top-${p.protected}` : '';
-      const cells = [
-        [String(p.year),                      'right',        ],
-        [p.round === 1 ? '1st' : '2nd',       'right',        ],
-        [teamCell(p),                          'muted center', ],
-        [p.pick != null ? `#${p.pick}` : '—', 'right',        ],
-        [bioPlayerName(p.player, bios) || '',  'muted',        ],
-        [protLabel,                            'muted',        ],
-        [p.swap_owner || '',                   'muted',        ],
-        [p.notes || '',                        'muted',        ],
-        [p.frozen ? 'FROZEN' : '',             'muted',        ],
-      ];
-      cells.forEach(([text, cls]) => {
-        const td = tr.insertCell();
-        if (cls) cls.split(' ').forEach(c => td.classList.add(c));
-        td.textContent = text;
-      });
-      if (p.frozen) {
-        const frozenTd = tr.cells[tr.cells.length - 1];
-        frozenTd.style.color = '#f87171';
-        frozenTd.style.fontWeight = '700';
-        if (p.frozen_reason) attachTooltip(frozenTd, p.frozen_reason);
-      }
-    });
-  };
-
-  addSection('Own Picks',           own,       null,              () => '—');
-  addSection('Owner TBD',           uncertain, 'picks-uncertain',  p => p.owner === '?' ? '?' : p.owner.split('|').join(' | '));
-  addSection('Acquired Picks',      acquired,  'picks-acquired',   p => p.orig);
-  addSection('Traded Away',         traded,    'picks-traded',     p => p.owner);
-
-  return table;
+  const wrap = document.createElement('div');
+  wrap.appendChild(table);
+  wrap.appendChild(legend);
+  return wrap;
 }
 
 const SEASON_COLS = [
@@ -2182,7 +2335,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
 
   function renderView(currentPicks) {
     wrapEl.innerHTML = '';
-    const t = buildPicksTable(currentPicks, teamAbbr, bios, allPicks);
+    const t = buildPicksTable(currentPicks, teamAbbr, allPicks);
     if (t) wrapEl.appendChild(t);
     else wrapEl.innerHTML = '<div class="status">No picks on file.</div>';
     attachBtn(currentPicks);
@@ -3218,7 +3371,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   if (pkr.status === 'fulfilled') {
     picksWrap.innerHTML = '';
     const allPicks = allpkr.status === 'fulfilled' ? allpkr.value : [];
-    const t = buildPicksTable(pkr.value, abbr, biosData, allPicks);
+    const t = buildPicksTable(pkr.value, abbr, allPicks);
     if (t) picksWrap.appendChild(t);
     else picksWrap.innerHTML = '<div class="status">No picks on file.</div>';
     setupPicksEditable('picks-title', picksWrap, pkr.value, abbr, biosData, allPicks);
