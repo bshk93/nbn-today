@@ -961,6 +961,13 @@ let currentToken = localStorage.getItem(TOKEN_KEY) || '';
 let isAdmin = false;
 let canManage = false;  // rosters/admin — can delete transactions and edit notes
 
+// The current league year (cap/contract clock). Set from GET /api/league-year at
+// page load; falls back to the date-based season if that fetch fails. Same pattern
+// as teams/team.js's LEAGUE_YEAR — the league year can diverge from a plain
+// calendar cutoff via BOD rollover overrides, so this must never be recomputed
+// locally once the real value is known.
+let LEAGUE_YEAR = null;
+
 function rolesCanManage(roles) {
   roles = roles || [];
   return roles.includes('admin') || roles.includes('rosters');
@@ -971,7 +978,6 @@ const TEAM_ABBRS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
 // ── Init ───────────────────────────────────────────────────────────────────
 (async function init() {
   setDefaultDate();
-  addSalaryRow();
   renderAuthBar();
   setupTypeSwitch();
   setupPlayerSearch();
@@ -991,14 +997,20 @@ const TEAM_ABBRS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
     document.querySelector('.txn-table').classList.toggle('admin-mode', canManage);
   }
 
-  const [txnRes, biosRes, picksRes, mapRes, statesRes, capRes] = await Promise.allSettled([
+  const [txnRes, biosRes, picksRes, mapRes, statesRes, capRes, lyrRes] = await Promise.allSettled([
     fetch('/api/transactions?limit=500').then(r => r.json()),
     fetch('/api/players').then(r => r.json()),
     fetch('/api/picks').then(r => r.json()),
     fetch('/api/team-map').then(r => r.json()),
     fetch('/api/team-state').then(r => r.ok ? r.json() : {}),
     fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
+    fetch('/api/league-year').then(r => r.ok ? r.json() : null),
   ]);
+
+  // Set the league year before adding the first salary row so its default year
+  // reflects the real cap/contract clock, not a local calendar-cutoff guess.
+  if (lyrRes.status === 'fulfilled' && lyrRes.value?.current_season) LEAGUE_YEAR = lyrRes.value.current_season;
+  addSalaryRow();
 
   if (biosRes.status === 'fulfilled') bios = biosRes.value;
   if (txnRes.status === 'fulfilled') allTransactions = txnRes.value.transactions || [];
@@ -1124,8 +1136,8 @@ function setupTypeSwitch() {
       document.getElementById('f-player-field').style.display        = isSetHardCap ? 'none' : '';
       document.getElementById('f-team-field').style.display          = (isSign || isSetHardCap) ? '' : 'none';
       document.getElementById('f-hardcap-level-field').style.display = isSetHardCap ? '' : 'none';
-      document.getElementById('f-signing-method-field').style.display = isSign ? '' : 'none';
-      if (!isSign) {
+      document.getElementById('f-signing-method-field').style.display = (isSign || isConvertTwoWay) ? '' : 'none';
+      if (!isSign && !isConvertTwoWay) {
         document.getElementById('f-bird-rights-field').style.display = 'none';
         document.getElementById('mle-hint').style.display = 'none';
       }
@@ -1174,6 +1186,7 @@ function setupTypeSwitch() {
 }
 
 function currentSeasonStr() {
+  if (LEAGUE_YEAR) return LEAGUE_YEAR;
   const now = new Date();
   const y = now.getFullYear() % 100;
   const m = now.getMonth() + 1;
@@ -1227,7 +1240,10 @@ function parseDollarStr(v) {
 function updateMleHint() {
   const hint = document.getElementById('mle-hint');
   const method = document.getElementById('f-signing-method').value;
-  const team = document.getElementById('f-team')?.value;
+  const txnType = document.getElementById('f-type').value;
+  const team = txnType === 'convert_twoway'
+    ? teamMap[document.getElementById('f-player-slug').value]
+    : document.getElementById('f-team')?.value;
   const birdField = document.getElementById('f-bird-rights-field');
   if (birdField) birdField.style.display = method === 'bird_rights' ? '' : 'none';
 
@@ -1434,6 +1450,7 @@ function seasonStart(s) {
 function onPlayerSelected(slug) {
   const type = document.getElementById('f-type').value;
   if (type === 'guarantee') { populateGuaranteeYears(slug); return; }
+  if (type === 'convert_twoway') { updateMleHint(); return; }
   if (type !== 'option') return;
   const bio = bios[slug];
   if (!bio) return;
@@ -2152,7 +2169,12 @@ async function submitTransaction() {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     if (!Object.keys(contract.salaries || {}).length) { setStatus('err', 'At least one salary year is required.'); return; }
-    details = { player: playerSlug, contract: { type: 'player', salaries: contract.salaries, cap_holds: contract.cap_holds } };
+    const signingMethod = document.getElementById('f-signing-method').value || null;
+    details = {
+      player: playerSlug,
+      contract: { type: 'player', salaries: contract.salaries, cap_holds: contract.cap_holds },
+      ...(signingMethod ? { signing_method: signingMethod } : {}),
+    };
   } else if (type === 'sign_pick') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -2559,8 +2581,13 @@ function renderDetailsCell(t) {
       const n = parseInt(v.replace(/[^0-9]/g, ''), 10) || 0;
       return sum + n;
     }, 0);
-    if (years) return escHtml(`${years}yr / $${(total / 1e6).toFixed(1)}M`);
-    return c.type === 'two-way' ? 'Two-Way' : '';
+    let contractStr2 = years ? `${years}yr / $${(total / 1e6).toFixed(1)}M` : (c.type === 'two-way' ? 'Two-Way' : '');
+    if (t.type === 'convert_twoway' && d.signing_method && d.signing_method !== 'cap_space') {
+      const methodLabels = { bird_rights: 'Bird Rights', mle: 'MLE', ntmle: 'NTMLE', tmle: 'TMLE', minimum: 'Minimum',
+        room_exception: 'Room Exc.', bae: 'BAE', sign_and_trade: 'S&T' };
+      contractStr2 += ` · ${methodLabels[d.signing_method] || d.signing_method}`;
+    }
+    return escHtml(contractStr2);
   }
   if (t.type === 'release') {
     const dc = d.dead_cap || {};

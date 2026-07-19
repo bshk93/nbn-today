@@ -142,14 +142,17 @@
     .team-card summary {
       list-style: none;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
       padding: 0.85rem 1.1rem;
       font-weight: 600;
     }
 
     .team-card summary::-webkit-details-marker { display: none; }
+
+    .team-card-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
     .team-card summary .count {
       font-weight: 500;
@@ -158,6 +161,50 @@
       background: rgba(245,158,11,0.12);
       border-radius: 999px;
       padding: 0.15rem 0.65rem;
+    }
+
+    /* Per-team breakdown chips: what kinds of diffs this team has, and how
+       big the dollar-denominated ones are, visible without expanding the card. */
+    .team-card-breakdown {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.55rem;
+    }
+
+    .breakdown-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #d1d5db;
+      white-space: nowrap;
+    }
+
+    .breakdown-chip .dot {
+      width: 0.42rem;
+      height: 0.42rem;
+      border-radius: 999px;
+      flex: 0 0 auto;
+    }
+
+    .mag {
+      color: #9ca3af;
+      font-weight: 400;
+    }
+
+    /* Per-row dollar-magnitude column in the diff table */
+    td.diff-mag, th.diff-mag {
+      text-align: right;
+    }
+    td.diff-mag {
+      color: #fca5a5;
+      font-variant-numeric: tabular-nums;
     }
 
     .table-scroll {
@@ -238,6 +285,214 @@
 
     #status { padding: 1rem; color: #9ca3af; }
 
+    .team-link { color: inherit; text-decoration: none; }
+    .team-link:hover { text-decoration: underline; }
+
+    /* ── Tabs ─────────────────────────────────────────────────────── */
+
+    .tabs {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1.1rem;
+      border-bottom: 1px solid #374151;
+    }
+
+    .tab-btn {
+      appearance: none;
+      background: none;
+      border: none;
+      color: #9ca3af;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.6rem 0.9rem 0.7rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .tab-btn:hover { color: #e5e7eb; }
+
+    .tab-btn.active {
+      color: #e5e7eb;
+      border-bottom-color: #a78bfa;
+    }
+
+    /* ── Draft Picks tab ──────────────────────────────────────────── */
+
+    .picks-intro {
+      color: #9ca3af;
+      font-size: 0.85rem;
+      max-width: 68ch;
+      margin: 0 0 1rem;
+    }
+
+    .picks-intro code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: rgba(255,255,255,0.06);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .pchip {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.45rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .pchip:hover { border-color: #6b7280; }
+
+    .pchip.active {
+      border-color: var(--pc);
+      background: color-mix(in srgb, var(--pc) 14%, #1f2937);
+      color: #e5e7eb;
+    }
+
+    .pchip .n {
+      font-weight: 700;
+      font-size: 0.95rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--pc);
+    }
+
+    .pick-group { margin-bottom: 1.4rem; }
+
+    .pick-group-head {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .pick-group-head .dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 999px;
+      flex: none;
+    }
+
+    .pick-group-head h3 {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #e5e7eb;
+    }
+
+    .pick-group-head .count {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      color: #9ca3af;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid #374151;
+      border-radius: 999px;
+      padding: 0.1rem 0.5rem;
+    }
+
+    .pick-group-desc {
+      margin: 0 0 0.7rem;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      max-width: 74ch;
+    }
+
+    .pick-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .pick-row {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-left: 3px solid var(--pc);
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      display: grid;
+      grid-template-columns: 92px 1fr 1fr;
+      gap: 0.2rem 1rem;
+    }
+
+    .pick-row .pick-id {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+
+    .pick-row .pick-id .team { font-weight: 800; font-size: 0.9rem; color: #e5e7eb; }
+    .pick-row .pick-id .yr { font-size: 0.72rem; color: #9ca3af; }
+
+    .pick-side .side-label {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 0.1rem;
+    }
+
+    .pick-side .owner { font-weight: 700; font-size: 0.85rem; color: #e5e7eb; }
+    .pick-side .owner.diverge { color: var(--pc); }
+
+    .pick-side .detail {
+      font-size: 0.76rem;
+      color: #9ca3af;
+      margin-top: 0.15rem;
+      white-space: pre-line;
+    }
+
+    .pick-flags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.25rem; }
+
+    .pick-flag {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.65rem;
+      padding: 0.05rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid #374151;
+      color: #9ca3af;
+    }
+
+    .pick-footer {
+      grid-column: 1 / -1;
+      margin-top: 0.35rem;
+      padding-top: 0.45rem;
+      border-top: 1px dashed #374151;
+      font-size: 0.76rem;
+      color: #9ca3af;
+    }
+
+    .pick-footer.investigate { color: #fca5a5; }
+
+    .pick-timeline { display: flex; flex-direction: column; gap: 0.15rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.7rem; }
+    .pick-timeline b { color: #e5e7eb; }
+
+    .pick-group-collapse > summary {
+      list-style: none;
+      cursor: pointer;
+      color: #9ca3af;
+      font-size: 0.82rem;
+      padding: 0.4rem 0;
+    }
+    .pick-group-collapse > summary::-webkit-details-marker { display: none; }
+    .pick-group-collapse > summary::before { content: "▸"; margin-right: 0.4rem; color: #6b7280; }
+    .pick-group-collapse[open] > summary::before { content: "▾"; }
+
+    @media (max-width: 720px) {
+      .pick-row { grid-template-columns: 1fr; }
+      .pick-row .pick-id { flex-direction: row; gap: 0.5rem; align-items: baseline; }
+    }
+
   </style>
 </head>
 <body>
@@ -251,15 +506,28 @@
 
     <div class="freshness" id="freshness"></div>
 
-    <details class="legend" id="legend">
-      <summary>What the categories mean</summary>
-      <div class="legend-body" id="legend-body"></div>
-    </details>
+    <div class="tabs" id="tabs">
+      <button type="button" class="tab-btn active" data-tab="cap">Cap &amp; Salaries</button>
+      <button type="button" class="tab-btn" data-tab="picks">Draft Picks</button>
+    </div>
 
-    <div class="summary-strip" id="summary-strip"></div>
+    <div class="tab-panel" id="panel-cap">
+      <details class="legend" id="legend">
+        <summary>What the categories mean</summary>
+        <div class="legend-body" id="legend-body"></div>
+      </details>
 
-    <div id="status">Loading…</div>
-    <div id="teams"></div>
+      <div class="summary-strip" id="summary-strip"></div>
+
+      <div id="status">Loading…</div>
+      <div id="teams"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-picks" hidden>
+      <p class="picks-intro">Every team's future draft pick (2027 and on, both rounds) reconciled between the cached league sheet's Details column + attached cell notes and the live <code>/api/picks</code> ledger.</p>
+      <div class="chip-row" id="picks-chips"></div>
+      <div id="picks-groups"></div>
+    </div>
   </div>
 
   <script src="/nav.js"></script>
@@ -284,7 +552,6 @@
     // actionable disagreement.
     const CATEGORY_META = {
       aggregate:                { label: "Aggregate",         color: "#f87171", desc: "Guaranteed salary or hard-cap status disagrees at the team level." },
-      picks:                    { label: "Draft Pick",        color: "#a78bfa", desc: "Sheet and site disagree on who currently owns a future draft pick." },
       mle:                      { label: "MLE",               color: "#38bdf8", desc: "Mid-level exception usage disagrees." },
       bae:                      { label: "BAE",               color: "#38bdf8", desc: "Bi-annual exception availability disagrees." },
       tpe:                      { label: "TPE",               color: "#38bdf8", desc: "Trade exception remaining amount disagrees." },
@@ -300,7 +567,7 @@
 
     const CATEGORY_ORDER = [
       "pick_signed", "player_status", "player_team_conflict", "aggregate",
-      "player_salary", "player_hold", "picks", "mle", "bae", "tpe",
+      "player_salary", "player_hold", "mle", "bae", "tpe",
       "player_missing", "player_extra", "player_hold_uncalculated",
     ];
 
@@ -308,6 +575,36 @@
       if (n === null || n === undefined) return '—';
       const sign = n < 0 ? '−' : '';
       return sign + '$' + Math.abs(Math.round(n)).toLocaleString('en-US');
+    }
+
+    function fmtMoneyShort(n) {
+      if (n === null || n === undefined) return '—';
+      const abs = Math.abs(n);
+      const sign = n < 0 ? '−' : '';
+      if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(abs >= 1e7 ? 0 : 1) + 'M';
+      if (abs >= 1e3) return sign + '$' + Math.round(abs / 1e3) + 'K';
+      return fmtMoney(n);
+    }
+
+    // Diffs come in three shapes depending on category: a raw number
+    // (aggregate/mle/tpe), a pre-formatted dollar string ("$51,975,000" for
+    // player_salary), or a compound string with a hold type prefix
+    // ("UFA $2,450,000" for player_hold). Non-dollar categories (picks,
+    // hard_cap, bae, team-conflict, missing/extra) have no $ pattern in either
+    // side and fall through to null -- correctly excluded from magnitude math.
+    function parseMoneyLike(v) {
+      if (typeof v === 'number') return v;
+      if (typeof v !== 'string') return null;
+      const m = v.match(/-?\$[\d,]+(?:\.\d+)?/);
+      if (!m) return null;
+      return parseFloat(m[0].replace(/[$,]/g, ''));
+    }
+
+    function diffMagnitude(d) {
+      const a = parseMoneyLike(d.sheet);
+      const b = parseMoneyLike(d.site);
+      if (a === null || b === null) return null;
+      return Math.abs(a - b);
     }
 
     function fmtVal(field, v) {
@@ -348,11 +645,17 @@
 
     function renderSummaryStrip(teams) {
       const counts = {};
-      teams.forEach(t => t.diffs.forEach(d => { counts[d.category] = (counts[d.category] || 0) + 1; }));
+      const magnitudes = {};
+      teams.forEach(t => t.diffs.forEach(d => {
+        counts[d.category] = (counts[d.category] || 0) + 1;
+        const mag = diffMagnitude(d);
+        if (mag !== null) magnitudes[d.category] = (magnitudes[d.category] || 0) + mag;
+      }));
       const strip = document.getElementById('summary-strip');
       const pills = CATEGORY_ORDER.filter(cat => counts[cat]).map(cat => {
         const m = catMeta(cat);
-        return `<span class="summary-pill"><span class="dot" style="background:${m.color}"></span>${counts[cat]} ${m.label}</span>`;
+        const magStr = magnitudes[cat] ? ` <span class="mag">· ${fmtMoneyShort(magnitudes[cat])}</span>` : '';
+        return `<span class="summary-pill"><span class="dot" style="background:${m.color}"></span>${counts[cat]} ${m.label}${magStr}</span>`;
       });
       strip.innerHTML = pills.join('');
     }
@@ -363,6 +666,22 @@
         const bi = CATEGORY_ORDER.indexOf(b.category);
         return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
       });
+    }
+
+    function teamBreakdown(diffs) {
+      const byCategory = {};
+      diffs.forEach(d => {
+        const b = (byCategory[d.category] = byCategory[d.category] || { count: 0, mag: 0, hasMag: false });
+        b.count++;
+        const mag = diffMagnitude(d);
+        if (mag !== null) { b.mag += mag; b.hasMag = true; }
+      });
+      return CATEGORY_ORDER.filter(cat => byCategory[cat]).map(cat => {
+        const m = catMeta(cat);
+        const b = byCategory[cat];
+        const magStr = b.hasMag ? ` <span class="mag">· ${fmtMoneyShort(b.mag)}</span>` : '';
+        return `<span class="breakdown-chip"><span class="dot" style="background:${m.color}"></span>${b.count} ${m.label}${magStr}</span>`;
+      }).join('');
     }
 
     function renderTeamCard(t) {
@@ -378,16 +697,20 @@
       const tableHtml = individual.length ? `
         <div class="table-scroll">
           <table class="diff-table">
-            <thead><tr><th>Category</th><th>Field</th><th>Sheet</th><th>Site</th></tr></thead>
+            <thead><tr><th>Category</th><th>Field</th><th>Sheet</th><th>Site</th><th class="diff-mag">Diff</th></tr></thead>
             <tbody>
-              ${individual.map(d => `
+              ${individual.map(d => {
+                const mag = diffMagnitude(d);
+                return `
                 <tr>
                   <td>${badge(d.category)}</td>
                   <td>${d.field}</td>
                   <td>${fmtVal(d.field, d.sheet)}</td>
                   <td>${fmtVal(d.field, d.site)}</td>
+                  <td class="diff-mag">${mag === null ? '<span class="mag">—</span>' : fmtMoney(mag)}</td>
                 </tr>
-              `).join('')}
+              `;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -408,13 +731,162 @@
       return `
         <details class="team-card">
           <summary>
-            <span>${TEAMS[t.team] || t.team} <span style="color:#9ca3af;font-weight:400">(${t.team})</span></span>
-            <span class="count">${t.diff_count} diff${t.diff_count === 1 ? '' : 's'}</span>
+            <div class="team-card-header-row">
+              <span><a href="/teams/${t.team}/" class="team-link" onclick="event.stopPropagation()">${TEAMS[t.team] || t.team}</a> <span style="color:#9ca3af;font-weight:400">(${t.team})</span></span>
+              <span class="count">${t.diff_count} diff${t.diff_count === 1 ? '' : 's'}</span>
+            </div>
+            <div class="team-card-breakdown">${teamBreakdown(t.diffs)}</div>
           </summary>
           ${tableHtml}
           ${groupedHtml}
         </details>
       `;
+    }
+
+    // ── Draft Picks tab ─────────────────────────────────────────────
+
+    const PICK_CATEGORY_META = {
+      needs_investigation: {
+        label: "Needs a decision", color: "#f87171",
+        desc: "No overlap and no logged trade explains it, or the site's own ledger disagrees with its own transaction log.",
+      },
+      committee_lag: {
+        label: "Sheet is behind", color: "#38bdf8",
+        desc: "The site disagrees with the sheet, but a logged trade explains exactly why — the sheet just hasn't caught up. Worth sending to the committee.",
+      },
+      same_owner_diff_representation: {
+        label: "Already reconciled", color: "#2dd4bf",
+        desc: "Sheet lists a compound/conditional owner; site names one practical team but its notes describe the same split. No action needed.",
+      },
+      richness_gap: {
+        label: "Detail gap", color: "#facc15",
+        desc: "Owner matches on both sides, but the sheet's swap/protection mechanics aren't in the site's structured fields yet. Backlog, not a dispute.",
+      },
+    };
+    const PICK_CATEGORY_ORDER = ["needs_investigation", "committee_lag", "same_owner_diff_representation", "richness_gap"];
+
+    let picksFilter = 'all';
+    let picksRowsGlobal = [];
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function pickRowCard(r) {
+      const meta = PICK_CATEGORY_META[r.category];
+      const sheetOwnerNorm = (r.sheet_owner || r.team).replace(/\*/g, '');
+      const diverge = sheetOwnerNorm.toUpperCase() !== (r.site_owner || r.team).toUpperCase();
+
+      let footer = '';
+      if (r.category === 'committee_lag' && r.evidence && r.evidence.length) {
+        const evs = r.evidence.map(e => {
+          const desc = e.description ? ' — ' + escapeHtml(e.description) : '';
+          return `<div><b>${e.date}</b> ${e.from} → ${e.to}${desc}</div>`;
+        }).join('');
+        footer = `<div class="pick-footer"><div class="pick-timeline">${evs}</div></div>`;
+      } else if (r.category === 'needs_investigation') {
+        const note = r.investigation_note
+          ? escapeHtml(r.investigation_note)
+          : "No logged transaction and no matching note explains this gap — worth a direct check.";
+        footer = `<div class="pick-footer investigate">${note}</div>`;
+      } else if (r.category === 'same_owner_diff_representation') {
+        footer = `<div class="pick-footer">Sheet split and site notes describe the same arrangement — just stored differently.</div>`;
+      }
+
+      const siteFlags = [];
+      if (r.site_protected) siteFlags.push(`protected top-${r.site_protected}`);
+      if (r.site_swap_owner) siteFlags.push(`swap w/ ${r.site_swap_owner}`);
+
+      return `
+        <div class="pick-row" style="--pc:${meta.color}">
+          <div class="pick-id">
+            <span class="team">${r.team}</span>
+            <span class="yr">${r.year} R${r.round}</span>
+          </div>
+          <div class="pick-side">
+            <div class="side-label">Sheet</div>
+            <div class="owner ${diverge ? 'diverge' : ''}">${escapeHtml(r.sheet_owner || '—')}</div>
+            ${r.sheet_details ? `<div class="detail">${escapeHtml(r.sheet_details)}</div>` : ''}
+            ${r.sheet_note ? `<div class="detail">${escapeHtml(r.sheet_note)}</div>` : ''}
+          </div>
+          <div class="pick-side">
+            <div class="side-label">Site</div>
+            <div class="owner ${diverge ? 'diverge' : ''}">${escapeHtml(r.site_owner || '—')}</div>
+            ${r.site_notes ? `<div class="detail">${escapeHtml(r.site_notes)}</div>` : ''}
+            ${siteFlags.length ? `<div class="pick-flags">${siteFlags.map(f => `<span class="pick-flag">${escapeHtml(f)}</span>`).join('')}</div>` : ''}
+          </div>
+          ${footer}
+        </div>`;
+    }
+
+    function renderPicksChips(counts, cleanTotal) {
+      const items = [
+        { key: 'all', label: 'All flagged', n: picksRowsGlobal.length, color: '#a78bfa' },
+        ...PICK_CATEGORY_ORDER.filter(k => counts[k]).map(k => ({ key: k, label: PICK_CATEGORY_META[k].label, n: counts[k], color: PICK_CATEGORY_META[k].color })),
+        { key: 'clean', label: 'Clean matches', n: cleanTotal, color: '#6b7280', disabled: true },
+      ];
+      document.getElementById('picks-chips').innerHTML = items.map(it => `
+        <button type="button" class="pchip ${picksFilter === it.key ? 'active' : ''}" data-key="${it.key}" style="--pc:${it.color}" ${it.disabled ? 'title="No action needed — not itemized below"' : ''}>
+          <span class="n">${it.n}</span><span>${it.label}</span>
+        </button>`).join('');
+      document.querySelectorAll('#picks-chips .pchip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.key;
+          if (key === 'clean') return;
+          picksFilter = key;
+          renderPicksGroups();
+          renderPicksChips(counts, cleanTotal);
+        });
+      });
+    }
+
+    function renderPicksGroups() {
+      const byCat = {};
+      picksRowsGlobal.forEach(r => { (byCat[r.category] = byCat[r.category] || []).push(r); });
+
+      const keys = PICK_CATEGORY_ORDER.filter(k => picksFilter === 'all' || picksFilter === k);
+      const html = keys.map(key => {
+        const meta = PICK_CATEGORY_META[key];
+        const list = byCat[key] || [];
+        if (!list.length) return '';
+        const head = `
+          <div class="pick-group-head">
+            <span class="dot" style="background:${meta.color}"></span>
+            <h3>${meta.label}</h3>
+            <span class="count">${list.length}</span>
+          </div>
+          <p class="pick-group-desc">${meta.desc}</p>`;
+        const body = `<div class="pick-rows">${list.map(pickRowCard).join('')}</div>`;
+        if (key === 'richness_gap' && picksFilter === 'all') {
+          return `<div class="pick-group"><details class="pick-group-collapse"><summary>${meta.label} — click to expand (${list.length})</summary>${head}${body}</details></div>`;
+        }
+        return `<div class="pick-group">${head}${body}</div>`;
+      }).join('');
+
+      document.getElementById('picks-groups').innerHTML = html || '<p style="color:#9ca3af;padding:1rem 0;">Nothing in this category.</p>';
+    }
+
+    function renderPicksTab(picks) {
+      if (!picks) {
+        document.getElementById('picks-groups').innerHTML = '<p style="color:#9ca3af;">No picks data yet — the job hasn\'t run with the new report.</p>';
+        return;
+      }
+      picksRowsGlobal = picks.rows;
+      const cleanTotal = (picks.counts.clean_match || 0) + (picks.counts.clean_match_frozen || 0);
+      renderPicksChips(picks.counts, cleanTotal);
+      renderPicksGroups();
+    }
+
+    function setupTabs() {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const tab = btn.dataset.tab;
+          document.getElementById('panel-cap').hidden = tab !== 'cap';
+          document.getElementById('panel-picks').hidden = tab !== 'picks';
+        });
+      });
     }
 
     async function load() {
@@ -445,12 +917,13 @@
       if (teamsWithDiffs.length === 0) {
         document.getElementById('summary-strip').remove();
         document.getElementById('teams').innerHTML = '<div class="clean-banner">No diffs — everything tracked matches the sheet.</div>';
-        return;
+      } else {
+        renderSummaryStrip(teamsWithDiffs);
+        document.getElementById('teams').innerHTML = teamsWithDiffs.map(renderTeamCard).join('');
       }
 
-      renderSummaryStrip(teamsWithDiffs);
-
-      document.getElementById('teams').innerHTML = teamsWithDiffs.map(renderTeamCard).join('');
+      renderPicksTab(data.picks);
+      setupTabs();
     }
 
     load();

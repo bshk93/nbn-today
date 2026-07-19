@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.0.352",
+    "date": "2026-07-16",
+    "changes": [
+      "Team roster tables now show a small player headshot next to each name, and the jersey number appears as a #-tag after the name instead of taking its own column",
+      "Trading Block salary columns now start on the current league year (matching team roster pages) instead of a hardcoded 25-26",
+      "Added a salary filter to the Trading Block table: set a min and/or max (in $M) on any season individually \u2014 e.g. max $0 in 27-28 to find players off the books that year. Active filters show a count on the Salary button and stack together",
+      "Hovering an OVR rating on a team roster, the Trading Block, or the player index now pops up that player's full 2K attribute breakdown (tap on mobile, or focus it with the keyboard). Potential and 2K position show in the popup header",
+      "Added an Attributes filter to the Trading Block: pick any 2K attribute and set a minimum rating. Add as many as you like \u2014 they stack, so you can ask for 3PT 85+ and Block 50+ at once"
+    ]
+  },
+  {
     "version": "0.0.351",
     "date": "2026-07-16",
     "changes": [

@@ -127,6 +127,33 @@
       header img { height: 90px; }
     }
 
+    .home-search-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      max-width: 820px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      margin-bottom: 1.5rem;
+      color: #9ca3af;
+      font-size: 0.9rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .home-search-btn:hover { border-color: #4b6a9b; color: #d1d5db; }
+    .home-search-icon { font-size: 1.1rem; color: #6b7280; }
+    .home-search-text { flex: 1; text-align: left; }
+    .home-search-kbd { font-size: 0.7rem; border: 1px solid #374151; border-radius: 4px; padding: 0.1rem 0.4rem; color: #6b7280; }
+
+    @media (max-width: 560px) {
+      .home-search-kbd { display: none; }
+    }
+
   </style>
 </head>
 <body>
@@ -136,6 +163,12 @@
     <h1>Nothing But Net</h1>
     <p>Basketball Simulation GM League</p>
   </header>
+
+  <button class="home-search-btn" id="home-search-btn" aria-label="Search pages, teams, and players (Ctrl+K)">
+    <span class="home-search-icon">⌕</span>
+    <span class="home-search-text">Search pages, teams, players… (or just start typing)</span>
+    <span class="home-search-kbd">Ctrl K</span>
+  </button>
 
   <main class="grid">
     <span class="section-label">League</span>
@@ -286,10 +319,6 @@
       <div class="card-header"><span class="card-icon">📖</span><span class="card-title">Rulebook</span></div>
     </a>
 
-    <a class="card" href="https://stats.nbn.today/files/">
-      <div class="card-header"><span class="card-icon">📁</span><span class="card-title">Data Files</span></div>
-    </a>
-
     <a class="card" href="/changelog">
       <div class="card-header"><span class="card-icon">🔖</span><span class="card-title">Changelog</span></div>
       <span id="site-version" style="font-size:0.75rem;color:#6b7280;"></span>
@@ -363,6 +392,23 @@
     fetch('/version.json').then(r => r.json()).then(d => {
       const el = document.getElementById('site-version');
       if (el) el.textContent = 'v' + d.version;
+    });
+
+    document.getElementById('home-search-btn').addEventListener('click', () => openSearch());
+
+    // Typing anywhere on the homepage (outside a form field) jumps straight
+    // into the site search, seeded with the character just typed.
+    document.addEventListener('keydown', e => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key.length !== 1) return;
+      const t = e.target;
+      const isFormField = t && (
+        t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' ||
+        t.tagName === 'BUTTON' || t.tagName === 'A' || t.isContentEditable
+      );
+      if (isFormField) return;
+      e.preventDefault();
+      openSearch(e.key);
     });
 
     const _loToken = localStorage.getItem('nbn_token');

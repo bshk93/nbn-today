@@ -62,6 +62,21 @@
     .award-chip.dpoy   { background: #0f1d12; border-color: #065f46; color: #34d399; }
     .award-chip.allnbn { background: #1a1305; border-color: #374151; color: #9ca3af; }
     #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+
+    /* Attribute ratings */
+    .attrs-section h3 { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.75rem; }
+    .attrs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .attr-col-name { font-size: 0.8rem; font-weight: 700; color: #d1d5db; margin-bottom: 0.15rem; }
+    .attr-col-meta { font-size: 0.72rem; color: #6b7280; margin-bottom: 0.75rem; }
+    .attr-cat-title { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af; padding-bottom: 0.3rem; margin: 0.7rem 0 0.4rem; border-bottom: 1px solid #374151; }
+    .attr-cat-title:first-of-type { margin-top: 0; }
+    .attr-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.32rem; }
+    .attr-label { width: 8rem; flex-shrink: 0; font-size: 0.78rem; color: #9ca3af; }
+    .attr-track { flex: 1; height: 6px; border-radius: 3px; background: #1f2937; position: relative; overflow: hidden; }
+    .attr-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+    .attr-val { width: 1.8rem; text-align: right; font-size: 0.78rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .attr-note { color: #6b7280; font-size: 0.85rem; }
+    .attr-source { font-size: 0.68rem; color: #4b5563; margin-top: 0.6rem; }
   </style>
 </head>
 <body>
@@ -88,15 +103,29 @@
   <div id="compare" style="display:none"></div>
   <div id="status">Loading…</div>
 </div>
+<script src="/ratings-popup.js"></script>
 <script>
   const params = new URLSearchParams(location.search);
   const slugA = params.get('a'), slugB = params.get('b');
 
-  let allPlayers = {};   // slug → bio
-  let allOvrs = {};      // slug → [{date,ovr}]
-  let currentOvrs = {};  // slug → number
-  let allSeasons = [];   // rows from player_seasons.csv
-  let allAwards = [];    // rows from player_awards.csv
+  let allPlayers = {};    // slug → bio
+  let allOvrs = {};       // slug → [{date,ovr}]
+  let currentOvrs = {};   // slug → number
+  let allSeasons = [];    // rows from player_seasons.csv
+  let allAwards = [];     // rows from player_awards.csv
+  let allAttributes = {}; // slug → [snapshot, …] oldest-first, from /api/attributes
+
+  // Current (latest) 2K attribute snapshot for a player, or null if never scraped
+  // (e.g. retired/legacy players who predate the 2K ratings pipeline).
+  function currentAttributes(slug) {
+    const history = allAttributes[slug];
+    return history && history.length ? history[history.length - 1] : null;
+  }
+
+  function attrColor(n) {
+    const t = Math.min(1, Math.max(0, (n - 40) / (99 - 40)));
+    return `hsl(${Math.round(t * 120)}, 65%, 55%)`;
+  }
 
   function displayName(raw) {
     if (!raw) return '';
@@ -132,8 +161,7 @@
 
       function filter() {
         const q = input.value.trim().toLowerCase();
-        const entries = Object.entries(allPlayers)
-          .filter(([, p]) => p.type === 'player' || p.type === 'two-way');
+        const entries = Object.entries(allPlayers);
         const matches = q
           ? entries.filter(([, p]) => displayName(p.name).toLowerCase().includes(q) || p.name.toLowerCase().includes(q))
           : entries.filter(([, p]) => p.type === 'player').slice(0, 20);
@@ -169,7 +197,7 @@
         if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, opts.length - 1); opts.forEach((o, i) => o.classList.toggle('active', i === activeIdx)); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); opts.forEach((o, i) => o.classList.toggle('active', i === activeIdx)); }
         else if (e.key === 'Enter' && activeIdx >= 0) {
-          const slug = Object.entries(allPlayers).filter(([, p]) => p.type === 'player' || p.type === 'two-way')
+          const slug = Object.entries(allPlayers)
             .filter(([, p]) => displayName(p.name).toLowerCase().includes(input.value.trim().toLowerCase()))
             .sort(([, a], [, b]) => a.name.localeCompare(b.name))[activeIdx];
           if (slug) selectPlayer(slug[0], slug[1]);
@@ -211,6 +239,9 @@
 
     // ── Awards ──
     container.appendChild(buildAwards(sA, pA, sB, pB));
+
+    // ── Attribute ratings ──
+    container.appendChild(buildAttributesSection(sA, pA, sB, pB));
   }
 
   function playerCard(slug, bio, isRight) {
@@ -234,6 +265,12 @@
 
     div.appendChild(img);
     div.appendChild(info);
+
+    if (ovr && window.RatingsPopup) {
+      const badge = info.querySelector('.cmp-ovr');
+      if (badge) RatingsPopup.attach(badge, slug, { name: displayName(bio.name) });
+    }
+
     return div;
   }
 
@@ -322,22 +359,97 @@
     return div;
   }
 
+  function buildAttributesSection(sA, pA, sB, pB) {
+    const div = document.createElement('div');
+    div.className = 'attrs-section';
+    const h3 = document.createElement('h3'); h3.textContent = '2K Attribute Ratings'; div.appendChild(h3);
+    const grid = document.createElement('div'); grid.className = 'attrs-grid'; div.appendChild(grid);
+    grid.appendChild(buildAttributesCol(sA, pA));
+    grid.appendChild(buildAttributesCol(sB, pB));
+    return div;
+  }
+
+  function buildAttributesCol(slug, bio) {
+    const col = document.createElement('div');
+    const name = document.createElement('div'); name.className = 'attr-col-name'; name.textContent = displayName(bio.name);
+    col.appendChild(name);
+
+    const snap = currentAttributes(slug);
+    if (!snap || !snap.attributes) {
+      const note = document.createElement('div');
+      note.className = 'attr-note';
+      note.textContent = 'No ratings data available for this player.';
+      col.appendChild(note);
+      return col;
+    }
+
+    const metaBits = [];
+    if (snap['2k_ovr'] != null) metaBits.push(`OVR ${snap['2k_ovr']}`);
+    if (snap.attributes.potential) metaBits.push(`POT ${snap.attributes.potential}`);
+    if ((snap['2k_pos'] || []).length) metaBits.push(snap['2k_pos'].join('/'));
+    if (metaBits.length) {
+      const meta = document.createElement('div'); meta.className = 'attr-col-meta'; meta.textContent = metaBits.join(' · ');
+      col.appendChild(meta);
+    }
+
+    const categories = (window.RatingsPopup && RatingsPopup.CATEGORIES) || [];
+    const labels = (window.RatingsPopup && RatingsPopup.LABELS) || {};
+
+    categories.forEach(cat => {
+      const present = cat.keys.filter(k => snap.attributes[k] != null);
+      if (!present.length) return;
+
+      const catTitle = document.createElement('div'); catTitle.className = 'attr-cat-title'; catTitle.textContent = cat.label;
+      col.appendChild(catTitle);
+
+      present.forEach(key => {
+        const val = parseFloat(snap.attributes[key]);
+        const row = document.createElement('div'); row.className = 'attr-row';
+
+        const label = document.createElement('span'); label.className = 'attr-label'; label.textContent = labels[key] || key;
+        row.appendChild(label);
+
+        const track = document.createElement('span'); track.className = 'attr-track';
+        const fill = document.createElement('span'); fill.className = 'attr-fill';
+        const color = attrColor(isNaN(val) ? 0 : val);
+        fill.style.cssText = `width:${Math.max(0, Math.min(100, (isNaN(val) ? 0 : val) / 99 * 100))}%;background:${color};`;
+        track.appendChild(fill);
+        row.appendChild(track);
+
+        const v = document.createElement('span'); v.className = 'attr-val'; v.style.color = color; v.textContent = snap.attributes[key];
+        row.appendChild(v);
+
+        col.appendChild(row);
+      });
+    });
+
+    const source = document.createElement('div');
+    source.className = 'attr-source';
+    source.textContent = snap.date ? `Source: 2kratings.com (as of ${snap.date})` : 'Source: 2kratings.com';
+    col.appendChild(source);
+
+    return col;
+  }
+
   // ── Data loading ─────────────────────────────────────────────────────────────
 
   async function load() {
     try {
-      const [playersJson, ovrCurrentJson, ovrAllJson, seasonsText, awardsText] = await Promise.all([
+      const [playersJson, ovrCurrentJson, ovrAllJson, seasonsText, awardsText, attributesJson] = await Promise.all([
         fetch('/api/players').then(r => r.ok ? r.json() : {}),
         fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
         fetch('/api/ovr').then(r => r.ok ? r.json() : {}),
         fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : ''),
         fetch('/players/player_awards.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+        fetch('/api/attributes').then(r => r.ok ? r.json() : {}).catch(() => ({})),
       ]);
       allPlayers = playersJson;
       currentOvrs = ovrCurrentJson;
       allOvrs = ovrAllJson;
       allSeasons = parseCSV(seasonsText);
       allAwards = awardsText ? parseCSV(awardsText) : [];
+      allAttributes = attributesJson;
+      if (window.RatingsPopup) RatingsPopup.setSource(currentAttributes);
 
       document.getElementById('status').style.display = 'none';
 

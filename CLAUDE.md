@@ -192,13 +192,13 @@ No framework or build step. Every page is a self-contained HTML file with inline
 
 | Task | Where to edit |
 |---|---|
-| Add/change a roster table column | `buildRosterTable` — `teams/team.js:588` |
-| Add/change a draft picks column | `buildPicksTable` — `teams/team.js:968` |
-| Add/change a season history column | `makeSeasonRenderCell` — `teams/team.js:1069` |
-| Add/change an owners table column | `COLS` array — `owners/index.html:164` |
+| Add/change a roster table column | `buildRosterTable` — `teams/team.js:893` |
+| Add/change a draft picks column | `buildPicksTable` — `teams/team.js:1365` |
+| Add/change a season history column | `makeSeasonRenderCell` — `teams/team.js:1478` |
+| Add/change an owners table column | `COLS` array — `owners/index.html:173` |
 | Change team page layout or HTML structure | `teams/team.js` (the injected HTML, not per-team files) |
-| Change cap/MLE/exception display | `renderHardCapBanner` / `renderExceptionsSection` — `teams/team.js:537` |
-| Change edit mode behavior | `enterEditMode` / `setupEditable` — `teams/team.js:1510` |
+| Change cap/MLE/exception display | `renderHardCapBanner` / `renderExceptionsSection` — `teams/team.js:806` |
+| Change edit mode behavior | `enterEditMode` / `setupEditable` — `teams/team.js:2041` |
 | Change stats highs table | `stats/highs/table.js` (not the per-stat HTML files) |
 | Change stats totals table | `stats/totals/table.js` (not the per-stat HTML files) |
 | Add/edit a NBNTV blurb | `BLURBS` object — `nbntv-classics/index.html` |
@@ -206,7 +206,7 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Change player index display | `players/index.html` |
 | Change HOF display | `hof/index.html` |
 | Change H2H display | `h2h/index.html` |
-| Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js:34` |
+| Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js:109` |
 
 ---
 

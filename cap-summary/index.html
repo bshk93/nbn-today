@@ -40,6 +40,77 @@
 
     .thresholds b { color: #e5e7eb; }
 
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #374151;
+      margin-bottom: 1.25rem;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #9ca3af;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: -1px;
+      padding: 0.6rem 1.1rem;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn:hover { color: #e5e7eb; }
+    .tab-btn.active { border-bottom-color: #60a5fa; color: #f3f4f6; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .salary-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .salary-controls label { font-size: 0.75rem; color: #9ca3af; }
+    .salary-controls select {
+      background: #111827;
+      color: #f3f4f6;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.8rem;
+    }
+    .salary-check {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-left: 0.75rem;
+      cursor: pointer;
+    }
+    .salary-check input { cursor: pointer; }
+
+    .chart-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 1rem 0.875rem 0.75rem;
+    }
+
+    #chart-tooltip {
+      position: fixed;
+      background: #1f2937;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.8rem;
+      color: #f3f4f6;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
     .table-wrap {
       background: #1f2937;
       border: 1px solid #374151;
@@ -319,7 +390,7 @@
       letter-spacing: 0.02em;
     }
 
-    #status {
+    #status, .loading {
       text-align: center;
       padding: 3rem;
       color: #6b7280;
@@ -427,12 +498,32 @@
       <p>Every team's cap sheet by category. Sort a column, tap a cell for detail, tap the arrow to test exclusions.</p>
     </header>
 
-    <div class="thresholds" id="thresholds"></div>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="table">Table</button>
+      <button class="tab-btn" data-tab="chart">Salaries</button>
+    </div>
 
-    <div class="table-wrap" id="table-wrap">
-      <div id="status">Loading…</div>
+    <div id="tab-table" class="tab-panel active">
+      <div class="thresholds" id="thresholds"></div>
+
+      <div class="table-wrap" id="table-wrap">
+        <div id="status">Loading…</div>
+      </div>
+    </div>
+
+    <div id="tab-chart" class="tab-panel">
+      <div class="chart-card">
+        <div class="salary-controls">
+          <label for="salary-season">Season</label>
+          <select id="salary-season"></select>
+          <label class="salary-check"><input type="checkbox" id="salary-order-type"> Order by type</label>
+          <label class="salary-check"><input type="checkbox" id="salary-sort-guaranteed"> Sort by guaranteed</label>
+        </div>
+        <div id="salary-chart"><div class="loading">Loading…</div></div>
+      </div>
     </div>
   </div>
+  <div id="chart-tooltip"></div>
 
   <script>
     const TEAMS = {
@@ -448,11 +539,12 @@
       TOR: "Toronto Raptors",   UTA: "Utah Jazz",            WAS: "Washington Wizards",
     };
 
-    // Cap-usage categories, in display order. Keyed to match the classification
-    // buckets used elsewhere on the site (teams/team.js BUCKET_ORDER, frivolities
-    // salary tab classify()) so a dollar always lands in the same bucket everywhere.
-    // Extend this array (plus classify()/buildTeamRow()) to add roster-spot-hold or
-    // unsigned-pick-hold columns once those are tracked as real data.
+    // Cap-usage categories, in display order. Drives both the table's columns
+    // and the Salaries chart tab's stack/legend (see classify() and
+    // computeCatsForTeam() below) — also keyed to match the classification
+    // buckets used in teams/team.js (BUCKET_ORDER). Extend this array (plus
+    // classify()) to add roster-spot-hold or unsigned-pick-hold columns once
+    // those are tracked as real data.
     const CATEGORIES = [
       { key: 'guaranteed', label: 'Guaranteed', short: 'Gtd' },
       { key: 'dead',       label: 'Dead Cap',   short: 'Dead' },
@@ -486,9 +578,13 @@
       return sign + '$' + (Math.abs(n) / 1e6).toFixed(1) + 'M';
     }
 
-    // Same guaranteed/hold-type classification as the roster table & salary viz
-    // elsewhere on the site — two-way players are $0 so folding them into
-    // "guaranteed" here is a no-op on the totals.
+    // No special case for two-way contracts: per rulebook § 2.2 they carry a $0
+    // salary, so they fall through to whichever generic bucket their guaranteed/
+    // cap_holds fields indicate for that season (usually nothing, occasionally an
+    // RFA hold in an out year) rather than needing their own column. This is the
+    // one classification function for the whole page — both the table and the
+    // Salaries chart tab call it via computeCatsForTeam so a dollar is always
+    // bucketed the same way regardless of which view is showing it.
     function classify(bio, season) {
       const g = bio.guaranteed?.[season];
       if (g === '0' || g === 0) return 'nongtd';
@@ -504,6 +600,36 @@
       const cats = {};
       CATEGORIES.forEach(c => { cats[c.key] = { total: 0, players: [] }; });
       return cats;
+    }
+
+    // Shared by the table (current season only) and the Salaries chart tab
+    // (any season in the dropdown) so a dollar always lands in the same
+    // bucket regardless of which view is looking at it.
+    function computeCatsForTeam(rosterRows, dcRows, playersData, season) {
+      const cats = emptyCats();
+
+      rosterRows.forEach(r => {
+        const bio = playersData[r.SLUG];
+        if (!bio) return;
+        if (bio.type === 'dead' || r.TYPE === 'dead') return; // dead cap comes from the deadcap endpoint below
+        const salary = parseSalary(bio.salaries?.[season]);
+        if (!salary) return;
+        const cls = classify(bio, season);
+        cats[cls].total += salary;
+        cats[cls].players.push({ name: formatName(bio.name || r.SLUG), amount: salary, slug: r.SLUG });
+      });
+
+      dcRows.forEach(r => {
+        const salary = parseSalary(r[season]);
+        if (!salary) return;
+        const bio = playersData[r.SLUG];
+        cats.dead.total += salary;
+        cats.dead.players.push({ name: formatName(bio?.name || r.SLUG), amount: salary, slug: r.SLUG });
+      });
+
+      CATEGORIES.forEach(c => cats[c.key].players.sort((a, b) => b.amount - a.amount));
+      const total = CATEGORIES.reduce((s, c) => s + cats[c.key].total, 0);
+      return { cats, total };
     }
 
     // Mirrors teams/team.js computeMleType/mleTypeLabel — kept in sync manually
@@ -543,6 +669,7 @@
         ? leagueYearRes.value.current_season
         : '25-26';
       const levels = capLevels[season] || {};
+      const rosterData = {}, deadCapData = {};
 
       const rows = abbrs.map((abbr, i) => {
         const rosterRes = rosterResults[i];
@@ -550,31 +677,10 @@
           ? parseCSV(rosterRes.value).filter(r => r.SLUG)
           : [];
         const dcRows = dcResults[i].status === 'fulfilled' ? dcResults[i].value : [];
+        rosterData[abbr] = rosterRows;
+        deadCapData[abbr] = dcRows;
 
-        const cats = emptyCats();
-
-        rosterRows.forEach(r => {
-          const bio = playersData[r.SLUG];
-          if (!bio) return;
-          if (bio.type === 'dead' || r.TYPE === 'dead') return; // dead cap comes from the deadcap endpoint below
-          const salary = parseSalary(bio.salaries?.[season]);
-          if (!salary) return;
-          const cls = classify(bio, season);
-          cats[cls].total += salary;
-          cats[cls].players.push({ name: formatName(bio.name || r.SLUG), amount: salary });
-        });
-
-        dcRows.forEach(r => {
-          const salary = parseSalary(r[season]);
-          if (!salary) return;
-          const bio = playersData[r.SLUG];
-          cats.dead.total += salary;
-          cats.dead.players.push({ name: formatName(bio?.name || r.SLUG), amount: salary });
-        });
-
-        CATEGORIES.forEach(c => cats[c.key].players.sort((a, b) => b.amount - a.amount));
-
-        const total = CATEGORIES.reduce((s, c) => s + cats[c.key].total, 0);
+        const { cats, total } = computeCatsForTeam(rosterRows, dcRows, playersData, season);
         const ts = teamState[abbr]?.current || {};
 
         // Trade Exceptions (§ 4.1a) — only non-expired ones count toward the
@@ -605,7 +711,21 @@
         };
       });
 
-      return { rows, levels, season };
+      // Union of every season that appears anywhere (bio salaries + dead cap rows),
+      // restricted to the current league year and later — matches what team roster
+      // pages are able to show. Backs the Salaries chart tab's season dropdown.
+      const seasons = new Set([season]);
+      for (const bio of Object.values(playersData)) {
+        Object.keys(bio.salaries || {}).forEach(s => { if (s >= season) seasons.add(s); });
+      }
+      for (const dcRows of Object.values(deadCapData)) {
+        dcRows.forEach(r => Object.keys(r).forEach(k => {
+          if (/^\d{2}-\d{2}$/.test(k) && k >= season) seasons.add(k);
+        }));
+      }
+      const seasonList = [...seasons].sort();
+
+      return { rows, levels, capLevels, season, playersData, rosterData, deadCapData, seasonList };
     }
 
     // ── edit state (client-side only, "what if I exclude this contract" scratchpad) ─
@@ -972,19 +1092,219 @@
       el.innerHTML = parts.map(([label, val]) => `<span>${label}: <b>${val}</b></span>`).join('');
     }
 
-    (async () => {
-      const status = document.getElementById('status');
-      const wrap = document.getElementById('table-wrap');
-      try {
-        const data = await loadData();
-        levels = data.levels;
-        renderThresholds(levels, data.season);
-        status.remove();
-        wrap.appendChild(buildTable(data.rows));
-      } catch (e) {
-        status.textContent = 'Failed to load cap summary.';
+    // ── Salaries chart tab ───────────────────────────────────────────────────
+    // Same CATEGORIES/classify()/computeCatsForTeam() as the table above, so a
+    // dollar is always bucketed identically whether you're looking at the
+    // table or the chart.
+
+    // Same hues as the "cap hold" swatches on team roster pages (teams/team.js
+    // SWATCH_COLORS) — kept in sync so a hold reads as the same color everywhere.
+    const CAP_HOLD_COLORS = {
+      nongtd:     '#374151',
+      player_opt: 'hsl(120, 50%, 30%)',
+      team_opt:   'hsl(210, 55%, 35%)',
+      rfa:        'hsl(25,  60%, 35%)',
+      ufa:        'hsl(45,  60%, 35%)',
+    };
+    const SEG_COLORS = {
+      dead:       '#4b5563',
+      guaranteed: '#3b82f6',
+      ...CAP_HOLD_COLORS,
+    };
+
+    // Segment stacking order when "Order by type" is on: dead cap first, then
+    // guaranteed money, then progressively less-certain money, cap holds last.
+    const STACK_ORDER = ['dead', 'guaranteed', 'nongtd', 'team_opt', 'player_opt', 'rfa', 'ufa'];
+
+    let salarySeason = null;
+
+    const chartTooltip = document.getElementById('chart-tooltip');
+
+    function attachChartTooltip(el) {
+      el.addEventListener('mousemove', e => {
+        const target = e.target.closest('[data-label]');
+        if (!target) { chartTooltip.style.display = 'none'; return; }
+        chartTooltip.textContent = target.dataset.label;
+        chartTooltip.style.display = 'block';
+        const x = e.clientX + 14;
+        const y = e.clientY - 36;
+        chartTooltip.style.left = Math.min(x, window.innerWidth - chartTooltip.offsetWidth - 8) + 'px';
+        chartTooltip.style.top  = (y < 8 ? e.clientY + 14 : y) + 'px';
+      });
+      el.addEventListener('mouseleave', () => { chartTooltip.style.display = 'none'; });
+      el.addEventListener('click', e => {
+        const target = e.target.closest('[data-slug]');
+        if (target?.dataset.slug) location.href = `/players/?p=${target.dataset.slug}`;
+      });
+    }
+
+    function renderChartTab(data, season) {
+      const SEASON = season || salarySeason || data.season;
+      salarySeason = SEASON;
+
+      const sel = document.getElementById('salary-season');
+      if (!sel.dataset.populated) {
+        sel.innerHTML = data.seasonList.map(s => `<option value="${s}">${s}</option>`).join('');
+        sel.value = SEASON;
+        sel.dataset.populated = '1';
+        sel.addEventListener('change', () => renderChartTab(data, sel.value));
       }
-    })();
+
+      const orderTypeEl = document.getElementById('salary-order-type');
+      const sortGtdEl   = document.getElementById('salary-sort-guaranteed');
+      if (!orderTypeEl.dataset.wired) {
+        orderTypeEl.dataset.wired = '1';
+        orderTypeEl.addEventListener('change', () => renderChartTab(data, salarySeason));
+      }
+      if (!sortGtdEl.dataset.wired) {
+        sortGtdEl.dataset.wired = '1';
+        sortGtdEl.addEventListener('change', () => renderChartTab(data, salarySeason));
+      }
+      const orderByType = orderTypeEl.checked;
+      const sortByGuaranteed = sortGtdEl.checked;
+
+      const chartLevels = data.capLevels?.[SEASON] || {};
+
+      // Build per-team segments straight from computeCatsForTeam — the exact
+      // same bucketing the table uses, just re-run for whichever season is
+      // selected instead of being locked to the current one.
+      const teamSal = {};
+      for (const abbr of Object.keys(TEAMS)) {
+        const { cats } = computeCatsForTeam(data.rosterData[abbr] || [], data.deadCapData[abbr] || [], data.playersData, SEASON);
+        const segments = [];
+        CATEGORIES.forEach(c => {
+          cats[c.key].players.forEach(p => {
+            const salStr = '$' + (p.amount / 1e6).toFixed(1) + 'M';
+            segments.push({
+              slug: p.slug, salary: p.amount, cls: c.key,
+              label: c.key === 'guaranteed' ? `${p.name} — ${salStr}` : `${p.name} — ${salStr} (${c.label})`,
+            });
+          });
+        });
+        segments.sort((a, b) => orderByType
+          ? (STACK_ORDER.indexOf(a.cls) - STACK_ORDER.indexOf(b.cls)) || (b.salary - a.salary)
+          : b.salary - a.salary);
+        const total = segments.reduce((s, p) => s + p.salary, 0);
+        const guaranteed = cats.guaranteed.total + cats.dead.total;
+        teamSal[abbr] = { segments, total, guaranteed };
+      }
+
+      const sorted = Object.keys(TEAMS).sort((a, b) => sortByGuaranteed
+        ? teamSal[b].guaranteed - teamSal[a].guaranteed
+        : teamSal[b].total - teamSal[a].total);
+
+      // Layout constants
+      const VB_W = 1000;
+      const PAD  = { t: 26, r: 80, b: 28, l: 44 };
+      const BAR_H = 18, GAP = 5, BAND = BAR_H + GAP;
+      const chartW = VB_W - PAD.l - PAD.r;
+      const chartH = sorted.length * BAND;
+      const VB_H   = chartH + PAD.t + PAD.b;
+
+      const maxSal = Math.max(...sorted.map(a => teamSal[a].total), (chartLevels.hard_cap || chartLevels.apron2 || 0) * 1.06);
+      const xS = v => PAD.l + (v / maxSal) * chartW;
+
+      // Threshold lines (stagger label heights to avoid overlap)
+      const thresholds = [
+        { val: chartLevels.cap,      label: 'Cap',      color: '#d1d5db', dy: -14 },
+        { val: chartLevels.apron1,   label: 'Apron 1',  color: '#f59e0b', dy: -5  },
+        { val: chartLevels.apron2,   label: 'Apron 2',  color: '#ef4444', dy: -14 },
+        { val: chartLevels.hard_cap, label: 'Hard Cap', color: '#7c3aed', dy: -5  },
+      ].filter(t => t.val);
+      const threshLines = thresholds.map(t => {
+        const x = xS(t.val).toFixed(1);
+        return `<line x1="${x}" y1="${PAD.t}" x2="${x}" y2="${PAD.t + chartH}" stroke="${t.color}" stroke-width="1" stroke-dasharray="4,3" opacity="0.85"/>
+                <text x="${x}" y="${PAD.t + t.dy}" text-anchor="middle" fill="${t.color}" font-size="8.5">${t.label}</text>`;
+      }).join('');
+
+      // X-axis ticks
+      const xTicks = [];
+      for (let v = 0; v <= maxSal; v += 50e6) {
+        const x = xS(v).toFixed(1);
+        xTicks.push(`<line x1="${x}" y1="${PAD.t + chartH}" x2="${x}" y2="${PAD.t + chartH + 4}" stroke="#4b5563"/>
+                     <text x="${x}" y="${PAD.t + chartH + 13}" text-anchor="middle" fill="#6b7280" font-size="8">${v === 0 ? '' : '$' + (v / 1e6).toFixed(0) + 'M'}</text>`);
+      }
+
+      // Bars
+      const bars = sorted.map((abbr, row) => {
+        const { segments, total } = teamSal[abbr];
+        const y  = PAD.t + row * BAND;
+        let   cx = PAD.l;
+        const segs = segments.map(seg => {
+          const w     = Math.max(0.5, (seg.salary / maxSal) * chartW);
+          const color = SEG_COLORS[seg.cls] || SEG_COLORS.guaranteed;
+          const rect  = `<rect x="${cx.toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="${BAR_H}" fill="${color}" stroke="#111827" stroke-width="0.5" data-label="${seg.label}" data-slug="${seg.slug}"></rect>`;
+          cx += w;
+          return rect;
+        }).join('');
+        const totalLabel = '$' + (total / 1e6).toFixed(1) + 'M';
+        return `
+          <a href="/teams/${abbr}/" style="text-decoration:none;cursor:pointer">
+            <text x="${PAD.l - 5}" y="${y + BAR_H / 2 + 4}" text-anchor="end" fill="#9ca3af" font-size="10" font-weight="600">${abbr}</text>
+          </a>
+          ${segs}
+          <text x="${cx + 4}" y="${y + BAR_H / 2 + 4}" fill="#6b7280" font-size="8.5">${totalLabel}</text>`;
+      }).join('');
+
+      // Legend — same order as the table's category columns
+      const legendDefs = CATEGORIES.map(c => ({ label: c.label, color: SEG_COLORS[c.key] }));
+      const LEG_COL_W = 100;
+      const legItems = legendDefs.map((d, i) =>
+        `<g transform="translate(${i * LEG_COL_W},0)">
+          <rect width="10" height="10" rx="2" fill="${d.color}"/>
+          <text x="14" y="9" fill="#9ca3af" font-size="9">${d.label}</text>
+        </g>`
+      ).join('');
+
+      const el = document.getElementById('salary-chart');
+      el.innerHTML = `
+        <svg viewBox="0 0 ${VB_W} ${VB_H}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">
+          ${xTicks.join('')}
+          <line x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${PAD.t + chartH}" stroke="#374151"/>
+          <line x1="${PAD.l}" y1="${PAD.t + chartH}" x2="${VB_W - PAD.r}" y2="${PAD.t + chartH}" stroke="#374151"/>
+          ${bars}
+          ${threshLines}
+        </svg>
+        <svg viewBox="0 0 ${legendDefs.length * LEG_COL_W} 14" width="${legendDefs.length * LEG_COL_W}" style="display:block;margin-top:0.75rem;max-width:100%" xmlns="http://www.w3.org/2000/svg">
+          ${legItems}
+        </svg>`;
+      attachChartTooltip(el);
+    }
+
+    // ── tab routing ──────────────────────────────────────────────────────────
+
+    const rendered = new Set();
+    let cachedData = null;
+
+    async function activateTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${name}`));
+      if (rendered.has(name)) return;
+      rendered.add(name);
+
+      const status = document.getElementById('status');
+      try {
+        if (!cachedData) cachedData = await loadData();
+      } catch (e) {
+        if (status) status.textContent = 'Failed to load cap summary.';
+        return;
+      }
+
+      if (name === 'table') {
+        levels = cachedData.levels;
+        renderThresholds(levels, cachedData.season);
+        status?.remove();
+        document.getElementById('table-wrap').appendChild(buildTable(cachedData.rows));
+      } else if (name === 'chart') {
+        renderChartTab(cachedData);
+      }
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    });
+
+    activateTab('table');
   </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>

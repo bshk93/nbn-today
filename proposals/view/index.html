@@ -368,6 +368,8 @@ function render(p) {
         const parts = [`<span style="color:#4ade80;">${r.yes} yes</span>`, `<span style="color:#f87171;">${r.no} no</span>`];
         if (p.allow_abstain !== false) parts.push(`${r.abstain} abstain`);
         liveResults.innerHTML = `Live results (visible to BOD only): ${parts.join(' · ')}`;
+        const groupTable = buildGroupBreakdown(r, p.allow_abstain !== false);
+        if (groupTable) liveResults.appendChild(groupTable);
       }
     } else if (p.status === 'closed') {
       if (p.outcome) {
@@ -491,6 +493,33 @@ function renderVoterBreakdown(p) {
   el.appendChild(table);
 }
 
+// Renders a small BOD vs non-BOD table from a tally that carries `.bod` and
+// `.non_bod` sub-objects. Returns null if the split data isn't present.
+function buildGroupBreakdown(tally, showAbstain) {
+  if (!tally || !tally.bod || !tally.non_bod) return null;
+  const cats = showAbstain ? ['yes','no','abstain'] : ['yes','no'];
+  const labels = { yes: 'Yes', no: 'No', abstain: 'Abstain' };
+  const groups = [
+    { key: 'bod', label: 'BOD' },
+    { key: 'non_bod', label: 'Non-BOD' },
+  ];
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-top:1rem;';
+  const table = document.createElement('table');
+  table.className = 'voter-table';
+  table.innerHTML = `
+    <thead><tr><th></th>${cats.map(c => `<th>${labels[c]}</th>`).join('')}</tr></thead>
+    <tbody>
+      ${groups.map(g => `
+        <tr>
+          <td style="font-weight:600;">${g.label}</td>
+          ${cats.map(c => `<td>${(tally[g.key] && tally[g.key][c]) || 0}</td>`).join('')}
+        </tr>`).join('')}
+    </tbody>`;
+  wrap.appendChild(table);
+  return wrap;
+}
+
 function renderVotePanel(p) {
   const panel = document.getElementById('vote-panel');
   const content = document.getElementById('vote-content');
@@ -576,6 +605,9 @@ function renderVotePanel(p) {
     grid.appendChild(totalDiv);
 
     content.appendChild(grid);
+
+    const groupTable = buildGroupBreakdown(r, p.allow_abstain !== false);
+    if (groupTable) content.appendChild(groupTable);
 
     if (myVote && me) {
       const chip = document.createElement('div');

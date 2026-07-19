@@ -62,36 +62,87 @@
     .team-chart { width: 100%; }
     .no-data { color: #4b5563; font-size: 0.75rem; padding: 1rem 0; text-align: center; }
 
-    .salary-controls {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
-    }
-    .salary-controls label { font-size: 0.75rem; color: #9ca3af; }
-    .salary-controls select {
-      background: #111827;
-      color: #f3f4f6;
-      border: 1px solid #374151;
-      border-radius: 6px;
-      padding: 0.3rem 0.5rem;
-      font-size: 0.8rem;
-    }
-    .salary-check {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      margin-left: 0.75rem;
-      cursor: pointer;
-    }
-    .salary-check input { cursor: pointer; }
-
     .league-card {
       background: #1f2937;
       border: 1px solid #374151;
       border-radius: 10px;
       padding: 1rem 0.875rem 0.75rem;
     }
+
+    .attr-table-wrap {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    .attr-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+
+    .attr-table thead th {
+      padding: 0.5rem 0.55rem;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+      user-select: none;
+    }
+
+    .attr-table thead th.group-label {
+      cursor: default;
+      text-align: center;
+      color: #4b5563;
+      border-bottom: 1px solid #283141;
+    }
+
+    .attr-table thead th.sortable-th {
+      cursor: pointer;
+      text-align: right;
+    }
+
+    .attr-table thead th.sortable-th:hover { color: #d1d5db; }
+    .attr-table thead th.sortable-th[data-active="true"] { color: #93c5fd; }
+    .attr-table thead th .sort-arrow { margin-left: 3px; opacity: 0; font-size: 0.58rem; }
+    .attr-table thead th.sortable-th[data-active="true"] .sort-arrow { opacity: 1; }
+
+    .attr-table tbody tr { border-bottom: 1px solid #283141; }
+    .attr-table tbody tr:last-child { border-bottom: none; }
+    .attr-table tbody tr:hover { background: #263244; }
+
+    .attr-table td {
+      padding: 0.45rem 0.55rem;
+      text-align: right;
+      color: #d1d5db;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .attr-table th.team-col, .attr-table td.team-col {
+      position: sticky;
+      left: 0;
+      background: #1f2937;
+      text-align: left;
+      border-right: 1px solid #374151;
+      z-index: 1;
+    }
+    .attr-table thead th.team-col { z-index: 2; cursor: default; }
+
+    .attr-table td.team-col a {
+      color: #f3f4f6;
+      font-weight: 700;
+      text-decoration: none;
+      letter-spacing: 0.03em;
+    }
+    .attr-table td.team-col a:hover { color: #60a5fa; }
+
+    .attr-note { color: #6b7280; font-size: 0.75rem; margin-top: 0.6rem; }
+
+    .attr-table td .cell-rank { opacity: 0.6; font-size: 0.85em; margin-left: 0.2em; }
 
     .loading { color: #6b7280; font-size: 0.9rem; text-align: center; padding: 3rem; grid-column: 1 / -1; }
 
@@ -118,6 +169,82 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
 
+    /* ── Plot Anything ── */
+    .plot-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      align-items: flex-end;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      margin-bottom: 1rem;
+    }
+    .plot-field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .plot-field label {
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #6b7280;
+    }
+    .plot-field select, .plot-field input {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #f3f4f6;
+      font-family: inherit;
+      font-size: 0.82rem;
+      padding: 0.35rem 0.5rem;
+    }
+    .plot-field input[type="number"] { width: 5.5rem; }
+    .plot-field select:focus, .plot-field input:focus { outline: none; border-color: #60a5fa; }
+    .plot-swap {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #e5e7eb;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.82rem;
+      padding: 0.35rem 0.7rem;
+    }
+    .plot-swap:hover { border-color: #60a5fa; color: #f3f4f6; }
+    .plot-count { margin-left: auto; color: #6b7280; font-size: 0.78rem; align-self: center; }
+    .plot-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 0.75rem;
+    }
+    .plot-card .plot-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .plot-card svg { display: block; width: 100%; }
+    .plot-empty { color: #6b7280; font-size: 0.85rem; text-align: center; padding: 3rem; }
+    circle[data-label] { cursor: pointer; }
+    .plot-readout {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem 0.75rem;
+      min-height: 1.2rem;
+      margin-top: 0.6rem;
+      padding: 0.55rem 0.7rem;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: #e5e7eb;
+    }
+    .plot-readout .pr-hint { color: #6b7280; }
+    .plot-readout a {
+      color: #60a5fa;
+      text-decoration: none;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .plot-readout a:hover { text-decoration: underline; }
+
     @media (max-width: 1000px) { .team-grid { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 700px)  { .team-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 480px)  { .team-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -135,7 +262,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="roster">Roster OVRs</button>
       <button class="tab-btn" data-tab="league">League OVRs</button>
-      <button class="tab-btn" data-tab="salaries">Salaries</button>
+      <button class="tab-btn" data-tab="attributes">Team Attributes</button>
+      <button class="tab-btn" data-tab="plot">Plot Anything</button>
     </div>
 
     <div id="tab-roster" class="tab-panel active">
@@ -150,16 +278,12 @@
       </div>
     </div>
 
-    <div id="tab-salaries" class="tab-panel">
-      <div class="league-card">
-        <div class="salary-controls">
-          <label for="salary-season">Season</label>
-          <select id="salary-season"></select>
-          <label class="salary-check"><input type="checkbox" id="salary-show-holds"> Show cap holds</label>
-          <label class="salary-check"><input type="checkbox" id="salary-order-type"> Order by type</label>
-        </div>
-        <div id="salary-chart"><div class="loading">Loading...</div></div>
-      </div>
+    <div id="tab-attributes" class="tab-panel">
+      <div id="attributes-table"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div id="tab-plot" class="tab-panel">
+      <div id="plot-root"><div class="loading">Loading...</div></div>
     </div>
   </div>
 
@@ -210,17 +334,13 @@
     async function loadData() {
       if (_cache) return _cache;
       const abbrs = Object.keys(TEAMS);
-      const [ovrRes, playersRes, capLevelsRes, leagueYearRes, ...rosterAndDcResults] = await Promise.allSettled([
+      const [ovrRes, playersRes, leagueYearRes, attrRes, ...rosterResults] = await Promise.allSettled([
         fetch('/api/ovr').then(r => r.json()),
         fetch('/api/players').then(r => r.json()),
-        fetch('/api/cap-levels').then(r => r.json()),
         fetch('/api/league-year').then(r => r.json()),
+        fetch('/api/attributes/current').then(r => r.json()),
         ...abbrs.map(abbr => fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.text())),
-        ...abbrs.map(abbr => fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : [])),
       ]);
-
-      const rosterResults = rosterAndDcResults.slice(0, abbrs.length);
-      const dcResults     = rosterAndDcResults.slice(abbrs.length);
 
       const ovrMap = {};
       if (ovrRes.status === 'fulfilled') {
@@ -230,7 +350,6 @@
       }
 
       const playersData = playersRes.status === 'fulfilled' ? playersRes.value : {};
-      const capLevels   = capLevelsRes.status === 'fulfilled' ? capLevelsRes.value : {};
       const currentSeason = leagueYearRes.status === 'fulfilled' && leagueYearRes.value.current_season
         ? leagueYearRes.value.current_season
         : '25-26';
@@ -240,34 +359,45 @@
         if (bio.name) nameMap[slug] = bio.name;
       }
 
-      const teamData = {}, rosterRows = {}, deadCapData = {};
+      const attrData = attrRes.status === 'fulfilled' ? attrRes.value : {};
+
+      // The SLUG-only roster CSV lists every roster-adjacent entry, which
+      // includes non-players: "draft-rights" (stashed/undrafted draft rights
+      // -- a cap hold, not an active roster spot) and "" (unsigned, no
+      // salary). Bio type alone isn't enough either: a player whose contract
+      // has expired into a UFA/RFA cap hold keeps type === 'player' until
+      // re-signed or renounced (rulebook §3.10), so also require an actual
+      // salary figure for the current season -- a hold with no real contract
+      // has none.
+      const isActiveRosterPlayer = slug => {
+        const bio = playersData[slug];
+        const t = bio?.type;
+        return (t === 'player' || t === 'two-way') && !!bio.salaries?.[currentSeason];
+      };
+
+      const teamData = {}, teamAttrData = {};
       abbrs.forEach((abbr, i) => {
         const res = rosterResults[i];
         const rows = res.status === 'fulfilled' ? parseCSV(res.value).filter(r => r.SLUG) : [];
-        rosterRows[abbr] = rows;
-        teamData[abbr] = rows
-          .filter(r => r.TYPE !== 'dead')
+        const activeRows = rows.filter(r => isActiveRosterPlayer(r.SLUG));
+        teamData[abbr] = activeRows
           .map(r => ({ name: nameMap[r.SLUG] || r.SLUG, ovr: ovrMap[r.SLUG] || 0, slug: r.SLUG }))
           .filter(p => p.ovr > 0)
           .sort((a, b) => b.ovr - a.ovr);
-        deadCapData[abbr] = dcResults[i].status === 'fulfilled' ? dcResults[i].value : [];
+
+        // Top 8 by 2K overall among actually-rostered players.
+        teamAttrData[abbr] = activeRows
+          .map(r => {
+            const a = attrData[r.SLUG];
+            if (!a || typeof a['2k_ovr'] !== 'number') return null;
+            return { slug: r.SLUG, name: nameMap[r.SLUG] || r.SLUG, ovr: a['2k_ovr'], attrs: a.attributes || {} };
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.ovr - a.ovr)
+          .slice(0, 8);
       });
 
-      // Union of every season that appears anywhere (bio salaries + dead cap rows),
-      // restricted to the current league year and later — matches what team roster
-      // pages are able to show.
-      const seasons = new Set([currentSeason]);
-      for (const bio of Object.values(playersData)) {
-        Object.keys(bio.salaries || {}).forEach(s => { if (s >= currentSeason) seasons.add(s); });
-      }
-      for (const rows of Object.values(deadCapData)) {
-        rows.forEach(r => Object.keys(r).forEach(k => {
-          if (/^\d{2}-\d{2}$/.test(k) && k >= currentSeason) seasons.add(k);
-        }));
-      }
-      const seasonList = [...seasons].sort();
-
-      _cache = { teamData, rosterRows, playersData, capLevels, deadCapData, currentSeason, seasonList };
+      _cache = { teamData, teamAttrData, currentSeason };
       return _cache;
     }
 
@@ -389,208 +519,436 @@
       attachTooltip(leagueEl);
     }
 
-    // ── viz: salaries ─────────────────────────────────────────────────────────
+    // ── viz: team attributes ─────────────────────────────────────────────────
 
-    let salarySeason = null;
+    const ATTR_GROUPS = [
+      { label: 'Finishing',   keys: ['close_shot', 'layup', 'driving_dunk', 'standing_dunk', 'post_hook', 'post_fade', 'post_control', 'draw_foul'] },
+      { label: 'Shooting',    keys: ['three_point_shot', 'mid_range_shot', 'free_throw', 'shot_iq', 'offensive_consistency'] },
+      { label: 'Playmaking',  keys: ['ball_handle', 'speed_with_ball', 'pass_accuracy', 'pass_vision', 'pass_iq', 'hands'] },
+      { label: 'Defense',     keys: ['interior_defense', 'perimeter_defense', 'steal', 'block', 'pass_perception', 'help_defense_iq', 'defensive_consistency'] },
+      { label: 'Rebounding',  keys: ['offensive_rebound', 'defensive_rebound'] },
+      { label: 'Physical',    keys: ['speed', 'agility', 'strength', 'vertical', 'stamina', 'overall_durability'] },
+      { label: 'Other',       keys: ['hustle', 'intangibles'] },
+    ];
 
-    // Same hues as the "cap hold" swatches on team roster pages (teams/team.js
-    // SWATCH_COLORS) — kept in sync so a hold reads as the same color everywhere.
-    const CAP_HOLD_COLORS = {
-      nongtd:     '#374151',
-      player_opt: 'hsl(120, 50%, 30%)',
-      team_opt:   'hsl(210, 55%, 35%)',
-      rfa:        'hsl(25,  60%, 35%)',
-      ufa:        'hsl(45,  60%, 35%)',
+    const ATTR_LABELS = {
+      three_point_shot: '3PT', mid_range_shot: 'MID', close_shot: 'CLOSE', free_throw: 'FT',
+      offensive_consistency: 'OFF CON', shot_iq: 'SHOT IQ', layup: 'LAYUP', driving_dunk: 'DRV DNK',
+      standing_dunk: 'STND DNK', post_hook: 'PST HOOK', post_fade: 'PST FADE', post_control: 'PST CTRL',
+      draw_foul: 'DRAW FOUL', hands: 'HANDS', speed: 'SPEED', strength: 'STRENGTH', agility: 'AGILITY',
+      vertical: 'VERTICAL', hustle: 'HUSTLE', stamina: 'STAMINA', overall_durability: 'DURABILITY',
+      ball_handle: 'BALL HDL', speed_with_ball: 'SPD W/BALL', pass_accuracy: 'PASS ACC', pass_vision: 'PASS VIS',
+      pass_iq: 'PASS IQ', block: 'BLOCK', steal: 'STEAL', pass_perception: 'PASS PERC',
+      interior_defense: 'INT DEF', perimeter_defense: 'PER DEF', defensive_consistency: 'DEF CON',
+      help_defense_iq: 'HELP DEF', defensive_rebound: 'DEF REB', offensive_rebound: 'OFF REB',
+      intangibles: 'INTANG',
     };
 
-    // Segment stacking order when "Order by type" is on: dead cap first, then
-    // guaranteed money, then progressively less-certain money, cap holds last.
-    const TYPE_ORDER = ['dead', 'regular', 'nongtd', 'twoway', 'player_opt', 'team_opt', 'rfa', 'ufa'];
+    const ATTR_KEYS = ATTR_GROUPS.flatMap(g => g.keys);
 
-    function renderSalaryTab(data, season) {
-      const { rosterRows, playersData, capLevels, deadCapData, currentSeason, seasonList } = data;
-      const SEASON = season || salarySeason || currentSeason;
-      salarySeason = SEASON;
+    function attrAverage(players, key) {
+      const vals = players.map(p => p.attrs[key]).filter(v => typeof v === 'number');
+      return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null;
+    }
 
-      const sel = document.getElementById('salary-season');
-      if (!sel.dataset.populated) {
-        sel.innerHTML = seasonList.map(s => `<option value="${s}">${s}</option>`).join('');
-        sel.value = SEASON;
-        sel.dataset.populated = '1';
-        sel.addEventListener('change', () => renderSalaryTab(data, sel.value));
+    function renderAttributesTab({ teamAttrData }) {
+      const rows = Object.keys(TEAMS).map(abbr => {
+        const players = teamAttrData[abbr] || [];
+        const ovr = players.length ? players.reduce((s, p) => s + p.ovr, 0) / players.length : null;
+        const attrs = {};
+        ATTR_KEYS.forEach(k => { attrs[k] = attrAverage(players, k); });
+        return { abbr, n: players.length, ovr, attrs };
+      });
+
+      const ranges = {}, ranks = {};
+      ['ovr', ...ATTR_KEYS].forEach(k => {
+        const withVals = rows
+          .map(r => ({ abbr: r.abbr, val: k === 'ovr' ? r.ovr : r.attrs[k] }))
+          .filter(r => r.val != null);
+        if (!withVals.length) return;
+        const vals = withVals.map(r => r.val);
+        ranges[k] = { min: Math.min(...vals), max: Math.max(...vals) };
+        // Standard competition ranking: ties share a rank, next rank skips
+        // ahead (1, 2, 2, 4, ...) rather than 8-player averages (denominator
+        // 8) landing on genuinely identical values getting split apart.
+        withVals.sort((a, b) => b.val - a.val);
+        const rankMap = {};
+        let rank = 1;
+        withVals.forEach((r, i) => {
+          if (i > 0 && r.val !== withVals[i - 1].val) rank = i + 1;
+          rankMap[r.abbr] = rank;
+        });
+        ranks[k] = rankMap;
+      });
+
+      function cellStyle(key, val) {
+        if (val == null || !ranges[key]) return '';
+        const { min, max } = ranges[key];
+        const t = max === min ? 0.5 : (val - min) / (max - min);
+        const hue = Math.round(t * 120);
+        return ` style="background:hsl(${hue},55%,18%);color:hsl(${hue},80%,72%);"`;
       }
 
-      const showHoldsEl  = document.getElementById('salary-show-holds');
-      const orderTypeEl  = document.getElementById('salary-order-type');
-      if (!showHoldsEl.dataset.wired) {
-        showHoldsEl.dataset.wired = '1';
-        showHoldsEl.addEventListener('change', () => renderSalaryTab(data, salarySeason));
-      }
-      if (!orderTypeEl.dataset.wired) {
-        orderTypeEl.dataset.wired = '1';
-        orderTypeEl.addEventListener('change', () => renderSalaryTab(data, salarySeason));
-      }
-      const showHolds = showHoldsEl.checked;
-      const orderByType = orderTypeEl.checked;
-
-      const levels = capLevels?.[SEASON] || {};
-
-      function parseSalary(s) {
-        if (!s) return 0;
-        return parseInt(String(s).replace(/[$,]/g, '')) || 0;
+      function cellText(key, abbr, val) {
+        if (val == null) return '—';
+        const rank = ranks[key]?.[abbr];
+        return rank ? `${val.toFixed(1)} <span class="cell-rank">(#${rank})</span>` : val.toFixed(1);
       }
 
-      const SEG_COLORS = {
-        dead:    '#4b5563',
-        regular: '#3b82f6',
-        twoway:  '#0891b2',
-        ...(showHolds ? CAP_HOLD_COLORS : {}),
-      };
-      const SEG_LABELS = {
-        dead: 'Dead cap', twoway: 'Two-way', nongtd: 'Non-gtd',
-        player_opt: 'Player opt', team_opt: 'Team opt', rfa: 'RFA hold', ufa: 'UFA hold',
-      };
+      let sortKey = 'ovr';
+      let sortDir = -1;
 
-      function classify(bio) {
-        if (bio.type === 'two-way')  return 'twoway';
-        const g = bio.guaranteed?.[SEASON];
-        if (g === '0' || g === 0)    return 'nongtd';
-        const hold = bio.cap_holds?.[SEASON];
-        if (hold === 'PLAYER_OPT')   return 'player_opt';
-        if (hold === 'TEAM_OPT')     return 'team_opt';
-        if (hold === 'RFA')          return 'rfa';
-        if (hold === 'UFA')          return 'ufa';
-        return 'regular';
-      }
+      const container = document.getElementById('attributes-table');
 
-      // Build per-team segments
-      const teamSal = {};
-      for (const abbr of Object.keys(TEAMS)) {
-        // Active roster players
-        const rosterSegs = (rosterRows[abbr] || [])
-          .map(r => {
-            const bio = playersData[r.SLUG];
-            if (!bio) return null;
-            const salary = parseSalary(bio.salaries?.[SEASON]);
-            if (!salary) return null;
-            let cls = classify(bio);
-            if (!showHolds && cls !== 'twoway') cls = 'regular';
-            const name   = formatName(bio.name || r.SLUG);
-            const salStr = '$' + (salary / 1e6).toFixed(1) + 'M';
-            const note   = SEG_LABELS[cls];
-            return { slug: r.SLUG, salary, cls,
-              label: note ? `${name} — ${salStr} (${note})` : `${name} — ${salStr}` };
-          })
-          .filter(Boolean);
+      function build() {
+        const sorted = [...rows].sort((a, b) => {
+          const va = (sortKey === 'ovr' ? a.ovr : a.attrs[sortKey]) ?? -Infinity;
+          const vb = (sortKey === 'ovr' ? b.ovr : b.attrs[sortKey]) ?? -Infinity;
+          return va < vb ? -sortDir : va > vb ? sortDir : 0;
+        });
 
-        // Dead cap (separate CSV, salary stored per-row not in bio)
-        const dcSegs = (deadCapData[abbr] || [])
-          .map(r => {
-            const salary = parseSalary(r[SEASON]);
-            if (!salary) return null;
-            const bio  = playersData[r.SLUG];
-            const name = formatName(bio?.name || r.SLUG);
-            const salStr = '$' + (salary / 1e6).toFixed(1) + 'M';
-            return { slug: r.SLUG, salary, cls: 'dead',
-              label: `${name} — ${salStr} (Dead cap)` };
-          })
-          .filter(Boolean);
+        const groupRow = [
+          `<th class="team-col" rowspan="2">Team</th>`,
+          `<th class="sortable-th" rowspan="2" data-key="ovr">2K OVR<span class="sort-arrow"></span></th>`,
+          ...ATTR_GROUPS.map(g => `<th class="group-label" colspan="${g.keys.length}">${g.label}</th>`),
+        ].join('');
 
-        const segments = [...rosterSegs, ...dcSegs].sort((a, b) => orderByType
-          ? (TYPE_ORDER.indexOf(a.cls) - TYPE_ORDER.indexOf(b.cls)) || (b.salary - a.salary)
-          : b.salary - a.salary);
-        teamSal[abbr] = { segments, total: segments.reduce((s, p) => s + p.salary, 0) };
-      }
+        const subRow = ATTR_GROUPS.flatMap(g => g.keys.map(k =>
+          `<th class="sortable-th" data-key="${k}">${ATTR_LABELS[k]}<span class="sort-arrow"></span></th>`
+        )).join('');
 
-      const sorted = Object.keys(TEAMS).sort((a, b) => teamSal[b].total - teamSal[a].total);
-
-      // Layout constants
-      const VB_W = 1000;
-      const PAD  = { t: 26, r: 80, b: 28, l: 44 };
-      const BAR_H = 18, GAP = 5, BAND = BAR_H + GAP;
-      const chartW = VB_W - PAD.l - PAD.r;
-      const chartH = sorted.length * BAND;
-      const VB_H   = chartH + PAD.t + PAD.b;
-
-      const maxSal = Math.max(...sorted.map(a => teamSal[a].total), (levels.hard_cap || levels.apron2 || 0) * 1.06);
-      const xS = v => PAD.l + (v / maxSal) * chartW;
-
-      // Threshold lines (stagger label heights to avoid overlap)
-      const thresholds = [
-        { val: levels.cap,      label: 'Cap',      color: '#d1d5db', dy: -14 },
-        { val: levels.apron1,   label: 'Apron 1',  color: '#f59e0b', dy: -5  },
-        { val: levels.apron2,   label: 'Apron 2',  color: '#ef4444', dy: -14 },
-        { val: levels.hard_cap, label: 'Hard Cap', color: '#7c3aed', dy: -5  },
-      ].filter(t => t.val);
-      const threshLines = thresholds.map(t => {
-        const x = xS(t.val).toFixed(1);
-        return `<line x1="${x}" y1="${PAD.t}" x2="${x}" y2="${PAD.t + chartH}" stroke="${t.color}" stroke-width="1" stroke-dasharray="4,3" opacity="0.85"/>
-                <text x="${x}" y="${PAD.t + t.dy}" text-anchor="middle" fill="${t.color}" font-size="8.5">${t.label}</text>`;
-      }).join('');
-
-      // X-axis ticks
-      const xTicks = [];
-      for (let v = 0; v <= maxSal; v += 50e6) {
-        const x = xS(v).toFixed(1);
-        xTicks.push(`<line x1="${x}" y1="${PAD.t + chartH}" x2="${x}" y2="${PAD.t + chartH + 4}" stroke="#4b5563"/>
-                     <text x="${x}" y="${PAD.t + chartH + 13}" text-anchor="middle" fill="#6b7280" font-size="8">${v === 0 ? '' : '$' + (v / 1e6).toFixed(0) + 'M'}</text>`);
-      }
-
-      // Bars
-      const bars = sorted.map((abbr, row) => {
-        const { segments, total } = teamSal[abbr];
-        const y  = PAD.t + row * BAND;
-        let   cx = PAD.l;
-        const segs = segments.map(seg => {
-          const w     = Math.max(0.5, (seg.salary / maxSal) * chartW);
-          const color = SEG_COLORS[seg.cls] || '#3b82f6';
-          const rect  = `<rect x="${cx.toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="${BAR_H}" fill="${color}" stroke="#111827" stroke-width="0.5" data-label="${seg.label}" data-slug="${seg.slug}"></rect>`;
-          cx += w;
-          return rect;
+        const bodyRows = sorted.map(r => {
+          const teamCell = `<td class="team-col"><a href="/teams/${r.abbr}/">${r.abbr}</a></td>`;
+          const ovrCell = `<td${cellStyle('ovr', r.ovr)}>${cellText('ovr', r.abbr, r.ovr)}</td>`;
+          const attrCells = ATTR_KEYS.map(k => {
+            const v = r.attrs[k];
+            return `<td${cellStyle(k, v)}>${cellText(k, r.abbr, v)}</td>`;
+          }).join('');
+          return `<tr>${teamCell}${ovrCell}${attrCells}</tr>`;
         }).join('');
-        const totalLabel = '$' + (total / 1e6).toFixed(1) + 'M';
-        return `
-          <a href="/teams/${abbr}/" style="text-decoration:none;cursor:pointer">
-            <text x="${PAD.l - 5}" y="${y + BAR_H / 2 + 4}" text-anchor="end" fill="#9ca3af" font-size="10" font-weight="600">${abbr}</text>
-          </a>
-          ${segs}
-          <text x="${cx + 4}" y="${y + BAR_H / 2 + 4}" fill="#6b7280" font-size="8.5">${totalLabel}</text>`;
-      }).join('');
 
-      // Legend
-      const legendDefs = [
-        { label: 'Guaranteed',    color: SEG_COLORS.regular },
-        { label: 'Two-way',       color: SEG_COLORS.twoway },
-        { label: 'Dead cap',      color: SEG_COLORS.dead },
-        ...(showHolds ? [
-          { label: 'Non-gtd',    color: SEG_COLORS.nongtd },
-          { label: 'Player opt', color: SEG_COLORS.player_opt },
-          { label: 'Team opt',   color: SEG_COLORS.team_opt },
-          { label: 'RFA hold',   color: SEG_COLORS.rfa },
-          { label: 'UFA hold',   color: SEG_COLORS.ufa },
-        ] : []),
+        container.innerHTML = `
+          <div class="attr-table-wrap">
+            <table class="attr-table">
+              <thead>
+                <tr>${groupRow}</tr>
+                <tr>${subRow}</tr>
+              </thead>
+              <tbody>${bodyRows}</tbody>
+            </table>
+          </div>
+          <p class="attr-note">Each team's average in every 2K attribute across its top 8 rostered players by 2K overall rating. Click any column to sort.</p>
+        `;
+
+        container.querySelectorAll('th.sortable-th').forEach(th => {
+          const key = th.dataset.key;
+          const active = key === sortKey;
+          th.dataset.active = active;
+          th.querySelector('.sort-arrow').textContent = active && sortDir === 1 ? '↑' : '↓';
+          th.addEventListener('click', () => {
+            if (sortKey === key) sortDir *= -1;
+            else { sortKey = key; sortDir = -1; }
+            build();
+          });
+        });
+      }
+
+      build();
+    }
+
+    // ── viz: plot anything ────────────────────────────────────────────────────
+
+    function ageAtSeason(dob, season) {
+      if (!dob || dob === 'NA') return null;
+      const m = season && season.match(/\d{2}-(\d{2})/);
+      if (!m) return null;
+      const ref = new Date(2000 + parseInt(m[1], 10), 0, 1); // Jan 1 of end year
+      const d = new Date(dob + 'T00:00:00');
+      if (isNaN(d)) return null;
+      let age = ref.getFullYear() - d.getFullYear();
+      const mo = ref.getMonth() - d.getMonth();
+      if (mo < 0 || (mo === 0 && ref.getDate() < d.getDate())) age--;
+      return age;
+    }
+
+    const pct = v => v.toFixed(1) + '%';
+    const AXIS_VARS = {
+      age:     { label: 'Age',   fmt: v => String(Math.round(v)) },
+      salary:  { label: 'Salary', fmt: v => '$' + (v / 1e6).toFixed(1) + 'M' },
+      ppg:     { label: 'PPG',   fmt: v => v.toFixed(1) },
+      rpg:     { label: 'RPG',   fmt: v => v.toFixed(1) },
+      apg:     { label: 'APG',   fmt: v => v.toFixed(1) },
+      spg:     { label: 'SPG',   fmt: v => v.toFixed(1) },
+      bpg:     { label: 'BPG',   fmt: v => v.toFixed(1) },
+      topg:    { label: 'TOPG',  fmt: v => v.toFixed(1) },
+      pfpg:    { label: 'PFPG',  fmt: v => v.toFixed(1) },
+      'fg%':   { label: 'FG%',   fmt: pct },
+      '2p%':   { label: '2P%',   fmt: pct },
+      '3p%':   { label: '3P%',   fmt: pct },
+      'ts%':   { label: 'TS%',   fmt: pct },
+      gmsc:    { label: 'GmSc/G', fmt: v => v.toFixed(1) },
+    };
+
+    let _plotCache = null;
+
+    async function loadPlotData() {
+      if (_plotCache) return _plotCache;
+      const [regRes, poRes, playersRes] = await Promise.allSettled([
+        fetch('/players/player_seasons.csv').then(r => r.text()),
+        fetch('/players/player_seasons_playoffs.csv').then(r => r.text()),
+        fetch('/api/players').then(r => r.json()),
+      ]);
+      const bios = playersRes.status === 'fulfilled' ? playersRes.value : {};
+      const parseSalary = s => {
+        if (!s) return null;
+        const n = parseInt(String(s).replace(/[^0-9]/g, ''), 10);
+        return isNaN(n) ? null : n;
+      };
+
+      function buildRows(text, isPlayoffs) {
+        if (!text) return [];
+        return parseCSV(text).map(r => {
+          const G = +r.G;
+          if (!G || isNaN(G)) return null;
+          const season = (r.SEASON || '').replace(' Playoffs', '').trim();
+          const FGM = +r.FGM, FGA = +r.FGA, TPM = +r['3PM'], TPA = +r['3PA'];
+          const FTA = +r.FTA, PTS = +r.PTS;
+          const twoA = FGA - TPA, twoM = FGM - TPM;
+          const tsDen = 2 * (FGA + 0.44 * FTA);
+          const salary = parseSalary(bios[r.SLUG]?.salaries?.[season]);
+          const vals = {
+            age:  ageAtSeason(r.DOB, season),
+            salary,
+            ppg:  PTS / G,
+            rpg:  +r.REB / G,
+            apg:  +r.AST / G,
+            spg:  +r.STL / G,
+            bpg:  +r.BLK / G,
+            topg: +r.TOV / G,
+            pfpg: +r.PF / G,
+            'fg%': FGA > 0 ? (FGM / FGA) * 100 : null,
+            '2p%': twoA > 0 ? (twoM / twoA) * 100 : null,
+            '3p%': TPA > 0 ? (TPM / TPA) * 100 : null,
+            'ts%': tsDen > 0 ? (PTS / tsDen) * 100 : null,
+            gmsc: +r.GMSC / G,
+          };
+          for (const k in vals) if (vals[k] != null && !isFinite(vals[k])) vals[k] = null;
+          return { name: r.PLAYER, slug: r.SLUG, season, team: r.TEAM, G, isPlayoffs, vals };
+        }).filter(Boolean);
+      }
+
+      const rows = [
+        ...buildRows(regRes.status === 'fulfilled' ? regRes.value : '', false),
+        ...buildRows(poRes.status === 'fulfilled' ? poRes.value : '', true),
       ];
-      const LEG_COL_W = 100;
-      const legItems = legendDefs.map((d, i) =>
-        `<g transform="translate(${i * LEG_COL_W},0)">
-          <rect width="10" height="10" rx="2" fill="${d.color}"/>
-          <text x="14" y="9" fill="#9ca3af" font-size="9">${d.label}</text>
-        </g>`
-      ).join('');
+      const seasons = [...new Set(rows.map(r => r.season))].filter(Boolean).sort();
+      const teams = [...new Set(rows.map(r => r.team))].filter(t => t && t !== 'NA').sort();
 
-      const el = document.getElementById('salary-chart');
-      el.innerHTML = `
-        <svg viewBox="0 0 ${VB_W} ${VB_H}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">
-          ${xTicks.join('')}
-          <line x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${PAD.t + chartH}" stroke="#374151"/>
-          <line x1="${PAD.l}" y1="${PAD.t + chartH}" x2="${VB_W - PAD.r}" y2="${PAD.t + chartH}" stroke="#374151"/>
-          ${bars}
-          ${threshLines}
-        </svg>
-        <svg viewBox="0 0 ${legendDefs.length * LEG_COL_W} 14" width="${legendDefs.length * LEG_COL_W}" style="display:block;margin-top:0.75rem;max-width:100%" xmlns="http://www.w3.org/2000/svg">
-          ${legItems}
-        </svg>`;
-      attachTooltip(el);
+      _plotCache = { rows, seasons, teams };
+      return _plotCache;
+    }
+
+    function renderPlotTab() {
+      const root = document.getElementById('plot-root');
+
+      loadPlotData().then(({ rows, seasons, teams }) => {
+        const opts = (arr, sel) => arr.map(v =>
+          `<option value="${v}"${v === sel ? ' selected' : ''}>${v}</option>`).join('');
+        const axisOpts = sel => Object.entries(AXIS_VARS).map(([k, v]) =>
+          `<option value="${k}"${k === sel ? ' selected' : ''}>${v.label}</option>`).join('');
+
+        root.innerHTML = `
+          <div class="plot-controls">
+            <div class="plot-field">
+              <label for="pf-x">X axis</label>
+              <select id="pf-x">${axisOpts('ppg')}</select>
+            </div>
+            <div class="plot-field">
+              <label for="pf-y">Y axis</label>
+              <select id="pf-y">${axisOpts('ts%')}</select>
+            </div>
+            <div class="plot-field">
+              <label>&nbsp;</label>
+              <button id="pf-swap" class="plot-swap" title="Swap X and Y axes">⇄ Swap</button>
+            </div>
+            <div class="plot-field">
+              <label for="pf-dataset">Games</label>
+              <select id="pf-dataset">
+                <option value="reg" selected>Regular season</option>
+                <option value="po">Playoffs</option>
+                <option value="all">Both</option>
+              </select>
+            </div>
+            <div class="plot-field">
+              <label for="pf-season">Season</label>
+              <select id="pf-season"><option value="">All</option>${opts(seasons, '')}</select>
+            </div>
+            <div class="plot-field">
+              <label for="pf-team">Team</label>
+              <select id="pf-team"><option value="">All</option>${opts(teams, '')}</select>
+            </div>
+            <div class="plot-field">
+              <label for="pf-ming">Min games</label>
+              <input id="pf-ming" type="number" min="0" step="1" value="0">
+            </div>
+            <div class="plot-count" id="pf-count"></div>
+          </div>
+          <div class="plot-card"><div class="plot-scroll" id="pf-chart"></div></div>
+          <div class="plot-readout" id="pf-readout">
+            <span class="pr-hint">Tap or hover a point to inspect it.</span>
+          </div>
+        `;
+
+        const $ = id => document.getElementById(id);
+        const controls = ['pf-x', 'pf-y', 'pf-dataset', 'pf-season', 'pf-team', 'pf-ming'];
+
+        const chartEl = $('pf-chart');
+        const readoutEl = $('pf-readout');
+        const READOUT_HINT = '<span class="pr-hint">Tap or hover a point to inspect it.</span>';
+        let hlCircle = null;
+
+        function resetReadout() {
+          if (hlCircle && hlCircle.isConnected) {
+            hlCircle.setAttribute('r', '3.2');
+            hlCircle.removeAttribute('stroke');
+          }
+          hlCircle = null;
+          readoutEl.innerHTML = READOUT_HINT;
+        }
+
+        function showInfo(circle) {
+          const label = circle.getAttribute('data-label') || '';
+          const slug = circle.getAttribute('data-slug');
+          readoutEl.innerHTML = `<span>${label}</span>` +
+            (slug ? ` <a href="/players/?p=${slug}">View player →</a>` : '');
+        }
+
+        function highlight(circle) {
+          if (hlCircle && hlCircle.isConnected && hlCircle !== circle) {
+            hlCircle.setAttribute('r', '3.2');
+            hlCircle.removeAttribute('stroke');
+          }
+          circle.setAttribute('r', '5.5');
+          circle.setAttribute('stroke', '#f3f4f6');
+          circle.setAttribute('stroke-width', '1.4');
+          hlCircle = circle;
+        }
+
+        // Desktop: hover moves the floating tooltip and fills the readout.
+        chartEl.addEventListener('mousemove', e => {
+          const t = e.target.closest('circle[data-label]');
+          if (!t) { tooltip.style.display = 'none'; return; }
+          tooltip.textContent = t.getAttribute('data-label');
+          tooltip.style.display = 'block';
+          const x = e.clientX + 14, y = e.clientY - 36;
+          tooltip.style.left = Math.min(x, window.innerWidth - tooltip.offsetWidth - 8) + 'px';
+          tooltip.style.top = (y < 8 ? e.clientY + 14 : y) + 'px';
+          showInfo(t);
+        });
+        chartEl.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+        // Mobile + desktop: a tap selects the point and fills the readout
+        // (with a separate "View player" link) instead of navigating away —
+        // there is no hover on touch, so this is the only way to read a label.
+        chartEl.addEventListener('click', e => {
+          const t = e.target.closest('circle[data-label]');
+          if (!t) return;
+          highlight(t);
+          showInfo(t);
+        });
+
+        function draw() {
+          resetReadout();
+          const xKey = $('pf-x').value, yKey = $('pf-y').value;
+          const dataset = $('pf-dataset').value;
+          const season = $('pf-season').value;
+          const team = $('pf-team').value;
+          const minG = parseInt($('pf-ming').value, 10) || 0;
+          const xV = AXIS_VARS[xKey], yV = AXIS_VARS[yKey];
+
+          const universe = rows.filter(r => {
+            if (dataset === 'reg' && r.isPlayoffs) return false;
+            if (dataset === 'po' && !r.isPlayoffs) return false;
+            if (season && r.season !== season) return false;
+            if (team && r.team !== team) return false;
+            if (r.G < minG) return false;
+            return true;
+          });
+          const pts = universe
+            .map(r => ({ r, x: r.vals[xKey], y: r.vals[yKey] }))
+            .filter(p => p.x != null && p.y != null);
+
+          $('pf-count').textContent =
+            `${pts.length.toLocaleString()} player-season${pts.length === 1 ? '' : 's'}`;
+
+          const chart = $('pf-chart');
+          if (!pts.length) {
+            chart.innerHTML = `<div class="plot-empty">No player-seasons match these filters.</div>`;
+            return;
+          }
+
+          const W = 900, H = 560;
+          const PAD = { t: 24, r: 24, b: 56, l: 76 };
+          const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
+
+          const extent = arr => {
+            let lo = Infinity, hi = -Infinity;
+            for (const v of arr) { if (v < lo) lo = v; if (v > hi) hi = v; }
+            if (lo === hi) { lo -= 1; hi += 1; }
+            const pad = (hi - lo) * 0.05;
+            return [lo - pad, hi + pad];
+          };
+          const [x0, x1] = extent(pts.map(p => p.x));
+          const [y0, y1] = extent(pts.map(p => p.y));
+          const sx = v => PAD.l + ((v - x0) / (x1 - x0)) * cW;
+          const sy = v => PAD.t + cH - ((v - y0) / (y1 - y0)) * cH;
+
+          const ticks = (lo, hi) => {
+            const n = 5, step = (hi - lo) / n, out = [];
+            for (let i = 0; i <= n; i++) out.push(lo + step * i);
+            return out;
+          };
+
+          const xGrid = ticks(x0, x1).map(t => {
+            const x = sx(t);
+            return `<line x1="${x}" y1="${PAD.t}" x2="${x}" y2="${PAD.t + cH}" stroke="#283141"/>
+              <text x="${x}" y="${PAD.t + cH + 18}" text-anchor="middle" fill="#6b7280" font-size="11">${xV.fmt(t)}</text>`;
+          }).join('');
+          const yGrid = ticks(y0, y1).map(t => {
+            const y = sy(t);
+            return `<line x1="${PAD.l}" y1="${y}" x2="${PAD.l + cW}" y2="${y}" stroke="#283141"/>
+              <text x="${PAD.l - 8}" y="${y + 4}" text-anchor="end" fill="#6b7280" font-size="11">${yV.fmt(t)}</text>`;
+          }).join('');
+
+          const dots = pts.map(p => {
+            const color = TEAM_COLORS[p.r.team] || '#60a5fa';
+            const label = `${formatName(p.r.name)} · ${p.r.season}${p.r.isPlayoffs ? ' PO' : ''} ${p.r.team} · ${xV.label} ${xV.fmt(p.x)} · ${yV.label} ${yV.fmt(p.y)}`;
+            return `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="3.2" fill="${color}" fill-opacity="0.68" data-label="${label.replace(/"/g, '&quot;')}" data-slug="${p.r.slug}"/>`;
+          }).join('');
+
+          chart.innerHTML = `
+            <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+              ${xGrid}${yGrid}
+              <line x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${PAD.t + cH}" stroke="#4b5563"/>
+              <line x1="${PAD.l}" y1="${PAD.t + cH}" x2="${PAD.l + cW}" y2="${PAD.t + cH}" stroke="#4b5563"/>
+              ${dots}
+              <text x="${PAD.l + cW / 2}" y="${H - 12}" text-anchor="middle" fill="#9ca3af" font-size="13" font-weight="600">${xV.label}</text>
+              <text transform="translate(18,${PAD.t + cH / 2}) rotate(-90)" text-anchor="middle" fill="#9ca3af" font-size="13" font-weight="600">${yV.label}</text>
+            </svg>`;
+        }
+
+        controls.forEach(id => {
+          const el = $(id);
+          el.addEventListener('change', draw);
+          if (el.tagName === 'INPUT') el.addEventListener('input', draw);
+        });
+        $('pf-swap').addEventListener('click', () => {
+          const x = $('pf-x'), y = $('pf-y');
+          [x.value, y.value] = [y.value, x.value];
+          draw();
+        });
+        draw();
+      });
     }
 
     // ── tooltip ───────────────────────────────────────────────────────────────
@@ -617,7 +975,7 @@
 
     // ── tab routing ───────────────────────────────────────────────────────────
 
-    const RENDERERS = { roster: renderRosterTab, league: renderLeagueTab, salaries: renderSalaryTab };
+    const RENDERERS = { roster: renderRosterTab, league: renderLeagueTab, attributes: renderAttributesTab };
     const rendered = new Set();
 
     async function activateTab(name) {
@@ -626,8 +984,12 @@
 
       if (!rendered.has(name)) {
         rendered.add(name);
-        const data = await loadData();
-        RENDERERS[name](data);
+        if (name === 'plot') {
+          renderPlotTab(); // loads its own player-season data
+        } else {
+          const data = await loadData();
+          RENDERERS[name](data);
+        }
       }
     }
 

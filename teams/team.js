@@ -2,56 +2,75 @@
 // FUNCTION INDEX (teams/team.js)
 // =============================================================================
 // Constants & boot
-//   TEAMS                     1   abbr → full team name
-//   RETIRED_JERSEYS          34   per-team retired number records
+//   TEAMS                        76   abbr → full team name
+//   RETIRED_JERSEYS             109   per-team retired number records
+//   ratingsPopupReady           127   resolves once /ratings-popup.js has loaded
+//   CAP_HOLD_CSS                730   cap-hold type → td class
+//   CAP_HOLD_LABELS             738   cap-hold type → legend label
+//   SWATCH_COLORS               746   cap-hold type → legend swatch color
+//   CAP_HOLD_COLORS            1705   cap-hold type → text color
+//   PO_CLASS                   1467   playoff result → css class
 //
 // Parsing & formatting utilities
-//   parseCSV                348   CSV text → array of row objects
-//   parseLine               359   handles quoted fields
-//   fmtPct                  371   decimal → "56.1%"
-//   fmtSigned               376   signed decimal with +/- prefix
-//   sv                      382   safe numeric value from row field
-//   formatSalary            389   "$37,000,000" display
-//   displayNameFromBio      399   "LAST, FIRST" → "First Last"
-//   calcAge                 409   ISO dob → age string
-//   parseCapHolds           495   legacy CSV cap-holds string → object
-//   currentSeasonYr         506   infers current season year
-//   parseSalaryNum          515   "$37,000,000" → 37000000
-//   fmtDollars              521   number → "$37.0M"
+//   parseCSV                    580   CSV text → array of row objects
+//   parseLine                   591   handles quoted fields
+//   fmtPct                      603   decimal → "56.1%"
+//   fmtSigned                   608   signed decimal with +/- prefix
+//   sv                          614   safe numeric value from row field
+//   formatSalary                621   "$37,000,000" display
+//   displayNameFromBio          658   "LAST, FIRST" → "First Last"
+//   calcAge                     668   ISO dob → age string
+//   fmtDate                     857   ISO date → short display date
+//   parseCapHolds               754   legacy CSV cap-holds string → object
+//   currentSeasonYr             771   infers current season year
+//   parseSalaryNum              781   "$37,000,000" → 37000000
+//   fmtDollars                  787   number → "$37.0M"
+//
+// Tooltips
+//   _ttShow                     455   shows the shared tooltip element
+//   _ttHide                     454   hides the shared tooltip element
+//   attachTooltip               473   attaches a hover/focus tooltip to an element
 //
 // Cap & roster logic
-//   computeMleType          525   determines MLE type from team salary
-//   mleTypeLabel            533   MLE type → display label
-//   renderHardCapBanner     537   injects hard cap warning banner
-//   renderExceptionsSection 547   renders MLE/BAE exceptions panel
+//   computeMleType              791   determines MLE type from team salary
+//   mleTypeLabel                802   MLE type → display label
+//   renderHardCapBanner         806   injects hard cap warning banner
+//   renderExceptionsSection     816   renders MLE/BAE exceptions panel
+//   renderTradeExceptionsSection  866   renders the trade exceptions (TPE) panel
+//   buildNonGtdTip              631   builds the non-guaranteed salary tooltip text
 //
 // Table builders
-//   buildTable              414   generic sortable table (used by owners page too)
-//   buildRosterTable        588   renders the Roster section with salary/cap data
-//   bioPlayerName           960   slug → display name from bios
-//   buildPicksTable         1036  renders the Draft Picks section
-//   makeSeasonRenderCell   1069   season history cell renderer (badges, playoff coloring)
-//   buildTimeline          1112   season timeline component
-//   buildPersonnelSection  1137   franchise personnel history (tenures + records)
+//   buildTable                  673   generic sortable table (used by owners page too)
+//   buildRosterTable            893   renders the Roster section with salary/cap data
+//   bioPlayerName              1357   slug → display name from bios
+//   buildPicksTable            1365   renders the Draft Picks section
+//   makeSeasonRenderCell       1478   season history cell renderer (badges, playoff coloring)
+//   buildTimeline              1631   season timeline component
+//   buildPersonnelSection      1526   franchise personnel history (tenures + records)
+//   buildHistoricalRoster      2706   renders an all-time roster table for a past season
 //
 // Player cell rendering
-//   playerSlug             1138   name → slug
-//   renderPlayerCell       1142   renders player name/photo/pos badge cell
-//   applyCapHoldColor      1178   colors cap-hold cells by type
+//   playerSlug                 1657   name → slug
+//   renderPlayerCell           1661   renders player name/photo/pos badge cell
+//   applyCapHoldColor          1713   colors cap-hold cells by type
 //
 // Edit mode & auth
-//   promptToken            1185   modal to enter/store bearer token
-//   withToken              1216   wraps fn with stored token
-//   makeSelect             1222   <select> helper
-//   nextSalaryYear         1237   "25-26" → "26-27"
-//   prevSalaryYear         1242   "26-27" → "25-26"
-//   makeEditCell           1247   creates editable cell (text/select/salary/cap-hold)
-//   buildEditableGrid      1336   full in-place editable table grid
-//   rosterCellConfig       1482   cell config map for roster editing
-//   enterEditMode          1510   swaps read view for edit grid
-//   setupPicksEditable     1614   wires edit mode for picks table
-//   setupJerseyEditable    1809   wires jersey number editing
-//   setupEditable          1945   wires edit mode for roster table
+//   getToken                   1675   reads the stored bearer token
+//   hasAuthRole                1683   true if the signed-in member holds a role
+//   canEditRosters             1690   true if the member may edit this team
+//   promptToken                1720   modal to enter/store bearer token
+//   withToken                  1751   wraps fn with stored token
+//   makeSelect                 1757   <select> helper
+//   nextSalaryYear             1772   "25-26" → "26-27"
+//   prevSalaryYear             1777   "26-27" → "25-26"
+//   makeEditCell               1782   creates editable cell (text/select/salary/cap-hold)
+//   buildEditableGrid          1871   full in-place editable table grid
+//   rosterCellConfig           2017   cell config map for roster editing
+//   enterEditMode              2041   swaps read view for edit grid
+//   setupPicksEditable         2145   wires edit mode for picks table
+//   setupJerseyEditable        2355   wires jersey number editing
+//   setupEditable              2674   wires edit mode for roster table
+//   setupDeadCapEditable       2490   wires edit mode for the dead cap table
 // =============================================================================
 
 const TEAMS = {
@@ -94,12 +113,28 @@ const RETIRED_JERSEYS = {
 };
 
 const abbr = location.pathname.replace(/\/$/, "").split("/").pop().toUpperCase();
+const TEAM_ABBRS = Object.keys(TEAMS);
+const _teamIdx = TEAM_ABBRS.indexOf(abbr);
+const prevAbbr = _teamIdx >= 0 ? TEAM_ABBRS[(_teamIdx - 1 + TEAM_ABBRS.length) % TEAM_ABBRS.length] : null;
+const nextAbbr = _teamIdx >= 0 ? TEAM_ABBRS[(_teamIdx + 1) % TEAM_ABBRS.length] : null;
 const name = TEAMS[abbr] || "Unknown Team";
 const slug = abbr.toLowerCase();
 
 document.title = `${abbr} — NBN`;
 
 { const _favicon = document.createElement('link'); _favicon.rel = 'icon'; _favicon.href = '/logo.png'; document.head.appendChild(_favicon); }
+
+// Team pages are 11-line shells that load only this file, so shared modules are
+// pulled in from here. Starts now, in parallel with the data fetches; the render
+// awaits ratingsPopupReady so RatingsPopup is guaranteed defined by then. A load
+// failure just means no popup — every call site guards on window.RatingsPopup.
+const ratingsPopupReady = new Promise(resolve => {
+  const _rp = document.createElement('script');
+  _rp.src = '/ratings-popup.js';
+  _rp.onload = resolve;
+  _rp.onerror = resolve;
+  document.head.appendChild(_rp);
+});
 
 { const _s = document.createElement('style'); _s.textContent = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -114,12 +149,26 @@ document.title = `${abbr} — NBN`;
   .nav { margin-bottom: 2rem; font-size: 0.875rem; }
   .nav a { color: #9ca3af; text-decoration: none; }
   .nav a:hover { color: #f3f4f6; }
+  .team-header-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+  .team-nav-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 2.5rem; height: 2.5rem; border-radius: 50%;
+    background: transparent; border: 1px solid #374151;
+    color: #6b7280; font-size: 1.5rem; cursor: pointer;
+    text-decoration: none; flex-shrink: 0; line-height: 1;
+  }
+  .team-nav-btn:hover { border-color: #6b7280; color: #d1d5db; }
   .team-header {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 3rem;
   }
   .team-header img { width: 140px; height: 140px; object-fit: contain; }
   .team-header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; text-align: center; }
@@ -172,29 +221,9 @@ document.title = `${abbr} — NBN`;
     display: inline-block;
     margin-left: 0.35rem;
     font-size: 0.8rem;
-    cursor: default;
-    position: relative;
+    cursor: pointer;
     vertical-align: middle;
   }
-  .badge::after {
-    content: attr(data-tip);
-    position: absolute;
-    bottom: calc(100% + 5px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1f2937;
-    border: 1px solid #374151;
-    color: #d1d5db;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.12s;
-    z-index: 10;
-  }
-  .badge:hover::after { opacity: 1; }
   .po-champion   { color: #fbbf24; font-weight: 600; }
   .po-runnerup   { color: #9ca3af; }
   .po-conffinals { color: #60a5fa; }
@@ -364,34 +393,38 @@ document.title = `${abbr} — NBN`;
   .token-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
   .player-note {
     display: inline-flex; align-items: center;
-    margin-left: 0.35rem; color: #b45309; cursor: default;
-    position: relative; vertical-align: middle; transition: color 0.1s;
+    margin-left: 0.35rem; color: #b45309;
+    vertical-align: middle; transition: color 0.1s;
   }
   .player-note:hover { color: #fbbf24; }
-  .player-note::after {
-    content: attr(data-tip);
-    position: absolute; bottom: calc(100% + 5px); left: 50%;
-    transform: translateX(-50%);
-    background: #1f2937; border: 1px solid #374151; color: #d1d5db;
-    padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem;
-    white-space: pre-wrap; max-width: 240px;
-    pointer-events: none; opacity: 0; transition: opacity 0.12s;
-    z-index: 10; font-weight: normal;
+  .roster-name-cell { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .roster-avatar {
+    flex: none; width: 26px; height: 26px; border-radius: 50%;
+    overflow: hidden; background: #1f2937; border: 1px solid #374151;
   }
-  .player-note:hover::after { opacity: 1; }
+  .roster-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+  .roster-avatar-empty {
+    background:
+      radial-gradient(circle at 50% 38%, #4b5563 0 6px, transparent 7px),
+      radial-gradient(ellipse 10px 7px at 50% 100%, #4b5563 0 100%, transparent 0);
+  }
+  .jersey-tag {
+    flex: none; font-size: 0.72rem; font-weight: 600; color: #6b7280;
+    font-variant-numeric: tabular-nums;
+  }
 
   /* NON_GTD salary cell tooltip */
-  .sal-tip { position: relative; cursor: default; }
-  .sal-tip::after {
-    content: attr(data-tip);
-    position: absolute; bottom: calc(100% + 5px); right: 0;
+  .sal-tip { cursor: pointer; }
+
+  /* mobile-friendly tooltip popup (hover on pointer devices, tap-to-toggle on touch) */
+  .tt-anchor { cursor: pointer; }
+  .tt-popup {
+    position: absolute; z-index: 500; max-width: 260px;
     background: #1f2937; border: 1px solid #374151; color: #d1d5db;
-    padding: 0.35rem 0.65rem; border-radius: 5px; font-size: 0.75rem;
-    white-space: pre; min-width: 160px; text-align: left;
-    pointer-events: none; opacity: 0; transition: opacity 0.12s;
-    z-index: 20; font-weight: normal; line-height: 1.6;
+    padding: 0.35rem 0.6rem; border-radius: 5px; font-size: 0.75rem;
+    white-space: pre-line; line-height: 1.5; text-align: left;
+    pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
   }
-  .sal-tip:hover::after { opacity: 1; }
 
   /* Tabs */
   .tabs {
@@ -434,34 +467,63 @@ document.title = `${abbr} — NBN`;
   .hist-controls select:focus { border-color: #3b82f6; }
 `; document.head.appendChild(_s); }
 
+// Mobile-friendly tooltip: hover-to-show on pointer devices, tap-to-toggle on touch.
+let _ttEl = null, _ttAnchor = null;
+function _ttHide() { if (_ttEl) { _ttEl.remove(); _ttEl = null; _ttAnchor = null; } }
+function _ttShow(anchor, text) {
+  _ttHide();
+  const tip = document.createElement('div');
+  tip.className = 'tt-popup';
+  tip.textContent = text;
+  document.body.appendChild(tip);
+  const r = anchor.getBoundingClientRect();
+  let left = r.left + r.width / 2 - tip.offsetWidth / 2;
+  left = Math.max(6, Math.min(left, window.innerWidth - tip.offsetWidth - 6));
+  let top = r.top - tip.offsetHeight - 8;
+  if (top < 4) top = r.bottom + 8;
+  tip.style.left = `${left + window.scrollX}px`;
+  tip.style.top = `${top + window.scrollY}px`;
+  _ttEl = tip;
+  _ttAnchor = anchor;
+}
+const _ttIsTouch = window.matchMedia('(hover: none)').matches;
+document.addEventListener('click', e => { if (_ttEl && !e.target.closest('.tt-anchor')) _ttHide(); });
+function attachTooltip(el, textOrFn) {
+  el.classList.add('tt-anchor');
+  const getText = () => (typeof textOrFn === 'function' ? textOrFn() : textOrFn);
+  if (_ttIsTouch) {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const text = getText();
+      if (!text) return;
+      if (_ttAnchor === el) _ttHide(); else _ttShow(el, text);
+    });
+  } else {
+    el.addEventListener('mouseenter', () => { const text = getText(); if (text) _ttShow(el, text); });
+    el.addEventListener('mouseleave', _ttHide);
+  }
+}
+
 document.body.innerHTML = `
   <div class="page">
     <nav class="nav"><a href="/teams">← Teams</a></nav>
-    <div class="team-header">
-      <img src="/logos/logo-${slug}.png" alt="${name} logo">
-      <h1>${name}</h1>
-      <span class="abbr">${abbr}</span>
+    <div class="team-header-nav">
+      ${prevAbbr ? `<a class="team-nav-btn" href="/teams/${prevAbbr}/" title="${TEAMS[prevAbbr]}" aria-label="Previous team">‹</a>` : ''}
+      <div class="team-header">
+        <img src="/logos/logo-${slug}.png" alt="${name} logo">
+        <h1>${name}</h1>
+        <span class="abbr">${abbr}</span>
+      </div>
+      ${nextAbbr ? `<a class="team-nav-btn" href="/teams/${nextAbbr}/" title="${TEAMS[nextAbbr]}" aria-label="Next team">›</a>` : ''}
     </div>
     <div class="tabs">
       <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="franchise">Franchise</button>
       <button class="tab" data-tab="draft">Draft History</button>
       <button class="tab" data-tab="alltime">All-Time Players</button>
       <button class="tab" data-tab="history">Historical Rosters</button>
     </div>
     <div class="tab-panel" id="tab-overview">
-      <section>
-        <h2 class="section-title">Season History</h2>
-        <div class="timeline" id="timeline-wrap"></div>
-        <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
-      </section>
-      <section id="personnel-section" style="display:none">
-        <h2 class="section-title">Franchise Personnel</h2>
-        <div class="table-wrap" id="personnel-wrap"></div>
-      </section>
-      <section id="retired-section" style="display:none">
-        <h2 class="section-title">Retired Numbers</h2>
-        <div class="retired-banners" id="retired-banners"></div>
-      </section>
       <div id="hard-cap-banner" style="display:none"></div>
       <section>
         <h2 class="section-title" id="roster-title">Roster</h2>
@@ -480,6 +542,21 @@ document.body.innerHTML = `
       <section>
         <h2 class="section-title" id="picks-title">Draft Picks</h2>
         <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-franchise">
+      <section>
+        <h2 class="section-title">Season History</h2>
+        <div class="timeline" id="timeline-wrap"></div>
+        <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
+      </section>
+      <section id="personnel-section" style="display:none">
+        <h2 class="section-title">Franchise Personnel</h2>
+        <div class="table-wrap" id="personnel-wrap"></div>
+      </section>
+      <section id="retired-section" style="display:none">
+        <h2 class="section-title">Retired Numbers</h2>
+        <div class="retired-banners" id="retired-banners"></div>
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-draft">
@@ -916,6 +993,10 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
             const hue = Math.round(t * 120);
             td.style.background = `hsl(${hue}, 55%, 18%)`;
             td.style.color = `hsl(${hue}, 80%, 72%)`;
+            const ovrSlug = playerSlug(row.PLAYER);
+            if (ovrSlug && window.RatingsPopup) {
+              RatingsPopup.attach(td, ovrSlug, { name: row.PLAYER });
+            }
           }
         } else if (/^\d{2}-\d{2}$/.test(col.key)) {
           td.textContent = col.display ? col.display(row) : (row[col.key] || '—');
@@ -977,6 +1058,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         _guarantee_dates:    bio.guarantee_dates || {},
         _guarantee_schedule: bio.guarantee_schedule || {},
         _jersey:             bio.jersey_number ?? null,
+        _photo:              bio.photo_url || '',
         _notes:              bio.notes || '',
       };
     });
@@ -995,6 +1077,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       _cap_holds: {},
       _salaries:  dcSals,
       _jersey:    null,
+      _photo:     bio.photo_url || '',
       _notes:     bio.notes || '',
     });
   });
@@ -1011,7 +1094,6 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   const ovrMin = 60, ovrMax = 100;
 
   const cols = [
-    { key: '_jersey', label: '#',      cls: 'right muted' },
     { key: '_name',   label: 'Player', cls: 'bold' },
     { key: '_pos',    label: 'Pos',    cls: 'muted center' },
     { key: '_age',    label: 'Age',    cls: 'right' },
@@ -1065,22 +1147,46 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       const td = tr.insertCell();
       col.cls?.split(' ').forEach(c => c && td.classList.add(c));
 
-      if (col.key === '_jersey') {
-        td.textContent = row._jersey != null ? `#${row._jersey}` : '—';
-      } else if (col.key === '_name') {
+      if (col.key === '_name') {
+        const cell = document.createElement('span');
+        cell.className = 'roster-name-cell';
+
+        const avatar = document.createElement('span');
+        avatar.className = 'roster-avatar';
+        if (row._photo) {
+          const img = document.createElement('img');
+          img.src = row._photo;
+          img.alt = '';
+          img.loading = 'lazy';
+          img.onerror = () => { avatar.classList.add('roster-avatar-empty'); img.remove(); };
+          avatar.appendChild(img);
+        } else {
+          avatar.classList.add('roster-avatar-empty');
+        }
+        cell.appendChild(avatar);
+
         if (row.SLUG) {
           const a = document.createElement('a');
           a.href = `/players/?p=${row.SLUG}`;
           a.textContent = row._name;
-          td.appendChild(a);
+          cell.appendChild(a);
         } else {
-          td.appendChild(document.createTextNode(row._name));
+          cell.appendChild(document.createTextNode(row._name));
         }
+
+        if (row._jersey != null) {
+          const jersey = document.createElement('span');
+          jersey.className = 'jersey-tag';
+          jersey.textContent = `#${row._jersey}`;
+          cell.appendChild(jersey);
+        }
+
+        td.appendChild(cell);
         if (row._notes) {
           const pip = document.createElement('span');
           pip.className = 'player-note';
-          pip.dataset.tip = row._notes;
           pip.innerHTML = '<svg width="9" height="11" viewBox="0 0 9 11" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0.5" y="0.5" width="8" height="10" rx="1" stroke="currentColor"/><line x1="2" y1="3.5" x2="7" y2="3.5" stroke="currentColor"/><line x1="2" y1="5.5" x2="7" y2="5.5" stroke="currentColor"/><line x1="2" y1="7.5" x2="5" y2="7.5" stroke="currentColor"/></svg>';
+          attachTooltip(pip, row._notes);
           td.appendChild(pip);
         }
       } else if (col.key === 'OVR') {
@@ -1091,6 +1197,9 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           const hue = Math.round(t * 120);
           td.style.background = `hsl(${hue}, 55%, 18%)`;
           td.style.color = `hsl(${hue}, 80%, 72%)`;
+          if (row.SLUG && window.RatingsPopup) {
+            RatingsPopup.attach(td, row.SLUG, { name: row._name });
+          }
         }
       } else if (col.key.startsWith('_s_')) {
         const k = col.key.slice(3);
@@ -1099,8 +1208,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           const tipText = buildNonGtdTip(k, row._guaranteed, row._guarantee_dates, row._guarantee_schedule);
           const wrap = document.createElement('span');
           wrap.className = 'sal-tip';
-          wrap.dataset.tip = tipText;
           wrap.textContent = formatSalary(row[col.key]);
+          attachTooltip(wrap, tipText);
           td.appendChild(wrap);
         } else {
           td.textContent = formatSalary(row[col.key]);
@@ -1170,8 +1279,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         if (name === 'Guaranteed') {
           const badge = document.createElement('span');
           badge.className = 'badge';
-          badge.dataset.tip = 'Salary with no player/team option, non-guaranteed flag, or free-agent hold — owed regardless of roster moves.';
           badge.textContent = 'ⓘ';
+          attachTooltip(badge, 'Salary with no player/team option, non-guaranteed flag, or free-agent hold — owed regardless of roster moves.');
           labelTd.appendChild(badge);
         }
         salaryKeys.forEach(k => {
@@ -1236,7 +1345,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           chip.className = 'hardcap-chip' + (hc === 'second_apron' ? ' apron2' : '');
           chip.textContent = hc === 'second_apron' ? '2nd Apron' : '1st Apron';
           const reason = seasonStates[k]?.hard_cap_reason;
-          if (reason) chip.title = reason;
+          if (reason) attachTooltip(chip, reason);
           td.appendChild(chip);
         });
       }
@@ -1334,7 +1443,7 @@ function buildPicksTable(picks, teamAbbr, bios = {}, allPicks = []) {
         const frozenTd = tr.cells[tr.cells.length - 1];
         frozenTd.style.color = '#f87171';
         frozenTd.style.fontWeight = '700';
-        if (p.frozen_reason) frozenTd.title = p.frozen_reason;
+        if (p.frozen_reason) attachTooltip(frozenTd, p.frozen_reason);
       }
     });
   };
@@ -1406,12 +1515,14 @@ function makeSeasonRenderCell(rows) {
       td.appendChild(document.createTextNode(row.SEASON));
       if (row.FOTY === 'TRUE') {
         const b = document.createElement('span');
-        b.className = 'badge'; b.dataset.tip = 'Franchise of the Year'; b.textContent = '⭐';
+        b.className = 'badge'; b.textContent = '⭐';
+        attachTooltip(b, 'Franchise of the Year');
         td.appendChild(b);
       }
       if (row.COTY === 'TRUE') {
         const b = document.createElement('span');
-        b.className = 'badge'; b.dataset.tip = 'Coach of the Year'; b.textContent = '🏅';
+        b.className = 'badge'; b.textContent = '🏅';
+        attachTooltip(b, 'Coach of the Year');
         td.appendChild(b);
       }
     } else if (col.key === 'PLAYOFF_RESULT') {
@@ -1558,7 +1669,7 @@ function buildTimeline(rows) {
     const card = document.createElement('div');
     card.className = 'tl-card ' + (TL_CLASS[row.PLAYOFF_RESULT] || '');
     const tip = `${row.SEASON}: ${row.W}–${row.L} · ${row.SEED || '—'} · ${row.PLAYOFF_RESULT || '—'}`;
-    card.title = tip;
+    attachTooltip(card, tip);
     card.innerHTML = `
       <span class="tl-season">${row.SEASON}</span>
       <span class="tl-wins">${row.W}</span>
@@ -2694,6 +2805,8 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []),
   ]);
 
+  await ratingsPopupReady;
+
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
   if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
 
@@ -2838,14 +2951,14 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
           if (row.RIGHTS_TO) {
             const arrow = document.createElement('span');
             arrow.style.cssText = 'color:#60a5fa;font-style:italic';
-            arrow.title = 'Draft rights traded away';
             arrow.textContent = `→ ${row.RIGHTS_TO}`;
+            attachTooltip(arrow, 'Draft rights traded away');
             td.appendChild(arrow);
           } else if (row.RIGHTS_FROM) {
             const arrow = document.createElement('span');
             arrow.style.cssText = 'color:#60a5fa;font-style:italic';
-            arrow.title = 'Draft rights acquired from another team';
             arrow.textContent = `← ${row.RIGHTS_FROM}`;
+            attachTooltip(arrow, 'Draft rights acquired from another team');
             td.appendChild(arrow);
           } else {
             td.textContent = '—';

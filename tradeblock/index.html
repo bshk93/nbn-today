@@ -24,12 +24,157 @@
       margin-bottom: 1rem;
     }
 
+    /* Left-hand controls group (position chips + salary filter) */
+    .controls-left {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.6rem 1rem;
+    }
+
     /* Position filter chips */
     .pos-filter {
       display: flex;
       flex-wrap: wrap;
       gap: 0.4rem;
     }
+
+    /* Dropdown filter menus (Salary $M, Attributes): button + popover chrome */
+    .filter-menu { position: relative; display: inline-flex; }
+    .filter-menu-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: transparent;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #9ca3af;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 0.3rem 0.55rem;
+      text-transform: uppercase;
+    }
+    .filter-menu-btn:hover { border-color: #4b5563; color: #e5e7eb; }
+    .filter-menu-btn.active { border-color: #3b82f6; color: #e5e7eb; }
+    .filter-menu-count {
+      background: #3b82f6;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 0.65rem;
+      line-height: 1;
+      padding: 0.15rem 0.35rem;
+    }
+    .filter-menu-caret { color: #6b7280; font-size: 0.6rem; }
+
+    .filter-menu-pop {
+      position: absolute;
+      top: calc(100% + 0.4rem);
+      left: 0;
+      z-index: 30;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      padding: 0.7rem;
+      min-width: 15rem;
+    }
+    .filter-menu-pop[hidden] { display: none; }
+    .filter-menu-hint {
+      color: #6b7280;
+      font-size: 0.68rem;
+      margin-bottom: 0.5rem;
+    }
+    .salary-year-row {
+      display: grid;
+      grid-template-columns: 3.2rem 1fr 0.6rem 1fr;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .salary-year-row .salary-year-label {
+      color: #9ca3af;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .salary-year-row.filtered .salary-year-label { color: #60a5fa; }
+    .filter-menu-dash { color: #6b7280; font-size: 0.72rem; text-align: center; }
+    .filter-menu-pop input {
+      width: 100%;
+      background: transparent;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #e5e7eb;
+      font-family: inherit;
+      font-size: 0.78rem;
+      padding: 0.2rem 0.4rem;
+      text-align: right;
+    }
+    .filter-menu-pop input::placeholder { color: #6b7280; }
+    .filter-menu-pop input:focus { outline: none; border-color: #3b82f6; }
+    .filter-menu-foot {
+      display: flex;
+      justify-content: flex-end;
+      border-top: 1px solid #1f2937;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+    .filter-menu-clear {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.25rem;
+    }
+    .filter-menu-clear:hover { color: #e5e7eb; }
+    .filter-menu-clear:disabled { color: #4b5563; cursor: default; }
+
+    /* Attribute minimum filter rows */
+    .attr-row {
+      display: grid;
+      grid-template-columns: 1fr 3.2rem 1.1rem;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .attr-row select {
+      width: 100%;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #e5e7eb;
+      font-family: inherit;
+      font-size: 0.72rem;
+      padding: 0.2rem 0.3rem;
+    }
+    .attr-row select:focus { outline: none; border-color: #3b82f6; }
+    .attr-row-remove {
+      background: transparent;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      line-height: 1;
+      padding: 0.1rem;
+    }
+    .attr-row-remove:hover { color: #f87171; }
+    .attr-add-btn {
+      background: transparent;
+      border: 1px dashed #374151;
+      border-radius: 6px;
+      color: #9ca3af;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.72rem;
+      padding: 0.25rem 0.5rem;
+      width: 100%;
+    }
+    .attr-add-btn:hover { border-color: #3b82f6; color: #e5e7eb; }
 
     .show-all-toggle {
       display: inline-flex;
@@ -303,7 +448,38 @@
     </div>
 
     <div id="controls-row" class="controls-row" style="display:none">
-      <div id="pos-filter" class="pos-filter"></div>
+      <div class="controls-left">
+        <div id="pos-filter" class="pos-filter"></div>
+        <div id="salary-filter" class="filter-menu">
+          <button type="button" id="salary-filter-btn" class="filter-menu-btn" aria-expanded="false">
+            <span>Salary $M</span>
+            <span id="salary-filter-count" class="filter-menu-count" hidden>0</span>
+            <span class="filter-menu-caret">▾</span>
+          </button>
+          <div id="salary-popover" class="filter-menu-pop" hidden>
+            <div class="filter-menu-hint">Min/max in $M, per season. Blank = no bound.</div>
+            <div id="salary-year-rows"></div>
+            <div class="filter-menu-foot">
+              <button type="button" id="salary-clear-btn" class="filter-menu-clear">Clear all</button>
+            </div>
+          </div>
+        </div>
+        <div id="attr-filter" class="filter-menu">
+          <button type="button" id="attr-filter-btn" class="filter-menu-btn" aria-expanded="false">
+            <span>Attributes</span>
+            <span id="attr-filter-count" class="filter-menu-count" hidden>0</span>
+            <span class="filter-menu-caret">▾</span>
+          </button>
+          <div id="attr-popover" class="filter-menu-pop" hidden>
+            <div class="filter-menu-hint">Show players at or above a minimum 2K rating.</div>
+            <div id="attr-rows"></div>
+            <button type="button" id="attr-add-btn" class="attr-add-btn">+ Add attribute</button>
+            <div class="filter-menu-foot">
+              <button type="button" id="attr-clear-btn" class="filter-menu-clear">Clear all</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <label id="show-all-wrap" class="show-all-toggle">
         <input type="checkbox" id="show-all-toggle">
         <span>Show all rostered players</span>
@@ -315,6 +491,7 @@
     </div>
   </div>
 
+  <script src="/ratings-popup.js"></script>
   <script>
     const VALID_TEAMS_LC = new Set([
       'atl','bkn','bos','cha','chi','cle','dal','den','det','gsw',
@@ -322,7 +499,19 @@
       'okc','orl','phi','phx','por','sac','sas','tor','uta','was',
     ]);
     const TOKEN_KEY = 'nbn_token';
-    const CUR_YR = '25-26';
+
+    // The current league year (cap/contract clock). Set from GET /api/league-year at
+    // page load; falls back to the date-based season if that fetch fails. Drives which
+    // salary column the table starts on (mirrors the team roster page).
+    function dateBasedSeasonYr() {
+      const now = new Date();
+      const y = now.getFullYear() % 100;
+      const m = now.getMonth() + 1;
+      return m < 7
+        ? `${String(y - 1).padStart(2, '0')}-${String(y).padStart(2, '0')}`
+        : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
+    }
+    let CUR_YR = dateBasedSeasonYr();
 
     const getToken = () => localStorage.getItem(TOKEN_KEY);
     const setToken = t => localStorage.setItem(TOKEN_KEY, t);
@@ -426,8 +615,15 @@
     ];
 
     const activeFilters = new Set();
+    // Per-season salary bounds: year → { min, max } in raw dollars (null = unbounded).
+    // Survives column changes (show-all toggle) — years that drop out are pruned on rebuild.
+    const salaryFilters = {};
 
     function rowMatchesFilter(row) {
+      return rowMatchesPos(row) && rowMatchesSalary(row) && rowMatchesAttrs(row);
+    }
+
+    function rowMatchesPos(row) {
       if (activeFilters.size === 0) return true;
       const picksActive = activeFilters.has('PICKS');
       const posFilters  = [...activeFilters].filter(id => id !== 'PICKS');
@@ -439,6 +635,251 @@
         if (def && def.pos.some(p => playerPos.has(p))) return true;
       }
       return false;
+    }
+
+    // Years carrying at least one bound. A season with no salary reads as $0, so a
+    // max bound is how you find cap space in a future year.
+    function activeSalaryYears() {
+      return salaryYears.filter(yr => salaryFilters[yr] &&
+        (salaryFilters[yr].min != null || salaryFilters[yr].max != null));
+    }
+
+    function rowMatchesSalary(row) {
+      const years = activeSalaryYears();
+      if (years.length === 0) return true;
+      if (row.isPick) return false; // picks have no salary to compare
+      return years.every(yr => {
+        const { min, max } = salaryFilters[yr];
+        const sal = parseFloat(String(row[yr]).replace(/[$,]/g, '')) || 0;
+        if (min != null && sal < min) return false;
+        if (max != null && sal > max) return false;
+        return true;
+      });
+    }
+
+    // Build one min/max input pair per salary year. Values are entered in $M.
+    function buildSalaryFilter() {
+      const rowsEl = document.getElementById('salary-year-rows');
+      Object.keys(salaryFilters).forEach(yr => {
+        if (!salaryYears.includes(yr)) delete salaryFilters[yr];
+      });
+      rowsEl.innerHTML = '';
+
+      if (salaryYears.length === 0) {
+        const none = document.createElement('div');
+        none.className = 'filter-menu-hint';
+        none.style.marginBottom = '0';
+        none.textContent = 'No salary years to filter on.';
+        rowsEl.appendChild(none);
+        syncSalaryFilterUI();
+        return;
+      }
+
+      const parse = v => {
+        const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
+        return isNaN(n) ? null : n * 1e6;
+      };
+
+      salaryYears.forEach(yr => {
+        const bounds = salaryFilters[yr] || (salaryFilters[yr] = { min: null, max: null });
+        const rowEl = document.createElement('div');
+        rowEl.className = 'salary-year-row';
+
+        const label = document.createElement('span');
+        label.className = 'salary-year-label';
+        label.textContent = yr;
+        rowEl.appendChild(label);
+
+        const makeInput = (key, placeholder) => {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.inputMode = 'decimal';
+          input.placeholder = placeholder;
+          input.autocomplete = 'off';
+          input.setAttribute('aria-label', `${yr} ${placeholder} salary in millions`);
+          if (bounds[key] != null) input.value = String(bounds[key] / 1e6);
+          input.addEventListener('input', () => {
+            bounds[key] = parse(input.value);
+            syncSalaryFilterUI();
+            if (currentTbody) rebuildBody(currentTbody);
+          });
+          return input;
+        };
+
+        rowEl.appendChild(makeInput('min', 'min'));
+        const dash = document.createElement('span');
+        dash.className = 'filter-menu-dash';
+        dash.textContent = '–';
+        rowEl.appendChild(dash);
+        rowEl.appendChild(makeInput('max', 'max'));
+        rowsEl.appendChild(rowEl);
+      });
+
+      syncSalaryFilterUI();
+    }
+
+    // Reflect the current bounds in the button badge and per-year row highlight.
+    function syncSalaryFilterUI() {
+      const years = activeSalaryYears();
+      const btn = document.getElementById('salary-filter-btn');
+      const count = document.getElementById('salary-filter-count');
+      btn.classList.toggle('active', years.length > 0);
+      count.hidden = years.length === 0;
+      count.textContent = years.length;
+      document.getElementById('salary-clear-btn').disabled = years.length === 0;
+      document.querySelectorAll('.salary-year-row').forEach((rowEl, i) => {
+        rowEl.classList.toggle('filtered', years.includes(salaryYears[i]));
+      });
+    }
+
+    // Shared open/close wiring for the dropdown filter menus: only one is open at
+    // a time, and an outside click or Escape closes whichever is.
+    const menus = [];
+
+    function setupMenu(btnId, popId) {
+      const btn = document.getElementById(btnId);
+      const pop = document.getElementById(popId);
+      const setOpen = open => {
+        pop.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+      };
+      menus.push(setOpen);
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const willOpen = pop.hidden;
+        closeMenus();
+        setOpen(willOpen);
+      });
+      pop.addEventListener('click', e => e.stopPropagation());
+    }
+
+    function closeMenus() { menus.forEach(setOpen => setOpen(false)); }
+
+    document.addEventListener('click', closeMenus);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenus(); });
+
+    function setupSalaryFilter() {
+      setupMenu('salary-filter-btn', 'salary-popover');
+      document.getElementById('salary-clear-btn').addEventListener('click', () => {
+        Object.values(salaryFilters).forEach(b => { b.min = null; b.max = null; });
+        document.querySelectorAll('#salary-popover input').forEach(i => { i.value = ''; });
+        syncSalaryFilterUI();
+        if (currentTbody) rebuildBody(currentTbody);
+      });
+    }
+
+    // ── Attribute minimum filters ─────────────────────────────────────────────
+    // Each entry is one "attribute >= min" clause; they AND together. Attribute
+    // names/grouping come from RatingsPopup so there's a single canonical list.
+    const attrFilters = [];
+
+    function activeAttrFilters() {
+      return attrFilters.filter(f => f.key && f.min != null);
+    }
+
+    function rowMatchesAttrs(row) {
+      const active = activeAttrFilters();
+      if (!active.length) return true;
+      if (row.isPick) return false;               // picks have no ratings
+      const snap = row.slug ? attrsCurrent[row.slug] : null;
+      // No ratings on file means we can't show the player clears a minimum.
+      if (!snap || !snap.attributes) return false;
+      return active.every(f => {
+        const v = parseFloat(snap.attributes[f.key]);
+        return !isNaN(v) && v >= f.min;
+      });
+    }
+
+    function buildAttrFilter() {
+      const rowsEl = document.getElementById('attr-rows');
+      rowsEl.innerHTML = '';
+      const cats = (window.RatingsPopup && RatingsPopup.CATEGORIES) || [];
+      const labels = (window.RatingsPopup && RatingsPopup.LABELS) || {};
+
+      attrFilters.forEach((f, i) => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'attr-row';
+
+        const sel = document.createElement('select');
+        sel.setAttribute('aria-label', 'Attribute');
+        const blank = document.createElement('option');
+        blank.value = '';
+        blank.textContent = 'Choose attribute…';
+        sel.appendChild(blank);
+        cats.forEach(cat => {
+          const group = document.createElement('optgroup');
+          group.label = cat.label;
+          cat.keys.forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k;
+            opt.textContent = labels[k] || k;
+            group.appendChild(opt);
+          });
+          sel.appendChild(group);
+        });
+        sel.value = f.key || '';
+        sel.addEventListener('change', () => {
+          f.key = sel.value;
+          syncAttrFilterUI();
+          if (currentTbody) rebuildBody(currentTbody);
+        });
+        rowEl.appendChild(sel);
+
+        const min = document.createElement('input');
+        min.type = 'text';
+        min.inputMode = 'numeric';
+        min.placeholder = 'min';
+        min.autocomplete = 'off';
+        min.setAttribute('aria-label', 'Minimum rating');
+        if (f.min != null) min.value = String(f.min);
+        min.addEventListener('input', () => {
+          const n = parseFloat(min.value.replace(/\s/g, ''));
+          f.min = isNaN(n) ? null : n;
+          syncAttrFilterUI();
+          if (currentTbody) rebuildBody(currentTbody);
+        });
+        rowEl.appendChild(min);
+
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'attr-row-remove';
+        rm.textContent = '×';
+        rm.setAttribute('aria-label', 'Remove this attribute filter');
+        rm.addEventListener('click', () => {
+          attrFilters.splice(i, 1);
+          buildAttrFilter();
+          if (currentTbody) rebuildBody(currentTbody);
+        });
+        rowEl.appendChild(rm);
+
+        rowsEl.appendChild(rowEl);
+      });
+
+      syncAttrFilterUI();
+    }
+
+    function syncAttrFilterUI() {
+      const n = activeAttrFilters().length;
+      const btn = document.getElementById('attr-filter-btn');
+      const count = document.getElementById('attr-filter-count');
+      btn.classList.toggle('active', n > 0);
+      count.hidden = n === 0;
+      count.textContent = n;
+      document.getElementById('attr-clear-btn').disabled = attrFilters.length === 0;
+    }
+
+    function setupAttrFilter() {
+      setupMenu('attr-filter-btn', 'attr-popover');
+      document.getElementById('attr-add-btn').addEventListener('click', () => {
+        attrFilters.push({ key: '', min: null });
+        buildAttrFilter();
+      });
+      document.getElementById('attr-clear-btn').addEventListener('click', () => {
+        attrFilters.length = 0;
+        buildAttrFilter();
+        if (currentTbody) rebuildBody(currentTbody);
+      });
+      buildAttrFilter();
     }
 
     function buildFilterChips() {
@@ -482,6 +923,7 @@
     let rosterData = {};      // team abbr → parsed roster CSV rows
     let picksApiMap = {};     // team abbr → { "year|round|orig": {notes, pick} }
     let ovrCurrent = {};      // slug → current OVR
+    let attrsCurrent = {};    // slug → latest 2K attribute snapshot
     let showAllRostered = false;
     let allRostersFetched = false;
 
@@ -565,7 +1007,7 @@
         td.style.cssText = 'text-align:center;padding:3rem;color:#6b7280;font-size:0.9rem;';
         td.textContent = tableRows.length === 0
           ? 'Nothing on the tradeblock yet.'
-          : 'No players match the selected position filter.';
+          : 'No players match the selected filters.';
         return;
       }
 
@@ -617,6 +1059,9 @@
                 const t = Math.min(1, Math.max(0, (n - 60) / (99 - 60)));
                 td.style.background = `hsl(${Math.round(t * 120)}, 55%, 18%)`;
                 td.style.color     = `hsl(${Math.round(t * 120)}, 80%, 72%)`;
+              }
+              if (row.slug && window.RatingsPopup) {
+                RatingsPopup.attach(td, row.slug, { name: row.player });
               }
             }
           } else if (/^\d{2}-\d{2}$/.test(col.key)) {
@@ -928,7 +1373,7 @@
         const slug = knownSlug || rosterNameToSlug(player);
         const bio = slug ? biosData[slug] : null;
         row = {
-          team, player, isPick: false,
+          team, player, isPick: false, slug,
           pos: bio ? ((bio.pos || []).join('/') || '—') : '—',
           ovr: slug ? (ovrCurrent[slug] || '') : '',
           age: bio ? calcAgeFromDob(bio.dob) : '',
@@ -940,7 +1385,7 @@
         const pr = rosterRows.find(r => r.PLAYER === player) || {};
         const legacyHolds = {};
         (pr.CAP_HOLDS || '').split(',').forEach(p => { const [y, t] = p.split(':'); if (y && t) legacyHolds[y.trim()] = t.trim(); });
-        row = { team, player, isPick: false, pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '', cap_holds: legacyHolds };
+        row = { team, player, isPick: false, slug: rosterNameToSlug(player), pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '', cap_holds: legacyHolds };
         salaryYears.forEach(yr => { row[yr] = pr[yr] || '—'; });
       }
       return row;
@@ -954,7 +1399,7 @@
       const pickNum      = pickApiData.pick ?? null;
       const numSuffix    = pickNum ? ` · #${pickNum}` : '';
       const pickLabel    = isOwnPick ? `${year} ${round}${numSuffix}` : `${year} ${round} (${origin})${numSuffix}`;
-      const row = { team, isPick: true, player: pickLabel, pos: 'Pick', ovr: '', age: '', notes: notes || '', pickApiNotes, cap_holds: {} };
+      const row = { team, isPick: true, slug: null, player: pickLabel, pos: 'Pick', ovr: '', age: '', notes: notes || '', pickApiNotes, cap_holds: {} };
       salaryYears.forEach(yr => { row[yr] = '—'; });
       return row;
     }
@@ -1039,6 +1484,7 @@
       computeSalaryYears();
       buildTableRows();
       buildCols();
+      buildSalaryFilter();
       renderTableAndLegend();
     }
 
@@ -1050,15 +1496,23 @@
       const signinPrompt = document.getElementById('signin-prompt');
 
       try {
-        const [tb, userInfo, biosJson, playerSeasonsTxt, ovrJson] = await Promise.all([
+        const [tb, userInfo, biosJson, playerSeasonsTxt, ovrJson, lyr, attrsJson] = await Promise.all([
           fetch('/api/trading-block').then(r => { if (!r.ok) throw r; return r.json(); }),
           checkAuth(),
           fetch('/api/players').then(r => r.ok ? r.json() : {}),
           fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : null),
           fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
+          fetch('/api/league-year').then(r => r.ok ? r.json() : null),
+          // Bulk snapshot: the attribute filters need every player's ratings up
+          // front, and it doubles as the popup's source (no per-hover fetch).
+          fetch('/api/attributes/current').then(r => r.ok ? r.json() : {}),
         ]);
         tbData = tb;
         ovrCurrent = ovrJson;
+        attrsCurrent = attrsJson;
+        if (window.RatingsPopup) RatingsPopup.setSource(s => attrsCurrent[s] || null);
+        // Set the league year before any render so salary columns start on the right season.
+        if (lyr && lyr.current_season) CUR_YR = lyr.current_season;
 
         buildNameMap(biosJson);
         if (playerSeasonsTxt) buildSlugMap(parseCSV(playerSeasonsTxt));
@@ -1102,6 +1556,8 @@
         }
 
         buildFilterChips();
+        setupSalaryFilter();
+        setupAttrFilter();
 
         // Set up edit panel or sign-in prompt
         if (myTeam) {

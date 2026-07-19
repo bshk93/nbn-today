@@ -15,8 +15,6 @@ Compares, per team, for the site's current league year (from
   - BAE year-used -- sheet's "Bi-Annual Exception -> Year Used" cell.
   - TPE remaining -- sheet's "Traded Player Exception -> Exception
     Amount Remaining" cell vs /api/trade-exceptions.
-  - Draft picks -- sheet's "Original Draft Picks" table (year/round/
-    current owner) vs the global /api/picks ledger.
   - Player-level: every named row in the sheet's "Players" section is
     matched by name (same team first, then fuzzy, then league-wide) to
     a site roster entry, and the two are compared for real-salary
@@ -26,9 +24,20 @@ Compares, per team, for the site's current league year (from
     conclusions, since the sheet lists holds in the same table as real
     contracts and only distinguishes them by row color.
 
+Separately, build_picks_report() does a full reconciliation of every
+future draft pick (every year beyond the current draft class, both
+rounds, all 30 teams) against the sheet's "Original Draft Picks" table --
+reading not just the plain owner cell but the Details column (F) and any
+cell Note attached to it, which is the only place split/swap/protection
+language actually lives. Disagreements are cross-checked against the
+site's own trade-transaction log (/api/transactions) before being
+flagged, so a sheet that's merely lagging a real, already-logged trade
+reads differently from a genuine open question.
+
 Writes a single JSON snapshot to $NBS_DATA_DIR/poopoo.json for the
-/poopoo/ page to render. Run on a timer (see poopoo.timer) aligned to
-the clock (:00/:10/:20/...) so refreshes are predictable.
+/poopoo/ page to render (cap/roster diffs under "teams", the picks
+reconciliation under "picks"). Run on a timer (see poopoo.timer) aligned
+to the clock (:00/:10/:20/...) so refreshes are predictable.
 
 Env:
   NBN_API_BASE   override the API base URL (default http://127.0.0.1:8001)
@@ -214,13 +223,16 @@ def sheet_tpe(ws):
     return 0
 
 
-def sheet_picks(ws, orig_team):
-    """Original Draft Picks table: col A=Year, B=Round, D=Current Owner.
+def sheet_original_picks(ws):
+    """Original Draft Picks table: col A=Year, B=Round, D=Current Owner,
+    F=Details (plus any cell Note attached to F -- the hover-note feature,
+    which carries the actual swap/protection language for split picks).
     Year is merged/blank on the 2nd-round row beneath each 1st-round row.
     Stops at the "Acquired Draft Picks" table, which reuses the same columns
-    with different semantics (col D = the *origin* team of a pick BKN etc.
-    acquired) -- not comparable to this table and must not be scanned into."""
-    picks = []
+    with different semantics (col D = the *origin* team of a pick this team
+    acquired) -- a secondary cross-reference view of the same underlying
+    picks, not a second source of truth, so it isn't parsed here."""
+    rows = []
     last_year = None
     for r in range(76, 160):
         label = ws.cell(row=r, column=1).value
@@ -229,19 +241,21 @@ def sheet_picks(ws, orig_team):
         year_cell = ws.cell(row=r, column=1).value
         round_cell = ws.cell(row=r, column=2).value
         owner_cell = ws.cell(row=r, column=4).value
+        details_cell = ws.cell(row=r, column=6)
         if round_cell not in ("1st", "2nd"):
             continue
         if year_cell:
             last_year = year_cell
-        if last_year is None or not owner_cell:
+        if last_year is None:
             continue
-        rnd = 1 if round_cell == "1st" else 2
-        owner_raw = str(owner_cell).strip().rstrip("*").strip()
-        if "/" in owner_raw:
-            continue  # compound/conditional destination (e.g. "CHA/CHI") -- not diffable against a single site owner
-        owner = orig_team if owner_raw.lower() == "own" else owner_raw.upper()
-        picks.append({"year": int(float(last_year)), "round": rnd, "owner": owner})
-    return picks
+        rows.append({
+            "year": int(float(last_year)),
+            "round": 1 if round_cell == "1st" else 2,
+            "owner_raw": str(owner_cell).strip() if owner_cell else None,
+            "details": str(details_cell.value).strip() if details_cell.value else None,
+            "note": details_cell.comment.text.strip() if details_cell.comment else None,
+        })
+    return rows
 
 
 def build_legend(ws):
@@ -324,7 +338,7 @@ def load_sheet():
             "mle": sheet_mle(ws),
             "bae_year_used": sheet_bae(ws),
             "tpe_remaining": sheet_tpe(ws),
-            "picks": sheet_picks(ws, team),
+            "picks": sheet_original_picks(ws),
             "players": sheet_players(ws, legend or {}),
         }
     tmp.unlink(missing_ok=True)
@@ -611,7 +625,142 @@ def diff_picks_signed(team, sheet_players_list, site_players_list, current_draft
     return diffs
 
 
-def diff_team(team, sheet, site, picks_by_orig, site_name_index, sheet_name_index, current_draft_year):
+# ── Picks tab: full 2027+ ledger reconciliation ─────────────────────────
+# A separate, richer pass over every future draft pick (not just this
+# season's), independent of the per-team cap-status diffs above. Rather than
+# reducing every sheet/site disagreement to a single "mismatch", this reads
+# the sheet's Details column (F) and its attached cell notes -- the only
+# place split/swap/protection language actually lives -- and cross-checks
+# disagreements against the site's own trade-transaction log before flagging
+# anything, so a sheet that's merely lagging a real trade doesn't read the
+# same as a genuine open question.
+
+def pick_events_index(transactions):
+    """(year, round, orig) -> chronological list of trade movements, built
+    from every trade transaction's structured pick assets. Used as evidence
+    that a sheet/site owner disagreement is just the sheet lagging a real,
+    already-logged trade rather than a fresh dispute."""
+    events = {}
+    for t in transactions:
+        if t.get("type") != "trade":
+            continue
+        for transfer in t.get("details", {}).get("transfers", []):
+            for asset in transfer.get("assets", []):
+                if asset.get("type") != "pick":
+                    continue
+                year, rnd, orig = asset.get("year"), asset.get("round"), asset.get("orig")
+                if year is None or rnd is None or orig is None:
+                    continue
+                events.setdefault((year, rnd, orig), []).append({
+                    "date": t["date"], "from": transfer["from_team"], "to": transfer["to_team"],
+                    "description": t.get("description", ""),
+                })
+    for key in events:
+        events[key].sort(key=lambda e: e["date"])
+    return events
+
+
+def norm_pick_owner(raw, team):
+    if not raw:
+        return team
+    v = raw.strip().rstrip("*").strip()
+    return team if v.lower() == "own" else v.upper()
+
+
+def classify_pick(team, row, site_pick, events):
+    """Buckets one (team, year, round) sheet row against its site
+    counterpart. Categories, roughly in order of urgency:
+      needs_investigation        -- no overlap and no logged trade explains
+                                     it, or the site's own ledger disagrees
+                                     with its own transaction log
+      committee_lag              -- disagreement fully explained by a real,
+                                     already-logged trade the sheet hasn't
+                                     caught up to yet
+      same_owner_diff_representation -- sheet lists a compound/conditional
+                                     owner, site names one practical team but
+                                     its free-text notes describe the same split
+      richness_gap                -- owners agree, but the sheet's swap/
+                                     protection detail isn't in the site's
+                                     structured fields (a model-limit backlog,
+                                     not a dispute)
+      clean_match / clean_match_frozen -- full agreement
+      site_missing_pick           -- site has no entry at all for this pick
+    """
+    out = {
+        "team": team, "year": row["year"], "round": row["round"],
+        "sheet_owner": row["owner_raw"], "sheet_details": row["details"], "sheet_note": row["note"],
+    }
+    if site_pick is None:
+        out["category"] = "site_missing_pick"
+        return out
+
+    sheet_owner = norm_pick_owner(row["owner_raw"], team)
+    site_owner = site_pick["owner"] or team
+    out.update({
+        "site_owner": site_owner, "site_protected": site_pick.get("protected"),
+        "site_swap_owner": site_pick.get("swap_owner"), "site_notes": site_pick.get("notes"),
+    })
+
+    if (row["details"] or "").upper() == "FROZEN" and site_pick.get("frozen"):
+        out["category"] = "clean_match_frozen"
+        return out
+
+    sheet_parts = set(re.split(r"[/|]", sheet_owner)) if any(c in sheet_owner for c in "/|") else {sheet_owner}
+    site_parts = set(site_owner.split("|"))
+
+    if sheet_parts == site_parts:
+        out["category"] = "clean_match" if not (row["details"] or row["note"]) else "richness_gap"
+        return out
+
+    hist = events.get((row["year"], row["round"], team))
+    if hist and hist[-1]["to"] == site_owner:
+        out["category"] = "committee_lag"
+        out["evidence"] = hist
+        return out
+    if hist:
+        # A real trade moved this pick, but /api/picks's current owner
+        # doesn't match where that trade left it -- the site disagrees with
+        # its own log, not just with the sheet.
+        out["category"] = "needs_investigation"
+        out["investigation_note"] = (
+            f"Site's own transaction log shows this pick moving to {hist[-1]['to']} "
+            f"({hist[-1]['date']}), but /api/picks currently lists the owner as "
+            f"{site_owner} -- a later untracked move, or a manual correction not "
+            "reflected in the trade log."
+        )
+        return out
+    if sheet_parts & site_parts and (site_pick.get("notes") or "").strip():
+        out["category"] = "same_owner_diff_representation"
+        return out
+    out["category"] = "needs_investigation"
+    return out
+
+
+def build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current_draft_year):
+    events = pick_events_index(transactions)
+    site_by_key = {
+        (p["year"], p["round"], p["orig"]): p
+        for team_picks in picks_by_orig.values() for p in team_picks
+    }
+
+    rows = []
+    for team in TEAMS:
+        for row in sheet_picks_by_team.get(team, []):
+            if row["year"] <= current_draft_year:
+                continue  # this year's picks are live-draft territory, tracked elsewhere
+            site_pick = site_by_key.get((row["year"], row["round"], team))
+            rows.append(classify_pick(team, row, site_pick, events))
+
+    counts = {}
+    for r in rows:
+        counts[r["category"]] = counts.get(r["category"], 0) + 1
+
+    itemized = [r for r in rows if r["category"] not in ("clean_match", "clean_match_frozen")]
+    itemized.sort(key=lambda r: (r["category"], r["year"], r["round"], r["team"]))
+    return {"counts": counts, "rows": itemized}
+
+
+def diff_team(team, sheet, site, site_name_index, sheet_name_index, current_draft_year):
     diffs = []
 
     s_agg, w_agg = sheet["aggregate"], site["aggregate"]
@@ -645,18 +794,8 @@ def diff_team(team, sheet, site, picks_by_orig, site_name_index, sheet_name_inde
             "sheet": sheet["tpe_remaining"], "site": site["tpe_remaining"],
         })
 
-    # Draft picks: compare (year, round) -> owner for this team's own-origin picks.
-    site_picks = {(p["year"], p["round"]): p["owner"] for p in picks_by_orig.get(team, [])}
-    for p in sheet["picks"]:
-        key = (p["year"], p["round"])
-        site_owner = site_picks.get(key)
-        if site_owner is None:
-            continue  # sheet has a future pick beyond the site's tracked horizon
-        if site_owner != p["owner"]:
-            diffs.append({
-                "category": "picks", "field": f"{key[0]} R{key[1]}",
-                "sheet": p["owner"], "site": site_owner,
-            })
+    # Draft picks live in their own dedicated Picks tab (see build_picks_report)
+    # -- richer than a same-team diff row, so not duplicated into this list.
 
     diffs.extend(diff_players(team, sheet["players"], site["players"], site_name_index, sheet_name_index))
     diffs.extend(diff_picks_signed(team, sheet["players"], site["players"], current_draft_year))
@@ -678,7 +817,7 @@ def main():
     for team in TEAMS:
         if team not in sheet_data or team not in site_data:
             continue
-        diffs = diff_team(team, sheet_data[team], site_data[team], picks_by_orig, site_name_index, sheet_name_index, current_draft_year)
+        diffs = diff_team(team, sheet_data[team], site_data[team], site_name_index, sheet_name_index, current_draft_year)
         teams_out.append({
             "team": team,
             "diff_count": len(diffs),
@@ -687,13 +826,21 @@ def main():
             "site": site_data[team],
         })
 
+    transactions = http_json("/api/transactions?limit=5000")["transactions"]
+    sheet_picks_by_team = {team: sheet_data[team]["picks"] for team in sheet_data}
+    picks_report = build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current_draft_year)
+
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "season": season,
         "teams": teams_out,
+        "picks": picks_report,
     }
     OUT_FILE.write_text(json.dumps(out, indent=2))
-    print(f"poopoo: wrote {OUT_FILE} ({sum(t['diff_count'] for t in teams_out)} diffs across {len(teams_out)} teams)")
+    print(
+        f"poopoo: wrote {OUT_FILE} ({sum(t['diff_count'] for t in teams_out)} cap diffs across "
+        f"{len(teams_out)} teams, {len(picks_report['rows'])} flagged picks)"
+    )
 
 
 if __name__ == "__main__":

@@ -180,6 +180,10 @@ let rosterData = {};     // abbr → [{slug, ovr, name, salary, type}]
 let picksData = {};      // abbr → [{year, round, team, type}]
 let selections = { a: { players: new Set(), picks: new Set() }, b: { players: new Set(), picks: new Set() } };
 
+// The current league year (cap/contract clock). Set from GET /api/league-year at
+// page load; falls back to the date-based season if that fetch fails.
+let LEAGUE_YEAR = null;
+
 function parseSalaryNum(v) {
   if (!v) return 0;
   const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
@@ -199,6 +203,7 @@ function displayName(raw) {
 }
 
 function curYr() {
+  if (LEAGUE_YEAR) return LEAGUE_YEAR;
   const now = new Date(), y = now.getFullYear() % 100, m = now.getMonth() + 1;
   return m < 7 ? `${String(y-1).padStart(2,'0')}-${String(y).padStart(2,'0')}` : `${String(y).padStart(2,'0')}-${String((y+1)%100).padStart(2,'0')}`;
 }
@@ -206,10 +211,13 @@ function curYr() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  [allBios, allOvr] = await Promise.all([
+  let leagueYearJson;
+  [allBios, allOvr, leagueYearJson] = await Promise.all([
     fetch('/api/players').then(r => r.ok ? r.json() : {}),
     fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
+    fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
   ]);
+  if (leagueYearJson?.current_season) LEAGUE_YEAR = leagueYearJson.current_season;
 
   ['a', 'b'].forEach(side => {
     const sel = document.getElementById(`sel-${side}`);

@@ -27,8 +27,9 @@ a:hover { text-decoration: underline; }
 .search-results { max-height: 55vh; overflow-y: auto; }
 .search-result { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; text-decoration: none; color: #f3f4f6; border-bottom: 1px solid #111827; }
 .search-result:hover, .search-result.active { background: #374151; }
+.search-result-icon { font-size: 1rem; flex-shrink: 0; }
 .search-result-name { font-size: 0.9rem; font-weight: 600; }
-.search-result-meta { font-size: 0.78rem; color: #9ca3af; margin-left: auto; white-space: nowrap; }
+.search-result-meta { font-size: 0.78rem; color: #9ca3af; margin-left: auto; white-space: nowrap; padding-left: 0.75rem; }
 .search-hint { padding: 0.4rem 1.25rem; font-size: 0.7rem; color: #4b5563; border-top: 1px solid #374151; }
 .search-empty { padding: 1rem 1.25rem; font-size: 0.85rem; color: #6b7280; }
 

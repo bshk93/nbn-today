@@ -344,6 +344,12 @@
       display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 1rem;
     }
     @media (max-width: 500px) { .bio-edit-form { grid-template-columns: 1fr; } }
+
+    /* 2K attribute categories */
+    .attr-categories-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem 2rem;
+    }
+    @media (max-width: 700px) { .attr-categories-grid { grid-template-columns: 1fr; } }
     .bio-edit-form label {
       display: flex; flex-direction: column; gap: 0.2rem;
       font-size: 0.7rem; color: #6b7280; font-weight: 600;
@@ -509,9 +515,30 @@
     .txn-badge-convert_twoway { background: #1c1917; color: #a8a29e; }
     .txn-badge-trade   { background: #2e1065; color: #c084fc; }
     .txn-badge-recap   { background: #422006; color: #fbbf24; }
-    .txn-table-details { color: #9ca3af; font-size: 0.8rem; }
+    .txn-badge-retired { background: #1f2937; color: #d1d5db; }
+    .txn-row-retired td { font-weight: 600; color: #f3f4f6; }
+    .txn-table-details { color: #9ca3af; font-size: 0.8rem; white-space: normal; overflow-wrap: break-word; word-break: break-word; }
     .txn-table-details a { color: #93c5fd; text-decoration: none; }
     .txn-table-details a:hover { text-decoration: underline; }
+    .txn-history-wrap { overflow-x: auto; }
+    .txn-history-table { table-layout: fixed; min-width: 480px; }
+    .txn-history-table td { vertical-align: top; }
+    .txn-note-cell { text-align: center; vertical-align: middle !important; }
+    .txn-note-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; color: #38bdf8; cursor: pointer;
+      filter: drop-shadow(0 0 3px rgba(56,189,248,0.85));
+      transition: filter 0.15s;
+    }
+    .txn-note-icon:hover { filter: drop-shadow(0 0 6px rgba(56,189,248,1)); }
+    .tt-anchor { cursor: pointer; }
+    .tt-popup {
+      position: absolute; z-index: 500; max-width: 260px;
+      background: #1f2937; border: 1px solid #374151; color: #d1d5db;
+      padding: 0.35rem 0.6rem; border-radius: 5px; font-size: 0.75rem;
+      white-space: pre-line; line-height: 1.5; text-align: left;
+      pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    }
     .txn-pagination { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0 0.25rem; font-size: 0.8rem; color: #9ca3af; }
     .txn-page-btn { padding: 0.28rem 0.65rem; background: #1f2937; border: 1px solid #374151; border-radius: 6px;
       color: #9ca3af; font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.12s, color 0.12s; }
@@ -569,15 +596,75 @@
 </div>
 
 <script src="/country-iso.js"></script>
+<script src="/ratings-popup.js"></script>
 <script>
 (function () {
   const slug = new URLSearchParams(location.search).get('p');
+
+  // Mobile-friendly tooltip: hover-to-show on pointer devices, tap-to-toggle on touch.
+  let _ttEl = null, _ttAnchor = null;
+  function _ttHide() { if (_ttEl) { _ttEl.remove(); _ttEl = null; _ttAnchor = null; } }
+  function _ttShow(anchor, text) {
+    _ttHide();
+    const tip = document.createElement('div');
+    tip.className = 'tt-popup';
+    tip.textContent = text;
+    document.body.appendChild(tip);
+    const r = anchor.getBoundingClientRect();
+    let left = r.left + r.width / 2 - tip.offsetWidth / 2;
+    left = Math.max(6, Math.min(left, window.innerWidth - tip.offsetWidth - 6));
+    let top = r.top - tip.offsetHeight - 8;
+    if (top < 4) top = r.bottom + 8;
+    tip.style.left = `${left + window.scrollX}px`;
+    tip.style.top = `${top + window.scrollY}px`;
+    _ttEl = tip;
+    _ttAnchor = anchor;
+  }
+  const _ttIsTouch = window.matchMedia('(hover: none)').matches;
+  document.addEventListener('click', e => { if (_ttEl && !e.target.closest('.tt-anchor')) _ttHide(); });
+  function attachTooltip(el, textOrFn) {
+    el.classList.add('tt-anchor');
+    const getText = () => (typeof textOrFn === 'function' ? textOrFn() : textOrFn);
+    if (_ttIsTouch) {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const text = getText();
+        if (!text) return;
+        if (_ttAnchor === el) _ttHide(); else _ttShow(el, text);
+      });
+    } else {
+      el.addEventListener('mouseenter', () => { const text = getText(); if (text) _ttShow(el, text); });
+      el.addEventListener('mouseleave', _ttHide);
+    }
+  }
 
   let biosData = {};
   let teamMap = {};
   let currentOvr = {};
   let allOvrHistory = {};
+  let allAttributes = {};
   let allPlayerSeasons = [];
+
+  // allAttributes is {slug: [snapshot, …]} oldest-first — current is the last entry.
+  function currentAttributes(playerSlug) {
+    const history = allAttributes[playerSlug];
+    return history && history.length ? history[history.length - 1] : null;
+  }
+
+  // The current league year (cap/contract clock). Set from GET /api/league-year at
+  // page load; falls back to the date-based season if that fetch fails. Drives the
+  // default starting season offered in the contract editor.
+  let LEAGUE_YEAR = null;
+
+  function currentSeasonStr() {
+    if (LEAGUE_YEAR) return LEAGUE_YEAR;
+    const now = new Date();
+    const y = now.getFullYear() % 100;
+    const m = now.getMonth() + 1;
+    return m < 7
+      ? `${String(y - 1).padStart(2, '0')}-${String(y).padStart(2, '0')}`
+      : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
+  }
 
   const TEAM_NAMES = {
     ATL:'Atlanta Hawks', BKN:'Brooklyn Nets', BOS:'Boston Celtics', CHA:'Charlotte Hornets',
@@ -1006,8 +1093,7 @@
     twStartWrap.appendChild(Object.assign(document.createElement('span'), { textContent: 'Starting Season' }));
     const twStart = document.createElement('input');
     twStart.type = 'text'; twStart.maxLength = 5; twStart.placeholder = '25-26';
-    { const _y = new Date().getMonth() >= 7 ? new Date().getFullYear() + 1 : new Date().getFullYear();
-      twStart.value = `${String(_y).slice(-2)}-${String(_y + 1).slice(-2)}`; }
+    twStart.value = currentSeasonStr();
     twStart.style.cssText = 'width:5rem;background:#111827;border:1px solid #374151;border-radius:4px;color:#f3f4f6;padding:0.3rem 0.4rem;font-size:0.85rem;font-family:inherit;outline:none';
     twStartWrap.appendChild(twStart);
     twRow.appendChild(twYearsWrap); twRow.appendChild(twStartWrap);
@@ -1158,8 +1244,7 @@
         const m = existing[existing.length - 1].value.match(/^(\d{2})-(\d{2})$/);
         if (m) next = `${m[2]}-${String(+m[2] + 1).padStart(2, '0')}`;
       } else {
-        const yr = new Date().getMonth() >= 7 ? new Date().getFullYear() + 1 : new Date().getFullYear();
-        next = `${String(yr).slice(-2)}-${String(yr + 1).slice(-2)}`;
+        next = currentSeasonStr();
       }
       salRows.appendChild(makeSalaryRow(next, ''));
     });
@@ -1478,6 +1563,226 @@
     container.appendChild(table);
   }
 
+  const ATTR_CATEGORIES = [
+    { label: 'Shooting', keys: ['three_point_shot', 'mid_range_shot', 'close_shot', 'free_throw', 'shot_iq', 'offensive_consistency'] },
+    { label: 'Finishing', keys: ['layup', 'driving_dunk', 'standing_dunk', 'post_hook', 'post_fade', 'post_control', 'draw_foul', 'hands'] },
+    { label: 'Athleticism', keys: ['speed', 'strength', 'agility', 'vertical', 'hustle', 'stamina', 'overall_durability'] },
+    { label: 'Playmaking', keys: ['ball_handle', 'speed_with_ball', 'pass_accuracy', 'pass_vision', 'pass_iq'] },
+    { label: 'Defense & Rebounding', keys: ['block', 'steal', 'pass_perception', 'interior_defense', 'perimeter_defense', 'defensive_consistency', 'help_defense_iq', 'defensive_rebound', 'offensive_rebound'] },
+    { label: 'Intangibles', keys: ['intangibles'] },
+  ];
+
+  const ATTR_LABELS = {
+    three_point_shot: '3PT Shot', mid_range_shot: 'Mid-Range Shot', close_shot: 'Close Shot',
+    free_throw: 'Free Throw', shot_iq: 'Shot IQ', offensive_consistency: 'Offensive Consistency',
+    layup: 'Layup', driving_dunk: 'Driving Dunk', standing_dunk: 'Standing Dunk',
+    post_hook: 'Post Hook', post_fade: 'Post Fade', post_control: 'Post Control',
+    draw_foul: 'Draw Foul', hands: 'Hands',
+    speed: 'Speed', strength: 'Strength', agility: 'Agility', vertical: 'Vertical',
+    hustle: 'Hustle', stamina: 'Stamina', overall_durability: 'Durability',
+    ball_handle: 'Ball Handle', speed_with_ball: 'Speed With Ball', pass_accuracy: 'Pass Accuracy',
+    pass_vision: 'Pass Vision', pass_iq: 'Pass IQ',
+    block: 'Block', steal: 'Steal', pass_perception: 'Pass Perception',
+    interior_defense: 'Interior Defense', perimeter_defense: 'Perimeter Defense',
+    defensive_consistency: 'Defensive Consistency', help_defense_iq: 'Help Defense IQ',
+    defensive_rebound: 'Defensive Rebound', offensive_rebound: 'Offensive Rebound',
+    intangibles: 'Intangibles',
+  };
+
+  // Abbreviated column headers for the history table (renderAttributeHistory)
+  // only -- renderAttributes' progress-bar labels keep the full ATTR_LABELS text.
+  const ATTR_ABBR = {
+    three_point_shot: '3PT', mid_range_shot: 'MID', close_shot: 'CS',
+    free_throw: 'FT', shot_iq: 'SIQ', offensive_consistency: 'OCON',
+    layup: 'LAY', driving_dunk: 'DDK', standing_dunk: 'SDK',
+    post_hook: 'PHK', post_fade: 'PFD', post_control: 'PCTL',
+    draw_foul: 'DF', hands: 'HND',
+    speed: 'SPD', strength: 'STR', agility: 'AGL', vertical: 'VERT',
+    hustle: 'HUS', stamina: 'STA', overall_durability: 'DUR',
+    ball_handle: 'BHD', speed_with_ball: 'SWB', pass_accuracy: 'PACC',
+    pass_vision: 'PVIS', pass_iq: 'PIQ',
+    block: 'BLK', steal: 'STL', pass_perception: 'PPER',
+    interior_defense: 'IDEF', perimeter_defense: 'PDEF',
+    defensive_consistency: 'DCON', help_defense_iq: 'HDIQ',
+    defensive_rebound: 'DREB', offensive_rebound: 'OREB',
+    intangibles: 'INT',
+  };
+
+  function renderAttributes(container, playerSlug) {
+    const data = currentAttributes(playerSlug);
+    if (!data || !data.attributes) return;
+
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = '2K Attributes';
+    container.appendChild(h2);
+
+    const outer = document.createElement('div');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'attr-categories-grid';
+    outer.appendChild(wrap);
+
+    ATTR_CATEGORIES.forEach(cat => {
+      const present = cat.keys.filter(k => data.attributes[k] != null);
+      if (!present.length) return;
+
+      const catBlock = document.createElement('div');
+
+      const catTitle = document.createElement('div');
+      catTitle.textContent = cat.label;
+      catTitle.style.cssText = 'font-size:0.75rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#e5e7eb;padding-bottom:0.35rem;margin-bottom:0.5rem;border-bottom:1px solid #374151;';
+      catBlock.appendChild(catTitle);
+
+      const grid = document.createElement('div');
+      grid.style.cssText = 'display:flex;flex-direction:column;gap:0.4rem;';
+
+      present.forEach(key => {
+        const val = data.attributes[key];
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;';
+
+        const label = document.createElement('span');
+        label.textContent = ATTR_LABELS[key] || key;
+        label.style.cssText = 'width:9rem;flex-shrink:0;font-size:0.85rem;color:#d1d5db;';
+
+        const bar = document.createElement('div');
+        bar.style.cssText = 'flex:1;height:6px;border-radius:3px;background:#374151;position:relative;overflow:hidden;';
+        const fill = document.createElement('div');
+        const heat = ovrHeatStyle(val);
+        fill.style.cssText = `position:absolute;left:0;top:0;bottom:0;width:${Math.max(0, Math.min(100, val))}%;background:${heat.color};`;
+        bar.appendChild(fill);
+
+        const valEl = document.createElement('span');
+        valEl.textContent = val;
+        valEl.style.cssText = `font-size:0.85rem;font-weight:600;width:1.8rem;text-align:right;color:${heat.color};`;
+
+        row.appendChild(label);
+        row.appendChild(bar);
+        row.appendChild(valEl);
+        grid.appendChild(row);
+      });
+
+      catBlock.appendChild(grid);
+      wrap.appendChild(catBlock);
+    });
+
+    if (data['2k_pos'] && data['2k_pos'].length) {
+      const posRow = document.createElement('div');
+      posRow.style.cssText = 'font-size:0.8rem;color:#9ca3af;margin-top:0.75rem;';
+      posRow.textContent = `Position: ${data['2k_pos'].join(' / ')}`;
+      outer.appendChild(posRow);
+    }
+
+    if (data.attributes.potential) {
+      const potRow = document.createElement('div');
+      potRow.style.cssText = 'font-size:0.8rem;color:#9ca3af;margin-top:0.75rem;';
+      potRow.textContent = `Potential: ${data.attributes.potential}`;
+      outer.appendChild(potRow);
+    }
+
+    const source = document.createElement('div');
+    source.style.cssText = 'font-size:0.7rem;color:#6b7280;margin-top:0.4rem;';
+    source.textContent = `Source: 2kratings.com (as of ${data.date})`;
+    outer.appendChild(source);
+
+    container.appendChild(outer);
+  }
+
+  function renderAttributeHistory(container, playerSlug) {
+    const history = allAttributes[playerSlug] || [];
+    if (!history.length) return;
+
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = '2K Attribute History';
+    container.appendChild(h2);
+
+    const cols = [
+      { key: '2k_ovr', label: 'OVR', full: 'Overall', top: true },
+      { key: '2k_pos', label: 'POS', full: 'Position', top: true },
+      { key: 'potential', label: 'POT', full: 'Potential' },
+      ...ATTR_CATEGORIES.flatMap(cat => cat.keys.map(k => ({ key: k, label: ATTR_ABBR[k] || k, full: ATTR_LABELS[k] || k }))),
+    ];
+
+    const scrollWrap = document.createElement('div');
+    scrollWrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;';
+
+    const table = document.createElement('table');
+    table.className = 'salary-table';
+    table.style.cssText = 'min-width:1500px;';
+
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    [{ label: 'Date' }, ...cols].forEach(c => {
+      const th = document.createElement('th');
+      th.textContent = c.label;
+      th.style.whiteSpace = 'nowrap';
+      if (c.full) th.title = c.full;
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    // Oldest first is how snapshots are stored; show newest first for reading convenience.
+    const newestFirst = [...history].reverse();
+    newestFirst.forEach((entry, idx) => {
+      const prev = idx < newestFirst.length - 1 ? newestFirst[idx + 1] : null;
+      const tr = tbody.insertRow();
+
+      const dateTd = tr.insertCell();
+      const [y, m, d] = entry.date.split('-').map(Number);
+      dateTd.textContent = `${months[m - 1]} ${d}, ${y}`;
+      dateTd.style.whiteSpace = 'nowrap';
+
+      cols.forEach(col => {
+        const td = tr.insertCell();
+        td.style.whiteSpace = 'nowrap';
+        td.style.textAlign = 'right';
+        const rawVal = col.top ? entry[col.key] : (entry.attributes || {})[col.key];
+        const val = Array.isArray(rawVal) ? rawVal.join(' / ') : rawVal;
+        td.textContent = val != null && val !== '' ? val : '—';
+
+        if (typeof val === 'number') {
+          Object.assign(td.style, ovrHeatStyle(val));
+          td.style.borderRadius = '4px';
+          td.style.padding = '0.1rem 0.35rem';
+        }
+
+        if (prev) {
+          const rawPrevVal = col.top ? prev[col.key] : (prev.attributes || {})[col.key];
+          const prevVal = Array.isArray(rawPrevVal) ? rawPrevVal.join(' / ') : rawPrevVal;
+          if (prevVal != null && val != null && prevVal !== val) {
+            if (typeof val === 'number' && typeof prevVal === 'number') {
+              td.style.color = val > prevVal ? '#4ade80' : '#f87171';
+            } else {
+              td.style.color = '#facc15';
+            }
+            td.style.fontWeight = '700';
+          }
+        }
+      });
+    });
+
+    scrollWrap.appendChild(table);
+    container.appendChild(scrollWrap);
+
+    const source = document.createElement('div');
+    source.style.cssText = 'font-size:0.7rem;color:#6b7280;margin-top:0.4rem;';
+    source.textContent = 'Source: 2kratings.com · colored cells changed since the previous snapshot';
+    container.appendChild(source);
+  }
+
+  function renderHistorySection(container, playerSlug) {
+    const attrHistory = allAttributes[playerSlug];
+    if (attrHistory && attrHistory.length) {
+      renderAttributeHistory(container, playerSlug);
+    } else {
+      renderOvrHistory(container, playerSlug);
+    }
+  }
+
   function renderOvrHistory(container, playerSlug) {
     const hasToken = canEditBios();
     const entries = allOvrHistory[playerSlug] || [];
@@ -1677,7 +1982,7 @@
     rebuild();
   }
 
-  function renderTransactionHistory(container, playerSlug, playerAwards = [], seasonLeaders = {}, seasonRows = []) {
+  function renderTransactionHistory(container, playerSlug, playerAwards = [], seasonLeaders = {}, seasonRows = [], bio = {}) {
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     function fmtDate(iso) {
       if (!iso) return '—';
@@ -1728,7 +2033,12 @@
           ? esc(`${d.year || ''} ${ol} — accepted`)
           : esc(`${d.year || ''} ${ol} — declined → ${d.cap_hold_type || 'UFA'} hold`);
       }
-      if (t.type === 'convert_twoway') return esc(fmtContract(d.contract));
+      if (t.type === 'convert_twoway') {
+        let s = fmtContract(d.contract);
+        if (d.signing_method && d.signing_method !== 'cap_space')
+          s += (s ? ' · ' : '') + (METHOD[d.signing_method] || d.signing_method);
+        return esc(s);
+      }
       if (t.type === 'release') {
         const dc = d.dead_cap || {};
         const entries = Object.entries(dc);
@@ -1839,6 +2149,22 @@
       return recaps;
     }
 
+    // Final line in a retired player's history: name + headline career stats.
+    // Always the most recent entry, regardless of the last season/transaction date.
+    function buildRetirementEntry() {
+      if (!bio.retired) return null;
+      const name = bio.name ? displayName(bio.name) : playerSlug;
+      const totalG = seasonRows.reduce((s, r) => s + (+r.G || 0), 0);
+      const bullets = [];
+      if (totalG > 0) {
+        const sum = f => seasonRows.reduce((s, r) => s + (+r[f] || 0), 0);
+        const seasons = new Set(seasonRows.map(r => r.SEASON)).size;
+        bullets.push(`${seasons} season${seasons !== 1 ? 's' : ''}, ${totalG} games`);
+        bullets.push(`${(sum('PTS') / totalG).toFixed(1)} PPG, ${(sum('REB') / totalG).toFixed(1)} RPG, ${(sum('AST') / totalG).toFixed(1)} APG career`);
+      }
+      return { kind: 'retired', name, bullets };
+    }
+
     function teamHtml(t) {
       const d = t.details || {};
       if (t.type === 'trade') {
@@ -1859,6 +2185,9 @@
           ...buildSeasonRecaps(),
         ].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
+        const retirementEntry = buildRetirementEntry();
+        if (retirementEntry) entries.unshift(retirementEntry);
+
         if (!entries.length) return;
 
         const h2 = document.createElement('h2');
@@ -1867,18 +2196,32 @@
         container.appendChild(h2);
 
         const table = document.createElement('table');
-        table.className = 'salary-table';
+        table.className = 'salary-table txn-history-table';
         table.style.cssText = 'font-size:0.8rem';
+
+        // Fixed pixel widths for the nowrap columns so they always have enough
+        // room for their content; Details is left unset so it gets whatever
+        // space remains (and wraps within it) at any table width.
+        const colgroup = document.createElement('colgroup');
+        ['104px', '112px', '92px', null, '40px'].forEach(w => {
+          const col = document.createElement('col');
+          if (w) col.style.width = w;
+          colgroup.appendChild(col);
+        });
+        table.appendChild(colgroup);
+
         const thead = table.createTHead();
         const hr = thead.insertRow();
-        ['Date', 'Type', 'Team', 'Details', 'Note'].forEach((h, i) => {
+        ['Date', 'Type', 'Team', 'Details', ''].forEach(h => {
           const th = document.createElement('th');
           th.textContent = h;
-          if (i >= 2) th.style.width = i === 2 ? '10%' : 'auto';
           hr.appendChild(th);
         });
         const tbody = table.createTBody();
-        container.appendChild(table);
+        const tableWrap = document.createElement('div');
+        tableWrap.className = 'txn-history-wrap';
+        tableWrap.appendChild(table);
+        container.appendChild(tableWrap);
 
         const pagination = document.createElement('div');
         pagination.className = 'txn-pagination';
@@ -1889,13 +2232,24 @@
 
         function renderEntryRow(entry) {
           const tr = tbody.insertRow();
+          if (entry.kind === 'retired') {
+            tr.className = 'txn-row-retired';
+            tr.innerHTML = `
+              <td style="white-space:nowrap;color:#9ca3af">—</td>
+              <td><span class="txn-badge txn-badge-retired">Retired</span></td>
+              <td style="white-space:nowrap" class="txn-table-details">—</td>
+              <td class="txn-table-details">${esc(entry.name)} retired${entry.bullets.length ? ' &middot; ' + entry.bullets.map(esc).join(' &middot; ') : ''}</td>
+              <td class="txn-note-cell"></td>
+            `;
+            return;
+          }
           if (entry.kind === 'recap') {
             tr.innerHTML = `
               <td style="white-space:nowrap;color:#9ca3af">${esc(fmtSeason(entry.season))}</td>
               <td><span class="txn-badge txn-badge-recap">Season Recap</span></td>
               <td style="white-space:nowrap" class="txn-table-details">${entry.team ? `<a href="/teams/${esc(entry.team)}">${esc(entry.team)}</a>` : '—'}</td>
               <td class="txn-table-details">${entry.bullets.map(esc).join(' &middot; ')}</td>
-              <td></td>
+              <td class="txn-note-cell"></td>
             `;
             return;
           }
@@ -1906,8 +2260,16 @@
             <td><span class="txn-badge txn-badge-${esc(t.type)}">${esc(label)}</span></td>
             <td style="white-space:nowrap" class="txn-table-details">${teamHtml(t)}</td>
             <td class="txn-table-details">${detailsHtml(t)}</td>
-            <td style="color:#6b7280;font-size:0.75rem">${esc(t.description || '')}</td>
+            <td class="txn-note-cell"></td>
           `;
+          const note = (t.description || '').trim();
+          if (note) {
+            const icon = document.createElement('span');
+            icon.className = 'txn-note-icon';
+            icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+            attachTooltip(icon, note);
+            tr.querySelector('.txn-note-cell').appendChild(icon);
+          }
         }
 
         function renderPage() {
@@ -2552,8 +2914,9 @@
     renderCurrentTeam(content, bioSlug);
     renderOvrBadge(content, bioSlug);
     renderSalaryTable(content, bio);
-    renderOvrHistory(content, bioSlug);
-    renderTransactionHistory(content, bioSlug);
+    renderHistorySection(content, bioSlug);
+    renderAttributes(content, bioSlug);
+    renderTransactionHistory(content, bioSlug, [], {}, [], bio);
 
     const editBioBtn = document.createElement('button');
     editBioBtn.className = 'btn-edit-bio';
@@ -2945,6 +3308,11 @@
           td.style.padding = '0.15rem 0.4rem';
           td.style.fontWeight = '700';
           td.style.textAlign = 'center';
+          // Ratings breakdown on hover/tap. Only wired up when we actually hold
+          // attributes for this player, so the cue never promises an empty popup.
+          if (window.RatingsPopup && currentAttributes(p.SLUG)) {
+            RatingsPopup.attach(td, p.SLUG, { name: p.PLAYER });
+          }
         }
       });
 
@@ -3151,8 +3519,9 @@
     const sections = document.createElement('div');
     content.appendChild(sections);
     renderSalaryTable(content, bio);
-    renderOvrHistory(content, slug);
-    renderTransactionHistory(content, slug, playerAwards[slug] || [], seasonLeaders, rows);
+    renderHistorySection(content, slug);
+    renderAttributes(content, slug);
+    renderTransactionHistory(content, slug, playerAwards[slug] || [], seasonLeaders, rows, bio);
 
     let bySeasonMode = false;
     let showPlayoffs = false;
@@ -3391,14 +3760,21 @@
     fetch('/api/team-map').then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('/api/ovr').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/attributes').then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('/api/auth/me', { headers: localStorage.getItem('nbn_token') ? { Authorization: `Bearer ${localStorage.getItem('nbn_token')}` } : {} }).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
   ])
-    .then(([seasonsText, awardsText, biosJson, teamMapJson, ovrJson, ovrHistoryJson, authJson]) => {
+    .then(([seasonsText, awardsText, biosJson, teamMapJson, ovrJson, ovrHistoryJson, attributesJson, authJson, leagueYearJson]) => {
       biosData = biosJson;
       teamMap = teamMapJson;
       currentOvr = ovrJson;
       allOvrHistory = ovrHistoryJson;
+      allAttributes = attributesJson;
+      // This page already holds every snapshot, so serve the popup from memory
+      // instead of letting it fetch per player.
+      if (window.RatingsPopup) RatingsPopup.setSource(currentAttributes);
       AUTH_ROLES = Array.isArray(authJson?.roles) ? authJson.roles : [];
+      if (leagueYearJson?.current_season) LEAGUE_YEAR = leagueYearJson.current_season;
 
       const rows = parseCSV(seasonsText);
       allPlayerSeasons = rows;
