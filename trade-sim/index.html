@@ -7,27 +7,26 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>Trade Simulator — NBN</title>
   <style>
-    .page { max-width: 1060px; margin: 0 auto; }
+    .page { max-width: 1280px; margin: 0 auto; }
     header { margin-bottom: 1.75rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: #9ca3af; margin-top: 0.3rem; font-size: 0.9rem; }
 
-    /* Trade grid */
-    .trade-grid { display: grid; grid-template-columns: 1fr 56px 1fr; gap: 0.75rem; margin-bottom: 1.25rem; align-items: start; }
-    .trade-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 2.5rem; gap: 0.5rem; color: #4b5563; font-size: 1.1rem; }
-
-    /* Team panel */
-    .team-panel { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow: hidden; }
+    /* Team cards */
+    .teams-container { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start; }
+    .team-panel { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow: hidden; flex: 1 1 280px; min-width: 260px; max-width: 360px; }
     .team-panel-header { padding: 0.75rem 1rem; border-bottom: 1px solid #374151; display: flex; align-items: center; gap: 0.6rem; }
     .team-sel { flex: 1; background: #111827; border: 1px solid #374151; border-radius: 6px; color: #f3f4f6; font-size: 0.9rem; padding: 0.35rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; }
     .team-sel:focus { border-color: #3b82f6; }
     .team-logo { width: 24px; height: 24px; object-fit: contain; }
+    .remove-team-btn { flex-shrink: 0; background: none; border: none; color: #6b7280; font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0.1rem 0.3rem; border-radius: 4px; }
+    .remove-team-btn:hover { color: #f87171; background: #2d0a0a; }
     .exc-sel { width: 100%; margin-top: 0.5rem; background: #111827; border: 1px solid #374151; border-radius: 6px; color: #9ca3af; font-size: 0.78rem; padding: 0.3rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; display: none; }
     .exc-sel:focus { border-color: #3b82f6; }
     .exc-sel option { color: #f3f4f6; }
     .panel-body { padding: 0.5rem 0; max-height: 400px; overflow-y: auto; }
     .panel-section-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #4b5563; padding: 0.5rem 1rem 0.2rem; }
-    .trade-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 1rem; cursor: pointer; border-radius: 0; transition: background 0.08s; }
+    .trade-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 1rem; cursor: pointer; border-radius: 0; transition: background 0.08s; flex-wrap: wrap; }
     .trade-row:hover { background: #263244; }
     .trade-row input[type=checkbox] { accent-color: #34d399; flex-shrink: 0; width: 14px; height: 14px; cursor: pointer; }
     .trade-row-name { flex: 1; font-size: 0.85rem; color: #d1d5db; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -36,6 +35,16 @@
     .trade-row.checked .trade-row-meta { color: #34d399; }
     .panel-empty { padding: 1.25rem 1rem; font-size: 0.82rem; color: #6b7280; text-align: center; }
     .panel-loading { padding: 1.25rem 1rem; font-size: 0.82rem; color: #6b7280; text-align: center; }
+
+    /* Destination selector — only shown once 3+ teams are in the trade */
+    .dest-sel { width: 100%; margin-top: 0.15rem; background: #111827; border: 1px solid #f59e0b55; border-radius: 5px; color: #fbbf24; font-size: 0.74rem; padding: 0.2rem 0.35rem; font-family: inherit; cursor: pointer; }
+    .dest-sel.unset { border-color: #f8717199; color: #fca5a5; }
+
+    /* Add-team control */
+    .add-team-row { margin-bottom: 1.25rem; }
+    .add-team-btn { background: #1f2937; border: 1px dashed #4b5563; border-radius: 8px; color: #9ca3af; font-size: 0.82rem; padding: 0.5rem 1rem; cursor: pointer; font-family: inherit; }
+    .add-team-btn:hover { border-color: #6b7280; color: #d1d5db; }
+    .add-team-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* Player type badges */
     .type-badge { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.35rem; border-radius: 4px; margin-right: 0.4rem; flex-shrink: 0; }
@@ -46,7 +55,7 @@
     .type-dead        { background: #450a0a; color: #f87171; }
 
     /* Sign-and-trade mini-form */
-    .sat-form { margin: 0.2rem 1rem 0.6rem; padding: 0.6rem 0.7rem; background: #111827; border: 1px solid #f59e0b55; border-radius: 8px; }
+    .sat-form { margin: 0.2rem 1rem 0.6rem; padding: 0.6rem 0.7rem; background: #111827; border: 1px solid #f59e0b55; border-radius: 8px; width: 100%; }
     .sat-form-title { font-size: 0.7rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
     .sat-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
     .sat-row label { font-size: 0.72rem; color: #9ca3af; flex-shrink: 0; }
@@ -62,9 +71,9 @@
     /* Results */
     .results { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow: hidden; }
     .results-header { padding: 0.75rem 1.25rem; border-bottom: 1px solid #374151; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; }
-    .results-grid { display: grid; grid-template-columns: 1fr 1fr; }
-    .result-col { padding: 1rem 1.25rem; }
-    .result-col + .result-col { border-left: 1px solid #374151; }
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+    .result-col { padding: 1rem 1.25rem; border-left: 1px solid #374151; }
+    .result-col:first-child { border-left: none; }
     .result-team { font-size: 0.85rem; font-weight: 700; color: #f3f4f6; margin-bottom: 0.75rem; }
     .result-row { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.35rem; color: #d1d5db; }
     .result-row .label { color: #9ca3af; }
@@ -107,48 +116,19 @@
   <nav class="nav"></nav>
   <header>
     <h1>Trade Simulator</h1>
-    <p>Model a trade and run it through the league's real validation rules.</p>
+    <p>Model a trade — two teams or a multi-team deal — and run it through the league's real validation rules.</p>
   </header>
 
-  <div class="trade-grid">
-    <div class="team-panel" id="panel-a">
-      <div class="team-panel-header">
-        <img class="team-logo" id="logo-a" src="" alt="" style="display:none">
-        <select class="team-sel" id="sel-a"><option value="">— Select Team A —</option></select>
-      </div>
-      <select class="exc-sel" id="exc-a">
-        <option value="">No exception used</option>
-        <option value="ntmle">Non-Taxpayer MLE</option>
-        <option value="tmle">Taxpayer MLE</option>
-        <option value="room_exception">Room Exception</option>
-        <option value="bae">Bi-Annual Exception</option>
-      </select>
-      <div class="panel-body" id="body-a"><div class="panel-empty">Select a team to see their roster.</div></div>
-    </div>
-    <div class="trade-arrow">⇄</div>
-    <div class="team-panel" id="panel-b">
-      <div class="team-panel-header">
-        <img class="team-logo" id="logo-b" src="" alt="" style="display:none">
-        <select class="team-sel" id="sel-b"><option value="">— Select Team B —</option></select>
-      </div>
-      <select class="exc-sel" id="exc-b">
-        <option value="">No exception used</option>
-        <option value="ntmle">Non-Taxpayer MLE</option>
-        <option value="tmle">Taxpayer MLE</option>
-        <option value="room_exception">Room Exception</option>
-        <option value="bae">Bi-Annual Exception</option>
-      </select>
-      <div class="panel-body" id="body-b"><div class="panel-empty">Select a team to see their roster.</div></div>
-    </div>
-  </div>
+  <div class="teams-container" id="teams-container"></div>
+  <div class="add-team-row"><button type="button" class="add-team-btn" id="add-team-btn">+ Add another team</button></div>
 
-  <div class="check-status" id="check-status">Select two teams and pick assets — the rubric evaluates live.</div>
+  <div class="check-status" id="check-status">Select at least two teams and pick assets — the rubric evaluates live.</div>
 
   <div class="results" id="results" style="display:none"></div>
 
   <details class="checks-doc" open>
     <summary>How trade validation works</summary>
-    <p class="doc-note">The simulator and the league's transaction system run the <em>same</em> rubric: the page calls <code>POST /api/validate/trade</code>, which shares its validator with <code>POST /api/transactions</code>. A "legal" result here is what the office will accept. Picks are tracked but carry no cap or roster weight.</p>
+    <p class="doc-note">The simulator and the league's transaction system run the <em>same</em> rubric: the page calls <code>POST /api/validate/trade</code>, which shares its validator with <code>POST /api/transactions</code>. A "legal" result here is what the office will accept. Picks are tracked but carry no cap or roster weight. With 3+ teams in the deal, each selected asset needs an explicit destination — with only 2, the destination is implied and there's nothing extra to pick.</p>
 
     <h4>Salary matching — max incoming salary by team type</h4>
     <ul>
@@ -162,7 +142,7 @@
       <li><strong>At/above the 1st Apron (§ 4.3)</strong> — no tiers: max incoming = <strong>outgoing + $250,000</strong>.</li>
       <li><strong>At/above the 2nd Apron (§ 4.4)</strong> — same outgoing + $250,000 limit, <em>and</em> the team may not <strong>aggregate</strong> (combine two or more outgoing salaries) to match incoming. Flagged as a warning for the office to verify.</li>
     </ul>
-    <p class="doc-note">A team's tier is set by its salary <em>before</em> the trade. Incoming ≤ outgoing always matches.</p>
+    <p class="doc-note">A team's tier is set by its salary <em>before</em> the trade. Incoming ≤ outgoing always matches. In a multi-team deal, each team's own outgoing/incoming totals (across all its legs) are what's matched — not pairwise per partner.</p>
 
     <h4>MLE trade absorption (§ 4.2a)</h4>
     <p class="doc-note">Pick an exception under a team's selector to absorb that team's incoming salary against its remaining season balance instead of matching outgoing salary — outgoing sent back doesn't matter under this path. Eligibility mirrors free-agent use of the same exception: NTMLE is blocked at/above the 1st Apron, TMLE at/above the 2nd Apron, the BAE at/above the 1st Apron (and unavailable in consecutive seasons, or alongside cap space/Room Exception use), and the Room Exception requires Team Salary more than a full NTMLE below the Cap. Using the NTMLE, TMLE, or BAE this way triggers the same hard-cap-at-apron effect as a signing.</p>
@@ -204,11 +184,20 @@ let allOvr = {};         // slug → current OVR (from ovr-history.json, the sin
 let rosterData = {};     // abbr → [{slug, ovr, name, salary, type, capHold, pos}]
 let picksData = {};      // abbr → [{year, round, team, type}]
 let tpeData = {};        // abbr → [{id, remaining, amount, expires_date, ...}] (unexpired, GET /api/trade-exceptions/{team})
-let selections = { a: { players: new Set(), picks: new Set() }, b: { players: new Set(), picks: new Set() } };
+
+// Team "slots" — a dynamic list of cards, each independently assigned a team.
+// Unlike the old fixed two-side model, a slot's outgoing assets don't have an
+// implied destination once 3+ teams are in play, so each selection carries
+// its own destination team alongside it.
+let teamSlots = [];      // ordered array of slot ids, e.g. ['t1', 't2', 't3']
+let slotTeam = {};       // slotId → abbr ('' if unset)
+let nextSlotId = 1;
+// slotId → { players: Map<slug, destAbbr|null>, picks: Map<pickKey, destAbbr|null> }
+let selections = {};
 
 // Sign-and-trade contract terms the user has entered for a cap-hold player,
-// keyed by slug (a slug only ever sits on one side's roster, so this doesn't
-// need to be split by side). Persists across re-renders/unchecks so typed-in
+// keyed by slug (a slug only ever sits on one slot's roster, so this doesn't
+// need to be split by slot). Persists across re-renders/unchecks so typed-in
 // terms aren't lost if the row is toggled off and back on.
 let signTerms = {};      // slug → { years, salaries: [y1,y2,...], birdType, method }
 
@@ -275,35 +264,132 @@ async function init() {
   ]);
   if (leagueYearJson?.current_season) LEAGUE_YEAR = leagueYearJson.current_season;
 
-  ['a', 'b'].forEach(side => {
-    const sel = document.getElementById(`sel-${side}`);
+  document.getElementById('add-team-btn').addEventListener('click', () => { addTeamSlot(null); rebuildTeamSelectOptions(); });
+
+  // URL params for pre-loading: ?teams=OKC,BOS,DEN (new, any count) or the
+  // legacy ?a=OKC&b=BOS (kept so old shared links still work).
+  const p = new URLSearchParams(location.search);
+  let preload = [];
+  if (p.get('teams')) preload = p.get('teams').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+  else {
+    if (p.get('a')) preload.push(p.get('a').toUpperCase());
+    if (p.get('b')) preload.push(p.get('b').toUpperCase());
+  }
+  while (preload.length < 2) preload.push(null);
+  preload.forEach(abbr => addTeamSlot(abbr));
+  rebuildTeamSelectOptions();
+}
+
+// ── Team slot management ───────────────────────────────────────────────────────
+
+function otherAssignedTeams(excludeSlotId) {
+  return teamSlots
+    .filter(id => id !== excludeSlotId && slotTeam[id])
+    .map(id => slotTeam[id]);
+}
+
+// Every team-sel dropdown's option list depends on what every OTHER slot has
+// chosen (a team can't be picked twice) — rebuilt in full whenever any slot's
+// assignment, or the slot count, changes.
+function rebuildTeamSelectOptions() {
+  teamSlots.forEach(slotId => {
+    const sel = document.getElementById(`sel-${slotId}`);
+    if (!sel) return;
+    const taken = new Set(otherAssignedTeams(slotId));
+    const current = slotTeam[slotId] || '';
+    sel.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = ''; placeholder.textContent = '— Select team —';
+    sel.appendChild(placeholder);
     Object.entries(TEAMS).sort(([,a],[,b]) => a.localeCompare(b)).forEach(([abbr, name]) => {
+      if (taken.has(abbr) && abbr !== current) return;
       const opt = document.createElement('option');
       opt.value = abbr; opt.textContent = name;
       sel.appendChild(opt);
     });
-    sel.addEventListener('change', () => loadTeam(side, sel.value));
-    document.getElementById(`exc-${side}`).addEventListener('change', updateCheckBtn);
+    sel.value = current;
   });
-
-  // URL params for pre-loading
-  const p = new URLSearchParams(location.search);
-  if (p.get('a')) { document.getElementById('sel-a').value = p.get('a'); loadTeam('a', p.get('a')); }
-  if (p.get('b')) { document.getElementById('sel-b').value = p.get('b'); loadTeam('b', p.get('b')); }
+  const anyUnassigned = Object.values(TEAMS).length > teamSlots.filter(id => slotTeam[id]).length;
+  document.getElementById('add-team-btn').disabled = !anyUnassigned;
 }
 
-async function loadTeam(side, abbr) {
-  const body = document.getElementById(`body-${side}`);
-  const logo = document.getElementById(`logo-${side}`);
-  const exc = document.getElementById(`exc-${side}`);
+function addTeamSlot(abbr) {
+  const slotId = `t${nextSlotId++}`;
+  teamSlots.push(slotId);
+  slotTeam[slotId] = '';
+  selections[slotId] = { players: new Map(), picks: new Map() };
+
+  const card = document.createElement('div');
+  card.className = 'team-panel';
+  card.id = `panel-${slotId}`;
+  card.innerHTML = `
+    <div class="team-panel-header">
+      <img class="team-logo" id="logo-${slotId}" src="" alt="" style="display:none">
+      <select class="team-sel" id="sel-${slotId}"><option value="">— Select team —</option></select>
+      <button type="button" class="remove-team-btn" id="rm-${slotId}" title="Remove team">✕</button>
+    </div>
+    <select class="exc-sel" id="exc-${slotId}">
+      <option value="">No exception used</option>
+      <option value="ntmle">Non-Taxpayer MLE</option>
+      <option value="tmle">Taxpayer MLE</option>
+      <option value="room_exception">Room Exception</option>
+      <option value="bae">Bi-Annual Exception</option>
+    </select>
+    <div class="panel-body" id="body-${slotId}"><div class="panel-empty">Select a team to see their roster.</div></div>
+  `;
+  document.getElementById('teams-container').appendChild(card);
+
+  document.getElementById(`sel-${slotId}`).addEventListener('change', e => loadTeam(slotId, e.target.value));
+  document.getElementById(`exc-${slotId}`).addEventListener('change', updateCheckBtn);
+  document.getElementById(`rm-${slotId}`).addEventListener('click', () => removeTeamSlot(slotId));
+
+  if (abbr) {
+    document.getElementById(`sel-${slotId}`).value = abbr;
+    loadTeam(slotId, abbr);
+  }
+  updateRemoveButtons();
+  return slotId;
+}
+
+function removeTeamSlot(slotId) {
+  if (teamSlots.length <= 2) return;   // a trade always needs at least two team cards
+  teamSlots = teamSlots.filter(id => id !== slotId);
+  delete slotTeam[slotId];
+  delete selections[slotId];
+  document.getElementById(`panel-${slotId}`)?.remove();
+  updateRemoveButtons();
+  rebuildTeamSelectOptions();
+  renderAllPanels();   // other cards' destination options may have shrunk
+  updateCheckBtn();
+}
+
+function updateRemoveButtons() {
+  const show = teamSlots.length > 2;
+  teamSlots.forEach(slotId => {
+    const btn = document.getElementById(`rm-${slotId}`);
+    if (btn) btn.style.visibility = show ? 'visible' : 'hidden';
+  });
+}
+
+async function loadTeam(slotId, abbr) {
+  const body = document.getElementById(`body-${slotId}`);
+  const logo = document.getElementById(`logo-${slotId}`);
+  const exc = document.getElementById(`exc-${slotId}`);
   exc.value = '';
-  if (!abbr) { body.innerHTML = '<div class="panel-empty">Select a team to see their roster.</div>'; logo.style.display = 'none'; exc.style.display = 'none'; selections[side] = { players: new Set(), picks: new Set() }; updateCheckBtn(); return; }
+  slotTeam[slotId] = abbr || '';
+  selections[slotId] = { players: new Map(), picks: new Map() };
+
+  if (!abbr) {
+    body.innerHTML = '<div class="panel-empty">Select a team to see their roster.</div>';
+    logo.style.display = 'none'; exc.style.display = 'none';
+    rebuildTeamSelectOptions(); renderAllPanels(); updateCheckBtn();
+    return;
+  }
 
   logo.src = `/logos/logo-${abbr.toLowerCase()}.png`;
   logo.alt = abbr; logo.style.display = '';
   exc.style.display = 'block';
   body.innerHTML = '<div class="panel-loading">Loading…</div>';
-  selections[side] = { players: new Set(), picks: new Set() };
 
   const yr = curYr();
   const [rosterText, picksJson, tpeJson] = await Promise.all([
@@ -342,14 +428,15 @@ async function loadTeam(side, abbr) {
   // offering. Appended as extra options on the same exception <select>
   // since a team uses at most one absorption method per trade either way.
   tpeData[abbr] = (Array.isArray(tpeJson) ? tpeJson : []).filter(e => !e.expired && e.remaining > 0);
-  populateExceptionSelect(side, abbr);
+  populateExceptionSelect(slotId, abbr);
 
-  renderPanel(side, abbr, yr);
+  rebuildTeamSelectOptions();
+  renderAllPanels();   // this team is now a valid destination on every OTHER card
   updateCheckBtn();
 }
 
-function populateExceptionSelect(side, abbr) {
-  const sel = document.getElementById(`exc-${side}`);
+function populateExceptionSelect(slotId, abbr) {
+  const sel = document.getElementById(`exc-${slotId}`);
   // Drop any previously-appended TPE options (identified by the tpe: prefix),
   // keep the fixed ntmle/tmle/room_exception/bae options untouched.
   Array.from(sel.options).forEach(o => { if (o.value.startsWith('tpe:')) o.remove(); });
@@ -437,7 +524,7 @@ function ensureSignTerms(slug) {
 // runCheck(), so the server validates the real § 3.14 rules (contract
 // length, 5% raise cap, MLE exclusion, Bird-rights eligibility) against
 // exactly what's entered here.
-function buildSignForm(slug, side, teamAbbr, yr) {
+function buildSignForm(slug, slotId, teamAbbr, yr) {
   const terms = ensureSignTerms(slug);
   const wrap = document.createElement('div');
   wrap.className = 'sat-form';
@@ -461,7 +548,7 @@ function buildSignForm(slug, side, teamAbbr, yr) {
     while (terms.salaries.length < n) terms.salaries.push(terms.salaries[terms.salaries.length - 1] + maxStep);
     terms.salaries.length = n;
     terms.years = n;
-    renderPanel(side, teamAbbr, yr);   // rebuild the salary-input row for the new year count
+    renderPanel(slotId, teamAbbr, yr);   // rebuild the salary-input row for the new year count
     updateCheckBtn();
   });
 
@@ -505,11 +592,56 @@ function buildSignForm(slug, side, teamAbbr, yr) {
   return wrap;
 }
 
-function renderPanel(side, abbr, yr) {
-  const body = document.getElementById(`body-${side}`);
+// Rebuilds every currently-loaded team card. Needed whenever the set of
+// teams in the trade changes (add/remove/reassign a slot), since that's what
+// determines each OTHER card's available destination options.
+function renderAllPanels() {
+  teamSlots.forEach(slotId => {
+    const abbr = slotTeam[slotId];
+    if (abbr) renderPanel(slotId, abbr, curYr());
+  });
+}
+
+// Builds the destination <select> for a checked row — only shown once there
+// are 2+ OTHER teams to choose from; with exactly one other team (the
+// original two-team case) the destination is implied and nothing is shown.
+function buildDestSelect(slotId, others, selMap, key) {
+  if (others.length <= 1) {
+    selMap.set(key, others[0] || null);   // auto-assign the only possible destination (or none left)
+    return null;
+  }
+  // A previously-chosen destination stops being valid the moment that team
+  // leaves the trade (its slot removed, or reassigned to a different team) —
+  // clear it back to unassigned rather than silently keep routing an asset to
+  // a team no longer in the deal. renderAllPanels() re-runs this on every
+  // team-set change, so a stale value never survives past the next render.
+  if (selMap.get(key) && !others.includes(selMap.get(key))) selMap.set(key, null);
+  const dest = document.createElement('select');
+  dest.className = 'dest-sel' + (selMap.get(key) ? '' : ' unset');
+  const placeholder = document.createElement('option');
+  placeholder.value = ''; placeholder.textContent = '→ choose destination…';
+  dest.appendChild(placeholder);
+  others.forEach(ab => {
+    const opt = document.createElement('option'); opt.value = ab; opt.textContent = `→ ${TEAMS[ab] || ab}`;
+    dest.appendChild(opt);
+  });
+  dest.value = selMap.get(key) || '';
+  dest.addEventListener('click', e => e.stopPropagation());
+  dest.addEventListener('change', () => {
+    selMap.set(key, dest.value || null);
+    dest.classList.toggle('unset', !dest.value);
+    updateCheckBtn();
+  });
+  return dest;
+}
+
+function renderPanel(slotId, abbr, yr) {
+  const body = document.getElementById(`body-${slotId}`);
   body.innerHTML = '';
   const roster = rosterData[abbr] || [];
   const picks = picksData[abbr] || [];
+  const others = otherAssignedTeams(slotId);
+  const sel = selections[slotId];
 
   if (!roster.length && !picks.length) { body.innerHTML = '<div class="panel-empty">No roster data.</div>'; return; }
 
@@ -517,12 +649,13 @@ function renderPanel(side, abbr, yr) {
     const lbl = document.createElement('div'); lbl.className = 'panel-section-label'; lbl.textContent = 'Players'; body.appendChild(lbl);
     roster.forEach(p => {
       const row = document.createElement('label');
-      row.className = 'trade-row' + (selections[side].players.has(p.slug) ? ' checked' : '');
-      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selections[side].players.has(p.slug);
+      row.className = 'trade-row' + (sel.players.has(p.slug) ? ' checked' : '');
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = sel.players.has(p.slug);
       cb.addEventListener('change', () => {
-        selections[side].players[cb.checked ? 'add' : 'delete'](p.slug);
+        if (cb.checked) sel.players.set(p.slug, sel.players.get(p.slug) || null);
+        else sel.players.delete(p.slug);
         row.classList.toggle('checked', cb.checked);
-        if (p.capHold) renderPanel(side, abbr, yr);   // toggle the sign-and-trade mini-form
+        renderPanel(slotId, abbr, yr);   // toggle dest-select / sign-and-trade mini-form
         updateCheckBtn();
       });
       const badge = document.createElement('span'); badge.className = `type-badge ${typeBadgeClass(p)}`; badge.textContent = typeLabel(p);
@@ -532,8 +665,10 @@ function renderPanel(side, abbr, yr) {
       row.appendChild(cb); row.appendChild(badge); row.appendChild(nameSpan); row.appendChild(meta);
       body.appendChild(row);
 
-      if (p.capHold && selections[side].players.has(p.slug)) {
-        body.appendChild(buildSignForm(p.slug, side, abbr, yr));
+      if (sel.players.has(p.slug)) {
+        const dest = buildDestSelect(slotId, others, sel.players, p.slug);
+        if (dest) body.appendChild(dest);
+        if (p.capHold) body.appendChild(buildSignForm(p.slug, slotId, abbr, yr));
       }
     });
   }
@@ -543,16 +678,23 @@ function renderPanel(side, abbr, yr) {
     picks.forEach(p => {
       const key = pickKey(p);
       const row = document.createElement('label');
-      row.className = 'trade-row' + (selections[side].picks.has(key) ? ' checked' : '');
-      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selections[side].picks.has(key);
+      row.className = 'trade-row' + (sel.picks.has(key) ? ' checked' : '');
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = sel.picks.has(key);
       cb.addEventListener('change', () => {
-        selections[side].picks[cb.checked ? 'add' : 'delete'](key);
+        if (cb.checked) sel.picks.set(key, sel.picks.get(key) || null);
+        else sel.picks.delete(key);
         row.classList.toggle('checked', cb.checked);
+        renderPanel(slotId, abbr, yr);
         updateCheckBtn();
       });
       const nameSpan = document.createElement('span'); nameSpan.className = 'trade-row-name'; nameSpan.textContent = pickLabel(p, abbr);
       row.appendChild(cb); row.appendChild(nameSpan);
       body.appendChild(row);
+
+      if (sel.picks.has(key)) {
+        const dest = buildDestSelect(slotId, others, sel.picks, key);
+        if (dest) body.appendChild(dest);
+      }
     });
   }
 }
@@ -574,38 +716,73 @@ function setStatus(msg, cls) {
   el.textContent = msg;
 }
 
-// Build one trade leg (from → to) from the current selections on one side.
-function buildTransfer(from, to, side) {
-  const assets = [];
-  selections[side].players.forEach(slug => assets.push({ type: 'player', slug }));
-  selections[side].picks.forEach(key => {
-    const p = (picksData[from] || []).find(x => pickKey(x) === key);
-    if (!p) return;
-    const asset = { type: 'pick', year: p.year, round: p.round, orig: p.orig };
-    const leafId = pickLeafId(p, from);
-    if (leafId) asset.leaf_id = leafId;
-    assets.push(asset);
+// Groups every selected asset by (from_team, to_team) into the flat
+// TradeTransfer list the API expects — the same shape whether it's a
+// two-team swap or an N-team deal, since the backend itself has no
+// team-count assumption (routers/transactions.py TradeTransfer is just
+// {from_team, to_team, assets}).
+function buildTransfers() {
+  const grouped = new Map();   // "FROM→TO" -> assets[]
+  teamSlots.forEach(slotId => {
+    const from = slotTeam[slotId];
+    if (!from) return;
+    const sel = selections[slotId];
+    sel.players.forEach((destAbbr, slug) => {
+      if (!destAbbr) return;
+      const key = `${from}→${destAbbr}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push({ type: 'player', slug });
+    });
+    sel.picks.forEach((destAbbr, pkey) => {
+      if (!destAbbr) return;
+      const p = (picksData[from] || []).find(x => pickKey(x) === pkey);
+      if (!p) return;
+      const asset = { type: 'pick', year: p.year, round: p.round, orig: p.orig };
+      const leafId = pickLeafId(p, from);
+      if (leafId) asset.leaf_id = leafId;
+      const key = `${from}→${destAbbr}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(asset);
+    });
   });
-  return { from_team: from, to_team: to, assets };
+  return Array.from(grouped.entries()).map(([key, assets]) => {
+    const [from_team, to_team] = key.split('→');
+    return { from_team, to_team, assets };
+  });
+}
+
+// Any checked asset whose destination is still unset (only possible with 3+
+// teams, where it isn't auto-assigned) — the trade can't be evaluated until
+// every one is resolved, since the server has no way to guess.
+function unassignedCount() {
+  let n = 0;
+  teamSlots.forEach(slotId => {
+    if (!slotTeam[slotId]) return;
+    const sel = selections[slotId];
+    sel.players.forEach(dest => { if (!dest) n++; });
+    sel.picks.forEach(dest => { if (!dest) n++; });
+  });
+  return n;
 }
 
 async function runCheck() {
-  const abbA = document.getElementById('sel-a').value;
-  const abbB = document.getElementById('sel-b').value;
   const el = document.getElementById('results');
+  const abbrs = teamSlots.map(id => slotTeam[id]).filter(Boolean);
 
-  if (!abbA || !abbB || abbA === abbB) {
+  if (abbrs.length < 2) {
     el.style.display = 'none';
-    setStatus('Select two teams to evaluate a trade.');
+    setStatus('Select at least two teams to evaluate a trade.');
     return;
   }
 
-  // Team A sends what's selected on side A to B, and vice versa.
-  const transfers = [
-    buildTransfer(abbA, abbB, 'a'),
-    buildTransfer(abbB, abbA, 'b'),
-  ].filter(t => t.assets.length);
+  const missing = unassignedCount();
+  if (missing > 0) {
+    el.style.display = 'none';
+    setStatus(`Assign a destination for ${missing} selected asset${missing > 1 ? 's' : ''} (look for the "→" dropdown).`);
+    return;
+  }
 
+  const transfers = buildTransfers();
   if (!transfers.length) {
     el.style.display = 'none';
     setStatus('Pick at least one player or pick to move.');
@@ -618,21 +795,25 @@ async function runCheck() {
   // fields the validator expects (§ 4.1a: mutually exclusive per team).
   const exceptions = {};
   const tpe_usage = {};
-  [[abbA, 'exc-a'], [abbB, 'exc-b']].forEach(([abbr, id]) => {
-    const val = document.getElementById(id).value;
+  teamSlots.forEach(slotId => {
+    const abbr = slotTeam[slotId];
+    if (!abbr) return;
+    const val = document.getElementById(`exc-${slotId}`).value;
     if (!val) return;
     if (val.startsWith('tpe:')) tpe_usage[abbr] = val.slice(4);
     else exceptions[abbr] = val;
   });
 
-  // Sign-and-trade: any checked cap-hold player (either side) with terms
+  // Sign-and-trade: any checked cap-hold player (any team) with terms
   // entered becomes an S&T leg — auto-detected from the roster data itself,
   // not a separate toggle, per how this page is meant to work.
   const sign_and_trade_players = [];
   const sign_and_trade_signings = [];
-  [['a', abbA], ['b', abbB]].forEach(([side, abbr]) => {
+  teamSlots.forEach(slotId => {
+    const abbr = slotTeam[slotId];
+    if (!abbr) return;
     (rosterData[abbr] || []).forEach(p => {
-      if (!p.capHold || !selections[side].players.has(p.slug)) return;
+      if (!p.capHold || !selections[slotId].players.has(p.slug)) return;
       const terms = ensureSignTerms(p.slug);
       const salaries = {};
       let season = curYr();
@@ -668,7 +849,7 @@ async function runCheck() {
       return;
     }
     setStatus('');
-    renderResults(abbA, abbB, await res.json());
+    renderResults(abbrs, await res.json());
   } catch (e) {
     if (seq !== validateSeq) return;
     el.style.display = 'none';
@@ -676,7 +857,7 @@ async function runCheck() {
   }
 }
 
-function renderResults(abbA, abbB, data) {
+function renderResults(abbrs, data) {
   const el = document.getElementById('results');
   el.style.display = '';
 
@@ -684,7 +865,7 @@ function renderResults(abbA, abbB, data) {
   const cl = fact_sheet.cap_levels || {};
   const ICON = { error: '✗', warning: '⚠', pass: '✓' };
 
-  const cols = [abbA, abbB].map(ab => factCol(ab, fact_sheet, cl)).join('');
+  const cols = abbrs.map(ab => factCol(ab, fact_sheet, cl)).join('');
 
   const checkRows = checks.map(c => {
     const kind = c.passed ? 'pass' : (c.level || 'error');
@@ -692,7 +873,7 @@ function renderResults(abbA, abbB, data) {
   }).join('') || '<div class="vc-row pass"><span class="vc-icon">✓</span><span>No constraints triggered.</span></div>';
 
   el.innerHTML = `
-    <div class="results-header">Trade Analysis · season ${fact_sheet.season || curYr()}</div>
+    <div class="results-header">Trade Analysis · season ${fact_sheet.season || curYr()} · ${abbrs.length} teams</div>
     <div class="results-grid">${cols}</div>
     <div class="vc-list">${checkRows}</div>
     <div class="results-summary">
