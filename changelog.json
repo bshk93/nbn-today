@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.0.356",
+    "date": "2026-07-20",
+    "changes": [
+      "Trade Simulator: draft picks now load from the live picks API instead of a flat CSV file that hadn't been written since May and had drifted badly out of date (still listing already-drafted picks as tradeable, missing acquired picks, and mislabeling swap/protection picks)",
+      "Trade Simulator: a pick's true origin team is now sent to the validator correctly, and contingent picks (swap/protection/ladder) that collapse to one shared claim across several distinct picks no longer show as multiple duplicate selectable rows"
+    ]
+  },
+  {
     "version": "0.0.355",
     "date": "2026-07-19",
     "changes": [

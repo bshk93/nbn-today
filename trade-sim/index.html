@@ -250,9 +250,9 @@ async function loadTeam(side, abbr) {
   selections[side] = { players: new Set(), picks: new Set() };
 
   const yr = curYr();
-  const [rosterText, picksText] = await Promise.all([
+  const [rosterText, picksJson] = await Promise.all([
     fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : '').catch(() => ''),
-    fetch(`/data/${abbr.toLowerCase()}-picks.csv`).then(r => r.ok ? r.text() : '').catch(() => ''),
+    fetch(`/api/picks/${abbr}`).then(r => r.ok ? r.json() : []).catch(() => []),
   ]);
 
   // Parse roster
@@ -263,12 +263,67 @@ async function loadTeam(side, abbr) {
     return { slug: r.SLUG, ovr: allOvr[r.SLUG] || 0, name: bio.name || r.SLUG, salary: sal, type: bio.type || 'player', pos: (bio.pos || []).join('/') };
   }).filter(r => r.type !== 'dead').sort((a, b) => b.ovr - a.ovr);
 
-  // Parse picks
-  const picks = picksText ? parseCSV(picksText) : [];
-  picksData[abbr] = picks.filter(p => p.TYPE === 'own');
+  // /api/picks/{team} already filters to picks this team holds a claim on
+  // (owner match or contingent candidate — see roster_picks.get_team_picks).
+  // Exclude picks already drafted (historical fact, not a tradeable asset)
+  // and legacy/frozen picks, which the transaction API itself refuses to
+  // re-trade (routers/transactions.py _check_retrade_allowed).
+  picksData[abbr] = dedupeByGroup(
+    picksJson.filter(p => !p.player && !p.legacy && !p.frozen),
+    abbr
+  ).sort((a, b) => a.year - b.year || a.round - b.round);
 
   renderPanel(side, abbr, yr);
   updateCheckBtn();
+}
+
+// Stable identity for a pick — (year, round, orig) never changes even as the
+// pick is re-traded, unlike TEAM/OWNER strings.
+function pickKey(p) { return `${p.year}-${p.round}-${p.orig}`; }
+
+// A swap group / binary chain spans N distinct real picks (one per member
+// team) that all share the SAME `leaves` list — the group's outcome, not any
+// one member's, is what's actually being described. Left un-collapsed, this
+// team's one real claim on the group would list once per member pick,
+// overstating what it can actually trade. Mirrors dedupeByGroup in
+// teams/team.js (kept in sync with it — same shape, same collapse rule).
+function dedupeByGroup(picks, teamAbbr) {
+  const groups = new Map();
+  const out = [];
+  picks.forEach(p => {
+    if (!p.group_id) { out.push(p); return; }
+    if (!groups.has(p.group_id)) groups.set(p.group_id, []);
+    groups.get(p.group_id).push(p);
+  });
+  groups.forEach(members => {
+    const leaves = members[0].leaves || [];
+    const myLeafCount = leaves.filter(l => l.team === teamAbbr).length;
+    if (myLeafCount > 1) { out.push(...members); return; }   // ambiguous which of the N is "ours" -- show them all
+    out.push(members.find(p => p.orig === teamAbbr) || members[0]);
+  });
+  return out;
+}
+
+// A contingent pick (swap/protection) may list this team on one of its
+// `leaves`. Real data has never shown a team occupying 2+ leaves of the same
+// pick (see picks-conveyance model notes) — if that ever changes, leave
+// leaf_id unset rather than guess; the server will reject with the specific
+// options to resubmit against, same as it does for a real ambiguous case.
+function pickLeafId(p, teamAbbr) {
+  const mine = (p.leaves || []).filter(l => l.team === teamAbbr);
+  return mine.length === 1 ? mine[0].leaf_id : null;
+}
+
+function pickLabel(p, teamAbbr) {
+  const rnd = p.round === 1 ? '1st' : '2nd';
+  const base = `${p.year} ${rnd}`;
+  const mine = (p.leaves || []).filter(l => l.team === teamAbbr);
+  if (mine.length) {
+    const desc = mine.map(l => l.description).join(' / ');
+    return `${base} · ${p.orig} orig · ${desc}`;
+  }
+  if (p.orig !== teamAbbr) return `${base} · from ${p.orig}`;
+  return base;
 }
 
 function renderPanel(side, abbr, yr) {
@@ -301,7 +356,7 @@ function renderPanel(side, abbr, yr) {
   if (picks.length) {
     const lbl = document.createElement('div'); lbl.className = 'panel-section-label'; lbl.textContent = 'Draft Picks'; body.appendChild(lbl);
     picks.forEach(p => {
-      const key = `${p.YEAR}-${p.ROUND}-${p.TEAM}`;
+      const key = pickKey(p);
       const row = document.createElement('label');
       row.className = 'trade-row' + (selections[side].picks.has(key) ? ' checked' : '');
       const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selections[side].picks.has(key);
@@ -310,7 +365,7 @@ function renderPanel(side, abbr, yr) {
         row.classList.toggle('checked', cb.checked);
         updateCheckBtn();
       });
-      const nameSpan = document.createElement('span'); nameSpan.className = 'trade-row-name'; nameSpan.textContent = `${p.YEAR} ${p.ROUND} · ${p.TEAM}`;
+      const nameSpan = document.createElement('span'); nameSpan.className = 'trade-row-name'; nameSpan.textContent = pickLabel(p, abbr);
       row.appendChild(cb); row.appendChild(nameSpan);
       body.appendChild(row);
     });
@@ -339,8 +394,12 @@ function buildTransfer(from, to, side) {
   const assets = [];
   selections[side].players.forEach(slug => assets.push({ type: 'player', slug }));
   selections[side].picks.forEach(key => {
-    const p = (picksData[from] || []).find(x => `${x.YEAR}-${x.ROUND}-${x.TEAM}` === key);
-    if (p) assets.push({ type: 'pick', year: +p.YEAR, round: String(p.ROUND).startsWith('1') ? 1 : 2, orig: from });
+    const p = (picksData[from] || []).find(x => pickKey(x) === key);
+    if (!p) return;
+    const asset = { type: 'pick', year: p.year, round: p.round, orig: p.orig };
+    const leafId = pickLeafId(p, from);
+    if (leafId) asset.leaf_id = leafId;
+    assets.push(asset);
   });
   return { from_team: from, to_team: to, assets };
 }
