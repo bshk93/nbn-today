@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.357",
+    "date": "2026-07-20",
+    "changes": [
+      "Trade Simulator: added Bi-Annual Exception and Trade Exception (TPE) options alongside the MLEs for absorbing incoming salary without a matching send-back",
+      "Trade Simulator: every roster row now shows its type (Player, Two-Way, Draft Rights, or Cap Hold) so it's clear what you're actually trading",
+      "Trade Simulator: checking a Cap Hold player reveals a sign-and-trade contract-terms form (years, salary schedule, Bird rights, funding source) and validates it against the real rulebook rules \u2014 contract length, the 5% raise cap, MLE exclusion, Base Year Compensation, and the receiving team's First Apron limit"
+    ]
+  },
+  {
     "version": "0.0.356",
     "date": "2026-07-20",
     "changes": [

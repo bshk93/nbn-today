@@ -641,7 +641,7 @@
           </div>
 
           <div class="doc-section" id="s3-14">
-            <h3 class="sec-title"><span class="sec-num">§ 3.14</span> Sign-and-Trade Rules <span class="badge badge-manual">👁 manual review</span></h3>
+            <h3 class="sec-title"><span class="sec-num">§ 3.14</span> Sign-and-Trade Rules <span class="badge badge-enforced">🔒 system-enforced</span> <span class="badge badge-manual">👁 manual review</span></h3>
             <p>A sign-and-trade (S&amp;T) is a transaction in which a team signs their own free agent and immediately trades them to another team. General S&amp;T salary-matching and apron restrictions are in §§ 4.2–4.3. The following additional rules apply:</p>
             <p><strong>Eligibility:</strong></p>
             <ul>
@@ -662,6 +662,7 @@
               <li>Up to <strong>3 different S&amp;T offers</strong> may be submitted for a single free agent across different acquiring teams.</li>
             </ul>
             <p><strong>Hard-cap effect:</strong> Using an S&amp;T hard-caps the receiving team at the First Apron (§ 1.4, Row C). The receiving team may not be above the First Apron at the conclusion of the trade (§ 4.3).</p>
+            <p><strong>What's system-enforced:</strong> when the trade builder is given the proposed contract terms, it checks contract length (3–4 years), the 5% raise cap, that the MLE doesn't fund any part of the deal, that the signing team hasn't already used the Taxpayer MLE this season, and the receiving-team First Apron restriction (§ 4.3) — plus the same hard-cap/roster-size checks a normal signing gets. <strong>Still manual review:</strong> Early Bird Rights (EQVFA) eligibility is self-declared by whoever submits the trade, not independently verified against real tenure history; and "the signing team must satisfy all applicable cap hold requirements" is enforced by the separate `sign` transaction's own validation, not by the trade check itself.</p>
           </div>
 
           <div class="doc-section" id="s3-15">
@@ -695,11 +696,11 @@
           </div>
 
           <div class="doc-section" id="s4-1a">
-            <h3 class="sec-title"><span class="sec-num">§ 4.1a</span> Trade Exceptions (TPE) <span class="badge badge-manual">👁 manual review</span></h3>
+            <h3 class="sec-title"><span class="sec-num">§ 4.1a</span> Trade Exceptions (TPE) <span class="badge badge-enforced">🔒 system-enforced</span> <span class="badge badge-manual">👁 manual review</span></h3>
             <p>When a team sends out more salary than it receives in a trade, it is credited with a <strong>Trade Exception</strong> equal to the difference (outgoing salary − incoming salary). The exception <strong>expires one year (365 days)</strong> from the date of the trade that created it; any unused balance is forfeited at expiration.</p>
             <p>A TPE may be used to acquire a player — via trade or waiver claim — whose salary is at or below the exception's <strong>remaining</strong> balance, without sending matching salary back. It cannot be combined with other exceptions, or with outgoing salary, in the same acquisition. Using a TPE does not itself trigger a hard cap.</p>
             <p><strong>Not itself tradeable</strong> (see § 4.1): a TPE stays with the team that banked it and cannot be packaged into another trade.</p>
-            <p>Creation and balance tracking are currently <strong>manual</strong> — entered from the league's roster/cap spreadsheet rather than computed automatically from trade transactions. The trade builder does not yet let a team draw on a TPE to absorb salary; that integration is planned but not yet built.</p>
+            <p>Creation and balance tracking are currently <strong>manual</strong> — entered from the league's roster/cap spreadsheet rather than computed automatically from trade transactions. <strong>Consuming a TPE in a trade is system-enforced</strong>: the trade builder checks the exception's remaining balance and expiration date, rejects combining it with another exception or with outgoing salary, and decrements the balance on submission.</p>
           </div>
 
           <div class="doc-section" id="s4-2">
@@ -722,10 +723,10 @@
 
           <div class="doc-section" id="s4-2a">
             <h3 class="sec-title"><span class="sec-num">§ 4.2a</span> MLE Trade Absorption <span class="badge badge-enforced">🔒 system-enforced</span></h3>
-            <p>A team may absorb incoming trade salary using its <strong>remaining season MLE balance</strong> (Non-Taxpayer MLE, Taxpayer MLE, or Room Exception) in lieu of matching outgoing salary. Under this path, incoming salary must not exceed the exception's <strong>remaining</strong> amount for the season (full amount minus any already used, from signings or prior trades) — outgoing salary sent back is not a factor.</p>
-            <p><strong>Eligibility mirrors free-agent use of the same exception</strong> (§§ 3.2–3.4): the Non-Taxpayer MLE is unavailable to a team at or above the First Apron (§ 1.5); the Taxpayer MLE is unavailable to a team at or above the Second Apron (§ 1.6, § 3.4); the Room Exception is available only to a team whose Team Salary is more than the full NTMLE amount below the Cap (§ 3.2). Eligibility is checked against the team's Team Salary <em>before</em> the trade.</p>
-            <p><strong>Hard-cap trigger:</strong> Using the NTMLE this way hard-caps the team at the <strong>First Apron</strong> for the remainder of the season, same as an NTMLE signing (§ 3.3). Using the TMLE hard-caps the team at the <strong>Second Apron</strong> (§ 3.4). The Room Exception triggers no hard cap.</p>
-            <p>This is distinct from cap-room absorption above and from using a TPE (§ 4.1a) — a team uses exactly one of the three for a given incoming player. MLE trade absorption draws from the team's shared season MLE balance, the same balance signings draw from (§ 3.1); it does not create or consume a Trade Exception.</p>
+            <p>A team may absorb incoming trade salary using its <strong>remaining season MLE balance</strong> (Non-Taxpayer MLE, Taxpayer MLE, Room Exception, or Bi-Annual Exception) in lieu of matching outgoing salary. Under this path, incoming salary must not exceed the exception's <strong>remaining</strong> amount for the season (full amount minus any already used, from signings or prior trades) — outgoing salary sent back is not a factor.</p>
+            <p><strong>Eligibility mirrors free-agent use of the same exception</strong> (§§ 3.2–3.5): the Non-Taxpayer MLE is unavailable to a team at or above the First Apron (§ 1.5); the Taxpayer MLE is unavailable to a team at or above the Second Apron (§ 1.6, § 3.4); the Room Exception is available only to a team whose Team Salary is more than the full NTMLE amount below the Cap (§ 3.2); the Bi-Annual Exception is unavailable to a team at or above the First Apron, cannot be used in consecutive salary cap years, and cannot be used if the team has already used cap space or the Room Exception that year (§ 3.5). Eligibility is checked against the team's Team Salary <em>before</em> the trade.</p>
+            <p><strong>Hard-cap trigger:</strong> Using the NTMLE this way hard-caps the team at the <strong>First Apron</strong> for the remainder of the season, same as an NTMLE signing (§ 3.3). Using the TMLE hard-caps the team at the <strong>Second Apron</strong> (§ 3.4). Using the BAE hard-caps the team at the <strong>First Apron</strong>, same as a BAE signing (§ 3.5). The Room Exception triggers no hard cap.</p>
+            <p>This is distinct from cap-room absorption above and from using a TPE (§ 4.1a) — a team uses exactly one of the four for a given incoming player. MLE trade absorption draws from the team's shared season MLE balance, the same balance signings draw from (§ 3.1); it does not create or consume a Trade Exception.</p>
           </div>
 
           <div class="doc-section" id="s4-3">

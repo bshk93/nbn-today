@@ -37,6 +37,23 @@
     .panel-empty { padding: 1.25rem 1rem; font-size: 0.82rem; color: #6b7280; text-align: center; }
     .panel-loading { padding: 1.25rem 1rem; font-size: 0.82rem; color: #6b7280; text-align: center; }
 
+    /* Player type badges */
+    .type-badge { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.35rem; border-radius: 4px; margin-right: 0.4rem; flex-shrink: 0; }
+    .type-player     { background: #1e293b; color: #93c5fd; }
+    .type-two-way     { background: #1e293b; color: #c4b5fd; }
+    .type-draft-rights { background: #1e293b; color: #fcd34d; }
+    .type-cap-hold    { background: #422006; color: #fb923c; }
+    .type-dead        { background: #450a0a; color: #f87171; }
+
+    /* Sign-and-trade mini-form */
+    .sat-form { margin: 0.2rem 1rem 0.6rem; padding: 0.6rem 0.7rem; background: #111827; border: 1px solid #f59e0b55; border-radius: 8px; }
+    .sat-form-title { font-size: 0.7rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .sat-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+    .sat-row label { font-size: 0.72rem; color: #9ca3af; flex-shrink: 0; }
+    .sat-row select, .sat-row input[type=number] { background: #1f2937; border: 1px solid #374151; border-radius: 5px; color: #f3f4f6; font-size: 0.78rem; padding: 0.25rem 0.4rem; font-family: inherit; }
+    .sat-salary-input { width: 110px; }
+    .sat-salary-label { font-size: 0.68rem; color: #6b7280; margin-right: 0.15rem; }
+
     /* Live status line */
     .check-status { text-align: center; font-size: 0.8rem; color: #6b7280; margin-bottom: 1.25rem; min-height: 1.1rem; }
     .check-status.evaluating { color: #9ca3af; }
@@ -104,6 +121,7 @@
         <option value="ntmle">Non-Taxpayer MLE</option>
         <option value="tmle">Taxpayer MLE</option>
         <option value="room_exception">Room Exception</option>
+        <option value="bae">Bi-Annual Exception</option>
       </select>
       <div class="panel-body" id="body-a"><div class="panel-empty">Select a team to see their roster.</div></div>
     </div>
@@ -118,6 +136,7 @@
         <option value="ntmle">Non-Taxpayer MLE</option>
         <option value="tmle">Taxpayer MLE</option>
         <option value="room_exception">Room Exception</option>
+        <option value="bae">Bi-Annual Exception</option>
       </select>
       <div class="panel-body" id="body-b"><div class="panel-empty">Select a team to see their roster.</div></div>
     </div>
@@ -146,7 +165,13 @@
     <p class="doc-note">A team's tier is set by its salary <em>before</em> the trade. Incoming ≤ outgoing always matches.</p>
 
     <h4>MLE trade absorption (§ 4.2a)</h4>
-    <p class="doc-note">Pick an exception under a team's selector to absorb that team's incoming salary against its remaining season MLE balance instead of matching outgoing salary — outgoing sent back doesn't matter under this path. Eligibility mirrors free-agent use of the same exception: NTMLE is blocked at/above the 1st Apron, TMLE at/above the 2nd Apron, and the Room Exception requires Team Salary more than a full NTMLE below the Cap. Using the NTMLE or TMLE this way triggers the same hard-cap-at-apron effect as a signing.</p>
+    <p class="doc-note">Pick an exception under a team's selector to absorb that team's incoming salary against its remaining season balance instead of matching outgoing salary — outgoing sent back doesn't matter under this path. Eligibility mirrors free-agent use of the same exception: NTMLE is blocked at/above the 1st Apron, TMLE at/above the 2nd Apron, the BAE at/above the 1st Apron (and unavailable in consecutive seasons, or alongside cap space/Room Exception use), and the Room Exception requires Team Salary more than a full NTMLE below the Cap. Using the NTMLE, TMLE, or BAE this way triggers the same hard-cap-at-apron effect as a signing.</p>
+
+    <h4>Trade Exceptions (§ 4.1a)</h4>
+    <p class="doc-note">If a team has an unexpired TPE on file, it appears as an extra option in the same selector ("TPE: $X remaining"). A TPE covers incoming salary up to its remaining balance with no outgoing salary required — but it cannot be combined with another exception, or with any outgoing salary from that team, in the same trade.</p>
+
+    <h4>Sign-and-trade (§ 3.14)</h4>
+    <p class="doc-note">Checking a <strong>Cap Hold</strong> player (a current free-agent hold — UFA/RFA — the team is carrying) reveals a contract-terms form: years (3–4), a per-year salary schedule, Bird-rights tier, and how the new deal is funded. Submitting with this filled in validates it as a sign-and-trade: contract length, the 5% raise cap (Bird's 8% doesn't apply here), that the MLE doesn't fund any part of it, that the signing team hasn't already used the Taxpayer MLE this season, Base Year Compensation where it applies, and that the receiving team ends up below the 1st Apron.</p>
 
     <h4>Other checks</h4>
     <ul>
@@ -176,9 +201,16 @@ const TEAMS = {
 
 let allBios = {};        // slug → bio (for roster display + salary labels in the picker)
 let allOvr = {};         // slug → current OVR (from ovr-history.json, the single source of truth)
-let rosterData = {};     // abbr → [{slug, ovr, name, salary, type}]
+let rosterData = {};     // abbr → [{slug, ovr, name, salary, type, capHold, pos}]
 let picksData = {};      // abbr → [{year, round, team, type}]
+let tpeData = {};        // abbr → [{id, remaining, amount, expires_date, ...}] (unexpired, GET /api/trade-exceptions/{team})
 let selections = { a: { players: new Set(), picks: new Set() }, b: { players: new Set(), picks: new Set() } };
+
+// Sign-and-trade contract terms the user has entered for a cap-hold player,
+// keyed by slug (a slug only ever sits on one side's roster, so this doesn't
+// need to be split by side). Persists across re-renders/unchecks so typed-in
+// terms aren't lost if the row is toggled off and back on.
+let signTerms = {};      // slug → { years, salaries: [y1,y2,...], birdType, method }
 
 // The current league year (cap/contract clock). Set from GET /api/league-year at
 // page load; falls back to the date-based season if that fetch fails.
@@ -206,6 +238,30 @@ function curYr() {
   if (LEAGUE_YEAR) return LEAGUE_YEAR;
   const now = new Date(), y = now.getFullYear() % 100, m = now.getMonth() + 1;
   return m < 7 ? `${String(y-1).padStart(2,'0')}-${String(y).padStart(2,'0')}` : `${String(y).padStart(2,'0')}-${String((y+1)%100).padStart(2,'0')}`;
+}
+
+// 'YY-YY' -> the following season, e.g. '26-27' -> '27-28'.
+function seasonAfter(s) {
+  const [a, b] = s.split('-').map(Number);
+  return `${String((a + 1) % 100).padStart(2, '0')}-${String((b + 1) % 100).padStart(2, '0')}`;
+}
+
+const _FA_HOLD_TYPES = ['UFA', 'RFA'];
+
+function typeLabel(p) {
+  if (p.capHold) return `Cap Hold (${p.capHold})`;
+  if (p.type === 'two-way') return 'Two-Way';
+  if (p.type === 'draft-rights') return 'Draft Rights';
+  if (p.type === 'dead') return 'Dead Cap';
+  return 'Player';
+}
+
+function typeBadgeClass(p) {
+  if (p.capHold) return 'type-cap-hold';
+  if (p.type === 'two-way') return 'type-two-way';
+  if (p.type === 'draft-rights') return 'type-draft-rights';
+  if (p.type === 'dead') return 'type-dead';
+  return 'type-player';
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -250,17 +306,25 @@ async function loadTeam(side, abbr) {
   selections[side] = { players: new Set(), picks: new Set() };
 
   const yr = curYr();
-  const [rosterText, picksJson] = await Promise.all([
+  const [rosterText, picksJson, tpeJson] = await Promise.all([
     fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : '').catch(() => ''),
     fetch(`/api/picks/${abbr}`).then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []).catch(() => []),
   ]);
 
-  // Parse roster
+  // Parse roster. A "cap hold" (§ 4.1a's ex-holds carve-out, § 3.10) is a
+  // roster row whose CURRENT-season cap_holds entry is UFA/RFA — the same
+  // definition _compute_team_salary_ex_holds uses server-side. It's not tied
+  // to bio.type: a lapsed contract's type often stays "player" until an
+  // explicit sign/renounce/release transaction touches it (see cap-holds
+  // audit in the trade-sim work), so type alone would miss real cap holds.
   const roster = rosterText ? parseCSV(rosterText) : [];
   rosterData[abbr] = roster.map(r => {
     const bio = allBios[r.SLUG] || {};
     const sal = parseSalaryNum((bio.salaries || {})[yr]);
-    return { slug: r.SLUG, ovr: allOvr[r.SLUG] || 0, name: bio.name || r.SLUG, salary: sal, type: bio.type || 'player', pos: (bio.pos || []).join('/') };
+    const holdType = (bio.cap_holds || {})[yr];
+    const capHold = _FA_HOLD_TYPES.includes(holdType) ? holdType : null;
+    return { slug: r.SLUG, ovr: allOvr[r.SLUG] || 0, name: bio.name || r.SLUG, salary: sal, type: bio.type || 'player', capHold, pos: (bio.pos || []).join('/') };
   }).filter(r => r.type !== 'dead').sort((a, b) => b.ovr - a.ovr);
 
   // /api/picks/{team} already filters to picks this team holds a claim on
@@ -273,8 +337,28 @@ async function loadTeam(side, abbr) {
     abbr
   ).sort((a, b) => a.year - b.year || a.round - b.round);
 
+  // Trade Exceptions (§ 4.1a) this team can draw on right now — the API
+  // already computes `expired`; a zero-remaining TPE is spent, not worth
+  // offering. Appended as extra options on the same exception <select>
+  // since a team uses at most one absorption method per trade either way.
+  tpeData[abbr] = (Array.isArray(tpeJson) ? tpeJson : []).filter(e => !e.expired && e.remaining > 0);
+  populateExceptionSelect(side, abbr);
+
   renderPanel(side, abbr, yr);
   updateCheckBtn();
+}
+
+function populateExceptionSelect(side, abbr) {
+  const sel = document.getElementById(`exc-${side}`);
+  // Drop any previously-appended TPE options (identified by the tpe: prefix),
+  // keep the fixed ntmle/tmle/room_exception/bae options untouched.
+  Array.from(sel.options).forEach(o => { if (o.value.startsWith('tpe:')) o.remove(); });
+  (tpeData[abbr] || []).forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = `tpe:${e.id}`;
+    opt.textContent = `TPE: ${fmtM(e.remaining)} remaining (exp. ${e.expires_date})`;
+    sel.appendChild(opt);
+  });
 }
 
 // Stable identity for a pick — (year, round, orig) never changes even as the
@@ -326,6 +410,101 @@ function pickLabel(p, teamAbbr) {
   return base;
 }
 
+// Default Year-1 salary for a fresh sign-and-trade form: the player's most
+// recent real (past-season) salary on file, so the form doesn't open on $0.
+function defaultYear1(slug) {
+  const bio = allBios[slug] || {};
+  const seasons = Object.keys(bio.salaries || {}).filter(s => s < curYr()).sort();
+  return seasons.length ? parseSalaryNum(bio.salaries[seasons[seasons.length - 1]]) : 3000000;
+}
+
+function ensureSignTerms(slug) {
+  if (signTerms[slug]) return signTerms[slug];
+  const y1 = defaultYear1(slug) || 3000000;
+  const maxStep = Math.round(y1 * 0.05);
+  signTerms[slug] = {
+    years: 3,
+    salaries: [y1, y1 + maxStep, y1 + 2 * maxStep],
+    birdType: 'EQVFA',
+    method: '',
+  };
+  return signTerms[slug];
+}
+
+// Builds the inline "Sign-and-Trade Terms" mini-form shown under a checked
+// cap-hold row. Reuses SignDetails' exact shape (player/team/contract/
+// signing_method/bird_rights_type) when the request body is assembled in
+// runCheck(), so the server validates the real § 3.14 rules (contract
+// length, 5% raise cap, MLE exclusion, Bird-rights eligibility) against
+// exactly what's entered here.
+function buildSignForm(slug, side, teamAbbr, yr) {
+  const terms = ensureSignTerms(slug);
+  const wrap = document.createElement('div');
+  wrap.className = 'sat-form';
+
+  const title = document.createElement('div');
+  title.className = 'sat-form-title';
+  title.textContent = `Sign-and-Trade Terms — ${displayName((allBios[slug] || {}).name || slug)}`;
+  wrap.appendChild(title);
+
+  const row1 = document.createElement('div'); row1.className = 'sat-row';
+  const yrsLabel = document.createElement('label'); yrsLabel.textContent = 'Years:';
+  const yrsSel = document.createElement('select');
+  [3, 4].forEach(n => {
+    const opt = document.createElement('option'); opt.value = n; opt.textContent = `${n} years`;
+    if (terms.years === n) opt.selected = true;
+    yrsSel.appendChild(opt);
+  });
+  yrsSel.addEventListener('change', () => {
+    const n = +yrsSel.value;
+    const maxStep = Math.round(terms.salaries[0] * 0.05);
+    while (terms.salaries.length < n) terms.salaries.push(terms.salaries[terms.salaries.length - 1] + maxStep);
+    terms.salaries.length = n;
+    terms.years = n;
+    renderPanel(side, teamAbbr, yr);   // rebuild the salary-input row for the new year count
+    updateCheckBtn();
+  });
+
+  const birdLabel = document.createElement('label'); birdLabel.textContent = 'Bird rights:';
+  const birdSel = document.createElement('select');
+  [['EQVFA', 'Early Bird (EQVFA)'], ['QVFA', 'Full Bird (QVFA)']].forEach(([v, t]) => {
+    const opt = document.createElement('option'); opt.value = v; opt.textContent = t;
+    if (terms.birdType === v) opt.selected = true;
+    birdSel.appendChild(opt);
+  });
+  birdSel.addEventListener('change', () => { terms.birdType = birdSel.value; updateCheckBtn(); });
+
+  const methodLabel = document.createElement('label'); methodLabel.textContent = 'Funded by:';
+  const methodSel = document.createElement('select');
+  [['', 'Cap space'], ['room_exception', 'Room Exception'], ['bae', 'Bi-Annual Exception']].forEach(([v, t]) => {
+    const opt = document.createElement('option'); opt.value = v; opt.textContent = t;
+    if (terms.method === v) opt.selected = true;
+    methodSel.appendChild(opt);
+  });
+  methodSel.addEventListener('change', () => { terms.method = methodSel.value; updateCheckBtn(); });
+
+  row1.appendChild(yrsLabel); row1.appendChild(yrsSel);
+  row1.appendChild(birdLabel); row1.appendChild(birdSel);
+  row1.appendChild(methodLabel); row1.appendChild(methodSel);
+  wrap.appendChild(row1);
+
+  const row2 = document.createElement('div'); row2.className = 'sat-row';
+  let season = yr;
+  for (let i = 0; i < terms.years; i++) {
+    const sLabel = document.createElement('span'); sLabel.className = 'sat-salary-label'; sLabel.textContent = `${season}:`;
+    const input = document.createElement('input');
+    input.type = 'number'; input.className = 'sat-salary-input'; input.step = '1000';
+    input.value = terms.salaries[i] || 0;
+    const idx = i;
+    input.addEventListener('input', () => { terms.salaries[idx] = +input.value || 0; updateCheckBtn(); });
+    row2.appendChild(sLabel); row2.appendChild(input);
+    season = seasonAfter(season);
+  }
+  wrap.appendChild(row2);
+
+  return wrap;
+}
+
 function renderPanel(side, abbr, yr) {
   const body = document.getElementById(`body-${side}`);
   body.innerHTML = '';
@@ -343,13 +522,19 @@ function renderPanel(side, abbr, yr) {
       cb.addEventListener('change', () => {
         selections[side].players[cb.checked ? 'add' : 'delete'](p.slug);
         row.classList.toggle('checked', cb.checked);
+        if (p.capHold) renderPanel(side, abbr, yr);   // toggle the sign-and-trade mini-form
         updateCheckBtn();
       });
+      const badge = document.createElement('span'); badge.className = `type-badge ${typeBadgeClass(p)}`; badge.textContent = typeLabel(p);
       const nameSpan = document.createElement('span'); nameSpan.className = 'trade-row-name'; nameSpan.textContent = displayName(p.name);
       const meta = document.createElement('span'); meta.className = 'trade-row-meta';
       meta.textContent = `${p.pos ? p.pos + ' · ' : ''}${p.salary ? fmtM(p.salary) : 'no sal'}`;
-      row.appendChild(cb); row.appendChild(nameSpan); row.appendChild(meta);
+      row.appendChild(cb); row.appendChild(badge); row.appendChild(nameSpan); row.appendChild(meta);
       body.appendChild(row);
+
+      if (p.capHold && selections[side].players.has(p.slug)) {
+        body.appendChild(buildSignForm(p.slug, side, abbr, yr));
+      }
     });
   }
 
@@ -427,11 +612,41 @@ async function runCheck() {
     return;
   }
 
+  // The exception <select> carries either a fixed MLE-family value
+  // (ntmle/tmle/room_exception/bae) or a dynamically-appended "tpe:<id>"
+  // option (see populateExceptionSelect) — split those into the two request
+  // fields the validator expects (§ 4.1a: mutually exclusive per team).
   const exceptions = {};
-  const excA = document.getElementById('exc-a').value;
-  const excB = document.getElementById('exc-b').value;
-  if (excA) exceptions[abbA] = excA;
-  if (excB) exceptions[abbB] = excB;
+  const tpe_usage = {};
+  [[abbA, 'exc-a'], [abbB, 'exc-b']].forEach(([abbr, id]) => {
+    const val = document.getElementById(id).value;
+    if (!val) return;
+    if (val.startsWith('tpe:')) tpe_usage[abbr] = val.slice(4);
+    else exceptions[abbr] = val;
+  });
+
+  // Sign-and-trade: any checked cap-hold player (either side) with terms
+  // entered becomes an S&T leg — auto-detected from the roster data itself,
+  // not a separate toggle, per how this page is meant to work.
+  const sign_and_trade_players = [];
+  const sign_and_trade_signings = [];
+  [['a', abbA], ['b', abbB]].forEach(([side, abbr]) => {
+    (rosterData[abbr] || []).forEach(p => {
+      if (!p.capHold || !selections[side].players.has(p.slug)) return;
+      const terms = ensureSignTerms(p.slug);
+      const salaries = {};
+      let season = curYr();
+      for (let i = 0; i < terms.years; i++) { salaries[season] = `$${terms.salaries[i] || 0}`; season = seasonAfter(season); }
+      sign_and_trade_players.push(p.slug);
+      sign_and_trade_signings.push({
+        player: p.slug, team: abbr,
+        contract: { type: 'player', salaries },
+        signing_method: terms.method || null,
+        bird_rights_type: terms.birdType,
+      });
+    });
+  });
+  const is_sign_and_trade = sign_and_trade_players.length > 0;
 
   const seq = ++validateSeq;
   setStatus('Evaluating…', 'evaluating');
@@ -440,7 +655,10 @@ async function runCheck() {
     const res = await fetch('/api/validate/trade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transfers, exceptions }),
+      body: JSON.stringify({
+        transfers, exceptions, tpe_usage,
+        is_sign_and_trade, sign_and_trade_players, sign_and_trade_signings,
+      }),
     });
     if (seq !== validateSeq) return;   // a newer change superseded this one
     if (!res.ok) {
