@@ -18,6 +18,10 @@ Matching strategy (skipped entirely in --refresh mode, see below):
   5. Each matched player's page embeds a JSON-LD block with the full
      attribute list under Person.additionalProperty -- no HTML scraping
      needed for the values themselves.
+  6. Badges (name, tier, category) are NOT in the JSON-LD block -- they're
+     scraped from the page's "All Badges" tab, which only lists badges the
+     player has actually earned (no HTML parsing of tier icon overlays
+     needed; the tier is embedded in each badge's image filename).
 
 Player selection:
   --slugs a,b,c   Only these NBN slugs (looked up in player-bios.json;
@@ -34,11 +38,13 @@ Storage format:
   (append-only, oldest first), mirroring ovr-history.json's shape. Each
   snapshot also carries "2k_pos" (list of 2K position abbreviations, e.g.
   ["PG", "SG"], scraped from the page header -- not part of the JSON-LD
-  attribute block). A new snapshot is only appended when the 2K OVR, any
-  attribute value, or the position list has actually changed since the
-  last recorded snapshot for that player -- re-running --refresh with no
-  real-world rating change is a no-op, so the file only grows when
-  something meaningful happened.
+  attribute block) and "badges" (list of {name, tier, category} for every
+  badge the player currently has -- tier is one of Bronze/Silver/Gold/HOF/
+  Legendary). A new snapshot is only appended when the 2K OVR, any
+  attribute value, the position list, or the badge list has actually
+  changed since the last recorded snapshot for that player -- re-running
+  --refresh with no real-world rating change is a no-op, so the file only
+  grows when something meaningful happened.
 
 Writing:
   Dry run by default -- writes a preview JSON to scratch, does not touch
@@ -213,8 +219,35 @@ def extract_position(html):
     return POSITION_ABBR_RE.findall(m.group(1))
 
 
+# The "All Badges" tab lists every badge the player currently has (no
+# duplicates from the per-category tabs that follow it in the DOM, since we
+# slice out just this tab's content first). Tier lives in the image
+# filename, e.g. ".../deadeye-hof-badge.png" -- not in any visible text.
+BADGE_TAB_RE = re.compile(r'id="pills-all"(.*?)tab-pane fade', re.S)
+BADGE_CARD_RE = re.compile(
+    r'data-src="https://www\.2kratings\.com/wp-content/uploads/'
+    r'[a-z0-9\-]+-(hof|legendary|gold|silver|bronze)-badge\.png"'
+    r'[^>]*alt="[^"]+"[^>]*>.*?'
+    r'<h4[^>]*>([^<]+)</h4>\s*'
+    r'<span[^>]*>([^<]+)</span>',
+    re.S,
+)
+TIER_LABELS = {"hof": "HOF", "legendary": "Legendary", "gold": "Gold", "silver": "Silver", "bronze": "Bronze"}
+
+
+def extract_badges(html):
+    m = BADGE_TAB_RE.search(html)
+    if not m:
+        return []
+    seg = m.group(1)
+    badges = []
+    for tier, name, category in BADGE_CARD_RE.findall(seg):
+        badges.append({"name": name.strip(), "tier": TIER_LABELS[tier], "category": category.strip()})
+    return badges
+
+
 def fetch_2k_page(twok_slug):
-    """GET a 2kratings player page and extract (name, ovr, attrs, positions), rate-limited."""
+    """GET a 2kratings player page and extract (name, ovr, attrs, positions, badges), rate-limited."""
     url = f"https://www.2kratings.com/{twok_slug}"
     try:
         status, html = fetch(url)
@@ -222,38 +255,39 @@ def fetch_2k_page(twok_slug):
         status, html = None, ""
     time.sleep(REQUEST_DELAY)
     if status != 200:
-        return status, None, None, {}, []
+        return status, None, None, {}, [], []
     name, ovr, attrs = extract_attributes(html)
     positions = extract_position(html)
-    return status, name, ovr, attrs, positions
+    badges = extract_badges(html)
+    return status, name, ovr, attrs, positions, badges
 
 
 def match_player(slug, bio, index):
-    """Return (twok_slug, via, name, ovr, attrs, positions) or None if no match found."""
+    """Return (twok_slug, via, name, ovr, attrs, positions, badges) or None if no match found."""
     if slug in MANUAL_SLUG_OVERRIDES:
         override = MANUAL_SLUG_OVERRIDES[slug]
-        status, name, ovr, attrs, positions = fetch_2k_page(override)
+        status, name, ovr, attrs, positions, badges = fetch_2k_page(override)
         if status == 200:
-            return override, "manual-override", name, ovr, attrs, positions
+            return override, "manual-override", name, ovr, attrs, positions, badges
 
     cands, first_clean, last_clean = candidate_slugs(bio["name"])
 
     # Tier 1: sitemap index, zero network calls
     hit = next((c for c in cands if c in index), None)
     if hit:
-        status, name, ovr, attrs, positions = fetch_2k_page(hit)
+        status, name, ovr, attrs, positions, badges = fetch_2k_page(hit)
         if status == 200 and attrs:
-            return hit, "sitemap", name, ovr, attrs, positions
+            return hit, "sitemap", name, ovr, attrs, positions, badges
         if status == 200:
-            return hit, "sitemap-no-attrs", name, ovr, {}, positions
+            return hit, "sitemap-no-attrs", name, ovr, {}, positions, badges
 
     # Tier 2: live-probe the deterministic candidates directly
     for c in cands:
-        status, name, ovr, attrs, positions = fetch_2k_page(c)
+        status, name, ovr, attrs, positions, badges = fetch_2k_page(c)
         if status == 200 and name and last_clean in clean_slug(name):
             if attrs:
-                return c, "live-fallback", name, ovr, attrs, positions
-            return c, "live-fallback-no-attrs", name, ovr, {}, positions
+                return c, "live-fallback", name, ovr, attrs, positions, badges
+            return c, "live-fallback-no-attrs", name, ovr, {}, positions, badges
 
     # Tier 3: last-name lookup in sitemap index, filtered by nickname
     # containment (Herb/Herbert, Cam/Cameron, Rob/Robert, ...)
@@ -262,9 +296,9 @@ def match_player(slug, bio, index):
         cand_first = cand.rsplit("-", 1)[0].replace("-", "")
         return cand_first.startswith(first_clean) or first_clean.startswith(cand_first)
     for c in [s for s in same_last if nickname_match(s)]:
-        status, name, ovr, attrs, positions = fetch_2k_page(c)
+        status, name, ovr, attrs, positions, badges = fetch_2k_page(c)
         if status == 200 and name and last_clean in clean_slug(name) and attrs:
-            return c, "nickname-lastname-fallback", name, ovr, attrs, positions
+            return c, "nickname-lastname-fallback", name, ovr, attrs, positions, badges
 
     return None
 
@@ -296,13 +330,13 @@ def main():
         for i, slug in enumerate(targets):
             last = existing[slug][-1]
             twok_slug = last["source_slug"]
-            status, name, ovr, attrs, positions = fetch_2k_page(twok_slug)
+            status, name, ovr, attrs, positions, badges = fetch_2k_page(twok_slug)
             if status == 200 and attrs:
                 results[slug] = {
                     "date": time.strftime("%Y-%m-%d"),
                     "2k_name": name, "2k_ovr": ovr, "2k_pos": positions,
                     "source_slug": twok_slug, "match_method": last["match_method"],
-                    "attributes": attrs,
+                    "attributes": attrs, "badges": badges,
                 }
             else:
                 failures.append((slug, twok_slug, status))
@@ -342,7 +376,7 @@ def main():
             if m is None:
                 failures.append((slug, "no candidate matched (page may not exist yet)"))
                 continue
-            twok_slug, via, name, ovr, attrs, positions = m
+            twok_slug, via, name, ovr, attrs, positions, badges = m
             if not attrs:
                 failures.append((slug, f"found {twok_slug} but 2K hasn't published attributes yet"))
                 continue
@@ -350,7 +384,7 @@ def main():
                 "date": time.strftime("%Y-%m-%d"),
                 "2k_name": name, "2k_ovr": ovr, "2k_pos": positions,
                 "source_slug": twok_slug, "match_method": via,
-                "attributes": attrs,
+                "attributes": attrs, "badges": badges,
             }
             if (i + 1) % 25 == 0:
                 print(f"  ...{i + 1}/{len(targets)} processed")
@@ -375,7 +409,8 @@ def main():
             last = history[-1] if history else None
             if (last and last["2k_ovr"] == entry["2k_ovr"]
                     and last["attributes"] == entry["attributes"]
-                    and last.get("2k_pos") == entry["2k_pos"]):
+                    and last.get("2k_pos") == entry["2k_pos"]
+                    and last.get("badges") == entry["badges"]):
                 unchanged += 1
                 continue
             if last:
@@ -388,6 +423,20 @@ def main():
                     print(f"  CHANGED {slug}: {changed_attrs}")
                 if last.get("2k_pos") != entry["2k_pos"]:
                     print(f"  POSITION CHANGED {slug}: {last.get('2k_pos')} -> {entry['2k_pos']}")
+                if last.get("badges") != entry["badges"]:
+                    prev_names = {b["name"] for b in last.get("badges", [])}
+                    new_names = {b["name"] for b in entry["badges"]}
+                    gained = new_names - prev_names
+                    lost = prev_names - new_names
+                    prev_tiers = {b["name"]: b["tier"] for b in last.get("badges", [])}
+                    new_tiers = {b["name"]: b["tier"] for b in entry["badges"]}
+                    retiered = {n: (prev_tiers[n], new_tiers[n]) for n in (prev_names & new_names) if prev_tiers[n] != new_tiers[n]}
+                    if gained:
+                        print(f"  BADGES GAINED {slug}: {sorted(gained)}")
+                    if lost:
+                        print(f"  BADGES LOST {slug}: {sorted(lost)}")
+                    if retiered:
+                        print(f"  BADGES RETIERED {slug}: {retiered}")
             history.append(entry)
             merged[slug] = history
             appended += 1

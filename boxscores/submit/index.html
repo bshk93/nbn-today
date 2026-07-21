@@ -11,26 +11,26 @@
     main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
     h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.35rem; }
-    .subtitle { color: #9ca3af; font-size: 0.9rem; margin-bottom: 1.75rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.75rem; }
 
     /* Auth bar */
     .auth-bar {
       display: flex; align-items: center; gap: 0.75rem;
-      margin-bottom: 1.5rem; font-size: 0.85rem; color: #9ca3af;
+      margin-bottom: 1.5rem; font-size: 0.85rem; color: var(--text-muted);
     }
     .auth-bar button {
-      background: #374151; border: 1px solid #4b5563; color: #f3f4f6;
+      background: var(--border); border: 1px solid var(--text-dim); color: var(--text-primary);
       border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem;
     }
-    .auth-bar button:hover { background: #4b5563; }
+    .auth-bar button:hover { background: var(--text-dim); }
 
     /* Cards */
     .card {
-      background: #1f2937; border: 1px solid #374151; border-radius: 12px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
       padding: 1.5rem; margin-bottom: 1.5rem;
     }
     .card h2 {
-      font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: #e5e7eb;
+      font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--text-secondary);
     }
 
     /* Form grid */
@@ -41,21 +41,21 @@
     .form-field.full { grid-column: 1 / -1; }
     .form-field label {
       font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.05em; color: #9ca3af;
+      letter-spacing: 0.05em; color: var(--text-muted);
     }
     .form-field input, .form-field select {
-      background: #111827; border: 1px solid #374151; color: #f3f4f6;
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
       border-radius: 6px; padding: 0.5rem 0.625rem; font-size: 0.875rem;
       font-family: inherit; width: 100%;
     }
     .form-field input:focus, .form-field select:focus {
-      outline: none; border-color: #3b82f6;
+      outline: none; border-color: var(--accent);
     }
     .radio-group { display: flex; gap: 1rem; align-items: center; padding: 0.5rem 0; }
     .radio-group label {
       display: flex; align-items: center; gap: 0.4rem; font-size: 0.875rem;
       font-weight: normal; text-transform: none; letter-spacing: 0;
-      color: #f3f4f6; cursor: pointer;
+      color: var(--text-primary); cursor: pointer;
     }
 
     /* Playoff extra fields */
@@ -64,36 +64,36 @@
 
     /* Tab switcher */
     .tab-bar {
-      display: flex; border-bottom: 1px solid #374151;
+      display: flex; border-bottom: 1px solid var(--border);
       margin-bottom: 1.5rem; gap: 0;
     }
     .tab-btn {
       background: none; border: none; border-bottom: 2px solid transparent;
-      color: #9ca3af; font-size: 0.875rem; font-weight: 600;
+      color: var(--text-muted); font-size: 0.875rem; font-weight: 600;
       padding: 0.625rem 1.25rem; cursor: pointer; margin-bottom: -1px;
       font-family: inherit; transition: color 0.12s;
     }
-    .tab-btn:hover { color: #e5e7eb; }
-    .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+    .tab-btn:hover { color: var(--text-secondary); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
     /* Upload zones */
     .uploads { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
     .upload-zone {
-      border: 2px dashed #374151; border-radius: 10px; padding: 1.5rem;
+      border: 2px dashed var(--border); border-radius: 10px; padding: 1.5rem;
       text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s;
       position: relative;
     }
     .upload-zone:hover, .upload-zone.drag-over {
-      border-color: #3b82f6; background: rgba(59,130,246,0.05);
+      border-color: var(--accent); background: rgba(59,130,246,0.05);
     }
-    .upload-zone.has-file { border-color: #34d399; background: rgba(52,211,153,0.05); }
+    .upload-zone.has-file { border-color: var(--market-positive); background: rgba(52,211,153,0.05); }
     .upload-zone input[type=file] {
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
-    .upload-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 0.5rem; }
+    .upload-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem; }
     .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .upload-hint { font-size: 0.78rem; color: #6b7280; }
-    .upload-filename { font-size: 0.82rem; color: #34d399; margin-top: 0.35rem; font-weight: 500; }
+    .upload-hint { font-size: 0.78rem; color: var(--text-muted); }
+    .upload-filename { font-size: 0.82rem; color: var(--market-positive); margin-top: 0.35rem; font-weight: 500; }
 
     /* Preview image */
     .preview-img { max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 0.75rem; display: none; }
@@ -101,42 +101,42 @@
     /* Actions */
     .form-actions { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
     .btn-primary {
-      background: #2563eb; border: none; color: #fff; border-radius: 8px;
+      background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: 8px;
       padding: 0.55rem 1.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
       font-family: inherit;
     }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-primary:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
     .btn-success {
-      background: #065f46; border: 1px solid #059669; color: #6ee7b7; border-radius: 8px;
+      background: var(--market-positive-border); border: 1px solid #059669; color: var(--market-positive-light); border-radius: 8px;
       padding: 0.55rem 1.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
       font-family: inherit;
     }
     .btn-success:hover { background: #047857; }
-    .btn-success:disabled { background: #374151; color: #6b7280; cursor: not-allowed; border-color: #374151; }
+    .btn-success:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; border-color: var(--border); }
     .form-status { font-size: 0.85rem; }
-    .form-status.ok { color: #34d399; }
-    .form-status.err { color: #f87171; }
+    .form-status.ok { color: var(--market-positive); }
+    .form-status.err { color: var(--danger); }
 
     /* ── Manual Entry ── */
     .manual-load-bar {
       display: flex; align-items: center; gap: 1rem;
-      padding-bottom: 1.25rem; border-bottom: 1px solid #374151; margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;
     }
-    #manual-msg { font-size: 0.82rem; color: #9ca3af; }
+    #manual-msg { font-size: 0.82rem; color: var(--text-muted); }
 
     .team-entry-section { margin-bottom: 2rem; }
     .team-entry-header {
       display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;
     }
     .team-entry-header h3 { font-size: 1rem; font-weight: 700; }
-    .score-live-wrap { font-size: 0.8rem; color: #9ca3af; }
+    .score-live-wrap { font-size: 0.8rem; color: var(--text-muted); }
     .score-live {
-      font-size: 1.125rem; font-weight: 800; color: #3b82f6;
+      font-size: 1.125rem; font-weight: 800; color: var(--accent);
       background: rgba(59,130,246,0.12); border-radius: 6px;
       padding: 0.15rem 0.6rem; margin-left: 0.25rem;
     }
-    .min-live-wrap { font-size: 0.8rem; color: #9ca3af; }
+    .min-live-wrap { font-size: 0.8rem; color: var(--text-muted); }
     .min-live {
       font-size: 1.125rem; font-weight: 800; color: #10b981;
       background: rgba(16,185,129,0.12); border-radius: 6px;
@@ -148,35 +148,35 @@
 
     /* Cell error */
     td.cell-error { background: rgba(239,68,68,0.18) !important; }
-    td.cell-error .cell-input { color: #fca5a5; }
+    td.cell-error .cell-input { color: var(--danger-light); }
 
     /* Totals footer */
-    tfoot tr { border-top: 2px solid #374151; }
+    tfoot tr { border-top: 2px solid var(--border); }
     tfoot td { padding: 0.35rem 0.35rem; font-size: 0.75rem; font-weight: 700;
-      color: #9ca3af; text-align: center; }
-    tfoot td.totals-label { text-align: left; color: #6b7280; font-size: 0.7rem; text-transform: uppercase; }
+      color: var(--text-muted); text-align: center; }
+    tfoot td.totals-label { text-align: left; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; }
 
     /* Min live error state */
-    .min-live.stat-error { background: rgba(239,68,68,0.18); color: #fca5a5; }
+    .min-live.stat-error { background: rgba(239,68,68,0.18); color: var(--danger-light); }
 
     /* Drag handle */
     .drag-handle {
-      cursor: grab; color: #4b5563; font-size: 0.9rem; padding: 0 0.3rem;
+      cursor: grab; color: var(--text-dim); font-size: 0.9rem; padding: 0 0.3rem;
       user-select: none;
     }
     tr.dragging { opacity: 0.4; }
-    tr.drag-over-row { border-top: 2px solid #3b82f6; }
+    tr.drag-over-row { border-top: 2px solid var(--accent); }
 
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
     th {
       text-align: center; padding: 0.4rem 0.35rem; font-size: 0.7rem;
       font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-      color: #9ca3af; border-bottom: 1px solid #374151; white-space: nowrap;
+      color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap;
     }
     th.player-col { text-align: left; }
     td {
-      padding: 0.3rem 0.25rem; border-bottom: 1px solid #1f2937; text-align: center;
+      padding: 0.3rem 0.25rem; border-bottom: 1px solid var(--bg-card); text-align: center;
     }
     td.player-col { text-align: left; }
     tr:last-child td { border-bottom: none; }
@@ -184,49 +184,49 @@
 
     /* Editable cells */
     .cell-input {
-      background: transparent; border: none; color: #f3f4f6;
+      background: transparent; border: none; color: var(--text-primary);
       font-size: 0.8rem; font-family: inherit; text-align: center;
       width: 100%; min-width: 2rem; max-width: 3.5rem; padding: 0;
     }
-    .cell-input:focus { outline: 1px solid #3b82f6; border-radius: 3px; background: #111827; }
+    .cell-input:focus { outline: 1px solid var(--accent); border-radius: 3px; background: var(--bg-page); }
 
     select.player-select {
-      background: #111827; border: 1px solid #374151; color: #f3f4f6;
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
       border-radius: 4px; padding: 0.2rem 0.3rem; font-size: 0.78rem;
       font-family: inherit; width: 100%; min-width: 150px;
     }
-    select.player-select:focus { outline: none; border-color: #3b82f6; }
+    select.player-select:focus { outline: none; border-color: var(--accent); }
 
     /* Commit-in-progress banner */
     #commit-warning {
       display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
       background: #92400e; color: #fef3c7; text-align: center;
       padding: 0.6rem 1rem; font-size: 0.88rem; font-weight: 600;
-      border-bottom: 2px solid #d97706;
+      border-bottom: 2px solid var(--champion-border);
     }
     #commit-warning.visible { display: block; }
 
     /* Game queue */
     .queue-section {
-      margin-top: 2rem; border-top: 1px solid #374151; padding-top: 1.25rem;
+      margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.25rem;
     }
     .queue-header {
       display: flex; align-items: center; gap: 1rem; margin-bottom: 0.875rem;
     }
-    .queue-header h3 { font-size: 0.9rem; font-weight: 600; color: #e5e7eb; }
+    .queue-header h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); }
     .queue-badge {
-      background: #1e3a5f; color: #60a5fa; font-size: 0.72rem; font-weight: 700;
+      background: var(--accent-panel-bg); color: var(--link); font-size: 0.72rem; font-weight: 700;
       border-radius: 10px; padding: 0.1rem 0.55rem;
     }
-    .queue-empty { font-size: 0.82rem; color: #6b7280; }
+    .queue-empty { font-size: 0.82rem; color: var(--text-muted); }
     .queue-item {
       display: flex; align-items: center; gap: 0.75rem;
-      padding: 0.5rem 0; border-bottom: 1px solid #374151; font-size: 0.84rem;
+      padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.84rem;
     }
     .queue-item:last-of-type { border-bottom: none; }
     .queue-item-orphan { background: rgba(245,158,11,0.07); }
-    .queue-item-label { flex: 1; font-weight: 600; color: #e5e7eb; }
-    .queue-item-meta { color: #9ca3af; font-size: 0.78rem; }
+    .queue-item-label { flex: 1; font-weight: 600; color: var(--text-secondary); }
+    .queue-item-meta { color: var(--text-muted); font-size: 0.78rem; }
     .queue-actions {
       display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; flex-wrap: wrap;
     }
@@ -236,21 +236,21 @@
       font-family: inherit;
     }
     .btn-queue:hover { background: #6d28d9; }
-    .btn-queue:disabled { background: #374151; color: #6b7280; cursor: not-allowed; border-color: #374151; }
+    .btn-queue:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; border-color: var(--border); }
 
     .btn-add-row {
-      background: none; border: 1px dashed #374151; color: #9ca3af;
+      background: none; border: 1px dashed var(--border); color: var(--text-muted);
       border-radius: 6px; padding: 0.3rem 0.875rem; font-size: 0.78rem;
       cursor: pointer; margin-top: 0.5rem; font-family: inherit;
     }
-    .btn-add-row:hover { border-color: #3b82f6; color: #3b82f6; }
+    .btn-add-row:hover { border-color: var(--accent); color: var(--accent); }
 
     .btn-remove-row {
-      background: none; border: 1px solid #374151; color: #6b7280;
+      background: none; border: 1px solid var(--border); color: var(--text-muted);
       border-radius: 4px; width: 1.5rem; height: 1.5rem; cursor: pointer;
       font-size: 0.85rem; line-height: 1; font-family: inherit; padding: 0;
     }
-    .btn-remove-row:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.08); }
+    .btn-remove-row:hover { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.08); }
 
     /* Token modal */
     .modal-backdrop {
@@ -260,24 +260,24 @@
     }
     .modal-backdrop.open { display: flex; }
     .modal {
-      background: #1f2937; border: 1px solid #374151; border-radius: 12px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
       padding: 1.5rem; width: 360px; max-width: 90vw;
       display: flex; flex-direction: column; gap: 0.875rem;
     }
     .modal h3 { font-size: 1rem; font-weight: 600; }
     .modal input {
-      background: #111827; border: 1px solid #374151; color: #f3f4f6;
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
       border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
       font-family: monospace; width: 100%;
     }
-    .modal input:focus { outline: none; border-color: #3b82f6; }
+    .modal input:focus { outline: none; border-color: var(--accent); }
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
     .btn-modal-save {
-      background: #2563eb; border: none; color: #fff; border-radius: 6px;
+      background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: 6px;
       padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer;
     }
     .btn-modal-cancel {
-      background: #374151; border: none; color: #9ca3af; border-radius: 6px;
+      background: var(--border); border: none; color: var(--text-muted); border-radius: 6px;
       padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer;
     }
 
@@ -446,7 +446,7 @@
     </div>
 
     <!-- Build status -->
-    <div id="build-banner" style="background:#1f2937;border:1px solid #374151;border-radius:12px;padding:1rem 1.5rem;margin-bottom:1.5rem;font-size:0.85rem;display:none;align-items:center;gap:0.75rem;">
+    <div id="build-banner" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.5rem;margin-bottom:1.5rem;font-size:0.85rem;display:none;align-items:center;gap:0.75rem;">
       <span id="build-icon">⏳</span>
       <span id="build-msg">Rebuilding site stats…</span>
     </div>
@@ -454,7 +454,7 @@
     <!-- Pending games -->
     <div class="card" id="pending-card">
       <h2>Pending Games</h2>
-      <div id="pending-list"><span style="color:#6b7280;font-size:0.85rem;">Loading…</span></div>
+      <div id="pending-list"><span style="color:var(--text-muted);font-size:0.85rem;">Loading…</span></div>
     </div>
   </main>
 
@@ -1376,7 +1376,7 @@
           rowEl.remove();
           const el = document.getElementById("pending-list");
           if (!el.querySelector("div")) {
-            el.innerHTML = `<span style="color:#6b7280;font-size:0.85rem;">No pending games.</span>`;
+            el.innerHTML = `<span style="color:var(--text-muted);font-size:0.85rem;">No pending games.</span>`;
           }
         } else {
           const err = await res.json().catch(() => ({}));
@@ -1388,7 +1388,7 @@
     async function loadPending() {
       const el = document.getElementById("pending-list");
       if (!token) {
-        el.innerHTML = `<span style="color:#6b7280;font-size:0.85rem;">Set a token to see pending games.</span>`;
+        el.innerHTML = `<span style="color:var(--text-muted);font-size:0.85rem;">Set a token to see pending games.</span>`;
         return;
       }
       try {
@@ -1398,30 +1398,30 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const items = await res.json();
         if (items.length === 0) {
-          el.innerHTML = `<span style="color:#6b7280;font-size:0.85rem;">No pending games.</span>`;
+          el.innerHTML = `<span style="color:var(--text-muted);font-size:0.85rem;">No pending games.</span>`;
           return;
         }
         el.innerHTML = "";
         items.forEach(m => {
           const row = document.createElement("div");
-          row.style.cssText = "display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid #374151;font-size:0.85rem;";
+          row.style.cssText = "display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--border);font-size:0.85rem;";
           const ts = m.uploaded_at ? ` · ${relTime(m.uploaded_at)}` : "";
           row.innerHTML = `
-            <span style="font-weight:600;color:#e5e7eb;flex:1;min-width:0;">${m.home_team} vs ${m.away_team}</span>
-            <span style="color:#9ca3af;">${m.date} · ${m.season} ${m.game_type}</span>
-            <span style="color:#6b7280;font-size:0.75rem;">by ${m.uploaded_by || "?"}${ts}</span>`;
+            <span style="font-weight:600;color:var(--text-secondary);flex:1;min-width:0;">${m.home_team} vs ${m.away_team}</span>
+            <span style="color:var(--text-muted);">${m.date} · ${m.season} ${m.game_type}</span>
+            <span style="color:var(--text-muted);font-size:0.75rem;">by ${m.uploaded_by || "?"}${ts}</span>`;
           const btn = document.createElement("button");
           btn.title = "Remove from queue";
           btn.textContent = "×";
-          btn.style.cssText = "background:none;border:1px solid #374151;color:#6b7280;border-radius:4px;width:1.5rem;height:1.5rem;cursor:pointer;font-size:0.85rem;flex-shrink:0;line-height:1;";
-          btn.onmouseenter = () => { btn.style.borderColor="#ef4444"; btn.style.color="#ef4444"; btn.style.background="rgba(239,68,68,0.08)"; };
-          btn.onmouseleave = () => { btn.style.borderColor="#374151"; btn.style.color="#6b7280"; btn.style.background="none"; };
+          btn.style.cssText = "background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:4px;width:1.5rem;height:1.5rem;cursor:pointer;font-size:0.85rem;flex-shrink:0;line-height:1;";
+          btn.onmouseenter = () => { btn.style.borderColor="var(--danger)"; btn.style.color="var(--danger)"; btn.style.background="rgba(239,68,68,0.08)"; };
+          btn.onmouseleave = () => { btn.style.borderColor="var(--border)"; btn.style.color="var(--text-muted)"; btn.style.background="none"; };
           btn.onclick = () => removeGame(m.id, row);
           row.appendChild(btn);
           el.appendChild(row);
         });
       } catch (e) {
-        el.innerHTML = `<span style="color:#f87171;font-size:0.85rem;">${e.message}</span>`;
+        el.innerHTML = `<span style="color:var(--danger);font-size:0.85rem;">${e.message}</span>`;
       }
     }
 
@@ -1448,19 +1448,19 @@
         if (data.status === "running") {
           banner.style.display = "flex";
           icon.textContent = "⏳";
-          msg.style.color = "#9ca3af";
+          msg.style.color = "var(--text-muted)";
           msg.textContent = "Rebuilding site stats…";
           if (!buildPollInterval) buildPollInterval = setInterval(checkBuildStatus, 4000);
         } else if (data.status === "done") {
           banner.style.display = "flex";
           icon.textContent = "✓";
-          msg.style.color = "#34d399";
+          msg.style.color = "var(--market-positive)";
           msg.textContent = `Site stats updated (finished ${new Date(data.finished_at).toLocaleTimeString()})`;
           stopBuildPoll();
         } else if (data.status === "error") {
           banner.style.display = "flex";
           icon.textContent = "✗";
-          msg.style.color = "#f87171";
+          msg.style.color = "var(--danger)";
           msg.textContent = `Build failed: ${data.error || "unknown error"}`;
           stopBuildPoll();
         } else {

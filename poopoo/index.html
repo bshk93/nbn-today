@@ -20,7 +20,7 @@
     }
 
     header p {
-      color: #9ca3af;
+      color: var(--text-muted);
       margin-top: 0.4rem;
       font-size: 0.9rem;
     }
@@ -30,18 +30,18 @@
       gap: 1.25rem;
       flex-wrap: wrap;
       font-size: 0.8rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       margin: 0.9rem 0 1.4rem;
     }
 
-    .freshness b { color: #e5e7eb; }
+    .freshness b { color: var(--text-secondary); }
 
     .clean-banner {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 1rem 1.25rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       font-size: 0.9rem;
       margin-bottom: 1rem;
     }
@@ -49,8 +49,8 @@
     /* ── Legend / rubric ─────────────────────────────────────────── */
 
     .legend {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       margin-bottom: 1rem;
       overflow: hidden;
@@ -65,13 +65,13 @@
       padding: 0.85rem 1.1rem;
       font-weight: 600;
       font-size: 0.9rem;
-      color: #e5e7eb;
+      color: var(--text-secondary);
     }
 
     .legend summary::-webkit-details-marker { display: none; }
     .legend summary::after {
       content: "▾";
-      color: #9ca3af;
+      color: var(--text-muted);
       transition: transform 0.15s;
     }
     .legend[open] summary::after { transform: rotate(180deg); }
@@ -87,7 +87,7 @@
       display: flex;
       gap: 0.55rem;
       font-size: 0.8rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       line-height: 1.35;
     }
 
@@ -99,7 +99,7 @@
       margin-top: 0.35rem;
     }
 
-    .legend-item b { color: #e5e7eb; display: block; font-weight: 600; }
+    .legend-item b { color: var(--text-secondary); display: block; font-weight: 600; }
 
     /* ── League summary strip ────────────────────────────────────── */
 
@@ -120,7 +120,7 @@
       font-weight: 500;
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
-      color: #d1d5db;
+      color: var(--text-secondary);
     }
 
     .summary-pill .dot {
@@ -132,8 +132,8 @@
     /* ── Team cards ───────────────────────────────────────────────── */
 
     .team-card {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       margin-bottom: 0.75rem;
       overflow: hidden;
@@ -157,7 +157,7 @@
     .team-card summary .count {
       font-weight: 500;
       font-size: 0.8rem;
-      color: #f59e0b;
+      color: var(--warning);
       background: rgba(245,158,11,0.12);
       border-radius: 999px;
       padding: 0.15rem 0.65rem;
@@ -182,7 +182,7 @@
       border-radius: 999px;
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
-      color: #d1d5db;
+      color: var(--text-secondary);
       white-space: nowrap;
     }
 
@@ -194,7 +194,7 @@
     }
 
     .mag {
-      color: #9ca3af;
+      color: var(--text-muted);
       font-weight: 400;
     }
 
@@ -203,7 +203,7 @@
       text-align: right;
     }
     td.diff-mag {
-      color: #fca5a5;
+      color: var(--danger-light);
       font-variant-numeric: tabular-nums;
     }
 
@@ -221,13 +221,13 @@
 
     table.diff-table th, table.diff-table td {
       padding: 0.5rem 1.1rem;
-      border-top: 1px solid #374151;
+      border-top: 1px solid var(--border);
       text-align: left;
       white-space: nowrap;
     }
 
     table.diff-table th {
-      color: #9ca3af;
+      color: var(--text-muted);
       font-weight: 500;
       font-size: 0.75rem;
       text-transform: uppercase;
@@ -258,9 +258,9 @@
        diffs that actually need a human decision. */
     .grouped-row {
       padding: 0.65rem 1.1rem;
-      border-top: 1px solid #374151;
+      border-top: 1px solid var(--border);
       font-size: 0.82rem;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
 
     .grouped-row summary {
@@ -273,17 +273,17 @@
     .grouped-row summary::-webkit-details-marker { display: none; }
     .grouped-row summary::before {
       content: "▸";
-      color: #6b7280;
+      color: var(--text-muted);
     }
     .grouped-row[open] summary::before { content: "▾"; }
 
     .grouped-row .names {
       margin-top: 0.4rem;
       padding-left: 1.1rem;
-      color: #d1d5db;
+      color: var(--text-secondary);
     }
 
-    #status { padding: 1rem; color: #9ca3af; }
+    #status { padding: 1rem; color: var(--text-muted); }
 
     .team-link { color: inherit; text-decoration: none; }
     .team-link:hover { text-decoration: underline; }
@@ -294,14 +294,14 @@
       display: flex;
       gap: 0.4rem;
       margin-bottom: 1.1rem;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border);
     }
 
     .tab-btn {
       appearance: none;
       background: none;
       border: none;
-      color: #9ca3af;
+      color: var(--text-muted);
       font: inherit;
       font-weight: 600;
       font-size: 0.9rem;
@@ -311,17 +311,17 @@
       margin-bottom: -1px;
     }
 
-    .tab-btn:hover { color: #e5e7eb; }
+    .tab-btn:hover { color: var(--text-secondary); }
 
     .tab-btn.active {
-      color: #e5e7eb;
-      border-bottom-color: #a78bfa;
+      color: var(--text-secondary);
+      border-bottom-color: var(--purple);
     }
 
     /* ── Draft Picks tab ──────────────────────────────────────────── */
 
     .picks-intro {
-      color: #9ca3af;
+      color: var(--text-muted);
       font-size: 0.85rem;
       max-width: 68ch;
       margin: 0 0 1rem;
@@ -347,19 +347,19 @@
       gap: 0.45rem;
       padding: 0.4rem 0.8rem;
       border-radius: 8px;
-      border: 1px solid #374151;
-      background: #1f2937;
-      color: #9ca3af;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
       font-size: 0.8rem;
       cursor: pointer;
     }
 
-    .pchip:hover { border-color: #6b7280; }
+    .pchip:hover { border-color: var(--text-muted); }
 
     .pchip.active {
       border-color: var(--pc);
-      background: color-mix(in srgb, var(--pc) 14%, #1f2937);
-      color: #e5e7eb;
+      background: color-mix(in srgb, var(--pc) 14%, var(--bg-card));
+      color: var(--text-secondary);
     }
 
     .pchip .n {
@@ -389,15 +389,15 @@
       margin: 0;
       font-size: 0.92rem;
       font-weight: 700;
-      color: #e5e7eb;
+      color: var(--text-secondary);
     }
 
     .pick-group-head .count {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.72rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       background: rgba(255,255,255,0.05);
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       border-radius: 999px;
       padding: 0.1rem 0.5rem;
     }
@@ -405,15 +405,15 @@
     .pick-group-desc {
       margin: 0 0 0.7rem;
       font-size: 0.8rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       max-width: 74ch;
     }
 
     .pick-rows { display: flex; flex-direction: column; gap: 0.5rem; }
 
     .pick-row {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-left: 3px solid var(--pc);
       border-radius: 8px;
       padding: 0.7rem 0.9rem;
@@ -429,24 +429,24 @@
       gap: 0.1rem;
     }
 
-    .pick-row .pick-id .team { font-weight: 800; font-size: 0.9rem; color: #e5e7eb; }
-    .pick-row .pick-id .yr { font-size: 0.72rem; color: #9ca3af; }
+    .pick-row .pick-id .team { font-weight: 800; font-size: 0.9rem; color: var(--text-secondary); }
+    .pick-row .pick-id .yr { font-size: 0.72rem; color: var(--text-muted); }
 
     .pick-side .side-label {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.62rem;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #6b7280;
+      color: var(--text-muted);
       margin-bottom: 0.1rem;
     }
 
-    .pick-side .owner { font-weight: 700; font-size: 0.85rem; color: #e5e7eb; }
+    .pick-side .owner { font-weight: 700; font-size: 0.85rem; color: var(--text-secondary); }
     .pick-side .owner.diverge { color: var(--pc); }
 
     .pick-side .detail {
       font-size: 0.76rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       margin-top: 0.15rem;
       white-space: pre-line;
     }
@@ -459,33 +459,33 @@
       padding: 0.05rem 0.4rem;
       border-radius: 4px;
       background: rgba(255,255,255,0.05);
-      border: 1px solid #374151;
-      color: #9ca3af;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
     }
 
     .pick-footer {
       grid-column: 1 / -1;
       margin-top: 0.35rem;
       padding-top: 0.45rem;
-      border-top: 1px dashed #374151;
+      border-top: 1px dashed var(--border);
       font-size: 0.76rem;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
 
-    .pick-footer.investigate { color: #fca5a5; }
+    .pick-footer.investigate { color: var(--danger-light); }
 
     .pick-timeline { display: flex; flex-direction: column; gap: 0.15rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.7rem; }
-    .pick-timeline b { color: #e5e7eb; }
+    .pick-timeline b { color: var(--text-secondary); }
 
     .pick-group-collapse > summary {
       list-style: none;
       cursor: pointer;
-      color: #9ca3af;
+      color: var(--text-muted);
       font-size: 0.82rem;
       padding: 0.4rem 0;
     }
     .pick-group-collapse > summary::-webkit-details-marker { display: none; }
-    .pick-group-collapse > summary::before { content: "▸"; margin-right: 0.4rem; color: #6b7280; }
+    .pick-group-collapse > summary::before { content: "▸"; margin-right: 0.4rem; color: var(--text-muted); }
     .pick-group-collapse[open] > summary::before { content: "▾"; }
 
     @media (max-width: 720px) {
@@ -551,13 +551,13 @@
     // are real but systemic/known rather than a fresh, individually
     // actionable disagreement.
     const CATEGORY_META = {
-      aggregate:                { label: "Aggregate",         color: "#f87171", desc: "Guaranteed salary or hard-cap status disagrees at the team level." },
+      aggregate:                { label: "Aggregate",         color: "var(--danger)", desc: "Guaranteed salary or hard-cap status disagrees at the team level." },
       mle:                      { label: "MLE",               color: "#38bdf8", desc: "Mid-level exception usage disagrees." },
       bae:                      { label: "BAE",               color: "#38bdf8", desc: "Bi-annual exception availability disagrees." },
       tpe:                      { label: "TPE",               color: "#38bdf8", desc: "Trade exception remaining amount disagrees." },
-      player_salary:            { label: "Salary",            color: "#f87171", desc: "A signed player's real contract amount disagrees between sheet and site." },
-      player_hold:              { label: "Cap Hold",          color: "#fb923c", desc: "A free agent's cap-hold amount disagrees — both sides have computed a real number, they just don't match (e.g. a Bird-rights tier dispute)." },
-      player_hold_uncalculated: { label: "Hold Not Calculated", color: "#facc15", desc: "The site has never computed a real cap-hold amount for this free agent — it's sitting at a $1 placeholder. A known, systemic gap, not a fresh dispute.", grouped: true },
+      player_salary:            { label: "Salary",            color: "var(--danger)", desc: "A signed player's real contract amount disagrees between sheet and site." },
+      player_hold:              { label: "Cap Hold",          color: "var(--danger-alt)", desc: "A free agent's cap-hold amount disagrees — both sides have computed a real number, they just don't match (e.g. a Bird-rights tier dispute)." },
+      player_hold_uncalculated: { label: "Hold Not Calculated", color: "var(--gold-alt)", desc: "The site has never computed a real cap-hold amount for this free agent — it's sitting at a $1 placeholder. A known, systemic gap, not a fresh dispute.", grouped: true },
       player_status:            { label: "Status",            color: "#e879f9", desc: "One side treats this player as signed to a contract, the other as an unsigned free-agent hold." },
       player_team_conflict:     { label: "Team Conflict",     color: "#2dd4bf", desc: "Sheet and site disagree on which team currently holds this player's rights." },
       player_missing:           { label: "Missing on Site",   color: "#94a3b8", desc: "The sheet lists this player on this team; the site has no record of him on any roster." },
@@ -615,7 +615,7 @@
     }
 
     function catMeta(cat) {
-      return CATEGORY_META[cat] || { label: cat, color: '#9ca3af', desc: '' };
+      return CATEGORY_META[cat] || { label: cat, color: 'var(--text-muted)', desc: '' };
     }
 
     function badge(cat) {
@@ -732,7 +732,7 @@
         <details class="team-card">
           <summary>
             <div class="team-card-header-row">
-              <span><a href="/teams/${t.team}/" class="team-link" onclick="event.stopPropagation()">${TEAMS[t.team] || t.team}</a> <span style="color:#9ca3af;font-weight:400">(${t.team})</span></span>
+              <span><a href="/teams/${t.team}/" class="team-link" onclick="event.stopPropagation()">${TEAMS[t.team] || t.team}</a> <span style="color:var(--text-muted);font-weight:400">(${t.team})</span></span>
               <span class="count">${t.diff_count} diff${t.diff_count === 1 ? '' : 's'}</span>
             </div>
             <div class="team-card-breakdown">${teamBreakdown(t.diffs)}</div>
@@ -747,7 +747,7 @@
 
     const PICK_CATEGORY_META = {
       needs_investigation: {
-        label: "Needs a decision", color: "#f87171",
+        label: "Needs a decision", color: "var(--danger)",
         desc: "No overlap and no logged trade explains it, or the site's own ledger disagrees with its own transaction log.",
       },
       committee_lag: {
@@ -759,7 +759,7 @@
         desc: "Sheet lists a compound/conditional owner; site names one practical team but its notes describe the same split. No action needed.",
       },
       richness_gap: {
-        label: "Detail gap", color: "#facc15",
+        label: "Detail gap", color: "var(--gold-alt)",
         desc: "Owner matches on both sides, but the sheet's swap/protection mechanics aren't in the site's structured fields yet. Backlog, not a dispute.",
       },
     };
@@ -821,9 +821,9 @@
 
     function renderPicksChips(counts, cleanTotal) {
       const items = [
-        { key: 'all', label: 'All flagged', n: picksRowsGlobal.length, color: '#a78bfa' },
+        { key: 'all', label: 'All flagged', n: picksRowsGlobal.length, color: 'var(--purple)' },
         ...PICK_CATEGORY_ORDER.filter(k => counts[k]).map(k => ({ key: k, label: PICK_CATEGORY_META[k].label, n: counts[k], color: PICK_CATEGORY_META[k].color })),
-        { key: 'clean', label: 'Clean matches', n: cleanTotal, color: '#6b7280', disabled: true },
+        { key: 'clean', label: 'Clean matches', n: cleanTotal, color: 'var(--text-muted)', disabled: true },
       ];
       document.getElementById('picks-chips').innerHTML = items.map(it => `
         <button type="button" class="pchip ${picksFilter === it.key ? 'active' : ''}" data-key="${it.key}" style="--pc:${it.color}" ${it.disabled ? 'title="No action needed — not itemized below"' : ''}>
@@ -863,12 +863,12 @@
         return `<div class="pick-group">${head}${body}</div>`;
       }).join('');
 
-      document.getElementById('picks-groups').innerHTML = html || '<p style="color:#9ca3af;padding:1rem 0;">Nothing in this category.</p>';
+      document.getElementById('picks-groups').innerHTML = html || '<p style="color:var(--text-muted);padding:1rem 0;">Nothing in this category.</p>';
     }
 
     function renderPicksTab(picks) {
       if (!picks) {
-        document.getElementById('picks-groups').innerHTML = '<p style="color:#9ca3af;">No picks data yet — the job hasn\'t run with the new report.</p>';
+        document.getElementById('picks-groups').innerHTML = '<p style="color:var(--text-muted);">No picks data yet — the job hasn\'t run with the new report.</p>';
         return;
       }
       picksRowsGlobal = picks.rows;

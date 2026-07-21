@@ -1,26 +1,134 @@
-// Shared utilities: nav injection, site-wide player search, parseCSV
+// Shared utilities: nav injection, site-wide player search, parseCSV, theming
+
+// ── Theme ────────────────────────────────────────────────────────────────────
+//
+// Named themes, chosen from the picker nav.js injects into every page's
+// .nav. Each id here must have a matching :root[data-theme="..."] block in
+// css/theme.css (the bare :root there is "nbn-today", the default/fallback).
+// Applied as early as possible (top-level, not waiting for DOMContentLoaded)
+// to minimize a flash of the wrong theme on load.
+
+const THEMES = [
+  { id: 'nbn-today',       label: 'NBN Today',       icon: '🌙' },
+  { id: 'nbn-today-light', label: 'NBN Today Light', icon: '☀️' },
+  { id: 'lavender-rose',   label: 'Lavender Rose',   icon: '🌹' },
+];
+const THEME_STORAGE_KEY = 'nbn_theme_pref'; // 'auto' or one of THEMES[].id
+const DEFAULT_THEME_PREF = 'nbn-today'; // dark — used until a visitor explicitly picks something, incl. "Match System"
+
+function _systemTheme() {
+  return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)
+    ? 'nbn-today-light' : 'nbn-today';
+}
+
+function _themePref() {
+  try { return localStorage.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME_PREF; } catch { return DEFAULT_THEME_PREF; }
+}
+
+function _effectiveTheme() {
+  const pref = _themePref();
+  return pref === 'auto' ? _systemTheme() : pref;
+}
+
+function _applyTheme() {
+  document.documentElement.setAttribute('data-theme', _effectiveTheme());
+  _refreshThemeMenu();
+}
+
+function _setThemePref(pref) {
+  try { localStorage.setItem(THEME_STORAGE_KEY, pref); } catch { /* private browsing etc — theme just won't persist */ }
+  _applyTheme();
+}
+
+_applyTheme();
+
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+    if (_themePref() === 'auto') _applyTheme();
+  });
+}
+
+function _refreshThemeMenu() {
+  const menu = document.querySelector('.theme-menu');
+  const pref = _themePref();
+  if (menu) {
+    menu.querySelectorAll('.theme-menu-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.themeChoice === pref);
+    });
+  }
+  const btn = document.querySelector('.theme-btn');
+  if (btn) {
+    const active = THEMES.find(t => t.id === _effectiveTheme());
+    btn.textContent = active ? active.icon : '🎨';
+  }
+}
+
+function _buildThemePicker() {
+  const wrap = document.createElement('div');
+  wrap.className = 'theme-picker';
+
+  const btn = document.createElement('button');
+  btn.className = 'theme-btn';
+  btn.setAttribute('aria-label', 'Choose theme');
+  btn.setAttribute('title', 'Choose theme');
+
+  const menu = document.createElement('div');
+  menu.className = 'theme-menu';
+
+  const choices = [{ id: 'auto', label: 'Match System', icon: '🖥️' }, ...THEMES];
+  choices.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'theme-menu-item';
+    item.dataset.themeChoice = c.id;
+    item.innerHTML = `<span class="theme-menu-icon">${c.icon}</span><span class="theme-menu-label">${c.label}</span><span class="theme-menu-check">✓</span>`;
+    item.addEventListener('click', () => { _setThemePref(c.id); menu.classList.remove('open'); });
+    menu.appendChild(item);
+  });
+
+  btn.addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('open'); });
+
+  wrap.appendChild(btn);
+  wrap.appendChild(menu);
+  return wrap;
+}
+
+document.addEventListener('click', e => {
+  const menu = document.querySelector('.theme-menu');
+  if (menu && menu.classList.contains('open') && !menu.parentElement.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
 
 // ── Nav injection ────────────────────────────────────────────────────────────
 
 document.addEventListener('keydown', function (e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
-  if (e.key === 'Escape') closeSearch();
+  if (e.key === 'Escape') { closeSearch(); document.querySelector('.theme-menu')?.classList.remove('open'); }
 });
 
 function _initNav() {
   const nav = document.querySelector('.nav');
   if (!nav || nav.id === 'nav') return;
-  if (!nav.children.length && !nav.textContent.trim()) {
+  if (!nav.children.length && !nav.textContent.trim() && !nav.hasAttribute('data-no-home')) {
     nav.innerHTML = '<a href="/">← Home</a>';
   }
-  if (!nav.querySelector('.search-btn')) {
-    const btn = document.createElement('button');
-    btn.className = 'search-btn';
-    btn.setAttribute('aria-label', 'Search (Ctrl+K)');
-    btn.setAttribute('title', 'Search (Ctrl+K)');
-    btn.textContent = '⌕';
-    btn.addEventListener('click', () => openSearch());
-    nav.appendChild(btn);
+  if (!nav.querySelector('.nav-actions')) {
+    const actions = document.createElement('div');
+    actions.className = 'nav-actions';
+
+    if (!nav.hasAttribute('data-no-search')) {
+      const btn = document.createElement('button');
+      btn.className = 'search-btn';
+      btn.setAttribute('aria-label', 'Search (Ctrl+K)');
+      btn.setAttribute('title', 'Search (Ctrl+K)');
+      btn.textContent = '⌕';
+      btn.addEventListener('click', () => openSearch());
+      actions.appendChild(btn);
+    }
+
+    actions.appendChild(_buildThemePicker());
+    nav.appendChild(actions);
+    _refreshThemeMenu();
   }
 }
 

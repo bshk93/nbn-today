@@ -10,18 +10,18 @@
     .page { max-width: 900px; margin: 0 auto; }
     header { margin-bottom: 2rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
     .auth-bar {
       display: flex; align-items: center; gap: 0.75rem;
-      margin-bottom: 1.25rem; font-size: 0.85rem; color: #9ca3af;
+      margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--text-muted);
     }
     .auth-bar button {
-      background: #374151; border: 1px solid #4b5563; color: #f3f4f6;
+      background: var(--border); border: 1px solid var(--text-dim); color: var(--text-primary);
       border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer;
       font-size: 0.8rem; font-family: inherit;
     }
-    .auth-bar button:hover { background: #4b5563; }
+    .auth-bar button:hover { background: var(--text-dim); }
 
     .create-bar {
       display: flex; align-items: center; justify-content: space-between;
@@ -29,31 +29,31 @@
     }
     .section-heading { font-size: 1.125rem; font-weight: 700; }
     .btn-create {
-      background: #2563eb; border: 1px solid #3b82f6; color: #fff;
+      background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text-on-accent);
       border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer;
       font-size: 0.8rem; font-family: inherit;
     }
-    .btn-create:hover { background: #1d4ed8; }
+    .btn-create:hover { background: var(--accent-dark); }
 
     .table-wrap {
-      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       overflow-x: auto;
     }
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
     thead th {
       padding: 0.6rem 1rem; text-align: left; font-size: 0.68rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280;
-      border-bottom: 1px solid #374151;
+      text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
     }
-    tbody td { padding: 0.65rem 1rem; border-bottom: 1px solid #1f2937; vertical-align: middle; }
+    tbody td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--bg-card); vertical-align: middle; }
     tbody tr:last-child td { border-bottom: none; }
-    tbody tr:hover { background: #263244; }
+    tbody tr:hover { background: var(--bg-hover); }
     tr.former-row { opacity: 0.5; }
 
     .member-name { font-weight: 600; }
     .strike-icon {
       display: inline-flex; align-items: center; justify-content: center;
-      background: #7f1d1d; color: #fca5a5;
+      background: var(--danger-border); color: var(--danger-light);
       font-size: 0.65rem; font-weight: 700; border-radius: 99px;
       min-width: 1.25rem; height: 1.25rem; padding: 0 0.3rem;
       margin-left: 0.35rem; cursor: default; vertical-align: middle;
@@ -61,65 +61,65 @@
     .team-badge {
       display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
       text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 4px;
-      background: #1c2c1e; color: #86efac;
+      background: #1c2c1e; color: var(--success-light);
     }
     .team-badge a { color: inherit; }
-    .pos-text { font-size: 0.85rem; color: #d1d5db; }
-    .ach-count { font-size: 0.85rem; color: #9ca3af; text-decoration: none; font-variant-numeric: tabular-nums; }
-    .ach-count:hover { color: #d1d5db; }
+    .pos-text { font-size: 0.85rem; color: var(--text-secondary); }
+    .ach-count { font-size: 0.85rem; color: var(--text-muted); text-decoration: none; font-variant-numeric: tabular-nums; }
+    .ach-count:hover { color: var(--text-secondary); }
     .role-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
     .rbadge {
       font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
       padding: 0.15rem 0.45rem; border-radius: 4px;
     }
-    .rb-admin   { background: #450a0a; color: #fca5a5; }
+    .rb-admin   { background: var(--danger-bg); color: var(--danger-light); }
     .rb-bod     { background: #3d2200; color: #fcd34d; }
-    .rb-rosters { background: #1e3a5f; color: #93c5fd; }
-    .rb-curator { background: #2e1065; color: #c4b5fd; }
+    .rb-rosters { background: var(--accent-panel-bg); color: var(--accent-light); }
+    .rb-curator { background: var(--purple-light-bg); color: var(--purple-light); }
     .rb-stats   { background: #0d2a33; color: #5eead4; }
-    .rb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid #854d0e; }
-    .rb-team    { background: #1c2c1e; color: #86efac; }
+    .rb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
+    .rb-team    { background: #1c2c1e; color: var(--success-light); }
 
     .action-cell { display: flex; gap: 0.35rem; align-items: center; white-space: nowrap; }
     .btn-sm {
-      background: transparent; border: 1px solid #374151; color: #9ca3af;
+      background: transparent; border: 1px solid var(--border); color: var(--text-muted);
       border-radius: 5px; padding: 0.15rem 0.5rem; font-size: 0.72rem;
       cursor: pointer; font-family: inherit; white-space: nowrap;
     }
-    .btn-sm:hover { border-color: #60a5fa; color: #60a5fa; }
-    .btn-sm.danger:hover { border-color: #ef4444; color: #ef4444; }
-    .btn-sm.rotate:hover { border-color: #f59e0b; color: #f59e0b; }
+    .btn-sm:hover { border-color: var(--link); color: var(--link); }
+    .btn-sm.danger:hover { border-color: var(--danger); color: var(--danger); }
+    .btn-sm.rotate:hover { border-color: var(--warning); color: var(--warning); }
 
-    .empty-state { text-align: center; color: #6b7280; padding: 2rem; }
+    .empty-state { text-align: center; color: var(--text-muted); padding: 2rem; }
 
     .cosm-swatches { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
     .cosm-swatch {
       width: 1.15rem; height: 1.15rem; border-radius: 50%; cursor: pointer;
       border: 2px solid transparent; transition: border-color 0.1s; flex-shrink: 0;
     }
-    .cosm-swatch:hover { border-color: #9ca3af; }
-    .cosm-swatch.selected { border-color: #f3f4f6; }
-    .cosm-swatch.swatch-none { background: #374151; }
-    .cosm-divider { border: none; border-top: 1px solid #374151; margin: 0.5rem 0; }
+    .cosm-swatch:hover { border-color: var(--text-muted); }
+    .cosm-swatch.selected { border-color: var(--text-primary); }
+    .cosm-swatch.swatch-none { background: var(--border); }
+    .cosm-divider { border: none; border-top: 1px solid var(--border); margin: 0.5rem 0; }
 
     .member-avatar {
       width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover;
       flex-shrink: 0; vertical-align: middle;
     }
     .member-avatar-placeholder {
-      width: 2rem; height: 2rem; border-radius: 50%; background: #374151;
+      width: 2rem; height: 2rem; border-radius: 50%; background: var(--border);
       display: inline-flex; align-items: center; justify-content: center;
-      font-size: 0.75rem; font-weight: 700; color: #9ca3af; flex-shrink: 0;
+      font-size: 0.75rem; font-weight: 700; color: var(--text-muted); flex-shrink: 0;
     }
     .avatar-upload-circle {
       width: 3rem; height: 3rem; border-radius: 50%; cursor: pointer;
-      border: 2px dashed #4b5563; display: flex; align-items: center;
+      border: 2px dashed var(--text-dim); display: flex; align-items: center;
       justify-content: center; overflow: hidden; flex-shrink: 0;
       transition: border-color 0.1s;
     }
-    .avatar-upload-circle:hover { border-color: #9ca3af; }
+    .avatar-upload-circle:hover { border-color: var(--text-muted); }
     .avatar-upload-circle img { width: 100%; height: 100%; object-fit: cover; }
-    .avatar-upload-circle .avatar-plus { font-size: 1.25rem; color: #6b7280; line-height: 1; }
+    .avatar-upload-circle .avatar-plus { font-size: 1.25rem; color: var(--text-muted); line-height: 1; }
 
     /* ── Modals ── */
     .modal-backdrop {
@@ -128,77 +128,77 @@
     }
     .modal-backdrop.open { display: flex; }
     .modal {
-      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1.5rem; width: 100%; max-width: 420px;
       display: flex; flex-direction: column; gap: 1rem;
       max-height: 88vh; overflow-y: auto;
     }
     .modal h3 { font-size: 1rem; font-weight: 600; }
     .modal input, .modal select {
-      background: #111827; border: 1px solid #374151; color: #f3f4f6;
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
       border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
       width: 100%; font-family: inherit;
     }
-    .modal input:focus, .modal select:focus { outline: none; border-color: #60a5fa; }
-    .modal select option { background: #1f2937; }
+    .modal input:focus, .modal select:focus { outline: none; border-color: var(--link); }
+    .modal select option { background: var(--bg-card); }
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
     .modal-label {
-      font-size: 0.75rem; font-weight: 600; color: #9ca3af;
+      font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
       text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem;
     }
     .btn-cancel {
-      background: transparent; border: 1px solid #374151; color: #d1d5db;
+      background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
       border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer;
       font-size: 0.8rem; font-family: inherit;
     }
-    .btn-cancel:hover { border-color: #6b7280; }
+    .btn-cancel:hover { border-color: var(--text-muted); }
     .btn-save {
-      background: #2563eb; border: 1px solid #3b82f6; color: #fff;
+      background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text-on-accent);
       border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer;
       font-size: 0.8rem; font-family: inherit;
     }
-    .btn-save:hover { background: #1d4ed8; }
+    .btn-save:hover { background: var(--accent-dark); }
 
     .roles-check-group { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
     .roles-check-group.teams-group { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.3rem 0.5rem; }
     .role-check-label {
       display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem;
-      color: #d1d5db; cursor: pointer; white-space: nowrap;
+      color: var(--text-secondary); cursor: pointer; white-space: nowrap;
     }
-    .role-check-label input[type=checkbox] { cursor: pointer; accent-color: #3b82f6; }
+    .role-check-label input[type=checkbox] { cursor: pointer; accent-color: var(--accent); }
 
     .token-result-box {
-      background: #111827; border: 1px solid #2d6a30; border-radius: 6px;
+      background: var(--bg-page); border: 1px solid #2d6a30; border-radius: 6px;
       padding: 0.65rem 0.75rem; display: flex; flex-direction: column; gap: 0.35rem;
     }
-    .token-result-label { font-size: 0.7rem; color: #6b7280; }
+    .token-result-label { font-size: 0.7rem; color: var(--text-muted); }
     .token-result-value {
       font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.72rem;
-      color: #86efac; word-break: break-all; line-height: 1.5;
+      color: var(--success-light); word-break: break-all; line-height: 1.5;
     }
     .btn-copy-result {
-      background: none; border: 1px solid #2d6a30; color: #86efac;
+      background: none; border: 1px solid #2d6a30; color: var(--success-light);
       border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.7rem;
       cursor: pointer; font-family: inherit; align-self: flex-start;
     }
-    .btn-copy-result:hover { background: #14532d; }
-    .btn-copy-result.copied { background: #14532d; }
+    .btn-copy-result:hover { background: var(--success-dark-bg); }
+    .btn-copy-result.copied { background: var(--success-dark-bg); }
 
     .error-box {
-      font-size: 0.8rem; color: #fca5a5; background: #450a0a;
+      font-size: 0.8rem; color: var(--danger-light); background: var(--danger-bg);
       border-radius: 6px; padding: 0.5rem 0.75rem;
     }
 
     /* Tenure modal */
     .tenure-table-wrap {
-      background: #111827; border: 1px solid #374151; border-radius: 8px;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: 8px;
       overflow-x: auto;
     }
     .tenure-table-wrap table { font-size: 0.82rem; }
     .tenure-table-wrap thead th { font-size: 0.65rem; padding: 0.45rem 0.75rem; }
-    .tenure-table-wrap tbody td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #1f2937; }
+    .tenure-table-wrap tbody td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--bg-card); }
     .tenure-table-wrap tbody tr:last-child td { border-bottom: none; }
-    .ongoing-text { color: #86efac; }
+    .ongoing-text { color: var(--success-light); }
     .tenure-form-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr 1fr auto auto;
@@ -208,7 +208,7 @@
     .tenure-form-grid input, .tenure-form-grid select {
       padding: 0.35rem 0.5rem; font-size: 0.8rem;
     }
-    .tenure-hint { font-size: 0.7rem; color: #6b7280; margin-top: 0.25rem; }
+    .tenure-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; }
 
     @media (max-width: 640px) {
       .roles-check-group.teams-group { grid-template-columns: repeat(4, 1fr); }
@@ -217,24 +217,24 @@
 
     .member-stat-row {
       display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-      font-size: 0.82rem; color: #9ca3af; margin-bottom: 0.9rem;
+      font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.9rem;
     }
-    .stat-num { color: #f3f4f6; font-weight: 700; }
-    .stat-sep { color: #4b5563; }
-    .stat-divider { width: 1px; height: 0.9rem; background: #374151; margin: 0 0.25rem; }
-    .stat-chip.muted .stat-num { color: #6b7280; }
-    .stat-chip.pos-owner .stat-num { color: #86efac; }
-    .stat-chip.pos-gm    .stat-num { color: #93c5fd; }
-    .stat-chip.pos-coach .stat-num { color: #c4b5fd; }
+    .stat-num { color: var(--text-primary); font-weight: 700; }
+    .stat-sep { color: var(--text-dim); }
+    .stat-divider { width: 1px; height: 0.9rem; background: var(--border); margin: 0 0.25rem; }
+    .stat-chip.muted .stat-num { color: var(--text-muted); }
+    .stat-chip.pos-owner .stat-num { color: var(--success-light); }
+    .stat-chip.pos-gm    .stat-num { color: var(--accent-light); }
+    .stat-chip.pos-coach .stat-num { color: var(--purple-light); }
 
     .staffing-toggle-btn {
       display: flex; align-items: center; gap: 0.4rem;
       background: none; border: none; cursor: pointer; font-family: inherit;
-      color: #6b7280; font-size: 0.72rem; font-weight: 700;
+      color: var(--text-muted); font-size: 0.72rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.07em;
       padding: 0; margin-bottom: 0.55rem;
     }
-    .staffing-toggle-btn:hover { color: #9ca3af; }
+    .staffing-toggle-btn:hover { color: var(--text-muted); }
     .staffing-chevron { font-size: 0.55rem; transition: transform 0.15s; display: inline-block; }
 
     .staffing-grid {
@@ -242,15 +242,15 @@
       margin-bottom: 1rem;
     }
     .team-staff-card {
-      background: #111827; border: 1px solid #1f2937; border-radius: 6px;
+      background: var(--bg-page); border: 1px solid var(--bg-card); border-radius: 6px;
       padding: 0.35rem 0.4rem; display: flex; flex-direction: column;
       align-items: center; gap: 0.22rem;
     }
     .ts-abbr {
       font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;
-      color: #d1d5db; text-decoration: none;
+      color: var(--text-secondary); text-decoration: none;
     }
-    .ts-abbr:hover { color: #f3f4f6; }
+    .ts-abbr:hover { color: var(--text-primary); }
     .ts-dots { display: flex; gap: 0.15rem; }
     .ts-dot {
       font-size: 0.52rem; font-weight: 800; letter-spacing: 0;
@@ -258,10 +258,10 @@
       display: flex; align-items: center; justify-content: center;
       cursor: default;
     }
-    .ts-dot-owner { background: #14532d; color: #86efac; }
-    .ts-dot-gm    { background: #1e3a5f; color: #93c5fd; }
-    .ts-dot-coach { background: #2e1065; color: #c4b5fd; }
-    .ts-dot.ts-dot-empty { background: #1a1f2e; color: #2d3748; }
+    .ts-dot-owner { background: var(--success-dark-bg); color: var(--success-light); }
+    .ts-dot-gm    { background: var(--accent-panel-bg); color: var(--accent-light); }
+    .ts-dot-coach { background: var(--purple-light-bg); color: var(--purple-light); }
+    .ts-dot.ts-dot-empty { background: #1a1f2e; color: var(--border-dark); }
 
     @media (max-width: 640px) {
       .staffing-grid { grid-template-columns: repeat(5, 1fr); }
@@ -287,38 +287,38 @@
   </div>
 
   <div id="my-profile-bar" style="display:none;margin-bottom:1.25rem">
-    <div style="background:#1f2937;border:1px solid #374151;border-radius:8px;overflow:hidden">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow:hidden">
       <button id="my-profile-toggle" onclick="(function(){var c=document.getElementById('my-profile-content'),ch=document.getElementById('my-profile-chevron'),open=c.style.display!=='none';c.style.display=open?'none':'';ch.style.transform=open?'':'rotate(90deg)';})()" style="width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left">
-        <span id="my-profile-chevron" style="color:#6b7280;font-size:0.65rem;transition:transform 0.15s">&#9654;</span>
-        <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Profile &amp; Customization</span>
-        <span style="color:#6b7280;font-size:0.75rem">(spend NB¥)</span>
+        <span id="my-profile-chevron" style="color:var(--text-muted);font-size:0.65rem;transition:transform 0.15s">&#9654;</span>
+        <span style="color:var(--text-muted);font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Profile &amp; Customization</span>
+        <span style="color:var(--text-muted);font-size:0.75rem">(spend NB¥)</span>
       </button>
       <div id="my-profile-content" style="display:none;padding:0 1rem 0.75rem">
         <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding-top:0.1rem">
-          <label style="color:#d1d5db;font-size:0.875rem;display:flex;align-items:center;gap:0.5rem">
+          <label style="color:var(--text-secondary);font-size:0.875rem;display:flex;align-items:center;gap:0.5rem">
             Birthday
-            <input type="date" id="my-dob-input" style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit">
+            <input type="date" id="my-dob-input" style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit">
           </label>
           <button class="btn-sm" id="my-profile-save">Save</button>
           <span id="my-profile-msg" style="display:none;font-size:0.8rem"></span>
         </div>
         <hr class="cosm-divider">
         <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-          <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Cosmetics</span>
+          <span style="color:var(--text-muted);font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Cosmetics</span>
           <div class="cosm-swatches" id="cosm-swatches"></div>
           <input type="text" id="cosm-status" maxlength="40" placeholder="Short tagline…"
-            style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit;width:12rem">
+            style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit;width:12rem">
           <button class="btn-sm" id="cosm-save">Save · 500 NB¥</button>
           <span id="cosm-msg" style="display:none;font-size:0.8rem"></span>
         </div>
         <hr class="cosm-divider">
         <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-          <span style="color:#9ca3af;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Avatar</span>
+          <span style="color:var(--text-muted);font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Avatar</span>
           <div class="avatar-upload-circle" id="avatar-upload-circle" title="Click to choose image">
             <span class="avatar-plus">+</span>
           </div>
           <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-          <div style="font-size:0.78rem;color:#9ca3af">JPEG / PNG / WebP · max 512 KB</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">JPEG / PNG / WebP · max 512 KB</div>
           <button class="btn-sm" id="avatar-save" style="display:none">Upload · 5,000 NB¥</button>
           <span id="avatar-msg" style="display:none;font-size:0.8rem"></span>
         </div>
@@ -389,7 +389,7 @@
       <div class="roles-check-group teams-group" id="create-roles-teams"></div>
     </div>
     <div>
-      <div class="modal-label">Initial Tenure <span style="color:#6b7280;font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+      <div class="modal-label">Initial Tenure <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem">
         <select id="create-team-sel"></select>
         <select id="create-pos-sel"></select>
@@ -492,7 +492,7 @@ let allMembers = [];
 let strikeMap = {}; // member name -> count
 let achCount = {};  // member name -> number of achievements unlocked (undefined while loading)
 
-const COSM_PALETTE = ['#f59e0b','#ef4444','#a855f7','#60a5fa','#34d399','#f472b6','#fb923c','#2dd4bf'];
+const COSM_PALETTE = ['var(--warning)','var(--danger)','#a855f7','var(--link)','var(--market-positive)','#f472b6','var(--danger-alt)','#2dd4bf'];
 let selectedColor = ''; // '' means "none"
 
 function buildSwatches() {
@@ -540,7 +540,7 @@ document.getElementById('avatar-file-input').addEventListener('change', e => {
   if (!f) return;
   if (f.size > 512 * 1024) {
     const msg = document.getElementById('avatar-msg');
-    msg.textContent = 'File too large (max 512 KB)'; msg.style.color = '#f87171'; msg.style.display = '';
+    msg.textContent = 'File too large (max 512 KB)'; msg.style.color = 'var(--danger)'; msg.style.display = '';
     return;
   }
   pendingAvatarFile = f;
@@ -568,7 +568,7 @@ document.getElementById('avatar-save').addEventListener('click', async () => {
     if (!res.ok) throw new Error((await res.json()).detail);
     const data = await res.json();
     msg.textContent = `Uploaded! NB¥ balance: ${data.new_balance.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2})}`;
-    msg.style.color = '#86efac'; msg.style.display = '';
+    msg.style.color = 'var(--success-light)'; msg.style.display = '';
     pendingAvatarFile = null;
     btn.style.display = 'none';
     const idx = allMembers.findIndex(m => m.name === myName);
@@ -576,7 +576,7 @@ document.getElementById('avatar-save').addEventListener('click', async () => {
     renderTable();
     setTimeout(() => { msg.style.display = 'none'; }, 4000);
   } catch (err) {
-    msg.textContent = 'Error: ' + err.message; msg.style.color = '#f87171'; msg.style.display = '';
+    msg.textContent = 'Error: ' + err.message; msg.style.color = 'var(--danger)'; msg.style.display = '';
   } finally { btn.disabled = false; btn.textContent = 'Upload · 5,000 NB¥'; }
 });
 
@@ -614,7 +614,7 @@ function roleClass(r) {
 }
 
 function roleBadgesHtml(roles) {
-  if (!roles.length) return '<span style="color:#4b5563">—</span>';
+  if (!roles.length) return '<span style="color:var(--text-dim)">—</span>';
   return roles.map(r => `<span class="rbadge ${roleClass(r)}">${r}</span>`).join('');
 }
 
@@ -741,7 +741,7 @@ function renderTable() {
     const nameStyle = nameColor ? ` style="color:${nameColor}"` : '';
     const statusText = m.cosmetics?.status_text;
     const statusHtml = statusText
-      ? `<div style="font-size:0.72rem;color:#9ca3af;font-weight:400;margin-top:2px">${statusText.replace(/</g,'&lt;')}</div>`
+      ? `<div style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-top:2px">${statusText.replace(/</g,'&lt;')}</div>`
       : '';
     const avatarHtml = m.avatar_url
       ? `<img class="member-avatar" src="${m.avatar_url}?v=${Date.now()}" alt="" loading="lazy">`
@@ -755,7 +755,7 @@ function renderTable() {
     } else if (last) {
       tdTeam.innerHTML = `<span class="team-badge" style="opacity:0.6"><a href="/teams/${last.team.toLowerCase()}/">${last.team}</a></span>`;
     } else {
-      tdTeam.innerHTML = '<span style="color:#4b5563">—</span>';
+      tdTeam.innerHTML = '<span style="color:var(--text-dim)">—</span>';
     }
 
     // Position
@@ -763,9 +763,9 @@ function renderTable() {
     if (cur) {
       tdPos.innerHTML = `<span class="pos-text">${displayPos(cur.position)}</span>`;
     } else if (last) {
-      tdPos.innerHTML = `<span class="pos-text" style="color:#6b7280;font-style:italic">Former</span>`;
+      tdPos.innerHTML = `<span class="pos-text" style="color:var(--text-muted);font-style:italic">Former</span>`;
     } else {
-      tdPos.innerHTML = '<span style="color:#4b5563">—</span>';
+      tdPos.innerHTML = '<span style="color:var(--text-dim)">—</span>';
     }
 
     // Achievements
@@ -773,7 +773,7 @@ function renderTable() {
     const cnt = achCount[m.name];
     const total = window.NBNAch ? NBNAch.total : '';
     tdAch.innerHTML = cnt === undefined
-      ? '<span style="color:#4b5563">…</span>'
+      ? '<span style="color:var(--text-dim)">…</span>'
       : `<a class="ach-count" href="/members/${encodeURIComponent(m.name)}/">${cnt}/${total}</a>`;
 
     // Roles
@@ -1122,7 +1122,7 @@ function resetTenureForm() {
 function renderTenureTable() {
   const tbody = document.getElementById('tenure-tbody');
   if (!workingTenures.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="color:#6b7280;padding:0.75rem;text-align:center">No tenures yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted);padding:0.75rem;text-align:center">No tenures yet.</td></tr>';
     return;
   }
   const sorted = workingTenures
@@ -1133,9 +1133,9 @@ function renderTenureTable() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><span class="team-badge">${team}</span></td>
-      <td style="color:#d1d5db">${displayPos(position)}</td>
-      <td style="color:#9ca3af;font-size:0.8rem">${fmtDate(start)}</td>
-      <td>${end ? `<span style="color:#9ca3af;font-size:0.8rem">${fmtDate(end)}</span>` : '<span class="ongoing-text" style="font-size:0.8rem">Ongoing</span>'}</td>
+      <td style="color:var(--text-secondary)">${displayPos(position)}</td>
+      <td style="color:var(--text-muted);font-size:0.8rem">${fmtDate(start)}</td>
+      <td>${end ? `<span style="color:var(--text-muted);font-size:0.8rem">${fmtDate(end)}</span>` : '<span class="ongoing-text" style="font-size:0.8rem">Ongoing</span>'}</td>
       <td>
         <div class="action-cell">
           <button class="btn-sm" data-edit="${_i}">Edit</button>
@@ -1223,10 +1223,10 @@ document.getElementById('my-profile-save').addEventListener('click', async () =>
       body: JSON.stringify({ dob: dob || '' }),
     });
     if (!res.ok) throw new Error((await res.json()).detail);
-    msg.textContent = 'Saved!'; msg.style.color = '#86efac'; msg.style.display = '';
+    msg.textContent = 'Saved!'; msg.style.color = 'var(--success-light)'; msg.style.display = '';
     setTimeout(() => { msg.style.display = 'none'; }, 2000);
   } catch (err) {
-    msg.textContent = 'Error: ' + err.message; msg.style.color = '#f87171'; msg.style.display = '';
+    msg.textContent = 'Error: ' + err.message; msg.style.color = 'var(--danger)'; msg.style.display = '';
   } finally { btn.disabled = false; btn.textContent = 'Save'; }
 });
 
@@ -1245,14 +1245,14 @@ document.getElementById('cosm-save').addEventListener('click', async () => {
     if (!res.ok) throw new Error((await res.json()).detail);
     const data = await res.json();
     msg.textContent = `Saved! NB¥ balance: ${data.new_balance.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2})}`;
-    msg.style.color = '#86efac'; msg.style.display = '';
+    msg.style.color = 'var(--success-light)'; msg.style.display = '';
     // patch allMembers in-place so re-render reflects new cosmetics immediately
     const idx = allMembers.findIndex(m => m.name === myName);
     if (idx >= 0) allMembers[idx].cosmetics = data.cosmetics;
     renderTable();
     setTimeout(() => { msg.style.display = 'none'; }, 4000);
   } catch (err) {
-    msg.textContent = 'Error: ' + err.message; msg.style.color = '#f87171'; msg.style.display = '';
+    msg.textContent = 'Error: ' + err.message; msg.style.color = 'var(--danger)'; msg.style.display = '';
   } finally { btn.disabled = false; btn.textContent = 'Save · 500 NB¥'; }
 });
 

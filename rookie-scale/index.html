@@ -10,38 +10,38 @@
     .page { max-width: 760px; margin: 0 auto; }
     header { margin-bottom: 2rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
     .auth-banner {
-      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
       display: flex; align-items: center; justify-content: space-between; gap: 1rem;
     }
-    .auth-banner p { font-size: 0.875rem; color: #9ca3af; }
+    .auth-banner p { font-size: 0.875rem; color: var(--text-muted); }
     .btn {
       font-size: 0.8rem; font-weight: 600; font-family: inherit; cursor: pointer;
       padding: 0.35rem 0.75rem; border-radius: 6px; border: none;
     }
-    .btn-primary { background: #3b82f6; color: #fff; }
-    .btn-primary:hover { background: #2563eb; }
-    .btn-primary:disabled { background: #374151; color: #6b7280; cursor: default; }
+    .btn-primary { background: var(--accent); color: var(--text-on-accent); }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: default; }
 
     .years { display: flex; flex-direction: column; gap: 1.25rem; }
 
     .year-card {
-      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1.25rem 1.5rem;
     }
     .year-card h2 {
       font-size: 1rem; font-weight: 700; margin-bottom: 1rem;
-      color: #60a5fa; font-family: ui-monospace, 'Cascadia Code', monospace;
+      color: var(--link); font-family: ui-monospace, 'Cascadia Code', monospace;
     }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
     thead th {
       text-align: right; padding: 0.3rem 0.5rem; font-size: 0.68rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280;
-      border-bottom: 1px solid #374151;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
     }
     thead th:first-child { text-align: center; width: 2.5rem; }
     tbody tr:hover { background: #1a2332; }
@@ -50,15 +50,15 @@
       border-bottom: 1px solid #252f3e;
       font-variant-numeric: tabular-nums;
     }
-    tbody td:first-child { text-align: center; color: #6b7280; font-size: 0.75rem; }
+    tbody td:first-child { text-align: center; color: var(--text-muted); font-size: 0.75rem; }
 
     input[type=number] {
-      background: #111827; border: 1px solid #374151; border-radius: 4px;
-      color: #f3f4f6; font-size: 0.8rem; font-family: inherit;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px;
+      color: var(--text-primary); font-size: 0.8rem; font-family: inherit;
       padding: 0.2rem 0.35rem; outline: none; width: 100%; text-align: right;
       font-variant-numeric: tabular-nums;
     }
-    input[type=number]:focus { border-color: #3b82f6; }
+    input[type=number]:focus { border-color: var(--accent); }
     input[type=number]:disabled {
       background: transparent; border-color: transparent; cursor: default;
     }
@@ -67,8 +67,8 @@
       display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem;
     }
     .status { font-size: 0.78rem; }
-    .status.ok  { color: #22c55e; }
-    .status.err { color: #ef4444; }
+    .status.ok  { color: var(--success-alt); }
+    .status.err { color: var(--danger); }
   </style>
 </head>
 <body>
@@ -85,7 +85,7 @@
     </div>
 
     <div class="years" id="years">
-      <p style="color:#6b7280;font-size:0.875rem;">Loading…</p>
+      <p style="color:var(--text-muted);font-size:0.875rem;">Loading…</p>
     </div>
   </div>
 

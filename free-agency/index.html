@@ -12,7 +12,7 @@
 
     header { margin-bottom: 1.5rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
     .filter-row {
       display: flex;
@@ -23,9 +23,9 @@
 
     .chip {
       background: transparent;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       border-radius: 20px;
-      color: #9ca3af;
+      color: var(--text-muted);
       cursor: pointer;
       font-family: inherit;
       font-size: 0.75rem;
@@ -33,33 +33,33 @@
       padding: 0.2rem 0.7rem;
       letter-spacing: 0.04em;
     }
-    .chip:hover { border-color: #6b7280; color: #d1d5db; }
-    .chip.active { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
-    .chip.year-chip.active { background: #065f46; border-color: #10b981; color: #d1fae5; }
+    .chip:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+    .chip.active { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
+    .chip.year-chip.active { background: var(--market-positive-border); border-color: #10b981; color: #d1fae5; }
 
     .table-wrap {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow-x: auto;
     }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
 
-    thead th[data-active="true"] { color: #f3f4f6; }
+    thead th[data-active="true"] { color: var(--text-primary); }
 
     .sort-arrow { margin-left: 4px; opacity: 0.4; font-size: 0.65rem; }
     th[data-active="true"] .sort-arrow { opacity: 1; }
 
-    tbody tr:nth-child(odd)  { background: #111827; }
-    tbody tr:nth-child(even) { background: #1a2234; }
-    tbody tr:hover { background: #263044; }
+    tbody tr:nth-child(odd)  { background: var(--bg-page); }
+    tbody tr:nth-child(even) { background: var(--bg-card); }
+    tbody tr:hover { background: var(--bg-hover); }
 
-    td { padding: 0.55rem 1rem; color: #d1d5db; border-top: 1px solid #1f2937; }
+    td { padding: 0.55rem 1rem; color: var(--text-secondary); border-top: 1px solid var(--bg-card); }
     td.right  { text-align: right; }
     td.center { text-align: center; }
-    td.muted  { color: #6b7280; }
-    td.bold   { font-weight: 600; color: #f3f4f6; }
+    td.muted  { color: var(--text-muted); }
+    td.bold   { font-weight: 600; color: var(--text-primary); }
     td.ovr-cell { font-weight: 700; text-align: right; }
     td.salary-cell { text-align: right; }
 
@@ -67,7 +67,8 @@
     td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
     td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
     td.cap-team-opt   { background: hsl(210, 55%, 20%); color: hsl(210, 75%, 70%); }
-    td.cap-non-gtd    { color: #4b5563; text-decoration: line-through; }
+    td.cap-non-gtd    { color: var(--text-dim); text-decoration: line-through; }
+    td.cap-renounced  { background: hsl(270, 35%, 18%); color: hsl(270, 55%, 76%); font-style: italic; }
 
     .cap-legend {
       display: flex;
@@ -75,13 +76,13 @@
       gap: 0.4rem 1.25rem;
       padding: 0.6rem 1rem 0.75rem;
       font-size: 0.75rem;
-      color: #9ca3af;
-      border-top: 1px solid #283141;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-subtle);
     }
     .cap-legend-item { display: flex; align-items: center; gap: 0.35rem; }
     .cap-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
 
-    #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -89,7 +90,7 @@
     <nav class="nav"></nav>
     <header>
       <h1>Free Agency</h1>
-      <p>Players with non-guaranteed salary. Click any column to sort.</p>
+      <p>Players with non-guaranteed salary, plus renounced free agents with no cap hold. Click any column to sort.</p>
     </header>
 
     <div class="filter-row" id="year-filter"></div>
@@ -154,14 +155,17 @@
     const CAP_HOLD_CSS = {
       UFA: 'cap-ufa', RFA: 'cap-rfa',
       PLAYER_OPT: 'cap-player-opt', TEAM_OPT: 'cap-team-opt', NON_GTD: 'cap-non-gtd',
+      RENOUNCED: 'cap-renounced',
     };
     const CAP_HOLD_LABELS = {
       UFA: 'UFA', RFA: 'RFA',
       PLAYER_OPT: 'Player Opt', TEAM_OPT: 'Team Opt', NON_GTD: 'Non-Gtd',
+      RENOUNCED: 'Renounced',
     };
     const CAP_SWATCH_COLORS = {
       UFA: 'hsl(45,60%,35%)', RFA: 'hsl(25,60%,35%)',
-      PLAYER_OPT: 'hsl(120,50%,30%)', TEAM_OPT: 'hsl(210,55%,35%)', NON_GTD: '#374151',
+      PLAYER_OPT: 'hsl(120,50%,30%)', TEAM_OPT: 'hsl(210,55%,35%)', NON_GTD: 'var(--border)',
+      RENOUNCED: 'hsl(270,45%,45%)',
     };
 
     const COLS = [
@@ -211,7 +215,7 @@
         const tr = currentTbody.insertRow();
         const td = tr.insertCell();
         td.colSpan = COLS.length;
-        td.style.cssText = 'text-align:center;padding:3rem;color:#6b7280;font-size:0.9rem;';
+        td.style.cssText = 'text-align:center;padding:3rem;color:var(--text-muted);font-size:0.9rem;';
         td.textContent = 'No non-guaranteed contracts for this year.';
         return;
       }
@@ -351,6 +355,8 @@
         // Rule: each player appears in exactly one FA class — the first year where
         // they have a PO, TO, UFA, or RFA cap hold (NON_GTD treated as guaranteed,
         // downstream holds after a PO/TO are contingent and not shown independently).
+        const renouncedSlugs = [];
+
         Object.entries(biosJson).forEach(([slug, bio]) => {
           const capMap = bio.cap_holds || {};
           const salaries = bio.salaries || {};
@@ -361,7 +367,20 @@
             .filter(([yr, type]) => type !== 'NON_GTD' && salaries[yr])
             .sort(([a], [b]) => a.localeCompare(b))[0];
 
-          if (!firstEntry) return;
+          if (!firstEntry) {
+            // Renounce (§3.10) clears cap_holds entirely and sets type to "" — no
+            // cap number, no roster spot, no obligation. That leaves these players
+            // invisible to the cap-hold scan above even though they're unsigned
+            // free agents. Detect them separately: type "" (the renounce handler's
+            // exact postcondition — excludes "dead" cap charges and universe
+            // players who were simply never touched by any NBN transaction), no
+            // current team, no cap hold, but salary history proving they had a
+            // real NBN contract at some point.
+            if (bio.type === '' && !slugToTeam[slug] && !Object.keys(capMap).length && Object.keys(salaries).length) {
+              renouncedSlugs.push(slug);
+            }
+            return;
+          }
           const [yr, type] = firstEntry;
 
           const salaryRaw = salaries[yr];
@@ -385,6 +404,32 @@
         });
 
         const years = Object.keys(allRows).sort();
+
+        // Renounced free agents aren't tied to a future FA year — they're
+        // unsigned right now — so they're bucketed into the current/earliest
+        // FA class alongside this year's UFA/RFA holds.
+        if (renouncedSlugs.length) {
+          const targetYear = years[0] || 'Current';
+          if (!allRows[targetYear]) allRows[targetYear] = [];
+          renouncedSlugs.forEach(slug => {
+            const bio = biosJson[slug];
+            allRows[targetYear].push({
+              slug,
+              player: displayName(bio.name || slug),
+              team: '',
+              pos: (bio.pos || []).join('/') || '—',
+              ovr: String(ovrJson[slug] || ''),
+              age: calcAge(bio.dob),
+              salary: 0,
+              salaryFmt: 'Renounced',
+              capType: 'RENOUNCED',
+              type: CAP_HOLD_LABELS.RENOUNCED,
+            });
+          });
+          if (!years.includes(targetYear)) years.push(targetYear);
+          years.sort();
+        }
+
         if (!years.length) {
           statusEl.textContent = 'No non-guaranteed contracts found.';
           return;
@@ -398,7 +443,7 @@
 
         const legend = document.createElement('div');
         legend.className = 'cap-legend';
-        ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA'].forEach(type => {
+        ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'RENOUNCED'].forEach(type => {
           const item = document.createElement('span');
           item.className = 'cap-legend-item';
           const swatch = document.createElement('span');
@@ -406,7 +451,7 @@
           swatch.style.background = CAP_SWATCH_COLORS[type];
           item.appendChild(swatch);
           item.appendChild(document.createTextNode(
-            { PLAYER_OPT: 'Player Option', TEAM_OPT: 'Team Option', UFA: 'UFA Hold', RFA: 'RFA Hold', NON_GTD: 'Non-Guaranteed' }[type]
+            { PLAYER_OPT: 'Player Option', TEAM_OPT: 'Team Option', UFA: 'UFA Hold', RFA: 'RFA Hold', NON_GTD: 'Non-Guaranteed', RENOUNCED: 'Renounced (no cap hold)' }[type]
           ));
           legend.appendChild(item);
         });

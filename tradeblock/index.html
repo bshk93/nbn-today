@@ -12,7 +12,7 @@
 
     header { margin-bottom: 1.75rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
     /* Controls row: position filter + show-all toggle */
     .controls-row {
@@ -46,9 +46,9 @@
       align-items: center;
       gap: 0.4rem;
       background: transparent;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       border-radius: 6px;
-      color: #9ca3af;
+      color: var(--text-muted);
       cursor: pointer;
       font-family: inherit;
       font-size: 0.75rem;
@@ -57,25 +57,25 @@
       padding: 0.3rem 0.55rem;
       text-transform: uppercase;
     }
-    .filter-menu-btn:hover { border-color: #4b5563; color: #e5e7eb; }
-    .filter-menu-btn.active { border-color: #3b82f6; color: #e5e7eb; }
+    .filter-menu-btn:hover { border-color: var(--text-dim); color: var(--text-secondary); }
+    .filter-menu-btn.active { border-color: var(--accent); color: var(--text-secondary); }
     .filter-menu-count {
-      background: #3b82f6;
+      background: var(--accent);
       border-radius: 999px;
-      color: #fff;
+      color: var(--text-on-accent);
       font-size: 0.65rem;
       line-height: 1;
       padding: 0.15rem 0.35rem;
     }
-    .filter-menu-caret { color: #6b7280; font-size: 0.6rem; }
+    .filter-menu-caret { color: var(--text-muted); font-size: 0.6rem; }
 
     .filter-menu-pop {
       position: absolute;
       top: calc(100% + 0.4rem);
       left: 0;
       z-index: 30;
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 8px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       padding: 0.7rem;
@@ -83,7 +83,7 @@
     }
     .filter-menu-pop[hidden] { display: none; }
     .filter-menu-hint {
-      color: #6b7280;
+      color: var(--text-muted);
       font-size: 0.68rem;
       margin-bottom: 0.5rem;
     }
@@ -95,43 +95,43 @@
       margin-bottom: 0.35rem;
     }
     .salary-year-row .salary-year-label {
-      color: #9ca3af;
+      color: var(--text-muted);
       font-size: 0.72rem;
       font-weight: 600;
     }
-    .salary-year-row.filtered .salary-year-label { color: #60a5fa; }
-    .filter-menu-dash { color: #6b7280; font-size: 0.72rem; text-align: center; }
+    .salary-year-row.filtered .salary-year-label { color: var(--link); }
+    .filter-menu-dash { color: var(--text-muted); font-size: 0.72rem; text-align: center; }
     .filter-menu-pop input {
       width: 100%;
       background: transparent;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       border-radius: 6px;
-      color: #e5e7eb;
+      color: var(--text-secondary);
       font-family: inherit;
       font-size: 0.78rem;
       padding: 0.2rem 0.4rem;
       text-align: right;
     }
-    .filter-menu-pop input::placeholder { color: #6b7280; }
-    .filter-menu-pop input:focus { outline: none; border-color: #3b82f6; }
+    .filter-menu-pop input::placeholder { color: var(--text-muted); }
+    .filter-menu-pop input:focus { outline: none; border-color: var(--accent); }
     .filter-menu-foot {
       display: flex;
       justify-content: flex-end;
-      border-top: 1px solid #1f2937;
+      border-top: 1px solid var(--bg-card);
       margin-top: 0.5rem;
       padding-top: 0.5rem;
     }
     .filter-menu-clear {
       background: transparent;
       border: none;
-      color: #9ca3af;
+      color: var(--text-muted);
       cursor: pointer;
       font-family: inherit;
       font-size: 0.72rem;
       padding: 0.15rem 0.25rem;
     }
-    .filter-menu-clear:hover { color: #e5e7eb; }
-    .filter-menu-clear:disabled { color: #4b5563; cursor: default; }
+    .filter-menu-clear:hover { color: var(--text-secondary); }
+    .filter-menu-clear:disabled { color: var(--text-dim); cursor: default; }
 
     /* Attribute minimum filter rows */
     .attr-row {
@@ -143,58 +143,58 @@
     }
     .attr-row select {
       width: 100%;
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      color: #e5e7eb;
+      color: var(--text-secondary);
       font-family: inherit;
       font-size: 0.72rem;
       padding: 0.2rem 0.3rem;
     }
-    .attr-row select:focus { outline: none; border-color: #3b82f6; }
+    .attr-row select:focus { outline: none; border-color: var(--accent); }
     .attr-row-remove {
       background: transparent;
       border: none;
-      color: #6b7280;
+      color: var(--text-muted);
       cursor: pointer;
       font-family: inherit;
       font-size: 0.85rem;
       line-height: 1;
       padding: 0.1rem;
     }
-    .attr-row-remove:hover { color: #f87171; }
+    .attr-row-remove:hover { color: var(--danger); }
     .attr-add-btn {
       background: transparent;
-      border: 1px dashed #374151;
+      border: 1px dashed var(--border);
       border-radius: 6px;
-      color: #9ca3af;
+      color: var(--text-muted);
       cursor: pointer;
       font-family: inherit;
       font-size: 0.72rem;
       padding: 0.25rem 0.5rem;
       width: 100%;
     }
-    .attr-add-btn:hover { border-color: #3b82f6; color: #e5e7eb; }
+    .attr-add-btn:hover { border-color: var(--accent); color: var(--text-secondary); }
 
     .show-all-toggle {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       cursor: pointer;
       font-size: 0.78rem;
       font-weight: 600;
       user-select: none;
       white-space: nowrap;
     }
-    .show-all-toggle:hover { color: #d1d5db; }
-    .show-all-toggle input { accent-color: #3b82f6; cursor: pointer; }
+    .show-all-toggle:hover { color: var(--text-secondary); }
+    .show-all-toggle input { accent-color: var(--accent); cursor: pointer; }
     .show-all-toggle input:disabled { cursor: default; }
     .pos-chip {
       background: transparent;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       border-radius: 20px;
-      color: #9ca3af;
+      color: var(--text-muted);
       cursor: pointer;
       font-family: inherit;
       font-size: 0.75rem;
@@ -203,34 +203,34 @@
       letter-spacing: 0.04em;
       transition: none;
     }
-    .pos-chip:hover { border-color: #6b7280; color: #d1d5db; }
-    .pos-chip.active { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+    .pos-chip:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+    .pos-chip.active { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
 
     .table-wrap {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow-x: auto;
     }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
 
-    thead th[data-active="true"] { color: #f3f4f6; }
+    thead th[data-active="true"] { color: var(--text-primary); }
 
     .sort-arrow { margin-left: 4px; opacity: 0.4; font-size: 0.65rem; }
     th[data-active="true"] .sort-arrow { opacity: 1; }
 
-    tbody tr:nth-child(odd)  { background: #111827; }
-    tbody tr:nth-child(even) { background: #1a2234; }
-    tbody tr:hover { background: #263044; }
+    tbody tr:nth-child(odd)  { background: var(--bg-page); }
+    tbody tr:nth-child(even) { background: var(--bg-card); }
+    tbody tr:hover { background: var(--bg-hover); }
 
-    td { padding: 0.55rem 1rem; color: #d1d5db; border-top: 1px solid #1f2937; }
+    td { padding: 0.55rem 1rem; color: var(--text-secondary); border-top: 1px solid var(--bg-card); }
     td.right  { text-align: right; }
     td.center { text-align: center; }
-    td.muted  { color: #6b7280; }
-    td.bold   { font-weight: 600; color: #f3f4f6; }
+    td.muted  { color: var(--text-muted); }
+    td.bold   { font-weight: 600; color: var(--text-primary); }
     td.ovr-cell { font-weight: 700; text-align: right; }
-    td.notes-cell { color: #9ca3af; font-size: 0.8rem; white-space: normal; min-width: 140px; max-width: 260px; }
+    td.notes-cell { color: var(--text-muted); font-size: 0.8rem; white-space: normal; min-width: 140px; max-width: 260px; }
 
     /* Pick badge + notes tooltip */
     .pick-badge-wrap {
@@ -244,9 +244,9 @@
       position: absolute;
       left: 0;
       top: calc(100% + 6px);
-      background: #1f2937;
-      border: 1px solid #374151;
-      color: #d1d5db;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
       font-size: 0.75rem;
       font-weight: 400;
       letter-spacing: 0;
@@ -266,7 +266,7 @@
     td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
     td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
     td.cap-team-opt   { background: hsl(210, 55%, 20%); color: hsl(210, 75%, 70%); }
-    td.cap-non-gtd    { color: #4b5563; text-decoration: line-through; }
+    td.cap-non-gtd    { color: var(--text-dim); text-decoration: line-through; }
 
     .cap-legend {
       display: flex;
@@ -274,18 +274,18 @@
       gap: 0.4rem 1.25rem;
       padding: 0.6rem 1rem 0.75rem;
       font-size: 0.75rem;
-      color: #9ca3af;
-      border-top: 1px solid #283141;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-subtle);
     }
     .cap-legend-item { display: flex; align-items: center; gap: 0.35rem; }
     .cap-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
 
-    #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
 
     /* Edit panel */
     .edit-panel {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 1.25rem 1.5rem;
       margin-bottom: 1.5rem;
@@ -301,22 +301,22 @@
     .edit-panel-header h2 {
       font-size: 0.9rem;
       font-weight: 700;
-      color: #f3f4f6;
+      color: var(--text-primary);
       flex: 1;
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
     .panel-toggle {
-      color: #6b7280;
+      color: var(--text-muted);
       font-size: 0.75rem;
       transition: transform 0.15s;
     }
     .edit-panel-body { margin-top: 1rem; }
     .edit-panel-body.collapsed { display: none; }
     .team-badge {
-      background: #3b82f6;
-      color: #fff;
+      background: var(--accent);
+      color: var(--text-on-accent);
       font-size: 0.68rem;
       padding: 0.1rem 0.45rem;
       border-radius: 4px;
@@ -330,45 +330,45 @@
       align-items: center;
       gap: 0.75rem;
       padding: 0.4rem 0;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border);
     }
     .entry-row:last-child { border-bottom: none; }
-    .entry-player { font-weight: 600; color: #f3f4f6; flex: 1; font-size: 0.875rem; }
-    .entry-notes  { color: #9ca3af; font-size: 0.8rem; flex: 2; }
+    .entry-player { font-weight: 600; color: var(--text-primary); flex: 1; font-size: 0.875rem; }
+    .entry-notes  { color: var(--text-muted); font-size: 0.8rem; flex: 2; }
     .btn-remove {
       background: transparent;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       border-radius: 4px;
-      color: #6b7280;
+      color: var(--text-muted);
       cursor: pointer;
       font-size: 0.75rem;
       padding: 0.15rem 0.45rem;
       font-family: inherit;
       white-space: nowrap;
     }
-    .btn-remove:hover { border-color: #ef4444; color: #ef4444; }
+    .btn-remove:hover { border-color: var(--danger); color: var(--danger); }
 
     .add-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; }
     .add-row select, .add-row input[type="text"] {
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      color: #d1d5db;
+      color: var(--text-secondary);
       font-size: 0.8rem;
       padding: 0.35rem 0.6rem;
       font-family: inherit;
       outline: none;
     }
-    .add-row select:focus, .add-row input[type="text"]:focus { border-color: #3b82f6; }
+    .add-row select:focus, .add-row input[type="text"]:focus { border-color: var(--accent); }
     .add-row select { min-width: 200px; }
     .add-row input[type="text"] { flex: 1; min-width: 160px; }
 
     .panel-actions { display: flex; gap: 0.5rem; align-items: center; }
     .btn-action {
       background: transparent;
-      border: 1px solid #3b82f6;
+      border: 1px solid var(--accent);
       border-radius: 6px;
-      color: #60a5fa;
+      color: var(--link);
       cursor: pointer;
       font-size: 0.8rem;
       font-weight: 600;
@@ -377,14 +377,14 @@
     }
     .btn-action:hover { background: rgba(59,130,246,0.15); }
     .btn-action:disabled { opacity: 0.5; cursor: default; }
-    .save-status { font-size: 0.78rem; color: #9ca3af; }
+    .save-status { font-size: 0.78rem; color: var(--text-muted); }
 
     /* Sign-in prompt */
-    .signin-prompt { font-size: 0.8rem; color: #6b7280; margin-bottom: 1.5rem; }
+    .signin-prompt { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem; }
     .signin-prompt button {
       background: transparent;
       border: none;
-      color: #60a5fa;
+      color: var(--link);
       cursor: pointer;
       font-size: 0.8rem;
       font-family: inherit;
@@ -400,37 +400,37 @@
       z-index: 1000;
     }
     .token-modal {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 1.5rem;
       width: 360px;
       max-width: 90vw;
     }
     .token-modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
-    .token-modal p  { font-size: 0.8rem; color: #9ca3af; margin-bottom: 1rem; }
+    .token-modal p  { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; }
     .token-modal input {
       width: 100%;
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      color: #f3f4f6;
+      color: var(--text-primary);
       font-size: 0.875rem;
       font-family: monospace;
       padding: 0.5rem 0.75rem;
       margin-bottom: 1rem;
     }
-    .token-modal input:focus { outline: none; border-color: #3b82f6; }
+    .token-modal input:focus { outline: none; border-color: var(--accent); }
     .token-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
     .btn-tok-cancel {
-      padding: 0.35rem 0.8rem; border: 1px solid #374151; border-radius: 6px;
+      padding: 0.35rem 0.8rem; border: 1px solid var(--border); border-radius: 6px;
       font-size: 0.8rem; font-weight: 600; cursor: pointer;
-      background: transparent; color: #d1d5db; font-family: inherit;
+      background: transparent; color: var(--text-secondary); font-family: inherit;
     }
     .btn-tok-submit {
-      padding: 0.35rem 0.8rem; border: 1px solid #3b82f6; border-radius: 6px;
+      padding: 0.35rem 0.8rem; border: 1px solid var(--accent); border-radius: 6px;
       font-size: 0.8rem; font-weight: 600; cursor: pointer;
-      background: transparent; color: #60a5fa; font-family: inherit;
+      background: transparent; color: var(--link); font-family: inherit;
     }
   </style>
 </head>
@@ -538,7 +538,7 @@
     };
     const CAP_SWATCH_COLORS = {
       UFA: 'hsl(45,60%,35%)', RFA: 'hsl(25,60%,35%)',
-      PLAYER_OPT: 'hsl(120,50%,30%)', TEAM_OPT: 'hsl(210,55%,35%)', NON_GTD: '#374151',
+      PLAYER_OPT: 'hsl(120,50%,30%)', TEAM_OPT: 'hsl(210,55%,35%)', NON_GTD: 'var(--border)',
     };
 
     // ── Player bio lookup ─────────────────────────────────────────────────────
@@ -888,7 +888,7 @@
       FILTER_DEFS.forEach(def => {
         if (def.isPick) {
           const sep = document.createElement('span');
-          sep.style.cssText = 'color:#374151;align-self:center;font-size:0.75rem;';
+          sep.style.cssText = 'color:var(--border);align-self:center;font-size:0.75rem;';
           sep.textContent = '·';
           container.appendChild(sep);
         }
@@ -1004,7 +1004,7 @@
         const tr = tbody.insertRow();
         const td = tr.insertCell();
         td.colSpan = COLS.length;
-        td.style.cssText = 'text-align:center;padding:3rem;color:#6b7280;font-size:0.9rem;';
+        td.style.cssText = 'text-align:center;padding:3rem;color:var(--text-muted);font-size:0.9rem;';
         td.textContent = tableRows.length === 0
           ? 'Nothing on the tradeblock yet.'
           : 'No players match the selected filters.';
@@ -1025,7 +1025,7 @@
           } else if (col.key === 'player') {
             if (row.isPick) {
               const badge = document.createElement('span');
-              badge.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:0.15rem 0.5rem;border-radius:4px;background:#1e1b4b;color:#a5b4fc;';
+              badge.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:0.15rem 0.5rem;border-radius:4px;background:var(--purple-bg);color:#a5b4fc;';
               badge.textContent = row.player;
               if (row.pickApiNotes) {
                 const wrap = document.createElement('span');
@@ -1109,7 +1109,7 @@
 
       // ── Players section ───────────────────────────────────────────────────
       const playersLabel = document.createElement('div');
-      playersLabel.style.cssText = 'font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#6b7280;margin-bottom:0.4rem;';
+      playersLabel.style.cssText = 'font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.4rem;';
       playersLabel.textContent = 'Players';
       body.appendChild(playersLabel);
 
@@ -1118,7 +1118,7 @@
 
       if (pendingEntries.length === 0) {
         const empty = document.createElement('p');
-        empty.style.cssText = 'color:#6b7280;font-size:0.8rem;padding:0.2rem 0 0.6rem;';
+        empty.style.cssText = 'color:var(--text-muted);font-size:0.8rem;padding:0.2rem 0 0.6rem;';
         empty.textContent = 'No players on the block yet.';
         entryList.appendChild(empty);
       } else {
@@ -1172,7 +1172,7 @@
 
       // ── Picks section ─────────────────────────────────────────────────────
       const picksLabel = document.createElement('div');
-      picksLabel.style.cssText = 'font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#6b7280;margin:1rem 0 0.4rem;';
+      picksLabel.style.cssText = 'font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin:1rem 0 0.4rem;';
       picksLabel.textContent = 'Picks';
       body.appendChild(picksLabel);
 
@@ -1181,7 +1181,7 @@
 
       if (pendingPicks.length === 0) {
         const empty = document.createElement('p');
-        empty.style.cssText = 'color:#6b7280;font-size:0.8rem;padding:0.2rem 0 0.6rem;';
+        empty.style.cssText = 'color:var(--text-muted);font-size:0.8rem;padding:0.2rem 0 0.6rem;';
         empty.textContent = 'No picks on the block yet.';
         pickList.appendChild(empty);
       } else {
@@ -1332,10 +1332,10 @@
       }
       if (!myPicks.length && myTeam) {
         const r = await fetch(`/api/picks/${myTeam}`);
-        if (r.ok) {
-          const all = await r.json();
-          myPicks = all.filter(p => (p.owner || '').toUpperCase() === myTeam);
-        }
+        // /api/picks/{team} already filters to picks myTeam is a legitimate
+        // candidate owner of (handling compound "TEAM1|TEAM2" ownership
+        // server-side) — no client-side re-filter needed.
+        if (r.ok) myPicks = await r.json();
       }
       const teamBlock = tbData[myTeam] || {};
       pendingEntries = [...(teamBlock.players || [])];

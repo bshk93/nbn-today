@@ -12,37 +12,37 @@
 
     header { margin-bottom: 1.75rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
     .card {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 1.5rem;
       margin-bottom: 1.25rem;
     }
 
-    .loading { color: #9ca3af; text-align: center; padding: 3rem; }
+    .loading { color: var(--text-muted); text-align: center; padding: 3rem; }
 
     /* Auth gate */
     .auth-gate {
       text-align: center;
       padding: 2.5rem 1rem;
     }
-    .auth-gate p { color: #9ca3af; margin-bottom: 1.25rem; font-size: 0.9rem; }
+    .auth-gate p { color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.9rem; }
     .token-row { display: flex; gap: 0.5rem; max-width: 380px; margin: 0 auto; }
     .token-row input {
       flex: 1;
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      color: #f3f4f6;
+      color: var(--text-primary);
       padding: 0.55rem 0.75rem;
       font-size: 0.875rem;
       font-family: monospace;
     }
-    .token-row input:focus { outline: none; border-color: #3b82f6; }
-    .token-err { color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; text-align: center; }
+    .token-row input:focus { outline: none; border-color: var(--accent); }
+    .token-err { color: var(--danger); font-size: 0.8rem; margin-top: 0.5rem; text-align: center; }
 
     /* Buttons */
     .btn {
@@ -56,10 +56,10 @@
       transition: opacity 0.15s;
     }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary { background: #3b82f6; color: #fff; }
-    .btn-primary:hover:not(:disabled) { background: #2563eb; }
-    .btn-secondary { background: #374151; color: #d1d5db; }
-    .btn-secondary:hover:not(:disabled) { background: #4b5563; }
+    .btn-primary { background: var(--accent); color: var(--text-on-accent); }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
+    .btn-secondary { background: var(--border); color: var(--text-secondary); }
+    .btn-secondary:hover:not(:disabled) { background: var(--text-dim); }
 
     /* Progress bar */
     .progress-wrap { margin-bottom: 1.5rem; }
@@ -68,17 +68,17 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #6b7280;
+      color: var(--text-muted);
       margin-bottom: 0.5rem;
     }
     .progress-dots { display: flex; gap: 0.5rem; }
     .progress-dot {
       flex: 1; height: 6px; border-radius: 3px;
-      background: #374151;
+      background: var(--border);
       transition: background 0.2s;
     }
-    .progress-dot.done { background: #3b82f6; }
-    .progress-dot.active { background: #60a5fa; }
+    .progress-dot.done { background: var(--accent); }
+    .progress-dot.active { background: var(--link); }
 
     /* Slots grid */
     .slots-grid {
@@ -90,21 +90,21 @@
     .slot-chip {
       padding: 0.4rem 0;
       border-radius: 8px;
-      border: 1px solid #374151;
-      background: #111827;
+      border: 1px solid var(--border);
+      background: var(--bg-page);
       font-size: 0.78rem;
       font-weight: 700;
       text-align: center;
       cursor: default;
-      color: #6b7280;
+      color: var(--text-muted);
       transition: all 0.15s;
       position: relative;
     }
-    .slot-chip.filled { color: #34d399; border-color: #065f46; background: #064e3b22; }
-    .slot-chip.filled .slot-player { font-size: 0.68rem; font-weight: 400; color: #6ee7b7; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .slot-chip.selectable { color: #f3f4f6; border-color: #4b5563; background: #1f2937; cursor: pointer; }
-    .slot-chip.selectable:hover { border-color: #3b82f6; background: #1e3a5f; color: #93c5fd; }
-    .slot-chip.selected { border-color: #3b82f6; background: #1e3a5f; color: #93c5fd; }
+    .slot-chip.filled { color: var(--market-positive); border-color: var(--market-positive-border); background: #064e3b22; }
+    .slot-chip.filled .slot-player { font-size: 0.68rem; font-weight: 400; color: var(--market-positive-light); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot-chip.selectable { color: var(--text-primary); border-color: var(--text-dim); background: var(--bg-card); cursor: pointer; }
+    .slot-chip.selectable:hover { border-color: var(--accent); background: var(--accent-panel-bg); color: var(--accent-light); }
+    .slot-chip.selected { border-color: var(--accent); background: var(--accent-panel-bg); color: var(--accent-light); }
     .slot-chip.ineligible { opacity: 0.35; }
 
     /* Team header */
@@ -114,33 +114,33 @@
     }
     .step-badge {
       font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.1em; color: #6b7280;
-      background: #111827; border: 1px solid #374151;
+      letter-spacing: 0.1em; color: var(--text-muted);
+      background: var(--bg-page); border: 1px solid var(--border);
       border-radius: 6px; padding: 0.25rem 0.5rem;
       white-space: nowrap;
     }
     .team-name { font-size: 1.25rem; font-weight: 700; }
-    .team-abbr { font-size: 0.8rem; color: #6b7280; margin-left: 0.4rem; }
+    .team-abbr { font-size: 0.8rem; color: var(--text-muted); margin-left: 0.4rem; }
 
     /* Search */
     .search-wrap { position: relative; margin-bottom: 1rem; }
     .search-wrap input {
       width: 100%;
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      color: #f3f4f6;
+      color: var(--text-primary);
       padding: 0.6rem 0.85rem;
       font-size: 0.9rem;
     }
-    .search-wrap input:focus { outline: none; border-color: #3b82f6; }
-    .search-wrap input::placeholder { color: #4b5563; }
+    .search-wrap input:focus { outline: none; border-color: var(--accent); }
+    .search-wrap input::placeholder { color: var(--text-dim); }
     .autocomplete-list {
       position: absolute;
       top: calc(100% + 4px);
       left: 0; right: 0;
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 8px;
       max-height: 200px;
       overflow-y: auto;
@@ -152,14 +152,14 @@
       font-size: 0.875rem;
       display: flex; justify-content: space-between; align-items: center;
     }
-    .autocomplete-item:hover, .autocomplete-item.focused { background: #374151; }
+    .autocomplete-item:hover, .autocomplete-item.focused { background: var(--border); }
     .autocomplete-item .pos-tag {
-      font-size: 0.68rem; font-weight: 700; color: #6b7280;
-      background: #111827; border-radius: 4px; padding: 0.15rem 0.4rem;
+      font-size: 0.68rem; font-weight: 700; color: var(--text-muted);
+      background: var(--bg-page); border-radius: 4px; padding: 0.15rem 0.4rem;
     }
     .selected-player-row {
-      background: #1e3a5f;
-      border: 1px solid #3b82f6;
+      background: var(--accent-panel-bg);
+      border: 1px solid var(--accent);
       border-radius: 8px;
       padding: 0.6rem 0.85rem;
       margin-bottom: 1rem;
@@ -167,88 +167,88 @@
       font-size: 0.875rem;
     }
     .selected-player-row .clear-btn {
-      font-size: 0.75rem; color: #6b7280; cursor: pointer;
+      font-size: 0.75rem; color: var(--text-muted); cursor: pointer;
       background: none; border: none; padding: 0.1rem 0.3rem;
     }
-    .selected-player-row .clear-btn:hover { color: #f87171; }
+    .selected-player-row .clear-btn:hover { color: var(--danger); }
 
     /* Confirm section */
     .confirm-section { margin-top: 1rem; }
     .statline-preview {
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 1rem;
       margin-bottom: 1rem;
     }
     .statline-header {
       font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.6rem;
+      letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 0.6rem;
     }
     .statline-row { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; }
     .stat-item { text-align: center; }
-    .stat-val { font-size: 1rem; font-weight: 700; color: #f3f4f6; }
-    .stat-lbl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-top: 0.1rem; }
-    .gmsc-highlight { color: #f59e0b; }
+    .stat-val { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+    .stat-lbl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-top: 0.1rem; }
+    .gmsc-highlight { color: var(--warning); }
     .confirm-actions { display: flex; gap: 0.75rem; }
 
     /* Result screen */
     .result-score-wrap { text-align: center; margin-bottom: 1.5rem; }
-    .result-score-big { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; color: #f59e0b; }
-    .result-score-sub { color: #9ca3af; margin-top: 0.3rem; font-size: 0.9rem; }
-    .result-pct { font-size: 1.1rem; font-weight: 700; color: #34d399; margin-top: 0.5rem; }
+    .result-score-big { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; color: var(--warning); }
+    .result-score-sub { color: var(--text-muted); margin-top: 0.3rem; font-size: 0.9rem; }
+    .result-pct { font-size: 1.1rem; font-weight: 700; color: var(--market-positive); margin-top: 0.5rem; }
 
     /* Lineup / solution table */
     .lineup-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 1.25rem; }
     .lineup-table th {
       font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.08em; color: #6b7280;
+      letter-spacing: 0.08em; color: var(--text-muted);
       padding: 0.4rem 0.6rem;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border);
       text-align: left;
     }
-    .lineup-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #1f2937; }
+    .lineup-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--bg-card); }
     .lineup-table tr:last-child td { border-bottom: none; }
     .slot-badge {
       font-size: 0.68rem; font-weight: 700;
-      background: #374151; color: #9ca3af;
+      background: var(--border); color: var(--text-muted);
       border-radius: 5px; padding: 0.2rem 0.45rem;
       display: inline-block;
     }
     .player-name-cell { font-weight: 600; }
-    .season-cell { color: #9ca3af; font-size: 0.8rem; }
-    .gmsc-cell { font-weight: 700; color: #f59e0b; text-align: right; }
+    .season-cell { color: var(--text-muted); font-size: 0.8rem; }
+    .gmsc-cell { font-weight: 700; color: var(--warning); text-align: right; }
 
     /* Leaderboard */
     .lb-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     .lb-table th {
       font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.08em; color: #6b7280;
+      letter-spacing: 0.08em; color: var(--text-muted);
       padding: 0.4rem 0.6rem;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border);
       text-align: left;
     }
     .lb-table th:last-child { text-align: right; }
-    .lb-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #1f2937; }
+    .lb-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--bg-card); }
     .lb-table tr:last-child td { border-bottom: none; }
     .lb-table td:last-child { text-align: right; font-weight: 700; }
-    .lb-rank { font-weight: 700; color: #6b7280; }
-    .lb-rank.top1 { color: #fbbf24; }
-    .lb-rank.top2 { color: #9ca3af; }
-    .lb-rank.top3 { color: #d97706; }
+    .lb-rank { font-weight: 700; color: var(--text-muted); }
+    .lb-rank.top1 { color: var(--gold); }
+    .lb-rank.top2 { color: var(--text-muted); }
+    .lb-rank.top3 { color: var(--champion-border); }
     .lb-me { background: #1e3a5f22; }
-    .lb-me td:nth-child(2) { font-weight: 700; color: #93c5fd; }
-    .empty-lb { color: #6b7280; text-align: center; padding: 1rem; font-size: 0.85rem; }
+    .lb-me td:nth-child(2) { font-weight: 700; color: var(--accent-light); }
+    .empty-lb { color: var(--text-muted); text-align: center; padding: 1rem; font-size: 0.85rem; }
 
     .section-title {
       font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.1em; color: #6b7280; margin-bottom: 0.75rem;
+      letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 0.75rem;
     }
 
     .date-chip {
       display: inline-block;
       font-size: 0.72rem; font-weight: 700;
-      background: #374151; color: #9ca3af;
+      background: var(--border); color: var(--text-muted);
       border-radius: 6px; padding: 0.2rem 0.55rem;
       margin-left: 0.6rem; vertical-align: middle;
     }
@@ -256,37 +256,37 @@
     .solution-badge {
       display: inline-block;
       font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.08em; background: #78350f; color: #fcd34d;
+      letter-spacing: 0.08em; background: var(--gold-chip-border); color: #fcd34d;
       border-radius: 5px; padding: 0.2rem 0.45rem; margin-right: 0.4rem;
     }
 
     .instructions {
-      color: #9ca3af; font-size: 0.85rem; line-height: 1.6;
+      color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;
       margin-bottom: 1.5rem;
     }
-    .instructions strong { color: #d1d5db; }
+    .instructions strong { color: var(--text-secondary); }
 
     /* History */
     .history-row {
       display: flex; align-items: center; gap: 0.75rem;
       padding: 0.6rem 0;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid var(--bg-card);
       cursor: pointer;
       font-size: 0.875rem;
     }
     .history-row:last-child { border-bottom: none; }
     .history-row:hover { background: #ffffff08; border-radius: 6px; padding-left: 0.25rem; }
     .history-date { font-weight: 700; min-width: 90px; }
-    .history-teams { color: #6b7280; font-size: 0.78rem; flex: 1; }
-    .history-winner { color: #d1d5db; font-size: 0.8rem; }
-    .history-chevron { color: #4b5563; margin-left: auto; transition: transform 0.15s; }
+    .history-teams { color: var(--text-muted); font-size: 0.78rem; flex: 1; }
+    .history-winner { color: var(--text-secondary); font-size: 0.8rem; }
+    .history-chevron { color: var(--text-dim); margin-left: auto; transition: transform 0.15s; }
     .history-chevron.open { transform: rotate(90deg); }
     .history-detail {
-      background: #111827; border-radius: 8px;
+      background: var(--bg-page); border-radius: 8px;
       padding: 1rem; margin-bottom: 0.5rem;
       font-size: 0.82rem;
     }
-    .history-loading { color: #6b7280; font-size: 0.82rem; padding: 0.5rem 0; }
+    .history-loading { color: var(--text-muted); font-size: 0.82rem; padding: 0.5rem 0; }
 
     @media (max-width: 480px) {
       .slots-grid { grid-template-columns: repeat(2, 1fr); }
@@ -313,7 +313,7 @@
       margin: 0 0 18px;
       padding: 22px 16px;
       text-align: center;
-      color: #fff;
+      color: var(--text-on-accent);
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.12em;
@@ -546,7 +546,7 @@
       // Player search or selected display
       if (selectedPlayer) {
         html += `<div class="selected-player-row">
-          <span><strong>${selectedPlayer.name}</strong> <span style="color:#6b7280;font-size:0.8rem">${selectedPlayer.pos.join('/')}</span></span>
+          <span><strong>${selectedPlayer.name}</strong> <span style="color:var(--text-muted);font-size:0.8rem">${selectedPlayer.pos.join('/')}</span></span>
           <button class="clear-btn" onclick="clearPlayer()">✕ clear</button>
         </div>`;
       } else {
@@ -737,7 +737,7 @@
       html += `<div style="margin-bottom:1.25rem">
         <span class="slot-badge" style="margin-right:0.5rem">${SLOT_LABELS[p.slot]}</span>
         <strong>${escHtml(p.name)}</strong>
-        <span style="color:#6b7280;font-size:0.85rem;margin-left:0.5rem">${escHtml(p.teamName)}</span>
+        <span style="color:var(--text-muted);font-size:0.85rem;margin-left:0.5rem">${escHtml(p.teamName)}</span>
       </div>`;
 
       html += `<div class="statline-preview">
@@ -755,7 +755,7 @@
       </div>`;
 
       html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem">
-        <span style="color:#9ca3af;font-size:0.85rem">Running total: <strong style="color:#f59e0b">${runningTotal.toFixed(1)}</strong></span>
+        <span style="color:var(--text-muted);font-size:0.85rem">Running total: <strong style="color:var(--warning)">${runningTotal.toFixed(1)}</strong></span>
         <button class="btn btn-primary" onclick="advanceAfterReveal()">${isLast ? 'Submit Lineup →' : 'Next Team →'}</button>
       </div>`;
 
@@ -781,7 +781,7 @@
         });
         const data = await res.json();
         if (!res.ok) {
-          root.innerHTML = `<div class="card"><p style="color:#f87171">Error: ${escHtml(data.detail || 'Submission failed')}</p></div>`;
+          root.innerHTML = `<div class="card"><p style="color:var(--danger)">Error: ${escHtml(data.detail || 'Submission failed')}</p></div>`;
           return;
         }
         clearProgress();
@@ -795,7 +795,7 @@
         );
         loadHistory();
       } catch {
-        root.innerHTML = `<div class="card"><p style="color:#f87171">Network error. Please try again.</p></div>`;
+        root.innerHTML = `<div class="card"><p style="color:var(--danger)">Network error. Please try again.</p></div>`;
       }
     }
 
@@ -815,14 +815,14 @@
 
       // Score summary
       html += `<div class="result-score-wrap">
-        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#6b7280;margin-bottom:0.5rem">Your Score</div>
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.5rem">Your Score</div>
         <div class="result-score-big">${entry.score.toFixed(1)}</div>
         <div class="result-score-sub">/ ${solutionScore ? solutionScore.toFixed(1) : '—'} optimal`;
       if (pct != null) html += ` &nbsp;·&nbsp; <span class="result-pct">${pct}%</span>`;
       html += `</div>`;
       if (myRank > 0) {
         const medal = myRank <= 3 ? MEDALS[myRank - 1] + ' ' : '';
-        html += `<div style="color:#9ca3af;font-size:0.85rem;margin-top:0.5rem">${medal}Rank #${myRank} today</div>`;
+        html += `<div style="color:var(--text-muted);font-size:0.85rem;margin-top:0.5rem">${medal}Rank #${myRank} today</div>`;
       }
       html += `</div>`;
 
@@ -884,7 +884,7 @@
         const rankCls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
         const meCls = e.member === me ? ' lb-me' : '';
         const medal = i < 3 ? MEDALS[i] : '';
-        const prize = i < 3 ? `<span style="color:#6b7280;font-size:0.75rem"> +NB¥${PRIZES[i]}</span>` : '';
+        const prize = i < 3 ? `<span style="color:var(--text-muted);font-size:0.75rem"> +NB¥${PRIZES[i]}</span>` : '';
         html += `<tr class="${meCls}">
           <td class="lb-rank ${rankCls}">${medal || (i + 1)}</td>
           <td>${escHtml(e.member)}</td>
@@ -963,14 +963,14 @@
       let html = `<div class="history-detail">`;
       html += `<div class="section-title" style="margin-bottom:0.5rem">Leaderboard</div>`;
       if (lb.length === 0) {
-        html += `<div style="color:#6b7280;font-size:0.82rem;margin-bottom:0.75rem">No entries that day.</div>`;
+        html += `<div style="color:var(--text-muted);font-size:0.82rem;margin-bottom:0.75rem">No entries that day.</div>`;
       } else {
         html += `<table class="lb-table" style="margin-bottom:0.75rem">
           <thead><tr><th>#</th><th>Member</th><th style="text-align:right">Score</th></tr></thead><tbody>`;
         lb.forEach((e, i) => {
           const rankCls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
           const medal = i < 3 ? MEDALS[i] : '';
-          const prize = i < 3 ? ` <span style="color:#6b7280;font-size:0.72rem">+NB¥${PRIZES[i]}</span>` : '';
+          const prize = i < 3 ? ` <span style="color:var(--text-muted);font-size:0.72rem">+NB¥${PRIZES[i]}</span>` : '';
           html += `<tr><td class="lb-rank ${rankCls}">${medal || (i+1)}</td>
             <td>${escHtml(e.member)}</td><td>${e.score.toFixed(1)}${prize}</td></tr>`;
         });

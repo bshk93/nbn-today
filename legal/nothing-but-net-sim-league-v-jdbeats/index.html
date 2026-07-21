@@ -9,70 +9,70 @@
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #111827;
-      color: #d1d5db;
+      background: var(--bg-page);
+      color: var(--text-secondary);
       min-height: 100vh;
       font-size: 0.925rem;
       line-height: 1.7;
     }
     .page { max-width: 920px; margin: 0 auto; padding: 2rem 1rem 6rem; }
 
-    .breadcrumb { font-size: 0.8rem; color: #6b7280; margin-bottom: 1.5rem; }
-    .breadcrumb a { color: #6b7280; text-decoration: none; }
-    .breadcrumb a:hover { color: #d1d5db; }
+    .breadcrumb { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--text-secondary); }
 
-    .doc-header { margin-bottom: 1.75rem; border-bottom: 1px solid #374151; padding-bottom: 1.25rem; text-align: center; }
-    .court { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: #6b7280; }
-    .caption { font-size: 1.7rem; font-weight: 800; color: #f3f4f6; letter-spacing: -0.02em; margin: 0.6rem 0 0.2rem; }
-    .caption .v { color: #f59e0b; font-style: italic; font-weight: 700; }
-    .docket { font-size: 0.78rem; color: #6b7280; margin-top: 0.5rem; }
+    .doc-header { margin-bottom: 1.75rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; text-align: center; }
+    .court { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); }
+    .caption { font-size: 1.7rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; margin: 0.6rem 0 0.2rem; }
+    .caption .v { color: var(--warning); font-style: italic; font-weight: 700; }
+    .docket { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem; }
     .verdict-chip {
       display: inline-block; margin-top: 0.9rem;
-      background: #3f1d1d; border: 1px solid #b91c1c; color: #fca5a5;
+      background: #3f1d1d; border: 1px solid #b91c1c; color: var(--danger-light);
       padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
     }
 
-    h2 { font-size: 1.05rem; font-weight: 800; color: #f3f4f6; margin: 2.2rem 0 0.4rem; letter-spacing: -0.01em; }
-    h2 .num { color: #f59e0b; margin-right: 0.5rem; }
-    h3 { font-size: 0.95rem; font-weight: 700; color: #e5e7eb; margin: 1.4rem 0 0.3rem; }
+    h2 { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 2.2rem 0 0.4rem; letter-spacing: -0.01em; }
+    h2 .num { color: var(--warning); margin-right: 0.5rem; }
+    h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-secondary); margin: 1.4rem 0 0.3rem; }
     p { margin: 0.5rem 0; }
-    .lead { color: #9ca3af; }
-    strong { color: #f3f4f6; }
+    .lead { color: var(--text-muted); }
+    strong { color: var(--text-primary); }
 
     .count {
-      border: 1px solid #374151; border-left: 3px solid #f59e0b;
+      border: 1px solid var(--border); border-left: 3px solid var(--warning);
       border-radius: 8px; padding: 0.6rem 1.1rem 1rem; margin: 1.1rem 0;
       background: #161e2e;
     }
-    .count.dismissed { border-left-color: #4b5563; opacity: 0.92; }
+    .count.dismissed { border-left-color: var(--text-dim); opacity: 0.92; }
     .count .verdict { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-    .v-proven { color: #34d399; }
-    .v-pattern { color: #fbbf24; }
-    .v-dismissed { color: #9ca3af; }
+    .v-proven { color: var(--market-positive); }
+    .v-pattern { color: var(--gold); }
+    .v-dismissed { color: var(--text-muted); }
 
     table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.82rem; }
-    th, td { padding: 0.35rem 0.55rem; text-align: left; border-bottom: 1px solid #1f2937; }
-    th { color: #9ca3af; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #374151; }
+    th, td { padding: 0.35rem 0.55rem; text-align: left; border-bottom: 1px solid var(--bg-card); }
+    th { color: var(--text-muted); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); }
     td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     tr.flag td { background: #2a1c10; }
     .mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.82em; }
-    .hot { color: #fca5a5; font-weight: 700; }
+    .hot { color: var(--danger-light); font-weight: 700; }
 
     .callout {
-      background: #1a2335; border: 1px solid #2563eb; border-radius: 8px;
+      background: #1a2335; border: 1px solid var(--accent-dark); border-radius: 8px;
       padding: 0.7rem 1rem; margin: 1rem 0; font-size: 0.87rem; color: #bfdbfe;
     }
-    .callout.warn { background: #2a1c10; border-color: #b45309; color: #fcd34d; }
+    .callout.warn { background: #2a1c10; border-color: var(--gold-dim); color: #fcd34d; }
 
     ul { margin: 0.4rem 0; padding-left: 1.3rem; }
     li { margin: 0.25rem 0; }
-    .exhibit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #f59e0b; margin-top: 1.2rem; }
-    footer.sig { margin-top: 3rem; border-top: 1px solid #374151; padding-top: 1.2rem; font-size: 0.82rem; color: #9ca3af; }
+    .exhibit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--warning); margin-top: 1.2rem; }
+    footer.sig { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.2rem; font-size: 0.82rem; color: var(--text-muted); }
   </style>
 </head>
 <body>
   <div class="page">
-    <div class="breadcrumb"><a href="/">← Home</a> / <a href="/legal/">Legal</a> / NBN Sim League v. JDBeats</div>
+    <div class="breadcrumb nav"><a href="/">← Home</a> / <a href="/legal/">Legal</a> / NBN Sim League v. JDBeats</div>
 
     <header class="doc-header">
       <div class="court">Before the Nothing But Net Competition Committee</div>

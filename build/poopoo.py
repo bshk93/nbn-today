@@ -199,11 +199,23 @@ def sheet_aggregate(ws, col=6):
 
 
 def sheet_mle(ws):
-    return {
-        "type": ws.cell(row=76, column=7).value,        # G76
-        "amount": ws.cell(row=76, column=9).value or 0,  # I76
-        "remaining": ws.cell(row=77, column=9).value or 0,  # I77
-    }
+    """MLE type/amount/remaining. Searched dynamically for the 'Exception Type'
+    header row (normally G75, data on the next two rows) rather than hardcoded,
+    since a single team's tab can drift by a row versus the rest of the workbook
+    -- e.g. PHI, found 2026-07-20, had its whole MLE block shifted down by one
+    row, landing the literal header text "Amount" in the cell the old hardcoded
+    row expected to be a number, which crashed the diff for all 30 teams."""
+    def num(v):
+        return v if isinstance(v, (int, float)) else 0
+
+    for r in range(70, 82):
+        if ws.cell(row=r, column=7).value == "Exception Type":
+            return {
+                "type": ws.cell(row=r + 1, column=7).value,
+                "amount": num(ws.cell(row=r + 1, column=9).value),
+                "remaining": num(ws.cell(row=r + 2, column=9).value),
+            }
+    return {"type": None, "amount": 0, "remaining": 0}
 
 
 def sheet_bae(ws):
@@ -458,12 +470,20 @@ def fmt_money(n):
 
 
 def describe_player(p):
-    """'UFA $2,450,000' / 'RFA $19,269,273' / 'signed $16,200,000' -- used
-    wherever only one side has a name-matched entry, so a player_missing/
-    player_extra diff shows what status the side that DOES have them gave
-    them, not just a bare dollar figure."""
+    """'UFA $2,450,000' / 'RFA $19,269,273' / 'TEAM_OPT $2,150,917' /
+    'signed $16,200,000' -- used wherever only one side has a name-matched
+    entry, so a player_missing/player_extra diff shows what status the side
+    that DOES have them gave them, not just a bare dollar figure. Site-side
+    dicts carry `cat` (team_opt/player_opt, distinct from a plain guaranteed
+    year); sheet-side dicts don't, since the sheet only colors true UFA/RFA
+    holds -- a Team/Player Option year reads as ordinary contract color on
+    the sheet, so there's nothing to key off there. Without this, a real
+    team option reads as an indistinguishable "signed" contract."""
     if p["hold"]:
         return f"{p['hold']} {fmt_money(p['salary'])}"
+    cat = p.get("cat")
+    if cat in ("team_opt", "player_opt"):
+        return f"{cat.upper()} {fmt_money(p['salary'])}"
     return f"signed {fmt_money(p['salary'])}"
 
 
@@ -529,10 +549,22 @@ def diff_players(team, sheet_players_list, site_players_list, site_name_index, s
             sheet_is_hold = sp["hold"] is not None
             site_is_hold = wp["hold"] is not None
             if sheet_is_hold != site_is_hold:
+                # Fall back through cat (team_opt/player_opt) before "signed" --
+                # the sheet has no cat (only UFA/RFA fill colors), so it always
+                # falls straight to "signed" when not a hold.
+                sheet_label = (f"{sp['hold']} hold {fmt_money(sp['salary'])}" if sheet_is_hold
+                               else f"signed {fmt_money(sp['salary'])}")
+                wp_cat = wp.get("cat")
+                if site_is_hold:
+                    site_label = f"{wp['hold']} hold {fmt_money(wp['salary'])}"
+                elif wp_cat in ("team_opt", "player_opt"):
+                    site_label = f"{wp_cat.upper()} {fmt_money(wp['salary'])}"
+                else:
+                    site_label = f"signed {fmt_money(wp['salary'])}"
                 diffs.append({
                     "category": "player_status", "field": sp["name"],
-                    "sheet": f"{sp['hold']} hold {fmt_money(sp['salary'])}" if sheet_is_hold else f"signed {fmt_money(sp['salary'])}",
-                    "site": f"{wp['hold']} hold {fmt_money(wp['salary'])}" if site_is_hold else f"signed {fmt_money(wp['salary'])}",
+                    "sheet": sheet_label,
+                    "site": site_label,
                 })
             elif sheet_is_hold and site_is_hold:
                 if wp["salary"] <= 1 and sp["salary"] <= 1:

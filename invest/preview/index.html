@@ -12,19 +12,19 @@
 
     header { margin-bottom: 1.5rem; }
     header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
-    .subtitle { font-size: 0.82rem; color: #6b7280; margin-top: 0.3rem; }
+    .subtitle { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem; }
 
     .algo-box { background: #1a1a2e; border: 1px solid #2d2d54; border-radius: 8px;
                 padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.82rem; color: #a5b4fc; }
-    .algo-box code { background: #111827; border-radius: 4px; padding: 0.1rem 0.35rem;
-                     font-size: 0.8rem; color: #c4b5fd; }
+    .algo-box code { background: var(--bg-page); border-radius: 4px; padding: 0.1rem 0.35rem;
+                     font-size: 0.8rem; color: var(--purple-light); }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     thead th { padding: 0.55rem 0.75rem; text-align: left; font-size: 0.7rem; font-weight: 600;
-               letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280;
-               border-bottom: 1px solid #374151; }
+               letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
+               border-bottom: 1px solid var(--border); }
     thead th.right { text-align: right; }
-    tbody tr { border-bottom: 1px solid #1f2937; cursor: pointer; }
+    tbody tr { border-bottom: 1px solid var(--bg-card); cursor: pointer; }
     tbody tr:hover { background: #1a2233; }
     tbody tr.expanded { background: #182030; }
     td { padding: 0.6rem 0.75rem; vertical-align: middle; }
@@ -35,30 +35,30 @@
     .team-abbr { font-weight: 700; }
 
     /* colour helpers */
-    .pos { color: #34d399; }
-    .neg { color: #f87171; }
-    .neu { color: #9ca3af; }
-    .dim { color: #6b7280; }
+    .pos { color: var(--market-positive); }
+    .neg { color: var(--danger); }
+    .neu { color: var(--text-muted); }
+    .dim { color: var(--text-muted); }
 
     /* delta pill */
     .delta { display: inline-block; font-size: 0.72rem; font-weight: 700;
              border-radius: 4px; padding: 0.1rem 0.4rem; }
-    .delta.pos { background: #064e3b; color: #34d399; }
-    .delta.neg { background: #450a0a; color: #f87171; }
-    .delta.neu { background: #1f2937; color: #6b7280; }
+    .delta.pos { background: var(--market-positive-bg); color: var(--market-positive); }
+    .delta.neg { background: var(--danger-bg); color: var(--danger); }
+    .delta.neu { background: var(--bg-card); color: var(--text-muted); }
 
     /* chart row */
     .chart-row { display: none; }
     .chart-row.visible { display: table-row; }
     .chart-row td { padding: 0 0.75rem 1rem; }
-    .chart-wrap { background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 0.75rem; }
+    .chart-wrap { background: var(--bg-page); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; }
     .chart-wrap canvas { max-height: 220px; }
     .chart-legend { display: flex; gap: 1.25rem; margin-bottom: 0.5rem; font-size: 0.75rem; }
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block;
                   margin-right: 0.3rem; vertical-align: middle; }
 
-    .loading { text-align: center; color: #6b7280; padding: 3rem; }
-    .sort-note { font-size: 0.72rem; color: #4b5563; margin-bottom: 0.75rem; }
+    .loading { text-align: center; color: var(--text-muted); padding: 3rem; }
+    .sort-note { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.75rem; }
   </style>
 </head>
 <body>
@@ -83,7 +83,7 @@
 
   <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;flex-wrap:wrap">
     <div class="sort-note" style="margin:0">Sorted by largest absolute price change (current → preview).</div>
-    <label style="font-size:0.78rem;color:#9ca3af;display:flex;align-items:center;gap:0.4rem;cursor:pointer;margin-left:auto">
+    <label style="font-size:0.78rem;color:var(--text-muted);display:flex;align-items:center;gap:0.4rem;cursor:pointer;margin-left:auto">
       <input type="checkbox" id="toggle-current" checked onchange="toggleCurrentLine(this.checked)">
       Show current line
     </label>
@@ -151,8 +151,8 @@ function render(rows) {
         <td colspan="5">
           <div class="chart-wrap">
             <div class="chart-legend">
-              <span><span class="legend-dot" style="background:#60a5fa"></span>Current</span>
-              <span><span class="legend-dot" style="background:#f59e0b"></span>Preview</span>
+              <span><span class="legend-dot" style="background:var(--link)"></span>Current</span>
+              <span><span class="legend-dot" style="background:var(--warning)"></span>Preview</span>
             </div>
             <canvas id="canvas-${r.team}"></canvas>
           </div>
@@ -194,7 +194,7 @@ async function toggleChart(team) {
         {
           label: 'Current',
           data: h1.map(p => p.price),
-          borderColor: '#60a5fa',
+          borderColor: 'var(--link)',
           backgroundColor: 'transparent',
           borderWidth: 1.5,
           pointRadius: 0,
@@ -203,7 +203,7 @@ async function toggleChart(team) {
         {
           label: 'Preview',
           data: h2.map(p => p.price),
-          borderColor: '#f59e0b',
+          borderColor: 'var(--warning)',
           backgroundColor: 'transparent',
           borderWidth: 1.5,
           pointRadius: 0,
@@ -226,8 +226,8 @@ async function toggleChart(team) {
       scales: {
         x: { display: false },
         y: {
-          ticks: { color: '#6b7280', font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
-          grid:  { color: '#1f2937' },
+          ticks: { color: 'var(--text-muted)', font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
+          grid:  { color: 'var(--bg-card)' },
         },
       },
     },
@@ -243,5 +243,6 @@ function toggleCurrentLine(visible) {
 
 init();
 </script>
+<script src="/nav.js"></script>
 </body>
 </html>

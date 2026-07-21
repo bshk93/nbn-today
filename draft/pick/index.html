@@ -7,37 +7,37 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>Make a Pick — NBN Draft</title>
   <style>
-    body { background: #0f1117; color: #f3f4f6; font-family: system-ui, sans-serif; margin: 0; }
+    body { background: var(--bg-deep); color: var(--text-primary); font-family: system-ui, sans-serif; margin: 0; }
 
     /* ── Page header ─────────────────────────────────────── */
     .page-header {
       padding: 0.6rem 1rem;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid var(--bg-card);
       display: flex;
       align-items: center;
       gap: 1rem;
-      background: #111827;
+      background: var(--bg-page);
     }
-    .page-header a { color: #6b7280; font-size: 0.8rem; text-decoration: none; }
-    .page-header a:hover { color: #f3f4f6; }
-    .page-header h1 { font-size: 0.95rem; font-weight: 700; margin: 0; color: #f3f4f6; flex: 1; }
-    .signed-in-as { font-size: 0.75rem; color: #4b5563; }
+    .page-header a { color: var(--text-muted); font-size: 0.8rem; text-decoration: none; }
+    .page-header a:hover { color: var(--text-primary); }
+    .page-header h1 { font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--text-primary); flex: 1; }
+    .signed-in-as { font-size: 0.75rem; color: var(--text-dim); }
 
     /* ── Status bar ──────────────────────────────────────── */
     .status-bar {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
+      background: var(--bg-page);
+      border-bottom: 1px solid var(--bg-card);
       padding: 0.6rem 1rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
     }
-    .status-text { font-size: 0.85rem; font-weight: 600; color: #f3f4f6; }
-    .status-sub  { font-size: 0.75rem; color: #6b7280; margin-top: 0.1rem; }
-    .countdown   { font-size: 1.1rem; font-weight: 700; color: #facc15; font-variant-numeric: tabular-nums; }
-    .live-badge  { display: inline-flex; align-items: center; gap: 0.3rem; background: #7f1d1d; color: #fca5a5; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.4rem; }
-    .live-dot    { width: 6px; height: 6px; border-radius: 50%; background: #f87171; animation: pulse 1.4s ease-in-out infinite; }
+    .status-text { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+    .status-sub  { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .countdown   { font-size: 1.1rem; font-weight: 700; color: var(--gold-alt); font-variant-numeric: tabular-nums; }
+    .live-badge  { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--danger-border); color: var(--danger-light); font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.4rem; }
+    .live-dot    { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
     /* ── Layout ──────────────────────────────────────────── */
@@ -48,7 +48,7 @@
       min-height: calc(100vh - 90px);
     }
     .left-panel {
-      border-right: 1px solid #1f2937;
+      border-right: 1px solid var(--bg-card);
       overflow-y: auto;
       max-height: calc(100vh - 90px);
       position: sticky;
@@ -60,7 +60,7 @@
 
     /* ── Cards / sections ────────────────────────────────── */
     .panel-section {
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid var(--bg-card);
       padding: 0.9rem 1rem;
     }
     .panel-title {
@@ -68,7 +68,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #4b5563;
+      color: var(--text-dim);
       margin-bottom: 0.65rem;
     }
 
@@ -79,20 +79,20 @@
       gap: 0.75rem;
       padding: 0.55rem 0.7rem;
       border-radius: 6px;
-      border: 1px solid #1f2937;
-      background: #111827;
+      border: 1px solid var(--bg-card);
+      background: var(--bg-page);
       margin-bottom: 0.4rem;
       font-size: 0.82rem;
     }
-    .pick-slot.on-clock { border-color: #3b82f6; background: #0d1f3c; }
+    .pick-slot.on-clock { border-color: var(--accent); background: #0d1f3c; }
     .pick-slot.submitted { opacity: 0.6; }
     .pick-slot-info { flex: 1; min-width: 0; }
-    .pick-slot-num  { font-weight: 700; color: #f3f4f6; }
-    .pick-slot-time { font-size: 0.72rem; color: #6b7280; }
+    .pick-slot-num  { font-weight: 700; color: var(--text-primary); }
+    .pick-slot-time { font-size: 0.72rem; color: var(--text-muted); }
     .pick-slot-status { font-size: 0.78rem; }
-    .pick-slot-queued { color: #93c5fd; font-weight: 600; }
-    .pick-slot-done   { color: #4ade80; }
-    .pick-slot-none   { color: #4b5563; font-style: italic; }
+    .pick-slot-queued { color: var(--accent-light); font-weight: 600; }
+    .pick-slot-done   { color: var(--success); }
+    .pick-slot-none   { color: var(--text-dim); font-style: italic; }
 
     /* ── Queue ───────────────────────────────────────────── */
     .queue-list { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.5rem; }
@@ -101,19 +101,19 @@
       align-items: center;
       gap: 0.4rem;
       padding: 0.3rem 0.5rem;
-      background: #111827;
-      border: 1px solid #1f2937;
+      background: var(--bg-page);
+      border: 1px solid var(--bg-card);
       border-radius: 5px;
       font-size: 0.82rem;
     }
-    .queue-rank  { color: #4b5563; font-size: 0.72rem; min-width: 1.2rem; font-variant-numeric: tabular-nums; }
-    .queue-name  { flex: 1; color: #f3f4f6; }
-    .queue-empty { color: #374151; font-size: 0.8rem; font-style: italic; padding: 0.4rem 0; }
+    .queue-rank  { color: var(--text-dim); font-size: 0.72rem; min-width: 1.2rem; font-variant-numeric: tabular-nums; }
+    .queue-name  { flex: 1; color: var(--text-primary); }
+    .queue-empty { color: var(--border); font-size: 0.8rem; font-style: italic; padding: 0.4rem 0; }
     .queue-add   { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.4rem; }
 
     /* ── Make Pick (BOD) ─────────────────────────────────── */
     .make-pick-form { display: flex; flex-direction: column; gap: 0.5rem; }
-    .make-pick-label { font-size: 0.8rem; color: #9ca3af; }
+    .make-pick-label { font-size: 0.8rem; color: var(--text-muted); }
 
     /* ── Available players table ─────────────────────────── */
     .available-wrap { padding: 0.9rem 1rem; }
@@ -122,7 +122,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #4b5563;
+      color: var(--text-dim);
       margin-bottom: 0.65rem;
     }
     table.pool-table {
@@ -133,29 +133,29 @@
     table.pool-table thead th {
       text-align: left;
       padding: 0.4rem 0.6rem;
-      color: #6b7280;
+      color: var(--text-muted);
       font-size: 0.72rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      border-bottom: 1px solid #1f2937;
-      background: #111827;
+      border-bottom: 1px solid var(--bg-card);
+      background: var(--bg-page);
       position: sticky;
       top: 0;
       z-index: 1;
     }
     table.pool-table td {
       padding: 0.4rem 0.6rem;
-      border-bottom: 1px solid #111827;
-      color: #f3f4f6;
+      border-bottom: 1px solid var(--bg-page);
+      color: var(--text-primary);
       vertical-align: middle;
     }
-    table.pool-table tr:hover td { background: #1f2937; }
-    table.pool-table td.muted { color: #6b7280; font-size: 0.75rem; }
-    table.pool-table td.num { color: #4b5563; font-variant-numeric: tabular-nums; width: 2rem; }
+    table.pool-table tr:hover td { background: var(--bg-card); }
+    table.pool-table td.muted { color: var(--text-muted); font-size: 0.75rem; }
+    table.pool-table td.num { color: var(--text-dim); font-variant-numeric: tabular-nums; width: 2rem; }
     .in-queue-badge {
       font-size: 0.7rem;
-      color: #60a5fa;
+      color: var(--link);
       font-weight: 600;
       padding: 0.15rem 0.4rem;
       background: #172554;
@@ -165,27 +165,27 @@
       font-size: 0.72rem;
       padding: 0.2rem 0.5rem;
       background: transparent;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       border-radius: 4px;
-      color: #9ca3af;
+      color: var(--text-muted);
       cursor: pointer;
       white-space: nowrap;
     }
-    .btn-add-queue:hover { border-color: #6b7280; color: #f3f4f6; }
+    .btn-add-queue:hover { border-color: var(--text-muted); color: var(--text-primary); }
 
     /* ── Shared buttons ──────────────────────────────────── */
     .btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 0.82rem; font-weight: 600; cursor: pointer; border: none; padding: 0.35rem 0.75rem; }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary { background: #2563eb; color: #fff; }
-    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
-    .btn-ghost   { background: transparent; border: 1px solid #374151; color: #9ca3af; }
-    .btn-ghost:hover:not(:disabled)  { border-color: #6b7280; color: #f3f4f6; }
-    .btn-danger  { background: transparent; border: 1px solid #7f1d1d; color: #f87171; }
+    .btn-primary { background: var(--accent-dark); color: var(--text-on-accent); }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
+    .btn-ghost   { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+    .btn-ghost:hover:not(:disabled)  { border-color: var(--text-muted); color: var(--text-primary); }
+    .btn-danger  { background: transparent; border: 1px solid var(--danger-border); color: var(--danger); }
     .btn-danger:hover:not(:disabled) { background: #7f1d1d33; }
     .btn-sm { font-size: 0.72rem; padding: 0.2rem 0.45rem; }
 
     .player-select {
-      background: #1f2937; border: 1px solid #374151; color: #f3f4f6;
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
       border-radius: 5px; padding: 0.3rem 0.5rem; font-size: 0.8rem; width: 100%;
     }
 
@@ -197,24 +197,24 @@
       justify-content: center;
       min-height: 60vh;
       gap: 0.75rem;
-      color: #6b7280;
+      color: var(--text-muted);
       font-size: 0.9rem;
     }
     .auth-wall p { margin: 0; }
 
     @media (max-width: 700px) {
       .layout { grid-template-columns: 1fr; }
-      .left-panel { max-height: none; position: static; border-right: none; border-bottom: 1px solid #1f2937; }
+      .left-panel { max-height: none; position: static; border-right: none; border-bottom: 1px solid var(--bg-card); }
     }
   </style>
 </head>
 <body>
 
-  <div class="page-header">
+  <div class="page-header nav">
     <a href="/draft/live/">← Draft</a>
     <h1>Make a Pick</h1>
     <span class="signed-in-as" id="signed-in-as"></span>
-    <a href="/draft/guide/" style="font-size:0.75rem;color:#4b5563;text-decoration:none" onmouseover="this.style.color='#9ca3af'" onmouseout="this.style.color='#4b5563'">Guide</a>
+    <a href="/draft/guide/" style="font-size:0.75rem;color:var(--text-dim);text-decoration:none" onmouseover="this.style.color='var(--text-muted)'" onmouseout="this.style.color='var(--text-dim)'">Guide</a>
   </div>
 
   <div class="status-bar" id="status-bar">
@@ -257,7 +257,7 @@
           <select id="make-pick-player" class="player-select" style="display:none"></select>
           <div style="display:flex;gap:0.5rem;align-items:center">
             <button class="btn btn-ghost btn-sm" id="make-pick-btn" disabled>Submit Pick</button>
-            <span id="make-pick-status" style="font-size:0.75rem;color:#6b7280"></span>
+            <span id="make-pick-status" style="font-size:0.75rem;color:var(--text-muted)"></span>
           </div>
         </div>
       </div>
@@ -544,7 +544,7 @@
       const owners = pickOwners(p);
       const isMyPick = myTeams.some(t => owners.includes(t));
       const now = Date.now();
-      const youBadge = isMyPick ? ' <span style="color:#4ade80">(You!)</span>' : '';
+      const youBadge = isMyPick ? ' <span style="color:var(--success)">(You!)</span>' : '';
 
       if (p.player) {
         // Staged but not yet revealed — the presenter is up next
@@ -628,7 +628,7 @@
 
         let statusHtml;
         if (isSubmitted) {
-          statusHtml = `<span class="pick-slot-done">✓ ${bioName(p.player)}${canUnstage ? ` <span style="color:#9ca3af;font-weight:400">— locked in early</span>` : ''}</span>`;
+          statusHtml = `<span class="pick-slot-done">✓ ${bioName(p.player)}${canUnstage ? ` <span style="color:var(--text-muted);font-weight:400">— locked in early</span>` : ''}</span>`;
         } else if (isUp && nextUp) {
           statusHtml = `<span class="pick-slot-queued">You're up${aheadOfSchedule ? ' early' : ''} — press Submit to pick ${bioName(nextUp)}</span>`;
         } else if (isUp) {
@@ -641,7 +641,7 @@
 
         div.innerHTML = `
           <div class="pick-slot-info">
-            <div class="pick-slot-num">R${p.round} · Pick ${p.pick}${owners.join('/') !== team ? ` <span style="color:#4b5563;font-size:0.72rem">(via ${owners.join('/')})</span>` : ''}</div>
+            <div class="pick-slot-num">R${p.round} · Pick ${p.pick}${owners.join('/') !== team ? ` <span style="color:var(--text-dim);font-size:0.72rem">(via ${owners.join('/')})</span>` : ''}</div>
             <div class="pick-slot-time">${timeStr}</div>
           </div>
           <div class="pick-slot-status">${statusHtml}</div>
@@ -875,7 +875,7 @@
 
       tbody.innerHTML = '';
       if (!available.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color:#4b5563;font-style:italic;padding:1rem">All players drafted.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-dim);font-style:italic;padding:1rem">All players drafted.</td></tr>`;
         return;
       }
 
@@ -980,5 +980,6 @@
       setInterval(async () => { await refreshState(); render(); }, 10_000);
     })();
   </script>
+  <script src="/nav.js"></script>
 </body>
 </html>

@@ -24,14 +24,14 @@
     }
 
     header p {
-      color: #9ca3af;
+      color: var(--text-muted);
       margin-top: 0.4rem;
       font-size: 0.9rem;
     }
 
     .table-wrap {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow-x: auto;
     }
@@ -50,8 +50,8 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #6b7280;
-      border-bottom: 1px solid #374151;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
       cursor: pointer;
       user-select: none;
       position: relative;
@@ -66,26 +66,26 @@
     thead th[data-active="true"] .sort-arrow { opacity: 1; }
 
     tbody tr {
-      border-bottom: 1px solid #283141;
+      border-bottom: 1px solid var(--border-subtle);
       transition: background 0.1s;
     }
 
     tbody tr:last-child { border-bottom: none; }
 
-    tbody tr:hover { background: #263244; }
+    tbody tr:hover { background: var(--bg-hover); }
 
     td {
       padding: 0.65rem 1rem;
-      color: #d1d5db;
+      color: var(--text-secondary);
     }
 
     td.owner-name {
       font-weight: 600;
-      color: #f3f4f6;
+      color: var(--text-primary);
     }
 
     td.team-name {
-      color: #9ca3af;
+      color: var(--text-muted);
       font-size: 0.8rem;
     }
 
@@ -94,7 +94,7 @@
       font-variant-numeric: tabular-nums;
     }
 
-    td.muted { color: #6b7280; }
+    td.muted { color: var(--text-muted); }
 
     td.center { text-align: center; }
 
@@ -110,8 +110,8 @@
       padding: 0 0.3rem;
     }
 
-    .trophy-gold { background: #78350f; color: #fbbf24; }
-    .trophy-silver { background: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+    .trophy-gold { background: var(--gold-chip-border); color: var(--gold); }
+    .trophy-silver { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); }
 
     .achievement {
       display: inline-block;
@@ -132,9 +132,9 @@
       bottom: calc(100% + 5px);
       left: 50%;
       transform: translateX(-50%);
-      background: #1f2937;
-      border: 1px solid #374151;
-      color: #d1d5db;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
       padding: 0.25rem 0.5rem;
       border-radius: 4px;
       font-size: 0.75rem;
@@ -150,7 +150,7 @@
     #status {
       text-align: center;
       padding: 3rem;
-      color: #6b7280;
+      color: var(--text-muted);
       font-size: 0.9rem;
     }
   </style>

@@ -13,7 +13,7 @@
     /* ── Admin panel ──────────────────────────────────── */
     #admin-panel, #bod-panel {
       background: #111;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       border-radius: 8px;
       margin-bottom: 1.5rem;
       font-size: 0.85rem;
@@ -21,54 +21,54 @@
     #admin-panel summary, #bod-panel summary {
       padding: 0.5rem 0.75rem;
       cursor: pointer;
-      color: #6b7280;
+      color: var(--text-muted);
       font-size: 0.75rem;
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       user-select: none;
     }
-    #admin-panel summary:hover, #bod-panel summary:hover { color: #9ca3af; }
+    #admin-panel summary:hover, #bod-panel summary:hover { color: var(--text-muted); }
     .admin-form {
       padding: 0.75rem;
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
       align-items: flex-end;
-      border-top: 1px solid #1f2937;
+      border-top: 1px solid var(--bg-card);
     }
     .admin-field { display: flex; flex-direction: column; gap: 0.3rem; }
-    .admin-field label { font-size: 0.7rem; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .admin-field label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
     .admin-field input[type="text"],
     .admin-field input[type="date"],
     .admin-field input[type="number"] {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 5px;
-      color: #f3f4f6;
+      color: var(--text-primary);
       font-size: 0.8rem;
       padding: 0.3rem 0.5rem;
       font-family: inherit;
     }
     .admin-field input[type="text"] { width: 320px; }
     .admin-toggle { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.1rem; }
-    .admin-toggle label { font-size: 0.85rem; color: #d1d5db; cursor: pointer; }
+    .admin-toggle label { font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; }
     .btn { padding: 0.35rem 0.9rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: inherit; border: none; }
-    .btn-primary { background: #3b82f6; color: #fff; }
-    .btn-primary:hover { background: #2563eb; }
-    .btn-primary:disabled { background: #374151; color: #6b7280; cursor: default; }
-    .btn-ghost { background: transparent; border: 1px solid #374151; color: #9ca3af; }
-    .btn-ghost:hover { border-color: #6b7280; color: #d1d5db; }
-    .btn-danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; }
+    .btn-primary { background: var(--accent); color: var(--text-on-accent); }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: default; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+    .btn-ghost:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+    .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
     .btn-danger:hover { background: #ef444420; }
     .btn-sm { padding: 0.2rem 0.55rem; font-size: 0.75rem; }
-    #admin-status { font-size: 0.75rem; color: #6b7280; align-self: center; }
+    #admin-status { font-size: 0.75rem; color: var(--text-muted); align-self: center; }
 
 
     /* ── Status bar ───────────────────────────────────── */
     .status-bar {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 1rem 1.25rem;
       margin-bottom: 1.25rem;
@@ -82,7 +82,7 @@
       align-items: center;
       gap: 0.35rem;
       background: #dc2626;
-      color: #fff;
+      color: var(--text-on-accent);
       font-size: 0.65rem;
       font-weight: 800;
       letter-spacing: 0.1em;
@@ -98,17 +98,17 @@
       animation: pulse 1.2s infinite;
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .status-text { font-size: 0.95rem; font-weight: 600; color: #f3f4f6; flex: 1; }
-    .status-sub { font-size: 0.8rem; color: #9ca3af; }
+    .status-text { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); flex: 1; }
+    .status-sub { font-size: 0.8rem; color: var(--text-muted); }
     .countdown {
       font-size: 2rem;
       font-weight: 800;
       font-variant-numeric: tabular-nums;
-      color: #f3f4f6;
+      color: var(--text-primary);
       letter-spacing: -0.02em;
       flex-shrink: 0;
     }
-    .countdown.urgent { color: #f87171; }
+    .countdown.urgent { color: var(--danger); }
 
     /* ── Draft board ──────────────────────────────────── */
     .section { margin-bottom: 2rem; }
@@ -118,19 +118,19 @@
     .pool-draggable { cursor: grab; }
     .pool-draggable:active { cursor: grabbing; }
     .pool-dragging { opacity: 0.35; }
-    .pool-drag-over { background: #1e3a5f !important; outline: 1px solid #3b82f6; }
-    body.pool-view #pool-section thead th { position: sticky; top: 0; background: #1f2937; z-index: 1; }
+    .pool-drag-over { background: var(--accent-panel-bg) !important; outline: 1px solid var(--accent); }
+    body.pool-view #pool-section thead th { position: sticky; top: 0; background: var(--bg-card); z-index: 1; }
     .section-title {
       font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #6b7280;
+      color: var(--text-muted);
       margin-bottom: 0.6rem;
     }
     .table-wrap {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       overflow-x: auto;
     }
@@ -142,30 +142,30 @@
       font-weight: 600;
       letter-spacing: 0.07em;
       text-transform: uppercase;
-      color: #6b7280;
-      border-bottom: 1px solid #374151;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
     }
-    tbody tr { border-bottom: 1px solid #283141; }
+    tbody tr { border-bottom: 1px solid var(--border-subtle); }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: #263244; }
-    td { padding: 0.5rem 0.75rem; color: #d1d5db; }
-    td.num { color: #6b7280; font-size: 0.75rem; width: 3rem; font-variant-numeric: tabular-nums; }
-    td.muted { color: #9ca3af; }
+    tbody tr:hover { background: var(--bg-hover); }
+    td { padding: 0.5rem 0.75rem; color: var(--text-secondary); }
+    td.num { color: var(--text-muted); font-size: 0.75rem; width: 3rem; font-variant-numeric: tabular-nums; }
+    td.muted { color: var(--text-muted); }
     td.team { font-weight: 600; }
     .player-cell { display: flex; align-items: center; gap: 0.55rem; }
     .player-photo {
       width: 30px; height: 30px; border-radius: 50%;
       object-fit: cover; object-position: top center;
-      background: #374151; flex-shrink: 0;
+      background: var(--border); flex-shrink: 0;
     }
-    .player-ph { width: 30px; height: 30px; border-radius: 50%; background: #374151; flex-shrink: 0; }
-    .player-name { font-weight: 600; color: #f3f4f6; }
+    .player-ph { width: 30px; height: 30px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+    .player-name { font-weight: 600; color: var(--text-primary); }
 
     .pick-in-cell {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      color: #facc15;
+      color: var(--gold-alt);
       font-weight: 700;
       font-size: 0.8rem;
       letter-spacing: 0.05em;
@@ -181,35 +181,35 @@
     .pick-in-btn:active { opacity: 0.65; }
     .pick-in-dot {
       width: 7px; height: 7px;
-      background: #facc15;
+      background: var(--gold-alt);
       border-radius: 50%;
       animation: pulse 1s infinite;
     }
 
-    .empty-state { padding: 2.5rem; text-align: center; color: #6b7280; font-size: 0.88rem; }
+    .empty-state { padding: 2.5rem; text-align: center; color: var(--text-muted); font-size: 0.88rem; }
 
     .round-separator {
       font-size: 0.68rem;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #374151;
+      color: var(--border);
       background: #1a2336;
       padding: 0.35rem 0.75rem;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border);
     }
 
     select.player-select {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 5px;
-      color: #f3f4f6;
+      color: var(--text-primary);
       font-size: 0.8rem;
       padding: 0.25rem 0.5rem;
       font-family: inherit;
       max-width: 200px;
     }
-    select.player-select:focus { outline: none; border-color: #60a5fa; }
+    select.player-select:focus { outline: none; border-color: var(--link); }
 
     /* ── View tabs ────────────────────────────────────── */
     .view-tabs {
@@ -224,12 +224,12 @@
       font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       background: transparent;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
-    .view-tab-btn:hover { color: #f3f4f6; border-color: #6b7280; }
-    .view-tab-btn.active { background: #1f2937; color: #f3f4f6; border-color: #6b7280; }
+    .view-tab-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+    .view-tab-btn.active { background: var(--bg-card); color: var(--text-primary); border-color: var(--text-muted); }
 
     /* ── Round sub-tabs ───────────────────────────────── */
     .round-tabs {
@@ -245,13 +245,13 @@
       font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       background: transparent;
-      color: #6b7280;
+      color: var(--text-muted);
     }
-    .round-tab-btn:hover { color: #d1d5db; border-color: #4b5563; }
-    .round-tab-btn.active { background: #1f2937; color: #f3f4f6; border-color: #6b7280; }
-    .round-tab-hint { font-size: 0.65rem; color: #374151; margin-left: 0.4rem; }
+    .round-tab-btn:hover { color: var(--text-secondary); border-color: var(--text-dim); }
+    .round-tab-btn.active { background: var(--bg-card); color: var(--text-primary); border-color: var(--text-muted); }
+    .round-tab-hint { font-size: 0.65rem; color: var(--border); margin-left: 0.4rem; }
     .pick-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -265,23 +265,23 @@
       display: flex;
       align-items: center;
       gap: 0.55rem;
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 6px;
       padding: 0.45rem 0.75rem;
       min-width: 0;
       overflow: hidden;
     }
-    .pick-card.on-clock { background: #0d1f3c; border-color: #3b82f6; }
-    .pc-num { font-size: 0.7rem; color: #4b5563; font-variant-numeric: tabular-nums; flex-shrink: 0; width: 1.6rem; }
+    .pick-card.on-clock { background: #0d1f3c; border-color: var(--accent); }
+    .pc-num { font-size: 0.7rem; color: var(--text-dim); font-variant-numeric: tabular-nums; flex-shrink: 0; width: 1.6rem; }
     .pc-team-wrap { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; width: 4.2rem; }
     .pc-team-logo { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
     .pc-team { font-size: 0.8rem; font-weight: 700; }
     .pc-player-wrap { flex: 1; display: flex; align-items: center; gap: 0.45rem; min-width: 0; overflow: hidden; }
     .pc-name { font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .pc-clock { color: #facc15; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
-    .pc-late { color: #fb923c; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
-    .pc-meta { font-size: 0.72rem; color: #6b7280; flex-shrink: 0; white-space: nowrap; margin-left: auto; }
+    .pc-clock { color: var(--gold-alt); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+    .pc-late { color: var(--danger-alt); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+    .pc-meta { font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; white-space: nowrap; margin-left: auto; }
 
     /* ── Trade-to-announce banner ─────────────────────── */
     #trade-banner { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
@@ -298,26 +298,26 @@
     .trade-card-badge {
       display: inline-flex; align-items: center; gap: 0.35rem;
       font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-      color: #fb923c; flex-shrink: 0;
+      color: var(--danger-alt); flex-shrink: 0;
     }
-    .trade-card-dot { width: 7px; height: 7px; background: #fb923c; border-radius: 50%; animation: pulse 1.2s infinite; }
+    .trade-card-dot { width: 7px; height: 7px; background: var(--danger-alt); border-radius: 50%; animation: pulse 1.2s infinite; }
     .trade-card-detail { flex: 1; min-width: 0; font-size: 0.85rem; color: #fdba74; }
     .trade-card-detail .swap { color: #fed7aa; font-weight: 600; white-space: nowrap; }
     .trade-card-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
-    .btn-announce { background: #ea580c; color: #fff; }
+    .btn-announce { background: #ea580c; color: var(--text-on-accent); }
     .btn-announce:hover { background: #c2410c; }
 
     /* ── Trade builder rows (BOD drawer) ──────────────── */
     .trade-row { display: flex; gap: 0.4rem; align-items: center; }
     .trade-row .player-select { flex: 1; max-width: none; }
     .trade-row-remove {
-      background: none; border: none; color: #6b7280; cursor: pointer;
+      background: none; border: none; color: var(--text-muted); cursor: pointer;
       font-size: 1rem; line-height: 1; padding: 0 0.2rem; flex-shrink: 0;
     }
-    .trade-row-remove:hover { color: #f87171; }
+    .trade-row-remove:hover { color: var(--danger); }
     #trade-text {
-      background: #1f2937; border: 1px solid #374151; border-radius: 5px;
-      color: #f3f4f6; font-size: 0.8rem; padding: 0.4rem 0.5rem; font-family: inherit;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 5px;
+      color: var(--text-primary); font-size: 0.8rem; padding: 0.4rem 0.5rem; font-family: inherit;
       width: 100%; box-sizing: border-box; resize: vertical; min-height: 3rem;
     }
 
@@ -325,12 +325,12 @@
     .trade-announce-body { padding: 2rem 1.75rem; }
     .trade-announce-eyebrow {
       font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
-      color: #fb923c; margin-bottom: 0.6rem;
+      color: var(--danger-alt); margin-bottom: 0.6rem;
     }
-    .trade-announce-text { font-size: 1.25rem; font-weight: 700; color: #f3f4f6; line-height: 1.5; white-space: pre-wrap; }
+    .trade-announce-text { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap; }
     .trade-announce-swaps { margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; }
-    .trade-announce-swap { font-size: 0.95rem; color: #d1d5db; }
-    .trade-announce-swap .arrow { color: #fb923c; margin: 0 0.4rem; }
+    .trade-announce-swap { font-size: 0.95rem; color: var(--text-secondary); }
+    .trade-announce-swap .arrow { color: var(--danger-alt); margin: 0 0.4rem; }
 
     /* ── Show modal overlay ───────────────────────────── */
     #show-overlay {
@@ -344,8 +344,8 @@
       padding: 1rem;
     }
     .show-modal {
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 14px;
       width: 100%;
       max-width: 1100px;
@@ -366,61 +366,61 @@
     .show-modal-player-ph {
       width: 60px; height: 60px;
       border-radius: 50%;
-      background: #374151;
+      background: var(--border);
       flex-shrink: 0;
     }
     .show-modal-pick-badge {
       font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em;
-      text-transform: uppercase; color: #facc15;
+      text-transform: uppercase; color: var(--gold-alt);
       background: #292308; border: 1px solid #713f12;
       border-radius: 4px; padding: 0.15rem 0.45rem;
       display: inline-block; margin-bottom: 0.35rem;
     }
-    .show-modal-title { font-size: 1.6rem; font-weight: 800; color: #f3f4f6; letter-spacing: -0.02em; }
-    .show-modal-sub { font-size: 0.9rem; color: #9ca3af; margin-top: 0.15rem; }
+    .show-modal-title { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+    .show-modal-sub { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.15rem; }
     .show-embed-wrap { position: relative; width: 100%; padding-top: 56.25%; background: #0f0f0f; }
     .show-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
     .show-no-video {
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 0.5rem; color: #4b5563; font-size: 0.85rem;
+      gap: 0.5rem; color: var(--text-dim); font-size: 0.85rem;
     }
     .show-modal-footer {
       padding: 0.75rem 1.5rem;
       display: flex; align-items: center; gap: 0.75rem;
-      border-top: 1px solid #1f2937;
+      border-top: 1px solid var(--bg-card);
     }
-    .show-modal-hint { font-size: 0.75rem; color: #4b5563; flex: 1; }
+    .show-modal-hint { font-size: 0.75rem; color: var(--text-dim); flex: 1; }
     .show-modal-hint kbd {
       display: inline-block;
-      background: #1f2937; border: 1px solid #374151; border-radius: 4px;
-      padding: 0.1rem 0.4rem; font-family: inherit; font-size: 0.72rem; color: #9ca3af;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px;
+      padding: 0.1rem 0.4rem; font-family: inherit; font-size: 0.72rem; color: var(--text-muted);
     }
     .highlight-url-form {
       display: flex; gap: 0.5rem;
       padding: 0.6rem 1.5rem;
-      border-top: 1px solid #1f2937;
+      border-top: 1px solid var(--bg-card);
       background: #0d1117;
     }
     .highlight-url-form input {
       flex: 1;
-      background: #1f2937; border: 1px solid #374151; border-radius: 5px;
-      color: #f3f4f6; font-size: 0.8rem; padding: 0.3rem 0.5rem; font-family: inherit;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 5px;
+      color: var(--text-primary); font-size: 0.8rem; padding: 0.3rem 0.5rem; font-family: inherit;
     }
     .highlight-url-label {
       font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
-      text-transform: uppercase; color: #4b5563; align-self: center; white-space: nowrap;
+      text-transform: uppercase; color: var(--text-dim); align-self: center; white-space: nowrap;
     }
 
     /* ── Depth chart modal ────────────────────────────── */
     .depth-modal-header {
       padding: 1.25rem 1.5rem 1rem;
       display: flex; align-items: center; gap: 0.85rem;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid var(--bg-card);
     }
     .depth-team-logo { width: 44px; height: 44px; object-fit: contain; }
-    .depth-team-name { font-size: 1.2rem; font-weight: 800; color: #f3f4f6; }
+    .depth-team-name { font-size: 1.2rem; font-weight: 800; color: var(--text-primary); }
     .depth-court-wrap {
       position: relative; padding: 0.6rem; background: #090f1c; overflow: hidden;
     }
@@ -435,11 +435,11 @@
       gap: 1rem 0.45rem;
     }
     .depth-pos-group {
-      background: rgba(13, 20, 38, 0.72); border: 1px solid #1f2937; border-radius: 6px; overflow: hidden;
+      background: rgba(13, 20, 38, 0.72); border: 1px solid var(--bg-card); border-radius: 6px; overflow: hidden;
     }
     .depth-pos-group-hdr {
       font-size: 0.58rem; font-weight: 700; letter-spacing: 0.09em;
-      text-transform: uppercase; color: #6b7280;
+      text-transform: uppercase; color: var(--text-muted);
       background: rgba(0,0,0,0.3); padding: 0.2rem 0.55rem;
       border-bottom: 1px solid #1a2336;
     }
@@ -448,18 +448,18 @@
       padding: 0.2rem 0.55rem; border-bottom: 1px solid #0f1a28; font-size: 0.78rem;
     }
     .depth-player-row:last-child { border-bottom: none; }
-    .depth-player-name { color: #f3f4f6; font-weight: 600; }
-    .depth-player-ovr { color: #9ca3af; font-variant-numeric: tabular-nums; font-size: 0.74rem; margin-left: 0.5rem; flex-shrink: 0; }
+    .depth-player-name { color: var(--text-primary); font-weight: 600; }
+    .depth-player-ovr { color: var(--text-muted); font-variant-numeric: tabular-nums; font-size: 0.74rem; margin-left: 0.5rem; flex-shrink: 0; }
     .cap-hold-tag {
       display: inline-block; font-size: 0.6rem; font-weight: 700;
       letter-spacing: 0.05em; padding: 0.1rem 0.35rem;
       border-radius: 3px; vertical-align: middle; margin-left: 0.4rem;
     }
-    .ch-ufa   { background: #3d3200; color: #facc15; }
-    .ch-rfa   { background: #431407; color: #fb923c; }
-    .ch-popt  { background: #14352a; color: #6ee7b7; }
-    .ch-topt  { background: #1e3a5f; color: #93c5fd; }
-    .ch-ngtd  { background: #3b1919; color: #f87171; }
+    .ch-ufa   { background: #3d3200; color: var(--gold-alt); }
+    .ch-rfa   { background: var(--danger-alt-bg); color: var(--danger-alt); }
+    .ch-popt  { background: #14352a; color: var(--market-positive-light); }
+    .ch-topt  { background: var(--accent-panel-bg); color: var(--accent-light); }
+    .ch-ngtd  { background: #3b1919; color: var(--danger); }
 
     /* ── Clickable name buttons ───────────────────────── */
     .name-btn {
@@ -468,23 +468,23 @@
       color: inherit; cursor: pointer; text-align: left;
     }
     .name-btn:hover { text-decoration: underline; }
-    .name-btn-player.has-video { color: #93c5fd; }
-    .name-btn-player.has-video:hover { color: #60a5fa; }
-    .name-btn-team { color: #d1d5db; }
-    .name-btn-team:hover { color: #f3f4f6; }
+    .name-btn-player.has-video { color: var(--accent-light); }
+    .name-btn-player.has-video:hover { color: var(--link); }
+    .name-btn-team { color: var(--text-secondary); }
+    .name-btn-team:hover { color: var(--text-primary); }
 
     /* ── Control drawer ───────────────────────────────── */
     #control-toggle {
       position: fixed;
-      top: 1rem;
+      top: 4.5rem; /* below the .nav row's search/theme buttons, which occupy the top-right corner */
       right: 1rem;
       z-index: 600;
       width: 34px;
       height: 34px;
       border-radius: 50%;
       background: rgba(17, 24, 39, 0.85);
-      border: 1px solid #374151;
-      color: #4b5563;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -492,8 +492,8 @@
       backdrop-filter: blur(6px);
       transition: color 0.15s, border-color 0.15s;
     }
-    #control-toggle:hover { color: #9ca3af; border-color: #6b7280; }
-    #control-toggle.has-pending { border-color: #facc15; color: #facc15; }
+    #control-toggle:hover { color: var(--text-muted); border-color: var(--text-muted); }
+    #control-toggle.has-pending { border-color: var(--gold-alt); color: var(--gold-alt); }
 
     #drawer-backdrop {
       position: fixed;
@@ -514,7 +514,7 @@
       width: 360px;
       max-width: 95vw;
       background: #0d1117;
-      border-left: 1px solid #374151;
+      border-left: 1px solid var(--border);
       z-index: 620;
       transform: translateX(100%);
       transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
@@ -536,7 +536,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 0.75rem 1rem;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid var(--bg-card);
       flex-shrink: 0;
     }
     .drawer-header h2 {
@@ -544,18 +544,18 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #4b5563;
+      color: var(--text-dim);
     }
     .drawer-close {
       background: none;
       border: none;
-      color: #4b5563;
+      color: var(--text-dim);
       cursor: pointer;
       font-size: 1.1rem;
       line-height: 1;
       padding: 0.1rem 0.3rem;
     }
-    .drawer-close:hover { color: #9ca3af; }
+    .drawer-close:hover { color: var(--text-muted); }
     .drawer-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 1.25rem; }
 
     /* Restyle admin panel inside drawer */
@@ -583,20 +583,22 @@
       align-items: baseline;
       gap: 0.75rem;
       padding: 0.55rem 1rem;
-      border-bottom: 1px solid #111827;
+      border-bottom: 1px solid var(--bg-page);
       font-size: 0.82rem;
     }
-    .log-entry:hover { background: #111827; }
-    .log-time { font-size: 0.7rem; color: #4b5563; flex-shrink: 0; font-variant-numeric: tabular-nums; min-width: 4.5rem; }
+    .log-entry:hover { background: var(--bg-page); }
+    .log-time { font-size: 0.7rem; color: var(--text-dim); flex-shrink: 0; font-variant-numeric: tabular-nums; min-width: 4.5rem; }
     .log-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.15rem 0.45rem; border-radius: 4px; flex-shrink: 0; }
-    .log-badge-pick     { background: #172554; color: #60a5fa; }
-    .log-badge-reassign { background: #2d1b00; color: #fb923c; }
-    .log-badge-auto     { background: #14532d; color: #4ade80; }
-    .log-desc { flex: 1; color: #d1d5db; }
-    .log-empty { padding: 2rem 1rem; text-align: center; color: #374151; font-size: 0.85rem; }
+    .log-badge-pick     { background: #172554; color: var(--link); }
+    .log-badge-reassign { background: #2d1b00; color: var(--danger-alt); }
+    .log-badge-auto     { background: var(--success-dark-bg); color: var(--success); }
+    .log-desc { flex: 1; color: var(--text-secondary); }
+    .log-empty { padding: 2rem 1rem; text-align: center; color: var(--border); font-size: 0.85rem; }
   </style>
 </head>
 <body>
+  <div class="nav"></div>
+
   <!-- Gear toggle (fixed top-right) -->
   <button id="control-toggle" title="Controls" onclick="toggleDrawer()">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -621,14 +623,14 @@
 
         <!-- Submit trade -->
         <div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem">
-          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Submit Trade</div>
-          <div style="font-size:0.7rem;color:#4b5563">Ownership flips now (hidden on the board) — shows as “Trade to Announce” until you announce it.</div>
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim)">Submit Trade</div>
+          <div style="font-size:0.7rem;color:var(--text-dim)">Ownership flips now (hidden on the board) — shows as “Trade to Announce” until you announce it.</div>
           <div id="trade-rows"></div>
           <button class="btn btn-ghost btn-sm" id="trade-add-row" style="align-self:flex-start">+ Add pick</button>
           <textarea id="trade-text" placeholder="Announcement text (e.g. “Phoenix acquires the 5th pick from New York for…”)"></textarea>
           <div style="display:flex;gap:0.5rem;align-items:center">
             <button class="btn btn-primary btn-sm" id="trade-submit-btn">Stage Trade</button>
-            <span id="trade-status" style="font-size:0.75rem;color:#6b7280"></span>
+            <span id="trade-status" style="font-size:0.75rem;color:var(--text-muted)"></span>
           </div>
         </div>
       </details>
@@ -639,7 +641,7 @@
 
         <!-- Reassign pick -->
         <div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem">
-          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Reassign Pick</div>
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim)">Reassign Pick</div>
           <select id="reassign-pick-sel" class="player-select"><option value="">Select pick…</option></select>
           <select id="reassign-owner-sel" class="player-select">
             <option value="">New owner…</option>
@@ -652,12 +654,12 @@
           </select>
           <div style="display:flex;gap:0.5rem;align-items:center">
             <button class="btn btn-primary btn-sm" id="reassign-btn">Reassign</button>
-            <span id="reassign-status" style="font-size:0.75rem;color:#6b7280"></span>
+            <span id="reassign-status" style="font-size:0.75rem;color:var(--text-muted)"></span>
           </div>
-          <div style="font-size:0.7rem;color:#4b5563">Silent fix — changes ownership immediately, no announcement.</div>
+          <div style="font-size:0.7rem;color:var(--text-dim)">Silent fix — changes ownership immediately, no announcement.</div>
         </div>
 
-        <div class="admin-form" style="border-top:1px solid #1f2937;margin-top:0.75rem;padding-top:0.75rem">
+        <div class="admin-form" style="border-top:1px solid var(--bg-card);margin-top:0.75rem;padding-top:0.75rem">
           <div class="admin-field">
             <label>Year</label>
             <input type="number" id="admin-year" style="width:80px" min="2020" max="2040" />
@@ -671,23 +673,23 @@
         </div>
 
         <!-- Snapshot / restore -->
-        <div style="border-top:1px solid #1f2937;margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
-          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Dry Run</div>
-          <div style="font-size:0.75rem;color:#6b7280" id="snapshot-meta">No snapshot saved.</div>
+        <div style="border-top:1px solid var(--bg-card);margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim)">Dry Run</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)" id="snapshot-meta">No snapshot saved.</div>
           <div style="display:flex;gap:0.5rem">
             <button class="btn btn-ghost btn-sm" id="snapshot-save-btn">Save Snapshot</button>
             <button class="btn btn-danger btn-sm" id="snapshot-restore-btn" disabled>Restore</button>
           </div>
-          <span id="snapshot-status" style="font-size:0.75rem;color:#6b7280"></span>
+          <span id="snapshot-status" style="font-size:0.75rem;color:var(--text-muted)"></span>
         </div>
 
         <!-- Reset to clean slate -->
-        <div style="border-top:1px solid #1f2937;margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
-          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4b5563">Reset Live Draft</div>
-          <div style="font-size:0.75rem;color:#6b7280">Clears rehearsal picks, event log, reveals &amp; queues; re-seeds the board from the permanent draft order. Keeps date, highlights &amp; Best Available order.</div>
+        <div style="border-top:1px solid var(--bg-card);margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim)">Reset Live Draft</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">Clears rehearsal picks, event log, reveals &amp; queues; re-seeds the board from the permanent draft order. Keeps date, highlights &amp; Best Available order.</div>
           <div style="display:flex;gap:0.5rem;align-items:center">
             <button class="btn btn-danger btn-sm" id="reset-btn">Reset to Clean Slate</button>
-            <span id="reset-status" style="font-size:0.75rem;color:#6b7280"></span>
+            <span id="reset-status" style="font-size:0.75rem;color:var(--text-muted)"></span>
           </div>
         </div>
       </details>
@@ -716,7 +718,7 @@
       <button class="view-tab-btn active" id="tab-fullboard-btn" onclick="switchTab('fullboard')">Draft Board</button>
       <button class="view-tab-btn" id="tab-pool-btn" onclick="switchTab('pool')">Best Available</button>
       <button class="view-tab-btn" id="tab-log-btn" onclick="switchTab('log')">Event Log</button>
-      <a href="/draft/guide/" style="margin-left:auto;font-size:0.75rem;color:#4b5563;text-decoration:none;align-self:center;padding:0.3rem 0.5rem;border-radius:5px" onmouseover="this.style.color='#9ca3af'" onmouseout="this.style.color='#4b5563'">Guide</a>
+      <a href="/draft/guide/" style="margin-left:auto;font-size:0.75rem;color:var(--text-dim);text-decoration:none;align-self:center;padding:0.3rem 0.5rem;border-radius:5px" onmouseover="this.style.color='var(--text-muted)'" onmouseout="this.style.color='var(--text-dim)'">Guide</a>
     </div>
 
     <!-- Full draft board (Draft Board tab) -->
@@ -899,7 +901,7 @@
       const owner = owners.join('/');
       const orig = (p.orig || '').toUpperCase();
       if (orig && !owners.includes(orig)) {
-        return `${owner} <span style="color:#4b5563;font-size:0.78rem;font-weight:400">(via ${orig})</span>`;
+        return `${owner} <span style="color:var(--text-dim);font-size:0.78rem;font-weight:400">(via ${orig})</span>`;
       }
       return owner;
     }
@@ -1079,13 +1081,13 @@
 
       if (p.player) {
         // Staged but not yet revealed — the presenter is up next
-        textEl.innerHTML = `${head}<strong style="color:#fff">${teamDisplay}</strong> · the pick is in`;
+        textEl.innerHTML = `${head}<strong style="color:var(--text-on-accent)">${teamDisplay}</strong> · the pick is in`;
         subEl.textContent = 'Awaiting reveal…';
         return;
       }
 
       // Not yet submitted — this team is on the clock
-      textEl.innerHTML = `${head}<strong style="color:#fff">${teamDisplay}</strong> on the clock`;
+      textEl.innerHTML = `${head}<strong style="color:var(--text-on-accent)">${teamDisplay}</strong> on the clock`;
       if (now < slot.start) {
         // On the clock ahead of schedule — no window-end deadline yet
         subEl.textContent = `On the clock early · scheduled window ${formatET(slot.start)} – ${formatET(slot.end)} ET`;
@@ -1175,7 +1177,7 @@
           const swaps = (ev.reassignments || [])
             .map(r => `<strong>${r.from_owner}</strong> → <strong>${r.to_owner}</strong> (R${r.round}${r.pick != null ? ' #' + r.pick : ''})`)
             .join(', ');
-          desc = ev.text ? `${ev.text} <span style="color:#6b7280">— ${swaps}</span>` : swaps;
+          desc = ev.text ? `${ev.text} <span style="color:var(--text-muted)">— ${swaps}</span>` : swaps;
         } else {
           badge = `<span class="log-badge log-badge-pick">${ev.type}</span>`;
           desc = JSON.stringify(ev);
@@ -1247,7 +1249,7 @@
       row.className = 'trade-row';
       row.innerHTML =
         `<select class="player-select trade-pick-sel">${pickOptionsHtml(state || draftState || {})}</select>` +
-        `<span style="color:#4b5563">→</span>` +
+        `<span style="color:var(--text-dim)">→</span>` +
         `<select class="player-select trade-owner-sel">${ownerOptionsHtml()}</select>` +
         `<button class="trade-row-remove" title="Remove">✕</button>`;
       row.querySelector('.trade-row-remove').addEventListener('click', () => {
@@ -1364,7 +1366,7 @@
     function renderTradeAnnounceModal(trade) {
       revealState = 3; // trade-announce modal state
       const swaps = (trade.reassignments || [])
-        .map(r => `<div class="trade-announce-swap">${r.from_owner}<span class="arrow">→</span>${r.to_owner} <span style="color:#6b7280">(R${r.round}${r.pick != null ? ' #' + r.pick : ''})</span></div>`)
+        .map(r => `<div class="trade-announce-swap">${r.from_owner}<span class="arrow">→</span>${r.to_owner} <span style="color:var(--text-muted)">(R${r.round}${r.pick != null ? ' #' + r.pick : ''})</span></div>`)
         .join('');
       const overlay = document.getElementById('show-overlay');
       overlay.innerHTML = `
@@ -1648,7 +1650,7 @@
               ${ovrSpan}
             </div>`;
             }).join('')
-          : `<div class="depth-player-row" style="color:#374151;font-style:italic">—</div>`;
+          : `<div class="depth-player-row" style="color:var(--border);font-style:italic">—</div>`;
         const style = `grid-column:${colStart}/${colStart+2};grid-row:${row}`;
         return `<div class="depth-pos-group" style="${style}"><div class="depth-pos-group-hdr">${pos}</div>${rows}</div>`;
       }
@@ -1779,7 +1781,7 @@
         }
         const teamBtn = document.createElement('button');
         teamBtn.className = 'name-btn name-btn-team pc-team';
-        if (isOnClock) teamBtn.style.color = '#93c5fd';
+        if (isOnClock) teamBtn.style.color = 'var(--accent-light)';
         teamBtn.textContent = owners.join('/');
         teamBtn.addEventListener('click', () => {
           revealState = 2; revealTeam = primaryTeam;
@@ -1825,7 +1827,7 @@
         } else if (state.round1_date && Date.now() >= pickWindowEnd(state.round1_date, p.round, p.pick)) {
           playerWrap.innerHTML = `<span class="pc-late">⚠ Awaiting pick</span>`;
         } else {
-          playerWrap.innerHTML = `<span style="color:#374151">—</span>`;
+          playerWrap.innerHTML = `<span style="color:var(--border)">—</span>`;
         }
         card.appendChild(playerWrap);
 

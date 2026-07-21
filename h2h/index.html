@@ -24,7 +24,7 @@
     }
 
     header p {
-      color: #9ca3af;
+      color: var(--text-muted);
       margin-top: 0.4rem;
       font-size: 0.9rem;
     }
@@ -36,14 +36,14 @@
     .section-title {
       font-size: 1rem;
       font-weight: 600;
-      color: #d1d5db;
+      color: var(--text-secondary);
       margin-bottom: 0.75rem;
       letter-spacing: 0.01em;
     }
 
     .table-scroll {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow: auto;
       max-height: 72vh;
@@ -58,14 +58,14 @@
       position: sticky;
       top: 0;
       z-index: 2;
-      background: #1f2937;
+      background: var(--bg-card);
       padding: 0.45rem 0.3rem;
       font-size: 0.65rem;
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: #6b7280;
-      border-bottom: 1px solid #374151;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
       text-align: center;
       min-width: 54px;
     }
@@ -74,7 +74,7 @@
       position: sticky;
       left: 0;
       z-index: 3;
-      background: #1f2937;
+      background: var(--bg-card);
       min-width: 40px;
       text-align: left;
       padding-left: 0.6rem;
@@ -86,8 +86,8 @@
 
     tbody tr:last-child { border-bottom: none; }
 
-    tbody tr:hover td { background: #263244; }
-    tbody tr:hover td:first-child { background: #263244; }
+    tbody tr:hover td { background: var(--bg-hover); }
+    tbody tr:hover td:first-child { background: var(--bg-hover); }
 
     td {
       padding: 0.28rem 0.3rem;
@@ -100,18 +100,18 @@
       position: sticky;
       left: 0;
       z-index: 1;
-      background: #1f2937;
+      background: var(--bg-card);
       font-size: 0.7rem;
       font-weight: 700;
-      color: #d1d5db;
+      color: var(--text-secondary);
       text-align: left;
       padding-left: 0.6rem;
-      border-right: 1px solid #374151;
+      border-right: 1px solid var(--border);
       min-width: 40px;
     }
 
     thead th:first-child {
-      border-right: 1px solid #374151;
+      border-right: 1px solid var(--border);
     }
 
     .cell-record {
@@ -130,13 +130,13 @@
 
     .cell-dash {
       font-size: 0.75rem;
-      color: #4b5563;
+      color: var(--text-dim);
     }
 
     #status {
       text-align: center;
       padding: 3rem;
-      color: #6b7280;
+      color: var(--text-muted);
       font-size: 0.9rem;
     }
 

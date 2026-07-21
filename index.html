@@ -15,6 +15,13 @@
       padding: 2.5rem 1rem 4rem;
     }
 
+    /* page-wrap's align-items:center shrinks block children to content
+       width by default — .nav needs the full width so its internal
+       margin-left:auto can push the theme picker to the actual right edge. */
+    .page-wrap > .nav {
+      align-self: stretch;
+    }
+
     header {
       text-align: center;
       margin-bottom: 3rem;
@@ -33,7 +40,7 @@
     }
 
     header p {
-      color: #9ca3af;
+      color: var(--text-muted);
       margin-top: 0.5rem;
       font-size: 1rem;
     }
@@ -52,17 +59,17 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #6b7280;
+      color: var(--text-muted);
       padding-bottom: 0.35rem;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border);
       margin-top: 0.75rem;
     }
 
     .section-label:first-child { margin-top: 0; }
 
     .card {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 0.875rem 1rem;
       text-decoration: none;
@@ -74,8 +81,8 @@
     }
 
     .card:hover {
-      background: #263244;
-      border-color: #4b6a9b;
+      background: var(--bg-hover);
+      border-color: var(--muted-border);
       transform: translateY(-2px);
     }
 
@@ -112,11 +119,11 @@
 
     .faq-q {
       font-weight: 600;
-      color: #e5e7eb;
+      color: var(--text-secondary);
     }
 
     .faq-item p:not(.faq-q) {
-      color: #9ca3af;
+      color: var(--text-muted);
       font-size: 0.9rem;
       line-height: 1.7;
     }
@@ -133,22 +140,22 @@
       gap: 0.6rem;
       width: 100%;
       max-width: 820px;
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 0.7rem 1rem;
       margin-bottom: 1.5rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       font-size: 0.9rem;
       font-family: inherit;
       cursor: pointer;
       transition: border-color 0.15s, color 0.15s;
     }
 
-    .home-search-btn:hover { border-color: #4b6a9b; color: #d1d5db; }
-    .home-search-icon { font-size: 1.1rem; color: #6b7280; }
+    .home-search-btn:hover { border-color: var(--muted-border); color: var(--text-secondary); }
+    .home-search-icon { font-size: 1.1rem; color: var(--text-muted); }
     .home-search-text { flex: 1; text-align: left; }
-    .home-search-kbd { font-size: 0.7rem; border: 1px solid #374151; border-radius: 4px; padding: 0.1rem 0.4rem; color: #6b7280; }
+    .home-search-kbd { font-size: 0.7rem; border: 1px solid var(--border); border-radius: 4px; padding: 0.1rem 0.4rem; color: var(--text-muted); }
 
     @media (max-width: 560px) {
       .home-search-kbd { display: none; }
@@ -158,6 +165,7 @@
 </head>
 <body>
   <div class="page-wrap">
+  <div class="nav" data-no-home data-no-search></div>
   <header>
     <img src="/logo.png" alt="NBN logo">
     <h1>Nothing But Net</h1>
@@ -321,7 +329,7 @@
 
     <a class="card" href="/changelog">
       <div class="card-header"><span class="card-icon">🔖</span><span class="card-title">Changelog</span></div>
-      <span id="site-version" style="font-size:0.75rem;color:#6b7280;"></span>
+      <span id="site-version" style="font-size:0.75rem;color:var(--text-muted);"></span>
     </a>
 
     <span class="section-label" id="lo-label">League Office</span>
@@ -349,26 +357,26 @@
     <div class="card" id="lo-reveal-awards" style="display:none;cursor:pointer">
       <div class="card-header"><span class="card-icon">🏆</span><span class="card-title">Reveal Season Awards</span></div>
     </div>
-    <div id="lo-reveal-awards-form" style="display:none;grid-column:1/-1;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
+    <div id="lo-reveal-awards-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
 
     <div class="card" id="lo-discord-standings" style="display:none;cursor:pointer">
       <div class="card-header"><span class="card-icon">📡</span><span class="card-title">Post Standings to Discord</span></div>
-      <span style="font-size:0.72rem;color:#6b7280">Announces to #stats-and-standings</span>
+      <span style="font-size:0.72rem;color:var(--text-muted)">Announces to #stats-and-standings</span>
     </div>
-    <div id="lo-discord-standings-form" style="display:none;grid-column:1/-1;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
+    <div id="lo-discord-standings-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
 
     <div class="card" id="lo-nby-adjust" style="display:none;cursor:pointer">
       <div class="card-header"><span class="card-icon">🪙</span><span class="card-title">Adjust NB¥</span></div>
-      <span style="font-size:0.72rem;color:#6b7280">Give or take NBYen from a member</span>
+      <span style="font-size:0.72rem;color:var(--text-muted)">Give or take NBYen from a member</span>
     </div>
-    <div id="lo-nby-adjust-form" style="display:none;grid-column:1/-1;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
+    <div id="lo-nby-adjust-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
   </main>
 
   <footer>
     <div class="faq">
       <div class="faq-item">
         <p class="faq-q">What is the Nothing But Net fantasy GM league?</p>
-        <p>We are a close group of basketball enthusiasts who together run a fantasy NBA league. Each member of NBN assumes a position within a team among the 30 teams in the league: typically either the Owner, the GM, or the Coach. We all hang out in a Discord server, chat about basketball and the league, and watch simulations of games between our teams through the video game NBA 2K. As a member of a team's front office, you would be working with other FO members to control everything about the team and its future, including setting rotations, gameplanning, scouting and making draft picks, trades, free agency, and much more. If you'd like to join, visit <a href="/join" style="color:#60a5fa;">nbn.today/join</a>.</p>
+        <p>We are a close group of basketball enthusiasts who together run a fantasy NBA league. Each member of NBN assumes a position within a team among the 30 teams in the league: typically either the Owner, the GM, or the Coach. We all hang out in a Discord server, chat about basketball and the league, and watch simulations of games between our teams through the video game NBA 2K. As a member of a team's front office, you would be working with other FO members to control everything about the team and its future, including setting rotations, gameplanning, scouting and making draft picks, trades, free agency, and much more. If you'd like to join, visit <a href="/join" style="color:var(--link);">nbn.today/join</a>.</p>
       </div>
 
       <div class="faq-item">
@@ -445,17 +453,17 @@
             fetch('/api/awards-config').then(r => r.json()).then(c => { cfg = c; }).catch(() => {});
             card.addEventListener('click', () => {
               if (form.style.display !== 'none') { form.style.display = 'none'; return; }
-              form.innerHTML = '<div style="color:#9ca3af;margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Reveal Season Awards</div>';
+              form.innerHTML = '<div style="color:var(--text-muted);margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Reveal Season Awards</div>';
               SEASONS.forEach(s => {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid #374151';
+                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border)';
                 const label = document.createElement('span');
                 label.textContent = LABELS[s] || s;
-                label.style.color = '#d1d5db';
+                label.style.color = 'var(--text-secondary)';
                 const revealed = !!(cfg[s]?.revealed);
                 const toggle = document.createElement('button');
                 toggle.textContent = revealed ? 'Revealed ✓' : 'Hidden';
-                toggle.style.cssText = `background:${revealed ? '#064e3b' : '#374151'};color:${revealed ? '#34d399' : '#9ca3af'};border:none;border-radius:5px;padding:0.2rem 0.65rem;font-size:0.78rem;cursor:pointer;font-family:inherit`;
+                toggle.style.cssText = `background:${revealed ? 'var(--market-positive-bg)' : 'var(--border)'};color:${revealed ? 'var(--market-positive)' : 'var(--text-muted)'};border:none;border-radius:5px;padding:0.2rem 0.65rem;font-size:0.78rem;cursor:pointer;font-family:inherit`;
                 toggle.addEventListener('click', async () => {
                   const next = !cfg[s]?.revealed;
                   const res = await fetch(`/api/awards-config/${s}`, {
@@ -467,8 +475,8 @@
                     if (!cfg[s]) cfg[s] = {};
                     cfg[s].revealed = next;
                     toggle.textContent = next ? 'Revealed ✓' : 'Hidden';
-                    toggle.style.background = next ? '#064e3b' : '#374151';
-                    toggle.style.color = next ? '#34d399' : '#9ca3af';
+                    toggle.style.background = next ? 'var(--market-positive-bg)' : 'var(--border)';
+                    toggle.style.color = next ? 'var(--market-positive)' : 'var(--text-muted)';
                   }
                 });
                 row.appendChild(label);
@@ -496,13 +504,13 @@
 
               // Header
               const hdr = document.createElement('div');
-              hdr.style.cssText = 'color:#9ca3af;margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em';
+              hdr.style.cssText = 'color:var(--text-muted);margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em';
               hdr.textContent = 'Post Standings to Discord';
               discForm.appendChild(hdr);
 
               // Description
               const desc = document.createElement('p');
-              desc.style.cssText = 'color:#6b7280;font-size:0.78rem;margin-bottom:0.9rem';
+              desc.style.cssText = 'color:var(--text-muted);font-size:0.78rem;margin-bottom:0.9rem';
               desc.textContent = 'Posts a formatted standings embed to the #stats-and-standings channel. Select the season to announce, then click Post.';
               discForm.appendChild(desc);
 
@@ -512,10 +520,10 @@
 
               const seasonLbl = document.createElement('label');
               seasonLbl.textContent = 'Season';
-              seasonLbl.style.cssText = 'font-size:0.78rem;color:#d1d5db;font-weight:600';
+              seasonLbl.style.cssText = 'font-size:0.78rem;color:var(--text-secondary);font-weight:600';
 
               const select = document.createElement('select');
-              select.style.cssText = 'background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.65rem;font-size:0.82rem;outline:none;font-family:inherit;cursor:pointer';
+              select.style.cssText = 'background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.3rem 0.65rem;font-size:0.82rem;outline:none;font-family:inherit;cursor:pointer';
               DISCORD_SEASONS.forEach(s => {
                 const opt = document.createElement('option');
                 opt.value = s;
@@ -525,16 +533,16 @@
 
               const postBtn = document.createElement('button');
               postBtn.textContent = '📡 Post to Discord';
-              postBtn.style.cssText = 'background:#5865f2;color:#fff;border:none;border-radius:5px;padding:0.3rem 0.9rem;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap';
+              postBtn.style.cssText = 'background:#5865f2;color:var(--text-on-accent);border:none;border-radius:5px;padding:0.3rem 0.9rem;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap';
 
               const status = document.createElement('span');
-              status.style.cssText = 'font-size:0.78rem;color:#9ca3af';
+              status.style.cssText = 'font-size:0.78rem;color:var(--text-muted)';
 
               postBtn.addEventListener('click', async () => {
                 postBtn.disabled = true;
                 postBtn.textContent = 'Posting…';
                 status.textContent = '';
-                status.style.color = '#9ca3af';
+                status.style.color = 'var(--text-muted)';
                 try {
                   const res = await fetch(
                     `/api/admin/discord/post-standings?season=${encodeURIComponent(select.value)}`,
@@ -542,10 +550,10 @@
                   );
                   const body = await res.json().catch(() => ({}));
                   if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
-                  status.style.color = '#34d399';
+                  status.style.color = 'var(--market-positive)';
                   status.textContent = `✓ Posted ${DISCORD_LABELS[select.value] || select.value} standings`;
                 } catch(e) {
-                  status.style.color = '#f87171';
+                  status.style.color = 'var(--danger)';
                   status.textContent = `✗ ${e.message}`;
                 } finally {
                   postBtn.disabled = false;
@@ -566,7 +574,7 @@
             nbyCard.addEventListener('click', async () => {
               if (nbyForm.style.display !== 'none') { nbyForm.style.display = 'none'; return; }
 
-              nbyForm.innerHTML = '<div style="color:#9ca3af;margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Adjust NB¥</div>';
+              nbyForm.innerHTML = '<div style="color:var(--text-muted);margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Adjust NB¥</div>';
 
               // Fetch members + current balances in parallel
               const [membersRaw, balsRaw] = await Promise.all([
@@ -576,7 +584,7 @@
               const members = membersRaw.map(m => m.name).sort();
               const balMap  = Object.fromEntries(balsRaw.map(b => [b.name, b.balance]));
 
-              const INPUT_CSS = 'background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.65rem;font-size:0.82rem;outline:none;font-family:inherit';
+              const INPUT_CSS = 'background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.3rem 0.65rem;font-size:0.82rem;outline:none;font-family:inherit';
               const fmtNby = n => `NB¥${Number(n).toLocaleString('en-US', {minimumFractionDigits:0,maximumFractionDigits:2})}`;
 
               const row = document.createElement('div');
@@ -590,7 +598,7 @@
               // Amount
               const amtIn = document.createElement('input');
               amtIn.type = 'number'; amtIn.min = '1'; amtIn.step = '1'; amtIn.placeholder = 'NB¥';
-              amtIn.style.cssText = INPUT_CSS + ';width:90px;color:#fbbf24';
+              amtIn.style.cssText = INPUT_CSS + ';width:90px;color:var(--gold)';
 
               // Member
               const memberSel = document.createElement('select');
@@ -600,7 +608,7 @@
 
               // Current balance hint
               const curBalEl = document.createElement('span');
-              curBalEl.style.cssText = 'font-size:0.75rem;color:#6b7280';
+              curBalEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted)';
               memberSel.addEventListener('change', () => {
                 const bal = balMap[memberSel.value];
                 curBalEl.textContent = memberSel.value ? `(currently ${fmtNby(bal ?? 1000)})` : '';
@@ -613,17 +621,17 @@
 
               // Submit
               const submitBtn = document.createElement('button');
-              submitBtn.style.cssText = 'background:#d97706;border:none;color:#fff;border-radius:5px;padding:0.3rem 0.85rem;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap';
+              submitBtn.style.cssText = 'background:var(--champion-border);border:none;color:var(--text-on-accent);border-radius:5px;padding:0.3rem 0.85rem;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap';
               submitBtn.textContent = '✓ Apply';
 
               const statusEl = document.createElement('span');
-              statusEl.style.cssText = 'font-size:0.78rem;color:#9ca3af;width:100%';
+              statusEl.style.cssText = 'font-size:0.78rem;color:var(--text-muted);width:100%';
 
               submitBtn.addEventListener('click', async () => {
                 const member = memberSel.value;
                 const amt    = parseFloat(amtIn.value);
-                if (!member)          { statusEl.style.color = '#f87171'; statusEl.textContent = 'Select a member.'; return; }
-                if (!amt || amt <= 0) { statusEl.style.color = '#f87171'; statusEl.textContent = 'Enter a positive amount.'; return; }
+                if (!member)          { statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'Select a member.'; return; }
+                if (!amt || amt <= 0) { statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'Enter a positive amount.'; return; }
                 const delta = actionSel.value === 'Give' ? amt : -amt;
                 submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; statusEl.textContent = '';
                 try {
@@ -635,12 +643,12 @@
                   const body = await res.json().catch(() => ({}));
                   if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
                   balMap[member] = body.new_balance;
-                  statusEl.style.color = '#34d399';
+                  statusEl.style.color = 'var(--market-positive)';
                   statusEl.textContent = `✓ ${member}: ${fmtNby(body.old_balance)} → ${fmtNby(body.new_balance)}`;
                   curBalEl.textContent = `(currently ${fmtNby(body.new_balance)})`;
                   amtIn.value = ''; reasonIn.value = '';
                 } catch(e) {
-                  statusEl.style.color = '#f87171'; statusEl.textContent = `✗ ${e.message}`;
+                  statusEl.style.color = 'var(--danger)'; statusEl.textContent = `✗ ${e.message}`;
                 } finally { submitBtn.disabled = false; submitBtn.textContent = '✓ Apply'; }
               });
 

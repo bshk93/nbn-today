@@ -15,20 +15,20 @@
       align-items: center;
       gap: 1rem;
       margin-bottom: 2rem;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid var(--bg-card);
     }
-    .page-header a { color: #6b7280; font-size: 0.85rem; text-decoration: none; }
-    .page-header a:hover { color: #f3f4f6; }
-    .page-header h1 { font-size: 1rem; font-weight: 700; margin: 0; color: #f3f4f6; flex: 1; }
+    .page-header a { color: var(--text-muted); font-size: 0.85rem; text-decoration: none; }
+    .page-header a:hover { color: var(--text-primary); }
+    .page-header h1 { font-size: 1rem; font-weight: 700; margin: 0; color: var(--text-primary); flex: 1; }
 
     h2 {
       font-size: 1.25rem;
       font-weight: 800;
-      color: #f3f4f6;
+      color: var(--text-primary);
       letter-spacing: -0.01em;
       margin: 2.5rem 0 1rem;
       padding-bottom: 0.5rem;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid var(--bg-card);
     }
     h2:first-of-type { margin-top: 0; }
 
@@ -37,18 +37,18 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.07em;
-      color: #6b7280;
+      color: var(--text-muted);
       margin: 1.75rem 0 0.5rem;
     }
 
-    p { font-size: 0.9rem; color: #d1d5db; line-height: 1.65; margin: 0 0 0.75rem; }
+    p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.65; margin: 0 0 0.75rem; }
 
     ul { margin: 0 0 0.75rem 0; padding-left: 1.4rem; }
-    li { font-size: 0.9rem; color: #d1d5db; line-height: 1.65; margin-bottom: 0.2rem; }
+    li { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 0.2rem; }
 
     .card {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 1rem 1.25rem;
       margin: 0.75rem 0;
@@ -65,19 +65,19 @@
       vertical-align: middle;
       margin-right: 0.3rem;
     }
-    .badge-pick     { background: #172554; color: #60a5fa; }
-    .badge-auto     { background: #14532d; color: #4ade80; }
-    .badge-trade    { background: #2d1b00; color: #fb923c; }
+    .badge-pick     { background: #172554; color: var(--link); }
+    .badge-auto     { background: var(--success-dark-bg); color: var(--success); }
+    .badge-trade    { background: #2d1b00; color: var(--danger-alt); }
 
     kbd {
       display: inline-block;
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 4px;
       padding: 0.1rem 0.4rem;
       font-family: inherit;
       font-size: 0.78rem;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
 
     .warning {
@@ -89,15 +89,15 @@
       color: #fdba74;
       margin: 0.75rem 0;
     }
-    .warning strong { color: #fb923c; }
+    .warning strong { color: var(--danger-alt); }
 
     .tip {
       background: #0a1628;
-      border: 1px solid #1e3a5f;
+      border: 1px solid var(--accent-panel-bg);
       border-radius: 8px;
       padding: 0.75rem 1rem;
       font-size: 0.85rem;
-      color: #93c5fd;
+      color: var(--accent-light);
       margin: 0.75rem 0;
     }
 
@@ -108,8 +108,8 @@
       font-size: 0.85rem;
       margin: 0.5rem 0 0.75rem;
     }
-    .schedule-label { color: #6b7280; white-space: nowrap; }
-    .schedule-val   { color: #d1d5db; }
+    .schedule-label { color: var(--text-muted); white-space: nowrap; }
+    .schedule-val   { color: var(--text-secondary); }
 
     .step {
       display: flex;
@@ -122,18 +122,18 @@
       width: 1.5rem;
       height: 1.5rem;
       border-radius: 50%;
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       font-size: 0.72rem;
       font-weight: 700;
-      color: #9ca3af;
+      color: var(--text-muted);
       display: flex;
       align-items: center;
       justify-content: center;
       margin-top: 0.05rem;
     }
-    .step-body { flex: 1; font-size: 0.9rem; color: #d1d5db; line-height: 1.6; }
-    .step-body strong { color: #f3f4f6; }
+    .step-body { flex: 1; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+    .step-body strong { color: var(--text-primary); }
 
     #bod-section { display: none; }
     .section-eyebrow {
@@ -141,16 +141,16 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #4b5563;
+      color: var(--text-dim);
       margin-bottom: 0.25rem;
     }
-    .divider { border: none; border-top: 1px solid #1f2937; margin: 3rem 0 0; }
+    .divider { border: none; border-top: 1px solid var(--bg-card); margin: 3rem 0 0; }
   </style>
 </head>
 <body>
   <div class="page">
 
-    <div class="page-header">
+    <div class="page-header nav">
       <a href="/draft/">← Draft</a>
       <h1>Draft Guide</h1>
     </div>
@@ -182,14 +182,14 @@
         <span class="schedule-label">Round 2</span>
         <span class="schedule-val">Day 2 starting at noon ET · picks 31–60, same cadence</span>
       </div>
-      <p style="margin:0;font-size:0.8rem;color:#6b7280">
+      <p style="margin:0;font-size:0.8rem;color:var(--text-muted)">
         Pick #1 window: 12:00–12:10 ET.&ensp;Pick #2: 12:10–12:20 ET.&ensp;And so on.
       </p>
     </div>
 
     <h3>Watching the draft — /draft/live</h3>
     <p>
-      The live board at <a href="/draft/live/" style="color:#60a5fa">/draft/live</a> is public.
+      The live board at <a href="/draft/live/" style="color:var(--link)">/draft/live</a> is public.
       No sign-in required to watch.
     </p>
     <ul>
@@ -204,7 +204,7 @@
 
     <h3>Making your pick — /draft/pick</h3>
     <p>
-      Go to <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> to manage
+      Go to <a href="/draft/pick/" style="color:var(--link)">/draft/pick</a> to manage
       your picks. You need to sign in with your NBN token — you'll be prompted on first
       visit and the token is saved in your browser. Don't have a token yet? Reach out to
       bryn to get one. If you see an error about your account not having a team role,
@@ -275,7 +275,7 @@
       queued, <strong>BOD will submit your #1 queued player for you</strong> — so as long as
       your queue is stocked, you're covered even if you can't make your window. You can also
       submit a missed pick yourself from
-      <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> at any time. Missed picks
+      <a href="/draft/pick/" style="color:var(--link)">/draft/pick</a> at any time. Missed picks
       are ordered by submission time, so whoever submits first selects first.
     </p>
     <div class="tip">
@@ -293,7 +293,7 @@
       Want to move a pick mid-draft? You don't stage trades yourself — reach out to
       <strong>TRC</strong> with the details. They'll stage the trade and announce it on the
       live board, and the picks involved will reflect their new owners on
-      <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> as soon as it's staged.
+      <a href="/draft/pick/" style="color:var(--link)">/draft/pick</a> as soon as it's staged.
       Only unsubmitted picks can be traded — once a pick has been submitted, it's final.
     </p>
 
@@ -310,7 +310,7 @@
     <hr class="divider">
 
     <div id="bod-signin-prompt" style="padding:1.5rem 0;text-align:center;display:none">
-      <button onclick="signInAndCheck()" style="background:transparent;border:1px solid #374151;border-radius:6px;color:#6b7280;font-size:0.8rem;font-family:inherit;padding:0.4rem 1rem;cursor:pointer" onmouseover="this.style.color='#9ca3af';this.style.borderColor='#6b7280'" onmouseout="this.style.color='#6b7280';this.style.borderColor='#374151'">BOD? Sign in to see BOD guide</button>
+      <button onclick="signInAndCheck()" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-size:0.8rem;font-family:inherit;padding:0.4rem 1rem;cursor:pointer" onmouseover="this.style.color='var(--text-muted)';this.style.borderColor='var(--text-muted)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">BOD? Sign in to see BOD guide</button>
     </div>
 
     <div id="bod-section">
@@ -319,7 +319,7 @@
 
       <h3>Before the draft</h3>
       <p>
-        Open <a href="/draft/live/" style="color:#60a5fa">/draft/live</a> and sign in.
+        Open <a href="/draft/live/" style="color:var(--link)">/draft/live</a> and sign in.
         The gear icon <strong>⚙</strong> in the top-right corner is visible only to BOD
         — click it to open the Controls drawer.
       </p>
@@ -339,8 +339,8 @@
       </p>
       <div class="card" style="display:flex;flex-direction:column;gap:0.75rem">
         <div>
-          <strong style="color:#f3f4f6">Permanent draft order — the
-          <a href="/draft/" style="color:#60a5fa">/draft/</a> page (Edit)</strong>
+          <strong style="color:var(--text-primary)">Permanent draft order — the
+          <a href="/draft/" style="color:var(--link)">/draft/</a> page (Edit)</strong>
           <p style="margin:0.25rem 0 0">
             This is the canonical draft order — the same picks the team pages and the real
             picks API read, and what the live board <em>seeds from</em>. Edit it here (sign
@@ -349,8 +349,8 @@
           </p>
         </div>
         <div>
-          <strong style="color:#f3f4f6">Live board — the Controls drawer on
-          <a href="/draft/live/" style="color:#60a5fa">/draft/live</a></strong>
+          <strong style="color:var(--text-primary)">Live board — the Controls drawer on
+          <a href="/draft/live/" style="color:var(--link)">/draft/live</a></strong>
           <p style="margin:0.25rem 0 0">
             <strong>Submit Trade</strong> changes ownership on the broadcast's own isolated
             copy only — it's your <strong>during-the-show</strong> tool, carrying the
@@ -363,7 +363,7 @@
         <strong>The two files fork once the show starts writing.</strong> The live board
         copies the permanent order on its <em>first</em> pick, trade, or reassign of the
         night — after that the two are independent. So once you're live, editing the
-        <a href="/draft/" style="color:#fb923c">/draft/</a> page will <strong>not</strong>
+        <a href="/draft/" style="color:var(--danger-alt)">/draft/</a> page will <strong>not</strong>
         change the broadcast, and Controls-drawer changes won't touch the permanent order.
         Lock the permanent order in <em>before</em> going live; route every on-air change
         through the Controls drawer. (Reset is what re-merges them — never during a live
@@ -379,7 +379,7 @@
       </p>
       <div class="card" style="display:flex;flex-direction:column;gap:0.75rem">
         <div>
-          <strong style="color:#f3f4f6">Presenter</strong>
+          <strong style="color:var(--text-primary)">Presenter</strong>
           <p style="margin:0.25rem 0 0">
             Owns the on-screen reveal: pressing <kbd>Enter</kbd> through the player modal,
             depth chart, and close steps, and pasting in highlights URLs. Should not need to
@@ -387,7 +387,7 @@
           </p>
         </div>
         <div>
-          <strong style="color:#f3f4f6">Panel</strong>
+          <strong style="color:var(--text-primary)">Panel</strong>
           <p style="margin:0.25rem 0 0">
             Watches the queue, backlog and event log in the background. Stages draft-day
             trades via <strong>Submit Trade</strong> in the Controls drawer (the presenter
@@ -395,7 +395,7 @@
             their window or can't be reached, and fields any other logistics — so the
             presenter can stay heads-down on the show. Since nothing auto-submits, the panel
             keeps an eye on the board for any pick marked
-            <span style="color:#fb923c">⚠ Awaiting pick</span>.
+            <span style="color:var(--danger-alt)">⚠ Awaiting pick</span>.
           </p>
         </div>
       </div>
@@ -403,7 +403,7 @@
       <h3>The reveal sequence</h3>
       <p>
         Picks are submitted silently. Only BOD can reveal them — this is the "TV moment"
-        where you announce each selection. The gear icon turns <span style="color:#facc15;font-weight:700">amber</span> when at least one pick is submitted but not yet revealed.
+        where you announce each selection. The gear icon turns <span style="color:var(--gold-alt);font-weight:700">amber</span> when at least one pick is submitted but not yet revealed.
       </p>
       <p>Press <kbd>Enter</kbd> (with no input field focused) to begin. The sequence:</p>
       <div class="step">
@@ -429,10 +429,10 @@
           The board updates and the next pick is ready to reveal.
         </div>
       </div>
-      <p style="margin-top:0.5rem;font-size:0.85rem;color:#6b7280">
+      <p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-muted)">
         Clicking a team name on the Draft Board also opens their depth chart directly.
         Clicking a revealed player name opens their modal (useful for re-showing highlights).
-        Player names shown in <span style="color:#93c5fd">blue</span> have a highlights video attached.
+        Player names shown in <span style="color:var(--accent-light)">blue</span> have a highlights video attached.
       </p>
 
       <h3>Draft-day trades</h3>
@@ -474,9 +474,9 @@
       <p>
         The clock runs on a fixed schedule — the next team goes on the clock at its
         scheduled time regardless. Nothing auto-submits, so the missed slot shows
-        <span style="color:#fb923c">⚠ Awaiting pick</span> on the board and stays open until
+        <span style="color:var(--danger-alt)">⚠ Awaiting pick</span> on the board and stays open until
         someone submits it. The missed GM can submit from
-        <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> at any time, or a BOD
+        <a href="/draft/pick/" style="color:var(--link)">/draft/pick</a> at any time, or a BOD
         member (with a privileged token) can submit on their behalf there — BOD can submit
         for any slot, active or missed. Missed picks are ordered by submission time, so
         whoever submits first selects first.
@@ -498,7 +498,7 @@
       <div class="step">
         <div class="step-num">1</div>
         <div class="step-body">
-          Create the player on the <a href="/players/" style="color:#60a5fa">/players</a>
+          Create the player on the <a href="/players/" style="color:var(--link)">/players</a>
           page.
         </div>
       </div>
@@ -513,7 +513,7 @@
         <div class="step-num">3</div>
         <div class="step-body">
           They'll now appear in the <strong>Available Players</strong> pool — draft them for
-          the team on <a href="/draft/pick/" style="color:#60a5fa">/draft/pick</a> like any
+          the team on <a href="/draft/pick/" style="color:var(--link)">/draft/pick</a> like any
           other selection.
         </div>
       </div>

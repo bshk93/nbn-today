@@ -12,7 +12,7 @@
 
     header { margin-bottom: 1.5rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
     .controls {
       display: flex;
@@ -21,24 +21,24 @@
       margin-bottom: 1.5rem;
     }
 
-    .controls label { font-size: 0.85rem; color: #9ca3af; }
+    .controls label { font-size: 0.85rem; color: var(--text-muted); }
 
     select {
-      background: #1f2937;
-      border: 1px solid #374151;
-      color: #f3f4f6;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
       padding: 0.4rem 0.75rem;
       border-radius: 6px;
       font-size: 0.875rem;
       cursor: pointer;
     }
 
-    select:focus { outline: none; border-color: #60a5fa; }
+    select:focus { outline: none; border-color: var(--link); }
 
     .year-nav {
-      background: #1f2937;
-      border: 1px solid #374151;
-      color: #f3f4f6;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
       width: 2rem;
       height: 2rem;
       border-radius: 6px;
@@ -50,7 +50,7 @@
       justify-content: center;
       flex-shrink: 0;
     }
-    .year-nav:hover:not(:disabled) { border-color: #60a5fa; }
+    .year-nav:hover:not(:disabled) { border-color: var(--link); }
     .year-nav:disabled { opacity: 0.35; cursor: default; }
 
     .round-block { margin-bottom: 1.25rem; }
@@ -60,13 +60,13 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #6b7280;
+      color: var(--text-muted);
       margin-bottom: 0.6rem;
     }
 
     .table-wrap {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow-x: auto;
     }
@@ -85,20 +85,20 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #6b7280;
-      border-bottom: 1px solid #374151;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
     }
 
-    tbody tr { border-bottom: 1px solid #283141; transition: background 0.1s; }
+    tbody tr { border-bottom: 1px solid var(--border-subtle); transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: #263244; }
+    tbody tr:hover { background: var(--bg-hover); }
     tbody tr[data-clickable] { cursor: pointer; }
 
-    td { padding: 0.55rem 0.75rem; color: #d1d5db; }
-    td.pick { color: #6b7280; font-size: 0.78rem; width: 2.5rem; font-variant-numeric: tabular-nums; }
+    td { padding: 0.55rem 0.75rem; color: var(--text-secondary); }
+    td.pick { color: var(--text-muted); font-size: 0.78rem; width: 2.5rem; font-variant-numeric: tabular-nums; }
     td.right { text-align: right; font-variant-numeric: tabular-nums; }
-    td.muted { color: #9ca3af; }
-    td.from  { color: #9ca3af; font-size: 0.8rem; }
+    td.muted { color: var(--text-muted); }
+    td.from  { color: var(--text-muted); font-size: 0.8rem; }
 
     .player-cell {
       display: flex;
@@ -112,7 +112,7 @@
       border-radius: 50%;
       object-fit: cover;
       object-position: top center;
-      background: #374151;
+      background: var(--border);
       flex-shrink: 0;
     }
 
@@ -120,13 +120,13 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: #374151;
+      background: var(--border);
       flex-shrink: 0;
     }
 
-    .player-name { font-weight: 600; color: #f3f4f6; }
+    .player-name { font-weight: 600; color: var(--text-primary); }
 
-    #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
 
     .upcoming-badge {
       display: inline-block;
@@ -134,33 +134,33 @@
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      background: #1e3a5f;
-      color: #60a5fa;
+      background: var(--accent-panel-bg);
+      color: var(--link);
       border-radius: 4px;
       padding: 0.1rem 0.4rem;
       vertical-align: middle;
       margin-left: 0.5rem;
     }
 
-    .pick-row-traded td { color: #60a5fa; }
+    .pick-row-traded td { color: var(--link); }
     .pick-row-traded td.orig-cell,
     .pick-row-traded td.owner-cell { font-weight: 600; }
     td.owner-cell { font-weight: 500; }
-    td.notes-cell { color: #6b7280; font-size: 0.8rem; font-style: italic; }
-    td.picknum-cell { color: #6b7280; font-size: 0.78rem; width: 2.5rem; font-variant-numeric: tabular-nums; }
+    td.notes-cell { color: var(--text-muted); font-size: 0.8rem; font-style: italic; }
+    td.picknum-cell { color: var(--text-muted); font-size: 0.78rem; width: 2.5rem; font-variant-numeric: tabular-nums; }
 
     /* Draft-pick grades */
     td.grade-cell { width: 1%; white-space: nowrap; cursor: default; }
     .grade-vote { display: flex; gap: 0.2rem; }
     .grade-btn {
       width: 1.55rem; height: 1.55rem; padding: 0;
-      border: 1px solid #374151; border-radius: 5px;
-      background: #111827; color: #9ca3af;
+      border: 1px solid var(--border); border-radius: 5px;
+      background: var(--bg-page); color: var(--text-muted);
       font-family: inherit; font-size: 0.78rem; font-weight: 700;
       cursor: pointer; transition: border-color 0.1s, color 0.1s;
     }
     .grade-btn:hover { border-color: var(--gc); color: var(--gc); }
-    .grade-btn.selected { border-color: var(--gc); color: var(--gc); background: #1f2937; }
+    .grade-btn.selected { border-color: var(--gc); color: var(--gc); background: var(--bg-card); }
 
     .grade-results { display: flex; align-items: flex-end; gap: 0.5rem; }
     .grade-avg { font-size: 1.05rem; font-weight: 800; line-height: 1.4; }
@@ -177,10 +177,10 @@
     .grade-tick:hover .grade-bar { opacity: 0.85; }
     .grade-tick.mine .grade-bar { opacity: 1; }
     .grade-tick-label {
-      font-size: 0.62rem; font-weight: 700; color: #6b7280; margin-top: 1px;
+      font-size: 0.62rem; font-weight: 700; color: var(--text-muted); margin-top: 1px;
     }
     .grade-tick.mine .grade-tick-label { color: var(--gc); }
-    .grade-count { font-size: 0.7rem; color: #6b7280; line-height: 1.9; }
+    .grade-count { font-size: 0.7rem; color: var(--text-muted); line-height: 1.9; }
   </style>
 </head>
 <body>
@@ -197,7 +197,7 @@
       <label for="year-select">Draft Class</label>
       <select id="year-select"></select>
       <button id="next-year" class="year-nav" title="Newer draft">›</button>
-      <button id="edit-btn" style="display:none;margin-left:auto;padding:0.3rem 0.7rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#6b7280;font-family:inherit">Edit</button>
+      <button id="edit-btn" style="display:none;margin-left:auto;padding:0.3rem 0.7rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-muted);font-family:inherit">Edit</button>
     </div>
 
     <div id="content"><div id="status">Loading…</div></div>
@@ -289,7 +289,7 @@
         tdFrom.textContent = pick.from || '—';
         if (pick.from && pick.tradedTo) {
           const arrow = document.createElement('span');
-          arrow.style.cssText = 'color:#60a5fa;margin-left:0.3rem';
+          arrow.style.cssText = 'color:var(--link);margin-left:0.3rem';
           arrow.title = 'Draft rights traded';
           arrow.textContent = `→ ${pick.tradedTo}`;
           tdFrom.appendChild(arrow);
@@ -355,7 +355,7 @@
     // Members grade picks of the most recent completed draft A–F. Results for a
     // pick are revealed only after the member has graded that pick themselves.
     const GRADES = ['A', 'B', 'C', 'D', 'F'];
-    const GRADE_COLORS = { A: '#4ade80', B: '#a3e635', C: '#fbbf24', D: '#fb923c', F: '#f87171' };
+    const GRADE_COLORS = { A: 'var(--success)', B: '#a3e635', C: 'var(--gold)', D: 'var(--danger-alt)', F: 'var(--danger)' };
     let GRADEABLE_YEAR = null;
     let gradeData = {};   // slug -> { my, count, avg, dist }
 
@@ -414,7 +414,7 @@
       const avg = document.createElement('span');
       avg.className = 'grade-avg';
       avg.textContent = L;
-      avg.style.color = GRADE_COLORS[L] || '#d1d5db';
+      avg.style.color = GRADE_COLORS[L] || 'var(--text-secondary)';
       avg.title = `Average ${entry.avg != null ? entry.avg.toFixed(2) : '—'} · ${entry.count} vote${entry.count === 1 ? '' : 's'}`;
       wrap.appendChild(avg);
 
@@ -503,7 +503,7 @@
       'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS',
     ];
 
-    const INP = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
+    const INP = 'background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
 
     function renderFutureEditable(allPicks, year, bios, onSaved) {
       const content = document.getElementById('content');
@@ -517,14 +517,14 @@
 
       const saveBtn = document.createElement('button');
       saveBtn.textContent = 'Save';
-      saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit';
+      saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
 
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit';
+      cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
 
       const statusEl = document.createElement('span');
-      statusEl.style.cssText = 'font-size:0.75rem;color:#6b7280;margin-left:auto';
+      statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
 
       toolbar.appendChild(saveBtn);
       toolbar.appendChild(cancelBtn);
@@ -565,21 +565,38 @@
         rndPicks.forEach(p => {
           const tr = document.createElement('tr');
 
+          // A contingent/compound owner ("BOS|CHI") can't be represented by
+          // this single-team <select> — it'd default to the first option with
+          // nothing selected. Track whether the admin actually touched it, so
+          // Save (which unconditionally PUTs every visible row as a full-row
+          // replace) falls back to the real p.owner instead of silently
+          // collapsing an untouched contingent pick to whatever the browser
+          // defaulted to.
+          p._ownerTouched = false;
+          const ownerIsCompound = (p.owner || '').includes('|');
           const selOwner = document.createElement('select');
           selOwner.style.cssText = INP;
+          if (ownerIsCompound) selOwner.title = `Contingent: ${p.owner} — pick one to resolve it, or leave untouched to keep as-is`;
           TEAM_ABBRS.forEach(t => {
             const o = document.createElement('option');
             o.value = t; o.textContent = t;
             if (t === p.owner) o.selected = true;
             selOwner.appendChild(o);
           });
+          selOwner.addEventListener('change', () => { p._ownerTouched = true; });
           const tdOwner = document.createElement('td');
           tdOwner.appendChild(selOwner);
+          if (ownerIsCompound) {
+            const hint = document.createElement('div');
+            hint.textContent = p.owner;
+            hint.style.cssText = 'font-size:0.7rem;color:var(--warning);margin-top:0.15rem';
+            tdOwner.appendChild(hint);
+          }
           tr.appendChild(tdOwner);
 
           const tdOrig = document.createElement('td');
           tdOrig.textContent = p.orig;
-          tdOrig.style.color = '#6b7280';
+          tdOrig.style.color = 'var(--text-muted)';
           tr.appendChild(tdOrig);
 
           const inpPick = document.createElement('input');
@@ -665,7 +682,7 @@
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
-                owner:      selOwner.value,
+                owner:      p._ownerTouched ? selOwner.value : p.owner,
                 pick:       inpPick.value  ? parseInt(inpPick.value)  : null,
                 player:     selPlayer.value || null,
                 protected:  inpProt.value  ? parseInt(inpProt.value)  : null,
@@ -874,16 +891,16 @@
           const statusText = document.createElement('span');
           if (p.conveys === true) {
             statusText.textContent = 'Conveys';
-            statusText.style.color = '#4ade80';
+            statusText.style.color = 'var(--success)';
           } else if (p.conveys === false) {
             statusText.textContent = 'Does not convey';
-            statusText.style.color = '#f87171';
+            statusText.style.color = 'var(--danger)';
           } else if (p.swap_conveys === true) {
             statusText.textContent = 'Swap conveys';
-            statusText.style.color = '#4ade80';
+            statusText.style.color = 'var(--success)';
           } else if (p.swap_conveys === false) {
             statusText.textContent = 'Swap does not convey';
-            statusText.style.color = '#f87171';
+            statusText.style.color = 'var(--danger)';
           } else {
             statusText.textContent = '—';
             statusText.className = 'muted';
@@ -892,7 +909,7 @@
             const badge = document.createElement('span');
             badge.textContent = 'FROZEN';
             badge.title = p.frozen_reason || '';
-            badge.style.cssText = 'color:#f87171;font-weight:700;margin-right:0.4rem';
+            badge.style.cssText = 'color:var(--danger);font-weight:700;margin-right:0.4rem';
             tdStatus.appendChild(badge);
           }
           tdStatus.appendChild(statusText);

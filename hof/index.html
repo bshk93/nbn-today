@@ -22,14 +22,14 @@
     }
 
     header p {
-      color: #9ca3af;
+      color: var(--text-muted);
       margin-top: 0.4rem;
       font-size: 0.9rem;
     }
 
     .table-wrap {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow-x: auto;
     }
@@ -46,14 +46,14 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #4b5563;
+      color: var(--text-dim);
       text-align: center;
       padding: 0.35rem 1rem 0;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid var(--bg-card);
     }
 
     .col-group-label.bordered {
-      border-left: 1px solid #283141;
+      border-left: 1px solid var(--border-subtle);
     }
 
     thead th {
@@ -63,8 +63,8 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #6b7280;
-      border-bottom: 1px solid #374151;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
       cursor: pointer;
       user-select: none;
     }
@@ -77,25 +77,25 @@
     thead th.center { text-align: center; }
 
     tbody tr {
-      border-bottom: 1px solid #283141;
+      border-bottom: 1px solid var(--border-subtle);
       transition: background 0.1s;
     }
 
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: #263244; }
+    tbody tr:hover { background: var(--bg-hover); }
 
     td {
       padding: 0.55rem 0.75rem;
-      color: #d1d5db;
+      color: var(--text-secondary);
     }
 
     td.player-name {
       font-weight: 600;
-      color: #f3f4f6;
+      color: var(--text-primary);
     }
 
     td.teams {
-      color: #9ca3af;
+      color: var(--text-muted);
       font-size: 0.8rem;
     }
 
@@ -109,20 +109,20 @@
       font-variant-numeric: tabular-nums;
     }
 
-    td.muted { color: #6b7280; }
+    td.muted { color: var(--text-muted); }
 
     td.score {
       text-align: right;
       font-variant-numeric: tabular-nums;
       font-weight: 600;
-      color: #93c5fd;
+      color: var(--accent-light);
     }
 
     .active-dot {
       display: inline-block;
       width: 6px;
       height: 6px;
-      background: #34d399;
+      background: var(--market-positive);
       border-radius: 50%;
       margin-left: 6px;
       vertical-align: middle;
@@ -131,18 +131,18 @@
 
     .formula-note {
       margin-bottom: 1.75rem;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
       border-radius: 8px;
-      background: #1f2937;
+      background: var(--bg-card);
       padding: 0.75rem 1rem;
       font-size: 0.825rem;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
 
     .formula-note summary {
       cursor: pointer;
       font-weight: 600;
-      color: #6b7280;
+      color: var(--text-muted);
       letter-spacing: 0.03em;
       list-style: none;
       user-select: none;
@@ -158,7 +158,7 @@
 
     .formula-note[open] summary::before { content: '▼ '; }
 
-    .formula-note summary:hover { color: #d1d5db; }
+    .formula-note summary:hover { color: var(--text-secondary); }
 
     .formula-body {
       margin-top: 0.75rem;
@@ -168,7 +168,7 @@
       line-height: 1.55;
     }
 
-    .formula-body strong { color: #d1d5db; }
+    .formula-body strong { color: var(--text-secondary); }
 
     .formula-body ul {
       margin: 0.1rem 0 0 1.1rem;
@@ -180,8 +180,8 @@
     .formula-mono {
       font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 0.78rem;
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 5px;
       padding: 0.4rem 0.65rem;
       color: #a5b4fc;
@@ -189,12 +189,12 @@
       white-space: nowrap;
     }
 
-    .border-left { border-left: 1px solid #283141; }
+    .border-left { border-left: 1px solid var(--border-subtle); }
 
     #status {
       text-align: center;
       padding: 3rem;
-      color: #6b7280;
+      color: var(--text-muted);
       font-size: 0.9rem;
     }
   </style>

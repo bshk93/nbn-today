@@ -13,199 +13,199 @@
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     .header-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 
-    .balance-chip { font-size: 0.82rem; font-weight: 700; color: #fbbf24; background: #1c1710; border: 1px solid #78350f; border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
+    .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: #1c1710; border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
 
-    .new-bet-btn { background: none; border: 1px solid #4b5563; color: #34d399; border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
-    .new-bet-btn:hover { border-color: #34d399; background: #0a1f15; }
+    .new-bet-btn { background: none; border: 1px solid var(--text-dim); color: var(--market-positive); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+    .new-bet-btn:hover { border-color: var(--market-positive); background: #0a1f15; }
 
     /* Tabs */
-    .tabs { display: flex; gap: 2px; background: #1f2937; border-radius: 8px; padding: 3px; margin-bottom: 1.5rem; width: fit-content; }
-    .tab-btn { background: none; border: none; color: #9ca3af; padding: 0.35rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 500; white-space: nowrap; }
-    .tab-btn.active { background: #374151; color: #f3f4f6; }
-    .tab-btn:hover:not(.active) { color: #d1d5db; }
+    .tabs { display: flex; gap: 2px; background: var(--bg-card); border-radius: 8px; padding: 3px; margin-bottom: 1.5rem; width: fit-content; }
+    .tab-btn { background: none; border: none; color: var(--text-muted); padding: 0.35rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 500; white-space: nowrap; }
+    .tab-btn.active { background: var(--border); color: var(--text-primary); }
+    .tab-btn:hover:not(.active) { color: var(--text-secondary); }
 
     /* New bet form */
-    .new-bet-form { background: #0a1f15; border: 1px solid #065f46; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
-    .new-bet-form label { font-size: 0.78rem; color: #6ee7b7; font-weight: 600; }
+    .new-bet-form { background: #0a1f15; border: 1px solid var(--market-positive-border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .new-bet-form label { font-size: 0.78rem; color: var(--market-positive-light); font-weight: 600; }
     .new-bet-form input[type="text"], .new-bet-form textarea {
-      background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 5px;
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 5px;
       padding: 0.35rem 0.65rem; font-size: 0.85rem; outline: none; width: 100%; font-family: inherit;
     }
     .new-bet-form input:focus, .new-bet-form textarea:focus { border-color: #10b981; }
     .new-bet-form textarea { resize: vertical; min-height: 48px; }
     .opt-row { display: flex; gap: 0.4rem; align-items: center; }
     .opt-row input { flex: 1; }
-    .opt-del { background: none; border: none; color: #374151; cursor: pointer; font-size: 1.1rem; padding: 0 0.2rem; }
-    .opt-del:hover { color: #f87171; }
-    .add-opt-btn { background: none; border: 1px dashed #374151; color: #6b7280; border-radius: 5px; padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; width: fit-content; }
-    .add-opt-btn:hover { border-color: #6b7280; color: #9ca3af; }
+    .opt-del { background: none; border: none; color: var(--border); cursor: pointer; font-size: 1.1rem; padding: 0 0.2rem; }
+    .opt-del:hover { color: var(--danger); }
+    .add-opt-btn { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: 5px; padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; width: fit-content; }
+    .add-opt-btn:hover { border-color: var(--text-muted); color: var(--text-muted); }
     .form-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .form-submit { background: #059669; border: none; color: #fff; border-radius: 5px; padding: 0.3rem 0.85rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .form-submit { background: #059669; border: none; color: var(--text-on-accent); border-radius: 5px; padding: 0.3rem 0.85rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
     .form-submit:hover { background: #047857; }
     .form-submit:disabled { opacity: 0.5; cursor: default; }
-    .form-cancel-btn { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.5rem; }
-    .form-cancel-btn:hover { color: #9ca3af; }
-    .form-err { font-size: 0.75rem; color: #f87171; }
+    .form-cancel-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.5rem; }
+    .form-cancel-btn:hover { color: var(--text-muted); }
+    .form-err { font-size: 0.75rem; color: var(--danger); }
 
     /* Bet card */
-    .bet-card { background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .bet-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .bet-card.locked { background: #16172a; border-color: #2d2d54; }
-    .bet-card.closed { background: #171f2a; border-color: #2d3748; }
+    .bet-card.closed { background: #171f2a; border-color: var(--border-dark); }
     .locked-notice { font-size: 0.78rem; color: #818cf8; margin-top: 0.6rem; }
     .bet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
-    .bet-title { font-size: 1rem; font-weight: 700; color: #f3f4f6; }
+    .bet-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
     .bet-status-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 4px; padding: 0.15rem 0.45rem; white-space: nowrap; flex-shrink: 0; }
-    .badge-open   { background: #064e3b; color: #34d399; }
-    .badge-locked { background: #1e1b4b; color: #818cf8; border: 1px solid #3730a3; }
-    .badge-closed { background: #1f2937; color: #6b7280; border: 1px solid #374151; }
-    .badge-voided { background: #292008; color: #f59e0b; }
-    .bet-meta { font-size: 0.72rem; color: #6b7280; margin-bottom: 0.75rem; }
-    .bet-desc { font-size: 0.82rem; color: #9ca3af; margin-bottom: 0.75rem; }
-    .pool-total { font-size: 0.75rem; color: #6b7280; margin: 0.5rem 0 0.9rem; }
-    .pool-total .nby { color: #fbbf24; }
+    .badge-open   { background: var(--market-positive-bg); color: var(--market-positive); }
+    .badge-locked { background: var(--purple-bg); color: #818cf8; border: 1px solid #3730a3; }
+    .badge-closed { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-voided { background: #292008; color: var(--warning); }
+    .bet-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+    .bet-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+    .pool-total { font-size: 0.75rem; color: var(--text-muted); margin: 0.5rem 0 0.9rem; }
+    .pool-total .nby { color: var(--gold); }
 
     /* Option bars */
     .options-list { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem; }
     .opt-bar-row { display: flex; align-items: center; gap: 0.5rem; }
-    .opt-label { font-size: 0.8rem; color: #d1d5db; min-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .opt-label.winner { color: #fbbf24; font-weight: 700; }
-    .opt-label.my-pick::after { content: ' ✓'; color: #60a5fa; font-size: 0.7rem; }
-    .bar-wrap { flex: 1; height: 8px; background: #374151; border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; background: #3b82f6; transition: width 0.3s; }
-    .bar-fill.winner { background: #f59e0b; }
-    .bar-fill.zero   { background: #374151; }
-    .opt-pct  { font-size: 0.72rem; color: #9ca3af; min-width: 36px; text-align: right; }
-    .opt-amt  { font-size: 0.72rem; color: #fbbf24; min-width: 60px; text-align: right; }
-    .opt-winner-badge { font-size: 0.6rem; font-weight: 700; color: #fbbf24; background: #292008; border-radius: 3px; padding: 0.1rem 0.3rem; }
+    .opt-label { font-size: 0.8rem; color: var(--text-secondary); min-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .opt-label.winner { color: var(--gold); font-weight: 700; }
+    .opt-label.my-pick::after { content: ' ✓'; color: var(--link); font-size: 0.7rem; }
+    .bar-wrap { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; background: var(--accent); transition: width 0.3s; }
+    .bar-fill.winner { background: var(--warning); }
+    .bar-fill.zero   { background: var(--border); }
+    .opt-pct  { font-size: 0.72rem; color: var(--text-muted); min-width: 36px; text-align: right; }
+    .opt-amt  { font-size: 0.72rem; color: var(--gold); min-width: 60px; text-align: right; }
+    .opt-winner-badge { font-size: 0.6rem; font-weight: 700; color: var(--gold); background: #292008; border-radius: 3px; padding: 0.1rem 0.3rem; }
 
     /* My current bet info */
-    .my-bet-info { font-size: 0.78rem; color: #93c5fd; background: #0c1929; border: 1px solid #1d4ed8; border-radius: 6px; padding: 0.4rem 0.75rem; margin: 0.75rem 0 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .my-bet-info .nby { color: #fbbf24; font-weight: 700; }
+    .my-bet-info { font-size: 0.78rem; color: var(--accent-light); background: #0c1929; border: 1px solid var(--accent-dark); border-radius: 6px; padding: 0.4rem 0.75rem; margin: 0.75rem 0 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .my-bet-info .nby { color: var(--gold); font-weight: 700; }
 
     /* Wager form */
     .wager-form { margin-top: 0.75rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .wager-form input[type="number"] {
-      background: #111827; border: 1px solid #374151; color: #fbbf24; border-radius: 5px;
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--gold); border-radius: 5px;
       padding: 0.3rem 0.6rem; font-size: 0.85rem; outline: none; width: 100px; font-family: inherit;
     }
-    .wager-form input[type="number"]:focus { border-color: #f59e0b; }
+    .wager-form input[type="number"]:focus { border-color: var(--warning); }
     .wager-form select {
-      background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 5px;
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 5px;
       padding: 0.3rem 0.6rem; font-size: 0.82rem; outline: none; font-family: inherit; cursor: pointer;
     }
-    .wager-form select:focus { border-color: #3b82f6; }
-    .wager-form .place-btn { background: #1d4ed8; border: none; color: #fff; border-radius: 5px; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .wager-form select:focus { border-color: var(--accent); }
+    .wager-form .place-btn { background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: 5px; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
     .wager-form .place-btn:hover { background: #1e40af; }
     .wager-form .place-btn:disabled { opacity: 0.5; cursor: default; }
-    .wager-avail { font-size: 0.72rem; color: #6b7280; }
-    .wager-avail .nby { color: #fbbf24; }
-    .wager-err { font-size: 0.73rem; color: #f87171; width: 100%; }
+    .wager-avail { font-size: 0.72rem; color: var(--text-muted); }
+    .wager-avail .nby { color: var(--gold); }
+    .wager-err { font-size: 0.73rem; color: var(--danger); width: 100%; }
 
     /* Close bet (bets role) */
-    .close-bet-section { margin-top: 0.75rem; border-top: 1px solid #374151; padding-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .close-toggle { background: none; border: 1px solid #4b5563; color: #9ca3af; border-radius: 5px; padding: 0.25rem 0.65rem; cursor: pointer; font-size: 0.78rem; }
-    .close-toggle:hover { border-color: #f87171; color: #f87171; }
+    .close-bet-section { margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .close-toggle { background: none; border: 1px solid var(--text-dim); color: var(--text-muted); border-radius: 5px; padding: 0.25rem 0.65rem; cursor: pointer; font-size: 0.78rem; }
+    .close-toggle:hover { border-color: var(--danger); color: var(--danger); }
     .close-form { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-    .close-form select { background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 5px; padding: 0.3rem 0.6rem; font-size: 0.82rem; outline: none; font-family: inherit; }
-    .close-confirm { background: #dc2626; border: none; color: #fff; border-radius: 5px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .close-form select { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 5px; padding: 0.3rem 0.6rem; font-size: 0.82rem; outline: none; font-family: inherit; }
+    .close-confirm { background: #dc2626; border: none; color: var(--text-on-accent); border-radius: 5px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
     .close-confirm:hover { background: #b91c1c; }
     .close-confirm:disabled { opacity: 0.5; cursor: default; }
-    .delete-btn { background: none; border: none; color: #374151; cursor: pointer; font-size: 0.78rem; padding: 0.25rem 0.5rem; margin-left: auto; }
-    .delete-btn:hover { color: #f87171; }
+    .delete-btn { background: none; border: none; color: var(--border); cursor: pointer; font-size: 0.78rem; padding: 0.25rem 0.5rem; margin-left: auto; }
+    .delete-btn:hover { color: var(--danger); }
 
     /* Payout info (closed bets) */
-    .payout-section { margin-top: 0.75rem; border-top: 1px solid #2d3748; padding-top: 0.75rem; font-size: 0.78rem; }
-    .payout-hdr { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #4b5563; margin-bottom: 0.4rem; }
-    .payout-row { display: flex; justify-content: space-between; padding: 0.15rem 0; color: #9ca3af; }
-    .payout-row .payout-winner { color: #fbbf24; font-weight: 600; }
-    .payout-row .payout-profit { font-size: 0.72rem; color: #34d399; }
-    .voided-notice { color: #f59e0b; font-size: 0.78rem; font-weight: 600; margin-top: 0.5rem; }
+    .payout-section { margin-top: 0.75rem; border-top: 1px solid var(--border-dark); padding-top: 0.75rem; font-size: 0.78rem; }
+    .payout-hdr { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 0.4rem; }
+    .payout-row { display: flex; justify-content: space-between; padding: 0.15rem 0; color: var(--text-muted); }
+    .payout-row .payout-winner { color: var(--gold); font-weight: 600; }
+    .payout-row .payout-profit { font-size: 0.72rem; color: var(--market-positive); }
+    .voided-notice { color: var(--warning); font-size: 0.78rem; font-weight: 600; margin-top: 0.5rem; }
 
     /* Balances leaderboard */
     .balances-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .balances-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; white-space: nowrap; }
-    .balances-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; padding: 0 0.5rem 0.5rem; border-bottom: 1px solid #374151; }
+    .balances-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); padding: 0 0.5rem 0.5rem; border-bottom: 1px solid var(--border); }
     .balances-table th.num { text-align: right; }
-    .balances-table th.dim { color: #4b5563; }
-    .balances-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid #1f2937; color: #d1d5db; }
+    .balances-table th.dim { color: var(--text-dim); }
+    .balances-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--bg-card); color: var(--text-secondary); }
     .balances-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .balances-table td.dim { color: #6b7280; }
+    .balances-table td.dim { color: var(--text-muted); }
     .balances-table tr:last-child td { border-bottom: none; }
-    .balances-table tr.me td { color: #f3f4f6; background: #1a2535; }
-    .rank-cell { color: #6b7280; font-size: 0.8rem; }
+    .balances-table tr.me td { color: var(--text-primary); background: #1a2535; }
+    .rank-cell { color: var(--text-muted); font-size: 0.8rem; }
     .name-cell { font-weight: 500; }
-    .bal-cell  { color: #fbbf24; font-weight: 700; }
-    .pl-pos    { color: #34d399; }
-    .pl-neg    { color: #f87171; }
-    .pl-zero   { color: #6b7280; }
+    .bal-cell  { color: var(--gold); font-weight: 700; }
+    .pl-pos    { color: var(--market-positive); }
+    .pl-neg    { color: var(--danger); }
+    .pl-zero   { color: var(--text-muted); }
 
-    .empty-state { color: #6b7280; font-size: 0.875rem; padding: 2rem 0; text-align: center; }
-    .loading { color: #6b7280; font-size: 0.875rem; }
+    .empty-state { color: var(--text-muted); font-size: 0.875rem; padding: 2rem 0; text-align: center; }
+    .loading { color: var(--text-muted); font-size: 0.875rem; }
 
     /* How to earn NB¥ panel */
-    .earn-link { font-size: 0.72rem; color: #4b5563; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; margin-bottom: 0.85rem; display: block; text-align: left; }
-    .earn-link:hover { color: #9ca3af; }
-    .earn-panel { background: #1a2030; border: 1px solid #2d3748; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
-    .earn-panel-title { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #4b5563; margin-bottom: 0.55rem; }
+    .earn-link { font-size: 0.72rem; color: var(--text-dim); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; margin-bottom: 0.85rem; display: block; text-align: left; }
+    .earn-link:hover { color: var(--text-muted); }
+    .earn-panel { background: #1a2030; border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
+    .earn-panel-title { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.55rem; }
     .earn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 2rem; }
     @media (max-width: 480px) { .earn-grid { grid-template-columns: 1fr; } }
-    .earn-item { font-size: 0.78rem; color: #9ca3af; line-height: 1.4; }
-    .earn-item .earn-amt { color: #fbbf24; font-weight: 600; }
+    .earn-item { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
+    .earn-item .earn-amt { color: var(--gold); font-weight: 600; }
     .earn-item .earn-tag { font-size: 0.65rem; border-radius: 3px; padding: 0.05rem 0.3rem; margin-left: 0.25rem; vertical-align: middle; }
-    .earn-tag-auto   { background: #052e16; color: #34d399; }
-    .earn-tag-manual { background: #1c1710; color: #9ca3af; }
-    .earn-item .earn-note { font-size: 0.68rem; color: #4b5563; display: block; margin-top: 0.1rem; }
+    .earn-tag-auto   { background: #052e16; color: var(--market-positive); }
+    .earn-tag-manual { background: #1c1710; color: var(--text-muted); }
+    .earn-item .earn-note { font-size: 0.68rem; color: var(--text-dim); display: block; margin-top: 0.1rem; }
 
     /* Ledger table */
     .ledger-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    .ledger-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; padding: 0 0.5rem 0.5rem; border-bottom: 1px solid #374151; }
+    .ledger-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); padding: 0 0.5rem 0.5rem; border-bottom: 1px solid var(--border); }
     .ledger-table th.num { text-align: right; }
-    .ledger-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #1f2937; color: #d1d5db; vertical-align: top; }
+    .ledger-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--bg-card); color: var(--text-secondary); vertical-align: top; }
     .ledger-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
     .ledger-table tr:last-child td { border-bottom: none; }
-    .ledger-ts   { font-size: 0.7rem; color: #6b7280; white-space: nowrap; }
-    .ledger-name { font-weight: 500; color: #f3f4f6; }
-    .ledger-reason { font-size: 0.75rem; color: #9ca3af; }
-    .ledger-bal  { color: #fbbf24; }
+    .ledger-ts   { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
+    .ledger-name { font-weight: 500; color: var(--text-primary); }
+    .ledger-reason { font-size: 0.75rem; color: var(--text-muted); }
+    .ledger-bal  { color: var(--gold); }
 
     /* Fixed-odds type badge */
-    .bet-type-badge { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 3px; padding: 0.1rem 0.35rem; background: #1e1b4b; color: #a78bfa; border: 1px solid #4c1d95; margin-left: 0.4rem; vertical-align: middle; }
+    .bet-type-badge { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 3px; padding: 0.1rem 0.35rem; background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); margin-left: 0.4rem; vertical-align: middle; }
     /* Form type toggle */
     .type-toggle-wrap { display: flex; gap: 0.35rem; }
-    .type-toggle-btn { background: none; border: 1px solid #374151; color: #6b7280; border-radius: 5px; padding: 0.25rem 0.75rem; cursor: pointer; font-size: 0.78rem; font-weight: 500; }
-    .type-toggle-btn.active { background: #1e1b4b; border-color: #4c1d95; color: #a78bfa; }
-    .type-toggle-btn:hover:not(.active) { border-color: #6b7280; color: #9ca3af; }
+    .type-toggle-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 5px; padding: 0.25rem 0.75rem; cursor: pointer; font-size: 0.78rem; font-weight: 500; }
+    .type-toggle-btn.active { background: var(--purple-bg); border-color: var(--purple-border); color: var(--purple); }
+    .type-toggle-btn:hover:not(.active) { border-color: var(--text-muted); color: var(--text-muted); }
     /* Odds multiplier chip on option row */
-    .opt-odds { font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: #1e1b4b; border-radius: 3px; padding: 0.1rem 0.3rem; white-space: nowrap; flex-shrink: 0; margin-left: 0.2rem; }
+    .opt-odds { font-size: 0.65rem; font-weight: 700; color: var(--purple); background: var(--purple-bg); border-radius: 3px; padding: 0.1rem 0.3rem; white-space: nowrap; flex-shrink: 0; margin-left: 0.2rem; }
     /* Potential payout preview in wager form */
-    .payout-preview { font-size: 0.72rem; color: #34d399; padding: 0.15rem 0 0; }
+    .payout-preview { font-size: 0.72rem; color: var(--market-positive); padding: 0.15rem 0 0; }
     /* Prob sum indicator in form */
     .prob-sum-row { font-size: 0.72rem; font-weight: 600; }
     /* Shortfall/surplus notice on closed fixed-odds bets */
-    .shortfall-notice { font-size: 0.72rem; color: #f59e0b; margin-top: 0.35rem; }
-    .surplus-notice   { font-size: 0.72rem; color: #34d399;  margin-top: 0.35rem; }
+    .shortfall-notice { font-size: 0.72rem; color: var(--warning); margin-top: 0.35rem; }
+    .surplus-notice   { font-size: 0.72rem; color: var(--market-positive);  margin-top: 0.35rem; }
 
     /* Canned bet button */
-    .new-canned-btn { background: none; border: 1px solid #4b5563; color: #60a5fa; border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
-    .new-canned-btn:hover { border-color: #60a5fa; background: #0c1929; }
+    .new-canned-btn { background: none; border: 1px solid var(--text-dim); color: var(--link); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+    .new-canned-btn:hover { border-color: var(--link); background: #0c1929; }
 
     /* Canned bet form — uses same .new-bet-form shell but with blue accent */
-    .canned-bet-form { background: #0c1929; border: 1px solid #1d4ed8; }
-    .canned-bet-form label { color: #93c5fd; }
+    .canned-bet-form { background: #0c1929; border: 1px solid var(--accent-dark); }
+    .canned-bet-form label { color: var(--accent-light); }
     .canned-bet-form input[type="text"]:focus,
     .canned-bet-form textarea:focus,
-    .canned-select:focus { border-color: #3b82f6; }
+    .canned-select:focus { border-color: var(--accent); }
     .canned-select {
-      background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 5px;
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 5px;
       padding: 0.35rem 0.65rem; font-size: 0.85rem; outline: none; font-family: inherit; cursor: pointer; width: 100%;
     }
-    .canned-info { font-size: 0.78rem; color: #9ca3af; background: #1a2535; border: 1px solid #1e3a5f; border-radius: 5px; padding: 0.4rem 0.75rem; }
-    .canned-opts-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: #6b7280; }
-    .canned-opt-chip { background: #1f2937; border: 1px solid #374151; border-radius: 4px; padding: 0.15rem 0.5rem; color: #d1d5db; font-size: 0.75rem; }
+    .canned-info { font-size: 0.78rem; color: var(--text-muted); background: #1a2535; border: 1px solid var(--accent-panel-bg); border-radius: 5px; padding: 0.4rem 0.75rem; }
+    .canned-opts-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: var(--text-muted); }
+    .canned-opt-chip { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 0.15rem 0.5rem; color: var(--text-secondary); font-size: 0.75rem; }
     .canned-adj-row { display: flex; align-items: center; gap: 0.5rem; }
-    .canned-adj-btn { background: #1f2937; border: 1px solid #374151; color: #f3f4f6; border-radius: 4px; padding: 0.2rem 0.65rem; cursor: pointer; font-size: 1rem; font-family: inherit; line-height: 1; }
-    .canned-adj-btn:hover { border-color: #6b7280; }
-    .canned-line-val { font-weight: 700; font-size: 1.05rem; color: #f3f4f6; min-width: 3rem; text-align: center; }
+    .canned-adj-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); border-radius: 4px; padding: 0.2rem 0.65rem; cursor: pointer; font-size: 1rem; font-family: inherit; line-height: 1; }
+    .canned-adj-btn:hover { border-color: var(--text-muted); }
+    .canned-line-val { font-weight: 700; font-size: 1.05rem; color: var(--text-primary); min-width: 3rem; text-align: center; }
   </style>
 </head>
 <body>
@@ -490,7 +490,7 @@
         const sum = probInputs.reduce((acc, inp) => acc + (parseFloat(inp.value) || 0), 0);
         const ok  = Math.abs(sum - 100) < 0.1;
         probSumEl.textContent = ok ? `Sum: ${sum.toFixed(1)}% ✓` : `Sum: ${sum.toFixed(1)}% — house edge applies`;
-        probSumEl.style.color   = ok ? '#34d399' : '#f59e0b';
+        probSumEl.style.color   = ok ? 'var(--market-positive)' : 'var(--warning)';
         probSumEl.style.display = '';
       }
 
@@ -510,19 +510,19 @@
         const probInp = document.createElement('input');
         probInp.type = 'number'; probInp.min = '0.1'; probInp.max = '99.9'; probInp.step = '0.1';
         probInp.placeholder = '%';
-        probInp.style.cssText = 'width:52px;background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:5px;padding:0.3rem 0.4rem;font-size:0.82rem;outline:none;font-family:inherit;';
+        probInp.style.cssText = 'width:52px;background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.3rem 0.4rem;font-size:0.82rem;outline:none;font-family:inherit;';
 
         const pctLbl = document.createElement('span');
         pctLbl.textContent = '%';
-        pctLbl.style.cssText = 'font-size:0.72rem;color:#6b7280;margin-right:2px;';
+        pctLbl.style.cssText = 'font-size:0.72rem;color:var(--text-muted);margin-right:2px;';
 
         const divLbl = document.createElement('span');
         divLbl.textContent = '/';
-        divLbl.style.cssText = 'font-size:0.72rem;color:#4b5563;';
+        divLbl.style.cssText = 'font-size:0.72rem;color:var(--text-dim);';
 
         const oddsInp = document.createElement('input');
         oddsInp.type = 'text'; oddsInp.placeholder = 'odds';
-        oddsInp.style.cssText = 'width:62px;background:#111827;border:1px solid #374151;color:#a78bfa;border-radius:5px;padding:0.3rem 0.4rem;font-size:0.82rem;outline:none;font-family:inherit;';
+        oddsInp.style.cssText = 'width:62px;background:var(--bg-page);border:1px solid var(--border);color:var(--purple);border-radius:5px;padding:0.3rem 0.4rem;font-size:0.82rem;outline:none;font-family:inherit;';
 
         // Cross-sync: % ↔ American odds
         probInp.oninput = () => {
@@ -729,13 +729,13 @@
         nameTd.appendChild(nameLink);
         if (isMe) {
           const you = document.createElement('span');
-          you.style.cssText = 'font-size:0.68rem;color:#6b7280;margin-left:0.4rem';
+          you.style.cssText = 'font-size:0.68rem;color:var(--text-muted);margin-left:0.4rem';
           you.textContent = '(you)';
           nameTd.appendChild(you);
         }
         if (isFormer) {
           const tag = document.createElement('span');
-          tag.style.cssText = 'font-size:0.65rem;color:#4b5563;margin-left:0.4rem;font-style:italic';
+          tag.style.cssText = 'font-size:0.65rem;color:var(--text-dim);margin-left:0.4rem;font-style:italic';
           tag.textContent = 'former';
           nameTd.appendChild(tag);
         }
@@ -785,7 +785,7 @@
       // Former members toggle
       if (formerCount > 0) {
         const toggle = document.createElement('button');
-        toggle.style.cssText = 'margin-top:0.75rem;background:none;border:none;color:#4b5563;font-size:0.75rem;cursor:pointer;padding:0;font-family:inherit;';
+        toggle.style.cssText = 'margin-top:0.75rem;background:none;border:none;color:var(--text-dim);font-size:0.75rem;cursor:pointer;padding:0;font-family:inherit;';
         toggle.textContent = showFormerBals
           ? 'Hide former members'
           : `Show ${formerCount} former member${formerCount !== 1 ? 's' : ''}`;
@@ -823,7 +823,7 @@
 
       // Summary line
       const summary = document.createElement('div');
-      summary.style.cssText = 'font-size:0.75rem;color:#6b7280;margin-bottom:0.75rem;';
+      summary.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-bottom:0.75rem;';
       summary.textContent = `${ledgerEntries.length.toLocaleString()} entries`;
       wrap.appendChild(summary);
 
@@ -862,7 +862,7 @@
         const delta = Number(entry.delta);
         const sign  = delta > 0 ? '+' : delta < 0 ? '-' : '';
         deltaTd.textContent = `${sign}${nby(delta)}`;
-        deltaTd.style.color = delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : '#6b7280';
+        deltaTd.style.color = delta > 0 ? 'var(--market-positive)' : delta < 0 ? 'var(--danger)' : 'var(--text-muted)';
 
         // New balance
         const balTd = tr.insertCell();
@@ -1042,7 +1042,7 @@
           const delBtn = document.createElement('button');
           delBtn.className = 'delete-btn';
           delBtn.textContent = '✕ Delete bet';
-          delBtn.style.cssText = 'display:block;margin-top:0.5rem;font-size:0.72rem;color:#4b5563;background:none;border:none;cursor:pointer;padding:0';
+          delBtn.style.cssText = 'display:block;margin-top:0.5rem;font-size:0.72rem;color:var(--text-dim);background:none;border:none;cursor:pointer;padding:0';
           delBtn.onclick = async () => {
             if (!confirm(`Delete "${bet.title}"?`)) return;
             const res = await fetch(`/api/bets/${bet.id}`, {
@@ -1104,8 +1104,8 @@
       let selectEl = null;
       if (locked) {
         const lockLabel = document.createElement('span');
-        lockLabel.style.cssText = 'font-size:0.78rem;color:#9ca3af';
-        lockLabel.innerHTML = `on <strong style="color:#d1d5db">${optMap[myWager.option_id]}</strong> (add more)`;
+        lockLabel.style.cssText = 'font-size:0.78rem;color:var(--text-muted)';
+        lockLabel.innerHTML = `on <strong style="color:var(--text-secondary)">${optMap[myWager.option_id]}</strong> (add more)`;
         form.append(amtIn, lockLabel);
       } else {
         selectEl = document.createElement('select');
@@ -1119,7 +1119,7 @@
         selectEl.value = chosenOptionId;
         selectEl.onchange = () => { chosenOptionId = selectEl.value; updatePayoutPreview(); };
         const onLbl = document.createElement('span');
-        onLbl.style.cssText = 'font-size:0.78rem;color:#6b7280';
+        onLbl.style.cssText = 'font-size:0.78rem;color:var(--text-muted)';
         onLbl.textContent = 'on';
         form.append(amtIn, onLbl, selectEl);
       }
@@ -1223,7 +1223,7 @@
       cbWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.3rem';
       bet.options.forEach(opt => {
         const lbl = document.createElement('label');
-        lbl.style.cssText = 'display:flex;align-items:center;gap:0.45rem;font-size:0.82rem;color:#d1d5db;cursor:pointer';
+        lbl.style.cssText = 'display:flex;align-items:center;gap:0.45rem;font-size:0.82rem;color:var(--text-secondary);cursor:pointer';
         const cb = document.createElement('input');
         cb.type = 'checkbox'; cb.value = opt.id; cb.style.cursor = 'pointer';
         lbl.append(cb, document.createTextNode(opt.label));
@@ -1237,7 +1237,7 @@
       confirmBtn.textContent = 'Confirm';
 
       const closeErr = document.createElement('span');
-      closeErr.style.cssText = 'font-size:0.72rem;color:#f87171';
+      closeErr.style.cssText = 'font-size:0.72rem;color:var(--danger)';
 
       confirmBtn.onclick = async () => {
         const selectedIds = winCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
@@ -1317,7 +1317,7 @@
           const amtEl  = document.createElement('div');
           amtEl.style.cssText = 'display:flex;gap:0.5rem;align-items:center';
           const payEl  = document.createElement('span');
-          payEl.style.color = '#fbbf24';
+          payEl.style.color = 'var(--gold)';
           payEl.textContent = `won ${nby(payout)}`;
           const profitEl = document.createElement('span');
           profitEl.className = 'payout-profit';
@@ -1339,7 +1339,7 @@
         const myWager  = bet.wagers?.[currentUser.name]?.amount || 0;
         const myProfit = myPayout - myWager;
         const myRow = document.createElement('div');
-        myRow.style.cssText = 'margin-top:0.4rem;font-size:0.75rem;color:#34d399;font-weight:600';
+        myRow.style.cssText = 'margin-top:0.4rem;font-size:0.75rem;color:var(--market-positive);font-weight:600';
         myRow.textContent = `✓ You won ${nby(myPayout)} (+${nby(myProfit)} profit)`;
         sec.appendChild(myRow);
       }
@@ -1617,13 +1617,13 @@
         infoEl.className = 'canned-info';
         const updateInfo = () => {
           infoEl.innerHTML =
-            `<span style="color:#9ca3af">${g.away_team} diff:</span> ` +
-            `<strong style="color:${dA >= 0 ? '#34d399' : '#f87171'}">${dA >= 0 ? '+' : ''}${dA.toFixed(1)}</strong>` +
-            `&ensp;<span style="color:#9ca3af">${g.home_team} diff:</span> ` +
-            `<strong style="color:${dH >= 0 ? '#34d399' : '#f87171'}">${dH >= 0 ? '+' : ''}${dH.toFixed(1)}</strong>` +
-            `&ensp;<span style="color:#6b7280">→</span>&ensp;` +
-            `<strong style="color:#d1d5db">${favTeam}</strong> <span style="color:#9ca3af">fav by</span> ` +
-            `<strong style="color:#f3f4f6">${line}</strong>`;
+            `<span style="color:var(--text-muted)">${g.away_team} diff:</span> ` +
+            `<strong style="color:${dA >= 0 ? 'var(--market-positive)' : 'var(--danger)'}">${dA >= 0 ? '+' : ''}${dA.toFixed(1)}</strong>` +
+            `&ensp;<span style="color:var(--text-muted)">${g.home_team} diff:</span> ` +
+            `<strong style="color:${dH >= 0 ? 'var(--market-positive)' : 'var(--danger)'}">${dH >= 0 ? '+' : ''}${dH.toFixed(1)}</strong>` +
+            `&ensp;<span style="color:var(--text-muted)">→</span>&ensp;` +
+            `<strong style="color:var(--text-secondary)">${favTeam}</strong> <span style="color:var(--text-muted)">fav by</span> ` +
+            `<strong style="color:var(--text-primary)">${line}</strong>`;
         };
         updateInfo();
         container.appendChild(infoEl);
@@ -1803,17 +1803,17 @@
             if (avg !== null && !isNaN(avg)) {
               line = _roundHalf(avg);
               infoEl.innerHTML =
-                `<span style="color:#9ca3af">${pName} averaging </span>` +
-                `<strong style="color:#d1d5db">${avg.toFixed(1)}</strong>` +
-                `<span style="color:#9ca3af"> ${activeStat.label.toLowerCase()}/game (${row.SEASON})</span>` +
-                `<span style="color:#6b7280"> → line: </span>` +
-                `<strong style="color:#f3f4f6">${line}</strong>`;
+                `<span style="color:var(--text-muted)">${pName} averaging </span>` +
+                `<strong style="color:var(--text-secondary)">${avg.toFixed(1)}</strong>` +
+                `<span style="color:var(--text-muted)"> ${activeStat.label.toLowerCase()}/game (${row.SEASON})</span>` +
+                `<span style="color:var(--text-muted)"> → line: </span>` +
+                `<strong style="color:var(--text-primary)">${line}</strong>`;
             } else {
               infoEl.innerHTML =
-                `<span style="color:#f59e0b">No current season stats for ${pName}. Adjust line manually.</span>`;
+                `<span style="color:var(--warning)">No current season stats for ${pName}. Adjust line manually.</span>`;
             }
           } catch {
-            infoEl.innerHTML = `<span style="color:#f59e0b">Could not load stats. Set line manually.</span>`;
+            infoEl.innerHTML = `<span style="color:var(--warning)">Could not load stats. Set line manually.</span>`;
           }
 
           // Line adjuster

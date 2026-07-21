@@ -10,8 +10,8 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #111827;
-      color: #d1d5db;
+      background: var(--bg-page);
+      color: var(--text-secondary);
       min-height: 100vh;
       font-size: 0.925rem;
       line-height: 1.7;
@@ -20,15 +20,15 @@
     /* ── Page shell ───────────────────────────────────────────────────── */
     .page { max-width: 1160px; margin: 0 auto; padding: 2rem 1rem 6rem; }
 
-    .breadcrumb { font-size: 0.8rem; color: #6b7280; margin-bottom: 1.5rem; }
-    .breadcrumb a { color: #6b7280; }
-    .breadcrumb a:hover { color: #d1d5db; }
+    .breadcrumb { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+    .breadcrumb a { color: var(--text-muted); }
+    .breadcrumb a:hover { color: var(--text-secondary); }
 
-    .doc-header { margin-bottom: 2rem; border-bottom: 1px solid #374151; padding-bottom: 1.25rem; }
-    .doc-header h1 { font-size: 2rem; font-weight: 800; color: #f3f4f6; letter-spacing: -0.025em; }
-    .doc-meta { margin-top: 0.4rem; font-size: 0.8rem; color: #6b7280; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+    .doc-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; }
+    .doc-header h1 { font-size: 2rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.025em; }
+    .doc-meta { margin-top: 0.4rem; font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     .season-chip {
-      background: #1e3a5f; border: 1px solid #2563eb; color: #93c5fd;
+      background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light);
       padding: 0.1rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700;
       letter-spacing: 0.04em;
     }
@@ -45,8 +45,8 @@
     .toc {
       position: sticky;
       top: 1.5rem;
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 1rem 0;
       font-size: 0.78rem;
@@ -55,56 +55,56 @@
     }
     .toc-heading {
       font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-      color: #6b7280; padding: 0 1rem 0.5rem; border-bottom: 1px solid #374151;
+      color: var(--text-muted); padding: 0 1rem 0.5rem; border-bottom: 1px solid var(--border);
       margin-bottom: 0.4rem;
     }
     .toc a {
-      display: block; color: #9ca3af; padding: 0.2rem 1rem;
+      display: block; color: var(--text-muted); padding: 0.2rem 1rem;
       border-left: 2px solid transparent; line-height: 1.45;
     }
-    .toc a:hover { color: #f3f4f6; text-decoration: none; background: rgba(255,255,255,0.03); }
+    .toc a:hover { color: var(--text-primary); text-decoration: none; background: rgba(255,255,255,0.03); }
     .toc a.art-link {
-      font-weight: 600; color: #d1d5db; padding-top: 0.35rem; margin-top: 0.1rem;
+      font-weight: 600; color: var(--text-secondary); padding-top: 0.35rem; margin-top: 0.1rem;
       display: flex; flex-direction: column; gap: 0.05rem;
     }
-    .toc a.art-link .art-num { font-size: 0.72rem; color: #6b7280; font-weight: 500; }
+    .toc a.art-link .art-num { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; }
     .toc a.art-link .art-ttl { font-size: 0.8rem; }
-    .toc a.sec-link { font-size: 0.72rem; padding-left: 1.5rem; color: #6b7280; }
-    .toc a.art-link:hover, .toc a.sec-link:hover { color: #f3f4f6; }
+    .toc a.sec-link { font-size: 0.72rem; padding-left: 1.5rem; color: var(--text-muted); }
+    .toc a.art-link:hover, .toc a.sec-link:hover { color: var(--text-primary); }
 
     /* ── Document content ────────────────────────────────────────────── */
     .doc-content article { margin-bottom: 3.5rem; }
 
     .art-header {
       font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-      color: #6b7280; margin-bottom: 0.3rem;
+      color: var(--text-muted); margin-bottom: 0.3rem;
     }
     .art-title {
-      font-size: 1.4rem; font-weight: 800; color: #f3f4f6;
-      border-bottom: 2px solid #1d4ed8; padding-bottom: 0.5rem; margin-bottom: 1.5rem;
+      font-size: 1.4rem; font-weight: 800; color: var(--text-primary);
+      border-bottom: 2px solid var(--accent-dark); padding-bottom: 0.5rem; margin-bottom: 1.5rem;
       letter-spacing: -0.01em;
     }
 
     .doc-section { margin-bottom: 2rem; }
     .sec-title {
-      font-size: 1rem; font-weight: 700; color: #f3f4f6;
+      font-size: 1rem; font-weight: 700; color: var(--text-primary);
       margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
     }
-    .sec-num { color: #4b5563; font-weight: 500; }
+    .sec-num { color: var(--text-dim); font-weight: 500; }
     .sub-title {
-      font-size: 0.875rem; font-weight: 700; color: #e5e7eb;
+      font-size: 0.875rem; font-weight: 700; color: var(--text-secondary);
       margin: 1.1rem 0 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-      padding-top: 0.75rem; border-top: 1px solid #1f2937;
+      padding-top: 0.75rem; border-top: 1px solid var(--bg-card);
     }
 
-    p { margin-bottom: 0.75rem; color: #d1d5db; }
+    p { margin-bottom: 0.75rem; color: var(--text-secondary); }
     p:last-child { margin-bottom: 0; }
 
     ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
     li { margin-bottom: 0.2rem; }
     li > ul, li > ol { margin-top: 0.2rem; margin-bottom: 0; }
 
-    strong { color: #f3f4f6; font-weight: 600; }
+    strong { color: var(--text-primary); font-weight: 600; }
 
     /* ── Enforcement badges ──────────────────────────────────────────── */
     .badge {
@@ -113,50 +113,50 @@
       padding: 0.15rem 0.55rem; border-radius: 20px; white-space: nowrap;
       vertical-align: middle; line-height: 1;
     }
-    .badge-enforced { background: #064e3b; border: 1px solid #059669; color: #6ee7b7; }
-    .badge-manual   { background: #451a03; border: 1px solid #b45309; color: #fcd34d; }
+    .badge-enforced { background: var(--market-positive-bg); border: 1px solid #059669; color: var(--market-positive-light); }
+    .badge-manual   { background: #451a03; border: 1px solid var(--gold-dim); color: #fcd34d; }
 
     /* ── Cap thresholds table ────────────────────────────────────────── */
     .cap-table-wrap {
-      background: #1a2234; border: 1px solid #1d4ed8; border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--accent-dark); border-radius: 8px;
       overflow: hidden; margin-bottom: 1.25rem;
     }
     .cap-table-header {
-      background: #1e3a5f; padding: 0.5rem 1rem;
+      background: var(--accent-panel-bg); padding: 0.5rem 1rem;
       font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.08em; color: #93c5fd; display: flex; gap: 0.5rem; align-items: center;
+      letter-spacing: 0.08em; color: var(--accent-light); display: flex; gap: 0.5rem; align-items: center;
     }
     .cap-table { width: 100%; border-collapse: collapse; }
-    .cap-table td { padding: 0.45rem 1rem; font-size: 0.85rem; border-top: 1px solid #1e3a5f; }
+    .cap-table td { padding: 0.45rem 1rem; font-size: 0.85rem; border-top: 1px solid var(--accent-panel-bg); }
     .cap-table tr:first-child td { border-top: none; }
-    .cap-table td:first-child { color: #9ca3af; }
-    .cap-table td:last-child { text-align: right; font-weight: 600; color: #f3f4f6; font-variant-numeric: tabular-nums; }
-    .cap-table tr.divider td { border-top: 1px solid #374151; }
+    .cap-table td:first-child { color: var(--text-muted); }
+    .cap-table td:last-child { text-align: right; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .cap-table tr.divider td { border-top: 1px solid var(--border); }
     .cap-table tr.highlight td { background: rgba(29,78,216,0.12); }
 
     /* ── Rule tables ─────────────────────────────────────────────────── */
     .rule-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1rem; font-size: 0.85rem; }
     .rule-table th {
       text-align: left; padding: 0.4rem 0.75rem; font-size: 0.7rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280;
-      border-bottom: 1px solid #374151;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
     }
-    .rule-table td { padding: 0.4rem 0.75rem; border-top: 1px solid #1f2937; color: #d1d5db; }
-    .rule-table tr:nth-child(odd) td { background: #111827; }
-    .rule-table tr:nth-child(even) td { background: #1a2234; }
-    .rule-table td:first-child { color: #9ca3af; font-size: 0.8rem; }
+    .rule-table td { padding: 0.4rem 0.75rem; border-top: 1px solid var(--bg-card); color: var(--text-secondary); }
+    .rule-table tr:nth-child(odd) td { background: var(--bg-page); }
+    .rule-table tr:nth-child(even) td { background: var(--bg-card); }
+    .rule-table td:first-child { color: var(--text-muted); font-size: 0.8rem; }
 
     /* ── Callout boxes ───────────────────────────────────────────────── */
     .callout {
       border-left: 3px solid; border-radius: 0 6px 6px 0;
       padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; font-size: 0.875rem;
     }
-    .callout-note { border-color: #2563eb; background: rgba(29,78,216,0.08); color: #93c5fd; }
-    .callout-warn { border-color: #b45309; background: rgba(180,83,9,0.08); color: #fcd34d; }
-    .callout-pending { border-color: #374151; background: rgba(55,65,81,0.25); color: #6b7280; }
+    .callout-note { border-color: var(--accent-dark); background: rgba(29,78,216,0.08); color: var(--accent-light); }
+    .callout-warn { border-color: var(--gold-dim); background: rgba(180,83,9,0.08); color: #fcd34d; }
+    .callout-pending { border-color: var(--border); background: rgba(55,65,81,0.25); color: var(--text-muted); }
 
     /* ── Divider ─────────────────────────────────────────────────────── */
-    .art-divider { border: none; border-top: 1px solid #374151; margin: 3rem 0; }
+    .art-divider { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
 
     /* ── Mobile ──────────────────────────────────────────────────────── */
     @media (max-width: 768px) {
@@ -167,7 +167,7 @@
 </head>
 <body>
   <div class="page">
-    <div class="breadcrumb"><a href="/">← Home</a></div>
+    <div class="breadcrumb nav"><a href="/">← Home</a></div>
 
     <header class="doc-header">
       <h1>NBN Rulebook</h1>
@@ -192,6 +192,7 @@
 
         <a class="art-link" href="#art2"><span class="art-num">Article II</span><span class="art-ttl">Roster Construction</span></a>
         <a class="sec-link" href="#s2-1">§ 2.1 Roster Size</a>
+        <a class="sec-link" href="#s2-1a">§ 2.1a Empty Roster Charge</a>
         <a class="sec-link" href="#s2-2">§ 2.2 Two-Way</a>
 
         <a class="art-link" href="#art3"><span class="art-num">Article III</span><span class="art-ttl">Free Agent Signings</span></a>
@@ -401,14 +402,18 @@
             <h3 class="sec-title"><span class="sec-num">§ 2.1</span> Standard Roster Size <span class="badge badge-enforced">🔒 system-enforced</span></h3>
             <p>During the <strong>regular season</strong>, a team's standard roster may not exceed <strong>15 players</strong>. If a trade would push a receiving team's roster over 15 in-season, the team must release a player before the trade is processed.</p>
             <p><strong>Offseason ceiling:</strong> In the offseason the standard roster may carry up to <strong>20 players</strong>; every team must trim back to <strong>15</strong> before the regular season begins. A trade that leaves a team at <strong>16–20</strong> standard players is permitted but <strong>flagged as a warning</strong> (the team is reminded to trim before the season). A trade that would leave any team <strong>above 20</strong> is blocked — release a player first.</p>
-            <p><strong>Pre-season minimum:</strong> Teams must have at least <strong>14 players</strong> on their main roster by the day before the regular season begins.</p>
-            <p><strong>In-season minimum:</strong> If a roster move during the regular season reduces a team below 14 players, the team has a <strong>one-week grace period</strong> to restore the minimum. If the minimum is not restored:</p>
-            <ul>
-              <li>At the <strong>1-week mark</strong>: each FO member of the affected team receives an <strong>activity strike</strong>, and a cap hold of <strong>$1,620,564</strong> is added to the team's books for each open slot below 14.</li>
-              <li>Activity strikes and additional cap holds continue at the <strong>2-week</strong> and <strong>3-week</strong> marks if the minimum is still not met.</li>
-              <li>Cap holds are removed once the team reaches 14 players.</li>
-            </ul>
+            <p><strong>Roster minimum:</strong> Teams must carry at least <strong>14 players</strong> on their standard roster <strong>year-round</strong> — in-season and offseason alike. This is a roster-construction requirement; see § 2.1a for how a shortfall is actually charged (the real charge only kicks in below <strong>12</strong>, not 14 — but trade legality is judged against the full 14-player line).</p>
+            <p><strong>Non-compliance strikes:</strong> If a team's roster is still below 14 players one week after the shortfall began, each FO member of the affected team receives an <strong>activity strike</strong>. Strikes continue accruing at the <strong>2-week</strong> and <strong>3-week</strong> marks if the shortfall still isn't fixed. Strikes are a front-office accountability measure, independent of the cap accounting in § 2.1a.</p>
             <p><strong>Simultaneous waiver restriction:</strong> A team at the 15-player maximum may not acquire a player and simultaneously waive another to remain at 15. A roster spot must exist <em>before</em> the acquisition is made. For example, a team with 14 players may not trade one player for three while simultaneously waiving one of the incoming players to land at 15 — the trade would leave the roster at 16, which exceeds the in-season limit.</p>
+          </div>
+
+          <div class="doc-section" id="s2-1a">
+            <h3 class="sec-title"><span class="sec-num">§ 2.1a</span> Empty Roster Charge <span class="badge badge-enforced">🔒 system-enforced</span></h3>
+            <p>The <strong>14-player roster minimum</strong> (§ 2.1) and the dollar charge for falling short of it are governed by <strong>two different floors</strong>, for two different purposes:</p>
+            <ul>
+              <li><strong>Real charge — floor of 12.</strong> A team whose standard roster falls <strong>below 12 players</strong> — for any reason, at any point in the year — is charged an <strong>Empty Roster Charge</strong> for each open slot below 12 (not 14). The charge equals that season's <strong>0-years-experience (rookie) minimum salary</strong> from the Minimum Salary Scale (§ 3.12) — for the current season, <span data-min-scale="0">—</span> per slot. It applies immediately, is not gated on the § 2.1 one-week grace period, shows up on the team's roster page as a line item named <strong>"Empty Roster Charge,"</strong> and counts toward the team's real <strong>guaranteed salary</strong> — including Hard Cap and apron comparisons (§ 1.3–§ 1.6) — exactly as a real player contract would. It is a virtual placeholder, not tied to any real player or transaction: recomputed live from the team's actual roster count on every render, it disappears on its own once the team reaches 12 players — no transaction ever creates or removes one directly. A team sitting at 12 or 13 players carries <strong>no</strong> real charge.</li>
+              <li><strong>Trade-legality floor of 14.</strong> Separately, when the trade validator judges whether a proposed trade is legal, it doesn't use the 12-player floor above — it assumes the team will need to fill every open slot up to the full <strong>14-player minimum</strong>, and folds that hypothetical cost into the team's projected salary before checking Hard Cap / apron limits (§ 4.3–§ 4.4, § 4.5). This is a wider, trade-specific assumption: a team can land at 12 or 13 players post-trade with no real charge on its books, but the trade math still has to treat the gap up to 14 as real money for the hard-cap comparison — otherwise a team could duck a hard cap by shedding headcount in a trade rather than actually paying for the roster spots it's short. <em>Example:</em> a team hard-capped at the First Apron completes a trade that leaves them $500,000 under the First Apron, but the trade also drops them to 13 standard players (no real charge — 13 is above the 12-player floor). For trade-legality purposes only, the validator still assumes 1 slot filled at the rookie minimum; if that hypothetical charge pushes projected salary over the First Apron, the trade is illegal, even though nothing would actually be added to the team's real books at 13 players.</li>
+            </ul>
           </div>
 
           <div class="doc-section" id="s2-2">
@@ -596,9 +601,9 @@
                   <td>No standalone cap hold. Second-round picks are signed via the Second Round Exception (§ 7.1) and do not occupy a hold beforehand.</td>
                 </tr>
                 <tr>
-                  <td><strong>Incomplete roster</strong> — fewer than 14 players one week into the league year (Article II, § 5.1)</td>
+                  <td><strong>Incomplete roster</strong> — fewer than 12 players (Article II, § 2.1a)</td>
                   <td>—</td>
-                  <td>An <strong>empty-slot charge</strong> of the rookie minimum ($1,620,564) per open slot below 14, removed once the roster reaches 14.</td>
+                  <td>An <strong>Empty Roster Charge</strong> equal to that season's rookie (0-years) minimum from the Minimum Salary Scale (§ 3.12) per open slot below 12 — applied immediately and year-round, counted as guaranteed salary, removed once the roster reaches 12. (Trade legality is judged against a wider 14-player floor — § 2.1a.)</td>
                 </tr>
               </tbody>
             </table>
@@ -625,12 +630,30 @@
 
           <div class="doc-section" id="s3-12">
             <h3 class="sec-title"><span class="sec-num">§ 3.12</span> Minimum Contracts <span class="badge badge-manual">👁 manual review</span></h3>
+            <p>Minimum salaries mirror the <strong>NBA's minimum salary scale</strong>, indexed by years of NBA experience — set each season by the league office and recorded in the system, the same way the cap thresholds in § 1.1 are. The 0-years (rookie) row is also the figure used for the Empty Roster Charge (§ 2.1a).</p>
+            <div class="cap-table-wrap">
+              <div class="cap-table-header">
+                <span id="min-scale-season-label">25-26</span> Minimum Salary Scale
+              </div>
+              <table class="cap-table">
+                <tr class="highlight"><td>0 years (rookie)</td><td><span data-min-scale="0">—</span></td></tr>
+                <tr><td>1 year</td><td><span data-min-scale="1">—</span></td></tr>
+                <tr class="highlight"><td>2 years</td><td><span data-min-scale="2">—</span></td></tr>
+                <tr><td>3 years</td><td><span data-min-scale="3">—</span></td></tr>
+                <tr><td>4 years</td><td><span data-min-scale="4">—</span></td></tr>
+                <tr><td>5 years</td><td><span data-min-scale="5">—</span></td></tr>
+                <tr><td>6 years</td><td><span data-min-scale="6">—</span></td></tr>
+                <tr><td>7 years</td><td><span data-min-scale="7">—</span></td></tr>
+                <tr><td>8 years</td><td><span data-min-scale="8">—</span></td></tr>
+                <tr><td>9 years</td><td><span data-min-scale="9">—</span></td></tr>
+                <tr class="divider"><td>10+ years</td><td><span data-min-scale="10+">—</span></td></tr>
+              </table>
+            </div>
             <p>Players may be signed to a minimum contract at any time:</p>
             <ul>
-              <li><strong>1-year minimum deal:</strong> The cap hit is equal to the <strong>2-year veteran minimum</strong>, regardless of the player's actual experience tier.</li>
-              <li><strong>Multi-year minimum deal:</strong> Each year's salary follows the standard minimum scale for the player's years of experience.</li>
+              <li><strong>1-year minimum deal:</strong> The cap hit is equal to the <strong>2-year veteran minimum</strong> (row above), regardless of the player's actual experience tier — the league reimburses the difference, mirroring the NBA's veteran-minimum hardship exception.</li>
+              <li><strong>Multi-year minimum deal:</strong> Each year's salary follows the scale above for the player's years of experience that season.</li>
             </ul>
-            <p>Minimum contract values by experience are available at <a href="http://basketball.realgm.com/nba/info/minimum_scale" target="_blank">basketball.realgm.com</a>.</p>
             <p><strong>Undrafted free agents (UDFAs):</strong> A UDFA signed via the minimum exception to a standard contract is <strong>non-guaranteed until July 31</strong>. Before that date the team may waive the player with <strong>no dead cap</strong> (a contract void under § 5.1); on July 31 the contract becomes fully guaranteed. A UDFA may instead be signed to a Two-Way contract, which carries <strong>no cap hit</strong> (see § 2.2).</p>
           </div>
 
@@ -746,7 +769,7 @@
             <h3 class="sec-title"><span class="sec-num">§ 4.5</span> Trade Restrictions <span class="badge badge-manual">👁 manual review</span></h3>
             <p><strong>Re-acquisition restriction:</strong> A team may not re-acquire a player they previously traded away until the following free agency period, regardless of how the original trade was structured.</p>
             <p><strong>Newly signed player restriction:</strong> A player signed as a free agent may not be traded until <strong>both</strong> of the following are met: (1) at least 90 days have elapsed since signing, and (2) December 15 of the current season has passed. The trade window opens on whichever date is later.</p>
-            <p><strong>Roster size:</strong> A trade may not leave any participating team's roster below the minimum roster size after the trade is processed. In-season, receiving teams over 15 must release a player before the trade can be recorded; in the offseason a team may land at 16–20 (flagged as a warning, to be trimmed before the season), but no trade may leave a team above 20 (see § 2.1).</p>
+            <p><strong>Roster size:</strong> In-season, receiving teams over 15 must release a player before the trade can be recorded; in the offseason a team may land at 16–20 (flagged as a warning, to be trimmed before the season), but no trade may leave a team above 20 (see § 2.1). A trade is <strong>not</strong> blocked purely for leaving a team below the 14-player minimum — but the trade math still assumes every open slot up to 14 gets filled at the rookie minimum, immediately, for hard-cap comparison purposes only (§ 2.1a). That hypothetical cost counts toward the team's Hard Cap and apron figures and can independently make the trade illegal, even for a team at 12–13 players that wouldn't carry any real Empty Roster Charge on its actual books.</p>
             <p><strong>Contract option travel:</strong> When a player is traded, all option provisions (team options, player options, non-guaranteed years) travel with the player to the new team unchanged.</p>
             <p><strong>Trade limit:</strong> Each team may make at most <strong>15 trades per season</strong>. Draft day trades and one additional trade made on trade deadline day are exempt from this limit. Effective 2026-27.</p>
           </div>
@@ -992,6 +1015,13 @@
         const cl = levels[cur] || {};
         document.querySelectorAll('[data-cap]').forEach(el => {
           const v = cl[el.dataset.cap];
+          if (v) el.textContent = '$' + Number(v).toLocaleString('en-US');
+        });
+        const scale = cl.min_salary_scale || {};
+        const scaleLabel = document.getElementById('min-scale-season-label');
+        if (scaleLabel) scaleLabel.textContent = cur;
+        document.querySelectorAll('[data-min-scale]').forEach(el => {
+          const v = scale[el.dataset.minScale];
           if (v) el.textContent = '$' + Number(v).toLocaleString('en-US');
         });
       } catch {

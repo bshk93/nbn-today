@@ -11,69 +11,69 @@
     .page { max-width: 760px; margin: 0 auto; }
     header { margin-bottom: 2.5rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.5rem; font-size: 0.95rem; line-height: 1.6; }
+    header p { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; line-height: 1.6; }
 
     .toc {
-      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1.25rem 1.5rem; margin-bottom: 2.5rem;
     }
-    .toc h2 { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.75rem; }
+    .toc h2 { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 0.75rem; }
     .toc ol { padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; }
     .toc li { font-size: 0.875rem; }
 
     .section { margin-bottom: 2.75rem; }
     .section h2 {
       font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;
-      padding-bottom: 0.5rem; border-bottom: 1px solid #374151;
+      padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
     }
-    .section h3 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: #e5e7eb; }
-    .section p { font-size: 0.9rem; line-height: 1.7; color: #d1d5db; margin-bottom: 0.6rem; }
+    .section h3 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--text-secondary); }
+    .section p { font-size: 0.9rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 0.6rem; }
     .section ul, .section ol { padding-left: 1.4rem; display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.6rem; }
-    .section li { font-size: 0.9rem; line-height: 1.6; color: #d1d5db; }
-    .section li strong { color: #f3f4f6; }
+    .section li { font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary); }
+    .section li strong { color: var(--text-primary); }
 
     .card {
-      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1.1rem 1.4rem; margin-top: 1rem;
     }
-    .card h4 { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem; color: #f3f4f6; }
-    .card p { font-size: 0.85rem; color: #9ca3af; margin-bottom: 0; }
+    .card h4 { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
+    .card p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0; }
     .card ul { padding-left: 1.2rem; }
-    .card li { font-size: 0.85rem; color: #9ca3af; }
+    .card li { font-size: 0.85rem; color: var(--text-muted); }
 
     .step-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
     .step { display: flex; gap: 0.75rem; align-items: flex-start; }
     .step-num {
       flex-shrink: 0; width: 1.4rem; height: 1.4rem; border-radius: 50%;
-      background: #1d4ed8; color: #fff; font-size: 0.7rem; font-weight: 700;
+      background: var(--accent-dark); color: var(--text-on-accent); font-size: 0.7rem; font-weight: 700;
       display: flex; align-items: center; justify-content: center; margin-top: 0.15rem;
     }
     .step p { margin-bottom: 0; }
 
     code {
       font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
-      font-size: 0.82em; background: #111827; color: #a5b4fc;
-      padding: 0.1em 0.4em; border-radius: 4px; border: 1px solid #374151;
+      font-size: 0.82em; background: var(--bg-page); color: #a5b4fc;
+      padding: 0.1em 0.4em; border-radius: 4px; border: 1px solid var(--border);
     }
 
     .tag {
       display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.06em; padding: 0.15rem 0.45rem; border-radius: 4px; margin-right: 0.3rem;
     }
-    .tag-auto { background: #064e3b; color: #6ee7b7; }
-    .tag-manual { background: #1e3a5f; color: #93c5fd; }
-    .tag-admin { background: #4c1d95; color: #c4b5fd; }
+    .tag-auto { background: var(--market-positive-bg); color: var(--market-positive-light); }
+    .tag-manual { background: var(--accent-panel-bg); color: var(--accent-light); }
+    .tag-admin { background: var(--purple-border); color: var(--purple-light); }
 
     .callout {
-      background: #1c2f45; border-left: 3px solid #3b82f6; border-radius: 0 8px 8px 0;
-      padding: 0.75rem 1rem; margin: 0.75rem 0; font-size: 0.875rem; color: #93c5fd; line-height: 1.6;
+      background: #1c2f45; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+      padding: 0.75rem 1rem; margin: 0.75rem 0; font-size: 0.875rem; color: var(--accent-light); line-height: 1.6;
     }
     .callout strong { color: #bfdbfe; }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 0.75rem 0; }
-    th { text-align: left; padding: 0.4rem 0.75rem; background: #1f2937; color: #9ca3af; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
-    td { padding: 0.45rem 0.75rem; border-top: 1px solid #1f2937; color: #d1d5db; vertical-align: top; }
-    tr:hover td { background: #1f2937; }
+    th { text-align: left; padding: 0.4rem 0.75rem; background: var(--bg-card); color: var(--text-muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { padding: 0.45rem 0.75rem; border-top: 1px solid var(--bg-card); color: var(--text-secondary); vertical-align: top; }
+    tr:hover td { background: var(--bg-card); }
   </style>
 </head>
 <body>

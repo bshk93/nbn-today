@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.0.359",
+    "date": "2026-07-21",
+    "changes": [
+      "Rulebook: added \u00a7 2.1a Empty Roster Charge with two floors \u2014 a real, persisted charge (that season's rookie/0-years minimum per open slot, counted as guaranteed salary) only below 12 standard players, but trade legality is judged against the full 14-player minimum, with any gap up to 14 assumed filled at the rookie minimum for hard-cap/apron comparison purposes even when nothing posts to the real roster; \u00a7 2.1, \u00a7 3.10's cap-hold table, and \u00a7 4.5's trade roster-size rule updated to match",
+      "Rulebook: \u00a7 3.12 now embeds the real Minimum Salary Scale by years of NBA experience (0 through 10+), sourced from the actual NBA scale and updated live from the same per-season data as the \u00a7 1.1 cap table, replacing the old external-link-only reference",
+      "Added a per-season minimum-salary-scale table (min_salary_scale) to cap-levels.json and the Cap Settings admin UI, alongside the existing cap/apron/exception fields",
+      "Trade Simulator and the real trade-submission validator now compute each team's post-trade roster count and assume any gap up to 14 players gets filled at the rookie minimum when checking hard-cap/apron legality \u2014 a trade can no longer duck a hard cap by shedding headcount, even if the resulting roster count wouldn't trigger a real charge on its own",
+      "Team pages show a live \"Empty Roster Charge\" roster line (and count it in guaranteed salary / MLE-eligibility totals) whenever a team's real standard roster count is below 12, recomputed on every page load with no separate transaction needed",
+      "Roster tables: 2K-attribute badges collapsed from 3 loud tiers to a quiet, muted style shown inline right after the player's name (where jersey numbers used to sit); top-10% earns a badge, top-5% gets a slightly more visible outline instead of a brighter color",
+      "Roster tables: added Contracts / Stats / Ratings mode switch \u2014 Stats shows each player's per-game averages from their latest season on record, Ratings shows every individual 2K attribute with heat-map coloring; Player/Pos/Age/OVR stay fixed across all three",
+      "Site-wide: added a theme picker to the nav bar (NBN Today dark, NBN Today Light, Lavender Rose, or Match System), replacing the single hardcoded dark palette; color tokens and shared nav/search chrome moved into new css/theme.css and css/nav-chrome.css",
+      "build/scrape_2k_attributes.py now also scrapes each player's 2K badges (name, tier, category) from their \"All Badges\" tab and stores them per snapshot alongside attributes"
+    ]
+  },
+  {
     "version": "0.0.358",
     "date": "2026-07-20",
     "changes": [

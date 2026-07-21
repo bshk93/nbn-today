@@ -22,14 +22,14 @@
     }
 
     header p {
-      color: #9ca3af;
+      color: var(--text-muted);
       margin-top: 0.4rem;
       font-size: 0.9rem;
     }
 
     .table-wrap {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow-x: auto;
     }
@@ -49,18 +49,18 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       text-align: center;
-      border-bottom: 1px solid #283141;
+      border-bottom: 1px solid var(--border-subtle);
     }
 
     thead tr:first-child th:first-child {
       text-align: left;
     }
 
-    .sh-season   { color: #9ca3af; }
-    .sh-post     { color: #f59e0b; border-right: 1px solid #374151; border-left: 1px solid #374151; }
-    .sh-awards   { color: #60a5fa; border-right: 1px solid #374151; }
-    .sh-stats    { color: #34d399; border-right: 1px solid #374151; }
-    .sh-ratings  { color: #a78bfa; }
+    .sh-season   { color: var(--text-muted); }
+    .sh-post     { color: var(--warning); border-right: 1px solid var(--border); border-left: 1px solid var(--border); }
+    .sh-awards   { color: var(--link); border-right: 1px solid var(--border); }
+    .sh-stats    { color: var(--market-positive); border-right: 1px solid var(--border); }
+    .sh-ratings  { color: var(--purple); }
 
     /* Column header row */
     thead tr:last-child th {
@@ -69,36 +69,36 @@
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #6b7280;
-      border-bottom: 1px solid #374151;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
     }
 
     /* Dividers between groups */
-    .div-left  { border-left:  1px solid #374151; }
-    .div-right { border-right: 1px solid #374151; }
+    .div-left  { border-left:  1px solid var(--border); }
+    .div-right { border-right: 1px solid var(--border); }
 
     tbody tr {
-      border-bottom: 1px solid #283141;
+      border-bottom: 1px solid var(--border-subtle);
       transition: background 0.1s;
     }
 
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: #263244; }
+    tbody tr:hover { background: var(--bg-hover); }
 
     td {
       padding: 0.6rem 1rem;
-      color: #d1d5db;
+      color: var(--text-secondary);
       vertical-align: middle;
     }
 
-    td.season   { font-weight: 700; color: #f3f4f6; }
-    td.champion { font-weight: 600; color: #fbbf24; }
-    td.muted    { color: #6b7280; }
+    td.season   { font-weight: 700; color: var(--text-primary); }
+    td.champion { font-weight: 600; color: var(--gold); }
+    td.muted    { color: var(--text-muted); }
 
     .status {
       text-align: center;
       padding: 3rem;
-      color: #6b7280;
+      color: var(--text-muted);
       font-size: 0.9rem;
     }
   </style>

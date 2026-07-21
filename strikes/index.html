@@ -10,21 +10,21 @@
     .page { max-width: 900px; margin: 0 auto; }
     header { margin-bottom: 2rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
     .auth-bar {
       display: flex; align-items: center; gap: 0.75rem;
-      margin-bottom: 1.25rem; font-size: 0.85rem; color: #9ca3af;
+      margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--text-muted);
     }
     .auth-bar button {
-      background: #374151; border: 1px solid #4b5563; color: #f3f4f6;
+      background: var(--border); border: 1px solid var(--text-dim); color: var(--text-primary);
       border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer;
       font-size: 0.8rem; font-family: inherit;
     }
-    .auth-bar button:hover { background: #4b5563; }
+    .auth-bar button:hover { background: var(--text-dim); }
 
     .gate {
-      text-align: center; color: #6b7280; padding: 4rem 1rem;
+      text-align: center; color: var(--text-muted); padding: 4rem 1rem;
       font-size: 0.9rem;
     }
     .gate .lock { font-size: 2rem; margin-bottom: 0.75rem; }
@@ -36,10 +36,10 @@
     }
 
     .member-card {
-      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.6rem;
     }
-    .member-card.has-strikes { border-color: #7f1d1d; }
+    .member-card.has-strikes { border-color: var(--danger-border); }
 
     .card-header {
       display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
@@ -51,70 +51,70 @@
     .card-name a { color: inherit; }
     .strike-count {
       display: inline-flex; align-items: center; justify-content: center;
-      background: #7f1d1d; color: #fca5a5;
+      background: var(--danger-border); color: var(--danger-light);
       font-size: 0.65rem; font-weight: 700; border-radius: 99px;
       min-width: 1.3rem; height: 1.3rem; padding: 0 0.35rem;
     }
     .team-badge {
       display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
       text-transform: uppercase; padding: 0.12rem 0.45rem; border-radius: 4px;
-      background: #1c2c1e; color: #86efac; white-space: nowrap;
+      background: #1c2c1e; color: var(--success-light); white-space: nowrap;
     }
     .team-badge a { color: inherit; }
 
     .strike-list { display: flex; flex-direction: column; gap: 0.4rem; }
     .strike-row {
       display: flex; align-items: flex-start; gap: 0.5rem;
-      font-size: 0.8rem; background: #111827; border-radius: 6px; padding: 0.45rem 0.6rem;
+      font-size: 0.8rem; background: var(--bg-page); border-radius: 6px; padding: 0.45rem 0.6rem;
     }
-    .strike-dot { color: #ef4444; margin-top: 0.1rem; flex-shrink: 0; }
+    .strike-dot { color: var(--danger); margin-top: 0.1rem; flex-shrink: 0; }
     .strike-body { flex: 1; min-width: 0; }
-    .strike-date { font-size: 0.7rem; color: #6b7280; }
-    .strike-reason { color: #d1d5db; line-height: 1.35; word-break: break-word; }
-    .strike-issuer { font-size: 0.68rem; color: #4b5563; margin-top: 0.1rem; }
+    .strike-date { font-size: 0.7rem; color: var(--text-muted); }
+    .strike-reason { color: var(--text-secondary); line-height: 1.35; word-break: break-word; }
+    .strike-issuer { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.1rem; }
     .btn-del-strike {
-      background: none; border: none; color: #4b5563; cursor: pointer;
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
       font-size: 0.75rem; padding: 0; line-height: 1; flex-shrink: 0;
       margin-top: 0.1rem;
     }
-    .btn-del-strike:hover { color: #ef4444; }
+    .btn-del-strike:hover { color: var(--danger); }
 
-    .no-strikes { font-size: 0.8rem; color: #4b5563; }
+    .no-strikes { font-size: 0.8rem; color: var(--text-dim); }
 
     .add-strike-btn {
-      align-self: flex-start; background: transparent; border: 1px solid #374151;
-      color: #9ca3af; border-radius: 6px; padding: 0.25rem 0.65rem;
+      align-self: flex-start; background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: 6px; padding: 0.25rem 0.65rem;
       font-size: 0.75rem; cursor: pointer; font-family: inherit;
     }
-    .add-strike-btn:hover { border-color: #ef4444; color: #ef4444; }
+    .add-strike-btn:hover { border-color: var(--danger); color: var(--danger); }
 
     .add-form {
       display: none; flex-direction: column; gap: 0.45rem;
-      background: #111827; border-radius: 8px; padding: 0.65rem 0.75rem;
+      background: var(--bg-page); border-radius: 8px; padding: 0.65rem 0.75rem;
     }
     .add-form.open { display: flex; }
     .add-form input, .add-form textarea {
-      background: #1f2937; border: 1px solid #374151; color: #f3f4f6;
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
       border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.8rem;
       font-family: inherit; width: 100%; box-sizing: border-box;
     }
-    .add-form input:focus, .add-form textarea:focus { outline: none; border-color: #60a5fa; }
+    .add-form input:focus, .add-form textarea:focus { outline: none; border-color: var(--link); }
     .add-form textarea { resize: vertical; min-height: 56px; }
     .form-row { display: flex; gap: 0.4rem; justify-content: flex-end; }
     .btn-form-cancel {
-      background: transparent; border: 1px solid #374151; color: #9ca3af;
+      background: transparent; border: 1px solid var(--border); color: var(--text-muted);
       border-radius: 5px; padding: 0.25rem 0.6rem; font-size: 0.75rem;
       cursor: pointer; font-family: inherit;
     }
-    .btn-form-cancel:hover { border-color: #6b7280; color: #d1d5db; }
+    .btn-form-cancel:hover { border-color: var(--text-muted); color: var(--text-secondary); }
     .btn-form-save {
-      background: #7f1d1d; border: 1px solid #991b1b; color: #fca5a5;
+      background: var(--danger-border); border: 1px solid var(--danger-border-strong); color: var(--danger-light);
       border-radius: 5px; padding: 0.25rem 0.6rem; font-size: 0.75rem;
       cursor: pointer; font-family: inherit;
     }
-    .btn-form-save:hover { background: #991b1b; }
+    .btn-form-save:hover { background: var(--danger-border-strong); }
     .btn-form-save:disabled { opacity: 0.5; cursor: not-allowed; }
-    .form-error { font-size: 0.75rem; color: #fca5a5; }
+    .form-error { font-size: 0.75rem; color: var(--danger-light); }
 
     @media (max-width: 540px) {
       .members-grid { grid-template-columns: 1fr; }
@@ -147,13 +147,13 @@
 
 <!-- Sign-in modal -->
 <div class="modal-backdrop" id="signin-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding-top:5vh">
-  <div style="background:#1f2937;border:1px solid #374151;border-radius:10px;padding:1.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem">
     <h3 style="font-size:1rem;font-weight:600">Sign In</h3>
     <input type="password" id="signin-input" placeholder="Paste your token…"
-      style="background:#111827;border:1px solid #374151;color:#f3f4f6;border-radius:6px;padding:0.5rem 0.75rem;font-size:0.875rem;font-family:inherit;width:100%;box-sizing:border-box">
+      style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.875rem;font-family:inherit;width:100%;box-sizing:border-box">
     <div style="display:flex;gap:0.5rem;justify-content:flex-end">
-      <button id="signin-cancel" style="background:transparent;border:1px solid #374151;color:#d1d5db;border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Cancel</button>
-      <button id="signin-save" style="background:#2563eb;border:1px solid #3b82f6;color:#fff;border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Sign in</button>
+      <button id="signin-cancel" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Cancel</button>
+      <button id="signin-save" style="background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Sign in</button>
     </div>
   </div>
 </div>

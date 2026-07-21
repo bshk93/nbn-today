@@ -12,7 +12,7 @@
 
     header { margin-bottom: 2rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
     /* ── Role cards ── */
     .roles-grid {
@@ -23,8 +23,8 @@
     }
 
     .role-card {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 1.25rem 1.5rem;
     }
@@ -46,13 +46,13 @@
       border-radius: 4px;
     }
 
-    .badge-admin   { background: #450a0a; color: #fca5a5; }
+    .badge-admin   { background: var(--danger-bg); color: var(--danger-light); }
     .badge-bod     { background: #3d2200; color: #fcd34d; }
-    .badge-rosters { background: #1e3a5f; color: #93c5fd; }
-    .badge-curator { background: #2e1065; color: #c4b5fd; }
+    .badge-rosters { background: var(--accent-panel-bg); color: var(--accent-light); }
+    .badge-curator { background: var(--purple-light-bg); color: var(--purple-light); }
     .badge-stats   { background: #0d2a33; color: #5eead4; }
-    .badge-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid #854d0e; }
-    .badge-team    { background: #1c2c1e; color: #86efac; }
+    .badge-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
+    .badge-team    { background: #1c2c1e; color: var(--success-light); }
 
     .role-card h2 {
       font-size: 1rem;
@@ -60,7 +60,7 @@
     }
 
     .role-card p {
-      color: #9ca3af;
+      color: var(--text-muted);
       font-size: 0.875rem;
       line-height: 1.6;
       margin-bottom: 0.75rem;
@@ -75,7 +75,7 @@
 
     .role-card li {
       font-size: 0.85rem;
-      color: #d1d5db;
+      color: var(--text-secondary);
       padding-left: 1rem;
       position: relative;
     }
@@ -84,12 +84,12 @@
       content: '·';
       position: absolute;
       left: 0;
-      color: #4b5563;
+      color: var(--text-dim);
     }
 
     .inherits {
       font-size: 0.75rem;
-      color: #6b7280;
+      color: var(--text-muted);
       margin-top: 0.5rem;
     }
 
@@ -106,24 +106,24 @@
       gap: 0.75rem;
       margin-bottom: 1.25rem;
       font-size: 0.85rem;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
 
     .auth-bar button {
-      background: #374151;
-      border: 1px solid #4b5563;
-      color: #f3f4f6;
+      background: var(--border);
+      border: 1px solid var(--text-dim);
+      color: var(--text-primary);
       border-radius: 6px;
       padding: 0.3rem 0.75rem;
       cursor: pointer;
       font-size: 0.8rem;
       font-family: inherit;
     }
-    .auth-bar button:hover { background: #4b5563; }
+    .auth-bar button:hover { background: var(--text-dim); }
 
     .table-wrap {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       overflow-x: auto;
     }
@@ -141,18 +141,18 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.07em;
-      color: #6b7280;
-      border-bottom: 1px solid #374151;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
     }
 
     tbody td {
       padding: 0.65rem 1rem;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid var(--bg-card);
       vertical-align: middle;
     }
 
     tbody tr:last-child td { border-bottom: none; }
-    tbody tr:hover { background: #263244; }
+    tbody tr:hover { background: var(--bg-hover); }
 
     .token-roles {
       display: flex;
@@ -169,28 +169,28 @@
       letter-spacing: 0.05em;
     }
 
-    .trb-admin   { background: #450a0a; color: #fca5a5; }
+    .trb-admin   { background: var(--danger-bg); color: var(--danger-light); }
     .trb-bod     { background: #3d2200; color: #fcd34d; }
-    .trb-rosters { background: #1e3a5f; color: #93c5fd; }
-    .trb-curator { background: #2e1065; color: #c4b5fd; }
+    .trb-rosters { background: var(--accent-panel-bg); color: var(--accent-light); }
+    .trb-curator { background: var(--purple-light-bg); color: var(--purple-light); }
     .trb-stats   { background: #0d2a33; color: #5eead4; }
-    .trb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid #854d0e; }
-    .trb-team    { background: #1c2c1e; color: #86efac; }
+    .trb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
+    .trb-team    { background: #1c2c1e; color: var(--success-light); }
 
-    .empty-state { text-align: center; color: #6b7280; padding: 2rem; }
+    .empty-state { text-align: center; color: var(--text-muted); padding: 2rem; }
 
     .token-value {
       font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 0.75rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       letter-spacing: 0.02em;
       word-break: break-all;
     }
 
     .copy-btn {
       background: none;
-      border: 1px solid #374151;
-      color: #6b7280;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
       border-radius: 4px;
       padding: 0.1rem 0.4rem;
       font-size: 0.7rem;
@@ -199,8 +199,8 @@
       margin-left: 0.4rem;
       white-space: nowrap;
     }
-    .copy-btn:hover { border-color: #6b7280; color: #d1d5db; }
-    .copy-btn.copied { border-color: #16a34a; color: #86efac; }
+    .copy-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+    .copy-btn.copied { border-color: #16a34a; color: var(--success-light); }
 
     /* ── Token admin actions ── */
     .create-bar {
@@ -210,41 +210,41 @@
       margin-bottom: 1rem;
     }
     .btn-create {
-      background: #2563eb;
-      border: 1px solid #3b82f6;
-      color: #fff;
+      background: var(--accent-dark);
+      border: 1px solid var(--accent);
+      color: var(--text-on-accent);
       border-radius: 6px;
       padding: 0.35rem 0.8rem;
       cursor: pointer;
       font-size: 0.8rem;
       font-family: inherit;
     }
-    .btn-create:hover { background: #1d4ed8; }
+    .btn-create:hover { background: var(--accent-dark); }
 
     .action-cell { display: flex; gap: 0.4rem; align-items: center; white-space: nowrap; }
     .btn-edit, .btn-delete {
       background: transparent;
-      border: 1px solid #374151;
-      color: #9ca3af;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
       border-radius: 5px;
       padding: 0.15rem 0.5rem;
       font-size: 0.72rem;
       cursor: pointer;
       font-family: inherit;
     }
-    .btn-edit:hover { border-color: #60a5fa; color: #60a5fa; }
-    .btn-delete:hover { border-color: #ef4444; color: #ef4444; }
+    .btn-edit:hover { border-color: var(--link); color: var(--link); }
+    .btn-delete:hover { border-color: var(--danger); color: var(--danger); }
 
     .show-tokens-label {
       display: flex;
       align-items: center;
       gap: 0.35rem;
       font-size: 0.78rem;
-      color: #6b7280;
+      color: var(--text-muted);
       cursor: pointer;
       white-space: nowrap;
     }
-    .show-tokens-label input { cursor: pointer; accent-color: #3b82f6; }
+    .show-tokens-label input { cursor: pointer; accent-color: var(--accent); }
 
     .token-value { display: none; }
     #tokens-table-wrap.tokens-revealed .token-value { display: inline; }
@@ -253,7 +253,7 @@
     .modal-label {
       font-size: 0.75rem;
       font-weight: 600;
-      color: #9ca3af;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin-bottom: 0.4rem;
@@ -274,14 +274,14 @@
       align-items: center;
       gap: 0.3rem;
       font-size: 0.8rem;
-      color: #d1d5db;
+      color: var(--text-secondary);
       cursor: pointer;
       white-space: nowrap;
     }
-    .role-check-label input[type=checkbox] { cursor: pointer; accent-color: #3b82f6; }
+    .role-check-label input[type=checkbox] { cursor: pointer; accent-color: var(--accent); }
 
     .token-result-box {
-      background: #111827;
+      background: var(--bg-page);
       border: 1px solid #2d6a30;
       border-radius: 6px;
       padding: 0.65rem 0.75rem;
@@ -289,18 +289,18 @@
       flex-direction: column;
       gap: 0.35rem;
     }
-    .token-result-label { font-size: 0.7rem; color: #6b7280; }
+    .token-result-label { font-size: 0.7rem; color: var(--text-muted); }
     .token-result-value {
       font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 0.72rem;
-      color: #86efac;
+      color: var(--success-light);
       word-break: break-all;
       line-height: 1.5;
     }
     .btn-copy-result {
       background: none;
       border: 1px solid #2d6a30;
-      color: #86efac;
+      color: var(--success-light);
       border-radius: 4px;
       padding: 0.15rem 0.5rem;
       font-size: 0.7rem;
@@ -308,8 +308,8 @@
       font-family: inherit;
       align-self: flex-start;
     }
-    .btn-copy-result:hover { background: #14532d; }
-    .btn-copy-result.copied { background: #14532d; }
+    .btn-copy-result:hover { background: var(--success-dark-bg); }
+    .btn-copy-result.copied { background: var(--success-dark-bg); }
 
     /* ── Modal ── */
     .modal-backdrop {
@@ -323,8 +323,8 @@
     }
     .modal-backdrop.open { display: flex; }
     .modal {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 1.5rem;
       width: 100%;
@@ -335,26 +335,26 @@
     }
     .modal h3 { font-size: 1rem; font-weight: 600; }
     .modal input {
-      background: #111827;
-      border: 1px solid #374151;
-      color: #f3f4f6;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
       border-radius: 6px;
       padding: 0.5rem 0.75rem;
       font-size: 0.875rem;
       width: 100%;
       font-family: inherit;
     }
-    .modal input:focus { outline: none; border-color: #60a5fa; }
+    .modal input:focus { outline: none; border-color: var(--link); }
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
     .btn-cancel {
-      background: transparent; border: 1px solid #374151; color: #d1d5db;
+      background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
       border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer; font-size: 0.8rem; font-family: inherit;
     }
     .btn-save {
-      background: #2563eb; border: 1px solid #3b82f6; color: #fff;
+      background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text-on-accent);
       border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer; font-size: 0.8rem; font-family: inherit;
     }
-    .btn-save:hover { background: #1d4ed8; }
+    .btn-save:hover { background: var(--accent-dark); }
   </style>
 </head>
 <body>
@@ -455,7 +455,7 @@
     <div class="role-card">
       <div class="role-card-header">
         <span class="role-badge badge-team">Team Roles</span>
-        <h2>Team Roles <span style="font-weight:400;color:#6b7280;font-size:0.875rem">(atl, bkn, bos, …)</span></h2>
+        <h2>Team Roles <span style="font-weight:400;color:var(--text-muted);font-size:0.875rem">(atl, bkn, bos, …)</span></h2>
       </div>
       <p>One role per NBA franchise. Assigned to a team's front office members.</p>
       <ul>
@@ -467,13 +467,13 @@
 
   </div>
 
-  <p style="color:#9ca3af;font-size:0.85rem;line-height:1.6;margin-bottom:2.5rem;padding:0.9rem 1.1rem;background:#1f2937;border:1px solid #374151;border-radius:10px">
-    <strong style="color:#d1d5db">Writing news.</strong> Any signed-in member can draft and submit articles to the newsroom — no special role is required. Articles are published immediately by their author; Curators, BOD, and Admins can publish, unpublish, or reject anyone's work and manage the queue.
+  <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.6;margin-bottom:2.5rem;padding:0.9rem 1.1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px">
+    <strong style="color:var(--text-secondary)">Writing news.</strong> Any signed-in member can draft and submit articles to the newsroom — no special role is required. Articles are published immediately by their author; Curators, BOD, and Admins can publish, unpublish, or reject anyone's work and manage the queue.
   </p>
 
   <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1rem">
     <div class="section-heading" style="margin-bottom:0">Active Members</div>
-    <a href="/members/" style="font-size:0.8rem;color:#60a5fa">Manage members →</a>
+    <a href="/members/" style="font-size:0.8rem;color:var(--link)">Manage members →</a>
   </div>
 
   <div class="table-wrap" id="tokens-table-wrap">
@@ -524,7 +524,7 @@ function renderMembers(members) {
       span.textContent = r;
       wrap.appendChild(span);
     });
-    if (!m.roles || !m.roles.length) wrap.innerHTML = '<span style="color:#6b7280">—</span>';
+    if (!m.roles || !m.roles.length) wrap.innerHTML = '<span style="color:var(--text-muted)">—</span>';
     tdRoles.appendChild(wrap);
     tbody.appendChild(tr);
   });

@@ -6,35 +6,37 @@
 <title>Team Archetypes — NBN</title>
 <script src="/nav.js" defer></script>
 <style>
+@import url("/css/theme.css");
+@import url("/css/nav-chrome.css");
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0f1117; color: #e5e7eb; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+body { background: var(--bg-deep); color: var(--text-secondary); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
 .page { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
-h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem; }
-.subtitle { color: #6b7280; font-size: 0.85rem; margin-bottom: 0.75rem; }
-.subtitle b { color: #9ca3af; }
+h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); margin-bottom: 0.25rem; }
+.subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem; }
+.subtitle b { color: var(--text-muted); }
 
 .page-nav { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
 .page-nav-link {
-  font-size: 0.8rem; font-weight: 600; color: #4b5563;
+  font-size: 0.8rem; font-weight: 600; color: var(--text-dim);
   text-decoration: none; padding: 0.25rem 0.65rem; border-radius: 5px;
   border: 1px solid transparent; transition: color 0.15s, background 0.15s;
 }
-.page-nav-link:hover { color: #d1d5db; background: #1f2937; }
-.page-nav-link.active { color: #f9fafb; background: #1f2937; border-color: #374151; }
+.page-nav-link:hover { color: var(--text-secondary); background: var(--bg-card); }
+.page-nav-link.active { color: var(--text-bright); background: var(--bg-card); border-color: var(--border); }
 
 .tabs {
   display: flex; gap: 0.25rem; margin-bottom: 1.5rem;
-  border-bottom: 1px solid #1f2937;
+  border-bottom: 1px solid var(--bg-card);
 }
 .tab-btn {
-  background: none; border: none; color: #6b7280;
+  background: none; border: none; color: var(--text-muted);
   font-size: 0.85rem; font-weight: 600; font-family: inherit;
   padding: 0.5rem 1rem; cursor: pointer;
   border-bottom: 2px solid transparent; margin-bottom: -1px;
   transition: color 0.15s;
 }
-.tab-btn:hover { color: #d1d5db; }
-.tab-btn.active { color: #f9fafb; border-bottom-color: #3b82f6; }
+.tab-btn:hover { color: var(--text-secondary); }
+.tab-btn.active { color: var(--text-bright); border-bottom-color: var(--accent); }
 
 /* ── Two-column layout ── */
 .main-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
@@ -47,15 +49,15 @@ h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem
 
 /* ── Chart ── */
 .chart-outer {
-  background: #161b27; border: 1px solid #1f2937; border-radius: 12px; overflow: hidden;
+  background: #161b27; border: 1px solid var(--bg-card); border-radius: 12px; overflow: hidden;
 }
 .chart-wrap { position: relative; }
 .cluster-svg { width: 100%; height: auto; aspect-ratio: 1; display: block; cursor: default; }
 
 .dot-tooltip {
   position: absolute; pointer-events: none;
-  background: #0f1117cc; border: 1px solid #374151; backdrop-filter: blur(4px);
-  color: #f9fafb; font-size: 0.72rem; font-weight: 700;
+  background: #0f1117cc; border: 1px solid var(--border); backdrop-filter: blur(4px);
+  color: var(--text-bright); font-size: 0.72rem; font-weight: 700;
   padding: 0.2rem 0.5rem; border-radius: 5px; white-space: nowrap;
   transform: translate(-50%, -100%); margin-top: -6px;
   z-index: 10; display: none;
@@ -64,14 +66,14 @@ h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem
 .chart-legend {
   display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem;
   justify-content: center; padding: 0.65rem 1rem;
-  border-bottom: 1px solid #1f2937;
+  border-bottom: 1px solid var(--bg-card);
 }
-.legend-item { display: flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; color: #9ca3af; cursor: pointer; }
+.legend-item { display: flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; color: var(--text-muted); cursor: pointer; }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 /* ── Detail panel ── */
 .detail-panel {
-  background: #161b27; border: 1px solid #1f2937; border-radius: 12px;
+  background: #161b27; border: 1px solid var(--bg-card); border-radius: 12px;
   padding: 1.25rem; min-height: 320px;
 }
 
@@ -79,133 +81,133 @@ h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem
   min-height: 300px; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 0.5rem; text-align: center;
 }
-.panel-empty-label { font-size: 0.8rem; color: #374151; font-weight: 600; }
-.panel-empty-sub { font-size: 0.72rem; color: #1f2937; }
+.panel-empty-label { font-size: 0.8rem; color: var(--border); font-weight: 600; }
+.panel-empty-sub { font-size: 0.72rem; color: var(--bg-card); }
 
 /* Cluster panel */
 .cluster-panel-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; }
 .cluster-badge {
   width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.78rem; font-weight: 800; color: #0f1117;
+  font-size: 0.78rem; font-weight: 800; color: var(--bg-deep);
 }
-.cluster-panel-name { font-size: 1rem; font-weight: 700; color: #f9fafb; line-height: 1.25; }
-.cluster-panel-meta { font-size: 0.72rem; color: #6b7280; margin-top: 0.1rem; }
-.cluster-panel-desc { font-size: 0.78rem; color: #9ca3af; line-height: 1.6; margin-bottom: 1.1rem; }
+.cluster-panel-name { font-size: 1rem; font-weight: 700; color: var(--text-bright); line-height: 1.25; }
+.cluster-panel-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+.cluster-panel-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1.1rem; }
 
 .panel-section-label {
-  font-size: 0.63rem; font-weight: 700; color: #374151;
+  font-size: 0.63rem; font-weight: 700; color: var(--border);
   text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.5rem;
 }
 
 /* Dim bars */
 .dim-bars { display: flex; flex-direction: column; gap: 0.25rem; }
 .dim-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; }
-.dim-label { color: #6b7280; width: 2.8rem; flex-shrink: 0; text-align: right; font-weight: 600; }
-.dim-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; position: relative; overflow: visible; }
+.dim-label { color: var(--text-muted); width: 2.8rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+.dim-track { flex: 1; background: var(--bg-card); border-radius: 2px; height: 5px; position: relative; overflow: visible; }
 .dim-fill { height: 5px; border-radius: 2px; position: absolute; top: 0; left: 0; }
 .dim-centroid-tick {
   position: absolute; top: -3px; width: 2px; height: 11px;
   background: rgba(249,250,251,0.55); border-radius: 1px;
 }
-.dim-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
+.dim-val { color: var(--text-muted); width: 2.2rem; text-align: right; flex-shrink: 0; }
 
 /* Team panel */
 .panel-back {
   background: none; border: none; font-family: inherit; cursor: pointer;
-  color: #4b5563; font-size: 0.75rem; font-weight: 600;
+  color: var(--text-dim); font-size: 0.75rem; font-weight: 600;
   display: inline-flex; align-items: center; gap: 0.3rem; padding: 0;
   margin-bottom: 1rem; transition: color 0.15s;
 }
-.panel-back:hover { color: #9ca3af; }
+.panel-back:hover { color: var(--text-muted); }
 
-.team-panel-name { font-size: 1.05rem; font-weight: 700; color: #f9fafb; }
+.team-panel-name { font-size: 1.05rem; font-weight: 700; color: var(--text-bright); }
 .team-panel-name a { color: inherit; text-decoration: none; }
-.team-panel-name a:hover { color: #93c5fd; }
+.team-panel-name a:hover { color: var(--accent-light); }
 .team-panel-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.3rem; margin-bottom: 1.1rem; }
-.team-meta-record { font-size: 0.82rem; color: #6b7280; font-weight: 600; }
-.team-meta-seed { font-size: 0.78rem; color: #6b7280; }
+.team-meta-record { font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+.team-meta-seed { font-size: 0.78rem; color: var(--text-muted); }
 .team-meta-result {
   padding: 0.15rem 0.5rem; border-radius: 4px;
   font-size: 0.7rem; font-weight: 700;
 }
 
 .dim-legend-row {
-  display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; font-size: 0.67rem; color: #4b5563;
+  display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; font-size: 0.67rem; color: var(--text-dim);
 }
 .dim-legend-row span { display: flex; align-items: center; gap: 0.3rem; }
-.dim-legend-fill { width: 20px; height: 5px; border-radius: 2px; background: #3b82f6; }
+.dim-legend-fill { width: 20px; height: 5px; border-radius: 2px; background: var(--accent); }
 .dim-legend-tick { width: 2px; height: 11px; background: rgba(249,250,251,0.55); border-radius: 1px; }
 
 .roster-grid { display: flex; flex-direction: column; }
 .roster-row {
   display: grid; grid-template-columns: 1fr 2.2rem 3rem 3rem;
   align-items: center; gap: 0 0.4rem;
-  padding: 0.22rem 0; border-bottom: 1px solid #1f2937; font-size: 0.7rem;
+  padding: 0.22rem 0; border-bottom: 1px solid var(--bg-card); font-size: 0.7rem;
 }
 .roster-row:last-child { border-bottom: none; }
 .roster-row.hdr { margin-bottom: 0.1rem; }
-.roster-name { color: #d1d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.roster-name { color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .roster-name a { color: inherit; text-decoration: none; }
-.roster-name a:hover { color: #93c5fd; }
-.roster-stat { color: #6b7280; text-align: right; }
-.roster-hdr-stat { color: #374151; text-align: right; font-size: 0.63rem; font-weight: 700; }
+.roster-name a:hover { color: var(--accent-light); }
+.roster-stat { color: var(--text-muted); text-align: right; }
+.roster-hdr-stat { color: var(--border); text-align: right; font-size: 0.63rem; font-weight: 700; }
 
 .seasons-list { display: flex; flex-direction: column; }
 .season-row {
   display: grid; grid-template-columns: 1fr 4rem 7rem;
   align-items: center; gap: 0 0.4rem;
-  padding: 0.22rem 0; border-bottom: 1px solid #1f2937; font-size: 0.7rem;
+  padding: 0.22rem 0; border-bottom: 1px solid var(--bg-card); font-size: 0.7rem;
   cursor: pointer;
 }
 .season-row:last-child { border-bottom: none; }
 .season-row.hdr { cursor: default; }
-.season-row-name { color: #d1d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.season-row:not(.hdr):hover .season-row-name { color: #93c5fd; }
-.season-row-record { color: #6b7280; text-align: right; }
+.season-row-name { color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.season-row:not(.hdr):hover .season-row-name { color: var(--accent-light); }
+.season-row-record { color: var(--text-muted); text-align: right; }
 .season-row-result { text-align: right; font-weight: 600; font-size: 0.68rem; }
-.show-more { margin-top: 0.4rem; background: none; border: none; color: #3b82f6; font-size: 0.72rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; font-family: inherit; }
-.show-more:hover { color: #60a5fa; }
+.show-more { margin-top: 0.4rem; background: none; border: none; color: var(--accent); font-size: 0.72rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; font-family: inherit; }
+.show-more:hover { color: var(--link); }
 
-.loading { color: #6b7280; padding: 3rem; text-align: center; }
-.error { color: #f87171; padding: 3rem; text-align: center; }
+.loading { color: var(--text-muted); padding: 3rem; text-align: center; }
+.error { color: var(--danger); padding: 3rem; text-align: center; }
 
 /* ── Filter bar ── */
 .filter-bar {
   display: flex; align-items: center; gap: 0.4rem;
-  padding: 0.45rem 0.75rem; border-bottom: 1px solid #1f2937;
+  padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--bg-card);
 }
-.filter-bar-label { font-size: 0.63rem; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.07em; margin-right: 0.1rem; }
+.filter-bar-label { font-size: 0.63rem; font-weight: 700; color: var(--border); text-transform: uppercase; letter-spacing: 0.07em; margin-right: 0.1rem; }
 .filter-btn {
-  background: none; border: 1px solid #1f2937; border-radius: 5px;
-  color: #6b7280; font-size: 0.7rem; font-weight: 700; font-family: inherit;
+  background: none; border: 1px solid var(--bg-card); border-radius: 5px;
+  color: var(--text-muted); font-size: 0.7rem; font-weight: 700; font-family: inherit;
   padding: 0.18rem 0.6rem; cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
-.filter-btn:hover { color: #d1d5db; border-color: #374151; }
-.filter-btn.active-champ { background: #f59e0b22; border-color: #f59e0b; color: #f59e0b; }
-.filter-btn.active-playoff { background: #3b82f622; border-color: #3b82f6; color: #93c5fd; }
-.filter-sep { width: 1px; height: 14px; background: #1f2937; margin: 0 0.1rem; flex-shrink: 0; }
+.filter-btn:hover { color: var(--text-secondary); border-color: var(--border); }
+.filter-btn.active-champ { background: #f59e0b22; border-color: var(--warning); color: var(--warning); }
+.filter-btn.active-playoff { background: #3b82f622; border-color: var(--accent); color: var(--accent-light); }
+.filter-sep { width: 1px; height: 14px; background: var(--bg-card); margin: 0 0.1rem; flex-shrink: 0; }
 .filter-select {
-  background: #0f1117; border: 1px solid #1f2937; border-radius: 5px;
-  color: #6b7280; font-size: 0.7rem; font-weight: 600; font-family: inherit;
+  background: var(--bg-deep); border: 1px solid var(--bg-card); border-radius: 5px;
+  color: var(--text-muted); font-size: 0.7rem; font-weight: 600; font-family: inherit;
   padding: 0.18rem 0.4rem; cursor: pointer; outline: none;
   transition: border-color 0.15s, color 0.15s;
 }
-.filter-select:hover, .filter-select:focus { border-color: #374151; color: #d1d5db; }
-.filter-select.active { border-color: #8b5cf6; color: #a78bfa; background: #8b5cf622; }
+.filter-select:hover, .filter-select:focus { border-color: var(--border); color: var(--text-secondary); }
+.filter-select.active { border-color: #8b5cf6; color: var(--purple); background: #8b5cf622; }
 .po-legend {
   display: none; align-items: center; gap: 0.75rem; flex-wrap: wrap;
-  padding: 0.3rem 0.75rem; border-bottom: 1px solid #1f2937;
+  padding: 0.3rem 0.75rem; border-bottom: 1px solid var(--bg-card);
 }
 .po-legend.visible { display: flex; }
-.po-legend-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.65rem; color: #6b7280; }
+.po-legend-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.65rem; color: var(--text-muted); }
 .po-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 /* ── History tab ── */
 .history-select-wrap { margin-bottom: 2rem; }
 .history-select-wrap select {
-  background: #161b27; border: 1px solid #1f2937; border-radius: 8px;
-  color: #f9fafb; font-size: 0.9rem; font-family: inherit;
+  background: #161b27; border: 1px solid var(--bg-card); border-radius: 8px;
+  color: var(--text-bright); font-size: 0.9rem; font-family: inherit;
   padding: 0.6rem 0.9rem; outline: none; cursor: pointer;
   transition: border-color 0.15s; min-width: 180px;
   appearance: none; -webkit-appearance: none;
@@ -213,13 +215,13 @@ h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem
   background-repeat: no-repeat; background-position: right 0.75rem center;
   padding-right: 2rem;
 }
-.history-select-wrap select:focus { border-color: #3b82f6; }
-.history-empty { color: #4b5563; font-size: 0.9rem; padding: 2rem 0; }
+.history-select-wrap select:focus { border-color: var(--accent); }
+.history-empty { color: var(--text-dim); font-size: 0.9rem; padding: 2rem 0; }
 .history-header { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 1.75rem; }
-.history-team-name { font-size: 1.2rem; font-weight: 700; color: #f9fafb; }
-.history-seasons-count { font-size: 0.8rem; color: #6b7280; }
+.history-team-name { font-size: 1.2rem; font-weight: 700; color: var(--text-bright); }
+.history-seasons-count { font-size: 0.8rem; color: var(--text-muted); }
 .history-graph {
-  background: #161b27; border: 1px solid #1f2937; border-radius: 10px;
+  background: #161b27; border: 1px solid var(--bg-card); border-radius: 10px;
   padding: 2rem 1.5rem 1.5rem; margin-bottom: 1.5rem;
 }
 .history-track-scroll { overflow-x: auto; padding-bottom: 0.5rem; }
@@ -234,37 +236,38 @@ h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem
 .history-node-wrap:hover .history-node { transform: scale(1.1); }
 .history-node-wrap.active .history-node {
   transform: scale(1.12);
-  box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
+  box-shadow: 0 0 0 3px var(--bg-deep), 0 0 0 5px var(--node-color, var(--accent));
 }
-.history-node-season { font-size: 0.72rem; font-weight: 700; color: #d1d5db; text-align: center; }
-.history-node-record { font-size: 0.65rem; color: #6b7280; text-align: center; margin-top: -0.3rem; }
-.history-connector { flex: 1; min-width: 24px; height: 2px; background: #374151; margin-top: 25px; flex-shrink: 1; }
-.history-connector.changed { background: #f59e0b; }
+.history-node-season { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); text-align: center; }
+.history-node-record { font-size: 0.65rem; color: var(--text-muted); text-align: center; margin-top: -0.3rem; }
+.history-connector { flex: 1; min-width: 24px; height: 2px; background: var(--border); margin-top: 25px; flex-shrink: 1; }
+.history-connector.changed { background: var(--warning); }
 .history-detail { opacity: 0; transform: translateY(6px); transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none; }
 .history-detail.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .history-detail-card {
-  background: #161b27; border: 1px solid #1f2937; border-radius: 10px;
+  background: #161b27; border: 1px solid var(--bg-card); border-radius: 10px;
   padding: 1.25rem;
 }
 .hd-left { flex-shrink: 0; }
 .hd-right { flex: 1; min-width: 0; }
 .hd-season-row { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
-.hd-season { font-size: 1rem; font-weight: 700; color: #f9fafb; }
-.hd-record { font-size: 0.85rem; color: #6b7280; font-weight: 600; }
-.hd-seed { font-size: 0.8rem; color: #6b7280; }
+.hd-season { font-size: 1rem; font-weight: 700; color: var(--text-bright); }
+.hd-record { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+.hd-seed { font-size: 0.8rem; color: var(--text-muted); }
 .hd-result { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 5px; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem; }
 .hd-badge { display: inline-flex; align-items: center; padding: 0.2rem 0.65rem; border-radius: 6px; border: 1px solid; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.3rem; }
-.hd-cluster-name { font-size: 0.85rem; color: #9ca3af; margin-bottom: 1rem; }
+.hd-cluster-name { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
 .hd-bars { display: flex; flex-direction: column; gap: 0.22rem; }
 .hd-bar-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; }
-.hd-bar-label { color: #6b7280; width: 3rem; flex-shrink: 0; text-align: right; font-weight: 600; }
-.hd-bar-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; position: relative; }
+.hd-bar-label { color: var(--text-muted); width: 3rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+.hd-bar-track { flex: 1; background: var(--bg-card); border-radius: 2px; height: 5px; position: relative; }
 .hd-bar-fill { height: 5px; border-radius: 2px; position: absolute; top: 0; left: 0; }
-.hd-bar-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
+.hd-bar-val { color: var(--text-muted); width: 2.2rem; text-align: right; flex-shrink: 0; }
 </style>
 </head>
 <body>
 <div class="page">
+  <div class="nav"></div>
   <h1>Team Archetypes</h1>
   <p class="subtitle">Two-stage clustering of <b id="n-seasons">—</b> team-seasons by shot diet, pace, ball movement, and roster structure. Scatter position shows offensive vs. defensive rating — upper-right is best.</p>
 
@@ -293,9 +296,9 @@ h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem
 <script>
 const DIMS = ['OFF_RTG','DEF','ASSIST_RATE','3PA_RATE','FTA_RATE','PACE','ROT_DEPTH','STAR_SHARE'];
 const DIM_COLOR = {
-  OFF_RTG:'#3b82f6', DEF:'#22c55e', ASSIST_RATE:'#06b6d4',
-  '3PA_RATE':'#8b5cf6', 'FTA_RATE':'#f97316', PACE:'#f59e0b',
-  ROT_DEPTH:'#ec4899', STAR_SHARE:'#ef4444',
+  OFF_RTG:'var(--accent)', DEF:'var(--success-alt)', ASSIST_RATE:'#06b6d4',
+  '3PA_RATE':'#8b5cf6', 'FTA_RATE':'#f97316', PACE:'var(--warning)',
+  ROT_DEPTH:'#ec4899', STAR_SHARE:'var(--danger)',
 };
 const DIM_LABEL = {
   OFF_RTG:'O-RTG', DEF:'D-RTG', ASSIST_RATE:'AST%',
@@ -330,7 +333,7 @@ const DESCRIPTIONS = {
   '4B':'Star-heavy perimeter attacks (72nd star share) with thin rotations (26th) and low paint presence (19th FT%). CHI 24-25 went 57-25 — the best regular season in the cluster — and lost in the second round. No team in this cluster has won a championship or reached the Finals. The star-plus-perimeter combination hasn\'t broken through when the playoff game slows down.',
   '4C':'Full rebuilds: fast pace (73rd), extreme 3-point volume (84th), worst defense (7th) and near-worst offense (28th). Zero playoff appearances across all 12 seasons in the cluster. Lottery teams spreading minutes across developing rosters — this is what the bottom of the standings looks like stylistically.',
 };
-const GROUP_COLOR = {'1':'#3b82f6','2':'#8b5cf6','3':'#f59e0b','4':'#22c55e'};
+const GROUP_COLOR = {'1':'var(--accent)','2':'#8b5cf6','3':'var(--warning)','4':'var(--success-alt)'};
 const GROUP_META = {
   '1':{name:'Fast Inside Ball-Movers'},
   '2':{name:'Halfcourt Inside Ball-Movers'},
@@ -338,14 +341,14 @@ const GROUP_META = {
   '4':{name:'Perimeter-First ISO Systems'},
 };
 
-function clusterColor(hierName) { return GROUP_COLOR[hierName[0]] || '#6b7280'; }
+function clusterColor(hierName) { return GROUP_COLOR[hierName[0]] || 'var(--text-muted)'; }
 function poColor(r) {
-  if (r === 'Champion')    return '#f59e0b';
-  if (r === 'Runner-Up')   return '#9ca3af';
-  if (r === 'Conf Finals') return '#3b82f6';
-  if (r === 'Second Round') return '#22c55e';
+  if (r === 'Champion')    return 'var(--warning)';
+  if (r === 'Runner-Up')   return 'var(--text-muted)';
+  if (r === 'Conf Finals') return 'var(--accent)';
+  if (r === 'Second Round') return 'var(--success-alt)';
   if (r === 'First Round') return '#f97316';
-  return '#4b5563';
+  return 'var(--text-dim)';
 }
 
 // ── Dim bars ─────────────────────────────────────────────────────────────────
@@ -398,7 +401,7 @@ function buildRadar(centroid, size = 110) {
   [0.33, 0.66, 1].forEach(f => {
     const poly = document.createElementNS(NS, 'polygon');
     poly.setAttribute('points', angles.map(a => pt(a, maxR * f).join(',')).join(' '));
-    poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', '#1f2937'); poly.setAttribute('stroke-width', '1');
+    poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', 'var(--bg-card)'); poly.setAttribute('stroke-width', '1');
     svg.appendChild(poly);
   });
   angles.forEach(a => {
@@ -406,18 +409,18 @@ function buildRadar(centroid, size = 110) {
     const line = document.createElementNS(NS, 'line');
     line.setAttribute('x1', cx); line.setAttribute('y1', cy);
     line.setAttribute('x2', x); line.setAttribute('y2', y);
-    line.setAttribute('stroke', '#1f2937'); line.setAttribute('stroke-width', '1');
+    line.setAttribute('stroke', 'var(--bg-card)'); line.setAttribute('stroke-width', '1');
     svg.appendChild(line);
   });
   const poly = document.createElementNS(NS, 'polygon');
   poly.setAttribute('points', DIMS.map((d, i) => pt(angles[i], maxR * (centroid[d] || 0)).join(',')).join(' '));
-  poly.setAttribute('fill', 'rgba(59,130,246,0.2)'); poly.setAttribute('stroke', '#3b82f6'); poly.setAttribute('stroke-width', '1.5');
+  poly.setAttribute('fill', 'rgba(59,130,246,0.2)'); poly.setAttribute('stroke', 'var(--accent)'); poly.setAttribute('stroke-width', '1.5');
   svg.appendChild(poly);
   DIMS.forEach((d, i) => {
     const [x, y] = pt(angles[i], maxR * (centroid[d] || 0));
     const dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '2.5');
-    dot.setAttribute('fill', DIM_COLOR[d]); dot.setAttribute('stroke', '#0f1117'); dot.setAttribute('stroke-width', '1');
+    dot.setAttribute('fill', DIM_COLOR[d]); dot.setAttribute('stroke', 'var(--bg-deep)'); dot.setAttribute('stroke-width', '1');
     svg.appendChild(dot);
   });
   const LABEL_R = maxR + 12;
@@ -425,7 +428,7 @@ function buildRadar(centroid, size = 110) {
     const [x, y] = pt(angles[i], LABEL_R);
     const txt = document.createElementNS(NS, 'text');
     txt.setAttribute('x', x); txt.setAttribute('y', y);
-    txt.setAttribute('font-size', '7.5'); txt.setAttribute('fill', '#6b7280');
+    txt.setAttribute('font-size', '7.5'); txt.setAttribute('fill', 'var(--text-muted)');
     txt.setAttribute('font-family', 'Inter, system-ui, sans-serif'); txt.setAttribute('font-weight', '600');
     txt.setAttribute('text-anchor', x < cx - 4 ? 'end' : x > cx + 4 ? 'start' : 'middle');
     txt.setAttribute('dominant-baseline', 'middle');
@@ -524,7 +527,7 @@ function renderClusterPanel(cluster) {
     recordCell.textContent = e.record;
     const resultCell = document.createElement('div');
     resultCell.className = 'season-row-result';
-    resultCell.style.color = e.playoff_result === 'Missed' ? '#4b5563' : rc;
+    resultCell.style.color = e.playoff_result === 'Missed' ? 'var(--text-dim)' : rc;
     resultCell.textContent = e.playoff_result === 'Missed' ? '—' : e.playoff_result;
     row.appendChild(nameCell);
     row.appendChild(recordCell);
@@ -570,7 +573,7 @@ function buildTeamCard(container, entry, cluster) {
   container.appendChild(meta);
 
   const clusterName = document.createElement('div');
-  clusterName.style.cssText = 'font-size:0.72rem;color:#6b7280;margin-bottom:0.75rem;';
+  clusterName.style.cssText = 'font-size:0.72rem;color:var(--text-muted);margin-bottom:0.75rem;';
   clusterName.textContent = NAMES[cluster.hier_name] || '';
   container.appendChild(clusterName);
 
@@ -659,7 +662,7 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
     const ln = document.createElementNS(NS, 'line');
     ln.setAttribute('x1', x1); ln.setAttribute('y1', y1);
     ln.setAttribute('x2', x2); ln.setAttribute('y2', y2);
-    ln.setAttribute('stroke', '#1f2937'); ln.setAttribute('stroke-width', '1');
+    ln.setAttribute('stroke', 'var(--bg-card)'); ln.setAttribute('stroke-width', '1');
     ln.setAttribute('stroke-dasharray', '4,4');
     svg.appendChild(ln);
   });
@@ -670,7 +673,7 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
     el.setAttribute('x', x); el.setAttribute('y', y);
     el.setAttribute('text-anchor', anchor); el.setAttribute('dominant-baseline', 'middle');
     el.setAttribute('font-size', '9'); el.setAttribute('font-weight', '700');
-    el.setAttribute('fill', '#374151'); el.setAttribute('font-family', 'Inter, system-ui, sans-serif');
+    el.setAttribute('fill', 'var(--border)'); el.setAttribute('font-family', 'Inter, system-ui, sans-serif');
     if (rotate) el.setAttribute('transform', `rotate(${rotate},${x},${y})`);
     el.textContent = txt;
     svg.appendChild(el);
@@ -782,7 +785,7 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
   mkr.setAttribute('id', 'arr'); mkr.setAttribute('markerWidth', '8'); mkr.setAttribute('markerHeight', '6');
   mkr.setAttribute('refX', '8'); mkr.setAttribute('refY', '3'); mkr.setAttribute('orient', 'auto');
   const arrowPoly = document.createElementNS(NS, 'polygon');
-  arrowPoly.setAttribute('points', '0,0 8,3 0,6'); arrowPoly.setAttribute('fill', '#9ca3af'); arrowPoly.setAttribute('fill-opacity', '0.7');
+  arrowPoly.setAttribute('points', '0,0 8,3 0,6'); arrowPoly.setAttribute('fill', 'var(--text-muted)'); arrowPoly.setAttribute('fill-opacity', '0.7');
   mkr.appendChild(arrowPoly); defs.appendChild(mkr); svg.insertBefore(defs, svg.firstChild);
 
   bg.style.cursor = 'default';
@@ -883,7 +886,7 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
           const ln = document.createElementNS(NS, 'line');
           ln.setAttribute('x1', a.x * W); ln.setAttribute('y1', a.y * H);
           ln.setAttribute('x2', b.x * W); ln.setAttribute('y2', b.y * H);
-          ln.setAttribute('stroke', '#6b7280'); ln.setAttribute('stroke-width', '1.2');
+          ln.setAttribute('stroke', 'var(--text-muted)'); ln.setAttribute('stroke-width', '1.2');
           ln.setAttribute('stroke-opacity', '0.55'); ln.setAttribute('marker-end', 'url(#arr)');
           ln.setAttribute('pointer-events', 'none');
           overlayG.appendChild(ln);
@@ -905,7 +908,7 @@ function buildChart(clusters, onClusterClick, onDotHover, onDotClick) {
           const lbl = document.createElementNS(NS, 'text');
           lbl.setAttribute('x', cx + 9); lbl.setAttribute('y', cy - 5);
           lbl.setAttribute('font-size', '8'); lbl.setAttribute('font-weight', '700');
-          lbl.setAttribute('fill', '#9ca3af'); lbl.setAttribute('pointer-events', 'none');
+          lbl.setAttribute('fill', 'var(--text-muted)'); lbl.setAttribute('pointer-events', 'none');
           lbl.setAttribute('font-family', 'Inter, system-ui, sans-serif');
           lbl.textContent = e.season;
           overlayG.appendChild(lbl);
@@ -1234,7 +1237,7 @@ Promise.all([
   // Playoff result color legend (shown when any overlay is active)
   poLegend = document.createElement('div');
   poLegend.className = 'po-legend';
-  [['Champion','#f59e0b'],['Runner-Up','#9ca3af'],['Conf Finals','#3b82f6'],['Second Round','#22c55e'],['First Round','#f97316'],['Missed','#4b5563']].forEach(([label, col]) => {
+  [['Champion','var(--warning)'],['Runner-Up','var(--text-muted)'],['Conf Finals','var(--accent)'],['Second Round','var(--success-alt)'],['First Round','#f97316'],['Missed','var(--text-dim)']].forEach(([label, col]) => {
     const item = document.createElement('div'); item.className = 'po-legend-item';
     const dot = document.createElement('div'); dot.className = 'po-legend-dot'; dot.style.background = col;
     item.appendChild(dot); item.appendChild(document.createTextNode(label));

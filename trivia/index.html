@@ -12,18 +12,18 @@
 
     header { margin-bottom: 2rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
     .game-wrap {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 1.5rem;
       margin-bottom: 2rem;
     }
 
     .loading-msg {
-      color: #9ca3af;
+      color: var(--text-muted);
       text-align: center;
       padding: 2.5rem;
       font-size: 0.9rem;
@@ -39,7 +39,7 @@
     }
 
     .idle-inner p {
-      color: #9ca3af;
+      color: var(--text-muted);
       max-width: 460px;
       line-height: 1.6;
       font-size: 0.9rem;
@@ -55,7 +55,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #6b7280;
+      color: var(--text-muted);
       margin-bottom: 0.5rem;
       text-align: left;
     }
@@ -69,32 +69,32 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #6b7280;
+      color: var(--text-muted);
       padding: 0.3rem 0.6rem;
       text-align: left;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border);
     }
     .reward-table th:last-child { text-align: right; }
     .reward-table td {
       padding: 0.3rem 0.6rem;
       border-bottom: 1px solid #1a2233;
-      color: #d1d5db;
+      color: var(--text-secondary);
     }
     .reward-table td:last-child {
       text-align: right;
       font-weight: 700;
-      color: #f59e0b;
+      color: var(--warning);
       font-variant-numeric: tabular-nums;
     }
     .reward-table tbody tr:last-child td { border-bottom: none; }
-    .reward-table .cap-row td { color: #9ca3af; }
-    .reward-table .cap-row td:last-child { color: #fbbf24; }
+    .reward-table .cap-row td { color: var(--text-muted); }
+    .reward-table .cap-row td:last-child { color: var(--gold); }
 
     .btn-primary {
-      background: #3b82f6;
+      background: var(--accent);
       border: none;
       border-radius: 8px;
-      color: #fff;
+      color: var(--text-on-accent);
       cursor: pointer;
       font-family: inherit;
       font-size: 0.95rem;
@@ -102,15 +102,15 @@
       padding: 0.6rem 1.5rem;
       transition: background 0.15s;
     }
-    .btn-primary:hover:not(:disabled) { background: #2563eb; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
     .btn-primary:disabled { opacity: 0.55; cursor: default; }
     .btn-primary.btn-correct { background: #059669; }
 
     .btn-secondary {
-      background: #374151;
+      background: var(--border);
       border: none;
       border-radius: 8px;
-      color: #f3f4f6;
+      color: var(--text-primary);
       cursor: pointer;
       font-family: inherit;
       font-size: 0.95rem;
@@ -118,7 +118,7 @@
       padding: 0.6rem 1.5rem;
       transition: background 0.15s;
     }
-    .btn-secondary:hover { background: #4b5563; }
+    .btn-secondary:hover { background: var(--text-dim); }
 
     /* Top stats bar: Streak | NB¥ | Timer */
     .stats-bars { margin-bottom: 1.25rem; }
@@ -133,12 +133,12 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
     .streak-num {
       font-size: 1.875rem;
       font-weight: 800;
-      color: #f59e0b;
+      color: var(--warning);
       line-height: 1;
       font-variant-numeric: tabular-nums;
     }
@@ -154,19 +154,19 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
     .timer-num {
       font-size: 1.875rem;
       font-weight: 800;
-      color: #60a5fa;
+      color: var(--link);
       line-height: 1;
       font-variant-numeric: tabular-nums;
       min-width: 2.2ch;
       text-align: right;
       transition: color 0.3s;
     }
-    .timer-num.urgent { color: #ef4444; }
+    .timer-num.urgent { color: var(--danger); }
 
     /* NB¥ session bar */
     .nby-bar {
@@ -181,23 +181,23 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
     .nby-num {
       font-size: 1rem;
       font-weight: 800;
-      color: #f59e0b;
+      color: var(--warning);
       font-variant-numeric: tabular-nums;
     }
     .nby-no-token {
       font-size: 0.75rem;
-      color: #4b5563;
+      color: var(--text-dim);
       font-style: italic;
     }
     .reward-flash {
       font-size: 0.875rem;
       font-weight: 700;
-      color: #34d399;
+      color: var(--market-positive);
       margin-left: 0.25rem;
       animation: fadeup 0.35s ease forwards;
     }
@@ -226,8 +226,8 @@
       font-size: 0.68rem;
       text-transform: uppercase;
       letter-spacing: 0.07em;
-      color: #9ca3af;
-      border-bottom: 1px solid #374151;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
       text-align: right;
     }
     .stats-table th:first-child,
@@ -235,7 +235,7 @@
 
     .stats-table td {
       padding: 0.35rem 0.65rem;
-      border-bottom: 1px solid #283141;
+      border-bottom: 1px solid var(--border-subtle);
       text-align: right;
       font-variant-numeric: tabular-nums;
     }
@@ -256,20 +256,20 @@
 
     .combo-wrap input {
       width: 100%;
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      color: #f3f4f6;
+      color: var(--text-primary);
       font-family: inherit;
       font-size: 0.9rem;
       padding: 0.575rem 0.75rem;
       outline: none;
       transition: border-color 0.15s;
     }
-    .combo-wrap input:focus { border-color: #3b82f6; }
+    .combo-wrap input:focus { border-color: var(--accent); }
     .combo-wrap input.shake {
       animation: shake 0.3s ease;
-      border-color: #ef4444;
+      border-color: var(--danger);
     }
 
     @keyframes shake {
@@ -283,8 +283,8 @@
       top: calc(100% + 4px);
       left: 0;
       right: 0;
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 8px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.45);
       max-height: 220px;
@@ -298,7 +298,7 @@
       cursor: pointer;
       transition: background 0.1s;
     }
-    .dd-item:hover, .dd-item.active { background: #374151; }
+    .dd-item:hover, .dd-item.active { background: var(--border); }
     .dd-item:first-child { border-radius: 8px 8px 0 0; }
     .dd-item:last-child  { border-radius: 0 0 8px 8px; }
 
@@ -310,31 +310,31 @@
       padding: 1.75rem 1rem;
       text-align: center;
     }
-    .go-title { font-size: 1.5rem; font-weight: 700; color: #ef4444; }
-    .go-streak { font-size: 1rem; color: #9ca3af; }
-    .go-streak span { font-weight: 700; color: #f59e0b; font-size: 1.5rem; }
+    .go-title { font-size: 1.5rem; font-weight: 700; color: var(--danger); }
+    .go-streak { font-size: 1rem; color: var(--text-muted); }
+    .go-streak span { font-weight: 700; color: var(--warning); font-size: 1.5rem; }
     .go-nby {
       font-size: 0.9rem;
-      color: #9ca3af;
-      background: #111827;
-      border: 1px solid #374151;
+      color: var(--text-muted);
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 0.5rem 1.1rem;
     }
-    .go-nby strong { color: #f59e0b; font-size: 1.1rem; }
-    .go-answer { color: #d1d5db; font-size: 0.9rem; }
-    .go-answer strong { color: #f3f4f6; }
+    .go-nby strong { color: var(--warning); font-size: 1.1rem; }
+    .go-answer { color: var(--text-secondary); font-size: 0.9rem; }
+    .go-answer strong { color: var(--text-primary); }
     .go-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin-top: 0.25rem; }
-    .submit-status { font-size: 0.825rem; min-height: 1.25rem; color: #9ca3af; }
-    .submit-status.ok  { color: #34d399; }
-    .submit-status.err { color: #f87171; }
+    .submit-status { font-size: 0.825rem; min-height: 1.25rem; color: var(--text-muted); }
+    .submit-status.ok  { color: var(--market-positive); }
+    .submit-status.err { color: var(--danger); }
 
     .scores-section { margin-top: 0; }
     .scores-title {
       font-size: 1.1rem;
       font-weight: 700;
       margin-bottom: 1rem;
-      color: #f3f4f6;
+      color: var(--text-primary);
     }
 
     .scores-table {
@@ -347,21 +347,21 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #6b7280;
+      color: var(--text-muted);
       padding: 0.4rem 0.75rem;
       text-align: left;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border);
     }
     .scores-table td {
       padding: 0.5rem 0.75rem;
       border-bottom: 1px solid #1a2233;
     }
     .scores-table tbody tr:last-child td { border-bottom: none; }
-    .scores-table .rank { color: #6b7280; width: 2.5rem; }
-    .scores-table .score-val { font-weight: 700; color: #f59e0b; font-variant-numeric: tabular-nums; }
-    .scores-table .date-val { color: #6b7280; font-size: 0.8rem; }
+    .scores-table .rank { color: var(--text-muted); width: 2.5rem; }
+    .scores-table .score-val { font-weight: 700; color: var(--warning); font-variant-numeric: tabular-nums; }
+    .scores-table .date-val { color: var(--text-muted); font-size: 0.8rem; }
 
-    .no-scores { color: #6b7280; font-size: 0.875rem; padding: 0.5rem 0; }
+    .no-scores { color: var(--text-muted); font-size: 0.875rem; padding: 0.5rem 0; }
 
     @media (max-width: 500px) {
       .guess-area { flex-direction: column; }
@@ -388,7 +388,7 @@
       margin: 0 0 18px;
       padding: 22px 16px;
       text-align: center;
-      color: #fff;
+      color: var(--text-on-accent);
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.12em;

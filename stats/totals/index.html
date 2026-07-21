@@ -10,11 +10,11 @@
     .page { max-width: 660px; margin: 0 auto; }
     header { margin-bottom: 2rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-    .card { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 1.5rem; text-decoration: none; color: inherit; transition: background 0.15s, border-color 0.15s, transform 0.15s; display: flex; flex-direction: column; gap: 0.4rem; }
-    .card:hover { background: #263244; border-color: #4b6a9b; transform: translateY(-2px); }
-    .card-stat { font-size: 1.5rem; font-weight: 700; color: #93c5fd; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-decoration: none; color: inherit; transition: background 0.15s, border-color 0.15s, transform 0.15s; display: flex; flex-direction: column; gap: 0.4rem; }
+    .card:hover { background: var(--bg-hover); border-color: var(--muted-border); transform: translateY(-2px); }
+    .card-stat { font-size: 1.5rem; font-weight: 700; color: var(--accent-light); }
     .card-title { font-size: 0.95rem; font-weight: 600; }
     @media (max-width: 480px) { .grid { grid-template-columns: repeat(2, 1fr); } }
   </style>

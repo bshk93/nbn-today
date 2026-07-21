@@ -41,6 +41,9 @@
 //
 // Table builders
 //   buildTable                  673   generic sortable table (used by owners page too)
+//   enableRangeSum              826   Sheets-style drag/shift/ctrl-click column sum + floating bar
+//   copyTableToClipboard              copies a table as TSV + HTML for pasting into Sheets
+//   attachCopyBtn                     adds the "Copy" button next to a section title
 //   buildRosterTable            893   renders the Roster section with salary/cap data
 //   buildPicksTable            1365   renders the Draft Picks section (future picks only, no player yet)
 //   makeSeasonRenderCell       1478   season history cell renderer (badges, playoff coloring)
@@ -136,18 +139,24 @@ const ratingsPopupReady = new Promise(resolve => {
 });
 
 { const _s = document.createElement('style'); _s.textContent = `
+  @import url("/css/theme.css");
+  @import url("/css/nav-chrome.css");
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #111827;
-    color: #f3f4f6;
+    background: var(--bg-page);
+    color: var(--text-primary);
     min-height: 100vh;
     padding: 2rem 1rem 4rem;
   }
-  .page { max-width: 1024px; margin: 0 auto; }
+  /* Scales fluidly with viewport width instead of jumping at a breakpoint:
+     stays at 1024px on laptop-class screens (anything ≤ ~1365px wide),
+     then grows proportionally (75% of viewport) up to a 1600px ceiling
+     for wide/ultrawide monitors. */
+  .page { max-width: clamp(1024px, 75vw, 1600px); margin: 0 auto; }
   .nav { margin-bottom: 2rem; font-size: 0.875rem; }
-  .nav a { color: #9ca3af; text-decoration: none; }
-  .nav a:hover { color: #f3f4f6; }
+  .nav a { color: var(--text-muted); text-decoration: none; }
+  .nav a:hover { color: var(--text-primary); }
   .team-header-nav {
     display: flex;
     align-items: center;
@@ -158,11 +167,11 @@ const ratingsPopupReady = new Promise(resolve => {
   .team-nav-btn {
     display: flex; align-items: center; justify-content: center;
     width: 2.5rem; height: 2.5rem; border-radius: 50%;
-    background: transparent; border: 1px solid #374151;
-    color: #6b7280; font-size: 1.5rem; cursor: pointer;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-muted); font-size: 1.5rem; cursor: pointer;
     text-decoration: none; flex-shrink: 0; line-height: 1;
   }
-  .team-nav-btn:hover { border-color: #6b7280; color: #d1d5db; }
+  .team-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
   .team-header {
     display: flex;
     flex-direction: column;
@@ -171,17 +180,17 @@ const ratingsPopupReady = new Promise(resolve => {
   }
   .team-header img { width: 140px; height: 140px; object-fit: contain; }
   .team-header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; text-align: center; }
-  .team-header .abbr { font-size: 0.9rem; color: #6b7280; letter-spacing: 0.08em; }
+  .team-header .abbr { font-size: 0.9rem; color: var(--text-muted); letter-spacing: 0.08em; }
   section { margin-bottom: 3rem; }
   .section-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.25rem; }
-  .section-sub { font-size: 0.8rem; color: #6b7280; margin-bottom: 0.75rem; }
+  .section-sub { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; }
   .table-wrap {
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 12px;
     overflow-x: auto;
   }
-  .status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+  .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
   table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
   thead th {
     padding: 0.7rem 1rem;
@@ -190,31 +199,43 @@ const ratingsPopupReady = new Promise(resolve => {
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #6b7280;
-    border-bottom: 1px solid #374151;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
     cursor: pointer;
     user-select: none;
   }
-  thead th:hover { color: #d1d5db; }
-  thead th[data-active="true"] { color: #93c5fd; }
+  thead th:hover { color: var(--text-secondary); }
+  thead th[data-active="true"] { color: var(--accent-light); }
   thead th .sort-arrow { margin-left: 4px; opacity: 0; font-size: 0.65rem; }
   thead th[data-active="true"] .sort-arrow { opacity: 1; }
   thead th.right { text-align: right; }
-  tbody tr { border-bottom: 1px solid #283141; transition: background 0.1s; }
+  tbody tr { border-bottom: 1px solid var(--border-subtle); transition: background 0.1s; }
   tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: #263244; }
-  tr.personnel-active td { background: #0e1f14; }
-  tr.personnel-active:hover td { background: #132a1b; }
+  tbody tr:hover { background: var(--bg-hover); }
+  tr.personnel-active td { background: var(--success-bg); }
+  tr.personnel-active:hover td { background: var(--success-bg-hover); }
   tr.personnel-former { opacity: 0.45; }
   tr.personnel-former:hover { opacity: 0.8; }
-  tr.personnel-divider td { padding: 0.2rem 1rem; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #4b5563; background: #111827; border-top: 1px solid #283141; }
-  .cur-role { color: #86efac; }
-  .cur-since { color: #86efac; }
-  td { padding: 0.65rem 1rem; color: #d1d5db; }
+  tr.personnel-divider td { padding: 0.2rem 1rem; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); background: var(--bg-page); border-top: 1px solid var(--border-subtle); }
+  .cur-role { color: var(--success-light); }
+  .cur-since { color: var(--success-light); }
+  td { padding: 0.65rem 1rem; color: var(--text-secondary); }
+  @media (min-width: 641px) {
+    #roster-wrap table th:first-child,
+    #roster-wrap table td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+    }
+    #roster-wrap table thead th:first-child { z-index: 2; }
+    #roster-wrap table tbody tr:hover td:first-child { background: var(--bg-hover); }
+  }
   td.right { text-align: right; font-variant-numeric: tabular-nums; }
-  td.muted { color: #6b7280; }
-  td.bold { font-weight: 600; color: #f3f4f6; }
-  td a { color: #60a5fa; text-decoration: none; }
+  td.muted { color: var(--text-muted); }
+  td.bold { font-weight: 600; color: var(--text-primary); }
+  td a { color: var(--link); text-decoration: none; }
   td a:hover { text-decoration: underline; }
   .badge {
     display: inline-block;
@@ -223,11 +244,11 @@ const ratingsPopupReady = new Promise(resolve => {
     cursor: pointer;
     vertical-align: middle;
   }
-  .po-champion   { color: #fbbf24; font-weight: 600; }
-  .po-runnerup   { color: #9ca3af; }
-  .po-conffinals { color: #60a5fa; }
-  .po-other      { color: #6b7280; }
-  .po-missed     { color: #4b5563; }
+  .po-champion   { color: var(--gold); font-weight: 600; }
+  .po-runnerup   { color: var(--text-muted); }
+  .po-conffinals { color: var(--link); }
+  .po-other      { color: var(--text-muted); }
+  .po-missed     { color: var(--text-dim); }
   td.center      { text-align: center; }
   .timeline {
     display: flex;
@@ -236,13 +257,13 @@ const ratingsPopupReady = new Promise(resolve => {
     padding: 0.5rem 0 0.75rem;
     margin-bottom: 0.75rem;
     scrollbar-width: thin;
-    scrollbar-color: #374151 transparent;
+    scrollbar-color: var(--border) transparent;
   }
   .tl-card {
     flex-shrink: 0;
     width: 58px;
-    background: #1f2937;
-    border: 2px solid #283141;
+    background: var(--bg-card);
+    border: 2px solid var(--border-subtle);
     border-radius: 8px;
     padding: 0.45rem 0.25rem;
     text-align: center;
@@ -250,43 +271,44 @@ const ratingsPopupReady = new Promise(resolve => {
     transition: filter 0.1s;
   }
   .tl-card:hover { filter: brightness(1.15); }
-  .tl-season { display: block; font-size: 0.6rem; color: #6b7280; letter-spacing: 0.03em; }
-  .tl-wins   { display: block; font-size: 1.25rem; font-weight: 700; color: #f3f4f6; line-height: 1; margin: 0.2rem 0 0.15rem; }
-  .tl-seed   { display: block; font-size: 0.62rem; color: #9ca3af; }
-  .tl-champion   { border-color: #d97706; background: #1a1305; }
-  .tl-champion .tl-wins { color: #fbbf24; }
-  .tl-runnerup   { border-color: #cbd5e1; background: #141c26; }
-  .tl-runnerup .tl-wins { color: #e2e8f0; }
-  .tl-conffinals { border-color: #1d4ed8; }
-  .tl-second     { border-color: #374151; }
+  .tl-season { display: block; font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.03em; }
+  .tl-wins   { display: block; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); line-height: 1; margin: 0.2rem 0 0.15rem; }
+  .tl-seed   { display: block; font-size: 0.62rem; color: var(--text-muted); }
+  .tl-champion   { border-color: var(--champion-border); background: var(--champion-bg); }
+  .tl-champion .tl-wins { color: var(--gold); }
+  .tl-runnerup   { border-color: var(--runnerup-border); background: var(--runnerup-bg); }
+  .tl-runnerup .tl-wins { color: var(--runnerup-text); }
+  .tl-conffinals { border-color: var(--accent-dark); }
+  .tl-second     { border-color: var(--border); }
   .tl-missed     { opacity: 0.55; }
-  td.div-left    { border-left: 1px solid #374151; }
+  td.div-left    { border-left: 1px solid var(--border); }
   .subheader td  {
-    background: #161f2e;
-    color: #6b7280;
+    background: var(--bg-subtle);
+    color: var(--text-muted);
     font-size: 0.65rem;
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
     padding: 0.35rem 1rem;
-    border-top: 1px solid #374151;
+    border-top: 1px solid var(--border);
   }
   .row-twoway td { opacity: 0.6; }
   .row-draft-rights td { opacity: 0.7; font-style: italic; }
   .row-dead td   { opacity: 0.45; font-style: italic; text-decoration: line-through; }
-  .picks-acquired td   { color: #60a5fa; }
-  .picks-traded td     { color: #6b7280; font-style: italic; }
-  .picks-uncertain td  { color: #f59e0b; font-style: italic; }
-  .picks-legacy td     { color: #f87171; font-style: italic; }
-  .picks-legacy td:nth-child(6) { color: #e5e7eb; font-style: normal; }
+  .row-erc td    { opacity: 0.7; font-style: italic; color: var(--warning); }
+  .picks-acquired td   { color: var(--link); }
+  .picks-traded td     { color: var(--text-muted); font-style: italic; }
+  .picks-uncertain td  { color: var(--warning); font-style: italic; }
+  .picks-legacy td     { color: var(--danger); font-style: italic; }
+  .picks-legacy td:nth-child(6) { color: var(--text-secondary); font-style: normal; }
   .picks-legend {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem 1.25rem;
     padding: 0.6rem 1rem 0.75rem;
     font-size: 0.75rem;
-    color: #9ca3af;
-    border-top: 1px solid #283141;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-subtle);
   }
   .picks-legend-item { display: flex; align-items: center; gap: 0.35rem; }
   .picks-swatch {
@@ -307,28 +329,41 @@ const ratingsPopupReady = new Promise(resolve => {
     justify-content: center;
     width: 90px;
     padding: 0.85rem 0.5rem 0.7rem;
-    background: #1f2937;
-    border: 1px solid #374151;
-    border-top: 3px solid #9ca3af;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--text-muted);
     border-radius: 8px;
     gap: 0.2rem;
   }
-  .retired-no   { font-size: 2rem; font-weight: 800; color: #f3f4f6; line-height: 1; letter-spacing: -0.03em; }
-  .retired-name { font-size: 0.62rem; color: #9ca3af; text-align: center; line-height: 1.3; }
-  .retired-date { font-size: 0.58rem; color: #4b5563; margin-top: 0.15rem; }
+  .retired-no   { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -0.03em; }
+  .retired-name { font-size: 0.62rem; color: var(--text-muted); text-align: center; line-height: 1.3; }
+  .retired-date { font-size: 0.58rem; color: var(--text-dim); margin-top: 0.15rem; }
   td.cap-ufa        { background: hsl(45,  60%, 20%); color: hsl(45,  90%, 72%); }
   td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
   td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
   td.cap-team-opt   { background: hsl(210, 55%, 20%); color: hsl(210, 75%, 70%); }
-  td.cap-non-gtd    { color: #4b5563; }
+  td.cap-non-gtd    { color: var(--text-dim); }
+  td.cell-selected { position: relative; box-shadow: inset 0 0 0 2px var(--accent); }
+  td.cell-selected::after {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(59, 130, 246, 0.25); pointer-events: none;
+  }
+  .range-sum-bar {
+    display: none; position: fixed; right: 1.25rem; bottom: 1.25rem;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.5rem 1rem; font-size: 0.82rem; color: var(--text-secondary);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4); z-index: 500;
+    pointer-events: none; white-space: nowrap;
+  }
+  .range-sum-bar b { color: var(--text-primary); }
   .cap-legend {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem 1.25rem;
     padding: 0.6rem 1rem 0.75rem;
     font-size: 0.75rem;
-    color: #9ca3af;
-    border-top: 1px solid #283141;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-subtle);
   }
   .cap-legend-item { display: flex; align-items: center; gap: 0.35rem; }
   .cap-swatch {
@@ -337,44 +372,44 @@ const ratingsPopupReady = new Promise(resolve => {
     border-radius: 2px;
     flex-shrink: 0;
   }
-  tfoot tr td { font-size: 0.8rem; padding: 0.3rem 0.6rem; color: #9ca3af; border-top: none; }
-  tfoot tr.tfoot-divider td { border-top: 1px solid #374151; padding-top: 0.45rem; }
-  tfoot tr.tfoot-total td { font-weight: 700; color: #d1d5db; }
-  tfoot tr.tfoot-cap td { color: #6b7280; }
-  tfoot tr.tfoot-cap.over .tfoot-diff { color: #f87171; }
-  tfoot tr.tfoot-cap.under .tfoot-diff { color: #4ade80; }
-  tfoot td.tfoot-label { color: #6b7280; }
-  tfoot td.tfoot-count { color: #374151; font-size: 0.72rem; text-align: right; }
+  tfoot tr td { font-size: 0.8rem; padding: 0.3rem 0.6rem; color: var(--text-muted); border-top: none; }
+  tfoot tr.tfoot-divider td { border-top: 1px solid var(--border); padding-top: 0.45rem; }
+  tfoot tr.tfoot-total td { font-weight: 700; color: var(--text-secondary); }
+  tfoot tr.tfoot-cap td { color: var(--text-muted); }
+  tfoot tr.tfoot-cap.over .tfoot-diff { color: var(--danger); }
+  tfoot tr.tfoot-cap.under .tfoot-diff { color: var(--success); }
+  tfoot td.tfoot-label { color: var(--text-muted); }
+  tfoot td.tfoot-count { color: var(--border); font-size: 0.72rem; text-align: right; }
   tfoot tr.tfoot-hardcap td { padding-top: 0.4rem; }
   .hardcap-chip { display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.02em;
-    padding: 0.05rem 0.35rem; border-radius: 3px; background: #422006; color: #fbbf24; border: 1px solid #854d0e; }
-  .hardcap-chip.apron2 { background: #450a0a; color: #fca5a5; border-color: #991b1b; }
+    padding: 0.05rem 0.35rem; border-radius: 3px; background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-border); }
+  .hardcap-chip.apron2 { background: var(--danger-bg); color: var(--danger-light); border-color: var(--danger-border-strong); }
   .cap-edit-form {
     display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
     margin-top: 0.75rem; padding: 0.6rem 0.75rem;
-    background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
     font-size: 0.8rem;
   }
-  .cap-edit-form label { display: flex; flex-direction: column; gap: 0.2rem; color: #6b7280; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
-  .cap-edit-form input { background: #111827; border: 1px solid #374151; border-radius: 4px; color: #f3f4f6; font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
-  .cap-edit-form input:focus { border-color: #3b82f6; }
-  .cap-edit-form select { background: #111827; border: 1px solid #374151; border-radius: 4px; color: #f3f4f6; font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
-  .cap-edit-form select:focus { border-color: #3b82f6; }
-  .cap-edit-form .form-divider { width: 100%; height: 1px; background: #374151; margin: 0.25rem 0; }
-  .cap-edit-form .form-section-label { width: 100%; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #4b5563; letter-spacing: 0.05em; padding-top: 0.15rem; }
+  .cap-edit-form label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+  .cap-edit-form input { background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
+  .cap-edit-form input:focus { border-color: var(--accent); }
+  .cap-edit-form select { background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
+  .cap-edit-form select:focus { border-color: var(--accent); }
+  .cap-edit-form .form-divider { width: 100%; height: 1px; background: var(--border); margin: 0.25rem 0; }
+  .cap-edit-form .form-section-label { width: 100%; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; padding-top: 0.15rem; }
   .hard-cap-banner {
-    background: #450a0a; border: 1px solid #7f1d1d; border-radius: 8px;
-    padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; color: #f87171;
+    background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: 8px;
+    padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; color: var(--danger);
     margin-bottom: 1.25rem;
   }
-  .hard-cap-banner.apron2 { background: #431407; border-color: #7c2d12; color: #fb923c; }
-  .exceptions-card { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 0.85rem 1.25rem; font-size: 0.85rem; }
-  .exceptions-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid #283141; gap: 1rem; }
+  .hard-cap-banner.apron2 { background: var(--danger-alt-bg); border-color: var(--danger-alt-border); color: var(--danger-alt); }
+  .exceptions-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1.25rem; font-size: 0.85rem; }
+  .exceptions-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid var(--border-subtle); gap: 1rem; }
   .exceptions-row:last-child { border-bottom: none; }
-  .exc-label { color: #9ca3af; font-size: 0.78rem; }
-  .exc-mle-type { font-size: 0.7rem; color: #6b7280; margin-left: 0.35rem; }
-  .exc-remaining { color: #34d399; }
-  .exc-used { color: #f87171; }
+  .exc-label { color: var(--text-muted); font-size: 0.78rem; }
+  .exc-mle-type { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.35rem; }
+  .exc-remaining { color: var(--success); }
+  .exc-used { color: var(--danger); }
   .token-overlay {
     position: fixed;
     inset: 0;
@@ -385,50 +420,64 @@ const ratingsPopupReady = new Promise(resolve => {
     z-index: 1000;
   }
   .token-modal {
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 1.5rem;
     width: 360px;
     max-width: 90vw;
   }
   .token-modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
-  .token-modal p  { font-size: 0.8rem; color: #9ca3af; margin-bottom: 1rem; }
+  .token-modal p  { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; }
   .token-modal input {
     width: 100%;
-    background: #111827;
-    border: 1px solid #374151;
+    background: var(--bg-page);
+    border: 1px solid var(--border);
     border-radius: 6px;
-    color: #f3f4f6;
+    color: var(--text-primary);
     font-size: 0.875rem;
     font-family: monospace;
     padding: 0.5rem 0.75rem;
     margin-bottom: 1rem;
     box-sizing: border-box;
   }
-  .token-modal input:focus { outline: none; border-color: #3b82f6; }
+  .token-modal input:focus { outline: none; border-color: var(--accent); }
   .token-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
   .player-note {
     display: inline-flex; align-items: center;
-    margin-left: 0.35rem; color: #b45309;
+    margin-left: 0.35rem; color: var(--gold-dim);
     vertical-align: middle; transition: color 0.1s;
   }
-  .player-note:hover { color: #fbbf24; }
-  .roster-name-cell { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .player-note:hover { color: var(--gold); }
+  .roster-name-cell { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+  .roster-name-top { display: inline-flex; align-items: center; gap: 0.5rem; }
   .roster-avatar {
     flex: none; width: 26px; height: 26px; border-radius: 50%;
-    overflow: hidden; background: #1f2937; border: 1px solid #374151;
+    overflow: hidden; background: var(--bg-card); border: 1px solid var(--border);
   }
   .roster-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
   .roster-avatar-empty {
     background:
-      radial-gradient(circle at 50% 38%, #4b5563 0 6px, transparent 7px),
-      radial-gradient(ellipse 10px 7px at 50% 100%, #4b5563 0 100%, transparent 0);
+      radial-gradient(circle at 50% 38%, var(--text-dim) 0 6px, transparent 7px),
+      radial-gradient(ellipse 10px 7px at 50% 100%, var(--text-dim) 0 100%, transparent 0);
   }
-  .jersey-tag {
-    flex: none; font-size: 0.72rem; font-weight: 600; color: #6b7280;
-    font-variant-numeric: tabular-nums;
+  /* Top-10%-in-category badges, shown inline after the player name (same
+     slot the jersey number tag used to occupy). Same muted color at both
+     levels -- top-5% (elite) just gets a more visible outline, not a
+     brighter fill or different hue, to stay quiet. */
+  .attr-badges { display: inline-flex; align-items: center; gap: 0.2rem; flex: none; }
+  .attr-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0 0.28rem; height: 14px; border-radius: 3px; flex: none;
+    font-size: 0.56rem; font-weight: 700; letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums; cursor: help;
+    color: var(--text-muted); background: rgba(107,114,128,0.08);
+    box-shadow: 0 0 0 1px rgba(107,114,128,0.16);
   }
+  .attr-badge-elite { box-shadow: 0 0 0 1px rgba(156,163,175,0.55); }
+  .attr-legend .cap-legend-item { cursor: default; }
+  .attr-legend-note { color: var(--text-dim); font-style: italic; margin-left: auto; }
+  .attr-badge-legend { cursor: default; }
 
   /* NON_GTD salary cell tooltip */
   .sal-tip { cursor: pointer; }
@@ -437,7 +486,7 @@ const ratingsPopupReady = new Promise(resolve => {
   .tt-anchor { cursor: pointer; }
   .tt-popup {
     position: absolute; z-index: 500; max-width: 260px;
-    background: #1f2937; border: 1px solid #374151; color: #d1d5db;
+    background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
     padding: 0.35rem 0.6rem; border-radius: 5px; font-size: 0.75rem;
     white-space: pre-line; line-height: 1.5; text-align: left;
     pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
@@ -446,7 +495,7 @@ const ratingsPopupReady = new Promise(resolve => {
   /* Tabs */
   .tabs {
     display: flex;
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--border);
     margin-bottom: 2rem;
     overflow-x: auto;
     scrollbar-width: none;
@@ -456,7 +505,7 @@ const ratingsPopupReady = new Promise(resolve => {
     background: none;
     border: none;
     border-bottom: 2px solid transparent;
-    color: #6b7280;
+    color: var(--text-muted);
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: 500;
@@ -466,22 +515,38 @@ const ratingsPopupReady = new Promise(resolve => {
     margin-bottom: -1px;
     white-space: nowrap;
   }
-  .tab:hover { color: #d1d5db; }
-  .tab.active { color: #f3f4f6; border-bottom-color: #3b82f6; font-weight: 600; }
+  .tab:hover { color: var(--text-secondary); }
+  .tab.active { color: var(--text-primary); border-bottom-color: var(--accent); font-weight: 600; }
   .tab-panel.hidden { display: none; }
+
+  /* Roster table mode switch (Contracts / Stats / Ratings) */
+  .roster-header-row {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 0.5rem;
+  }
+  .roster-header-row .section-title { margin-bottom: 0; }
+  .mode-tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; flex: none; }
+  .mode-tab {
+    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    font-size: 0.72rem; font-weight: 600; padding: 0.3rem 0.65rem;
+    font-family: inherit; transition: color 0.12s, background 0.12s;
+  }
+  .mode-tab + .mode-tab { border-left: 1px solid var(--border); }
+  .mode-tab:hover { color: var(--text-secondary); }
+  .mode-tab.active { color: var(--text-primary); background: var(--bg-card); }
   .hist-controls { margin-bottom: 1.5rem; }
   .hist-controls select {
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 6px;
-    color: #f3f4f6;
+    color: var(--text-primary);
     font-size: 0.875rem;
     padding: 0.4rem 0.75rem;
     font-family: inherit;
     cursor: pointer;
     outline: none;
   }
-  .hist-controls select:focus { border-color: #3b82f6; }
+  .hist-controls select:focus { border-color: var(--accent); }
 `; document.head.appendChild(_s); }
 
 // Mobile-friendly tooltip: hover-to-show on pointer devices, tap-to-toggle on touch.
@@ -543,7 +608,14 @@ document.body.innerHTML = `
     <div class="tab-panel" id="tab-overview">
       <div id="hard-cap-banner" style="display:none"></div>
       <section>
-        <h2 class="section-title" id="roster-title">Roster</h2>
+        <div class="roster-header-row">
+          <h2 class="section-title" id="roster-title">Roster</h2>
+          <div class="mode-tabs" id="roster-mode-tabs">
+            <button class="mode-tab active" data-mode="contracts" type="button">Contracts</button>
+            <button class="mode-tab" data-mode="stats" type="button">Stats</button>
+            <button class="mode-tab" data-mode="ratings" type="button">Ratings</button>
+          </div>
+        </div>
         <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
         <div id="cap-edit-wrap"></div>
         <div id="dead-cap-edit-wrap"></div>
@@ -769,6 +841,227 @@ function buildTable(cols, rows, initSortField, initSortDir, renderCell) {
   return table;
 }
 
+// Google-Sheets-style range selection: drag or shift-click down a single numeric
+// column inside `container` to see the sum/avg/count of the selected cells in a
+// floating bar. Ctrl/Cmd-click (or ctrl/cmd-drag) adds a non-contiguous block to
+// the existing selection instead of replacing it, mirroring Sheets' multi-select.
+// Delegated on `container` (not the table) so it keeps working across re-renders
+// (mode switches, edits) without needing to be re-attached.
+function enableRangeSum(container) {
+  const bar = document.createElement('div');
+  bar.className = 'range-sum-bar';
+  document.body.appendChild(bar);
+
+  let selectedCol = null;   // column index every selected cell must belong to
+  let committed = new Set(); // cells locked in from prior, already-finished gestures
+  let gesture = [];          // cells touched by the in-progress mouse gesture
+  let anchor = null;         // start cell of the in-progress gesture
+  let dragging = false;
+
+  function dataRows() {
+    const tbody = container.querySelector('table tbody');
+    return tbody ? [...tbody.rows].filter(tr => !tr.classList.contains('subheader')) : [];
+  }
+
+  function eligibleTd(target) {
+    const td = target.closest && target.closest('td.right');
+    if (!td || !container.contains(td) || !td.closest('tbody')) return null;
+    if (td.closest('tr').classList.contains('subheader')) return null;
+    return td;
+  }
+
+  function numFromCell(td) {
+    let t = td.textContent.replace(/[$,%\s]/g, '');
+    if (t[0] === '+') t = t.slice(1);
+    if (t === '' || t === '—' || t === '-') return null;
+    const n = parseFloat(t);
+    return isNaN(n) ? null : n;
+  }
+
+  function blockBetween(fromTd, toTd) {
+    if (toTd.cellIndex !== fromTd.cellIndex) return [fromTd];
+    const rows = dataRows();
+    const a = rows.indexOf(fromTd.closest('tr'));
+    const b = rows.indexOf(toTd.closest('tr'));
+    if (a === -1 || b === -1) return [fromTd];
+    const [lo, hi] = a <= b ? [a, b] : [b, a];
+    return rows.slice(lo, hi + 1).map(tr => tr.cells[fromTd.cellIndex]).filter(Boolean);
+  }
+
+  function currentSelection() {
+    return new Set([...committed, ...gesture]);
+  }
+
+  function clearSelection() {
+    container.querySelectorAll('td.cell-selected').forEach(td => td.classList.remove('cell-selected'));
+    selectedCol = null;
+    committed = new Set();
+    gesture = [];
+    anchor = null;
+    dragging = false;
+    bar.style.display = 'none';
+  }
+
+  function render() {
+    container.querySelectorAll('td.cell-selected').forEach(td => td.classList.remove('cell-selected'));
+    const all = currentSelection();
+    all.forEach(td => td.classList.add('cell-selected'));
+    if (all.size < 2) { bar.style.display = 'none'; return; }
+
+    const nums = [...all].map(numFromCell).filter(n => n !== null);
+    if (!nums.length) { bar.style.display = 'none'; return; }
+    const isCurrency = [...all].some(td => td.textContent.includes('$'));
+    const sum = nums.reduce((a, b) => a + b, 0);
+    const avg = sum / nums.length;
+    const fmt = n => isCurrency
+      ? '$' + Math.round(n).toLocaleString('en-US')
+      : n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    bar.innerHTML = `Sum <b>${fmt(sum)}</b> &nbsp;·&nbsp; Avg <b>${fmt(avg)}</b> &nbsp;·&nbsp; Count <b>${nums.length}</b>`;
+    bar.style.display = 'block';
+  }
+
+  container.addEventListener('mousedown', e => {
+    const td = eligibleTd(e.target);
+    if (!td) { clearSelection(); return; }
+    e.preventDefault();
+
+    const ctrlKey = e.ctrlKey || e.metaKey;
+    const sameCol = selectedCol === td.cellIndex;
+
+    if (e.shiftKey && anchor && sameCol) {
+      // Plain shift-click always re-anchors to one contiguous block.
+      committed = new Set();
+      gesture = blockBetween(anchor, td);
+      dragging = true;
+      render();
+      return;
+    }
+
+    if (ctrlKey && selectedCol !== null && sameCol) {
+      // Fold whatever was selected before into `committed`, then start a new
+      // block anchored at this cell that gets ADDED rather than replacing it.
+      committed = currentSelection();
+      anchor = td;
+      gesture = [td];
+      dragging = true;
+      render();
+      return;
+    }
+
+    // Plain click/drag: start a brand-new selection in this column.
+    selectedCol = td.cellIndex;
+    committed = new Set();
+    anchor = td;
+    gesture = [td];
+    dragging = true;
+    render();
+  });
+
+  container.addEventListener('mouseover', e => {
+    if (!dragging || !anchor) return;
+    const td = eligibleTd(e.target);
+    if (!td || td.cellIndex !== selectedCol) return;
+    gesture = blockBetween(anchor, td);
+    render();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    committed = currentSelection();
+    gesture = [];
+    dragging = false;
+  });
+  document.addEventListener('mousedown', e => { if (!container.contains(e.target)) clearSelection(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') clearSelection(); });
+
+  new MutationObserver(clearSelection).observe(container, { childList: true });
+}
+
+// Copies `table` to the clipboard as tab-separated text (plus an HTML table
+// variant) so pasting into Google Sheets/Excel lands each cell in its own
+// spreadsheet cell instead of one blob of text. Player-name cells resolve to
+// just the link text (skipping avatar/badge/note clutter); footnote markup
+// (`sup` player counts, cap-vs-total diff lines, the Guaranteed info badge)
+// is stripped so it can't glue onto an adjacent number (e.g. "$50,000,0003").
+function getCellText(td) {
+  const clone = td.cloneNode(true);
+  clone.querySelectorAll('sup, .tfoot-diff, .badge').forEach(el => el.remove());
+  const a = clone.querySelector('a');
+  const text = (a ? a.textContent : clone.textContent) || '';
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+function tableToTSV(table) {
+  return [...table.querySelectorAll('tr')]
+    .map(tr => [...tr.cells].map(td => getCellText(td).replace(/\t/g, ' ')).join('\t'))
+    .join('\n');
+}
+
+function tableToHTML(table) {
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const rows = [...table.querySelectorAll('tr')].map(tr => {
+    const cells = [...tr.cells].map(td => {
+      const tag = td.tagName.toLowerCase();
+      const colspan = td.colSpan > 1 ? ` colspan="${td.colSpan}"` : '';
+      return `<${tag}${colspan}>${esc(getCellText(td))}</${tag}>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+  return `<table>${rows}</table>`;
+}
+
+async function copyTableToClipboard(table, btn) {
+  const tsv = tableToTSV(table);
+  const origLabel = btn.textContent;
+  const flash = msg => { btn.textContent = msg; setTimeout(() => { btn.textContent = origLabel; }, 1400); };
+
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/plain': new Blob([tsv], { type: 'text/plain' }),
+          'text/html':  new Blob([tableToHTML(table)], { type: 'text/html' }),
+        }),
+      ]);
+    } else {
+      await navigator.clipboard.writeText(tsv);
+    }
+    flash('Copied!');
+  } catch (err) {
+    // Clipboard API needs a secure context + permission; fall back to the
+    // old select-a-hidden-textarea-and-execCommand trick.
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = tsv;
+      ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      flash('Copied!');
+    } catch (err2) {
+      flash('Copy failed');
+    }
+  }
+}
+
+function attachCopyBtn(titleId, wrapId) {
+  const titleEl = document.getElementById(titleId);
+  if (!titleEl || titleEl.querySelector('.section-copy-btn')) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'section-copy-btn';
+  btn.textContent = 'Copy';
+  btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+  btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
+  btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
+  btn.addEventListener('click', () => {
+    const table = document.getElementById(wrapId)?.querySelector('table');
+    if (table) copyTableToClipboard(table, btn);
+  });
+  titleEl.appendChild(btn);
+}
+
 const CAP_HOLD_CSS = {
   UFA:        'cap-ufa',
   RFA:        'cap-rfa',
@@ -790,7 +1083,7 @@ const SWATCH_COLORS = {
   RFA:        'hsl(25,  60%, 35%)',
   PLAYER_OPT: 'hsl(120, 50%, 30%)',
   TEAM_OPT:   'hsl(210, 55%, 35%)',
-  NON_GTD:    '#374151',
+  NON_GTD:    'var(--border)',
 };
 
 function parseCapHolds(val) {
@@ -828,6 +1121,27 @@ function parseSalaryNum(v) {
 
 function fmtDollars(v) {
   return v ? '$' + Math.round(v).toLocaleString('en-US') : '$0';
+}
+
+// Real, persisted Empty Roster Charge (rulebook § 2.1a) — distinct from the
+// 14-player standard-roster minimum (§ 2.1) and from the trade-legality mock
+// the backend runs against a 14-player floor (routers/transactions.py,
+// _empty_roster_charge). The charge that actually shows on a team's roster
+// and counts toward real Team Salary only kicks in below 12 players — this
+// mirrors _is_standard_roster_slot's type filter (two-way/draft-rights/dead
+// don't occupy a standard slot) but against the narrower 12-player floor.
+const ROSTER_CHARGE_MIN = 12;
+const ROSTER_EXEMPT_TYPES = new Set(['two-way', 'draft-rights', 'dead']);
+
+function computeEmptyRosterCharge(rosterRows, biosData, capLevels, season) {
+  const standardCount = rosterRows.filter(row => {
+    const bio = biosData[row.SLUG] || {};
+    const type = row.TYPE || bio.type || '';
+    return !ROSTER_EXEMPT_TYPES.has(type);
+  }).length;
+  const deficiency = Math.max(0, ROSTER_CHARGE_MIN - standardCount);
+  const rookieMin = (capLevels?.[season] || {}).min_salary_scale?.['0'] || 0;
+  return { deficiency, rookieMin, charge: deficiency * rookieMin };
 }
 
 function computeMleType(teamSalaryFull, teamSalaryExHolds, capLevels, season, teamState) {
@@ -878,8 +1192,8 @@ function renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalar
       <span class="exc-label">MLE <span class="exc-mle-type">(${mleTypeLabel(mleType)})</span></span>
       <span>
         <span class="${remCls}">${fmtDollars(mleRemaining)} remaining</span>
-        <span style="color:#4b5563;font-size:0.75rem"> / ${fmtDollars(mleTotal)}</span>
-        ${mleUsed ? `<span style="color:#6b7280;font-size:0.72rem"> (${fmtDollars(mleUsed)} used)</span>` : ''}
+        <span style="color:var(--text-dim);font-size:0.75rem"> / ${fmtDollars(mleTotal)}</span>
+        ${mleUsed ? `<span style="color:var(--text-muted);font-size:0.72rem"> (${fmtDollars(mleUsed)} used)</span>` : ''}
       </span>`;
     wrap.appendChild(row);
   }
@@ -923,8 +1237,8 @@ function renderTradeExceptionsSection(exceptions) {
       <span class="exc-label">TPE ${noteHtml}</span>
       <span>
         <span class="${remCls}">${fmtDollars(exc.remaining)} remaining</span>
-        <span style="color:#4b5563;font-size:0.75rem"> / ${fmtDollars(exc.amount)}</span>
-        <span style="color:#6b7280;font-size:0.72rem"> · ${exc.expired ? 'expired' : 'expires'} ${fmtDate(exc.expires_date)}</span>
+        <span style="color:var(--text-dim);font-size:0.75rem"> / ${fmtDollars(exc.amount)}</span>
+        <span style="color:var(--text-muted);font-size:0.72rem"> · ${exc.expired ? 'expired' : 'expires'} ${fmtDate(exc.expires_date)}</span>
       </span>`;
     wrap.appendChild(row);
   });
@@ -932,7 +1246,174 @@ function renderTradeExceptionsSection(exceptions) {
   section.style.display = '';
 }
 
-function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}) {
+// Compact roster-table badges summarizing a player's standout 2K attributes.
+// Each entry is a specific skill (not a whole ratings-popup category); score
+// is the plain average of every attribute in the group (see
+// computeAttrBadgeCutoffs for why the bronze/silver/gold bar is calibrated
+// per group instead of one fixed number).
+const ATTR_BADGE_GROUPS = [
+  { label: 'S3', full: 'Scoring: 3PT',        keys: ['three_point_shot'] },
+  { label: 'Sm', full: 'Scoring: Mid-Range',  keys: ['mid_range_shot'] },
+  { label: 'Si', full: 'Scoring: Inside',     keys: ['layup', 'driving_dunk', 'standing_dunk', 'post_hook', 'post_fade', 'post_control', 'draw_foul'] },
+  { label: 'Pa', full: 'Passing',             keys: ['pass_accuracy', 'pass_vision'] },
+  { label: 'H',  full: 'Ballhandling',        keys: ['ball_handle', 'speed_with_ball'] },
+  { label: 'IQ', full: 'IQ',                  keys: ['shot_iq', 'pass_iq', 'help_defense_iq'] },
+  { label: 'Dp', full: 'Perimeter Defense',   keys: ['perimeter_defense', 'steal'] },
+  { label: 'Di', full: 'Inside Defense',      keys: ['interior_defense', 'block'] },
+  { label: 'R',  full: 'Rebounding',          keys: ['defensive_rebound', 'offensive_rebound'] },
+  { label: 'A',  full: 'Athleticism',         keys: ['speed', 'strength', 'agility', 'vertical', 'hustle'] },
+];
+
+// A plain average across a 5-7 attribute group (e.g. Athleticism, Inside
+// Finishing) regresses hard to the mean -- a real player is rarely elite at
+// every sub-skill simultaneously -- so its raw scale sits far below a 1-2
+// attribute group's. Rather than a fixed cut that would starve the big
+// groups, each group's own cutoffs are the values at the Nth percentile of
+// that group's score distribution *across the whole league* (not just this
+// roster), computed fresh from attributesData so it tracks as ratings
+// change. Every badge therefore represents roughly the same population
+// rarity no matter which group it's in. `elite` (top 5%) gets a slightly
+// more visible outline than `base` (top 10%) -- same muted color either
+// way, just a hair more emphasis, no tier-color system.
+const ATTR_BADGE_PERCENTILES = { base: 0.90, elite: 0.95 };
+
+function computeAttrBadgeCutoffs(attributesData) {
+  const scoresByLabel = {};
+  ATTR_BADGE_GROUPS.forEach(g => { scoresByLabel[g.label] = []; });
+  Object.values(attributesData || {}).forEach(snap => {
+    const attrs = snap && snap.attributes;
+    if (!attrs) return;
+    ATTR_BADGE_GROUPS.forEach(group => {
+      const vals = group.keys.map(k => parseFloat(attrs[k])).filter(v => !isNaN(v));
+      if (!vals.length) return;
+      scoresByLabel[group.label].push(vals.reduce((s, v) => s + v, 0) / vals.length);
+    });
+  });
+  const cutoffs = {};
+  Object.keys(scoresByLabel).forEach(label => {
+    const sorted = scoresByLabel[label].slice().sort((a, b) => a - b);
+    const at = p => sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))] : Infinity;
+    cutoffs[label] = { base: at(ATTR_BADGE_PERCENTILES.base), elite: at(ATTR_BADGE_PERCENTILES.elite) };
+  });
+  return cutoffs;
+}
+
+function computeAttrBadges(attrSnap, cutoffs) {
+  if (!attrSnap || !attrSnap.attributes || !cutoffs) return [];
+  const attrs = attrSnap.attributes;
+  const badges = [];
+  ATTR_BADGE_GROUPS.forEach(group => {
+    const vals = group.keys.map(k => parseFloat(attrs[k])).filter(v => !isNaN(v));
+    if (!vals.length) return;
+    const score = vals.reduce((s, v) => s + v, 0) / vals.length;
+    const c = cutoffs[group.label];
+    if (c && score >= c.base) {
+      badges.push({ label: group.label, full: group.full, value: score, elite: score >= c.elite });
+    }
+  });
+  return badges;
+}
+
+// Individual 2K attributes for the roster table's Ratings mode. Same
+// grouping/order/abbreviations as players/index.html's ATTR_CATEGORIES /
+// ATTR_ABBR, so the two pages read consistently. `catStart` marks the first
+// column of each category for a divider, mirroring the salary-year divider.
+const RATING_ATTR_COLUMNS = [
+  { key: 'three_point_shot',      abbr: '3PT',  full: '3PT Shot',              catStart: true },
+  { key: 'mid_range_shot',        abbr: 'MID',  full: 'Mid-Range Shot' },
+  { key: 'close_shot',            abbr: 'CS',   full: 'Close Shot' },
+  { key: 'free_throw',            abbr: 'FT',   full: 'Free Throw' },
+  { key: 'shot_iq',               abbr: 'SIQ',  full: 'Shot IQ' },
+  { key: 'offensive_consistency', abbr: 'OCON', full: 'Offensive Consistency' },
+
+  { key: 'layup',                 abbr: 'LAY',  full: 'Layup',                 catStart: true },
+  { key: 'driving_dunk',          abbr: 'DDK',  full: 'Driving Dunk' },
+  { key: 'standing_dunk',         abbr: 'SDK',  full: 'Standing Dunk' },
+  { key: 'post_hook',             abbr: 'PHK',  full: 'Post Hook' },
+  { key: 'post_fade',             abbr: 'PFD',  full: 'Post Fade' },
+  { key: 'post_control',          abbr: 'PCTL', full: 'Post Control' },
+  { key: 'draw_foul',             abbr: 'DF',   full: 'Draw Foul' },
+  { key: 'hands',                 abbr: 'HND',  full: 'Hands' },
+
+  { key: 'speed',                 abbr: 'SPD',  full: 'Speed',                 catStart: true },
+  { key: 'strength',              abbr: 'STR',  full: 'Strength' },
+  { key: 'agility',               abbr: 'AGL',  full: 'Agility' },
+  { key: 'vertical',              abbr: 'VERT', full: 'Vertical' },
+  { key: 'hustle',                abbr: 'HUS',  full: 'Hustle' },
+  { key: 'stamina',               abbr: 'STA',  full: 'Stamina' },
+  { key: 'overall_durability',    abbr: 'DUR',  full: 'Durability' },
+
+  { key: 'ball_handle',           abbr: 'BHD',  full: 'Ball Handle',           catStart: true },
+  { key: 'speed_with_ball',       abbr: 'SWB',  full: 'Speed With Ball' },
+  { key: 'pass_accuracy',         abbr: 'PACC', full: 'Pass Accuracy' },
+  { key: 'pass_vision',           abbr: 'PVIS', full: 'Pass Vision' },
+  { key: 'pass_iq',               abbr: 'PIQ',  full: 'Pass IQ' },
+
+  { key: 'block',                 abbr: 'BLK',  full: 'Block',                 catStart: true },
+  { key: 'steal',                 abbr: 'STL',  full: 'Steal' },
+  { key: 'pass_perception',       abbr: 'PPER', full: 'Pass Perception' },
+  { key: 'interior_defense',      abbr: 'IDEF', full: 'Interior Defense' },
+  { key: 'perimeter_defense',     abbr: 'PDEF', full: 'Perimeter Defense' },
+  { key: 'defensive_consistency', abbr: 'DCON', full: 'Defensive Consistency' },
+  { key: 'help_defense_iq',       abbr: 'HDIQ', full: 'Help Defense IQ' },
+  { key: 'defensive_rebound',     abbr: 'DREB', full: 'Defensive Rebound' },
+  { key: 'offensive_rebound',     abbr: 'OREB', full: 'Offensive Rebound' },
+
+  { key: 'intangibles',           abbr: 'INT',  full: 'Intangibles',           catStart: true },
+];
+const RATING_HEAT_MIN = 25, RATING_HEAT_MAX = 99;
+
+// Roster table's Stats mode: per-game averages from each player's most
+// recent season on record (any team), looked up by computeLatestSeasonBySlug.
+const STATS_COLS = [
+  { key: '_statSeason', label: 'Season', cls: 'muted' },
+  { key: '_statG',      label: 'G',      cls: 'right' },
+  { key: '_statMpg',    label: 'MPG',    cls: 'right muted' },
+  { key: '_statPpg',    label: 'PPG',    cls: 'right' },
+  { key: '_statRpg',    label: 'RPG',    cls: 'right' },
+  { key: '_statApg',    label: 'APG',    cls: 'right' },
+  { key: '_statSpg',    label: 'SPG',    cls: 'right muted' },
+  { key: '_statBpg',    label: 'BPG',    cls: 'right muted' },
+  { key: '_stat3pmpg',  label: '3PM/G',  cls: 'right muted' },
+  { key: '_statGmscpg', label: 'GMSC/G', cls: 'right' },
+];
+
+function computeRatingFields(attrSnap) {
+  const attrs = (attrSnap && attrSnap.attributes) || {};
+  const fields = {};
+  RATING_ATTR_COLUMNS.forEach(c => {
+    const v = parseFloat(attrs[c.key]);
+    fields[`_attr_${c.key}`] = isNaN(v) ? null : Math.round(v);
+  });
+  return fields;
+}
+
+function computeStatFields(seasonRow) {
+  if (!seasonRow) {
+    return { _statSeason: '—', _statG: '—', _statMpg: '—', _statPpg: '—', _statRpg: '—', _statApg: '—', _statSpg: '—', _statBpg: '—', _stat3pmpg: '—', _statGmscpg: '—' };
+  }
+  const g = Math.max(1, parseInt(seasonRow.G) || 1);
+  const pg = k => Math.round((parseFloat(seasonRow[k]) || 0) / g * 10) / 10;
+  return {
+    _statSeason: seasonRow.SEASON || '—',
+    _statG:      seasonRow.G ?? '0',
+    _statMpg:    pg('MIN'),
+    _statPpg:    pg('PTS'),
+    _statRpg:    pg('REB'),
+    _statApg:    pg('AST'),
+    _statSpg:    pg('STL'),
+    _statBpg:    pg('BLK'),
+    _stat3pmpg:  pg('3PM'),
+    _statGmscpg: pg('GMSC'),
+  };
+}
+
+// Roster table for a team page. `mode` selects which columns follow Player /
+// Pos / Age / OVR: 'contracts' (default) shows salary years, 'stats' shows
+// per-game averages from the player's latest season, 'ratings' shows every
+// individual 2K attribute. `latestSeasonBySlug` comes from
+// computeLatestSeasonBySlug(allSeasons), computed once at page load.
+function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}) {
   if (!rows.length) return null;
   const curYr = currentSeasonYr();
   const hasSlug = 'SLUG' in rows[0] && !('PLAYER' in rows[0]);
@@ -1058,6 +1539,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   // ── New format: SLUG + TYPE, OVR from currentOvr, rest from biosData ────────
   biosData = biosData || {};
 
+  const attrBadgeCutoffs = computeAttrBadgeCutoffs(attributesData);
+
   const augmented = rows
     .map(row => {
       const bio = biosData[row.SLUG] || {};
@@ -1074,9 +1557,11 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         _guaranteed:         bio.guaranteed || {},
         _guarantee_dates:    bio.guarantee_dates || {},
         _guarantee_schedule: bio.guarantee_schedule || {},
-        _jersey:             bio.jersey_number ?? null,
+        _badges:             computeAttrBadges((attributesData || {})[row.SLUG], attrBadgeCutoffs),
         _photo:              bio.photo_url || '',
         _notes:              bio.notes || '',
+        ...computeStatFields(latestSeasonBySlug[row.SLUG]),
+        ...computeRatingFields((attributesData || {})[row.SLUG]),
       };
     });
 
@@ -1093,11 +1578,35 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       _type:      'dead',
       _cap_holds: {},
       _salaries:  dcSals,
-      _jersey:    null,
+      _badges:    [],
       _photo:     bio.photo_url || '',
       _notes:     bio.notes || '',
+      ...computeStatFields(latestSeasonBySlug[row.SLUG]),
+      ...computeRatingFields((attributesData || {})[row.SLUG]),
     });
   });
+
+  // Empty Roster Charge rows (§ 2.1a) — virtual, never persisted to the roster
+  // CSV. Recomputed live from the real roster count every render, so they
+  // appear/disappear on their own as the team crosses the 14-player line;
+  // no explicit transaction ever creates or removes one.
+  const erc = computeEmptyRosterCharge(rows, biosData, capLevels, curYr);
+  for (let i = 0; i < erc.deficiency && erc.rookieMin; i++) {
+    augmented.push({
+      SLUG:       '',
+      OVR:        '',
+      _name:      'Empty Roster Charge',
+      _pos:       '—',
+      _age:       '',
+      _type:      'player',
+      _erc:       true,
+      _cap_holds: {},
+      _salaries:  { [curYr]: erc.rookieMin },
+      _badges:    [],
+      _photo:     '',
+      _notes:     '',
+    });
+  }
 
   const salaryKeySet = new Set();
   augmented.forEach(a => {
@@ -1110,15 +1619,27 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
 
   const ovrMin = 60, ovrMax = 100;
 
-  const cols = [
+  const hasAnyBadges = augmented.some(a => a._badges && a._badges.length);
+
+  const sharedCols = [
     { key: '_name',   label: 'Player', cls: 'bold' },
     { key: '_pos',    label: 'Pos',    cls: 'muted center' },
     { key: '_age',    label: 'Age',    cls: 'right' },
     { key: 'OVR',     label: 'OVR',    cls: 'right bold' },
-    ...salaryKeys.map((k, i) => ({
-      key: `_s_${k}`, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
-    })),
   ];
+  let modeCols;
+  if (mode === 'stats') {
+    modeCols = STATS_COLS.map((c, i) => ({ ...c, cls: c.cls + (i === 0 ? ' div-left' : '') }));
+  } else if (mode === 'ratings') {
+    modeCols = RATING_ATTR_COLUMNS.map(c => ({
+      key: `_attr_${c.key}`, label: c.abbr, full: c.full, cls: 'right' + (c.catStart ? ' div-left' : ''),
+    }));
+  } else {
+    modeCols = salaryKeys.map((k, i) => ({
+      key: `_s_${k}`, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
+    }));
+  }
+  const cols = [...sharedCols, ...modeCols];
 
   const typeOrder = { player: 0, 'two-way': 1, 'draft-rights': 2, dead: 3 };
   const sorted = [...augmented].sort((a, b) => {
@@ -1134,6 +1655,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     const th = document.createElement('th');
     th.textContent = col.label;
     if (col.cls?.includes('right')) th.classList.add('right');
+    if (col.full) attachTooltip(th, col.full);
     hr.appendChild(th);
   });
 
@@ -1157,6 +1679,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     if (row._type === 'two-way')      tr.className = 'row-twoway';
     if (row._type === 'draft-rights') tr.className = 'row-draft-rights';
     if (row._type === 'dead')         tr.className = 'row-dead';
+    if (row._erc)                     tr.className = 'row-erc';
 
     const capMap = parseCapHolds(row._cap_holds);
 
@@ -1167,6 +1690,9 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       if (col.key === '_name') {
         const cell = document.createElement('span');
         cell.className = 'roster-name-cell';
+
+        const topRow = document.createElement('span');
+        topRow.className = 'roster-name-top';
 
         const avatar = document.createElement('span');
         avatar.className = 'roster-avatar';
@@ -1180,23 +1706,31 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         } else {
           avatar.classList.add('roster-avatar-empty');
         }
-        cell.appendChild(avatar);
+        topRow.appendChild(avatar);
 
         if (row.SLUG) {
           const a = document.createElement('a');
           a.href = `/players/?p=${row.SLUG}`;
           a.textContent = row._name;
-          cell.appendChild(a);
+          topRow.appendChild(a);
         } else {
-          cell.appendChild(document.createTextNode(row._name));
+          topRow.appendChild(document.createTextNode(row._name));
         }
 
-        if (row._jersey != null) {
-          const jersey = document.createElement('span');
-          jersey.className = 'jersey-tag';
-          jersey.textContent = `#${row._jersey}`;
-          cell.appendChild(jersey);
+        if (row._badges && row._badges.length) {
+          const badgeGroup = document.createElement('span');
+          badgeGroup.className = 'attr-badges';
+          row._badges.forEach(b => {
+            const badge = document.createElement('span');
+            badge.className = 'attr-badge' + (b.elite ? ' attr-badge-elite' : '');
+            badge.textContent = b.label;
+            attachTooltip(badge, `${b.full} (${Math.round(b.value)})`);
+            badgeGroup.appendChild(badge);
+          });
+          topRow.appendChild(badgeGroup);
         }
+
+        cell.appendChild(topRow);
 
         td.appendChild(cell);
         if (row._notes) {
@@ -1204,7 +1738,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           pip.className = 'player-note';
           pip.innerHTML = '<svg width="9" height="11" viewBox="0 0 9 11" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0.5" y="0.5" width="8" height="10" rx="1" stroke="currentColor"/><line x1="2" y1="3.5" x2="7" y2="3.5" stroke="currentColor"/><line x1="2" y1="5.5" x2="7" y2="5.5" stroke="currentColor"/><line x1="2" y1="7.5" x2="5" y2="7.5" stroke="currentColor"/></svg>';
           attachTooltip(pip, row._notes);
-          td.appendChild(pip);
+          topRow.appendChild(pip);
         }
       } else if (col.key === 'OVR') {
         const n = parseFloat(row.OVR);
@@ -1217,6 +1751,17 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           if (row.SLUG && window.RatingsPopup) {
             RatingsPopup.attach(td, row.SLUG, { name: row._name });
           }
+        }
+      } else if (col.key.startsWith('_attr_')) {
+        const v = row[col.key];
+        if (v == null) {
+          td.textContent = '—';
+        } else {
+          td.textContent = String(v);
+          const t = Math.min(1, Math.max(0, (v - RATING_HEAT_MIN) / (RATING_HEAT_MAX - RATING_HEAT_MIN)));
+          const hue = Math.round(t * 120);
+          td.style.background = `hsl(${hue}, 55%, 18%)`;
+          td.style.color = `hsl(${hue}, 80%, 72%)`;
         }
       } else if (col.key.startsWith('_s_')) {
         const k = col.key.slice(3);
@@ -1239,7 +1784,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   });
 
   // ── Salary tfoot ─────────────────────────────────────────────────────────────
-  if (salaryKeys.length) {
+  if (mode === 'contracts' && salaryKeys.length) {
     const BUCKET_ORDER = ['Guaranteed', 'Player Option', 'Team Option', 'Non-Guaranteed', 'Two-Way', 'Dead Cap', 'UFA Hold', 'RFA Hold'];
     const nonSalCols = cols.length - salaryKeys.length;
 
@@ -1306,7 +1851,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           if (count) {
             const sup = document.createElement('sup');
             sup.textContent = count;
-            sup.style.cssText = 'color:#374151;font-size:0.65rem;margin-left:2px';
+            sup.style.cssText = 'color:var(--border);font-size:0.65rem;margin-left:2px';
             td.appendChild(sup);
           }
         });
@@ -1373,26 +1918,49 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   augmented.forEach(a => {
     Object.values(parseCapHolds(a._cap_holds || '')).forEach(t => allCapTypes.add(t));
   });
-  const hasCapData = augmented.some(a => Object.keys(a._cap_holds || {}).length > 0);
-  if (!hasCapData) return table;
-
-  const legend = document.createElement('div');
-  legend.className = 'cap-legend';
-  ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
-    if (!allCapTypes.has(type)) return;
-    const item = document.createElement('span');
-    item.className = 'cap-legend-item';
-    const swatch = document.createElement('span');
-    swatch.className = 'cap-swatch';
-    swatch.style.background = SWATCH_COLORS[type];
-    item.appendChild(swatch);
-    item.appendChild(document.createTextNode(CAP_HOLD_LABELS[type]));
-    legend.appendChild(item);
-  });
+  const hasCapData = mode === 'contracts' && augmented.some(a => Object.keys(a._cap_holds || {}).length > 0);
+  if (!hasCapData && !hasAnyBadges) return table;
 
   const wrap = document.createElement('div');
   wrap.appendChild(table);
-  wrap.appendChild(legend);
+
+  if (hasCapData) {
+    const legend = document.createElement('div');
+    legend.className = 'cap-legend';
+    ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
+      if (!allCapTypes.has(type)) return;
+      const item = document.createElement('span');
+      item.className = 'cap-legend-item';
+      const swatch = document.createElement('span');
+      swatch.className = 'cap-swatch';
+      swatch.style.background = SWATCH_COLORS[type];
+      item.appendChild(swatch);
+      item.appendChild(document.createTextNode(CAP_HOLD_LABELS[type]));
+      legend.appendChild(item);
+    });
+    wrap.appendChild(legend);
+  }
+
+  if (hasAnyBadges) {
+    const attrLegend = document.createElement('div');
+    attrLegend.className = 'cap-legend attr-legend';
+    ATTR_BADGE_GROUPS.forEach(group => {
+      const item = document.createElement('span');
+      item.className = 'cap-legend-item';
+      const badge = document.createElement('span');
+      badge.className = 'attr-badge attr-badge-legend';
+      badge.textContent = group.label;
+      item.appendChild(badge);
+      item.appendChild(document.createTextNode(group.full));
+      attrLegend.appendChild(item);
+    });
+    const note = document.createElement('span');
+    note.className = 'attr-legend-note';
+    note.textContent = 'top 10% of rostered players in that category, league-wide (outlined = top 5%)';
+    attrLegend.appendChild(note);
+    wrap.appendChild(attrLegend);
+  }
+
   return wrap;
 }
 
@@ -1605,14 +2173,14 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     // reuse the `p.frozen` check above.
     if (p.legacy) {
       const legacyTd = tr.cells[tr.cells.length - 1];
-      legacyTd.style.color = '#f87171';
+      legacyTd.style.color = 'var(--danger)';
       legacyTd.style.fontWeight = '700';
       attachTooltip(legacyTd, 'This pick predates the site\'s conveyance model and '
         + 'isn’t tracked automatically — the real terms are whatever Notes says. '
         + 'Frozen from re-trade until manually converted to real structure.');
     } else if (p.frozen) {
       const frozenTd = tr.cells[tr.cells.length - 1];
-      frozenTd.style.color = '#f87171';
+      frozenTd.style.color = 'var(--danger)';
       frozenTd.style.fontWeight = '700';
       if (p.frozen_reason) attachTooltip(frozenTd, p.frozen_reason);
     }
@@ -1636,11 +2204,11 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
   const legend = document.createElement('div');
   legend.className = 'picks-legend';
   [
-    ['Own',           null,               '#d1d5db'],
-    ['Acquired',      'picks-acquired',   '#60a5fa'],
-    ['Traded away',   'picks-traded',     '#6b7280'],
-    ['Uncertain owner', 'picks-uncertain', '#f59e0b'],
-    ['Legacy — unmodeled, see Notes', 'picks-legacy', '#f87171'],
+    ['Own',           null,               'var(--text-secondary)'],
+    ['Acquired',      'picks-acquired',   'var(--link)'],
+    ['Traded away',   'picks-traded',     'var(--text-muted)'],
+    ['Uncertain owner', 'picks-uncertain', 'var(--warning)'],
+    ['Legacy — unmodeled, see Notes', 'picks-legacy', 'var(--danger)'],
   ].forEach(([label, , color]) => {
     const item = document.createElement('span');
     item.className = 'picks-legend-item';
@@ -1918,7 +2486,7 @@ const canEditRosters = () => hasAuthRole('rosters');
 // Jersey numbers can also be set by the team's own owner role (e.g. 'phx' on /teams/PHX).
 const canEditJersey = abbr => canEditRosters() || AUTH_ROLES.includes(abbr.toLowerCase());
 
-const SEL_STYLE = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;cursor:pointer;outline:none';
+const SEL_STYLE = 'background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;cursor:pointer;outline:none';
 
 const CAP_OPTIONS = [
   { value: '',           label: '—'          },
@@ -1934,14 +2502,14 @@ const CAP_HOLD_COLORS = {
   RFA:        { bg: 'hsl(25,60%,20%)',  color: 'hsl(25,90%,72%)'  },
   PLAYER_OPT: { bg: 'hsl(120,50%,17%)', color: 'hsl(120,75%,68%)' },
   TEAM_OPT:   { bg: 'hsl(210,55%,20%)', color: 'hsl(210,75%,70%)' },
-  NON_GTD:    { bg: '#111827',           color: '#4b5563'          },
+  NON_GTD:    { bg: 'var(--bg-page)',           color: 'var(--text-dim)'          },
 };
 
 function applyCapHoldColor(sel) {
   const c = CAP_HOLD_COLORS[sel.value];
-  sel.style.background = c ? c.bg : '#111827';
-  sel.style.color = c ? c.color : '#d1d5db';
-  sel.style.borderColor = c ? c.color.replace(/(\d+)%\)$/, m => m.replace(/\d+/, n => Math.round(n * 0.55))) : '#374151';
+  sel.style.background = c ? c.bg : 'var(--bg-page)';
+  sel.style.color = c ? c.color : 'var(--text-secondary)';
+  sel.style.borderColor = c ? c.color.replace(/(\d+)%\)$/, m => m.replace(/\d+/, n => Math.round(n * 0.55))) : 'var(--border)';
 }
 
 function promptToken(onSuccess) {
@@ -1953,8 +2521,8 @@ function promptToken(onSuccess) {
       <p>Enter your committee token. It will be saved in this browser.</p>
       <input type="password" id="token-input" placeholder="Paste token…" autocomplete="off" />
       <div class="token-modal-actions">
-        <button style="padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit" id="tok-cancel">Cancel</button>
-        <button style="padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit" id="tok-submit">Continue</button>
+        <button style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit" id="tok-cancel">Cancel</button>
+        <button style="padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit" id="tok-submit">Continue</button>
       </div>
     </div>
   `;
@@ -2030,7 +2598,7 @@ function makeEditCell(header, value, config, pickerCtx) {
     config.years.forEach(yr => {
       const lbl = document.createElement('span');
       lbl.textContent = yr;
-      lbl.style.cssText = 'font-size:0.65rem;color:#6b7280;white-space:nowrap';
+      lbl.style.cssText = 'font-size:0.65rem;color:var(--text-muted);white-space:nowrap';
       const sel = makeSelect(CAP_OPTIONS, holdMap[yr] || '');
       applyCapHoldColor(sel);
       sel.addEventListener('change', () => applyCapHoldColor(sel));
@@ -2050,8 +2618,8 @@ function makeEditCell(header, value, config, pickerCtx) {
     td.textContent = value;
     td.style.outline = 'none';
     td.addEventListener('focus', () => {
-      td.style.background = '#263244';
-      td.style.boxShadow = 'inset 0 0 0 1px #3b82f6';
+      td.style.background = 'var(--bg-hover)';
+      td.style.boxShadow = 'inset 0 0 0 1px var(--accent)';
     });
     td.addEventListener('blur', () => {
       td.style.background = '';
@@ -2069,7 +2637,7 @@ function makeEditCell(header, value, config, pickerCtx) {
     input.type = 'text';
     if (ctx.listId) input.setAttribute('list', ctx.listId);
     input.value = value && ctx.slugToDisplay ? (ctx.slugToDisplay.get(value) || value) : (value || '');
-    input.style.cssText = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:180px;box-sizing:border-box';
+    input.style.cssText = 'background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:180px;box-sizing:border-box';
     td.style.cssText = 'padding:0.4rem 0.5rem;vertical-align:middle';
     td.appendChild(input);
     getValue = () => {
@@ -2082,8 +2650,8 @@ function makeEditCell(header, value, config, pickerCtx) {
     td.textContent = value;
     td.style.outline = 'none';
     td.addEventListener('focus', () => {
-      td.style.background = '#263244';
-      td.style.boxShadow = 'inset 0 0 0 1px #3b82f6';
+      td.style.background = 'var(--bg-hover)';
+      td.style.boxShadow = 'inset 0 0 0 1px var(--accent)';
     });
     td.addEventListener('blur', () => {
       td.style.background = '';
@@ -2146,9 +2714,9 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
     delTd.style.cssText = 'width:28px;padding:0 0.4rem;text-align:center;vertical-align:middle';
     const delBtn = document.createElement('button');
     delBtn.textContent = '×';
-    delBtn.style.cssText = 'background:none;border:none;color:#4b5563;cursor:pointer;font-size:1.1rem;line-height:1;padding:0;font-family:inherit';
-    delBtn.onmouseenter = () => { delBtn.style.color = '#f87171'; };
-    delBtn.onmouseleave = () => { delBtn.style.color = '#4b5563'; };
+    delBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;line-height:1;padding:0;font-family:inherit';
+    delBtn.onmouseenter = () => { delBtn.style.color = 'var(--danger)'; };
+    delBtn.onmouseleave = () => { delBtn.style.color = 'var(--text-dim)'; };
     delBtn.addEventListener('click', () => tr.remove());
     delTd.appendChild(delBtn);
     tr.appendChild(delTd);
@@ -2169,12 +2737,12 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
   const addTr = document.createElement('tr');
   const addTd = document.createElement('td');
   addTd.colSpan = mutableHeaders.length + 1;
-  addTd.style.cssText = 'padding:0.5rem 1rem;border-top:1px solid #374151';
+  addTd.style.cssText = 'padding:0.5rem 1rem;border-top:1px solid var(--border)';
   const addBtn = document.createElement('button');
   addBtn.textContent = '+ Add row';
-  addBtn.style.cssText = 'background:none;border:1px dashed #374151;border-radius:4px;color:#6b7280;cursor:pointer;font-size:0.8rem;padding:0.25rem 0.75rem;font-family:inherit';
-  addBtn.onmouseenter = () => { addBtn.style.color = '#d1d5db'; addBtn.style.borderColor = '#9ca3af'; };
-  addBtn.onmouseleave = () => { addBtn.style.color = '#6b7280'; addBtn.style.borderColor = '#374151'; };
+  addBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:4px;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:0.25rem 0.75rem;font-family:inherit';
+  addBtn.onmouseenter = () => { addBtn.style.color = 'var(--text-secondary)'; addBtn.style.borderColor = 'var(--text-muted)'; };
+  addBtn.onmouseleave = () => { addBtn.style.color = 'var(--text-muted)'; addBtn.style.borderColor = 'var(--border)'; };
   addBtn.addEventListener('click', () => tbody.insertBefore(makeRow({}), addTr));
   addTd.appendChild(addBtn);
   addTr.appendChild(addTd);
@@ -2214,7 +2782,7 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
     capHoldCells.forEach(({ wrap, selects }) => {
       const lbl = document.createElement('span');
       lbl.textContent = yr;
-      lbl.style.cssText = 'font-size:0.65rem;color:#6b7280;white-space:nowrap';
+      lbl.style.cssText = 'font-size:0.65rem;color:var(--text-muted);white-space:nowrap';
       const sel = makeSelect(CAP_OPTIONS, '');
       applyCapHoldColor(sel);
       sel.addEventListener('change', () => applyCapHoldColor(sel));
@@ -2269,27 +2837,28 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
   const { table, getRows, getHeaders, addYearColumn } = buildEditableGrid(headers, rows, cellConfig);
 
   const toolbar = document.createElement('div');
+  toolbar.className = 'roster-edit-toolbar';
   toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem';
 
   const saveBtn = document.createElement('button');
   saveBtn.textContent = 'Save';
-  saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit';
+  saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
 
   const cancelBtn = document.createElement('button');
   cancelBtn.textContent = 'Cancel';
-  cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit';
+  cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
 
   const statusEl = document.createElement('span');
-  statusEl.style.cssText = 'font-size:0.75rem;color:#6b7280;margin-left:auto';
+  statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
 
   toolbar.appendChild(saveBtn);
   toolbar.appendChild(cancelBtn);
 
   const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
   if (salaryYears.length && (cellConfig.CAP_HOLDS || cellConfig.SLUG)) {
-    const YR_BTN = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:500;cursor:pointer;background:transparent;color:#9ca3af;font-family:inherit';
-    const onYrEnter = e => { e.target.style.color = '#d1d5db'; e.target.style.borderColor = '#6b7280'; };
-    const onYrLeave = e => { e.target.style.color = '#9ca3af'; e.target.style.borderColor = '#374151'; };
+    const YR_BTN = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:500;cursor:pointer;background:transparent;color:var(--text-muted);font-family:inherit';
+    const onYrEnter = e => { e.target.style.color = 'var(--text-secondary)'; e.target.style.borderColor = 'var(--text-muted)'; };
+    const onYrLeave = e => { e.target.style.color = 'var(--text-muted)'; e.target.style.borderColor = 'var(--border)'; };
 
     let pendingPrevYr = prevSalaryYear(salaryYears[0]);
     const addPrevBtn = document.createElement('button');
@@ -2370,7 +2939,7 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
 }
 
 function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPicks = []) {
-  const INP = 'background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
+  const INP = 'background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
 
   const playerOpts = [{ slug: '', label: '—' },
     ...Object.entries(bios)
@@ -2397,9 +2966,9 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
     const btn = document.createElement('button');
     btn.className = 'section-edit-btn';
     btn.textContent = 'Edit';
-    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #374151;border-radius:4px;background:transparent;color:#6b7280;cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
-    btn.onmouseenter = () => { btn.style.color = '#d1d5db'; btn.style.borderColor = '#6b7280'; };
-    btn.onmouseleave = () => { btn.style.color = '#6b7280'; btn.style.borderColor = '#374151'; };
+    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+    btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
+    btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
     btn.addEventListener('click', () => withToken(() => enterPicksEdit(currentPicks)));
     titleEl.appendChild(btn);
   }
@@ -2412,14 +2981,14 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
 
     const saveBtn = document.createElement('button');
     saveBtn.textContent = 'Save';
-    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit';
+    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
 
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit';
+    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
 
     const statusEl = document.createElement('span');
-    statusEl.style.cssText = 'font-size:0.75rem;color:#6b7280;margin-left:auto';
+    statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
 
     toolbar.appendChild(saveBtn);
     toolbar.appendChild(cancelBtn);
@@ -2450,7 +3019,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
       [String(p.year), p.round === 1 ? '1st' : '2nd', p.orig].forEach(v => {
         const td = tr.insertCell();
         td.textContent = v;
-        td.style.color = '#6b7280';
+        td.style.color = 'var(--text-muted)';
       });
 
       // owner input (supports single team, pipe-separated candidates, or '?')
@@ -2592,9 +3161,9 @@ function setupJerseyEditable(titleId, wrapId, rosterRows, biosData, restoreView)
   const btn = document.createElement('button');
   btn.className = 'jersey-edit-btn';
   btn.textContent = 'Edit #';
-  btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #374151;border-radius:4px;background:transparent;color:#6b7280;cursor:pointer;font-weight:500;margin-left:0.4rem;font-family:inherit;vertical-align:middle';
-  btn.onmouseenter = () => { btn.style.color = '#d1d5db'; btn.style.borderColor = '#6b7280'; };
-  btn.onmouseleave = () => { btn.style.color = '#6b7280'; btn.style.borderColor = '#374151'; };
+  btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.4rem;font-family:inherit;vertical-align:middle';
+  btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
+  btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
   btn.addEventListener('click', () => withToken(() => enterJerseyEdit()));
   titleEl.appendChild(btn);
 
@@ -2606,14 +3175,14 @@ function setupJerseyEditable(titleId, wrapId, rosterRows, biosData, restoreView)
 
     const saveBtn = document.createElement('button');
     saveBtn.textContent = 'Save';
-    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #3b82f6;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#60a5fa;font-family:inherit';
+    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
 
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid #374151;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:#d1d5db;font-family:inherit';
+    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
 
     const statusEl = document.createElement('span');
-    statusEl.style.cssText = 'font-size:0.75rem;color:#6b7280;margin-left:auto';
+    statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
 
     toolbar.appendChild(saveBtn);
     toolbar.appendChild(cancelBtn);
@@ -2650,9 +3219,9 @@ function setupJerseyEditable(titleId, wrapId, rosterRows, biosData, restoreView)
       input.pattern = '\\d{1,2}';
       input.value = jersey;
       input.placeholder = '—';
-      input.style.cssText = 'width:3.5rem;background:#111827;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;text-align:right;outline:none';
-      input.addEventListener('focus', () => { input.style.borderColor = '#3b82f6'; });
-      input.addEventListener('blur',  () => { input.style.borderColor = '#374151'; });
+      input.style.cssText = 'width:3.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;text-align:right;outline:none';
+      input.addEventListener('focus', () => { input.style.borderColor = 'var(--accent)'; });
+      input.addEventListener('blur',  () => { input.style.borderColor = 'var(--border)'; });
       numTd.appendChild(input);
 
       inputs.push({ slug: row.SLUG, input, original: String(jersey) });
@@ -2757,7 +3326,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
     formDl = dl;
 
     formEl = document.createElement('div');
-    formEl.style.cssText = 'margin-top:0.75rem;background:#1f2937;border:1px solid #374151;border-radius:6px;padding:0.75rem;overflow-x:auto';
+    formEl.style.cssText = 'margin-top:0.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:0.75rem;overflow-x:auto';
 
     function render() {
       formEl.innerHTML = '';
@@ -2769,7 +3338,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
       ['Player', ...seasonList, ''].forEach((lbl, i) => {
         const th = document.createElement('th');
         th.textContent = lbl;
-        th.style.cssText = `padding:3px 8px;color:#9ca3af;text-align:${i === 0 ? 'left' : 'right'}`;
+        th.style.cssText = `padding:3px 8px;color:var(--text-muted);text-align:${i === 0 ? 'left' : 'right'}`;
         hr.appendChild(th);
       });
 
@@ -2791,7 +3360,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
           inp.type = 'text';
           inp.value = row[s] || '';
           inp.placeholder = '—';
-          inp.style.cssText = 'width:90px;text-align:right;background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 4px;font-size:0.75rem';
+          inp.style.cssText = 'width:90px;text-align:right;background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:2px 4px;font-size:0.75rem';
           inp.addEventListener('input', () => { row[s] = inp.value.trim(); });
           td.appendChild(inp);
         });
@@ -2801,14 +3370,14 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
         delTd.style.cssText = 'padding:3px 6px;text-align:right';
         const delBtn = document.createElement('button');
         delBtn.textContent = '✕';
-        delBtn.style.cssText = 'background:none;border:none;color:#ef4444;cursor:pointer;padding:0 4px';
+        delBtn.style.cssText = 'background:none;border:none;color:var(--danger);cursor:pointer;padding:0 4px';
         delBtn.addEventListener('click', () => { rows.splice(ri, 1); render(); });
         delTd.appendChild(delBtn);
       });
 
       // Add-entry row
       const addTr = tbody.insertRow();
-      addTr.style.borderTop = '1px solid #374151';
+      addTr.style.borderTop = '1px solid var(--border)';
       const addTd = addTr.insertCell();
       addTd.colSpan = seasonList.length + 2;
       addTd.style.cssText = 'padding:6px 8px';
@@ -2816,19 +3385,19 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
       const nameInp = document.createElement('input');
       nameInp.type = 'text'; nameInp.placeholder = 'Player name';
       nameInp.setAttribute('list', dlId);
-      nameInp.style.cssText = 'background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 6px;font-size:0.75rem;width:160px;margin-right:6px';
+      nameInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-size:0.75rem;width:160px;margin-right:6px';
 
       const seasonInp = document.createElement('input');
       seasonInp.type = 'text'; seasonInp.placeholder = '25-26';
-      seasonInp.style.cssText = 'background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 6px;font-size:0.75rem;width:70px;margin-right:6px';
+      seasonInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-size:0.75rem;width:70px;margin-right:6px';
 
       const amtInp = document.createElement('input');
       amtInp.type = 'text'; amtInp.placeholder = '$X,XXX,XXX';
-      amtInp.style.cssText = 'background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 6px;font-size:0.75rem;width:110px;margin-right:6px';
+      amtInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-size:0.75rem;width:110px;margin-right:6px';
 
       const addBtn = document.createElement('button');
       addBtn.textContent = '+ Add';
-      addBtn.style.cssText = 'background:#1d4ed8;color:#fff;border:none;border-radius:3px;padding:2px 8px;font-size:0.75rem;cursor:pointer';
+      addBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:3px;padding:2px 8px;font-size:0.75rem;cursor:pointer';
       addBtn.addEventListener('click', () => {
         const typed = nameInp.value.trim();
         const slug = nameToSlug.get(typed.toLowerCase()) || '';
@@ -2855,7 +3424,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
 
       const saveBtn = document.createElement('button');
       saveBtn.textContent = 'Save';
-      saveBtn.style.cssText = 'background:#1d4ed8;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.75rem';
+      saveBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.75rem';
       saveBtn.addEventListener('click', () => {
         withToken(token => {
           const payload = rows
@@ -2886,7 +3455,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
 
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.cssText = 'background:#374151;color:#e5e7eb;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.75rem';
+      cancelBtn.style.cssText = 'background:var(--border);color:var(--text-secondary);border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.75rem';
       cancelBtn.addEventListener('click', () => { formEl.remove(); formEl = null; formDl?.remove(); formDl = null; editBtn.textContent = 'Edit Dead Cap'; });
 
       btns.append(saveBtn, cancelBtn);
@@ -2915,9 +3484,9 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     const btn = document.createElement('button');
     btn.className = 'section-edit-btn';
     btn.textContent = 'Edit';
-    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid #374151;border-radius:4px;background:transparent;color:#6b7280;cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
-    btn.onmouseenter = () => { btn.style.color = '#d1d5db'; btn.style.borderColor = '#6b7280'; };
-    btn.onmouseleave = () => { btn.style.color = '#6b7280'; btn.style.borderColor = '#374151'; };
+    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+    btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
+    btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
     btn.addEventListener('click', () => {
       withToken(() => {
         const wrapEl = document.getElementById(wrapId);
@@ -2928,6 +3497,21 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   }
 
   attachEditBtn(rows);
+}
+
+// slug -> that player's most recent player_seasons.csv row (any team), used
+// by the roster table's Stats mode. Season strings ("24-25") sort correctly
+// with plain string comparison, same convention used for the Historical
+// Rosters season dropdown below.
+function computeLatestSeasonBySlug(allSeasons) {
+  const bySlug = {};
+  allSeasons.forEach(r => {
+    const slug = (r.SLUG || '').trim();
+    if (!slug) return;
+    const existing = bySlug[slug];
+    if (!existing || r.SEASON > existing.SEASON) bySlug[slug] = r;
+  });
+  return bySlug;
 }
 
 function buildHistoricalRoster(allSeasons, teamAbbr, season) {
@@ -2984,10 +3568,12 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const seasonsWrap  = document.getElementById('seasons-wrap');
   const playersWrap  = document.getElementById('players-wrap');
   const rosterWrap   = document.getElementById('roster-wrap');
+  enableRangeSum(rosterWrap);
+  attachCopyBtn('roster-title', 'roster-wrap');
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -3005,6 +3591,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/auth/me', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : null),
     fetch('/api/transactions?limit=500').then(r => r.ok ? r.json() : { transactions: [] }),
     fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []),
+    fetch('/api/attributes/current').then(r => r.ok ? r.json() : {}),
   ]);
 
   await ratingsPopupReady;
@@ -3025,6 +3612,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const membersData = memr.status  === 'fulfilled' ? memr.value  : [];
   const allGames    = gamesr.status === 'fulfilled' ? gamesr.value : [];
   const tradeExceptions = ter.status === 'fulfilled' ? ter.value : [];
+  const attributesData = attrr.status === 'fulfilled' ? attrr.value : {};
 
   let seasonRows = [];
   if (sr.status === 'fulfilled') {
@@ -3046,6 +3634,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   }
 
   const allSeasons = psr.status === 'fulfilled' ? parseCSV(psr.value) : [];
+  const latestSeasonBySlug = computeLatestSeasonBySlug(allSeasons);
 
   // Draft History tab — sourced from player bios (/api/players via biosData),
   // the canonical per-player draft record: draft_team (who made the pick) plus
@@ -3152,13 +3741,13 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         } else if (col.key === 'RIGHTS_TO') {
           if (row.RIGHTS_TO) {
             const arrow = document.createElement('span');
-            arrow.style.cssText = 'color:#60a5fa;font-style:italic';
+            arrow.style.cssText = 'color:var(--link);font-style:italic';
             arrow.textContent = `→ ${row.RIGHTS_TO}`;
             attachTooltip(arrow, 'Draft rights traded away');
             td.appendChild(arrow);
           } else if (row.RIGHTS_FROM) {
             const arrow = document.createElement('span');
-            arrow.style.cssText = 'color:#60a5fa;font-style:italic';
+            arrow.style.cssText = 'color:var(--link);font-style:italic';
             arrow.textContent = `← ${row.RIGHTS_FROM}`;
             attachTooltip(arrow, 'Draft rights acquired from another team');
             td.appendChild(arrow);
@@ -3217,9 +3806,40 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     rosterWrap.innerHTML = '';
     const rosterRows = parseCSV(rr.value);
     const rosterHeaders = parseLine(rr.value.trim().split('\n')[0]);
-    const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows, seasonStates);
+
+    // Contracts / Stats / Ratings mode switch. `liveRosterRows` tracks the
+    // freshest row set (updated after a contracts-mode save) so switching
+    // modes afterwards doesn't fall back to stale data.
+    let rosterMode = 'contracts';
+    let liveRosterRows = rosterRows;
+    const renderRoster = rowsForDisplay => buildRosterTable(
+      rowsForDisplay, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, rosterMode, latestSeasonBySlug
+    );
+    function rerenderRosterWrap() {
+      rosterWrap.innerHTML = '';
+      const t = renderRoster(liveRosterRows);
+      if (t) rosterWrap.appendChild(t);
+      else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
+    }
+
+    const t = renderRoster(rosterRows);
     if (t) rosterWrap.appendChild(t);
     else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
+
+    const modeTabsEl = document.getElementById('roster-mode-tabs');
+    if (modeTabsEl) {
+      modeTabsEl.querySelectorAll('.mode-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Switching modes mid-edit would silently discard unsaved changes.
+          if (rosterWrap.querySelector('.roster-edit-toolbar')) return;
+          if (btn.classList.contains('active')) return;
+          modeTabsEl.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          rosterMode = btn.dataset.mode;
+          rerenderRosterWrap();
+        });
+      });
+    }
 
     // Hard cap banner + exceptions section. Apron-level (NTMLE/TMLE) comparisons
     // exclude pure free-agent cap holds (UFA/RFA) — rulebook § 1.3/1.4 — while
@@ -3239,17 +3859,22 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       teamSalaryFull += sal;
       teamSalaryExHolds += sal;
     });
+    // Empty Roster Charge (§ 2.1a) — a team below 14 standard players owes at
+    // least the rookie minimum per open slot, so it counts here too, exactly
+    // like the backend folds it into hard-cap projections during a trade.
+    const erc = computeEmptyRosterCharge(rosterRows, biosData, capLevels, curYr);
+    teamSalaryFull += erc.charge;
+    teamSalaryExHolds += erc.charge;
     renderHardCapBanner(teamState);
     renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, curYr);
     renderTradeExceptionsSection(tradeExceptions);
 
-    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => buildRosterTable(rows, biosData, capLevels, currentOvr, deadCapRows, seasonStates), rosterCellConfig(rosterHeaders, biosData));
+    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => {
+      liveRosterRows = rows;
+      return renderRoster(rows);
+    }, rosterCellConfig(rosterHeaders, biosData));
     setupJerseyEditable('roster-title', 'roster-wrap', rosterRows, biosData, () => {
-      const wrapEl = document.getElementById('roster-wrap');
-      wrapEl.innerHTML = '';
-      const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows, seasonStates);
-      if (t) wrapEl.appendChild(t);
-      else wrapEl.innerHTML = '<div class="status">No roster data.</div>';
+      rerenderRosterWrap();
     });
 
     setupDeadCapEditable(
@@ -3258,10 +3883,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       newRows => {
         deadCapRows.length = 0;
         newRows.forEach(r => deadCapRows.push(r));
-        rosterWrap.innerHTML = '';
-        const t = buildRosterTable(rosterRows, biosData, capLevels, currentOvr, deadCapRows, seasonStates);
-        if (t) rosterWrap.appendChild(t);
-        else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
+        rerenderRosterWrap();
       }
     );
 
@@ -3301,7 +3923,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         hcBlock.style.cssText = 'display:flex;flex-direction:column;gap:0.35rem;width:100%';
         const hcTitle = document.createElement('div');
         hcTitle.textContent = 'Hard Cap (per season)';
-        hcTitle.style.cssText = 'font-size:0.72rem;color:#9ca3af;font-weight:600';
+        hcTitle.style.cssText = 'font-size:0.72rem;color:var(--text-muted);font-weight:600';
         hcBlock.appendChild(hcTitle);
 
         // season → { sel, reason } controls, for diffing on save
@@ -3312,7 +3934,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
           row.style.cssText = 'display:flex;gap:0.4rem;align-items:center';
           const lbl = document.createElement('span');
           lbl.textContent = s;
-          lbl.style.cssText = 'font-size:0.72rem;color:#6b7280;width:3.2rem';
+          lbl.style.cssText = 'font-size:0.72rem;color:var(--text-muted);width:3.2rem';
           const sel = document.createElement('select');
           [['', 'None'], ['first_apron', 'First Apron'], ['second_apron', 'Second Apron']].forEach(([v, l]) => {
             const o = document.createElement('option');
@@ -3363,7 +3985,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         saveBtn.textContent = 'Save';
         saveBtn.style.cssText = 'align-self:flex-end;margin-top:0.6rem';
         const statusEl = document.createElement('span');
-        statusEl.style.cssText = 'font-size:0.72rem;color:#ef4444;align-self:flex-end';
+        statusEl.style.cssText = 'font-size:0.72rem;color:var(--danger);align-self:flex-end';
         capFormEl.appendChild(saveBtn);
         capFormEl.appendChild(statusEl);
 

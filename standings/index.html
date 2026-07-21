@@ -17,7 +17,7 @@
     .tab-row {
       display: flex;
       gap: 0.25rem;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border);
       margin-bottom: 1.5rem;
     }
 
@@ -25,7 +25,7 @@
       padding: 0.5rem 1.1rem;
       font-size: 0.875rem;
       font-weight: 500;
-      color: #6b7280;
+      color: var(--text-muted);
       background: none;
       border: none;
       border-bottom: 2px solid transparent;
@@ -34,8 +34,8 @@
       transition: color 0.1s;
     }
 
-    .tab-btn:hover { color: #d1d5db; }
-    .tab-btn.active { color: #f3f4f6; border-bottom-color: #60a5fa; }
+    .tab-btn:hover { color: var(--text-secondary); }
+    .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--link); }
 
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
@@ -48,19 +48,19 @@
       margin-bottom: 1.25rem;
     }
 
-    .controls label { font-size: 0.85rem; color: #9ca3af; }
+    .controls label { font-size: 0.85rem; color: var(--text-muted); }
 
     select {
-      background: #1f2937;
-      border: 1px solid #374151;
-      color: #f3f4f6;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
       padding: 0.4rem 0.75rem;
       border-radius: 6px;
       font-size: 0.875rem;
       cursor: pointer;
     }
 
-    select:focus { outline: none; border-color: #60a5fa; }
+    select:focus { outline: none; border-color: var(--link); }
 
     /* Standings tables */
     .conferences {
@@ -76,13 +76,13 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #6b7280;
+      color: var(--text-muted);
       margin-bottom: 0.6rem;
     }
 
     .table-wrap {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow-x: auto;
     }
@@ -101,21 +101,21 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #6b7280;
-      border-bottom: 1px solid #374151;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
     }
 
-    tbody tr { border-bottom: 1px solid #283141; transition: background 0.1s; }
+    tbody tr { border-bottom: 1px solid var(--border-subtle); transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: #263244; }
+    tbody tr:hover { background: var(--bg-hover); }
 
-    td { padding: 0.55rem 0.75rem; color: #d1d5db; }
-    td.seed { color: #6b7280; font-size: 0.78rem; width: 2rem; }
-    td.team { font-weight: 600; color: #f3f4f6; }
+    td { padding: 0.55rem 0.75rem; color: var(--text-secondary); }
+    td.seed { color: var(--text-muted); font-size: 0.78rem; width: 2rem; }
+    td.team { font-weight: 600; color: var(--text-primary); }
     td.team a { display: inline-flex; align-items: center; gap: 0.4rem; }
     .team-logo { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
     td.right { text-align: right; font-variant-numeric: tabular-nums; }
-    td.muted { color: #9ca3af; }
+    td.muted { color: var(--text-muted); }
     td.result { padding-right: 0.75rem; }
 
     .result-badge {
@@ -127,11 +127,11 @@
       letter-spacing: 0.03em;
     }
 
-    .result-champion   { background: #78350f; color: #fbbf24; }
-    .result-runnerup   { background: #1c2533; color: #9ca3af; border: 1px solid #374151; }
-    .result-conffinals { background: #1c2d24; color: #6ee7b7; }
-    .result-second     { background: #1e2d3d; color: #93c5fd; }
-    .result-first      { background: #27212b; color: #c4b5fd; }
+    .result-champion   { background: var(--gold-chip-border); color: var(--gold); }
+    .result-runnerup   { background: #1c2533; color: var(--text-muted); border: 1px solid var(--border); }
+    .result-conffinals { background: #1c2d24; color: var(--market-positive-light); }
+    .result-second     { background: #1e2d3d; color: var(--accent-light); }
+    .result-first      { background: #27212b; color: var(--purple-light); }
 
     /* Bracket */
     #bracket-content { overflow-x: auto; }
@@ -147,7 +147,7 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #6b7280;
+      color: var(--text-muted);
       text-align: center;
       padding-bottom: 0.5rem;
     }
@@ -169,14 +169,14 @@
     }
 
     .series-card {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 8px;
       overflow: hidden;
     }
 
     .series-card-pending {
-      border-color: #1f2937;
+      border-color: var(--bg-card);
       border-style: dashed;
       min-height: 52px;
     }
@@ -187,47 +187,47 @@
       justify-content: space-between;
       padding: 0.4rem 0.65rem;
       font-size: 0.82rem;
-      color: #9ca3af;
-      border-bottom: 1px solid #283141;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
     }
 
     .series-team:last-child { border-bottom: none; }
 
     .series-team.winner {
-      color: #f3f4f6;
+      color: var(--text-primary);
       font-weight: 600;
-      background: #263244;
+      background: var(--bg-hover);
     }
 
-    .series-team.champion { background: #1c1305; color: #fbbf24; font-weight: 700; }
+    .series-team.champion { background: #1c1305; color: var(--gold); font-weight: 700; }
 
     .series-team .team-name { flex: 1; }
 
     .series-team .seed-badge {
       font-size: 0.68rem;
-      color: #4b5563;
+      color: var(--text-dim);
       margin-right: 0.3rem;
     }
     .series-team .bracket-logo {
       width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; margin-right: 0.3rem;
     }
 
-    .series-team.winner .seed-badge { color: #6b7280; }
+    .series-team.winner .seed-badge { color: var(--text-muted); }
 
     .series-team .wins {
       font-size: 0.78rem;
       font-variant-numeric: tabular-nums;
-      color: #4b5563;
+      color: var(--text-dim);
       min-width: 1.2rem;
       text-align: right;
     }
 
-    .series-team.winner .wins { color: #60a5fa; }
+    .series-team.winner .wins { color: var(--link); }
 
-    .finals-card { border-color: #4b5563; }
-    .finals-card .series-team.champion .wins { color: #fbbf24; }
+    .finals-card { border-color: var(--text-dim); }
+    .finals-card .series-team.champion .wins { color: var(--gold); }
 
-    #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -420,7 +420,7 @@
         const midY = (i + 0.5) / nRight * 100;
         const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         p.setAttribute('d', `M0,${topY}L50,${topY}L50,${botY}L0,${botY}M50,${midY}L100,${midY}`);
-        p.setAttribute('stroke', '#374151');
+        p.setAttribute('stroke', 'var(--border)');
         p.setAttribute('stroke-width', '1.5');
         p.setAttribute('fill', 'none');
         p.setAttribute('vector-effect', 'non-scaling-stroke');

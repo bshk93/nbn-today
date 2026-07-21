@@ -6,25 +6,27 @@
 <title>Player Archetypes — NBN</title>
 <script src="/nav.js" defer></script>
 <style>
+  @import url("/css/theme.css");
+  @import url("/css/nav-chrome.css");
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0f1117; color: #e5e7eb; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+  body { background: var(--bg-deep); color: var(--text-secondary); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
   .page { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
-  h1 { font-size: 1.5rem; font-weight: 700; color: #f9fafb; margin-bottom: 0.25rem; }
-  .subtitle { color: #6b7280; font-size: 0.85rem; margin-bottom: 1.5rem; }
-  .subtitle b { color: #9ca3af; }
+  h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); margin-bottom: 0.25rem; }
+  .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .subtitle b { color: var(--text-muted); }
 
   /* Tabs */
   .tabs {
     display: flex;
     gap: 0.25rem;
     margin-bottom: 1.5rem;
-    border-bottom: 1px solid #1f2937;
+    border-bottom: 1px solid var(--bg-card);
     padding-bottom: 0;
   }
   .tab-btn {
     background: none;
     border: none;
-    color: #6b7280;
+    color: var(--text-muted);
     font-size: 0.85rem;
     font-weight: 600;
     font-family: inherit;
@@ -34,8 +36,8 @@
     margin-bottom: -1px;
     transition: color 0.15s;
   }
-  .tab-btn:hover { color: #d1d5db; }
-  .tab-btn.active { color: #f9fafb; border-bottom-color: #3b82f6; }
+  .tab-btn:hover { color: var(--text-secondary); }
+  .tab-btn.active { color: var(--text-bright); border-bottom-color: var(--accent); }
 
   /* Archetypes tab — node grid */
   .archetype-node-grid {
@@ -56,10 +58,10 @@
     border: 1px solid transparent;
     transition: background 0.15s, border-color 0.15s;
   }
-  .archetype-node-wrap:hover { background: #161b27; border-color: #1f2937; }
+  .archetype-node-wrap:hover { background: #161b27; border-color: var(--bg-card); }
   .archetype-node-wrap.active {
     background: #161b27;
-    border-color: var(--node-color, #3b82f6);
+    border-color: var(--node-color, var(--accent));
   }
 
   .archetype-node {
@@ -77,17 +79,17 @@
   .archetype-node-wrap:hover .archetype-node { transform: scale(1.07); }
   .archetype-node-wrap.active .archetype-node {
     transform: scale(1.1);
-    box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
+    box-shadow: 0 0 0 3px var(--bg-deep), 0 0 0 5px var(--node-color, var(--accent));
   }
 
   .archetype-node-name {
     font-size: 0.72rem;
     font-weight: 600;
-    color: #9ca3af;
+    color: var(--text-muted);
     text-align: center;
     line-height: 1.35;
   }
-  .archetype-node-wrap.active .archetype-node-name { color: #d1d5db; }
+  .archetype-node-wrap.active .archetype-node-name { color: var(--text-secondary); }
 
   /* Archetype detail panel */
   .archetype-detail {
@@ -105,7 +107,7 @@
   /* Cluster card (used in detail panel) */
   .cluster-card {
     background: #161b27;
-    border: 1px solid #1f2937;
+    border: 1px solid var(--bg-card);
     border-radius: 10px;
     padding: 1rem 1.25rem 1.25rem;
     display: flex;
@@ -115,10 +117,10 @@
 
   .cluster-desc {
     font-size: 0.78rem;
-    color: #9ca3af;
+    color: var(--text-muted);
     line-height: 1.55;
     padding-bottom: 0.25rem;
-    border-bottom: 1px solid #1f2937;
+    border-bottom: 1px solid var(--bg-card);
   }
 
   .cluster-header {
@@ -127,8 +129,8 @@
     gap: 0.75rem;
   }
   .cluster-num {
-    background: #1f2937;
-    color: #6b7280;
+    background: var(--bg-card);
+    color: var(--text-muted);
     font-size: 0.7rem;
     font-weight: 700;
     padding: 0.2rem 0.5rem;
@@ -138,12 +140,12 @@
   .cluster-name {
     font-size: 1rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--text-bright);
     flex: 1;
   }
   .cluster-size {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--text-muted);
     flex-shrink: 0;
   }
 
@@ -159,7 +161,7 @@
   .players-list-title {
     font-size: 0.68rem;
     font-weight: 600;
-    color: #4b5563;
+    color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-bottom: 0.4rem;
@@ -169,22 +171,22 @@
     align-items: baseline;
     gap: 0.4rem;
     padding: 0.18rem 0;
-    border-bottom: 1px solid #1f2937;
+    border-bottom: 1px solid var(--bg-card);
     font-size: 0.78rem;
     white-space: nowrap;
     overflow: hidden;
   }
   .player-row:last-child { border-bottom: none; }
   .player-name {
-    color: #d1d5db;
+    color: var(--text-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
     flex: 1;
     min-width: 0;
   }
   .player-name a { color: inherit; text-decoration: none; }
-  .player-name a:hover { color: #93c5fd; }
-  .player-season { color: #6b7280; font-size: 0.72rem; flex-shrink: 0; }
+  .player-name a:hover { color: var(--accent-light); }
+  .player-season { color: var(--text-muted); font-size: 0.72rem; flex-shrink: 0; }
 
   .dim-bars {
     display: flex;
@@ -198,30 +200,30 @@
     gap: 0.4rem;
     font-size: 0.68rem;
   }
-  .dim-label { color: #6b7280; width: 2.8rem; flex-shrink: 0; text-align: right; font-weight: 600; }
-  .dim-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; }
+  .dim-label { color: var(--text-muted); width: 2.8rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+  .dim-track { flex: 1; background: var(--bg-card); border-radius: 2px; height: 5px; }
   .dim-fill { height: 5px; border-radius: 2px; }
-  .dim-val { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
+  .dim-val { color: var(--text-muted); width: 2.2rem; text-align: right; flex-shrink: 0; }
 
   .show-more {
     margin-top: 0.4rem;
     background: none;
     border: none;
-    color: #3b82f6;
+    color: var(--accent);
     font-size: 0.72rem;
     font-weight: 600;
     cursor: pointer;
     padding: 0.1rem 0;
     font-family: inherit;
   }
-  .show-more:hover { color: #60a5fa; }
+  .show-more:hover { color: var(--link); }
 
-  .loading { color: #6b7280; padding: 3rem; text-align: center; }
-  .error   { color: #f87171; padding: 3rem; text-align: center; }
+  .loading { color: var(--text-muted); padding: 3rem; text-align: center; }
+  .error   { color: var(--danger); padding: 3rem; text-align: center; }
 
   .dendrogram-section {
     background: #161b27;
-    border: 1px solid #1f2937;
+    border: 1px solid var(--bg-card);
     border-radius: 10px;
     padding: 1.25rem;
     margin-bottom: 1.5rem;
@@ -229,7 +231,7 @@
   .dendrogram-title {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-bottom: 0.75rem;
@@ -239,12 +241,12 @@
   /* Page nav */
   .page-nav { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
   .page-nav-link {
-    font-size: 0.8rem; font-weight: 600; color: #4b5563;
+    font-size: 0.8rem; font-weight: 600; color: var(--text-dim);
     text-decoration: none; padding: 0.25rem 0.65rem; border-radius: 5px;
     border: 1px solid transparent; transition: color 0.15s, background 0.15s;
   }
-  .page-nav-link:hover { color: #d1d5db; background: #1f2937; }
-  .page-nav-link.active { color: #f9fafb; background: #1f2937; border-color: #374151; }
+  .page-nav-link:hover { color: var(--text-secondary); background: var(--bg-card); }
+  .page-nav-link.active { color: var(--text-bright); background: var(--bg-card); border-color: var(--border); }
 
   /* Journey tab */
   .journey-search-wrap {
@@ -255,24 +257,24 @@
   .journey-search-wrap input {
     width: 100%;
     background: #161b27;
-    border: 1px solid #1f2937;
+    border: 1px solid var(--bg-card);
     border-radius: 8px;
-    color: #f9fafb;
+    color: var(--text-bright);
     font-size: 0.9rem;
     font-family: inherit;
     padding: 0.6rem 0.9rem;
     outline: none;
     transition: border-color 0.15s;
   }
-  .journey-search-wrap input:focus { border-color: #3b82f6; }
-  .journey-search-wrap input::placeholder { color: #4b5563; }
+  .journey-search-wrap input:focus { border-color: var(--accent); }
+  .journey-search-wrap input::placeholder { color: var(--text-dim); }
 
   .suggestions {
     position: absolute;
     top: calc(100% + 4px);
     left: 0; right: 0;
     background: #1c2333;
-    border: 1px solid #1f2937;
+    border: 1px solid var(--bg-card);
     border-radius: 8px;
     overflow: hidden;
     z-index: 100;
@@ -281,15 +283,15 @@
   .suggestion-item {
     padding: 0.55rem 0.9rem;
     font-size: 0.85rem;
-    color: #d1d5db;
+    color: var(--text-secondary);
     cursor: pointer;
-    border-bottom: 1px solid #1f2937;
+    border-bottom: 1px solid var(--bg-card);
   }
   .suggestion-item:last-child { border-bottom: none; }
-  .suggestion-item:hover, .suggestion-item.focused { background: #1f2937; color: #f9fafb; }
+  .suggestion-item:hover, .suggestion-item.focused { background: var(--bg-card); color: var(--text-bright); }
 
   .journey-empty {
-    color: #4b5563;
+    color: var(--text-dim);
     font-size: 0.9rem;
     padding: 2rem 0;
   }
@@ -303,17 +305,17 @@
   .journey-player-name {
     font-size: 1.2rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--text-bright);
   }
   .journey-seasons-count {
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--text-muted);
   }
 
   /* Graph */
   .journey-graph {
     background: #161b27;
-    border: 1px solid #1f2937;
+    border: 1px solid var(--bg-card);
     border-radius: 10px;
     padding: 2rem 1.5rem 1.5rem;
     margin-bottom: 1.5rem;
@@ -354,18 +356,18 @@
   .journey-node-wrap:hover .journey-node { transform: scale(1.1); }
   .journey-node-wrap.active .journey-node {
     transform: scale(1.12);
-    box-shadow: 0 0 0 3px #0f1117, 0 0 0 5px var(--node-color, #3b82f6);
+    box-shadow: 0 0 0 3px var(--bg-deep), 0 0 0 5px var(--node-color, var(--accent));
   }
 
   .journey-node-season {
     font-size: 0.72rem;
     font-weight: 700;
-    color: #d1d5db;
+    color: var(--text-secondary);
     text-align: center;
   }
   .journey-node-team {
     font-size: 0.65rem;
-    color: #6b7280;
+    color: var(--text-muted);
     text-align: center;
     margin-top: -0.3rem;
   }
@@ -374,11 +376,11 @@
     flex: 1;
     min-width: 24px;
     height: 2px;
-    background: #374151;
+    background: var(--border);
     margin-top: 25px; /* align with node center (52px / 2 - 1px) */
     flex-shrink: 1;
   }
-  .journey-connector.changed { background: #f59e0b; }
+  .journey-connector.changed { background: var(--warning); }
 
   /* Detail panel */
   .journey-detail {
@@ -395,7 +397,7 @@
 
   .journey-detail-card {
     background: #161b27;
-    border: 1px solid #1f2937;
+    border: 1px solid var(--bg-card);
     border-radius: 10px;
     padding: 1.25rem;
     display: flex;
@@ -416,11 +418,11 @@
   .jd-season {
     font-size: 1rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--text-bright);
   }
   .jd-team {
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--text-muted);
     font-weight: 600;
   }
 
@@ -437,7 +439,7 @@
   }
   .jd-cluster-name {
     font-size: 0.85rem;
-    color: #9ca3af;
+    color: var(--text-muted);
     margin-bottom: 1rem;
   }
 
@@ -452,14 +454,15 @@
     gap: 0.4rem;
     font-size: 0.72rem;
   }
-  .jd-bar-label { color: #6b7280; width: 2.8rem; flex-shrink: 0; text-align: right; font-weight: 600; }
-  .jd-bar-track { flex: 1; background: #1f2937; border-radius: 2px; height: 5px; }
+  .jd-bar-label { color: var(--text-muted); width: 2.8rem; flex-shrink: 0; text-align: right; font-weight: 600; }
+  .jd-bar-track { flex: 1; background: var(--bg-card); border-radius: 2px; height: 5px; }
   .jd-bar-fill  { height: 5px; border-radius: 2px; }
-  .jd-bar-val   { color: #9ca3af; width: 2.2rem; text-align: right; flex-shrink: 0; }
+  .jd-bar-val   { color: var(--text-muted); width: 2.2rem; text-align: right; flex-shrink: 0; }
 </style>
 </head>
 <body>
 <div class="page">
+  <div class="nav"></div>
   <h1>Player Archetypes</h1>
   <p class="subtitle">Two-stage hierarchical clustering across <b id="n-seasons">—</b> player-seasons (≥20G). Stage 1 groups by shot diet (3pt rate, FT rate, volume) → top-level number. Stage 2 refines by efficiency, playmaking &amp; defense → letter suffix.</p>
 
@@ -492,8 +495,8 @@
 <script>
 const DIMS = ['PPG','3PA','FTA','TS%','APG','TOV','RPG','BLK','STL'];
 const DIM_COLOR = {
-  PPG: '#3b82f6', APG: '#8b5cf6', TOV: '#ef4444',
-  'TS%': '#22c55e', '3PA': '#06b6d4', RPG: '#f59e0b',
+  PPG: 'var(--accent)', APG: '#8b5cf6', TOV: 'var(--danger)',
+  'TS%': 'var(--success-alt)', '3PA': '#06b6d4', RPG: 'var(--warning)',
   BLK: '#6366f1',  STL: '#ec4899',   FTA: '#f97316',
 };
 
@@ -537,10 +540,10 @@ const DESCRIPTIONS = {
 
 const CLUSTER_ORDER = ['1A','1D','1B','4A','1C','4C','2B','3A','2C','3C','4B','4D','2A','3B','2D','3D'];
 
-const GROUP_COLOR = { '1': '#3b82f6', '2': '#8b5cf6', '3': '#f59e0b', '4': '#22c55e' };
+const GROUP_COLOR = { '1': 'var(--accent)', '2': '#8b5cf6', '3': 'var(--warning)', '4': 'var(--success-alt)' };
 
 function clusterColor(hierName) {
-  return GROUP_COLOR[hierName[0]] || '#6b7280';
+  return GROUP_COLOR[hierName[0]] || 'var(--text-muted)';
 }
 
 function fmtName(raw) {
@@ -570,7 +573,7 @@ function buildRadar(centroid, size = 110) {
     const poly = document.createElementNS(NS, 'polygon');
     poly.setAttribute('points', pts);
     poly.setAttribute('fill', 'none');
-    poly.setAttribute('stroke', '#1f2937');
+    poly.setAttribute('stroke', 'var(--bg-card)');
     poly.setAttribute('stroke-width', '1');
     svg.appendChild(poly);
   });
@@ -580,7 +583,7 @@ function buildRadar(centroid, size = 110) {
     const line = document.createElementNS(NS, 'line');
     line.setAttribute('x1', cx); line.setAttribute('y1', cy);
     line.setAttribute('x2', x); line.setAttribute('y2', y);
-    line.setAttribute('stroke', '#1f2937'); line.setAttribute('stroke-width', '1');
+    line.setAttribute('stroke', 'var(--bg-card)'); line.setAttribute('stroke-width', '1');
     svg.appendChild(line);
   });
 
@@ -588,7 +591,7 @@ function buildRadar(centroid, size = 110) {
   const poly = document.createElementNS(NS, 'polygon');
   poly.setAttribute('points', polyPts);
   poly.setAttribute('fill', 'rgba(59,130,246,0.2)');
-  poly.setAttribute('stroke', '#3b82f6');
+  poly.setAttribute('stroke', 'var(--accent)');
   poly.setAttribute('stroke-width', '1.5');
   svg.appendChild(poly);
 
@@ -596,7 +599,7 @@ function buildRadar(centroid, size = 110) {
     const [x, y] = pt(angles[i], maxR * (centroid[d] || 0));
     const dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '2.5');
-    dot.setAttribute('fill', DIM_COLOR[d]); dot.setAttribute('stroke', '#0f1117');
+    dot.setAttribute('fill', DIM_COLOR[d]); dot.setAttribute('stroke', 'var(--bg-deep)');
     dot.setAttribute('stroke-width', '1');
     dot.appendChild(Object.assign(document.createElementNS(NS, 'title'), {
       textContent: `${d}: ${((centroid[d] || 0) * 100).toFixed(0)}th pct`
@@ -609,7 +612,7 @@ function buildRadar(centroid, size = 110) {
     const [x, y] = pt(angles[i], LABEL_R);
     const txt = document.createElementNS(NS, 'text');
     txt.setAttribute('x', x); txt.setAttribute('y', y);
-    txt.setAttribute('font-size', '7.5'); txt.setAttribute('fill', '#6b7280');
+    txt.setAttribute('font-size', '7.5'); txt.setAttribute('fill', 'var(--text-muted)');
     txt.setAttribute('font-family', 'Inter, system-ui, sans-serif');
     txt.setAttribute('font-weight', '600');
     const anchor = x < cx - 4 ? 'end' : x > cx + 4 ? 'start' : 'middle';
@@ -776,13 +779,13 @@ function buildDendrogram(clusters, linkage) {
     const tick = document.createElementNS(NS, 'line');
     tick.setAttribute('x1', pad.left - 4); tick.setAttribute('y1', y);
     tick.setAttribute('x2', W - pad.right); tick.setAttribute('y2', y);
-    tick.setAttribute('stroke', '#1f2937'); tick.setAttribute('stroke-width', '1');
+    tick.setAttribute('stroke', 'var(--bg-card)'); tick.setAttribute('stroke-width', '1');
     tick.setAttribute('stroke-dasharray', '3 4');
     svg.appendChild(tick);
     const lbl = document.createElementNS(NS, 'text');
     lbl.setAttribute('x', pad.left - 6); lbl.setAttribute('y', y);
     lbl.setAttribute('text-anchor', 'end'); lbl.setAttribute('dominant-baseline', 'middle');
-    lbl.setAttribute('font-size', '8'); lbl.setAttribute('fill', '#4b5563');
+    lbl.setAttribute('font-size', '8'); lbl.setAttribute('fill', 'var(--text-dim)');
     lbl.textContent = (maxDist * frac).toFixed(3);
     svg.appendChild(lbl);
   });
@@ -800,14 +803,14 @@ function buildDendrogram(clusters, linkage) {
     const hbar = document.createElementNS(NS, 'line');
     hbar.setAttribute('x1', xL); hbar.setAttribute('y1', y);
     hbar.setAttribute('x2', xR); hbar.setAttribute('y2', y);
-    hbar.setAttribute('stroke', '#374151'); hbar.setAttribute('stroke-width', '1.5');
+    hbar.setAttribute('stroke', 'var(--border)'); hbar.setAttribute('stroke-width', '1.5');
     svg.appendChild(hbar);
 
     [[xL, yL], [xR, yR]].forEach(([cx, cy]) => {
       const vl = document.createElementNS(NS, 'line');
       vl.setAttribute('x1', cx); vl.setAttribute('y1', y);
       vl.setAttribute('x2', cx); vl.setAttribute('y2', cy);
-      vl.setAttribute('stroke', '#374151'); vl.setAttribute('stroke-width', '1.5');
+      vl.setAttribute('stroke', 'var(--border)'); vl.setAttribute('stroke-width', '1.5');
       svg.appendChild(vl);
     });
 
@@ -827,7 +830,7 @@ function buildDendrogram(clusters, linkage) {
     hierTxt.setAttribute('dominant-baseline', 'hanging');
     hierTxt.setAttribute('font-size', '9');
     hierTxt.setAttribute('font-weight', '700');
-    hierTxt.setAttribute('fill', '#d1d5db');
+    hierTxt.setAttribute('fill', 'var(--text-secondary)');
     hierTxt.textContent = nd.label;
     svg.appendChild(hierTxt);
 
@@ -837,7 +840,7 @@ function buildDendrogram(clusters, linkage) {
       nameTxt.setAttribute('text-anchor', 'middle');
       nameTxt.setAttribute('dominant-baseline', 'hanging');
       nameTxt.setAttribute('font-size', '7.5');
-      nameTxt.setAttribute('fill', '#6b7280');
+      nameTxt.setAttribute('fill', 'var(--text-muted)');
       nameTxt.textContent = nd.name;
       svg.appendChild(nameTxt);
     }
@@ -847,7 +850,7 @@ function buildDendrogram(clusters, linkage) {
     sizeTxt.setAttribute('text-anchor', 'middle');
     sizeTxt.setAttribute('dominant-baseline', 'hanging');
     sizeTxt.setAttribute('font-size', '7.5');
-    sizeTxt.setAttribute('fill', '#374151');
+    sizeTxt.setAttribute('fill', 'var(--border)');
     sizeTxt.textContent = `n=${nd.size}`;
     svg.appendChild(sizeTxt);
   });

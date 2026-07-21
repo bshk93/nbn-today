@@ -1,0 +1,59 @@
+/* Nav bar chrome shared site-wide: the breadcrumb nav, the search button +
+   overlay, and the theme picker. Imported (after css/theme.css) by every
+   surface that injects its own stylesheet — css/shared.css for the ~68
+   pages that link it, plus teams/team.js, awards/results.js, awards/vote.js,
+   and the two clusters/ pages, which each maintain a separate stylesheet.
+   Built by nav.js, which runs on every page (directly or injected by one
+   of those scripts) — see nav.js for the markup these rules target. */
+
+/* Nav */
+.nav { margin-bottom: 1.75rem; font-size: .875rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; }
+.nav a { color: var(--text-muted); text-decoration: none; }
+.nav a:hover { color: var(--text-primary); }
+
+/* Wraps search-btn + theme-picker so the group gets pushed to the right
+   edge of .nav regardless of which of those two is actually present
+   (e.g. the homepage suppresses search-btn since it has its own big
+   search bar already) — the margin-left:auto belongs on the wrapper,
+   not on whichever button happens to be first. */
+.nav-actions { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
+
+.search-btn { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0.1rem 0.35rem; transition: border-color 0.1s, color 0.1s; }
+.search-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+
+/* Search overlay */
+.search-overlay { position: fixed; inset: 0; background: var(--overlay-scrim); display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh; z-index: 9999; }
+.search-modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; width: min(620px, 90vw); overflow: hidden; box-shadow: 0 24px 64px var(--shadow-color-strong); }
+.search-input { width: 100%; padding: 0.9rem 1.25rem; font-size: 1rem; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-primary); outline: none; font-family: inherit; }
+.search-results { max-height: 55vh; overflow-y: auto; }
+.search-result { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; text-decoration: none; color: var(--text-primary); border-bottom: 1px solid var(--bg-page); }
+.search-result:hover, .search-result.active { background: var(--border); }
+.search-result-icon { font-size: 1rem; flex-shrink: 0; }
+.search-result-name { font-size: 0.9rem; font-weight: 600; }
+.search-result-meta { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; white-space: nowrap; padding-left: 0.75rem; }
+.search-hint { padding: 0.4rem 1.25rem; font-size: 0.7rem; color: var(--text-dim); border-top: 1px solid var(--border); }
+.search-empty { padding: 1rem 1.25rem; font-size: 0.85rem; color: var(--text-muted); }
+
+/* Theme picker */
+.theme-picker { position: relative; display: inline-flex; }
+.theme-btn { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0.1rem 0.35rem; transition: border-color 0.1s, color 0.1s; }
+.theme-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+.theme-menu {
+  position: absolute; top: calc(100% + 0.4rem); right: 0;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow-color-strong);
+  min-width: 200px; padding: 0.3rem; z-index: 10000;
+  display: none;
+}
+.theme-menu.open { display: block; }
+.theme-menu-item {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.45rem 0.6rem; border-radius: 5px;
+  font-size: 0.82rem; color: var(--text-secondary); cursor: pointer;
+}
+.theme-menu-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.theme-menu-item.active { color: var(--text-primary); font-weight: 600; }
+.theme-menu-icon { font-size: 0.9rem; width: 1.1rem; text-align: center; flex-shrink: 0; }
+.theme-menu-label { flex: 1; }
+.theme-menu-check { font-size: 0.75rem; color: var(--accent-light); flex-shrink: 0; opacity: 0; }
+.theme-menu-item.active .theme-menu-check { opacity: 1; }

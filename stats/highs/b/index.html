@@ -10,23 +10,23 @@
     .page { max-width: 960px; margin: 0 auto; }
     header { margin-bottom: 1.75rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: #9ca3af; margin-top: 0.4rem; font-size: 0.9rem; }
-    .table-wrap { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow-x: auto; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
+    .table-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
     thead th.center { text-align: center; }
-    thead th.stat-primary { color: #9ca3af; }
-    thead th.stat-sec { color: #4b5563; }
-    tbody tr { border-bottom: 1px solid #283141; transition: background 0.1s; }
+    thead th.stat-primary { color: var(--text-muted); }
+    thead th.stat-sec { color: var(--text-dim); }
+    tbody tr { border-bottom: 1px solid var(--border-subtle); transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: #263244; }
-    td { padding: 0.65rem 1rem; color: #d1d5db; }
-    td.player-name { font-weight: 600; color: #f3f4f6; }
+    tbody tr:hover { background: var(--bg-hover); }
+    td { padding: 0.65rem 1rem; color: var(--text-secondary); }
+    td.player-name { font-weight: 600; color: var(--text-primary); }
     td.right { text-align: right; font-variant-numeric: tabular-nums; }
     td.center { text-align: center; }
-    td.muted { color: #6b7280; }
-    td.stat-primary { color: #f3f4f6; font-weight: 600; }
-    td.stat-sec { color: #6b7280; }
-    #status { text-align: center; padding: 3rem; color: #6b7280; font-size: 0.9rem; }
+    td.muted { color: var(--text-muted); }
+    td.stat-primary { color: var(--text-primary); font-weight: 600; }
+    td.stat-sec { color: var(--text-muted); }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
   </style>
 </head>
 <body>

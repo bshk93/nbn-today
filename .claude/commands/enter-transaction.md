@@ -67,13 +67,18 @@ For a `trade`, freeform text often states only the **receiving** side per team (
 
 **Do not** try to match picks by reading `draft-picks.csv` directly or by naive string equality on `OWNER`. That field can be a pipe-separated multi-team string (`"LAL|BOS"`, meaning contingent/unresolved ownership) or the literal placeholder `"?"` (meaning "not yet determined, defaults to the original team"). Use `GET /api/picks/{team}` for the team the text says currently holds the pick — it applies the correct resolution (`owner == "?"` → falls back to the original team; otherwise `team in owner.split("|")`) — and match on `year`/`round`/`orig` from there.
 
+**As of 2026-07-19, `/api/picks` and `/api/picks/{team}` are served from a real conveyance model** (`nbn-api/picks_conveyance/`, spec at `nbn-api/docs/picks-conveyance.md`), not the flat CSV directly. The response shape and the resolution rule above are unchanged — keep using them exactly as written — but the values are now accurate rather than approximate: a contingent pick's `owner` lists every real candidate team, `protected` is the genuine threshold, and stale `PROTECTED`/`SWAP_OWNER` carryover (the old warning that used to live in this paragraph) is largely gone for any pick that's gone through a trade since the cutover — new trades build real structure automatically now instead of leaving flat fields to rot. Trade *validation* also runs against this model: a team can trade a contingent share it holds even when it isn't the row's single nominal owner. None of this changes how you resolve a pick reference — just trust `/api/picks/{team}` more than the old guidance implied. `GET /api/picks-preview` still exists but is now identical to `/api/picks`; no need to check it separately.
+
 If a pick reference in the text doesn't cleanly resolve (compound owner, `"?"` placeholder, or you can't find a `year/round/orig` combination matching what's described):
 
 1. Search `GET /api/transactions?team={team}` (or fetch all and filter client-side) for prior `trade`/`pick` entries touching that `year`/`round`/`orig` to reconstruct how it got to its current state.
 2. Draft-pick records are known to be incomplete for moves that predate this site's transaction log. If the trail goes cold, **say so explicitly** and ask the user to supply the missing provenance (which trade sent it where) rather than guessing — getting this wrong writes bad ownership data that then compounds for the next person trying to trace the same pick.
 3. Once resolved, note in the transaction's `description` field any manual reconciliation you had to do, so the next lookup has more to go on than the last one did.
 
-If the pick's `PROTECTED` or `SWAP_OWNER` fields are non-empty on the current row, surface that to the user before treating the pick as a clean asset — `_apply_trade` only overwrites those fields when the new trade explicitly supplies `protection`/`swap_with`, so stale protection/swap metadata from a previous deal otherwise silently carries over to the new owner.
+**Two `422` rejection reasons a pick trade can now hit that aren't data errors — explain them, don't retry past them:**
+
+- **Legacy pick, frozen from re-trade**: `"Pick ... is a legacy pick, frozen from re-trade until manually converted to real structure: <reason>"`. A handful of picks (multi-team historical cascades too tangled to model cleanly — e.g. a 5-team swap-of-swaps) are tagged `legacy` and can't move again until someone manually converts them to real structure. Tell the user the pick needs manual reconciliation first; this is intentional, not a bug.
+- **Ambiguous leaf**: `"Pick ...: <team> holds N distinct claims — specify which with asset.leaf_id. Options: <leaf_id> (<description>); ..."`. A team holding more than one distinct contingent claim on the same pick, where the trade doesn't say which one is being conveyed. No real pick triggers this today (verified 2026-07-19) — but if it ever does, **this is resolvable, not a dead end**: the error lists the exact `leaf_id` values to choose from (also visible directly on the pick's `leaves` field from `GET /api/picks/{team}` — a list of `{leaf_id, team, description}` for any protected/swap/binary pick). Ask the user which claim `TEXT` actually means, matching against each option's `description` (e.g. "protected band 1-4" vs. "swap priority (worse pick)"), then resubmit the same pick asset with `leaf_id` set to the chosen value. Only needed in this specific ambiguous case — never set `leaf_id` on an ordinary trade.
 
 ### 5. Build the structured `details` payload
 
@@ -92,7 +97,7 @@ void_player:     { player, reason? }
 set_hard_cap_level: { team, level: "first_apron"|"second_apron"|"default", reason? }
 trade:           { transfers: [ { from_team, to_team, assets: [
                      { type: "player", slug },
-                     { type: "pick", year, round, orig, protection?, swap_with? }
+                     { type: "pick", year, round, orig, protection?, swap_with?, leaf_id? }
                    ] } ], legality: "tbd", exceptions?: { TEAM: "ntmle"|"tmle"|"room_exception" },
                    is_sign_and_trade?: bool, sign_and_trade_txn_id?: string }
 ```

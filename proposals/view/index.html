@@ -16,19 +16,19 @@
       letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.55rem;
       border-radius: 4px;
     }
-    .badge-submitted { background: #1e3a5f; border: 1px solid #1d4ed8; color: #93c5fd; }
-    .badge-voting    { background: #3b1f00; border: 1px solid #b45309; color: #fbbf24; }
-    .badge-closed    { background: #1a1f2e; border: 1px solid #374151; color: #4b5563; }
-    .badge-draft     { background: #1f2937; border: 1px solid #374151; color: #6b7280; }
-    .badge-passed    { background: #14532d; border: 1px solid #16a34a; color: #4ade80; }
-    .badge-failed    { background: #3b1f1f; border: 1px solid #991b1b; color: #f87171; }
+    .badge-submitted { background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light); }
+    .badge-voting    { background: #3b1f00; border: 1px solid var(--gold-dim); color: var(--gold); }
+    .badge-closed    { background: #1a1f2e; border: 1px solid var(--border); color: var(--text-dim); }
+    .badge-draft     { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
+    .badge-passed    { background: var(--success-dark-bg); border: 1px solid #16a34a; color: var(--success); }
+    .badge-failed    { background: #3b1f1f; border: 1px solid var(--danger-border-strong); color: var(--danger); }
 
     /* Proposal header */
     .proposal-header { margin-bottom: 1.5rem; }
     .proposal-header .badge { margin-bottom: 0.6rem; }
     .proposal-header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
-    .proposal-meta { font-size: 0.8rem; color: #6b7280; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-    .proposal-meta .sep { color: #374151; }
+    .proposal-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .proposal-meta .sep { color: var(--border); }
 
     /* Header actions */
     .header-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
@@ -37,26 +37,26 @@
       font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.85rem;
       border: 1px solid transparent;
     }
-    .btn-primary { background: #2563eb; border-color: #3b82f6; color: #fff; }
-    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
+    .btn-primary:hover { background: var(--accent-dark); }
     .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-secondary { background: #1f2937; border-color: #374151; color: #d1d5db; }
-    .btn-secondary:hover { background: #263244; border-color: #4b5563; }
-    .btn-success { background: #14532d; border-color: #16a34a; color: #4ade80; }
+    .btn-secondary { background: var(--bg-card); border-color: var(--border); color: var(--text-secondary); }
+    .btn-secondary:hover { background: var(--bg-hover); border-color: var(--text-dim); }
+    .btn-success { background: var(--success-dark-bg); border-color: #16a34a; color: var(--success); }
     .btn-success:hover { background: #166534; }
-    .btn-warning { background: #3b1f00; border-color: #b45309; color: #fbbf24; }
+    .btn-warning { background: #3b1f00; border-color: var(--gold-dim); color: var(--gold); }
     .btn-warning:hover { background: #451f00; }
-    .btn-ghost { background: transparent; border-color: #374151; color: #9ca3af; }
-    .btn-ghost:hover { background: #1f2937; color: #f3f4f6; }
-    .btn-danger { background: transparent; border-color: #374151; color: #f87171; }
-    .btn-danger:hover { background: #3b1f1f; border-color: #ef4444; }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--bg-card); color: var(--text-primary); }
+    .btn-danger { background: transparent; border-color: var(--border); color: var(--danger); }
+    .btn-danger:hover { background: #3b1f1f; border-color: var(--danger); }
 
     /* Divider */
-    .divider { border: none; border-top: 1px solid #374151; margin: 2rem 0; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
 
     /* Markdown body */
-    .md-body { line-height: 1.7; color: #d1d5db; }
-    .md-body h1, .md-body h2, .md-body h3, .md-body h4 { color: #f3f4f6; margin: 1.25rem 0 0.5rem; font-weight: 700; }
+    .md-body { line-height: 1.7; color: var(--text-secondary); }
+    .md-body h1, .md-body h2, .md-body h3, .md-body h4 { color: var(--text-primary); margin: 1.25rem 0 0.5rem; font-weight: 700; }
     .md-body h1 { font-size: 1.4rem; }
     .md-body h2 { font-size: 1.15rem; }
     .md-body h3 { font-size: 1rem; }
@@ -64,38 +64,38 @@
     .md-body ul, .md-body ol { margin: 0.5rem 0 0.9rem 1.5rem; }
     .md-body li { margin-bottom: 0.25rem; }
     .md-body blockquote {
-      border-left: 3px solid #374151; padding-left: 1rem; color: #9ca3af; margin: 0.75rem 0;
+      border-left: 3px solid var(--border); padding-left: 1rem; color: var(--text-muted); margin: 0.75rem 0;
     }
     .md-body code {
-      background: #1f2937; border: 1px solid #374151; border-radius: 3px;
-      padding: 0.1rem 0.35rem; font-size: 0.85em; font-family: monospace; color: #f3f4f6;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 3px;
+      padding: 0.1rem 0.35rem; font-size: 0.85em; font-family: monospace; color: var(--text-primary);
     }
-    .md-body pre { background: #1f2937; border: 1px solid #374151; border-radius: 6px; padding: 1rem; overflow-x: auto; margin-bottom: 0.9rem; }
+    .md-body pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin-bottom: 0.9rem; }
     .md-body pre code { background: none; border: none; padding: 0; }
-    .md-body a { color: #60a5fa; }
-    .md-body hr { border: none; border-top: 1px solid #374151; margin: 1rem 0; }
+    .md-body a { color: var(--link); }
+    .md-body hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
     .md-body table { border-collapse: collapse; width: 100%; margin-bottom: 0.9rem; }
-    .md-body th, .md-body td { border: 1px solid #374151; padding: 0.4rem 0.7rem; }
-    .md-body th { background: #1f2937; font-weight: 600; }
+    .md-body th, .md-body td { border: 1px solid var(--border); padding: 0.4rem 0.7rem; }
+    .md-body th { background: var(--bg-card); font-weight: 600; }
 
     /* Section titles */
     .section-title {
       font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em;
-      text-transform: uppercase; color: #4b5563; margin-bottom: 1rem;
+      text-transform: uppercase; color: var(--text-dim); margin-bottom: 1rem;
     }
 
     /* BOD panel */
     .bod-panel {
-      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1rem 1.25rem; margin-bottom: 1.5rem;
     }
     .bod-panel .section-title { margin-bottom: 0.75rem; }
     .bod-panel .bod-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-    .bod-note { font-size: 0.75rem; color: #6b7280; margin-top: 0.5rem; }
+    .bod-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
 
     /* Vote section */
     .vote-panel {
-      background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1rem 1.25rem; margin-bottom: 1.5rem;
     }
     .vote-panel .section-title { margin-bottom: 0.5rem; }
@@ -105,78 +105,78 @@
       border: 2px solid transparent; cursor: pointer; font-family: inherit;
       transition: background 0.1s, border-color 0.1s;
     }
-    .vote-btn-yes    { background: #14532d; border-color: #16a34a; color: #4ade80; }
-    .vote-btn-yes:hover, .vote-btn-yes.active    { background: #166534; border-color: #22c55e; }
-    .vote-btn-no     { background: #3b1f1f; border-color: #991b1b; color: #f87171; }
-    .vote-btn-no:hover, .vote-btn-no.active      { background: #4b2121; border-color: #ef4444; }
-    .vote-btn-abstain { background: #1f2937; border-color: #4b5563; color: #9ca3af; }
-    .vote-btn-abstain:hover, .vote-btn-abstain.active { background: #263244; border-color: #6b7280; }
-    .vote-note { font-size: 0.75rem; color: #6b7280; margin-top: 0.6rem; }
-    .vote-info { font-size: 0.8rem; color: #6b7280; margin-top: 0.4rem; }
-    .vote-count { font-size: 0.8rem; color: #9ca3af; }
-    .not-eligible { font-size: 0.85rem; color: #4b5563; padding: 0.5rem 0; }
+    .vote-btn-yes    { background: var(--success-dark-bg); border-color: #16a34a; color: var(--success); }
+    .vote-btn-yes:hover, .vote-btn-yes.active    { background: #166534; border-color: var(--success-alt); }
+    .vote-btn-no     { background: #3b1f1f; border-color: var(--danger-border-strong); color: var(--danger); }
+    .vote-btn-no:hover, .vote-btn-no.active      { background: #4b2121; border-color: var(--danger); }
+    .vote-btn-abstain { background: var(--bg-card); border-color: var(--text-dim); color: var(--text-muted); }
+    .vote-btn-abstain:hover, .vote-btn-abstain.active { background: var(--bg-hover); border-color: var(--text-muted); }
+    .vote-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.6rem; }
+    .vote-info { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; }
+    .vote-count { font-size: 0.8rem; color: var(--text-muted); }
+    .not-eligible { font-size: 0.85rem; color: var(--text-dim); padding: 0.5rem 0; }
 
     /* Results */
     .results-grid { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
     .result-item { text-align: center; }
     .result-num { font-size: 1.75rem; font-weight: 700; }
-    .result-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; margin-top: 0.15rem; }
-    .result-yes .result-num  { color: #4ade80; }
-    .result-no .result-num   { color: #f87171; }
-    .result-abstain .result-num { color: #9ca3af; }
+    .result-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-top: 0.15rem; }
+    .result-yes .result-num  { color: var(--success); }
+    .result-no .result-num   { color: var(--danger); }
+    .result-abstain .result-num { color: var(--text-muted); }
     .my-vote-chip {
       display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem;
       border-radius: 4px; margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;
     }
-    .mv-yes     { background: #14532d; color: #4ade80; }
-    .mv-no      { background: #3b1f1f; color: #f87171; }
-    .mv-abstain { background: #1f2937; color: #9ca3af; }
+    .mv-yes     { background: var(--success-dark-bg); color: var(--success); }
+    .mv-no      { background: #3b1f1f; color: var(--danger); }
+    .mv-abstain { background: var(--bg-card); color: var(--text-muted); }
 
     .voter-table { border-collapse: collapse; width: 100%; }
-    .voter-table th, .voter-table td { padding: 0.35rem 0.65rem; text-align: left; border-bottom: 1px solid #1f2937; }
-    .voter-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; font-weight: 600; }
-    .voter-table td { color: #d1d5db; }
+    .voter-table th, .voter-table td { padding: 0.35rem 0.65rem; text-align: left; border-bottom: 1px solid var(--bg-card); }
+    .voter-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
+    .voter-table td { color: var(--text-secondary); }
     .voter-table tr:last-child td { border-bottom: none; }
 
     /* Comments */
     .comment {
-      border-top: 1px solid #1f2937; padding: 1rem 0;
+      border-top: 1px solid var(--bg-card); padding: 1rem 0;
     }
     .comment:first-child { border-top: none; }
     .comment-header {
       display: flex; align-items: baseline; justify-content: space-between;
       margin-bottom: 0.6rem;
     }
-    .comment-author { font-size: 0.8rem; font-weight: 700; color: #d1d5db; }
-    .comment-date { font-size: 0.75rem; color: #4b5563; }
-    .comment-delete { font-size: 0.7rem; color: #4b5563; background: none; border: none; cursor: pointer; }
-    .comment-delete:hover { color: #f87171; }
+    .comment-author { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
+    .comment-date { font-size: 0.75rem; color: var(--text-dim); }
+    .comment-delete { font-size: 0.7rem; color: var(--text-dim); background: none; border: none; cursor: pointer; }
+    .comment-delete:hover { color: var(--danger); }
     .comment-body { font-size: 0.875rem; }
 
     /* Add comment */
     .add-comment { margin-top: 1.25rem; }
     .add-comment textarea {
-      width: 100%; background: #1f2937; border: 1px solid #374151; color: #f3f4f6;
+      width: 100%; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
       border-radius: 8px; padding: 0.65rem 0.85rem; font-size: 0.875rem;
       font-family: inherit; resize: vertical; min-height: 90px;
     }
-    .add-comment textarea:focus { outline: none; border-color: #3b82f6; }
-    .add-comment textarea::placeholder { color: #4b5563; }
+    .add-comment textarea:focus { outline: none; border-color: var(--accent); }
+    .add-comment textarea::placeholder { color: var(--text-dim); }
     .comment-form-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
-    .comment-auth { font-size: 0.75rem; color: #6b7280; }
-    .comment-auth a { color: #60a5fa; cursor: pointer; }
+    .comment-auth { font-size: 0.75rem; color: var(--text-muted); }
+    .comment-auth a { color: var(--link); cursor: pointer; }
     .status-msg { font-size: 0.75rem; }
-    .status-msg.ok { color: #4ade80; }
-    .status-msg.err { color: #f87171; }
+    .status-msg.ok { color: var(--success); }
+    .status-msg.err { color: var(--danger); }
 
-    .empty { color: #4b5563; font-size: 0.875rem; padding: 1rem 0; }
+    .empty { color: var(--text-dim); font-size: 0.875rem; padding: 1rem 0; }
   </style>
 </head>
 <body>
 <div class="page">
   <div class="nav"><a href="/proposals/">← Proposals</a></div>
 
-  <div id="loading" style="color:#6b7280;font-size:0.9rem;">Loading…</div>
+  <div id="loading" style="color:var(--text-muted);font-size:0.9rem;">Loading…</div>
   <div id="content" style="display:none;">
 
     <!-- Header -->
@@ -224,15 +224,15 @@
         </div>
       </div>
       <div id="comment-signin-prompt" style="display:none;margin-top:1rem;">
-        <span style="font-size:0.85rem;color:#6b7280;">
-          <a onclick="openTokenPrompt()" style="cursor:pointer;color:#60a5fa;">Sign in</a> to leave a comment.
+        <span style="font-size:0.85rem;color:var(--text-muted);">
+          <a onclick="openTokenPrompt()" style="cursor:pointer;color:var(--link);">Sign in</a> to leave a comment.
         </span>
       </div>
     </div>
   </div>
 
   <!-- Error -->
-  <div id="error-msg" style="display:none;color:#f87171;font-size:0.9rem;"></div>
+  <div id="error-msg" style="display:none;color:var(--danger);font-size:0.9rem;"></div>
 </div>
 
 <script>
@@ -328,7 +328,7 @@ function render(p) {
     const editLink = document.createElement('a');
     editLink.href = `/proposals/new/?id=${p.id}`;
     editLink.className = 'btn-ghost';
-    editLink.style.cssText = 'display:inline-block;padding:0.35rem 0.85rem;border-radius:6px;border:1px solid #374151;font-size:0.8rem;font-weight:500;color:#9ca3af;';
+    editLink.style.cssText = 'display:inline-block;padding:0.35rem 0.85rem;border-radius:6px;border:1px solid var(--border);font-size:0.8rem;font-weight:500;color:var(--text-muted);';
     editLink.textContent = 'Edit';
     actionsEl.appendChild(editLink);
   }
@@ -364,8 +364,8 @@ function render(p) {
       bodNote.textContent = `${p.vote_count || 0} vote${p.vote_count !== 1 ? 's' : ''} cast so far. ${eligibleLabel(p)}`;
       if (p.live_results) {
         const r = p.live_results;
-        liveResults.style.cssText = 'margin-top:0.75rem;font-size:0.8rem;color:#9ca3af;';
-        const parts = [`<span style="color:#4ade80;">${r.yes} yes</span>`, `<span style="color:#f87171;">${r.no} no</span>`];
+        liveResults.style.cssText = 'margin-top:0.75rem;font-size:0.8rem;color:var(--text-muted);';
+        const parts = [`<span style="color:var(--success);">${r.yes} yes</span>`, `<span style="color:var(--danger);">${r.no} no</span>`];
         if (p.allow_abstain !== false) parts.push(`${r.abstain} abstain`);
         liveResults.innerHTML = `Live results (visible to BOD only): ${parts.join(' · ')}`;
         const groupTable = buildGroupBreakdown(r, p.allow_abstain !== false);
@@ -474,7 +474,7 @@ function renderVoterBreakdown(p) {
 
   el.style.cssText = 'margin-top:0.75rem;font-size:0.8rem;';
   const label = document.createElement('div');
-  label.style.cssText = 'color:#6b7280;margin-bottom:0.5rem;';
+  label.style.cssText = 'color:var(--text-muted);margin-bottom:0.5rem;';
   label.textContent = 'Voter breakdown (visible to admin only):';
   el.appendChild(label);
 
@@ -485,7 +485,7 @@ function renderVoterBreakdown(p) {
     <tbody>
       ${rows.map(r => `
         <tr>
-          <td>${r.team ? escHtml(r.team) : '<span style="color:#4b5563;">—</span>'}</td>
+          <td>${r.team ? escHtml(r.team) : '<span style="color:var(--text-dim);">—</span>'}</td>
           <td>${escHtml(r.name)}</td>
           <td><span class="my-vote-chip mv-${r.vote}">${escHtml(r.vote)}</span></td>
         </tr>`).join('')}
@@ -532,12 +532,12 @@ function renderVotePanel(p) {
 
     if (!me) {
       content.innerHTML = `<div class="not-eligible">
-        <a onclick="openTokenPrompt()" style="cursor:pointer;color:#60a5fa;">Sign in</a> to vote.
+        <a onclick="openTokenPrompt()" style="cursor:pointer;color:var(--link);">Sign in</a> to vote.
       </div>`;
       return;
     }
     if (!isEligibleVoter) {
-      content.innerHTML = `<div class="not-eligible">You are not eligible to vote on this proposal.<br><span style="font-size:0.75rem;color:#374151;">${eligibleLabel(p)}</span></div>`;
+      content.innerHTML = `<div class="not-eligible">You are not eligible to vote on this proposal.<br><span style="font-size:0.75rem;color:var(--border);">${eligibleLabel(p)}</span></div>`;
       return;
     }
 
@@ -600,8 +600,8 @@ function renderVotePanel(p) {
 
     const totalDiv = document.createElement('div');
     totalDiv.className = 'result-item';
-    totalDiv.style.cssText = 'border-left:1px solid #374151;padding-left:1.5rem;';
-    totalDiv.innerHTML = `<div class="result-num" style="color:#9ca3af;">${total}</div><div class="result-label">Total</div>`;
+    totalDiv.style.cssText = 'border-left:1px solid var(--border);padding-left:1.5rem;';
+    totalDiv.innerHTML = `<div class="result-num" style="color:var(--text-muted);">${total}</div><div class="result-label">Total</div>`;
     grid.appendChild(totalDiv);
 
     content.appendChild(grid);
@@ -614,7 +614,7 @@ function renderVotePanel(p) {
       chip.innerHTML = `You voted: <span class="my-vote-chip mv-${myVote}">${myVote}</span>`;
       chip.style.marginTop = '0.75rem';
       chip.style.fontSize = '0.8rem';
-      chip.style.color = '#6b7280';
+      chip.style.color = 'var(--text-muted)';
       content.appendChild(chip);
     }
   }

@@ -27,25 +27,25 @@
       gap: 0.75rem;
       margin-bottom: 1.5rem;
       font-size: 0.85rem;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
 
     .auth-bar button {
-      background: #374151;
-      border: 1px solid #4b5563;
-      color: #f3f4f6;
+      background: var(--border);
+      border: 1px solid var(--text-dim);
+      color: var(--text-primary);
       border-radius: 6px;
       padding: 0.3rem 0.75rem;
       cursor: pointer;
       font-size: 0.8rem;
     }
 
-    .auth-bar button:hover { background: #4b5563; }
+    .auth-bar button:hover { background: var(--text-dim); }
 
     /* ── Form card ── */
     .form-card {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 1.5rem;
       margin-bottom: 2rem;
@@ -55,7 +55,7 @@
       font-size: 1rem;
       font-weight: 600;
       margin-bottom: 1.25rem;
-      color: #e5e7eb;
+      color: var(--text-secondary);
     }
 
     .form-grid {
@@ -77,15 +77,15 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
 
     .form-field input,
     .form-field select,
     .form-field textarea {
-      background: #111827;
-      border: 1px solid #374151;
-      color: #f3f4f6;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
       border-radius: 6px;
       padding: 0.5rem 0.625rem;
       font-size: 0.875rem;
@@ -97,10 +97,10 @@
     .form-field select:focus,
     .form-field textarea:focus {
       outline: none;
-      border-color: #3b82f6;
+      border-color: var(--accent);
     }
 
-    .form-field select option[disabled] { color: #6b7280; }
+    .form-field select option[disabled] { color: var(--text-muted); }
 
     .radio-group {
       display: flex;
@@ -117,7 +117,7 @@
       font-weight: normal;
       text-transform: none;
       letter-spacing: 0;
-      color: #f3f4f6;
+      color: var(--text-primary);
       cursor: pointer;
     }
 
@@ -143,9 +143,9 @@
     .salary-row-main .hold-select {
       flex: 0 0 auto;
       width: 9rem;
-      background: #111827;
-      border: 1px solid #374151;
-      color: #f3f4f6;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
       border-radius: 6px;
       padding: 0.5rem 0.5rem;
       font-size: 0.8rem;
@@ -153,20 +153,20 @@
     }
 
     /* Guarantee steps */
-    .gtd-steps { display: none; flex-direction: column; gap: 0.2rem; margin-left: 1.25rem; padding: 0.3rem 0.6rem; background: rgba(0,0,0,0.25); border-left: 2px solid #374151; border-radius: 0 4px 4px 0; }
+    .gtd-steps { display: none; flex-direction: column; gap: 0.2rem; margin-left: 1.25rem; padding: 0.3rem 0.6rem; background: rgba(0,0,0,0.25); border-left: 2px solid var(--border); border-radius: 0 4px 4px 0; }
     .gtd-steps.visible { display: flex; }
     .gtd-step { display: flex; gap: 0.4rem; align-items: center; }
     .gtd-step .gtd-step-amount { max-width: 9rem; }
     .gtd-step .gtd-step-date { max-width: 9.5rem; }
-    .gtd-step .gtd-step-remove { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 1rem; padding: 0 0.2rem; line-height: 1; }
-    .gtd-step .gtd-step-remove:hover { color: #ef4444; }
-    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed #374151; border-radius: 3px; color: #6b7280; cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
-    .add-step-btn:hover { color: #d1d5db; border-color: #9ca3af; }
+    .gtd-step .gtd-step-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0 0.2rem; line-height: 1; }
+    .gtd-step .gtd-step-remove:hover { color: var(--danger); }
+    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: 3px; color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
+    .add-step-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
 
     .salary-row-main button {
       background: none;
       border: none;
-      color: #ef4444;
+      color: var(--danger);
       cursor: pointer;
       font-size: 1.1rem;
       line-height: 1;
@@ -176,8 +176,8 @@
     .add-salary-btn {
       margin-top: 0.4rem;
       background: none;
-      border: 1px dashed #374151;
-      color: #6b7280;
+      border: 1px dashed var(--border);
+      color: var(--text-muted);
       border-radius: 6px;
       padding: 0.3rem 0.75rem;
       cursor: pointer;
@@ -185,12 +185,12 @@
       width: 100%;
     }
 
-    .add-salary-btn:hover { border-color: #4b5563; color: #9ca3af; }
+    .add-salary-btn:hover { border-color: var(--text-dim); color: var(--text-muted); }
 
     /* ── Contract helper ── */
     .contract-helper {
-      background: #111827;
-      border: 1px solid #374151;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
       border-radius: 6px;
       margin-bottom: 0.6rem;
     }
@@ -203,11 +203,11 @@
       cursor: pointer;
       font-size: 0.8rem;
       font-weight: 600;
-      color: #9ca3af;
+      color: var(--text-muted);
       user-select: none;
     }
 
-    .contract-helper-header:hover { color: #d1d5db; }
+    .contract-helper-header:hover { color: var(--text-secondary); }
 
     .contract-helper-header .chevron { transition: transform 0.15s; font-size: 0.7rem; }
     .contract-helper.open .chevron { transform: rotate(180deg); }
@@ -231,14 +231,14 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #9ca3af;
+      color: var(--text-muted);
       flex: 1 1 8rem;
     }
 
     .ch-row input, .ch-row select {
-      background: #1f2937;
-      border: 1px solid #374151;
-      color: #f3f4f6;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
       border-radius: 6px;
       padding: 0.4rem 0.5rem;
       font-size: 0.85rem;
@@ -248,7 +248,7 @@
     .ch-generate-btn {
       align-self: flex-start;
       background: #1e3a8a;
-      border: 1px solid #3b82f6;
+      border: 1px solid var(--accent);
       color: #dbeafe;
       border-radius: 6px;
       padding: 0.4rem 0.9rem;
@@ -259,7 +259,7 @@
 
     .ch-generate-btn:hover { background: #1e40af; }
 
-    .ch-hint { font-size: 0.72rem; color: #6b7280; }
+    .ch-hint { font-size: 0.72rem; color: var(--text-muted); }
 
     /* ── Pick fields ── */
     #pick-fields { display: none; }
@@ -274,9 +274,9 @@
     }
 
     .btn-submit {
-      background: #2563eb;
+      background: var(--accent-dark);
       border: none;
-      color: #fff;
+      color: var(--text-on-accent);
       border-radius: 8px;
       padding: 0.55rem 1.5rem;
       font-size: 0.875rem;
@@ -284,44 +284,44 @@
       cursor: pointer;
     }
 
-    .btn-submit:hover { background: #1d4ed8; }
-    .btn-submit:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+    .btn-submit:hover { background: var(--accent-dark); }
+    .btn-submit:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
 
     .form-status {
       font-size: 0.85rem;
     }
 
-    .form-status.ok { color: #34d399; }
+    .form-status.ok { color: var(--market-positive); }
 
     .validation-panel {
       display: none; margin-top: 1rem;
-      background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
       padding: 1rem 1.25rem;
     }
     .validation-panel h4 {
       font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.06em; color: #9ca3af; margin-bottom: 0.6rem;
+      letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.6rem;
     }
     .check-row {
       display: flex; align-items: flex-start; gap: 0.6rem;
       padding: 0.3rem 0; font-size: 0.85rem; line-height: 1.5;
     }
-    .check-row + .check-row { border-top: 1px solid #111827; }
+    .check-row + .check-row { border-top: 1px solid var(--bg-page); }
     .check-icon { flex-shrink: 0; font-size: 0.9rem; margin-top: 0.05rem; }
-    .check-row.error .check-msg  { color: #fca5a5; }
+    .check-row.error .check-msg  { color: var(--danger-light); }
     .check-row.warning .check-msg { color: #fde68a; }
-    .check-row.pass .check-msg   { color: #6b7280; }
+    .check-row.pass .check-msg   { color: var(--text-muted); }
     .validation-actions {
       margin-top: 0.85rem; display: flex; align-items: center; gap: 0.75rem;
-      padding-top: 0.75rem; border-top: 1px solid #374151;
+      padding-top: 0.75rem; border-top: 1px solid var(--border);
     }
     .btn-force {
-      background: #92400e; color: #fde68a; border: 1px solid #b45309;
+      background: #92400e; color: #fde68a; border: 1px solid var(--gold-dim);
       border-radius: 6px; font-size: 0.8rem; font-weight: 600;
       padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit;
     }
-    .btn-force:hover { background: #b45309; }
-    .form-status.err { color: #f87171; }
+    .btn-force:hover { background: var(--gold-dim); }
+    .form-status.err { color: var(--danger); }
 
     /* ── Token modal ── */
     .modal-backdrop {
@@ -337,8 +337,8 @@
     .modal-backdrop.open { display: flex; }
 
     .modal {
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 1.5rem;
       width: 360px;
@@ -351,9 +351,9 @@
     .modal h3 { font-size: 1rem; font-weight: 600; }
 
     .modal input {
-      background: #111827;
-      border: 1px solid #374151;
-      color: #f3f4f6;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
       border-radius: 6px;
       padding: 0.5rem 0.625rem;
       font-size: 0.875rem;
@@ -370,8 +370,8 @@
       border: none;
     }
 
-    .btn-cancel { background: #374151; color: #f3f4f6; }
-    .btn-save   { background: #2563eb; color: #fff; }
+    .btn-cancel { background: var(--border); color: var(--text-primary); }
+    .btn-save   { background: var(--accent-dark); color: var(--text-on-accent); }
 
     /* ── Filters ── */
     .filters {
@@ -384,14 +384,14 @@
 
     .filter-label {
       font-size: 0.75rem;
-      color: #6b7280;
+      color: var(--text-muted);
       margin-right: 0.25rem;
     }
 
     .chip {
-      background: #1f2937;
-      border: 1px solid #374151;
-      color: #9ca3af;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
       border-radius: 999px;
       padding: 0.2rem 0.75rem;
       font-size: 0.78rem;
@@ -399,7 +399,7 @@
       user-select: none;
     }
 
-    .chip.active { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
+    .chip.active { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
 
     /* ── Table ── */
     .table-wrap { overflow-x: auto; }
@@ -413,25 +413,25 @@
     thead th {
       text-align: left;
       padding: 0.5rem 0.75rem;
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border);
       font-size: 0.7rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.07em;
-      color: #6b7280;
+      color: var(--text-muted);
       white-space: nowrap;
     }
 
-    tbody tr { border-bottom: 1px solid #1f2937; }
-    tbody tr:hover { background: #1f2937; }
+    tbody tr { border-bottom: 1px solid var(--bg-card); }
+    tbody tr:hover { background: var(--bg-card); }
 
     tbody td {
       padding: 0.625rem 0.75rem;
       vertical-align: middle;
-      color: #d1d5db;
+      color: var(--text-secondary);
     }
 
-    td a { color: #60a5fa; text-decoration: none; }
+    td a { color: var(--link); text-decoration: none; }
     td a:hover { text-decoration: underline; }
 
     .badge {
@@ -444,87 +444,87 @@
       letter-spacing: 0.04em;
     }
 
-    .badge-sign    { background: #064e3b; color: #34d399; }
-    .badge-pick    { background: #1e3a5f; color: #93c5fd; }
-    .badge-option  { background: #431407; color: #fb923c; }
+    .badge-sign    { background: var(--market-positive-bg); color: var(--market-positive); }
+    .badge-pick    { background: var(--accent-panel-bg); color: var(--accent-light); }
+    .badge-option  { background: var(--danger-alt-bg); color: var(--danger-alt); }
     .badge-guarantee { background: #052e2b; color: #2dd4bf; }
 
     /* ── Trade details (log view, grouped per team) ── */
     .trade-log-team { margin-bottom: 0.4rem; }
     .trade-log-team:last-child { margin-bottom: 0; }
-    .trade-log-team-name { font-weight: 700; color: #d1d5db; font-size: 0.78rem; margin-bottom: 0.1rem; }
-    .trade-log-asset-out { color: #fca5a5; font-size: 0.8rem; }
-    .trade-log-asset-in  { color: #86efac; font-size: 0.8rem; }
+    .trade-log-team-name { font-weight: 700; color: var(--text-secondary); font-size: 0.78rem; margin-bottom: 0.1rem; }
+    .trade-log-asset-out { color: var(--danger-light); font-size: 0.8rem; }
+    .trade-log-asset-in  { color: var(--success-light); font-size: 0.8rem; }
 
     .del-col { display: none; width: 1px; }
     .txn-table.admin-mode .del-col { display: table-cell; }
     .delete-txn-btn {
-      background: none; border: none; color: #4b5563; cursor: pointer;
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
       font-size: 1rem; padding: 0.15rem 0.4rem; border-radius: 4px; line-height: 1;
     }
-    .delete-txn-btn:hover { color: #f87171; }
+    .delete-txn-btn:hover { color: var(--danger); }
     .txn-table.admin-mode .note-cell { cursor: pointer; }
     .txn-table.admin-mode .note-cell:hover { background: #1a1f2e; }
-    .txn-table.admin-mode .note-cell.empty::before { content: "+ Add note"; color: #4b5563; font-style: italic; }
+    .txn-table.admin-mode .note-cell.empty::before { content: "+ Add note"; color: var(--text-dim); font-style: italic; }
     .note-edit-input {
-      width: 100%; background: #0f1420; border: 1px solid #3b82f6; border-radius: 4px;
-      color: #e5e7eb; font: inherit; padding: 0.2rem 0.4rem;
+      width: 100%; background: #0f1420; border: 1px solid var(--accent); border-radius: 4px;
+      color: var(--text-secondary); font: inherit; padding: 0.2rem 0.4rem;
     }
-    .badge-release        { background: #450a0a; color: #f87171; }
+    .badge-release        { background: var(--danger-bg); color: var(--danger); }
     .badge-renounce       { background: #3b2f0a; color: #fcd34d; }
     .badge-convert_twoway { background: #1c1917; color: #a8a29e; }
-    .badge-void_player    { background: #1f1f1f; color: #9ca3af; }
-    .badge-set_hard_cap_level { background: #422006; color: #fbbf24; }
-    .badge-callup  { background: #451a03; color: #fb923c; }
-    .badge-calldown { background: #451a03; color: #fb923c; }
-    .badge-trade   { background: #2e1065; color: #c084fc; }
-    .badge-tbd     { background: #374151; color: #6b7280; font-size: 0.68rem; }
+    .badge-void_player    { background: #1f1f1f; color: var(--text-muted); }
+    .badge-set_hard_cap_level { background: var(--gold-bg); color: var(--gold); }
+    .badge-callup  { background: #451a03; color: var(--danger-alt); }
+    .badge-calldown { background: #451a03; color: var(--danger-alt); }
+    .badge-trade   { background: var(--purple-light-bg); color: #c084fc; }
+    .badge-tbd     { background: var(--border); color: var(--text-muted); font-size: 0.68rem; }
 
     /* ── Trade builder ── */
-    .trade-leg { background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
+    .trade-leg { background: var(--bg-page); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
     .trade-leg-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
-    .trade-team-sel { background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.85rem; font-family: inherit; outline: none; }
-    .trade-team-sel:focus { border-color: #3b82f6; }
-    .trade-leg-arrow { color: #6b7280; font-size: 1.1rem; }
+    .trade-team-sel { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.85rem; font-family: inherit; outline: none; }
+    .trade-team-sel:focus { border-color: var(--accent); }
+    .trade-leg-arrow { color: var(--text-muted); font-size: 1.1rem; }
     .trade-asset-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
-    .trade-asset-sel { flex: 1; min-width: 160px; background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
-    .trade-asset-sel:focus { border-color: #3b82f6; }
-    .trade-prot-inp { width: 5rem; background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
-    .trade-prot-inp:focus { border-color: #3b82f6; }
-    .trade-swap-sel { background: #111827; border: 1px solid #374151; color: #f3f4f6; border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
-    .trade-swap-sel:focus { border-color: #3b82f6; }
-    .trade-add-asset-btn { background: none; border: 1px dashed #374151; color: #6b7280; border-radius: 4px; padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; font-family: inherit; margin-top: 0.15rem; }
-    .trade-add-asset-btn:hover { border-color: #4b5563; color: #9ca3af; }
-    .trade-add-main-btn { width: 100%; background: none; border: 1px dashed #374151; color: #6b7280; border-radius: 6px; padding: 0.4rem; cursor: pointer; font-size: 0.82rem; font-family: inherit; margin-bottom: 0.75rem; }
-    .trade-add-main-btn:hover { border-color: #4b5563; color: #9ca3af; }
-    .remove-leg-btn, .remove-asset-btn { background: none; border: none; color: #4b5563; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.25rem; }
-    .remove-leg-btn:hover, .remove-asset-btn:hover { color: #f87171; }
-    .legality-section { border: 1px solid #374151; border-radius: 8px; overflow: hidden; margin-top: 1rem; margin-bottom: 0.75rem; }
-    .legality-header { background: #1a2535; padding: 0.45rem 0.75rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; border-bottom: 1px solid #374151; }
-    .legality-row { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; font-size: 0.82rem; color: #9ca3af; border-bottom: 1px solid #283141; }
+    .trade-asset-sel { flex: 1; min-width: 160px; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-asset-sel:focus { border-color: var(--accent); }
+    .trade-prot-inp { width: 5rem; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-prot-inp:focus { border-color: var(--accent); }
+    .trade-swap-sel { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-swap-sel:focus { border-color: var(--accent); }
+    .trade-add-asset-btn { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: 4px; padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; font-family: inherit; margin-top: 0.15rem; }
+    .trade-add-asset-btn:hover { border-color: var(--text-dim); color: var(--text-muted); }
+    .trade-add-main-btn { width: 100%; background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: 6px; padding: 0.4rem; cursor: pointer; font-size: 0.82rem; font-family: inherit; margin-bottom: 0.75rem; }
+    .trade-add-main-btn:hover { border-color: var(--text-dim); color: var(--text-muted); }
+    .remove-leg-btn, .remove-asset-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.25rem; }
+    .remove-leg-btn:hover, .remove-asset-btn:hover { color: var(--danger); }
+    .legality-section { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-top: 1rem; margin-bottom: 0.75rem; }
+    .legality-header { background: #1a2535; padding: 0.45rem 0.75rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .legality-row { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
     .legality-row:last-child { border-bottom: none; }
     .rubric-body { padding: 0.4rem 0.75rem 0.55rem; }
-    .rubric-empty { font-size: 0.8rem; color: #6b7280; padding: 0.35rem 0; }
-    .rubric-empty.err { color: #f87171; }
+    .rubric-empty { font-size: 0.8rem; color: var(--text-muted); padding: 0.35rem 0; }
+    .rubric-empty.err { color: var(--danger); }
     .rubric-verdict { font-size: 0.82rem; font-weight: 700; padding: 0.3rem 0 0.45rem; }
-    .rubric-verdict.ok { color: #4ade80; }
-    .rubric-verdict.bad { color: #f87171; }
+    .rubric-verdict.ok { color: var(--success); }
+    .rubric-verdict.bad { color: var(--danger); }
 
     .trade-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem; }
-    .trade-summary-card { background: #0d1420; border: 1px solid #1f2937; border-radius: 6px; padding: 0.55rem 0.65rem; }
-    .trade-summary-team { font-size: 0.85rem; font-weight: 700; color: #f3f4f6; margin-bottom: 0.25rem; }
+    .trade-summary-card { background: #0d1420; border: 1px solid var(--bg-card); border-radius: 6px; padding: 0.55rem 0.65rem; }
+    .trade-summary-team { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
     .trade-summary-net { font-size: 0.78rem; font-weight: 600; margin-bottom: 0.35rem; }
-    .trade-summary-net.pos { color: #f87171; }
-    .trade-summary-net.neg { color: #4ade80; }
-    .trade-summary-net.zero { color: #9ca3af; }
-    .trade-summary-detail { font-weight: normal; color: #6b7280; }
-    .trade-summary-asset-list { font-size: 0.76rem; color: #9ca3af; display: flex; flex-direction: column; gap: 0.15rem; }
-    .trade-summary-asset-list .asset-out { color: #fca5a5; }
-    .trade-summary-asset-list .asset-in { color: #86efac; }
+    .trade-summary-net.pos { color: var(--danger); }
+    .trade-summary-net.neg { color: var(--success); }
+    .trade-summary-net.zero { color: var(--text-muted); }
+    .trade-summary-detail { font-weight: normal; color: var(--text-muted); }
+    .trade-summary-asset-list { font-size: 0.76rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.15rem; }
+    .trade-summary-asset-list .asset-out { color: var(--danger-light); }
+    .trade-summary-asset-list .asset-in { color: var(--success-light); }
 
     .empty-state {
       text-align: center;
-      color: #6b7280;
+      color: var(--text-muted);
       padding: 3rem 0;
       font-size: 0.9rem;
     }
@@ -536,21 +536,21 @@
       gap: 0.75rem;
       padding: 1rem 0;
       font-size: 0.85rem;
-      color: #9ca3af;
+      color: var(--text-muted);
     }
     .txn-page-btn {
       padding: 0.3rem 0.7rem;
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      color: #9ca3af;
+      color: var(--text-muted);
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
       transition: background 0.12s, color 0.12s;
     }
-    .txn-page-btn:hover:not(:disabled) { background: #263244; color: #d1d5db; }
+    .txn-page-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-secondary); }
     .txn-page-btn:disabled { opacity: 0.35; cursor: default; }
 
     /* ── Player autocomplete ── */
@@ -562,8 +562,8 @@
       top: calc(100% + 2px);
       left: 0;
       right: 0;
-      background: #1f2937;
-      border: 1px solid #4b5563;
+      background: var(--bg-card);
+      border: 1px solid var(--text-dim);
       border-radius: 6px;
       max-height: 220px;
       overflow-y: auto;
@@ -578,11 +578,11 @@
       font-size: 0.85rem;
     }
 
-    .pd-item:hover, .pd-item.focused { background: #374151; }
+    .pd-item:hover, .pd-item.focused { background: var(--border); }
 
     .pd-item .pd-slug {
       font-size: 0.72rem;
-      color: #6b7280;
+      color: var(--text-muted);
       margin-left: 0.5rem;
     }
 
@@ -831,7 +831,7 @@
       </div>
 
       <div class="form-field full">
-        <label>Note <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:#6b7280">(optional)</span></label>
+        <label>Note <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(optional)</span></label>
         <input type="text" id="f-description" placeholder="e.g. 4yr max deal">
       </div>
 
@@ -845,7 +845,7 @@
           <input type="date" id="f-trade-date">
         </div>
         <div class="form-field">
-          <label>Note <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:#6b7280">(optional)</span></label>
+          <label>Note <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(optional)</span></label>
           <input type="text" id="f-trade-description" placeholder="e.g. 3-team blockbuster">
         </div>
       </div>
@@ -862,11 +862,11 @@
       <div class="legality-section" id="trade-sat-section">
         <div class="legality-header">Sign-and-Trade · § 1.4 row C</div>
         <div class="rubric-body" style="padding:0.6rem 0.75rem">
-          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;color:#9ca3af;font-weight:normal;text-transform:none">
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;color:var(--text-muted);font-weight:normal;text-transform:none">
             <input type="checkbox" id="f-trade-sat"> This trade completes a sign-and-trade (hard-caps every acquiring team at First Apron)
           </label>
           <div id="f-trade-sat-txn-field" style="display:none;margin-top:0.5rem">
-            <label style="font-size:0.75rem;color:#6b7280">Linked sign transaction ID (optional)</label>
+            <label style="font-size:0.75rem;color:var(--text-muted)">Linked sign transaction ID (optional)</label>
             <input type="text" id="f-trade-sat-txn" placeholder="e.g. a1b2c3d4e5f6a7b8" style="width:100%">
           </div>
         </div>
@@ -1257,7 +1257,7 @@ function updateMleHint() {
   if (method === 'bae') {
     hint.style.display = '';
     const available = !state.bae_used && (state.bae_available !== false);
-    hint.style.color = available ? '#34d399' : '#f87171';
+    hint.style.color = available ? 'var(--market-positive)' : 'var(--danger)';
     hint.textContent = state.bae_used ? 'BAE: already used this season'
       : state.bae_available === false ? 'BAE: not available (used last season)'
       : `BAE: ${fmtDollarsShort(cl.bae_amount || 0)} available`;
@@ -1273,7 +1273,7 @@ function updateMleHint() {
   if (!total) { hint.style.display = 'none'; return; }
   const remaining = Math.max(0, total - (state.mle_used || 0));
   hint.style.display = '';
-  hint.style.color = remaining > 0 ? '#34d399' : '#f87171';
+  hint.style.color = remaining > 0 ? 'var(--market-positive)' : 'var(--danger)';
   hint.textContent = `${mleLabel}: ${fmtDollarsShort(remaining)} remaining of ${fmtDollarsShort(total)}`;
 }
 
@@ -1891,7 +1891,7 @@ function addTradeLeg(fromTeam, toTeam) {
 
 function sectionLabel(text) {
   const el = document.createElement('div');
-  el.style.cssText = 'font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#6b7280;margin-bottom:0.35rem;margin-top:0.5rem;';
+  el.style.cssText = 'font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.35rem;margin-top:0.5rem;';
   el.textContent = text;
   return el;
 }
@@ -1945,7 +1945,7 @@ function addPickRow(leg) {
   buildPickOptions(sel, fromTeam, null);
 
   const protLabel = document.createElement('span');
-  protLabel.style.cssText = 'font-size:0.75rem;color:#6b7280;white-space:nowrap;';
+  protLabel.style.cssText = 'font-size:0.75rem;color:var(--text-muted);white-space:nowrap;';
   protLabel.textContent = 'Prot:';
 
   const protInp = document.createElement('input');
@@ -1956,7 +1956,7 @@ function addPickRow(leg) {
   protInp.max = 30;
 
   const swapLabel = document.createElement('span');
-  swapLabel.style.cssText = 'font-size:0.75rem;color:#6b7280;white-space:nowrap;';
+  swapLabel.style.cssText = 'font-size:0.75rem;color:var(--text-muted);white-space:nowrap;';
   swapLabel.textContent = 'Swap:';
 
   const swapSel = document.createElement('select');
@@ -2342,7 +2342,7 @@ function renderValidationPanel(result, originalBody) {
 
   if (can_force) {
     const note = document.createElement('span');
-    note.style.cssText = 'font-size:0.8rem;color:#9ca3af;flex:1';
+    note.style.cssText = 'font-size:0.8rem;color:var(--text-muted);flex:1';
     note.textContent = 'Warnings above can be overridden.';
     actions.appendChild(note);
 
@@ -2372,7 +2372,7 @@ function renderValidationPanel(result, originalBody) {
     actions.appendChild(forceBtn);
   } else {
     const note = document.createElement('span');
-    note.style.cssText = 'font-size:0.8rem;color:#fca5a5';
+    note.style.cssText = 'font-size:0.8rem;color:var(--danger-light)';
     note.textContent = 'Fix the errors above before submitting.';
     actions.appendChild(note);
   }
@@ -2523,7 +2523,7 @@ function renderRow(t) {
   }
   const detailsCell = renderDetailsCell(t);
   const note = escHtml(t.description || '');
-  const noteCell = `<td class="note-cell${t.description ? '' : ' empty'}" data-id="${escHtml(t.id)}" style="color:#6b7280">${note}</td>`;
+  const noteCell = `<td class="note-cell${t.description ? '' : ' empty'}" data-id="${escHtml(t.id)}" style="color:var(--text-muted)">${note}</td>`;
   const delCell = `<td class="del-col"><button class="delete-txn-btn" data-id="${escHtml(t.id)}" title="Delete transaction">×</button></td>`;
   return `<tr><td>${dateStr}</td><td>${badge}</td><td>${teamCell}</td><td>${playerCell}</td><td>${detailsCell}</td>${noteCell}${delCell}</tr>`;
 }
@@ -2651,7 +2651,7 @@ function renderDetailsCell(t) {
     }).join('');
 
     return d.is_sign_and_trade
-      ? teamsStr + '<div style="color:#fbbf24;margin-top:0.25rem">S&amp;T — acquiring team(s) hard-capped at First Apron</div>'
+      ? teamsStr + '<div style="color:var(--gold);margin-top:0.25rem">S&amp;T — acquiring team(s) hard-capped at First Apron</div>'
       : teamsStr;
   }
   return '';
