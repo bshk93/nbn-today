@@ -2382,7 +2382,14 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
   // History, not this panel — this panel is only future picks still up in
   // the air (no player attached yet).
   const notDrafted = p => !p.player;
-  const isTBD      = p => p.owner === '?' || p.owner.includes('|');
+  // A pick whose owner/leaves look like a plain settled fact can still carry
+  // a real contingent claim for THIS team via `ladder_fallback_of` — server
+  // now includes such picks in this team's list (2026-07-23 fix), but the
+  // `owner` field itself is untouched (still names the actual current
+  // holder, e.g. "OKC"), so without this check it would wrongly land in the
+  // confident "Acquired" bucket below instead of "Uncertain owner".
+  const isFallbackClaim = p => !!(p.ladder_fallback_of && p.ladder_fallback_of.to === teamAbbr);
+  const isTBD      = p => p.owner === '?' || p.owner.includes('|') || isFallbackClaim(p);
   const isLegacy   = p => !!p.legacy;
 
   const tag = (arr, kind) => arr.map(p => ({ ...p, _kind: kind }));
