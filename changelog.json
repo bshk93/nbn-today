@@ -1,16 +1,23 @@
 [
   {
+    "version": "0.0.364",
+    "date": "2026-07-23",
+    "changes": [
+      "Fixed a Stepien Rule bug: two pick rows sharing a swap group or binary chain were treated as independent claims, so a team could look like it had a spare when trading away either row would actually empty that draft year for them (e.g. HOU's 2027 1st, a shared DET/HOU swap right shown as two rows). Both the roster-page lock indicator and the trade validator now correctly treat same-group rows as one shared claim"
+    ]
+  },
+  {
     "version": "0.0.363",
     "date": "2026-07-23",
     "changes": [
-      "CLAUDE.md: replaced the picks-conveyance doc pointer with the complete pick data model written out directly (orig/owner/leaves/group_id/protected/swap_owner/ladder/legacy) — internal documentation only, no site-facing change"
+      "CLAUDE.md: replaced the picks-conveyance doc pointer with the complete pick data model written out directly (orig/owner/leaves/group_id/protected/swap_owner/ladder/legacy) \u2014 internal documentation only, no site-facing change"
     ]
   },
   {
     "version": "0.0.362",
     "date": "2026-07-23",
     "changes": [
-      "CLAUDE.md: added a pointer to nbn-api/docs/picks-conveyance.md (plus a fast-recall cheat sheet on orig/owner/leaves) ahead of any pick-object interpretation — internal documentation only, no site-facing change"
+      "CLAUDE.md: added a pointer to nbn-api/docs/picks-conveyance.md (plus a fast-recall cheat sheet on orig/owner/leaves) ahead of any pick-object interpretation \u2014 internal documentation only, no site-facing change"
     ]
   },
   {

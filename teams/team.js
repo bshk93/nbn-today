@@ -1310,14 +1310,27 @@ function computeStepienLocked(teamPicks, allPicks) {
   if (!range) return locked;
   const [lo, hi] = range;
   const round1 = (teamPicks || []).filter(p => p.round === 1 && !p.player);
-  const countByYear = new Map();
-  round1.forEach(p => countByYear.set(p.year, (countByYear.get(p.year) || 0) + 1));
   const have = new Set(round1.map(p => p.year));
+
+  // Two pick rows sharing the same group_id (a swap group / binary chain)
+  // are ONE shared claim, not two independent ones -- trading either row
+  // mutates the same underlying priority list / chain node (see nbn-api's
+  // registry.handle_retrade), so a team can't give up one and "keep the
+  // other." Group rows by claim before counting how many distinct claims a
+  // team holds in a year, and lock every row in a claim together.
+  const claims = new Map();
   round1.forEach(p => {
-    if (countByYear.get(p.year) > 1) return;   // another pick still covers this year
-    const prevMissing = p.year - 1 >= lo && !have.has(p.year - 1);
-    const nextMissing = p.year + 1 <= hi && !have.has(p.year + 1);
-    if (prevMissing || nextMissing) locked.add(`${p.year}:${p.orig}`);
+    const key = p.group_id || `solo:${p.year}:${p.orig}`;
+    if (!claims.has(key)) claims.set(key, { year: p.year, rows: [] });
+    claims.get(key).rows.push(p);
+  });
+  const countByYear = new Map();
+  claims.forEach(c => countByYear.set(c.year, (countByYear.get(c.year) || 0) + 1));
+  claims.forEach(c => {
+    if (countByYear.get(c.year) > 1) return;   // another distinct claim still covers this year
+    const prevMissing = c.year - 1 >= lo && !have.has(c.year - 1);
+    const nextMissing = c.year + 1 <= hi && !have.has(c.year + 1);
+    if (prevMissing || nextMissing) c.rows.forEach(p => locked.add(`${p.year}:${p.orig}`));
   });
   return locked;
 }
