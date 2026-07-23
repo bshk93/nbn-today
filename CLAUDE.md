@@ -509,16 +509,14 @@ All other display data (name, position, age, salary, cap holds) is joined from `
 
 ### Draft pick
 
-One row in `{abbr}-picks.csv`. Represents a future draft pick owned by or owed by the team.
+**Before interpreting any pick object — from `GET /api/picks`, `GET /api/picks/{team}`, or the picks table in a team page — read `nbn-api/docs/picks-conveyance.md` first.** It is the design spec for the live conveyance model and contains worked examples for every structure below (protections, swaps, ladders, legacy). Do not infer a pick's real ownership from field names alone; the model was built specifically so that guessing is unnecessary. Getting this wrong by skipping the doc has happened before (2026-07-23) — an already-resolved swap right got reverse-engineered from raw transaction history instead of just reading the doc's own acceptance-test example for that exact pick.
 
-| Column | Values | Notes |
-|---|---|---|
-| `YEAR` | e.g. `2026` | Draft year |
-| `ROUND` | `1st` or `2nd` | |
-| `TEAM` | `Own`, `from NYK`, … | Origin team (for acquired picks) or `Own` |
-| `TYPE` | `own` or `acquired` | Whether the team retains or receives this pick |
-
-A trailing `*` on `TEAM` (e.g. `Own*`) conventionally marks a pick with conditions.
+Fast-recall cheat sheet (the doc is still the source of truth):
+- **`orig`** is immutable identity only — "whose draft slot is this numerically" — never a current party. `(year, round, orig)` is the primary key. A pick with `orig: "LAL"` does not imply LAL has any live stake in it; they may have traded it away entirely, with only the numeric slot label persisting.
+- **`owner`** is the resolved-view convenience field: a single team when settled, `"?"` when genuinely undetermined, or `"TEAM1|TEAM2"` when there are exactly N live candidates and no distinguishing info between them.
+- **`leaves`** is the authoritative structure for any contingent pick (protected, swap, ladder) — an array of `{team, description, txn_ids}`. The set of teams appearing in `leaves` **is** the complete list of real candidates; nothing else names a party. `description` states the role in plain language (e.g. `"swap priority (better pick)"` / `"(worse pick)"`, `"protected band 1-4"`) — read it before drawing any conclusion about who ends up with what.
+- A 2-leaf swap (`group_id` set, `swap_owner` present) is a **two-team relationship** between whichever teams appear in `leaves`, even though it spans two separate `(year, round, orig)` pick rows — the second row's `orig` is not a third party, just the other physical pick being compared.
+- The flat, legacy `{abbr}-picks.csv` (`YEAR, ROUND, TEAM, TYPE`, `TEAM` values like `Own`, `from NYK`, a trailing `*` for "has conditions") is a coarse display/compatibility projection, not the model. It exists for the write-side (`PUT /api/picks/{team}`) and older code paths; anything that needs to reason about *why* a pick is owned by whom must go through `/api/picks` and `leaves`, not this file.
 
 ### Player season
 
