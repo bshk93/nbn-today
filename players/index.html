@@ -945,8 +945,8 @@
         if (tiebreakerField) {
           const ta = a[tiebreakerField] ?? '';
           const tb = b[tiebreakerField] ?? '';
-          if (ta < tb) return 1;
-          if (ta > tb) return -1;
+          if (ta < tb) return sortDir === 1 ? -1 : 1;
+          if (ta > tb) return sortDir === 1 ? 1 : -1;
         }
         return 0;
       });
