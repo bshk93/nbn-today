@@ -26,12 +26,13 @@ Also read `/home/skim/projects/nbn-today/rulebook/index.html` sections as needed
 
 ### 3. Classify the transaction type
 
-Read `TEXT` and decide which of the 11 types it describes:
+Read `TEXT` and decide which of the 12 types it describes:
 
 | Type | Cues in freeform text |
 |---|---|
 | `trade` | Two or more teams exchanging players/picks ("trades X for Y", "sends ... to ... for ...") |
 | `sign` + `trade` (sign-and-trade) | "sign-and-trades X to Y", or a pending free agent being re-signed by their own team and immediately moved elsewhere. Not a distinct API type — see the note under step 5's shape reference. |
+| `offer_sheet` (RFA offer sheet, § 3.15) | A team extends an offer sheet to another team's restricted free agent ("X offers Y a 2-year offer sheet", "Z matches the offer sheet", "Z declines to match / lets Y walk"). One call — it applies the contract itself, matched or not. See step 5. |
 | `sign` | A free agent signing a new contract with a team |
 | `sign_pick` | Signing a player to their **rookie-scale** contract after their draft rights were awarded (distinct from `pick` — see below) |
 | `pick` | Awarding a drafted player's rights to the team that picked them (no contract yet — that's a separate later `sign_pick`) |
@@ -52,6 +53,8 @@ If the text is genuinely ambiguous between two types (e.g. "signs their draft pi
 For each player named in `TEXT`, match against `/api/players` the same way as other skills in this repo: build a `lowercase "first last" -> slug` map from each bio's `name` field (`"LAST, FIRST"`), then fuzzy-match with `difflib.get_close_matches`. Confirm uncertain matches with the user in step 7 rather than silently picking the top match if the text used an ambiguous short name (e.g. just a last name shared by multiple players).
 
 For `sign`/`release`/`renounce`/`convert_twoway`/`option`/`guarantee`/`void_player`, cross-check the resolved player is actually in the state the text implies (e.g. don't resolve a `release` or `void_player` against a player who isn't currently on that team's roster per `/api/team-map`) — flag a mismatch instead of proceeding.
+
+For `offer_sheet`, the named player must currently carry an `RFA` (not `UFA`) cap hold for the upcoming season on their current team per `/api/players` — the API hard-rejects (422) anything else, so check this yourself before presenting the interpretation rather than letting the submit fail. The retaining team is not something you ask for — it's whichever team `/api/team-map` currently shows for the player; `offering_team` is the team named in the text as extending the offer, and must differ from the retaining team.
 
 `set_hard_cap_level` names no player at all — it's a team-only transaction. Don't try to resolve a player for it.
 
@@ -86,6 +89,7 @@ Use these exact shapes (from `nbn-api/routers/transactions.py`):
 
 ```
 sign:            { player, team, contract, signing_method?, bird_rights_type? }
+offer_sheet:     { player, offering_team, contract, outcome: "matched"|"not_matched" }
 pick:            { player, team, pick: { year, round, orig, pick_number? } }
 sign_pick:       { player, contract }
 release:         { player }
@@ -104,6 +108,8 @@ trade:           { transfers: [ { from_team, to_team, assets: [
 
 **Sign-and-trade** is not its own transaction type — submit it as two separate calls: a `sign` (set `signing_method: "sign_and_trade"`) for the re-signing team, immediately followed by a `trade` moving the player to the acquiring team. Nothing links these automatically; if `TEXT` describes a sign-and-trade, set `is_sign_and_trade: true` on the trade step yourself (this hard-caps every team receiving a player in that trade at First Apron — rulebook §1.4 row C) and pass the `sign` transaction's returned `id` as `sign_and_trade_txn_id` so the log stays traceable. Submit the `sign` first and wait for its response before building the `trade` payload — you need its `id`.
 
+**RFA offer sheet** (§ 3.15) is a single call — `outcome: "matched"` means the retaining team keeps the player, signed to `contract`; `outcome: "not_matched"` means the offer stands and the player signs with `offering_team` on `contract`. The API applies the contract itself (internally the same as a `sign`) to whichever team the outcome resolves to — you don't submit a separate `sign` afterward. (An earlier two-step design that required a follow-up `sign` transaction shipped a real bug: the offer sheet got submitted, the follow-up `sign` didn't, and the contract silently never applied. Don't reintroduce that pattern.) Rescission of renounced holds when the retaining team matches (§ 3.10/§ 3.15) is not modeled as its own transaction type yet — if `TEXT` mentions the offering team restoring a renounced hold after a match, flag it in step 7 and note it needs to be entered as a separate manual correction.
+
 `reason` (`void_player`/`set_hard_cap_level`, optional but strongly encouraged): free text — for `void_player`, why there's no dead cap (e.g. "retired", "not in 2K26"); for `set_hard_cap_level`, why the level is being set (e.g. "NTMLE trade absorption", "sign-and-trade"). This is the whole point of routing these through the transaction log instead of a silent CSV/team-state edit — don't leave it blank if the text gives you a reason. `level: "default"` clears the team back to no team-specific cap (only the league-wide absolute hard cap still applies).
 
 `exceptions` (trade only, optional): maps a team abbr to the MLE-type exception it's using to absorb *that team's* incoming salary in this trade, in lieu of matching outgoing salary (rulebook § 4.2a). Only set this when the text explicitly says a team is using its MLE/room exception to make a trade work — don't infer it just because a trade would otherwise fail salary matching. Omit a team's key (or use `null`) for teams matching normally.
@@ -121,7 +127,7 @@ Only include optional fields the text actually implies — don't invent salary n
 
 ### 6. Check against the rulebook
 
-Look up the relevant article per the table in this project's CLAUDE.md (Article IV for trades, III for signings, § 6.2 extensions, § 6.1 options, Article V releases, § 3.10 renounce, Article VII draft pick signings; § 5.1's "contract voiding" carve-out for `void_player`; Article I §§ 1.3–1.4 for `set_hard_cap_level`). **Only `sign`, `trade`, and `convert_twoway` have real automated validators in the API** (`_validate_sign`, `_validate_trade`, `_validate_convert_twoway` in `transactions.py`) — every other type (`release`, `renounce`, `option`, `guarantee`, `pick`, `void_player`, `set_hard_cap_level`) returns no checks at all from the API regardless of legality. The rulebook itself flags which sections are "🔒 system-enforced" vs "👁 manual review" — for anything marked manual review, you are the check: read the section and reason about whether the described transaction is legal before presenting it, and flag any concern even though the API won't block it.
+Look up the relevant article per the table in this project's CLAUDE.md (Article IV for trades, III for signings, § 3.15 RFA offer sheets, § 6.2 extensions, § 6.1 options, Article V releases, § 3.10 renounce, Article VII draft pick signings; § 5.1's "contract voiding" carve-out for `void_player`; Article I §§ 1.3–1.4 for `set_hard_cap_level`). **Only `sign`, `trade`, and `convert_twoway` have real automated validators in the soft `checks` path** (`_validate_sign`, `_validate_trade`, `_validate_convert_twoway` in `transactions.py`) — every other type (`release`, `renounce`, `option`, `guarantee`, `pick`, `void_player`, `set_hard_cap_level`, `offer_sheet`) returns no soft checks at all regardless of legality. `offer_sheet` is a partial exception: it does hard-reject (422, not forceable) on a few structural things — player must currently hold an `RFA` cap hold, `offering_team` must differ from the retaining team, `contract.salaries` must cover ≥2 years — but everything else about § 3.15 legality (whether the offer is a good-faith fit under the offering team's cap situation, Gilbert Arenas Provision eligibility for a 2-years-of-service player, etc.) is manual review, same as the fully-manual types. The rulebook itself flags which sections are "🔒 system-enforced" vs "👁 manual review" — for anything marked manual review, you are the check: read the section and reason about whether the described transaction is legal before presenting it, and flag any concern even though the API won't block it.
 
 For `void_player` specifically, §5.1 limits voiding-with-no-payment to three circumstances (real-life/medical retirement, player not present in the current 2K build, or an unwanted 2nd-round pick/UDFA voided by the July 31 deadline). If `TEXT` describes an ordinary cut where the team is on the hook for anything, that's `release`, not `void_player` — say so and don't let the user route real dead cap around the dead-cap calculation by mislabeling the type.
 

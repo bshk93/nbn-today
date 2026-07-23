@@ -629,7 +629,7 @@
           </div>
 
           <div class="doc-section" id="s3-12">
-            <h3 class="sec-title"><span class="sec-num">§ 3.12</span> Minimum Contracts <span class="badge badge-manual">👁 manual review</span></h3>
+            <h3 class="sec-title"><span class="sec-num">§ 3.12</span> Minimum Contracts <span class="badge badge-enforced">🔒 system-enforced</span> <span class="badge badge-manual">👁 manual review</span></h3>
             <p>Minimum salaries mirror the <strong>NBA's minimum salary scale</strong>, indexed by years of NBA experience — set each season by the league office and recorded in the system, the same way the cap thresholds in § 1.1 are. The 0-years (rookie) row is also the figure used for the Empty Roster Charge (§ 2.1a).</p>
             <div class="cap-table-wrap">
               <div class="cap-table-header">
@@ -655,6 +655,7 @@
               <li><strong>Multi-year minimum deal:</strong> Each year's salary follows the scale above for the player's years of experience that season.</li>
             </ul>
             <p><strong>Undrafted free agents (UDFAs):</strong> A UDFA signed via the minimum exception to a standard contract is <strong>non-guaranteed until July 31</strong>. Before that date the team may waive the player with <strong>no dead cap</strong> (a contract void under § 5.1); on July 31 the contract becomes fully guaranteed. A UDFA may instead be signed to a Two-Way contract, which carries <strong>no cap hit</strong> (see § 2.2).</p>
+            <p><strong>What's system-enforced:</strong> when a <code>sign</code> transaction is submitted with <code>signing_method: "minimum"</code> and a single salary year, the API infers the player's years of NBA experience from their real draft year and flags (as an overridable warning) any submitted amount that doesn't match the 2-year-capped figure above. <strong>Still manual review:</strong> multi-year minimum deals aren't checked against the per-year scale, and the experience inference has no independent source to verify against beyond draft year — the What If Mode roster sandbox (team pages) offers the same capped 1-yr Vet Min presets so a hypothetical signing matches this rule too.</p>
           </div>
 
           <div class="doc-section" id="s3-13">
@@ -689,7 +690,7 @@
           </div>
 
           <div class="doc-section" id="s3-15">
-            <h3 class="sec-title"><span class="sec-num">§ 3.15</span> Restricted Free Agents — Offer Sheets &amp; Matching <span class="badge badge-manual">👁 manual review</span></h3>
+            <h3 class="sec-title"><span class="sec-num">§ 3.15</span> Restricted Free Agents — Offer Sheets &amp; Matching <span class="badge badge-enforced">🔒 system-enforced</span> <span class="badge badge-manual">👁 manual review</span></h3>
             <p>A player becomes a Restricted Free Agent (RFA) when their team issues a Qualifying Offer at the end of their contract and the player does not accept. The retaining team holds the right to match any offer sheet.</p>
             <p><strong>Offer sheets:</strong></p>
             <ul>
@@ -699,6 +700,7 @@
             </ul>
             <p><strong>Renouncement and rescission:</strong> A team may renounce cap holds to create space for an offer sheet. If the retaining team matches, the offering team may rescind those renouncements (see § 3.10 for restrictions).</p>
             <p><strong>RFA via S&amp;T:</strong> Under the Gilbert Arenas Provision (§ 3.8), a team with Early Bird Rights may use those rights to match an offer sheet for an RFA with 2 years of service.</p>
+            <p><strong>What's system-enforced:</strong> a single <code>offer_sheet</code> transaction records the offer and outcome and immediately applies it — it validates the player is a real RFA (not UFA) hold, the offer covers at least 2 contract years, and the offering team isn't the player's own team, then signs the player to the offered contract (retaining team on a match, offering team otherwise). <strong>Still manual review:</strong> the 48-hour match clock and the offering team's temporary offer-value cap hold aren't modeled — everything is entered after the outcome is known. Rescission of renouncements on a match isn't implemented yet (no <code>rescind_renounce</code> transaction type); do it by hand.</p>
           </div>
         </article>
 

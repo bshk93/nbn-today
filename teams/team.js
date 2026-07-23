@@ -209,6 +209,7 @@ const ratingsPopupReady = new Promise(resolve => {
   thead th .sort-arrow { margin-left: 4px; opacity: 0; font-size: 0.65rem; }
   thead th[data-active="true"] .sort-arrow { opacity: 1; }
   thead th.right { text-align: right; }
+  thead th.center { text-align: center; }
   tbody tr { border-bottom: 1px solid var(--border-subtle); transition: background 0.1s; }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: var(--bg-hover); }
@@ -300,7 +301,7 @@ const ratingsPopupReady = new Promise(resolve => {
   .picks-traded td     { color: var(--text-muted); font-style: italic; }
   .picks-uncertain td  { color: var(--warning); font-style: italic; }
   .picks-legacy td     { color: var(--danger); font-style: italic; }
-  .picks-legacy td:nth-child(6) { color: var(--text-secondary); font-style: normal; }
+  .picks-legacy td:nth-child(7) { color: var(--text-secondary); font-style: normal; }
   .picks-legend {
     display: flex;
     flex-wrap: wrap;
@@ -403,6 +404,11 @@ const ratingsPopupReady = new Promise(resolve => {
     margin-bottom: 1.25rem;
   }
   .hard-cap-banner.apron2 { background: var(--danger-alt-bg); border-color: var(--danger-alt-border); color: var(--danger-alt); }
+  .stepien-banner {
+    background: var(--danger-alt-bg); border: 1px solid var(--danger-alt-border); border-radius: 8px;
+    padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; color: var(--danger-alt);
+    margin-bottom: 0.75rem;
+  }
   .exceptions-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1.25rem; font-size: 0.85rem; }
   .exceptions-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid var(--border-subtle); gap: 1rem; }
   .exceptions-row:last-child { border-bottom: none; }
@@ -410,6 +416,74 @@ const ratingsPopupReady = new Promise(resolve => {
   .exc-mle-type { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.35rem; }
   .exc-remaining { color: var(--success); }
   .exc-used { color: var(--danger); }
+  .whatif-enter-btn, .whatif-exit-btn {
+    padding: 0.3rem 0.7rem; border: 1px solid var(--danger-border); border-radius: 6px;
+    font-size: 0.75rem; font-weight: 600; cursor: pointer; background: transparent;
+    color: var(--danger); font-family: inherit; white-space: nowrap;
+  }
+  .whatif-enter-btn:hover, .whatif-exit-btn:hover { background: var(--danger-bg); }
+  .whatif-panel {
+    border: 1px dashed var(--danger-border); border-radius: 10px;
+    padding: 0.85rem 1rem; margin-top: 0.85rem;
+    background: repeating-linear-gradient(135deg, transparent, transparent 10px, var(--danger-bg) 10px, var(--danger-bg) 20px);
+  }
+  .whatif-panel > * + * { margin-top: 0.75rem; }
+  .whatif-toolbar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .whatif-badge {
+    display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 4px;
+    background: var(--danger-bg); color: var(--danger-light); border: 1px solid var(--danger-border-strong);
+  }
+  .whatif-add-input {
+    background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text-primary); font-size: 0.8rem; padding: 0.3rem 0.55rem;
+    font-family: inherit; min-width: 240px; outline: none;
+  }
+  .whatif-add-input:focus { border-color: var(--accent); }
+  .whatif-row-action {
+    font-size: 0.68rem; padding: 0.12rem 0.4rem; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-card); color: var(--text-muted); cursor: pointer; font-family: inherit; margin-left: 0.3rem;
+    white-space: nowrap;
+  }
+  .whatif-row-action:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+  .whatif-row-action.danger { color: var(--danger); border-color: var(--danger-border); }
+  .whatif-row-action.danger:hover { background: var(--danger-bg); }
+  .whatif-warning-line { color: var(--danger); font-size: 0.78rem; font-weight: 600; padding: 0.15rem 0; }
+  .whatif-attr-heading { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .whatif-attr-heading-note { font-size: 0.7rem; font-weight: 500; text-transform: none; letter-spacing: normal; color: var(--text-dim); }
+  #whatif-attr-impact table td, #whatif-attr-impact table th { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+  .whatif-attr-delta-line { font-weight: 700; }
+  .whatif-attr-ba-line { font-size: 0.68rem; color: var(--text-dim); font-weight: 400; margin-top: 0.1rem; }
+  .whatif-attr-up   .whatif-attr-delta-line { color: var(--success); }
+  .whatif-attr-down .whatif-attr-delta-line { color: var(--danger); }
+  .whatif-attr-zero .whatif-attr-delta-line { color: var(--text-dim); }
+  .whatif-attr-total-row td { font-weight: 700; border-bottom: 1px solid var(--border); }
+  .whatif-attr-total-row td:first-child { color: var(--text-primary); }
+  .whatif-attr-total-row .whatif-attr-delta-line { font-weight: 800; }
+  .whatif-contract-form {
+    display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;
+    padding: 0.6rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    font-size: 0.8rem;
+  }
+  .whatif-contract-form label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+  .whatif-contract-form input, .whatif-contract-form select {
+    background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);
+    font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 7.5rem; outline: none;
+  }
+  .whatif-contract-form input:focus, .whatif-contract-form select:focus { border-color: var(--accent); }
+  .whatif-contract-year { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.3rem 0.5rem; border: 1px solid var(--border-subtle); border-radius: 6px; }
+  .whatif-log { display: flex; flex-direction: column; gap: 0.3rem; }
+  .whatif-log-entry {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+    font-size: 0.76rem; color: var(--text-secondary);
+    background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 6px;
+    padding: 0.25rem 0.3rem 0.25rem 0.6rem;
+  }
+  .whatif-log-entry button {
+    background: none; border: none; color: var(--text-dim); cursor: pointer;
+    font-size: 1.05rem; line-height: 1; padding: 0 0.3rem; font-family: inherit;
+  }
+  .whatif-log-entry button:hover { color: var(--danger); }
   .token-overlay {
     position: fixed;
     inset: 0;
@@ -615,10 +689,30 @@ document.body.innerHTML = `
             <button class="mode-tab" data-mode="stats" type="button">Stats</button>
             <button class="mode-tab" data-mode="ratings" type="button">Ratings</button>
           </div>
+          <button id="whatif-enter-btn" class="whatif-enter-btn" type="button">What If Mode</button>
         </div>
         <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
         <div id="cap-edit-wrap"></div>
         <div id="dead-cap-edit-wrap"></div>
+        <div id="whatif-panel" class="whatif-panel" style="display:none">
+          <div class="whatif-toolbar">
+            <span class="whatif-badge">What If Mode — nothing here is saved</span>
+            <span id="whatif-add-wrap"></span>
+            <button id="whatif-exit-btn" class="whatif-exit-btn" type="button">Exit What If Mode</button>
+          </div>
+          <div id="whatif-log" class="whatif-log"></div>
+          <div id="whatif-contract-form-slot"></div>
+          <div class="table-wrap" id="whatif-roster-wrap"></div>
+          <div id="whatif-warnings"></div>
+          <div id="whatif-attr-impact-wrap" style="display:none">
+            <div class="whatif-attr-heading">Attribute Impact <span class="whatif-attr-heading-note">— vs. your real roster, cap holds excluded</span></div>
+            <div id="whatif-attr-impact" class="table-wrap"></div>
+          </div>
+          <div id="whatif-hard-cap-banner" style="display:none"></div>
+          <div id="whatif-exceptions-section" style="display:none">
+            <div id="whatif-exceptions-wrap" class="exceptions-card"></div>
+          </div>
+        </div>
       </section>
       <section id="exceptions-section" style="display:none">
         <h2 class="section-title">Cap Exceptions</h2>
@@ -630,6 +724,7 @@ document.body.innerHTML = `
       </section>
       <section>
         <h2 class="section-title" id="picks-title">Draft Picks</h2>
+        <div id="stepien-banner" style="display:none"></div>
         <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
@@ -1144,6 +1239,31 @@ function computeEmptyRosterCharge(rosterRows, biosData, capLevels, season) {
   return { deficiency, rookieMin, charge: deficiency * rookieMin };
 }
 
+// Team salary totals (§ 1.3/1.4: teamSalaryExHolds excludes pure UFA/RFA
+// free-agent holds for apron/hard-cap comparisons, teamSalaryFull keeps them
+// for plain Cap/room checks) plus the real Empty Roster Charge. Shared by the
+// real roster render and by What-If Mode, which calls this with a hypothetical
+// rosterRows/deadCapRows + a merged biosData rather than the real ones.
+function computeCapSummary(rosterRows, deadCapRows, biosData, capLevels, season) {
+  const FA_HOLD_TYPES = ['UFA', 'RFA'];
+  let teamSalaryFull = 0, teamSalaryExHolds = 0;
+  rosterRows.forEach(row => {
+    const bio = biosData[row.SLUG] || {};
+    const sal = parseSalaryNum((bio.salaries || {})[season]);
+    teamSalaryFull += sal;
+    if (!FA_HOLD_TYPES.includes((bio.cap_holds || {})[season])) teamSalaryExHolds += sal;
+  });
+  deadCapRows.forEach(row => {
+    const sal = parseSalaryNum(row[season] || '');
+    teamSalaryFull += sal;
+    teamSalaryExHolds += sal;
+  });
+  const erc = computeEmptyRosterCharge(rosterRows, biosData, capLevels, season);
+  teamSalaryFull += erc.charge;
+  teamSalaryExHolds += erc.charge;
+  return { teamSalaryFull, teamSalaryExHolds, erc };
+}
+
 function computeMleType(teamSalaryFull, teamSalaryExHolds, capLevels, season, teamState) {
   if (teamState?.mle_type) return teamState.mle_type;
   const cl = capLevels?.[season];
@@ -1159,8 +1279,8 @@ function mleTypeLabel(type) {
   return { room: 'Room Exception', ntmle: 'Non-Taxpayer MLE', tmle: 'Taxpayer MLE' }[type] || '—';
 }
 
-function renderHardCapBanner(teamState) {
-  const el = document.getElementById('hard-cap-banner');
+function renderHardCapBanner(teamState, el = document.getElementById('hard-cap-banner')) {
+  if (!el) return;
   if (!teamState?.hard_cap) { el.style.display = 'none'; return; }
   const isApron2 = teamState.hard_cap === 'second_apron';
   el.className = 'hard-cap-banner' + (isApron2 ? ' apron2' : '');
@@ -1169,9 +1289,46 @@ function renderHardCapBanner(teamState) {
   el.textContent = `⚠ Hard-Capped: ${isApron2 ? 'Second' : 'First'} Apron${reason}`;
 }
 
-function renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, season) {
-  const section = document.getElementById('exceptions-section');
-  const wrap = document.getElementById('exceptions-wrap');
+// § 7.2 Stepien Rule: a team must retain the ability to make a first-round
+// selection at least once every two draft years. `teamPicks` (GET
+// /api/picks/{team}) already resolves "does this team hold a claim on this
+// pick" the same way trade validation does (own, acquired, or a named
+// candidate on a still-contingent pick) — count any round-1 entry there as
+// "has a pick that year". `allPicks` (GET /api/picks, league-wide) supplies
+// the year range to scan, since a team missing from every row in a year is
+// otherwise indistinguishable from a year outside the tracked horizon.
+function computeStepienGap(teamPicks, allPicks) {
+  const have = new Set(
+    (teamPicks || []).filter(p => p.round === 1 && !p.player).map(p => p.year)
+  );
+  // Only undrafted years define the scan range — once every team's pick for
+  // a year is drafted (player set), that year drops out of the ledger for
+  // everyone and would otherwise misread as a league-wide gap.
+  const years = (allPicks || []).filter(p => p.round === 1 && !p.player).map(p => p.year);
+  if (!years.length) return null;
+  const lo = Math.min(...years), hi = Math.max(...years);
+  let runStart = null;
+  for (let y = lo; y <= hi; y++) {
+    if (have.has(y)) { runStart = null; continue; }
+    if (runStart === null) runStart = y;
+    else return [runStart, y];
+  }
+  return null;
+}
+
+function renderStepienBanner(gap, el = document.getElementById('stepien-banner')) {
+  if (!el) return;
+  if (!gap) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.textContent = `⚠ Stepien Rule: no first-round pick in ${gap[0]} or ${gap[1]} (§ 7.2)`;
+}
+
+function renderExceptionsSection(
+  teamState, capLevels, teamSalaryFull, teamSalaryExHolds, season,
+  section = document.getElementById('exceptions-section'),
+  wrap = document.getElementById('exceptions-wrap'),
+) {
+  if (!section || !wrap) return;
   const cl = capLevels?.[season];
   if (!cl?.ntmle_amount && !cl?.bae_amount) { section.style.display = 'none'; return; }
 
@@ -1388,6 +1545,60 @@ function computeRatingFields(attrSnap) {
   return fields;
 }
 
+// Whether a roster row actually plays for the team (and so should count
+// toward roster-wide attribute totals) as opposed to being a pure cap
+// placeholder — a bare UFA/RFA hold (no real salary this season) or a dead-cap
+// line. Two-way/draft-rights rows do count; they're real players.
+function isAttrCountedRow(row, biosData, season) {
+  if (!row.SLUG) return false;
+  const bio = biosData[row.SLUG] || {};
+  const type = row.TYPE || bio.type || '';
+  if (type === 'dead') return false;
+  // A UFA/RFA cap-hold type means this is a bare hold, not a real roster
+  // spot — even though it carries a nominal $ figure (same convention as
+  // real FA holds elsewhere on the page), it doesn't count as a player.
+  const capType = (bio.cap_holds || {})[season];
+  if (capType === 'UFA' || capType === 'RFA') return false;
+  return true;
+}
+
+// Sum of each RATING_ATTR_COLUMNS attribute across a specific set of rows —
+// the caller decides which rows belong (the whole countable roster, or just
+// its top N by OVR).
+function sumAttrsForRows(rows, attributesData) {
+  const totals = {};
+  RATING_ATTR_COLUMNS.forEach(c => { totals[c.key] = 0; });
+  rows.forEach(row => {
+    const attrs = (attributesData[row.SLUG] && attributesData[row.SLUG].attributes) || {};
+    RATING_ATTR_COLUMNS.forEach(c => {
+      const v = parseFloat(attrs[c.key]);
+      if (!isNaN(v)) totals[c.key] += v;
+    });
+  });
+  return totals;
+}
+
+// Countable rows (cap holds/dead cap excluded), highest OVR first — the
+// ordering a "top N players" cut is taken from.
+function countableRowsByOvr(rows, biosData, currentOvr, season) {
+  return rows
+    .filter(row => isAttrCountedRow(row, biosData, season))
+    .slice()
+    .sort((a, b) => (parseFloat(currentOvr[b.SLUG]) || 0) - (parseFloat(currentOvr[a.SLUG]) || 0));
+}
+
+// Attribute totals for the whole countable roster, plus its top 5/8/10 by
+// OVR — used to diff a real roster against a What-If Mode hypothetical one.
+function computeAttrTotals(rows, biosData, attributesData, currentOvr, season) {
+  const sorted = countableRowsByOvr(rows, biosData, currentOvr, season);
+  return {
+    all:   sumAttrsForRows(sorted, attributesData),
+    top5:  sumAttrsForRows(sorted.slice(0, 5), attributesData),
+    top8:  sumAttrsForRows(sorted.slice(0, 8), attributesData),
+    top10: sumAttrsForRows(sorted.slice(0, 10), attributesData),
+  };
+}
+
 function computeStatFields(seasonRow) {
   if (!seasonRow) {
     return { _statSeason: '—', _statG: '—', _statMpg: '—', _statPpg: '—', _statRpg: '—', _statApg: '—', _statSpg: '—', _statBpg: '—', _stat3pmpg: '—', _statGmscpg: '—' };
@@ -1413,7 +1624,7 @@ function computeStatFields(seasonRow) {
 // per-game averages from the player's latest season, 'ratings' shows every
 // individual 2K attribute. `latestSeasonBySlug` comes from
 // computeLatestSeasonBySlug(allSeasons), computed once at page load.
-function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}) {
+function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null) {
   if (!rows.length) return null;
   const curYr = currentSeasonYr();
   const hasSlug = 'SLUG' in rows[0] && !('PLAYER' in rows[0]);
@@ -1568,7 +1779,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   deadCapRows.forEach(row => {
     const bio = biosData[row.SLUG] || {};
     const dcSals = {};
-    Object.keys(row).forEach(k => { if (/^\d{2}-\d{2}$/.test(k) && row[k]) dcSals[k] = row[k]; });
+    Object.keys(row).forEach(k => { if (/^\d{2}-\d{2}$/.test(k) && row[k] && k >= curYr) dcSals[k] = row[k]; });
+    if (!Object.keys(dcSals).length) return; // dead cap fully in the past — keep the record, just stop showing the row
     augmented.push({
       SLUG:       row.SLUG,
       OVR:        '',
@@ -1658,6 +1870,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     if (col.full) attachTooltip(th, col.full);
     hr.appendChild(th);
   });
+  if (rowActions) hr.appendChild(document.createElement('th'));
 
   const tbody = table.createTBody();
   let lastType = null;
@@ -1668,7 +1881,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       const sep = tbody.insertRow();
       sep.className = 'subheader';
       const td = sep.insertCell();
-      td.colSpan = cols.length;
+      td.colSpan = cols.length + (rowActions ? 1 : 0);
       td.textContent = LABELS[row._type];
       lastType = row._type;
     } else if (row._type !== lastType) {
@@ -1708,7 +1921,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         }
         topRow.appendChild(avatar);
 
-        if (row.SLUG) {
+        if (row.SLUG && !row.SLUG.startsWith(WHATIF_CUSTOM_PREFIX)) {
           const a = document.createElement('a');
           a.href = `/players/?p=${row.SLUG}`;
           a.textContent = row._name;
@@ -1781,6 +1994,12 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         td.textContent = row[col.key] ?? '—';
       }
     });
+
+    if (rowActions) {
+      const actionsTd = tr.insertCell();
+      actionsTd.className = 'whatif-actions-cell';
+      rowActions(row, actionsTd, capMap);
+    }
   });
 
   // ── Salary tfoot ─────────────────────────────────────────────────────────────
@@ -1792,7 +2011,11 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     const totals = {};
     BUCKET_ORDER.forEach(b => { totals[b] = {}; salaryKeys.forEach(k => { totals[b][k] = { amt: 0, count: 0 }; }); });
     const grandTotals = {};
-    salaryKeys.forEach(k => { grandTotals[k] = 0; });
+    // Apron/hard-cap comparisons exclude pure UFA/RFA holds (§ 1.3/1.4) — same
+    // convention as computeMleType/computeCapSummary; the plain Salary Cap row
+    // below still uses the hold-inclusive grandTotals.
+    const grandTotalsExHolds = {};
+    salaryKeys.forEach(k => { grandTotals[k] = 0; grandTotalsExHolds[k] = 0; });
 
     augmented.forEach(a => {
       const capMap = parseCapHolds(a._cap_holds);
@@ -1812,6 +2035,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         totals[bucket][k].amt += amt;
         totals[bucket][k].count += 1;
         grandTotals[k] += amt;
+        if (bucket !== 'UFA Hold' && bucket !== 'RFA Hold') grandTotalsExHolds[k] += amt;
       });
     });
 
@@ -1865,20 +2089,21 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       // cap level rows
       if (capLevels) {
         const capDefs = [
-          { label: 'Salary Cap', key: 'cap' },
-          { label: '1st Apron',  key: 'apron1' },
-          { label: '2nd Apron',  key: 'apron2' },
-          { label: 'Hard Cap',   key: 'hard_cap' },
+          { label: 'Salary Cap', key: 'cap',      exHolds: false },
+          { label: '1st Apron',  key: 'apron1',   exHolds: true },
+          { label: '2nd Apron',  key: 'apron2',   exHolds: true },
+          { label: 'Hard Cap',   key: 'hard_cap', exHolds: true },
         ];
-        capDefs.forEach(({ label, key }) => {
+        capDefs.forEach(({ label, key, exHolds }) => {
           const hasCap = salaryKeys.some(k => capLevels[k]?.[key]);
           if (!hasCap) return;
+          const totalsForRow = exHolds ? grandTotalsExHolds : grandTotals;
           const tr = tfRow('tfoot-cap');
           tfCell(tr, label, 'tfoot-label', nonSalCols);
           salaryKeys.forEach(k => {
             const val = capLevels[k]?.[key];
             if (!val) { tfCell(tr, '—', 'right'); return; }
-            const diff = grandTotals[k] - val;
+            const diff = totalsForRow[k] - val;
             const over = diff > 0;
             if (over) tr.classList.add('over'); else tr.classList.add('under');
             const td = tfCell(tr, formatSalary(val), 'right');
@@ -2053,6 +2278,21 @@ function formatSwapLeaves(p) {
   }).join(' · ');
 }
 
+// The flat `protected` column only ever holds a single from-1 threshold — a
+// multi-team band split (e.g. the pick conveys to one team across positions
+// 31-50 and a different team across 51-60) has no single number to put there,
+// so `p.protected` comes back null even though the pick is very much
+// protected. Fall back to the real per-band leaves so that case isn't just
+// blank (mirrors formatSwapLeaves' approach for the Swap column).
+function formatProtectedLeaves(p) {
+  const protLeaves = (p.leaves || []).filter(l => (l.description || '').startsWith('protected band'));
+  if (!protLeaves.length) return '';
+  return protLeaves.map(l => {
+    const m = l.description.match(/protected band (\d+-\d+)/);
+    return m ? `${l.team} (${m[1]})` : l.team;
+  }).join(' · ');
+}
+
 // Historical NOTES rows in the flat CSV predate the conveyance model and
 // carry a leftover one-word marker ("protected") or a stale
 // "conditional: X/Y" string for picks that have since been fully modeled as
@@ -2069,40 +2309,46 @@ function cleanNotes(p) {
   return notes;
 }
 
-// Team-cell text + row class per pick "kind" — replaces the old subheader
-// grouping now that all kinds share one year/round-sorted table.
+// Identity vs. ownership are two different facts about a pick and used to be
+// crammed into one "Team" cell with kind-dependent formatting ("from DET",
+// "DET | OKC | BKN", "DET → DET | OKC | BKN", ...) — every prior fix in this
+// area (the arrow-prefix hack, `_groupOrigs`) was patching that same
+// conflation one shape at a time. Split into two columns instead: **Orig**
+// (whose draft slot this is — immutable, never changes; same name as the
+// picks-edit grid's read-only "Orig" column a few hundred lines down, and
+// the `orig` field itself — don't reintroduce a second name for this) and
+// **Owner** (who currently has a real claim on it — can be contingent).
+// Every kind reads from the same two functions; only `legacy` overrides
+// Owner, to flag that its nominal owner isn't fully trusted (see below).
+//
 // A swap/binary-chain group can collapse two or more PHYSICALLY DISTINCT
 // picks (e.g. DEN's own natural 1st and OKC's own natural 1st) into one
-// displayed row (dedupeByGroup, above) — at that point "BOS | OKC" alone
-// (today's *candidate* owners) silently drops which pick(s) are actually in
-// play, which reads as "OKC traded its pick to BOS" rather than the real
-// "the more favorable of DEN's-or-OKC's own pick goes to BOS, the other
-// stays put." `_groupOrigs` (set only when a group was actually collapsed —
-// dedupeByGroup) carries the ORIGINAL orig team(s); show both, original
-// first since that's the pick's real identity, current second since that's
-// who might end up with it.
-function teamCellText(p) {
-  const current = p.owner === '?' ? '?' : p.owner.split('|').join(' | ');
-  if (p._groupOrigs && p._groupOrigs.length > 1) {
-    return `${p._groupOrigs.join('/')} → ${current}`;
-  }
-  return current;
+// displayed row (dedupeByGroup, above) — `_groupOrigs` (set only when a group
+// was actually collapsed) carries the ORIGINAL orig team(s) for that case;
+// a single-pick row just uses its own `orig`.
+function origCell(p, teamAbbr) {
+  if (p._groupOrigs && p._groupOrigs.length > 1) return p._groupOrigs.join('/');
+  return p.orig === teamAbbr ? 'Own' : p.orig;
+}
+
+function ownerCell(p) {
+  return p.owner === '?' ? '?' : p.owner.split('|').join(' | ');
 }
 
 const PICK_KIND_DISPLAY = {
-  own:       { cls: null,               teamCell: () => 'Own' },
-  uncertain: { cls: 'picks-uncertain',   teamCell: teamCellText },
-  acquired:  { cls: 'picks-acquired',    teamCell: p => `from ${p.orig}` },
-  traded:    { cls: 'picks-traded',      teamCell: p => `to ${p.owner}` },
+  own:       { cls: null },
+  uncertain: { cls: 'picks-uncertain' },
+  acquired:  { cls: 'picks-acquired' },
+  traded:    { cls: 'picks-traded',   ownerCell: p => `to ${p.owner}` },
   // A `legacy` pick is a real historical deal too tangled to model
   // structurally — its flat owner/orig look exactly like a plain settled
   // pick (single team, nothing flagged), but the real terms live only in
   // its notes prose and can name entirely different teams (e.g. OKC's own
   // 2027 1st shows owner "OKC" while its notes say Phoenix and the Clippers
-  // are the real parties). Without a distinct kind this silently renders as
-  // confident "Own" — same failure shape the Swap-column fix addressed,
-  // just for a different node type.
-  legacy:    { cls: 'picks-legacy',     teamCell: p => `${p.owner} · unmodeled` },
+  // are the real parties). Without a distinct marker this silently renders as
+  // a confident, trustworthy owner — same failure shape the Swap-column fix
+  // addressed, just for a different node type.
+  legacy:    { cls: 'picks-legacy',   ownerCell: p => `${p.owner} · unmodeled` },
 };
 
 function buildPicksTable(picks, teamAbbr, allPicks = []) {
@@ -2137,26 +2383,28 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
   const table = document.createElement('table');
   const thead = table.createTHead();
   const hr = thead.insertRow();
-  ['Year', 'Rnd', 'Team', 'Protection', 'Swap', 'Notes', 'Frozen'].forEach(label => {
+  ['Year', 'Rnd', 'Orig', 'Owner', 'Protection', 'Swap', 'Notes', 'Frozen'].forEach(label => {
     const th = document.createElement('th');
     th.textContent = label;
     if (label === 'Year' || label === 'Rnd') th.classList.add('right');
-    if (label === 'Team' || label === 'Protection' || label === 'Swap' || label === 'Notes' || label === 'Frozen') th.classList.add('muted');
+    if (label === 'Orig' || label === 'Owner') th.classList.add('center');
+    if (label !== 'Year' && label !== 'Rnd') th.classList.add('muted');
     hr.appendChild(th);
   });
 
   const tbody = table.createTBody();
 
   const renderRow = p => {
-    const { cls, teamCell } = PICK_KIND_DISPLAY[p._kind];
+    const { cls, ownerCell: ownerCellFn } = PICK_KIND_DISPLAY[p._kind];
     const tr = tbody.insertRow();
     if (cls) tr.className = cls;
 
-    const protLabel = p.protected != null ? `Top-${p.protected}` : '';
+    const protLabel = p.protected != null ? `Top-${p.protected}` : formatProtectedLeaves(p);
     const cells = [
       [String(p.year),                'right',        ],
       [p.round === 1 ? '1st' : '2nd', 'right',        ],
-      [teamCell(p),                    'muted center', ],
+      [origCell(p, teamAbbr),          'muted center', ],
+      [(ownerCellFn || ownerCell)(p),  'muted center', ],
       [protLabel,                      'muted',        ],
       [formatSwapLeaves(p),            'muted',        ],
       [cleanNotes(p),                  'muted',        ],
@@ -2186,7 +2434,7 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     }
     if (p.leaves && p.leaves.length) {
       p.leaves.forEach(l => (l.txn_ids || []).forEach(t => _fetchTxnDesc(t.id)));
-      attachTooltip(tr.cells[2], () => buildLeavesTooltip(p));
+      attachTooltip(tr.cells[3], () => buildLeavesTooltip(p));
     }
   };
 
@@ -2196,7 +2444,7 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     const sep = tbody.insertRow();
     sep.className = 'subheader';
     const td = sep.insertCell();
-    td.colSpan = 7;
+    td.colSpan = 8;
     td.textContent = 'Traded Away';
     traded.forEach(renderRow);
   }
@@ -2663,6 +2911,33 @@ function makeEditCell(header, value, config, pickerCtx) {
   return { td, getValue, capHoldRef };
 }
 
+// Shared "type a name, resolve to a slug" datalist, built fresh from biosData
+// each time (biosData is already the full league-wide player-bios.json, so
+// this is a league-wide picker regardless of caller). `excludeSlugs` hides
+// players already spoken for by the caller (e.g. already on the roster grid
+// being edited, or already added to a What-If Mode roster).
+function buildPlayerDatalist(biosData, excludeSlugs = new Set()) {
+  const nameToSlug = new Map();
+  const slugToDisplay = new Map();
+  const listId = `nbn-pdl-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const dl = document.createElement('datalist');
+  dl.id = listId;
+  Object.entries(biosData || {}).sort(([, a], [, b]) => {
+    return displayNameFromBio(a.name || '').localeCompare(displayNameFromBio(b.name || ''));
+  }).forEach(([s, bio]) => {
+    if (excludeSlugs.has(s)) return;
+    const dn = displayNameFromBio(bio.name || '');
+    if (!dn) return;
+    nameToSlug.set(dn.toLowerCase(), s);
+    slugToDisplay.set(s, dn);
+    const opt = document.createElement('option');
+    opt.value = dn;
+    dl.appendChild(opt);
+  });
+  document.body.appendChild(dl);
+  return { listId, dl, nameToSlug, slugToDisplay };
+}
+
 function buildEditableGrid(headers, rows, cellConfig = {}) {
   const mutableHeaders = [...headers];
   const capHoldCells = [];
@@ -2671,25 +2946,7 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
   let pickerCtx = null;
   const pickerConf = Object.values(cellConfig).find(c => c?.type === 'player-picker');
   if (pickerConf) {
-    const bios = pickerConf.biosData || {};
-    const nameToSlug = new Map();
-    const slugToDisplay = new Map();
-    const listId = `nbn-pdl-${Date.now()}`;
-    const dl = document.createElement('datalist');
-    dl.id = listId;
-    Object.entries(bios).sort(([, a], [, b]) => {
-      return displayNameFromBio(a.name || '').localeCompare(displayNameFromBio(b.name || ''));
-    }).forEach(([s, bio]) => {
-      const dn = displayNameFromBio(bio.name || '');
-      if (!dn) return;
-      nameToSlug.set(dn.toLowerCase(), s);
-      slugToDisplay.set(s, dn);
-      const opt = document.createElement('option');
-      opt.value = dn;
-      dl.appendChild(opt);
-    });
-    document.body.appendChild(dl);
-    pickerCtx = { listId, nameToSlug, slugToDisplay };
+    pickerCtx = buildPlayerDatalist(pickerConf.biosData || {});
   }
 
   const table = document.createElement('table');
@@ -3467,6 +3724,712 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
   });
 }
 
+// ─── What If Mode ────────────────────────────────────────────────────────────
+// A client-side-only sandbox: clones the real roster into local state, lets
+// the user add/remove players (any player in the league — one-sided, the
+// source team is never touched) and decline options / renounce holds, then
+// recomputes the same cap figures the real page shows via the exact same
+// pure functions (buildRosterTable, computeCapSummary, renderHardCapBanner,
+// renderExceptionsSection). Nothing here ever calls the API; exiting just
+// discards the local state, so the real roster/cap sections are untouched.
+
+// Dead-cap remainder on a hypothetical release (rulebook § 5.1-5.2). Walks
+// every salary-bearing season from `season` onward and applies the guarantee
+// rule for that year's cap-hold type: TEAM_OPT/UFA/RFA years owe nothing
+// (they're not real salary), PLAYER_OPT years owe the guaranteed amount (or
+// full salary if no partial guarantee is set — a player option fully
+// guarantees once the team can no longer decline it), NON_GTD years owe only
+// what's vested as of today (a step schedule, or a single guarantee-date
+// cutoff), and a plain guaranteed year owes the guaranteed amount or full
+// salary.
+function simulateRelease(row, season, today = new Date()) {
+  let total = 0;
+  Object.keys(row._salaries || {}).filter(y => y >= season).forEach(y => {
+    const capType = (row._cap_holds || {})[y];
+    const salary = parseSalaryNum(row._salaries[y]);
+    if (!salary) return;
+    if (capType === 'TEAM_OPT' || capType === 'UFA' || capType === 'RFA') return;
+    if (capType === 'PLAYER_OPT') {
+      const gtd = (row._guaranteed || {})[y];
+      total += (gtd != null && gtd !== '') ? parseSalaryNum(gtd) : salary;
+      return;
+    }
+    if (capType === 'NON_GTD') {
+      const sched = (row._guarantee_schedule || {})[y];
+      if (sched && sched.length) {
+        total += sched.filter(s => !s.date || new Date(s.date) <= today)
+                       .reduce((sum, s) => sum + parseSalaryNum(s.amount), 0);
+        return;
+      }
+      const gtdDate = (row._guarantee_dates || {})[y];
+      const gtdAmt  = (row._guaranteed || {})[y];
+      if (gtdDate && today < new Date(gtdDate + 'T00:00:00')) { total += parseSalaryNum(gtdAmt); return; }
+      total += salary;
+      return;
+    }
+    const gtdAmt = (row._guaranteed || {})[y];
+    total += (gtdAmt != null && gtdAmt !== '') ? parseSalaryNum(gtdAmt) : salary;
+  });
+  return total;
+}
+
+// Slug prefix for fictional (not-a-real-player) What-If additions — lets the
+// roster table skip the /players/ link and OVR popup for a slug that will
+// never resolve to anything (see buildRosterTable's '_name'/OVR cells).
+const WHATIF_CUSTOM_PREFIX = '__whatif-custom-';
+
+// Minimum Salary Scale tiers (§ 3.12), keyed the same way as
+// capLevels[season].min_salary_scale (see cap-settings/index.html's
+// MIN_SCALE_FIELDS) — used to offer "1-yr vet min" presets in the custom
+// player form.
+const MIN_SALARY_EXP_TIERS = [
+  { key: '0',   label: '0 yrs (rookie)' },
+  { key: '1',   label: '1 yr' },
+  { key: '2',   label: '2 yrs' },
+  { key: '3',   label: '3 yrs' },
+  { key: '4',   label: '4 yrs' },
+  { key: '5',   label: '5 yrs' },
+  { key: '6',   label: '6 yrs' },
+  { key: '7',   label: '7 yrs' },
+  { key: '8',   label: '8 yrs' },
+  { key: '9',   label: '9 yrs' },
+  { key: '10+', label: '10+ yrs' },
+];
+
+// Layers What-If overrides on top of the real biosData without mutating it —
+// every existing pure function keeps working unmodified against this merged
+// object, so there's still only one client-side cap-math mirror, not a
+// second one built just for the sandbox.
+function buildWhatifBiosData(realBiosData, bioOverrides) {
+  const merged = { ...realBiosData };
+  Object.entries(bioOverrides).forEach(([slug, patch]) => {
+    const base = merged[slug] || {};
+    merged[slug] = {
+      ...base, ...patch,
+      salaries:        { ...(base.salaries || {}),        ...(patch.salaries || {}) },
+      cap_holds:       { ...(base.cap_holds || {}),       ...(patch.cap_holds || {}) },
+      guaranteed:      { ...(base.guaranteed || {}),      ...(patch.guaranteed || {}) },
+      guarantee_dates: { ...(base.guarantee_dates || {}), ...(patch.guarantee_dates || {}) },
+    };
+  });
+  return merged;
+}
+
+// Shared "Years" stepper + per-season salary/cap-type row builder used by
+// both What-If contract forms: signing an existing player to a fresh deal,
+// and adding a wholly fictional custom player.
+function buildContractYearsController(startSeason) {
+  const yearsLbl = document.createElement('label');
+  yearsLbl.textContent = 'Years';
+  const yearsInp = document.createElement('input');
+  yearsInp.type = 'number'; yearsInp.min = '1'; yearsInp.max = '5'; yearsInp.value = '1';
+  yearsLbl.appendChild(yearsInp);
+
+  const yearRowsWrap = document.createElement('div');
+  yearRowsWrap.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;width:100%';
+
+  function render() {
+    const prevValues = {};
+    yearRowsWrap.querySelectorAll('.whatif-year-salary').forEach(inp => { prevValues[inp.dataset.year] = inp.value; });
+    yearRowsWrap.innerHTML = '';
+    const n = Math.max(1, Math.min(5, parseInt(yearsInp.value, 10) || 1));
+    let yr = startSeason;
+    for (let i = 0; i < n; i++) {
+      const yBox = document.createElement('div');
+      yBox.className = 'whatif-contract-year';
+      const yLbl = document.createElement('span');
+      yLbl.textContent = yr;
+      yLbl.style.cssText = 'font-size:0.68rem;color:var(--text-muted);font-weight:700';
+      const salInp = document.createElement('input');
+      salInp.type = 'text'; salInp.placeholder = '$X,XXX,XXX'; salInp.dataset.year = yr;
+      salInp.className = 'whatif-year-salary';
+      salInp.value = prevValues[yr] || '';
+      const typeSel = makeSelect(CAP_OPTIONS, '');
+      typeSel.className = 'whatif-year-captype';
+      typeSel.dataset.year = yr;
+      yBox.append(yLbl, salInp, typeSel);
+      yearRowsWrap.appendChild(yBox);
+      yr = nextSalaryYear(yr);
+    }
+  }
+  yearsInp.addEventListener('input', render);
+  render();
+
+  function getValues() {
+    const salaries = {}, cap_holds = {};
+    yearRowsWrap.querySelectorAll('.whatif-year-salary').forEach(inp => {
+      const n = parseSalaryNum(inp.value);
+      if (n > 0) salaries[inp.dataset.year] = n;
+    });
+    yearRowsWrap.querySelectorAll('.whatif-year-captype').forEach(sel => {
+      if (sel.value) cap_holds[sel.dataset.year] = sel.value;
+    });
+    return { salaries, cap_holds };
+  }
+
+  // Vet-min presets: collapse to a single year and drop the amount straight
+  // into that year's salary box.
+  function setSingleYearSalary(amount) {
+    yearsInp.value = '1';
+    render();
+    const inp = yearRowsWrap.querySelector('.whatif-year-salary');
+    if (inp) inp.value = fmtDollars(amount);
+  }
+
+  return { yearsLbl, yearRowsWrap, getValues, setSingleYearSalary };
+}
+
+// Builds the "1-yr Vet Min" preset button row (§ 3.12) shared by both
+// What-If contract forms. A 1-year minimum deal's cap hit never exceeds the
+// 2-year veteran minimum, regardless of the player's actual experience tier
+// — the league reimburses the difference — so tiers at 2+ years all collapse
+// to the 2-yr scale amount here; only the 0/1-yr tiers (already at or below
+// that number) keep their own scale value. Returns null if no scale is
+// configured for `startSeason`.
+function buildMinSalaryPresetRow(capLevels, startSeason, yc) {
+  const scale = (capLevels?.[startSeason] || {}).min_salary_scale || {};
+  const twoYrAmt = parseSalaryNum(scale['2']) || 0;
+  const presetTiers = MIN_SALARY_EXP_TIERS
+    .map(t => {
+      const raw = parseSalaryNum(scale[t.key]);
+      if (raw <= 0) return null;
+      const capped = (t.key === '0' || t.key === '1' || !twoYrAmt) ? raw : Math.min(raw, twoYrAmt);
+      return { ...t, amt: capped, raw };
+    })
+    .filter(Boolean);
+  if (!presetTiers.length) return null;
+
+  const presetWrap = document.createElement('div');
+  presetWrap.style.cssText = 'display:flex;gap:0.3rem;flex-wrap:wrap;width:100%;align-items:center';
+  const presetLbl = document.createElement('span');
+  presetLbl.textContent = '1-yr Vet Min:';
+  presetLbl.style.cssText = 'font-size:0.68rem;color:var(--text-muted);font-weight:700;text-transform:uppercase';
+  presetWrap.appendChild(presetLbl);
+  presetTiers.forEach(t => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'whatif-row-action';
+    btn.textContent = `${t.label} (${fmtDollars(t.amt)})`;
+    if (t.amt < t.raw) {
+      btn.title = '1-yr deal cap hit capped at the 2-year veteran minimum (§ 3.12) — the league reimburses the difference.';
+    }
+    btn.addEventListener('click', () => yc.setSingleYearSalary(t.amt));
+    presetWrap.appendChild(btn);
+  });
+  return presetWrap;
+}
+
+function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDeadCapRows, seasonStates, attributesData, latestSeasonBySlug, teamState) {
+  const enterBtn = document.getElementById('whatif-enter-btn');
+  const panel = document.getElementById('whatif-panel');
+  if (!enterBtn || !panel) return;
+
+  // What-If Mode only understands the current SLUG-format roster CSV.
+  const hasSlug = realRosterRows.length && 'SLUG' in realRosterRows[0] && !('PLAYER' in realRosterRows[0]);
+  if (!hasSlug) { enterBtn.style.display = 'none'; return; }
+
+  const exitBtn      = document.getElementById('whatif-exit-btn');
+  const realRosterWrap = document.getElementById('roster-wrap');
+  const addWrap      = document.getElementById('whatif-add-wrap');
+  const contractSlot = document.getElementById('whatif-contract-form-slot');
+  const gridWrap     = document.getElementById('whatif-roster-wrap');
+  enableRangeSum(gridWrap); // same Sheets-style select-to-sum as the real roster table — delegated, so it survives every rerender
+  const warningsEl   = document.getElementById('whatif-warnings');
+  const hcBanner     = document.getElementById('whatif-hard-cap-banner');
+  const excSection   = document.getElementById('whatif-exceptions-section');
+  const excWrap      = document.getElementById('whatif-exceptions-wrap');
+  const logEl        = document.getElementById('whatif-log');
+  const attrImpactWrap = document.getElementById('whatif-attr-impact-wrap');
+  const attrImpactEl  = document.getElementById('whatif-attr-impact');
+
+  let state = null;
+  let datalist = null; // { listId, dl, nameToSlug, slugToDisplay } — rebuilt every render so just-added players drop out of the search
+  let realAttrTotals = null; // snapshot of the real roster's attribute totals, taken once on entry
+
+  function freshState() {
+    return {
+      rows: realRosterRows.map(r => ({ SLUG: r.SLUG, TYPE: r.TYPE || '' })),
+      deadCapRows: realDeadCapRows.map(r => ({ ...r })),
+      bioOverrides: {},
+      customCounter: 0, // bumped per custom-player add, to keep synthetic slugs unique within this session
+      log: [], // { id, label, undo() } — each entry reverses just its own change, independent of the others
+    };
+  }
+
+  // Every action pushes one of these; its `undo` closure captures whatever
+  // pre-mutation state it needs to put back exactly what it changed, so any
+  // entry can be reversed on its own regardless of what else happened after it.
+  function logAction(label, undo) {
+    state.log.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, label, undo });
+  }
+
+  function renderLog() {
+    logEl.innerHTML = '';
+    state.log.forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'whatif-log-entry';
+      const lbl = document.createElement('span');
+      lbl.textContent = entry.label;
+      const xBtn = document.createElement('button');
+      xBtn.type = 'button';
+      xBtn.textContent = '×';
+      xBtn.title = 'Undo this change';
+      xBtn.addEventListener('click', () => {
+        entry.undo();
+        state.log = state.log.filter(e => e.id !== entry.id);
+        rerender();
+      });
+      row.append(lbl, xBtn);
+      logEl.appendChild(row);
+    });
+  }
+
+  function openDeclineForm(row, season) {
+    contractSlot.innerHTML = '';
+    const form = document.createElement('div');
+    form.className = 'whatif-contract-form';
+
+    const label = document.createElement('span');
+    label.textContent = `Decline ${row._name}'s ${season} option — becomes:`;
+    label.style.cssText = 'font-size:0.8rem;color:var(--text-secondary);font-weight:600';
+    form.appendChild(label);
+
+    const holdSel = makeSelect([{ value: 'UFA', label: 'UFA' }, { value: 'RFA', label: 'RFA' }], 'UFA');
+    form.appendChild(holdSel);
+
+    const applyBtn = document.createElement('button');
+    applyBtn.type = 'button'; applyBtn.className = 'whatif-row-action';
+    applyBtn.textContent = 'Apply';
+    applyBtn.addEventListener('click', () => {
+      // § 6.1 — declining sizes the resulting hold at the player's previous
+      // season's actual salary, not the declined option's own amount.
+      const prevYr = prevSalaryYear(season);
+      const nominal = parseSalaryNum(row._salaries[prevYr]) || parseSalaryNum(row._salaries[season]);
+      const prevOverride = state.bioOverrides[row.SLUG];
+      const patch = prevOverride || {};
+      state.bioOverrides[row.SLUG] = {
+        ...patch,
+        salaries:  { ...(patch.salaries || {}),  [season]: nominal },
+        cap_holds: { ...(patch.cap_holds || {}), [season]: holdSel.value },
+      };
+      logAction(`Declined ${row._name}'s ${season} option (→ ${holdSel.value})`, () => {
+        if (prevOverride) state.bioOverrides[row.SLUG] = prevOverride;
+        else delete state.bioOverrides[row.SLUG];
+      });
+      contractSlot.innerHTML = '';
+      rerender();
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button'; cancelBtn.className = 'whatif-row-action';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => { contractSlot.innerHTML = ''; });
+
+    form.append(applyBtn, cancelBtn);
+    contractSlot.appendChild(form);
+  }
+
+  function openCustomContractForm(slug) {
+    contractSlot.innerHTML = '';
+    const bio = biosData[slug] || {};
+    const startSeason = currentSeasonYr();
+
+    const form = document.createElement('div');
+    form.className = 'whatif-contract-form';
+
+    const title = document.createElement('span');
+    title.textContent = `${displayNameFromBio(bio.name || '') || slug} — new contract:`;
+    title.style.cssText = 'font-size:0.8rem;color:var(--text-secondary);font-weight:600;width:100%';
+    form.appendChild(title);
+
+    const yc = buildContractYearsController(startSeason);
+    form.append(yc.yearsLbl, yc.yearRowsWrap);
+
+    const presetRow = buildMinSalaryPresetRow(capLevels, startSeason, yc);
+    if (presetRow) form.appendChild(presetRow);
+
+    const applyBtn = document.createElement('button');
+    applyBtn.type = 'button'; applyBtn.className = 'whatif-row-action';
+    applyBtn.textContent = 'Add to roster';
+    applyBtn.addEventListener('click', () => {
+      const { salaries, cap_holds } = yc.getValues();
+      if (!Object.keys(salaries).length) return;
+      const prevOverride = state.bioOverrides[slug];
+      state.bioOverrides[slug] = { ...(prevOverride || {}), salaries, cap_holds };
+      state.rows.push({ SLUG: slug, TYPE: 'player' });
+      logAction(`Signed ${displayNameFromBio(bio.name || '') || slug} to a new contract`, () => {
+        state.rows = state.rows.filter(r => r.SLUG !== slug);
+        if (prevOverride) state.bioOverrides[slug] = prevOverride;
+        else delete state.bioOverrides[slug];
+      });
+      contractSlot.innerHTML = '';
+      rerender();
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button'; cancelBtn.className = 'whatif-row-action';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => { contractSlot.innerHTML = ''; });
+
+    form.append(applyBtn, cancelBtn);
+    contractSlot.appendChild(form);
+  }
+
+  function openNewCustomPlayerForm() {
+    contractSlot.innerHTML = '';
+    const startSeason = currentSeasonYr();
+
+    const form = document.createElement('div');
+    form.className = 'whatif-contract-form';
+
+    const title = document.createElement('span');
+    title.textContent = 'Add a custom player — not a real roster player, OVR/ratings won\'t apply:';
+    title.style.cssText = 'font-size:0.8rem;color:var(--text-secondary);font-weight:600;width:100%';
+    form.appendChild(title);
+
+    const nameLbl = document.createElement('label');
+    nameLbl.textContent = 'Name';
+    const nameInp = document.createElement('input');
+    nameInp.type = 'text'; nameInp.placeholder = 'Player name';
+    nameInp.value = `Custom Player #${state.customCounter + 1}`;
+    nameInp.addEventListener('focus', () => nameInp.select(), { once: true });
+    nameLbl.appendChild(nameInp);
+    form.appendChild(nameLbl);
+
+    const yc = buildContractYearsController(startSeason);
+    form.append(yc.yearsLbl, yc.yearRowsWrap);
+
+    const presetRow = buildMinSalaryPresetRow(capLevels, startSeason, yc);
+    if (presetRow) form.appendChild(presetRow);
+
+    const applyBtn = document.createElement('button');
+    applyBtn.type = 'button'; applyBtn.className = 'whatif-row-action';
+    applyBtn.textContent = 'Add to roster';
+    applyBtn.addEventListener('click', () => {
+      const name = nameInp.value.trim();
+      if (!name) { nameInp.focus(); return; }
+      const { salaries, cap_holds } = yc.getValues();
+      if (!Object.keys(salaries).length) return;
+      state.customCounter += 1;
+      const slug = `${WHATIF_CUSTOM_PREFIX}${state.customCounter}`;
+      state.bioOverrides[slug] = { name, pos: [], salaries, cap_holds };
+      state.rows.push({ SLUG: slug, TYPE: 'player' });
+      logAction(`Added custom player ${name}`, () => {
+        state.rows = state.rows.filter(r => r.SLUG !== slug);
+        delete state.bioOverrides[slug];
+      });
+      contractSlot.innerHTML = '';
+      rerender();
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button'; cancelBtn.className = 'whatif-row-action';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => { contractSlot.innerHTML = ''; });
+
+    form.append(applyBtn, cancelBtn);
+    contractSlot.appendChild(form);
+  }
+
+  function rowActions(row, td, capMap) {
+    if (!row.SLUG || row._erc) return;
+    const season = currentSeasonYr();
+
+    if (row._type === 'dead') {
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button'; clearBtn.className = 'whatif-row-action danger';
+      clearBtn.textContent = 'Clear';
+      clearBtn.title = 'Remove this dead-cap line from the hypothetical roster';
+      clearBtn.addEventListener('click', () => {
+        const prevDeadRow = state.deadCapRows.find(r => r.SLUG === row.SLUG);
+        const prevDeadRowClone = prevDeadRow ? { ...prevDeadRow } : null;
+        state.deadCapRows = state.deadCapRows.filter(r => r.SLUG !== row.SLUG);
+        logAction(`Cleared ${row._name}'s dead cap`, () => {
+          if (prevDeadRowClone) state.deadCapRows.push(prevDeadRowClone);
+        });
+        rerender();
+      });
+      td.appendChild(clearBtn);
+      return;
+    }
+
+    const hasSalary = !!row._salaries[season];
+    const capType = capMap[season];
+
+    // A UFA/RFA row is a bare cap hold, not a real contract — even though it
+    // carries a nominal $ figure (same convention real FA holds use, see the
+    // tfoot's UFA/RFA Hold buckets), the only valid action is Renounce, never
+    // Release (there's no dead cap concept for a hold that was never a deal).
+    if (capType === 'UFA' || capType === 'RFA') {
+      const renounceBtn = document.createElement('button');
+      renounceBtn.type = 'button'; renounceBtn.className = 'whatif-row-action danger';
+      renounceBtn.textContent = 'Renounce';
+      renounceBtn.title = 'Removes the hold — no dead cap (rulebook § 3.10)';
+      renounceBtn.addEventListener('click', () => {
+        const raw = state.rows.find(r => r.SLUG === row.SLUG);
+        state.rows = state.rows.filter(r => r.SLUG !== row.SLUG);
+        logAction(`Renounced ${row._name}'s hold`, () => {
+          state.rows.push({ SLUG: row.SLUG, TYPE: raw?.TYPE || '' });
+        });
+        rerender();
+      });
+      td.appendChild(renounceBtn);
+      return;
+    }
+
+    if (capType === 'PLAYER_OPT' || capType === 'TEAM_OPT') {
+      const declineBtn = document.createElement('button');
+      declineBtn.type = 'button'; declineBtn.className = 'whatif-row-action';
+      declineBtn.textContent = 'Decline Option';
+      declineBtn.addEventListener('click', () => openDeclineForm(row, season));
+      td.appendChild(declineBtn);
+    }
+
+    if (hasSalary) {
+      // "Remove" models the player leaving cleanly (e.g. traded away — their
+      // salary follows them to the other side of the deal) with no dead cap.
+      // "Release" models actually waiving them, which does leave a dead-cap
+      // remainder per § 5.1-5.2. Same starting point, different real move.
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button'; removeBtn.className = 'whatif-row-action';
+      removeBtn.textContent = 'Remove';
+      removeBtn.title = 'Take them off the roster with no dead cap — e.g. modeling a trade away';
+      removeBtn.addEventListener('click', () => {
+        const raw = state.rows.find(r => r.SLUG === row.SLUG);
+        state.rows = state.rows.filter(r => r.SLUG !== row.SLUG);
+        logAction(`Removed ${row._name}`, () => {
+          state.rows.push({ SLUG: row.SLUG, TYPE: raw?.TYPE || '' });
+        });
+        rerender();
+      });
+      td.appendChild(removeBtn);
+
+      const releaseBtn = document.createElement('button');
+      releaseBtn.type = 'button'; releaseBtn.className = 'whatif-row-action danger';
+      releaseBtn.textContent = 'Release';
+      releaseBtn.title = 'Waives the player — dead cap sized per rulebook § 5.1-5.2';
+      releaseBtn.addEventListener('click', () => {
+        const raw = state.rows.find(r => r.SLUG === row.SLUG);
+        const deadAmt = simulateRelease(row, season);
+        state.rows = state.rows.filter(r => r.SLUG !== row.SLUG);
+        const existingDeadRow = state.deadCapRows.find(r => r.SLUG === row.SLUG);
+        const prevDeadSeasonVal = existingDeadRow ? existingDeadRow[season] : undefined;
+        const isNewDeadRow = deadAmt > 0 && !existingDeadRow;
+        if (deadAmt > 0) {
+          if (existingDeadRow) existingDeadRow[season] = String(deadAmt);
+          else state.deadCapRows.push({ SLUG: row.SLUG, [season]: String(deadAmt) });
+        }
+        logAction(`Released ${row._name}`, () => {
+          state.rows.push({ SLUG: row.SLUG, TYPE: raw?.TYPE || '' });
+          if (deadAmt > 0) {
+            if (isNewDeadRow) {
+              state.deadCapRows = state.deadCapRows.filter(r => r.SLUG !== row.SLUG);
+            } else {
+              const dr = state.deadCapRows.find(r => r.SLUG === row.SLUG);
+              if (dr) {
+                if (prevDeadSeasonVal === undefined) delete dr[season];
+                else dr[season] = prevDeadSeasonVal;
+              }
+            }
+          }
+        });
+        rerender();
+      });
+      td.appendChild(releaseBtn);
+    }
+  }
+
+  function buildAddControl() {
+    addWrap.innerHTML = '';
+    if (datalist) { datalist.dl.remove(); datalist = null; }
+    const excludeSlugs = new Set(state.rows.map(r => r.SLUG));
+    // Real-life retirement (bio.retired) means there's no one to sign or
+    // trade for — exclude them from the What-If search regardless of
+    // whether they're already on the roster.
+    Object.entries(biosData).forEach(([slug, bio]) => { if (bio.retired) excludeSlugs.add(slug); });
+    datalist = buildPlayerDatalist(biosData, excludeSlugs);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Add a player (any team)…';
+    input.className = 'whatif-add-input';
+    input.setAttribute('list', datalist.listId);
+    input.addEventListener('change', () => {
+      const slug = datalist.nameToSlug.get(input.value.trim().toLowerCase());
+      input.value = '';
+      if (!slug) return;
+      const bio = biosData[slug] || {};
+      const season = currentSeasonYr();
+      const hasActiveContract = !!(bio.salaries || {})[season] || !!(bio.cap_holds || {})[season];
+      if (hasActiveContract) {
+        state.rows.push({ SLUG: slug, TYPE: bio.type || 'player' });
+        logAction(`Added ${displayNameFromBio(bio.name || '') || slug}`, () => {
+          state.rows = state.rows.filter(r => r.SLUG !== slug);
+        });
+        rerender();
+      } else {
+        openCustomContractForm(slug);
+      }
+    });
+    addWrap.appendChild(input);
+
+    const customBtn = document.createElement('button');
+    customBtn.type = 'button'; customBtn.className = 'whatif-row-action';
+    customBtn.textContent = '+ Custom Player';
+    customBtn.title = 'Add a made-up player with your own contract — not a real roster player';
+    customBtn.addEventListener('click', () => openNewCustomPlayerForm());
+    addWrap.appendChild(customBtn);
+  }
+
+  function renderWarnings(rows, mergedBios, teamSalaryFull, teamSalaryExHolds, season) {
+    const lines = [];
+
+    const standardCount = rows.filter(r => {
+      const type = r.TYPE || (mergedBios[r.SLUG] || {}).type || '';
+      return !ROSTER_EXEMPT_TYPES.has(type);
+    }).length;
+    if (standardCount > 15) lines.push(`Roster size ${standardCount} exceeds the 15-player in-season limit (§ 2.1)`);
+
+    // Apron/cap comparisons mirror computeMleType's convention: apron-level
+    // checks (and this team's own hard cap, if one applies — § 1.3/1.4)
+    // exclude pure UFA/RFA holds; the plain Salary Cap check does not. Only
+    // the single most severe threshold crossed is shown, since anything over
+    // the 2nd apron is necessarily over the 1st apron and the cap too.
+    const cl = capLevels?.[season];
+    if (cl) {
+      const hcApronKey = teamState?.hard_cap === 'second_apron' ? 'apron2' : teamState?.hard_cap === 'first_apron' ? 'apron1' : null;
+      const hcLevel = hcApronKey ? cl[hcApronKey] : null;
+      if (hcLevel && teamSalaryExHolds > hcLevel) {
+        lines.push(`Violates this team's Hard Cap (${hcApronKey === 'apron2' ? 'Second' : 'First'} Apron) by ${fmtDollars(teamSalaryExHolds - hcLevel)}`);
+      } else if (cl.apron2 && teamSalaryExHolds > cl.apron2) {
+        lines.push(`Over the Second Apron by ${fmtDollars(teamSalaryExHolds - cl.apron2)}`);
+      } else if (cl.apron1 && teamSalaryExHolds > cl.apron1) {
+        lines.push(`Over the First Apron by ${fmtDollars(teamSalaryExHolds - cl.apron1)}`);
+      } else if (cl.cap && teamSalaryFull > cl.cap) {
+        lines.push(`Over the Salary Cap by ${fmtDollars(teamSalaryFull - cl.cap)}`);
+      }
+    }
+
+    warningsEl.innerHTML = lines.map(l => `<div class="whatif-warning-line">⚠ ${l}</div>`).join('');
+  }
+
+  const ATTR_IMPACT_COLS = [
+    { key: 'all',   label: 'All' },
+    { key: 'top5',  label: 'Top 5' },
+    { key: 'top8',  label: 'Top 8' },
+    { key: 'top10', label: 'Top 10' },
+  ];
+
+  const round1 = n => Math.round(n * 10) / 10;
+
+  // Each cell shows the delta (bold, colored) as the headline, with the
+  // actual before → after totals underneath in smaller muted text so the
+  // magnitude of the underlying numbers is visible too, not just the swing.
+  function fillAttrCell(td, before, after) {
+    const b = round1(before), a = round1(after);
+    const d = round1(a - b);
+    td.className = 'right ' + (d > 0 ? 'whatif-attr-up' : d < 0 ? 'whatif-attr-down' : 'whatif-attr-zero');
+    const deltaLine = document.createElement('div');
+    deltaLine.className = 'whatif-attr-delta-line';
+    deltaLine.textContent = d > 0 ? `+${d}` : `${d}`;
+    const baLine = document.createElement('div');
+    baLine.className = 'whatif-attr-ba-line';
+    baLine.textContent = `${b} → ${a}`;
+    td.append(deltaLine, baLine);
+  }
+
+  function renderAttrImpact(mergedBios, season) {
+    if (!realAttrTotals) { attrImpactWrap.style.display = 'none'; return; }
+    attrImpactWrap.style.display = '';
+    const hypoTotals = computeAttrTotals(state.rows, mergedBios, attributesData, currentOvr, season);
+
+    const table = document.createElement('table');
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    const nameTh = document.createElement('th');
+    nameTh.textContent = 'Attribute';
+    hr.appendChild(nameTh);
+    ATTR_IMPACT_COLS.forEach(col => {
+      const th = document.createElement('th');
+      th.className = 'right';
+      th.textContent = col.label;
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+
+    const totalTr = tbody.insertRow();
+    totalTr.className = 'whatif-attr-total-row';
+    const totalNameTd = totalTr.insertCell();
+    totalNameTd.textContent = 'TOTAL';
+    ATTR_IMPACT_COLS.forEach(col => {
+      const before = RATING_ATTR_COLUMNS.reduce((s, c) => s + realAttrTotals[col.key][c.key], 0);
+      const after  = RATING_ATTR_COLUMNS.reduce((s, c) => s + hypoTotals[col.key][c.key], 0);
+      fillAttrCell(totalTr.insertCell(), before, after);
+    });
+
+    RATING_ATTR_COLUMNS.forEach(c => {
+      const tr = tbody.insertRow();
+      const nameTd = tr.insertCell();
+      nameTd.textContent = c.full;
+      ATTR_IMPACT_COLS.forEach(col => {
+        fillAttrCell(tr.insertCell(), realAttrTotals[col.key][c.key], hypoTotals[col.key][c.key]);
+      });
+    });
+
+    attrImpactEl.innerHTML = '';
+    attrImpactEl.appendChild(table);
+  }
+
+  function rerender() {
+    const mergedBios = buildWhatifBiosData(biosData, state.bioOverrides);
+    const season = currentSeasonYr();
+
+    gridWrap.innerHTML = '';
+    const t = buildRosterTable(
+      state.rows, mergedBios, capLevels, currentOvr, state.deadCapRows,
+      seasonStates, attributesData, 'contracts', latestSeasonBySlug, rowActions,
+    );
+    if (t) gridWrap.appendChild(t);
+    else gridWrap.innerHTML = '<div class="status">No players on this hypothetical roster.</div>';
+
+    const { teamSalaryFull, teamSalaryExHolds } = computeCapSummary(state.rows, state.deadCapRows, mergedBios, capLevels, season);
+    renderHardCapBanner(teamState, hcBanner);
+    renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, season, excSection, excWrap);
+    renderWarnings(state.rows, mergedBios, teamSalaryFull, teamSalaryExHolds, season);
+    renderAttrImpact(mergedBios, season);
+    buildAddControl();
+    renderLog();
+  }
+
+  enterBtn.addEventListener('click', () => {
+    // Mutually exclusive with real roster Edit mode (same guard the mode
+    // tabs already use for the same reason — don't let two edit surfaces
+    // fight over the same underlying rows).
+    if (realRosterWrap.querySelector('.roster-edit-toolbar')) return;
+    state = freshState();
+    realAttrTotals = computeAttrTotals(realRosterRows, biosData, attributesData, currentOvr, currentSeasonYr());
+    realRosterWrap.closest('section').querySelectorAll(':scope > .roster-header-row, :scope > .table-wrap, :scope > #cap-edit-wrap, :scope > #dead-cap-edit-wrap').forEach(el => { el.style.display = 'none'; });
+    document.getElementById('exceptions-section').style.display = 'none';
+    panel.style.display = '';
+    enterBtn.disabled = true;
+    rerender();
+  });
+
+  exitBtn.addEventListener('click', () => {
+    state = null;
+    realAttrTotals = null;
+    contractSlot.innerHTML = '';
+    if (datalist) { datalist.dl.remove(); datalist = null; }
+    panel.style.display = 'none';
+    realRosterWrap.closest('section').querySelectorAll(':scope > .roster-header-row, :scope > .table-wrap, :scope > #cap-edit-wrap, :scope > #dead-cap-edit-wrap').forEach(el => { el.style.display = ''; });
+    enterBtn.disabled = false;
+    // Real roster/cap data was never touched — just recompute+show the real numbers again.
+    const season = currentSeasonYr();
+    const { teamSalaryFull, teamSalaryExHolds } = computeCapSummary(realRosterRows, realDeadCapRows, biosData, capLevels, season);
+    renderHardCapBanner(teamState);
+    renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, season);
+  });
+}
+
 function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellConfig = {}) {
   function renderView(currentRows) {
     const wrapEl = document.getElementById(wrapId);
@@ -3846,28 +4809,12 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     // Room Exception eligibility stays Cap-based and still counts them (§ 3.2).
     // Mirror both figures from the backend's _compute_team_salary(_ex_holds).
     const curYr = currentSeasonYr();
-    const FA_HOLD_TYPES = ['UFA', 'RFA'];
-    let teamSalaryFull = 0, teamSalaryExHolds = 0;
-    rosterRows.forEach(row => {
-      const bio = biosData[row.SLUG] || {};
-      const sal = parseSalaryNum((bio.salaries || {})[curYr]);
-      teamSalaryFull += sal;
-      if (!FA_HOLD_TYPES.includes((bio.cap_holds || {})[curYr])) teamSalaryExHolds += sal;
-    });
-    deadCapRows.forEach(row => {
-      const sal = parseSalaryNum(row[curYr] || '');
-      teamSalaryFull += sal;
-      teamSalaryExHolds += sal;
-    });
-    // Empty Roster Charge (§ 2.1a) — a team below 14 standard players owes at
-    // least the rookie minimum per open slot, so it counts here too, exactly
-    // like the backend folds it into hard-cap projections during a trade.
-    const erc = computeEmptyRosterCharge(rosterRows, biosData, capLevels, curYr);
-    teamSalaryFull += erc.charge;
-    teamSalaryExHolds += erc.charge;
+    const { teamSalaryFull, teamSalaryExHolds } = computeCapSummary(rosterRows, deadCapRows, biosData, capLevels, curYr);
     renderHardCapBanner(teamState);
     renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, curYr);
     renderTradeExceptionsSection(tradeExceptions);
+
+    setupWhatIfMode(rosterRows, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, latestSeasonBySlug, teamState);
 
     setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => {
       liveRosterRows = rows;
@@ -4046,6 +4993,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     if (t) picksWrap.appendChild(t);
     else picksWrap.innerHTML = '<div class="status">No picks on file.</div>';
     setupPicksEditable('picks-title', picksWrap, pkr.value, abbr, biosData, allPicks);
+    renderStepienBanner(computeStepienGap(pkr.value, allPicks));
   } else {
     picksWrap.innerHTML = '<div class="status">Failed to load picks data.</div>';
   }

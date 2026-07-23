@@ -169,12 +169,30 @@ def classify(bio, season):
 
 
 def sheet_aggregate(ws, col=6):
-    """Rows 39-49, column F (=season col 1, index 6) by default."""
+    """Normally rows 39-49, column F (=season col 1, index 6) -- but the
+    whole "Roster Cap Figures" block is anchored dynamically off the
+    "Guaranteed Salary" row label rather than a hardcoded row number,
+    since a single team's tab can drift by a row versus the rest of the
+    workbook -- e.g. PHI, found 2026-07-21, had its whole Roster Cap
+    Figures block (including the hard-cap text row) shifted down by one
+    row, landing "Second Apron"'s number in the cell the old hardcoded
+    row 47 expected to be the "FIRST/SECOND APRON HARD CAP" text, which
+    silently produced hard_cap=None for a team the site correctly shows
+    as hard-capped. Same class of bug as the MLE block below."""
     def cell(r):
         v = ws.cell(row=r, column=col).value
         return v if isinstance(v, (int, float)) else 0
 
-    hard_cap_text = ws.cell(row=47, column=col).value
+    anchor = None
+    for r in range(1, ws.max_row + 1):
+        label = ws.cell(row=r, column=1).value
+        if isinstance(label, str) and label.strip().lower() == "guaranteed salary":
+            anchor = r
+            break
+    if anchor is None:
+        anchor = 39  # fallback to the standard template row
+
+    hard_cap_text = ws.cell(row=anchor + 8, column=col).value
     hard_cap = None
     if hard_cap_text:
         t = str(hard_cap_text).upper()
@@ -184,17 +202,17 @@ def sheet_aggregate(ws, col=6):
             hard_cap = "first_apron"
 
     return {
-        "guaranteed_salary": cell(39),
-        "cap_holds": cell(40),
-        "cap_space": cell(41),
-        "salary_cap": cell(42),
-        "first_apron_space": cell(43),
-        "first_apron": cell(44),
-        "second_apron_space": cell(45),
-        "second_apron": cell(46),
+        "guaranteed_salary": cell(anchor),
+        "cap_holds": cell(anchor + 1),
+        "cap_space": cell(anchor + 2),
+        "salary_cap": cell(anchor + 3),
+        "first_apron_space": cell(anchor + 4),
+        "first_apron": cell(anchor + 5),
+        "second_apron_space": cell(anchor + 6),
+        "second_apron": cell(anchor + 7),
         "hard_cap": hard_cap,
-        "nbn_hard_cap_space": cell(48),
-        "nbn_hard_cap": cell(49),
+        "nbn_hard_cap_space": cell(anchor + 9),
+        "nbn_hard_cap": cell(anchor + 10),
     }
 
 
@@ -325,6 +343,31 @@ def sheet_players(ws, legend):
     return rows
 
 
+def sheet_dead_cap(ws):
+    """Parses the 'Dead Cap Figures' section (right below Two-Way Contracts,
+    same row shape as sheet_players but without hold-color semantics --
+    dead cap is never a hold, always a flat charge). Returns {name: salary}.
+    Not matched against site players during normal name-matching (see
+    sheet_players/diff_players) -- used separately so a site player the
+    sheet books as dead cap but the site still carries as an active
+    RFA/UFA hold reports as a precise 'player_dead_cap_mismatch' instead of
+    the vaguer generic 'player_extra' (site has no counterpart anywhere)."""
+    rows = {}
+    in_section = False
+    for r in range(5, 40):
+        label = ws.cell(row=r, column=1).value
+        if isinstance(label, str) and "dead cap" in label.lower():
+            in_section = True
+            continue
+        if not in_section:
+            continue
+        if not label:
+            break  # first blank row after the section header ends the block
+        salary = ws.cell(row=r, column=6).value
+        rows[str(label).strip()] = salary if isinstance(salary, (int, float)) else 0
+    return rows
+
+
 def load_sheet():
     import tempfile
     fd, tmp_path = tempfile.mkstemp(suffix=".xlsx", prefix="poopoo-sheet-")
@@ -352,6 +395,7 @@ def load_sheet():
             "tpe_remaining": sheet_tpe(ws),
             "picks": sheet_original_picks(ws),
             "players": sheet_players(ws, legend or {}),
+            "dead_cap": sheet_dead_cap(ws),
         }
     tmp.unlink(missing_ok=True)
     return result
@@ -521,8 +565,9 @@ def find_fuzzy(name_key, candidates_by_key):
     return best
 
 
-def diff_players(team, sheet_players_list, site_players_list, site_name_index, sheet_name_index):
+def diff_players(team, sheet_players_list, site_players_list, site_name_index, sheet_name_index, sheet_dead_cap):
     diffs = []
+    dead_cap_by_key = {normalize_name(name): salary for name, salary in sheet_dead_cap.items()}
     site_by_key = {}
     for p in site_players_list:
         if p["cat"] == "draft-rights":
@@ -620,6 +665,18 @@ def diff_players(team, sheet_players_list, site_players_list, site_name_index, s
         in_sheet_anywhere = sheet_name_index.get(key) or sheet_name_index.get(find_fuzzy(key, sheet_name_index) or "")
         if in_sheet_anywhere:
             continue  # cross-team conflict already surfaced from the sheet-side pass
+        if key in dead_cap_by_key or find_fuzzy(key, dead_cap_by_key):
+            # Sheet books this player as a flat Dead Cap charge; site still
+            # carries them as an active roster entry with a real hold/salary
+            # -- a precise classification disagreement, not "player not on
+            # the sheet at all" (see sheet_dead_cap docstring).
+            fuzzy_dc_key = key if key in dead_cap_by_key else find_fuzzy(key, dead_cap_by_key)
+            diffs.append({
+                "category": "player_dead_cap_mismatch", "field": wp["name"],
+                "sheet": f"Dead Cap {fmt_money(dead_cap_by_key[fuzzy_dc_key])}",
+                "site": f"{team} {describe_player(wp)}",
+            })
+            continue
         if wp["salary"] <= 1:
             continue  # a placeholder hold with no real dollar value isn't worth flagging as "extra"
         diffs.append({
@@ -740,8 +797,24 @@ def classify_pick(team, row, site_pick, events):
     sheet_parts = set(re.split(r"[/|]", sheet_owner)) if any(c in sheet_owner for c in "/|") else {sheet_owner}
     site_parts = set(site_owner.split("|"))
 
+    # A pick can carry real structure (protected bands, a swap group, a
+    # ladder, a binary chain) without the old flat PROTECTED/SWAP_OWNER
+    # scalar columns ever being set -- most structure written since the
+    # conveyance model shipped never touches those two columns at all.
+    # Checking only them understated how much was actually modeled,
+    # flagging plenty of already-structured picks as a still-open gap.
+    site_has_structure = (
+        bool(site_pick.get("leaves")) or bool(site_pick.get("ladder"))
+        or bool(site_pick.get("group_id")) or bool(site_pick.get("ladder_fallback_of"))
+    )
+
     if sheet_parts == site_parts:
-        out["category"] = "clean_match" if not (row["details"] or row["note"]) else "richness_gap"
+        if not (row["details"] or row["note"]):
+            out["category"] = "clean_match"
+        elif site_has_structure:
+            out["category"] = "clean_match"
+        else:
+            out["category"] = "richness_gap"
         return out
 
     hist = events.get((row["year"], row["round"], team))
@@ -829,7 +902,7 @@ def diff_team(team, sheet, site, site_name_index, sheet_name_index, current_draf
     # Draft picks live in their own dedicated Picks tab (see build_picks_report)
     # -- richer than a same-team diff row, so not duplicated into this list.
 
-    diffs.extend(diff_players(team, sheet["players"], site["players"], site_name_index, sheet_name_index))
+    diffs.extend(diff_players(team, sheet["players"], site["players"], site_name_index, sheet_name_index, sheet["dead_cap"]))
     diffs.extend(diff_picks_signed(team, sheet["players"], site["players"], current_draft_year))
 
     return diffs

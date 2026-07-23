@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>2028 First-Round Pick Chain — NBN</title>
+  <style>
+    .page { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 2.75rem; }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    /* header */
+    .eyebrow { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-alt); font-weight: 700; }
+    header h1 { font-size: clamp(1.5rem, 3.6vw, 2.1rem); margin: 0.5rem 0 0.75rem; font-weight: 700; letter-spacing: -0.01em; }
+    header .subtitle { color: var(--text-secondary); max-width: 68ch; font-size: 1rem; line-height: 1.6; }
+    header .subtitle b { color: var(--text-primary); }
+    .status-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .status-chip { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; padding: 0.3rem 0.65rem; border-radius: 5px; font-weight: 600; }
+    .status-chip.ok { background: var(--success-bg); color: var(--success-light); }
+    .status-chip.gap { background: var(--danger-bg); color: var(--danger-light); }
+
+    /* section shell */
+    section h2 { font-size: 1.2rem; margin: 0 0 0.35rem; display: flex; align-items: baseline; gap: 0.6rem; color: var(--text-primary); }
+    section h2 .rule { flex: 1; height: 1px; background: var(--border); }
+    .section-note { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 1.4rem; max-width: 65ch; }
+
+    /* timeline */
+    .timeline { position: relative; padding-left: 1.85rem; }
+    .timeline::before { content: ""; position: absolute; left: 0.4rem; top: 0.4rem; bottom: 0.4rem; width: 2px; background: var(--border); }
+    .t-item { position: relative; padding-bottom: 1.75rem; }
+    .t-item:last-child { padding-bottom: 0; }
+    .t-dot { position: absolute; left: -1.85rem; top: 0.3rem; width: 0.8rem; height: 0.8rem; border-radius: 50%; background: var(--bg-page); border: 2px solid var(--success); }
+    .t-item.gap .t-dot { border-color: var(--danger); background: var(--danger-bg); }
+    .t-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; margin-bottom: 0.5rem; }
+    .t-date { font-size: 0.82rem; color: var(--text-muted); }
+    .t-title { font-weight: 700; font-size: 1rem; color: var(--text-primary); }
+    .t-tag { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; }
+    .t-item .t-tag { background: var(--success-bg); color: var(--success-light); }
+    .t-item.gap .t-tag { background: var(--danger-bg); color: var(--danger-light); }
+    .t-quote { background: var(--bg-card); border-left: 3px solid var(--border); padding: 0.65rem 0.9rem; font-size: 0.88rem; color: var(--text-secondary); margin: 0.55rem 0; }
+    .t-quote .who { font-weight: 700; color: var(--text-primary); }
+    .t-establishes { font-size: 0.9rem; color: var(--text-secondary); }
+    .t-establishes .lbl { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-right: 0.4rem; }
+    .t-id { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.3rem; }
+
+    /* resolution map */
+    .map-scroll { overflow-x: auto; }
+    .branches { display: grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 1rem; align-items: start; }
+    @media (max-width: 720px) { .branches { grid-template-columns: 1fr; } }
+    .branch { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.65rem; }
+    .branch-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
+    .node { border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.6rem 0.7rem; background: var(--bg-subtle); }
+    .node-title { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .node-inputs { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.45rem; color: var(--text-primary); }
+    .node-inputs .vs { font-weight: 400; font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; }
+    .chip { font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 4px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); }
+    .node-outputs { display: flex; flex-direction: column; gap: 0.28rem; font-size: 0.82rem; }
+    .node-outputs .out { display: flex; gap: 0.4rem; align-items: baseline; }
+    .node-outputs .arrow { color: var(--text-dim); }
+    .node-outputs .dest.better { color: var(--success-light); font-weight: 700; }
+    .node-outputs .dest.worse { color: var(--text-muted); }
+    .feeds { font-style: italic; color: var(--text-muted); font-size: 0.8rem; }
+    .outright { border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.6rem 0.7rem; background: var(--bg-subtle); font-size: 0.88rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+
+    .pool { margin-top: 1.3rem; border: 1px solid var(--gold-border); border-radius: 8px; padding: 1rem 1.15rem; background: var(--gold-bg); }
+    .pool-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gold-dim); font-weight: 700; margin-bottom: 0.65rem; }
+    .pool-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.65rem; }
+    .pool-slot { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 0.55rem 0.7rem; font-size: 0.85rem; color: var(--text-secondary); }
+    .pool-slot .slot-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem; }
+    .pool-slot.missing { border: 2px dashed var(--danger-border-strong); background: var(--danger-bg); }
+    .pool-slot.missing .slot-label { color: var(--danger-light); }
+    .pool-outcome { margin-top: 0.75rem; font-size: 0.88rem; color: var(--text-muted); }
+
+    /* callout */
+    .callout { border: 1px solid var(--danger-border); background: var(--danger-bg); border-radius: 8px; padding: 1.2rem 1.3rem; display: flex; flex-direction: column; gap: 0.65rem; }
+    .callout .callout-title { text-transform: uppercase; letter-spacing: 0.07em; font-size: 0.78rem; font-weight: 700; color: var(--danger-light); }
+    .callout p { margin: 0; color: var(--text-secondary); }
+    .callout ul { margin: 0.3rem 0 0; padding-left: 1.2rem; color: var(--text-secondary); }
+    .callout li { margin-bottom: 0.4rem; }
+
+    footer.page-footer { border-top: 1px solid var(--border); padding-top: 1rem; font-size: 0.72rem; color: var(--text-dim); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav" data-no-search></nav>
+
+    <header>
+      <div class="eyebrow">Pick Provenance &middot; Working Reconstruction</div>
+      <h1>The 2028 First-Round Pick Chain</h1>
+      <p class="subtitle">
+        Eight transactions, spanning 2024&ndash;2026, all feed into one trade: <b>MIA and SAC's June 2026
+        swap-rights deal</b>, in which MIA takes &ldquo;the best of SAC, DAL, and PHX&rsquo;s 2028 1sts.&rdquo;
+        Two of those three legs trace cleanly to real trades. The third &mdash; <b>DAL</b> &mdash; does not.
+      </p>
+      <div class="status-row">
+        <span class="status-chip ok">7 confirmed</span>
+        <span class="status-chip gap">1 open gap</span>
+      </div>
+    </header>
+
+    <section>
+      <h2>The Paper Trail<span class="rule"></span></h2>
+      <p class="section-note">Every transaction in chronological order, with the verbatim trade text and what it establishes structurally.</p>
+
+      <div class="timeline">
+
+        <div class="t-item">
+          <div class="t-dot"></div>
+          <div class="t-head"><span class="t-date mono">2024-07-01</span><span class="t-title">Trade 15</span><span class="t-tag">confirmed</span></div>
+          <div class="t-quote"><span class="who">SAC receives:</span> &hellip; 2028 MIA 1st (rights to swap) &hellip;</div>
+          <div class="t-establishes"><span class="lbl">Establishes</span>SAC vs. MIA&rsquo;s own 2028 1st &mdash; better goes to SAC.</div>
+          <div class="t-id mono">id 9c36669e3ebcb5c4</div>
+        </div>
+
+        <div class="t-item">
+          <div class="t-dot"></div>
+          <div class="t-head"><span class="t-date mono">2025-01-19</span><span class="t-title">Trade 51</span><span class="t-tag">confirmed</span></div>
+          <div class="t-quote"><span class="who">MEM receives:</span> Trayce Jackson-Davis, 2027 MIN 2nd, 2028 DAL 1st (Swap Rights)</div>
+          <div class="t-establishes"><span class="lbl">Establishes</span>MEM vs. DAL&rsquo;s own 2028 1st &mdash; better goes to MEM. The oldest claim on DAL&rsquo;s pick.</div>
+          <div class="t-id mono">id 12a43498cf0b25f7</div>
+        </div>
+
+        <div class="t-item">
+          <div class="t-dot"></div>
+          <div class="t-head"><span class="t-date mono">2025-06-18</span><span class="t-title">Trade 3 &mdash; the Fox deal</span><span class="t-tag">confirmed</span></div>
+          <div class="t-quote"><span class="who">MIN receives:</span> &hellip; 2028 MIA 1st, 2030 MIA 1st &hellip; <span class="who">MIA receives:</span> De&rsquo;Aaron Fox</div>
+          <div class="t-establishes"><span class="lbl">Establishes</span>The physical MIA-origin pick itself (still carrying SAC&rsquo;s Trade-15 right) moves MIA &rarr; MIN.</div>
+          <div class="t-id mono">id c56e2797b4a7468f</div>
+        </div>
+
+        <div class="t-item">
+          <div class="t-dot"></div>
+          <div class="t-head"><span class="t-date mono">2025-07-26</span><span class="t-title">Trade 28</span><span class="t-tag">confirmed</span></div>
+          <div class="t-quote"><span class="who">CHA receives:</span> &hellip; MIA 2028 1st, MIA 2030 1st &hellip; <span class="who">MIN receives:</span> LaMelo Ball</div>
+          <div class="t-establishes"><span class="lbl">Establishes</span>Same pick moves MIN &rarr; CHA. CHA is now the &ldquo;if SAC doesn&rsquo;t take it&rdquo; default holder.</div>
+          <div class="t-id mono">id 18ea40fc05533bfe</div>
+        </div>
+
+        <div class="t-item">
+          <div class="t-dot"></div>
+          <div class="t-head"><span class="t-date mono">2026-02-02</span><span class="t-title">Trade 53</span><span class="t-tag">confirmed</span></div>
+          <div class="t-quote"><span class="who">DAL receives:</span> Lillard, Zubac, 2028 DAL 1st swap (least favorable) &mdash; <span class="who">NYK receives:</span> &hellip; 2028 CHA 1st swap (most favorable)</div>
+          <div class="t-establishes"><span class="lbl">Establishes</span>CHA&rsquo;s own 1st vs. <i>the loser of the Trade-51 MEM/DAL comparison</i> &mdash; better to NYK, worse stays DAL. DAL only keeps its pick if it loses twice.</div>
+          <div class="t-id mono">id 978556774e578813</div>
+        </div>
+
+        <div class="t-item">
+          <div class="t-dot"></div>
+          <div class="t-head"><span class="t-date mono">2026-02-05</span><span class="t-title">Trade 57</span><span class="t-tag">confirmed</span></div>
+          <div class="t-quote"><span class="who">MIA receives:</span> Scotty Pippen Jr., Leonard Miller, 2027 MIL 1st, <b>2028 PHX 1st</b>, &hellip; <span class="who">PHX receives:</span> Daniel Gafford, Maxime Raynaud</div>
+          <div class="t-establishes"><span class="lbl">Establishes</span>PHX&rsquo;s 2028 1st moves to MIA, outright &mdash; no swap language, no contingency.</div>
+          <div class="t-id mono">id fb8a46a188270aa3</div>
+        </div>
+
+        <div class="t-item">
+          <div class="t-dot"></div>
+          <div class="t-head"><span class="t-date mono">2026-06-20</span><span class="t-title">SAC / MIA trade</span><span class="t-tag">confirmed</span></div>
+          <div class="t-quote"><span class="who">SAC receives:</span> Julius Randle, Gradey Dick, Jakobe Walter &mdash; <span class="who">MIA receives:</span> Bradley Beal, Devin Carter, SAC&rsquo;s 2028 1st swap-priority &mdash; logged as &ldquo;MIA receives best of SAC/DAL/PHX, SAC receives 2nd&rdquo;</div>
+          <div class="t-establishes"><span class="lbl">Establishes</span>MIA takes over SAC&rsquo;s Trade-15 first-dibs position; SAC drops to second priority. The pool&rsquo;s SAC and PHX legs are now both accounted for. <b>Its own structured record only moves the SAC-origin asset &mdash; DAL is named in the description only.</b></div>
+          <div class="t-id mono">id 8685c0dfc2717083</div>
+        </div>
+
+        <div class="t-item">
+          <div class="t-dot"></div>
+          <div class="t-head"><span class="t-date mono">2026-07-10</span><span class="t-title">Trade 31</span><span class="t-tag">confirmed</span></div>
+          <div class="t-quote"><span class="who">MIL receives:</span> Anthony Davis, 2028 DAL 1st (outright) plus a swap right (most favorable) on DAL&rsquo;s 2028 CHA-origin 1st &mdash; &ldquo;restoring the swap grant from Trade 53&rdquo;</div>
+          <div class="t-establishes"><span class="lbl">Establishes</span>NYK&rsquo;s Trade-53 &ldquo;better&rdquo; claim re-traded to MIL. This is the <i>only</i> transaction anywhere touching DAL&rsquo;s 2028 1st &mdash; and it happens three weeks <i>after</i> the SAC/MIA pool trade above.</div>
+          <div class="t-id mono">id 8f288314921b0603</div>
+        </div>
+
+      </div>
+    </section>
+
+    <section>
+      <h2>Where Everything Feeds<span class="rule"></span></h2>
+      <p class="section-note">Three independent branches, each resolved by real trades, converging on the June 2026 pool.</p>
+
+      <div class="map-scroll">
+        <div class="branches">
+
+          <div class="branch">
+            <div class="branch-label">Branch A &middot; MEM / DAL / CHA</div>
+            <div class="node">
+              <div class="node-title mono">2025 &middot; Trade 51</div>
+              <div class="node-inputs"><span class="chip">MEM own</span><span class="vs">vs</span><span class="chip">DAL own</span></div>
+              <div class="node-outputs">
+                <div class="out"><span class="arrow">&rarr;</span><span class="dest better">better: MEM</span></div>
+                <div class="out"><span class="arrow">&rarr;</span><span class="dest worse">worse: <span class="feeds">feeds node below</span></span></div>
+              </div>
+            </div>
+            <div class="node">
+              <div class="node-title mono">2026 &middot; Trade 53 &rarr; 31</div>
+              <div class="node-inputs"><span class="chip">CHA own</span><span class="vs">vs</span><span class="chip">DAL (loser above)</span></div>
+              <div class="node-outputs">
+                <div class="out"><span class="arrow">&rarr;</span><span class="dest better">better: MIL</span></div>
+                <div class="out"><span class="arrow">&rarr;</span><span class="dest worse">worse: DAL (final floor)</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="branch">
+            <div class="branch-label">Branch B &middot; SAC / MIA / CHA</div>
+            <div class="node">
+              <div class="node-title mono">2024 &middot; Trade 15</div>
+              <div class="node-inputs"><span class="chip">SAC own</span><span class="vs">vs</span><span class="chip">MIA own</span></div>
+              <div class="node-outputs">
+                <div class="out"><span class="arrow">&rarr;</span><span class="dest better">better: SAC</span></div>
+                <div class="out"><span class="arrow">&rarr;</span><span class="dest worse">worse: CHA <span class="feeds">(via MIN, Trades 3+28)</span></span></div>
+              </div>
+            </div>
+            <div class="node">
+              <div class="node-title mono">2026-06-20</div>
+              <div class="node-inputs"><span class="chip">SAC&rsquo;s &ldquo;better&rdquo;</span></div>
+              <div class="node-outputs">
+                <div class="out"><span class="arrow">&rarr;</span><span class="dest better">reassigned to MIA</span></div>
+                <div class="out"><span class="arrow">&rarr;</span><span class="dest worse">SAC keeps 2nd priority</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="branch">
+            <div class="branch-label">Branch C &middot; PHX</div>
+            <div class="outright"><span class="mono">2026-02-05 &middot; Trade 57</span><span class="chip">PHX own &rarr; MIA</span></div>
+            <p class="feeds" style="margin:0;">Outright, no contingency &mdash; already MIA&rsquo;s by the time the pool forms.</p>
+          </div>
+
+        </div>
+
+        <div class="pool">
+          <div class="pool-title">June 2026 Pool &mdash; MIA takes best of three</div>
+          <div class="pool-inputs">
+            <div class="pool-slot">
+              <span class="slot-label">Slot 1</span>
+              Branch B&rsquo;s SAC-side output, reassigned to MIA (confirmed)
+            </div>
+            <div class="pool-slot missing">
+              <span class="slot-label">Slot 2 &middot; gap</span>
+              Branch A&rsquo;s DAL final floor &mdash; <b>no transaction moves this into MIA&rsquo;s or SAC&rsquo;s hands</b>
+            </div>
+            <div class="pool-slot">
+              <span class="slot-label">Slot 3</span>
+              PHX&rsquo;s pick, already MIA&rsquo;s outright (Branch C)
+            </div>
+          </div>
+          <div class="pool-outcome">MIA keeps the best of the three; SAC gets second choice; whichever is left over has no named claimant.</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="callout">
+        <div class="callout-title">The Open Question</div>
+        <p>
+          For &ldquo;DAL&rdquo; to belong in the June 2026 pool, someone would have had to hand MIA (or SAC) a claim on
+          Branch A&rsquo;s final floor pick &mdash; the one DAL only keeps after losing to <i>both</i> MEM and CHA/MIL.
+          No transaction does this.
+        </p>
+        <ul>
+          <li>The June 2026 trade&rsquo;s own structured data moves exactly one pick asset: SAC&rsquo;s own. DAL is not a party to that trade.</li>
+          <li>The only transaction anywhere touching DAL&rsquo;s 2028 1st is Trade 31 (2026-07-10) &mdash; three weeks <i>after</i> the pool trade, and it&rsquo;s the CHA-side re-trade, not a transfer to MIA/SAC.</li>
+          <li>Either an off-ledger understanding never got logged as its own trade, or the &ldquo;best of SAC/DAL/PHX&rdquo; description is imprecise about what DAL refers to.</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="page-footer">
+      <span>Sources: transaction ledger (/api/transactions) &middot; league sheet cell notes</span>
+      <span>Working reconstruction &middot; not yet reflected in the live pick model</span>
+    </footer>
+  </div>
+
+  <script src="/nav.js"></script>
+</body>
+</html>

@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.0.360",
+    "date": "2026-07-23",
+    "changes": [
+      "Team pages: added a Stepien Rule indicator on the Draft Picks section \u2014 flags when a team has no first-round pick (own or acquired) in two or more consecutive draft years (\u00a7 7.2)",
+      "Transactions: added RFA Offer Sheet (\u00a7 3.15) as a submittable type, with offering-team and matched/not-matched outcome fields",
+      "Team pages: added a \u201cWhat If Mode\u201d roster sandbox for previewing hypothetical roster/contract changes (attribute impact, hard-cap projection) without saving anything",
+      "Rulebook: \u00a7 3.12 and \u00a7 3.15 now show a system-enforced badge alongside manual review, documenting what the API actually checks vs. what's still committee judgment",
+      "Player pages: added a Badge History table showing 2K badges earned per snapshot",
+      "poopoo audit: added Dead Cap Status mismatch detection (sheet books a flat dead-cap charge, site still shows an active roster entry)",
+      "build/poopoo.py: anchor the Roster Cap Figures block off the \u201cGuaranteed Salary\u201d row label instead of a hardcoded row number, fixing a silent hard_cap=None on row-shifted team tabs",
+      "build/scrape_2k_attributes.py: added --replace-last-ovr to correct a bad prior OVR scrape entry in place instead of appending a new one"
+    ]
+  },
+  {
     "version": "0.0.359",
     "date": "2026-07-21",
     "changes": [

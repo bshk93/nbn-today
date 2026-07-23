@@ -475,6 +475,7 @@
     .badge-convert_twoway { background: #1c1917; color: #a8a29e; }
     .badge-void_player    { background: #1f1f1f; color: var(--text-muted); }
     .badge-set_hard_cap_level { background: var(--gold-bg); color: var(--gold); }
+    .badge-offer_sheet    { background: #1e1b4b; color: #a5b4fc; }
     .badge-callup  { background: #451a03; color: var(--danger-alt); }
     .badge-calldown { background: #451a03; color: var(--danger-alt); }
     .badge-trade   { background: var(--purple-light-bg); color: #c084fc; }
@@ -628,6 +629,7 @@
         <label>Type</label>
         <select id="f-type">
           <option value="sign">Free Agency Signing</option>
+          <option value="offer_sheet">RFA Offer Sheet</option>
           <option value="pick">Draft Pick</option>
           <option value="sign_pick">Sign Draft Pick</option>
           <option value="option">Option Decision</option>
@@ -689,6 +691,30 @@
           <option>POR</option><option>SAC</option><option>SAS</option><option>TOR</option>
           <option>UTA</option><option>WAS</option>
         </select>
+      </div>
+
+      <!-- offer_sheet-only -->
+      <div class="form-field" id="f-offer-team-field" style="display:none">
+        <label>Offering Team</label>
+        <select id="f-offer-team">
+          <option value="">— select —</option>
+          <option>ATL</option><option>BKN</option><option>BOS</option><option>CHA</option>
+          <option>CHI</option><option>CLE</option><option>DAL</option><option>DEN</option>
+          <option>DET</option><option>GSW</option><option>HOU</option><option>IND</option>
+          <option>LAC</option><option>LAL</option><option>MEM</option><option>MIA</option>
+          <option>MIL</option><option>MIN</option><option>NOP</option><option>NYK</option>
+          <option>OKC</option><option>ORL</option><option>PHI</option><option>PHX</option>
+          <option>POR</option><option>SAC</option><option>SAS</option><option>TOR</option>
+          <option>UTA</option><option>WAS</option>
+        </select>
+      </div>
+
+      <div class="form-field" id="f-offer-outcome-field" style="display:none">
+        <label>Outcome</label>
+        <div class="radio-group">
+          <label><input type="radio" name="offer-outcome" value="matched" checked> Matched (retaining team keeps player)</label>
+          <label><input type="radio" name="offer-outcome" value="not_matched"> Not Matched (signs with offering team)</label>
+        </div>
       </div>
 
       <!-- set_hard_cap_level-only -->
@@ -891,6 +917,7 @@
     <span class="filter-label">Type:</span>
     <span class="chip active" data-filter="type" data-value="">All</span>
     <span class="chip" data-filter="type" data-value="sign">Signings</span>
+    <span class="chip" data-filter="type" data-value="offer_sheet">Offer Sheets</span>
     <span class="chip" data-filter="type" data-value="pick">Draft Picks</span>
     <span class="chip" data-filter="type" data-value="sign_pick">Pick Signings</span>
     <span class="chip" data-filter="type" data-value="option">Options</span>
@@ -1118,10 +1145,13 @@ function setupTypeSwitch() {
     const isConvertTwoWay = v === 'convert_twoway';
     const isSignPick = v === 'sign_pick';
     const isSetHardCap = v === 'set_hard_cap_level';
+    const isOfferSheet = v === 'offer_sheet';
     // A draft pick conveys rights only — no contract at pick time (it's attached
     // later via the separate Sign Draft Pick step), so picks don't show the
-    // contract section but sign_pick does.
-    const needsContract = isSign || isConvertTwoWay || isSignPick;
+    // contract section but sign_pick does. An offer_sheet does carry a contract
+    // (the terms being offered), even though it's not the transaction that
+    // actually applies it — that's a follow-up `sign`.
+    const needsContract = isSign || isConvertTwoWay || isSignPick || isOfferSheet;
 
     // Reset contract-type to player whenever transaction type changes
     const playerRadio = document.querySelector('input[name="contract-type"][value="player"]');
@@ -1135,6 +1165,8 @@ function setupTypeSwitch() {
       document.getElementById('f-date-field').style.display          = '';
       document.getElementById('f-player-field').style.display        = isSetHardCap ? 'none' : '';
       document.getElementById('f-team-field').style.display          = (isSign || isSetHardCap) ? '' : 'none';
+      document.getElementById('f-offer-team-field').style.display    = isOfferSheet ? '' : 'none';
+      document.getElementById('f-offer-outcome-field').style.display = isOfferSheet ? '' : 'none';
       document.getElementById('f-hardcap-level-field').style.display = isSetHardCap ? '' : 'none';
       document.getElementById('f-signing-method-field').style.display = (isSign || isConvertTwoWay) ? '' : 'none';
       if (!isSign && !isConvertTwoWay) {
@@ -1172,7 +1204,7 @@ function setupTypeSwitch() {
   document.querySelectorAll('input[name="contract-type"]').forEach(r => {
     r.addEventListener('change', () => {
       const v = document.getElementById('f-type').value;
-      const needsContract = v === 'sign' || v === 'convert_twoway' || v === 'sign_pick';
+      const needsContract = v === 'sign' || v === 'convert_twoway' || v === 'sign_pick' || v === 'offer_sheet';
       applyContractTypeVisibility(needsContract, v === 'convert_twoway');
       // Pre-fill starting season when switching to two-way
       if (r.value === 'two-way') {
@@ -1212,6 +1244,17 @@ function isFreeAgentHold(bio) {
   const earliest = years[0];
   const faSeason = nextSeasonStr(currentSeasonStr());
   return (holds[earliest] === 'UFA' || holds[earliest] === 'RFA') && earliest <= faSeason;
+}
+
+// Offer sheets (§ 3.15) only apply to restricted (not unrestricted) free agents —
+// matches the API's hard-fail check in _apply_offer_sheet.
+function isRfaHold(bio) {
+  const holds = bio.cap_holds || {};
+  const years = Object.keys(holds).sort();
+  if (!years.length) return false;
+  const earliest = years[0];
+  const faSeason = nextSeasonStr(currentSeasonStr());
+  return holds[earliest] === 'RFA' && earliest <= faSeason;
 }
 
 function buildTwowayContract(years, startSeason) {
@@ -1370,6 +1413,8 @@ function setupPlayerSearch() {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'player' || bio.type === 'two-way');
     } else if (txnType === 'renounce') {
       pool = Object.entries(bios).filter(([slug, bio]) => teamMap[slug] && isFreeAgentHold(bio));
+    } else if (txnType === 'offer_sheet') {
+      pool = Object.entries(bios).filter(([slug, bio]) => teamMap[slug] && isRfaHold(bio));
     } else if (txnType === 'convert_twoway') {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'two-way');
     } else if (txnType === 'sign_pick') {
@@ -2127,6 +2172,16 @@ async function submitTransaction() {
       ...(signingMethod ? { signing_method: signingMethod } : {}),
       ...(birdRightsType ? { bird_rights_type: birdRightsType } : {}),
     };
+  } else if (type === 'offer_sheet') {
+    date = document.getElementById('f-date').value;
+    const offering_team = document.getElementById('f-offer-team').value;
+    const outcome = document.querySelector('input[name="offer-outcome"]:checked').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
+    if (!offering_team) { setStatus('err', 'Select the offering team.'); return; }
+    if (!Object.keys(contract.salaries || {}).length) {
+      setStatus('err', 'At least one salary year is required (offer sheet must cover ≥2 years — § 3.15).'); return;
+    }
+    details = { player: playerSlug, offering_team, contract, outcome };
   } else if (type === 'pick') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -2260,6 +2315,8 @@ function resetForm() {
   document.getElementById('f-player-display').value = '';
   document.getElementById('f-player-slug').value = '';
   document.getElementById('f-team').value = '';
+  document.getElementById('f-offer-team').value = '';
+  document.querySelector('input[name="offer-outcome"][value="matched"]').checked = true;
   document.getElementById('f-hardcap-level').value = '';
   document.getElementById('f-signing-method').value = '';
   document.getElementById('f-bird-rights-field').style.display = 'none';
@@ -2513,7 +2570,11 @@ function renderRow(t) {
   const dateStr = fmtDate(t.date);
   const badge = `<span class="badge badge-${t.type}">${typeLabel(t.type)}</span>`;
   let teamCell, playerCell;
-  if (t.type === 'trade') {
+  if (t.type === 'offer_sheet') {
+    const teams = d.teams || [];
+    teamCell = teams.length ? teams.map(tm => `<a href="/teams/${tm}">${escHtml(tm)}</a>`).join(' → ') : '—';
+    playerCell = renderPlayerCell(d.player);
+  } else if (t.type === 'trade') {
     const teams = d.teams || [];
     teamCell = teams.length ? teams.map(tm => `<a href="/teams/${tm}">${escHtml(tm)}</a>`).join(' · ') : '—';
     playerCell = '—';
@@ -2600,6 +2661,17 @@ function renderDetailsCell(t) {
   if (t.type === 'renounce') {
     return 'Renounced — free agent, no dead cap';
   }
+  if (t.type === 'offer_sheet') {
+    const c = d.contract || {};
+    const years = Object.keys(c.salaries || {}).length;
+    const total = Object.values(c.salaries || {}).reduce((sum, v) => {
+      const n = parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0;
+      return sum + n;
+    }, 0);
+    const contractStr = years ? `${years}yr / $${(total / 1e6).toFixed(1)}M` : '';
+    const outcomeStr = d.outcome === 'matched' ? 'Matched' : 'Not Matched';
+    return escHtml(`${contractStr}${contractStr ? ' · ' : ''}${outcomeStr}`);
+  }
   if (t.type === 'void_player') {
     return d.reason ? `Voided — ${escHtml(d.reason)}` : 'Voided — no cap hit';
   }
@@ -2610,7 +2682,7 @@ function renderDetailsCell(t) {
   }
   if (t.type === 'trade') {
     const transfers = d.transfers || [];
-    const assetLabel = a => {
+    const assetLabel = (a, toTeam) => {
       if (a.type === 'player') {
         const bio = bios[a.slug];
         const name = bio ? bioDisplayName(bio) : a.slug;
@@ -2621,6 +2693,23 @@ function renderDetailsCell(t) {
         const mods = [];
         if (a.protection) mods.push(`top-${a.protection} prot.`);
         if (a.swap_with) mods.push(`swap w/ ${a.swap_with}`);
+        if (a.ladder_fallback && a.ladder_fallback.length) {
+          const fb = a.ladder_fallback.map(f => `${f.year} R${f.round} ${f.orig}`).join(' / ');
+          mods.push(`if protected → ${fb}`);
+        }
+        // This transaction's own asset record carries no protection/swap terms
+        // of its own — e.g. a plain retrade of a pick that already carries a
+        // contingent claim from an earlier trade (nothing new is being set, so
+        // the flat fields above are all null). Fall back to the pick's current
+        // conveyance state (same /api/picks data team.js's picks table reads)
+        // so an existing band/swap doesn't just disappear from the trade log.
+        if (!mods.length) {
+          const cur = allPicks.find(p => p.year === a.year && p.round === a.round && p.orig === a.orig);
+          const leaf = cur?.leaves?.find(l => l.team === toTeam);
+          if (leaf) mods.push(leaf.description);
+          else if (cur?.protected != null) mods.push(`top-${cur.protected} prot.`);
+          else if (cur?.swap_owner) mods.push(`swap w/ ${cur.swap_owner}`);
+        }
         if (mods.length) s += ` (${mods.join(', ')})`;
         return escHtml(s);
       }
@@ -2634,7 +2723,7 @@ function renderDetailsCell(t) {
     transfers.forEach(({ from_team, to_team, assets }) => {
       const out = ensure(from_team), inn = ensure(to_team);
       (assets || []).forEach(a => {
-        const label = assetLabel(a);
+        const label = assetLabel(a, to_team);
         if (!label) return;
         out.out.push(`${label} → ${escHtml(to_team)}`);
         inn.in.push(`${label} ← ${escHtml(from_team)}`);
@@ -2680,7 +2769,7 @@ function fmtDate(iso) {
 }
 
 function typeLabel(type) {
-  const labels = { sign: 'Signing', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', guarantee: 'Guarantee', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion', void_player: 'Void Player', set_hard_cap_level: 'Set Hard Cap' };
+  const labels = { sign: 'Signing', offer_sheet: 'Offer Sheet', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', guarantee: 'Guarantee', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion', void_player: 'Void Player', set_hard_cap_level: 'Set Hard Cap' };
   return labels[type] || type;
 }
 

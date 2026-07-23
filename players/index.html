@@ -514,6 +514,7 @@
     .txn-badge-release { background: var(--danger-bg); color: var(--danger); }
     .txn-badge-convert_twoway { background: #1c1917; color: #a8a29e; }
     .txn-badge-trade   { background: var(--purple-light-bg); color: #c084fc; }
+    .txn-badge-offer_sheet { background: #1e1b4b; color: #a5b4fc; }
     .txn-badge-recap   { background: var(--gold-bg); color: var(--gold); }
     .txn-badge-retired { background: var(--bg-card); color: var(--text-secondary); }
     .txn-row-retired td { font-weight: 600; color: var(--text-primary); }
@@ -1800,10 +1801,93 @@
     container.appendChild(source);
   }
 
+  function renderBadgeHistory(container, playerSlug) {
+    const history = allAttributes[playerSlug] || [];
+    if (!history.some(e => e.badges && e.badges.length)) return;
+
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = 'Badge History';
+    container.appendChild(h2);
+
+    // Union of every badge name ever held, grouped by category (last-seen
+    // category wins), sorted category then name -- same grouping intent as
+    // ATTR_CATEGORIES above, just derived from the data since badges don't
+    // have a fixed category list.
+    const badgeCategory = new Map();
+    history.forEach(entry => {
+      (entry.badges || []).forEach(b => badgeCategory.set(b.name, b.category));
+    });
+    const cols = [...badgeCategory.keys()].sort((a, b) => {
+      const catA = badgeCategory.get(a), catB = badgeCategory.get(b);
+      return catA !== catB ? (catA < catB ? -1 : 1) : (a < b ? -1 : 1);
+    });
+
+    const tierColors = (window.RatingsPopup && window.RatingsPopup.TIER_COLORS) || {};
+
+    const scrollWrap = document.createElement('div');
+    scrollWrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;';
+
+    const table = document.createElement('table');
+    table.className = 'salary-table';
+    table.style.cssText = `min-width:${Math.max(600, 90 + cols.length * 34)}px;`;
+
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    const dateTh = document.createElement('th');
+    dateTh.textContent = 'Date';
+    dateTh.style.whiteSpace = 'nowrap';
+    hr.appendChild(dateTh);
+    cols.forEach(name => {
+      const th = document.createElement('th');
+      th.textContent = name;
+      th.title = `${name} (${badgeCategory.get(name)})`;
+      th.style.whiteSpace = 'nowrap';
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const newestFirst = [...history].reverse();
+    newestFirst.forEach(entry => {
+      const tr = tbody.insertRow();
+      const dateTd = tr.insertCell();
+      const [y, m, d] = entry.date.split('-').map(Number);
+      dateTd.textContent = `${months[m - 1]} ${d}, ${y}`;
+      dateTd.style.whiteSpace = 'nowrap';
+
+      const tierByName = {};
+      (entry.badges || []).forEach(b => { tierByName[b.name] = b.tier; });
+
+      cols.forEach(name => {
+        const td = tr.insertCell();
+        td.style.textAlign = 'center';
+        const tier = tierByName[name];
+        const dot = document.createElement('span');
+        if (tier) {
+          dot.title = tier;
+          dot.style.cssText = `display:inline-block;width:0.6rem;height:0.6rem;border-radius:50%;background:${tierColors[tier] || 'var(--text-muted)'};`;
+        } else {
+          dot.style.cssText = 'display:inline-block;width:0.6rem;height:0.6rem;border-radius:50%;border:1px solid var(--border);';
+        }
+        td.appendChild(dot);
+      });
+    });
+
+    scrollWrap.appendChild(table);
+    container.appendChild(scrollWrap);
+
+    const source = document.createElement('div');
+    source.style.cssText = 'font-size:0.7rem;color:var(--text-muted);margin-top:0.4rem;';
+    source.textContent = 'Source: 2kratings.com · dot color = badge tier held on that date';
+    container.appendChild(source);
+  }
+
   function renderHistorySection(container, playerSlug) {
     const attrHistory = allAttributes[playerSlug];
     if (attrHistory && attrHistory.length) {
       renderAttributeHistory(container, playerSlug);
+      renderBadgeHistory(container, playerSlug);
     } else {
       renderOvrHistory(container, playerSlug);
     }
@@ -2009,6 +2093,7 @@
   }
 
   function renderTransactionHistory(container, playerSlug, playerAwards = [], seasonLeaders = {}, seasonRows = [], bio = {}) {
+    let currentPicks = [];
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     function fmtDate(iso) {
       if (!iso) return '—';
@@ -2038,7 +2123,7 @@
     const METHOD = { bird_rights:'Bird Rights', ntmle:'NTMLE', tmle:'TMLE',
       room_exception:'Room Exc.', bae:'BAE', sign_and_trade:'S&T' };
     const TYPE_LABEL = { sign:'Signing', pick:'Draft Pick', option:'Option',
-      release:'Release', trade:'Trade', convert_twoway:'Two-Way Conv.' };
+      release:'Release', trade:'Trade', convert_twoway:'Two-Way Conv.', offer_sheet:'Offer Sheet' };
 
     function detailsHtml(t) {
       const d = t.details || {};
@@ -2058,6 +2143,14 @@
         return d.decision === 'accept'
           ? esc(`${d.year || ''} ${ol} — accepted`)
           : esc(`${d.year || ''} ${ol} — declined → ${d.cap_hold_type || 'UFA'} hold`);
+      }
+      if (t.type === 'offer_sheet') {
+        const [offeringTeam, retainingTeam] = d.teams || [];
+        const outcomeStr = d.outcome === 'matched'
+          ? `${retainingTeam || 'Retaining team'} matched`
+          : `Not matched — signs with ${offeringTeam || 'offering team'}`;
+        const contractStr = fmtContract(d.contract);
+        return esc(outcomeStr) + (contractStr ? ' · ' + esc(contractStr) : '');
       }
       if (t.type === 'convert_twoway') {
         let s = fmtContract(d.contract);
@@ -2079,11 +2172,29 @@
           (tr.assets || []).some(a => a.type === 'player' && a.slug === playerSlug));
         const myTeam = myLeg ? myLeg.from_team : null;
 
-        const assetLabel = a => {
+        const assetLabel = (a, toTeam) => {
           if (a.type === 'player') return playerLink(a.slug);
           if (a.type === 'pick') {
             let s = `${a.year} R${a.round} ${a.orig}`;
-            if (a.protection) s += ` (top-${a.protection})`;
+            const mods = [];
+            if (a.protection) mods.push(`top-${a.protection} prot.`);
+            if (a.swap_with) mods.push(`swap w/ ${a.swap_with}`);
+            if (a.ladder_fallback && a.ladder_fallback.length) {
+              const fb = a.ladder_fallback.map(f => `${f.year} R${f.round} ${f.orig}`).join(' / ');
+              mods.push(`if protected → ${fb}`);
+            }
+            // Nothing set by this transaction itself (e.g. a plain retrade of a
+            // pick that already carries a contingent claim) — fall back to the
+            // pick's current conveyance state so an existing band/swap doesn't
+            // just disappear from the player's history.
+            if (!mods.length) {
+              const cur = currentPicks.find(p => p.year === a.year && p.round === a.round && p.orig === a.orig);
+              const leaf = cur?.leaves?.find(l => l.team === toTeam);
+              if (leaf) mods.push(leaf.description);
+              else if (cur?.protected != null) mods.push(`top-${cur.protected} prot.`);
+              else if (cur?.swap_owner) mods.push(`swap w/ ${cur.swap_owner}`);
+            }
+            if (mods.length) s += ` (${mods.join(', ')})`;
             return esc(s);
           }
           return '';
@@ -2098,16 +2209,16 @@
           if (tr.from_team === myTeam) {
             (tr.assets || []).forEach(a => {
               if (a.type === 'player' && a.slug === playerSlug) return; // this player themself
-              const label = assetLabel(a);
+              const label = assetLabel(a, tr.to_team);
               if (label) sent.push(label);
             });
           } else if (tr.to_team === myTeam) {
             (tr.assets || []).forEach(a => {
-              const label = assetLabel(a);
+              const label = assetLabel(a, tr.to_team);
               if (label) received.push(label);
             });
           } else {
-            const assetStrs = (tr.assets || []).map(assetLabel).filter(Boolean);
+            const assetStrs = (tr.assets || []).map(a => assetLabel(a, tr.to_team)).filter(Boolean);
             otherLegStrs.push(esc(`${tr.from_team}→${tr.to_team}`) + (assetStrs.length ? ': ' + assetStrs.join(', ') : ''));
           }
         });
@@ -2200,12 +2311,19 @@
         if (!myLeg) return (d.teams || []).map(esc).join(' · ') || '—';
         return `<a href="/teams/${esc(myLeg.from_team)}">${esc(myLeg.from_team)}</a> → <a href="/teams/${esc(myLeg.to_team)}">${esc(myLeg.to_team)}</a>`;
       }
+      if (t.type === 'offer_sheet') {
+        const teams = d.teams || [];
+        return teams.length ? teams.map(tm => `<a href="/teams/${esc(tm)}">${esc(tm)}</a>`).join(' → ') : '—';
+      }
       return d.team ? `<a href="/teams/${esc(d.team)}">${esc(d.team)}</a>` : '—';
     }
 
-    fetch(`/api/transactions?player=${encodeURIComponent(playerSlug)}`)
-      .then(r => r.ok ? r.json() : { transactions: [] })
-      .then(({ transactions }) => {
+    Promise.all([
+      fetch(`/api/transactions?player=${encodeURIComponent(playerSlug)}`).then(r => r.ok ? r.json() : { transactions: [] }),
+      fetch('/api/picks').then(r => r.ok ? r.json() : []).catch(() => []),
+    ])
+      .then(([{ transactions }, picks]) => {
+        currentPicks = picks;
         const entries = [
           ...transactions.map(t => ({ kind: 'txn', date: t.date, t })),
           ...buildSeasonRecaps(),

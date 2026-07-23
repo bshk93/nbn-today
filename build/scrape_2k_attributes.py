@@ -309,6 +309,7 @@ def main():
     ap.add_argument("--limit", type=int, default=None, help="only process first N players (testing)")
     ap.add_argument("--slugs", type=str, default=None, help="comma-separated NBN slugs to target (need not be rostered)")
     ap.add_argument("--refresh", action="store_true", help="re-fetch players already in player-attributes.json via their stored source_slug (skips matching)")
+    ap.add_argument("--replace-last-ovr", action="store_true", help="one-off: overwrite ovr-history.json's LAST entry per player instead of appending a new one. Use only when correcting a bad prior scrape (i.e. you know 2K's site itself hasn't changed since that entry) -- normal runs should never pass this, since it discards the timeline's memory of what the wrong value was.")
     args = ap.parse_args()
 
     bios = json.loads(BIOS_FILE.read_text())
@@ -454,8 +455,13 @@ def main():
             ovr_entries = ovr_history.get(slug, [])
             if ovr_entries and ovr_entries[-1]["ovr"] == ovr:
                 continue
-            ovr_entries.append({"date": entry["date"], "ovr": ovr})
-            ovr_entries.sort(key=lambda e: e["date"])
+            if args.replace_last_ovr and ovr_entries:
+                old = ovr_entries[-1]
+                ovr_entries[-1] = {"date": entry["date"], "ovr": ovr}
+                print(f"  REPLACED {slug} ovr-history last entry: {old['date']} {old['ovr']} -> {entry['date']} {ovr}")
+            else:
+                ovr_entries.append({"date": entry["date"], "ovr": ovr})
+                ovr_entries.sort(key=lambda e: e["date"])
             ovr_history[slug] = ovr_entries
             ovr_synced += 1
         OVR_HISTORY_FILE.write_text(json.dumps(ovr_history, indent=2))

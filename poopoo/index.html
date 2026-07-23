@@ -562,11 +562,12 @@
       player_team_conflict:     { label: "Team Conflict",     color: "#2dd4bf", desc: "Sheet and site disagree on which team currently holds this player's rights." },
       player_missing:           { label: "Missing on Site",   color: "#94a3b8", desc: "The sheet lists this player on this team; the site has no record of him on any roster." },
       player_extra:             { label: "Extra on Site",     color: "#94a3b8", desc: "The site has this player on the roster; the sheet doesn't list him anywhere in the league." },
+      player_dead_cap_mismatch: { label: "Dead Cap Status",   color: "#e879f9", desc: "The sheet books this player as a flat Dead Cap charge; the site still carries him as an active roster entry with a real salary/hold. Likely a release/waive that happened but was never entered as a transaction on the site." },
       pick_signed:              { label: "Pick Signed Early", color: "#dc2626", desc: "The sheet still shows this pick as unsigned draft rights, but the site already has him fully signed to a contract (the 2026 mass-autosign bug, recurring)." },
     };
 
     const CATEGORY_ORDER = [
-      "pick_signed", "player_status", "player_team_conflict", "aggregate",
+      "pick_signed", "player_status", "player_dead_cap_mismatch", "player_team_conflict", "aggregate",
       "player_salary", "player_hold", "mle", "bae", "tpe",
       "player_missing", "player_extra", "player_hold_uncalculated",
     ];
