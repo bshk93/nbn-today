@@ -1,9 +1,16 @@
 [
   {
+    "version": "0.0.366",
+    "date": "2026-07-23",
+    "changes": [
+      "Fixed another Stepien Rule gap: a pick that's compensation for a different pick's unresolved protection ladder (ladder_fallback_of) wasn't credited toward that team's draft-year coverage at all, since neither the roster page nor /api/picks/{team}'s own filter surfaces it \u2014 could have caused a false lock on an unrelated pick in a neighboring year"
+    ]
+  },
+  {
     "version": "0.0.365",
     "date": "2026-07-23",
     "changes": [
-      "CLAUDE.md: documented that same-group_id pick rows are one shared, indivisible claim (can't trade one row and keep the other) — internal documentation only, no site-facing change"
+      "CLAUDE.md: documented that same-group_id pick rows are one shared, indivisible claim (can't trade one row and keep the other) \u2014 internal documentation only, no site-facing change"
     ]
   },
   {

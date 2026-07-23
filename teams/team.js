@@ -1304,13 +1304,27 @@ function stepienYearRange(allPicks) {
 // already-empty year on one side, so trading it away in isolation would open
 // a two-year gap right now. Mirrors the backend's per-trade simulation, just
 // evaluated proactively per pick instead of only at trade-submit time.
-function computeStepienLocked(teamPicks, allPicks) {
+function computeStepienLocked(teamPicks, allPicks, teamAbbr) {
   const locked = new Set();
   const range = stepienYearRange(allPicks);
   if (!range) return locked;
   const [lo, hi] = range;
   const round1 = (teamPicks || []).filter(p => p.round === 1 && !p.player);
   const have = new Set(round1.map(p => p.year));
+
+  // A pick can carry a real but easy-to-miss claim: `ladder_fallback_of` on
+  // a DIFFERENT pick names it as compensation if that pick's protection
+  // ladder never resolves. `/api/picks/{team}` doesn't currently surface
+  // this (its own owner/leaves match doesn't check ladder_fallback_of), so
+  // `teamPicks` alone would silently miss real year coverage -- pull it
+  // from the league-wide `allPicks` instead, which carries the raw field.
+  // Not added to the claims map below (no visible row exists for it to
+  // attach a lock flag to, a separate, pre-existing gap in the API's own
+  // team filter) -- just credited toward `have` so it doesn't cause a
+  // false lock on some OTHER real pick in a neighboring year.
+  (allPicks || []).forEach(p => {
+    if (p.round === 1 && !p.player && p.ladder_fallback_of?.to === teamAbbr) have.add(p.year);
+  });
 
   // Two pick rows sharing the same group_id (a swap group / binary chain)
   // are ONE shared claim, not two independent ones -- trading either row
@@ -2392,7 +2406,7 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
 
   if (!rows.length && !traded.length) return null;
 
-  const stepienLocked = computeStepienLocked(picks, allPicks);
+  const stepienLocked = computeStepienLocked(picks, allPicks, teamAbbr);
 
   const table = document.createElement('table');
   const thead = table.createTHead();
