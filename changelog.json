@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.0.361",
+    "date": "2026-07-23",
+    "changes": [
+      "Team pages: reworked the Stepien Rule indicator \u2014 a whole-team \"currently in violation\" banner could only ever fire from a data gap (the trade that would cause it is already blocked at submit time), so it never showed anything useful. Replaced with a per-pick flag in the Draft Picks table (reusing the Frozen column) marking specifically which picks can't be traded away right now without opening a two-year gap"
+    ]
+  },
+  {
     "version": "0.0.360",
     "date": "2026-07-23",
     "changes": [

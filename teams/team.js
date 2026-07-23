@@ -404,11 +404,6 @@ const ratingsPopupReady = new Promise(resolve => {
     margin-bottom: 1.25rem;
   }
   .hard-cap-banner.apron2 { background: var(--danger-alt-bg); border-color: var(--danger-alt-border); color: var(--danger-alt); }
-  .stepien-banner {
-    background: var(--danger-alt-bg); border: 1px solid var(--danger-alt-border); border-radius: 8px;
-    padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; color: var(--danger-alt);
-    margin-bottom: 0.75rem;
-  }
   .exceptions-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1.25rem; font-size: 0.85rem; }
   .exceptions-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid var(--border-subtle); gap: 1rem; }
   .exceptions-row:last-child { border-bottom: none; }
@@ -724,7 +719,6 @@ document.body.innerHTML = `
       </section>
       <section>
         <h2 class="section-title" id="picks-title">Draft Picks</h2>
-        <div id="stepien-banner" style="display:none"></div>
         <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
@@ -1289,38 +1283,43 @@ function renderHardCapBanner(teamState, el = document.getElementById('hard-cap-b
   el.textContent = `⚠ Hard-Capped: ${isApron2 ? 'Second' : 'First'} Apron${reason}`;
 }
 
-// § 7.2 Stepien Rule: a team must retain the ability to make a first-round
-// selection at least once every two draft years. `teamPicks` (GET
-// /api/picks/{team}) already resolves "does this team hold a claim on this
-// pick" the same way trade validation does (own, acquired, or a named
-// candidate on a still-contingent pick) — count any round-1 entry there as
-// "has a pick that year". `allPicks` (GET /api/picks, league-wide) supplies
-// the year range to scan, since a team missing from every row in a year is
-// otherwise indistinguishable from a year outside the tracked horizon.
-function computeStepienGap(teamPicks, allPicks) {
-  const have = new Set(
-    (teamPicks || []).filter(p => p.round === 1 && !p.player).map(p => p.year)
-  );
-  // Only undrafted years define the scan range — once every team's pick for
-  // a year is drafted (player set), that year drops out of the ledger for
-  // everyone and would otherwise misread as a league-wide gap.
+// The undrafted draft-year horizon to reason about for § 7.2 — once every
+// team's pick for a year is drafted (player set), that year drops out of the
+// ledger entirely and would otherwise misread as a league-wide gap rather
+// than a resolved past year.
+function stepienYearRange(allPicks) {
   const years = (allPicks || []).filter(p => p.round === 1 && !p.player).map(p => p.year);
   if (!years.length) return null;
-  const lo = Math.min(...years), hi = Math.max(...years);
-  let runStart = null;
-  for (let y = lo; y <= hi; y++) {
-    if (have.has(y)) { runStart = null; continue; }
-    if (runStart === null) runStart = y;
-    else return [runStart, y];
-  }
-  return null;
+  return [Math.min(...years), Math.max(...years)];
 }
 
-function renderStepienBanner(gap, el = document.getElementById('stepien-banner')) {
-  if (!el) return;
-  if (!gap) { el.style.display = 'none'; return; }
-  el.style.display = '';
-  el.textContent = `⚠ Stepien Rule: no first-round pick in ${gap[0]} or ${gap[1]} (§ 7.2)`;
+// § 7.2 Stepien Rule is a restriction on trading, not a retroactive state —
+// the league can't already be sitting in violation (the trade that would
+// cause it gets blocked at submit time, see nbn-api's _check_stepien_rule),
+// so a whole-team "are you currently in violation" check is close to
+// pointless: it can only ever fire from a data-modeling gap, not a real one.
+// What's actually useful to a GM is knowing WHICH of their picks they
+// currently can't trade away — this returns the set of "{year}:{orig}" keys
+// for picks that are the team's only claim on that draft year, with an
+// already-empty year on one side, so trading it away in isolation would open
+// a two-year gap right now. Mirrors the backend's per-trade simulation, just
+// evaluated proactively per pick instead of only at trade-submit time.
+function computeStepienLocked(teamPicks, allPicks) {
+  const locked = new Set();
+  const range = stepienYearRange(allPicks);
+  if (!range) return locked;
+  const [lo, hi] = range;
+  const round1 = (teamPicks || []).filter(p => p.round === 1 && !p.player);
+  const countByYear = new Map();
+  round1.forEach(p => countByYear.set(p.year, (countByYear.get(p.year) || 0) + 1));
+  const have = new Set(round1.map(p => p.year));
+  round1.forEach(p => {
+    if (countByYear.get(p.year) > 1) return;   // another pick still covers this year
+    const prevMissing = p.year - 1 >= lo && !have.has(p.year - 1);
+    const nextMissing = p.year + 1 <= hi && !have.has(p.year + 1);
+    if (prevMissing || nextMissing) locked.add(`${p.year}:${p.orig}`);
+  });
+  return locked;
 }
 
 function renderExceptionsSection(
@@ -2380,6 +2379,8 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
 
   if (!rows.length && !traded.length) return null;
 
+  const stepienLocked = computeStepienLocked(picks, allPicks);
+
   const table = document.createElement('table');
   const thead = table.createTHead();
   const hr = thead.insertRow();
@@ -2400,6 +2401,7 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     if (cls) tr.className = cls;
 
     const protLabel = p.protected != null ? `Top-${p.protected}` : formatProtectedLeaves(p);
+    const isStepienLocked = p._kind !== 'traded' && stepienLocked.has(`${p.year}:${p.orig}`);
     const cells = [
       [String(p.year),                'right',        ],
       [p.round === 1 ? '1st' : '2nd', 'right',        ],
@@ -2408,7 +2410,7 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
       [protLabel,                      'muted',        ],
       [formatSwapLeaves(p),            'muted',        ],
       [cleanNotes(p),                  'muted',        ],
-      [p.legacy ? 'LEGACY' : (p.frozen ? 'FROZEN' : ''), 'muted', ],
+      [p.legacy ? 'LEGACY' : (p.frozen ? 'FROZEN' : (isStepienLocked ? 'STEPIEN' : '')), 'muted', ],
     ];
     cells.forEach(([text, cellCls]) => {
       const td = tr.insertCell();
@@ -2431,6 +2433,12 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
       frozenTd.style.color = 'var(--danger)';
       frozenTd.style.fontWeight = '700';
       if (p.frozen_reason) attachTooltip(frozenTd, p.frozen_reason);
+    } else if (isStepienLocked) {
+      const stepienTd = tr.cells[tr.cells.length - 1];
+      stepienTd.style.color = 'var(--danger-alt)';
+      stepienTd.style.fontWeight = '700';
+      attachTooltip(stepienTd, `${teamAbbr}'s only first-round pick for ${p.year} — trading it away right `
+        + 'now would leave a two-year gap with no first-round pick, violating the Stepien Rule (§ 7.2).');
     }
     if (p.leaves && p.leaves.length) {
       p.leaves.forEach(l => (l.txn_ids || []).forEach(t => _fetchTxnDesc(t.id)));
@@ -4993,7 +5001,6 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     if (t) picksWrap.appendChild(t);
     else picksWrap.innerHTML = '<div class="status">No picks on file.</div>';
     setupPicksEditable('picks-title', picksWrap, pkr.value, abbr, biosData, allPicks);
-    renderStepienBanner(computeStepienGap(pkr.value, allPicks));
   } else {
     picksWrap.innerHTML = '<div class="status">Failed to load picks data.</div>';
   }
