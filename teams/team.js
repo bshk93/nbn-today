@@ -2418,7 +2418,7 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
   const table = document.createElement('table');
   const thead = table.createTHead();
   const hr = thead.insertRow();
-  ['Year', 'Rnd', 'Orig', 'Owner', 'Protection', 'Swap', 'Notes', 'Frozen'].forEach(label => {
+  ['Year', 'Rnd', 'Orig', 'Owner', 'Protection', 'Swap', 'Frozen', 'Notes'].forEach(label => {
     const th = document.createElement('th');
     th.textContent = label;
     if (label === 'Year' || label === 'Rnd') th.classList.add('right');
@@ -2443,8 +2443,8 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
       [(ownerCellFn || ownerCell)(p),  'muted center', ],
       [protLabel,                      'muted',        ],
       [formatSwapLeaves(p),            'muted',        ],
-      [cleanNotes(p),                  'muted',        ],
       [p.legacy ? 'LEGACY' : (p.frozen ? 'FROZEN' : (isStepienLocked ? 'STEPIEN' : '')), 'muted', ],
+      [cleanNotes(p),                  'muted',        ],
     ];
     cells.forEach(([text, cellCls]) => {
       const td = tr.insertCell();
@@ -2456,19 +2456,19 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     // flat FROZEN column, which was never set for it — so this can't just
     // reuse the `p.frozen` check above.
     if (p.legacy) {
-      const legacyTd = tr.cells[tr.cells.length - 1];
+      const legacyTd = tr.cells[tr.cells.length - 2];
       legacyTd.style.color = 'var(--danger)';
       legacyTd.style.fontWeight = '700';
       attachTooltip(legacyTd, 'This pick predates the site\'s conveyance model and '
         + 'isn’t tracked automatically — the real terms are whatever Notes says. '
         + 'Frozen from re-trade until manually converted to real structure.');
     } else if (p.frozen) {
-      const frozenTd = tr.cells[tr.cells.length - 1];
+      const frozenTd = tr.cells[tr.cells.length - 2];
       frozenTd.style.color = 'var(--danger)';
       frozenTd.style.fontWeight = '700';
       if (p.frozen_reason) attachTooltip(frozenTd, p.frozen_reason);
     } else if (isStepienLocked) {
-      const stepienTd = tr.cells[tr.cells.length - 1];
+      const stepienTd = tr.cells[tr.cells.length - 2];
       stepienTd.style.color = 'var(--danger-alt)';
       stepienTd.style.fontWeight = '700';
       attachTooltip(stepienTd, `${teamAbbr}'s only first-round pick for ${p.year} — trading it away right `
