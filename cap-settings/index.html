@@ -354,6 +354,45 @@
         });
         card.appendChild(scaleFieldsDiv);
 
+        // Maximum Salary (§ 3.11) — a fixed % of Salary Cap by experience tier,
+        // not its own manually-tracked number. Read-only, recomputed live from
+        // the Salary Cap field above.
+        const maxHeading = document.createElement('h2');
+        maxHeading.style.cssText = 'font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;';
+        maxHeading.textContent = 'Maximum Salary (§ 3.11) — derived from Salary Cap, not stored';
+        card.appendChild(maxHeading);
+
+        const MAX_TIERS = [
+          { label: '0–6 yrs', pct: 0.25 },
+          { label: '7–9 yrs', pct: 0.30 },
+          { label: '10+ yrs', pct: 0.35 },
+        ];
+        const maxFieldsDiv = document.createElement('div');
+        maxFieldsDiv.className = 'fields';
+        const maxHints = [];
+        MAX_TIERS.forEach(({ label, pct }) => {
+          const wrap = document.createElement('div');
+          wrap.className = 'field';
+          const lbl = document.createElement('label');
+          lbl.textContent = `${label} (${Math.round(pct * 100)}%)`;
+          const hint = document.createElement('div');
+          hint.className = 'hint';
+          hint.style.cssText = 'font-size:1rem;color:var(--text);margin-top:0.25rem;';
+          wrap.appendChild(lbl);
+          wrap.appendChild(hint);
+          maxFieldsDiv.appendChild(wrap);
+          maxHints.push({ hint, pct });
+        });
+        const refreshMaxHints = () => {
+          const cap = Number(inputs.cap.value) || 0;
+          maxHints.forEach(({ hint, pct }) => {
+            hint.textContent = cap ? fmtDollars(Math.round(cap * pct)) : '—';
+          });
+        };
+        refreshMaxHints();
+        inputs.cap.addEventListener('input', refreshMaxHints);
+        card.appendChild(maxFieldsDiv);
+
         if (canEdit) {
           const footer = document.createElement('div');
           footer.className = 'card-footer';

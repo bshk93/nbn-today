@@ -442,8 +442,17 @@
           <div class="doc-section" id="s3-1">
             <h3 class="sec-title"><span class="sec-num">§ 3.1</span> Signing Using Cap Space <span class="badge badge-manual">👁 manual review</span></h3>
             <p>A team with salary below the cap may sign free agents using their available cap space. Available cap space = Salary Cap − current Team Salary. Signings may not exceed available cap space unless the team is also using an exception (exceptions and cap space may not be combined — see § 3.2).</p>
-            <div class="callout callout-pending">
-              Eligibility windows, UFA/RFA designations, and RFA matching rights rules are pending documentation.
+            <h4 class="sub-title">UFA / RFA Eligibility <span class="badge badge-manual">👁 manual review</span></h4>
+            <p>A player's free agency status is determined by years of NBA experience and, for eligible players, whether the team extends a Qualifying Offer:</p>
+            <ul>
+              <li><strong>4 or more years of NBA experience:</strong> always an Unrestricted Free Agent (UFA), regardless of contract type or any Qualifying Offer.</li>
+              <li><strong>Fewer than 4 years of NBA experience:</strong> Restricted Free Agent (RFA) if the team extends a Qualifying Offer; UFA if the team lets the player go without one (including missing a signing deadline).</li>
+              <li>Years of NBA experience uses the same real-draft-year proxy already used for the Minimum Salary Scale (§ 3.12): <code>season_start_year − draft_year</code>. An undrafted player has no such proxy and is judged manually.</li>
+              <li><strong>Qualifying Offer amount:</strong> for a first-round pick finishing (or losing an option out of) their rookie-scale deal, the Year 4 team-option value they would otherwise have received (§ 7.1). For a second-round pick, UDFA, or any other player with fewer than 4 years of experience, the greater of the applicable Minimum Salary Scale figure (§ 3.12) or 125% of the player's prior salary.</li>
+              <li>Declining an option (§ 6.1) does not by itself decide RFA vs. UFA — the experience / Qualifying-Offer test above still applies afterward, exactly as it would for an ordinary contract expiration (see § 3.10, "Declined option").</li>
+            </ul>
+            <div class="callout callout-note">
+              <strong>Proposed rule — pending league confirmation.</strong> This fills a previously undocumented gap (the eligibility test itself was marked "pending documentation"). The Qualifying Offer amount formula specifically is a new synthesis modeled on the real NBA CBA, not a rule this league had already agreed on — treat it as the working rule until BOD confirms or amends it.
             </div>
           </div>
 
@@ -577,12 +586,12 @@
               <tbody>
                 <tr>
                   <td><strong>Expiring veteran contract</strong> — contract runs out and the player is not re-signed</td>
-                  <td>UFA or RFA</td>
+                  <td>UFA or RFA — see § 3.1 for the eligibility test</td>
                   <td>Bird-tier multiple of previous salary (table above)</td>
                 </tr>
                 <tr>
                   <td><strong>Declined option</strong> — a player or team option (§ 6.1) is declined, sending the player to free agency</td>
-                  <td>UFA or RFA</td>
+                  <td>UFA or RFA — see § 3.1 for the eligibility test</td>
                   <td>Same as an expiring veteran contract: the Bird-tier multiple of the player's previous salary (the last contract year actually played, <em>not</em> the declined option amount). Declining an option does not forfeit Bird Rights.</td>
                 </tr>
                 <tr>
