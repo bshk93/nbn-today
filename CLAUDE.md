@@ -199,6 +199,7 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Change team page layout or HTML structure | `teams/team.js` (the injected HTML, not per-team files) |
 | Change cap/MLE/exception display | `renderHardCapBanner` / `renderExceptionsSection` — `teams/team.js:806` |
 | Change edit mode behavior | `enterEditMode` / `setupEditable` — `teams/team.js:2041` |
+| Change the Team Settings tab (jersey #, secondary position) | `setupTeamSettingsTab` — `teams/team.js:3458` |
 | Change stats highs table | `stats/highs/table.js` (not the per-stat HTML files) |
 | Change stats totals table | `stats/totals/table.js` (not the per-stat HTML files) |
 | Add/edit a NBNTV blurb | `BLURBS` object — `nbntv-classics/index.html` |
@@ -454,9 +455,10 @@ These change infrequently but can legitimately be updated as better information 
 | Field | Type | When it changes |
 |---|---|---|
 | `name` | string (`"LAST, FIRST"` uppercase) | Typo correction only; not a game event |
-| `pos` | string[] (subset of `PG SG SF PF C`) | If the league reclassifies a player's eligible positions |
+| `pos` | string[] (subset of `PG SG SF PF C`) | If the league reclassifies a player's eligible positions. This is the set `secondary_pos` (below) must be chosen from. Distinct from the "Primary Position" shown in the Team Settings tab, which is read from the 2K scrape snapshot (`player-attributes.json` → `2k_pos[0]`, written by `build/scrape_2k_attributes.py`, served via `GET /api/attributes/current`), not from this field. |
 | `photo_url` | string | Replaced if a better image is found |
-| `jersey_number` | string or null | Updated by the owning team via `PUT /api/players/{slug}/jersey`; only the team owner (or admin) can change it |
+| `jersey_number` | string or null | Set by the owning team in the Team Settings tab (`teams/{ABB}` → Team Settings), via `PUT /api/players/{slug}/team-settings`. Gated strictly by the team's own role — not admin/rosters/bod — since this is the team's own cosmetic choice, not league-administered roster data. |
+| `secondary_pos` | string or null (one of `PG SG SF PF C`) | A position the owning team assigns to the player, alongside (not replacing) their 2K-scraped primary position. Must be one of the player's own eligible positions (`pos`, above) — the API rejects any value not in that list. Same Team Settings tab and endpoint/permissions as `jersey_number`. |
 
 #### Fields: change with contract/roster activity
 

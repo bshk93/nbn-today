@@ -56,7 +56,24 @@
       font-weight: 600;
       margin-bottom: 1.25rem;
       color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
     }
+
+    .form-card.collapsed h2 { margin-bottom: 0; }
+
+    .form-card h2 .form-card-chevron {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      transition: transform 0.15s;
+    }
+
+    .form-card.collapsed h2 .form-card-chevron { transform: rotate(-90deg); }
+
+    .form-card.collapsed .form-card-body { display: none; }
 
     .form-grid {
       display: grid;
@@ -406,9 +423,28 @@
 
     table {
       width: 100%;
+      min-width: 952px;
       border-collapse: collapse;
       font-size: 0.875rem;
+      table-layout: fixed;
     }
+
+    /* Fixed px, not %: the Type badges (e.g. "Renounce" at ~118px incl. padding)
+       are unbreakable single words in an inline-block pill, so a column that's
+       merely a small percentage of the table (and shrinks further on narrow
+       viewports) makes the pill bleed past its cell and overlap the next
+       column instead of wrapping. Pixel widths give every column a fixed
+       floor that's never squeezed below the badge/name's own minimum — on
+       viewports narrower than the 952px sum, .table-wrap's horizontal scroll
+       takes over instead of squeezing. Details still gets by far the most
+       room for trade give/get breakdowns and contract terms. */
+    col.col-date    { width: 110px; }
+    col.col-type    { width: 130px; }
+    col.col-team    { width: 85px; }
+    col.col-player  { width: 130px; }
+    col.col-details { width: 320px; }
+    col.col-note    { width: 147px; }
+    col.col-del     { width: 30px; }
 
     thead th {
       text-align: left;
@@ -429,6 +465,7 @@
       padding: 0.625rem 0.75rem;
       vertical-align: middle;
       color: var(--text-secondary);
+      overflow-wrap: break-word;
     }
 
     td a { color: var(--link); text-decoration: none; }
@@ -621,9 +658,10 @@
   </div>
 
   <!-- New transaction form (shown when authenticated) -->
-  <div class="form-card" id="form-card" style="display:none">
-    <h2>New Transaction</h2>
+  <div class="form-card collapsed" id="form-card" style="display:none">
+    <h2 id="form-card-toggle">New Transaction <span class="form-card-chevron">&#9660;</span></h2>
 
+    <div class="form-card-body" id="form-card-body">
     <div class="form-grid" style="margin-bottom:0.5rem">
       <div class="form-field">
         <label>Type</label>
@@ -794,6 +832,13 @@
         </select>
       </div>
 
+      <!-- release-only -->
+      <div class="form-field" id="f-release-stretch-field" style="display:none">
+        <label>Stretch (years)</label>
+        <input type="number" id="f-release-stretch" min="1" max="10" placeholder="leave blank for no stretch">
+        <span id="f-release-stretch-hint" style="display:none;font-size:0.75rem;margin-top:0.25rem"></span>
+      </div>
+
       <div class="form-field" id="f-contract-type-field">
         <label>Contract Type</label>
         <div class="radio-group">
@@ -910,6 +955,7 @@
       <span class="form-status" id="form-status"></span>
     </div>
     <div class="validation-panel" id="validation-panel"></div>
+    </div>
   </div>
 
   <!-- Filters -->
@@ -925,11 +971,29 @@
     <span class="chip" data-filter="type" data-value="release">Releases</span>
     <span class="chip" data-filter="type" data-value="renounce">Renounces</span>
     <span class="chip" data-filter="type" data-value="trade">Trades</span>
+
+    <span class="filter-label" style="margin-left:0.75rem">Team:</span>
+    <select id="team-filter-sel" class="trade-team-sel">
+      <option value="">All teams</option>
+      <option>ATL</option><option>BKN</option><option>BOS</option><option>CHA</option>
+      <option>CHI</option><option>CLE</option><option>DAL</option><option>DEN</option>
+      <option>DET</option><option>GSW</option><option>HOU</option><option>IND</option>
+      <option>LAC</option><option>LAL</option><option>MEM</option><option>MIA</option>
+      <option>MIL</option><option>MIN</option><option>NOP</option><option>NYK</option>
+      <option>OKC</option><option>ORL</option><option>PHI</option><option>PHX</option>
+      <option>POR</option><option>SAC</option><option>SAS</option><option>TOR</option>
+      <option>UTA</option><option>WAS</option>
+    </select>
   </div>
 
   <!-- Log table -->
   <div class="table-wrap">
     <table id="txn-table" class="txn-table">
+      <colgroup>
+        <col class="col-date"><col class="col-type"><col class="col-team">
+        <col class="col-player"><col class="col-details"><col class="col-note">
+        <col class="col-del">
+      </colgroup>
       <thead>
         <tr>
           <th>Date</th>
@@ -982,6 +1046,7 @@ let teamStates = {};   // abbr → { hard_cap, mle_used, bae_used, bae_available
 let capLevelsData = {}; // season → { cap, apron1, ntmle_amount, ... }
 let legCounter = 0;
 let activeTypeFilter = '';
+let activeTeamFilter = '';
 let currentPage = 0;
 const TXN_PAGE_SIZE = 25;
 let currentToken = localStorage.getItem(TOKEN_KEY) || '';
@@ -994,6 +1059,11 @@ let canManage = false;  // rosters/admin — can delete transactions and edit no
 // calendar cutoff via BOD rollover overrides, so this must never be recomputed
 // locally once the real value is known.
 let LEAGUE_YEAR = null;
+// BOD rollover overrides (season -> effective start date), needed to resolve
+// which league year an arbitrary release *date* falls in — mirrors
+// nbn-api's _season_for_date, since a release can be entered for any date,
+// not just today.
+let LEAGUE_ROLLOVERS = {};
 
 function rolesCanManage(roles) {
   roles = roles || [];
@@ -1002,10 +1072,34 @@ function rolesCanManage(roles) {
 
 const TEAM_ABBRS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW','HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK','OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'];
 
+// ── Transaction fetching ─────────────────────────────────────────────────────
+// /api/transactions caps each response at `limit` (default 100). The log now
+// includes ~1,700+ backfilled historical trades/signings/options dating back
+// to 2020 in addition to live entries, so a single fixed-size fetch silently
+// drops everything past that page — historical rows are old, so they're
+// exactly what falls off the end when sorted newest-first. Page through the
+// full `total` instead of hardcoding a limit that will fall behind again.
+async function fetchAllTransactions() {
+  const pageSize = 500;
+  let offset = 0;
+  let all = [];
+  let total = Infinity;
+  while (offset < total) {
+    const res = await fetch(`/api/transactions?limit=${pageSize}&offset=${offset}`).then(r => r.json());
+    const batch = res.transactions || [];
+    if (!batch.length) break;
+    all = all.concat(batch);
+    total = res.total ?? all.length;
+    offset += pageSize;
+  }
+  return { transactions: all };
+}
+
 // ── Init ───────────────────────────────────────────────────────────────────
 (async function init() {
   setDefaultDate();
   renderAuthBar();
+  setupFormCardToggle();
   setupTypeSwitch();
   setupPlayerSearch();
   setupSalaryRows();
@@ -1025,7 +1119,7 @@ const TEAM_ABBRS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
   }
 
   const [txnRes, biosRes, picksRes, mapRes, statesRes, capRes, lyrRes] = await Promise.allSettled([
-    fetch('/api/transactions?limit=500').then(r => r.json()),
+    fetchAllTransactions(),
     fetch('/api/players').then(r => r.json()),
     fetch('/api/picks').then(r => r.json()),
     fetch('/api/team-map').then(r => r.json()),
@@ -1037,6 +1131,7 @@ const TEAM_ABBRS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
   // Set the league year before adding the first salary row so its default year
   // reflects the real cap/contract clock, not a local calendar-cutoff guess.
   if (lyrRes.status === 'fulfilled' && lyrRes.value?.current_season) LEAGUE_YEAR = lyrRes.value.current_season;
+  if (lyrRes.status === 'fulfilled' && lyrRes.value?.rollovers) LEAGUE_ROLLOVERS = lyrRes.value.rollovers;
   addSalaryRow();
 
   if (biosRes.status === 'fulfilled') bios = biosRes.value;
@@ -1056,6 +1151,12 @@ const TEAM_ABBRS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
 })();
 
 // ── Auth ───────────────────────────────────────────────────────────────────
+function setupFormCardToggle() {
+  document.getElementById('form-card-toggle').addEventListener('click', () => {
+    document.getElementById('form-card').classList.toggle('collapsed');
+  });
+}
+
 function renderAuthBar() {
   const bar = document.getElementById('auth-bar');
   const status = document.getElementById('auth-status');
@@ -1181,6 +1282,8 @@ function setupTypeSwitch() {
       document.getElementById('f-opt-hold-field').style.display        = 'none';
       document.getElementById('f-opt-hold-amount-field').style.display = 'none';
       document.getElementById('f-gtd-year-field').style.display        = isGtd ? '' : 'none';
+      document.getElementById('f-release-stretch-field').style.display = isRelease ? '' : 'none';
+      if (isRelease) updateReleaseStretchHint(); else document.getElementById('f-release-stretch').value = '';
       document.getElementById('f-contract-type-field').style.display   = (needsContract && !isConvertTwoWay) ? '' : 'none';
       applyContractTypeVisibility(needsContract, isConvertTwoWay);
     }
@@ -1199,6 +1302,15 @@ function setupTypeSwitch() {
   }
 
   document.getElementById('f-type').addEventListener('change', onTypeChange);
+
+  // A release can be backdated, which can shift which league year it falls
+  // in and therefore how many seasons are "remaining" — recompute the
+  // stretch autofill if the date changes after a player's already selected.
+  document.getElementById('f-date').addEventListener('change', () => {
+    if (document.getElementById('f-type').value === 'release') {
+      updateReleaseStretchHint(document.getElementById('f-player-slug').value || null);
+    }
+  });
 
   // When contract-type radio changes, re-evaluate salary vs twoway fields
   document.querySelectorAll('input[name="contract-type"]').forEach(r => {
@@ -1406,11 +1518,12 @@ function setupPlayerSearch() {
     let pool;
     if (txnType === 'option') {
       pool = Object.entries(bios).filter(([, bio]) => {
+        if (bio.retired) return false;
         const holds = parseCapHolds(bio.cap_holds || '');
         return holds.some(h => h.type === 'PLAYER_OPT' || h.type === 'TEAM_OPT');
       });
     } else if (txnType === 'release') {
-      pool = Object.entries(bios).filter(([, bio]) => bio.type === 'player' || bio.type === 'two-way');
+      pool = Object.entries(bios).filter(([, bio]) => !bio.retired && (bio.type === 'player' || bio.type === 'two-way'));
     } else if (txnType === 'renounce') {
       pool = Object.entries(bios).filter(([slug, bio]) => teamMap[slug] && isFreeAgentHold(bio));
     } else if (txnType === 'offer_sheet') {
@@ -1425,7 +1538,7 @@ function setupPlayerSearch() {
       const draftYear = +document.getElementById('f-pick-year-sel').value;
       pool = Object.entries(bios).filter(([slug, bio]) => bio.draft_year === draftYear && !teamMap[slug]);
     } else {
-      pool = Object.entries(bios);
+      pool = Object.entries(bios).filter(([, bio]) => !bio.retired);
     }
     const matches = pool
       .map(([slug, bio]) => ({ slug, name: bioDisplayName(bio) }))
@@ -1496,6 +1609,7 @@ function onPlayerSelected(slug) {
   const type = document.getElementById('f-type').value;
   if (type === 'guarantee') { populateGuaranteeYears(slug); return; }
   if (type === 'convert_twoway') { updateMleHint(); return; }
+  if (type === 'release') { updateReleaseStretchHint(slug); return; }
   if (type !== 'option') return;
   const bio = bios[slug];
   if (!bio) return;
@@ -1529,6 +1643,131 @@ function populateGuaranteeYears(slug) {
     const sal = bio.salaries && bio.salaries[h.year] ? bio.salaries[h.year] : '';
     return `<option value="${h.year}">${h.year}${sal ? ' — ' + sal : ''}</option>`;
   }).join('');
+}
+
+// ── Release stretch (§ 5.1) ─────────────────────────────────────────────────
+// Ports nbn-api's _season_for_date so "which league year is this release
+// date in" resolves the same way client-side as it will server-side,
+// including BOD rollover overrides — a release can be backdated, so this
+// can't just use today's date / the cached LEAGUE_YEAR.
+function defaultSeasonStart(season) {
+  const yy = parseInt(season.split('-')[0], 10);
+  return new Date(Date.UTC(2000 + yy, 6, 1)); // July (0-indexed month 6)
+}
+
+function seasonShiftYear(season, delta) {
+  const [a, b] = season.split('-').map(Number);
+  const shift = n => ((n + delta) % 100 + 100) % 100;
+  return `${String(shift(a)).padStart(2, '0')}-${String(shift(b)).padStart(2, '0')}`;
+}
+
+function seasonStartDate(season, rollovers) {
+  const ov = rollovers && rollovers[season];
+  return ov ? new Date(`${ov}T00:00:00Z`) : defaultSeasonStart(season);
+}
+
+function seasonForDate(dateStr, rollovers) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  const y = d.getUTCFullYear() % 100;
+  const m = d.getUTCMonth() + 1;
+  let season = m < 7
+    ? `${String((y + 99) % 100).padStart(2, '0')}-${String(y).padStart(2, '0')}`
+    : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
+  while (seasonStartDate(seasonShiftYear(season, 1), rollovers) <= d) season = seasonShiftYear(season, 1);
+  while (seasonStartDate(season, rollovers) > d) season = seasonShiftYear(season, -1);
+  return season;
+}
+
+function parseDollarJs(v) {
+  if (!v) return 0;
+  return parseFloat(String(v).replace(/[$,\s]/g, '')) || 0;
+}
+
+// Mirrors _dead_cap_from_schedule: walk a NON_GTD year's multi-step
+// guarantee schedule and total up whatever's vested as of the release date.
+function deadCapFromSchedule(schedule, salary, txnDate) {
+  let cumulative = 0, fullyGtd = false;
+  for (const step of (schedule || [])) {
+    const stepDate = step.date || '';
+    if (stepDate && txnDate < stepDate) continue;
+    if (!step.amount) { fullyGtd = true; break; }
+    cumulative += parseDollarJs(step.amount);
+  }
+  if (fullyGtd) return parseDollarJs(salary);
+  return cumulative > 0 ? cumulative : null;
+}
+
+// Mirrors _apply_release's dead-cap loop (transactions.py:620-640): which
+// remaining seasons actually carry a real dead-cap obligation, and how much.
+// TEAM_OPT/UFA/RFA hold years are placeholders, not real salary, so they're
+// excluded — this is also what "n" in the § 5.1 stretch formula counts.
+function computeReleaseDeadCap(bio, curSeason, txnDate) {
+  const holdsMap = bio.cap_holds || {};
+  const guaranteed = bio.guaranteed || {};
+  const guaranteeDates = bio.guarantee_dates || {};
+  const guaranteeSchedule = bio.guarantee_schedule || {};
+  const deadCap = {};
+  for (const [season, salary] of Object.entries(bio.salaries || {})) {
+    if (season < curSeason) continue;
+    const holdType = holdsMap[season];
+    if (holdType === 'TEAM_OPT' || holdType === 'UFA' || holdType === 'RFA') continue;
+    if (holdType === 'NON_GTD') {
+      const schedule = guaranteeSchedule[season];
+      if (schedule) {
+        const dead = deadCapFromSchedule(schedule, salary, txnDate);
+        if (dead) deadCap[season] = dead;
+      } else {
+        const gtdDate = guaranteeDates[season];
+        if (gtdDate && txnDate >= gtdDate) deadCap[season] = parseDollarJs(salary);
+        else if (guaranteed[season]) deadCap[season] = parseDollarJs(guaranteed[season]);
+      }
+      continue;
+    }
+    deadCap[season] = parseDollarJs(guaranteed[season] || salary);
+  }
+  return deadCap;
+}
+
+// Two-way contracts carry $0 salary and count for nothing against the cap
+// (§ 2.2), so there's no dead cap to stretch — grey out the field rather
+// than let it silently no-op on submit. Otherwise auto-fill the § 5.1
+// formula (2n+1, n = remaining seasons with real dead cap) but leave it
+// editable for the rare case that needs a manual override.
+function updateReleaseStretchHint(slug) {
+  const field = document.getElementById('f-release-stretch');
+  const hint = document.getElementById('f-release-stretch-hint');
+  const bio = slug ? bios[slug] : null;
+
+  if (!bio) { field.disabled = false; hint.style.display = 'none'; return; }
+
+  if (bio.type === 'two-way') {
+    field.disabled = true;
+    field.value = '';
+    hint.style.display = '';
+    hint.textContent = 'Two-way contracts have no cap hit — nothing to stretch.';
+    return;
+  }
+
+  const releaseDate = document.getElementById('f-date').value || new Date().toISOString().slice(0, 10);
+  const curSeason = seasonForDate(releaseDate, LEAGUE_ROLLOVERS);
+  const deadCap = computeReleaseDeadCap(bio, curSeason, releaseDate);
+  const seasons = Object.keys(deadCap);
+  const total = seasons.reduce((sum, yr) => sum + deadCap[yr], 0);
+
+  if (!seasons.length || total <= 0) {
+    field.disabled = true;
+    field.value = '';
+    hint.style.display = '';
+    hint.textContent = 'No remaining guaranteed salary — nothing to stretch.';
+    return;
+  }
+
+  const n = seasons.length;
+  const stretchYears = 2 * n + 1;
+  field.disabled = false;
+  field.value = stretchYears;
+  hint.style.display = '';
+  hint.textContent = `${n} remaining guaranteed year${n === 1 ? '' : 's'} → ${stretchYears}-year stretch (§ 5.1) · ~$${(total / stretchYears / 1e6).toFixed(2)}M/yr, $${(total / 1e6).toFixed(1)}M total`;
 }
 
 // ── Salary rows ────────────────────────────────────────────────────────────
@@ -2123,6 +2362,23 @@ function setupFilters() {
       renderTable();
     });
   });
+
+  document.getElementById('team-filter-sel').addEventListener('change', function() {
+    activeTeamFilter = this.value;
+    currentPage = 0;
+    renderTable();
+  });
+}
+
+// The set of team abbrs actually party to a transaction. Prefer the team(s)
+// stamped into details at creation time (every type now stores this — see
+// nbn-api routers/transactions.py create_transaction) over any derived guess,
+// since a derived "current roster team" would silently mislabel old
+// transactions once a player has since changed teams.
+function txnTeams(t) {
+  const d = t.details || {};
+  if (t.type === 'trade' || t.type === 'offer_sheet') return d.teams || [];
+  return d.team ? [d.team] : [];
 }
 
 // ── Submit ─────────────────────────────────────────────────────────────────
@@ -2215,7 +2471,9 @@ async function submitTransaction() {
   } else if (type === 'release') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
-    details = { player: playerSlug };
+    const stretchField = document.getElementById('f-release-stretch');
+    const stretchYears = (!stretchField.disabled && stretchField.value) ? parseInt(stretchField.value, 10) : null;
+    details = { player: playerSlug, ...(stretchYears ? { stretch_years: stretchYears } : {}) };
   } else if (type === 'renounce') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -2536,6 +2794,9 @@ function renderTable() {
   if (activeTypeFilter) {
     txns = txns.filter(t => t.type === activeTypeFilter);
   }
+  if (activeTeamFilter) {
+    txns = txns.filter(t => txnTeams(t).includes(activeTeamFilter));
+  }
 
   if (!txns.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No transactions yet.</td></tr>';
@@ -2570,18 +2831,10 @@ function renderRow(t) {
   const dateStr = fmtDate(t.date);
   const badge = `<span class="badge badge-${t.type}">${typeLabel(t.type)}</span>`;
   let teamCell, playerCell;
-  if (t.type === 'offer_sheet') {
-    const teams = d.teams || [];
-    teamCell = teams.length ? teams.map(tm => `<a href="/teams/${tm}">${escHtml(tm)}</a>`).join(' → ') : '—';
-    playerCell = renderPlayerCell(d.player);
-  } else if (t.type === 'trade') {
-    const teams = d.teams || [];
-    teamCell = teams.length ? teams.map(tm => `<a href="/teams/${tm}">${escHtml(tm)}</a>`).join(' · ') : '—';
-    playerCell = '—';
-  } else {
-    teamCell = d.team ? `<a href="/teams/${d.team}">${d.team}</a>` : '—';
-    playerCell = renderPlayerCell(d.player);
-  }
+  const teams = txnTeams(t);
+  const sep = t.type === 'offer_sheet' ? ' → ' : ' · ';
+  teamCell = teams.length ? teams.map(tm => `<a href="/teams/${tm}">${escHtml(tm)}</a>`).join(sep) : '—';
+  playerCell = t.type === 'trade' ? '—' : renderPlayerCell(d.player);
   const detailsCell = renderDetailsCell(t);
   const note = escHtml(t.description || '');
   const noteCell = `<td class="note-cell${t.description ? '' : ' empty'}" data-id="${escHtml(t.id)}" style="color:var(--text-muted)">${note}</td>`;
@@ -2656,7 +2909,8 @@ function renderDetailsCell(t) {
     if (!entries.length) return 'No dead cap';
     const total = entries.reduce((sum, [, v]) => sum + (parseInt(v.replace(/[^0-9]/g, ''), 10) || 0), 0);
     const years = entries.map(([yr]) => yr).join(', ');
-    return `Dead cap: $${(total / 1e6).toFixed(1)}M (${escHtml(years)})`;
+    const stretchNote = d.stretch_years ? ` · stretched over ${d.stretch_years}yr` : '';
+    return `Dead cap: $${(total / 1e6).toFixed(1)}M (${escHtml(years)})${stretchNote}`;
   }
   if (t.type === 'renounce') {
     return 'Renounced — free agent, no dead cap';

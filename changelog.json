@@ -1,5 +1,28 @@
 [
   {
+    "version": "0.0.370",
+    "date": "2026-07-27",
+    "changes": [
+      "Transaction form: retired players (e.g. LaMarcus Aldridge) no longer appear in the player search dropdown for Trade, Guarantee Year, Void Player, Release, or Option Decision \u2014 only Free Agency Signing excluded them before"
+    ]
+  },
+  {
+    "version": "pending",
+    "date": "2026-07-24",
+    "changes": [
+      "Team pages: renamed the Overview tab to Roster and added a new Team Settings tab for editing jersey numbers and a player's owner-assigned secondary position (primary position stays read-only, shown as the first position from the 2K attribute scrape)",
+      "Team Settings edits (jersey number, secondary position) are now gated strictly by the team's own role, not admin/rosters/bod",
+      "Secondary position can only be set to one of the player's own eligible positions (their bio's position list), not any of the five positions"
+    ]
+  },
+  {
+    "version": "pending",
+    "date": "2026-07-24",
+    "changes": [
+      "Draft Picks table: fixed Stepien lock indicator keying by year+orig only, which could cause a 2nd round pick to be wrongly flagged STEPIEN when a locked 1st round pick shared the same year and orig team (\u00a7 7.2 only ever applies to first-rounders)"
+    ]
+  },
+  {
     "version": "0.0.369",
     "date": "2026-07-23",
     "changes": [
