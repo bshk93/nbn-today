@@ -110,6 +110,11 @@ SCHEMA = {
          "BEST_OVERALL"],
         1, "season-summary/index.html",
     ),
+    "data/franchise-records.csv": (
+        ["TEAM", "STAT", "RANK", "VALUE", "PLAYER", "SLUG", "DATE", "SEASON",
+         "OPP", "gametype"],
+        30, "teams/team.js (Franchise Records)",
+    ),
     "data/h2h-alltime.csv": (["TEAM"] + H2H_COLS, 30, "h2h/index.html"),
     "data/h2h-playoffs.csv": (["TEAM"] + H2H_COLS, 1, "h2h/index.html"),
     "data/h2h-owners.csv": (["OWNER"] + H2H_COLS, 1, "h2h/index.html"),

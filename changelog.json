@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.373",
+    "date": "2026-07-31",
+    "changes": [
+      "Team pages: new Franchise Records section on the All-Time Players tab \u2014 each franchise's five best single games for points, rebounds, assists, steals, blocks, threes and Game Score, with opponent, season and a badge for playoff performances",
+      "Franchise Records covers every team, unlike the league-wide Single-Game Highs leaderboards a franchise without an all-time great never cracks; playoff games count, and 12% of the records league-wide are playoff performances",
+      "Build writes data/franchise-records.csv (top 5 per team per stat, all 30 teams in one file) and the smoke test now checks it"
+    ]
+  },
+  {
     "version": "0.0.372",
     "date": "2026-07-31",
     "changes": [

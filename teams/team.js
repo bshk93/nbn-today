@@ -191,6 +191,28 @@ const ratingsPopupReady = new Promise(resolve => {
     overflow-x: auto;
   }
   .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+  .rec-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .rec-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 0.9rem 1rem;
+  }
+  .rec-stat {
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted); font-weight: 600; margin-bottom: 0.5rem;
+  }
+  .rec-top { display: flex; align-items: baseline; gap: 0.5rem; }
+  .rec-top .val {
+    font-size: 1.75rem; font-weight: 700; color: var(--accent-light);
+    font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .rec-top .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem; font-weight: 600; }
+  .rec-when { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem; }
+  .rec-rest { margin-top: 0.6rem; border-top: 1px solid var(--border-subtle); padding-top: 0.4rem; }
+  .rec-row { display: flex; gap: 0.5rem; font-size: 0.75rem; padding: 0.15rem 0; align-items: baseline; }
+  .rec-row .val { font-variant-numeric: tabular-nums; color: var(--text-secondary); min-width: 2.6rem; }
+  .rec-row .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rec-row .when { margin-left: auto; color: var(--text-dim); white-space: nowrap; font-size: 0.7rem; }
+  .rec-po { color: var(--gold); font-weight: 700; }
   table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
   thead th {
     padding: 0.7rem 1rem;
@@ -772,6 +794,11 @@ document.body.innerHTML = `
         <h2 class="section-title">All-Time Top Players</h2>
         <p class="section-sub">Regular season · ranked by total Game Score</p>
         <div class="table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
+      </section>
+      <section>
+        <h2 class="section-title">Franchise Records</h2>
+        <p class="section-sub">Best single games in franchise history · regular season and playoffs</p>
+        <div id="records-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-history">
@@ -4707,7 +4734,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, recr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -4726,6 +4753,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/transactions?limit=500').then(r => r.ok ? r.json() : { transactions: [] }),
     fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/attributes/current').then(r => r.ok ? r.json() : {}),
+    fetch('/data/franchise-records.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
   ]);
 
   await ratingsPopupReady;
@@ -4767,6 +4795,74 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     playersWrap.appendChild(buildTable(PLAYER_COLS, parseCSV(pr.value), 'GMSC_TOT', -1, makePlayerRenderCell(currentSlugs)));
   } else {
     playersWrap.innerHTML = '<div class="status">Failed to load player data.</div>';
+  }
+
+  // Franchise Records — best single games by anyone who played for this team.
+  // Sourced from data/franchise-records.csv (top 5 per stat per team), which the
+  // build writes alongside the league-wide game-highs; a franchise with no
+  // all-time great never cracks those, but still has its own record book.
+  {
+    const recordsWrap = document.getElementById('records-wrap');
+    const escAttr = s => String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    const REC_STATS = [
+      ['P', 'Points'], ['R', 'Rebounds'], ['A', 'Assists'], ['S', 'Steals'],
+      ['B', 'Blocks'], ['3PM', '3-Pointers'], ['GMSC', 'Game Score'],
+    ];
+
+    if (recr.status !== 'fulfilled') {
+      recordsWrap.innerHTML = '<div class="status">Failed to load franchise records.</div>';
+    } else {
+      const mine = parseCSV(recr.value).filter(r => r.TEAM === abbr);
+      const byStat = new Map();
+      for (const r of mine) {
+        if (!byStat.has(r.STAT)) byStat.set(r.STAT, []);
+        byStat.get(r.STAT).push(r);
+      }
+      for (const arr of byStat.values()) arr.sort((a, b) => (+a.RANK) - (+b.RANK));
+
+      // OPP is stored "@DEN" for road games, "DEN" for home.
+      const opponent = opp => (opp || '').startsWith('@')
+        ? `@ ${opp.slice(1)}` : `vs ${opp || '—'}`;
+      // Playoff rows carry SEASON "20-21 Playoffs"; the PO badge already says
+      // that, so show the bare season and don't print it twice.
+      const seasonOf = r => r.SEASON.replace(' Playoffs', '');
+      const po = r => r.gametype === 'PLAYOFF' ? ' <span class="rec-po">PO</span>' : '';
+      const whenFull = r => `${opponent(r.OPP)} · ${seasonOf(r)}${po(r)}`;
+      // Sub-rows are narrow — the opponent is dropped so the name isn't clipped.
+      const whenShort = r => `${seasonOf(r)}${po(r)}`;
+      const nameLink = r =>
+        `<a href="/players/?p=${encodeURIComponent(r.SLUG)}">${escAttr(displayNameFromBio(r.PLAYER))}</a>`;
+      // Values are whole numbers except Game Score, which carries two decimals.
+      const val = r => r.STAT === 'GMSC' ? (+r.VALUE).toFixed(1) : String(+r.VALUE);
+
+      const cards = REC_STATS.map(([key, label]) => {
+        const rows = byStat.get(key) || [];
+        if (!rows.length) return '';
+        const [top, ...rest] = rows;
+        return `
+          <div class="rec-card">
+            <div class="rec-stat">${escAttr(label)}</div>
+            <div class="rec-top">
+              <span class="val">${escAttr(val(top))}</span>
+              <span class="who">${nameLink(top)}</span>
+            </div>
+            <div class="rec-when">${whenFull(top)}</div>
+            ${rest.length ? `<div class="rec-rest">${rest.map(r => `
+              <div class="rec-row">
+                <span class="val">${escAttr(val(r))}</span>
+                <span class="who">${nameLink(r)}</span>
+                <span class="when">${whenShort(r)}</span>
+              </div>`).join('')}</div>` : ''}
+          </div>`;
+      }).filter(Boolean).join('');
+
+      recordsWrap.innerHTML = cards
+        ? `<div class="rec-grid">${cards}</div>`
+        : '<div class="status">No games recorded for this franchise yet.</div>';
+    }
   }
 
   const allSeasons = psr.status === 'fulfilled' ? parseCSV(psr.value) : [];

@@ -535,6 +535,30 @@ list(
   })
 inform(" * DONE")
 
+inform("Writing franchise records CSV....")
+# Per-team single-game bests. game-highs-*.csv is league-wide top 50, so a team
+# with no all-time great never appears in it; this gives every franchise its own
+# record book. One combined file rather than 30, since it stays small.
+franchise_base <- dfs_all %>%
+  mutate(SLUG = gsub("[^a-z0-9-]", "", gsub(" ", "-", gsub(", ", "-", tolower(PLAYER))))) %>%
+  select(TEAM, PLAYER, SLUG, DATE, SEASON, OPP, gametype, P, R, A, S, B, `3PM`, GMSC)
+
+c("P", "R", "A", "S", "B", "3PM", "GMSC") %>%
+  map(function(col) {
+    franchise_base %>%
+      filter(!is.na(.data[[col]])) %>%
+      group_by(TEAM) %>%
+      arrange(desc(.data[[col]]), DATE, .by_group = TRUE) %>%
+      slice_head(n = 5) %>%
+      mutate(RANK = row_number(), STAT = col, VALUE = .data[[col]]) %>%
+      ungroup() %>%
+      select(TEAM, STAT, RANK, VALUE, PLAYER, SLUG, DATE, SEASON, OPP, gametype)
+  }) %>%
+  bind_rows() %>%
+  arrange(TEAM, STAT, RANK) %>%
+  write_csv(file.path(REPO_ROOT, "data", "franchise-records.csv"))
+inform(" * DONE")
+
 inform("Writing playoff classics CSV....")
 dfs_playoffs %>%
   filter(WL == "W") %>%

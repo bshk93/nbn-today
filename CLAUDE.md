@@ -86,6 +86,7 @@ Runs automatically after each box score commit, or manually. Source data: `allst
 | `players/player_seasons_playoffs.csv` | `players/index.html` | Same for playoffs |
 | `players/player_awards.csv` | `players/index.html` | One row per award per player per season |
 | `data/game-highs-{p,r,a,s,b,3pm}.csv` | `stats/highs/{stat}/index.html` | Top 20 single-game performances per stat category |
+| `data/franchise-records.csv` | `teams/team.js` (All-Time tab) | Top 5 single games **per team** per stat (P/R/A/S/B/3PM/GMSC) — one combined file for all 30 teams. Unlike `game-highs-*`, which is league-wide, every franchise appears here |
 | `data/totals-{p,r,a,s,b,3pm}.csv` | `stats/totals/{stat}/index.html` | Top 250 career totals per stat category |
 | `data/h2h-alltime.csv` | `h2h/index.html` | All-time head-to-head W/L matrix (teams vs teams) |
 | `data/h2h-playoffs.csv` | `h2h/index.html` | Same, playoffs only |
@@ -155,7 +156,7 @@ Stats flow from game submission to the live site in one automated step:
 - `data/owner_stats.csv`, `data/{abbr}-seasons.csv`, `data/{abbr}-players.csv`
 - `standings/standings-history.csv`, `standings/playoff-brackets.csv`
 - `players/player_seasons.csv`, `players/player_seasons_playoffs.csv`, `players/player_awards.csv`
-- `data/game-highs-*.csv`, `data/totals-*.csv`, `data/hof.csv`, `data/h2h-*.csv`, `data/league-history.csv`
+- `data/game-highs-*.csv`, `data/totals-*.csv`, `data/hof.csv`, `data/h2h-*.csv`, `data/league-history.csv`, `data/franchise-records.csv`
 - `nbntv-classics/playoff-classics.csv`, `nbntv-classics/playoff-series-margins.csv`
 
 Box score detail (individual game lines) is served via API endpoints (`GET /api/boxscores`, `GET /api/players/{slug}/gamelog`) rather than static files, keeping the repo size manageable.
@@ -208,6 +209,8 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Change HOF display | `hof/index.html` |
 | Change H2H display | `h2h/index.html` |
 | Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js:109` |
+| Change the Franchise Records cards | `records-wrap` block in `teams/team.js`; data comes from `build/job.R` ("Writing franchise records CSV") |
+| Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
 
 ---
 
