@@ -149,6 +149,7 @@ const SITE_PAGES = [
   { title: 'Standings & Playoffs', href: '/standings', icon: '🏅' },
   { title: 'Tradeblock', href: '/tradeblock/', icon: '🤝' },
   { title: 'Trade Simulator', href: '/trade-sim/', icon: '⚖️' },
+  { title: 'Trade Retrospectives', href: '/trade-retros/', icon: '🔍' },
   { title: 'Compare Players', href: '/compare/', icon: '⇆' },
   { title: 'Free Agency', href: '/free-agency/', icon: '✍️' },
   { title: 'Transactions', href: '/transactions', icon: '📝' },
@@ -181,6 +182,7 @@ const SITE_PAGES = [
   { title: 'Rulebook', href: '/rulebook/', icon: '📖' },
   { title: 'Changelog', href: '/changelog', icon: '🔖' },
   { title: 'Proposals', href: '/proposals/', icon: '🗳️' },
+  { title: 'Suggestions', href: '/suggestions/', icon: '💡' },
 ];
 
 const TEAM_LIST = {

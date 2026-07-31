@@ -375,7 +375,7 @@
             <p>A team whose salary is at or above the First Apron is subject to all of the following, regardless of transaction type:</p>
             <ol>
               <li><strong>No NTMLE.</strong> The team may not use the Non-Taxpayer Mid-Level Salary Exception.</li>
-              <li><strong>No mid-season buyout signings above NTMLE.</strong> The team may not sign a player waived during the current Regular Season if that player's terminated contract carried a salary exceeding the full NTMLE amount.</li>
+              <li><strong>No mid-season buyout signings above NTMLE.</strong> <span class="badge badge-enforced">🔒 system-enforced</span> The team may not sign a player waived during the current Regular Season if that player's terminated contract carried a salary exceeding the full NTMLE amount. The signing is rejected at submission. A team <em>below</em> the First Apron may make the signing, but is hard-capped at the First Apron for doing so (§ 1.4, Row D).</li>
               <li><strong>Trade salary-matching cap: outgoing + $250,000.</strong> When acquiring a player in a trade, the incoming salary may be at most the outgoing salary plus $250,000. Standard tiered matching (§ 4.2) does not apply above the First Apron.</li>
             </ol>
           </div>
@@ -730,11 +730,12 @@
           </div>
 
           <div class="doc-section" id="s4-1a">
-            <h3 class="sec-title"><span class="sec-num">§ 4.1a</span> Trade Exceptions (TPE) <span class="badge badge-enforced">🔒 system-enforced</span> <span class="badge badge-manual">👁 manual review</span></h3>
-            <p>When a team sends out more salary than it receives in a trade, it is credited with a <strong>Trade Exception</strong> equal to the difference (outgoing salary − incoming salary). The exception <strong>expires one year (365 days)</strong> from the date of the trade that created it; any unused balance is forfeited at expiration.</p>
+            <h3 class="sec-title"><span class="sec-num">§ 4.1a</span> Trade Exceptions (TPE) <span class="badge badge-enforced">🔒 system-enforced</span></h3>
+            <p>When a team <strong>over the Salary Cap</strong> sends out more salary than it receives in a trade, it is credited with a <strong>Trade Exception</strong> equal to the difference (outgoing salary − incoming salary). The exception <strong>expires one year (365 days)</strong> from the date of the trade that created it; any unused balance is forfeited at expiration.</p>
+            <p><strong>Teams under the Cap bank no exception.</strong> A team below the Cap after the trade absorbs the difference into its own cap room instead (§ 4.2, cap-room absorption), and sending salary away simply increases that room. Granting such a team an exception on top would let the same space be spent twice, so the two are mutually exclusive. Cap position is measured after the trade, against the plain Salary Cap, counting cap holds — the same measure cap-room absorption uses.</p>
             <p>A TPE may be used to acquire a player — via trade or waiver claim — whose salary is at or below the exception's <strong>remaining</strong> balance, without sending matching salary back. It cannot be combined with other exceptions, or with outgoing salary, in the same acquisition. Using a TPE does not itself trigger a hard cap.</p>
             <p><strong>Not itself tradeable</strong> (see § 4.1): a TPE stays with the team that banked it and cannot be packaged into another trade.</p>
-            <p>Creation and balance tracking are currently <strong>manual</strong> — entered from the league's roster/cap spreadsheet rather than computed automatically from trade transactions. <strong>Consuming a TPE in a trade is system-enforced</strong>: the trade builder checks the exception's remaining balance and expiration date, rejects combining it with another exception or with outgoing salary, and decrements the balance on submission.</p>
+            <p><strong>Creation and consumption are both automatic.</strong> Completing a trade banks an exception for every over-the-cap team that sent out more salary than it took back, dated to the trade and expiring 365 days later. Using one is checked at submission: the trade builder verifies the remaining balance and expiration date, rejects combining it with another exception or with outgoing salary, and decrements the balance. A team cannot both absorb salary through an exception and bank a new one out of the same trade. Exceptions may still be entered or corrected by hand for anything the ledger doesn't cover.</p>
           </div>
 
           <div class="doc-section" id="s4-2">

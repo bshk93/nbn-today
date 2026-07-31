@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Suggestions — NBN</title>
+  <style>
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .top-bar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
+    .top-bar h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    .top-bar p { color: var(--text-muted); margin-top: 0.35rem; font-size: 0.9rem; }
+
+    .right-bar { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    .auth-label { font-size: 0.8rem; color: var(--text-muted); }
+    .auth-name { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+
+    button {
+      font-family: inherit; cursor: pointer; border-radius: 6px;
+      font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.8rem;
+      border: 1px solid transparent; transition: background 0.1s;
+    }
+    .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-primary:disabled { opacity: 0.5; cursor: default; }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--bg-card); color: var(--text-primary); }
+    .btn-danger { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border);
+      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: var(--text-muted); padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; margin-bottom: -1px;
+      letter-spacing: 0.02em; white-space: nowrap; flex-shrink: 0;
+    }
+    .tab:hover { color: var(--text-secondary); }
+    .tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+    .tab-count { color: var(--text-dim); font-weight: 500; }
+    .tab.active .tab-count { color: var(--text-muted); }
+
+    @media (max-width: 480px) {
+      .tab { padding: 0.5rem 0.6rem; font-size: 0.75rem; }
+    }
+
+    /* Suggestion cards */
+    .suggestion-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .suggestion-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem 1.25rem; cursor: pointer; transition: border-color 0.1s, background 0.1s;
+    }
+    .suggestion-card:hover { border-color: var(--text-dim); }
+    .card-row { display: flex; align-items: center; gap: 1rem; }
+    .card-body { flex: 1; min-width: 0; }
+    .card-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .card-meta .sep { color: var(--border); }
+    .card-arrow { color: var(--border); font-size: 1.1rem; flex-shrink: 0; transition: transform 0.15s; }
+    .suggestion-card.expanded .card-arrow { transform: rotate(90deg); }
+
+    .card-details { display: none; margin-top: 0.85rem; padding-top: 0.85rem; border-top: 1px solid var(--border-subtle); }
+    .suggestion-card.expanded .card-details { display: block; }
+    .card-description { font-size: 0.85rem; color: var(--text-secondary); white-space: pre-wrap; margin-bottom: 0.85rem; }
+    .card-description:empty::before { content: '(no description provided)'; color: var(--text-dim); font-style: italic; }
+    .card-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .card-actions select {
+      font-family: inherit; font-size: 0.78rem; background: var(--bg-page); color: var(--text-secondary);
+      border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.5rem;
+    }
+
+    .badge {
+      display: inline-block; font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.5rem;
+      border-radius: 4px; flex-shrink: 0;
+    }
+    .badge-open        { background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light); }
+    .badge-in_progress { background: #3b1f00; border: 1px solid var(--gold-dim); color: var(--gold); }
+    .badge-complete    { background: var(--success-dark-bg); border: 1px solid #16a34a; color: var(--success); }
+    .badge-closed      { background: #1a1f2e; border: 1px solid var(--border); color: var(--text-dim); }
+
+    .section { margin-bottom: 2.5rem; }
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--text-dim); font-size: 0.9rem; }
+
+    /* Modals */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 100; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.5rem; width: 100%; max-width: 420px; margin: 1rem;
+    }
+    .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .modal input, .modal textarea {
+      width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
+      border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+      margin-bottom: 0.75rem; font-family: inherit;
+    }
+    .modal input#token-input { font-family: monospace; }
+    .modal textarea { resize: vertical; min-height: 5.5rem; }
+    .modal input:focus, .modal textarea:focus { outline: none; border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .modal p.note { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+    .modal .field-label { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; display: block; }
+    .modal-error { font-size: 0.78rem; color: var(--danger); margin-bottom: 0.5rem; display: none; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav"></nav>
+
+  <div class="top-bar">
+    <div>
+      <h1>Suggestions</h1>
+      <p>Things to work on for the site — submit an idea, track its status.</p>
+    </div>
+    <div class="right-bar">
+      <span class="auth-label" id="auth-label">Not signed in</span>
+      <span class="auth-name" id="auth-name"></span>
+      <button class="btn-ghost" id="btn-auth" onclick="openAuthModal()">Sign in</button>
+      <button class="btn-primary" id="btn-new" style="display:none;" onclick="openNewModal()">+ New Suggestion</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="tabs">
+      <button class="tab active" data-tab="open" onclick="setTab('open')">Open <span class="tab-count" id="count-open"></span></button>
+      <button class="tab" data-tab="in_progress" onclick="setTab('in_progress')">In Progress <span class="tab-count" id="count-in_progress"></span></button>
+      <button class="tab" data-tab="complete" onclick="setTab('complete')">Complete <span class="tab-count" id="count-complete"></span></button>
+      <button class="tab" data-tab="closed" onclick="setTab('closed')">Closed <span class="tab-count" id="count-closed"></span></button>
+      <button class="tab" data-tab="all" onclick="setTab('all')">All <span class="tab-count" id="count-all"></span></button>
+    </div>
+    <div class="suggestion-list" id="suggestion-list">
+      <div class="empty">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Auth modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeAuthModal(event)">
+  <div class="modal">
+    <h2>Sign in with your member token</h2>
+    <p class="note">A member token is required to submit suggestions. It's stored locally in your browser.</p>
+    <input type="password" id="token-input" placeholder="Paste your token" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeAuthModal()">Cancel</button>
+      <button class="btn-primary" onclick="doSignIn()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- New suggestion modal -->
+<div class="modal-overlay" id="new-modal-overlay" onclick="closeNewModal(event)">
+  <div class="modal">
+    <h2>New Suggestion</h2>
+    <div class="modal-error" id="new-error"></div>
+    <span class="field-label">Title</span>
+    <input type="text" id="new-title" placeholder="Short summary…" maxlength="120" autocomplete="off">
+    <span class="field-label">Description</span>
+    <textarea id="new-description" placeholder="Details, context, why it matters… (optional)"></textarea>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeNewModal()">Cancel</button>
+      <button class="btn-primary" id="new-submit-btn" onclick="submitNewSuggestion()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let allSuggestions = [];
+let currentTab = 'open';
+let me = null; // { name, roles }
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const STATUS_LABELS = { open: 'Open', in_progress: 'In Progress', complete: 'Complete', closed: 'Closed' };
+
+function badge(status) {
+  return `<span class="badge badge-${status}">${STATUS_LABELS[status] || status}</span>`;
+}
+
+function isPrivileged() {
+  return !!me && (me.roles || []).some(r => r === 'bod' || r === 'admin');
+}
+
+function renderCard(s) {
+  const el = document.createElement('div');
+  el.className = 'suggestion-card';
+  el.innerHTML = `
+    <div class="card-row">
+      <div class="card-body">
+        <div class="card-title">${s.number ? `#${s.number} — ` : ''}${escHtml(s.title)}</div>
+        <div class="card-meta">
+          ${badge(s.status)}
+          <span class="sep">•</span>
+          <span>${escHtml(s.author)}</span>
+          <span class="sep">•</span>
+          <span>${fmtDate(s.created_at)}</span>
+        </div>
+      </div>
+      <span class="card-arrow">›</span>
+    </div>
+    <div class="card-details">
+      <div class="card-description">${escHtml(s.description)}</div>
+      <div class="card-actions"></div>
+    </div>`;
+
+  el.querySelector('.card-row').addEventListener('click', () => {
+    el.classList.toggle('expanded');
+  });
+
+  const actions = el.querySelector('.card-actions');
+  const privileged = isPrivileged();
+  const isAuthor = me && me.name === s.author;
+
+  if (privileged) {
+    const sel = document.createElement('select');
+    Object.keys(STATUS_LABELS).forEach(st => {
+      const opt = document.createElement('option');
+      opt.value = st; opt.textContent = STATUS_LABELS[st];
+      if (st === s.status) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('click', e => e.stopPropagation());
+    sel.addEventListener('change', () => changeStatus(s.id, sel.value));
+    actions.appendChild(sel);
+  }
+
+  if (privileged || (isAuthor && s.status === 'open')) {
+    const del = document.createElement('button');
+    del.className = 'btn-danger';
+    del.textContent = 'Delete';
+    del.addEventListener('click', e => { e.stopPropagation(); deleteSuggestion(s.id); });
+    actions.appendChild(del);
+  }
+
+  return el;
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  renderSuggestions();
+}
+
+function matchesTab(s, tab) {
+  return tab === 'all' ? true : s.status === tab;
+}
+
+function renderSuggestions() {
+  const list = document.getElementById('suggestion-list');
+  const filtered = allSuggestions.filter(s => matchesTab(s, currentTab));
+  list.innerHTML = '';
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty">No ${currentTab === 'all' ? '' : STATUS_LABELS[currentTab].toLowerCase() + ' '}suggestions yet.</div>`;
+    return;
+  }
+  filtered.forEach(s => list.appendChild(renderCard(s)));
+}
+
+function updateTabCounts() {
+  ['open', 'in_progress', 'complete', 'closed', 'all'].forEach(tab => {
+    const el = document.getElementById(`count-${tab}`);
+    if (el) el.textContent = `(${allSuggestions.filter(s => matchesTab(s, tab)).length})`;
+  });
+}
+
+async function loadSuggestions() {
+  try {
+    const res = await fetch(`${API}/suggestions`);
+    if (!res.ok) throw new Error('Failed');
+    allSuggestions = await res.json();
+    updateTabCounts();
+    renderSuggestions();
+  } catch {
+    document.getElementById('suggestion-list').innerHTML = '<div class="empty">Failed to load suggestions.</div>';
+  }
+}
+
+async function changeStatus(id, status) {
+  const token = localStorage.getItem('nbn_token');
+  try {
+    const res = await fetch(`${API}/suggestions/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) { alert('Could not update status.'); return; }
+    await loadSuggestions();
+  } catch { alert('Could not update status.'); }
+}
+
+async function deleteSuggestion(id) {
+  if (!confirm('Delete this suggestion?')) return;
+  const token = localStorage.getItem('nbn_token');
+  try {
+    const res = await fetch(`${API}/suggestions/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) { alert('Could not delete.'); return; }
+    await loadSuggestions();
+  } catch { alert('Could not delete.'); }
+}
+
+// ── New suggestion modal ─────────────────────────────────────────────────────
+
+function openNewModal() {
+  document.getElementById('new-error').style.display = 'none';
+  document.getElementById('new-title').value = '';
+  document.getElementById('new-description').value = '';
+  document.getElementById('new-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('new-title').focus(), 50);
+}
+
+function closeNewModal(e) {
+  if (e && e.target !== document.getElementById('new-modal-overlay')) return;
+  document.getElementById('new-modal-overlay').classList.remove('open');
+}
+
+async function submitNewSuggestion() {
+  const title = document.getElementById('new-title').value.trim();
+  const description = document.getElementById('new-description').value.trim();
+  const errEl = document.getElementById('new-error');
+  errEl.style.display = 'none';
+  if (!title) { errEl.textContent = 'Title is required.'; errEl.style.display = 'block'; return; }
+
+  const token = localStorage.getItem('nbn_token');
+  const btn = document.getElementById('new-submit-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/suggestions`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      errEl.textContent = data.detail || 'Could not submit suggestion.';
+      errEl.style.display = 'block';
+      return;
+    }
+    closeNewModal();
+    currentTab = 'open';
+    setTab('open');
+    await loadSuggestions();
+  } catch {
+    errEl.textContent = 'Could not reach the server.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+async function initAuth() {
+  const token = localStorage.getItem('nbn_token');
+  if (!token) { updateAuthUI(null); return; }
+  try {
+    const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) {
+      me = await res.json();
+      updateAuthUI(me);
+    } else {
+      localStorage.removeItem('nbn_token');
+      updateAuthUI(null);
+    }
+  } catch {
+    me = { name: '…', roles: [] };
+    updateAuthUI(me);
+  }
+}
+
+function updateAuthUI(info) {
+  const label = document.getElementById('auth-label');
+  const name = document.getElementById('auth-name');
+  const btn = document.getElementById('btn-auth');
+  const btnNew = document.getElementById('btn-new');
+  if (info) {
+    label.textContent = 'Signed in as';
+    name.textContent = info.name;
+    btn.textContent = 'Sign out';
+    btn.onclick = doSignOut;
+    btnNew.style.display = '';
+  } else {
+    label.textContent = 'Not signed in';
+    name.textContent = '';
+    btn.textContent = 'Sign in';
+    btn.onclick = openAuthModal;
+    btnNew.style.display = 'none';
+  }
+}
+
+function openAuthModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('token-input').focus(), 50);
+}
+
+function closeAuthModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('token-input').value = '';
+}
+
+async function doSignIn() {
+  const token = document.getElementById('token-input').value.trim();
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { alert('Invalid token.'); return; }
+    me = await res.json();
+    localStorage.setItem('nbn_token', token);
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.getElementById('token-input').value = '';
+    updateAuthUI(me);
+    renderSuggestions();
+  } catch { alert('Could not sign in. Check your connection.'); }
+}
+
+function doSignOut() {
+  localStorage.removeItem('nbn_token');
+  me = null;
+  updateAuthUI(null);
+  renderSuggestions();
+}
+
+document.getElementById('token-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSignIn();
+  if (e.key === 'Escape') closeAuthModal();
+});
+
+(async () => {
+  await initAuth();
+  await loadSuggestions();
+})();
+</script>
+  <script src="/nav.js"></script>
+</body>
+</html>

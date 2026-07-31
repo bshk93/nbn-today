@@ -1,5 +1,21 @@
 [
   {
+    "version": "0.0.372",
+    "date": "2026-07-31",
+    "changes": [
+      "Trade Exceptions (\u00a74.1a) are now created automatically: completing a trade banks a TPE for every over-the-cap team that sent out more salary than it took back, dated to the trade and expiring 365 days later \u2014 previously they could only be entered by hand from the league spreadsheet",
+      "Rulebook \u00a74.1a: teams under the Salary Cap bank no Trade Exception, matching the real CBA \u2014 their cap room already absorbs the difference, so granting one on top would let the same space be spent twice",
+      "Hard cap \u00a71.4 Row D is now automated: signing a player whose contract was terminated earlier the same season above the full NTMLE hard-caps the signing team at the First Apron",
+      "Rulebook \u00a71.5.2 is now enforced: a team already at or above the First Apron is blocked from making such a signing entirely",
+      "Fixed \u00a74.3 contagion measuring team salary after the trade instead of before it \u2014 a team that started below the First Apron and crossed it by taking on salary escaped the hard-cap lock the rule exists to apply",
+      "New Suggestions page (/suggestions): members can file a suggestion and follow its status; BOD and admins can retriage or delete",
+      "Free Agency: never-signed free agents with no cap hold now appear alongside renounced ones, tagged Unsigned; dropped the Status column since the salary cell already carries that colour coding",
+      "New Trade Retrospectives page (/trade-retros): grades all 481 trades in league history by the Game Score each side's acquisitions actually went on to produce for the team that acquired them, filterable by season, team and grade",
+      "Trade Retrospectives credits production only from the trade's effective season onward, so a midseason trade never counts a player's production for his previous team; draft picks are listed but left unvalued unless the draft has happened and the resulting player is unambiguous",
+      "Builds now verify their own output: build/smoke_test.py checks every generated CSV still has the columns the pages read, still has rows, and has no silently-blanked column, and that every data path a page fetches exists. Runs after each build and on every commit"
+    ]
+  },
+  {
     "version": "0.0.371",
     "date": "2026-07-27",
     "changes": [

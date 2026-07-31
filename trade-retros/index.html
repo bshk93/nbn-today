@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Trade Retrospectives — NBN</title>
+  <style>
+    .page { max-width: 1100px; margin: 0 auto; }
+
+    header { margin-bottom: 1.5rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p.sub { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
+
+    /* Methodology disclosure */
+    details.method {
+      margin-top: 1rem; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.75rem 1rem;
+    }
+    details.method summary {
+      cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);
+      user-select: none;
+    }
+    details.method summary:hover { color: var(--accent-light); }
+    details.method .body { margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.6; }
+    details.method .body ul { margin: 0.5rem 0 0 1.1rem; }
+    details.method .body li { margin-bottom: 0.3rem; }
+    details.method code {
+      background: var(--bg-subtle); padding: 0.1rem 0.3rem; border-radius: 4px;
+      font-size: 0.95em;
+    }
+
+    /* Summary tiles */
+    .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 1.5rem 0; }
+    .tile {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.9rem 1rem;
+    }
+    .tile .label {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted); font-weight: 600;
+    }
+    .tile .value { font-size: 1.4rem; font-weight: 700; margin-top: 0.25rem; }
+    .tile .note { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+    /* Controls */
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    .controls select, .controls input {
+      background: var(--bg-card); color: var(--text-primary);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.45rem 0.6rem; font-size: 0.82rem; font-family: inherit;
+    }
+    .controls input { min-width: 200px; flex: 1 1 200px; }
+    .controls select:focus, .controls input:focus { outline: none; border-color: var(--accent); }
+    .count { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; }
+
+    /* Trade cards */
+    .trade {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      margin-bottom: 0.7rem; overflow: hidden;
+    }
+    .trade-head {
+      display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1.1rem;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .trade-head:hover { background: var(--bg-hover); }
+    .trade-date {
+      font-size: 0.72rem; color: var(--text-muted); white-space: nowrap;
+      font-variant-numeric: tabular-nums; min-width: 92px;
+    }
+    .matchup { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; flex: 1; min-width: 0; }
+    .side { display: flex; align-items: baseline; gap: 0.35rem; }
+    .side .abbr { font-weight: 700; font-size: 0.9rem; }
+    .side .score { font-size: 0.9rem; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+    .side.win .abbr { color: var(--success); }
+    .side.win .score { color: var(--success); font-weight: 700; }
+    .vs { color: var(--text-dim); font-size: 0.7rem; }
+
+    .verdict {
+      font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; padding: 0.2rem 0.5rem; border-radius: 999px;
+      white-space: nowrap; border: 1px solid;
+    }
+    .verdict.fleecing { color: var(--danger-light); background: var(--danger-bg); border-color: var(--danger-border); }
+    .verdict.lopsided { color: var(--warning); background: var(--gold-bg); border-color: var(--gold-border); }
+    .verdict.edge     { color: var(--text-secondary); background: var(--bg-subtle); border-color: var(--border); }
+    .verdict.even     { color: var(--text-muted); background: var(--bg-subtle); border-color: var(--border); }
+    .verdict.early    { color: var(--purple-light); background: var(--purple-bg); border-color: var(--purple-border); }
+
+    .arrow { color: var(--text-dim); font-size: 1rem; transition: transform 0.15s; }
+    .trade.open .arrow { transform: rotate(90deg); }
+
+    /* Expanded detail */
+    .trade-body { display: none; padding: 0 1.1rem 1.1rem; }
+    .trade.open .trade-body { display: block; }
+    .sides-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .side-panel {
+      background: var(--bg-subtle); border: 1px solid var(--border-subtle);
+      border-radius: 10px; padding: 0.8rem;
+    }
+    .side-panel.win { border-color: var(--success); }
+    .side-panel h4 {
+      font-size: 0.8rem; font-weight: 700; margin-bottom: 0.1rem;
+      display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem;
+    }
+    .side-panel .tot { font-variant-numeric: tabular-nums; }
+    .side-panel .sublabel { font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .asset {
+      display: flex; justify-content: space-between; gap: 0.5rem;
+      font-size: 0.78rem; padding: 0.25rem 0; border-top: 1px solid var(--border-subtle);
+    }
+    .asset:first-of-type { border-top: none; }
+    .asset .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .asset .val { font-variant-numeric: tabular-nums; color: var(--text-secondary); white-space: nowrap; }
+    .asset .val.none { color: var(--text-dim); }
+    .asset .meta { font-size: 0.68rem; color: var(--text-muted); }
+    .asset.pick .who { color: var(--text-muted); font-style: italic; }
+
+    .desc {
+      margin-top: 0.8rem; font-size: 0.76rem; color: var(--text-muted);
+      line-height: 1.55; border-left: 2px solid var(--border); padding-left: 0.7rem;
+    }
+
+    .empty { text-align: center; color: var(--text-muted); padding: 3rem 1rem; font-size: 0.9rem; }
+    .loading { text-align: center; color: var(--text-muted); padding: 3rem 1rem; }
+
+    @media (max-width: 820px) {
+      .tiles { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+      .trade-head { flex-wrap: wrap; gap: 0.5rem; }
+      .trade-date { min-width: 0; width: 100%; }
+      .count { margin-left: 0; width: 100%; }
+      .controls input, .controls select { flex: 1 1 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"></nav>
+    <header>
+      <h1>Trade Retrospectives</h1>
+      <p class="sub">Every trade in league history, graded by what each side actually produced afterward.</p>
+
+      <details class="method">
+        <summary>How these grades are calculated</summary>
+        <div class="body">
+          <p>Each side of a trade is credited with the total <strong>Game Score</strong> that the
+          players it acquired went on to produce <em>for that team</em>, regular season and playoffs combined.</p>
+          <ul>
+            <li>Production counts from the trade's effective season onward. A trade made after a
+                season's final game counts from the following season.</li>
+            <li>Because season stats are stored per team, a player traded midseason only brings his
+                new team's games with him — production before the trade is never credited.</li>
+            <li>Draft picks are listed but carry <strong>no value</strong> unless they have already
+                been used and the resulting player is unambiguous. Most traded picks are for future
+                drafts, so they show as <code>pending</code>.</li>
+            <li>Trades whose effective season hasn't produced games yet are marked
+                <strong>Too early</strong> rather than scored.</li>
+            <li>Cash, exceptions, and swap rights aren't valued.</li>
+          </ul>
+          <p style="margin-top:0.5rem">Grade thresholds come from the actual distribution of margins
+          across all graded trades: <strong>Even</strong> below the median, <strong>Edge</strong> to
+          the 75th percentile, <strong>Lopsided</strong> to the 95th, <strong>Fleecing</strong> above it.</p>
+        </div>
+      </details>
+    </header>
+
+    <div class="tiles" id="tiles"></div>
+
+    <div class="controls">
+      <select id="f-season"><option value="">All seasons</option></select>
+      <select id="f-team"><option value="">All teams</option></select>
+      <select id="f-verdict">
+        <option value="">All grades</option>
+        <option value="fleecing">Fleecing</option>
+        <option value="lopsided">Lopsided</option>
+        <option value="edge">Edge</option>
+        <option value="even">Even</option>
+        <option value="early">Too early</option>
+      </select>
+      <select id="f-sort">
+        <option value="margin">Most lopsided</option>
+        <option value="recent">Most recent</option>
+        <option value="oldest">Oldest</option>
+        <option value="volume">Most value moved</option>
+      </select>
+      <input id="f-search" type="search" placeholder="Search player or team…">
+      <span class="count" id="count"></span>
+    </div>
+
+    <div id="list"><div class="loading">Loading trades…</div></div>
+  </div>
+
+  <script>
+  'use strict';
+
+  // ---- helpers -------------------------------------------------------------
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function parseLine(line) {
+    const out = []; let cur = '', quoted = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (quoted && line[i + 1] === '"') { cur += '"'; i++; }
+        else quoted = !quoted;
+      } else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
+
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = parseLine(lines[0]).map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const vals = parseLine(line);
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = (vals[i] ?? '').trim(); });
+      return obj;
+    });
+  }
+
+  const num = v => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const fmt = n => Math.round(n).toLocaleString();
+
+  function fmtDate(d) {
+    if (!d) return '';
+    const [y, m, day] = d.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[parseInt(m, 10) - 1]} ${parseInt(day, 10)}, ${y}`;
+  }
+
+  // Names are stored "Last, First" in the stats CSVs and "LAST, FIRST" in the
+  // bios. Prefer the CSV spelling so this page reads the same as the rest of
+  // the site; title-case the bio fallback so it doesn't shout in a dense list.
+  const NAMES = new Map();
+
+  function displayName(_bio, slug) {
+    const canonical = NAMES.get(slug) || (_bio && _bio.name) || '';
+    if (!canonical) {
+      return slug.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+    }
+    const i = canonical.indexOf(', ');
+    const swapped = i > 0 ? canonical.slice(i + 2) + ' ' + canonical.slice(0, i) : canonical;
+    return swapped === swapped.toUpperCase()
+      ? swapped.toLowerCase().replace(/(^|[\s'-])(\w)/g, (_, a, b) => a + b.toUpperCase())
+      : swapped;
+  }
+
+  // ---- season model --------------------------------------------------------
+  // Season order and each season's final game date, derived from the stats data
+  // at load time so this never drifts from the build.
+  let SEASON_ORDER = [];
+  let SEASON_LAST = {};
+
+  function baseSeason(s) { return s.replace(' Playoffs', ''); }
+
+  /** Season a date falls in, using the Sep 30 cutoff the build uses. */
+  function seasonOf(date) {
+    const y = parseInt(date.slice(0, 4), 10);
+    const m = parseInt(date.slice(5, 7), 10);
+    const y1 = m <= 9 ? y - 1 : y;
+    const two = n => String(n).slice(-2);
+    return `${two(y1)}-${two(y1 + 1)}`;
+  }
+
+  /**
+   * The first season a trade's production should count toward. If the trade
+   * happened after its season's final game, value starts the following season.
+   */
+  function effectiveSeason(date) {
+    const s = seasonOf(date);
+    const last = SEASON_LAST[s];
+    if (last && date > last) {
+      const i = SEASON_ORDER.indexOf(s);
+      return (i >= 0 && i + 1 < SEASON_ORDER.length) ? SEASON_ORDER[i + 1] : null;
+    }
+    return SEASON_ORDER.includes(s) ? s : null;
+  }
+
+  // ---- state ---------------------------------------------------------------
+  let TRADES = [];
+  let BIOS = {};
+  const state = { season: '', team: '', verdict: '', sort: 'margin', search: '' };
+
+  const VERDICT_LABEL = {
+    fleecing: 'Fleecing', lopsided: 'Lopsided', edge: 'Edge',
+    even: 'Even', early: 'Too early',
+  };
+
+  // ---- valuation -----------------------------------------------------------
+  /**
+   * prod: Map "slug|team" -> [{season, gmsc, g}]
+   * Rows are already team-scoped, so a midseason trade never leaks the
+   * player's production for his previous team into his new team's total.
+   */
+  function buildProduction(rows) {
+    const prod = new Map();
+    for (const r of rows) {
+      const slug = r.SLUG, team = r.TEAM, season = baseSeason(r.SEASON);
+      if (!slug || !team || team === 'NA' || !season || season === 'NA') continue;
+      if (!SEASON_ORDER.includes(season)) continue;
+      const key = slug + '|' + team;
+      let arr = prod.get(key);
+      if (!arr) { arr = []; prod.set(key, arr); }
+      arr.push({ season, gmsc: num(r.GMSC), g: parseInt(r.G, 10) || 0 });
+    }
+    return prod;
+  }
+
+  function valueFor(prod, slug, team, fromSeason) {
+    const arr = prod.get(slug + '|' + team);
+    if (!arr) return { value: 0, g: 0, seasons: [] };
+    const from = SEASON_ORDER.indexOf(fromSeason);
+    let value = 0, g = 0;
+    const seasons = new Set();
+    for (const row of arr) {
+      if (SEASON_ORDER.indexOf(row.season) < from) continue;
+      value += row.gmsc; g += row.g; seasons.add(row.season);
+    }
+    return { value, g, seasons: [...seasons].sort() };
+  }
+
+  /** Picks are only credited when a draft has happened AND the match is unambiguous. */
+  function buildDraftIndex(bios) {
+    const idx = new Map();
+    for (const [slug, b] of Object.entries(bios)) {
+      if (!b.draft_team || !b.draft_year || !b.draft_round) continue;
+      const key = `${b.draft_year}|${b.draft_round}|${b.draft_team}`;
+      let arr = idx.get(key);
+      if (!arr) { arr = []; idx.set(key, arr); }
+      arr.push(slug);
+    }
+    return idx;
+  }
+
+  function gradeTrades(txns, prod, draftIdx) {
+    const out = [];
+    for (const t of txns) {
+      if (!t.date) continue;
+      const eff = effectiveSeason(t.date);
+
+      const received = new Map();
+      for (const tr of (t.details && t.details.transfers) || []) {
+        if (!tr.to_team) continue;
+        if (!received.has(tr.to_team)) received.set(tr.to_team, []);
+        received.get(tr.to_team).push(...(tr.assets || []));
+      }
+      if (received.size < 2) continue;
+
+      const sides = [];
+      for (const [team, assets] of received) {
+        let total = 0;
+        const items = [];
+        for (const a of assets) {
+          if (a.type === 'player' && a.slug) {
+            const { value, g, seasons } = eff
+              ? valueFor(prod, a.slug, team, eff)
+              : { value: 0, g: 0, seasons: [] };
+            total += value;
+            items.push({ kind: 'player', slug: a.slug, value, g, seasons });
+          } else if (a.type === 'pick') {
+            const label = `${a.year || '?'} ${a.round === 1 ? '1st' : a.round === 2 ? '2nd' : 'R' + (a.round || '?')}`;
+            const cands = draftIdx.get(`${a.year}|${a.round}|${team}`) || [];
+            if (cands.length === 1) {
+              const slug = cands[0];
+              const from = effectiveSeason(`${a.year}-11-01`) || SEASON_ORDER[SEASON_ORDER.length - 1];
+              const { value, g, seasons } = valueFor(prod, slug, team, from);
+              total += value;
+              items.push({ kind: 'pick-used', slug, label, value, g, seasons });
+            } else {
+              items.push({ kind: 'pick', label, value: 0, pending: true });
+            }
+          } else {
+            items.push({ kind: 'other', label: a.type || 'asset', value: 0, pending: true });
+          }
+        }
+        sides.push({ team, total, items });
+      }
+
+      sides.sort((a, b) => b.total - a.total);
+      const margin = sides[0].total - sides[sides.length - 1].total;
+      const volume = sides.reduce((s, x) => s + x.total, 0);
+
+      out.push({
+        id: t.id, date: t.date, season: eff, sides, margin, volume,
+        description: t.description || '',
+        graded: !!eff && volume > 0,
+      });
+    }
+    return out;
+  }
+
+  /** Thresholds from the observed margin distribution of graded trades. */
+  function assignVerdicts(trades) {
+    const graded = trades.filter(t => t.graded).map(t => t.margin).sort((a, b) => a - b);
+    const q = p => graded.length ? graded[Math.min(graded.length - 1, Math.floor(graded.length * p))] : 0;
+    const p50 = q(0.50), p75 = q(0.75), p95 = q(0.95);
+    for (const t of trades) {
+      if (!t.graded) { t.verdict = 'early'; continue; }
+      if (t.margin >= p95) t.verdict = 'fleecing';
+      else if (t.margin >= p75) t.verdict = 'lopsided';
+      else if (t.margin >= p50) t.verdict = 'edge';
+      else t.verdict = 'even';
+    }
+    return { p50, p75, p95 };
+  }
+
+  // ---- rendering -----------------------------------------------------------
+  function renderTiles(trades) {
+    const graded = trades.filter(t => t.graded);
+    const fleecings = graded.filter(t => t.verdict === 'fleecing').length;
+    const biggest = graded.slice().sort((a, b) => b.margin - a.margin)[0];
+
+    const byTeam = new Map();
+    for (const t of graded) {
+      for (const s of t.sides) {
+        const cur = byTeam.get(s.team) || 0;
+        const others = t.sides.filter(x => x !== s);
+        const best = Math.max(...others.map(x => x.total));
+        byTeam.set(s.team, cur + (s.total - best));
+      }
+    }
+    const ranked = [...byTeam.entries()].sort((a, b) => b[1] - a[1])[0];
+
+    const tiles = [
+      { label: 'Trades graded', value: fmt(graded.length),
+        note: `${trades.length - graded.length} too early to call` },
+      { label: 'Fleecings', value: fmt(fleecings), note: 'top 5% of margins' },
+      { label: 'Biggest margin', value: biggest ? fmt(biggest.margin) : '—',
+        note: biggest ? `${biggest.sides[0].team}, ${fmtDate(biggest.date)}` : '' },
+      { label: 'Best net trader', value: ranked ? ranked[0] : '—',
+        note: ranked ? `+${fmt(ranked[1])} GmSc across all trades` : '' },
+    ];
+
+    document.getElementById('tiles').innerHTML = tiles.map(t => `
+      <div class="tile">
+        <div class="label">${esc(t.label)}</div>
+        <div class="value">${esc(t.value)}</div>
+        <div class="note">${esc(t.note)}</div>
+      </div>`).join('');
+  }
+
+  function assetRow(item) {
+    if (item.kind === 'player' || item.kind === 'pick-used') {
+      const name = displayName(BIOS[item.slug], item.slug);
+      const label = item.kind === 'pick-used'
+        ? `${esc(item.label)} → <a href="/players/?p=${encodeURIComponent(item.slug)}">${esc(name)}</a>`
+        : `<a href="/players/?p=${encodeURIComponent(item.slug)}">${esc(name)}</a>`;
+      const meta = item.seasons.length
+        ? `<span class="meta"> · ${item.g} G, ${item.seasons.length} season${item.seasons.length > 1 ? 's' : ''}</span>`
+        : '<span class="meta"> · never played for them</span>';
+      return `<div class="asset">
+        <span class="who">${label}${meta}</span>
+        <span class="val${item.value ? '' : ' none'}">${item.value ? fmt(item.value) : '—'}</span>
+      </div>`;
+    }
+    return `<div class="asset pick">
+      <span class="who">${esc(item.label)}</span>
+      <span class="val none">pending</span>
+    </div>`;
+  }
+
+  function renderTrade(t) {
+    const winner = t.sides[0];
+    const matchup = t.sides.map((s, i) => `
+      ${i > 0 ? '<span class="vs">vs</span>' : ''}
+      <span class="side${t.graded && s === winner && t.verdict !== 'even' ? ' win' : ''}">
+        <a class="abbr" href="/teams/${esc(s.team)}/">${esc(s.team)}</a>
+        <span class="score">${t.graded ? fmt(s.total) : '—'}</span>
+      </span>`).join('');
+
+    const panels = t.sides.map(s => `
+      <div class="side-panel${t.graded && s === winner && t.verdict !== 'even' ? ' win' : ''}">
+        <h4><a href="/teams/${esc(s.team)}/">${esc(s.team)} received</a>
+            <span class="tot">${t.graded ? fmt(s.total) : '—'}</span></h4>
+        <div class="sublabel">Game Score produced for ${esc(s.team)}${t.season ? ` since ${esc(t.season)}` : ''}</div>
+        ${s.items.length ? s.items.map(assetRow).join('') : '<div class="asset"><span class="who">—</span></div>'}
+      </div>`).join('');
+
+    return `
+      <div class="trade" data-id="${esc(t.id)}">
+        <div class="trade-head">
+          <span class="trade-date">${esc(fmtDate(t.date))}</span>
+          <span class="matchup">${matchup}</span>
+          <span class="verdict ${t.verdict}">${esc(VERDICT_LABEL[t.verdict])}</span>
+          <span class="arrow">›</span>
+        </div>
+        <div class="trade-body">
+          <div class="sides-grid">${panels}</div>
+          ${t.description ? `<div class="desc">${esc(t.description)}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function applyFilters() {
+    let rows = TRADES.slice();
+    if (state.season) rows = rows.filter(t => t.season === state.season);
+    if (state.team) rows = rows.filter(t => t.sides.some(s => s.team === state.team));
+    if (state.verdict) rows = rows.filter(t => t.verdict === state.verdict);
+    if (state.search) {
+      const q = state.search.toLowerCase();
+      rows = rows.filter(t =>
+        t.sides.some(s =>
+          s.team.toLowerCase().includes(q) ||
+          s.items.some(i => i.slug && displayName(BIOS[i.slug], i.slug).toLowerCase().includes(q))));
+    }
+    const sorters = {
+      margin: (a, b) => b.margin - a.margin,
+      recent: (a, b) => b.date.localeCompare(a.date),
+      oldest: (a, b) => a.date.localeCompare(b.date),
+      volume: (a, b) => b.volume - a.volume,
+    };
+    rows.sort(sorters[state.sort]);
+
+    document.getElementById('count').textContent =
+      `${rows.length} trade${rows.length === 1 ? '' : 's'}`;
+    document.getElementById('list').innerHTML = rows.length
+      ? rows.map(renderTrade).join('')
+      : '<div class="empty">No trades match these filters.</div>';
+  }
+
+  // ---- boot ----------------------------------------------------------------
+  Promise.all([
+    fetch('/api/transactions?type=trade&limit=1000').then(r => r.json()),
+    fetch('/players/player_seasons.csv').then(r => r.text()),
+    fetch('/players/player_seasons_playoffs.csv').then(r => r.text()),
+    fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+  ]).then(([txnResp, regText, poText, bios]) => {
+    BIOS = bios || {};
+
+    const regRows = parseCSV(regText);
+    const poRows = parseCSV(poText);
+    const allRows = regRows.concat(poRows);
+
+    // Derive season order and each season's final game date from the data.
+    const seasons = new Set();
+    for (const r of allRows) {
+      if (r.SLUG && r.PLAYER && !NAMES.has(r.SLUG)) NAMES.set(r.SLUG, r.PLAYER);
+      const s = baseSeason(r.SEASON || '');
+      if (!s || s === 'NA') continue;
+      seasons.add(s);
+      const d = r.LAST_DATE;
+      if (d && d !== 'NA' && (!SEASON_LAST[s] || d > SEASON_LAST[s])) SEASON_LAST[s] = d;
+    }
+    SEASON_ORDER = [...seasons].sort();
+
+    const prod = buildProduction(allRows);
+    const draftIdx = buildDraftIndex(BIOS);
+    const txns = (txnResp.transactions || txnResp || []).filter(t => t.type === 'trade');
+
+    TRADES = gradeTrades(txns, prod, draftIdx);
+    assignVerdicts(TRADES);
+
+    const seasonSel = document.getElementById('f-season');
+    SEASON_ORDER.slice().reverse().forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      seasonSel.appendChild(o);
+    });
+
+    const teams = [...new Set(TRADES.flatMap(t => t.sides.map(s => s.team)))].sort();
+    const teamSel = document.getElementById('f-team');
+    teams.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t; o.textContent = t;
+      teamSel.appendChild(o);
+    });
+
+    renderTiles(TRADES);
+    applyFilters();
+  }).catch(err => {
+    document.getElementById('list').innerHTML =
+      `<div class="empty">Could not load trade data. ${esc(err.message || err)}</div>`;
+  });
+
+  // Bind controls
+  const bind = (id, key, evt) => {
+    document.getElementById(id).addEventListener(evt, e => {
+      state[key] = e.target.value;
+      applyFilters();
+    });
+  };
+  bind('f-season', 'season', 'change');
+  bind('f-team', 'team', 'change');
+  bind('f-verdict', 'verdict', 'change');
+  bind('f-sort', 'sort', 'change');
+  bind('f-search', 'search', 'input');
+
+  document.getElementById('list').addEventListener('click', e => {
+    if (e.target.closest('a')) return;   // let team/player links through
+    const head = e.target.closest('.trade-head');
+    if (head) head.parentElement.classList.toggle('open');
+  });
+  </script>
+
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

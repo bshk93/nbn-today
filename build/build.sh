@@ -43,4 +43,16 @@ python3 "$SCRIPT_DIR/sync_owners.py"
 echo "--- running R build ---"
 Rscript "$JOB_R" "$SEASON" "${PLAYOFFS_FROM:-}" ""
 
+# Verify the build's output still satisfies what the pages read. The docroot is
+# a symlink to this tree, so anything broken here is already live — surface it
+# loudly rather than letting a renamed column ship silently.
+echo "--- verifying data contract ---"
+SMOKE_STATUS=0
+python3 "$SCRIPT_DIR/smoke_test.py" --quiet || SMOKE_STATUS=$?
+
+if [[ "$SMOKE_STATUS" -ne 0 ]]; then
+  echo "!!! DATA CONTRACT BROKEN — pages are reading columns the build no longer writes"
+fi
+
 echo "=== nbn build completed at $(date) ==="
+exit "$SMOKE_STATUS"

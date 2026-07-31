@@ -69,6 +69,7 @@
     td.cap-team-opt   { background: hsl(210, 55%, 20%); color: hsl(210, 75%, 70%); }
     td.cap-non-gtd    { color: var(--text-dim); text-decoration: line-through; }
     td.cap-renounced  { background: hsl(270, 35%, 18%); color: hsl(270, 55%, 76%); font-style: italic; }
+    td.cap-unsigned   { background: hsl(200, 15%, 18%); color: hsl(200, 20%, 68%); font-style: italic; }
 
     .cap-legend {
       display: flex;
@@ -90,7 +91,7 @@
     <nav class="nav"></nav>
     <header>
       <h1>Free Agency</h1>
-      <p>Players with non-guaranteed salary, plus renounced free agents with no cap hold. Click any column to sort.</p>
+      <p>Players with non-guaranteed salary, plus renounced and never-signed free agents with no cap hold. Click any column to sort.</p>
     </header>
 
     <div class="filter-row" id="year-filter"></div>
@@ -155,17 +156,17 @@
     const CAP_HOLD_CSS = {
       UFA: 'cap-ufa', RFA: 'cap-rfa',
       PLAYER_OPT: 'cap-player-opt', TEAM_OPT: 'cap-team-opt', NON_GTD: 'cap-non-gtd',
-      RENOUNCED: 'cap-renounced',
+      RENOUNCED: 'cap-renounced', UNSIGNED: 'cap-unsigned',
     };
     const CAP_HOLD_LABELS = {
       UFA: 'UFA', RFA: 'RFA',
       PLAYER_OPT: 'Player Opt', TEAM_OPT: 'Team Opt', NON_GTD: 'Non-Gtd',
-      RENOUNCED: 'Renounced',
+      RENOUNCED: 'Renounced', UNSIGNED: 'Unsigned',
     };
     const CAP_SWATCH_COLORS = {
       UFA: 'hsl(45,60%,35%)', RFA: 'hsl(25,60%,35%)',
       PLAYER_OPT: 'hsl(120,50%,30%)', TEAM_OPT: 'hsl(210,55%,35%)', NON_GTD: 'var(--border)',
-      RENOUNCED: 'hsl(270,45%,45%)',
+      RENOUNCED: 'hsl(270,45%,45%)', UNSIGNED: 'hsl(200,15%,45%)',
     };
 
     const COLS = [
@@ -175,7 +176,6 @@
       { key: 'ovr',    label: 'OVR',    sortField: 'ovr',    cls: 'ovr-cell',     numeric: true,  defaultDir: -1 },
       { key: 'age',    label: 'Age',    sortField: 'age',    cls: 'right',        numeric: true,  defaultDir:  1 },
       { key: 'salary', label: 'Salary', sortField: 'salary', cls: 'salary-cell',  numeric: true,  defaultDir: -1 },
-      { key: 'type',   label: 'Status', sortField: 'type',   cls: 'muted',        numeric: false, defaultDir:  1 },
     ];
 
     function visibleRows() {
@@ -254,8 +254,6 @@
             td.textContent = row.salaryFmt;
             const cls = CAP_HOLD_CSS[row.capType];
             if (cls) td.classList.add(cls);
-          } else if (col.key === 'type') {
-            td.textContent = CAP_HOLD_LABELS[row.capType] || row.capType;
           } else {
             td.textContent = row[col.key] || '—';
           }
@@ -356,6 +354,7 @@
         // they have a PO, TO, UFA, or RFA cap hold (NON_GTD treated as guaranteed,
         // downstream holds after a PO/TO are contingent and not shown independently).
         const renouncedSlugs = [];
+        const unsignedSlugs = [];
 
         Object.entries(biosJson).forEach(([slug, bio]) => {
           const capMap = bio.cap_holds || {};
@@ -368,16 +367,18 @@
             .sort(([a], [b]) => a.localeCompare(b))[0];
 
           if (!firstEntry) {
-            // Renounce (§3.10) clears cap_holds entirely and sets type to "" — no
-            // cap number, no roster spot, no obligation. That leaves these players
-            // invisible to the cap-hold scan above even though they're unsigned
-            // free agents. Detect them separately: type "" (the renounce handler's
-            // exact postcondition — excludes "dead" cap charges and universe
-            // players who were simply never touched by any NBN transaction), no
-            // current team, no cap hold, but salary history proving they had a
-            // real NBN contract at some point.
-            if (bio.type === '' && !slugToTeam[slug] && !Object.keys(capMap).length && Object.keys(salaries).length) {
-              renouncedSlugs.push(slug);
+            // No actionable cap hold, so this player is either a genuine free
+            // agent (unrostered, not retired) or someone who legitimately
+            // shouldn't be signable — "dead" cap charges and draft-rights
+            // holds (type "draft-rights") both have a non-empty `type`, so
+            // the `bio.type === ''` check already excludes them without
+            // needing to check slugToTeam separately for that case.
+            // Split on whether they've ever held an NBN contract: prior
+            // salary history means they were actually renounced (§3.10);
+            // no salary history means they've simply never been signed.
+            if (bio.type === '' && !slugToTeam[slug] && !Object.keys(capMap).length && !bio.retired) {
+              if (Object.keys(salaries).length) renouncedSlugs.push(slug);
+              else unsignedSlugs.push(slug);
             }
             return;
           }
@@ -396,7 +397,6 @@
             salary: salaryNum,
             salaryFmt: formatSalary(salaryRaw),
             capType: type,
-            type: CAP_HOLD_LABELS[type] || type,
           };
 
           if (!allRows[yr]) allRows[yr] = [];
@@ -405,13 +405,17 @@
 
         const years = Object.keys(allRows).sort();
 
-        // Renounced free agents aren't tied to a future FA year — they're
-        // unsigned right now — so they're bucketed into the current/earliest
-        // FA class alongside this year's UFA/RFA holds.
-        if (renouncedSlugs.length) {
+        // Renounced/unsigned free agents aren't tied to a future FA year —
+        // they're available right now — so they're bucketed into the
+        // current/earliest FA class alongside this year's UFA/RFA holds.
+        const noCapHoldSlugs = [
+          ...renouncedSlugs.map(slug => ({ slug, capType: 'RENOUNCED' })),
+          ...unsignedSlugs.map(slug => ({ slug, capType: 'UNSIGNED' })),
+        ];
+        if (noCapHoldSlugs.length) {
           const targetYear = years[0] || 'Current';
           if (!allRows[targetYear]) allRows[targetYear] = [];
-          renouncedSlugs.forEach(slug => {
+          noCapHoldSlugs.forEach(({ slug, capType }) => {
             const bio = biosJson[slug];
             allRows[targetYear].push({
               slug,
@@ -421,9 +425,8 @@
               ovr: String(ovrJson[slug] || ''),
               age: calcAge(bio.dob),
               salary: 0,
-              salaryFmt: 'Renounced',
-              capType: 'RENOUNCED',
-              type: CAP_HOLD_LABELS.RENOUNCED,
+              salaryFmt: CAP_HOLD_LABELS[capType],
+              capType,
             });
           });
           if (!years.includes(targetYear)) years.push(targetYear);
@@ -443,7 +446,7 @@
 
         const legend = document.createElement('div');
         legend.className = 'cap-legend';
-        ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'RENOUNCED'].forEach(type => {
+        ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'RENOUNCED', 'UNSIGNED'].forEach(type => {
           const item = document.createElement('span');
           item.className = 'cap-legend-item';
           const swatch = document.createElement('span');
@@ -451,7 +454,7 @@
           swatch.style.background = CAP_SWATCH_COLORS[type];
           item.appendChild(swatch);
           item.appendChild(document.createTextNode(
-            { PLAYER_OPT: 'Player Option', TEAM_OPT: 'Team Option', UFA: 'UFA Hold', RFA: 'RFA Hold', NON_GTD: 'Non-Guaranteed', RENOUNCED: 'Renounced (no cap hold)' }[type]
+            { PLAYER_OPT: 'Player Option', TEAM_OPT: 'Team Option', UFA: 'UFA Hold', RFA: 'RFA Hold', NON_GTD: 'Non-Guaranteed', RENOUNCED: 'Renounced (no cap hold)', UNSIGNED: 'Never signed' }[type]
           ));
           legend.appendChild(item);
         });
