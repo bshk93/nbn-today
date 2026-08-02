@@ -541,6 +541,15 @@
     .legality-header { background: #1a2535; padding: 0.45rem 0.75rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
     .legality-row { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
     .legality-row:last-child { border-bottom: none; }
+    /* § 4.2a per-player absorption picker — sits after the exception select,
+       wraps onto its own line on narrow screens rather than squashing it. */
+    .legality-row:has(.exc-players) { flex-wrap: wrap; gap: 0.4rem; }
+    .exc-players { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-left: auto; }
+    .exc-players:empty { display: none; }
+    .exc-players-hint { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
+    .exc-player { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.78rem; color: var(--text-secondary); cursor: pointer; }
+    .exc-player input { cursor: pointer; margin: 0; }
+    @media (max-width: 640px) { .exc-players { margin-left: 0; width: 100%; } }
     .rubric-body { padding: 0.4rem 0.75rem 0.55rem; }
     .rubric-empty { font-size: 0.8rem; color: var(--text-muted); padding: 0.35rem 0; }
     .rubric-empty.err { color: var(--danger); }
@@ -2021,7 +2030,7 @@ function renderTradeSummary() {
 async function runTradeRubric() {
   const body = document.getElementById('trade-rubric-body');
   if (!body) return;
-  const { transfers, exceptions } = collectTrade();
+  const { transfers, exceptions, exception_players } = collectTrade();
   if (!transfers.length) {
     body.innerHTML = '<div class="rubric-empty">Add teams and assets to evaluate this trade.</div>';
     return;
@@ -2031,7 +2040,7 @@ async function runTradeRubric() {
     const res = await fetch('/api/validate/trade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transfers, exceptions }),
+      body: JSON.stringify({ transfers, exceptions, exception_players }),
     });
     if (seq !== rubricSeq) return;   // superseded by a newer edit
     if (!res.ok) {
@@ -2096,8 +2105,60 @@ function refreshExceptionsSection() {
     sel.dataset.excSelect = abbr;
     [['', 'No exception'], ['ntmle', 'Non-Taxpayer MLE'], ['tmle', 'Taxpayer MLE'], ['room_exception', 'Room Exception']]
       .forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; sel.appendChild(o); });
-    row.append(label, sel);
+    // § 4.2a is per-player: a team can fund one incoming player from its
+    // exception while the rest still match against outgoing salary. Leaving
+    // every box unchecked keeps the all-or-nothing behavior (the whole
+    // incoming total is tested against the exception).
+    const players = document.createElement('div');
+    players.className = 'exc-players';
+    players.dataset.excPlayers = abbr;
+    row.append(label, sel, players);
     body.appendChild(row);
+    sel.addEventListener('change', () => refreshExceptionPlayers(abbr));
+  });
+
+  Array.from(teams).forEach(refreshExceptionPlayers);
+}
+
+// Which incoming players a team's exception is absorbing (§ 4.2a). Only shown
+// once an exception type is picked — it's meaningless otherwise.
+function refreshExceptionPlayers(abbr) {
+  const wrap = document.querySelector(`[data-exc-players="${abbr}"]`);
+  if (!wrap) return;
+  const sel = document.querySelector(`[data-exc-select="${abbr}"]`);
+  const checked = new Set(
+    Array.from(wrap.querySelectorAll('input:checked')).map(i => i.value));
+
+  if (!sel || !sel.value) { wrap.innerHTML = ''; return; }
+
+  const incoming = [];
+  document.querySelectorAll('#trade-legs .trade-leg').forEach(leg => {
+    if (leg.querySelector('[data-role="to"]').value !== abbr) return;
+    leg.querySelectorAll('.trade-asset-row[data-asset-type="player"]').forEach(r => {
+      const slug = r.querySelector('.trade-asset-sel').value;
+      if (slug && !incoming.some(p => p.slug === slug)) {
+        incoming.push({ slug, name: r.querySelector('.trade-asset-sel').selectedOptions[0]?.textContent || slug });
+      }
+    });
+  });
+
+  if (!incoming.length) { wrap.innerHTML = ''; return; }
+
+  wrap.innerHTML = '';
+  const hint = document.createElement('span');
+  hint.className = 'exc-players-hint';
+  hint.textContent = 'absorbs:';
+  wrap.appendChild(hint);
+  incoming.forEach(({ slug, name }) => {
+    const lbl = document.createElement('label');
+    lbl.className = 'exc-player';
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.value = slug;
+    box.checked = checked.has(slug);
+    box.addEventListener('change', scheduleRubric);
+    lbl.append(box, document.createTextNode(name));
+    wrap.appendChild(lbl);
   });
 }
 
@@ -2347,9 +2408,16 @@ function collectTrade() {
   document.querySelectorAll('#trade-exceptions-body [data-exc-select]').forEach(sel => {
     if (sel.value) exceptions[sel.dataset.excSelect] = sel.value;
   });
+  // Only send exception_players for teams that actually named some — an empty
+  // list means "absorb the whole incoming total", which is the default.
+  const exception_players = {};
+  document.querySelectorAll('#trade-exceptions-body [data-exc-players]').forEach(wrap => {
+    const slugs = Array.from(wrap.querySelectorAll('input:checked')).map(i => i.value);
+    if (slugs.length) exception_players[wrap.dataset.excPlayers] = slugs;
+  });
   const is_sign_and_trade = document.getElementById('f-trade-sat').checked;
   const sign_and_trade_txn_id = document.getElementById('f-trade-sat-txn').value.trim() || null;
-  return { date, description, transfers, exceptions, is_sign_and_trade, sign_and_trade_txn_id };
+  return { date, description, transfers, exceptions, exception_players, is_sign_and_trade, sign_and_trade_txn_id };
 }
 
 // ── Filters ────────────────────────────────────────────────────────────────
@@ -2515,6 +2583,7 @@ async function submitTransaction() {
     date = trade.date;
     details = {
       transfers: trade.transfers, legality: 'tbd', exceptions: trade.exceptions,
+      exception_players: trade.exception_players,
       is_sign_and_trade: trade.is_sign_and_trade,
       ...(trade.sign_and_trade_txn_id ? { sign_and_trade_txn_id: trade.sign_and_trade_txn_id } : {}),
     };

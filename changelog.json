@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.376",
+    "date": "2026-08-01",
+    "changes": [
+      "Trade builder: an exception can now be applied to specific incoming players rather than a team's whole incoming total \u2014 check off which players the MLE or Room Exception is absorbing (rulebook \u00a7 4.2a)",
+      "This makes hybrid trades enterable: some incoming players matched against outgoing salary, another funded out of the exception",
+      "Fixed the Room Exception being refused for teams that were assigned it on July 1 and later went over the cap \u2014 \u00a7 3.2 locks the assignment for the year"
+    ]
+  },
+  {
     "version": "0.0.375",
     "date": "2026-08-01",
     "changes": [
