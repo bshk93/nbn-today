@@ -70,7 +70,16 @@
 
     /* Results */
     .results { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-    .results-header { padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+    .results-header { padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .results-header .rh-title { flex: 1; min-width: 0; }
+    .export-btn { flex-shrink: 0; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-secondary); font-family: inherit; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.3rem 0.7rem; cursor: pointer; }
+    .export-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+    .export-btn.primary { border-color: var(--accent); color: var(--link); }
+    .export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .export-status { padding: 0 1.25rem; font-size: 0.8rem; color: var(--text-muted); text-transform: none; letter-spacing: 0; font-weight: 400; }
+    .export-status:not(:empty) { padding: 0.6rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .export-status a { color: var(--link); font-weight: 600; }
+    .export-status.err { color: var(--danger); }
     .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
     .result-col { padding: 1rem 1.25rem; border-left: 1px solid var(--border); }
     .result-col:first-child { border-left: none; }
@@ -162,6 +171,8 @@
   </details>
 </div>
 
+<script src="/league-time.js"></script>
+<script src="/trade-sim/xlsx.js"></script>
 <script>
 const TEAMS = {
   ATL:"Atlanta Hawks",BKN:"Brooklyn Nets",BOS:"Boston Celtics",CHA:"Charlotte Hornets",
@@ -205,6 +216,10 @@ let signTerms = {};      // slug → { years, salaries: [y1,y2,...], birdType, m
 // page load; falls back to the date-based season if that fetch fails.
 let LEAGUE_YEAR = null;
 
+// The most recent /api/validate/trade response, kept so the spreadsheet export
+// writes exactly the figures currently on screen rather than recomputing them.
+let lastResult = null;
+
 function parseSalaryNum(v) {
   if (!v) return 0;
   const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
@@ -219,7 +234,9 @@ function fmtM(n) {
 function displayName(raw) {
   if (!raw) return '';
   const [last, first] = raw.split(', ');
-  const tc = s => s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  // Bios store names uppercase, so every word has to be re-cased — including
+  // the part after a hyphen or apostrophe ("Gilgeous-Alexander", "O'Neale").
+  const tc = s => s.toLowerCase().replace(/(^|[\s\-'’])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
   return first ? `${tc(first)} ${tc(last)}` : tc(last);
 }
 
@@ -877,7 +894,12 @@ function renderResults(abbrs, data) {
   }).join('') || '<div class="vc-row pass"><span class="vc-icon">✓</span><span>No constraints triggered.</span></div>';
 
   el.innerHTML = `
-    <div class="results-header">Trade Analysis · season ${fact_sheet.season || curYr()} · ${abbrs.length} teams</div>
+    <div class="results-header">
+      <span class="rh-title">Trade Analysis · season ${fact_sheet.season || curYr()} · ${abbrs.length} teams</span>
+      <button type="button" class="export-btn primary" id="sheet-btn" title="Create a public Google Sheet of this trade">▤ Create Google Sheet</button>
+      <button type="button" class="export-btn" id="export-btn" title="Download the same trade sheet as an .xlsx file">↓ .xlsx</button>
+    </div>
+    <div class="export-status" id="export-status"></div>
     <div class="results-grid">${cols}</div>
     <div class="vc-list">${checkRows}</div>
     <div class="results-summary">
@@ -885,6 +907,12 @@ function renderResults(abbrs, data) {
         ? '<strong style="color:var(--success)">✓ Trade is legal</strong> — every check the league office runs at submission passes.'
         : '<strong style="color:var(--danger)">✗ Trade is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.'}
     </div>`;
+
+  // Keep the last evaluated response around so the export writes exactly the
+  // numbers on screen — never a re-derived or re-fetched second opinion.
+  lastResult = { abbrs, data };
+  document.getElementById('export-btn').addEventListener('click', downloadTradeSheet);
+  document.getElementById('sheet-btn').addEventListener('click', publishTradeSheet);
 }
 
 function factCol(abbr, fs, cl) {
@@ -937,6 +965,395 @@ function factCol(abbr, fs, cl) {
     ${leagueRow}
     <div class="result-row"><span class="label">Roster after</span><span>${t.standard_count_after}${t.empty_roster_deficiency ? ` (+${t.empty_roster_deficiency} ERC)` : ''} / 15</span></div>
   </div>`;
+}
+
+// ── Spreadsheet export ────────────────────────────────────────────────────────
+//
+// Writes the evaluated trade into an .xlsx laid out like the league's "NBN
+// Trade Machine" Google Sheet — one five-column block per team (assets out,
+// where each goes, and that team's cap summary), so an exported deal drops
+// straight into the format the committee already reads.
+//
+// Everything numeric comes from the /api/validate/trade response held in
+// `lastResult`: the export is a rendering of the validator's own fact sheet,
+// not a second implementation of the cap rules. The one thing computed here is
+// subtraction (threshold − projected salary) for the space rows.
+
+const BLOCK_W = 5;                          // columns per team block
+const BLOCK_COL_W = [17, 11, 8, 12, 12];    // name, name, "to", salary, salary
+const HC_LABEL = { first_apron: 'First Apron', second_apron: 'Second Apron' };
+
+const EXC_META = {
+  ntmle:          ['Non-Taxpayer MLE',    'ntmle_amount'],
+  tmle:           ['Taxpayer MLE',        'tmle_amount'],
+  room_exception: ['Room Exception',      'room_amount'],
+  bae:            ['Bi-Annual Exception', 'bae_amount'],
+};
+
+// Gathers, per team in the trade, the assets it is sending and where — the
+// left-hand side of a block. The cap summary on the right comes straight from
+// fact_sheet and is read at render time.
+function collectExportBlocks() {
+  return teamSlots.filter(id => slotTeam[id]).map(slotId => {
+    const abbr = slotTeam[slotId];
+    const sel = selections[slotId];
+
+    const players = (rosterData[abbr] || [])
+      .filter(p => sel.players.has(p.slug))
+      .map(p => ({
+        // A sign-and-trade player is on the books at $0 (they're a cap hold) —
+        // the salary that matters for the sheet is the new deal's Year 1.
+        name: displayName(p.name) + (p.capHold ? ' (S&T)' : ''),
+        to: sel.players.get(p.slug) || '?',
+        salary: p.capHold ? ((signTerms[p.slug] || {}).salaries || [])[0] || 0 : p.salary,
+      }));
+
+    const picks = (picksData[abbr] || [])
+      .filter(p => sel.picks.has(pickKey(p)))
+      .map(p => {
+        const mine = (p.leaves || []).filter(l => l.team === abbr);
+        return {
+          label: `${p.year} ${p.round === 1 ? '1st' : '2nd'}` + (p.orig !== abbr ? ` (${p.orig})` : ''),
+          to: sel.picks.get(pickKey(p)) || '?',
+          // `leaves` is the authoritative structure for a contingent pick; the
+          // flat `protected` field only covers a plain top-N band.
+          protections: mine.map(l => l.description).join(' / ')
+                       || (p.protected ? `Top ${p.protected} protected` : ''),
+        };
+      });
+
+    const excVal = document.getElementById(`exc-${slotId}`)?.value || '';
+    const exceptions = [];
+    if (excVal.startsWith('tpe:')) {
+      const tpe = (tpeData[abbr] || []).find(e => String(e.id) === excVal.slice(4));
+      if (tpe) exceptions.push({ label: `Trade Exception (exp. ${tpe.expires_date})`, amount: tpe.remaining });
+    } else if (EXC_META[excVal]) {
+      exceptions.push({ label: EXC_META[excVal][0], key: EXC_META[excVal][1] });
+    }
+
+    return { abbr, players, picks, exceptions };
+  });
+}
+
+// VALID / WARNING / INVALID for a subset of a team's checks, using the same
+// rule the page footer does: only error-level failures are disqualifying.
+function checkVerdict(checks) {
+  const S = XLSXMini.S;
+  if (checks.some(c => !c.passed && (c.level || 'error') === 'error')) return ['INVALID', S.INVALID];
+  if (checks.some(c => !c.passed || c.level === 'warning')) return ['WARNING', S.WARN];
+  return ['VALID', S.VALID];
+}
+
+function buildTradeWorkbook() {
+  if (!lastResult) return null;
+  const { data } = lastResult;
+  const S = XLSXMini.S, ref = XLSXMini.cellRef;
+  const fs = data.fact_sheet || {}, cl = fs.cap_levels || {};
+  const season = fs.season || curYr();
+  const allChecks = data.checks || [];
+
+  const blocks = collectExportBlocks();
+  const nB = blocks.length;
+  const lastCol = nB * BLOCK_W - 1;
+
+  const rows = [], merges = [], rowHeights = {};
+  const cols = [];
+  for (let b = 0; b < nB; b++) cols.push(...BLOCK_COL_W);
+
+  const put = (r, c, v, s) => {
+    while (rows.length <= r) rows.push([]);
+    rows[r][c] = { v: v === undefined || v === null ? '' : v, s };
+  };
+  // Writes `v` into c0 and extends its style (and the merge) through c1, so a
+  // banner's fill covers the full span rather than just its first cell.
+  const band = (r, c0, c1, v, s) => {
+    for (let c = c0; c <= c1; c++) put(r, c, c === c0 ? v : '', s);
+    if (c1 > c0) merges.push(`${ref(r, c0)}:${ref(r, c1)}`);
+  };
+  const bandRect = (r0, r1, c0, c1, v, s) => {
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) put(r, c, (r === r0 && c === c0) ? v : '', s);
+    merges.push(`${ref(r0, c0)}:${ref(r1, c1)}`);
+  };
+
+  // ── Title band ──────────────────────────────────────────────────────────────
+  const [verdictText, verdictStyle] = data.legal ? ['VALID', S.VALID] : ['INVALID', S.INVALID];
+  bandRect(0, 2, 0, 1, verdictText, verdictStyle);
+  bandRect(0, 2, 2, lastCol, 'NBN TRADE MACHINE', S.TITLE);
+  [0, 1, 2].forEach(r => { rowHeights[r] = 22; });
+
+  band(3, 0, lastCol,
+       `${season} season · ${blocks.map(b => b.abbr).join(' / ')} · generated ${nbnFormatDateTime(new Date())}`,
+       S.TEXT_CENTER);
+
+  // ── Section sizing ──────────────────────────────────────────────────────────
+  // Every block shares one row grid so the columns line up across teams; each
+  // section is sized to the busiest team, with a minimum so a lightly-used
+  // section still reads as a form rather than collapsing to nothing.
+  const nPlayers = Math.max(3, ...blocks.map(b => b.players.length));
+  const nPicks   = Math.max(2, ...blocks.map(b => b.picks.length));
+  const nExc     = Math.max(1, ...blocks.map(b => b.exceptions.length));
+
+  const R_TEAM    = 5;
+  const R_PLAYERS = R_TEAM + 1;                       // header row
+  const R_PICKS   = R_PLAYERS + 1 + nPlayers + 1;
+  const R_EXC     = R_PICKS + 1 + nPicks + 1;
+  const R_SUM     = R_EXC + 1 + nExc + 1;
+
+  // Apron room excludes pure free-agent cap holds (§ 1.3/1.4); cap space counts
+  // them — the same split the validator applies.
+  const exHolds = t => t.projected_salary_ex_holds ?? t.projected_salary;
+
+  const SUMMARY = [
+    ['Total Outgoing',  t => [t.outgoing_salary, S.MONEY]],
+    ['Unaggregated',    t => [t.unaggregated_outgoing, S.MONEY]],
+    ['Total Incoming',  t => [t.incoming_salary, S.MONEY]],
+    ['Change',          t => [t.incoming_salary - t.outgoing_salary, S.MONEY]],
+    ['Max Incoming',    t => t.max_incoming == null ? ['n/a', S.TEXT_CENTER] : [t.max_incoming, S.MONEY]],
+    ['Need Aggregate',  t => [t.needs_aggregation ? 'Yes' : 'No', t.needs_aggregation ? S.WARN : S.TEXT_CENTER]],
+    null,
+    ['Current Salary',  t => [t.current_salary, S.MONEY]],
+    ['New Salary',      t => [t.projected_salary, S.MONEY_BOLD]],
+    ['Roster After',    t => [`${t.standard_count_after} / 15`, S.TEXT_CENTER]],
+    // The apron this team is *locked to* (§ 1.4), vs. where it actually lands
+    // after the trade — two different things that both matter.
+    ['Hard Capped At',  t => [HC_LABEL[t.hard_cap_level] || 'None', S.TEXT_CENTER]],
+    ['Apron (Post)',    t => [HC_LABEL[t.apron_after] || 'None', S.TEXT_CENTER]],
+    ['Cap Space',       t => cl.cap    == null ? ['n/a', S.TEXT_CENTER] : [cl.cap - t.projected_salary, S.MONEY]],
+    ['Apron 1 Space',   t => cl.apron1 == null ? ['n/a', S.TEXT_CENTER] : [cl.apron1 - exHolds(t), S.MONEY]],
+    ['Apron 2 Space',   t => cl.apron2 == null ? ['n/a', S.TEXT_CENTER] : [cl.apron2 - exHolds(t), S.MONEY]],
+    null,
+  ];
+
+  // ── Per-team blocks ─────────────────────────────────────────────────────────
+  blocks.forEach((blk, bi) => {
+    const c0 = bi * BLOCK_W, cEnd = c0 + BLOCK_W - 1;
+    const t = (fs.teams || {})[blk.abbr];
+    const hasFacts = !!t;
+
+    band(R_TEAM, c0, cEnd, `${blk.abbr} — ${TEAMS[blk.abbr] || blk.abbr}`, S.TEAM);
+    rowHeights[R_TEAM] = 20;
+
+    // Players
+    band(R_PLAYERS, c0, c0 + 1, 'Players Out', S.SECTION);
+    put(R_PLAYERS, c0 + 2, 'To', S.COL_HEAD);
+    band(R_PLAYERS, c0 + 3, cEnd, 'Salary', S.COL_HEAD);
+    for (let i = 0; i < nPlayers; i++) {
+      const r = R_PLAYERS + 1 + i, p = blk.players[i];
+      band(r, c0, c0 + 1, p ? p.name : '—', p ? S.TEXT : S.PLACEHOLDER);
+      put(r, c0 + 2, p ? p.to : '', p ? S.TEXT_CENTER : S.PLACEHOLDER);
+      band(r, c0 + 3, cEnd, p ? p.salary : '', p ? S.MONEY : S.PLACEHOLDER);
+    }
+
+    // Draft picks
+    band(R_PICKS, c0, c0 + 1, 'Draft Picks', S.SECTION);
+    put(R_PICKS, c0 + 2, 'To', S.COL_HEAD);
+    band(R_PICKS, c0 + 3, cEnd, 'Protections (if any)', S.COL_HEAD);
+    for (let i = 0; i < nPicks; i++) {
+      const r = R_PICKS + 1 + i, p = blk.picks[i];
+      band(r, c0, c0 + 1, p ? p.label : '—', p ? S.TEXT : S.PLACEHOLDER);
+      put(r, c0 + 2, p ? p.to : '', p ? S.TEXT_CENTER : S.PLACEHOLDER);
+      band(r, c0 + 3, cEnd, p ? (p.protections || 'None') : '', p ? S.TEXT : S.PLACEHOLDER);
+    }
+
+    // Exceptions used
+    band(R_EXC, c0, c0 + 1, 'Trade Exceptions', S.SECTION);
+    put(R_EXC, c0 + 2, '', S.COL_HEAD);
+    band(R_EXC, c0 + 3, cEnd, 'Amount', S.COL_HEAD);
+    for (let i = 0; i < nExc; i++) {
+      const r = R_EXC + 1 + i, e = blk.exceptions[i];
+      band(r, c0, c0 + 1, e ? e.label : '—', e ? S.TEXT : S.PLACEHOLDER);
+      put(r, c0 + 2, '', e ? S.TEXT_CENTER : S.PLACEHOLDER);
+      const amt = e ? (e.amount ?? cl[e.key]) : null;
+      band(r, c0 + 3, cEnd, e ? (amt ?? 'n/a') : '', e ? (amt == null ? S.TEXT_CENTER : S.MONEY) : S.PLACEHOLDER);
+    }
+
+    // Cap summary. fact_sheet only carries teams with salary actually moving —
+    // a team in the deal for picks alone has no entry, and gets dashes rather
+    // than a column of zeroes that would read as real cap figures.
+    SUMMARY.forEach((entry, i) => {
+      const r = R_SUM + i;
+      if (!entry) { band(r, c0, cEnd, '', S.DEFAULT); return; }
+      const [label, valueOf] = entry;
+      band(r, c0, c0 + 2, label, S.LABEL);
+      const [v, st] = hasFacts ? valueOf(t) : ['—', S.PLACEHOLDER];
+      band(r, c0 + 3, cEnd, v === undefined || v === null || Number.isNaN(v) ? '—' : v, st);
+    });
+
+    // Verdict rows — the same checks the page lists, bucketed per team.
+    const suffix = '_' + blk.abbr.toLowerCase();
+    const mine = allChecks.filter(c => (c.check || '').endsWith(suffix));
+    const bucket = pre => mine.filter(c => pre.some(p => (c.check || '').startsWith(p)));
+    const verdicts = [
+      ['Salary Match', checkVerdict(bucket(['salary_matching_', 'apron2_aggregation_', 'apron1_contagion_']))],
+      ['Hard Cap',     checkVerdict(bucket(['hard_cap_']))],
+      ['Roster',       checkVerdict(bucket(['empty_roster_charge_', 'roster_']))],
+      [`${blk.abbr} Result`, checkVerdict(mine)],
+    ];
+    verdicts.forEach(([label, [text, style]], i) => {
+      const r = R_SUM + SUMMARY.length + i;
+      band(r, c0, c0 + 2, label, S.LABEL);
+      band(r, c0 + 3, cEnd, text, style);
+    });
+  });
+
+  const tradeSheet = { name: 'Trade', cols, rows, merges, rowHeights, freeze: 4 };
+
+  // ── Validation sheet ────────────────────────────────────────────────────────
+  const vRows = [
+    [{ v: 'Validation checks', s: S.NOTE_HEAD }],
+    [{ v: `${season} · ${data.legal ? 'LEGAL' : 'NOT LEGAL'} · generated ${nbnFormatDateTime(new Date())}`, s: S.TEXT }],
+    [],
+    [{ v: 'Result', s: S.COL_HEAD }, { v: 'Check', s: S.COL_HEAD }, { v: 'Detail', s: S.COL_HEAD }],
+  ];
+  (allChecks.length ? allChecks : [{ check: '—', passed: true, message: 'No constraints triggered.' }])
+    .forEach(c => {
+      const kind = c.level === 'warning' ? ['WARNING', S.WARN]
+                 : c.passed ? ['PASS', S.VALID] : ['FAIL', S.INVALID];
+      vRows.push([{ v: kind[0], s: kind[1] }, { v: c.check || '', s: S.TEXT }, { v: c.message || '', s: S.NOTE }]);
+    });
+  const validationSheet = { name: 'Validation', cols: [12, 34, 110], rows: vRows, merges: [], freeze: 4 };
+
+  // ── Rules sheet ─────────────────────────────────────────────────────────────
+  // Regenerated from the live cap levels and the rulebook's § 4.2 tiers on every
+  // export, so a saved copy can't drift out of date the way a hand-maintained
+  // notes tab does.
+  const money = n => (n == null ? 'not set' : '$' + n.toLocaleString());
+  const rRows = [
+    [{ v: `NBN salary-matching rules — ${season}`, s: S.NOTE_HEAD }],
+    [{ v: 'Generated from the league rulebook (nbn.today/rulebook) and the live cap levels. Article/section numbers refer to the rulebook.', s: S.NOTE }],
+    [],
+    [{ v: 'Cap levels', s: S.COL_HEAD }, { v: 'Amount', s: S.COL_HEAD }],
+    [{ v: 'Salary Cap', s: S.TEXT }, { v: money(cl.cap), s: S.TEXT }],
+    [{ v: 'First Apron (§ 1.5)', s: S.TEXT }, { v: money(cl.apron1), s: S.TEXT }],
+    [{ v: 'Second Apron (§ 1.5)', s: S.TEXT }, { v: money(cl.apron2), s: S.TEXT }],
+    [{ v: 'League Hard Cap (§ 1.3)', s: S.TEXT }, { v: money(cl.hard_cap), s: S.TEXT }],
+    [{ v: 'Non-Taxpayer MLE', s: S.TEXT }, { v: money(cl.ntmle_amount), s: S.TEXT }],
+    [{ v: 'Taxpayer MLE', s: S.TEXT }, { v: money(cl.tmle_amount), s: S.TEXT }],
+    [{ v: 'Room Exception', s: S.TEXT }, { v: money(cl.room_amount), s: S.TEXT }],
+    [{ v: 'Bi-Annual Exception', s: S.TEXT }, { v: money(cl.bae_amount), s: S.TEXT }],
+    [],
+    [{ v: 'Below the First Apron — tiered matching (§ 4.2)', s: S.COL_HEAD }, { v: 'Max incoming', s: S.COL_HEAD }],
+    [{ v: 'Outgoing $0 – $8,527,000', s: S.TEXT }, { v: '200% of outgoing + $250,000', s: S.TEXT }],
+    [{ v: 'Outgoing $8,527,001 – $29,000,000', s: S.TEXT }, { v: 'Outgoing + $8,527,000', s: S.TEXT }],
+    [{ v: 'Outgoing above $29,000,000', s: S.TEXT }, { v: '125% of outgoing + $250,000', s: S.TEXT }],
+    [],
+    [{ v: 'At or above the First Apron (§ 4.3)', s: S.TEXT }, { v: 'Outgoing + $250,000; no tiered matching', s: S.TEXT }],
+    [{ v: 'At or above the Second Apron (§ 4.4)', s: S.TEXT }, { v: 'Outgoing + $250,000, and salaries may not be aggregated', s: S.TEXT }],
+    [],
+    [{ v: 'Contagion (§ 4.3 / § 4.4)', s: S.COL_HEAD }, { v: '', s: S.COL_HEAD }],
+    [{ v: 'Below the First Apron, incoming > outgoing + $250,000', s: S.TEXT }, { v: 'Legal, but hard-caps the team at the First Apron for the rest of the season', s: S.NOTE }],
+    [{ v: 'Below the Second Apron, aggregating two or more outgoing salaries', s: S.TEXT }, { v: 'Legal, but hard-caps the team at the Second Apron for the rest of the season', s: S.NOTE }],
+    [],
+    [{ v: 'Reading this sheet', s: S.COL_HEAD }, { v: '', s: S.COL_HEAD }],
+    [{ v: 'Unaggregated', s: S.TEXT }, { v: 'The largest single outgoing salary — what the team could send without combining salaries.', s: S.NOTE }],
+    [{ v: 'Need Aggregate', s: S.TEXT }, { v: 'Yes when no single outgoing salary covers the incoming total on its own (§ 4.4).', s: S.NOTE }],
+    [{ v: 'Cap Space', s: S.TEXT }, { v: 'Salary Cap minus projected salary, counting free-agent cap holds.', s: S.NOTE }],
+    [{ v: 'Apron 1 / Apron 2 Space', s: S.TEXT }, { v: 'Apron minus projected salary excluding free-agent cap holds (§ 1.3/1.4), including any Empty Roster Charge (§ 2.1a).', s: S.NOTE }],
+  ];
+  const rulesSheet = { name: 'Rules', cols: [42, 72], rows: rRows, merges: [] };
+
+  return {
+    name: `NBN Trade — ${blocks.map(b => b.abbr).join(' / ')} — ${nbnToday()}`,
+    filename: `NBN-Trade-${blocks.map(b => b.abbr).join('-')}-${nbnToday()}.xlsx`,
+    sheets: [tradeSheet, validationSheet, rulesSheet],
+  };
+}
+
+// ── Delivery ─────────────────────────────────────────────────────────────────
+// Two ways out of the same workbook: a plain file download, or a native Google
+// Sheet. The Sheet path uploads the identical .xlsx to nbn-api, which creates it
+// in the league's Drive account and shares it publicly — done server-side
+// precisely so nobody clicking Export sees a Google consent screen.
+
+function setExportStatus(html, isErr) {
+  const el = document.getElementById('export-status');
+  if (!el) return;
+  el.className = 'export-status' + (isErr ? ' err' : '');
+  el.innerHTML = html;
+}
+
+async function downloadTradeSheet() {
+  const wb = buildTradeWorkbook();
+  if (wb) await XLSXMini.download(wb.filename, wb.sheets);
+}
+
+// Minimal token prompt — same localStorage key (`nbn_token`) the rest of the
+// site uses, so a GM who has already entered their token anywhere is never
+// asked again here.
+function promptForToken() {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000';
+    overlay.innerHTML = `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;width:360px;max-width:90vw">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.4rem;color:var(--text-primary)">Enter your token</h3>
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Creating a Google Sheet needs a league member token. It will be saved in this browser.</p>
+      <input type="password" placeholder="Paste token…" autocomplete="off" style="width:100%;background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.875rem;font-family:monospace;padding:0.5rem 0.75rem;margin-bottom:1rem;box-sizing:border-box;outline:none">
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+        <button data-act="cancel" style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit">Cancel</button>
+        <button data-act="ok" style="padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit">Continue</button>
+      </div></div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('input');
+    input.focus();
+    const done = val => { overlay.remove(); resolve(val || null); };
+    overlay.querySelector('[data-act=cancel]').addEventListener('click', () => done(null));
+    overlay.querySelector('[data-act=ok]').addEventListener('click', () => {
+      const v = input.value.trim();
+      if (!v) return;
+      localStorage.setItem('nbn_token', v);
+      done(v);
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') overlay.querySelector('[data-act=ok]').click();
+      if (e.key === 'Escape') done(null);
+    });
+  });
+}
+
+async function publishTradeSheet() {
+  const wb = buildTradeWorkbook();
+  if (!wb) return;
+
+  let token = localStorage.getItem('nbn_token');
+  if (!token) {
+    token = await promptForToken();
+    if (!token) return;
+  }
+
+  const btn = document.getElementById('sheet-btn');
+  btn.disabled = true;
+  setExportStatus('Creating Google Sheet…');
+
+  try {
+    const form = new FormData();
+    form.append('file', await XLSXMini.build(wb.sheets), wb.filename);
+    form.append('name', wb.name);
+
+    const res = await fetch('/api/trade-sheet', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    if (res.status === 403 || res.status === 401) {
+      // Same convention as team-page edit mode: a rejected token is cleared so
+      // the next attempt re-prompts instead of silently failing again.
+      localStorage.removeItem('nbn_token');
+      setExportStatus('That token was rejected — click again to re-enter it.', true);
+      return;
+    }
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setExportStatus(`Could not create the Sheet — ${d.detail || 'HTTP ' + res.status}. Use the .xlsx download instead.`, true);
+      return;
+    }
+    const { url } = await res.json();
+    setExportStatus(`Google Sheet created — <a href="${url}" target="_blank" rel="noopener">open it</a> · <span style="color:var(--text-dim)">anyone with the link can view</span>`);
+    window.open(url, '_blank', 'noopener');
+  } catch (e) {
+    setExportStatus('Network error creating the Sheet. Use the .xlsx download instead.', true);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── CSV utility (reuse global from nav.js if loaded, else inline) ─────────────

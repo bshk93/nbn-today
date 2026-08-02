@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.0.377",
+    "date": "2026-08-02",
+    "changes": [
+      "Trade Simulator: new \"Create Google Sheet\" button turns the evaluated trade into a public Google Sheet and hands you the link \u2014 no Google sign-in or permission prompt. Laid out like the league's NBN Trade Machine sheet: one block per team with assets out, destinations, and that team's cap summary",
+      "There's also a \".xlsx\" button next to it if you'd rather have the file",
+      "The export carries a Validation tab (every check the office runs, with its verdict) and a Rules tab regenerated from the live cap levels and the rulebook's \u00a7 4.2 tiers, so a saved copy can't go stale the way the old hand-maintained sheet did",
+      "Trade Simulator now shows Max Incoming, Unaggregated outgoing, and whether a deal needs salary aggregation \u2014 computed by the same validator that judges the trade",
+      "Fixed hyphenated and apostrophe names rendering as \"Gilgeous-alexander\" in the trade simulator"
+    ]
+  },
+  {
     "version": "0.0.376",
     "date": "2026-08-01",
     "changes": [

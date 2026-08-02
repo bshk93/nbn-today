@@ -210,6 +210,7 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Change H2H display | `h2h/index.html` |
 | Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js:109` |
 | Change the Franchise Records cards | `records-wrap` block in `teams/team.js`; data comes from `build/job.R` ("Writing franchise records CSV") |
+| Change the trade simulator's spreadsheet export | `buildTradeWorkbook` — `trade-sim/index.html`; the .xlsx writer is `trade-sim/xlsx.js`, and publishing to Google Sheets is `POST /api/trade-sheet` (`nbn-api/routers/google_sheets.py`) |
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
 
 ---
