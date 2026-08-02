@@ -169,6 +169,85 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
 
+    /* ── Career Earnings ── */
+    .earn-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .earn-stat {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 0.9rem;
+    }
+    .earn-stat .es-label {
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .earn-stat .es-value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-top: 0.2rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .earn-stat .es-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .earn-stat .es-sub a { color: var(--link); }
+
+    .earn-table td { color: var(--text-secondary); }
+    .earn-table td.num { font-variant-numeric: tabular-nums; }
+    .earn-table thead th.rank-col, .earn-table td.rank-col {
+      text-align: right;
+      color: var(--text-dim);
+      width: 2.5rem;
+      cursor: default;
+    }
+    .earn-table thead th.name-col, .earn-table td.name-col { text-align: left; }
+    .earn-table td.name-col a { color: var(--text-primary); font-weight: 600; }
+    .earn-table td.name-col a:hover { color: var(--link); }
+    .earn-table td.total-col { color: var(--text-primary); font-weight: 700; }
+    .earn-table td.fut-col { color: var(--text-muted); }
+    .earn-table .team-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    .earn-table .team-tag a { color: inherit; }
+    .earn-table .team-tag a:hover { color: var(--link); }
+    .earn-table .team-tag.off { color: var(--text-dim); font-weight: 500; letter-spacing: 0; }
+
+    .earn-spark { display: inline-flex; align-items: flex-end; gap: 2px; height: 20px; }
+    .earn-spark i {
+      width: 5px;
+      min-height: 1px;
+      display: block;
+      border-radius: 1px;
+      background: var(--accent);
+    }
+    .earn-spark i.fut { background: var(--text-dim); }
+    .earn-spark i.none { background: var(--border-subtle); height: 1px; }
+
+    .earn-legend {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      margin-left: auto;
+      align-self: center;
+    }
+    .earn-legend .swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+    .earn-legend .swatch.past { background: var(--accent); }
+    .earn-legend .swatch.fut { background: var(--text-dim); }
+
+    @media (max-width: 900px) { .earn-summary { grid-template-columns: repeat(2, 1fr); } }
+
     /* ── Plot Anything ── */
     .plot-controls {
       display: flex;
@@ -263,6 +342,7 @@
       <button class="tab-btn active" data-tab="roster">Roster OVRs</button>
       <button class="tab-btn" data-tab="league">League OVRs</button>
       <button class="tab-btn" data-tab="attributes">Team Attributes</button>
+      <button class="tab-btn" data-tab="earnings">Career Earnings</button>
       <button class="tab-btn" data-tab="plot">Plot Anything</button>
     </div>
 
@@ -280,6 +360,10 @@
 
     <div id="tab-attributes" class="tab-panel">
       <div id="attributes-table"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div id="tab-earnings" class="tab-panel">
+      <div id="earnings-root"><div class="loading">Loading...</div></div>
     </div>
 
     <div id="tab-plot" class="tab-panel">
@@ -375,10 +459,13 @@
         return (t === 'player' || t === 'two-way') && !!bio.salaries?.[currentSeason];
       };
 
-      const teamData = {}, teamAttrData = {};
+      const teamData = {}, teamAttrData = {}, slugTeam = {};
       abbrs.forEach((abbr, i) => {
         const res = rosterResults[i];
         const rows = res.status === 'fulfilled' ? parseCSV(res.value).filter(r => r.SLUG) : [];
+        // Every roster row, including dead-cap entries and unsigned holds — the
+        // earnings tab wants "whose books is this money on", not "who plays".
+        rows.forEach(r => { slugTeam[r.SLUG] = abbr; });
         const activeRows = rows.filter(r => isActiveRosterPlayer(r.SLUG));
         teamData[abbr] = activeRows
           .map(r => ({ name: nameMap[r.SLUG] || r.SLUG, ovr: ovrMap[r.SLUG] || 0, slug: r.SLUG }))
@@ -397,7 +484,7 @@
           .slice(0, 8);
       });
 
-      _cache = { teamData, teamAttrData, currentSeason };
+      _cache = { teamData, teamAttrData, currentSeason, bios: playersData, slugTeam };
       return _cache;
     }
 
@@ -652,6 +739,241 @@
           });
         });
       }
+
+      build();
+    }
+
+    // ── viz: career earnings ──────────────────────────────────────────────────
+
+    function parseMoney(v) {
+      if (v == null) return 0;
+      const digits = String(v).replace(/[^0-9]/g, '');
+      return digits ? parseInt(digits, 10) : 0;
+    }
+
+    function money(n) {
+      if (n == null) return '—';
+      if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+      if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K';
+      return '$' + n;
+    }
+
+    const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    function renderEarningsTab({ bios, slugTeam, currentSeason }) {
+      const seasonSet = new Set();
+      const rows = [];
+
+      for (const [slug, bio] of Object.entries(bios)) {
+        const bySeason = {};
+        let total = 0, past = 0, future = 0, years = 0, peak = 0, peakSeason = null;
+        for (const [season, raw] of Object.entries(bio.salaries || {})) {
+          const v = parseMoney(raw);
+          if (!v) continue;
+          bySeason[season] = v;
+          seasonSet.add(season);
+          total += v;
+          years++;
+          // Season strings sort lexicographically inside a century ("25-26" <
+          // "26-27"), so a plain string compare splits banked from still-owed.
+          if (season <= currentSeason) past += v; else future += v;
+          if (v > peak) { peak = v; peakSeason = season; }
+        }
+        if (!total) continue;
+        rows.push({
+          slug,
+          name: formatName(bio.name || slug),
+          team: slugTeam[slug] || null,
+          type: bio.type || '',
+          bySeason, total, past, future, years, peak, peakSeason,
+          aav: total / years,
+        });
+      }
+
+      const root = document.getElementById('earnings-root');
+      if (!rows.length) {
+        root.innerHTML = `<div class="no-data">No contract data available.</div>`;
+        return;
+      }
+
+      const seasons = [...seasonSet].sort();
+      const maxSeasonSal = Math.max(1, ...rows.map(r => r.peak));
+      const leagueTotal  = rows.reduce((s, r) => s + r.total, 0);
+      const leaguePast   = rows.reduce((s, r) => s + r.past, 0);
+      const leagueFuture = rows.reduce((s, r) => s + r.future, 0);
+      const top = [...rows].sort((a, b) => b.total - a.total)[0];
+
+      const COLS = [
+        { key: 'name',   label: 'Player',              cls: 'name-col', dir: 1  },
+        { key: 'team',   label: 'Team',                cls: 'name-col', dir: 1  },
+        { key: 'total',  label: 'Total',               cls: 'num total-col', dir: -1 },
+        { key: 'past',   label: `Thru ${currentSeason}`, cls: 'num',    dir: -1 },
+        { key: 'future', label: 'Still Owed',          cls: 'num fut-col', dir: -1 },
+        { key: 'years',  label: 'Yrs',                 cls: 'num',      dir: -1 },
+        { key: 'aav',    label: 'AAV',                 cls: 'num',      dir: -1 },
+        { key: 'peak',   label: 'Peak Yr',             cls: 'num',      dir: -1 },
+      ];
+
+      const FMT = {
+        total: r => money(r.total),
+        past:  r => money(r.past),
+        future: r => r.future ? money(r.future) : '—',
+        years: r => r.years,
+        aav:   r => money(r.aav),
+        peak:  r => `${money(r.peak)} <span class="cell-rank">${r.peakSeason}</span>`,
+        team:  r => r.team
+          ? `<span class="team-tag"><a href="/teams/${r.team}/">${r.team}</a></span>`
+          : `<span class="team-tag off">${r.type === 'dead' ? 'dead cap' : 'off roster'}</span>`,
+        name:  r => `<a href="/players/?p=${encodeURIComponent(r.slug)}">${esc(r.name)}</a>`,
+      };
+
+      function spark(r) {
+        const bars = seasons.map(s => {
+          const v = r.bySeason[s] || 0;
+          if (!v) return `<i class="none" title="${s}: —"></i>`;
+          const h = Math.max(2, Math.round((v / maxSeasonSal) * 20));
+          const cls = s <= currentSeason ? '' : ' fut';
+          return `<i class="${cls.trim()}" style="height:${h}px" title="${s}: ${money(v)}"></i>`;
+        }).join('');
+        return `<span class="earn-spark">${bars}</span>`;
+      }
+
+      const teamsWithMoney = [...new Set(rows.map(r => r.team).filter(Boolean))].sort();
+
+      root.innerHTML = `
+        <div class="earn-summary">
+          <div class="earn-stat">
+            <div class="es-label">Top career earner</div>
+            <div class="es-value">${money(top.total)}</div>
+            <div class="es-sub"><a href="/players/?p=${encodeURIComponent(top.slug)}">${esc(top.name)}</a></div>
+          </div>
+          <div class="earn-stat">
+            <div class="es-label">League money on record</div>
+            <div class="es-value">${money(leagueTotal)}</div>
+            <div class="es-sub">${rows.length} players with a contract</div>
+          </div>
+          <div class="earn-stat">
+            <div class="es-label">Banked thru ${currentSeason}</div>
+            <div class="es-value">${money(leaguePast)}</div>
+            <div class="es-sub">${((leaguePast / leagueTotal) * 100).toFixed(0)}% of all salary on record</div>
+          </div>
+          <div class="earn-stat">
+            <div class="es-label">Still owed</div>
+            <div class="es-value">${money(leagueFuture)}</div>
+            <div class="es-sub">${currentSeason < seasons[seasons.length - 1] ? `through ${seasons[seasons.length - 1]}` : 'no future money'}</div>
+          </div>
+        </div>
+
+        <div class="plot-controls">
+          <div class="plot-field">
+            <label for="ef-search">Player</label>
+            <input id="ef-search" type="search" placeholder="Search name…">
+          </div>
+          <div class="plot-field">
+            <label for="ef-team">Team</label>
+            <select id="ef-team">
+              <option value="">All</option>
+              ${teamsWithMoney.map(t => `<option value="${t}">${t}</option>`).join('')}
+            </select>
+          </div>
+          <div class="plot-field">
+            <label for="ef-status">Roster status</label>
+            <select id="ef-status">
+              <option value="">Everyone</option>
+              <option value="on">On a roster</option>
+              <option value="off">Off roster</option>
+              <option value="dead">Dead cap</option>
+            </select>
+          </div>
+          <div class="plot-field">
+            <label for="ef-limit">Show</label>
+            <select id="ef-limit">
+              <option value="50">Top 50</option>
+              <option value="100" selected>Top 100</option>
+              <option value="250">Top 250</option>
+              <option value="0">All</option>
+            </select>
+          </div>
+          <div class="earn-legend">
+            <span class="swatch past"></span> paid
+            <span class="swatch fut" style="margin-left:0.5rem"></span> owed
+          </div>
+        </div>
+
+        <div class="attr-table-wrap"><table class="attr-table earn-table" id="earn-table"></table></div>
+        <p class="attr-note">
+          Every dollar in NBN's contract records, by player. Salary tracking begins with the
+          <strong>${seasons[0]}</strong> season, so nothing before that counts — this is career earnings
+          <em>on record</em>, banked money plus money still owed under current deals. Bars show
+          season-by-season salary from ${seasons[0]} to ${seasons[seasons.length - 1]}. Click any column to sort.
+        </p>
+      `;
+
+      let sortKey = 'total', sortDir = -1;
+      const table = document.getElementById('earn-table');
+      const $ = id => document.getElementById(id);
+
+      function build() {
+        const q = $('ef-search').value.trim().toLowerCase();
+        const team = $('ef-team').value;
+        const status = $('ef-status').value;
+        const limit = parseInt($('ef-limit').value, 10);
+
+        let view = rows.filter(r => {
+          if (q && !r.name.toLowerCase().includes(q)) return false;
+          if (team && r.team !== team) return false;
+          if (status === 'on' && !r.team) return false;
+          if (status === 'off' && r.team) return false;
+          if (status === 'dead' && r.type !== 'dead') return false;
+          return true;
+        });
+
+        view.sort((a, b) => {
+          const va = a[sortKey], vb = b[sortKey];
+          if (typeof va === 'string' || typeof vb === 'string') {
+            return String(va ?? '').localeCompare(String(vb ?? '')) * sortDir;
+          }
+          return ((va ?? -Infinity) - (vb ?? -Infinity)) * sortDir;
+        });
+
+        const shown = limit ? view.slice(0, limit) : view;
+
+        const head = `<thead><tr>
+          <th class="rank-col">#</th>
+          ${COLS.map(c => `<th class="sortable-th ${c.cls}" data-key="${c.key}">${c.label}<span class="sort-arrow"></span></th>`).join('')}
+          <th>${seasons[0]} → ${seasons[seasons.length - 1]}</th>
+        </tr></thead>`;
+
+        const body = `<tbody>${shown.map((r, i) => `<tr>
+          <td class="rank-col">${i + 1}</td>
+          ${COLS.map(c => `<td class="${c.cls}">${FMT[c.key](r)}</td>`).join('')}
+          <td>${spark(r)}</td>
+        </tr>`).join('')}</tbody>`;
+
+        table.innerHTML = shown.length
+          ? head + body
+          : `${head}<tbody><tr><td colspan="${COLS.length + 2}" style="text-align:center;color:var(--text-dim)">No players match these filters.</td></tr></tbody>`;
+
+        table.querySelectorAll('th.sortable-th').forEach(th => {
+          const key = th.dataset.key;
+          const active = key === sortKey;
+          th.dataset.active = active;
+          th.querySelector('.sort-arrow').textContent = active && sortDir === 1 ? '↑' : '↓';
+          th.addEventListener('click', () => {
+            if (sortKey === key) sortDir *= -1;
+            else { sortKey = key; sortDir = COLS.find(c => c.key === key).dir; }
+            build();
+          });
+        });
+      }
+
+      ['ef-search', 'ef-team', 'ef-status', 'ef-limit'].forEach(id => {
+        const el = $(id);
+        el.addEventListener('change', build);
+        if (el.tagName === 'INPUT') el.addEventListener('input', build);
+      });
 
       build();
     }
@@ -975,7 +1297,12 @@
 
     // ── tab routing ───────────────────────────────────────────────────────────
 
-    const RENDERERS = { roster: renderRosterTab, league: renderLeagueTab, attributes: renderAttributesTab };
+    const RENDERERS = {
+      roster: renderRosterTab,
+      league: renderLeagueTab,
+      attributes: renderAttributesTab,
+      earnings: renderEarningsTab,
+    };
     const rendered = new Set();
 
     async function activateTab(name) {
