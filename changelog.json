@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.378",
+    "date": "2026-08-02",
+    "changes": [
+      "Trade sheet export: each team's block now shows what it *receives* (Players In / Picks In, with who sent them), not just what it sends \u2014 in a three-team deal you had to scan every other block's \"To\" column to work that out",
+      "Trade sheet export: new \"Thru\" column giving the last season each player is under contract for, flagged PO / TO / NG for option and non-guaranteed years \u2014 a $40M expiring and a $40M with four years left no longer look identical",
+      "Trade sheet export: a Notes section under each team explaining why any verdict isn't a clean pass, instead of leaving the reason on the Validation tab"
+    ]
+  },
+  {
     "version": "0.0.377",
     "date": "2026-08-02",
     "changes": [

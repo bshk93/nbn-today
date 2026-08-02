@@ -993,8 +993,36 @@ const EXC_META = {
 // Gathers, per team in the trade, the assets it is sending and where — the
 // left-hand side of a block. The cap summary on the right comes straight from
 // fact_sheet and is read at render time.
+// Last season this player is actually under contract for, with the flag that
+// makes that year conditional. The cap rules only judge the current season, but
+// a $40M expiring and a $40M with four years left are not the same asset, and
+// that difference is invisible from the salary column alone.
+//
+// `cap_holds` is keyed by the season it describes, so a PLAYER_OPT on the final
+// year means that year itself is an option (not a status after it).
+const _THRU_FLAG = { PLAYER_OPT: 'PO', TEAM_OPT: 'TO', NON_GTD: 'NG' };
+
+function contractThru(slug, yr, satTerms) {
+  if (satTerms) {
+    // A sign-and-trade contract doesn't exist on the bio yet — it's whatever
+    // was typed into the terms form.
+    let s = yr;
+    for (let i = 1; i < satTerms.years; i++) s = seasonAfter(s);
+    return s;
+  }
+  const bio = allBios[slug] || {};
+  const seasons = Object.keys(bio.salaries || {})
+    .filter(s => s >= yr && parseSalaryNum(bio.salaries[s]) > 0)
+    .sort();
+  if (!seasons.length) return '';
+  const last = seasons[seasons.length - 1];
+  const flag = _THRU_FLAG[(bio.cap_holds || {})[last]];
+  return flag ? `${last} ${flag}` : last;
+}
+
 function collectExportBlocks() {
-  return teamSlots.filter(id => slotTeam[id]).map(slotId => {
+  const yr = curYr();
+  const blocks = teamSlots.filter(id => slotTeam[id]).map(slotId => {
     const abbr = slotTeam[slotId];
     const sel = selections[slotId];
 
@@ -1006,6 +1034,7 @@ function collectExportBlocks() {
         name: displayName(p.name) + (p.capHold ? ' (S&T)' : ''),
         to: sel.players.get(p.slug) || '?',
         salary: p.capHold ? ((signTerms[p.slug] || {}).salaries || [])[0] || 0 : p.salary,
+        thru: contractThru(p.slug, yr, p.capHold ? signTerms[p.slug] : null),
       }));
 
     const picks = (picksData[abbr] || [])
@@ -1031,8 +1060,23 @@ function collectExportBlocks() {
       exceptions.push({ label: EXC_META[excVal][0], key: EXC_META[excVal][1] });
     }
 
-    return { abbr, players, picks, exceptions };
+    return { abbr, players, picks, exceptions, playersIn: [], picksIn: [] };
   });
+
+  // Second pass: what each team RECEIVES. A block only knows what it sends, so
+  // incoming is everything routed here from somewhere else. In a two-team deal
+  // you could read that off the other block; with three or more you'd be
+  // scanning every other block's "To" column and filtering by eye.
+  const byAbbr = Object.fromEntries(blocks.map(b => [b.abbr, b]));
+  blocks.forEach(src => {
+    src.players.forEach(p => {
+      byAbbr[p.to]?.playersIn.push({ name: p.name, from: src.abbr, salary: p.salary, thru: p.thru });
+    });
+    src.picks.forEach(p => {
+      byAbbr[p.to]?.picksIn.push({ label: p.label, from: src.abbr, protections: p.protections });
+    });
+  });
+  return blocks;
 }
 
 // VALID / WARNING / INVALID for a subset of a team's checks, using the same
@@ -1089,15 +1133,32 @@ function buildTradeWorkbook() {
   // Every block shares one row grid so the columns line up across teams; each
   // section is sized to the busiest team, with a minimum so a lightly-used
   // section still reads as a form rather than collapsing to nothing.
-  const nPlayers = Math.max(3, ...blocks.map(b => b.players.length));
-  const nPicks   = Math.max(2, ...blocks.map(b => b.picks.length));
+  const nOut     = Math.max(1, ...blocks.map(b => b.players.length));
+  const nIn      = Math.max(1, ...blocks.map(b => b.playersIn.length));
+  const nPickOut = Math.max(1, ...blocks.map(b => b.picks.length));
+  const nPickIn  = Math.max(1, ...blocks.map(b => b.picksIn.length));
   const nExc     = Math.max(1, ...blocks.map(b => b.exceptions.length));
 
+  // Notes carry the explanation behind any non-clean verdict, per team. Without
+  // them a block says "Salary Match: WARNING" and the reason lives on a
+  // different tab.
+  const teamNotes = {};
+  blocks.forEach(b => {
+    const suffix = '_' + b.abbr.toLowerCase();
+    teamNotes[b.abbr] = allChecks
+      .filter(c => (c.check || '').endsWith(suffix))
+      .filter(c => !c.passed || c.level === 'warning')
+      .map(c => c.message);
+  });
+  const nNotes = Math.max(1, ...Object.values(teamNotes).map(n => n.length));
+
   const R_TEAM    = 5;
-  const R_PLAYERS = R_TEAM + 1;                       // header row
-  const R_PICKS   = R_PLAYERS + 1 + nPlayers + 1;
-  const R_EXC     = R_PICKS + 1 + nPicks + 1;
-  const R_SUM     = R_EXC + 1 + nExc + 1;
+  const R_OUT     = R_TEAM + 1;                        // header row
+  const R_IN      = R_OUT     + 1 + nOut     + 1;
+  const R_PICKOUT = R_IN      + 1 + nIn      + 1;
+  const R_PICKIN  = R_PICKOUT + 1 + nPickOut + 1;
+  const R_EXC     = R_PICKIN  + 1 + nPickIn  + 1;
+  const R_SUM     = R_EXC     + 1 + nExc     + 1;
 
   // Apron room excludes pure free-agent cap holds (§ 1.3/1.4); cap space counts
   // them — the same split the validator applies.
@@ -1133,27 +1194,37 @@ function buildTradeWorkbook() {
     band(R_TEAM, c0, cEnd, `${blk.abbr} — ${TEAMS[blk.abbr] || blk.abbr}`, S.TEAM);
     rowHeights[R_TEAM] = 20;
 
-    // Players
-    band(R_PLAYERS, c0, c0 + 1, 'Players Out', S.SECTION);
-    put(R_PLAYERS, c0 + 2, 'To', S.COL_HEAD);
-    band(R_PLAYERS, c0 + 3, cEnd, 'Salary', S.COL_HEAD);
-    for (let i = 0; i < nPlayers; i++) {
-      const r = R_PLAYERS + 1 + i, p = blk.players[i];
-      band(r, c0, c0 + 1, p ? p.name : '—', p ? S.TEXT : S.PLACEHOLDER);
-      put(r, c0 + 2, p ? p.to : '', p ? S.TEXT_CENTER : S.PLACEHOLDER);
-      band(r, c0 + 3, cEnd, p ? p.salary : '', p ? S.MONEY : S.PLACEHOLDER);
-    }
+    // Players out / in. Salary and Thru get a column each (the block's last two),
+    // so contract length sits beside the figure the cap rules actually judge.
+    const playerSection = (rowAt, title, dirLabel, list, n) => {
+      band(rowAt, c0, c0 + 1, title, S.SECTION);
+      put(rowAt, c0 + 2, dirLabel, S.COL_HEAD);
+      put(rowAt, c0 + 3, 'Salary', S.COL_HEAD);
+      put(rowAt, c0 + 4, 'Thru', S.COL_HEAD);
+      for (let i = 0; i < n; i++) {
+        const r = rowAt + 1 + i, p = list[i];
+        band(r, c0, c0 + 1, p ? p.name : '—', p ? S.TEXT : S.PLACEHOLDER);
+        put(r, c0 + 2, p ? (p.to || p.from) : '', p ? S.TEXT_CENTER : S.PLACEHOLDER);
+        put(r, c0 + 3, p ? p.salary : '', p ? S.MONEY : S.PLACEHOLDER);
+        put(r, c0 + 4, p ? (p.thru || '—') : '', p ? S.TEXT_CENTER : S.PLACEHOLDER);
+      }
+    };
+    playerSection(R_OUT, 'Players Out', 'To',   blk.players,   nOut);
+    playerSection(R_IN,  'Players In',  'From', blk.playersIn, nIn);
 
-    // Draft picks
-    band(R_PICKS, c0, c0 + 1, 'Draft Picks', S.SECTION);
-    put(R_PICKS, c0 + 2, 'To', S.COL_HEAD);
-    band(R_PICKS, c0 + 3, cEnd, 'Protections (if any)', S.COL_HEAD);
-    for (let i = 0; i < nPicks; i++) {
-      const r = R_PICKS + 1 + i, p = blk.picks[i];
-      band(r, c0, c0 + 1, p ? p.label : '—', p ? S.TEXT : S.PLACEHOLDER);
-      put(r, c0 + 2, p ? p.to : '', p ? S.TEXT_CENTER : S.PLACEHOLDER);
-      band(r, c0 + 3, cEnd, p ? (p.protections || 'None') : '', p ? S.TEXT : S.PLACEHOLDER);
-    }
+    const pickSection = (rowAt, title, dirLabel, list, n) => {
+      band(rowAt, c0, c0 + 1, title, S.SECTION);
+      put(rowAt, c0 + 2, dirLabel, S.COL_HEAD);
+      band(rowAt, c0 + 3, cEnd, 'Protections (if any)', S.COL_HEAD);
+      for (let i = 0; i < n; i++) {
+        const r = rowAt + 1 + i, p = list[i];
+        band(r, c0, c0 + 1, p ? p.label : '—', p ? S.TEXT : S.PLACEHOLDER);
+        put(r, c0 + 2, p ? (p.to || p.from) : '', p ? S.TEXT_CENTER : S.PLACEHOLDER);
+        band(r, c0 + 3, cEnd, p ? (p.protections || 'None') : '', p ? S.TEXT : S.PLACEHOLDER);
+      }
+    };
+    pickSection(R_PICKOUT, 'Picks Out', 'To',   blk.picks,   nPickOut);
+    pickSection(R_PICKIN,  'Picks In',  'From', blk.picksIn, nPickIn);
 
     // Exceptions used
     band(R_EXC, c0, c0 + 1, 'Trade Exceptions', S.SECTION);
@@ -1194,6 +1265,23 @@ function buildTradeWorkbook() {
       band(r, c0, c0 + 2, label, S.LABEL);
       band(r, c0 + 3, cEnd, text, style);
     });
+
+    // Notes — why any verdict above isn't a clean pass, in this team's own
+    // column rather than off on the Validation tab.
+    const notes = teamNotes[blk.abbr] || [];
+    const rNotesHead = R_SUM + SUMMARY.length + verdicts.length + 1;
+    band(rNotesHead, c0, cEnd, 'Notes', S.SECTION);
+    for (let i = 0; i < nNotes; i++) {
+      const r = rNotesHead + 1 + i, msg = notes[i];
+      band(r, c0, cEnd, msg || (i === 0 ? 'No constraints triggered.' : ''),
+           msg ? S.NOTE : S.PLACEHOLDER);
+      if (msg) {
+        // Wrapped text needs an explicit height or the row clips to one line.
+        // ~66 characters fit across a block at these column widths.
+        const lines = Math.max(1, Math.ceil(msg.length / 66));
+        rowHeights[r] = Math.max(rowHeights[r] || 0, lines * 14 + 4);
+      }
+    }
   });
 
   const tradeSheet = { name: 'Trade', cols, rows, merges, rowHeights, freeze: 4 };
@@ -1245,6 +1333,9 @@ function buildTradeWorkbook() {
     [{ v: 'Below the Second Apron, aggregating two or more outgoing salaries', s: S.TEXT }, { v: 'Legal, but hard-caps the team at the Second Apron for the rest of the season', s: S.NOTE }],
     [],
     [{ v: 'Reading this sheet', s: S.COL_HEAD }, { v: '', s: S.COL_HEAD }],
+    [{ v: 'Salary', s: S.TEXT }, { v: `Current-season (${season}) salary — the only figure the trade rules judge.`, s: S.NOTE }],
+    [{ v: 'Thru', s: S.TEXT }, { v: 'Last season the player is under contract for. PO = that year is a player option, TO = team option, NG = non-guaranteed. Not part of any cap test; shown because an expiring deal and a long one at the same salary are very different assets.', s: S.NOTE }],
+    [{ v: 'Notes', s: S.TEXT }, { v: 'Why a team’s verdict above is not a clean pass. The Validation tab lists every check, including the ones that passed.', s: S.NOTE }],
     [{ v: 'Unaggregated', s: S.TEXT }, { v: 'The largest single outgoing salary — what the team could send without combining salaries.', s: S.NOTE }],
     [{ v: 'Need Aggregate', s: S.TEXT }, { v: 'Yes when no single outgoing salary covers the incoming total on its own (§ 4.4).', s: S.NOTE }],
     [{ v: 'Cap Space', s: S.TEXT }, { v: 'Salary Cap minus projected salary, counting free-agent cap holds.', s: S.NOTE }],
