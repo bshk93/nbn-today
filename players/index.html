@@ -598,6 +598,7 @@
 
 <script src="/country-iso.js"></script>
 <script src="/ratings-popup.js"></script>
+<script src="/league-time.js"></script>
 <script>
 (function () {
   const slug = new URLSearchParams(location.search).get('p');
@@ -2037,7 +2038,7 @@
       formRow.className = 'ovr-edit-row';
       formRow.style.marginTop = '0.6rem';
 
-      const today = new Date().toISOString().slice(0, 10);
+      const today = nbnToday();
       const dateIn = document.createElement('input');
       dateIn.type = 'date';
       dateIn.value = today;

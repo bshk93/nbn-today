@@ -179,6 +179,7 @@
     <div id="content"><span class="loading">Loading…</span></div>
   </div>
 
+  <script src="/league-time.js"></script>
   <script>
     const CAL_DAYS    = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const CAL_MONTHS  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -340,11 +341,14 @@
           });
           const dates = Object.keys(gamesByDate).sort();
           if (dates.length) {
-            const lastDt = new Date(dates[dates.length - 1] + 'T00:00:00');
-            lastDt.setDate(lastDt.getDate() + 1);
+            // Pure date arithmetic (day after the last game), so do it entirely
+            // in UTC: parsing 'YYYY-MM-DD' without a Z yields *local* midnight,
+            // which toISOString() then shifted back a day for anyone east of UTC.
+            const lastDt = new Date(dates[dates.length - 1] + 'T00:00:00Z');
+            lastDt.setUTCDate(lastDt.getUTCDate() + 1);
             leagueToday = lastDt.toISOString().slice(0, 10);
-            viewYear    = lastDt.getFullYear();
-            viewMonth   = lastDt.getMonth();
+            viewYear    = lastDt.getUTCFullYear();
+            viewMonth   = lastDt.getUTCMonth();
           }
         }
         if (vestResult.status === 'fulfilled')   vestingByDate      = vestResult.value;
@@ -358,10 +362,12 @@
         }
 
         if (!leagueToday) {
-          const now = new Date();
-          leagueToday = now.toISOString().slice(0, 10);
-          viewYear    = now.getFullYear();
-          viewMonth   = now.getMonth();
+          // Derive the view month from the league date itself, so the calendar
+          // can never open on a different month than the day it calls "today".
+          leagueToday = nbnToday();
+          const [y, m] = leagueToday.split('-').map(Number);
+          viewYear    = y;
+          viewMonth   = m - 1;
         }
 
         shownPastIdx = getPastEventDates().length; // default: no past shown

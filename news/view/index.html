@@ -136,6 +136,7 @@
   <div id="error-msg" style="display:none;color:var(--danger);font-size:0.9rem;"></div>
 </div>
 
+<script src="/league-time.js"></script>
 <script>
 const API = '/api';
 const params = new URLSearchParams(location.search);
@@ -214,7 +215,7 @@ function render(a) {
     if (a.status === 'submitted') {
       const dateInput = document.createElement('input');
       dateInput.type = 'date'; dateInput.className = 'pub-date'; dateInput.id = 'pub-date';
-      dateInput.value = new Date().toISOString().slice(0, 10);
+      dateInput.value = nbnToday();
       const pub = document.createElement('button');
       pub.className = 'btn-success'; pub.textContent = 'Publish';
       pub.onclick = doPublish;

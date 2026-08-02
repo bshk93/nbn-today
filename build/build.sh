@@ -16,9 +16,11 @@ export NBS_DATA_DIR="${NBS_DATA_DIR:-/var/lib/nothing-but-stats}"
 export NBN_REPO_ROOT="$REPO_ROOT"
 export NBN_BUILD_DIR="$SCRIPT_DIR"
 
-# Infer current season (Sep 30 cutoff)
-current_year=$(date +%Y)
-current_month=$(date +%-m)
+# Infer current season (Sep 30 cutoff).
+# League time, not the host clock: the box runs UTC, so on Sep 30 the cutoff
+# would flip to the next season at 8pm ET on the 30th rather than at midnight.
+current_year=$(TZ=America/New_York date +%Y)
+current_month=$(TZ=America/New_York date +%-m)
 if [[ "$current_month" -le 9 ]]; then
   y1=$(( current_year - 1 ))
   y2=$current_year

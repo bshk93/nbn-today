@@ -243,6 +243,7 @@
     <div id="content"><span class="loading">Loading…</span></div>
   </div>
 
+  <script src="/league-time.js"></script>
   <script>
     const TOKEN = localStorage.getItem('nbn_token');
     let currentUser     = null;   // {name, roles}
@@ -1407,7 +1408,7 @@
 
     async function _getFutureGames() {
       if (_futureGamesCache) return _futureGamesCache;
-      const today = new Date().toISOString().slice(0, 10);
+      const today = nbnToday();
       const games = await fetch('/api/calendar/games').then(r => r.json());
       _futureGamesCache = games.filter(g => g.date >= today);
       return _futureGamesCache;

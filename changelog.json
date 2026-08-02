@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.375",
+    "date": "2026-08-01",
+    "changes": [
+      "Dates across the site now use league time (US Eastern) instead of UTC \u2014 entering a transaction in the evening no longer prefills tomorrow's date",
+      "Every date field (transactions, box score submission, OVR updates, strikes, news publishing, calendar) now agrees on the same league day no matter where you are",
+      "Calendar: fixed the month view opening a day early for anyone east of UTC",
+      "League-year rollover and the season cutoff now happen at midnight Eastern rather than 8pm Eastern the evening before"
+    ]
+  },
+  {
     "version": "0.0.374",
     "date": "2026-08-01",
     "changes": [

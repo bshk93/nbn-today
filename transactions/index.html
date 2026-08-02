@@ -1025,6 +1025,7 @@
   </div>
 </div>
 
+<script src="/league-time.js"></script>
 <script>
 const TOKEN_KEY = 'nbn_token';
 
@@ -1225,7 +1226,7 @@ function saveToken() {
 
 // ── Form setup ─────────────────────────────────────────────────────────────
 function setDefaultDate() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = nbnToday();
   document.getElementById('f-date').value = today;
 }
 
@@ -1748,7 +1749,7 @@ function updateReleaseStretchHint(slug) {
     return;
   }
 
-  const releaseDate = document.getElementById('f-date').value || new Date().toISOString().slice(0, 10);
+  const releaseDate = document.getElementById('f-date').value || nbnToday();
   const curSeason = seasonForDate(releaseDate, LEAGUE_ROLLOVERS);
   const deadCap = computeReleaseDeadCap(bio, curSeason, releaseDate);
   const seasons = Object.keys(deadCap);
@@ -1940,7 +1941,7 @@ function setupTrade() {
   document.getElementById('add-leg-btn').addEventListener('click', () => { addTradeLeg(); refreshExceptionsSection(); scheduleRubric(); });
   addTradeLeg();
   addTradeLeg();
-  document.getElementById('f-trade-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-trade-date').value = nbnToday();
 
   // Live rubric: any change inside the builder (team/asset selects, pick protection
   // inputs) re-runs the shared validator. Add/remove of legs and rows call
@@ -2607,7 +2608,7 @@ function resetForm() {
   addTradeLeg();
   addTradeLeg();
   refreshExceptionsSection();
-  document.getElementById('f-trade-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-trade-date').value = nbnToday();
   document.getElementById('f-trade-description').value = '';
   document.getElementById('f-trade-sat').checked = false;
   document.getElementById('f-trade-sat-txn').value = '';

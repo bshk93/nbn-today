@@ -158,6 +158,7 @@
   </div>
 </div>
 
+<script src="/league-time.js"></script>
 <script>
 const TOKEN_KEY = 'nbn_token';
 let currentToken = localStorage.getItem(TOKEN_KEY) || '';
@@ -357,7 +358,7 @@ function buildCard(m, strikes) {
   const form = document.createElement('div');
   form.className = 'add-form';
   form.innerHTML = `
-    <input type="date" class="af-date" value="${new Date().toISOString().slice(0,10)}">
+    <input type="date" class="af-date" value="${nbnToday()}">
     <textarea class="af-reason" placeholder="Reason for strike…" rows="2"></textarea>
     <div class="form-error" style="display:none"></div>
     <div class="form-row">

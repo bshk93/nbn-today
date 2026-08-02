@@ -470,6 +470,7 @@
     </div>
   </div>
 
+  <script src="/league-time.js"></script>
   <script>
     const TEAMS = [
       "ATL","BKN","BOS","CHA","CHI","CLE","DAL","DEN","DET","GSW",
@@ -515,7 +516,7 @@
     };
 
     // ── Default form values ──────────────────────────────────────
-    document.getElementById("date").value = new Date().toISOString().slice(0,10);
+    document.getElementById("date").value = nbnToday();
     document.getElementById("season").value = "25-26";
 
     // ── Playoff fields toggle ────────────────────────────────────
