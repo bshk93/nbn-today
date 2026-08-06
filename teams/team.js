@@ -44,6 +44,7 @@
 //   enableRangeSum              826   Sheets-style drag/shift/ctrl-click column sum + floating bar
 //   copyTableToClipboard              copies a table as TSV + HTML for pasting into Sheets
 //   attachCopyBtn                     adds the "Copy" button next to a section title
+//   computeStartingFive               best PG/SG/SF/PF/C lineup for the Rosters mode
 //   buildRosterTable            893   renders the Roster section with salary/cap data
 //   buildPicksTable            1365   renders the Draft Picks section (future picks only, no player yet)
 //   makeSeasonRenderCell       1478   season history cell renderer (badges, playoff coloring)
@@ -335,6 +336,11 @@ const ratingsPopupReady = new Promise(resolve => {
   .row-draft-rights td { opacity: 0.7; font-style: italic; }
   .row-dead td   { opacity: 0.45; font-style: italic; text-decoration: line-through; }
   .row-erc td    { opacity: 0.7; font-style: italic; color: var(--warning); }
+  .row-empty-slot td { opacity: 0.5; font-style: italic; }
+  td.depth-slot, th.depth-slot {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+    color: var(--text-muted); width: 2.5rem;
+  }
   .picks-acquired td   { color: var(--link); }
   .picks-traded td     { color: var(--text-muted); font-style: italic; }
   .picks-uncertain td  { color: var(--warning); font-style: italic; }
@@ -718,7 +724,8 @@ document.body.innerHTML = `
         <div class="roster-header-row">
           <h2 class="section-title" id="roster-title">Roster</h2>
           <div class="mode-tabs" id="roster-mode-tabs">
-            <button class="mode-tab active" data-mode="contracts" type="button">Contracts</button>
+            <button class="mode-tab active" data-mode="depth" type="button">Rosters</button>
+            <button class="mode-tab" data-mode="contracts" type="button">Contracts</button>
             <button class="mode-tab" data-mode="stats" type="button">Stats</button>
             <button class="mode-tab" data-mode="ratings" type="button">Ratings</button>
           </div>
@@ -1006,6 +1013,7 @@ function enableRangeSum(container) {
     const td = target.closest && target.closest('td.right');
     if (!td || !container.contains(td) || !td.closest('tbody')) return null;
     if (td.closest('tr').classList.contains('subheader')) return null;
+    if (td.classList.contains('nosum')) return null;   // right-aligned but not a number
     return td;
   }
 
@@ -1695,10 +1703,127 @@ function computeStatFields(seasonRow) {
   };
 }
 
+const DEPTH_SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
+
+const CONTRACT_TAGS = { PLAYER_OPT: 'PO', TEAM_OPT: 'TO', NON_GTD: 'NG' };
+
+function compactMoney(n) {
+  if (!n) return '$0';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K';
+  return '$' + Math.round(n);
+}
+
+// One-line contract summary for the Rosters mode: guaranteed years, then any
+// option / non-guaranteed years, then total remaining money — "2+1 PO, $150M".
+// Years run from the current league year forward; a UFA/RFA line is a cap hold
+// rather than a contract year, so it ends the deal (or is the whole story, if
+// the player has nothing but a hold).
+function summarizeContract(row, curYr) {
+  const caps = parseCapHolds(row._cap_holds || {});
+  const sals = row._salaries || {};
+  const years = Object.keys(sals)
+    .filter(k => /^\d{2}-\d{2}$/.test(k) && k >= curYr && sals[k] !== '' && sals[k] != null)
+    .sort();
+  if (!years.length) return '—';
+
+  const isHold = k => caps[k] === 'UFA' || caps[k] === 'RFA';
+  if (isHold(years[0])) {
+    // Placeholder holds carry a nominal $1 — a figure worth hiding, not showing.
+    const amt = parseSalaryNum(sals[years[0]]);
+    return `${caps[years[0]]} hold` + (amt >= 1000 ? `, ${compactMoney(amt)}` : '');
+  }
+
+  const deal = [];
+  for (const k of years) {
+    if (isHold(k)) break;
+    deal.push({ year: k, tag: CONTRACT_TAGS[caps[k]] || null });
+  }
+
+  let base = 0;
+  while (base < deal.length && !deal[base].tag) base++;
+
+  // everything after the guaranteed run, collapsed into runs of like years
+  const extras = [];
+  for (let i = base; i < deal.length;) {
+    const tag = deal[i].tag;
+    let n = 0;
+    while (i < deal.length && deal[i].tag === tag) { n++; i++; }
+    extras.push(n + (tag ? ' ' + tag : ''));
+  }
+
+  let yrs;
+  if (!extras.length)  yrs = `${base} yr${base === 1 ? '' : 's'}`;
+  else if (base === 0) yrs = extras.join('+');
+  else                 yrs = `${base}+${extras.join('+')}`;
+
+  const total = deal.reduce((sum, d) => sum + parseSalaryNum(sals[d.year]), 0);
+  return total ? `${yrs}, ${compactMoney(total)}` : yrs;
+}
+
+// Depth-chart ordering for the 'depth' roster mode: a starting five (one player
+// per slot, PG→C) followed by everyone else in OVR order. A player only
+// qualifies for a slot if that position is one of their eligible positions
+// (bio `pos`), and each player fills at most one slot.
+//
+// Picking each slot greedily in PG→C order would strand slots — the best SF on
+// a team listed "SF · C" can leave C empty even when they were the only player
+// eligible there. So every legal assignment is scored and the best one wins,
+// ranked by: most slots filled first, then highest OVR at PG, then SG, and so
+// on down the order. With no conflicts that reduces to exactly "the highest
+// rated player at each position, in order"; with conflicts it prefers a full
+// five, and breaks the remaining ties in favour of the earlier slot.
+//
+// Candidates per slot are capped at the top 5 by OVR — five slots can never
+// need a sixth-deep option at any one position — so the search is at most 6^5.
+function computeStartingFive(players) {
+  const ovrOf = p => parseFloat(p.OVR) || 0;
+  const candidates = DEPTH_SLOTS.map(slot =>
+    players
+      .filter(p => (p._posList || []).includes(slot))
+      .sort((a, b) => ovrOf(b) - ovrOf(a))
+      .slice(0, DEPTH_SLOTS.length)
+  );
+
+  // [filled, ovr@PG, ovr@SG, …]; an empty slot scores -1 so any filled slot beats it.
+  const scoreOf = assign => [
+    assign.filter(Boolean).length,
+    ...assign.map(p => (p ? ovrOf(p) : -1)),
+  ];
+  const better = (a, b) => {
+    if (!b) return true;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] > b[i];
+    return false;
+  };
+
+  const used = new Set();
+  const cur = new Array(DEPTH_SLOTS.length).fill(null);
+  let best = null, bestScore = null;
+
+  (function search(i) {
+    if (i === DEPTH_SLOTS.length) {
+      const score = scoreOf(cur);
+      if (better(score, bestScore)) { bestScore = score; best = [...cur]; }
+      return;
+    }
+    for (const p of candidates[i]) {
+      if (used.has(p)) continue;
+      used.add(p); cur[i] = p;
+      search(i + 1);
+      used.delete(p); cur[i] = null;
+    }
+    cur[i] = null;          // leaving the slot empty is always a legal branch
+    search(i + 1);
+  })(0);
+
+  return best || new Array(DEPTH_SLOTS.length).fill(null);
+}
+
 // Roster table for a team page. `mode` selects which columns follow Player /
 // Pos / Age / OVR: 'contracts' (default) shows salary years, 'stats' shows
 // per-game averages from the player's latest season, 'ratings' shows every
-// individual 2K attribute. `latestSeasonBySlug` comes from
+// individual 2K attribute, and 'depth' reorders the rows into a starting five
+// plus bench (see computeStartingFive). `latestSeasonBySlug` comes from
 // computeLatestSeasonBySlug(allSeasons), computed once at page load.
 function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null) {
   if (!rows.length) return null;
@@ -1838,6 +1963,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         OVR:        currentOvr[row.SLUG] ?? '',
         _name:      displayNameFromBio(bio.name || '') || row.SLUG || '—',
         _pos:       (bio.pos || []).join(' · ') || '—',
+        _posList:   bio.pos || [],
         _age:       calcAge(bio.dob),
         _type,
         _cap_holds:          bio.cap_holds || {},
@@ -1863,6 +1989,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       OVR:        '',
       _name:      displayNameFromBio(bio.name || '') || row.SLUG || '—',
       _pos:       (bio.pos || []).join(' · ') || '—',
+      _posList:   bio.pos || [],
       _age:       calcAge(bio.dob),
       _type:      'dead',
       _cap_holds: {},
@@ -1886,6 +2013,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       OVR:        '',
       _name:      'Empty Roster Charge',
       _pos:       '—',
+      _posList:   [],
       _age:       '',
       _type:      'player',
       _erc:       true,
@@ -1923,19 +2051,58 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     modeCols = RATING_ATTR_COLUMNS.map(c => ({
       key: `_attr_${c.key}`, label: c.abbr, full: c.full, cls: 'right' + (c.catStart ? ' div-left' : ''),
     }));
+  } else if (mode === 'depth') {
+    modeCols = [{ key: '_contract', label: 'Contract', cls: 'right nosum div-left' }];
   } else {
     modeCols = salaryKeys.map((k, i) => ({
       key: `_s_${k}`, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
     }));
   }
-  const cols = [...sharedCols, ...modeCols];
+  const cols = [
+    ...(mode === 'depth' ? [{ key: '_slot', label: '', cls: 'depth-slot center' }] : []),
+    ...sharedCols,
+    ...modeCols,
+  ];
 
   const typeOrder = { player: 0, 'two-way': 1, 'draft-rights': 2, dead: 3 };
-  const sorted = [...augmented].sort((a, b) => {
-    const ta = typeOrder[a._type] ?? 4, tb = typeOrder[b._type] ?? 4;
-    if (ta !== tb) return ta - tb;
-    return (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
-  });
+  const byOvrDesc = (a, b) => (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
+
+  // Row order and the subheaders that break it up. Every mode but 'depth'
+  // groups by contract type; 'depth' splits the standard players into a
+  // starting five and a bench, then falls back to the type groups for the rest.
+  let sorted, GROUP_LABELS;
+  if (mode === 'depth') {
+    const starterPool = augmented.filter(a => a._type === 'player' && !a._erc);
+    const five = computeStartingFive(starterPool);
+    const started = new Set(five.filter(Boolean));
+
+    const starterRows = five.map((p, i) => {
+      const slot = DEPTH_SLOTS[i];
+      if (p) return { ...p, _slot: slot, _group: 'starters' };
+      return {
+        SLUG: '', OVR: '', _name: `No eligible ${slot}`, _pos: '—', _posList: [],
+        _age: '', _type: 'player', _slot: slot, _group: 'starters', _emptySlot: true,
+        _cap_holds: {}, _salaries: {}, _badges: [], _photo: '', _notes: '',
+      };
+    });
+    const bench = starterPool.filter(a => !started.has(a)).sort(byOvrDesc)
+      .map(a => ({ ...a, _group: 'bench' }));
+    const rest = augmented.filter(a => a._type !== 'player' || a._erc)
+      .sort((a, b) => (typeOrder[a._type] ?? 4) - (typeOrder[b._type] ?? 4) || byOvrDesc(a, b))
+      .map(a => ({ ...a, _group: a._type }));
+
+    sorted = [...starterRows, ...bench, ...rest];
+    GROUP_LABELS = {
+      starters: 'Starters', bench: 'Bench',
+      'two-way': 'Two-Way Contracts', 'draft-rights': 'Draft Rights', dead: 'Dead Cap',
+    };
+  } else {
+    // Rows stay the original objects here — what-if's rowActions is handed them.
+    sorted = [...augmented]
+      .sort((a, b) => (typeOrder[a._type] ?? 4) - (typeOrder[b._type] ?? 4) || byOvrDesc(a, b));
+    GROUP_LABELS = { 'two-way': 'Two-Way Contracts', 'draft-rights': 'Draft Rights', dead: 'Dead Cap' };
+  }
+  const groupOf = row => (mode === 'depth' ? row._group : row._type);
 
   const table = document.createElement('table');
   const thead = table.createTHead();
@@ -1951,19 +2118,19 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   if (rowActions) hr.appendChild(document.createElement('th'));
 
   const tbody = table.createTBody();
-  let lastType = null;
-  const LABELS = { 'two-way': 'Two-Way Contracts', 'draft-rights': 'Draft Rights', dead: 'Dead Cap' };
+  let lastGroup = null;
 
   sorted.forEach(row => {
-    if (row._type !== lastType && LABELS[row._type]) {
+    const group = groupOf(row);
+    if (group !== lastGroup && GROUP_LABELS[group]) {
       const sep = tbody.insertRow();
       sep.className = 'subheader';
       const td = sep.insertCell();
       td.colSpan = cols.length + (rowActions ? 1 : 0);
-      td.textContent = LABELS[row._type];
-      lastType = row._type;
-    } else if (row._type !== lastType) {
-      lastType = row._type;
+      td.textContent = GROUP_LABELS[group];
+      lastGroup = group;
+    } else if (group !== lastGroup) {
+      lastGroup = group;
     }
 
     const tr = tbody.insertRow();
@@ -1971,6 +2138,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     if (row._type === 'draft-rights') tr.className = 'row-draft-rights';
     if (row._type === 'dead')         tr.className = 'row-dead';
     if (row._erc)                     tr.className = 'row-erc';
+    if (row._emptySlot)               tr.className = 'row-empty-slot';
 
     const capMap = parseCapHolds(row._cap_holds);
 
@@ -1978,7 +2146,13 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       const td = tr.insertCell();
       col.cls?.split(' ').forEach(c => c && td.classList.add(c));
 
-      if (col.key === '_name') {
+      if (col.key === '_slot') {
+        td.textContent = row._slot || '';
+      } else if (col.key === '_contract') {
+        td.textContent = row._emptySlot ? '' : summarizeContract(row, curYr);
+      } else if (row._emptySlot) {
+        td.textContent = col.key === '_name' ? row._name : '';
+      } else if (col.key === '_name') {
         const cell = document.createElement('span');
         cell.className = 'roster-name-cell';
 
@@ -5039,10 +5213,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     const rosterRows = currentRosterRowsParsed;
     const rosterHeaders = parseLine(rr.value.trim().split('\n')[0]);
 
-    // Contracts / Stats / Ratings mode switch. `liveRosterRows` tracks the
+    // Rosters / Contracts / Stats / Ratings mode switch. `liveRosterRows` tracks the
     // freshest row set (updated after a contracts-mode save) so switching
-    // modes afterwards doesn't fall back to stale data.
-    let rosterMode = 'contracts';
+    // modes afterwards doesn't fall back to stale data. Rosters (the depth
+    // chart) is the default view; it must match the .active mode-tab above.
+    let rosterMode = 'depth';
     let liveRosterRows = rosterRows;
     const renderRoster = rowsForDisplay => buildRosterTable(
       rowsForDisplay, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, rosterMode, latestSeasonBySlug
