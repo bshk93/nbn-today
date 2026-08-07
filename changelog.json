@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.0.387",
+    "date": "2026-08-07",
+    "changes": [
+      "Transaction Simulator: the player dropdown now lists only players who can actually receive the transaction \u2014 301 signable free agents instead of all 1,018 bios, with retired and under-contract players excluded, and each entry labelled with its team and hold type",
+      "RFA offer sheets now list only genuine restricted free agents (32), since under \u00a7 3.15 nobody else can receive one",
+      "\u00a7 3.12 minimum salary is now enforced \u2014 a contract year below the Minimum Salary Scale is caught instead of passing clean; salaries between the league floor and the player's own experience tier warn, and two-way contracts are exempt",
+      "In-season signings prorate, so a below-minimum Year 1 warns rather than blocks; later contract years are always full seasons and are blocked",
+      "Signing a retired player, or a player under contract to another team, is now rejected on both the simulator and real submissions"
+    ]
+  },
+  {
     "version": "0.0.386",
     "date": "2026-08-07",
     "changes": [

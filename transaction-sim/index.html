@@ -191,6 +191,7 @@
           <input id="sign-player" list="player-list" autocomplete="off" placeholder="Type a name…">
           <datalist id="player-list"></datalist>
           <span class="hint" id="player-hint"></span>
+          <span class="hint" id="player-count"></span>
         </div>
       </div>
 
@@ -266,7 +267,11 @@
       <li><strong>Raises (§ 3.13)</strong> — capped at 5% of Year 1, or 8% with Full/Early Bird rights.</li>
       <li><strong>Maximum salary (§ 3.11)</strong> — 25/30/35% of the Cap by experience tier. Advisory only: experience is inferred from the player's real NBA draft year, not independently verified, so this reports as a <em>warning</em>.</li>
       <li><strong>Minimum contracts (§ 3.12)</strong> — a 1-year minimum's cap hit should equal the 2-year veteran minimum. Also advisory.</li>
+      <li><strong>Minimum salary (§ 3.12)</strong> — no contract year may pay below the Minimum Salary Scale. The 0-years tier is the floor for anyone and is enforced; falling between that and the player's own experience tier warns, since experience is inferred from their real NBA draft year. In-season signings prorate, so a below-floor <em>Year 1</em> warns rather than blocks — later years are full seasons and always blocked. Two-way contracts are exempt.</li>
     </ul>
+
+    <h4>Who can be signed</h4>
+    <p class="doc-note">Retired players can't be signed, and neither can players already under contract to another team — acquire them by trade instead. A player carrying a UFA or RFA cap hold <em>is</em> a free agent (§ 3.10): their team holds the rights, so re-signing them is exactly what a signing is for. The player dropdown is filtered to match, and an <strong>RFA offer sheet</strong> only lists genuine restricted free agents, since under § 3.15 nobody else can receive one.</p>
 
     <h4>Cap position</h4>
     <ul>
@@ -432,6 +437,10 @@ const signState = { years: 2, salaries: [0, 0] };
 // whichever entry was written last rather than guessing.
 let nameToSlug = {};
 
+// slug -> current team, from GET /api/team-map (the same _build_team_map the
+// server's eligibility check uses, so the filter can't drift from it).
+let teamMap = {};
+
 function setMode(mode) {
   MODE = mode;
   document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
@@ -445,6 +454,16 @@ function setMode(mode) {
   document.getElementById('f-team').hidden = isOffer;
   document.getElementById('f-offering').hidden = !isOffer;
   document.getElementById('f-outcome').hidden = !isOffer;
+  rebuildPlayerList();
+  // A player valid in one mode may not be in the other (an RFA offer sheet
+  // accepts a far narrower set), so drop a selection the new mode can't use
+  // rather than leaving a stale name that will only fail validation.
+  const slug = currentSignSlug();
+  if (slug) {
+    const bio = allBios[slug] || {};
+    const ok = isOffer ? isRFA(slug, bio) : isSignable(slug, bio);
+    if (!ok) { document.getElementById('sign-player').value = ''; document.getElementById('player-hint').textContent = ''; }
+  }
   document.getElementById('results').style.display = 'none';
   setStatus('');
   updateCheckBtn();
@@ -500,6 +519,49 @@ function applyPreset(kind) {
   updateCheckBtn();
 }
 
+// Who may actually receive each transaction type. Mirrors the server checks
+// (_check_signing_eligibility / the § 3.15 RFA gate) so the dropdown can't
+// offer a player the validator will immediately reject — offering all 1,018
+// bios, retired players included, was misleading as well as unusable.
+function isSignable(slug, bio) {
+  if (bio.retired) return false;
+  if (bio.type === 'dead' || bio.type === 'draft-rights') return false;
+  // On a roster under a real contract = not a free agent. A UFA/RFA cap hold
+  // is the opposite: their team holds the rights, and re-signing them is
+  // exactly what a signing is for (§ 3.10).
+  const hold = (bio.cap_holds || {})[curYr()];
+  if (teamMap[slug] && !_FA_HOLD_TYPES.includes(hold)) return false;
+  return true;
+}
+
+function isRFA(slug, bio) {
+  return !bio.retired && (bio.cap_holds || {})[curYr()] === 'RFA' && !!teamMap[slug];
+}
+
+function rebuildPlayerList() {
+  const offer = (MODE === 'offer_sheet');
+  const dl = document.getElementById('player-list');
+  const frag = document.createDocumentFragment();
+  let n = 0;
+  Object.entries(allBios).forEach(([slug, bio]) => {
+    if (!(offer ? isRFA(slug, bio) : isSignable(slug, bio))) return;
+    const label = displayName(bio.name || slug);
+    if (!label) return;
+    const o = document.createElement('option');
+    o.value = label;
+    // Datalist labels are advisory, but they're what makes a 300-name list
+    // navigable: current team and hold type are exactly what disambiguates.
+    const hold = (bio.cap_holds || {})[curYr()];
+    o.label = [teamMap[slug], hold].filter(Boolean).join(' · ') || 'unsigned';
+    frag.appendChild(o); n++;
+  });
+  dl.replaceChildren(frag);
+  const el = document.getElementById('player-count');
+  if (el) el.textContent = offer
+    ? `${n} restricted free agent${n === 1 ? '' : 's'} — only an RFA can receive an offer sheet (§ 3.15)`
+    : `${n} signable free agent${n === 1 ? '' : 's'} — retired and under-contract players are excluded`;
+}
+
 function currentSignSlug() {
   return nameToSlug[document.getElementById('sign-player').value.trim().toLowerCase()] || null;
 }
@@ -540,19 +602,14 @@ function setupSignForm() {
   const yearsSel = document.getElementById('sign-years');
   yearsSel.innerHTML = [1, 2, 3, 4, 5].map(n => `<option value="${n}"${n === signState.years ? ' selected' : ''}>${n} year${n > 1 ? 's' : ''}</option>`).join('');
 
-  // Datalist over every known player — the page already holds all bios, so
-  // this costs nothing extra and lets the sim model a signing for anyone,
-  // not just players currently on a roster.
-  const dl = document.getElementById('player-list');
-  const frag = document.createDocumentFragment();
+  // Name -> slug is built over every bio (so a name typed by hand still
+  // resolves), but the *offered* list is filtered per mode by
+  // rebuildPlayerList below.
   Object.entries(allBios).forEach(([slug, bio]) => {
     const label = displayName(bio.name || slug);
-    if (!label) return;
-    nameToSlug[label.toLowerCase()] = slug;
-    const o = document.createElement('option'); o.value = label;
-    frag.appendChild(o);
+    if (label) nameToSlug[label.toLowerCase()] = slug;
   });
-  dl.appendChild(frag);
+  rebuildPlayerList();
 
   yearsSel.addEventListener('change', () => {
     signState.years = +yearsSel.value;
@@ -707,10 +764,11 @@ function renderSignResults(data, isOffer) {
 
 async function init() {
   let leagueYearJson;
-  [allBios, allOvr, leagueYearJson] = await Promise.all([
+  [allBios, allOvr, leagueYearJson, teamMap] = await Promise.all([
     fetch('/api/players').then(r => r.ok ? r.json() : {}),
     fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
     fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch('/api/team-map').then(r => r.ok ? r.json() : {}).catch(() => ({})),
   ]);
   if (leagueYearJson?.current_season) LEAGUE_YEAR = leagueYearJson.current_season;
 

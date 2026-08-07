@@ -113,6 +113,22 @@ Section still reads 👁 manual review only, despite Stepien going live
 2026-07-23. Should be 🔒 + 👁. Badge accuracy is the whole point of the system;
 one wrong badge undermines the rest.
 
+### [P2] Proration is practiced but undocumented
+The league prorates in-season minimum signings, but the rulebook says nothing
+about it — zero occurrences of "prorat" anywhere in `rulebook/index.html`.
+Confirmed as real practice 2026-08-07.
+
+This matters now that § 3.12 minimums are enforced. `_check_minimum_salary`
+works around the gap with a coarse rule: Year 1 of a signing dated outside
+Jul–Sep may fall below the full-season minimum (warning, "confirm the
+proration"), while the offseason and every later contract year are hard
+errors. That's a guess at the season boundary standing in for a rule.
+
+Needs: a § 3.12 subsection stating that in-season minimum signings prorate,
+the basis (days? games?), and a season-start date the validator can key off —
+at which point the warning can become a real computed check. Grant Williams'
+2026-04-11 signing ($39,820) is the live example.
+
 ### [P2] `rescind_renounce` not implemented
 § 3.15 explicitly says so: on an RFA match, rescinding renouncements is done by
 hand. Small, well-specified transaction type.
