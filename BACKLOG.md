@@ -127,11 +127,16 @@ verified** — a team can declare `bird_rights` on a player they have no Bird
 tenure with and pass clean. Closing it means § 3.8 tenure verification
 (below), not a new blocking rule.
 
-### [P2] § 3.8 Bird Rights tenure never verified
-Continuous-service tenure is taken on faith from `bird_rights_type`, yet it
-gates both the funding method and the size of the cap hold. Derivable from
-`transactions.json` + roster history. Surfaced but explicitly **not** checked
-by the transaction simulator, which says so in its own docs panel.
+### ~~[P2] § 3.8 Bird Rights tenure never verified~~ — DONE 2026-08-07
+Now derived from the transaction ledger (`_bird_tenure`), enforced on both the
+submit and simulator paths, badge updated to 🔒 + 👁. Over-declaration errors;
+lower-bound and unverifiable cases warn. 483/487 rostered players resolve; 0
+false positives against the 14 real Bird signings on file. Closed alongside it:
+`signing_method="bird_rights"` no longer bypasses funding validation.
+
+**Residual:** the 4 unresolved players, and `bio["contracts"]` is still
+near-empty (47/1018) — harmless now that tenure doesn't read it, but it means
+contract *terms* history is thin for pre-2026 deals.
 
 ### [P3] Other standing manual-review items
 Roughly in order of how often they bite:

@@ -255,7 +255,11 @@
     <p class="doc-note">The simulator and the league's transaction system run the <em>same</em> rubric: the page calls <code>POST /api/validate/sign</code> (or <code>/api/validate/offer_sheet</code>), which shares its validator with <code>POST /api/transactions</code>. A "legal" result here is what the office will accept. These endpoints are <strong>read-only</strong> — nothing entered here is submitted, recorded, or applied to a roster.</p>
 
     <h4>Funding method (§ 3.1 – § 3.6)</h4>
-    <p class="doc-note">The declared method has to actually be available. <strong>Cap space</strong> is measured against Team Salary <em>with cap holds included</em> (§ 3.10) — an unrenounced hold occupies room until it's cleared, so a team that has renounced on the league sheet but not in the ledger will read as having no room here. <strong>NTMLE/TMLE/Room Exception</strong> are checked against the remaining season balance, and a generic "MLE" resolves to whichever bucket the team is already locked into. The NTMLE is unavailable at or above the 1st Apron (§ 3.3); the Room Exception requires Team Salary to have been more than a full NTMLE below the Cap at the start of the league year (§ 3.2). <strong>Bird Rights</strong> and <strong>minimum</strong> carry no ceiling of their own and are checked elsewhere.</p>
+    <p class="doc-note">The declared method has to actually be available. <strong>Cap space</strong> is measured against Team Salary <em>with cap holds included</em> (§ 3.10) — an unrenounced hold occupies room until it's cleared, so a team that has renounced on the league sheet but not in the ledger will read as having no room here. <strong>NTMLE/TMLE/Room Exception</strong> are checked against the remaining season balance, and a generic "MLE" resolves to whichever bucket the team is already locked into. The NTMLE is unavailable at or above the 1st Apron (§ 3.3); the Room Exception requires Team Salary to have been more than a full NTMLE below the Cap at the start of the league year (§ 3.2). <strong>Bird Rights</strong> carries no dollar ceiling of its own, but is checked against real tenure (§ 3.8, below); <strong>minimum</strong> is checked by § 3.12.</p>
+
+    <h4>Bird Rights tenure (§ 3.8)</h4>
+    <p class="doc-note">The declared tier is checked against continuous service derived from the transaction ledger. Rights accrue from the most recent free-agent signing and <strong>carry through trades</strong> — § 6.2 recognises holding "Bird Rights with the team via trade" — while <strong>re-signing your own free agent continues the clock</strong> rather than restarting it. Signing with a different team, or a release, resets it. A drafted player's clock starts at their draft.</p>
+    <p class="doc-note">Only <em>over-declaration</em> is blocked, and only when tenure is definite. Claiming a higher tier than the ledger supports is an error; claiming a lower one is allowed. Where the record starts with a trade and no earlier history, the result is a <em>lower bound</em> — the acquiring team inherits accrual we can't see — so that only ever warns. Unverifiable tenure warns too, and is never treated as Non-Bird: a player with no record is usually a long-tenured one.</p>
 
     <h4>Contract terms</h4>
     <ul>
@@ -275,7 +279,7 @@
     <h4>Offer sheets (§ 3.15)</h4>
     <p class="doc-note">An offer sheet is validated against whichever team ends up signing the player: the <strong>retaining</strong> team if the outcome is a match, the <strong>offering</strong> team if not. A match keeps the player on a roster spot they already occupy, so it doesn't add to the roster count; a non-match does. Everything else about § 3.15 — the 48-hour match clock, good-faith fit, Gilbert Arenas eligibility — stays manual review and is <em>not</em> checked here.</p>
 
-    <p class="doc-note">Not modeled: § 3.7 DPE (no exception type exists), and § 3.8 Bird Rights tenure, which is self-declared above and never independently verified. A signing can pass every check here and still be wrong if the declared tier is wrong.</p>
+    <p class="doc-note">Not modeled: § 3.7 DPE (no exception type exists). Tenure derivation currently resolves 483 of 487 rostered players; where it can't, you get a warning rather than a verdict.</p>
   </details>
 
   <details class="checks-doc" open id="doc-trade">

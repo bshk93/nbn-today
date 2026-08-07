@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.0.386",
+    "date": "2026-08-07",
+    "changes": [
+      "\u00a7 3.8 Bird Rights tenure is now verified instead of taken on faith \u2014 the declared tier is checked against continuous service derived from the transaction ledger, on both real submissions and the Transaction Simulator",
+      "Bird tenure follows the actual rule: rights carry through trades (\u00a7 6.2), re-signing your own free agent continues the clock, and signing elsewhere or a release resets it; a drafted player's clock starts at their draft",
+      "Only over-claiming is blocked. Claiming a lower tier is allowed, and where tenure can't be established the office gets a warning to check by hand rather than a false verdict \u2014 483 of 487 rostered players resolve",
+      "Closed a hole where declaring \"Bird Rights\" as the funding method skipped cap validation entirely and quietly raised the annual raise ceiling from 5% to 8%",
+      "Using Bird Rights on a player the ledger shows with another team is now rejected \u2014 Bird Rights re-sign a team's own free agent",
+      "Rulebook \u00a7 3.8 is now badged system-enforced, with a note on exactly what is and isn't checked"
+    ]
+  },
+  {
     "version": "0.0.385",
     "date": "2026-08-07",
     "changes": [

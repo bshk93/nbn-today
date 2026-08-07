@@ -327,8 +327,52 @@ transaction that was never evaluated.
 Coverage is uneven and the UI says so: `sign`/`offer_sheet`/`trade` have real
 validators, while `release`, `renounce`, `option` and `pick` are stubs
 returning `[]` — those types are deliberately **not** offered in the simulator,
-since a verdict off zero checks is worse than no verdict. § 3.7 (DPE) and § 3.8
-(Bird tenure, self-declared) remain unmodeled for signings.
+since a verdict off zero checks is worse than no verdict. § 3.7 (DPE) remains
+unmodeled.
+
+### § 3.8 Bird Rights tenure
+
+`_bird_tenure(slug, team, season, bio)` derives continuous service from the
+**transaction ledger**, not from `bio["contracts"]`. That field is a
+projection of the ledger written only by `_apply_sign` / `_apply_sign_pick` /
+`_apply_convert_twoway` (each entry carries a `txn_id` back-pointer), so it is
+empty for ~95% of players, can never express a trade, and will never
+retroactively fill — the 1,178 backfilled signings went through
+`_append_historical`, which by design doesn't touch bios. Don't reintroduce it
+as a tenure source; it's the same denormalized-copy trap as the old roster-CSV
+`OVR` column. It remains the right place for contract *terms*.
+
+The model (`tests/test_bird_rights_tenure.py` pins all of it):
+
+- A **trade carries** the clock — § 6.2 recognises Bird Rights held "via trade".
+- **Re-signing your own free agent continues** the clock; § 3.8 is about teams
+  re-signing their own free agents, so a reset would make Bird rights
+  single-use.
+- Signing with a **different team**, or a **release**, resets it.
+- The **draft seeds** the timeline, so drafted-then-traded resolves to the
+  current holder.
+- A trade with **no earlier record** yields a lower bound only (`basis:
+  "trade_floor"`).
+
+**Only over-declaration errors, and only from a definite basis.** This
+asymmetry is the safety property: a ledger gap can only make derived tenure
+look *longer* (the most recent signing visible is an older one), so "declared
+above derived" cannot be manufactured by missing data. `trade_floor` and
+unknown bases warn instead. **Unknown is never Non-QVFA** — a player with no
+record is typically a long-tenured one, so defaulting them to Non-Bird would
+invert the truth.
+
+Coverage is 483/487 rostered players. Verified against all 14 real Bird
+signings in the ledger: 12 pass, 2 warn, 0 false-positive errors.
+
+`_check_bird_rights_declaration` also takes `method`, which closes a real hole:
+`_check_signing_method_funding` returns early for any method outside the
+cap-space/MLE family, so `signing_method="bird_rights"` used to bypass funding
+validation entirely *and* unlock § 3.13's 8% raise ceiling.
+
+The ledger index is cached against `transactions.json`'s (mtime, size) —
+the simulator revalidates on a 250ms debounce, and re-parsing ~2MB per
+keystroke is pure waste.
 
 ### Member management
 
