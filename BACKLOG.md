@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Not linked from nav; the member-facing board is `/suggestions` (currently empty).
 
-Last reviewed: **2026-08-04** (against version 0.0.378).
+Last reviewed: **2026-08-07** (against version 0.0.383).
 
 Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** nice to have
 
@@ -11,27 +11,46 @@ Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** ni
 
 ## 1. Data integrity / open reconciliation
 
-### [P1] 22 cap-sheet diffs across 9 teams still unreconciled
-`/poopoo` (`build/poopoo.py` → `poopoo.json`, regenerated 2026-08-04) reports:
+### [P1] 31 cap-sheet diffs across 12 teams still unreconciled
+`/poopoo` (`build/poopoo.py` → `poopoo.json`, regenerated 2026-08-07) reports:
 
 | Team | Diffs | Fields |
 |---|---|---|
-| TOR | 7 | Guaranteed Salary, TPE Remaining, Moses Moody, Luke Kennard, … |
+| TOR | 9 | Guaranteed Salary, Hard Cap, MLE Used, TPE Remaining, Moses Moody, Luke Kennard, Trayce Jackson-Davis, Jordan Hawkins, Ryan Nembhard |
 | NOP | 3 | Guaranteed Salary, MLE Used, Tre Mann |
 | UTA | 3 | Guaranteed Salary, HALL PJ, POST QUINTEN |
+| WAS | 3 | Guaranteed Salary, MLE Used, MCCOLLUM CJ |
 | BKN | 2 | Guaranteed Salary, Keldon Johnson |
 | LAC | 2 | Guaranteed Salary, MLE Used |
+| MEM | 2 | Guaranteed Salary, MLE Used |
+| MIN | 2 | Guaranteed Salary, Mark Williams |
 | PHI | 2 | Guaranteed Salary, MANON CHRIS |
 | DEN | 1 | Hard Cap |
 | IND | 1 | Tobias Harris |
-| MIN | 1 | Guaranteed Salary |
+| PHX | 1 | Daniel Gafford |
 
-"Guaranteed Salary" recurring on 6 of 9 teams suggests one systemic cause, not
-nine separate ones — worth diagnosing as a single bug before hand-fixing rows.
+**This got worse, not better** — 22/9 teams on 2026-08-04 → 31/12 now. New since
+then: MEM, PHX, WAS; TOR grew 7→9, MIN 1→2. Nothing resolved.
 Committee fixes were sent 2026-07-13; these are what survived.
 
+"Guaranteed Salary" now recurs on 9 of the 12 teams. The earlier hunch was that
+this is one systemic cause — partly right, but not a single missing addend: the
+deltas run in **both** directions and aren't a constant. The real tell is that 5
+of the 9 sheet values carry fractional cents while every site value is a clean
+integer:
+
+    BKN  sheet 178,853,658.6  site 157,458,309
+    MEM  sheet 187,745,791.1  site 202,789,791
+    PHI  sheet 177,974,132.5  site 180,125,050
+    TOR  sheet 211,462,407.4  site 200,902,663
+    UTA  sheet 145,202,503.2  site 140,118,523
+
+The sheet is doing arithmetic the site isn't — proration or partial guarantees
+is the obvious suspect. Chase that before hand-fixing 31 rows.
+
 ### [P1] Picks conveyance — 88 picks still not cleanly modeled
-`poopoo.json` `picks.counts` as of 2026-08-04:
+`poopoo.json` `picks.counts` as of 2026-08-07 — **every count identical to
+2026-08-04; nothing moved in three days**:
 
 - `clean_match` 323, `clean_match_frozen` 7 — fine
 - `needs_investigation` **32** — no explanation yet
@@ -127,15 +146,16 @@ around 2029.
 
 ## 3. Tooling / infrastructure
 
-### [P1] Production runs off an unmerged feature branch, and nothing is pushed
-`nbn-api` is on branch `picks-conveyance-phase0`, **56 commits ahead of
+### [P1] Production runs off an unmerged feature branch
+`nbn-api` is on branch `picks-conveyance-phase0`, **58 commits ahead of
 `main`** — and the systemd service serves directly out of that working
-directory, so that branch *is* production. Both repos also have **28 unpushed
-commits** each (`nbn-today` and `nbn-api`). Working trees are clean, so the
-code isn't at risk of being lost to an edit — but a disk failure loses ~4 weeks
-of work in both repos, and `main` no longer describes what's running.
-Two separate fixes: push both repos, then decide whether to merge the branch
-to `main` or rename it.
+directory, so that branch *is* production. `main` no longer describes what's
+running. Decide whether to merge the branch to `main` or rename it.
+
+~~Both repos have 28 unpushed commits each.~~ **Resolved as of 2026-08-07** —
+`nbn-today` and `nbn-api` both report 0 unpushed against their upstreams, so
+the "disk failure loses ~4 weeks of work" risk is gone. Only the branch
+question remains.
 
 ### [P2] `NBN_ADMIN_TOKEN` still wants rotating
 Leaked into a transcript by an accidental `export $VAR` typo during the Discord
@@ -145,12 +165,16 @@ acting; if it's already rotated, delete this item.
 ### [P2] Pre-commit hook only fills the *top* changelog entry
 `.git/hooks/pre-commit` sets `changelog[0]['version']` if it's `"pending"`.
 A commit that adds two entries, or adds one below the top, leaves `"pending"`
-in the file forever. Five entries are stuck that way right now:
+in the file forever. The same five entries are stuck, identified by date —
+**do not record their indices here, they shift every commit** (these five were
+listed as idx 9, 10, 30, 56, 64 on 2026-08-04 and are idx 14, 15, 35, 61, 69 as
+of 2026-08-07, purely from new entries landing on top):
 
-    idx 9, 10 → 2026-07-24
-    idx 30    → 2026-07-15
-    idx 56    → 2026-06-25
-    idx 64    → 2026-06-23
+    2026-07-24  ×2  "Team pages: renamed the Overview tab to Roster…"
+                    "Draft Picks table: fixed Stepien lock indicator…"
+    2026-07-15      "Move the team Salaries chart from Frivolities…"
+    2026-06-25      "draft: show '→ TEAM' when draft rights were traded…"
+    2026-06-23      "Achievements now award NB¥ on every unlock…"
 
 Fix: fill in *every* pending entry, not just index 0. Then repair the five
 (they can be dated back to the commits that introduced them via `git log`).
