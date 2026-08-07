@@ -243,6 +243,16 @@
           reset.className = 'btn btn-ghost';
           reset.textContent = 'Reset to Jul 1';
           reset.addEventListener('click', async () => {
+            const today = new Date().toISOString().slice(0, 10);
+            const defaultDate = defaultStart(season);
+            if (defaultDate <= today) {
+              const msg = `Are you sure? The default rollover (${defaultDate}) is today or earlier, so removing ` +
+                `this override takes effect immediately — not on a future date. This has the same effects as ` +
+                `advancing the league year directly: it switches the live league year to ${season} everywhere on ` +
+                `the site right now, and permanently locks in every team's Room Exception eligibility (§ 3.2) ` +
+                `using their Team Salary at this exact moment.\n\nContinue?`;
+              if (!window.confirm(msg)) return;
+            }
             reset.disabled = true; status.textContent = 'Resetting…'; status.className = 'status';
             try {
               const r = await fetch(`/api/league-year/${season}`, {
@@ -259,6 +269,22 @@
         row.appendChild(status);
 
         save.addEventListener('click', async () => {
+          const today = new Date().toISOString().slice(0, 10);
+          const immediate = input.value <= today;
+          const msg = immediate
+            ? `Are you sure? ${input.value} is today or earlier, so this takes effect immediately — ` +
+              `not on a future date. Saving it will:\n\n` +
+              `• Switch the live league year to ${season} everywhere on the site right now — every new ` +
+              `transaction from this point validates against ${season}'s Cap/Aprons/MLE below, so make sure ` +
+              `those are filled in first\n` +
+              `• Lock in every team's Room Exception eligibility (§ 3.2) using their Team Salary at this exact ` +
+              `moment — this baseline is permanent once taken and can't be redone later, even by resetting this ` +
+              `date back to default\n` +
+              `• Extend the draft-pick ledger horizon for ${season}\n\n` +
+              `Continue?`
+            : `Save ${season}'s rollover as ${input.value}? This schedules the league year to advance on that ` +
+              `date automatically — nothing changes right now.`;
+          if (!window.confirm(msg)) return;
           save.disabled = true; status.textContent = 'Saving…'; status.className = 'status';
           try {
             const r = await fetch(`/api/league-year/${season}`, {
