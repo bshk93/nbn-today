@@ -113,6 +113,20 @@ Section still reads 👁 manual review only, despite Stepien going live
 2026-07-23. Should be 🔒 + 👁. Badge accuracy is the whole point of the system;
 one wrong badge undermines the rest.
 
+### [P2] Extend-and-trade is referenced but never defined
+§ 3.9's raise table has an "Extend-and-trade" row (5% of Year 1, vs 8% for a
+normal extension), and § 6.2 repeats the 5% figure — but no section anywhere
+defines what an extend-and-trade *is*, when it may be used, or how the
+extension and the trade are sequenced.
+
+The row originally cited "§ 8(e)(2)", which is the real NBA CBA's numbering;
+this rulebook has Articles I–VII only, so it pointed at nothing. Dangling
+citation removed 2026-08-07 — the 5% figure is still correct and still
+enforceable, so nothing is blocked, but the mechanism needs writing.
+
+Interacts with `docs/extensions.md`: `ExtensionDetails.kind` already reserves
+`"extend_and_trade"` as the value that selects the 5% ceiling.
+
 ### [P2] Proration is practiced but undocumented
 The league prorates in-season minimum signings, but the rulebook says nothing
 about it — zero occurrences of "prorat" anywhere in `rulebook/index.html`.
