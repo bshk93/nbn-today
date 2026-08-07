@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.0.385",
+    "date": "2026-08-07",
+    "changes": [
+      "Trade Simulator is now the Transaction Simulator at /transaction-sim/ \u2014 pick a transaction type from the tab bar; old /trade-sim/ links redirect and keep their query params",
+      "Transaction Simulator: added FA signing \u2014 choose team, player, contract years and per-year salary, funding method (\u00a7 3.1\u2013\u00a7 3.6) and Bird tier, then see the same checks the league office runs at submission",
+      "Transaction Simulator: added RFA offer sheets \u2014 validated against whichever team actually ends up signing the player (retaining team on a match, offering team otherwise), including the roster-spot difference between the two",
+      "Signing analysis shows the team's cap position before and after: Team Salary with and without cap holds, cap room, unrenounced free-agent holds, apron position, room to the hard cap, remaining exception balance, and roster count",
+      "Per-year raise percentages are shown as you type, with Flat / 5% / 8% fill buttons; Year 1 seeds from the player's current salary",
+      "The simulator remains read-only \u2014 the new /api/validate/sign and /api/validate/offer_sheet endpoints never write, and there is no path from the simulator to an actual transaction submission"
+    ]
+  },
+  {
     "version": "0.0.384",
     "date": "2026-08-07",
     "changes": [

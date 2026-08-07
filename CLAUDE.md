@@ -210,7 +210,8 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Change H2H display | `h2h/index.html` |
 | Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js:109` |
 | Change the Franchise Records cards | `records-wrap` block in `teams/team.js`; data comes from `build/job.R` ("Writing franchise records CSV") |
-| Change the trade simulator's spreadsheet export | `buildTradeWorkbook` — `trade-sim/index.html`; the .xlsx writer is `trade-sim/xlsx.js`, and publishing to Google Sheets is `POST /api/trade-sheet` (`nbn-api/routers/google_sheets.py`) |
+| Change the transaction simulator's spreadsheet export | `buildTradeWorkbook` — `transaction-sim/index.html`; the .xlsx writer is `transaction-sim/xlsx.js`, and publishing to Google Sheets is `POST /api/trade-sheet` (`nbn-api/routers/google_sheets.py`). Export is trade-mode only |
+| Add a transaction type to the simulator | `setMode` / `runSignCheck` — `transaction-sim/index.html`, plus a `POST /api/validate/{type}` endpoint in `nbn-api/routers/transactions.py` (see "Transaction simulator" below) |
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
 
 ---
@@ -291,6 +292,43 @@ Valid roles are enforced at member creation time — `POST /api/members` rejects
 | `PUT /api/trading-block/{team}` | Team role or admin | Replaces that team's list; body is `[{player, notes}]` |
 
 Data stored in `/var/lib/nothing-but-stats/trading-block.json`. The page at `tradeblock/index.html` fetches this API plus the relevant teams' roster CSVs (for team membership) and `player-bios.json`/`GET /api/ovr/current` to join player metadata (POS, OVR, AGE, salary columns).
+
+### Validation endpoints (Transaction Simulator)
+
+`/transaction-sim/` models a transaction and reports the legal checks against
+it. It is **read-only by design** — there is deliberately no path from the
+simulator to an actual submission.
+
+| Endpoint | Validator | Fact sheet |
+|---|---|---|
+| `POST /api/validate/trade` | `_validate_trade` | `_trade_fact_sheet` |
+| `POST /api/validate/sign` | `_validate_sign` | `_signing_fact_sheet` |
+| `POST /api/validate/offer_sheet` | `_validate_offer_sheet` | `_signing_fact_sheet` |
+
+All three are public (no auth), take the same body shape as the corresponding
+`details` in `POST /api/transactions`, and return
+`{legal, checks[], fact_sheet}`. They share their validators with the submit
+path, so a "legal" verdict here is what the office accepts — **but they never
+write**: no roster, bio, team-state or ledger change, and they don't take the
+API lock. Note that `POST /api/transactions` *applies for real* when checks
+pass; it is not a dry run, which is exactly why these exist separately.
+
+Key invariant: **the fact sheet must never do its own cap math.** Both fact
+sheets are built from the same helpers the validators use
+(`_signee_existing_hold`, `_resolve_mle_bucket`, `_compute_team_salary*`,
+`_trade_flows`), so the sim can't show a team room the validator didn't credit
+it with. When adding a check, reuse the helper rather than recomputing.
+
+`_require_validatable` rejects unknown teams/players with a 400 instead of
+scoring them — a validator handed an unknown team reads its salary as $0 and
+every check passes vacuously, which would print a confident "LEGAL" for a
+transaction that was never evaluated.
+
+Coverage is uneven and the UI says so: `sign`/`offer_sheet`/`trade` have real
+validators, while `release`, `renounce`, `option` and `pick` are stubs
+returning `[]` — those types are deliberately **not** offered in the simulator,
+since a verdict off zero checks is worse than no verdict. § 3.7 (DPE) and § 3.8
+(Bird tenure, self-declared) remain unmodeled for signings.
 
 ### Member management
 

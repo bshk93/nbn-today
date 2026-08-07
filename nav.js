@@ -148,7 +148,7 @@ const SITE_PAGES = [
   { title: 'Calendar', href: '/calendar', icon: '📅' },
   { title: 'Standings & Playoffs', href: '/standings', icon: '🏅' },
   { title: 'Tradeblock', href: '/tradeblock/', icon: '🤝' },
-  { title: 'Trade Simulator', href: '/trade-sim/', icon: '⚖️' },
+  { title: 'Transaction Simulator', href: '/transaction-sim/', icon: '⚖️' },
   { title: 'Trade Retrospectives', href: '/trade-retros/', icon: '🔍' },
   { title: 'Compare Players', href: '/compare/', icon: '⇆' },
   { title: 'Free Agency', href: '/free-agency/', icon: '✍️' },

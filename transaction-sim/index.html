@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Transaction Simulator — NBN</title>
+  <style>
+    .page { max-width: 1280px; margin: 0 auto; }
+    header { margin-bottom: 1.75rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: var(--text-muted); margin-top: 0.3rem; font-size: 0.9rem; }
+
+    /* Team cards */
+    .teams-container { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start; }
+    .team-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; flex: 1 1 280px; min-width: 260px; max-width: 360px; }
+    .team-panel-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.6rem; }
+    .team-sel { flex: 1; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.9rem; padding: 0.35rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; }
+    .team-sel:focus { border-color: var(--accent); }
+    .team-logo { width: 24px; height: 24px; object-fit: contain; }
+    .remove-team-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0.1rem 0.3rem; border-radius: 4px; }
+    .remove-team-btn:hover { color: var(--danger); background: #2d0a0a; }
+    .exc-sel { width: 100%; margin-top: 0.5rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); font-size: 0.78rem; padding: 0.3rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; display: none; }
+    .exc-sel:focus { border-color: var(--accent); }
+    .exc-sel option { color: var(--text-primary); }
+    .panel-body { padding: 0.5rem 0; max-height: 400px; overflow-y: auto; }
+    .panel-section-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); padding: 0.5rem 1rem 0.2rem; }
+    .trade-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 1rem; cursor: pointer; border-radius: 0; transition: background 0.08s; flex-wrap: wrap; }
+    .trade-row:hover { background: var(--bg-hover); }
+    .trade-row input[type=checkbox] { accent-color: var(--market-positive); flex-shrink: 0; width: 14px; height: 14px; cursor: pointer; }
+    .trade-row-name { flex: 1; font-size: 0.85rem; color: var(--text-secondary); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .trade-row-meta { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+    .trade-row.checked .trade-row-name { color: var(--text-primary); font-weight: 600; }
+    .trade-row.checked .trade-row-meta { color: var(--market-positive); }
+    .panel-empty { padding: 1.25rem 1rem; font-size: 0.82rem; color: var(--text-muted); text-align: center; }
+    .panel-loading { padding: 1.25rem 1rem; font-size: 0.82rem; color: var(--text-muted); text-align: center; }
+
+    /* Destination selector — only shown once 3+ teams are in the trade */
+    .dest-sel { width: 100%; margin-top: 0.15rem; background: var(--bg-page); border: 1px solid #f59e0b55; border-radius: 5px; color: var(--gold); font-size: 0.74rem; padding: 0.2rem 0.35rem; font-family: inherit; cursor: pointer; }
+    .dest-sel.unset { border-color: #f8717199; color: var(--danger-light); }
+
+    /* Add-team control */
+    .add-team-row { margin-bottom: 1.25rem; }
+    .add-team-btn { background: var(--bg-card); border: 1px dashed var(--text-dim); border-radius: 8px; color: var(--text-muted); font-size: 0.82rem; padding: 0.5rem 1rem; cursor: pointer; font-family: inherit; }
+    .add-team-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+    .add-team-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Player type badges */
+    .type-badge { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.35rem; border-radius: 4px; margin-right: 0.4rem; flex-shrink: 0; }
+    .type-player     { background: #1e293b; color: var(--accent-light); }
+    .type-two-way     { background: #1e293b; color: var(--purple-light); }
+    .type-draft-rights { background: #1e293b; color: #fcd34d; }
+    .type-cap-hold    { background: var(--gold-bg); color: var(--danger-alt); }
+    .type-dead        { background: var(--danger-bg); color: var(--danger); }
+
+    /* Sign-and-trade mini-form */
+    .sat-form { margin: 0.2rem 1rem 0.6rem; padding: 0.6rem 0.7rem; background: var(--bg-page); border: 1px solid #f59e0b55; border-radius: 8px; width: 100%; }
+    .sat-form-title { font-size: 0.7rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .sat-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+    .sat-row label { font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; }
+    .sat-row select, .sat-row input[type=number] { background: var(--bg-card); border: 1px solid var(--border); border-radius: 5px; color: var(--text-primary); font-size: 0.78rem; padding: 0.25rem 0.4rem; font-family: inherit; }
+    .sat-salary-input { width: 110px; }
+    .sat-salary-label { font-size: 0.68rem; color: var(--text-muted); margin-right: 0.15rem; }
+
+    /* Live status line */
+    .check-status { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem; min-height: 1.1rem; }
+    .check-status.evaluating { color: var(--text-muted); }
+    .check-status.err { color: var(--danger); }
+
+    /* Transaction-type tabs */
+    .mode-tabs { display: flex; gap: 0.35rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+    .mode-tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-family: inherit; font-size: 0.85rem; font-weight: 600; padding: 0.5rem 0.9rem; cursor: pointer; margin-bottom: -1px; }
+    .mode-tab:hover { color: var(--text-secondary); }
+    .mode-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+
+    /* Signing / offer-sheet form */
+    .sign-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .sign-row { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: flex-end; margin-bottom: 0.85rem; }
+    .sign-row:last-child { margin-bottom: 0; }
+    .sign-field { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 190px; min-width: 150px; }
+    /* An explicit display: flex beats the UA stylesheet's [hidden] rule, so the
+       mode-specific fields need this or they stay visible in the wrong mode. */
+    .sign-field[hidden] { display: none; }
+    .sign-field.narrow { flex: 0 1 130px; }
+    .sign-field label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+    .sign-field select, .sign-field input { background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 0.85rem; padding: 0.4rem 0.5rem; outline: none; width: 100%; }
+    .sign-field select:focus, .sign-field input:focus { border-color: var(--accent); }
+    .sign-field .hint { font-size: 0.7rem; color: var(--text-muted); }
+    .salary-years { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .salary-year { display: flex; flex-direction: column; gap: 0.2rem; }
+    .salary-year label { font-size: 0.65rem; font-weight: 700; color: var(--text-dim); letter-spacing: 0.05em; }
+    .salary-year input { width: 130px; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 0.82rem; padding: 0.35rem 0.5rem; outline: none; }
+    .salary-year input:focus { border-color: var(--accent); }
+    .salary-year .raise { font-size: 0.62rem; color: var(--text-muted); }
+    .sign-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+    .preset-btn { background: var(--bg-page); border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); font-family: inherit; font-size: 0.7rem; padding: 0.25rem 0.55rem; cursor: pointer; }
+    .preset-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+
+    /* Results */
+    .results { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .results-header { padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .results-header .rh-title { flex: 1; min-width: 0; }
+    .export-btn { flex-shrink: 0; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-secondary); font-family: inherit; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.3rem 0.7rem; cursor: pointer; }
+    .export-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+    .export-btn.primary { border-color: var(--accent); color: var(--link); }
+    .export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .export-status { padding: 0 1.25rem; font-size: 0.8rem; color: var(--text-muted); text-transform: none; letter-spacing: 0; font-weight: 400; }
+    .export-status:not(:empty) { padding: 0.6rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .export-status a { color: var(--link); font-weight: 600; }
+    .export-status.err { color: var(--danger); }
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+    .result-col { padding: 1rem 1.25rem; border-left: 1px solid var(--border); }
+    .result-col:first-child { border-left: none; }
+    .result-team { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.75rem; }
+    .result-row { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.35rem; color: var(--text-secondary); }
+    .result-row .label { color: var(--text-muted); }
+    .result-divider { border: none; border-top: 1px solid var(--border); margin: 0.6rem 0; }
+    .result-status { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 5px; margin-top: 0.5rem; }
+    .status-ok   { background: #052e16; color: var(--success); border: 1px solid var(--success-dark-bg); }
+    .status-warn { background: #1c1200; color: var(--gold); border: 1px solid var(--gold-chip-border); }
+    .status-err  { background: #2d0a0a; color: var(--danger); border: 1px solid var(--danger-border); }
+    .result-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; line-height: 1.5; }
+    .results-summary { padding: 0.75rem 1.25rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--text-muted); }
+    .results-summary strong { color: var(--text-primary); }
+
+    /* Validation checklist (rendered from the same checks the API returns) */
+    .vc-list { border-top: 1px solid var(--border); padding: 0.7rem 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .vc-row { display: flex; gap: 0.5rem; font-size: 0.82rem; line-height: 1.45; align-items: flex-start; }
+    .vc-icon { flex-shrink: 0; font-weight: 700; width: 1rem; text-align: center; }
+    .vc-row.pass { color: var(--text-secondary); }    .vc-row.pass .vc-icon { color: var(--success); }
+    .vc-row.warning { color: #fcd34d; } .vc-row.warning .vc-icon { color: var(--gold); }
+    .vc-row.error { color: var(--danger-light); }   .vc-row.error .vc-icon { color: var(--danger); }
+
+    /* "What this checks" documentation panel */
+    .checks-doc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0.4rem 1.1rem; margin-bottom: 1.25rem; }
+    .checks-doc summary { cursor: pointer; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); padding: 0.45rem 0; list-style: none; }
+    .checks-doc summary::-webkit-details-marker { display: none; }
+    .checks-doc summary::before { content: '▸ '; color: var(--text-dim); }
+    .checks-doc[open] summary::before { content: '▾ '; }
+    .checks-doc ul { margin: 0.3rem 0 0.5rem 1.1rem; padding: 0; }
+    .checks-doc li { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.55; margin-bottom: 0.35rem; }
+    .checks-doc li strong { color: var(--text-primary); }
+    .checks-doc ul ul { margin: 0.3rem 0 0.4rem 1rem; }
+    .checks-doc ul ul li { font-size: 0.8rem; color: var(--text-muted); }
+    .checks-doc h4 { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0.9rem 0 0.3rem; }
+    .checks-doc em { color: var(--runnerup-border); font-style: italic; }
+    .checks-doc .doc-note { font-size: 0.75rem; color: var(--text-muted); line-height: 1.55; margin: 0.2rem 0 0.5rem; }
+    .checks-doc code { background: var(--bg-page); padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.72rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav"></nav>
+  <header>
+    <h1>Transaction Simulator</h1>
+    <p>Model a transaction — a trade, a free-agent signing, or an RFA offer sheet — and run it through the league's real validation rules.</p>
+  </header>
+
+  <div class="mode-tabs" id="mode-tabs">
+    <button type="button" class="mode-tab active" data-mode="trade">Trade</button>
+    <button type="button" class="mode-tab" data-mode="sign">FA Signing</button>
+    <button type="button" class="mode-tab" data-mode="offer_sheet">RFA Offer Sheet</button>
+  </div>
+
+  <section id="mode-trade">
+    <div class="teams-container" id="teams-container"></div>
+    <div class="add-team-row"><button type="button" class="add-team-btn" id="add-team-btn">+ Add another team</button></div>
+  </section>
+
+  <section id="mode-sign" hidden>
+    <div class="sign-card">
+      <div class="sign-row">
+        <div class="sign-field" id="f-team">
+          <label for="sign-team">Signing team</label>
+          <select id="sign-team"></select>
+        </div>
+        <div class="sign-field" id="f-offering" hidden>
+          <label for="sign-offering">Offering team</label>
+          <select id="sign-offering"></select>
+        </div>
+        <div class="sign-field" id="f-outcome" hidden>
+          <label for="sign-outcome">Outcome</label>
+          <select id="sign-outcome">
+            <option value="not_matched">Not matched — offering team signs</option>
+            <option value="matched">Matched — current team retains</option>
+          </select>
+        </div>
+        <div class="sign-field" style="flex:2 1 260px">
+          <label for="sign-player">Player</label>
+          <input id="sign-player" list="player-list" autocomplete="off" placeholder="Type a name…">
+          <datalist id="player-list"></datalist>
+          <span class="hint" id="player-hint"></span>
+        </div>
+      </div>
+
+      <div class="sign-row">
+        <div class="sign-field narrow">
+          <label for="sign-type">Contract</label>
+          <select id="sign-type">
+            <option value="standard">Standard</option>
+            <option value="two-way">Two-way</option>
+          </select>
+        </div>
+        <div class="sign-field narrow">
+          <label for="sign-years">Years</label>
+          <select id="sign-years"></select>
+        </div>
+        <div class="sign-field">
+          <label for="sign-method">Funded by (§ 3.1–3.6)</label>
+          <select id="sign-method">
+            <option value="">— not declared —</option>
+            <option value="cap_space">Cap space</option>
+            <option value="bird_rights">Bird Rights</option>
+            <option value="minimum">Minimum</option>
+            <option value="mle">MLE (team's current bucket)</option>
+            <option value="ntmle">Non-Taxpayer MLE</option>
+            <option value="tmle">Taxpayer MLE</option>
+            <option value="room_exception">Room Exception</option>
+            <option value="bae">Bi-Annual Exception</option>
+          </select>
+        </div>
+        <div class="sign-field">
+          <label for="sign-bird">Bird rights tier</label>
+          <select id="sign-bird">
+            <option value="">— none / not applicable —</option>
+            <option value="QVFA">Full Bird (QVFA)</option>
+            <option value="EQVFA">Early Bird (EQVFA)</option>
+            <option value="Non-QVFA">Non-Bird (Non-QVFA)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sign-row">
+        <div class="sign-field" style="flex:1 1 100%">
+          <label>Salary by season</label>
+          <div class="salary-years" id="salary-years"></div>
+          <div class="sign-presets">
+            <span class="hint">Fill:</span>
+            <button type="button" class="preset-btn" data-preset="flat">Flat</button>
+            <button type="button" class="preset-btn" data-preset="5">5% raises</button>
+            <button type="button" class="preset-btn" data-preset="8">8% raises (Bird)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="check-status" id="check-status">Select at least two teams and pick assets — the rubric evaluates live.</div>
+
+  <div class="results" id="results" style="display:none"></div>
+
+  <details class="checks-doc" id="doc-sign" hidden>
+    <summary>How signing validation works</summary>
+    <p class="doc-note">The simulator and the league's transaction system run the <em>same</em> rubric: the page calls <code>POST /api/validate/sign</code> (or <code>/api/validate/offer_sheet</code>), which shares its validator with <code>POST /api/transactions</code>. A "legal" result here is what the office will accept. These endpoints are <strong>read-only</strong> — nothing entered here is submitted, recorded, or applied to a roster.</p>
+
+    <h4>Funding method (§ 3.1 – § 3.6)</h4>
+    <p class="doc-note">The declared method has to actually be available. <strong>Cap space</strong> is measured against Team Salary <em>with cap holds included</em> (§ 3.10) — an unrenounced hold occupies room until it's cleared, so a team that has renounced on the league sheet but not in the ledger will read as having no room here. <strong>NTMLE/TMLE/Room Exception</strong> are checked against the remaining season balance, and a generic "MLE" resolves to whichever bucket the team is already locked into. The NTMLE is unavailable at or above the 1st Apron (§ 3.3); the Room Exception requires Team Salary to have been more than a full NTMLE below the Cap at the start of the league year (§ 3.2). <strong>Bird Rights</strong> and <strong>minimum</strong> carry no ceiling of their own and are checked elsewhere.</p>
+
+    <h4>Contract terms</h4>
+    <ul>
+      <li><strong>Raises (§ 3.13)</strong> — capped at 5% of Year 1, or 8% with Full/Early Bird rights.</li>
+      <li><strong>Maximum salary (§ 3.11)</strong> — 25/30/35% of the Cap by experience tier. Advisory only: experience is inferred from the player's real NBA draft year, not independently verified, so this reports as a <em>warning</em>.</li>
+      <li><strong>Minimum contracts (§ 3.12)</strong> — a 1-year minimum's cap hit should equal the 2-year veteran minimum. Also advisory.</li>
+    </ul>
+
+    <h4>Cap position</h4>
+    <ul>
+      <li><strong>Hard cap (§ 1.3 – § 1.4)</strong> — a team hard-capped at an apron can't exceed it after the signing; a league-wide hard cap, if set, applies to everyone. Measured on the ex-holds figure.</li>
+      <li><strong>Buyout signings (§ 1.5.2)</strong> — a team at or above the 1st Apron may not sign a player waived this season whose terminated contract paid above the full NTMLE.</li>
+      <li><strong>Roster size (Article II)</strong> — 15 standard players maximum.</li>
+      <li><strong>Cap holds (§ 3.10)</strong> — if the signee is already carried as this team's own cap hold, that hold is <em>replaced</em> by the new Year 1 salary, not stacked on top of it.</li>
+    </ul>
+
+    <h4>Offer sheets (§ 3.15)</h4>
+    <p class="doc-note">An offer sheet is validated against whichever team ends up signing the player: the <strong>retaining</strong> team if the outcome is a match, the <strong>offering</strong> team if not. A match keeps the player on a roster spot they already occupy, so it doesn't add to the roster count; a non-match does. Everything else about § 3.15 — the 48-hour match clock, good-faith fit, Gilbert Arenas eligibility — stays manual review and is <em>not</em> checked here.</p>
+
+    <p class="doc-note">Not modeled: § 3.7 DPE (no exception type exists), and § 3.8 Bird Rights tenure, which is self-declared above and never independently verified. A signing can pass every check here and still be wrong if the declared tier is wrong.</p>
+  </details>
+
+  <details class="checks-doc" open id="doc-trade">
+    <summary>How trade validation works</summary>
+    <p class="doc-note">The simulator and the league's transaction system run the <em>same</em> rubric: the page calls <code>POST /api/validate/trade</code>, which shares its validator with <code>POST /api/transactions</code>. A "legal" result here is what the office will accept. Picks are tracked but carry no cap or roster weight. With 3+ teams in the deal, each selected asset needs an explicit destination — with only 2, the destination is implied and there's nothing extra to pick.</p>
+
+    <h4>Salary matching — max incoming salary by team type</h4>
+    <ul>
+      <li><strong>Below the 1st Apron (§ 4.2)</strong> — tiered on the salary you send out:
+        <ul>
+          <li>outgoing ≤ $8,527,000 → max incoming = <strong>2 × outgoing + $250,000</strong></li>
+          <li>$8,527,000 &lt; outgoing ≤ $29,000,000 → max incoming = <strong>outgoing + $8,527,000</strong></li>
+          <li>outgoing &gt; $29,000,000 → max incoming = <strong>1.25 × outgoing + $250,000</strong></li>
+        </ul>
+      </li>
+      <li><strong>At/above the 1st Apron (§ 4.3)</strong> — no tiers: max incoming = <strong>outgoing + $250,000</strong>.</li>
+      <li><strong>At/above the 2nd Apron (§ 4.4)</strong> — same outgoing + $250,000 limit, <em>and</em> the team may not <strong>aggregate</strong> (combine two or more outgoing salaries) to match incoming. Flagged as a warning for the office to verify.</li>
+    </ul>
+    <p class="doc-note">A team's tier is set by its salary <em>before</em> the trade. Incoming ≤ outgoing always matches. In a multi-team deal, each team's own outgoing/incoming totals (across all its legs) are what's matched — not pairwise per partner.</p>
+
+    <h4>MLE trade absorption (§ 4.2a)</h4>
+    <p class="doc-note">Pick an exception under a team's selector to absorb that team's incoming salary against its remaining season balance instead of matching outgoing salary — outgoing sent back doesn't matter under this path. Eligibility mirrors free-agent use of the same exception: NTMLE is blocked at/above the 1st Apron, TMLE at/above the 2nd Apron, the BAE at/above the 1st Apron (and unavailable in consecutive seasons, or alongside cap space/Room Exception use), and the Room Exception requires Team Salary more than a full NTMLE below the Cap. Using the NTMLE, TMLE, or BAE this way triggers the same hard-cap-at-apron effect as a signing.</p>
+
+    <h4>Trade Exceptions (§ 4.1a)</h4>
+    <p class="doc-note">If a team has an unexpired TPE on file, it appears as an extra option in the same selector ("TPE: $X remaining"). A TPE covers incoming salary up to its remaining balance with no outgoing salary required — but it cannot be combined with another exception, or with any outgoing salary from that team, in the same trade.</p>
+
+    <h4>Sign-and-trade (§ 3.14)</h4>
+    <p class="doc-note">Checking a <strong>Cap Hold</strong> player (a current free-agent hold — UFA/RFA — the team is carrying) reveals a contract-terms form: years (3–4), a per-year salary schedule, Bird-rights tier, and how the new deal is funded. Submitting with this filled in validates it as a sign-and-trade: contract length, the 5% raise cap (Bird's 8% doesn't apply here), that the MLE doesn't fund any part of it, that the signing team hasn't already used the Taxpayer MLE this season, Base Year Compensation where it applies, and that the receiving team ends up below the 1st Apron.</p>
+
+    <h4>Other checks</h4>
+    <ul>
+      <li><strong>Hard cap</strong> — a team hard-capped at an apron (per its team-state) can't exceed that apron after the trade; a league-wide hard cap, if set, applies to everyone.</li>
+      <li><strong>Roster size (Article II)</strong> — 15 standard players in-season; the offseason ceiling is 20. Ending at 16–20 is a warning (trim to 15 before the season); above 20 is a hard block.</li>
+      <li><strong>Leg count (§ 4.1)</strong> — a normal trade has two or more legs. Single-sided legs are allowed (e.g. a draft-show split) but flagged.</li>
+    </ul>
+  </details>
+</div>
+
+<script src="/league-time.js"></script>
+<script src="/transaction-sim/xlsx.js"></script>
+<script>
+const TEAMS = {
+  ATL:"Atlanta Hawks",BKN:"Brooklyn Nets",BOS:"Boston Celtics",CHA:"Charlotte Hornets",
+  CHI:"Chicago Bulls",CLE:"Cleveland Cavaliers",DAL:"Dallas Mavericks",DEN:"Denver Nuggets",
+  DET:"Detroit Pistons",GSW:"Golden State Warriors",HOU:"Houston Rockets",IND:"Indiana Pacers",
+  LAC:"LA Clippers",LAL:"Los Angeles Lakers",MEM:"Memphis Grizzlies",MIA:"Miami Heat",
+  MIL:"Milwaukee Bucks",MIN:"Minnesota Timberwolves",NOP:"New Orleans Pelicans",NYK:"New York Knicks",
+  OKC:"Oklahoma City Thunder",ORL:"Orlando Magic",PHI:"Philadelphia 76ers",PHX:"Phoenix Suns",
+  POR:"Portland Trail Blazers",SAC:"Sacramento Kings",SAS:"San Antonio Spurs",TOR:"Toronto Raptors",
+  UTA:"Utah Jazz",WAS:"Washington Wizards",
+};
+
+// Salary-matching, apron, hard-cap, and roster-size rules all live server-side
+// in POST /api/validate/trade (shared with the transaction submit path). This
+// page sends the selected assets there and renders whatever checks come back —
+// no cap math is duplicated in the client.
+
+let allBios = {};        // slug → bio (for roster display + salary labels in the picker)
+let allOvr = {};         // slug → current OVR (from ovr-history.json, the single source of truth)
+let rosterData = {};     // abbr → [{slug, ovr, name, salary, type, capHold, pos}]
+let picksData = {};      // abbr → [{year, round, team, type}]
+let tpeData = {};        // abbr → [{id, remaining, amount, expires_date, ...}] (unexpired, GET /api/trade-exceptions/{team})
+
+// Team "slots" — a dynamic list of cards, each independently assigned a team.
+// Unlike the old fixed two-side model, a slot's outgoing assets don't have an
+// implied destination once 3+ teams are in play, so each selection carries
+// its own destination team alongside it.
+let teamSlots = [];      // ordered array of slot ids, e.g. ['t1', 't2', 't3']
+let slotTeam = {};       // slotId → abbr ('' if unset)
+let nextSlotId = 1;
+// slotId → { players: Map<slug, destAbbr|null>, picks: Map<pickKey, destAbbr|null> }
+let selections = {};
+
+// Sign-and-trade contract terms the user has entered for a cap-hold player,
+// keyed by slug (a slug only ever sits on one slot's roster, so this doesn't
+// need to be split by slot). Persists across re-renders/unchecks so typed-in
+// terms aren't lost if the row is toggled off and back on.
+let signTerms = {};      // slug → { years, salaries: [y1,y2,...], birdType, method }
+
+// The current league year (cap/contract clock). Set from GET /api/league-year at
+// page load; falls back to the date-based season if that fetch fails.
+let LEAGUE_YEAR = null;
+
+// The most recent /api/validate/trade response, kept so the spreadsheet export
+// writes exactly the figures currently on screen rather than recomputing them.
+let lastResult = null;
+
+function parseSalaryNum(v) {
+  if (!v) return 0;
+  const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
+  return isNaN(n) ? 0 : Math.round(n);
+}
+
+function fmtM(n) {
+  if (!n) return '$0';
+  return '$' + (n / 1e6).toFixed(1) + 'M';
+}
+
+function displayName(raw) {
+  if (!raw) return '';
+  const [last, first] = raw.split(', ');
+  // Bios store names uppercase, so every word has to be re-cased — including
+  // the part after a hyphen or apostrophe ("Gilgeous-Alexander", "O'Neale").
+  const tc = s => s.toLowerCase().replace(/(^|[\s\-'’])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
+  return first ? `${tc(first)} ${tc(last)}` : tc(last);
+}
+
+function curYr() {
+  if (LEAGUE_YEAR) return LEAGUE_YEAR;
+  const now = new Date(), y = now.getFullYear() % 100, m = now.getMonth() + 1;
+  return m < 7 ? `${String(y-1).padStart(2,'0')}-${String(y).padStart(2,'0')}` : `${String(y).padStart(2,'0')}-${String((y+1)%100).padStart(2,'0')}`;
+}
+
+// 'YY-YY' -> the following season, e.g. '26-27' -> '27-28'.
+function seasonAfter(s) {
+  const [a, b] = s.split('-').map(Number);
+  return `${String((a + 1) % 100).padStart(2, '0')}-${String((b + 1) % 100).padStart(2, '0')}`;
+}
+
+const _FA_HOLD_TYPES = ['UFA', 'RFA'];
+
+function typeLabel(p) {
+  if (p.capHold) return `Cap Hold (${p.capHold})`;
+  if (p.type === 'two-way') return 'Two-Way';
+  if (p.type === 'draft-rights') return 'Draft Rights';
+  if (p.type === 'dead') return 'Dead Cap';
+  return 'Player';
+}
+
+function typeBadgeClass(p) {
+  if (p.capHold) return 'type-cap-hold';
+  if (p.type === 'two-way') return 'type-two-way';
+  if (p.type === 'draft-rights') return 'type-draft-rights';
+  if (p.type === 'dead') return 'type-dead';
+  return 'type-player';
+}
+
+// ── Signing / offer-sheet mode ────────────────────────────────────────────────
+// Contract terms, funding method and Bird tier are all sent verbatim to
+// POST /api/validate/sign (or /api/validate/offer_sheet), which runs the same
+// _validate_sign / _validate_offer_sheet the submit path runs. Nothing is
+// computed here — this page only collects the terms and renders the verdict.
+
+let MODE = 'trade';
+const signState = { years: 2, salaries: [0, 0] };
+
+// Display name -> slug, for the player datalist. Bios carry no duplicate
+// display names (verified against the live file), so the name alone is an
+// unambiguous key; if that ever changes, the lookup below simply resolves to
+// whichever entry was written last rather than guessing.
+let nameToSlug = {};
+
+function setMode(mode) {
+  MODE = mode;
+  document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.getElementById('mode-trade').hidden = (mode !== 'trade');
+  document.getElementById('mode-sign').hidden = (mode === 'trade');
+  document.getElementById('doc-trade').hidden = (mode !== 'trade');
+  document.getElementById('doc-sign').hidden = (mode === 'trade');
+  // An offer sheet is signed by the offering team unless it's matched, so the
+  // team field is labelled and sourced differently from a plain signing.
+  const isOffer = (mode === 'offer_sheet');
+  document.getElementById('f-team').hidden = isOffer;
+  document.getElementById('f-offering').hidden = !isOffer;
+  document.getElementById('f-outcome').hidden = !isOffer;
+  document.getElementById('results').style.display = 'none';
+  setStatus('');
+  updateCheckBtn();
+}
+
+function buildSalaryInputs() {
+  const wrap = document.getElementById('salary-years');
+  wrap.innerHTML = '';
+  let season = curYr();
+  for (let i = 0; i < signState.years; i++) {
+    const cell = document.createElement('div'); cell.className = 'salary-year';
+    const lab = document.createElement('label'); lab.textContent = season;
+    const input = document.createElement('input');
+    input.type = 'number'; input.step = '1000'; input.min = '0';
+    input.value = signState.salaries[i] || 0;
+    const idx = i;
+    input.addEventListener('input', () => {
+      signState.salaries[idx] = +input.value || 0;
+      renderRaiseHints();
+      updateCheckBtn();
+    });
+    const raise = document.createElement('span'); raise.className = 'raise';
+    cell.appendChild(lab); cell.appendChild(input); cell.appendChild(raise);
+    wrap.appendChild(cell);
+    season = seasonAfter(season);
+  }
+  renderRaiseHints();
+}
+
+// Year-over-year raise as a % of Year 1 — the figure § 3.13 actually caps
+// (5%, or 8% with Bird rights). Shown purely as a typing aid; the binding
+// check is _check_contract_raises server-side.
+function renderRaiseHints() {
+  const cells = document.querySelectorAll('#salary-years .salary-year');
+  const base = signState.salaries[0] || 0;
+  cells.forEach((cell, i) => {
+    const el = cell.querySelector('.raise');
+    if (i === 0 || !base) { el.textContent = ''; return; }
+    const step = (signState.salaries[i] || 0) - (signState.salaries[i - 1] || 0);
+    const pct = (step / base) * 100;
+    el.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% of Yr 1`;
+    el.style.color = pct > 8.01 ? 'var(--danger)' : (pct > 5.01 ? 'var(--gold)' : 'var(--text-muted)');
+  });
+}
+
+function applyPreset(kind) {
+  const base = signState.salaries[0] || 0;
+  for (let i = 1; i < signState.years; i++) {
+    const step = kind === 'flat' ? 0 : Math.round(base * (kind === '8' ? 0.08 : 0.05));
+    signState.salaries[i] = (signState.salaries[i - 1] || 0) + step;
+  }
+  buildSalaryInputs();
+  updateCheckBtn();
+}
+
+function currentSignSlug() {
+  return nameToSlug[document.getElementById('sign-player').value.trim().toLowerCase()] || null;
+}
+
+// Seed Year 1 from what the player is already on the books for, so the common
+// case (re-signing a cap hold) starts from a real number instead of $0.
+function onPlayerPicked() {
+  const slug = currentSignSlug();
+  const hint = document.getElementById('player-hint');
+  if (!slug) {
+    hint.textContent = document.getElementById('sign-player').value.trim() ? 'No player by that name.' : '';
+    updateCheckBtn();
+    return;
+  }
+  const bio = allBios[slug] || {};
+  const yr = curYr();
+  const hold = (bio.cap_holds || {})[yr];
+  const sal = parseSalaryNum((bio.salaries || {})[yr]);
+  hint.textContent = [
+    (bio.pos || []).join('/'),
+    hold ? `${yr} hold: ${hold}` : null,
+    sal ? `currently ${fmtM(sal)}` : null,
+  ].filter(Boolean).join(' · ');
+  if (sal && !signState.salaries[0]) {
+    signState.salaries[0] = sal;
+    applyPreset('flat');
+    return;
+  }
+  updateCheckBtn();
+}
+
+function setupSignForm() {
+  const teamOpts = Object.keys(TEAMS).sort()
+    .map(ab => `<option value="${ab}">${ab} — ${TEAMS[ab]}</option>`).join('');
+  document.getElementById('sign-team').innerHTML = `<option value="">— select —</option>${teamOpts}`;
+  document.getElementById('sign-offering').innerHTML = `<option value="">— select —</option>${teamOpts}`;
+
+  const yearsSel = document.getElementById('sign-years');
+  yearsSel.innerHTML = [1, 2, 3, 4, 5].map(n => `<option value="${n}"${n === signState.years ? ' selected' : ''}>${n} year${n > 1 ? 's' : ''}</option>`).join('');
+
+  // Datalist over every known player — the page already holds all bios, so
+  // this costs nothing extra and lets the sim model a signing for anyone,
+  // not just players currently on a roster.
+  const dl = document.getElementById('player-list');
+  const frag = document.createDocumentFragment();
+  Object.entries(allBios).forEach(([slug, bio]) => {
+    const label = displayName(bio.name || slug);
+    if (!label) return;
+    nameToSlug[label.toLowerCase()] = slug;
+    const o = document.createElement('option'); o.value = label;
+    frag.appendChild(o);
+  });
+  dl.appendChild(frag);
+
+  yearsSel.addEventListener('change', () => {
+    signState.years = +yearsSel.value;
+    signState.salaries.length = signState.years;
+    for (let i = 0; i < signState.years; i++) signState.salaries[i] = signState.salaries[i] || 0;
+    buildSalaryInputs();
+    updateCheckBtn();
+  });
+  document.getElementById('sign-player').addEventListener('input', onPlayerPicked);
+  ['sign-team', 'sign-offering', 'sign-outcome', 'sign-type', 'sign-method', 'sign-bird']
+    .forEach(id => document.getElementById(id).addEventListener('change', updateCheckBtn));
+  document.querySelectorAll('.preset-btn')
+    .forEach(b => b.addEventListener('click', () => applyPreset(b.dataset.preset)));
+  document.querySelectorAll('.mode-tab')
+    .forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+  buildSalaryInputs();
+}
+
+async function runSignCheck() {
+  const el = document.getElementById('results');
+  const isOffer = (MODE === 'offer_sheet');
+  const slug = currentSignSlug();
+  const team = document.getElementById(isOffer ? 'sign-offering' : 'sign-team').value;
+
+  if (!team) { el.style.display = 'none'; setStatus(`Select the ${isOffer ? 'offering' : 'signing'} team.`); return; }
+  if (!slug) { el.style.display = 'none'; setStatus('Select a player.'); return; }
+  if (!(signState.salaries[0] > 0)) { el.style.display = 'none'; setStatus('Enter a Year 1 salary.'); return; }
+
+  const salaries = {};
+  let season = curYr();
+  for (let i = 0; i < signState.years; i++) { salaries[season] = `$${signState.salaries[i] || 0}`; season = seasonAfter(season); }
+
+  const contract = { type: document.getElementById('sign-type').value, salaries };
+  const method = document.getElementById('sign-method').value || null;
+  const bird = document.getElementById('sign-bird').value || null;
+  const body = isOffer
+    ? { player: slug, offering_team: team, outcome: document.getElementById('sign-outcome').value,
+        contract, signing_method: method, bird_rights_type: bird }
+    : { player: slug, team, contract, signing_method: method, bird_rights_type: bird };
+
+  const seq = ++validateSeq;
+  setStatus('Evaluating…', 'evaluating');
+  try {
+    const res = await fetch(`/api/validate/${isOffer ? 'offer_sheet' : 'sign'}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (seq !== validateSeq) return;   // a newer change superseded this one
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      el.style.display = 'none';
+      setStatus(`Validation error — ${d.detail || ('HTTP ' + res.status)}`, 'err');
+      return;
+    }
+    setStatus('');
+    renderSignResults(await res.json(), isOffer);
+  } catch (e) {
+    if (seq !== validateSeq) return;
+    el.style.display = 'none';
+    setStatus('Network error — could not reach the validator.', 'err');
+  }
+}
+
+function renderSignResults(data, isOffer) {
+  const el = document.getElementById('results');
+  el.style.display = '';
+  const { legal, checks = [], fact_sheet: f = {} } = data;
+  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+
+  const checkRows = checks.map(c => {
+    const kind = c.level === 'warning' ? 'warning' : (c.passed ? 'pass' : (c.level || 'error'));
+    return `<div class="vc-row ${kind}"><span class="vc-icon">${ICON[kind] || '?'}</span><span>${c.message}</span></div>`;
+  }).join('') || '<div class="vc-row pass"><span class="vc-icon">✓</span><span>No constraints triggered.</span></div>';
+
+  if (f.unresolved) {
+    el.innerHTML = `<div class="results-header"><span class="rh-title">${isOffer ? 'Offer Sheet' : 'Signing'} Analysis</span></div>
+      <div class="vc-list">${checkRows}</div>`;
+    return;
+  }
+
+  const row = (label, val, cls) =>
+    `<div class="result-row"><span class="label">${label}</span><span${cls ? ` style="color:${cls}"` : ''}>${val}</span></div>`;
+  const apron = a => a === 'second_apron' ? '2nd Apron' : a === 'first_apron' ? '1st Apron' : 'Below 1st Apron';
+
+  // Left column: where the team stands. Right column: what the contract does.
+  // Over the cap reads as a positive overage ("$29.1M over"), not a negative
+  // room figure ("$-29.1M over"), which parses as a double negative.
+  const capRoom = f.cap_room == null ? '—'
+    : (f.cap_room > 0 ? fmtM(f.cap_room) : `${fmtM(Math.abs(f.cap_room))} over`);
+  const teamCol = `
+    <div class="result-col">
+      <div class="result-team">${f.team} — before</div>
+      ${row('Team salary', fmtM(f.current_salary))}
+      ${row('Excl. cap holds', fmtM(f.current_salary_ex_holds))}
+      ${row('Cap room (§ 3.10)', capRoom, f.cap_room > 0 ? 'var(--success)' : 'var(--danger)')}
+      ${f.unrenounced_other_holds > 0 ? row('Other FA holds', fmtM(f.unrenounced_other_holds), 'var(--gold)') : ''}
+      <hr class="result-divider">
+      ${row('Apron position', apron(f.apron_before))}
+      ${row('Hard cap', f.hard_cap_limit ? `${apron(f.hard_cap_level)} (${fmtM(f.hard_cap_limit)})` : 'none')}
+      ${row('Standard roster', `${f.standard_count_before} / 15`)}
+    </div>`;
+
+  const contractCol = `
+    <div class="result-col">
+      <div class="result-team">${displayName(f.player_name || '')} — contract</div>
+      ${row('Year 1', fmtM(f.new_salary))}
+      ${row('Total years', Object.keys(f.salaries || {}).length)}
+      ${f.existing_hold > 0
+        ? row(f.existing_hold_is_fa ? 'Replaces FA hold' : 'Replaces salary', fmtM(f.existing_hold), 'var(--gold)')
+        : ''}
+      <hr class="result-divider">
+      ${row('Funded by', f.exception ? f.exception.label : (f.signing_method || 'not declared'))}
+      ${f.exception
+        ? row('Exception left', `${fmtM(f.exception.remaining)} of ${fmtM(f.exception.amount)}`,
+              f.exception.remaining >= f.new_salary ? 'var(--success)' : 'var(--danger)')
+        : ''}
+      ${f.bird_rights_type ? row('Bird tier', f.bird_rights_type) : ''}
+    </div>`;
+
+  const afterCol = `
+    <div class="result-col">
+      <div class="result-team">${f.team} — after</div>
+      ${row('Salary excl. holds', fmtM(f.projected_salary_ex_holds))}
+      ${row('Apron position', apron(f.apron_after),
+            f.apron_after && f.apron_after !== f.apron_before ? 'var(--gold)' : '')}
+      ${f.hard_cap_limit
+        ? row('Room to hard cap', fmtM(f.hard_cap_limit - f.projected_salary_ex_holds),
+              f.projected_salary_ex_holds > f.hard_cap_limit ? 'var(--danger)' : 'var(--success)')
+        : ''}
+      ${row('Standard roster', `${f.standard_count_after} / 15`,
+            f.standard_count_after > 15 ? 'var(--danger)' : '')}
+    </div>`;
+
+  const role = isOffer && f.signing_team_role
+    ? ` · signed by ${f.team}, ${f.signing_team_role}` : '';
+  el.innerHTML = `
+    <div class="results-header">
+      <span class="rh-title">${isOffer ? 'Offer Sheet' : 'Signing'} Analysis · season ${f.season || curYr()}${role}</span>
+    </div>
+    <div class="results-grid">${teamCol}${contractCol}${afterCol}</div>
+    <div class="vc-list">${checkRows}</div>
+    <div class="results-summary">
+      ${legal
+        ? `<strong style="color:var(--success)">✓ ${isOffer ? 'Offer sheet' : 'Signing'} is legal</strong> — every check the league office runs at submission passes. Nothing here has been submitted.`
+        : `<strong style="color:var(--danger)">✗ ${isOffer ? 'Offer sheet' : 'Signing'} is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.`}
+    </div>`;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  let leagueYearJson;
+  [allBios, allOvr, leagueYearJson] = await Promise.all([
+    fetch('/api/players').then(r => r.ok ? r.json() : {}),
+    fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
+    fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+  if (leagueYearJson?.current_season) LEAGUE_YEAR = leagueYearJson.current_season;
+
+  document.getElementById('add-team-btn').addEventListener('click', () => { addTeamSlot(null); rebuildTeamSelectOptions(); });
+  setupSignForm();
+
+  // URL params for pre-loading: ?teams=OKC,BOS,DEN (new, any count) or the
+  // legacy ?a=OKC&b=BOS (kept so old shared links still work).
+  const p = new URLSearchParams(location.search);
+  let preload = [];
+  if (p.get('teams')) preload = p.get('teams').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+  else {
+    if (p.get('a')) preload.push(p.get('a').toUpperCase());
+    if (p.get('b')) preload.push(p.get('b').toUpperCase());
+  }
+  while (preload.length < 2) preload.push(null);
+  preload.forEach(abbr => addTeamSlot(abbr));
+  rebuildTeamSelectOptions();
+
+  // ?type=sign / ?type=offer_sheet opens straight into that transaction type.
+  const t = p.get('type');
+  if (t === 'sign' || t === 'offer_sheet') setMode(t);
+}
+
+// ── Team slot management ───────────────────────────────────────────────────────
+
+function otherAssignedTeams(excludeSlotId) {
+  return teamSlots
+    .filter(id => id !== excludeSlotId && slotTeam[id])
+    .map(id => slotTeam[id]);
+}
+
+// Every team-sel dropdown's option list depends on what every OTHER slot has
+// chosen (a team can't be picked twice) — rebuilt in full whenever any slot's
+// assignment, or the slot count, changes.
+function rebuildTeamSelectOptions() {
+  teamSlots.forEach(slotId => {
+    const sel = document.getElementById(`sel-${slotId}`);
+    if (!sel) return;
+    const taken = new Set(otherAssignedTeams(slotId));
+    const current = slotTeam[slotId] || '';
+    sel.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = ''; placeholder.textContent = '— Select team —';
+    sel.appendChild(placeholder);
+    Object.entries(TEAMS).sort(([,a],[,b]) => a.localeCompare(b)).forEach(([abbr, name]) => {
+      if (taken.has(abbr) && abbr !== current) return;
+      const opt = document.createElement('option');
+      opt.value = abbr; opt.textContent = name;
+      sel.appendChild(opt);
+    });
+    sel.value = current;
+  });
+  const anyUnassigned = Object.values(TEAMS).length > teamSlots.filter(id => slotTeam[id]).length;
+  document.getElementById('add-team-btn').disabled = !anyUnassigned;
+}
+
+function addTeamSlot(abbr) {
+  const slotId = `t${nextSlotId++}`;
+  teamSlots.push(slotId);
+  slotTeam[slotId] = '';
+  selections[slotId] = { players: new Map(), picks: new Map() };
+
+  const card = document.createElement('div');
+  card.className = 'team-panel';
+  card.id = `panel-${slotId}`;
+  card.innerHTML = `
+    <div class="team-panel-header">
+      <img class="team-logo" id="logo-${slotId}" src="" alt="" style="display:none">
+      <select class="team-sel" id="sel-${slotId}"><option value="">— Select team —</option></select>
+      <button type="button" class="remove-team-btn" id="rm-${slotId}" title="Remove team">✕</button>
+    </div>
+    <select class="exc-sel" id="exc-${slotId}">
+      <option value="">No exception used</option>
+      <option value="ntmle">Non-Taxpayer MLE</option>
+      <option value="tmle">Taxpayer MLE</option>
+      <option value="room_exception">Room Exception</option>
+      <option value="bae">Bi-Annual Exception</option>
+    </select>
+    <div class="panel-body" id="body-${slotId}"><div class="panel-empty">Select a team to see their roster.</div></div>
+  `;
+  document.getElementById('teams-container').appendChild(card);
+
+  document.getElementById(`sel-${slotId}`).addEventListener('change', e => loadTeam(slotId, e.target.value));
+  document.getElementById(`exc-${slotId}`).addEventListener('change', updateCheckBtn);
+  document.getElementById(`rm-${slotId}`).addEventListener('click', () => removeTeamSlot(slotId));
+
+  if (abbr) {
+    document.getElementById(`sel-${slotId}`).value = abbr;
+    loadTeam(slotId, abbr);
+  }
+  updateRemoveButtons();
+  return slotId;
+}
+
+function removeTeamSlot(slotId) {
+  if (teamSlots.length <= 2) return;   // a trade always needs at least two team cards
+  teamSlots = teamSlots.filter(id => id !== slotId);
+  delete slotTeam[slotId];
+  delete selections[slotId];
+  document.getElementById(`panel-${slotId}`)?.remove();
+  updateRemoveButtons();
+  rebuildTeamSelectOptions();
+  renderAllPanels();   // other cards' destination options may have shrunk
+  updateCheckBtn();
+}
+
+function updateRemoveButtons() {
+  const show = teamSlots.length > 2;
+  teamSlots.forEach(slotId => {
+    const btn = document.getElementById(`rm-${slotId}`);
+    if (btn) btn.style.visibility = show ? 'visible' : 'hidden';
+  });
+}
+
+async function loadTeam(slotId, abbr) {
+  const body = document.getElementById(`body-${slotId}`);
+  const logo = document.getElementById(`logo-${slotId}`);
+  const exc = document.getElementById(`exc-${slotId}`);
+  exc.value = '';
+  slotTeam[slotId] = abbr || '';
+  selections[slotId] = { players: new Map(), picks: new Map() };
+
+  if (!abbr) {
+    body.innerHTML = '<div class="panel-empty">Select a team to see their roster.</div>';
+    logo.style.display = 'none'; exc.style.display = 'none';
+    rebuildTeamSelectOptions(); renderAllPanels(); updateCheckBtn();
+    return;
+  }
+
+  logo.src = `/logos/logo-${abbr.toLowerCase()}.png`;
+  logo.alt = abbr; logo.style.display = '';
+  exc.style.display = 'block';
+  body.innerHTML = '<div class="panel-loading">Loading…</div>';
+
+  const yr = curYr();
+  const [rosterText, picksJson, tpeJson] = await Promise.all([
+    fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : '').catch(() => ''),
+    fetch(`/api/picks/${abbr}`).then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []).catch(() => []),
+  ]);
+
+  // Parse roster. A "cap hold" (§ 4.1a's ex-holds carve-out, § 3.10) is a
+  // roster row whose CURRENT-season cap_holds entry is UFA/RFA — the same
+  // definition _compute_team_salary_ex_holds uses server-side. It's not tied
+  // to bio.type: a lapsed contract's type often stays "player" until an
+  // explicit sign/renounce/release transaction touches it (see cap-holds
+  // audit in the trade-sim work), so type alone would miss real cap holds.
+  const roster = rosterText ? parseCSV(rosterText) : [];
+  rosterData[abbr] = roster.map(r => {
+    const bio = allBios[r.SLUG] || {};
+    const sal = parseSalaryNum((bio.salaries || {})[yr]);
+    const holdType = (bio.cap_holds || {})[yr];
+    const capHold = _FA_HOLD_TYPES.includes(holdType) ? holdType : null;
+    return { slug: r.SLUG, ovr: allOvr[r.SLUG] || 0, name: bio.name || r.SLUG, salary: sal, type: bio.type || 'player', capHold, pos: (bio.pos || []).join('/') };
+  }).filter(r => r.type !== 'dead').sort((a, b) => b.ovr - a.ovr);
+
+  // /api/picks/{team} already filters to picks this team holds a claim on
+  // (owner match or contingent candidate — see roster_picks.get_team_picks).
+  // Exclude picks already drafted (historical fact, not a tradeable asset)
+  // and legacy/frozen picks, which the transaction API itself refuses to
+  // re-trade (routers/transactions.py _check_retrade_allowed).
+  picksData[abbr] = dedupeByGroup(
+    picksJson.filter(p => !p.player && !p.legacy && !p.frozen),
+    abbr
+  ).sort((a, b) => a.year - b.year || a.round - b.round);
+
+  // Trade Exceptions (§ 4.1a) this team can draw on right now — the API
+  // already computes `expired`; a zero-remaining TPE is spent, not worth
+  // offering. Appended as extra options on the same exception <select>
+  // since a team uses at most one absorption method per trade either way.
+  tpeData[abbr] = (Array.isArray(tpeJson) ? tpeJson : []).filter(e => !e.expired && e.remaining > 0);
+  populateExceptionSelect(slotId, abbr);
+
+  rebuildTeamSelectOptions();
+  renderAllPanels();   // this team is now a valid destination on every OTHER card
+  updateCheckBtn();
+}
+
+function populateExceptionSelect(slotId, abbr) {
+  const sel = document.getElementById(`exc-${slotId}`);
+  // Drop any previously-appended TPE options (identified by the tpe: prefix),
+  // keep the fixed ntmle/tmle/room_exception/bae options untouched.
+  Array.from(sel.options).forEach(o => { if (o.value.startsWith('tpe:')) o.remove(); });
+  (tpeData[abbr] || []).forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = `tpe:${e.id}`;
+    opt.textContent = `TPE: ${fmtM(e.remaining)} remaining (exp. ${e.expires_date})`;
+    sel.appendChild(opt);
+  });
+}
+
+// Stable identity for a pick — (year, round, orig) never changes even as the
+// pick is re-traded, unlike TEAM/OWNER strings.
+function pickKey(p) { return `${p.year}-${p.round}-${p.orig}`; }
+
+// A swap group / binary chain spans N distinct real picks (one per member
+// team) that all share the SAME `leaves` list — the group's outcome, not any
+// one member's, is what's actually being described. Left un-collapsed, this
+// team's one real claim on the group would list once per member pick,
+// overstating what it can actually trade. Mirrors dedupeByGroup in
+// teams/team.js (kept in sync with it — same shape, same collapse rule).
+function dedupeByGroup(picks, teamAbbr) {
+  const groups = new Map();
+  const out = [];
+  picks.forEach(p => {
+    if (!p.group_id) { out.push(p); return; }
+    if (!groups.has(p.group_id)) groups.set(p.group_id, []);
+    groups.get(p.group_id).push(p);
+  });
+  groups.forEach(members => {
+    const leaves = members[0].leaves || [];
+    const myLeafCount = leaves.filter(l => l.team === teamAbbr).length;
+    if (myLeafCount > 1) { out.push(...members); return; }   // ambiguous which of the N is "ours" -- show them all
+    out.push(members.find(p => p.orig === teamAbbr) || members[0]);
+  });
+  return out;
+}
+
+// A contingent pick (swap/protection) may list this team on one of its
+// `leaves`. Real data has never shown a team occupying 2+ leaves of the same
+// pick (see picks-conveyance model notes) — if that ever changes, leave
+// leaf_id unset rather than guess; the server will reject with the specific
+// options to resubmit against, same as it does for a real ambiguous case.
+function pickLeafId(p, teamAbbr) {
+  const mine = (p.leaves || []).filter(l => l.team === teamAbbr);
+  return mine.length === 1 ? mine[0].leaf_id : null;
+}
+
+function pickLabel(p, teamAbbr) {
+  const rnd = p.round === 1 ? '1st' : '2nd';
+  const base = `${p.year} ${rnd}`;
+  const mine = (p.leaves || []).filter(l => l.team === teamAbbr);
+  if (mine.length) {
+    const desc = mine.map(l => l.description).join(' / ');
+    return `${base} · ${p.orig} orig · ${desc}`;
+  }
+  if (p.orig !== teamAbbr) return `${base} · from ${p.orig}`;
+  return base;
+}
+
+// Default Year-1 salary for a fresh sign-and-trade form: the player's most
+// recent real (past-season) salary on file, so the form doesn't open on $0.
+function defaultYear1(slug) {
+  const bio = allBios[slug] || {};
+  const seasons = Object.keys(bio.salaries || {}).filter(s => s < curYr()).sort();
+  return seasons.length ? parseSalaryNum(bio.salaries[seasons[seasons.length - 1]]) : 3000000;
+}
+
+function ensureSignTerms(slug) {
+  if (signTerms[slug]) return signTerms[slug];
+  const y1 = defaultYear1(slug) || 3000000;
+  const maxStep = Math.round(y1 * 0.05);
+  signTerms[slug] = {
+    years: 3,
+    salaries: [y1, y1 + maxStep, y1 + 2 * maxStep],
+    birdType: 'EQVFA',
+    method: '',
+  };
+  return signTerms[slug];
+}
+
+// Builds the inline "Sign-and-Trade Terms" mini-form shown under a checked
+// cap-hold row. Reuses SignDetails' exact shape (player/team/contract/
+// signing_method/bird_rights_type) when the request body is assembled in
+// runCheck(), so the server validates the real § 3.14 rules (contract
+// length, 5% raise cap, MLE exclusion, Bird-rights eligibility) against
+// exactly what's entered here.
+function buildSignForm(slug, slotId, teamAbbr, yr) {
+  const terms = ensureSignTerms(slug);
+  const wrap = document.createElement('div');
+  wrap.className = 'sat-form';
+
+  const title = document.createElement('div');
+  title.className = 'sat-form-title';
+  title.textContent = `Sign-and-Trade Terms — ${displayName((allBios[slug] || {}).name || slug)}`;
+  wrap.appendChild(title);
+
+  const row1 = document.createElement('div'); row1.className = 'sat-row';
+  const yrsLabel = document.createElement('label'); yrsLabel.textContent = 'Years:';
+  const yrsSel = document.createElement('select');
+  [3, 4].forEach(n => {
+    const opt = document.createElement('option'); opt.value = n; opt.textContent = `${n} years`;
+    if (terms.years === n) opt.selected = true;
+    yrsSel.appendChild(opt);
+  });
+  yrsSel.addEventListener('change', () => {
+    const n = +yrsSel.value;
+    const maxStep = Math.round(terms.salaries[0] * 0.05);
+    while (terms.salaries.length < n) terms.salaries.push(terms.salaries[terms.salaries.length - 1] + maxStep);
+    terms.salaries.length = n;
+    terms.years = n;
+    renderPanel(slotId, teamAbbr, yr);   // rebuild the salary-input row for the new year count
+    updateCheckBtn();
+  });
+
+  const birdLabel = document.createElement('label'); birdLabel.textContent = 'Bird rights:';
+  const birdSel = document.createElement('select');
+  [['EQVFA', 'Early Bird (EQVFA)'], ['QVFA', 'Full Bird (QVFA)']].forEach(([v, t]) => {
+    const opt = document.createElement('option'); opt.value = v; opt.textContent = t;
+    if (terms.birdType === v) opt.selected = true;
+    birdSel.appendChild(opt);
+  });
+  birdSel.addEventListener('change', () => { terms.birdType = birdSel.value; updateCheckBtn(); });
+
+  const methodLabel = document.createElement('label'); methodLabel.textContent = 'Funded by:';
+  const methodSel = document.createElement('select');
+  [['', 'Cap space'], ['room_exception', 'Room Exception'], ['bae', 'Bi-Annual Exception']].forEach(([v, t]) => {
+    const opt = document.createElement('option'); opt.value = v; opt.textContent = t;
+    if (terms.method === v) opt.selected = true;
+    methodSel.appendChild(opt);
+  });
+  methodSel.addEventListener('change', () => { terms.method = methodSel.value; updateCheckBtn(); });
+
+  row1.appendChild(yrsLabel); row1.appendChild(yrsSel);
+  row1.appendChild(birdLabel); row1.appendChild(birdSel);
+  row1.appendChild(methodLabel); row1.appendChild(methodSel);
+  wrap.appendChild(row1);
+
+  const row2 = document.createElement('div'); row2.className = 'sat-row';
+  let season = yr;
+  for (let i = 0; i < terms.years; i++) {
+    const sLabel = document.createElement('span'); sLabel.className = 'sat-salary-label'; sLabel.textContent = `${season}:`;
+    const input = document.createElement('input');
+    input.type = 'number'; input.className = 'sat-salary-input'; input.step = '1000';
+    input.value = terms.salaries[i] || 0;
+    const idx = i;
+    input.addEventListener('input', () => { terms.salaries[idx] = +input.value || 0; updateCheckBtn(); });
+    row2.appendChild(sLabel); row2.appendChild(input);
+    season = seasonAfter(season);
+  }
+  wrap.appendChild(row2);
+
+  return wrap;
+}
+
+// Rebuilds every currently-loaded team card. Needed whenever the set of
+// teams in the trade changes (add/remove/reassign a slot), since that's what
+// determines each OTHER card's available destination options.
+function renderAllPanels() {
+  teamSlots.forEach(slotId => {
+    const abbr = slotTeam[slotId];
+    if (abbr) renderPanel(slotId, abbr, curYr());
+  });
+}
+
+// Builds the destination <select> for a checked row — only shown once there
+// are 2+ OTHER teams to choose from; with exactly one other team (the
+// original two-team case) the destination is implied and nothing is shown.
+function buildDestSelect(slotId, others, selMap, key) {
+  if (others.length <= 1) {
+    selMap.set(key, others[0] || null);   // auto-assign the only possible destination (or none left)
+    return null;
+  }
+  // A previously-chosen destination stops being valid the moment that team
+  // leaves the trade (its slot removed, or reassigned to a different team) —
+  // clear it back to unassigned rather than silently keep routing an asset to
+  // a team no longer in the deal. renderAllPanels() re-runs this on every
+  // team-set change, so a stale value never survives past the next render.
+  if (selMap.get(key) && !others.includes(selMap.get(key))) selMap.set(key, null);
+  const dest = document.createElement('select');
+  dest.className = 'dest-sel' + (selMap.get(key) ? '' : ' unset');
+  const placeholder = document.createElement('option');
+  placeholder.value = ''; placeholder.textContent = '→ choose destination…';
+  dest.appendChild(placeholder);
+  others.forEach(ab => {
+    const opt = document.createElement('option'); opt.value = ab; opt.textContent = `→ ${TEAMS[ab] || ab}`;
+    dest.appendChild(opt);
+  });
+  dest.value = selMap.get(key) || '';
+  dest.addEventListener('click', e => e.stopPropagation());
+  dest.addEventListener('change', () => {
+    selMap.set(key, dest.value || null);
+    dest.classList.toggle('unset', !dest.value);
+    updateCheckBtn();
+  });
+  return dest;
+}
+
+function renderPanel(slotId, abbr, yr) {
+  const body = document.getElementById(`body-${slotId}`);
+  body.innerHTML = '';
+  const roster = rosterData[abbr] || [];
+  const picks = picksData[abbr] || [];
+  const others = otherAssignedTeams(slotId);
+  const sel = selections[slotId];
+
+  if (!roster.length && !picks.length) { body.innerHTML = '<div class="panel-empty">No roster data.</div>'; return; }
+
+  if (roster.length) {
+    const lbl = document.createElement('div'); lbl.className = 'panel-section-label'; lbl.textContent = 'Players'; body.appendChild(lbl);
+    roster.forEach(p => {
+      const row = document.createElement('label');
+      row.className = 'trade-row' + (sel.players.has(p.slug) ? ' checked' : '');
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = sel.players.has(p.slug);
+      cb.addEventListener('change', () => {
+        if (cb.checked) sel.players.set(p.slug, sel.players.get(p.slug) || null);
+        else sel.players.delete(p.slug);
+        row.classList.toggle('checked', cb.checked);
+        renderPanel(slotId, abbr, yr);   // toggle dest-select / sign-and-trade mini-form
+        updateCheckBtn();
+      });
+      const badge = document.createElement('span'); badge.className = `type-badge ${typeBadgeClass(p)}`; badge.textContent = typeLabel(p);
+      const nameSpan = document.createElement('span'); nameSpan.className = 'trade-row-name'; nameSpan.textContent = displayName(p.name);
+      const meta = document.createElement('span'); meta.className = 'trade-row-meta';
+      meta.textContent = `${p.pos ? p.pos + ' · ' : ''}${p.salary ? fmtM(p.salary) : 'no sal'}`;
+      row.appendChild(cb); row.appendChild(badge); row.appendChild(nameSpan); row.appendChild(meta);
+      body.appendChild(row);
+
+      if (sel.players.has(p.slug)) {
+        const dest = buildDestSelect(slotId, others, sel.players, p.slug);
+        if (dest) body.appendChild(dest);
+        if (p.capHold) body.appendChild(buildSignForm(p.slug, slotId, abbr, yr));
+      }
+    });
+  }
+
+  if (picks.length) {
+    const lbl = document.createElement('div'); lbl.className = 'panel-section-label'; lbl.textContent = 'Draft Picks'; body.appendChild(lbl);
+    picks.forEach(p => {
+      const key = pickKey(p);
+      const row = document.createElement('label');
+      row.className = 'trade-row' + (sel.picks.has(key) ? ' checked' : '');
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = sel.picks.has(key);
+      cb.addEventListener('change', () => {
+        if (cb.checked) sel.picks.set(key, sel.picks.get(key) || null);
+        else sel.picks.delete(key);
+        row.classList.toggle('checked', cb.checked);
+        renderPanel(slotId, abbr, yr);
+        updateCheckBtn();
+      });
+      const nameSpan = document.createElement('span'); nameSpan.className = 'trade-row-name'; nameSpan.textContent = pickLabel(p, abbr);
+      row.appendChild(cb); row.appendChild(nameSpan);
+      body.appendChild(row);
+
+      if (sel.picks.has(key)) {
+        const dest = buildDestSelect(slotId, others, sel.picks, key);
+        if (dest) body.appendChild(dest);
+      }
+    });
+  }
+}
+
+// ── Live trade check (delegates to the shared server-side validator) ──────────
+
+let validateTimer = null;
+let validateSeq = 0;   // guards against out-of-order responses
+
+// Called on every team/selection change — debounces a live revalidation of
+// whichever transaction type is currently on screen.
+function updateCheckBtn() {
+  clearTimeout(validateTimer);
+  validateTimer = setTimeout(MODE === 'trade' ? runCheck : runSignCheck, 250);
+}
+
+function setStatus(msg, cls) {
+  const el = document.getElementById('check-status');
+  el.className = 'check-status' + (cls ? ' ' + cls : '');
+  el.textContent = msg;
+}
+
+// Groups every selected asset by (from_team, to_team) into the flat
+// TradeTransfer list the API expects — the same shape whether it's a
+// two-team swap or an N-team deal, since the backend itself has no
+// team-count assumption (routers/transactions.py TradeTransfer is just
+// {from_team, to_team, assets}).
+function buildTransfers() {
+  const grouped = new Map();   // "FROM→TO" -> assets[]
+  teamSlots.forEach(slotId => {
+    const from = slotTeam[slotId];
+    if (!from) return;
+    const sel = selections[slotId];
+    sel.players.forEach((destAbbr, slug) => {
+      if (!destAbbr) return;
+      const key = `${from}→${destAbbr}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push({ type: 'player', slug });
+    });
+    sel.picks.forEach((destAbbr, pkey) => {
+      if (!destAbbr) return;
+      const p = (picksData[from] || []).find(x => pickKey(x) === pkey);
+      if (!p) return;
+      const asset = { type: 'pick', year: p.year, round: p.round, orig: p.orig };
+      const leafId = pickLeafId(p, from);
+      if (leafId) asset.leaf_id = leafId;
+      const key = `${from}→${destAbbr}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(asset);
+    });
+  });
+  return Array.from(grouped.entries()).map(([key, assets]) => {
+    const [from_team, to_team] = key.split('→');
+    return { from_team, to_team, assets };
+  });
+}
+
+// Any checked asset whose destination is still unset (only possible with 3+
+// teams, where it isn't auto-assigned) — the trade can't be evaluated until
+// every one is resolved, since the server has no way to guess.
+function unassignedCount() {
+  let n = 0;
+  teamSlots.forEach(slotId => {
+    if (!slotTeam[slotId]) return;
+    const sel = selections[slotId];
+    sel.players.forEach(dest => { if (!dest) n++; });
+    sel.picks.forEach(dest => { if (!dest) n++; });
+  });
+  return n;
+}
+
+async function runCheck() {
+  const el = document.getElementById('results');
+  const abbrs = teamSlots.map(id => slotTeam[id]).filter(Boolean);
+
+  if (abbrs.length < 2) {
+    el.style.display = 'none';
+    setStatus('Select at least two teams to evaluate a trade.');
+    return;
+  }
+
+  const missing = unassignedCount();
+  if (missing > 0) {
+    el.style.display = 'none';
+    setStatus(`Assign a destination for ${missing} selected asset${missing > 1 ? 's' : ''} (look for the "→" dropdown).`);
+    return;
+  }
+
+  const transfers = buildTransfers();
+  if (!transfers.length) {
+    el.style.display = 'none';
+    setStatus('Pick at least one player or pick to move.');
+    return;
+  }
+
+  // The exception <select> carries either a fixed MLE-family value
+  // (ntmle/tmle/room_exception/bae) or a dynamically-appended "tpe:<id>"
+  // option (see populateExceptionSelect) — split those into the two request
+  // fields the validator expects (§ 4.1a: mutually exclusive per team).
+  const exceptions = {};
+  const tpe_usage = {};
+  teamSlots.forEach(slotId => {
+    const abbr = slotTeam[slotId];
+    if (!abbr) return;
+    const val = document.getElementById(`exc-${slotId}`).value;
+    if (!val) return;
+    if (val.startsWith('tpe:')) tpe_usage[abbr] = val.slice(4);
+    else exceptions[abbr] = val;
+  });
+
+  // Sign-and-trade: any checked cap-hold player (any team) with terms
+  // entered becomes an S&T leg — auto-detected from the roster data itself,
+  // not a separate toggle, per how this page is meant to work.
+  const sign_and_trade_players = [];
+  const sign_and_trade_signings = [];
+  teamSlots.forEach(slotId => {
+    const abbr = slotTeam[slotId];
+    if (!abbr) return;
+    (rosterData[abbr] || []).forEach(p => {
+      if (!p.capHold || !selections[slotId].players.has(p.slug)) return;
+      const terms = ensureSignTerms(p.slug);
+      const salaries = {};
+      let season = curYr();
+      for (let i = 0; i < terms.years; i++) { salaries[season] = `$${terms.salaries[i] || 0}`; season = seasonAfter(season); }
+      sign_and_trade_players.push(p.slug);
+      sign_and_trade_signings.push({
+        player: p.slug, team: abbr,
+        contract: { type: 'player', salaries },
+        signing_method: terms.method || null,
+        bird_rights_type: terms.birdType,
+      });
+    });
+  });
+  const is_sign_and_trade = sign_and_trade_players.length > 0;
+
+  const seq = ++validateSeq;
+  setStatus('Evaluating…', 'evaluating');
+
+  try {
+    const res = await fetch('/api/validate/trade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transfers, exceptions, tpe_usage,
+        is_sign_and_trade, sign_and_trade_players, sign_and_trade_signings,
+      }),
+    });
+    if (seq !== validateSeq) return;   // a newer change superseded this one
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      el.style.display = 'none';
+      setStatus(`Validation error — ${d.detail || ('HTTP ' + res.status)}`, 'err');
+      return;
+    }
+    setStatus('');
+    renderResults(abbrs, await res.json());
+  } catch (e) {
+    if (seq !== validateSeq) return;
+    el.style.display = 'none';
+    setStatus('Network error — could not reach the validator.', 'err');
+  }
+}
+
+function renderResults(abbrs, data) {
+  const el = document.getElementById('results');
+  el.style.display = '';
+
+  const { legal, checks = [], fact_sheet = {} } = data;
+  const cl = fact_sheet.cap_levels || {};
+  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+
+  const cols = abbrs.map(ab => factCol(ab, fact_sheet, cl)).join('');
+
+  // A "warning"-level check is flagged for attention regardless of pass/fail —
+  // e.g. an informational note that's merely explaining an assumption still
+  // reads as a plain green pass otherwise, which is misleading when that
+  // assumption turns out to be the actual reason a check above it failed.
+  const checkRows = checks.map(c => {
+    const kind = c.level === 'warning' ? 'warning' : (c.passed ? 'pass' : (c.level || 'error'));
+    return `<div class="vc-row ${kind}"><span class="vc-icon">${ICON[kind] || '?'}</span><span>${c.message}</span></div>`;
+  }).join('') || '<div class="vc-row pass"><span class="vc-icon">✓</span><span>No constraints triggered.</span></div>';
+
+  el.innerHTML = `
+    <div class="results-header">
+      <span class="rh-title">Trade Analysis · season ${fact_sheet.season || curYr()} · ${abbrs.length} teams</span>
+      <button type="button" class="export-btn primary" id="sheet-btn" title="Create a public Google Sheet of this trade">▤ Create Google Sheet</button>
+      <button type="button" class="export-btn" id="export-btn" title="Download the same trade sheet as an .xlsx file">↓ .xlsx</button>
+    </div>
+    <div class="export-status" id="export-status"></div>
+    <div class="results-grid">${cols}</div>
+    <div class="vc-list">${checkRows}</div>
+    <div class="results-summary">
+      ${legal
+        ? '<strong style="color:var(--success)">✓ Trade is legal</strong> — every check the league office runs at submission passes.'
+        : '<strong style="color:var(--danger)">✗ Trade is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.'}
+    </div>`;
+
+  // Keep the last evaluated response around so the export writes exactly the
+  // numbers on screen — never a re-derived or re-fetched second opinion.
+  lastResult = { abbrs, data };
+  document.getElementById('export-btn').addEventListener('click', downloadTradeSheet);
+  document.getElementById('sheet-btn').addEventListener('click', publishTradeSheet);
+}
+
+function factCol(abbr, fs, cl) {
+  const name = TEAMS[abbr] || abbr;
+  const t = (fs.teams || {})[abbr];
+  if (!t) {
+    return `<div class="result-col"><div class="result-team">${name}</div>
+      <div class="result-note">No assets moving for this team.</div></div>`;
+  }
+  // Apron comparisons exclude pure free-agent cap holds (§ 1.3/1.4) — use the
+  // ex-holds projected figure so this matches what the checks below actually judge.
+  const proj = t.projected_salary_ex_holds ?? t.projected_salary;
+
+  // Hard-cap status chip — shows the team's *actual* triggered hard cap (1st or
+  // 2nd apron, § 1.4), not just a blanket "vs 1st Apron" comparison every team
+  // used to get regardless of which (if any) apron they're really locked to.
+  const HARD_CAP_LABEL = { first_apron: 'First Apron', second_apron: 'Second Apron' };
+  const hcLabel = HARD_CAP_LABEL[t.hard_cap_level];
+  const hcChip = hcLabel
+    ? `<span style="font-size:0.68rem;font-weight:700;color:var(--danger);border:1px solid var(--danger);border-radius:4px;padding:0.05rem 0.35rem;margin-left:0.5rem;">HARD CAPPED · ${hcLabel}</span>`
+    : `<span style="font-size:0.68rem;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;padding:0.05rem 0.35rem;margin-left:0.5rem;">not hard-capped</span>`;
+
+  let hardCapRow = '';
+  if (t.hard_cap_limit) {
+    const over = proj >= t.hard_cap_limit;
+    hardCapRow = `<div class="result-row"><span class="label">vs ${hcLabel} (their hard cap)</span><span style="color:${over ? 'var(--danger)' : 'var(--success)'}">${over ? 'OVER by ' + fmtM(proj - t.hard_cap_limit) : fmtM(t.hard_cap_limit - proj) + ' room'}</span></div>`;
+  }
+  // League-wide Hard Cap always applies regardless of any apron-level lock (§ 1.3) —
+  // shown for every team, in addition to their specific apron row above if any.
+  const leagueHC = cl.hard_cap || 0;
+  const leagueRow = leagueHC
+    ? `<div class="result-row"><span class="label">vs League Hard Cap</span><span style="color:${proj >= leagueHC ? 'var(--danger)' : 'var(--text-muted)'}">${proj >= leagueHC ? 'OVER by ' + fmtM(proj - leagueHC) : fmtM(leagueHC - proj) + ' room'}</span></div>`
+    : '';
+
+  // Trade-legality assumption only (fills to 14, § 2.1a) — may not match what
+  // actually posts to the team's real roster page, which only charges below 12.
+  const ercRow = t.empty_roster_deficiency
+    ? `<div class="result-row"><span class="label">ERC (hard-cap math)</span><span style="color:var(--warning)">+${fmtM(t.empty_roster_charge)} (${t.empty_roster_deficiency} slot${t.empty_roster_deficiency > 1 ? 's' : ''})</span></div>`
+    : '';
+
+  return `<div class="result-col">
+    <div class="result-team">${name}${hcChip}</div>
+    <div class="result-row"><span class="label">Current salary</span><span>${fmtM(t.current_salary)}</span></div>
+    <div class="result-row"><span class="label">Sending</span><span>${t.outgoing_salary ? fmtM(t.outgoing_salary) : '—'}</span></div>
+    <div class="result-row"><span class="label">Receiving</span><span>${t.incoming_salary ? fmtM(t.incoming_salary) : '—'}</span></div>
+    ${ercRow}
+    <hr class="result-divider">
+    <div class="result-row"><span class="label">New salary</span><span><strong>${fmtM(proj)}</strong></span></div>
+    ${hardCapRow}
+    ${leagueRow}
+    <div class="result-row"><span class="label">Roster after</span><span>${t.standard_count_after}${t.empty_roster_deficiency ? ` (+${t.empty_roster_deficiency} ERC)` : ''} / 15</span></div>
+  </div>`;
+}
+
+// ── Spreadsheet export ────────────────────────────────────────────────────────
+//
+// Writes the evaluated trade into an .xlsx laid out like the league's "NBN
+// Trade Machine" Google Sheet — one five-column block per team (assets out,
+// where each goes, and that team's cap summary), so an exported deal drops
+// straight into the format the committee already reads.
+//
+// Everything numeric comes from the /api/validate/trade response held in
+// `lastResult`: the export is a rendering of the validator's own fact sheet,
+// not a second implementation of the cap rules. The one thing computed here is
+// subtraction (threshold − projected salary) for the space rows.
+
+const BLOCK_W = 5;                          // columns per team block
+const BLOCK_COL_W = [17, 11, 8, 12, 12];    // name, name, "to", salary, salary
+const HC_LABEL = { first_apron: 'First Apron', second_apron: 'Second Apron' };
+
+const EXC_META = {
+  ntmle:          ['Non-Taxpayer MLE',    'ntmle_amount'],
+  tmle:           ['Taxpayer MLE',        'tmle_amount'],
+  room_exception: ['Room Exception',      'room_amount'],
+  bae:            ['Bi-Annual Exception', 'bae_amount'],
+};
+
+// Gathers, per team in the trade, the assets it is sending and where — the
+// left-hand side of a block. The cap summary on the right comes straight from
+// fact_sheet and is read at render time.
+// Last season this player is actually under contract for, with the flag that
+// makes that year conditional. The cap rules only judge the current season, but
+// a $40M expiring and a $40M with four years left are not the same asset, and
+// that difference is invisible from the salary column alone.
+//
+// `cap_holds` is keyed by the season it describes, so a PLAYER_OPT on the final
+// year means that year itself is an option (not a status after it).
+const _THRU_FLAG = { PLAYER_OPT: 'PO', TEAM_OPT: 'TO', NON_GTD: 'NG' };
+
+function contractThru(slug, yr, satTerms) {
+  if (satTerms) {
+    // A sign-and-trade contract doesn't exist on the bio yet — it's whatever
+    // was typed into the terms form.
+    let s = yr;
+    for (let i = 1; i < satTerms.years; i++) s = seasonAfter(s);
+    return s;
+  }
+  const bio = allBios[slug] || {};
+  const seasons = Object.keys(bio.salaries || {})
+    .filter(s => s >= yr && parseSalaryNum(bio.salaries[s]) > 0)
+    .sort();
+  if (!seasons.length) return '';
+  const last = seasons[seasons.length - 1];
+  const flag = _THRU_FLAG[(bio.cap_holds || {})[last]];
+  return flag ? `${last} ${flag}` : last;
+}
+
+function collectExportBlocks() {
+  const yr = curYr();
+  const blocks = teamSlots.filter(id => slotTeam[id]).map(slotId => {
+    const abbr = slotTeam[slotId];
+    const sel = selections[slotId];
+
+    const players = (rosterData[abbr] || [])
+      .filter(p => sel.players.has(p.slug))
+      .map(p => ({
+        // A sign-and-trade player is on the books at $0 (they're a cap hold) —
+        // the salary that matters for the sheet is the new deal's Year 1.
+        name: displayName(p.name) + (p.capHold ? ' (S&T)' : ''),
+        to: sel.players.get(p.slug) || '?',
+        salary: p.capHold ? ((signTerms[p.slug] || {}).salaries || [])[0] || 0 : p.salary,
+        thru: contractThru(p.slug, yr, p.capHold ? signTerms[p.slug] : null),
+      }));
+
+    const picks = (picksData[abbr] || [])
+      .filter(p => sel.picks.has(pickKey(p)))
+      .map(p => {
+        const mine = (p.leaves || []).filter(l => l.team === abbr);
+        return {
+          label: `${p.year} ${p.round === 1 ? '1st' : '2nd'}` + (p.orig !== abbr ? ` (${p.orig})` : ''),
+          to: sel.picks.get(pickKey(p)) || '?',
+          // `leaves` is the authoritative structure for a contingent pick; the
+          // flat `protected` field only covers a plain top-N band.
+          protections: mine.map(l => l.description).join(' / ')
+                       || (p.protected ? `Top ${p.protected} protected` : ''),
+        };
+      });
+
+    const excVal = document.getElementById(`exc-${slotId}`)?.value || '';
+    const exceptions = [];
+    if (excVal.startsWith('tpe:')) {
+      const tpe = (tpeData[abbr] || []).find(e => String(e.id) === excVal.slice(4));
+      if (tpe) exceptions.push({ label: `Trade Exception (exp. ${tpe.expires_date})`, amount: tpe.remaining });
+    } else if (EXC_META[excVal]) {
+      exceptions.push({ label: EXC_META[excVal][0], key: EXC_META[excVal][1] });
+    }
+
+    return { abbr, players, picks, exceptions, playersIn: [], picksIn: [] };
+  });
+
+  // Second pass: what each team RECEIVES. A block only knows what it sends, so
+  // incoming is everything routed here from somewhere else. In a two-team deal
+  // you could read that off the other block; with three or more you'd be
+  // scanning every other block's "To" column and filtering by eye.
+  const byAbbr = Object.fromEntries(blocks.map(b => [b.abbr, b]));
+  blocks.forEach(src => {
+    src.players.forEach(p => {
+      byAbbr[p.to]?.playersIn.push({ name: p.name, from: src.abbr, salary: p.salary, thru: p.thru });
+    });
+    src.picks.forEach(p => {
+      byAbbr[p.to]?.picksIn.push({ label: p.label, from: src.abbr, protections: p.protections });
+    });
+  });
+  return blocks;
+}
+
+// VALID / WARNING / INVALID for a subset of a team's checks, using the same
+// rule the page footer does: only error-level failures are disqualifying.
+function checkVerdict(checks) {
+  const S = XLSXMini.S;
+  if (checks.some(c => !c.passed && (c.level || 'error') === 'error')) return ['INVALID', S.INVALID];
+  if (checks.some(c => !c.passed || c.level === 'warning')) return ['WARNING', S.WARN];
+  return ['VALID', S.VALID];
+}
+
+function buildTradeWorkbook() {
+  if (!lastResult) return null;
+  const { data } = lastResult;
+  const S = XLSXMini.S, ref = XLSXMini.cellRef;
+  const fs = data.fact_sheet || {}, cl = fs.cap_levels || {};
+  const season = fs.season || curYr();
+  const allChecks = data.checks || [];
+
+  const blocks = collectExportBlocks();
+  const nB = blocks.length;
+  const lastCol = nB * BLOCK_W - 1;
+
+  const rows = [], merges = [], rowHeights = {};
+  const cols = [];
+  for (let b = 0; b < nB; b++) cols.push(...BLOCK_COL_W);
+
+  const put = (r, c, v, s) => {
+    while (rows.length <= r) rows.push([]);
+    rows[r][c] = { v: v === undefined || v === null ? '' : v, s };
+  };
+  // Writes `v` into c0 and extends its style (and the merge) through c1, so a
+  // banner's fill covers the full span rather than just its first cell.
+  const band = (r, c0, c1, v, s) => {
+    for (let c = c0; c <= c1; c++) put(r, c, c === c0 ? v : '', s);
+    if (c1 > c0) merges.push(`${ref(r, c0)}:${ref(r, c1)}`);
+  };
+  const bandRect = (r0, r1, c0, c1, v, s) => {
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) put(r, c, (r === r0 && c === c0) ? v : '', s);
+    merges.push(`${ref(r0, c0)}:${ref(r1, c1)}`);
+  };
+
+  // ── Title band ──────────────────────────────────────────────────────────────
+  const [verdictText, verdictStyle] = data.legal ? ['VALID', S.VALID] : ['INVALID', S.INVALID];
+  bandRect(0, 2, 0, 1, verdictText, verdictStyle);
+  bandRect(0, 2, 2, lastCol, 'NBN TRADE MACHINE', S.TITLE);
+  [0, 1, 2].forEach(r => { rowHeights[r] = 22; });
+
+  band(3, 0, lastCol,
+       `${season} season · ${blocks.map(b => b.abbr).join(' / ')} · generated ${nbnFormatDateTime(new Date())}`,
+       S.TEXT_CENTER);
+
+  // ── Section sizing ──────────────────────────────────────────────────────────
+  // Every block shares one row grid so the columns line up across teams; each
+  // section is sized to the busiest team, with a minimum so a lightly-used
+  // section still reads as a form rather than collapsing to nothing.
+  const nOut     = Math.max(1, ...blocks.map(b => b.players.length));
+  const nIn      = Math.max(1, ...blocks.map(b => b.playersIn.length));
+  const nPickOut = Math.max(1, ...blocks.map(b => b.picks.length));
+  const nPickIn  = Math.max(1, ...blocks.map(b => b.picksIn.length));
+  const nExc     = Math.max(1, ...blocks.map(b => b.exceptions.length));
+
+  // Notes carry the explanation behind any non-clean verdict, per team. Without
+  // them a block says "Salary Match: WARNING" and the reason lives on a
+  // different tab.
+  const teamNotes = {};
+  blocks.forEach(b => {
+    const suffix = '_' + b.abbr.toLowerCase();
+    teamNotes[b.abbr] = allChecks
+      .filter(c => (c.check || '').endsWith(suffix))
+      .filter(c => !c.passed || c.level === 'warning')
+      .map(c => c.message);
+  });
+  const nNotes = Math.max(1, ...Object.values(teamNotes).map(n => n.length));
+
+  const R_TEAM    = 5;
+  const R_OUT     = R_TEAM + 1;                        // header row
+  const R_IN      = R_OUT     + 1 + nOut     + 1;
+  const R_PICKOUT = R_IN      + 1 + nIn      + 1;
+  const R_PICKIN  = R_PICKOUT + 1 + nPickOut + 1;
+  const R_EXC     = R_PICKIN  + 1 + nPickIn  + 1;
+  const R_SUM     = R_EXC     + 1 + nExc     + 1;
+
+  // Apron room excludes pure free-agent cap holds (§ 1.3/1.4); cap space counts
+  // them — the same split the validator applies.
+  const exHolds = t => t.projected_salary_ex_holds ?? t.projected_salary;
+
+  const SUMMARY = [
+    ['Total Outgoing',  t => [t.outgoing_salary, S.MONEY]],
+    ['Unaggregated',    t => [t.unaggregated_outgoing, S.MONEY]],
+    ['Total Incoming',  t => [t.incoming_salary, S.MONEY]],
+    ['Change',          t => [t.incoming_salary - t.outgoing_salary, S.MONEY]],
+    ['Max Incoming',    t => t.max_incoming == null ? ['n/a', S.TEXT_CENTER] : [t.max_incoming, S.MONEY]],
+    ['Need Aggregate',  t => [t.needs_aggregation ? 'Yes' : 'No', t.needs_aggregation ? S.WARN : S.TEXT_CENTER]],
+    null,
+    ['Current Salary',  t => [t.current_salary, S.MONEY]],
+    ['New Salary',      t => [t.projected_salary, S.MONEY_BOLD]],
+    ['Roster After',    t => [`${t.standard_count_after} / 15`, S.TEXT_CENTER]],
+    // The apron this team is *locked to* (§ 1.4), vs. where it actually lands
+    // after the trade — two different things that both matter.
+    ['Hard Capped At',  t => [HC_LABEL[t.hard_cap_level] || 'None', S.TEXT_CENTER]],
+    ['Apron (Post)',    t => [HC_LABEL[t.apron_after] || 'None', S.TEXT_CENTER]],
+    ['Cap Space',       t => cl.cap    == null ? ['n/a', S.TEXT_CENTER] : [cl.cap - t.projected_salary, S.MONEY]],
+    ['Apron 1 Space',   t => cl.apron1 == null ? ['n/a', S.TEXT_CENTER] : [cl.apron1 - exHolds(t), S.MONEY]],
+    ['Apron 2 Space',   t => cl.apron2 == null ? ['n/a', S.TEXT_CENTER] : [cl.apron2 - exHolds(t), S.MONEY]],
+    null,
+  ];
+
+  // ── Per-team blocks ─────────────────────────────────────────────────────────
+  blocks.forEach((blk, bi) => {
+    const c0 = bi * BLOCK_W, cEnd = c0 + BLOCK_W - 1;
+    const t = (fs.teams || {})[blk.abbr];
+    const hasFacts = !!t;
+
+    band(R_TEAM, c0, cEnd, `${blk.abbr} — ${TEAMS[blk.abbr] || blk.abbr}`, S.TEAM);
+    rowHeights[R_TEAM] = 20;
+
+    // Players out / in. Salary and Thru get a column each (the block's last two),
+    // so contract length sits beside the figure the cap rules actually judge.
+    const playerSection = (rowAt, title, dirLabel, list, n) => {
+      band(rowAt, c0, c0 + 1, title, S.SECTION);
+      put(rowAt, c0 + 2, dirLabel, S.COL_HEAD);
+      put(rowAt, c0 + 3, 'Salary', S.COL_HEAD);
+      put(rowAt, c0 + 4, 'Thru', S.COL_HEAD);
+      for (let i = 0; i < n; i++) {
+        const r = rowAt + 1 + i, p = list[i];
+        band(r, c0, c0 + 1, p ? p.name : '—', p ? S.TEXT : S.PLACEHOLDER);
+        put(r, c0 + 2, p ? (p.to || p.from) : '', p ? S.TEXT_CENTER : S.PLACEHOLDER);
+        put(r, c0 + 3, p ? p.salary : '', p ? S.MONEY : S.PLACEHOLDER);
+        put(r, c0 + 4, p ? (p.thru || '—') : '', p ? S.TEXT_CENTER : S.PLACEHOLDER);
+      }
+    };
+    playerSection(R_OUT, 'Players Out', 'To',   blk.players,   nOut);
+    playerSection(R_IN,  'Players In',  'From', blk.playersIn, nIn);
+
+    const pickSection = (rowAt, title, dirLabel, list, n) => {
+      band(rowAt, c0, c0 + 1, title, S.SECTION);
+      put(rowAt, c0 + 2, dirLabel, S.COL_HEAD);
+      band(rowAt, c0 + 3, cEnd, 'Protections (if any)', S.COL_HEAD);
+      for (let i = 0; i < n; i++) {
+        const r = rowAt + 1 + i, p = list[i];
+        band(r, c0, c0 + 1, p ? p.label : '—', p ? S.TEXT : S.PLACEHOLDER);
+        put(r, c0 + 2, p ? (p.to || p.from) : '', p ? S.TEXT_CENTER : S.PLACEHOLDER);
+        band(r, c0 + 3, cEnd, p ? (p.protections || 'None') : '', p ? S.TEXT : S.PLACEHOLDER);
+      }
+    };
+    pickSection(R_PICKOUT, 'Picks Out', 'To',   blk.picks,   nPickOut);
+    pickSection(R_PICKIN,  'Picks In',  'From', blk.picksIn, nPickIn);
+
+    // Exceptions used
+    band(R_EXC, c0, c0 + 1, 'Trade Exceptions', S.SECTION);
+    put(R_EXC, c0 + 2, '', S.COL_HEAD);
+    band(R_EXC, c0 + 3, cEnd, 'Amount', S.COL_HEAD);
+    for (let i = 0; i < nExc; i++) {
+      const r = R_EXC + 1 + i, e = blk.exceptions[i];
+      band(r, c0, c0 + 1, e ? e.label : '—', e ? S.TEXT : S.PLACEHOLDER);
+      put(r, c0 + 2, '', e ? S.TEXT_CENTER : S.PLACEHOLDER);
+      const amt = e ? (e.amount ?? cl[e.key]) : null;
+      band(r, c0 + 3, cEnd, e ? (amt ?? 'n/a') : '', e ? (amt == null ? S.TEXT_CENTER : S.MONEY) : S.PLACEHOLDER);
+    }
+
+    // Cap summary. fact_sheet only carries teams with salary actually moving —
+    // a team in the deal for picks alone has no entry, and gets dashes rather
+    // than a column of zeroes that would read as real cap figures.
+    SUMMARY.forEach((entry, i) => {
+      const r = R_SUM + i;
+      if (!entry) { band(r, c0, cEnd, '', S.DEFAULT); return; }
+      const [label, valueOf] = entry;
+      band(r, c0, c0 + 2, label, S.LABEL);
+      const [v, st] = hasFacts ? valueOf(t) : ['—', S.PLACEHOLDER];
+      band(r, c0 + 3, cEnd, v === undefined || v === null || Number.isNaN(v) ? '—' : v, st);
+    });
+
+    // Verdict rows — the same checks the page lists, bucketed per team.
+    const suffix = '_' + blk.abbr.toLowerCase();
+    const mine = allChecks.filter(c => (c.check || '').endsWith(suffix));
+    const bucket = pre => mine.filter(c => pre.some(p => (c.check || '').startsWith(p)));
+    const verdicts = [
+      ['Salary Match', checkVerdict(bucket(['salary_matching_', 'apron2_aggregation_', 'apron1_contagion_']))],
+      ['Hard Cap',     checkVerdict(bucket(['hard_cap_']))],
+      ['Roster',       checkVerdict(bucket(['empty_roster_charge_', 'roster_']))],
+      [`${blk.abbr} Result`, checkVerdict(mine)],
+    ];
+    verdicts.forEach(([label, [text, style]], i) => {
+      const r = R_SUM + SUMMARY.length + i;
+      band(r, c0, c0 + 2, label, S.LABEL);
+      band(r, c0 + 3, cEnd, text, style);
+    });
+
+    // Notes — why any verdict above isn't a clean pass, in this team's own
+    // column rather than off on the Validation tab.
+    const notes = teamNotes[blk.abbr] || [];
+    const rNotesHead = R_SUM + SUMMARY.length + verdicts.length + 1;
+    band(rNotesHead, c0, cEnd, 'Notes', S.SECTION);
+    for (let i = 0; i < nNotes; i++) {
+      const r = rNotesHead + 1 + i, msg = notes[i];
+      band(r, c0, cEnd, msg || (i === 0 ? 'No constraints triggered.' : ''),
+           msg ? S.NOTE : S.PLACEHOLDER);
+      if (msg) {
+        // Wrapped text needs an explicit height or the row clips to one line.
+        // ~66 characters fit across a block at these column widths.
+        const lines = Math.max(1, Math.ceil(msg.length / 66));
+        rowHeights[r] = Math.max(rowHeights[r] || 0, lines * 14 + 4);
+      }
+    }
+  });
+
+  const tradeSheet = { name: 'Trade', cols, rows, merges, rowHeights, freeze: 4 };
+
+  // ── Validation sheet ────────────────────────────────────────────────────────
+  const vRows = [
+    [{ v: 'Validation checks', s: S.NOTE_HEAD }],
+    [{ v: `${season} · ${data.legal ? 'LEGAL' : 'NOT LEGAL'} · generated ${nbnFormatDateTime(new Date())}`, s: S.TEXT }],
+    [],
+    [{ v: 'Result', s: S.COL_HEAD }, { v: 'Check', s: S.COL_HEAD }, { v: 'Detail', s: S.COL_HEAD }],
+  ];
+  (allChecks.length ? allChecks : [{ check: '—', passed: true, message: 'No constraints triggered.' }])
+    .forEach(c => {
+      const kind = c.level === 'warning' ? ['WARNING', S.WARN]
+                 : c.passed ? ['PASS', S.VALID] : ['FAIL', S.INVALID];
+      vRows.push([{ v: kind[0], s: kind[1] }, { v: c.check || '', s: S.TEXT }, { v: c.message || '', s: S.NOTE }]);
+    });
+  const validationSheet = { name: 'Validation', cols: [12, 34, 110], rows: vRows, merges: [], freeze: 4 };
+
+  // ── Rules sheet ─────────────────────────────────────────────────────────────
+  // Regenerated from the live cap levels and the rulebook's § 4.2 tiers on every
+  // export, so a saved copy can't drift out of date the way a hand-maintained
+  // notes tab does.
+  const money = n => (n == null ? 'not set' : '$' + n.toLocaleString());
+  const rRows = [
+    [{ v: `NBN salary-matching rules — ${season}`, s: S.NOTE_HEAD }],
+    [{ v: 'Generated from the league rulebook (nbn.today/rulebook) and the live cap levels. Article/section numbers refer to the rulebook.', s: S.NOTE }],
+    [],
+    [{ v: 'Cap levels', s: S.COL_HEAD }, { v: 'Amount', s: S.COL_HEAD }],
+    [{ v: 'Salary Cap', s: S.TEXT }, { v: money(cl.cap), s: S.TEXT }],
+    [{ v: 'First Apron (§ 1.5)', s: S.TEXT }, { v: money(cl.apron1), s: S.TEXT }],
+    [{ v: 'Second Apron (§ 1.5)', s: S.TEXT }, { v: money(cl.apron2), s: S.TEXT }],
+    [{ v: 'League Hard Cap (§ 1.3)', s: S.TEXT }, { v: money(cl.hard_cap), s: S.TEXT }],
+    [{ v: 'Non-Taxpayer MLE', s: S.TEXT }, { v: money(cl.ntmle_amount), s: S.TEXT }],
+    [{ v: 'Taxpayer MLE', s: S.TEXT }, { v: money(cl.tmle_amount), s: S.TEXT }],
+    [{ v: 'Room Exception', s: S.TEXT }, { v: money(cl.room_amount), s: S.TEXT }],
+    [{ v: 'Bi-Annual Exception', s: S.TEXT }, { v: money(cl.bae_amount), s: S.TEXT }],
+    [],
+    [{ v: 'Below the First Apron — tiered matching (§ 4.2)', s: S.COL_HEAD }, { v: 'Max incoming', s: S.COL_HEAD }],
+    [{ v: 'Outgoing $0 – $8,527,000', s: S.TEXT }, { v: '200% of outgoing + $250,000', s: S.TEXT }],
+    [{ v: 'Outgoing $8,527,001 – $29,000,000', s: S.TEXT }, { v: 'Outgoing + $8,527,000', s: S.TEXT }],
+    [{ v: 'Outgoing above $29,000,000', s: S.TEXT }, { v: '125% of outgoing + $250,000', s: S.TEXT }],
+    [],
+    [{ v: 'At or above the First Apron (§ 4.3)', s: S.TEXT }, { v: 'Outgoing + $250,000; no tiered matching', s: S.TEXT }],
+    [{ v: 'At or above the Second Apron (§ 4.4)', s: S.TEXT }, { v: 'Outgoing + $250,000, and salaries may not be aggregated', s: S.TEXT }],
+    [],
+    [{ v: 'Contagion (§ 4.3 / § 4.4)', s: S.COL_HEAD }, { v: '', s: S.COL_HEAD }],
+    [{ v: 'Below the First Apron, incoming > outgoing + $250,000', s: S.TEXT }, { v: 'Legal, but hard-caps the team at the First Apron for the rest of the season', s: S.NOTE }],
+    [{ v: 'Below the Second Apron, aggregating two or more outgoing salaries', s: S.TEXT }, { v: 'Legal, but hard-caps the team at the Second Apron for the rest of the season', s: S.NOTE }],
+    [],
+    [{ v: 'Reading this sheet', s: S.COL_HEAD }, { v: '', s: S.COL_HEAD }],
+    [{ v: 'Salary', s: S.TEXT }, { v: `Current-season (${season}) salary — the only figure the trade rules judge.`, s: S.NOTE }],
+    [{ v: 'Thru', s: S.TEXT }, { v: 'Last season the player is under contract for. PO = that year is a player option, TO = team option, NG = non-guaranteed. Not part of any cap test; shown because an expiring deal and a long one at the same salary are very different assets.', s: S.NOTE }],
+    [{ v: 'Notes', s: S.TEXT }, { v: 'Why a team’s verdict above is not a clean pass. The Validation tab lists every check, including the ones that passed.', s: S.NOTE }],
+    [{ v: 'Unaggregated', s: S.TEXT }, { v: 'The largest single outgoing salary — what the team could send without combining salaries.', s: S.NOTE }],
+    [{ v: 'Need Aggregate', s: S.TEXT }, { v: 'Yes when no single outgoing salary covers the incoming total on its own (§ 4.4).', s: S.NOTE }],
+    [{ v: 'Cap Space', s: S.TEXT }, { v: 'Salary Cap minus projected salary, counting free-agent cap holds.', s: S.NOTE }],
+    [{ v: 'Apron 1 / Apron 2 Space', s: S.TEXT }, { v: 'Apron minus projected salary excluding free-agent cap holds (§ 1.3/1.4), including any Empty Roster Charge (§ 2.1a).', s: S.NOTE }],
+  ];
+  const rulesSheet = { name: 'Rules', cols: [42, 72], rows: rRows, merges: [] };
+
+  return {
+    name: `NBN Trade — ${blocks.map(b => b.abbr).join(' / ')} — ${nbnToday()}`,
+    filename: `NBN-Trade-${blocks.map(b => b.abbr).join('-')}-${nbnToday()}.xlsx`,
+    sheets: [tradeSheet, validationSheet, rulesSheet],
+  };
+}
+
+// ── Delivery ─────────────────────────────────────────────────────────────────
+// Two ways out of the same workbook: a plain file download, or a native Google
+// Sheet. The Sheet path uploads the identical .xlsx to nbn-api, which creates it
+// in the league's Drive account and shares it publicly — done server-side
+// precisely so nobody clicking Export sees a Google consent screen.
+
+function setExportStatus(html, isErr) {
+  const el = document.getElementById('export-status');
+  if (!el) return;
+  el.className = 'export-status' + (isErr ? ' err' : '');
+  el.innerHTML = html;
+}
+
+async function downloadTradeSheet() {
+  const wb = buildTradeWorkbook();
+  if (wb) await XLSXMini.download(wb.filename, wb.sheets);
+}
+
+// Minimal token prompt — same localStorage key (`nbn_token`) the rest of the
+// site uses, so a GM who has already entered their token anywhere is never
+// asked again here.
+function promptForToken() {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000';
+    overlay.innerHTML = `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;width:360px;max-width:90vw">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.4rem;color:var(--text-primary)">Enter your token</h3>
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Creating a Google Sheet needs a league member token. It will be saved in this browser.</p>
+      <input type="password" placeholder="Paste token…" autocomplete="off" style="width:100%;background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.875rem;font-family:monospace;padding:0.5rem 0.75rem;margin-bottom:1rem;box-sizing:border-box;outline:none">
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+        <button data-act="cancel" style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit">Cancel</button>
+        <button data-act="ok" style="padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit">Continue</button>
+      </div></div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('input');
+    input.focus();
+    const done = val => { overlay.remove(); resolve(val || null); };
+    overlay.querySelector('[data-act=cancel]').addEventListener('click', () => done(null));
+    overlay.querySelector('[data-act=ok]').addEventListener('click', () => {
+      const v = input.value.trim();
+      if (!v) return;
+      localStorage.setItem('nbn_token', v);
+      done(v);
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') overlay.querySelector('[data-act=ok]').click();
+      if (e.key === 'Escape') done(null);
+    });
+  });
+}
+
+async function publishTradeSheet() {
+  const wb = buildTradeWorkbook();
+  if (!wb) return;
+
+  let token = localStorage.getItem('nbn_token');
+  if (!token) {
+    token = await promptForToken();
+    if (!token) return;
+  }
+
+  const btn = document.getElementById('sheet-btn');
+  btn.disabled = true;
+  setExportStatus('Creating Google Sheet…');
+
+  try {
+    const form = new FormData();
+    form.append('file', await XLSXMini.build(wb.sheets), wb.filename);
+    form.append('name', wb.name);
+
+    const res = await fetch('/api/trade-sheet', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    if (res.status === 403 || res.status === 401) {
+      // Same convention as team-page edit mode: a rejected token is cleared so
+      // the next attempt re-prompts instead of silently failing again.
+      localStorage.removeItem('nbn_token');
+      setExportStatus('That token was rejected — click again to re-enter it.', true);
+      return;
+    }
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setExportStatus(`Could not create the Sheet — ${d.detail || 'HTTP ' + res.status}. Use the .xlsx download instead.`, true);
+      return;
+    }
+    const { url } = await res.json();
+    setExportStatus(`Google Sheet created — <a href="${url}" target="_blank" rel="noopener">open it</a> · <span style="color:var(--text-dim)">anyone with the link can view</span>`);
+    window.open(url, '_blank', 'noopener');
+  } catch (e) {
+    setExportStatus('Network error creating the Sheet. Use the .xlsx download instead.', true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── CSV utility (reuse global from nav.js if loaded, else inline) ─────────────
+
+function parseCSV(text) {
+  if (typeof window.parseCSV === 'function' && parseCSV !== window.parseCSV) return window.parseCSV(text);
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = []; let cur = '', inQ = false;
+    for (const ch of line) {
+      if (ch === '"') { inQ = !inQ; } else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; } else { cur += ch; }
+    }
+    vals.push(cur.trim());
+    const obj = {}; headers.forEach((h, i) => { obj[h] = vals[i] ?? ''; });
+    return obj;
+  });
+}
+
+init();
+</script>
+<script src="/nav.js"></script>
+</body>
+</html>

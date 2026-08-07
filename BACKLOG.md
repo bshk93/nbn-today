@@ -117,16 +117,27 @@ one wrong badge undermines the rest.
 § 3.15 explicitly says so: on an RFA match, rescinding renouncements is done by
 hand. Small, well-specified transaction type.
 
-### [P2] § 1.2 soft cap not enforced
-The rulebook itself calls this out as "on the validation roadmap": over-cap
-signings lacking a valid exception aren't blocked, only reviewed. Given MLE/TPE
-funding is now modeled, this is more tractable than it was.
+### [P2] § 1.2 soft cap — partly enforced, gap is verification not blocking
+Corrected 2026-08-07: the original entry ("over-cap signings lacking a valid
+exception aren't blocked, only reviewed") is stale.
+`_check_signing_method_funding` already returns `level="error"`, so a declared
+method that isn't actually available **does** block. The real remaining hole is
+that `signing_method` and `bird_rights_type` are **self-declared and never
+verified** — a team can declare `bird_rights` on a player they have no Bird
+tenure with and pass clean. Closing it means § 3.8 tenure verification
+(below), not a new blocking rule.
+
+### [P2] § 3.8 Bird Rights tenure never verified
+Continuous-service tenure is taken on faith from `bird_rights_type`, yet it
+gates both the funding method and the size of the cap hold. Derivable from
+`transactions.json` + roster history. Surfaced but explicitly **not** checked
+by the transaction simulator, which says so in its own docs panel.
 
 ### [P3] Other standing manual-review items
 Roughly in order of how often they bite:
 - § 4.5 trade restrictions, § 4.6 Touch Rule (multi-team trades)
 - § 3.7 DPE — no exception type exists
-- § 3.8 Bird Rights tenure never independently verified (self-declared)
+- § 3.8 Bird Rights tenure never independently verified (self-declared) — promoted to its own P2 entry above
 - § 3.10 cap holds, § 3.11 max contracts, § 3.13 contract structure
 - § 6.1 options, § 7.4 international rights
 - § 3.12 multi-year minimum deals unchecked against the per-year scale
@@ -210,9 +221,10 @@ endpoint that looks authoritative is worse than none.
 
 - **Extension window UI** — once § 6.2 exists as a transaction type, the
   submission windows in § 6.3 want a calendar surface like FA does.
-- **Trade sim → real transaction** — the simulator now validates a trade fully
-  and exports it to Sheets/xlsx; the missing step is "submit this as an actual
-  transaction" for a deal that passes every check.
+- ~~**Trade sim → real transaction**~~ — **deliberately not doing this.** The
+  simulator (now `/transaction-sim/`, covering trades, FA signings and RFA
+  offer sheets) is read-only by design: `/api/validate/*` never writes, and
+  there is intentionally no path from it to a submission. Decided 2026-08-07.
 - **Per-team cap health on the team page** — `/poopoo` diffs are league-wide and
   internal; a team's own owner can't see that their sheet disagrees with the site.
 - **Franchise records beyond single games** — season-level franchise records
