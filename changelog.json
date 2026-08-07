@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.0.388",
+    "date": "2026-08-07",
+    "changes": [
+      "Transaction Simulator: contracts can now carry options \u2014 each year can be marked a player option, team option, or non-guaranteed, and the deal can be given a trailing UFA or RFA cap hold (\u00a7 3.10)",
+      "The trailing hold's dollar figure is computed by the system from the prior salary and Bird tier rather than typed in, with an optional EAPS assumption for Full Bird holds in seasons with no EAPS on file",
+      "Signing results now echo back the option years and the hold the contract rolls into, so the shape being judged is visible"
+    ]
+  },
+  {
     "version": "0.0.387",
     "date": "2026-08-07",
     "changes": [

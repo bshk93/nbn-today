@@ -93,6 +93,8 @@
     .salary-year input { width: 130px; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 0.82rem; padding: 0.35rem 0.5rem; outline: none; }
     .salary-year input:focus { border-color: var(--accent); }
     .salary-year .raise { font-size: 0.62rem; color: var(--text-muted); }
+    .salary-year .year-opt { width: 130px; background: var(--bg-page); border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); font-family: inherit; font-size: 0.68rem; padding: 0.15rem 0.3rem; outline: none; cursor: pointer; }
+    .salary-year .year-opt:focus { border-color: var(--accent); }
     .sign-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
     .preset-btn { background: var(--bg-page); border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); font-family: inherit; font-size: 0.7rem; padding: 0.25rem 0.55rem; cursor: pointer; }
     .preset-btn:hover { border-color: var(--accent); color: var(--text-primary); }
@@ -242,6 +244,27 @@
             <button type="button" class="preset-btn" data-preset="5">5% raises</button>
             <button type="button" class="preset-btn" data-preset="8">8% raises (Bird)</button>
           </div>
+        </div>
+      </div>
+
+      <div class="sign-row">
+        <div class="sign-field">
+          <label for="sign-hold">After the contract (§ 3.10)</label>
+          <select id="sign-hold">
+            <option value="">— no trailing hold —</option>
+            <option value="UFA">UFA hold</option>
+            <option value="RFA">RFA hold</option>
+          </select>
+          <span class="hint">The cap hold the deal rolls into. Its dollar figure is computed for you.</span>
+        </div>
+        <div class="sign-field" id="f-eaps" hidden>
+          <label for="sign-eaps">Prior salary vs. EAPS</label>
+          <select id="sign-eaps">
+            <option value="">— not specified —</option>
+            <option value="below">At or below EAPS</option>
+            <option value="above">Above EAPS</option>
+          </select>
+          <span class="hint">Only used for a Full Bird hold in a season with no EAPS on file.</span>
         </div>
       </div>
     </div>
@@ -429,7 +452,7 @@ function typeBadgeClass(p) {
 // computed here — this page only collects the terms and renders the verdict.
 
 let MODE = 'trade';
-const signState = { years: 2, salaries: [0, 0] };
+const signState = { years: 2, salaries: [0, 0], options: ['', ''], hold: '', eaps: '' };
 
 // Display name -> slug, for the player datalist. Bios carry no duplicate
 // display names (verified against the live file), so the name alone is an
@@ -485,8 +508,21 @@ function buildSalaryInputs() {
       renderRaiseHints();
       updateCheckBtn();
     });
+    // Per-year option status. Sent as a cap_holds entry keyed by that season,
+    // which is how the API models it — a PLAYER_OPT on a season means that
+    // year itself is an option, not a status following it.
+    const opt = document.createElement('select');
+    opt.className = 'year-opt';
+    [['', '— guaranteed —'], ['PLAYER_OPT', 'Player option'],
+     ['TEAM_OPT', 'Team option'], ['NON_GTD', 'Non-guaranteed']]
+      .forEach(([v, t]) => {
+        const o = document.createElement('option'); o.value = v; o.textContent = t;
+        if ((signState.options[idx] || '') === v) o.selected = true;
+        opt.appendChild(o);
+      });
+    opt.addEventListener('change', () => { signState.options[idx] = opt.value; updateCheckBtn(); });
     const raise = document.createElement('span'); raise.className = 'raise';
-    cell.appendChild(lab); cell.appendChild(input); cell.appendChild(raise);
+    cell.appendChild(lab); cell.appendChild(input); cell.appendChild(opt); cell.appendChild(raise);
     wrap.appendChild(cell);
     season = seasonAfter(season);
   }
@@ -614,11 +650,25 @@ function setupSignForm() {
   yearsSel.addEventListener('change', () => {
     signState.years = +yearsSel.value;
     signState.salaries.length = signState.years;
-    for (let i = 0; i < signState.years; i++) signState.salaries[i] = signState.salaries[i] || 0;
+    signState.options.length = signState.years;
+    for (let i = 0; i < signState.years; i++) {
+      signState.salaries[i] = signState.salaries[i] || 0;
+      signState.options[i] = signState.options[i] || '';
+    }
     buildSalaryInputs();
     updateCheckBtn();
   });
   document.getElementById('sign-player').addEventListener('input', onPlayerPicked);
+  document.getElementById('sign-hold').addEventListener('change', e => {
+    signState.hold = e.target.value;
+    // The EAPS assumption only feeds a Full Bird hold's § 3.10 figure, so it
+    // is meaningless without a hold to compute.
+    document.getElementById('f-eaps').hidden = !signState.hold;
+    updateCheckBtn();
+  });
+  document.getElementById('sign-eaps').addEventListener('change', e => {
+    signState.eaps = e.target.value; updateCheckBtn();
+  });
   ['sign-team', 'sign-offering', 'sign-outcome', 'sign-type', 'sign-method', 'sign-bird']
     .forEach(id => document.getElementById(id).addEventListener('change', updateCheckBtn));
   document.querySelectorAll('.preset-btn')
@@ -643,13 +693,26 @@ async function runSignCheck() {
   let season = curYr();
   for (let i = 0; i < signState.years; i++) { salaries[season] = `$${signState.salaries[i] || 0}`; season = seasonAfter(season); }
 
-  const contract = { type: document.getElementById('sign-type').value, salaries };
+  // cap_holds carries both per-year option status and the trailing free-agent
+  // hold. The hold season is deliberately left OUT of `salaries`: the API's
+  // _autofill_fa_hold_amounts computes the real § 3.10 figure from the prior
+  // salary and Bird tier, which a typed-in placeholder would override.
+  const cap_holds = {};
+  let os = curYr();
+  for (let i = 0; i < signState.years; i++) {
+    if (signState.options[i]) cap_holds[os] = signState.options[i];
+    os = seasonAfter(os);
+  }
+  if (signState.hold) cap_holds[os] = signState.hold;
+
+  const contract = { type: document.getElementById('sign-type').value, salaries, cap_holds };
   const method = document.getElementById('sign-method').value || null;
   const bird = document.getElementById('sign-bird').value || null;
   const body = isOffer
     ? { player: slug, offering_team: team, outcome: document.getElementById('sign-outcome').value,
-        contract, signing_method: method, bird_rights_type: bird }
-    : { player: slug, team, contract, signing_method: method, bird_rights_type: bird };
+        contract, signing_method: method, bird_rights_type: bird, eaps_assumption: signState.eaps || null }
+    : { player: slug, team, contract, signing_method: method, bird_rights_type: bird,
+        eaps_assumption: signState.eaps || null };
 
   const seq = ++validateSeq;
   setStatus('Evaluating…', 'evaluating');
@@ -719,6 +782,17 @@ function renderSignResults(data, isOffer) {
       <div class="result-team">${displayName(f.player_name || '')} — contract</div>
       ${row('Year 1', fmtM(f.new_salary))}
       ${row('Total years', Object.keys(f.salaries || {}).length)}
+      ${(() => {
+        // Echo back the option years and trailing hold, so it's visible that
+        // the shape the validator judged is the shape that was entered.
+        const ch = f.cap_holds || {};
+        const LBL = { PLAYER_OPT: 'player option', TEAM_OPT: 'team option', NON_GTD: 'non-guaranteed' };
+        const opts = Object.keys(ch).filter(s => LBL[ch[s]]).sort()
+          .map(s => `${s} ${LBL[ch[s]]}`).join(', ');
+        const hold = Object.keys(ch).filter(s => ch[s] === 'UFA' || ch[s] === 'RFA').sort()[0];
+        return (opts ? row('Options', opts) : '')
+             + (hold ? row('Rolls into', `${hold} ${ch[hold]} hold`) : '');
+      })()}
       ${f.existing_hold > 0
         ? row(f.existing_hold_is_fa ? 'Replaces FA hold' : 'Replaces salary', fmtM(f.existing_hold), 'var(--gold)')
         : ''}
