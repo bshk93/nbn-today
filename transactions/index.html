@@ -775,7 +775,7 @@
         </select>
       </div>
 
-      <!-- sign-only: signing method -->
+      <!-- sign / convert_twoway / offer_sheet: signing method -->
       <div class="form-field" id="f-signing-method-field" style="display:none">
         <label>Signing Method</label>
         <select id="f-signing-method">
@@ -790,7 +790,7 @@
         <span id="mle-hint" style="display:none;font-size:0.75rem;margin-top:0.25rem"></span>
       </div>
 
-      <!-- sign-only: bird rights subtype -->
+      <!-- sign / convert_twoway / offer_sheet: bird rights subtype -->
       <div class="form-field" id="f-bird-rights-field" style="display:none">
         <label>Bird Rights Type</label>
         <select id="f-bird-rights-type">
@@ -1279,8 +1279,8 @@ function setupTypeSwitch() {
       document.getElementById('f-offer-team-field').style.display    = isOfferSheet ? '' : 'none';
       document.getElementById('f-offer-outcome-field').style.display = isOfferSheet ? '' : 'none';
       document.getElementById('f-hardcap-level-field').style.display = isSetHardCap ? '' : 'none';
-      document.getElementById('f-signing-method-field').style.display = (isSign || isConvertTwoWay) ? '' : 'none';
-      if (!isSign && !isConvertTwoWay) {
+      document.getElementById('f-signing-method-field').style.display = (isSign || isConvertTwoWay || isOfferSheet) ? '' : 'none';
+      if (!isSign && !isConvertTwoWay && !isOfferSheet) {
         document.getElementById('f-bird-rights-field').style.display = 'none';
         document.getElementById('mle-hint').style.display = 'none';
       }
@@ -1408,7 +1408,11 @@ function updateMleHint() {
   const txnType = document.getElementById('f-type').value;
   const team = txnType === 'convert_twoway'
     ? teamMap[document.getElementById('f-player-slug').value]
-    : document.getElementById('f-team')?.value;
+    : txnType === 'offer_sheet'
+      ? (document.querySelector('input[name="offer-outcome"]:checked')?.value === 'matched'
+          ? teamMap[document.getElementById('f-player-slug').value]
+          : document.getElementById('f-offer-team')?.value)
+      : document.getElementById('f-team')?.value;
   const birdField = document.getElementById('f-bird-rights-field');
   if (birdField) birdField.style.display = method === 'bird_rights' ? '' : 'none';
 
@@ -1445,6 +1449,8 @@ function updateMleHint() {
 // Wire up signing method + team change → hint update
 document.getElementById('f-signing-method').addEventListener('change', updateMleHint);
 document.getElementById('f-team').addEventListener('change', updateMleHint);
+document.getElementById('f-offer-team').addEventListener('change', updateMleHint);
+document.querySelectorAll('input[name="offer-outcome"]').forEach(r => r.addEventListener('change', updateMleHint));
 
 document.getElementById('f-trade-sat').addEventListener('change', function() {
   document.getElementById('f-trade-sat-txn-field').style.display = this.checked ? '' : 'none';
@@ -2501,12 +2507,18 @@ async function submitTransaction() {
     date = document.getElementById('f-date').value;
     const offering_team = document.getElementById('f-offer-team').value;
     const outcome = document.querySelector('input[name="offer-outcome"]:checked').value;
+    const signingMethod = document.getElementById('f-signing-method').value || null;
+    const birdRightsType = signingMethod === 'bird_rights'
+      ? (document.getElementById('f-bird-rights-type').value || null) : null;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     if (!offering_team) { setStatus('err', 'Select the offering team.'); return; }
     if (!Object.keys(contract.salaries || {}).length) {
       setStatus('err', 'At least one salary year is required (offer sheet must cover ≥2 years — § 3.15).'); return;
     }
-    details = { player: playerSlug, offering_team, contract, outcome };
+    details = { player: playerSlug, offering_team, contract, outcome,
+      ...(signingMethod ? { signing_method: signingMethod } : {}),
+      ...(birdRightsType ? { bird_rights_type: birdRightsType } : {}),
+    };
   } else if (type === 'pick') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -2994,7 +3006,14 @@ function renderDetailsCell(t) {
     }, 0);
     const contractStr = years ? `${years}yr / $${(total / 1e6).toFixed(1)}M` : '';
     const outcomeStr = d.outcome === 'matched' ? 'Matched' : 'Not Matched';
-    return escHtml(`${contractStr}${contractStr ? ' · ' : ''}${outcomeStr}`);
+    const methodLabels = { bird_rights: 'Bird Rights', mle: 'MLE', ntmle: 'NTMLE', tmle: 'TMLE', minimum: 'Minimum',
+      room_exception: 'Room Exc.', bae: 'BAE' };
+    let methodStr = '';
+    if (d.signing_method && d.signing_method !== 'cap_space') {
+      methodStr = ' · ' + (methodLabels[d.signing_method] || d.signing_method);
+      if (d.bird_rights_type) methodStr += ` (${d.bird_rights_type})`;
+    }
+    return escHtml(`${contractStr}${contractStr ? ' · ' : ''}${outcomeStr}${methodStr}`);
   }
   if (t.type === 'void_player') {
     return d.reason ? `Voided — ${escHtml(d.reason)}` : 'Voided — no cap hit';

@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.0.382",
+    "date": "2026-08-07",
+    "changes": [
+      "Transactions form: RFA offer sheets now capture a Signing Method (and Bird Rights subtype) alongside the contract, matching what `sign`/`convert_twoway` already collect",
+      "Transactions log and player pages: an offer sheet's signing method (MLE / NTMLE / TMLE / Room Exception / BAE / Bird Rights subtype) now shows next to the contract and match/no-match outcome"
+    ]
+  },
+  {
     "version": "0.0.381",
     "date": "2026-08-07",
     "changes": [

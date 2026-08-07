@@ -2150,8 +2150,10 @@
         const outcomeStr = d.outcome === 'matched'
           ? `${retainingTeam || 'Retaining team'} matched`
           : `Not matched — signs with ${offeringTeam || 'offering team'}`;
-        const contractStr = fmtContract(d.contract);
-        return esc(outcomeStr) + (contractStr ? ' · ' + esc(contractStr) : '');
+        let s = fmtContract(d.contract);
+        if (d.signing_method && d.signing_method !== 'cap_space')
+          s += (s ? ' · ' : '') + (METHOD[d.signing_method] || d.signing_method);
+        return esc(outcomeStr) + (s ? ' · ' + esc(s) : '');
       }
       if (t.type === 'convert_twoway') {
         let s = fmtContract(d.contract);
