@@ -212,7 +212,9 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Change the Franchise Records cards | `records-wrap` block in `teams/team.js`; data comes from `build/job.R` ("Writing franchise records CSV") |
 | Change the transaction simulator's spreadsheet export | `buildTradeWorkbook` — `transaction-sim/index.html`; the .xlsx writer is `transaction-sim/xlsx.js`, and publishing to Google Sheets is `POST /api/trade-sheet` (`nbn-api/routers/google_sheets.py`). Export is trade-mode only |
 | Add a transaction type to the simulator | `setMode` / `runSignCheck` — `transaction-sim/index.html`, plus a `POST /api/validate/{type}` endpoint in `nbn-api/routers/transactions.py` (see "Transaction simulator" below) |
+| Add/change an owner's per-player roster move | `makeRosterMoveActions` / `openMovesMenu` — `teams/team.js` (see "Owner self-serve roster moves") |
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
+| Change the suggestions board or its comment threads | `suggestions/index.html` + `nbn-api/routers/suggestions.py` (see "Suggestions board" below) |
 
 ---
 
@@ -304,8 +306,10 @@ simulator to an actual submission.
 | `POST /api/validate/trade` | `_validate_trade` | `_trade_fact_sheet` |
 | `POST /api/validate/sign` | `_validate_sign` | `_signing_fact_sheet` |
 | `POST /api/validate/offer_sheet` | `_validate_offer_sheet` | `_signing_fact_sheet` |
+| `POST /api/validate/offer_sheet_decision` | `_validate_offer_sheet_decision` | inline |
+| `POST /api/validate/renounce` | `_validate_renounce` | `_renounce_fact_sheet` |
 
-All three are public (no auth), take the same body shape as the corresponding
+All four are public (no auth), take the same body shape as the corresponding
 `details` in `POST /api/transactions`, and return
 `{legal, checks[], fact_sheet}`. They share their validators with the submit
 path, so a "legal" verdict here is what the office accepts — **but they never
@@ -324,11 +328,13 @@ scoring them — a validator handed an unknown team reads its salary as $0 and
 every check passes vacuously, which would print a confident "LEGAL" for a
 transaction that was never evaluated.
 
-Coverage is uneven and the UI says so: `sign`/`offer_sheet`/`trade` have real
-validators, while `release`, `renounce`, `option` and `pick` are stubs
-returning `[]` — those types are deliberately **not** offered in the simulator,
-since a verdict off zero checks is worse than no verdict. § 3.7 (DPE) remains
-unmodeled.
+Coverage is uneven and the UI says so: `sign`/`offer_sheet`/`offer_sheet_decision`/
+`trade`/`renounce` have real validators, while `release`, `option` and `pick` are stubs returning
+`[]` — those types are deliberately **not** offered in the simulator, since a
+verdict off zero checks is worse than no verdict. § 3.7 (DPE) remains unmodeled.
+(`renounce` is validated but still isn't wired into the simulator UI; its
+validator exists to serve the roster page's confirm dialog. Adding it there is
+now just UI work.)
 
 ### § 3.8 Bird Rights tenure
 
@@ -373,6 +379,194 @@ validation entirely *and* unlock § 3.13's 8% raise ceiling.
 The ledger index is cached against `transactions.json`'s (mtime, size) —
 the simulator revalidates on a 250ms debounce, and re-parsing ~2MB per
 keystroke is pure waste.
+
+### Owner self-serve roster moves
+
+Team pages carry a per-player **⋯ menu** offering moves the viewer is actually
+entitled to make. Built by `makeRosterMoveActions` / `openMovesMenu` in
+`teams/team.js`. Actions the player is ineligible for are shown **disabled with the
+rule-citing reason**, not hidden — "why can't I renounce him?" is a rules question
+and the menu is where it gets answered.
+
+Rendered in the **Rosters and Contracts** roster views (`MOVE_MODES`), not Stats or
+Ratings. Rosters is the default tab, so gating it to Contracts alone made the
+feature invisible to the owners it exists for.
+
+**Getting a token in the first place:** the roster header has a `#team-signin-btn`
+shown only when `/api/auth/me` resolves to no roles. It is not decoration — every
+other affordance on a team page that prompts for a token (`attachEditBtn`, the
+Team Settings tab) is gated on roles that require a token to already be stored, so
+without it a team owner who isn't on the committee had no way into their own tools
+at all. `hadStoredToken` is snapshotted *before* the page's fetches, since the first
+request to 403 clears a stale token and would otherwise erase the difference between
+"never signed in" and "token revoked".
+
+Two permission tiers, and they are genuinely different:
+
+| Action | Gate | Endpoint |
+|---|---|---|
+| Add/remove from trade block | team's own role **or** admin (`canEditTradeBlock`) | `PUT`/`DELETE /api/trading-block/{team}/player/{slug}` |
+| Renounce (§ 3.10) | **owner tenure** (`canRenounce`, server: `auth.is_team_owner`) | `POST /api/self/renounce` |
+
+**Ownership is a tenure position, not a role.** Every front-office member of a
+team carries the team role (`phx`, `bkn`, …) — it gates cosmetic/soft writes like
+jersey numbers and the trading block. Only a member with a *current* `owner`-position
+tenure in members.json may move real roster state, so a GM or coach passes the role
+check and fails `is_team_owner`. `GET /api/auth/me` returns `owner_of` computed by
+that same function, so the UI can't offer a move the API would refuse. Admin passes
+everything, consistent with every other check in `auth.py`.
+
+The scoped trading-block endpoints exist because the whole-block `PUT` is a
+last-write-wins replace — fine for the `/tradeblock` editor which owns the entire
+form, wrong for a one-click add from the roster page, where a stale read would
+silently wipe the rest of the team's listing.
+
+Renounce is the dangerous one and is treated accordingly: the confirm dialog runs
+`POST /api/validate/renounce` and shows the room freed, the resulting roster count
+against the § 2.1/§ 2.1a floors, and the § 3.8 Bird tenure being forfeited, then
+requires typing the player's surname. Every renounce stores a `_snapshot` of the
+bio state it erases; `rescind_renounce` restores from it via the **undo** button on
+renounce rows in `/transactions`. See `nbn-api/docs/transactions.md` for both types.
+
+### Offer sheets are two transactions (§ 3.15)
+
+`offer_sheet` extends the offer; `offer_sheet_decision` records the incumbent's
+answer and does the signing. Two decisions by two different teams, so two records.
+
+**This is a deliberate return to a design that previously broke — read this before
+touching it.** An earlier two-step version was merged into one transaction because
+an offer could be submitted with no follow-up, silently leaving the player on
+nothing but their old RFA hold (it bit Dyson Daniels' matched sheet in production;
+`_apply_offer_sheet_decision`'s docstring carries the history). Three things make
+the split safe, and removing any one of them reintroduces the bug:
+
+1. **Pending is enumerable.** `_open_offer_sheets()` derives every unresolved
+   offer from the ledger — an offer is open exactly when no `offer_sheet_decision`
+   names it. No second store, so nothing can drift from the transactions it
+   describes.
+2. **Pending costs money.** `_pending_offer_hold` charges the offering team a cap
+   hold equal to the offer's **Year 1** salary, inside `_compute_team_salary`, for
+   as long as it's open. A hold is a single season's charge, so the multi-year
+   total isn't the figure § 3.15 means. Counted against the Cap but not hard
+   cap/apron, exactly like the UFA/RFA holds it sits beside (§ 3.10).
+3. **Pending is loud.** `GET /api/offer-sheets/open` backs a banner on both teams'
+   pages and a panel at the top of `/transactions`, flagged `overdue` past the
+   48-hour deadline. Nothing auto-resolves — silently moving a real player on a
+   timer is worse than a late decision.
+
+`_rfa_eligibility` is the single eligibility rule, shared by the validator and the
+apply path. It tests the **current** season on purpose: `_apply_sign` refuses a
+cross-team signing unless the player carries a current-season UFA/RFA hold, so an
+"earliest hold" reading accepts a player still under contract — the offer
+validates, holds real cap room, then fails at the decision. (Verified the hard
+way; `tests/test_offer_sheets.py` pins it.)
+
+Decision-time validation checks the **incumbent's** hard cap on a match — a team
+may exceed the Cap to keep its own free agent, but a hard cap still binds (§ 1.3).
+Nothing checked that before the split.
+
+Three legacy combined entries carry their own `outcome` and were applied on
+submission. They read as already-resolved everywhere and are not migrated.
+
+### Discord transaction notifications
+
+`routers/discord_notify.py` posts an embed to Discord for every **live**
+transaction, using the existing `DISCORD_BOT_TOKEN` (same channel-post endpoint
+as `misc._notify_join_discord`). Set `DISCORD_TXN_CHANNEL` in `.env` to the target
+channel id; **unset, the module is a complete no-op**, so it is safe to deploy
+before the channel exists.
+
+The load-bearing requirement is negative — *the channel must never receive a
+dump*. 1,935 of the ledger's 2,241 entries are backfill, so any path that iterates
+it and notifies would fire ~2,000 messages and rate-limit the bot. Three
+independent gates enforce that; all three must be defeated at once for a flood:
+
+1. **Call-site opt-in.** Only the two live submit paths (`POST /api/transactions`,
+   `POST /api/self/renounce`) call `notify_transaction`. `_append_transaction` is
+   deliberately *not* the hook — it's also the append path for `_append_historical`.
+   There is no startup, replay, migration, or scheduled hook that notifies.
+2. **Freshness.** A transaction whose `created_at` is older than `MAX_AGE_SECONDS`
+   (300s) is never announced. This makes replaying old entries structurally silent
+   regardless of caller intent.
+3. **Burst cap.** `MAX_BURST` (250) messages per `BURST_WINDOW` (900s), plus a
+   `MAX_QUEUE` (400) backlog ceiling. A runaway loop posts 250 and then goes quiet
+   with a log line.
+
+**Sizing gate 3 is measured, not guessed** — get this wrong in either direction and
+you either spam the channel or silently lose a busy day. From the real ledger:
+busiest single day **52** live transactions (2026-06-21), tightest actual 10-minute
+burst **19**. Draft day is expected to beat both (~30 pick signings plus trades,
+50+). An earlier 20/300s setting would have clipped that real 19-transaction burst.
+`tests/test_discord_notify.py` pins those figures, so if league activity outgrows
+them a test fails rather than messages quietly going missing.
+
+**Delivery is a paced queue, not a thread per message.** Discord rate-limits channel
+messages at roughly 5 per 5 seconds; firing a draft day's worth concurrently would
+429 most of them, and a dropped announcement is worse than a late one. A single
+daemon worker drains `_queue` at `SEND_INTERVAL` (1.25s, ~4 per 5s) and honours the
+`retry_after` Discord returns, retrying up to `MAX_RETRIES`. A 4xx that isn't a rate
+limit (bad channel id, bot not in the guild, missing Send Messages) fails fast — it
+won't fix itself. A draft day drains in about two minutes.
+
+`tests/test_discord_notify.py` proves each gate independently — including that
+replaying all 2,241 entries sends zero messages, and that a 429'd message is
+delivered rather than dropped.
+
+**Contract shorthand mirrors `teams/team.js`'s `summarizeContract`** — `2+1 PO`,
+`1 NG+1 TO`, tags PO/TO/NG. Divergent shorthand for the same deal is worse than
+none, so `_contract_str` reimplements that function's rules, including treating a
+trailing UFA/RFA line as the hold the deal *rolls into* rather than a contract year
+(counting it would inflate the total on every deal that has one). Contract-carrying
+types also get a `Year by year` field: a code block of per-season figures with
+option/non-guaranteed years labelled.
+
+**Offer sheets name the destination, never an arrow.** `details.teams` is stored
+`[offering, retaining]`; joining them with `→` stated the opposite of what happened
+on a non-match, where the player leaves for the *offering* team. `_headline_team`
+resolves whoever actually ends up with the player, and the roles are labelled
+("CLE offering · SAC incumbent") rather than implied by ordering.
+
+Enqueueing happens outside the API lock, after the roster write and ledger append
+are already committed: Discord being down must never delay or fail a transaction.
+Forced transactions (`force: true` overriding a failed check) are posted with the
+overridden check names and a distinct colour — the override is already in the ledger
+as `_forced_checks`, this just surfaces it. Owner self-serve moves are marked in the
+footer via `details._source`.
+
+### Suggestions board
+
+`/suggestions` is the member-facing idea board (`routers/suggestions.py`,
+`suggestions.json`). `BACKLOG.md` is the internal list; this is the one members
+can write to. Suggestion **numbers come from a monotonic `seq`**, never from
+`max(existing)`, so a number is a permanent reference even after deletions.
+
+| Endpoint | Auth |
+|---|---|
+| `GET /api/suggestions` | public |
+| `POST /api/suggestions` | any member token |
+| `PATCH /api/suggestions/{id}` | author (title/description, while open) · bod/admin (anything, any status) |
+| `DELETE /api/suggestions/{id}` | author while open · bod/admin any time |
+| `POST /api/suggestions/{id}/comments` | any member token, **any status** |
+| `PATCH`/`DELETE /api/suggestions/{id}/comments/{cid}` | comment's author · bod/admin |
+
+**One thread, two kinds of entry.** `suggestion["comments"]` holds both
+`kind="comment"` and `kind="status"` entries in a single append-ordered list, so
+the ordering between a decision and the discussion around it is real rather than
+reconstructed at render time. A status entry (`{from, to, author}`) is appended
+by `PATCH` whenever the status actually changes — a no-op change appends
+nothing. **Status entries are the record: they are never editable or deletable**,
+by the author or by BOD. Only comments are.
+
+Commenting is deliberately allowed on every status, including `complete` and
+`closed` — posting updates as a suggestion is worked, and after it lands, is the
+whole point. Editing the suggestion *body* is not: once BOD triages it, the
+author can no longer rewrite what was triaged, and the page shows the Edit
+button **disabled with that reason** rather than hiding it, pointing at the
+comment thread instead.
+
+Suggestions predating comments have no `comments` key; `list_suggestions`
+defaults it in the response so no client guards for its absence, without
+writing the key back. `tests/test_suggestions.py` pins all of the above.
 
 ### Member management
 

@@ -1,5 +1,31 @@
 [
   {
+    "version": "0.0.390",
+    "date": "2026-08-08",
+    "changes": [
+      "Suggestions: every suggestion now has a comment thread, so a suggestion can be followed up on as it's worked rather than only filed and closed. Anyone signed in can comment, on any status \u2014 including after it's complete",
+      "Suggestions: status changes are recorded in the thread (\"chair moved this to In Progress\"), so a suggestion carries its own history. Comments can be edited or deleted by whoever wrote them, or by BOD; status entries are the record and can't be",
+      "Suggestions can now be edited from the page. The server has accepted edits since the board launched, but nothing in the UI ever offered it. Authors can edit while a suggestion is open; once BOD has triaged it the Edit button stays visible but disabled, saying so and pointing at the comment thread",
+      "Team pages: every player on your own roster now has a \u22ef menu (Rosters and Contracts views) for roster moves you're entitled to make. Moves you can't make on that player stay visible but disabled, with the rule that blocks them",
+      "Team pages now have a Sign in button when you're not signed in. Previously the only way to enter your token here was a button that already required being signed in, so team owners who aren't on the committee could never reach their own tools",
+      "Trade block: add or remove a player straight from your roster, with an optional note for other teams \u2014 no more editing the whole block on /tradeblock just to list one player",
+      "Renounce (\u00a7 3.10): team owners can now renounce their own free-agent cap holds. The confirmation shows the cap room it frees, the roster count you'd be left with against the 14-player minimum and 12-player charge floor, and the Bird Rights you'd forfeit \u2014 then asks you to type the player's name",
+      "Renouncing is owner-only. A GM or coach with the team's token can edit the trade block but cannot renounce; legality is re-checked on the server and cannot be forced through",
+      "Renounces are now checked against \u00a7 3.10 rather than accepted unvalidated, and the same checks back a new public /api/validate/renounce",
+      "Rescission (\u00a7 3.10) is implemented: every renounce records what it erased, and the committee can restore a renounced free agent with the undo button on the Transactions log \u2014 previously this had to be repaired by hand",
+      "Discord: every transaction submitted on the site now posts to a league channel as it happens \u2014 teams, player, contract terms, trade assets, and who submitted it. Transactions forced past a failed rulebook check say so",
+      "Signings post the full year-by-year salary breakdown alongside the summary, with player options, team options and non-guaranteed years labelled on the year they fall in, and the cap hold the deal rolls into. Contract shorthand matches the roster page (\"2+1 PO\")",
+      "Offer sheet messages now name the team the player actually ends up with. The old header joined the two teams with an arrow, which read backwards on an unmatched offer \u2014 the player leaves for the offering team, not the incumbent",
+      "Offer sheets (\u00a7 3.15) are now two steps: extending the offer, then the incumbent's decision to match. They're two decisions by two different teams, and recording them as one attributed the match to whoever typed it",
+      "An extended offer sits on the books as pending \u2014 the offering team carries a cap hold equal to its first-year salary until it's resolved, so a team can't float offers it couldn't collectively fund",
+      "Open offer sheets appear at the top of the Transactions page and on both teams' pages, with the 48-hour deadline and an overdue flag. Nothing resolves on a timer \u2014 an expired offer nags until someone settles it",
+      "Matching is now checked against the incumbent's hard cap. A team may go over the Cap to keep its own free agent, but a hard cap still binds \u2014 nothing verified that before",
+      "Fixed: offer sheets never counted toward Bird Rights, so a player who changed teams on an unmatched offer kept their tenure credited to the team they left. Mark Williams' Toronto tenure was reading as Minnesota's",
+      "Notifications only ever fire for a live submission. Backfilled history, replayed entries and bulk imports send nothing",
+      "Busy days are handled properly: messages are paced and queued rather than fired all at once, so a draft day's 50+ moves all arrive (over a couple of minutes) instead of being dropped by Discord's rate limit"
+    ]
+  },
+  {
     "version": "0.0.389",
     "date": "2026-08-07",
     "changes": [

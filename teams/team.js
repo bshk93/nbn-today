@@ -556,6 +556,107 @@ const ratingsPopupReady = new Promise(resolve => {
   }
   .token-modal input:focus { outline: none; border-color: var(--accent); }
   .token-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+  /* ── Owner roster moves (per-player action menu) ─────────────────────────── */
+  .move-btn {
+    background: transparent; border: 1px solid var(--border); border-radius: 5px;
+    color: var(--text-dim); cursor: pointer; font-family: inherit; font-size: 0.8rem;
+    line-height: 1; padding: 0.2rem 0.4rem;
+  }
+  .move-btn:hover { color: var(--text-primary); border-color: var(--text-dim); }
+  .move-menu {
+    position: fixed; z-index: 1001; min-width: 220px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.3rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .move-menu-head {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-dim); padding: 0.3rem 0.5rem 0.35rem;
+    border-bottom: 1px solid var(--border); margin-bottom: 0.25rem;
+  }
+  .move-menu button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    border-radius: 5px; color: var(--text-secondary); cursor: pointer;
+    font-family: inherit; font-size: 0.8rem; padding: 0.4rem 0.5rem;
+  }
+  .move-menu button:hover:not(:disabled) { background: var(--bg-page); color: var(--text-primary); }
+  .move-menu button.danger:hover:not(:disabled) { color: var(--danger); }
+  .move-menu button:disabled { color: var(--text-dim); cursor: default; opacity: 0.65; }
+  /* Ineligible actions stay visible with their reason rather than disappearing —
+     "why can't I renounce him?" is a rules question, and the menu is where it
+     gets answered. */
+  .move-menu-why {
+    display: block; font-size: 0.68rem; color: var(--text-dim);
+    padding: 0 0.5rem 0.35rem; margin-top: -0.2rem; white-space: normal;
+  }
+  .confirm-modal {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.35rem; width: 520px; max-width: 92vw;
+    max-height: 86vh; overflow-y: auto;
+  }
+  .confirm-modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.15rem; }
+  .confirm-modal .sub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.9rem; }
+  .confirm-facts {
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.5rem 0.7rem; margin-bottom: 0.9rem;
+  }
+  .confirm-fact {
+    display: flex; justify-content: space-between; gap: 1rem;
+    font-size: 0.78rem; padding: 0.2rem 0;
+  }
+  .confirm-fact span:first-child { color: var(--text-muted); }
+  .confirm-fact span:last-child  { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .confirm-check {
+    font-size: 0.76rem; line-height: 1.4; padding: 0.4rem 0.55rem;
+    border-radius: 6px; margin-bottom: 0.4rem; border: 1px solid transparent;
+  }
+  .confirm-check.ok    { color: var(--text-muted); }
+  .confirm-check.warn  { color: hsl(45,90%,72%);  background: hsl(45,60%,12%);  border-color: hsl(45,60%,22%); }
+  .confirm-check.error { color: hsl(0,85%,74%);   background: hsl(0,55%,12%);   border-color: hsl(0,55%,24%); }
+  .confirm-modal input[type=text] {
+    width: 100%; background: var(--bg-page); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text-primary); font-family: inherit;
+    font-size: 0.85rem; padding: 0.45rem 0.65rem; margin-bottom: 0.9rem;
+    box-sizing: border-box;
+  }
+  .confirm-modal input[type=text]:focus { outline: none; border-color: var(--accent); }
+  .confirm-modal label {
+    display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.3rem;
+  }
+  .confirm-actions { display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; }
+  .confirm-actions .spacer { flex: 1; font-size: 0.75rem; color: var(--danger); }
+  .btn-plain, .btn-danger, .btn-go {
+    padding: 0.4rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; background: transparent; font-family: inherit;
+  }
+  .btn-plain  { border: 1px solid var(--border); color: var(--text-secondary); }
+  .btn-go     { border: 1px solid var(--accent); color: var(--link); }
+  .btn-danger { border: 1px solid var(--danger); color: var(--danger); }
+  .btn-danger:disabled, .btn-go:disabled { opacity: 0.4; cursor: not-allowed; }
+  .block-flag { color: var(--gold); font-size: 0.7rem; margin-left: 0.3rem; }
+  /* Open offer sheet (§ 3.15). Sits above the hard-cap banner because a pending
+     offer changes what the team can spend and is waiting on somebody. */
+  .offer-banner {
+    border: 1px solid hsl(45,60%,26%); background: hsl(45,60%,9%);
+    border-radius: 10px; padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
+    font-size: 0.85rem; color: var(--text-secondary);
+  }
+  .offer-banner.overdue { border-color: var(--danger); background: hsl(0,55%,9%); }
+  .offer-banner b { color: var(--text-primary); }
+  .offer-banner .meta { display: block; margin-top: 0.2rem; font-size: 0.76rem; color: var(--text-muted); }
+  .offer-banner .tag {
+    color: var(--danger); font-weight: 700; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  /* Only rendered when no token is stored. Without it a team owner who isn't on
+     the committee has no way into their own tools: every other affordance that
+     prompts for a token is itself gated on roles that require a token. */
+  .team-signin-btn {
+    background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-muted); cursor: pointer; font-family: inherit;
+    font-size: 0.72rem; padding: 0.25rem 0.6rem;
+  }
+  .team-signin-btn:hover { color: var(--text-primary); border-color: var(--text-dim); }
   .player-note {
     display: inline-flex; align-items: center;
     margin-left: 0.35rem; color: var(--gold-dim);
@@ -719,6 +820,7 @@ document.body.innerHTML = `
       <button class="tab" data-tab="history">Historical Rosters</button>
     </div>
     <div class="tab-panel" id="tab-overview">
+      <div id="offer-sheet-banner" style="display:none"></div>
       <div id="hard-cap-banner" style="display:none"></div>
       <section>
         <div class="roster-header-row">
@@ -730,6 +832,7 @@ document.body.innerHTML = `
             <button class="mode-tab" data-mode="ratings" type="button">Ratings</button>
           </div>
           <button id="whatif-enter-btn" class="whatif-enter-btn" type="button">What If Mode</button>
+          <button id="team-signin-btn" class="team-signin-btn" type="button" style="display:none">Sign in</button>
         </div>
         <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
         <div id="cap-edit-wrap"></div>
@@ -3047,6 +3150,20 @@ const canEditRosters = () => hasAuthRole('rosters');
 // since these are the team's own cosmetic identity choices, not league-administered
 // roster data.
 const canEditTeamSettings = abbr => AUTH_ROLES.includes(abbr.toLowerCase());
+// The trading block takes the team's own role OR admin — mirroring
+// put_trading_block in roster_picks.py. Deliberately not the same predicate as
+// canEditTeamSettings above, which excludes admin on purpose: a jersey number is
+// the team's own cosmetic choice, while the block is league-visible listing data
+// the office does administer.
+const canEditTradeBlock = abbr => AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_ROLES.includes('admin');
+
+// Teams this member currently *owns*, from GET /api/auth/me. Ownership is a
+// tenure position, not a role — every FO member of a team carries the team role
+// (it gates the trading block and jersey numbers), but only the owner may move
+// real roster state. The server computes this with the same `is_team_owner` its
+// write endpoints gate on, so the menu can't offer a move the API would refuse.
+let AUTH_OWNER_OF = [];
+const canRenounce = abbr => AUTH_OWNER_OF.includes(abbr.toUpperCase());
 
 const SEL_STYLE = 'background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;cursor:pointer;outline:none';
 
@@ -3109,6 +3226,386 @@ function withToken(fn) {
   const t = getToken();
   if (t) { fn(t); return; }
   promptToken(fn);
+}
+
+// ── Owner roster moves ───────────────────────────────────────────────────────
+// The per-player "⋯" menu on a team's own roster. Every move here writes for
+// real through the API; nothing in this section is a simulation. The what-if
+// tab's row buttons look similar on purpose but are purely hypothetical, so
+// each real action confirms explicitly and says what it will change.
+
+function openConfirmModal({ title, sub, render, confirmLabel, danger, onConfirm }) {
+  const overlay = document.createElement('div');
+  overlay.className = 'token-overlay';
+  const modal = document.createElement('div');
+  modal.className = 'confirm-modal';
+  overlay.appendChild(modal);
+
+  const h = document.createElement('h3'); h.textContent = title;
+  const s = document.createElement('div'); s.className = 'sub'; s.textContent = sub || '';
+  const bodyEl = document.createElement('div');
+  const actions = document.createElement('div'); actions.className = 'confirm-actions';
+  const err = document.createElement('div'); err.className = 'spacer';
+  const cancel = document.createElement('button'); cancel.className = 'btn-plain'; cancel.textContent = 'Cancel';
+  const go = document.createElement('button');
+  go.className = danger ? 'btn-danger' : 'btn-go';
+  go.textContent = confirmLabel;
+  actions.append(err, cancel, go);
+  modal.append(h, s, bodyEl, actions);
+
+  const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  cancel.addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+  go.addEventListener('click', async () => {
+    go.disabled = true; cancel.disabled = true; err.textContent = '';
+    const prev = go.textContent; go.textContent = 'Working…';
+    try {
+      await onConfirm();
+      close();
+    } catch (e) {
+      err.textContent = e.message || 'Failed.';
+      go.disabled = false; cancel.disabled = false; go.textContent = prev;
+    }
+  });
+
+  document.body.appendChild(overlay);
+  // `render` gets the body element plus a handle to gate the confirm button, so
+  // a dialog can require typed confirmation or block on a failed check.
+  render(bodyEl, { setEnabled: v => { go.disabled = !v; }, close });
+  return overlay;
+}
+
+function factRow(label, value, color) {
+  const d = document.createElement('div'); d.className = 'confirm-fact';
+  const a = document.createElement('span'); a.textContent = label;
+  const b = document.createElement('span'); b.textContent = value;
+  if (color) b.style.color = color;
+  d.append(a, b);
+  return d;
+}
+
+function checkRow(c) {
+  const d = document.createElement('div');
+  d.className = 'confirm-check ' + (c.passed ? 'ok' : c.level === 'error' ? 'error' : 'warn');
+  d.textContent = (c.passed ? '✓ ' : c.level === 'error' ? '✕ ' : '⚠ ') + c.message;
+  return d;
+}
+
+// The API stores trading-block entries by display name; the roster works in
+// slugs. Same transform the API's _display_name applies, so membership tests
+// line up on both sides.
+const blockNameFor = bio => displayNameFromBio((bio && bio.name) || '');
+
+// Mirror of the API's _renounce_eligibility (§ 3.10), so the menu greys out
+// exactly what the server would reject. Note it can't be read off the current
+// season's cap-hold cell: a player whose contract runs through this season sits
+// as a hold for *next* season, and that is the common renounceable case. The
+// test is on the player's EARLIEST hold, not the current year's.
+function renounceEligibility(bio) {
+  const holds = (bio && bio.cap_holds) || {};
+  const years = Object.keys(holds).sort();
+  if (!years.length) return { ok: false, why: 'No cap hold on file — nothing to renounce (§ 3.10).' };
+  const earliest = years[0];
+  const type = holds[earliest];
+  const cur = currentSeasonYr();
+  const m = cur.match(/^(\d{2})-(\d{2})$/);
+  const next = m ? `${m[2]}-${String((parseInt(m[2], 10) + 1) % 100).padStart(2, '0')}` : cur;
+  if (type === 'PLAYER_OPT' || type === 'TEAM_OPT') {
+    return { ok: false, why: 'Decline the option first (§ 6.1) — only a UFA/RFA hold can be renounced.' };
+  }
+  if (type !== 'UFA' && type !== 'RFA') {
+    return { ok: false, why: 'Under contract — a player still under contract must be released (§ 5.1), not renounced.' };
+  }
+  if (earliest > next) {
+    return { ok: false, why: `Contract runs through ${earliest} — renounce applies once they reach free agency (§ 3.10).` };
+  }
+  return { ok: true, why: '', holdType: type, holdSeason: earliest };
+}
+
+async function apiFetch(url, opts, token) {
+  const res = await fetch(url, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
+  });
+  if (res.status === 403) {
+    localStorage.removeItem(TOKEN_KEY);
+    throw new Error('Not authorized — token cleared, reload and try again.');
+  }
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try {
+      const j = await res.json();
+      if (typeof j.detail === 'string') detail = j.detail;
+      else if (j.detail && j.detail.checks) {
+        const bad = j.detail.checks.filter(c => !c.passed && c.level === 'error');
+        detail = bad.length ? bad[0].message : detail;
+      }
+    } catch {}
+    throw new Error(detail);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+function openRenounceDialog(slug, bio, abbr) {
+  const name = displayNameFromBio(bio.name || slug);
+  // Typed confirmation, using the surname alone so it's short enough to type but
+  // still specific to this player. Renounce has no self-serve undo — restoring
+  // one is a committee `rescind_renounce` — so a stray click must not be enough.
+  const surname = String(bio.name || '').split(',')[0].trim() || name;
+
+  openConfirmModal({
+    title: `Renounce ${name}?`,
+    sub: `${abbr} gives up this cap hold under § 3.10. Checking against the rulebook…`,
+    confirmLabel: 'Renounce',
+    danger: true,
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 3.10 checks…';
+      body.appendChild(loading);
+
+      let data;
+      try {
+        data = await apiFetchPublic('/api/validate/renounce', { player: slug });
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      const f = data.fact_sheet || {};
+      const facts = document.createElement('div'); facts.className = 'confirm-facts';
+      facts.appendChild(factRow('Cap hold', `${f.hold_type || '—'} · ${f.hold_season || '—'}`));
+      facts.appendChild(factRow('Hold removed', formatSalary(f.hold_amount)));
+      if (f.cap_room_before != null) {
+        facts.appendChild(factRow('Cap room', `${formatSalary(f.cap_room_before)} → ${formatSalary(f.cap_room_after)}`));
+      }
+      facts.appendChild(factRow('Team salary', `${formatSalary(f.team_salary_before)} → ${formatSalary(f.team_salary_after)}`));
+      facts.appendChild(factRow('Roster', `${f.standard_count_before} → ${f.standard_count_after} players`,
+        f.standard_count_after < f.roster_min ? 'var(--danger)' : ''));
+      facts.appendChild(factRow('Bird Rights forfeited', f.bird_tier || 'none on record',
+        (f.bird_tier === 'QVFA' || f.bird_tier === 'EQVFA') ? 'var(--gold)' : ''));
+      body.appendChild(facts);
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      const note = document.createElement('div');
+      note.className = 'confirm-check warn';
+      note.textContent = 'This cannot be undone from here. ' + name +
+        ' becomes an unsigned free agent, free to sign anywhere, and only the committee can restore them.';
+      body.appendChild(note);
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = 'This renounce is not legal, so it cannot be submitted.';
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+
+      const label = document.createElement('label');
+      label.textContent = `Type ${surname} to confirm`;
+      const input = document.createElement('input');
+      input.type = 'text'; input.autocomplete = 'off';
+      body.append(label, input);
+      input.addEventListener('input', () => {
+        ctl.setEnabled(input.value.trim().toLowerCase() === surname.toLowerCase());
+      });
+      input.focus();
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/renounce', {
+            method: 'POST',
+            body: JSON.stringify({ player: slug, description: `${abbr} renounce ${name}` }),
+          }, token);
+          resolve();
+          // Team salary, cap room, the exceptions panel, the hard-cap banner and
+          // the roster table all derive from the roster that just changed. There
+          // is no partial re-render path that keeps them consistent, so reload.
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
+async function apiFetchPublic(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try { const j = await res.json(); if (typeof j.detail === 'string') detail = j.detail; } catch {}
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+function openBlockDialog(slug, bio, abbr, onBlock, currentNotes, afterChange) {
+  const name = displayNameFromBio(bio.name || slug);
+  let notesInput;
+  openConfirmModal({
+    title: onBlock ? `Remove ${name} from the trade block?` : `Put ${name} on the trade block?`,
+    sub: onBlock
+      ? `${name} stops being listed as available on /tradeblock.`
+      : `${name} is listed as available on /tradeblock. This is a listing only — it moves no salary and makes no trade.`,
+    confirmLabel: onBlock ? 'Remove' : 'Add to block',
+    danger: false,
+    render: (body, ctl) => {
+      ctl.setEnabled(true);
+      if (onBlock) return;
+      const label = document.createElement('label');
+      label.textContent = 'Note for other teams (optional)';
+      notesInput = document.createElement('input');
+      notesInput.type = 'text';
+      notesInput.placeholder = 'e.g. looking for a wing / expiring';
+      notesInput.value = currentNotes || '';
+      body.append(label, notesInput);
+      notesInput.focus();
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          const url = `/api/trading-block/${abbr}/player/${encodeURIComponent(slug)}`;
+          if (onBlock) await apiFetch(url, { method: 'DELETE' }, token);
+          else await apiFetch(url, { method: 'PUT', body: JSON.stringify({ notes: (notesInput?.value || '').trim() }) }, token);
+          afterChange(!onBlock, (notesInput?.value || '').trim());
+          resolve();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
+function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange) {
+  document.querySelectorAll('.move-menu').forEach(m => m.remove());
+  const menu = document.createElement('div');
+  menu.className = 'move-menu';
+
+  const head = document.createElement('div');
+  head.className = 'move-menu-head';
+  head.textContent = displayNameFromBio(bio.name || slug);
+  menu.appendChild(head);
+
+  const close = () => { menu.remove(); document.removeEventListener('click', onDoc, true); };
+  const onDoc = e => { if (!menu.contains(e.target) && e.target !== anchor) close(); };
+
+  const addItem = (label, { enabled, why, danger, onClick }) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    if (danger) b.className = 'danger';
+    b.disabled = !enabled;
+    if (enabled) b.addEventListener('click', () => { close(); onClick(); });
+    menu.appendChild(b);
+    if (!enabled && why) {
+      const w = document.createElement('span');
+      w.className = 'move-menu-why';
+      w.textContent = why;
+      menu.appendChild(w);
+    }
+  };
+
+  const onBlock = blockState.on;
+  addItem(onBlock ? 'Remove from trade block' : 'Add to trade block', {
+    enabled: canEditTradeBlock(abbr),
+    why: 'Only this team’s front office can edit the trade block.',
+    onClick: () => openBlockDialog(slug, bio, abbr, onBlock, blockState.notes, afterBlockChange),
+  });
+
+  // § 3.10: only a UFA/RFA cap hold is renounceable. A player under contract is
+  // released (§ 5.1); one with a live option has it declined first (§ 6.1).
+  const elig = renounceEligibility(bio);
+  const owner = canRenounce(abbr);
+  addItem('Renounce…', {
+    enabled: elig.ok && owner,
+    danger: true,
+    why: !owner ? 'Only the team owner can renounce.' : elig.why,
+    onClick: () => openRenounceDialog(slug, bio, abbr),
+  });
+
+  document.body.appendChild(menu);
+  const r = anchor.getBoundingClientRect();
+  const mr = menu.getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - mr.width - 8))}px`;
+  menu.style.top = `${r.bottom + 4 + mr.height > window.innerHeight ? Math.max(8, r.top - mr.height - 4) : r.bottom + 4}px`;
+  setTimeout(() => document.addEventListener('click', onDoc, true), 0);
+}
+
+
+// Any § 3.15 offer sheet this team is on either side of. Shown to everyone, not
+// just the teams involved — an unresolved offer is exactly the state that used
+// to go unnoticed, and the offering team is carrying a real cap hold for it.
+function renderOfferSheetBanner(offers) {
+  const el = document.getElementById('offer-sheet-banner');
+  if (!el || !offers.length) return;
+  el.style.display = '';
+  el.innerHTML = offers.map(o => {
+    const offering = o.offering_team === abbr;
+    const who = `<a href="/players/?p=${o.player}">${o.player_name || o.player}</a>`;
+    const line = offering
+      ? `Offer sheet out for <b>${who}</b> — ${o.retaining_team} has the right to match.`
+      : `<b>${o.offering_team}</b> has an offer sheet out for <b>${who}</b> — ${abbr} must decide whether to match.`;
+    const cost = offering
+      ? `Holding ${formatSalary(o.hold)} against the cap until it's resolved (§ 3.15).`
+      : `${o.offering_team} is holding ${formatSalary(o.hold)} against their cap until this is resolved.`;
+    return `<div class="offer-banner${o.overdue ? ' overdue' : ''}">
+      ${line}${o.overdue ? ' <span class="tag">overdue</span>' : ''}
+      <span class="meta">${cost} Offered ${o.date}${o.deadline ? ` · due ${o.deadline}` : ''} ·
+        <a href="/transactions">resolve on the Transactions page</a></span>
+    </div>`;
+  }).join('');
+}
+
+// Builds the `rowActions` callback for the live roster table. Returns null when
+// the viewer has no move available at all, which keeps the extra column off
+// every public page load.
+function makeRosterMoveActions(abbr, biosData, blockEntries) {
+  if (!canEditTradeBlock(abbr) && !canRenounce(abbr)) return null;
+
+  // slug -> {on, notes}, seeded from the team's current block listing.
+  const byName = new Map((blockEntries || []).map(e => [e.player, e.notes || '']));
+  const state = {};
+  Object.keys(biosData || {}).forEach(slug => {
+    const n = blockNameFor(biosData[slug]);
+    if (n && byName.has(n)) state[slug] = { on: true, notes: byName.get(n) };
+  });
+  const stateFor = slug => state[slug] || (state[slug] = { on: false, notes: '' });
+
+  return (row, td) => {
+    if (!row.SLUG || row._erc || row._type === 'dead') return;
+    const bio = (biosData || {})[row.SLUG];
+    if (!bio) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'move-btn';
+    btn.textContent = '⋯';
+    btn.title = 'Roster moves';
+    btn.setAttribute('aria-label', `Roster moves for ${displayNameFromBio(bio.name || row.SLUG)}`);
+    const st = stateFor(row.SLUG);
+
+    const flag = document.createElement('span');
+    flag.className = 'block-flag';
+    const syncFlag = () => { flag.textContent = st.on ? 'on block' : ''; };
+    syncFlag();
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openMovesMenu(btn, row.SLUG, bio, abbr, st,
+        (nowOn, notes) => { st.on = nowOn; st.notes = notes; syncFlag(); });
+    });
+    td.append(btn, flag);
+  };
 }
 
 function makeSelect(options, selectedValue) {
@@ -4908,7 +5405,12 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, recr] = await Promise.allSettled([
+  // Snapshot this before the fetches: a stale token gets cleared by the first
+  // request that 403s, so reading it afterwards can't tell "never signed in"
+  // from "signed in with a token that has since been revoked".
+  const hadStoredToken = !!getToken();
+
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -4927,6 +5429,8 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/transactions?limit=500').then(r => r.ok ? r.json() : { transactions: [] }),
     fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/attributes/current').then(r => r.ok ? r.json() : {}),
+    fetch('/api/trading-block').then(r => r.ok ? r.json() : {}),
+    fetch(`/api/offer-sheets/open?team=${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/data/franchise-records.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
   ]);
 
@@ -4937,6 +5441,22 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
   // Roles drive which edit buttons render below; default to none if the call failed.
   AUTH_ROLES = (authr.status === 'fulfilled' && Array.isArray(authr.value?.roles)) ? authr.value.roles : [];
+  AUTH_OWNER_OF = (authr.status === 'fulfilled' && Array.isArray(authr.value?.owner_of)) ? authr.value.owner_of : [];
+
+  // Every role-gated affordance on this page needs a token to already be stored,
+  // and the only ways to store one were themselves role-gated — so a team owner
+  // without committee roles could never reach their own tools here. Offer the
+  // prompt whenever we have no identity at all, then reload so the gated UI
+  // renders. A stale/invalid token also lands here, since it resolves to no roles.
+  const signInBtn = document.getElementById('team-signin-btn');
+  if (signInBtn && !AUTH_ROLES.length) {
+    signInBtn.style.display = '';
+    signInBtn.textContent = hadStoredToken ? 'Sign in again' : 'Sign in';
+    signInBtn.title = hadStoredToken
+      ? 'Your saved token isn’t valid — enter it again to manage your team.'
+      : 'Enter your member token to manage your team.';
+    signInBtn.addEventListener('click', () => promptToken(() => location.reload()));
+  }
 
   const biosData    = biosr.status === 'fulfilled' ? biosr.value : {};
   const capLevels   = capr.status === 'fulfilled'  ? capr.value  : {};
@@ -4949,6 +5469,9 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const allGames    = gamesr.status === 'fulfilled' ? gamesr.value : [];
   const tradeExceptions = ter.status === 'fulfilled' ? ter.value : [];
   const attributesData = attrr.status === 'fulfilled' ? attrr.value : {};
+  const myBlockEntries = ((blockr.status === 'fulfilled' ? blockr.value : {})[abbr] || {}).players || [];
+  const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];
+  renderOfferSheetBanner(openOffers);
   const currentRosterRowsParsed = rr.status === 'fulfilled' ? parseCSV(rr.value) : [];
   const currentSlugs = computeCurrentSlugSet(currentRosterRowsParsed);
 
@@ -5219,8 +5742,15 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     // chart) is the default view; it must match the .active mode-tab above.
     let rosterMode = 'depth';
     let liveRosterRows = rosterRows;
+    // Per-player move menu, only for a viewer who actually has a move available.
+    // Offered on both roster views: Rosters is the default tab, so gating it to
+    // Contracts alone made the feature invisible to the owners it exists for.
+    // Stats and Ratings are analytical views where an actions column is noise.
+    const moveActions = makeRosterMoveActions(abbr, biosData, myBlockEntries);
+    const MOVE_MODES = ['depth', 'contracts'];
     const renderRoster = rowsForDisplay => buildRosterTable(
-      rowsForDisplay, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, rosterMode, latestSeasonBySlug
+      rowsForDisplay, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, rosterMode, latestSeasonBySlug,
+      MOVE_MODES.includes(rosterMode) ? moveActions : null
     );
     function rerenderRosterWrap() {
       rosterWrap.innerHTML = '';
