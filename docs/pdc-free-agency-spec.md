@@ -1,7 +1,11 @@
-# PDC — Free Agency offer pipeline (spec v0.3)
+# PDC — Free Agency offer pipeline (spec v0.4)
 
-**Status:** v0.3, 2026-08-08. Fifteen decisions settled (§ 12); no design
-questions outstanding. Ready to build — Phase 0 in § 10 is the entry point.
+**Status:** v0.4, 2026-08-08. Fifteen decisions settled (§ 12); no design
+questions outstanding. **Phases 0–2 are built** — the roles, the server-side FA
+pool, and the whole offer/ballot API. Phase 3 in § 10 is the next entry point.
+Sections amended during the build carry the reason inline (§ 4 locking, § 4.2
+archiving and `round_id`, § 4.3a version freezing, § 4.4 ballot gating); those
+notes are the record of what was learned, not decoration.
 
 Scope of *this* document: **free agency only** — an owner drafts and submits a
 contract offer to a free agent, the Free Agency Committee (FAC) reviews the
@@ -141,8 +145,13 @@ A static HTML shell served at any URL is world-readable. So:
 
 ## 4. Data model
 
-Three new files in `NBS_DATA_DIR`, each with its own lock, all read/written via
-`storage._load_json` / `_save_json`.
+Three new files in `NBS_DATA_DIR`, all read/written via `storage._load_json` /
+`_save_json`, under **one** `_fa_lock` — not one lock per file, as this section
+originally sketched. Every write that matters spans two of them (submit stamps
+the FFA clock in `fa-state` *and* appends to `fa-offers`; finalize reads offers
+*and* writes ballots), so three locks would always be taken together: no
+concurrency gained, a lock-ordering bug available. Write traffic here is a
+committee of a few people.
 
 ### 4.1 `fa-state.json` — the board's state
 
@@ -250,11 +259,23 @@ A flat list (like `transactions.json`), newest appended:
 the team already has a draft or submitted offer on that player. Competing offers
 from the same team to the same player are not allowed for now.
 
-*Assumption flagged for confirmation:* "live" is scoped to the current round.
-Once a player is finalized, or reopened by the head in a later round, prior
-offers are archived and the team may offer again — otherwise losing a bid in
-Round 1 would lock a team out of that player permanently, which can't be the
-intent. The archived offers stay readable on the player's history.
+**"Live" ends at finalize, and only at finalize (built).** Each offer carries an
+`archived_at`, null while live; `POST /api/fa/players/{slug}/finalize` stamps it
+on every offer for that player, which is what frees the team to bid again in a
+later round. Losing a bid in Round 1 must not lock a team out of that player
+permanently.
+
+A **reopen deliberately does not archive.** Offers on a player the head reopened
+*without* finalizing were never resolved — they are still the ones under review,
+and archiving them would silently discard live work. Unlock reverses its own
+finalize by clearing the `archived_at` that finalize wrote, so the restored
+ballots don't end up referring to offers nobody can see.
+
+**`round_id` is stamped at submit, not at creation.** A draft isn't in a round
+yet, and stamping early would misfile an offer drafted before the head opened
+the player. In FFA the clock's session id doubles as the round id
+(`ffa-<hex>`), so a player reopened for a second FFA window gets a fresh ballot
+bucket instead of merging into the closed window's.
 
 Note the interaction with § 4.3: with no withdrawal *and* no second offer, **the
 draft is a team's only chance to get it right**. That is the whole reason the
@@ -328,13 +349,22 @@ Rules:
 - **Nothing is overwritten.** `versions[]` plus `remands[]` mean the dashboard
   can show *offered → asked → returned* as a sequence. Without that history,
   "final" would be unfalsifiable — nobody could see what changed.
+  **The freeze happens at the remand, not at the resubmission** (learned the
+  hard way, pinned by a test). A returned offer is editable, so by the time it
+  comes back `offer` already holds the *new* figures — snapshotting then records
+  the revision as if it were the thing the committee objected to, and the diff
+  below compares v(n) against itself. Guarded by version number so a second,
+  additive remand doesn't freeze the same version twice.
 - **`pdc-alerts` posts the diff**, not just the new offer: which years and
   figures moved between v(n−1) and v(n). Reviewing a resubmission without seeing
   what changed is the same work twice.
 - **Ballots already cast are flagged, never voided.** A member who balloted
   before a revision sees *"this offer was revised after you voted"* with the
   diff, and is nudged to revisit. Silently discarding a member's considered
-  judgment is worse than showing them it may be stale.
+  judgment is worse than showing them it may be stale. Built as `revised_since`
+  on each ballot in `GET /api/fa/players/{slug}/ballots` — derived server-side
+  rather than in the dashboard, so the rule has one implementation. Re-saving a
+  ballot clears its own flag and leaves everyone else's standing.
 - **A remand cannot follow a finalize.** Once the head locks a player, the
   offers on them are closed; reopening the player (§ 4.1) is the escape hatch.
 - **A returned offer is enumerable and visibly waiting**, like an open offer
@@ -404,7 +434,15 @@ Other rules:
 - A ballot must sum to **exactly 1,000** to be considered cast; anything else is
   rejected at write time with the running total in the error message.
 - Ballots are freely revisable **until** the FAC head finalizes; after
-  `final.locked_at`, every write to that (player, round) 409s.
+  `final.locked_at`, every write to that (player, round) 409s. The lock is
+  checked *before* the ball keys are validated — finalize archives the offers,
+  so a late ballot would otherwise be refused as "not an option on this ballot",
+  which is true and not the reason.
+- **`admin` is not waved through the ballot endpoint**, unlike every other check
+  in `auth.py`. A ballot is a vote, not an administrative action; there is no
+  such thing as casting one you weren't assigned. The head's real powers over a
+  ballot — assign, finalize, unlock — are separate endpoints, and admin passes
+  those.
 - `totals` is **stored, not recomputed on read** — it is the record of what was
   decided at that moment, and the offers it refers to are not guaranteed to
   still be the current picture.
@@ -751,7 +789,7 @@ runner, not pytest — pytest isn't installed).
 |---|---|---|
 | **0** ✅ | `VALID_ROLES` + `ROLE_IMPLIES` additions **and `NAMED_ROLES` in `members/index.html`** — without the latter an admin cannot grant the roles at all; then grant `fac_head` to the head, `fac` to members | Nobody (roles do nothing yet) |
 | **1** ✅ | `_fa_pool` server-side + `GET /api/fa/pool`; rewrite `free-agency/index.html` to consume it | Nobody — page output unchanged |
-| **2** | `free_agency.py`: state/offers/ballots storage, full endpoint set, validation wiring, tests. No UI anywhere | API only, role-gated |
+| **2** ✅ | `free_agency.py`: state/offers/ballots storage, full endpoint set, validation wiring, tests. No UI anywhere | API only, role-gated |
 | **3** | Extract `teams/lineup.js`; `team.js` consumes it | Nobody — identical render |
 | **4** | Session cookie: `sessions.json`, `POST /api/auth/session`, `_resolve_session` accepted on `/api/fa/*` + `/api/auth/me`, `token-badge.js` mints it on load | Nobody — no behaviour changes on any existing page |
 | **5** | Dashboard at **`nbn.today/pdc`**, unlinked from `nav.js`. Build and review the whole thing here | Anyone with the URL — and it shows only the forbidden screen without a role |
@@ -808,13 +846,10 @@ Settled 2026-08-08. Each links to the section that implements it.
 
 ## 13. Open items
 
-Nothing blocking, and no design questions left. Two assumptions to confirm as
-they are built:
+Nothing blocking, and no design questions left.
 
-1. **"Live" offer scoping across rounds** (§ 4.2) — the assumption is that a
-   finalized or reopened player frees a team to offer again in a later round.
-   Stated rather than asked, because the alternative locks a team out of a
-   player permanently after one losing bid.
+1. ~~**"Live" offer scoping across rounds** (§ 4.2)~~ — **settled in Phase 2.**
+   Finalize archives; a reopen does not. See § 4.2 for why the two differ.
 2. **QO amount** (§ 7.2) — the § 3.9 formula is marked *proposed, pending BOD
    confirmation* in the rulebook itself. The ballot shows the QO line either
    way, labelling the figure **estimated** when it comes from that formula.
