@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>PDC — NBN</title>
+  <!--
+    The PDC committee dashboard — see nbn-today/docs/pdc-free-agency-spec.md § 8.
+
+    This file ships **no league data** (§ 3.4). It is a shell plus JS, and every
+    byte of committee data arrives from a role-gated endpoint: a stranger who
+    finds the URL gets this shell, one /api/auth/me with no roles, and the
+    forbidden screen. That screen is a courtesy, not a control — the security
+    boundary is the API, never the page.
+
+    Served at nbn.today/pdc and at pdc.nbn.today off the same docroot, so /api/*,
+    /data/*.csv and /teams/* resolve same-origin under either host and no
+    cross-origin request is ever made. The subdomain's nginx block lives at
+    /etc/nginx/sites-available/pdc.nbn.today.
+  -->
+  <style>
+    body { padding: 1.5rem 1rem 4rem; }
+    .page { max-width: 1500px; margin: 0 auto; }
+
+    /* ── chrome ───────────────────────────────────────────────────────────── */
+    .top-bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .top-bar h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+    .top-bar .sub { color: var(--text-muted); margin-top: 0.3rem; font-size: 0.85rem; }
+    .right-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+    .who { font-size: 0.8rem; color: var(--text-muted); }
+    .who b { color: var(--text-secondary); font-weight: 600; }
+
+    button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.78rem; font-weight: 600; padding: 0.32rem 0.7rem; border: 1px solid transparent; }
+    .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--bg-card); color: var(--text-primary); }
+    .btn-danger { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+    button:disabled { opacity: 0.45; cursor: default; }
+    input, textarea, select {
+      font-family: inherit; font-size: 0.82rem; background: var(--bg-page); color: var(--text-primary);
+      border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.55rem; outline: none; width: 100%;
+    }
+    textarea { resize: vertical; min-height: 5rem; }
+
+    .chip { display: inline-block; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+            padding: 0.12rem 0.4rem; border-radius: 4px; border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
+    .chip-role { border-color: var(--muted-border); color: var(--accent-light); }
+    .chip-ok { border-color: var(--success); color: var(--success); }
+    .chip-bad { border-color: var(--danger-border-strong); color: var(--danger); }
+    .chip-warn { border-color: var(--gold-border); color: var(--gold); }
+    .chip-live { border-color: var(--accent); color: var(--accent-light); }
+
+    /* ── gate ─────────────────────────────────────────────────────────────── */
+    .gate { max-width: 520px; margin: 4rem auto; text-align: center; }
+    .gate h2 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+    .gate p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1rem; }
+
+    /* ── board bar ────────────────────────────────────────────────────────── */
+    .boardbar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+                padding: 0.7rem 0.9rem; margin-bottom: 1rem; display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; }
+    .bb-block { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .bb-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; }
+    .bb-val { font-size: 0.82rem; color: var(--text-secondary); }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; background: transparent; color: var(--text-muted); padding: 0.28rem 0.6rem; }
+    .seg button.on { background: var(--accent-dark); color: var(--text-on-accent); }
+    .seg button:not(.on):hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    /* ── panes ────────────────────────────────────────────────────────────── */
+    .panes { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 1rem; align-items: start; }
+    @media (max-width: 900px) { .panes { grid-template-columns: 1fr; } }
+
+    .pane { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
+    .pane-head { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 0.5rem; align-items: center; justify-content: space-between; }
+    .tabs-mini { display: flex; gap: 0.15rem; }
+    .tabs-mini button { background: none; border: none; color: var(--text-muted); padding: 0.2rem 0.45rem; font-size: 0.72rem; border-radius: 5px; }
+    .tabs-mini button.on { background: var(--bg-hover); color: var(--text-primary); }
+
+    .plist { max-height: 70vh; overflow-y: auto; }
+    .prow { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border-subtle); cursor: pointer; display: flex; gap: 0.5rem; align-items: flex-start; }
+    .prow:last-child { border-bottom: none; }
+    .prow:hover { background: var(--bg-hover); }
+    .prow.on { background: var(--accent-panel-bg); }
+    .prow-body { flex: 1; min-width: 0; }
+    .prow-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prow-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
+    .prow-tags { display: flex; flex-direction: column; gap: 0.2rem; align-items: flex-end; }
+    .empty { padding: 1.25rem 0.9rem; color: var(--text-dim); font-size: 0.8rem; text-align: center; }
+
+    /* ── detail ───────────────────────────────────────────────────────────── */
+    .detail-head { padding: 0.9rem 1rem; border-bottom: 1px solid var(--border-subtle); }
+    .detail-head h2 { font-size: 1.15rem; font-weight: 700; }
+    .detail-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .section { padding: 0.9rem 1rem; border-bottom: 1px solid var(--border-subtle); }
+    .section:last-child { border-bottom: none; }
+    .section h3 { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 700; margin-bottom: 0.6rem; }
+
+    .offers { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.3rem; align-items: stretch; }
+    .offer { flex: 0 0 320px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 9px; padding: 0.7rem 0.8rem; display: flex; flex-direction: column; gap: 0.55rem; }
+    .offer.returned { border-color: var(--gold-border); }
+    .offer-head { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .offer-team { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.02em; }
+    .offer-num { font-size: 0.7rem; color: var(--text-dim); font-family: monospace; }
+    .shorthand { font-size: 0.85rem; color: var(--text-primary); font-weight: 600; }
+    .kv { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.5rem; font-size: 0.74rem; }
+    .kv dt { color: var(--text-muted); }
+    .kv dd { color: var(--text-secondary); text-align: right; }
+    table.years { width: 100%; font-size: 0.74rem; border-collapse: collapse; }
+    table.years td { padding: 0.16rem 0; border-bottom: 1px solid var(--border-subtle); }
+    table.years td.amt { text-align: right; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    table.years td.tag { text-align: right; width: 2.6rem; color: var(--text-muted); font-size: 0.66rem; }
+    table.years tr.hold td { color: var(--gold-dim); border-bottom: none; }
+
+    .mini-head { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); font-weight: 700; margin-bottom: 0.2rem; }
+    .checkline { font-size: 0.72rem; display: flex; gap: 0.35rem; align-items: baseline; }
+    .checkline.err { color: var(--danger); }
+    .checkline.warn { color: var(--gold); }
+    .pitch { font-size: 0.76rem; color: var(--text-secondary); white-space: pre-wrap; line-height: 1.5;
+             max-height: 6.5rem; overflow: hidden; position: relative; }
+    .pitch.open { max-height: none; }
+    .linkish { background: none; border: none; color: var(--link); padding: 0; font-size: 0.72rem; font-weight: 600; }
+    .lineup { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+    .lu { font-size: 0.68rem; border: 1px solid var(--border); border-radius: 5px; padding: 0.1rem 0.3rem; color: var(--text-muted); }
+    .lu b { color: var(--text-secondary); font-weight: 600; }
+    .lu.signee { border-color: var(--accent); color: var(--accent-light); }
+    .lu.signee b { color: var(--accent-light); }
+
+    .banner { border: 1px solid var(--border); border-radius: 7px; padding: 0.5rem 0.65rem; font-size: 0.76rem; color: var(--text-secondary); line-height: 1.5; }
+    .banner.warn { border-color: var(--gold-border); background: var(--gold-bg); color: var(--gold); }
+    .banner.bad { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-light); }
+    .banner.info { border-color: var(--muted-border); background: var(--accent-panel-bg); color: var(--text-secondary); }
+
+    .remand { border-left: 2px solid var(--gold-border); padding: 0.15rem 0 0.15rem 0.5rem; font-size: 0.73rem; color: var(--text-secondary); margin-bottom: 0.35rem; }
+    .remand .meta { color: var(--text-dim); font-size: 0.67rem; }
+    .diff { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; }
+
+    .ballot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.6rem; }
+    .ballot { border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.7rem; background: var(--bg-subtle); }
+    .ballot-name { font-size: 0.8rem; font-weight: 600; display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
+    .bar-row { display: grid; grid-template-columns: 1fr 3.2rem; gap: 0.4rem; align-items: center; font-size: 0.72rem; margin-top: 0.3rem; }
+    .bar { height: 0.5rem; background: var(--bg-page); border-radius: 3px; overflow: hidden; border: 1px solid var(--border-subtle); }
+    .bar span { display: block; height: 100%; background: var(--accent); }
+    .bar-lbl { font-size: 0.7rem; color: var(--text-muted); }
+    .bar-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+
+    .commit { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .commit-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.65rem; font-size: 0.74rem; color: var(--text-muted); }
+    .commit-card b { color: var(--text-secondary); }
+    .commit-card.over { border-color: var(--gold-border); color: var(--gold); }
+
+    /* ── modal ────────────────────────────────────────────────────────────── */
+    .scrim { position: fixed; inset: 0; background: var(--overlay-scrim); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 1rem; }
+    .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; width: 460px; max-width: 100%; max-height: 85vh; overflow-y: auto; }
+    .modal h3 { font-size: 0.98rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .modal p.note { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.8rem; line-height: 1.5; }
+    .modal .row { margin-bottom: 0.7rem; }
+    .modal label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.2rem; font-weight: 600; }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.9rem; }
+    .picklist { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 7px; }
+    .pickrow { display: flex; gap: 0.5rem; align-items: center; padding: 0.35rem 0.55rem; border-bottom: 1px solid var(--border-subtle); font-size: 0.8rem; }
+    .pickrow:last-child { border-bottom: none; }
+    .pickrow input[type=checkbox] { width: auto; }
+
+    .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 10001;
+             background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.9rem; font-size: 0.8rem; }
+    .toast.bad { border-color: var(--danger-border-strong); color: var(--danger-light); }
+  </style>
+</head>
+<body>
+  <nav class="nav"><a href="/" id="home-link">← nbn.today</a></nav>
+
+  <div class="page">
+    <header class="top-bar">
+      <div>
+        <h1>PDC</h1>
+        <p class="sub" id="subtitle">Committee review — Free Agency</p>
+      </div>
+      <div class="right-bar" id="whoami"></div>
+    </header>
+
+    <div id="gate"></div>
+
+    <div id="app" hidden>
+      <div class="boardbar" id="boardbar"></div>
+      <div class="panes">
+        <aside class="pane">
+          <div class="pane-head">
+            <div class="tabs-mini" id="list-tabs"></div>
+            <button class="btn-ghost" id="add-player" hidden>+ Player</button>
+          </div>
+          <div class="plist" id="player-list"></div>
+        </aside>
+        <main class="pane" id="detail"></main>
+      </div>
+    </div>
+
+    <div id="poext" hidden></div>
+  </div>
+
+  <script src="/teams/lineup.js"></script>
+  <script>
+  // ══ PDC dashboard ═══════════════════════════════════════════════════════════
+  //
+  // Read side of the committee pipeline (spec § 8.2 / § 8.3) plus the head's
+  // board controls. Ball allocation and finalize are Phase 8 and are deliberately
+  // absent here rather than stubbed — a half-wired vote button is worse than a
+  // visibly missing one.
+  //
+  // Two rules this file follows and must keep following:
+  //   * **No cap math here.** Every dollar rendered comes out of the fact sheet
+  //     the API built with the same helpers `_validate_sign` uses, so the
+  //     dashboard can never show a team room the validator didn't credit it with.
+  //   * **No client-side hiding.** What a viewer may see is what the endpoint
+  //     returned; grouping is a rendering of an already-filtered payload (§ 6.1).
+
+  const API = '/api';
+
+  let ME = { name: null, roles: [], owner_of: [] };
+  let IS_FAC = false, IS_HEAD = false, IS_POEXT = false;
+  let STATE = null;                 // GET /api/fa/state
+  let POOL = {}, BIOS = {}, OVR = {}, TEAMMAP = {};
+  let SEASON = '';
+  let LIST_MODE = 'mine';           // 'mine' | 'all'
+  let OPEN_SLUG = null;
+
+  // ── small helpers ───────────────────────────────────────────────────────────
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function token() { try { return localStorage.getItem('nbn_token'); } catch { return null; } }
+
+  // The `.nbn.today` session cookie covers /api/fa/* and /api/auth/me (§ 3.3), so
+  // a member who has ever loaded nbn.today needs no token in this origin at all.
+  // The header still wins where a token happens to be present.
+  async function api(path, opts) {
+    const o = Object.assign({ credentials: 'same-origin' }, opts || {});
+    o.headers = Object.assign({}, o.headers || {});
+    const t = token();
+    if (t) o.headers.Authorization = 'Bearer ' + t;
+    if (o.body && typeof o.body !== 'string') {
+      o.headers['Content-Type'] = 'application/json';
+      o.body = JSON.stringify(o.body);
+    }
+    const res = await fetch(API + path, o);
+    let data = null;
+    try { data = await res.json(); } catch { /* empty body */ }
+    if (!res.ok) {
+      const err = new Error((data && (data.detail && data.detail.detail || data.detail)) || res.statusText);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
+  function toast(msg, bad) {
+    const t = el('div', 'toast' + (bad ? ' bad' : ''), msg);
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 4200);
+  }
+
+  function displayName(canonical) {
+    if (!canonical) return '';
+    const toTitle = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    if (canonical.includes(',')) {
+      const [last, first] = canonical.split(',', 2);
+      return toTitle(`${first.trim()} ${last.trim()}`);
+    }
+    return toTitle(canonical);
+  }
+
+  function nameOf(slug) { return displayName((BIOS[slug] || {}).name || slug); }
+
+  function parseMoney(v) {
+    if (v == null || v === '') return 0;
+    const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
+    return isNaN(n) ? 0 : n;
+  }
+  function money(n) { return (n == null) ? '—' : '$' + Math.round(n).toLocaleString('en-US'); }
+  function compactMoney(n) {
+    if (!n) return '$0';
+    const s = n < 0 ? '-' : '';
+    n = Math.abs(n);
+    if (n >= 1e6) return s + '$' + (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n >= 1e3) return s + '$' + Math.round(n / 1e3) + 'K';
+    return s + '$' + Math.round(n);
+  }
+
+  function age(dob) {
+    if (!dob) return '';
+    return String(Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 3600 * 1000)));
+  }
+
+  function when(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
+  function ago(iso) {
+    if (!iso) return '';
+    const secs = (Date.now() - new Date(iso).getTime()) / 1000;
+    const fwd = secs < 0;
+    const s = Math.abs(secs);
+    const n = s < 60 ? 'just now'
+      : s < 3600 ? Math.floor(s / 60) + 'm'
+      : s < 86400 ? Math.floor(s / 3600) + 'h'
+      : Math.floor(s / 86400) + 'd';
+    if (n === 'just now') return n;
+    return fwd ? 'in ' + n : n + ' ago';
+  }
+
+  const TAGS = { PLAYER_OPT: 'PO', TEAM_OPT: 'TO', NON_GTD: 'NG' };
+  const HOLD = t => t === 'UFA' || t === 'RFA';
+
+  // Mirrors summarizeContract's grammar in teams/team.js — "2+1 PO, $150M". The
+  // same shorthand appears on team pages and in the Discord embeds; divergent
+  // shorthand for the same deal is worse than none. A trailing UFA/RFA line is
+  // the hold the deal rolls into, not a contract year, so it ends the deal.
+  function shorthand(contract, season) {
+    const sals = contract.salaries || {};
+    const caps = contract.cap_holds || {};
+    const years = Object.keys(sals)
+      .filter(k => /^\d{2}-\d{2}$/.test(k) && k >= season && sals[k] !== '' && sals[k] != null)
+      .sort();
+    if (!years.length) return '—';
+    if (HOLD(caps[years[0]])) {
+      const amt = parseMoney(sals[years[0]]);
+      return `${caps[years[0]]} hold` + (amt >= 1000 ? `, ${compactMoney(amt)}` : '');
+    }
+    const deal = [];
+    for (const k of years) {
+      if (HOLD(caps[k])) break;
+      deal.push({ year: k, tag: TAGS[caps[k]] || null });
+    }
+    let base = 0;
+    while (base < deal.length && !deal[base].tag) base++;
+    const extras = [];
+    for (let i = base; i < deal.length;) {
+      const tag = deal[i].tag;
+      let n = 0;
+      while (i < deal.length && deal[i].tag === tag) { n++; i++; }
+      extras.push(n + (tag ? ' ' + tag : ''));
+    }
+    let yrs;
+    if (!extras.length) yrs = `${base} yr${base === 1 ? '' : 's'}`;
+    else if (base === 0) yrs = extras.join('+');
+    else yrs = `${base}+${extras.join('+')}`;
+    const total = deal.reduce((sum, d) => sum + parseMoney(sals[d.year]), 0);
+    return total ? `${yrs}, ${compactMoney(total)}` : yrs;
+  }
+
+  const METHOD_LABELS = {
+    cap_space: 'Cap space', bird_rights: 'Bird rights', mle: 'MLE', ntmle: 'Non-taxpayer MLE',
+    tmle: 'Taxpayer MLE', bae: 'Bi-annual exception', room: 'Room exception', minimum: 'Minimum',
+    sign_and_trade: 'Sign-and-trade', rookie_scale: 'Rookie scale',
+  };
+  const ROLE_LABELS = {
+    face: 'Face of the franchise', starter: 'Starter', role_player: 'Role player',
+    veteran: 'Veteran', none: 'No role promised',
+  };
+
+  // ── boot ────────────────────────────────────────────────────────────────────
+
+  (async function boot() {
+    if (location.hostname.startsWith('pdc.')) {
+      // Under the subdomain "/" is this dashboard, so Home has to be spelled out.
+      document.getElementById('home-link').href = 'https://nbn.today/';
+    }
+    try {
+      ME = await api('/auth/me');
+    } catch (e) {
+      renderGate('offline');
+      return;
+    }
+    const roles = new Set(ME.roles || []);
+    const admin = roles.has('admin');
+    IS_HEAD = admin || roles.has('fac_head');
+    IS_FAC = IS_HEAD || roles.has('fac');
+    IS_POEXT = admin || roles.has('poext') || roles.has('poext_head');
+    renderWhoami();
+
+    if (!IS_FAC && !IS_POEXT) { renderGate(ME.name ? 'forbidden' : 'anon'); return; }
+    if (IS_POEXT) renderPoext();
+    if (!IS_FAC) { document.getElementById('subtitle').textContent = 'Committee review — PO-EXT'; return; }
+
+    document.getElementById('app').hidden = false;
+    document.getElementById('detail').appendChild(el('div', 'empty', 'Pick a player from the board.'));
+
+    const [state, pool, bios, ovr, teamMap, ly] = await Promise.all([
+      api('/fa/state'),
+      api('/fa/pool'),
+      api('/players'),
+      api('/ovr/current'),
+      api('/team-map'),
+      api('/league-year').catch(() => ({})),
+    ]);
+    STATE = state; POOL = pool; BIOS = bios; OVR = ovr; TEAMMAP = teamMap;
+    SEASON = ly.current_season || '';
+    LIST_MODE = IS_HEAD ? 'all' : 'mine';
+    renderBoard();
+    renderList();
+    routeFromHash();
+    window.addEventListener('hashchange', routeFromHash);
+  })();
+
+  function renderWhoami() {
+    const box = document.getElementById('whoami');
+    box.innerHTML = '';
+    if (!ME.name) return;
+    const who = el('span', 'who');
+    who.appendChild(el('b', null, ME.name));
+    box.appendChild(who);
+    (ME.roles || []).filter(r => ['admin', 'fac', 'fac_head', 'poext', 'poext_head'].includes(r))
+      .forEach(r => box.appendChild(el('span', 'chip chip-role', r)));
+  }
+
+  // The forbidden screen is a courtesy — the API is the boundary (§ 3.4). It
+  // exists so a member who lands here by accident gets a sentence rather than a
+  // blank page and a console full of 403s.
+  function renderGate(kind) {
+    const g = document.getElementById('gate');
+    g.innerHTML = '';
+    const wrap = el('div', 'gate');
+    if (kind === 'offline') {
+      wrap.appendChild(el('h2', null, 'Can’t reach the league API'));
+      wrap.appendChild(el('p', null, 'The dashboard needs /api to answer. Try again in a moment.'));
+    } else if (kind === 'anon') {
+      wrap.appendChild(el('h2', null, 'Not signed in'));
+      wrap.appendChild(el('p', null,
+        'Sign in on nbn.today in this browser and you are signed in here automatically. '
+        + 'If this browser has never seen the main site, paste your member token instead.'));
+      const btn = el('button', 'btn-primary', 'Enter token');
+      btn.addEventListener('click', signInModal);
+      wrap.appendChild(btn);
+    } else {
+      wrap.appendChild(el('h2', null, 'Forbidden'));
+      wrap.appendChild(el('p', null,
+        'This is the PDC committee dashboard. Your member account isn’t on the Free Agency '
+        + 'or PO-EXT committee, so there is nothing here for you.'));
+      const a = el('a', null, '← Back to nbn.today');
+      a.href = location.hostname.startsWith('pdc.') ? 'https://nbn.today/' : '/';
+      wrap.appendChild(a);
+    }
+    g.appendChild(wrap);
+  }
+
+  function signInModal() {
+    const body = el('div');
+    const row = el('div', 'row');
+    row.appendChild(el('label', null, 'Member token'));
+    const input = el('input');
+    input.type = 'password';
+    input.placeholder = 'Paste token…';
+    row.appendChild(input);
+    body.appendChild(row);
+    modal('Sign in', body, [
+      { label: 'Continue', cls: 'btn-primary', run: () => {
+        const v = input.value.trim();
+        if (!v) return false;
+        try { localStorage.setItem('nbn_token', v); } catch {}
+        // token-badge.js mints the .nbn.today session on the next load, so the
+        // paste is a one-time cost even if the member lands here first.
+        location.reload();
+      } },
+    ]);
+    input.focus();
+  }
+
+  function renderPoext() {
+    const box = document.getElementById('poext');
+    box.hidden = false;
+    box.innerHTML = '';
+    const b = el('div', 'banner info');
+    b.style.marginTop = '1rem';
+    b.textContent = 'PO-EXT: player options and extensions come to this dashboard after free agency. '
+      + 'Your role is granted and does nothing yet — nothing is being missed.';
+    box.appendChild(b);
+  }
+
+  // ── the board bar (mode, rounds) ────────────────────────────────────────────
+
+  const MODE_COPY = {
+    closed: 'No offers are accepted.',
+    rounds: 'Only players the head has opened accept offers.',
+    ffa: 'Every free agent accepts offers; the first offer on a player starts a 24-hour clock.',
+  };
+
+  function currentRound() {
+    const rs = (STATE.rounds || []);
+    const open = rs.filter(r => !r.closed_at);
+    return open.length ? open[open.length - 1] : (rs.length ? rs[rs.length - 1] : null);
+  }
+
+  function renderBoard() {
+    const bar = document.getElementById('boardbar');
+    bar.innerHTML = '';
+
+    const modeBlock = el('div', 'bb-block');
+    modeBlock.appendChild(el('span', 'bb-label', 'Mode'));
+    if (IS_HEAD) {
+      const seg = el('div', 'seg');
+      ['closed', 'rounds', 'ffa'].forEach(m => {
+        const b = el('button', STATE.mode === m ? 'on' : '', m === 'ffa' ? 'FFA' : m[0].toUpperCase() + m.slice(1));
+        b.title = MODE_COPY[m];
+        b.addEventListener('click', () => setMode(m));
+        seg.appendChild(b);
+      });
+      modeBlock.appendChild(seg);
+    } else {
+      modeBlock.appendChild(el('span', 'chip chip-live', STATE.mode));
+    }
+    modeBlock.appendChild(el('span', 'bb-val', MODE_COPY[STATE.mode] || ''));
+    bar.appendChild(modeBlock);
+
+    const rnd = currentRound();
+    const roundBlock = el('div', 'bb-block');
+    roundBlock.appendChild(el('span', 'bb-label', 'Round'));
+    if (rnd) {
+      roundBlock.appendChild(el('span', 'bb-val', rnd.name + (rnd.closed_at ? ' (closed)' : '')));
+      if (rnd.closes_at && !rnd.closed_at) {
+        // Advisory only: nothing acts on it (§ 4.1, D11). Labelled as such so
+        // nobody plans around a deadline the software will not enforce.
+        const c = el('span', 'chip', 'label only · ' + when(rnd.closes_at));
+        c.title = 'Rounds carry no enforced clock — the head closes players by hand.';
+        roundBlock.appendChild(c);
+      }
+    } else {
+      roundBlock.appendChild(el('span', 'bb-val', 'none opened'));
+    }
+    if (IS_HEAD) {
+      const b = el('button', 'btn-ghost', 'Open round…');
+      b.addEventListener('click', openRoundModal);
+      roundBlock.appendChild(b);
+    }
+    bar.appendChild(roundBlock);
+
+    document.getElementById('add-player').hidden = !IS_HEAD;
+    document.getElementById('add-player').onclick = addPlayerModal;
+  }
+
+  async function setMode(mode) {
+    if (mode === STATE.mode) return;
+    if (mode === 'ffa' && !confirm(
+      'Switch to FFA?\n\nEvery free agent in the pool becomes offerable immediately, and the first '
+      + 'submitted offer on a player starts a 24-hour clock that closes their window.')) return;
+    try {
+      await api('/fa/mode', { method: 'PUT', body: { mode } });
+      await reload();
+      toast('Mode is now ' + mode);
+    } catch (e) { toast(e.message, true); }
+  }
+
+  function openRoundModal() {
+    const body = el('div');
+    const r1 = el('div', 'row');
+    r1.appendChild(el('label', null, 'Name'));
+    const name = el('input');
+    name.placeholder = 'Round ' + ((STATE.rounds || []).length + 1);
+    r1.appendChild(name);
+    body.appendChild(r1);
+
+    const r2 = el('div', 'row');
+    r2.appendChild(el('label', null, 'Closes at (display label only — nothing acts on it)'));
+    const closes = el('input');
+    closes.type = 'datetime-local';
+    r2.appendChild(closes);
+    body.appendChild(r2);
+
+    const r3 = el('div', 'row');
+    const lbl = el('label');
+    lbl.style.display = 'flex';
+    lbl.style.gap = '0.4rem';
+    lbl.style.alignItems = 'center';
+    const cb = el('input');
+    cb.type = 'checkbox';
+    cb.style.width = 'auto';
+    lbl.appendChild(cb);
+    lbl.appendChild(document.createTextNode('Close the previous round record'));
+    r3.appendChild(lbl);
+    r3.appendChild(el('p', 'note', 'Closing the round record does not close any player — players are closed by hand (§ 4.1).'));
+    body.appendChild(r3);
+
+    modal('Open a round', body, [{
+      label: 'Open round', cls: 'btn-primary', run: async () => {
+        await api('/fa/rounds', { method: 'POST', body: {
+          name: name.value.trim() || null,
+          closes_at: closes.value ? new Date(closes.value).toISOString() : null,
+          close_previous: cb.checked,
+        } });
+        await reload();
+        toast('Round opened');
+      },
+    }]);
+  }
+
+  function addPlayerModal() {
+    const body = el('div');
+    body.appendChild(el('p', 'note', 'Opening a player lets teams submit offers on them in the current round. '
+      + 'In FFA mode every pool player already accepts offers — opening one there is about the sub-committee, not the window.'));
+    const search = el('input');
+    search.placeholder = 'Search the free-agent pool…';
+    body.appendChild(search);
+    const list = el('div', 'picklist');
+    list.style.marginTop = '0.5rem';
+    body.appendChild(list);
+
+    const onBoard = new Set(Object.keys(STATE.players || {}));
+    const candidates = Object.keys(POOL)
+      .map(slug => ({ slug, name: nameOf(slug), pool: POOL[slug] }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    function draw() {
+      const q = search.value.trim().toLowerCase();
+      list.innerHTML = '';
+      const rows = candidates.filter(c => !q || c.name.toLowerCase().includes(q)).slice(0, 60);
+      if (!rows.length) { list.appendChild(el('div', 'empty', 'No match.')); return; }
+      rows.forEach(c => {
+        const row = el('div', 'pickrow');
+        const nm = el('span', null, c.name);
+        nm.style.flex = '1';
+        row.appendChild(nm);
+        row.appendChild(el('span', 'chip', c.pool.hold_type));
+        row.appendChild(el('span', 'chip', c.pool.class_year));
+        if (onBoard.has(c.slug)) row.appendChild(el('span', 'chip chip-live', (STATE.players[c.slug] || {}).status || 'on board'));
+        const b = el('button', 'btn-ghost', 'Open');
+        b.addEventListener('click', async () => {
+          b.disabled = true;
+          try {
+            await api('/fa/players/' + encodeURIComponent(c.slug), { method: 'PUT', body: { status: 'open' } });
+            await reload();
+            closeModal();
+            openPlayer(c.slug);
+          } catch (e) { toast(e.message, true); b.disabled = false; }
+        });
+        row.appendChild(b);
+        list.appendChild(row);
+      });
+    }
+    search.addEventListener('input', draw);
+    draw();
+    modal('Open a player for offers', body, []);
+    search.focus();
+  }
+
+  // ── the player list ─────────────────────────────────────────────────────────
+
+  // Urgency, most pressing first: a running FFA clock (soonest deadline), then a
+  // window that has closed and is waiting on ballots, then open players, then the
+  // rest. The FFA window is the only clock the software enforces, so it is the
+  // only thing here that can actually run out.
+  function urgency(p) {
+    const dl = (p.ffa || {}).deadline;
+    if (dl && !p.ffa_expired) return [0, new Date(dl).getTime()];
+    if (p.ffa_expired) return [1, 0];
+    if (p.status === 'open') return [2, 0];
+    if (p.status === 'held') return [3, 0];
+    return [4, 0];
+  }
+
+  function renderList() {
+    const tabs = document.getElementById('list-tabs');
+    tabs.innerHTML = '';
+    const entries = Object.entries(STATE.players || {});
+    const mineCount = entries.filter(([, p]) => p.mine).length;
+    [['mine', `My queue (${mineCount})`], ['all', `Board (${entries.length})`]].forEach(([id, label]) => {
+      const b = el('button', LIST_MODE === id ? 'on' : '', label);
+      b.addEventListener('click', () => { LIST_MODE = id; renderList(); });
+      tabs.appendChild(b);
+    });
+
+    const list = document.getElementById('player-list');
+    list.innerHTML = '';
+    let rows = entries.filter(([, p]) => LIST_MODE === 'all' || p.mine);
+    rows.sort((a, b) => {
+      const ua = urgency(a[1]), ub = urgency(b[1]);
+      return ua[0] - ub[0] || ua[1] - ub[1] || nameOf(a[0]).localeCompare(nameOf(b[0]));
+    });
+
+    if (!rows.length) {
+      list.appendChild(el('div', 'empty', LIST_MODE === 'mine'
+        ? 'You aren’t assigned to any player yet. The FAC head assigns sub-committees.'
+        : 'No players are on the board.'));
+      return;
+    }
+
+    rows.forEach(([slug, p]) => {
+      const row = el('div', 'prow' + (slug === OPEN_SLUG ? ' on' : ''));
+      row.dataset.slug = slug;
+      const body = el('div', 'prow-body');
+      body.appendChild(el('div', 'prow-name', nameOf(slug)));
+
+      const meta = el('div', 'prow-meta');
+      meta.appendChild(el('span', null, (POOL[slug] || {}).hold_type || '—'));
+      meta.appendChild(el('span', null, '·'));
+      meta.appendChild(el('span', null, p.offer_count === 1 ? '1 offer' : p.offer_count + ' offers'));
+      const dl = (p.ffa || {}).deadline;
+      if (dl) {
+        meta.appendChild(el('span', null, '·'));
+        meta.appendChild(el('span', null, p.ffa_expired ? 'window closed ' + ago(dl) : 'closes ' + ago(dl)));
+      }
+      if (IS_HEAD && p.ballots_cast != null && (p.subcommittee || []).length) {
+        meta.appendChild(el('span', null, '·'));
+        meta.appendChild(el('span', null, `${p.ballots_cast}/${p.subcommittee.length} balloted`));
+      }
+      body.appendChild(meta);
+      row.appendChild(body);
+
+      const tags = el('div', 'prow-tags');
+      if (p.finalized) tags.appendChild(el('span', 'chip chip-ok', 'locked'));
+      else if (p.ffa_expired) tags.appendChild(el('span', 'chip chip-warn', 'ready'));
+      else tags.appendChild(el('span', 'chip' + (p.status === 'open' ? ' chip-live' : ''), p.status || '—'));
+      if (p.mine && !p.balloted && !p.finalized) tags.appendChild(el('span', 'chip chip-warn', 'ballot'));
+      if (p.mine && p.balloted) tags.appendChild(el('span', 'chip chip-ok', 'voted'));
+      row.appendChild(tags);
+
+      row.addEventListener('click', () => { location.hash = '#/p/' + slug; });
+      list.appendChild(row);
+    });
+  }
+
+  function routeFromHash() {
+    const m = (location.hash || '').match(/^#\/p\/([a-z0-9\-']+)$/i);
+    if (m) openPlayer(m[1]);
+  }
+
+  async function reload() {
+    STATE = await api('/fa/state');
+    renderBoard();
+    renderList();
+    if (OPEN_SLUG) await openPlayer(OPEN_SLUG, true);
+  }
+
+  // ── the review view ─────────────────────────────────────────────────────────
+
+  async function openPlayer(slug, silent) {
+    OPEN_SLUG = slug;
+    renderList();
+    const box = document.getElementById('detail');
+    if (!silent) { box.innerHTML = ''; box.appendChild(el('div', 'empty', 'Loading…')); }
+
+    const entry = (STATE.players || {})[slug] || {};
+    let review = null, ballots = null, err = null;
+    try {
+      review = await api('/fa/players/' + encodeURIComponent(slug) + '/review');
+    } catch (e) { err = e; }
+    if (review) {
+      try {
+        ballots = await api('/fa/players/' + encodeURIComponent(slug) + '/ballots');
+      } catch (e) {
+        // 422 = the player has never been opened in a round, so there is no
+        // ballot bucket to read. Not an error worth shouting about.
+        ballots = { _unavailable: e.message };
+      }
+    }
+
+    box.innerHTML = '';
+    box.appendChild(detailHead(slug, entry, review));
+
+    if (err) {
+      const s = el('div', 'section');
+      s.appendChild(el('div', 'banner ' + (err.status === 403 ? 'info' : 'bad'),
+        err.status === 403
+          ? 'You aren’t on this player’s sub-committee, so their offers and ballots aren’t readable to you. '
+            + 'A sub-committee is transparent to itself and opaque to everyone outside it (§ 4.5).'
+          : err.message));
+      box.appendChild(s);
+      return;
+    }
+
+    if (IS_HEAD) box.appendChild(headControls(slug, entry, review));
+    box.appendChild(offersSection(review));
+    box.appendChild(commitmentsSection(review));
+    box.appendChild(ballotsSection(review, ballots));
+  }
+
+  function detailHead(slug, entry, review) {
+    const head = el('div', 'detail-head');
+    head.appendChild(el('h2', null, nameOf(slug)));
+    const bio = BIOS[slug] || {};
+    const pool = (review && review.pool) || POOL[slug] || {};
+    const sub = el('div', 'detail-sub');
+    const bits = [(bio.pos || []).join('/'), age(bio.dob) ? age(bio.dob) + ' yrs' : '', OVR[slug] ? OVR[slug] + ' OVR' : ''];
+    sub.appendChild(el('span', null, bits.filter(Boolean).join(' · ')));
+    if (pool.hold_type) sub.appendChild(el('span', 'chip', pool.hold_type + ' ' + (pool.class_year || '')));
+    if (pool.rfa) {
+      // The § 3.9 QO formula is flagged "proposed, pending BOD confirmation" in
+      // the rulebook itself, so the figure is labelled rather than asserted. The
+      // line shows either way — an incumbent keeping an RFA on the QO is a real
+      // outcome whether or not we can price it.
+      const qo = pool.qo_amount == null ? 'QO amount unknown' : 'QO ≈ ' + compactMoney(pool.qo_amount) + ' (estimated)';
+      sub.appendChild(el('span', 'chip chip-warn', qo));
+    }
+    const st = (review && review.state) || entry;
+    if (st.status) sub.appendChild(el('span', 'chip' + (st.status === 'open' ? ' chip-live' : ''), st.status));
+    const dl = (st.ffa || {}).deadline;
+    if (dl) {
+      sub.appendChild(el('span', 'chip ' + (st.ffa_expired ? 'chip-warn' : 'chip-live'),
+        st.ffa_expired ? 'FFA window closed ' + when(dl) : 'FFA window closes ' + when(dl)));
+    }
+    if ((st.subcommittee || []).length) {
+      sub.appendChild(el('span', null, 'Sub-committee: ' + st.subcommittee.join(', ')));
+    } else {
+      sub.appendChild(el('span', 'chip chip-warn', 'no sub-committee assigned'));
+    }
+    head.appendChild(sub);
+    return head;
+  }
+
+  // ── head controls (§ 8.3) ───────────────────────────────────────────────────
+
+  function headControls(slug, entry, review) {
+    const s = el('div', 'section');
+    s.appendChild(el('h3', null, 'Head controls'));
+    const row = el('div', 'bb-block');
+    ['open', 'held', 'closed'].forEach(status => {
+      const b = el('button', (review.state || {}).status === status ? 'btn-primary' : 'btn-ghost',
+        status === 'open' ? 'Open' : status === 'held' ? 'Hold' : 'Close');
+      b.addEventListener('click', async () => {
+        try {
+          await api('/fa/players/' + encodeURIComponent(slug), { method: 'PUT', body: { status } });
+          await reload();
+          toast(nameOf(slug) + ' → ' + status);
+        } catch (e) { toast(e.message, true); }
+      });
+      row.appendChild(b);
+    });
+    const assign = el('button', 'btn-ghost', 'Sub-committee…');
+    assign.addEventListener('click', () => assignModal(slug, review));
+    row.appendChild(assign);
+    s.appendChild(row);
+
+    if ((review.state || {}).status === 'open' && !(review.state.subcommittee || []).length) {
+      const b = el('div', 'banner warn');
+      b.style.marginTop = '0.6rem';
+      b.textContent = 'Nobody is assigned, so nobody can ballot on this player. Sub-committees default to empty by design — assign one.';
+      s.appendChild(b);
+    }
+    return s;
+  }
+
+  function assignModal(slug, review) {
+    const assigned = new Set((review.state || {}).subcommittee || []);
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'A conflicted member is flagged, never refused (§ 4.6). In a league this size hard-blocking would make '
+      + 'some players unballotable, and holding a team role is not by itself evidence of bad faith — but the '
+      + 'flag follows them onto their ballot and onto the finalize view.'));
+    const list = el('div', 'picklist');
+    const boxes = {};
+    (review.assignable || []).forEach(m => {
+      const row = el('div', 'pickrow');
+      const cb = el('input');
+      cb.type = 'checkbox';
+      cb.checked = assigned.has(m.name);
+      boxes[m.name] = cb;
+      row.appendChild(cb);
+      const nm = el('span', null, m.name);
+      nm.style.flex = '1';
+      row.appendChild(nm);
+      if (m.team) row.appendChild(el('span', 'chip', m.team));
+      if (m.conflict) row.appendChild(el('span', 'chip chip-warn', m.conflict + ' has an offer in'));
+      list.appendChild(row);
+    });
+    if (!(review.assignable || []).length) list.appendChild(el('div', 'empty', 'No members hold the fac role yet.'));
+    body.appendChild(list);
+
+    modal('Sub-committee — ' + nameOf(slug), body, [{
+      label: 'Save', cls: 'btn-primary', run: async () => {
+        const picked = Object.keys(boxes).filter(n => boxes[n].checked);
+        await api('/fa/players/' + encodeURIComponent(slug), { method: 'PUT', body: { subcommittee: picked } });
+        await reload();
+        toast('Sub-committee saved');
+      },
+    }]);
+  }
+
+  // ── offers (§ 8.2) ──────────────────────────────────────────────────────────
+
+  function offersSection(review) {
+    const s = el('div', 'section');
+    s.appendChild(el('h3', null, 'Offers'));
+    if (!review.offers.length) {
+      s.appendChild(el('div', 'empty', 'No submitted offers on this player.'));
+      return s;
+    }
+    const wrap = el('div', 'offers');
+    review.offers
+      .slice()
+      .sort((a, b) => a.number - b.number)
+      .forEach(o => wrap.appendChild(offerCard(o, review)));
+    s.appendChild(wrap);
+    return s;
+  }
+
+  function offerCard(o, review) {
+    const season = (o.revalidation && o.revalidation.season) || (o.validation && o.validation.season) || SEASON;
+    const card = el('div', 'offer' + (o.status === 'returned' ? ' returned' : ''));
+
+    const head = el('div', 'offer-head');
+    head.appendChild(el('span', 'offer-team', o.team));
+    head.appendChild(el('span', 'offer-num', '#' + o.number));
+    head.appendChild(el('span', 'chip' + (o.status === 'returned' ? ' chip-warn' : ' chip-live'),
+      o.status === 'returned' ? 'returned' : 'submitted'));
+    if (o.version > 1) head.appendChild(el('span', 'chip', 'v' + o.version));
+    card.appendChild(head);
+
+    card.appendChild(el('div', 'shorthand', shorthand(o.offer.contract, season)));
+    card.appendChild(yearTable(o.offer.contract, season));
+
+    const kv = el('dl', 'kv');
+    const put = (k, v) => { kv.appendChild(el('dt', null, k)); kv.appendChild(el('dd', null, v)); };
+    put('Method', METHOD_LABELS[o.offer.signing_method] || o.offer.signing_method || '—');
+    if (o.offer.bird_rights_type) put('Bird', o.offer.bird_rights_type);
+    put('Submitted', when(o.submitted_at) + ' · ' + (o.submitted_by || '—'));
+    if (o.created_by && o.created_by !== o.submitted_by) put('Drafted by', o.created_by);
+    card.appendChild(kv);
+
+    card.appendChild(legalityBlock(o));
+
+    // Cap position after the signing — every figure straight off the fact sheet
+    // the API built. The dashboard does no cap math of its own.
+    const sheet = (o.revalidation && o.revalidation.fact_sheet) || (o.validation && o.validation.fact_sheet);
+    if (sheet) card.appendChild(capBlock(sheet));
+
+    card.appendChild(promisesBlock(o.promises));
+    if (o.pitch) card.appendChild(pitchBlock(o.pitch));
+
+    const lineup = lineupBlock(o.team, o.player);
+    if (lineup) card.appendChild(lineup);
+
+    if (o.outstanding_remands && o.outstanding_remands.length) {
+      const b = el('div', 'banner warn');
+      b.appendChild(el('div', 'mini-head', 'Awaiting the team · sent back ' + ago(o.outstanding_remands[0].at)));
+      o.outstanding_remands.forEach(r => b.appendChild(remandLine(r)));
+      card.appendChild(b);
+    }
+    if (o.versions && o.versions.length) card.appendChild(historyBlock(o, season));
+
+    if (canRemand(review) && o.status === 'submitted') {
+      const b = el('button', 'btn-danger', 'Send back for revision…');
+      b.addEventListener('click', () => remandModal(o));
+      card.appendChild(b);
+    }
+    return card;
+  }
+
+  // Any assigned sub-committee member may remand, plus the head (D14) — the FAC
+  // reviews as a group, so a reviewer who wants a term changed shouldn't have to
+  // route through the head.
+  function canRemand(review) {
+    return IS_HEAD || ((review.state || {}).subcommittee || []).includes(ME.name);
+  }
+
+  function yearTable(contract, season) {
+    const t = el('table', 'years');
+    const sals = contract.salaries || {};
+    const caps = contract.cap_holds || {};
+    const gtd = contract.guaranteed || {};
+    Object.keys(sals).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= season).sort().forEach(yr => {
+      const isHold = HOLD(caps[yr]);
+      const tr = el('tr', isHold ? 'hold' : '');
+      tr.appendChild(el('td', null, yr));
+      tr.appendChild(el('td', 'amt', isHold ? '' : money(parseMoney(sals[yr]))));
+      const tag = isHold ? caps[yr] : (TAGS[caps[yr]] || '');
+      const td = el('td', 'tag', tag);
+      if (!isHold && gtd[yr] != null && parseMoney(gtd[yr]) < parseMoney(sals[yr])) {
+        td.textContent = (tag ? tag + ' ' : '') + 'PG';
+        td.title = 'Partially guaranteed: ' + money(parseMoney(gtd[yr]));
+      }
+      tr.appendChild(td);
+      t.appendChild(tr);
+    });
+    return t;
+  }
+
+  // § 5.2 — the frozen submit-time verdict beside a live one. With no withdrawal
+  // path (§ 4.3), this badge is the only way the committee learns that an offer
+  // has gone illegal since it was made, so it is required, not decorative.
+  function legalityBlock(o) {
+    const box = el('div');
+    const now = o.revalidation || {};
+    const then = o.validation || {};
+    if (o.legality_changed && now.legal === false) {
+      const b = el('div', 'banner bad');
+      b.appendChild(el('div', null, 'Legal at submit · illegal now'));
+      (now.checks || []).filter(c => !c.passed && c.level === 'error')
+        .forEach(c => b.appendChild(el('div', 'checkline err', '✗ ' + (c.message || c.check))));
+      if (now.error) b.appendChild(el('div', 'checkline err', now.error));
+      box.appendChild(b);
+      return box;
+    }
+    const failing = (now.checks || []).filter(c => !c.passed);
+    const chip = el('span', 'chip ' + (now.legal === false ? 'chip-bad' : 'chip-ok'),
+      now.legal === false ? 'illegal' : 'legal now');
+    chip.title = 'Frozen at submit: ' + (then.legal ? 'legal' : 'not recorded') + '. Revalidated on this page load.';
+    box.appendChild(chip);
+    failing.forEach(c => box.appendChild(el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
+      (c.level === 'error' ? '✗ ' : '! ') + (c.message || c.check))));
+    return box;
+  }
+
+  function capBlock(sheet) {
+    const box = el('div');
+    box.appendChild(el('div', 'mini-head', 'Cap after signing · ' + sheet.season));
+    const kv = el('dl', 'kv');
+    const put = (k, v, title) => {
+      kv.appendChild(el('dt', null, k));
+      const dd = el('dd', null, v);
+      if (title) dd.title = title;
+      kv.appendChild(dd);
+    };
+    put('Team salary', compactMoney(sheet.current_salary_ex_holds) + ' → ' + compactMoney(sheet.projected_salary_ex_holds));
+    put('Cap room', sheet.cap_room == null ? '—' : compactMoney(sheet.cap_room));
+    if (sheet.exception) {
+      put(sheet.exception.label, compactMoney(sheet.exception.remaining) + ' left',
+        'Of ' + money(sheet.exception.amount) + ', ' + money(sheet.exception.used) + ' used');
+    }
+    if (sheet.hard_cap_level) {
+      put('Hard cap', sheet.hard_cap_level.replace('_', ' ') + ' · ' + compactMoney(sheet.hard_cap_limit));
+    }
+    if (sheet.apron_after) put('Apron after', sheet.apron_after.replace('_', ' '));
+    put('Roster', sheet.standard_count_before + ' → ' + sheet.standard_count_after);
+    box.appendChild(kv);
+    return box;
+  }
+
+  function promisesBlock(p) {
+    const box = el('div');
+    box.appendChild(el('div', 'mini-head', 'Promises'));
+    const bits = [];
+    if (p.mpg != null) bits.push(p.mpg + ' mpg');
+    if (p.playoffs) bits.push('playoffs');
+    bits.push(ROLE_LABELS[p.role] || p.role);
+    box.appendChild(el('div', 'bb-val', bits.join(' · ')));
+    return box;
+  }
+
+  function pitchBlock(text) {
+    const box = el('div');
+    box.appendChild(el('div', 'mini-head', 'Pitch'));
+    const p = el('div', 'pitch', text);
+    box.appendChild(p);
+    const btn = el('button', 'linkish', 'Show more');
+    btn.addEventListener('click', () => {
+      p.classList.toggle('open');
+      btn.textContent = p.classList.contains('open') ? 'Show less' : 'Show more';
+    });
+    box.appendChild(btn);
+    return box;
+  }
+
+  // The offering team's projected starting five with this player inserted
+  // (§ 8.2), using the same computeStartingFive team pages run — teams/lineup.js
+  // was extracted for exactly this. It reads two fields off each row and nothing
+  // else, so these thin objects are all it needs.
+  function lineupBlock(team, slug) {
+    if (typeof computeStartingFive !== 'function') return null;
+    const rows = Object.keys(TEAMMAP)
+      .filter(s => TEAMMAP[s] === team && s !== slug)
+      .map(s => ({ slug: s, _posList: (BIOS[s] || {}).pos || [], OVR: OVR[s] || 0 }));
+    rows.push({ slug, _posList: (BIOS[slug] || {}).pos || [], OVR: OVR[slug] || 0, signee: true });
+    const five = computeStartingFive(rows);
+    const box = el('div');
+    box.appendChild(el('div', 'mini-head', 'Projected starting five'));
+    const wrap = el('div', 'lineup');
+    DEPTH_SLOTS.forEach((slot, i) => {
+      const p = five[i];
+      const chip = el('span', 'lu' + (p && p.signee ? ' signee' : ''));
+      chip.appendChild(el('b', null, slot));
+      chip.appendChild(document.createTextNode(' ' + (p ? nameOf(p.slug).split(' ').slice(-1)[0] + ' ' + (p.OVR || '') : '—')));
+      wrap.appendChild(chip);
+    });
+    box.appendChild(wrap);
+    return box;
+  }
+
+  function remandLine(r) {
+    const d = el('div', 'remand');
+    d.appendChild(el('div', null, r.note));
+    const meta = el('div', 'meta', r.by + ' · ' + when(r.at) + (r.conflict ? ' · conflicted (' + r.conflict + ')' : ''));
+    d.appendChild(meta);
+    return d;
+  }
+
+  // Offered → asked → returned, as a sequence. Without the frozen prior version
+  // "final" would be unfalsifiable — nobody could see what actually changed.
+  function historyBlock(o, season) {
+    const box = el('div');
+    box.appendChild(el('div', 'mini-head', 'Revision history'));
+    const chain = o.versions.slice().sort((a, b) => a.version - b.version);
+    chain.forEach((v, i) => {
+      box.appendChild(el('div', 'bb-val', 'v' + v.version + ' — ' + shorthand(v.offer.contract, season)));
+      o.remands.filter(r => r.from_version === v.version).forEach(r => box.appendChild(remandLine(r)));
+      const next = chain[i + 1] ? chain[i + 1].offer : o.offer;
+      const diff = contractDiff(v.offer, next, season);
+      if (diff.length) {
+        const d = el('div', 'diff');
+        d.textContent = 'v' + v.version + ' → v' + (v.version + 1) + ': ' + diff.join(' · ');
+        box.appendChild(d);
+      }
+    });
+    // The current state is only a *further* entry once the team has resubmitted
+    // (version bumps then) or edited the returned offer. Printing it
+    // unconditionally repeats the frozen version back at itself the moment an
+    // offer is sent back and before the team has touched it.
+    const last = chain[chain.length - 1];
+    const edited = contractDiff(last.offer, o.offer, season).length > 0;
+    if (o.version > last.version || edited) {
+      box.appendChild(el('div', 'bb-val', 'v' + o.version + ' — ' + shorthand(o.offer.contract, season)
+        + (o.version > last.version ? ' (current)' : ' (edited, not yet resubmitted)')));
+    }
+    return box;
+  }
+
+  function contractDiff(prev, next, season) {
+    const out = [];
+    const ps = prev.contract.salaries || {}, ns = next.contract.salaries || {};
+    const pc = prev.contract.cap_holds || {}, nc = next.contract.cap_holds || {};
+    const years = Array.from(new Set(Object.keys(ps).concat(Object.keys(ns))))
+      .filter(k => /^\d{2}-\d{2}$/.test(k) && k >= season).sort();
+    years.forEach(y => {
+      const a = parseMoney(ps[y]), b = parseMoney(ns[y]);
+      if (a !== b) out.push(`${y} ${a ? compactMoney(a) : '—'}→${b ? compactMoney(b) : '—'}`);
+      else if ((pc[y] || '') !== (nc[y] || '')) out.push(`${y} ${pc[y] || '—'}→${nc[y] || '—'}`);
+    });
+    if (prev.signing_method !== next.signing_method) {
+      out.push(`method ${prev.signing_method || '—'}→${next.signing_method || '—'}`);
+    }
+    return out;
+  }
+
+  // § 5.3 — a pending FA offer holds no cap room, unlike a § 3.15 offer sheet, so
+  // nothing stops a team bidding more than it can fund. Disclosed, never blocked.
+  function commitmentsSection(review) {
+    const s = el('div', 'section');
+    s.appendChild(el('h3', null, 'Offering teams'));
+    const teams = Object.keys(review.commitments || {});
+    if (!teams.length) { s.appendChild(el('div', 'empty', '—')); return s; }
+    const wrap = el('div', 'commit');
+    teams.sort().forEach(t => {
+      const c = review.commitments[t];
+      const card = el('div', 'commit-card' + (c.overcommitted ? ' over' : ''));
+      card.appendChild(el('b', null, t));
+      card.appendChild(document.createTextNode(
+        ` — ${c.live_offers} live offer${c.live_offers === 1 ? '' : 's'}, `
+        + `${compactMoney(c.committed_year1)} committed vs ${c.room == null ? '—' : compactMoney(c.room)} room`));
+      if (c.overcommitted) {
+        card.appendChild(document.createTextNode(' · overcommitted'));
+        card.title = 'A pending offer holds no cap room, so this is allowed — the committee is told, not blocked (§ 5.3).';
+      }
+      wrap.appendChild(card);
+    });
+    s.appendChild(wrap);
+    return s;
+  }
+
+  // ── ballots (read side; casting is Phase 8) ─────────────────────────────────
+
+  function ballotsSection(review, ballots) {
+    const s = el('div', 'section');
+    s.appendChild(el('h3', null, 'Ballots'));
+    if (!ballots || ballots._unavailable) {
+      s.appendChild(el('div', 'empty', ballots && ballots._unavailable
+        ? ballots._unavailable
+        : 'No ballot bucket for this player yet.'));
+      return s;
+    }
+
+    const labels = {};
+    (review.ballot_options || []).forEach(opt => {
+      labels[opt.key] = opt.kind === 'offer' ? `${opt.team} #${opt.number}`
+        : opt.kind === 'qo' ? 'Qualifying offer'
+        : 'No signing';
+    });
+
+    // § 4.6 — warn, never block. The team comes from the server's own
+    // `_conflict_team`, the same rule that stamps a cast ballot, so what a member
+    // is told before voting matches what the head sees afterwards.
+    if (ballots.your_conflict) {
+      const b = el('div', 'banner warn');
+      b.textContent = `${ballots.your_conflict} has an offer in for this player. `
+        + 'You may still ballot; the head will see it flagged.';
+      s.appendChild(b);
+    }
+
+    if (ballots.final) {
+      const f = el('div', 'banner info');
+      f.appendChild(el('div', null, 'Locked ' + when(ballots.final.locked_at) + ' by ' + ballots.final.locked_by));
+      const totals = Object.entries(ballots.final.totals || {}).sort((a, b) => b[1] - a[1]);
+      const cap = totals.reduce((m, [, v]) => Math.max(m, v), 0) || 1;
+      totals.forEach(([k, v]) => f.appendChild(barRow(labels[k] || k, v, cap)));
+      if ((ballots.final.abstained || []).length) {
+        f.appendChild(el('div', 'bb-val', 'Abstained: ' + ballots.final.abstained.join(', ')));
+      }
+      if ((ballots.final.outstanding_remands || []).length) {
+        f.appendChild(el('div', 'bb-val', 'Locked with '
+          + ballots.final.outstanding_remands.length + ' unanswered remand(s).'));
+      }
+      s.appendChild(f);
+    }
+
+    const grid = el('div', 'ballot-grid');
+    const cast = Object.entries(ballots.ballots || {});
+    cast.forEach(([who, b]) => {
+      const card = el('div', 'ballot');
+      const nm = el('div', 'ballot-name');
+      nm.appendChild(document.createTextNode(who));
+      if (who === ME.name) nm.appendChild(el('span', 'chip', 'you'));
+      if (b.conflict) nm.appendChild(el('span', 'chip chip-warn', b.conflict));
+      card.appendChild(nm);
+      card.appendChild(el('div', 'bar-lbl', 'updated ' + ago(b.updated_at)));
+      Object.entries(b.balls || {}).sort((x, y) => y[1] - x[1])
+        .forEach(([k, v]) => card.appendChild(barRow(labels[k] || k, v, 1000)));
+      if (b.note) card.appendChild(el('div', 'bar-lbl', '“' + b.note + '”'));
+      if ((b.revised_since || []).length) {
+        // Flagged, never voided — silently discarding a member's considered
+        // judgment is worse than showing them it may be stale (§ 4.3a).
+        const w = el('div', 'banner warn');
+        w.style.marginTop = '0.4rem';
+        w.textContent = 'Revised after this ballot: ' + b.revised_since.map(id => labels[id] || id).join(', ');
+        card.appendChild(w);
+      }
+      grid.appendChild(card);
+    });
+    if (!cast.length) grid.appendChild(el('div', 'empty', 'Nobody has balloted yet.'));
+    s.appendChild(grid);
+
+    if ((ballots.outstanding || []).length) {
+      s.appendChild(el('div', 'bar-lbl', 'Outstanding: ' + ballots.outstanding.join(', ')));
+    }
+    const note = el('div', 'bar-lbl');
+    note.style.marginTop = '0.5rem';
+    note.textContent = 'Casting a ballot and finalizing aren’t wired into this dashboard yet.';
+    s.appendChild(note);
+    return s;
+  }
+
+  function barRow(label, value, cap) {
+    const row = el('div', 'bar-row');
+    const left = el('div');
+    left.appendChild(el('div', 'bar-lbl', label));
+    const bar = el('div', 'bar');
+    const fill = el('span');
+    fill.style.width = Math.max(0, Math.min(100, (value / (cap || 1)) * 100)) + '%';
+    bar.appendChild(fill);
+    left.appendChild(bar);
+    row.appendChild(left);
+    row.appendChild(el('div', 'bar-val', value));
+    return row;
+  }
+
+  function remandModal(o) {
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'A remand is the only way back from a submitted offer — the team can never reach for it (§ 4.3a). '
+      + 'It is additive: another member sending the same offer back appends a second note rather than '
+      + 'starting a new round-trip, and the team answers them all in one resubmission.'));
+    const row = el('div', 'row');
+    row.appendChild(el('label', null, 'What should change? (required)'));
+    const ta = el('textarea');
+    ta.placeholder = 'e.g. Add a fourth year, or trim year 1 to the MLE.';
+    row.appendChild(ta);
+    body.appendChild(row);
+    modal('Send ' + o.team + ' #' + o.number + ' back', body, [{
+      label: 'Send back', cls: 'btn-danger', run: async () => {
+        const note = ta.value.trim();
+        if (!note) { toast('A remand requires a note.', true); return false; }
+        await api('/fa/offers/' + o.id + '/remand', { method: 'POST', body: { note } });
+        await reload();
+        toast('Sent back to ' + o.team);
+      },
+    }]);
+    ta.focus();
+  }
+
+  // ── modal plumbing ──────────────────────────────────────────────────────────
+
+  let _scrim = null;
+
+  function modal(title, body, actions) {
+    closeModal();
+    _scrim = el('div', 'scrim');
+    const box = el('div', 'modal');
+    box.appendChild(el('h3', null, title));
+    box.appendChild(body);
+    const bar = el('div', 'modal-actions');
+    const cancel = el('button', 'btn-ghost', 'Close');
+    cancel.addEventListener('click', closeModal);
+    bar.appendChild(cancel);
+    (actions || []).forEach(a => {
+      const b = el('button', a.cls || 'btn-ghost', a.label);
+      b.addEventListener('click', async () => {
+        b.disabled = true;
+        try {
+          const res = await a.run();
+          if (res !== false) closeModal();
+          else b.disabled = false;
+        } catch (e) {
+          toast(e.message, true);
+          b.disabled = false;
+        }
+      });
+      bar.appendChild(b);
+    });
+    box.appendChild(bar);
+    _scrim.appendChild(box);
+    _scrim.addEventListener('click', e => { if (e.target === _scrim) closeModal(); });
+    document.body.appendChild(_scrim);
+  }
+
+  function closeModal() {
+    if (_scrim) { _scrim.remove(); _scrim = null; }
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

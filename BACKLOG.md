@@ -238,7 +238,16 @@ visitor. Trades and extensions reuse the shape later.
 `.nbn.today` for cross-subdomain auth (scoped to `/api/fa/*` only); GM drafts an
 offer, owner submits; FFA's 24h clock closes the offer window; submission final
 per § 3.14 except that any sub-committee member may **remand** an offer back for
-revision. Phase 0 (role constants) is the entry point.
+revision.
+
+**Phases 0–5b built (2026-08-08):** roles, the server-side FA pool, the whole
+offer/ballot API, `teams/lineup.js`, the session cookie, the dashboard (review +
+head board controls; ball allocation and finalize are Phase 8), and its own host
+at **`pdc.nbn.today`** — same docroot, `/` → `/pdc/index.html`, so every fetch
+stays same-origin. Next is **Phase 6** — `routers/fa_notify.py` reusing
+`discord_notify`'s transport, shipped with the channel env vars unset (a no-op),
+then `DISCORD_PDC_CHANNEL`, then the public `fa-news` channel last. Nothing is
+linked from `nav.js` yet, which is also the rollback.
 
 ### [P1] Production runs off an unmerged feature branch
 `nbn-api` is on branch `picks-conveyance-phase0`, **58 commits ahead of

@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.0.396",
+    "date": "2026-08-08",
+    "changes": [
+      "New committee dashboard at /pdc for the Free Agency Committee: the queue of players you're assigned to, every offer on a player side by side with its contract, legality, promises, pitch and the offering team's projected starting five, and the ballots already cast",
+      "FAC heads can set the free-agency mode, open rounds, open/hold/close a player, and assign a sub-committee \u2014 with any member whose own team is bidding flagged before the assignment is confirmed",
+      "Any assigned reviewer can send an offer back to the team for revision with a note, and the offer's revision history shows what moved between versions",
+      "An offer that was legal when it was submitted but isn't any more is badged as such, since a submitted offer can't be withdrawn",
+      "The page is unlinked and role-gated \u2014 without a committee role it shows nothing but a 'forbidden' notice",
+      "The dashboard now has its own address, pdc.nbn.today, alongside nbn.today/pdc. Signing in on nbn.today signs you in there too, so committee members can go straight to it"
+    ]
+  },
+  {
     "version": "0.0.395",
     "date": "2026-08-08",
     "changes": [

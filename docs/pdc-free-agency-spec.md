@@ -1,13 +1,16 @@
 # PDC — Free Agency offer pipeline (spec v0.4)
 
-**Status:** v0.6, 2026-08-08. Fifteen decisions settled (§ 12); no design
-questions outstanding. **Phases 0–4 are built** — the roles, the server-side FA
-pool, the whole offer/ballot API, the shared lineup helper, and the
-`.nbn.today` session cookie. Phase 5 (the dashboard at `nbn.today/pdc`) in § 10
-is the next entry point. Sections amended during the build carry the reason
-inline (§ 3.3 the marker cookie and the allowlist's placement, § 4 locking,
-§ 4.2 archiving and `round_id`, § 4.3a version freezing, § 4.4 ballot gating,
-§ 8.4 loading); those notes are the record of what was learned, not decoration.
+**Status:** v0.8, 2026-08-08. Fifteen decisions settled (§ 12); no design
+questions outstanding. **Phases 0–5b are built** — the roles, the server-side FA
+pool, the whole offer/ballot API, the shared lineup helper, the `.nbn.today`
+session cookie, the dashboard, and its own host at **`pdc.nbn.today`**. Phase 6
+(the Discord modules) in § 10 is the next entry point. Sections amended during
+the build carry the reason inline (§ 3.2 what the live server block does,
+§ 3.3 the marker cookie and the allowlist's placement, § 4 locking, § 4.2
+archiving and `round_id`, § 4.3a version freezing, § 4.4 ballot gating, § 6.2
+the three read-side fields the dashboard needed, § 8.2/§ 8.3 what Phase 5
+covers, § 8.4 loading); those notes are the record of what was learned, not
+decoration.
 
 Scope of *this* document: **free agency only** — an owner drafts and submits a
 contract offer to a free agent, the Free Agency Committee (FAC) reviews the
@@ -87,6 +90,26 @@ docroot, with `location = /` mapping to `/pdc/index.html` and the identical
 `/api/` proxy block. Then `/api/...`, `/data/*.csv` and `/teams/*` all resolve
 under `pdc.nbn.today` itself — **no cross-origin request is ever made**, so
 neither the CORS allowlist nor the missing static CORS header is in play.
+
+**Built (Phase 5b)** at `/etc/nginx/sites-available/pdc.nbn.today`, symlinked
+into `sites-enabled`, with its own Let's Encrypt certificate (`certbot --nginx
+-d pdc.nbn.today`, HTTP→HTTPS redirect, auto-renewing on the existing timer).
+Two additions the sketch above didn't carry:
+
+- The block copies nbn.today's `.csv` and `/members/{name}` rules rather than
+  only `/api/` — the dashboard fetches CSVs and links to member profiles, and a
+  partial copy would have worked under `nbn.today/pdc` and 404'd here, which is
+  the worst kind of divergence between two hosts serving one docroot.
+- A per-host `robots.txt` returning `Disallow: /`, plus `X-Robots-Tag: noindex`
+  on the HTML locations. The docroot is shared, so a file couldn't say something
+  different here than on the main site. Nothing on this host is data a crawler
+  could reach anyway (§ 3.4) — this is about the whole league site not being
+  indexed twice under a committee hostname.
+
+Verified live: the cookie minted on `nbn.today` authenticates
+`GET /api/auth/me` and `/api/fa/state` under `pdc.nbn.today` with no bearer
+header, while the same cookie on `PUT /api/trading-block/{team}` still 401s —
+the § 3.3 allowlist holds across the host, which is the property that matters.
 
 ### 3.3 Auth — a session cookie scoped to `.nbn.today`
 
@@ -620,6 +643,28 @@ cannot name a team to claim authority over it.
 Enforced server-side per request. The dashboard's grouping is a rendering of
 what the endpoint already filtered, never a client-side hide.
 
+### 6.2 Three read-side fields Phase 5 added
+
+The dashboard needed three things the Phase 2 payloads didn't carry. All three
+are **derivations of rules that already existed**, moved server-side rather than
+reimplemented in page JS — the same reasoning as `revised_since` (§ 4.3a):
+
+- `GET /api/fa/players/{slug}/review` → **`assignable`**: the sub-committee
+  picker's roster (every `fac` member, their current team, and their
+  `_conflict_team` on this player). § 4.6 wants a conflicted assignee flagged
+  *before* the head confirms, and `PUT /api/fa/players/{slug}` only reported
+  conflicts after the fact. Head-only; a plain reviewer gets `[]`.
+- `GET /api/fa/players/{slug}/ballots` → **`your_conflict`**: the viewer's own
+  conflict, from the same `_conflict_team` that stamps a cast ballot. The first
+  cut of the dashboard guessed this from the member's team *roles*, which is
+  simply the wrong rule — a conflict comes from an active tenure, and a GM
+  holding no team role would have gone unwarned.
+- `GET /api/fa/state` → **`balloted`** (the viewer's own, so it leaks nothing),
+  **`finalized`**, and head-only **`ballots_cast`**. The queue sorts by urgency
+  and badges what still wants the viewer's attention; *how many others* have
+  voted is scoped to that player's sub-committee, so a member reads it from the
+  ballots endpoint, which enforces that scope.
+
 ---
 
 ## 7. Deriving the FA pool
@@ -695,6 +740,22 @@ The form (a modal, same furniture as the renounce dialog):
 
 ### 8.2 Dashboard — FAC member view
 
+**Built (Phase 5), minus the ballot widget.** `pdc/index.html` is one
+self-contained page: a queue sorted by urgency, the player review view, and the
+head's board controls. Casting a ballot and finalizing are Phase 8 and are
+**absent rather than stubbed** — a vote button that doesn't vote is worse than a
+visibly missing one — so the ballot panel below renders read-only: everyone's
+cast ballots, who is outstanding, the conflict banner, and the locked totals if
+the head has finalized. Two invariants the page holds and must keep holding:
+
+- **No cap math in the dashboard.** Every dollar rendered comes off the fact
+  sheet the API built with the helpers `_validate_sign` uses, so the page cannot
+  show a team room the validator didn't credit it with — the same rule the
+  simulator's fact sheet holds.
+- **No client-side hiding.** What a viewer sees is what the endpoint returned. A
+  `fac` member who opens a player they aren't assigned to gets the server's 403
+  rendered as the § 4.5 explanation, not a filtered-down page.
+
 - **Queue:** players I'm assigned to, sorted by urgency (FFA deadline first,
   then round close), each showing offer count and whether I've cast a ballot.
 - **Player review page:** offers side by side in columns —
@@ -719,7 +780,8 @@ The form (a modal, same furniture as the renounce dialog):
 
 ### 8.3 Dashboard — FAC head view
 
-Everything above, plus:
+**Built (Phase 5)** except per-player finalize, which is Phase 8 along with the
+ballot widget it locks. Everything above, plus:
 
 - **Mode control:** Closed / Rounds / FFA, with a confirm step on FFA
   ("every free agent becomes offerable immediately").
@@ -838,15 +900,16 @@ runner, not pytest — pytest isn't installed).
 | **2** ✅ | `free_agency.py`: state/offers/ballots storage, full endpoint set, validation wiring, tests. No UI anywhere | API only, role-gated |
 | **3** ✅ | Extract `teams/lineup.js`; `team.js` consumes it | Nobody — identical render |
 | **4** ✅ | Session cookie: `sessions.json`, `POST /api/auth/session` + `/logout`, `_resolve_session` accepted on `/api/fa/*` + `/api/auth/me`, `token-badge.js` mints it on load | Nobody — no behaviour changes on any existing page |
-| **5** | Dashboard at **`nbn.today/pdc`**, unlinked from `nav.js`. Build and review the whole thing here | Anyone with the URL — and it shows only the forbidden screen without a role |
-| **5b** | nginx `pdc.nbn.today` block (same docroot, `/` → `/pdc/index.html`, `/api/` proxy) + certbot | Committee |
+| **5** ✅ | Dashboard at **`nbn.today/pdc`**, unlinked from `nav.js`. Build and review the whole thing here | Anyone with the URL — and it shows only the forbidden screen without a role |
+| **5b** ✅ | nginx `pdc.nbn.today` block (same docroot, `/` → `/pdc/index.html`, `/api/` proxy) + certbot | Committee |
 | **6** | Discord modules with channels **unset**; then set `DISCORD_PDC_CHANNEL`, verify in the private channel; then `DISCORD_FA_NEWS_CHANNEL` last | Committee, then league |
 | **7** | Team-facing ⋯ menu + offer form on `/free-agency`, gated on team role (draft) / owner tenure (submit) | Team front offices |
 | **8** | Ball allocation + finalize UI; role-aware instructions | Committee |
 
-Rollback at every phase is deleting a role, unsetting an env var, or removing
-one `nav.js` line. Nothing before Phase 7 changes what a logged-out visitor
-sees.
+Rollback at every phase is deleting a role, unsetting an env var, removing one
+`nav.js` line, or — for 5b — unlinking `sites-enabled/pdc.nbn.today` and
+reloading nginx, which leaves `nbn.today/pdc` working exactly as before.
+Nothing before Phase 7 changes what a logged-out visitor sees.
 
 **Ordering note:** Phase 7 (owners can submit) must not precede Phase 6's
 private channel and Phase 8's review tooling, or the first real offer lands
