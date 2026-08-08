@@ -102,6 +102,35 @@ the API. `transactions.py` implements: `sign`, `pick`, `option`, `guarantee`,
 loses the fact that it was an extension and skips every § 6.2 constraint.
 This is the largest single hole in transaction coverage.
 
+### [P1] Qualifying Offers don't exist in the system at all
+§ 3.9 defines the QO — it's what makes a sub-4-year free agent an **RFA** rather
+than a UFA — but nothing in the API represents one. Three separate consequences,
+and the third is already live:
+
+1. **No `qualifying_offer` transaction type.** There is no record that a team
+   extended (or declined to extend) a QO. RFA status is asserted by hand, by
+   setting `cap_holds[season] = "RFA"` on the bio. `_rfa_eligibility`
+   (`transactions.py:2035`) reads exactly that field and nothing else — so the
+   RFA/UFA split § 3.9 defines is a manual annotation, not a derivation.
+2. **No QO amount anywhere.** § 3.9's Non-QVFA ceiling is "the greatest of 120%
+   of the final-year salary, 120% of the applicable minimum, **or (for RFAs) the
+   qualifying offer amount**" — and that third branch has no data source, so it
+   can't be evaluated. `_BIRD_HOLD_PCT` covers the § 3.10 *hold* (1.3 EQVFA /
+   1.2 Non-QVFA); it is not the QO.
+3. **The amount formula itself is unratified.** § 3.9 flags it in the rulebook
+   as *"a new synthesis modeled on the real NBA CBA, not a rule this league had
+   already agreed on"* — pending BOD confirmation.
+
+**This blocks two things.** § 3.15 **offer sheets** are the live one: the whole
+matching right flows from RFA status, which flows from a QO the system has no
+record of. And the PDC free-agency ballot (`docs/pdc-free-agency-spec.md` § 7.2)
+needs a QO line for every RFA — it will ship labelling the figure *estimated*
+until this is settled.
+
+Order of operations: get BOD to ratify or amend the § 3.9 formula first, then
+add the transaction type and the derived amount. Doing it the other way round
+bakes an unratified number into the ledger.
+
 ### [P2] § 7.2 seven-year advance limit unenforced
 The Stepien half of § 7.2 *is* enforced (`_check_stepien_rule`,
 `transactions.py:2687`, with `tests/test_stepien_rule.py`). The companion rule —
@@ -143,9 +172,15 @@ the basis (days? games?), and a season-start date the validator can key off —
 at which point the warning can become a real computed check. Grant Williams'
 2026-04-11 signing ($39,820) is the live example.
 
-### [P2] `rescind_renounce` not implemented
-§ 3.15 explicitly says so: on an RFA match, rescinding renouncements is done by
-hand. Small, well-specified transaction type.
+### ~~[P2] `rescind_renounce` not implemented~~ — DONE 2026-08-08
+Built alongside owner self-serve renounce, which needed an undo path. Every
+`renounce` now stores a `_snapshot` of the bio state it erases, and
+`rescind_renounce` restores from it (undo button on renounce rows in
+`/transactions`). § 3.10's cap restrictions are warnings, not errors, since the
+same mechanism doubles as the correction path for a mistaken renounce.
+Remaining gap: nothing links an RFA match back to the holds that funded the
+offer, so the office picks them out by hand, one renounce at a time. The
+trading-block entry a renounce scrubs also isn't restored.
 
 ### [P2] § 1.2 soft cap — partly enforced, gap is verification not blocking
 Corrected 2026-08-07: the original entry ("over-cap signings lacking a valid
@@ -192,6 +227,19 @@ around 2029.
 
 ## 3. Tooling / infrastructure
 
+### [P2] PDC dashboard — committee review pipeline (spec'd 2026-08-08)
+Owners submit trades / FA offers / extensions for committee approval, reviewed
+on `pdc.nbn.today`. Full spec for the **free agency** half in
+`docs/pdc-free-agency-spec.md` — data model, endpoints, Discord gates, and an
+8-phase build order where nothing before Phase 7 is visible to a logged-out
+visitor. Trades and extensions reuse the shape later.
+
+15 decisions settled, no design questions outstanding — session cookie on
+`.nbn.today` for cross-subdomain auth (scoped to `/api/fa/*` only); GM drafts an
+offer, owner submits; FFA's 24h clock closes the offer window; submission final
+per § 3.14 except that any sub-committee member may **remand** an offer back for
+revision. Phase 0 (role constants) is the entry point.
+
 ### [P1] Production runs off an unmerged feature branch
 `nbn-api` is on branch `picks-conveyance-phase0`, **58 commits ahead of
 `main`** — and the systemd service serves directly out of that working
@@ -234,9 +282,12 @@ Puppeteer + Chromium does work in this environment; a handful of
 "page loads, table has rows, no console errors" checks would catch a whole class
 of breakage the smoke test can't see.
 
-### [P3] `/suggestions` board is empty
-seq is at 3, items is `[]` — three were filed and deleted. Either seed it with
-the member-facing subset of this file, or the page reads as abandoned.
+### ~~[P3] `/suggestions` board is empty~~ — no longer true 2026-08-08
+Two live suggestions (#4 MCP server, #5 comments/editing); seq is at 5. #5 is
+built — threads, status history, and an Edit button the UI had never exposed
+despite the PATCH existing since launch. Seeding the board with the
+member-facing subset of this file is still worth doing, but the page no longer
+reads as abandoned.
 
 ### [P3] Unlinked pages
 `/cap-settings`, `/clusters`, `/context`, `/how-to-rosters`, `/join`, `/legal`,
