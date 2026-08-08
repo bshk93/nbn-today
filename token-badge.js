@@ -67,6 +67,37 @@
     }, 3000);
   }
 
+  // ── .nbn.today session cookie ──────────────────────────────────────────────
+  // The token lives in localStorage, which is per-origin, so it does not follow
+  // the member to pdc.nbn.today. Minting a session cookie scoped to .nbn.today
+  // here means anyone who has loaded this site is already signed in over there —
+  // no link to send, no second paste, nothing in browser history.
+  //
+  // The session cookie itself is HttpOnly and unreadable from here; the server
+  // sets a second, valueless `nbn_session_live` marker alongside it purely so
+  // this can tell it already has one. Without that check every page load would
+  // mint another session row. (Both are Secure, so over plain http in local dev
+  // neither sticks and this mints each load — harmless, and never the case in
+  // production.)
+  function hasSession() {
+    return document.cookie.split(';').some(function (c) {
+      return c.trim().indexOf('nbn_session_live=') === 0;
+    });
+  }
+
+  function ensureSession(token, fresh) {
+    // `fresh` = the token was just pasted, so it may be a rotated one whose old
+    // session the server has already dropped. Mint regardless of the marker.
+    if (!fresh && hasSession()) return;
+    try {
+      fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token },
+        credentials: 'same-origin',
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
   function sendSignal(token) {
     try {
       fetch('/api/me/signal', {
@@ -81,7 +112,7 @@
     } catch (_) {}
   }
 
-  function tryToken(el, token) {
+  function tryToken(el, token, fresh) {
     fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
@@ -109,6 +140,7 @@
             .catch(function () {});
 
           sendSignal(token);
+          ensureSession(token, fresh);
         } else {
           localStorage.removeItem('nbn_token');
           setNoToken(el);
@@ -124,7 +156,7 @@
     el.style.cursor = 'pointer';
     el.textContent = 'enter token';
     el.onclick = function () {
-      showModal(function (token) { tryToken(el, token); });
+      showModal(function (token) { tryToken(el, token, true); });
     };
   }
 

@@ -1,12 +1,13 @@
 # PDC — Free Agency offer pipeline (spec v0.4)
 
-**Status:** v0.5, 2026-08-08. Fifteen decisions settled (§ 12); no design
-questions outstanding. **Phases 0–3 are built** — the roles, the server-side FA
-pool, the whole offer/ballot API, and the shared lineup helper. Phase 4 (the
-session cookie) in § 10 is the next entry point. Sections amended during the
-build carry the reason inline (§ 4 locking, § 4.2 archiving and `round_id`,
-§ 4.3a version freezing, § 4.4 ballot gating, § 8.4 loading); those notes are
-the record of what was learned, not decoration.
+**Status:** v0.6, 2026-08-08. Fifteen decisions settled (§ 12); no design
+questions outstanding. **Phases 0–4 are built** — the roles, the server-side FA
+pool, the whole offer/ballot API, the shared lineup helper, and the
+`.nbn.today` session cookie. Phase 5 (the dashboard at `nbn.today/pdc`) in § 10
+is the next entry point. Sections amended during the build carry the reason
+inline (§ 3.3 the marker cookie and the allowlist's placement, § 4 locking,
+§ 4.2 archiving and `round_id`, § 4.3a version freezing, § 4.4 ballot gating,
+§ 8.4 loading); those notes are the record of what was learned, not decoration.
 
 Scope of *this* document: **free agency only** — an owner drafts and submits a
 contract offer to a free agent, the Free Agency Committee (FAC) reviews the
@@ -108,7 +109,17 @@ neither the CORS allowlist nor the missing static CORS header is in play.
   deleting a member (`rotate-token`, `DELETE /api/members`) **drops all their
   sessions** — so revocation works, which a raw-token cookie could not offer.
 - `HttpOnly` means page JS cannot read it at all: strictly safer than the
-  localStorage token it complements.
+  localStorage token it complements. **This forced one addition (built):** the
+  server sets a second, valueless `nbn_session_live` marker cookie that is *not*
+  HttpOnly, because JS that cannot read the session cookie cannot tell whether it
+  already has one — without the marker, `token-badge.js` would mint a fresh
+  session row on every single page load. The marker carries no secret and expires
+  with the session it marks. Verified in a real browser: `document.cookie` reads
+  exactly `nbn_session_live=1`, load 2 mints nothing.
+- **Roles are read live from members.json on resolve, never frozen onto the
+  session** (built), so a role grant or revocation lands on the next request
+  rather than at the session's 30-day expiry. A member deleted meanwhile resolves
+  to nobody.
 - Result: a committee member who has loaded nbn.today at any point since this
   ships can type `pdc.nbn.today` straight into the address bar and is already
   signed in. No link, no handoff, no paste, nothing in browser history.
@@ -125,8 +136,31 @@ all of it — keeps requiring the `Authorization` header exactly as today. The
 blast radius on the real roster and transaction write paths is zero. Widening it
 later is a one-line change; narrowing it after the fact would not be.
 
-`POST /api/auth/session/logout` clears the cookie and deletes the session row.
-Expired sessions are reaped lazily on read — no scheduler.
+Three things about that allowlist the build settled:
+
+- **It lives in `get_token_info`, which reads `request.url.path`** — not in each
+  endpoint. Every gate in `auth.py` (`require_role`, `require_any_role`,
+  `require_admin`) already depends on that one resolver, so all of `/api/fa/*`
+  inherits the cookie with no per-endpoint opt-in and nothing else can acquire it
+  by accident.
+- **`POST /api/auth/session` is itself off the list.** Minting takes the real
+  token, so a session can never mint its successor and 30 days is a hard ceiling
+  rather than a rolling one.
+- **A bad `Authorization` header is never rescued by the cookie.** Only the
+  branch that already 401'd on a missing header falls through to it, so a stale
+  or revoked token still 403s loudly instead of quietly succeeding as whoever the
+  cookie belongs to.
+
+`POST /api/auth/session/logout` clears both cookies and deletes the session row.
+It is deliberately **unauthenticated** — it only ever destroys the caller's own
+cookie, and requiring auth would make an already-dead session impossible to
+clear. Expired sessions are reaped lazily on read — no scheduler.
+
+Revocation is wired at three call sites (built): `rotate-token`,
+`DELETE /api/members/{name}`, and also `DELETE /api/tokens/{token}`, the
+compatibility shim that revokes a token without deleting the member — it was
+missed by the sketch above and would have left a revoked member signed in for
+another 30 days.
 
 ### 3.4 The security boundary is the API, never the page
 
@@ -803,7 +837,7 @@ runner, not pytest — pytest isn't installed).
 | **1** ✅ | `_fa_pool` server-side + `GET /api/fa/pool`; rewrite `free-agency/index.html` to consume it | Nobody — page output unchanged |
 | **2** ✅ | `free_agency.py`: state/offers/ballots storage, full endpoint set, validation wiring, tests. No UI anywhere | API only, role-gated |
 | **3** ✅ | Extract `teams/lineup.js`; `team.js` consumes it | Nobody — identical render |
-| **4** | Session cookie: `sessions.json`, `POST /api/auth/session`, `_resolve_session` accepted on `/api/fa/*` + `/api/auth/me`, `token-badge.js` mints it on load | Nobody — no behaviour changes on any existing page |
+| **4** ✅ | Session cookie: `sessions.json`, `POST /api/auth/session` + `/logout`, `_resolve_session` accepted on `/api/fa/*` + `/api/auth/me`, `token-badge.js` mints it on load | Nobody — no behaviour changes on any existing page |
 | **5** | Dashboard at **`nbn.today/pdc`**, unlinked from `nav.js`. Build and review the whole thing here | Anyone with the URL — and it shows only the forbidden screen without a role |
 | **5b** | nginx `pdc.nbn.today` block (same docroot, `/` → `/pdc/index.html`, `/api/` proxy) + certbot | Committee |
 | **6** | Discord modules with channels **unset**; then set `DISCORD_PDC_CHANNEL`, verify in the private channel; then `DISCORD_FA_NEWS_CHANNEL` last | Committee, then league |

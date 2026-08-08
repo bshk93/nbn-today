@@ -290,6 +290,14 @@ FastAPI app running as a systemd service on port 8001, proxied through nginx. So
 
 Valid roles are enforced at member creation time — `POST /api/members` rejects any unrecognized role name.
 
+### Sign-in: the token, and the `.nbn.today` session cookie
+
+The member token lives in `localStorage` as `nbn_token`, which is **per-origin** — so a member signed in on `nbn.today` is a stranger on `pdc.nbn.today` (this is why `news.nbn.today` was retired into `nbn.today/news` rather than solved). `token-badge.js` runs on every page and, when it has a working token and no session yet, calls `POST /api/auth/session` to mint an **opaque** session id delivered as `nbn_session=…; Domain=.nbn.today; Secure; HttpOnly; SameSite=Lax; Max-Age=30d`. Every subdomain sends it automatically, so signing in once anywhere covers all of them.
+
+The token itself never enters the cookie, which is what makes a session revocable — rotating a token, revoking it, or deleting the member drops every session that member had. The cookie is honoured on a **narrow allowlist only** (`GET /api/auth/me` and `/api/fa/*`); every real write path still requires the `Authorization` header. Full rationale and the mechanics live in `nbn-api/CLAUDE.md` § "Browser sessions"; do not widen the allowlist without reading it.
+
+`nbn_session_live` is a companion cookie that is deliberately readable by page JS and holds nothing but `1` — it exists only so `token-badge.js` can tell it already has a session (the real one is `HttpOnly`), and without it every page load would mint another session row.
+
 ### Trading Block endpoints
 
 | Endpoint | Auth | Description |
