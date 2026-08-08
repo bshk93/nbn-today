@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.0.397",
+    "date": "2026-08-08",
+    "changes": [
+      "Free-agency events now post to Discord: the committee's private channel gets every offer in full (contract year by year, funding method, promises, pitch and the legality verdict), plus remands with their note, mode and round changes, clock starts and expiries, and the final ballot allocation",
+      "A resubmitted offer is announced with a diff against the version the committee actually sent back \u2014 and says so plainly when a resubmission changed nothing",
+      "In free-for-all mode the league channel gets exactly two posts per player: the 24-hour clock starting, and the window closing. Never a team, a figure, or an offer count \u2014 who is bidding stays committee information",
+      "Deadlines post as Discord timestamps, so every reader sees the 24-hour window in their own timezone",
+      "Both channels stay silent until they're configured, and each is independent of the other"
+    ]
+  },
+  {
     "version": "0.0.396",
     "date": "2026-08-08",
     "changes": [

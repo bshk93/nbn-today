@@ -489,6 +489,14 @@ as `misc._notify_join_discord`). Set `DISCORD_TXN_CHANNEL` in `.env` to the targ
 channel id; **unset, the module is a complete no-op**, so it is safe to deploy
 before the channel exists.
 
+**Delivery lives in `routers/discord_transport.py`**, shared with `fa_notify`
+(below). One paced queue and one worker process-wide: two modules each pacing
+themselves correctly would still collectively exceed Discord's rate limit. The
+burst cap is keyed **by channel**, so a runaway on one feed can't silence
+another, and each module sizes its own. `transport.send` takes a callable
+payload built only *after* the gates pass — a transaction embed loads every
+player bio, and refusing a message has to stay cheap.
+
 The load-bearing requirement is negative — *the channel must never receive a
 dump*. 1,935 of the ledger's 2,241 entries are backfill, so any path that iterates
 it and notifies would fire ~2,000 messages and rate-limit the bot. Three
@@ -545,6 +553,32 @@ Forced transactions (`force: true` overriding a failed check) are posted with th
 overridden check names and a distinct colour — the override is already in the ledger
 as `_forced_checks`, this just surfaces it. Owner self-serve moves are marked in the
 footer via `details._source`.
+
+### PDC free-agency Discord feeds
+
+`routers/fa_notify.py` (spec: `docs/pdc-free-agency-spec.md` § 9) posts the FA
+pipeline's events to two channels with deliberately different appetites:
+
+| Channel | Env var | Gets |
+|---|---|---|
+| `pdc-alerts` (private) | `DISCORD_PDC_CHANNEL` | Everything: offer submitted/resubmitted with a **diff vs the version frozen at the remand**, remands with their note and conflict flag, mode changes, rounds, clock start/expiry, finalize totals |
+| `fa-news` (public) | `DISCORD_FA_NEWS_CHANNEL` | **FFA mode only**, exactly twice per player: clock started, window closed |
+
+Each is inert without its own env var, which is how it rolled out (module, then
+private channel, then public last).
+
+**No team abbreviation and no `$` may ever reach `fa-news`** — that a team is
+bidding is committee information. This is enforced by signature, not by care:
+`_news(slug, text)` is the only function that can reach the public channel and
+it cannot be handed an offer. `tests/test_fa_notify.py` asserts it against
+rendered output.
+
+Expiry has no scheduler (§ 4.1) — `free_agency._sweep_ffa_expiry` announces from
+whichever read request first observes a deadline has passed, stamping
+`ffa.closed_posted` under the lock *before* sending so simultaneous observers
+produce one post. Nothing consults that stamp for offerability, so it can't
+reopen a player; and a window that expired more than a day ago is stamped but
+never announced.
 
 ### Suggestions board
 

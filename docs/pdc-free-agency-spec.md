@@ -1,16 +1,19 @@
 # PDC — Free Agency offer pipeline (spec v0.4)
 
-**Status:** v0.8, 2026-08-08. Fifteen decisions settled (§ 12); no design
-questions outstanding. **Phases 0–5b are built** — the roles, the server-side FA
+**Status:** v0.9, 2026-08-08. Fifteen decisions settled (§ 12); no design
+questions outstanding. **Phases 0–6 are built** — the roles, the server-side FA
 pool, the whole offer/ballot API, the shared lineup helper, the `.nbn.today`
-session cookie, the dashboard, and its own host at **`pdc.nbn.today`**. Phase 6
-(the Discord modules) in § 10 is the next entry point. Sections amended during
-the build carry the reason inline (§ 3.2 what the live server block does,
-§ 3.3 the marker cookie and the allowlist's placement, § 4 locking, § 4.2
-archiving and `round_id`, § 4.3a version freezing, § 4.4 ballot gating, § 6.2
-the three read-side fields the dashboard needed, § 8.2/§ 8.3 what Phase 5
-covers, § 8.4 loading); those notes are the record of what was learned, not
-decoration.
+session cookie, the dashboard, its own host at **`pdc.nbn.today`**, and the two
+Discord feeds. Phase 6 shipped with both channels unset, so the remaining work
+there is setting `DISCORD_PDC_CHANNEL` and then `DISCORD_FA_NEWS_CHANNEL`.
+Phase 7 (the team-facing offer form) in § 10 is the next entry point. Sections
+amended during the build carry the reason inline (§ 3.2 what the live server
+block does, § 3.3 the marker cookie and the allowlist's placement, § 4 locking,
+§ 4.2 archiving and `round_id`, § 4.3a version freezing, § 4.4 ballot gating,
+§ 6.2 the three read-side fields the dashboard needed, § 8.2/§ 8.3 what Phase 5
+covers, § 8.4 loading, § 9 the shared transport and the public-channel
+chokepoint, § 9.3 the once-only expiry guard); those notes are the record of
+what was learned, not decoration.
 
 Scope of *this* document: **free agency only** — an owner drafts and submits a
 contract offer to a free agent, the Free Agency Committee (FAC) reviews the
@@ -835,13 +838,23 @@ A collapsible "How this works" panel on the dashboard, keyed off
 
 ## 9. Discord
 
-New module `routers/fa_notify.py`, reusing `discord_notify`'s transport (paced
-queue, retry, burst cap) rather than a fresh `httpx.post`. Refactor: lift the
-queue/worker/`_post` out of `discord_notify.py` into a small internal helper
-both import, keeping `DISCORD_TXN_CHANNEL`'s behaviour identical.
+**Built (Phase 6).** `routers/fa_notify.py`, with delivery lifted out of
+`discord_notify.py` into `routers/discord_transport.py` — one paced queue, one
+worker, shared. Two modules pacing themselves correctly and *still* collectively
+exceeding Discord's rate limit is the failure a second transport would have
+introduced. `DISCORD_TXN_CHANNEL`'s behaviour is unchanged; the burst cap moved
+into the transport keyed **by channel**, so a runaway on one feed can't silence
+the other, and each caller keeps its own sizing.
+
+One thing the extraction added: `transport.send` accepts a *callable* payload,
+built only after the gates pass. Transaction embeds load every player bio, and
+under the old ordering the burst gate ran first — refusing a message must stay
+cheap, or a runaway loop costs 2,000 bio loads on the way to being suppressed.
 
 Same no-op-without-config rule: unset the channel env vars and the module does
-nothing, so this ships before the channels are ready.
+nothing, so this ships before the channels are ready. The two are independent —
+`DISCORD_PDC_CHANNEL` alone gives the committee its feed with the league still
+hearing nothing, which is exactly the rollout order in § 10.
 
 ### 9.1 `pdc-alerts` (private, `1535633131346853959`)
 
@@ -852,6 +865,19 @@ Also fires on: mode change, round opened, FFA clock started/expired, player
 finalized (with totals), and **offer remanded / resubmitted** — the latter
 carrying the committee's note and a diff of what actually changed between
 versions (§ 4.3a). No withdrawal event exists (§ 4.3).
+
+Three things the build settled:
+
+- **The diff is against the version frozen at the remand**, so `submit_offer`
+  captures it *before* incrementing `version` — capture it after and the
+  announcement names the wrong version and compares the revision to itself
+  (the § 4.3a trap, one layer up).
+- **A resubmission that changed nothing says so explicitly.** Rendering an
+  empty diff would read as a formatting failure, when it is the substantive
+  fact that the remand went unanswered.
+- **Legality shows the warnings, not just the verdict.** The submit path
+  refuses an illegal offer outright and has no `force`, so a posted offer is
+  legal by construction — the informative half is what passed *conditionally*.
 
 ### 9.2 `fa-news` (public, `1517304922847055994`)
 
@@ -873,16 +899,40 @@ No team, no dollars, no offer count, in either. Both bodies are assembled from
 `$`.** The FFA mode flip itself is not announced here (it goes to `pdc-alerts`)
 — the clock posts are what the league actually needs to act on.
 
-Since expiry is evaluated lazily (§ 4.1), the closed post is emitted by whichever
-request first observes the deadline has passed, guarded by a `posted` flag on the
-player's `ffa` object so it fires exactly once.
+**The boundary is structural, not careful.** `_news(slug, text)` is the only
+function in the module that can reach the public channel, and it takes a player
+slug and a finished string — it cannot be handed an offer. Enforcing this by
+signature rather than by convention is the point: a single leak here is the
+league learning a rival's terms, and "we were careful at each call site" is not
+a property a test can check. `tests/test_fa_notify.py` checks the rendered
+output instead, so the guarantee survives however a message gets built.
+
+The deadline renders as a Discord dynamic timestamp (`<t:…:f>`), not a fixed
+clock time — a league spread across timezones acting on a 24-hour window is
+exactly what a literal "5:00 PM" gets wrong.
 
 ### 9.3 Clock expiry
 
 At expiry the player stops accepting offers (§ 4.1) and the dashboard lists them
-as ready for ballots. **Nothing resolves itself** — no signing, no outcome, ever.
-Whether a follow-up "window closed" post also goes to `fa-news` is open
-question 12.4.
+as ready for ballots. **Nothing resolves itself** — no signing, no outcome, ever;
+the closed post says so in as many words, because a post that reads like an
+outcome is worse than no post.
+
+Expiry is evaluated lazily (§ 4.1), so the post is emitted by whichever request
+first observes the deadline has passed — `_sweep_ffa_expiry`, called from the
+read endpoints the dashboards and the public FA page already hit. Three
+properties it has to carry:
+
+- **Once.** `ffa.closed_posted` is stamped **under the lock, before anything is
+  sent**, so two simultaneous observers produce one post rather than two.
+- **It doesn't reopen anybody.** The stamp is an announcement guard and nothing
+  consults it — offerability is still `now >= deadline`. Losing the flag would
+  re-announce, never reopen. `tests/test_fa_offers.py` pins that separation,
+  since a write on a read path is exactly how the derived-expiry property
+  (§ 4.1) would erode.
+- **A stale window is stamped but not announced.** A closure older than the
+  window it closes is a replay, not news — the case being deploying this module
+  while clocks that expired weeks ago sit unflagged in `fa-state.json`.
 
 ---
 
@@ -902,7 +952,7 @@ runner, not pytest — pytest isn't installed).
 | **4** ✅ | Session cookie: `sessions.json`, `POST /api/auth/session` + `/logout`, `_resolve_session` accepted on `/api/fa/*` + `/api/auth/me`, `token-badge.js` mints it on load | Nobody — no behaviour changes on any existing page |
 | **5** ✅ | Dashboard at **`nbn.today/pdc`**, unlinked from `nav.js`. Build and review the whole thing here | Anyone with the URL — and it shows only the forbidden screen without a role |
 | **5b** ✅ | nginx `pdc.nbn.today` block (same docroot, `/` → `/pdc/index.html`, `/api/` proxy) + certbot | Committee |
-| **6** | Discord modules with channels **unset**; then set `DISCORD_PDC_CHANNEL`, verify in the private channel; then `DISCORD_FA_NEWS_CHANNEL` last | Committee, then league |
+| **6** ✅ | `discord_transport` + `fa_notify`, wired into every FA write path, shipped with both channels **unset**. Rollout is then two env vars, in order: `DISCORD_PDC_CHANNEL`, verify in the private channel, then `DISCORD_FA_NEWS_CHANNEL` | Nobody until an env var is set — then committee, then league |
 | **7** | Team-facing ⋯ menu + offer form on `/free-agency`, gated on team role (draft) / owner tenure (submit) | Team front offices |
 | **8** | Ball allocation + finalize UI; role-aware instructions | Committee |
 
