@@ -341,97 +341,38 @@
     (async () => {
       const statusEl = document.getElementById('status');
       try {
-        const [biosJson, ovrJson, teamMapJson] = await Promise.all([
+        const [pool, biosJson, ovrJson, teamMapJson] = await Promise.all([
+          fetch('/api/fa/pool').then(r => r.ok ? r.json() : {}),
           fetch('/api/players').then(r => r.ok ? r.json() : {}),
           fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
           fetch('/api/team-map').then(r => r.ok ? r.json() : {}),
         ]);
 
-        const slugToTeam = teamMapJson; // already slug → team
-
-        // Build rows grouped by year.
-        // Rule: each player appears in exactly one FA class — the first year where
-        // they have a PO, TO, UFA, or RFA cap hold (NON_GTD treated as guaranteed,
-        // downstream holds after a PO/TO are contingent and not shown independently).
-        const renouncedSlugs = [];
-        const unsignedSlugs = [];
-
-        Object.entries(biosJson).forEach(([slug, bio]) => {
-          const capMap = bio.cap_holds || {};
-          const salaries = bio.salaries || {};
-
-          // Find the earliest cap_hold year that is actionable (not NON_GTD)
-          // and has a corresponding salary entry.
-          const firstEntry = Object.entries(capMap)
-            .filter(([yr, type]) => type !== 'NON_GTD' && salaries[yr])
-            .sort(([a], [b]) => a.localeCompare(b))[0];
-
-          if (!firstEntry) {
-            // No actionable cap hold, so this player is either a genuine free
-            // agent (unrostered, not retired) or someone who legitimately
-            // shouldn't be signable — "dead" cap charges and draft-rights
-            // holds (type "draft-rights") both have a non-empty `type`, so
-            // the `bio.type === ''` check already excludes them without
-            // needing to check slugToTeam separately for that case.
-            // Split on whether they've ever held an NBN contract: prior
-            // salary history means they were actually renounced (§3.10);
-            // no salary history means they've simply never been signed.
-            if (bio.type === '' && !slugToTeam[slug] && !Object.keys(capMap).length && !bio.retired) {
-              if (Object.keys(salaries).length) renouncedSlugs.push(slug);
-              else unsignedSlugs.push(slug);
-            }
-            return;
-          }
-          const [yr, type] = firstEntry;
-
-          const salaryRaw = salaries[yr];
-          const salaryNum = parseFloat(String(salaryRaw).replace(/[$,\s]/g, '')) || 0;
+        // The pool (class_year, hold_type, prior_salary per player) is derived
+        // server-side by GET /api/fa/pool — see nbn-api routers/free_agency.py.
+        // This just joins it against bio/OVR/team data for display.
+        Object.entries(pool).forEach(([slug, entry]) => {
+          const bio = biosJson[slug] || {};
+          const noCapHold = entry.hold_type === 'RENOUNCED' || entry.hold_type === 'UNSIGNED';
 
           const row = {
             slug,
             player: displayName(bio.name || slug),
-            team: slugToTeam[slug] || '',
+            team: teamMapJson[slug] || '',
             pos: (bio.pos || []).join('/') || '—',
             ovr: String(ovrJson[slug] || ''),
             age: calcAge(bio.dob),
-            salary: salaryNum,
-            salaryFmt: formatSalary(salaryRaw),
-            capType: type,
+            salary: noCapHold ? 0 : entry.prior_salary,
+            salaryFmt: noCapHold ? CAP_HOLD_LABELS[entry.hold_type] : formatSalary(entry.prior_salary),
+            capType: entry.hold_type,
           };
 
+          const yr = entry.class_year;
           if (!allRows[yr]) allRows[yr] = [];
           allRows[yr].push(row);
         });
 
         const years = Object.keys(allRows).sort();
-
-        // Renounced/unsigned free agents aren't tied to a future FA year —
-        // they're available right now — so they're bucketed into the
-        // current/earliest FA class alongside this year's UFA/RFA holds.
-        const noCapHoldSlugs = [
-          ...renouncedSlugs.map(slug => ({ slug, capType: 'RENOUNCED' })),
-          ...unsignedSlugs.map(slug => ({ slug, capType: 'UNSIGNED' })),
-        ];
-        if (noCapHoldSlugs.length) {
-          const targetYear = years[0] || 'Current';
-          if (!allRows[targetYear]) allRows[targetYear] = [];
-          noCapHoldSlugs.forEach(({ slug, capType }) => {
-            const bio = biosJson[slug];
-            allRows[targetYear].push({
-              slug,
-              player: displayName(bio.name || slug),
-              team: '',
-              pos: (bio.pos || []).join('/') || '—',
-              ovr: String(ovrJson[slug] || ''),
-              age: calcAge(bio.dob),
-              salary: 0,
-              salaryFmt: CAP_HOLD_LABELS[capType],
-              capType,
-            });
-          });
-          if (!years.includes(targetYear)) years.push(targetYear);
-          years.sort();
-        }
 
         if (!years.length) {
           statusEl.textContent = 'No non-guaranteed contracts found.';

@@ -750,7 +750,7 @@ runner, not pytest — pytest isn't installed).
 | Phase | Work | Who can see it |
 |---|---|---|
 | **0** ✅ | `VALID_ROLES` + `ROLE_IMPLIES` additions **and `NAMED_ROLES` in `members/index.html`** — without the latter an admin cannot grant the roles at all; then grant `fac_head` to the head, `fac` to members | Nobody (roles do nothing yet) |
-| **1** | `_fa_pool` server-side + `GET /api/fa/pool`; rewrite `free-agency/index.html` to consume it | Nobody — page output unchanged |
+| **1** ✅ | `_fa_pool` server-side + `GET /api/fa/pool`; rewrite `free-agency/index.html` to consume it | Nobody — page output unchanged |
 | **2** | `free_agency.py`: state/offers/ballots storage, full endpoint set, validation wiring, tests. No UI anywhere | API only, role-gated |
 | **3** | Extract `teams/lineup.js`; `team.js` consumes it | Nobody — identical render |
 | **4** | Session cookie: `sessions.json`, `POST /api/auth/session`, `_resolve_session` accepted on `/api/fa/*` + `/api/auth/me`, `token-badge.js` mints it on load | Nobody — no behaviour changes on any existing page |
