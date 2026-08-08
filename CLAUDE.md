@@ -234,6 +234,10 @@ No framework or build step. Every page is a self-contained HTML file with inline
 
 > **Never edit `teams/{ABB}/index.html` directly.** All 30 files are identical 11-line shells (`<script src="../team.js"></script>`). All team page logic lives in `team.js`.
 
+**`teams/lineup.js`** — `DEPTH_SLOTS` + `computeStartingFive`, the best legal one-player-per-slot PG→C lineup. Extracted from `team.js` so pages other than a team page can project a lineup (`team.js` injects a whole page into `document.body` on load, so nothing can import from it). It reads exactly two fields off each row — `_posList` and `OVR` — so any caller producing objects with those can use it.
+
+> Because the team shells load only `team.js`, shared modules are pulled in from `team.js` itself via an injected `<script>` + an awaited promise (`ratingsPopupReady`, `lineupReady`). Add new shared modules the same way rather than touching the 30 shells.
+
 **`stats/highs/table.js`** and **`stats/totals/table.js`** — loaded by each stat-category page. The page sets `window.PAGE_CONFIG = { statKey, csvPath }` before the script tag, and the script reads that config to know which CSV to fetch and which column to highlight as primary.
 
 > **Never edit individual stat-category HTML files** (`stats/highs/{stat}/index.html`, `stats/totals/{stat}/index.html`). They only differ by 3 lines (title, heading, `PAGE_CONFIG`). All display logic lives in `table.js`.

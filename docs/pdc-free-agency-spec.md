@@ -1,11 +1,12 @@
 # PDC — Free Agency offer pipeline (spec v0.4)
 
-**Status:** v0.4, 2026-08-08. Fifteen decisions settled (§ 12); no design
-questions outstanding. **Phases 0–2 are built** — the roles, the server-side FA
-pool, and the whole offer/ballot API. Phase 3 in § 10 is the next entry point.
-Sections amended during the build carry the reason inline (§ 4 locking, § 4.2
-archiving and `round_id`, § 4.3a version freezing, § 4.4 ballot gating); those
-notes are the record of what was learned, not decoration.
+**Status:** v0.5, 2026-08-08. Fifteen decisions settled (§ 12); no design
+questions outstanding. **Phases 0–3 are built** — the roles, the server-side FA
+pool, the whole offer/ballot API, and the shared lineup helper. Phase 4 (the
+session cookie) in § 10 is the next entry point. Sections amended during the
+build carry the reason inline (§ 4 locking, § 4.2 archiving and `round_id`,
+§ 4.3a version freezing, § 4.4 ballot gating, § 8.4 loading); those notes are
+the record of what was learned, not decoration.
 
 Scope of *this* document: **free agency only** — an owner drafts and submits a
 contract offer to a free agent, the Free Agency Committee (FAC) reviews the
@@ -711,6 +712,17 @@ another page. Extract both into `teams/lineup.js` as globals, have `team.js`
 consume them, change nothing else. Behaviour-preserving, ships alone, and is
 verifiable by diffing a rendered team page before/after.
 
+**Built.** Loaded the same way `ratings-popup.js` is — injected from `team.js`
+with a `lineupReady` promise the render awaits — **not** as a `<script>` tag in
+the 30 team shells, which are 11-line files that deliberately load only
+`team.js`. One difference from the popup: this is a hard dependency (the `depth`
+branch of `buildRosterTable` calls it directly, and there is no meaningful
+fallback), so its `onerror` logs before resolving instead of failing silent.
+The only fields it reads are `_posList` and `OVR`, so the dashboard needs to
+hand it objects with those two keys and nothing more. Verified as specified:
+`--dump-dom` of PHX, BOS and LAL before/after differ by exactly the one added
+`<script>` tag, with no console errors.
+
 ### 8.5 Role-aware instructions
 
 A collapsible "How this works" panel on the dashboard, keyed off
@@ -790,7 +802,7 @@ runner, not pytest — pytest isn't installed).
 | **0** ✅ | `VALID_ROLES` + `ROLE_IMPLIES` additions **and `NAMED_ROLES` in `members/index.html`** — without the latter an admin cannot grant the roles at all; then grant `fac_head` to the head, `fac` to members | Nobody (roles do nothing yet) |
 | **1** ✅ | `_fa_pool` server-side + `GET /api/fa/pool`; rewrite `free-agency/index.html` to consume it | Nobody — page output unchanged |
 | **2** ✅ | `free_agency.py`: state/offers/ballots storage, full endpoint set, validation wiring, tests. No UI anywhere | API only, role-gated |
-| **3** | Extract `teams/lineup.js`; `team.js` consumes it | Nobody — identical render |
+| **3** ✅ | Extract `teams/lineup.js`; `team.js` consumes it | Nobody — identical render |
 | **4** | Session cookie: `sessions.json`, `POST /api/auth/session`, `_resolve_session` accepted on `/api/fa/*` + `/api/auth/me`, `token-badge.js` mints it on load | Nobody — no behaviour changes on any existing page |
 | **5** | Dashboard at **`nbn.today/pdc`**, unlinked from `nav.js`. Build and review the whole thing here | Anyone with the URL — and it shows only the forbidden screen without a role |
 | **5b** | nginx `pdc.nbn.today` block (same docroot, `/` → `/pdc/index.html`, `/api/` proxy) + certbot | Committee |

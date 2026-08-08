@@ -4,7 +4,8 @@
 // Constants & boot
 //   TEAMS                        76   abbr → full team name
 //   RETIRED_JERSEYS             109   per-team retired number records
-//   ratingsPopupReady           127   resolves once /ratings-popup.js has loaded
+//   ratingsPopupReady           135   resolves once /ratings-popup.js has loaded
+//   lineupReady                 148   resolves once /teams/lineup.js has loaded
 //   CAP_HOLD_CSS                730   cap-hold type → td class
 //   CAP_HOLD_LABELS             738   cap-hold type → legend label
 //   SWATCH_COLORS               746   cap-hold type → legend swatch color
@@ -45,6 +46,7 @@
 //   copyTableToClipboard              copies a table as TSV + HTML for pasting into Sheets
 //   attachCopyBtn                     adds the "Copy" button next to a section title
 //   computeStartingFive               best PG/SG/SF/PF/C lineup for the Rosters mode
+//                                     — lives in teams/lineup.js, loaded above
 //   buildRosterTable            893   renders the Roster section with salary/cap data
 //   buildPicksTable            1365   renders the Draft Picks section (future picks only, no player yet)
 //   makeSeasonRenderCell       1478   season history cell renderer (badges, playoff coloring)
@@ -138,6 +140,19 @@ const ratingsPopupReady = new Promise(resolve => {
   _rp.onload = resolve;
   _rp.onerror = resolve;
   document.head.appendChild(_rp);
+});
+
+// DEPTH_SLOTS / computeStartingFive — the Rosters mode's starting five. Unlike
+// the popup above this is a hard dependency, not a nicety: the 'depth' branch of
+// buildRosterTable calls it directly, so the render awaits this and a failure is
+// logged rather than swallowed. Same file is loaded by anything else that needs
+// a projected lineup, which is why it doesn't live in here any more.
+const lineupReady = new Promise(resolve => {
+  const _lu = document.createElement('script');
+  _lu.src = '/teams/lineup.js';
+  _lu.onload = resolve;
+  _lu.onerror = () => { console.error('teams/lineup.js failed to load — depth chart unavailable'); resolve(); };
+  document.head.appendChild(_lu);
 });
 
 { const _s = document.createElement('style'); _s.textContent = `
@@ -1806,8 +1821,6 @@ function computeStatFields(seasonRow) {
   };
 }
 
-const DEPTH_SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
-
 const CONTRACT_TAGS = { PLAYER_OPT: 'PO', TEAM_OPT: 'TO', NON_GTD: 'NG' };
 
 function compactMoney(n) {
@@ -1862,64 +1875,6 @@ function summarizeContract(row, curYr) {
 
   const total = deal.reduce((sum, d) => sum + parseSalaryNum(sals[d.year]), 0);
   return total ? `${yrs}, ${compactMoney(total)}` : yrs;
-}
-
-// Depth-chart ordering for the 'depth' roster mode: a starting five (one player
-// per slot, PG→C) followed by everyone else in OVR order. A player only
-// qualifies for a slot if that position is one of their eligible positions
-// (bio `pos`), and each player fills at most one slot.
-//
-// Picking each slot greedily in PG→C order would strand slots — the best SF on
-// a team listed "SF · C" can leave C empty even when they were the only player
-// eligible there. So every legal assignment is scored and the best one wins,
-// ranked by: most slots filled first, then highest OVR at PG, then SG, and so
-// on down the order. With no conflicts that reduces to exactly "the highest
-// rated player at each position, in order"; with conflicts it prefers a full
-// five, and breaks the remaining ties in favour of the earlier slot.
-//
-// Candidates per slot are capped at the top 5 by OVR — five slots can never
-// need a sixth-deep option at any one position — so the search is at most 6^5.
-function computeStartingFive(players) {
-  const ovrOf = p => parseFloat(p.OVR) || 0;
-  const candidates = DEPTH_SLOTS.map(slot =>
-    players
-      .filter(p => (p._posList || []).includes(slot))
-      .sort((a, b) => ovrOf(b) - ovrOf(a))
-      .slice(0, DEPTH_SLOTS.length)
-  );
-
-  // [filled, ovr@PG, ovr@SG, …]; an empty slot scores -1 so any filled slot beats it.
-  const scoreOf = assign => [
-    assign.filter(Boolean).length,
-    ...assign.map(p => (p ? ovrOf(p) : -1)),
-  ];
-  const better = (a, b) => {
-    if (!b) return true;
-    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] > b[i];
-    return false;
-  };
-
-  const used = new Set();
-  const cur = new Array(DEPTH_SLOTS.length).fill(null);
-  let best = null, bestScore = null;
-
-  (function search(i) {
-    if (i === DEPTH_SLOTS.length) {
-      const score = scoreOf(cur);
-      if (better(score, bestScore)) { bestScore = score; best = [...cur]; }
-      return;
-    }
-    for (const p of candidates[i]) {
-      if (used.has(p)) continue;
-      used.add(p); cur[i] = p;
-      search(i + 1);
-      used.delete(p); cur[i] = null;
-    }
-    cur[i] = null;          // leaving the slot empty is always a legal branch
-    search(i + 1);
-  })(0);
-
-  return best || new Array(DEPTH_SLOTS.length).fill(null);
 }
 
 // Roster table for a team page. `mode` selects which columns follow Player /
@@ -5435,6 +5390,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   ]);
 
   await ratingsPopupReady;
+  await lineupReady;
 
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
   if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
