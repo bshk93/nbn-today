@@ -298,6 +298,14 @@ of 2026-08-07, purely from new entries landing on top):
 Fix: fill in *every* pending entry, not just index 0. Then repair the five
 (they can be dated back to the commits that introduced them via `git log`).
 
+**Second gap, same hook (found 2026-08-09):** it bumps `version.json` even when
+there is *no* pending entry to stamp. A docs-only commit — BACKLOG, CLAUDE.md, a
+spec — therefore advertises a new version on the homepage that `/changelog` has
+no entry for. Hit it on `bb821f8`, which took the site to 0.0.401 with the
+changelog's newest at 0.0.400; corrected by hand. Fix: skip the bump when
+`changelog[0]['version'] != "pending"`, since that is exactly the case where
+nothing user-facing shipped.
+
 ### [P2] No frontend test coverage
 `build/smoke_test.py` (165 checks, currently green) guards the *data contract*
 only — that pages can still find the columns they read. Nothing checks that a
@@ -306,6 +314,20 @@ page renders. The API side has 5 test files (`stepien_rule`, `tpe_and_hardcap`,
 Puppeteer + Chromium does work in this environment; a handful of
 "page loads, table has rows, no console errors" checks would catch a whole class
 of breakage the smoke test can't see.
+
+### [P3] PDC dashboard boots with an uncaught rejection if any fetch fails
+`pdc/index.html`'s boot does `await Promise.all([...])` over `/fa/state`,
+`/fa/pool`, `/players`, `/ovr/current`, `/team-map` with **no `catch`**. Any one
+of them failing leaves the page half-rendered — header and "How this works"
+panel drawn, no board, no queue — plus an unhandled rejection in the console and
+no message to the viewer. The realistic trigger is a role revoked mid-session or
+an API hiccup, since `/api/auth/me` has already resolved by then and the gate
+has passed.
+
+Note `/auth/me` itself *is* handled (it renders the "can't reach the league API"
+gate), so this is specifically the second wave of fetches. `renderGate('offline')`
+already exists and is the obvious thing to reuse. Found 2026-08-09 while building
+a test harness against the dashboard, not in real use.
 
 ### ~~[P3] `/suggestions` board is empty~~ — no longer true 2026-08-08
 Two live suggestions (#4 MCP server, #5 comments/editing); seq is at 5. #5 is
