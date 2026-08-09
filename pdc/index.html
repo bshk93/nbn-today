@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>PDC — NBN</title>
+  <title>Player Decision Committee Dashboard — NBN</title>
   <!--
     The PDC committee dashboard — see nbn-today/docs/pdc-free-agency-spec.md § 8.
 
@@ -27,7 +27,6 @@
     /* ── chrome ───────────────────────────────────────────────────────────── */
     .top-bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
     .top-bar h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
-    .top-bar .sub { color: var(--text-muted); margin-top: 0.3rem; font-size: 0.85rem; }
     .right-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
     .who { font-size: 0.8rem; color: var(--text-muted); }
     .who b { color: var(--text-secondary); font-weight: 600; }
@@ -51,6 +50,7 @@
     .chip-ok { border-color: var(--success); color: var(--success); }
     .chip-bad { border-color: var(--danger-border-strong); color: var(--danger); }
     .chip-warn { border-color: var(--gold-border); color: var(--gold); }
+    .chip-head { border-color: var(--accent); color: var(--accent-light); }
     .chip-live { border-color: var(--accent); color: var(--accent-light); }
 
     /* ── gate ─────────────────────────────────────────────────────────────── */
@@ -68,6 +68,18 @@
     .seg button { border: none; border-radius: 0; background: transparent; color: var(--text-muted); padding: 0.28rem 0.6rem; }
     .seg button.on { background: var(--accent-dark); color: var(--text-on-accent); }
     .seg button:not(.on):hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    /* ── head zone ────────────────────────────────────────────────────────────
+       One consistently-styled, clearly bounded box for every control only a
+       head (fac_head/poext_head, or admin) can use — instead of a badge next to
+       each individual control, which reads as noise once there's more than one. */
+    .head-zone { background: var(--accent-panel-bg); border: 1px solid var(--accent); border-radius: 10px;
+                 padding: 0.7rem 0.9rem; margin-bottom: 1rem; display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: center; }
+    .head-zone-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em;
+                        color: var(--accent-light); font-weight: 800; width: 100%; }
+    .section.head-section { background: var(--accent-panel-bg); border: 1px solid var(--accent);
+                             border-radius: 8px; margin: 0.9rem 1rem; padding: 0.9rem 1rem; }
+    .section.head-section h3 { color: var(--accent-light); }
 
     /* ── panes ────────────────────────────────────────────────────────────── */
     .panes { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 1rem; align-items: start; }
@@ -201,8 +213,7 @@
   <div class="page">
     <header class="top-bar">
       <div>
-        <h1>PDC</h1>
-        <p class="sub" id="subtitle">Committee review — Free Agency</p>
+        <h1>Player Decision Committee Dashboard</h1>
       </div>
       <div class="right-bar" id="whoami"></div>
     </header>
@@ -216,11 +227,11 @@
 
     <div id="app" hidden>
       <div class="boardbar" id="boardbar"></div>
+      <div class="head-zone" id="head-zone" hidden></div>
       <div class="panes">
         <aside class="pane">
           <div class="pane-head">
             <div class="tabs-mini" id="list-tabs"></div>
-            <button class="btn-ghost" id="add-player" hidden>+ Player</button>
           </div>
           <div class="plist" id="player-list"></div>
         </aside>
@@ -235,8 +246,9 @@
   <script>
   // ══ PDC dashboard ═══════════════════════════════════════════════════════════
   //
-  // The committee pipeline (spec § 8.2 / § 8.3): the queue, the player review,
-  // the head's board controls, the 1,000-ball ballot, and per-player finalize.
+  // The committee pipeline (spec § 8.2 / § 8.3): each member's assigned free
+  // agents, the player review, the head's Free Agency controls (mode, rounds),
+  // the 1,000-ball ballot, and per-player finalize.
   //
   // Two rules this file follows and must keep following:
   //   * **No cap math here.** Every dollar rendered comes out of the fact sheet
@@ -425,10 +437,10 @@
     if (!IS_FAC && !IS_POEXT) { renderGate(ME.name ? 'forbidden' : 'anon'); return; }
     renderHowto();
     if (IS_POEXT) renderPoext();
-    if (!IS_FAC) { document.getElementById('subtitle').textContent = 'Committee review — PO-EXT'; return; }
+    if (!IS_FAC) return;
 
     document.getElementById('app').hidden = false;
-    document.getElementById('detail').appendChild(el('div', 'empty', 'Pick a player from the board.'));
+    document.getElementById('detail').appendChild(el('div', 'empty', 'Pick a player to review.'));
 
     const [state, pool, bios, ovr, teamMap, ly] = await Promise.all([
       api('/fa/state'),
@@ -447,6 +459,18 @@
     window.addEventListener('hashchange', routeFromHash);
   })();
 
+  // What each role actually grants on this page — shown as a tooltip on the
+  // role chip, since "fac_head" on its own doesn't say it's the one that runs
+  // Free Agency rather than just reviewing offers.
+  const ROLE_EXPLAIN = {
+    admin: 'Admin — full access to every control on this page, FAC and PO-EXT alike.',
+    fac: 'FAC — reviews offers and casts ballots on players you’re assigned to.',
+    fac_head: 'FAC Head — runs Free Agency: mode, rounds, sub-committee assignment, finalize/unlock. These live in the boxed "FAC Head controls" areas on the page.',
+    poext: 'PO-EXT — granted, but this page is a stub for PO-EXT for now. Nothing to do yet.',
+    poext_head: 'PO-EXT Head — granted, but this page is a stub for PO-EXT for now. Nothing to do yet.',
+  };
+  const HEAD_ROLES = new Set(['admin', 'fac_head', 'poext_head']);
+
   function renderWhoami() {
     const box = document.getElementById('whoami');
     box.innerHTML = '';
@@ -454,8 +478,12 @@
     const who = el('span', 'who');
     who.appendChild(el('b', null, ME.name));
     box.appendChild(who);
-    (ME.roles || []).filter(r => ['admin', 'fac', 'fac_head', 'poext', 'poext_head'].includes(r))
-      .forEach(r => box.appendChild(el('span', 'chip chip-role', r)));
+    (ME.roles || []).filter(r => ROLE_EXPLAIN[r])
+      .forEach(r => {
+        const chip = el('span', 'chip ' + (HEAD_ROLES.has(r) ? 'chip-head' : 'chip-role'), r);
+        chip.title = ROLE_EXPLAIN[r];
+        box.appendChild(chip);
+      });
   }
 
   // The forbidden screen is a courtesy — the API is the boundary (§ 3.4). It
@@ -523,10 +551,18 @@
       return ul;
     };
 
+    const intro = el('p', 'note',
+      'Two tiers on FAC: fac reviews offers and ballots on players you’re assigned to — that’s '
+      + '"Reviewing a player" below, and it’s the same page for everyone on the committee. fac_head '
+      + '(or admin) additionally runs Free Agency — everything under "Running Free Agency", which on '
+      + 'the page itself lives in the boxed "FAC Head controls" areas, set apart from the rest of the UI. '
+      + 'PO-EXT (poext/poext_head) is granted but this dashboard is a stub for it for now.');
+    box.appendChild(intro);
+
     if (IS_FAC) {
       box.appendChild(el('h4', null, 'Reviewing a player'));
       box.appendChild(list([
-        'Your queue is the players the head has put you on. You cannot see the offers or the ballots for a player you aren’t assigned to — a sub-committee is transparent to itself and opaque to everyone outside it.',
+        '"My assigned free agents" is the players the head has put you on. You cannot see the offers or the ballots for a player you aren’t assigned to — a sub-committee is transparent to itself and opaque to everyone outside it.',
         'Offers sit side by side: the contract year by year, how it’s funded, the team’s cap position after signing, their projected starting five with this player in it, the promises made, and the pitch.',
         'Legality is re-checked every time you open the page. “Legal at submit · illegal now” means the team’s cap position moved since they offered. They cannot withdraw it — you decide what that’s worth.',
         'Any of you can send an offer back for revision with a note. It’s additive: a second note from someone else joins yours and the team answers both in one go.',
@@ -538,7 +574,7 @@
     }
 
     if (IS_HEAD) {
-      box.appendChild(el('h4', null, 'Running the board'));
+      box.appendChild(el('h4', null, 'Running Free Agency'));
       box.appendChild(list([
         'Mode is the master switch. Closed takes no offers at all. Rounds takes them only on players you’ve opened. FFA opens every free agent at once.',
         'FFA is the only clock the software enforces: the first submitted offer on a player starts 24 hours, later offers don’t extend it, and at the deadline he stops taking offers and comes to you. Nothing signs itself, ever.',
@@ -588,20 +624,12 @@
     const bar = document.getElementById('boardbar');
     bar.innerHTML = '';
 
+    // Everyone sees the same read-only status bar, whatever their role — no
+    // interactive controls live here, so there's nothing role-dependent to
+    // render differently.
     const modeBlock = el('div', 'bb-block');
     modeBlock.appendChild(el('span', 'bb-label', 'Mode'));
-    if (IS_HEAD) {
-      const seg = el('div', 'seg');
-      ['closed', 'rounds', 'ffa'].forEach(m => {
-        const b = el('button', STATE.mode === m ? 'on' : '', m === 'ffa' ? 'FFA' : m[0].toUpperCase() + m.slice(1));
-        b.title = MODE_COPY[m];
-        b.addEventListener('click', () => setMode(m));
-        seg.appendChild(b);
-      });
-      modeBlock.appendChild(seg);
-    } else {
-      modeBlock.appendChild(el('span', 'chip chip-live', STATE.mode));
-    }
+    modeBlock.appendChild(el('span', 'chip chip-live', STATE.mode === 'ffa' ? 'FFA' : STATE.mode[0].toUpperCase() + STATE.mode.slice(1)));
     modeBlock.appendChild(el('span', 'bb-val', MODE_COPY[STATE.mode] || ''));
     bar.appendChild(modeBlock);
 
@@ -620,15 +648,37 @@
     } else {
       roundBlock.appendChild(el('span', 'bb-val', 'none opened'));
     }
-    if (IS_HEAD) {
-      const b = el('button', 'btn-ghost', 'Open round…');
-      b.addEventListener('click', openRoundModal);
-      roundBlock.appendChild(b);
-    }
     bar.appendChild(roundBlock);
 
-    document.getElementById('add-player').hidden = !IS_HEAD;
-    document.getElementById('add-player').onclick = addPlayerModal;
+    // Every control only the head can use lives in this one boxed zone, set
+    // apart from the status bar above by its own border and tint — instead of
+    // marking each control individually.
+    const zone = document.getElementById('head-zone');
+    zone.innerHTML = '';
+    zone.hidden = !IS_HEAD;
+    if (IS_HEAD) {
+      zone.appendChild(el('div', 'head-zone-label', 'FAC Head controls'));
+
+      const modeRow = el('div', 'bb-block');
+      modeRow.appendChild(el('span', 'bb-label', 'Set FA mode'));
+      const seg = el('div', 'seg');
+      ['closed', 'rounds', 'ffa'].forEach(m => {
+        const b = el('button', STATE.mode === m ? 'on' : '', m === 'ffa' ? 'FFA' : m[0].toUpperCase() + m.slice(1));
+        b.title = MODE_COPY[m];
+        b.addEventListener('click', () => setMode(m));
+        seg.appendChild(b);
+      });
+      modeRow.appendChild(seg);
+      zone.appendChild(modeRow);
+
+      const openBtn = el('button', 'btn-ghost', 'Open round…');
+      openBtn.addEventListener('click', openRoundModal);
+      zone.appendChild(openBtn);
+
+      const addBtn = el('button', 'btn-ghost', '+ Add player to round…');
+      addBtn.addEventListener('click', addPlayerModal);
+      zone.appendChild(addBtn);
+    }
   }
 
   async function setMode(mode) {
@@ -687,7 +737,7 @@
   }
 
   function addPlayerModal() {
-    const onBoard = new Set(Object.keys(STATE.players || {}));
+    const alreadyAdded = new Set(Object.keys(STATE.players || {}));
     // `POOL` is everyone with a cap hold *on file*, which spans future league
     // years — /free-agency's year chips are built from it. Only the current
     // class has actually reached free agency, and opening anyone else produces a
@@ -699,18 +749,10 @@
       .filter(slug => POOL[slug].current)
       .map(slug => ({ slug, name: nameOf(slug), pool: POOL[slug] }))
       .sort((a, b) => a.name.localeCompare(b.name));
-    const laterCount = all.length - candidates.length;
 
     const body = el('div');
     body.appendChild(el('p', 'note', 'Opening a player lets teams submit offers on them in the current round. '
       + 'In FFA mode every free agent already accepts offers — opening one there is about the sub-committee, not the window.'));
-    if (laterCount) {
-      // Said out loud, because "why isn't he in this list?" is the obvious next
-      // question and the answer is a rule, not an omission.
-      body.appendChild(el('p', 'note', `Listing the ${candidates.length} players who are free agents in `
-        + `${SEASON || 'the current league year'}. Another ${laterCount} have a cap hold on file for a later `
-        + `year and can’t be signed yet, so they aren’t here.`));
-    }
     const search = el('input');
     search.placeholder = 'Search the free agents…';
     body.appendChild(search);
@@ -721,7 +763,7 @@
     function draw() {
       const q = search.value.trim().toLowerCase();
       list.innerHTML = '';
-      const rows = candidates.filter(c => !q || c.name.toLowerCase().includes(q)).slice(0, 60);
+      const rows = candidates.filter(c => !q || c.name.toLowerCase().includes(q));
       if (!rows.length) { list.appendChild(el('div', 'empty', 'No match.')); return; }
       rows.forEach(c => {
         const row = el('div', 'pickrow');
@@ -730,7 +772,7 @@
         row.appendChild(nm);
         row.appendChild(el('span', 'chip', c.pool.hold_type));
         row.appendChild(el('span', 'chip', c.pool.class_year));
-        if (onBoard.has(c.slug)) row.appendChild(el('span', 'chip chip-live', (STATE.players[c.slug] || {}).status || 'on board'));
+        if (alreadyAdded.has(c.slug)) row.appendChild(el('span', 'chip chip-live', (STATE.players[c.slug] || {}).status || 'added'));
         const b = el('button', 'btn-ghost', 'Open');
         b.addEventListener('click', async () => {
           b.disabled = true;
@@ -771,7 +813,7 @@
     tabs.innerHTML = '';
     const entries = Object.entries(STATE.players || {});
     const mineCount = entries.filter(([, p]) => p.mine).length;
-    [['mine', `My queue (${mineCount})`], ['all', `Board (${entries.length})`]].forEach(([id, label]) => {
+    [['mine', `My free agents (${mineCount})`], ['all', `All players (${entries.length})`]].forEach(([id, label]) => {
       const b = el('button', LIST_MODE === id ? 'on' : '', label);
       b.addEventListener('click', () => { LIST_MODE = id; renderList(); });
       tabs.appendChild(b);
@@ -788,7 +830,7 @@
     if (!rows.length) {
       list.appendChild(el('div', 'empty', LIST_MODE === 'mine'
         ? 'You aren’t assigned to any player yet. The FAC head assigns sub-committees.'
-        : 'No players are on the board.'));
+        : 'No players have been opened for Free Agency yet.'));
       return;
     }
 
@@ -876,7 +918,7 @@
       return;
     }
 
-    if (IS_HEAD) box.appendChild(headControls(slug, entry, review));
+    if (IS_HEAD) box.appendChild(headControls(slug, entry, review, ballots));
     box.appendChild(offersSection(review));
     box.appendChild(commitmentsSection(review));
     box.appendChild(ballotsSection(review, ballots));
@@ -917,9 +959,9 @@
 
   // ── head controls (§ 8.3) ───────────────────────────────────────────────────
 
-  function headControls(slug, entry, review) {
-    const s = el('div', 'section');
-    s.appendChild(el('h3', null, 'Head controls'));
+  function headControls(slug, entry, review, ballots) {
+    const s = el('div', 'section head-section');
+    s.appendChild(el('h3', null, 'FAC Head controls'));
     const row = el('div', 'bb-block');
     ['open', 'held', 'closed'].forEach(status => {
       const b = el('button', (review.state || {}).status === status ? 'btn-primary' : 'btn-ghost',
@@ -943,6 +985,26 @@
       b.style.marginTop = '0.6rem';
       b.textContent = 'Nobody is assigned, so nobody can ballot on this player. Sub-committees default to empty by design — assign one.';
       s.appendChild(b);
+    }
+
+    // Finalize/Unlock are head actions too, so they live here rather than
+    // inside the Ballots section below — the totals and lock record they act
+    // on stay there, since those are visible to the whole sub-committee.
+    if (ballots && !ballots._unavailable) {
+      const actionRow = el('div', 'bb-block');
+      actionRow.style.marginTop = '0.6rem';
+      if (ballots.final) {
+        const u = el('button', 'btn-danger', 'Unlock…');
+        u.addEventListener('click', () => unlockModal(slug, ballots));
+        actionRow.appendChild(u);
+        actionRow.appendChild(el('span', 'bb-val', 'Reopens the ballots and offers this finalize locked.'));
+      } else {
+        const f = el('button', 'btn-primary', 'Finalize…');
+        f.addEventListener('click', () => finalizeModal(review, ballots, optionLabels(review)));
+        actionRow.appendChild(f);
+        actionRow.appendChild(el('span', 'bb-val', 'Locks every ballot on this player and records the totals.'));
+      }
+      s.appendChild(actionRow);
     }
     return s;
   }
@@ -1332,12 +1394,6 @@
       // a locked result looking like it executed itself.
       f.appendChild(el('div', 'bb-val',
         'The allocation is the record of the decision. The signing is still entered by hand on /transactions.'));
-      if (IS_HEAD) {
-        const u = el('button', 'btn-danger', 'Unlock…');
-        u.style.marginTop = '0.5rem';
-        u.addEventListener('click', () => unlockModal(review.player, ballots));
-        f.appendChild(u);
-      }
       s.appendChild(f);
     } else if (amAssigned(review)) {
       s.appendChild(myBallot(review, ballots, labels));
@@ -1377,16 +1433,6 @@
       s.appendChild(el('div', 'bar-lbl', 'Outstanding: ' + ballots.outstanding.join(', ')));
     }
 
-    if (IS_HEAD && !ballots.final) {
-      const bar = el('div', 'bb-block');
-      bar.style.marginTop = '0.7rem';
-      const b = el('button', 'btn-primary', 'Finalize…');
-      b.addEventListener('click', () => finalizeModal(review, ballots, labels));
-      bar.appendChild(b);
-      bar.appendChild(el('span', 'bar-lbl',
-        'Locks every ballot on this player and records the totals.'));
-      s.appendChild(bar);
-    }
     return s;
   }
 

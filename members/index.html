@@ -78,6 +78,10 @@
     .rb-curator { background: var(--purple-light-bg); color: var(--purple-light); }
     .rb-stats   { background: #0d2a33; color: #5eead4; }
     .rb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
+    .rb-fac       { background: #500724; color: #f9a8d4; }
+    .rb-fac-head   { background: #500724; color: #f9a8d4; border: 1px solid #ec4899; }
+    .rb-poext      { background: #1e1b4b; color: #a5b4fc; }
+    .rb-poext-head { background: #1e1b4b; color: #a5b4fc; border: 1px solid #818cf8; }
     .rb-team    { background: #1c2c1e; color: var(--success-light); }
 
     .action-cell { display: flex; gap: 0.35rem; align-items: center; white-space: nowrap; }
@@ -610,6 +614,10 @@ function roleClass(r) {
   if (r === 'curator') return 'rb-curator';
   if (r === 'stats')   return 'rb-stats';
   if (r === 'bookie')  return 'rb-bookie';
+  if (r === 'fac_head')   return 'rb-fac-head';
+  if (r === 'fac')        return 'rb-fac';
+  if (r === 'poext_head') return 'rb-poext-head';
+  if (r === 'poext')      return 'rb-poext';
   return 'rb-team';
 }
 

@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.0.403",
+    "date": "2026-08-09",
+    "changes": [
+      "Rulebook: \u00a7 7.2 badge updated to \ud83d\udd12 system-enforced + \ud83d\udc41 manual review, reflecting the live Stepien Rule check; added a note distinguishing it from the still-unenforced 7-year advance limit",
+      "Homepage: added an admin-only Backlog nav card linking to the new /backlog page",
+      "Backlog: new /backlog page renders BACKLOG.md for admins",
+      "PDC dashboard: reworked the head-only controls into a single boxed \"FAC Head controls\" zone instead of scattering badges per control; renamed queue/board labels to \"My free agents\"/\"All players\"; added role-chip tooltips explaining what each committee role grants",
+      "Members: added role badge styles for fac/fac_head/poext/poext_head",
+      "Frivolities earnings tab: only count guaranteed salary (mirrors _apply_release's dead-cap logic) instead of full contract face value, so UFA/RFA holds, team options, and non-guaranteed years no longer inflate career earnings"
+    ]
+  },
+  {
     "version": "0.0.401",
     "date": "2026-08-09",
     "changes": [

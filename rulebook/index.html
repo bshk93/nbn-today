@@ -972,12 +972,13 @@
           </div>
 
           <div class="doc-section" id="s7-2">
-            <h3 class="sec-title"><span class="sec-num">§ 7.2</span> Pick Trading Restrictions <span class="badge badge-manual">👁 manual review</span></h3>
+            <h3 class="sec-title"><span class="sec-num">§ 7.2</span> Pick Trading Restrictions <span class="badge badge-enforced">🔒 system-enforced</span> <span class="badge badge-manual">👁 manual review</span></h3>
             <p><strong>Stepien Rule:</strong> A team may not trade away first-round picks in consecutive draft years. Every team must retain the ability to make a first-round selection at least once every two years. A proposed trade is illegal if, after the trade, the team would have no first-round pick in two or more consecutive draft years.</p>
             <div class="callout callout-note">
               Trading the right to make a selection after already holding the pick (post-draft, after the team has made their selection) does not count as trading away a first-round pick for Stepien Rule purposes.
             </div>
             <p><strong>7-year advance limit:</strong> Draft picks may only be traded up to <strong>7 years in advance</strong> of the current season. A pick further than 7 years out may not be included in any trade.</p>
+            <p><strong>What's system-enforced:</strong> the Stepien Rule is checked on every proposed trade (`_check_stepien_rule`), reading conveyance-resolved pick ownership rather than raw CSV rows, so protected/swap picks are accounted for correctly. <strong>Still manual review:</strong> the 7-year advance limit has no corresponding check yet — a trade involving a pick more than 7 years out is not rejected at submission.</p>
           </div>
 
           <div class="doc-section" id="s7-3">

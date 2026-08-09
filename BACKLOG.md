@@ -1,7 +1,7 @@
 # NBN — Backlog
 
 Internal working list of what needs doing and what would be nice to have.
-Not linked from nav; the member-facing board is `/suggestions` (currently empty).
+Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions` (currently empty).
 
 Last reviewed: **2026-08-09** (against version 0.0.401).
 
@@ -135,10 +135,13 @@ The Stepien half of § 7.2 *is* enforced (`_check_stepien_rule`,
 picks may only be traded 7 years out — has no check. Cheap to add next to the
 existing one.
 
-### [P2] § 7.2 rulebook badge is stale
-Section still reads 👁 manual review only, despite Stepien going live
-2026-07-23. Should be 🔒 + 👁. Badge accuracy is the whole point of the system;
-one wrong badge undermines the rest.
+### [P2] § 7.2 rulebook badge is stale — CLOSED 2026-08-09
+Section read 👁 manual review only, despite Stepien going live 2026-07-23.
+Fixed: badge is now 🔒 + 👁 (matching the § 1.3/§ 3.14-style mixed-enforcement
+pattern), with a trailing "What's system-enforced / Still manual review"
+paragraph explaining the split — Stepien (`_check_stepien_rule`) is enforced on
+every trade; the companion 7-year advance limit is not (see next item, still
+open).
 
 ### [P2] Extend-and-trade is referenced but never defined
 § 3.9's raise table has an "Extend-and-trade" row (5% of Year 1, vs 8% for a

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Backlog — NBN</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    .page { max-width: 900px; margin: 0 auto; }
+
+    header { margin-bottom: 1.25rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .auth-bar {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--text-muted);
+    }
+    .auth-bar button {
+      background: var(--border); border: 1px solid var(--text-dim); color: var(--text-primary);
+      border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer;
+      font-size: 0.8rem; font-family: inherit;
+    }
+    .auth-bar button:hover { background: var(--text-dim); }
+
+    .gate {
+      text-align: center; color: var(--text-muted); padding: 4rem 1rem;
+      font-size: 0.9rem;
+    }
+    .gate .lock { font-size: 2rem; margin-bottom: 0.75rem; }
+
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .search-row input {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      padding: 0.55rem 0.875rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-row input::placeholder { color: var(--text-muted); }
+    .search-row input:focus { border-color: var(--link); }
+
+    .match-info {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      min-width: 6rem;
+      text-align: right;
+    }
+
+    .nav-btns { display: flex; gap: 0.375rem; }
+    .nav-btns button {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 0.3rem 0.6rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-btns button:hover { background: var(--border); color: var(--text-primary); }
+    .nav-btns button:disabled { opacity: 0.3; cursor: default; }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 2.25rem;
+    }
+
+    /* markdown prose */
+    #content h1 { display: none; } /* page already has a title */
+    #content h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.4rem;
+      margin: 2.25rem 0 1rem;
+    }
+    #content h2:first-child { margin-top: 0; }
+    #content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin: 1.5rem 0 0.6rem;
+    }
+    #content h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin: 1.25rem 0 0.5rem;
+    }
+    #content p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      margin-bottom: 0.75rem;
+    }
+    #content ul, #content ol {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      margin: 0.5rem 0 0.75rem 1.5rem;
+    }
+    #content li { margin-bottom: 0.25rem; }
+    #content code {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8em;
+      padding: 0.1em 0.35em;
+    }
+    #content pre {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow-x: auto;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0 1rem;
+    }
+    #content pre code {
+      background: none;
+      border: none;
+      font-size: 0.82rem;
+      padding: 0;
+    }
+    #content table {
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin: 0.75rem 0 1rem;
+      width: 100%;
+      display: block;
+      overflow-x: auto;
+    }
+    #content th {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 0.45rem 0.75rem;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    #content td {
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 0.4rem 0.75rem;
+      vertical-align: top;
+    }
+    #content tr:hover td { background: #253042; }
+    #content strong { color: var(--text-bright); font-weight: 600; }
+    #content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0;
+    }
+    #content blockquote {
+      border-left: 3px solid var(--border);
+      color: var(--text-muted);
+      font-style: italic;
+      margin: 0.75rem 0;
+      padding-left: 1rem;
+    }
+
+    /* search highlights */
+    mark {
+      background: var(--gold-border);
+      border-radius: 2px;
+      color: #fef3c7;
+      padding: 0 2px;
+    }
+    mark.current {
+      background: var(--champion-border);
+      color: var(--text-on-accent);
+    }
+
+    #loading {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      padding: 2rem 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<script src="/nav.js"></script>
+
+<div class="page">
+  <nav class="nav"></nav>
+
+  <header>
+    <h1>Backlog</h1>
+    <p>Internal working list of what needs doing and what would be nice to have. Admin access required.</p>
+  </header>
+
+  <div class="auth-bar" id="auth-bar">
+    <span id="auth-status">Sign in to view the backlog.</span>
+    <button id="auth-btn">Sign in</button>
+  </div>
+
+  <div id="gate" class="gate" style="display:none">
+    <div class="lock">🔒</div>
+    <div>This page requires admin access.</div>
+  </div>
+
+  <div id="doc" style="display:none">
+    <div class="search-row">
+      <input type="text" id="search" placeholder="Search backlog…" autocomplete="off" spellcheck="false">
+      <div class="nav-btns">
+        <button id="prev-btn" disabled>↑</button>
+        <button id="next-btn" disabled>↓</button>
+      </div>
+      <div class="match-info" id="match-info"></div>
+    </div>
+
+    <div class="card">
+      <div id="loading">Loading…</div>
+      <div id="content" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Sign-in modal -->
+<div class="modal-backdrop" id="signin-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding-top:5vh">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem">
+    <h3 style="font-size:1rem;font-weight:600">Sign In</h3>
+    <input type="password" id="signin-input" placeholder="Paste your token…"
+      style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.875rem;font-family:inherit;width:100%;box-sizing:border-box">
+    <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+      <button id="signin-cancel" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Cancel</button>
+      <button id="signin-save" style="background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const TOKEN_KEY = 'nbn_token';
+  let currentToken = localStorage.getItem(TOKEN_KEY) || '';
+  let myName = '', isAdmin = false;
+
+  const contentEl = document.getElementById('content');
+  const loadingEl = document.getElementById('loading');
+  const searchEl  = document.getElementById('search');
+  const matchInfo = document.getElementById('match-info');
+  const prevBtn   = document.getElementById('prev-btn');
+  const nextBtn   = document.getElementById('next-btn');
+
+  let rawHTML = '';
+  let marks = [];
+  let currentIdx = -1;
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+
+  function updateAuthBar() {
+    const status = document.getElementById('auth-status');
+    const btn    = document.getElementById('auth-btn');
+    if (currentToken && myName) {
+      status.textContent = `Signed in as ${myName}`;
+      btn.textContent = 'Sign out';
+    } else if (currentToken) {
+      status.textContent = 'Signed in';
+      btn.textContent = 'Sign out';
+    } else {
+      status.textContent = 'Sign in to view the backlog.';
+      btn.textContent = 'Sign in';
+    }
+  }
+
+  async function initAuth() {
+    try {
+      const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${currentToken}` } });
+      if (!res.ok) { signOut(); return; }
+      const me = await res.json();
+      myName = me.name;
+      isAdmin = (me.roles || []).includes('admin');
+      updateAuthBar();
+      if (isAdmin) {
+        document.getElementById('gate').style.display = 'none';
+        document.getElementById('doc').style.display = '';
+        loadDoc();
+      } else {
+        document.getElementById('gate').style.display = '';
+        document.getElementById('doc').style.display = 'none';
+      }
+    } catch { signOut(); }
+  }
+
+  function signOut() {
+    currentToken = ''; myName = ''; isAdmin = false;
+    localStorage.removeItem(TOKEN_KEY);
+    updateAuthBar();
+    document.getElementById('gate').style.display = '';
+    document.getElementById('doc').style.display = 'none';
+  }
+
+  document.getElementById('auth-btn').addEventListener('click', () => {
+    if (currentToken) { signOut(); }
+    else {
+      const bd = document.getElementById('signin-backdrop');
+      bd.style.display = 'flex';
+      document.getElementById('signin-input').value = '';
+      setTimeout(() => document.getElementById('signin-input').focus(), 50);
+    }
+  });
+
+  document.getElementById('signin-cancel').addEventListener('click', () =>
+    document.getElementById('signin-backdrop').style.display = 'none');
+  document.getElementById('signin-backdrop').addEventListener('click', e => {
+    if (e.target === document.getElementById('signin-backdrop'))
+      document.getElementById('signin-backdrop').style.display = 'none';
+  });
+
+  async function doSignIn() {
+    const t = document.getElementById('signin-input').value.trim();
+    if (!t) return;
+    currentToken = t; localStorage.setItem(TOKEN_KEY, t);
+    document.getElementById('signin-backdrop').style.display = 'none';
+    await initAuth();
+  }
+  document.getElementById('signin-save').addEventListener('click', doSignIn);
+  document.getElementById('signin-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+
+  // ── Doc loading ───────────────────────────────────────────────────────────
+
+  function loadDoc() {
+    if (rawHTML) return; // already loaded
+    fetch('/BACKLOG.md')
+      .then(r => r.text())
+      .then(md => {
+        rawHTML = marked.parse(md);
+        contentEl.innerHTML = rawHTML;
+        loadingEl.style.display = 'none';
+        contentEl.style.display = '';
+      })
+      .catch(() => {
+        loadingEl.textContent = 'Failed to load BACKLOG.md.';
+      });
+  }
+
+  // ── Search ────────────────────────────────────────────────────────────────
+
+  function clearHighlights() {
+    contentEl.innerHTML = rawHTML;
+    marks = [];
+    currentIdx = -1;
+  }
+
+  function highlight(query) {
+    clearHighlights();
+    if (!query) {
+      matchInfo.textContent = '';
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      return;
+    }
+
+    const walker = document.createTreeWalker(contentEl, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+
+    const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    textNodes.forEach(tn => {
+      const val = tn.nodeValue;
+      if (!re.test(val)) return;
+      re.lastIndex = 0;
+
+      const frag = document.createDocumentFragment();
+      let last = 0, m;
+      while ((m = re.exec(val)) !== null) {
+        if (m.index > last) frag.appendChild(document.createTextNode(val.slice(last, m.index)));
+        const mark = document.createElement('mark');
+        mark.textContent = m[0];
+        frag.appendChild(mark);
+        marks.push(mark);
+        last = re.lastIndex;
+      }
+      if (last < val.length) frag.appendChild(document.createTextNode(val.slice(last)));
+      tn.parentNode.replaceChild(frag, tn);
+    });
+
+    const count = marks.length;
+    if (count === 0) {
+      matchInfo.textContent = 'No matches';
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      return;
+    }
+
+    prevBtn.disabled = false;
+    nextBtn.disabled = false;
+    goTo(0);
+  }
+
+  function goTo(idx) {
+    if (!marks.length) return;
+    if (currentIdx >= 0) marks[currentIdx].classList.remove('current');
+    currentIdx = (idx + marks.length) % marks.length;
+    marks[currentIdx].classList.add('current');
+    marks[currentIdx].scrollIntoView({ block: 'center', behavior: 'smooth' });
+    matchInfo.textContent = `${currentIdx + 1} / ${marks.length}`;
+  }
+
+  let debounceTimer;
+  searchEl.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => highlight(searchEl.value.trim()), 150);
+  });
+
+  searchEl.addEventListener('keydown', e => {
+    if (!marks.length) return;
+    if (e.key === 'Enter') { e.preventDefault(); goTo(e.shiftKey ? currentIdx - 1 : currentIdx + 1); }
+  });
+
+  nextBtn.addEventListener('click', () => goTo(currentIdx + 1));
+  prevBtn.addEventListener('click', () => goTo(currentIdx - 1));
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  updateAuthBar();
+  if (currentToken) initAuth();
+</script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

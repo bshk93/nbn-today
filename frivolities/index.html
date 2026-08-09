@@ -762,6 +762,22 @@
     const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+    // Mirrors _apply_release's dead-cap logic (transactions.py) — the codebase's
+    // canonical definition of what's actually guaranteed for a contract year.
+    // `guaranteed` always wins when set (it's the explicit override, partial or
+    // full). Otherwise UFA/RFA (free-agent holds, not a contract at all),
+    // TEAM_OPT, and NON_GTD years aren't locked in — they read as $0 rather than
+    // their `salaries` face value.
+    function guaranteedAmount(bio, season, raw) {
+      const override = bio.guaranteed?.[season];
+      if (override != null) return parseMoney(override);
+      const holdType = bio.cap_holds?.[season];
+      if (holdType === 'UFA' || holdType === 'RFA' || holdType === 'TEAM_OPT' || holdType === 'NON_GTD') {
+        return 0;
+      }
+      return parseMoney(raw);
+    }
+
     function renderEarningsTab({ bios, slugTeam, currentSeason }) {
       const seasonSet = new Set();
       const rows = [];
@@ -770,7 +786,7 @@
         const bySeason = {};
         let total = 0, past = 0, future = 0, years = 0, peak = 0, peakSeason = null;
         for (const [season, raw] of Object.entries(bio.salaries || {})) {
-          const v = parseMoney(raw);
+          const v = guaranteedAmount(bio, season, raw);
           if (!v) continue;
           bySeason[season] = v;
           seasonSet.add(season);
@@ -904,10 +920,12 @@
 
         <div class="attr-table-wrap"><table class="attr-table earn-table" id="earn-table"></table></div>
         <p class="attr-note">
-          Every dollar in NBN's contract records, by player. Salary tracking begins with the
+          Every guaranteed dollar in NBN's contract records, by player. Salary tracking begins with the
           <strong>${seasons[0]}</strong> season, so nothing before that counts — this is career earnings
-          <em>on record</em>, banked money plus money still owed under current deals. Bars show
-          season-by-season salary from ${seasons[0]} to ${seasons[seasons.length - 1]}. Click any column to sort.
+          <em>on record</em>, banked money plus guaranteed money still owed under current deals.
+          Free-agent holds (UFA/RFA), team options, and non-guaranteed years don't count until they're
+          actually locked in. Bars show season-by-season guaranteed salary from ${seasons[0]} to
+          ${seasons[seasons.length - 1]}. Click any column to sort.
         </p>
       `;
 
