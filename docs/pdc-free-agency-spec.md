@@ -1,19 +1,26 @@
 # PDC — Free Agency offer pipeline (spec v0.4)
 
-**Status:** v0.9, 2026-08-08. Fifteen decisions settled (§ 12); no design
-questions outstanding. **Phases 0–6 are built** — the roles, the server-side FA
-pool, the whole offer/ballot API, the shared lineup helper, the `.nbn.today`
-session cookie, the dashboard, its own host at **`pdc.nbn.today`**, and the two
-Discord feeds. Phase 6 shipped with both channels unset, so the remaining work
-there is setting `DISCORD_PDC_CHANNEL` and then `DISCORD_FA_NEWS_CHANNEL`.
-Phase 7 (the team-facing offer form) in § 10 is the next entry point. Sections
-amended during the build carry the reason inline (§ 3.2 what the live server
-block does, § 3.3 the marker cookie and the allowlist's placement, § 4 locking,
-§ 4.2 archiving and `round_id`, § 4.3a version freezing, § 4.4 ballot gating,
-§ 6.2 the three read-side fields the dashboard needed, § 8.2/§ 8.3 what Phase 5
-covers, § 8.4 loading, § 9 the shared transport and the public-channel
-chokepoint, § 9.3 the once-only expiry guard); those notes are the record of
-what was learned, not decoration.
+**Status:** v1.1, 2026-08-09. Fifteen decisions settled (§ 12); no design
+questions outstanding. **All eight phases are built** — the roles, the
+server-side FA pool, the whole offer/ballot API, the shared lineup helper, the
+`.nbn.today` session cookie, the dashboard, its own host at **`pdc.nbn.today`**,
+the two Discord feeds, the team-facing ⋯ menu and offer form on `/free-agency`,
+and the 1,000-ball ballot with per-player finalize. Both Discord env vars are
+set and both feeds are live (verified in the running process, 2026-08-09).
+
+**The pipeline is complete end to end: an owner can submit, the committee can
+review, remand, ballot and lock**, and the dashboard is reachable from the main
+site's jump box for the members who hold the role (§ 3.4). What remains is not
+build work — it is the head putting the board into `rounds` or `ffa`, which is
+the real switch (§ 10). Sections amended during the build
+carry the reason inline (§ 3.2 what the live server block does, § 3.3 the marker
+cookie and the allowlist's placement, § 4 locking, § 4.2 archiving and
+`round_id`, § 4.3a version freezing, § 4.4 ballot gating, § 5.3 what
+"overcommitted" means, § 6.2 the three read-side fields the dashboard needed,
+§ 6.3 the team-side commitment endpoint, § 8.1/§ 8.2/§ 8.3 what Phases 5, 7 and
+8 cover, § 8.4 loading, § 8.5 the panel's shape, § 9 the shared transport and
+the public-channel chokepoint, § 9.3 the once-only expiry guard); those notes
+are the record of what was learned, not decoration.
 
 Scope of *this* document: **free agency only** — an owner drafts and submits a
 contract offer to a free agent, the Free Agency Committee (FAC) reviews the
@@ -201,6 +208,22 @@ A static HTML shell served at any URL is world-readable. So:
 - **Nothing in `nav.js` links to the dashboard** for non-committee members, and
   the PDC entry point on nbn.today is rendered only when `/api/auth/me` says so
   — the same pattern as `makeRosterMoveActions` returning `null`.
+
+**Built.** `nav.js`'s `SITE_PAGES` is offered to everybody, so the entry lives in
+a separate `ROLE_PAGES` list merged into the jump box's page results only for a
+member holding `fac`/`fac_head`/`poext`/`poext_head`/`admin`. Three properties
+it has to keep, all measured rather than assumed:
+
+- **A logged-out visitor makes no auth request at all.** `nav.js` loads on every
+  page of the site, so the check is guarded by `nbn_session_live` — the readable
+  companion to the HttpOnly session cookie (§ 3.3), which exists for exactly this
+  kind of question. Verified: zero `/api/auth/me` requests logged out, ever.
+- **Nothing fires on an ordinary page load.** The check rides the same lazy path
+  as the player index (`_loadPlayerData`), so it costs one request the first
+  time a signed-in member opens search, and none after that.
+- **It is a courtesy, not a control** — the same standing as the Forbidden
+  screen. Anyone can type the URL; the API is the boundary. Hiding the entry is
+  about not putting a page 27 of 30 owners can't use into their jump box.
 
 ---
 
@@ -575,10 +598,18 @@ pitch, not an executed instrument, and the § 3.15 hold exists because that
 transaction is binding.
 
 This has a consequence to handle explicitly rather than ignore: nothing stops a
-team submitting five max offers it could only fund once. Proposal — the
-dashboard shows, per team, **the sum of that team's live offers against its
-room**, flagged when overcommitted, and the owner's own form shows the same
-figure. It is disclosed, not blocked (12.3).
+team submitting five max offers it could only fund once. So the dashboard shows,
+per team, **the sum of that team's live offers against its room**, flagged when
+overcommitted, and the owner's own form shows the same figure off the same
+helper (§ 6.3). It is disclosed, not blocked (D6).
+
+**"Overcommitted" means bidding more than you can fund, not being over the cap**
+(built, Phase 7). The first cut tested `committed > room`, which flags every
+team with negative room and *zero* offers out — true of most of the league, and
+on the team's own form it opens by shouting at a team that hasn't bid on
+anybody. The test is `committed > 0 and committed > max(room, 0)`: a team with
+no room that bids anything at all is exposed by exactly that amount, and a team
+that has bid nothing is exposed by nothing.
 
 ### 5.4 Sign-and-trade — earmarked, unsupported
 
@@ -609,6 +640,7 @@ All under `/api/fa/`, new router `nbn-api/routers/free_agency.py`.
 | `DELETE /api/fa/offers/{id}` | **team role**, while `draft` | Drafts only — a submitted offer is final (§ 4.3) |
 | `POST /api/fa/offers/{id}/submit` | **team owner** | Validates, stores snapshot, notifies (§ 9). Also the resubmit path for a `returned` offer |
 | `POST /api/fa/offers/{id}/remand` | assigned sub-committee member, `fac_head`, admin | Sends a submitted offer back for revision; **note required**; additive (§ 4.3a) |
+| `GET /api/fa/commitment/{team}` | **team role** | § 5.3 exposure for the team's own form — the same helper the review page renders (§ 6.3) |
 | `GET /api/fa/players/{slug}/review` | sub-committee, `fac_head`, admin | Offers side by side + per-team cap + projected lineups |
 | `GET /api/fa/players/{slug}/ballots` | sub-committee, `fac_head`, admin | **All** ballots on that player, including in progress (§ 4.5) |
 | `PUT /api/fa/players/{slug}/ballot` | assigned sub-committee member | Own ballot only; must total 1,000 |
@@ -668,6 +700,25 @@ reimplemented in page JS — the same reasoning as `revised_since` (§ 4.3a):
   voted is scoped to that player's sub-committee, so a member reads it from the
   ballots endpoint, which enforces that scope.
 
+### 6.3 Two read-side changes Phase 7 needed
+
+Both exist so the **team's** side of the pipeline can be built without page JS
+re-deriving a rule the server already owns — the same reasoning as § 6.2:
+
+- **`GET /api/fa/commitment/{team}`** — `_team_commitment` for one team,
+  team-role gated (a GM drafting the offer needs the exposure in front of them,
+  and it is the team's own position). § 8.1's form has to show the § 5.3 figure,
+  and the only other way to get it would be for the page to do cap math, which
+  is the one thing neither dashboard is allowed to do. One helper, one answer:
+  the number on the owner's form and the number on the committee's review page
+  cannot disagree.
+- **`GET /api/fa/board` now lists every player in the pool**, accepting or not,
+  instead of only the accepting ones plus those with a board entry. `reason` is
+  the copy § 8.1 puts verbatim into the disabled ⋯-menu entry — with the closed
+  players omitted, `/free-agency` would have had to compose those strings itself
+  from `mode`, and the site would then explain the rule in two places. The pool
+  is already public, so listing it with a status leaks nothing.
+
 ---
 
 ## 7. Deriving the FA pool
@@ -702,9 +753,12 @@ rulebook itself flags as *proposed, pending BOD confirmation*. So:
 
 ### 8.1 Owner side — `/free-agency`
 
-A ⋯ menu per row, built exactly like `makeRosterMoveActions`: the column does
-not render at all unless the viewer holds a team role, so a public page load is
-byte-identical to today's.
+**Built (Phase 7.)** A ⋯ menu per row, built exactly like
+`makeRosterMoveActions`: the column is not pushed onto `COLS` at all unless the
+viewer holds a team role, so a public page load renders the table it rendered
+before Phase 7. Verified in a real browser — anonymous, 6 columns and zero ⋯
+buttons; as a PHX owner, 7 columns and a ⋯ on every row, no console errors on
+either.
 
 Menu items, with the disabled-with-reason convention:
 
@@ -720,6 +774,15 @@ Menu items, with the disabled-with-reason convention:
 
 Note the menu is available to **any** team-role holder, not only the owner — a
 GM drafting an offer is the point of the § 6.0 split.
+
+**Not one of those reason strings is composed in the page.** Each is
+`board.players[slug].reason`, straight from the server's `_accepts_offers` —
+which is why § 6.3 made the board list closed players too. The menu and the
+submit path therefore cannot come to different conclusions about why a player
+is unofferable, and rewording a rule is a one-file change.
+
+A member holding more than one team role gets one entry per team, prefixed with
+the abbreviation. Rare, but the alternative is silently picking one for them.
 
 The form (a modal, same furniture as the renounce dialog):
 
@@ -741,15 +804,32 @@ The form (a modal, same furniture as the renounce dialog):
    § 3.14's wording: *once submitted to the committee, this offer cannot be
    withdrawn.*
 
+Four things the build settled:
+
+- **Submit always saves first.** `POST /api/fa/offers/{id}/submit` validates and
+  freezes the *stored* offer, so the figures on screen have to be the stored
+  ones before it is called. Create-or-PATCH then submit, through one function —
+  otherwise a team could confirm one contract and submit another.
+- **A submitted offer opens read-only rather than not opening.** Every input is
+  disabled and the § 3.14 rule is stated at the top. Refusing to open it would
+  leave a team unable to re-read what it committed to, which is the one thing
+  finality makes it most important to be able to do.
+- **A `returned` offer is exempt from the window check on the Submit button**,
+  matching `submit_offer`'s own exemption (§ 4.3a) — the FFA clock governs new
+  offers from other teams, not a revision the committee asked for. Verified: with
+  every player closed for offers, the resubmit button's only complaint is the
+  rule check, not the window.
+- **The remand notes are pinned above the editor and the frozen figures sit
+  beside the inputs** (`was $9M` / `new year` per year). A team answering
+  "add a year, trim year 1" needs both asks and both baselines on screen; the
+  round-trip is otherwise reconstructed from Discord.
+
 ### 8.2 Dashboard — FAC member view
 
-**Built (Phase 5), minus the ballot widget.** `pdc/index.html` is one
-self-contained page: a queue sorted by urgency, the player review view, and the
-head's board controls. Casting a ballot and finalizing are Phase 8 and are
-**absent rather than stubbed** — a vote button that doesn't vote is worse than a
-visibly missing one — so the ballot panel below renders read-only: everyone's
-cast ballots, who is outstanding, the conflict banner, and the locked totals if
-the head has finalized. Two invariants the page holds and must keep holding:
+**Built — Phase 5 for the read side, Phase 8 for the ballot.** `pdc/index.html`
+is one self-contained page: a queue sorted by urgency, the player review view,
+the head's board controls, the 1,000-ball widget and per-player finalize. Two
+invariants the page holds and must keep holding:
 
 - **No cap math in the dashboard.** Every dollar rendered comes off the fact
   sheet the API built with the helpers `_validate_sign` uses, so the page cannot
@@ -771,9 +851,27 @@ the head has finalized. Two invariants the page holds and must keep holding:
 - **Version history** on any offer that was remanded: v1 → the committee's note
   → v2, with the figures that moved highlighted. A ballot cast before a revision
   carries the "revised after you voted" flag (§ 4.3a).
-- **Ballot widget:** 1,000 balls — one slider/number per offer, plus the **QO**
-  line for RFAs and a **No signing** line always. Live remainder; save disabled
-  until it totals exactly 1,000.
+- **Ballot widget:** 1,000 balls — one slider *and* number per offer, plus the
+  **QO** line for RFAs and a **No signing** line always. Live remainder; save
+  disabled until it totals exactly 1,000, which is the same arithmetic the
+  server rejects on, so the refusal is never a surprise. An **Even split**
+  button divides 1,000 across the lines (remainder on the first) — a starting
+  point, since hitting exactly 1,000 by hand across four lines is fiddly.
+
+  Three things the build settled:
+
+  - **The widget is gated on *assignment*, never on being the head.**
+    `cast_ballot` is the one endpoint in the API that does not wave `admin`
+    through, so gating the UI on `IS_HEAD` would have offered a vote the server
+    refuses. A head who isn't on the sub-committee gets the totals, the
+    finalize button, and a line saying why there is no ballot for them.
+  - **Each line carries what it is voting on** — the offer's contract shorthand,
+    plus *sent back* or *illegal now* where they apply. A member allocating
+    balls should not have to scroll back up to the offer columns to remember
+    which is which.
+  - **The QO line states its own uncertainty** (§ 7.2, § 13.2): *"amount unknown
+    — the QO isn't recorded anywhere in the API yet"*, or the figure marked
+    estimated. It is on the ballot either way.
 - **Other members' ballots** beside my own, live, with `updated_at` (§ 4.5). A
   member who hasn't cast yet shows as outstanding rather than as zeroes.
 - **Conflict banner** when my own team has an offer on this player: *"PHX has an
@@ -783,8 +881,8 @@ the head has finalized. Two invariants the page holds and must keep holding:
 
 ### 8.3 Dashboard — FAC head view
 
-**Built (Phase 5)** except per-player finalize, which is Phase 8 along with the
-ballot widget it locks. Everything above, plus:
+**Built — Phase 5 for the board controls, Phase 8 for finalize.** Everything
+above, plus:
 
 - **Mode control:** Closed / Rounds / FFA, with a confirm step on FFA
   ("every free agent becomes offerable immediately").
@@ -797,9 +895,19 @@ ballot widget it locks. Everything above, plus:
   assigned member** on the review page, with the required note (§ 4.3a). The
   offer then shows as *returned, awaiting the team* with an age — on this view,
   the member view, and the team's own page.
-- **Per-player finalize:** each member's ballot, running totals, members who
-  haven't voted, conflicted ballots marked, **outstanding remands surfaced** —
-  then lock.
+- **Per-player finalize:** a confirm step showing the running totals, each
+  voter with their ball count and any conflict flag, the members who haven't
+  voted (*"will be recorded as abstained"*), and every **unanswered remand with
+  its age** — then lock. The remands warn and do not block (D15): a team that
+  goes quiet cannot stall a player indefinitely, and a head who locks early
+  does so knowingly, which is only true if the confirm names what they are
+  locking over.
+
+  The step also says what finalize *is not*: it archives the offers (freeing
+  those teams to bid again in a later round) and records a decision — it signs
+  nobody (§ 11.1). The locked panel repeats that, so a locked result never
+  reads as though it executed itself. **Unlock** sits on that panel, reversing
+  ballots and offers together.
 - **Cross-player overview:** every open player, offer counts, ballots
   outstanding, deadlines.
 
@@ -824,8 +932,10 @@ hand it objects with those two keys and nothing more. Verified as specified:
 
 ### 8.5 Role-aware instructions
 
-A collapsible "How this works" panel on the dashboard, keyed off
-`GET /api/auth/me`:
+**Built (Phase 8).** A collapsible "How this works" panel on the dashboard, a
+plain `<details>` so it costs no JS, **collapsed by default** — a member who has
+done this before shouldn't scroll past it, and one who hasn't shouldn't have to
+be told where to look. Keyed off `GET /api/auth/me`:
 
 | Viewer | Panel |
 |---|---|
@@ -855,6 +965,12 @@ Same no-op-without-config rule: unset the channel env vars and the module does
 nothing, so this ships before the channels are ready. The two are independent —
 `DISCORD_PDC_CHANNEL` alone gives the committee its feed with the league still
 hearing nothing, which is exactly the rollout order in § 10.
+
+**Both are set as of 2026-08-09** (`nbn-api/.env`, read at import, confirmed in
+the running process). So the public feed is armed too: the next time the head
+puts the board in FFA mode, the first submitted offer on a player posts a clock
+start to the whole league. Nothing else reaches `fa-news` — § 9.2's chokepoint
+is unchanged — but that post is now real rather than pending an env var.
 
 ### 9.1 `pdc-alerts` (private, `1535633131346853959`)
 
@@ -953,8 +1069,8 @@ runner, not pytest — pytest isn't installed).
 | **5** ✅ | Dashboard at **`nbn.today/pdc`**, unlinked from `nav.js`. Build and review the whole thing here | Anyone with the URL — and it shows only the forbidden screen without a role |
 | **5b** ✅ | nginx `pdc.nbn.today` block (same docroot, `/` → `/pdc/index.html`, `/api/` proxy) + certbot | Committee |
 | **6** ✅ | `discord_transport` + `fa_notify`, wired into every FA write path, shipped with both channels **unset**. Rollout is then two env vars, in order: `DISCORD_PDC_CHANNEL`, verify in the private channel, then `DISCORD_FA_NEWS_CHANNEL` | Nobody until an env var is set — then committee, then league |
-| **7** | Team-facing ⋯ menu + offer form on `/free-agency`, gated on team role (draft) / owner tenure (submit) | Team front offices |
-| **8** | Ball allocation + finalize UI; role-aware instructions | Committee |
+| **7** ✅ | Team-facing ⋯ menu + offer form on `/free-agency`, gated on team role (draft) / owner tenure (submit), plus `GET /api/fa/commitment/{team}` and the board listing closed players (§ 6.3) | Team front offices |
+| **8** ✅ | Ball allocation + finalize/unlock UI; role-aware instructions (§ 8.5) | Committee |
 
 Rollback at every phase is deleting a role, unsetting an env var, removing one
 `nav.js` line, or — for 5b — unlinking `sites-enabled/pdc.nbn.today` and
@@ -964,6 +1080,13 @@ Nothing before Phase 7 changes what a logged-out visitor sees.
 **Ordering note:** Phase 7 (owners can submit) must not precede Phase 6's
 private channel and Phase 8's review tooling, or the first real offer lands
 somewhere nobody is looking.
+
+**Where that note stands now that all eight are built.** Phase 7 shipped ahead
+of Phase 8 and Phase 8 followed the same day, so the ordering held in the only
+sense that mattered: no owner could submit before the committee could review,
+because `mode` was `closed` throughout. It still is. **The head flipping the
+mode is the real switch**, and everything the note was protecting — a private
+channel to announce into, and tooling to review and vote with — now exists.
 
 ---
 

@@ -240,14 +240,30 @@ offer, owner submits; FFA's 24h clock closes the offer window; submission final
 per § 3.14 except that any sub-committee member may **remand** an offer back for
 revision.
 
-**Phases 0–5b built (2026-08-08):** roles, the server-side FA pool, the whole
-offer/ballot API, `teams/lineup.js`, the session cookie, the dashboard (review +
-head board controls; ball allocation and finalize are Phase 8), and its own host
-at **`pdc.nbn.today`** — same docroot, `/` → `/pdc/index.html`, so every fetch
-stays same-origin. Next is **Phase 6** — `routers/fa_notify.py` reusing
-`discord_notify`'s transport, shipped with the channel env vars unset (a no-op),
-then `DISCORD_PDC_CHANNEL`, then the public `fa-news` channel last. Nothing is
-linked from `nav.js` yet, which is also the rollback.
+**All 8 phases built** (0–6 on 2026-08-08, 7–8 on 2026-08-09): roles, the
+server-side FA pool, the whole offer/ballot API, `teams/lineup.js`, the session
+cookie, the dashboard, its own host at **`pdc.nbn.today`** — same docroot,
+`/` → `/pdc/index.html`, so every fetch stays same-origin — the two Discord
+feeds (both channels set and live in the running process), the team-facing ⋯
+menu and offer form on `/free-agency`, and the 1,000-ball ballot with
+per-player finalize/unlock.
+
+**Nothing is left to build. The pipeline opens when the FAC head sets `mode` to
+`rounds` or `ffa`** — it is `closed` today, so every offer menu reads "Free
+agency is closed." and `POST /api/fa/offers` 422s.
+
+The dashboard is now in the Ctrl+K jump box as "PDC Committee", role-gated via
+`ROLE_PAGES` in `nav.js` — resolved lazily when search is first opened, and not
+at all for a logged-out visitor, so nav.js still makes no request on an ordinary
+page load.
+
+One thing to do before the first round:
+
+- **Nobody holds `fac` or `fac_head`** (checked 2026-08-09 — `bryn` is the only
+  member with any of these roles, as `admin`). Admin passes every head check, so
+  the board is operable today, but **admin does not get a ballot**: `cast_ballot`
+  gates on being *assigned*, not on a role, so even admin has to put themselves
+  on a sub-committee to vote. Grant the real roles at `/members/`.
 
 ### [P1] Production runs off an unmerged feature branch
 `nbn-api` is on branch `picks-conveyance-phase0`, **58 commits ahead of

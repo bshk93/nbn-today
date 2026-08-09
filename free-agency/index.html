@@ -84,6 +84,111 @@
     .cap-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
 
     #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+
+    /* ── team-facing offers (spec § 8.1) ──────────────────────────────────────
+       None of this renders for a viewer with no team role: the column is not
+       added to COLS at all, so a public page load is byte-identical to before. */
+    td.moves-cell { text-align: right; white-space: nowrap; }
+    .move-btn {
+      background: transparent; border: 1px solid var(--border); border-radius: 5px;
+      color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 0.8rem;
+      line-height: 1; padding: 0.15rem 0.4rem;
+    }
+    .move-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+    .offer-flag {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+      border: 1px solid var(--border); border-radius: 4px; padding: 0.1rem 0.3rem;
+      color: var(--text-muted); margin-right: 0.35rem;
+    }
+    .offer-flag.draft { border-color: var(--muted-border); color: var(--accent-light); }
+    .offer-flag.submitted { border-color: var(--success); color: var(--success); }
+    .offer-flag.returned { border-color: var(--gold-border); color: var(--gold); }
+
+    .move-menu {
+      position: fixed; z-index: 10000; min-width: 230px; max-width: 320px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.3rem; box-shadow: 0 8px 24px var(--overlay-scrim);
+      display: flex; flex-direction: column; gap: 0.1rem;
+    }
+    .move-menu-head {
+      font-size: 0.7rem; color: var(--text-muted); padding: 0.25rem 0.45rem 0.35rem;
+      border-bottom: 1px solid var(--border-subtle); margin-bottom: 0.2rem;
+    }
+    .move-menu button {
+      background: none; border: none; border-radius: 5px; color: var(--text-secondary);
+      cursor: pointer; font-family: inherit; font-size: 0.8rem; padding: 0.35rem 0.45rem; text-align: left;
+    }
+    .move-menu button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+    .move-menu button:disabled { color: var(--text-dim); cursor: default; }
+    .move-menu button.attn { color: var(--gold); }
+    .move-menu-why { color: var(--text-dim); font-size: 0.68rem; line-height: 1.4; padding: 0 0.45rem 0.35rem; }
+
+    .scrim { position: fixed; inset: 0; background: var(--overlay-scrim); z-index: 10001;
+             display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem; overflow-y: auto; }
+    .offer-modal {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      width: 660px; max-width: 100%; padding: 1.1rem 1.2rem 1rem;
+    }
+    .offer-modal h3 { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+    .offer-modal .sub { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.5; }
+    .offer-modal .fs { border: none; padding: 0.8rem 0 0; margin: 0; }
+    .offer-modal legend, .fs-head {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--text-muted); font-weight: 700; padding: 0; margin-bottom: 0.4rem;
+    }
+    .offer-modal label { display: block; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.2rem; }
+    .offer-modal input, .offer-modal select, .offer-modal textarea {
+      font-family: inherit; font-size: 0.8rem; background: var(--bg-page); color: var(--text-primary);
+      border: 1px solid var(--border); border-radius: 6px; padding: 0.32rem 0.45rem; outline: none; width: 100%;
+    }
+    .offer-modal textarea { resize: vertical; min-height: 4.5rem; line-height: 1.5; }
+    .grid-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .grid-row > div { flex: 1 1 130px; min-width: 0; }
+
+    .yr-row { display: grid; grid-template-columns: 3.4rem minmax(0,1fr) 8.5rem; gap: 0.4rem; align-items: center; margin-bottom: 0.3rem; }
+    .yr-row .yr { font-size: 0.74rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .yr-was { font-size: 0.66rem; color: var(--gold); margin-left: 0.3rem; }
+    .yr-raise { font-size: 0.66rem; color: var(--text-muted); }
+    .hold-row { font-size: 0.74rem; color: var(--gold-dim); padding: 0.15rem 0 0 3.8rem; }
+    .presets { display: flex; gap: 0.35rem; align-items: center; margin-top: 0.35rem; }
+    .presets button {
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted);
+      font-family: inherit; font-size: 0.68rem; padding: 0.2rem 0.5rem; cursor: pointer; width: auto;
+    }
+    .presets button:hover { border-color: var(--accent); color: var(--text-primary); }
+    .presets span { font-size: 0.68rem; color: var(--text-dim); }
+
+    .checkbox-line { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--text-secondary); margin-top: 1.1rem; }
+    .checkbox-line input { width: auto; }
+
+    .panel { border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.7rem; font-size: 0.76rem;
+             color: var(--text-secondary); line-height: 1.5; }
+    .panel.warn { border-color: var(--gold-border); background: var(--gold-bg); color: var(--gold); }
+    .panel.bad { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-light); }
+    .panel.info { border-color: var(--muted-border); background: var(--accent-panel-bg); }
+    .checkline { display: flex; gap: 0.35rem; align-items: baseline; font-size: 0.74rem; }
+    .checkline.err { color: var(--danger); }
+    .checkline.warn { color: var(--gold); }
+    .checkline.ok { color: var(--text-muted); }
+    .remand-note { border-left: 2px solid var(--gold-border); padding-left: 0.5rem; margin-top: 0.4rem; }
+    .remand-note .meta { color: var(--text-dim); font-size: 0.67rem; }
+
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
+    .modal-actions .spacer { flex: 1; font-size: 0.72rem; color: var(--danger); }
+    .modal-actions button {
+      font-family: inherit; font-size: 0.78rem; font-weight: 600; padding: 0.35rem 0.75rem;
+      border-radius: 6px; border: 1px solid var(--border); cursor: pointer; width: auto;
+      background: transparent; color: var(--text-secondary);
+    }
+    .modal-actions button.primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
+    .modal-actions button.danger { color: var(--text-muted); }
+    .modal-actions button.danger:hover { border-color: var(--danger); color: var(--danger); }
+    .modal-actions button:disabled { opacity: 0.45; cursor: default; }
+
+    .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 10002;
+             background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+             padding: 0.5rem 0.9rem; font-size: 0.8rem; color: var(--text-secondary); }
+    .toast.bad { border-color: var(--danger-border-strong); color: var(--danger-light); }
   </style>
 </head>
 <body>
@@ -254,6 +359,8 @@
             td.textContent = row.salaryFmt;
             const cls = CAP_HOLD_CSS[row.capType];
             if (cls) td.classList.add(cls);
+          } else if (col.render) {
+            col.render(row, td);
           } else {
             td.textContent = row[col.key] || '—';
           }
@@ -273,20 +380,24 @@
         const th = document.createElement('th');
         const isActive = col.sortField === sortField;
         th.appendChild(document.createTextNode(col.label));
+        if (col.cls.includes('right') || col.cls.includes('ovr-cell') || col.cls.includes('salary-cell')) th.style.textAlign = 'right';
+        if (col.cls.includes('center')) th.style.textAlign = 'center';
+        // The ⋯ column holds no value to sort on, so it gets no arrow and no
+        // click handler rather than a header that silently does nothing.
+        if (!col.sortField) { hr.appendChild(th); return; }
         const arrow = document.createElement('span');
         arrow.className = 'sort-arrow';
         arrow.textContent = isActive ? (sortDir === -1 ? '↓' : '↑') : '↓';
         th.appendChild(arrow);
         th.dataset.active = isActive;
-        if (col.cls.includes('right') || col.cls.includes('ovr-cell') || col.cls.includes('salary-cell')) th.style.textAlign = 'right';
-        if (col.cls.includes('center')) th.style.textAlign = 'center';
 
         th.addEventListener('click', () => {
           if (sortField === col.sortField) { sortDir *= -1; }
           else { sortField = col.sortField; sortDir = col.defaultDir; }
           thead.querySelectorAll('th').forEach(t => {
             t.dataset.active = false;
-            t.querySelector('.sort-arrow').textContent = '↓';
+            const a = t.querySelector('.sort-arrow');
+            if (a) a.textContent = '↓';
           });
           th.dataset.active = true;
           th.querySelector('.sort-arrow').textContent = sortDir === -1 ? '↓' : '↑';
@@ -336,17 +447,850 @@
       });
     }
 
+    // ══ Team-facing offers (spec § 8.1 — Phase 7) ═════════════════════════════
+    //
+    // The ⋯ menu and the offer form. Two gates on one object, and they are
+    // genuinely different (§ 6.0): any holder of the team's role may draft the
+    // whole offer; only the team's **owner** may submit it. Both are enforced by
+    // the API — everything here only decides which affordances to draw, and draws
+    // the ones it can't offer *disabled with the rule-citing reason* rather than
+    // hiding them, the same convention as the roster ⋯ menu.
+    //
+    // **No cap math in this page.** Every dollar in the legality panel comes off
+    // the fact sheet `POST /api/validate/sign` returns, and the committed-vs-room
+    // figure off `GET /api/fa/commitment/{team}` — the same helper the committee's
+    // review page renders, so a team can never be shown room the validator didn't
+    // credit it with.
+
+    const TEAM_ABBRS = new Set(Object.keys(TEAM_NAMES));
+
+    let ME = { name: null, roles: [], owner_of: [] };
+    let MY_TEAMS = [];                       // team roles this member holds
+    let BOARD = { mode: 'closed', players: {} };
+    let MY_OFFERS = {};                      // "TEAM|slug" -> live offer
+    let POOL = {};
+    let LEAGUE_YEAR = null;
+
+    // The `.nbn.today` session cookie covers /api/fa/* (§ 3.3), so a member who
+    // has signed in anywhere on the site needs no token here. The header still
+    // wins where one happens to be stored.
+    async function api(path, opts) {
+      const o = Object.assign({ credentials: 'same-origin' }, opts || {});
+      o.headers = Object.assign({}, o.headers || {});
+      let t = null;
+      try { t = localStorage.getItem('nbn_token'); } catch {}
+      if (t) o.headers.Authorization = 'Bearer ' + t;
+      if (o.body && typeof o.body !== 'string') {
+        o.headers['Content-Type'] = 'application/json';
+        o.body = JSON.stringify(o.body);
+      }
+      const res = await fetch('/api' + path, o);
+      let data = null;
+      try { data = await res.json(); } catch {}
+      if (!res.ok) {
+        const d = data && data.detail;
+        const err = new Error((d && (d.detail || (typeof d === 'string' ? d : null))) || res.statusText);
+        err.status = res.status;
+        err.data = data;
+        throw err;
+      }
+      return data;
+    }
+
+    // `nbn_session_live` is the readable companion to the HttpOnly session cookie
+    // — it exists precisely so page JS can tell whether it has a session. Used
+    // here to avoid firing an offers request that would 401 on a public load.
+    function maybeSignedIn() {
+      try { if (localStorage.getItem('nbn_token')) return true; } catch {}
+      return /(?:^|;\s*)nbn_session_live=/.test(document.cookie);
+    }
+
+    function toast(msg, bad) {
+      const t = document.createElement('div');
+      t.className = 'toast' + (bad ? ' bad' : '');
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 4500);
+    }
+
+    function curYr() {
+      if (LEAGUE_YEAR) return LEAGUE_YEAR;
+      const now = new Date(), y = now.getFullYear() % 100, m = now.getMonth() + 1;
+      return m < 7
+        ? `${String(y - 1).padStart(2, '0')}-${String(y).padStart(2, '0')}`
+        : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
+    }
+
+    function seasonAfter(s) {
+      const [a, b] = s.split('-').map(Number);
+      return `${String((a + 1) % 100).padStart(2, '0')}-${String((b + 1) % 100).padStart(2, '0')}`;
+    }
+
+    function compactMoney(n) {
+      if (!n) return '$0';
+      const sign = n < 0 ? '-' : '';
+      n = Math.abs(n);
+      if (n >= 1e6) return sign + '$' + (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (n >= 1e3) return sign + '$' + Math.round(n / 1e3) + 'K';
+      return sign + '$' + Math.round(n);
+    }
+
+    function parseMoney(v) {
+      if (v == null || v === '') return 0;
+      const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
+      return isNaN(n) ? 0 : n;
+    }
+
+    function whenLocal(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleString(undefined,
+        { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+
+    const METHODS = [
+      ['', '— not declared —'],
+      ['cap_space', 'Cap space'],
+      ['bird_rights', 'Bird Rights'],
+      ['minimum', 'Minimum'],
+      ['mle', "MLE (team's current bucket)"],
+      ['ntmle', 'Non-Taxpayer MLE'],
+      ['tmle', 'Taxpayer MLE'],
+      ['room_exception', 'Room Exception'],
+      ['bae', 'Bi-Annual Exception'],
+    ];
+    const ROLE_OPTIONS = [
+      ['none', 'No role promised'],
+      ['face', 'Face of the franchise'],
+      ['starter', 'Starter'],
+      ['role_player', 'Role player'],
+      ['veteran', 'Veteran'],
+    ];
+
+    function offerFor(team, slug) { return MY_OFFERS[team + '|' + slug] || null; }
+
+    async function refreshOffers() {
+      MY_OFFERS = {};
+      if (!MY_TEAMS.length) return;
+      let list = [];
+      try { list = await api('/fa/offers'); } catch { return; }
+      // The endpoint also returns offers on players this member reviews as a
+      // committee assignee (§ 6.1). Those are not this team's to edit.
+      (list || []).filter(o => MY_TEAMS.includes(o.team))
+        .forEach(o => { MY_OFFERS[o.team + '|' + o.player] = o; });
+    }
+
+    // ── the ⋯ menu ────────────────────────────────────────────────────────────
+
+    function movesColumn() {
+      return {
+        key: 'moves', label: '', sortField: null, cls: 'moves-cell', numeric: false,
+        render(row, td) {
+          // The most advanced state across this member's teams is what the row
+          // flag shows; the menu itself breaks it down per team.
+          const states = MY_TEAMS.map(t => (offerFor(t, row.slug) || {}).status).filter(Boolean);
+          const flagged = states.includes('returned') ? 'returned'
+            : states.includes('submitted') ? 'submitted'
+            : states.includes('draft') ? 'draft' : null;
+          if (flagged) {
+            const f = document.createElement('span');
+            f.className = 'offer-flag ' + flagged;
+            f.textContent = flagged === 'returned' ? 'changes asked' : flagged;
+            td.appendChild(f);
+          }
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'move-btn';
+          btn.textContent = '⋯';
+          btn.title = 'Free-agency offer';
+          btn.setAttribute('aria-label', `Free-agency offer for ${row.player}`);
+          btn.addEventListener('click', e => { e.stopPropagation(); openOfferMenu(btn, row); });
+          td.appendChild(btn);
+        },
+      };
+    }
+
+    function openOfferMenu(anchor, row) {
+      document.querySelectorAll('.move-menu').forEach(m => m.remove());
+      const menu = document.createElement('div');
+      menu.className = 'move-menu';
+
+      const head = document.createElement('div');
+      head.className = 'move-menu-head';
+      head.textContent = row.player;
+      menu.appendChild(head);
+
+      const close = () => { menu.remove(); document.removeEventListener('click', onDoc, true); };
+      const onDoc = e => { if (!menu.contains(e.target) && e.target !== anchor) close(); };
+
+      const addItem = (label, { enabled, why, attn, onClick }) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        if (attn) b.className = 'attn';
+        b.disabled = !enabled;
+        if (enabled) b.addEventListener('click', () => { close(); onClick(); });
+        menu.appendChild(b);
+        if (!enabled && why) {
+          const w = document.createElement('span');
+          w.className = 'move-menu-why';
+          w.textContent = why;
+          menu.appendChild(w);
+        }
+      };
+
+      // `accepting` and its reason are the server's, from GET /api/fa/board —
+      // the same `_accepts_offers` the submit path runs. The disabled copy is
+      // never composed here, so what the menu says and what the API would do
+      // cannot drift.
+      const entry = (BOARD.players || {})[row.slug] || null;
+      const accepting = !!(entry && entry.accepting);
+      const why = (entry && entry.reason) || 'This player isn’t accepting offers right now.';
+
+      MY_TEAMS.forEach(team => {
+        const prefix = MY_TEAMS.length > 1 ? team + ' — ' : '';
+        const existing = offerFor(team, row.slug);
+        if (!existing) {
+          addItem(prefix + 'Offer a contract…', {
+            enabled: accepting, why,
+            onClick: () => openOfferForm(team, row, null),
+          });
+        } else if (existing.status === 'returned') {
+          addItem(prefix + 'Committee asked for changes…', {
+            enabled: true, attn: true,
+            onClick: () => openOfferForm(team, row, existing),
+          });
+        } else if (existing.status === 'draft') {
+          addItem(prefix + 'Our draft offer…', {
+            enabled: true,
+            onClick: () => openOfferForm(team, row, existing),
+          });
+        } else {
+          addItem(prefix + 'Our submitted offer', {
+            enabled: true,
+            onClick: () => openOfferForm(team, row, existing),
+          });
+        }
+      });
+
+      document.body.appendChild(menu);
+      const r = anchor.getBoundingClientRect();
+      const mr = menu.getBoundingClientRect();
+      menu.style.left = `${Math.max(8, Math.min(r.left - mr.width + r.width, window.innerWidth - mr.width - 8))}px`;
+      menu.style.top = `${r.bottom + 4 + mr.height > window.innerHeight ? Math.max(8, r.top - mr.height - 4) : r.bottom + 4}px`;
+      setTimeout(() => document.addEventListener('click', onDoc, true), 0);
+    }
+
+    // ── the offer form ────────────────────────────────────────────────────────
+
+    function seedForm(row, existing) {
+      const y0 = curYr();
+      const F = {
+        years: 1, salaries: [0], options: [''], hold: '', eaps: '',
+        type: 'player', method: '', bird: '',
+        pitch: '', promises: { mpg: null, playoffs: false, role: 'none' },
+      };
+      if (existing) {
+        const c = existing.offer.contract || {};
+        const sals = c.salaries || {}, caps = c.cap_holds || {};
+        const seasons = Object.keys(sals).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= y0).sort();
+        // A trailing UFA/RFA line is the hold the deal rolls into, not a
+        // contract year — same reading as summarizeContract and the Discord
+        // embeds. Counting it would add a phantom year on every reopen.
+        const deal = seasons.filter(s => caps[s] !== 'UFA' && caps[s] !== 'RFA');
+        F.years = Math.max(1, deal.length);
+        F.salaries = deal.map(s => parseMoney(sals[s]));
+        F.options = deal.map(s => (caps[s] === 'UFA' || caps[s] === 'RFA') ? '' : (caps[s] || ''));
+        const after = deal.length ? seasonAfter(deal[deal.length - 1]) : y0;
+        F.hold = (caps[after] === 'UFA' || caps[after] === 'RFA') ? caps[after] : '';
+        F.type = c.type || 'player';
+        F.method = existing.offer.signing_method || '';
+        F.bird = existing.offer.bird_rights_type || '';
+        F.eaps = existing.offer.eaps_assumption || '';
+        F.pitch = existing.pitch || '';
+        F.promises = Object.assign({ mpg: null, playoffs: false, role: 'none' }, existing.promises || {});
+      } else {
+        // Year 1 seeded from what the player is already on the books for, so
+        // the common case (re-signing a hold) starts from a real figure.
+        F.salaries[0] = (POOL[row.slug] || {}).prior_salary || 0;
+        F.hold = 'UFA';
+      }
+      while (F.salaries.length < F.years) F.salaries.push(0);
+      while (F.options.length < F.years) F.options.push('');
+      return F;
+    }
+
+    function contractFromForm(F) {
+      const salaries = {}, cap_holds = {};
+      let s = curYr();
+      for (let i = 0; i < F.years; i++) {
+        salaries[s] = '$' + (F.salaries[i] || 0);
+        if (F.options[i]) cap_holds[s] = F.options[i];
+        s = seasonAfter(s);
+      }
+      // The hold's season is deliberately left out of `salaries`: the API's
+      // _autofill_fa_hold_amounts computes the real § 3.10 figure from the prior
+      // salary and Bird tier, and a typed placeholder would override it.
+      if (F.hold) cap_holds[s] = F.hold;
+      return { type: F.type, salaries, cap_holds };
+    }
+
+    function offerBody(F, team, slug) {
+      return {
+        player: slug, team,
+        contract: contractFromForm(F),
+        signing_method: F.method || null,
+        bird_rights_type: F.bird || null,
+        eaps_assumption: F.eaps || null,
+      };
+    }
+
+    function totalValue(F) {
+      let t = 0;
+      for (let i = 0; i < F.years; i++) t += F.salaries[i] || 0;
+      return t;
+    }
+
+    function openOfferForm(team, row, existing) {
+      const slug = row.slug;
+      const F = seedForm(row, existing);
+      const isOwner = (ME.owner_of || []).includes(team);
+      const readOnly = !!existing && existing.status === 'submitted';
+      const entry = (BOARD.players || {})[slug] || null;
+      // A resubmission is exempt from the FFA window (§ 4.3a): the clock governs
+      // *new* offers from other teams, and a revision the committee itself asked
+      // for is part of its own review.
+      const windowOpen = !!(entry && entry.accepting) || (!!existing && existing.status === 'returned');
+      // The version frozen at the remand — what the committee is actually
+      // answering. Shown beside each input so the team can see what it is
+      // changing from (§ 8.1).
+      const prevVersion = existing && (existing.versions || []).length
+        ? existing.versions[existing.versions.length - 1] : null;
+
+      const scrim = document.createElement('div');
+      scrim.className = 'scrim';
+      const box = document.createElement('div');
+      box.className = 'offer-modal';
+      scrim.appendChild(box);
+      const close = () => { scrim.remove(); document.removeEventListener('keydown', onKey); };
+      const onKey = e => { if (e.key === 'Escape') close(); };
+      document.addEventListener('keydown', onKey);
+      scrim.addEventListener('click', e => { if (e.target === scrim) close(); });
+      document.body.appendChild(scrim);
+
+      let validateTimer = null, validateSeq = 0, lastValidation = null;
+
+      drawForm();
+
+      function el(tag, cls, text) {
+        const n = document.createElement(tag);
+        if (cls) n.className = cls;
+        if (text != null) n.textContent = text;
+        return n;
+      }
+
+      function select(options, value, onChange) {
+        const s = document.createElement('select');
+        options.forEach(([v, label, disabled]) => {
+          const o = document.createElement('option');
+          o.value = v; o.textContent = label;
+          if (disabled) o.disabled = true;
+          if (v === value) o.selected = true;
+          s.appendChild(o);
+        });
+        s.disabled = readOnly;
+        s.addEventListener('change', () => onChange(s.value));
+        return s;
+      }
+
+      function field(labelText, control) {
+        const wrap = el('div');
+        wrap.appendChild(el('label', null, labelText));
+        wrap.appendChild(control);
+        return wrap;
+      }
+
+      function drawForm() {
+        box.innerHTML = '';
+
+        const h = el('h3');
+        h.appendChild(document.createTextNode(`${team} offer — ${row.player}`));
+        if (existing) h.appendChild(el('span', 'offer-flag ' + existing.status,
+          existing.status === 'returned' ? 'changes asked' : existing.status));
+        box.appendChild(h);
+        const pool = POOL[slug] || {};
+        box.appendChild(el('div', 'sub',
+          `${pool.hold_type || ''} ${pool.class_year || ''} · ${row.pos} · ${row.age} yrs`
+          + (pool.rfa ? ' · restricted' : '')
+          + (existing ? ` · offer #${existing.number}, v${existing.version}` : '')));
+
+        // The committee's asks, pinned above the editor. Every outstanding note
+        // is shown, attributed: remands are additive, so a team answers them all
+        // in one resubmission rather than guessing which is live (§ 4.3a).
+        if (existing && existing.status === 'returned') {
+          const b = el('div', 'panel warn');
+          b.style.marginTop = '0.7rem';
+          b.appendChild(el('div', 'fs-head', 'The committee asked for changes'));
+          (existing.remands || []).filter(r => r.from_version >= existing.version).forEach(r => {
+            const n = el('div', 'remand-note');
+            n.appendChild(el('div', null, r.note));
+            n.appendChild(el('div', 'meta', `${r.by} · ${whenLocal(r.at)}`));
+            b.appendChild(n);
+          });
+          box.appendChild(b);
+        }
+
+        if (readOnly) {
+          const b = el('div', 'panel info');
+          b.style.marginTop = '0.7rem';
+          b.textContent = 'This offer is with the committee. Once submitted to the committee, an offer '
+            + 'cannot be withdrawn (§ 3.14) — it can only come back if the committee sends it back for '
+            + 'revision. Nothing below can be changed.';
+          box.appendChild(b);
+        }
+
+        // ── contract ─────────────────────────────────────────────────────────
+        const cf = el('fieldset', 'fs');
+        cf.appendChild(el('legend', null, 'Contract'));
+        const topRow = el('div', 'grid-row');
+        topRow.appendChild(field('Years', select(
+          [1, 2, 3, 4, 5].map(n => [String(n), n + (n > 1 ? ' years' : ' year')]),
+          String(F.years), v => {
+            F.years = +v;
+            for (let i = 0; i < F.years; i++) {
+              F.salaries[i] = F.salaries[i] || 0;
+              F.options[i] = F.options[i] || '';
+            }
+            F.salaries.length = F.years;
+            F.options.length = F.years;
+            drawForm();
+          })));
+        topRow.appendChild(field('Type', select(
+          [['player', 'Standard'], ['two-way', 'Two-way']], F.type, v => { F.type = v; revalidate(); })));
+        cf.appendChild(topRow);
+
+        const yrs = el('div');
+        yrs.style.marginTop = '0.55rem';
+        let season = curYr();
+        for (let i = 0; i < F.years; i++) {
+          const s = season;
+          const idx = i;
+          const r = el('div', 'yr-row');
+          const yl = el('div', 'yr', s);
+          r.appendChild(yl);
+
+          const input = document.createElement('input');
+          input.type = 'number'; input.step = '1000'; input.min = '0';
+          input.value = F.salaries[i] || 0;
+          input.disabled = readOnly;
+          input.addEventListener('input', () => {
+            F.salaries[idx] = +input.value || 0;
+            drawRaises();
+            revalidate();
+          });
+          r.appendChild(input);
+
+          r.appendChild(select(
+            [['', '— guaranteed —'], ['PLAYER_OPT', 'Player option'],
+             ['TEAM_OPT', 'Team option'], ['NON_GTD', 'Non-guaranteed']],
+            F.options[i] || '', v => { F.options[idx] = v; revalidate(); }));
+
+          const raise = el('span', 'yr-raise');
+          raise.dataset.idx = String(i);
+          yl.appendChild(raise);
+
+          if (prevVersion) {
+            const was = parseMoney((prevVersion.offer.contract.salaries || {})[s]);
+            if (was !== (F.salaries[i] || 0)) {
+              const w = el('span', 'yr-was', was ? 'was ' + compactMoney(was) : 'new year');
+              yl.appendChild(w);
+            }
+          }
+          yrs.appendChild(r);
+          season = seasonAfter(season);
+        }
+        if (F.hold) {
+          yrs.appendChild(el('div', 'hold-row',
+            `${season} — ${F.hold} hold (amount computed by the office, § 3.10)`));
+        }
+        cf.appendChild(yrs);
+
+        if (!readOnly) {
+          const presets = el('div', 'presets');
+          presets.appendChild(el('span', null, 'Fill:'));
+          [['flat', 'Flat'], ['5', '5% raises'], ['8', '8% raises (Bird)']].forEach(([k, label]) => {
+            const b = el('button', null, label);
+            b.type = 'button';
+            b.addEventListener('click', () => {
+              const base = F.salaries[0] || 0;
+              for (let i = 1; i < F.years; i++) {
+                const step = k === 'flat' ? 0 : Math.round(base * (k === '8' ? 0.08 : 0.05));
+                F.salaries[i] = (F.salaries[i - 1] || 0) + step;
+              }
+              drawForm();
+            });
+            presets.appendChild(b);
+          });
+          cf.appendChild(presets);
+        }
+
+        const holdRow = el('div', 'grid-row');
+        holdRow.style.marginTop = '0.6rem';
+        holdRow.appendChild(field('After the contract (§ 3.10)', select(
+          [['', '— no trailing hold —'], ['UFA', 'UFA hold'], ['RFA', 'RFA hold']],
+          F.hold, v => { F.hold = v; drawForm(); revalidate(); })));
+        if (F.hold) {
+          holdRow.appendChild(field('Prior salary vs. EAPS', select(
+            [['', '— not specified —'], ['below', 'At or below EAPS'], ['above', 'Above EAPS']],
+            F.eaps, v => { F.eaps = v; revalidate(); })));
+        }
+        cf.appendChild(holdRow);
+        box.appendChild(cf);
+
+        // ── funding ──────────────────────────────────────────────────────────
+        const ff = el('fieldset', 'fs');
+        ff.appendChild(el('legend', null, 'Funded by (§ 3.1–3.6)'));
+        const fr = el('div', 'grid-row');
+        // § 5.4 — shown and disabled with the reason, not hidden, exactly like an
+        // ineligible entry in the roster ⋯ menu.
+        const methodOpts = METHODS.concat([['sign_and_trade', 'Sign-and-trade — not supported here', true]]);
+        const methodSel = select(methodOpts, F.method, v => { F.method = v; revalidate(); });
+        methodSel.title = 'Sign-and-trade requires a companion trade proposal and joint approval — '
+          + 'not yet supported on the site (§ 3.14). Bring it to the committee directly.';
+        fr.appendChild(field('Exception / method', methodSel));
+        fr.appendChild(field('Bird rights tier', select(
+          [['', '— none / not applicable —'], ['QVFA', 'Full Bird (QVFA)'],
+           ['EQVFA', 'Early Bird (EQVFA)'], ['Non-QVFA', 'Non-Bird (Non-QVFA)']],
+          F.bird, v => { F.bird = v; revalidate(); })));
+        ff.appendChild(fr);
+        box.appendChild(ff);
+
+        // ── pitch and promises ───────────────────────────────────────────────
+        const pf = el('fieldset', 'fs');
+        pf.appendChild(el('legend', null, 'Pitch'));
+        const ta = document.createElement('textarea');
+        ta.value = F.pitch;
+        ta.disabled = readOnly;
+        ta.placeholder = 'Why this player should sign here. The committee reads this alongside the money.';
+        ta.addEventListener('input', () => { F.pitch = ta.value; });
+        pf.appendChild(ta);
+        box.appendChild(pf);
+
+        const mf = el('fieldset', 'fs');
+        mf.appendChild(el('legend', null, 'Promises'));
+        const mr = el('div', 'grid-row');
+        const mpg = document.createElement('input');
+        mpg.type = 'number'; mpg.min = '0'; mpg.max = '48';
+        mpg.value = F.promises.mpg == null ? '' : F.promises.mpg;
+        mpg.disabled = readOnly;
+        mpg.placeholder = '—';
+        mpg.addEventListener('input', () => {
+          F.promises.mpg = mpg.value === '' ? null : Math.max(0, Math.min(48, +mpg.value));
+        });
+        mr.appendChild(field('Minutes per game', mpg));
+        mr.appendChild(field('Role', select(ROLE_OPTIONS, F.promises.role, v => { F.promises.role = v; })));
+        const cb = el('label', 'checkbox-line');
+        const playoffBox = document.createElement('input');
+        playoffBox.type = 'checkbox';
+        playoffBox.checked = !!F.promises.playoffs;
+        playoffBox.disabled = readOnly;
+        playoffBox.addEventListener('change', () => { F.promises.playoffs = playoffBox.checked; });
+        cb.appendChild(playoffBox);
+        cb.appendChild(document.createTextNode('Promised a playoff team'));
+        mr.appendChild(cb);
+        mf.appendChild(mr);
+        box.appendChild(mf);
+
+        // ── legality ─────────────────────────────────────────────────────────
+        const lf = el('fieldset', 'fs');
+        lf.appendChild(el('legend', null, 'Legality (§ 5.1) and exposure (§ 5.3)'));
+        const panel = el('div', 'panel');
+        panel.id = 'legality-panel';
+        panel.textContent = 'Checking…';
+        lf.appendChild(panel);
+        const commit = el('div', 'panel info');
+        commit.style.marginTop = '0.4rem';
+        commit.id = 'commit-panel';
+        commit.textContent = 'Loading this team’s committed offers…';
+        lf.appendChild(commit);
+        box.appendChild(lf);
+
+        // ── actions ──────────────────────────────────────────────────────────
+        const actions = el('div', 'modal-actions');
+        const errSpan = el('div', 'spacer');
+        actions.appendChild(errSpan);
+
+        const cancel = el('button', null, readOnly ? 'Close' : 'Cancel');
+        cancel.addEventListener('click', close);
+        actions.appendChild(cancel);
+
+        if (!readOnly) {
+          if (existing && existing.status === 'draft') {
+            const del = el('button', 'danger', 'Delete draft');
+            del.addEventListener('click', async () => {
+              if (!confirm('Delete this draft? Nothing has been sent to the committee.')) return;
+              del.disabled = true;
+              try {
+                await api('/fa/offers/' + existing.id, { method: 'DELETE' });
+                await refreshOffers();
+                rebuildBody();
+                close();
+                toast('Draft deleted');
+              } catch (e) { errSpan.textContent = e.message; del.disabled = false; }
+            });
+            actions.appendChild(del);
+          }
+
+          const save = el('button', null, 'Save draft');
+          save.addEventListener('click', async () => {
+            save.disabled = true; errSpan.textContent = '';
+            try {
+              await persist();
+              await refreshOffers();
+              rebuildBody();
+              toast('Saved');
+              close();
+            } catch (e) { errSpan.textContent = e.message; save.disabled = false; }
+          });
+          actions.appendChild(save);
+
+          const submit = el('button', 'primary', existing && existing.status === 'returned' ? 'Resubmit…' : 'Submit…');
+          submit.id = 'submit-btn';
+          submit.addEventListener('click', () => drawConfirm());
+          actions.appendChild(submit);
+        }
+        box.appendChild(actions);
+
+        drawRaises();
+        gateSubmit();
+        revalidate(true);
+        loadCommitment();
+      }
+
+      // Year-over-year raise as a % of Year 1 — the figure § 3.13 actually caps.
+      // A typing aid only; the binding check is _check_contract_raises server-side.
+      function drawRaises() {
+        const base = F.salaries[0] || 0;
+        box.querySelectorAll('.yr-raise').forEach(span => {
+          const i = +span.dataset.idx;
+          if (i === 0 || !base) { span.textContent = ''; return; }
+          const pct = ((F.salaries[i] || 0) - (F.salaries[i - 1] || 0)) / base * 100;
+          span.textContent = ` ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+          span.style.color = pct > 8.01 ? 'var(--danger)' : pct > 5.01 ? 'var(--gold)' : 'var(--text-muted)';
+        });
+      }
+
+      // The client check is advisory (§ 5.1): the server re-runs `_validate_sign`
+      // at submit and *that* verdict is what's stored. This is the same endpoint,
+      // on the same 250ms debounce the transaction simulator uses.
+      function revalidate(immediate) {
+        clearTimeout(validateTimer);
+        validateTimer = setTimeout(runValidation, immediate ? 0 : 250);
+      }
+
+      async function runValidation() {
+        const panel = box.querySelector('#legality-panel');
+        if (!panel) return;
+        const seq = ++validateSeq;
+        try {
+          const res = await fetch('/api/validate/sign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(offerBody(F, team, slug)),
+          });
+          if (seq !== validateSeq) return;
+          if (!res.ok) {
+            const d = await res.json().catch(() => ({}));
+            lastValidation = null;
+            panel.className = 'panel bad';
+            panel.textContent = 'Could not evaluate: ' + (d.detail || ('HTTP ' + res.status));
+            gateSubmit();
+            return;
+          }
+          lastValidation = await res.json();
+        } catch {
+          if (seq !== validateSeq) return;
+          lastValidation = null;
+          panel.className = 'panel bad';
+          panel.textContent = 'Could not reach the validator.';
+          gateSubmit();
+          return;
+        }
+        if (seq !== validateSeq) return;
+        renderValidation(panel, lastValidation);
+        gateSubmit();
+      }
+
+      function renderValidation(panel, data) {
+        const checks = data.checks || [];
+        const failing = checks.filter(c => !c.passed);
+        panel.className = 'panel' + (data.legal ? '' : ' bad');
+        panel.innerHTML = '';
+        panel.appendChild(el('div', 'fs-head',
+          data.legal ? 'Legal as it stands' : 'Fails a rule check — cannot be submitted'));
+        if (!failing.length) {
+          panel.appendChild(el('div', 'checkline ok', '✓ No constraint is triggered.'));
+        }
+        failing.forEach(c => panel.appendChild(el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
+          (c.level === 'error' ? '✗ ' : '⚠ ') + (c.message || c.check))));
+        const f = data.fact_sheet || {};
+        if (!f.unresolved) {
+          const bits = [];
+          if (f.cap_room != null) bits.push('cap room ' + compactMoney(f.cap_room));
+          if (f.exception) bits.push(f.exception.label + ' ' + compactMoney(f.exception.remaining) + ' left');
+          if (f.standard_count_after != null) bits.push('roster ' + f.standard_count_before + ' → ' + f.standard_count_after);
+          if (bits.length) panel.appendChild(el('div', 'checkline ok', bits.join(' · ')));
+        }
+        // Warnings are submittable and the committee sees them (§ 5.1) — say so,
+        // rather than leaving a yellow line looking like a blocker.
+        if (data.legal && failing.length) {
+          panel.appendChild(el('div', 'checkline ok',
+            'Warnings don’t block a submission; the committee is shown them.'));
+        }
+      }
+
+      // § 5.3 — a pending offer holds no cap room, so nothing stops a team
+      // bidding more than it can fund. Disclosed here and on the committee's
+      // review page, off the same server-side helper. Never blocked.
+      async function loadCommitment() {
+        const panel = box.querySelector('#commit-panel');
+        if (!panel) return;
+        let c;
+        try { c = await api('/fa/commitment/' + team); }
+        catch { panel.remove(); return; }
+        if (!box.contains(panel)) return;
+        panel.className = 'panel' + (c.overcommitted ? ' warn' : ' info');
+        panel.textContent = `${team} has ${c.live_offers} live offer${c.live_offers === 1 ? '' : 's'} out, `
+          + `${compactMoney(c.committed_year1)} of ${c.season} salary committed against `
+          + `${c.room == null ? 'unknown' : compactMoney(c.room)} of room`
+          + (c.overcommitted
+            ? ' — more than this team can fund. A pending offer holds no cap room, so this is allowed; '
+              + 'the committee is told, not blocked (§ 5.3).'
+            : '.');
+      }
+
+      function gateSubmit() {
+        const btn = box.querySelector('#submit-btn');
+        if (!btn) return;
+        const errs = ((lastValidation && lastValidation.checks) || [])
+          .filter(c => !c.passed && c.level === 'error');
+        let why = '';
+        if (!lastValidation) why = 'Waiting on the legality check.';
+        else if (errs.length) why = 'Fails a rule check: ' + (errs[0].message || errs[0].check);
+        else if (!isOwner) why = 'Only the team owner can submit this offer.';
+        else if (!windowOpen) why = (entry && entry.reason) || 'This player isn’t accepting offers right now.';
+        btn.disabled = !!why;
+        btn.title = why || 'Review and submit to the committee';
+      }
+
+      // Writes the current form to the server. A submit always goes through here
+      // first: `POST /api/fa/offers/{id}/submit` validates and freezes the
+      // *stored* offer, so the figures on screen have to be the stored ones.
+      async function persist() {
+        const body = offerBody(F, team, slug);
+        const promises = {
+          mpg: F.promises.mpg, playoffs: !!F.promises.playoffs, role: F.promises.role || 'none',
+        };
+        if (existing) {
+          const patched = await api('/fa/offers/' + existing.id, {
+            method: 'PATCH',
+            body: {
+              contract: body.contract, signing_method: body.signing_method,
+              bird_rights_type: body.bird_rights_type, eaps_assumption: body.eaps_assumption,
+              pitch: F.pitch, promises,
+            },
+          });
+          return patched;
+        }
+        const created = await api('/fa/offers', {
+          method: 'POST',
+          body: Object.assign({}, body, { pitch: F.pitch, promises }),
+        });
+        existing = created;
+        return created;
+      }
+
+      // § 8.1.7 — a second step naming the player and the total value, quoting
+      // § 3.14's rule verbatim. With no withdrawal and one live offer per team
+      // per player, the draft is a team's only chance to get this right, so the
+      // last thing before it becomes final is a full restatement of it.
+      function drawConfirm() {
+        const contract = contractFromForm(F);
+        const seasons = Object.keys(contract.salaries).sort();
+        box.innerHTML = '';
+        box.appendChild(el('h3', null, `Submit ${team}’s offer to ${row.player}?`));
+        box.appendChild(el('div', 'sub',
+          `${F.years} year${F.years === 1 ? '' : 's'}, ${compactMoney(totalValue(F))} total`
+          + (F.hold ? ` · rolls into a ${F.hold} hold` : '')));
+
+        const list = el('div', 'panel');
+        list.style.marginTop = '0.7rem';
+        seasons.forEach((s, i) => {
+          const tag = contract.cap_holds[s];
+          list.appendChild(el('div', 'checkline ok',
+            `${s} — ${compactMoney(F.salaries[i] || 0)}${tag ? ' (' + tag + ')' : ''}`));
+        });
+        box.appendChild(list);
+
+        const warn = el('div', 'panel warn');
+        warn.style.marginTop = '0.6rem';
+        warn.textContent = 'Once submitted to the committee, this offer cannot be withdrawn (§ 3.14). '
+          + 'Your team cannot edit it or take it back; the only way it returns is if the committee sends '
+          + 'it back for revision. If your cap position changes and the offer becomes illegal, the '
+          + 'committee is shown that and decides — the offer still stands.';
+        box.appendChild(warn);
+
+        const actions = el('div', 'modal-actions');
+        const errSpan = el('div', 'spacer');
+        actions.appendChild(errSpan);
+        const back = el('button', null, 'Back');
+        back.addEventListener('click', drawForm);
+        actions.appendChild(back);
+        const go = el('button', 'primary', 'Submit to the committee');
+        go.addEventListener('click', async () => {
+          go.disabled = true; back.disabled = true; errSpan.textContent = '';
+          const label = go.textContent;
+          go.textContent = 'Submitting…';
+          try {
+            const saved = await persist();
+            await api('/fa/offers/' + saved.id + '/submit', { method: 'POST' });
+            await refreshOffers();
+            rebuildBody();
+            close();
+            toast(`${team}’s offer to ${row.player} is with the committee`);
+          } catch (e) {
+            errSpan.textContent = e.message;
+            go.disabled = false; back.disabled = false; go.textContent = label;
+          }
+        });
+        actions.appendChild(go);
+        box.appendChild(actions);
+      }
+    }
+
     // ── Main ─────────────────────────────────────────────────────────────────
 
     (async () => {
       const statusEl = document.getElementById('status');
       try {
-        const [pool, biosJson, ovrJson, teamMapJson] = await Promise.all([
+        const signedIn = maybeSignedIn();
+        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers] = await Promise.all([
           fetch('/api/fa/pool').then(r => r.ok ? r.json() : {}),
           fetch('/api/players').then(r => r.ok ? r.json() : {}),
           fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
           fetch('/api/team-map').then(r => r.ok ? r.json() : {}),
+          signedIn ? api('/auth/me').catch(() => null) : Promise.resolve(null),
+          fetch('/api/fa/board').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
+          signedIn ? api('/fa/offers').catch(() => []) : Promise.resolve([]),
         ]);
+
+        POOL = pool;
+        ME = me || ME;
+        if (board) BOARD = board;
+        LEAGUE_YEAR = (ly && ly.current_season) || null;
+        MY_TEAMS = (ME.roles || []).map(r => r.toUpperCase()).filter(r => TEAM_ABBRS.has(r)).sort();
+        (myOffers || []).filter(o => MY_TEAMS.includes(o.team))
+          .forEach(o => { MY_OFFERS[o.team + '|' + o.player] = o; });
 
         // The pool (class_year, hold_type, prior_salary per player) is derived
         // server-side by GET /api/fa/pool — see nbn-api routers/free_agency.py.
@@ -383,6 +1327,9 @@
         buildYearChips(years);
         buildPosChips();
         statusEl.remove();
+        // The ⋯ column is never added for a viewer with no team role, so a
+        // public page load renders exactly the table it rendered before Phase 7.
+        if (MY_TEAMS.length) COLS.push(movesColumn());
         buildTable();
 
         const legend = document.createElement('div');

@@ -1,5 +1,26 @@
 [
   {
+    "version": "0.0.398",
+    "date": "2026-08-09",
+    "changes": [
+      "Team front offices can now draft and submit free-agency offers from /free-agency: a \u22ef menu on each free agent opens a contract editor with year-by-year salary, options, the trailing cap hold, funding method and Bird tier, plus a pitch and the promises (minutes, role, playoffs) the committee reads alongside the money",
+      "The offer is checked against the rulebook live as you type, by the same validator the office runs \u2014 an offer that fails a rule can't be submitted, and warnings are shown but don't block",
+      "Any member of a team's front office can prepare the offer; only the team owner can submit it, and the button says so rather than disappearing",
+      "The form shows what the team has already committed across all its live offers against its room, since a pending offer holds no cap room",
+      "Submitting takes a second confirm step naming the player, the years and the total: once submitted to the committee an offer cannot be withdrawn (\u00a7 3.14)",
+      "When the committee sends an offer back for changes, the row is flagged and the form reopens with every reviewer's note pinned above the editor and the previous figures shown beside each year",
+      "Players who aren't taking offers show the reason \u2014 free agency closed, not open this round, or the 24-hour window having lapsed \u2014 instead of a menu entry that does nothing",
+      "Nothing on this page changes for a visitor who isn't signed in to a team",
+      "Committee members can now cast their 1,000 balls on the PDC dashboard: a slider and a number per offer, plus the qualifying offer for a restricted free agent and a \"no signing\" line always, with a running remainder and saving blocked until it totals exactly 1,000",
+      "Each line on the ballot carries the deal it stands for, and flags an offer that's been sent back or has gone illegal since it was made",
+      "Ballots stay editable until the head locks the player, and a member whose ballot predates a revision is told so rather than having their vote discarded",
+      "FAC heads can finalize a player: a confirm step showing the running totals, who voted, who will be recorded as abstaining, and any remand the team never answered \u2014 which warns but never blocks. Unlock reverses it",
+      "Finalizing records the committee's decision and frees those teams to bid again in a later round. It signs nobody \u2014 the signing is still entered by hand on the transactions page, and the dashboard says so",
+      "A collapsible \"How this works\" panel explains the pipeline, sectioned by whether you're a committee member, the head, or both",
+      "Committee members can find the dashboard from the site search (Ctrl+K) instead of remembering the address \u2014 it's listed only for members who hold the role, and a signed-out visitor's search works exactly as before"
+    ]
+  },
+  {
     "version": "0.0.397",
     "date": "2026-08-08",
     "changes": [

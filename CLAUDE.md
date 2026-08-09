@@ -215,7 +215,8 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Add/change an owner's per-player roster move | `makeRosterMoveActions` / `openMovesMenu` — `teams/team.js` (see "Owner self-serve roster moves") |
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
 | Change the suggestions board or its comment threads | `suggestions/index.html` + `nbn-api/routers/suggestions.py` (see "Suggestions board" below) |
-| Change the PDC committee dashboard (FA review, ballots, head controls) | `pdc/index.html`; data from `/api/fa/*` in `nbn-api/routers/free_agency.py`; design record in `docs/pdc-free-agency-spec.md`. Served at both `nbn.today/pdc` and `pdc.nbn.today` — the subdomain is `/etc/nginx/sites-available/pdc.nbn.today`, the **same docroot** with `/` → `/pdc/index.html`, so every fetch stays same-origin (no CORS, no static-asset CORS gap). Keep any new path rule in sync with the `nbn.today` block or it works on one host and 404s on the other |
+| Change the team-facing FA offer form (⋯ menu, contract editor, submit confirm) | `free-agency/index.html` — the block under "Team-facing offers"; endpoints `POST/PATCH/DELETE /api/fa/offers`, `POST /api/fa/offers/{id}/submit`, `GET /api/fa/commitment/{team}`. an offer's legality and every dollar shown come from `POST /api/validate/sign`, never from page code (see "Team-facing FA offers" below) |
+| Change the PDC committee dashboard (FA review, the 1,000-ball ballot, finalize/unlock, head controls) | `pdc/index.html`; data from `/api/fa/*` in `nbn-api/routers/free_agency.py`; design record in `docs/pdc-free-agency-spec.md`. Served at both `nbn.today/pdc` and `pdc.nbn.today` — the subdomain is `/etc/nginx/sites-available/pdc.nbn.today`, the **same docroot** with `/` → `/pdc/index.html`, so every fetch stays same-origin (no CORS, no static-asset CORS gap). Keep any new path rule in sync with the `nbn.today` block or it works on one host and 404s on the other |
 
 ---
 
@@ -553,6 +554,49 @@ Forced transactions (`force: true` overriding a failed check) are posted with th
 overridden check names and a distinct colour — the override is already in the ledger
 as `_forced_checks`, this just surfaces it. Owner self-serve moves are marked in the
 footer via `details._source`.
+
+### Team-facing FA offers
+
+The ⋯ menu and offer form on `/free-agency` (spec § 8.1). **Two gates on one
+object, and they are genuinely different** (§ 6.0), mirroring the split team
+pages already draw between the trading block and renounce:
+
+| Action | Gate | Endpoint |
+|---|---|---|
+| Create / edit / delete a **draft** | any holder of the team's role | `POST`/`PATCH`/`DELETE /api/fa/offers` |
+| **Submit** (and resubmit a remanded offer) | the team's **owner** (`is_team_owner`) | `POST /api/fa/offers/{id}/submit` |
+
+So a GM can prepare the whole offer and cannot pull the trigger; the button is
+shown **disabled with that reason**, not hidden, so the draft can visibly be
+handed off. The team is always derived from the stored offer, never from the
+request body.
+
+Three rules this page holds and must keep holding:
+
+- **No cap math in the page.** Every dollar comes off the fact sheet
+  `POST /api/validate/sign` returns, or off `GET /api/fa/commitment/{team}` —
+  the same `_team_commitment` the committee's review page renders. A team can
+  never be shown room the validator didn't credit it with.
+- **No reason string is composed client-side.** The disabled ⋯-menu copy is
+  `reason` from `GET /api/fa/board`, i.e. the server's `_accepts_offers`. That
+  is why the board lists closed players too (§ 6.3).
+- **Submission is final at the team's initiative** (§ 4.3). There is no withdraw
+  endpoint and no post-submit edit — a submitted offer opens read-only. The only
+  way back is a committee **remand**, after which the same form reopens with the
+  committee's notes pinned above it and the frozen prior figures beside each
+  year input.
+
+The client legality check is advisory: the server re-runs `_validate_sign` at
+submit and *that* verdict is what's stored. There is no `force` on this path,
+for the same reason `self_renounce` has none.
+
+**On the committee side, the ballot widget is gated on *assignment*, never on
+being the head.** `PUT /api/fa/players/{slug}/ballot` is the one endpoint in the
+API that does not wave `admin` through — a ballot is a vote, not an
+administrative action — so gating the UI on "is head" would offer a vote the
+server refuses. A head who isn't on a player's sub-committee sees the totals and
+the finalize button and no inputs. Finalize, unlock and assignment are the
+head's real powers and are separate endpoints.
 
 ### PDC free-agency Discord feeds
 

@@ -185,6 +185,17 @@ const SITE_PAGES = [
   { title: 'Suggestions', href: '/suggestions/', icon: '💡' },
 ];
 
+// Pages that only exist for people holding a specific role. Kept out of
+// SITE_PAGES because that list is offered to everybody: a page 27 of 30 owners
+// can't use has no business in their jump box. Resolved lazily — see
+// _loadCommitteePages — and merged into the page results only when the API says
+// this member holds the role. The gate is a courtesy either way; the security
+// boundary is the API, which is what /pdc's own shell relies on too.
+const ROLE_PAGES = [
+  { title: 'PDC Committee', href: '/pdc/', icon: '🗳️',
+    roles: ['fac', 'fac_head', 'poext', 'poext_head', 'admin'] },
+];
+
 const TEAM_LIST = {
   ATL: "Atlanta Hawks", BKN: "Brooklyn Nets", BOS: "Boston Celtics",
   CHA: "Charlotte Hornets", CHI: "Chicago Bulls", CLE: "Cleveland Cavaliers",
@@ -204,6 +215,8 @@ let _searchResults = null;
 let _playerCache = null;   // { slug: { name, pos, type } }
 let _ovrCache = null;      // { slug: ovrNumber }
 let _activeIdx = -1;
+let _rolePages = [];       // ROLE_PAGES this member actually qualifies for
+let _rolesChecked = false; // asked once per page, whatever the answer
 
 function openSearch(initialQuery) {
   if (!_searchOverlay) _buildSearchOverlay();
@@ -212,7 +225,10 @@ function openSearch(initialQuery) {
   _activeIdx = -1;
   _searchInput.focus();
   _filter();
-  _loadPlayerData().then(() => _filter());
+  // Both are lazy and fire only when someone actually opens the search overlay,
+  // so nav.js still makes no request on an ordinary page load — which matters,
+  // because it loads on every page of the site.
+  Promise.all([_loadPlayerData(), _loadCommitteePages()]).then(() => _filter());
 }
 
 function closeSearch() {
@@ -274,7 +290,7 @@ function _filter() {
     return;
   }
 
-  const pageMatches = SITE_PAGES
+  const pageMatches = SITE_PAGES.concat(_rolePages)
     .filter(p => p.title.toLowerCase().includes(q))
     .slice(0, 6)
     .map(p => ({ type: 'Page', icon: p.icon, title: p.title, meta: '', href: p.href }));
@@ -322,6 +338,35 @@ function _filter() {
     a.addEventListener('click', () => closeSearch());
     _searchResults.appendChild(a);
   });
+}
+
+// Does this browser plausibly have a signed-in member behind it? `nbn_session_live`
+// is the readable companion to the HttpOnly `.nbn.today` session cookie and exists
+// precisely so page JS can answer this. Checking it first means a logged-out
+// visitor's search costs exactly what it did before — no auth request at all.
+function _maybeSignedIn() {
+  try { if (localStorage.getItem('nbn_token')) return true; } catch { /* private browsing */ }
+  return /(?:^|;\s*)nbn_session_live=/.test(document.cookie);
+}
+
+async function _loadCommitteePages() {
+  if (_rolesChecked) return;
+  _rolesChecked = true;
+  if (!_maybeSignedIn()) return;
+  try {
+    const headers = {};
+    try {
+      const t = localStorage.getItem('nbn_token');
+      if (t) headers.Authorization = 'Bearer ' + t;
+    } catch { /* ignore */ }
+    const me = await fetch('/api/auth/me', { credentials: 'same-origin', headers })
+      .then(r => r.ok ? r.json() : null);
+    const roles = new Set((me && me.roles) || []);
+    // Same rule the pages themselves apply: admin satisfies any role check.
+    _rolePages = ROLE_PAGES.filter(p => roles.has('admin') || p.roles.some(r => roles.has(r)));
+  } catch {
+    // The jump box works without this; it just won't list the committee page.
+  }
 }
 
 async function _loadPlayerData() {

@@ -146,6 +146,32 @@
     .bar-lbl { font-size: 0.7rem; color: var(--text-muted); }
     .bar-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 
+    /* ── the 1,000-ball allocation (§ 4.4) ────────────────────────────────── */
+    .ballot.mine { border-color: var(--accent); margin-bottom: 0.7rem; }
+    .ballot label { display: block; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.2rem; }
+    .alloc-row { display: grid; grid-template-columns: minmax(0, 1fr) 9rem 4.5rem; gap: 0.5rem;
+                 align-items: center; padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle); }
+    .alloc-row:last-child { border-bottom: none; }
+    .alloc-lbl { font-size: 0.78rem; color: var(--text-secondary); min-width: 0; }
+    .alloc-num { text-align: right; font-variant-numeric: tabular-nums; }
+    .alloc-row input[type=range] { width: 100%; accent-color: var(--accent); padding: 0; }
+    .ballot-foot { margin-top: 0.5rem; }
+    .ballot-total { font-size: 0.78rem; font-weight: 600; color: var(--gold); }
+    .ballot-total.ok { color: var(--success); }
+    @media (max-width: 700px) {
+      .alloc-row { grid-template-columns: minmax(0, 1fr) 4.5rem; }
+      .alloc-row input[type=range] { grid-column: 1 / -1; }
+    }
+
+    /* ── role-aware instructions (§ 8.5) ──────────────────────────────────── */
+    .howto { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 1rem; }
+    .howto > summary { cursor: pointer; padding: 0.55rem 0.9rem; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
+    .howto > summary::marker { color: var(--text-dim); }
+    .howto-body { padding: 0 0.9rem 0.8rem; }
+    .howto h4 { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted);
+                font-weight: 700; margin: 0.6rem 0 0.3rem; }
+    .howto li { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; margin-left: 1rem; }
+
     .commit { display: flex; gap: 0.6rem; flex-wrap: wrap; }
     .commit-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.65rem; font-size: 0.74rem; color: var(--text-muted); }
     .commit-card b { color: var(--text-secondary); }
@@ -183,6 +209,11 @@
 
     <div id="gate"></div>
 
+    <details class="howto" id="howto" hidden>
+      <summary>How this works</summary>
+      <div class="howto-body" id="howto-body"></div>
+    </details>
+
     <div id="app" hidden>
       <div class="boardbar" id="boardbar"></div>
       <div class="panes">
@@ -204,10 +235,8 @@
   <script>
   // ══ PDC dashboard ═══════════════════════════════════════════════════════════
   //
-  // Read side of the committee pipeline (spec § 8.2 / § 8.3) plus the head's
-  // board controls. Ball allocation and finalize are Phase 8 and are deliberately
-  // absent here rather than stubbed — a half-wired vote button is worse than a
-  // visibly missing one.
+  // The committee pipeline (spec § 8.2 / § 8.3): the queue, the player review,
+  // the head's board controls, the 1,000-ball ballot, and per-player finalize.
   //
   // Two rules this file follows and must keep following:
   //   * **No cap math here.** Every dollar rendered comes out of the fact sheet
@@ -217,6 +246,7 @@
   //     returned; grouping is a rendering of an already-filtered payload (§ 6.1).
 
   const API = '/api';
+  const BALLOT_TOTAL = 1000;   // § 4.4 — a ballot must sum to exactly this
 
   let ME = { name: null, roles: [], owner_of: [] };
   let IS_FAC = false, IS_HEAD = false, IS_POEXT = false;
@@ -360,7 +390,11 @@
 
   const METHOD_LABELS = {
     cap_space: 'Cap space', bird_rights: 'Bird rights', mle: 'MLE', ntmle: 'Non-taxpayer MLE',
-    tmle: 'Taxpayer MLE', bae: 'Bi-annual exception', room: 'Room exception', minimum: 'Minimum',
+    tmle: 'Taxpayer MLE', bae: 'Bi-annual exception', minimum: 'Minimum',
+    // The API's value is `room_exception`; `room` is the short form team_state
+    // stores. Both appear, so both are labelled — an offer funded from the Room
+    // Exception must not read as a raw enum on the review page.
+    room_exception: 'Room exception', room: 'Room exception',
     sign_and_trade: 'Sign-and-trade', rookie_scale: 'Rookie scale',
   };
   const ROLE_LABELS = {
@@ -389,6 +423,7 @@
     renderWhoami();
 
     if (!IS_FAC && !IS_POEXT) { renderGate(ME.name ? 'forbidden' : 'anon'); return; }
+    renderHowto();
     if (IS_POEXT) renderPoext();
     if (!IS_FAC) { document.getElementById('subtitle').textContent = 'Committee review — PO-EXT'; return; }
 
@@ -473,6 +508,55 @@
       } },
     ]);
     input.focus();
+  }
+
+  // § 8.5 — keyed off the viewer's roles, and sectioned when they hold both. It
+  // is collapsed by default: a committee member who has done this before should
+  // not have to scroll past it, and one who hasn't should not have to be told
+  // where to look.
+  function renderHowto() {
+    const box = document.getElementById('howto-body');
+    box.innerHTML = '';
+    const list = items => {
+      const ul = el('ul');
+      items.forEach(t => ul.appendChild(el('li', null, t)));
+      return ul;
+    };
+
+    if (IS_FAC) {
+      box.appendChild(el('h4', null, 'Reviewing a player'));
+      box.appendChild(list([
+        'Your queue is the players the head has put you on. You cannot see the offers or the ballots for a player you aren’t assigned to — a sub-committee is transparent to itself and opaque to everyone outside it.',
+        'Offers sit side by side: the contract year by year, how it’s funded, the team’s cap position after signing, their projected starting five with this player in it, the promises made, and the pitch.',
+        'Legality is re-checked every time you open the page. “Legal at submit · illegal now” means the team’s cap position moved since they offered. They cannot withdraw it — you decide what that’s worth.',
+        'Any of you can send an offer back for revision with a note. It’s additive: a second note from someone else joins yours and the team answers both in one go.',
+        'The 1,000 balls are yours to split across the offers, plus “no signing” always and the qualifying offer for a restricted free agent. It must total exactly 1,000.',
+        '“No signing” is there so that thinking every offer is bad is something you can actually say. Without it the least-bad offer wins by default.',
+        'Ballots stay editable until the head locks the player, and everyone on the sub-committee can see each other’s as they go — including when they were last touched.',
+        'If your own team is bidding, you’ll see a banner. You may still vote; the head sees it flagged.',
+      ]));
+    }
+
+    if (IS_HEAD) {
+      box.appendChild(el('h4', null, 'Running the board'));
+      box.appendChild(list([
+        'Mode is the master switch. Closed takes no offers at all. Rounds takes them only on players you’ve opened. FFA opens every free agent at once.',
+        'FFA is the only clock the software enforces: the first submitted offer on a player starts 24 hours, later offers don’t extend it, and at the deadline he stops taking offers and comes to you. Nothing signs itself, ever.',
+        'Rounds carry no clock. Opening Round N does not close Round N−1’s players, and a round’s “closes at” is a label — you close players by hand, on purpose, so you can leave one open across a boundary.',
+        'Sub-committees default to empty. Nobody can ballot on a player until you assign one, and the picker flags anyone whose own team is bidding before you confirm.',
+        'Finalize locks the ballots, records the totals, and archives that player’s offers — which is what lets those teams bid on him again in a later round. An unanswered remand warns you and does not block you.',
+        'Unlock reverses a finalize, ballots and offers together. What you undid stays on the record.',
+        'The totals are a decision, not a transaction. The signing is still entered by hand on /transactions.',
+      ]));
+    }
+
+    if (IS_POEXT) {
+      box.appendChild(el('h4', null, 'PO-EXT'));
+      box.appendChild(list([
+        'Player options and extensions come to this dashboard after free agency. Your role is granted and does nothing yet.',
+      ]));
+    }
+    document.getElementById('howto').hidden = false;
   }
 
   function renderPoext() {
@@ -1163,7 +1247,34 @@
     return s;
   }
 
-  // ── ballots (read side; casting is Phase 8) ─────────────────────────────────
+  // ── ballots (§ 4.4) ─────────────────────────────────────────────────────────
+
+  function optionLabels(review) {
+    const labels = {};
+    (review.ballot_options || []).forEach(opt => {
+      labels[opt.key] = opt.kind === 'offer' ? `${opt.team} #${opt.number}`
+        : opt.kind === 'qo' ? 'Qualifying offer'
+        : 'No signing';
+    });
+    return labels;
+  }
+
+  function tally(cast) {
+    const totals = {};
+    Object.values(cast || {}).forEach(b => {
+      Object.entries(b.balls || {}).forEach(([k, v]) => { totals[k] = (totals[k] || 0) + v; });
+    });
+    return totals;
+  }
+
+  // Casting is gated on *assignment*, never on being the head. `cast_ballot` is
+  // the one endpoint in the API that does not wave `admin` through: a ballot is a
+  // vote, not an administrative action, and there is no such thing as casting one
+  // you weren't assigned. A head who isn't on this sub-committee gets the totals
+  // and the finalize button, and no inputs.
+  function amAssigned(review) {
+    return ((review.state || {}).subcommittee || []).includes(ME.name);
+  }
 
   function ballotsSection(review, ballots) {
     const s = el('div', 'section');
@@ -1175,12 +1286,7 @@
       return s;
     }
 
-    const labels = {};
-    (review.ballot_options || []).forEach(opt => {
-      labels[opt.key] = opt.kind === 'offer' ? `${opt.team} #${opt.number}`
-        : opt.kind === 'qo' ? 'Qualifying offer'
-        : 'No signing';
-    });
+    const labels = optionLabels(review);
 
     // § 4.6 — warn, never block. The team comes from the server's own
     // `_conflict_team`, the same rule that stamps a cast ballot, so what a member
@@ -1205,7 +1311,24 @@
         f.appendChild(el('div', 'bb-val', 'Locked with '
           + ballots.final.outstanding_remands.length + ' unanswered remand(s).'));
       }
+      // § 11.1 — the totals are the committee's decision, not a signing. Nothing
+      // here signs anybody, by design, and the panel says so rather than leaving
+      // a locked result looking like it executed itself.
+      f.appendChild(el('div', 'bb-val',
+        'The allocation is the record of the decision. The signing is still entered by hand on /transactions.'));
+      if (IS_HEAD) {
+        const u = el('button', 'btn-danger', 'Unlock…');
+        u.style.marginTop = '0.5rem';
+        u.addEventListener('click', () => unlockModal(review.player, ballots));
+        f.appendChild(u);
+      }
       s.appendChild(f);
+    } else if (amAssigned(review)) {
+      s.appendChild(myBallot(review, ballots, labels));
+    } else if (IS_HEAD) {
+      s.appendChild(el('div', 'bar-lbl',
+        'You aren’t on this player’s sub-committee, so there is no ballot for you to cast. '
+        + 'Assigning yourself would let you vote on it.'));
     }
 
     const grid = el('div', 'ballot-grid');
@@ -1237,11 +1360,255 @@
     if ((ballots.outstanding || []).length) {
       s.appendChild(el('div', 'bar-lbl', 'Outstanding: ' + ballots.outstanding.join(', ')));
     }
-    const note = el('div', 'bar-lbl');
-    note.style.marginTop = '0.5rem';
-    note.textContent = 'Casting a ballot and finalizing aren’t wired into this dashboard yet.';
-    s.appendChild(note);
+
+    if (IS_HEAD && !ballots.final) {
+      const bar = el('div', 'bb-block');
+      bar.style.marginTop = '0.7rem';
+      const b = el('button', 'btn-primary', 'Finalize…');
+      b.addEventListener('click', () => finalizeModal(review, ballots, labels));
+      bar.appendChild(b);
+      bar.appendChild(el('span', 'bar-lbl',
+        'Locks every ballot on this player and records the totals.'));
+      s.appendChild(bar);
+    }
     return s;
+  }
+
+  // The 1,000 balls (§ 4.4). A ballot must total exactly 1,000 to be cast — the
+  // server rejects anything else with the running total in the message, and this
+  // gates Save on the same arithmetic so the refusal is never a surprise.
+  //
+  // Freely revisable until the head finalizes, which is why Save reads "Save" and
+  // not "Submit": the last version before the lock is the one that counts.
+  function myBallot(review, ballots, labels) {
+    const slug = review.player;
+    const opts = (review.ballot_options || []).slice();
+    const mine = (ballots.ballots || {})[ME.name] || null;
+    const balls = {};
+    opts.forEach(o => { balls[o.key] = ((mine || {}).balls || {})[o.key] || 0; });
+
+    const box = el('div', 'ballot mine');
+    const head = el('div', 'ballot-name');
+    head.appendChild(document.createTextNode(mine ? 'Your ballot' : 'Cast your ballot'));
+    if (mine) head.appendChild(el('span', 'chip', 'updated ' + ago(mine.updated_at)));
+    box.appendChild(head);
+
+    // A member who balloted before a revision is *told*, never silently voided
+    // (§ 4.3a). Re-saving clears their own flag and leaves everyone else's.
+    if (mine && (mine.revised_since || []).length) {
+      const w = el('div', 'banner warn');
+      w.style.margin = '0.4rem 0';
+      w.textContent = 'Revised after you voted: '
+        + mine.revised_since.map(id => labels[id] || id).join(', ')
+        + '. Your ballot still stands — re-save it to clear this.';
+      box.appendChild(w);
+    }
+
+    const rows = el('div');
+    box.appendChild(rows);
+    const foot = el('div', 'ballot-foot');
+    box.appendChild(foot);
+
+    const noteRow = el('div');
+    noteRow.style.marginTop = '0.5rem';
+    noteRow.appendChild(el('label', null, 'Note for the committee (optional)'));
+    const note = el('input');
+    note.value = (mine && mine.note) || '';
+    note.placeholder = 'Why you split them this way';
+    noteRow.appendChild(note);
+    box.appendChild(noteRow);
+
+    const actions = el('div', 'modal-actions');
+    actions.style.marginTop = '0.6rem';
+    const even = el('button', 'btn-ghost', 'Even split');
+    even.title = 'Divide 1,000 evenly across every line, remainder on the first.';
+    const save = el('button', 'btn-primary', mine ? 'Update ballot' : 'Cast ballot');
+    actions.appendChild(even);
+    actions.appendChild(save);
+    box.appendChild(actions);
+
+    const inputs = {};
+
+    function total() { return opts.reduce((n, o) => n + (balls[o.key] || 0), 0); }
+
+    function sync() {
+      const t = total();
+      const left = BALLOT_TOTAL - t;
+      foot.innerHTML = '';
+      const line = el('div', 'ballot-total' + (t === BALLOT_TOTAL ? ' ok' : ''));
+      line.textContent = t === BALLOT_TOTAL
+        ? '1,000 of 1,000 allocated'
+        : `${t.toLocaleString('en-US')} of 1,000 allocated · ${left > 0 ? left.toLocaleString('en-US') + ' left to place' : Math.abs(left).toLocaleString('en-US') + ' over'}`;
+      foot.appendChild(line);
+      save.disabled = t !== BALLOT_TOTAL;
+      save.title = t === BALLOT_TOTAL ? '' : 'A ballot must total exactly 1,000.';
+      opts.forEach(o => {
+        inputs[o.key].num.value = balls[o.key] || 0;
+        inputs[o.key].range.value = balls[o.key] || 0;
+      });
+    }
+
+    opts.forEach(o => {
+      const row = el('div', 'alloc-row');
+      const lbl = el('div', 'alloc-lbl');
+      lbl.appendChild(el('div', null, labels[o.key] || o.key));
+      if (o.kind === 'qo') {
+        // § 7.2 / § 13.2 — the amount comes from a formula the rulebook itself
+        // marks "proposed, pending BOD confirmation", so it is labelled rather
+        // than asserted. The line shows either way: an incumbent keeping an RFA
+        // on the QO is a real outcome whether or not we can price it.
+        lbl.appendChild(el('div', 'bar-lbl', o.amount == null
+          ? 'amount unknown — the QO isn’t recorded anywhere in the API yet'
+          : '≈ ' + compactMoney(o.amount) + ' (estimated)'));
+      } else if (o.kind === 'no_signing') {
+        lbl.appendChild(el('div', 'bar-lbl', 'Nobody signs him; he stays a free agent'));
+      } else {
+        const off = (review.offers || []).find(x => x.id === o.key);
+        if (off) {
+          lbl.appendChild(el('div', 'bar-lbl',
+            shorthand(off.offer.contract, (off.revalidation || off.validation || {}).season || SEASON)
+            + (off.status === 'returned' ? ' · sent back' : '')
+            + ((off.revalidation || {}).legal === false ? ' · illegal now' : '')));
+        }
+      }
+      row.appendChild(lbl);
+
+      const range = el('input');
+      range.type = 'range'; range.min = '0'; range.max = String(BALLOT_TOTAL); range.step = '25';
+      range.value = balls[o.key] || 0;
+      range.addEventListener('input', () => { balls[o.key] = +range.value; sync(); });
+      row.appendChild(range);
+
+      const num = el('input');
+      num.type = 'number'; num.min = '0'; num.max = String(BALLOT_TOTAL); num.step = '1';
+      num.className = 'alloc-num';
+      num.value = balls[o.key] || 0;
+      num.addEventListener('input', () => {
+        balls[o.key] = Math.max(0, Math.min(BALLOT_TOTAL, +num.value || 0));
+        sync();
+      });
+      row.appendChild(num);
+
+      inputs[o.key] = { range, num };
+      rows.appendChild(row);
+    });
+
+    even.addEventListener('click', () => {
+      const each = Math.floor(BALLOT_TOTAL / opts.length);
+      opts.forEach(o => { balls[o.key] = each; });
+      balls[opts[0].key] += BALLOT_TOTAL - each * opts.length;
+      sync();
+    });
+
+    save.addEventListener('click', async () => {
+      save.disabled = true;
+      try {
+        await api('/fa/players/' + encodeURIComponent(slug) + '/ballot', {
+          method: 'PUT',
+          body: { balls, note: note.value.trim() },
+        });
+        await reload();
+        toast('Ballot saved');
+      } catch (e) {
+        toast(e.message, true);
+        save.disabled = false;
+      }
+    });
+
+    sync();
+    return box;
+  }
+
+  // § 4.3a / D15 — an unanswered remand **warns, never blocks**. The head is the
+  // clock everywhere else in this system (§ 4.1, D11), so a team that goes quiet
+  // can't stall a player indefinitely; a head who locks early does so knowingly,
+  // which means the confirm step has to name what they're locking over.
+  function finalizeModal(review, ballots, labels) {
+    const slug = review.player;
+    const cast = ballots.ballots || {};
+    const totals = tally(cast);
+    const body = el('div');
+
+    body.appendChild(el('p', 'note',
+      'Finalizing locks every ballot on this player, records the totals as the committee’s decision, '
+      + 'and archives the offers — which is what frees those teams to bid on him again in a later round. '
+      + 'It signs nobody: the signing is still entered by hand on /transactions.'));
+
+    const totalBox = el('div', 'banner info');
+    const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+    if (!sorted.length) {
+      totalBox.appendChild(el('div', null, 'No ballots have been cast. Locking now records an empty result.'));
+    } else {
+      totalBox.appendChild(el('div', 'mini-head', 'Totals as they stand'));
+      const cap = sorted[0][1] || 1;
+      sorted.forEach(([k, v]) => totalBox.appendChild(barRow(labels[k] || k, v, cap)));
+    }
+    body.appendChild(totalBox);
+
+    const voters = Object.keys(cast);
+    if (voters.length) {
+      const who = el('div');
+      who.style.marginTop = '0.6rem';
+      who.appendChild(el('div', 'mini-head', 'Who voted'));
+      voters.forEach(name => {
+        const line = el('div', 'bar-lbl');
+        const sum = Object.values(cast[name].balls || {}).reduce((a, b) => a + b, 0);
+        line.textContent = `${name} — ${sum.toLocaleString('en-US')} balls, updated ${ago(cast[name].updated_at)}`
+          + (cast[name].conflict ? ` · conflicted (${cast[name].conflict} is bidding)` : '');
+        if (cast[name].conflict) line.style.color = 'var(--gold)';
+        who.appendChild(line);
+      });
+      body.appendChild(who);
+    }
+
+    if ((ballots.outstanding || []).length) {
+      const b = el('div', 'banner warn');
+      b.style.marginTop = '0.6rem';
+      b.textContent = 'Not voted, and will be recorded as abstained: ' + ballots.outstanding.join(', ');
+      body.appendChild(b);
+    }
+
+    // Same rule the server applies when it stamps `outstanding_remands` onto the
+    // final record: an offer sitting in `returned` is one the team hasn't
+    // answered. Surfaced with its age so "locking early" is a visible choice.
+    const unanswered = (review.offers || []).filter(o => o.status === 'returned');
+    if (unanswered.length) {
+      const b = el('div', 'banner warn');
+      b.style.marginTop = '0.6rem';
+      b.appendChild(el('div', 'mini-head', 'Unanswered remands — this warns, it does not block'));
+      unanswered.forEach(o => {
+        const first = (o.outstanding_remands || [])[0];
+        b.appendChild(el('div', null,
+          `${o.team} #${o.number} — sent back ${first ? ago(first.at) : 'earlier'}, still awaiting the team`));
+      });
+      body.appendChild(b);
+    }
+
+    modal('Finalize ' + nameOf(slug), body, [{
+      label: 'Lock the ballots', cls: 'btn-primary', run: async () => {
+        await api('/fa/players/' + encodeURIComponent(slug) + '/finalize', { method: 'POST' });
+        await reload();
+        toast(nameOf(slug) + ' finalized');
+      },
+    }]);
+  }
+
+  function unlockModal(slug, ballots) {
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'Unlocking reopens the ballots for this round and un-archives the offers this finalize archived — '
+      + 'otherwise the restored ballots would refer to offers nobody can see. The result you are undoing '
+      + 'is kept on the record.'));
+    const f = ballots.final || {};
+    body.appendChild(el('div', 'banner info',
+      'Locked ' + when(f.locked_at) + ' by ' + f.locked_by + '.'));
+    modal('Unlock ' + nameOf(slug), body, [{
+      label: 'Unlock', cls: 'btn-danger', run: async () => {
+        await api('/fa/players/' + encodeURIComponent(slug) + '/unlock', { method: 'POST' });
+        await reload();
+        toast(nameOf(slug) + ' unlocked');
+      },
+    }]);
   }
 
   function barRow(label, value, cap) {
