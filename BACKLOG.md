@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Not linked from nav; the member-facing board is `/suggestions` (currently empty).
 
-Last reviewed: **2026-08-07** (against version 0.0.383).
+Last reviewed: **2026-08-09** (against version 0.0.401).
 
 Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** nice to have
 
@@ -11,42 +11,40 @@ Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** ni
 
 ## 1. Data integrity / open reconciliation
 
-### [P1] 31 cap-sheet diffs across 12 teams still unreconciled
-`/poopoo` (`build/poopoo.py` → `poopoo.json`, regenerated 2026-08-07) reports:
+### [P1] 9 cap-sheet diffs across 6 teams still unreconciled
+`/poopoo` (`build/poopoo.py` → `poopoo.json`, regenerated 2026-08-09) reports:
 
 | Team | Diffs | Fields |
 |---|---|---|
-| TOR | 9 | Guaranteed Salary, Hard Cap, MLE Used, TPE Remaining, Moses Moody, Luke Kennard, Trayce Jackson-Davis, Jordan Hawkins, Ryan Nembhard |
-| NOP | 3 | Guaranteed Salary, MLE Used, Tre Mann |
-| UTA | 3 | Guaranteed Salary, HALL PJ, POST QUINTEN |
-| WAS | 3 | Guaranteed Salary, MLE Used, MCCOLLUM CJ |
-| BKN | 2 | Guaranteed Salary, Keldon Johnson |
-| LAC | 2 | Guaranteed Salary, MLE Used |
-| MEM | 2 | Guaranteed Salary, MLE Used |
-| MIN | 2 | Guaranteed Salary, Mark Williams |
 | PHI | 2 | Guaranteed Salary, MANON CHRIS |
-| DEN | 1 | Hard Cap |
-| IND | 1 | Tobias Harris |
-| PHX | 1 | Daniel Gafford |
+| UTA | 3 | Guaranteed Salary, HALL PJ, POST QUINTEN |
+| BKN | 1 | MLE Used |
+| LAC | 1 | MLE Used |
+| TOR | 1 | TPE Remaining |
+| WAS | 1 | MLE Used |
 
-**This got worse, not better** — 22/9 teams on 2026-08-04 → 31/12 now. New since
-then: MEM, PHX, WAS; TOR grew 7→9, MIN 1→2. Nothing resolved.
-Committee fixes were sent 2026-07-13; these are what survived.
+Sharply down from 31 diffs / 12 teams on 2026-08-07 — most of that gap (TOR's
+Hard Cap/player rows, NOP, MEM, MIN, IND, PHX entirely, BKN's/WAS's/LAC's
+Guaranteed Salary rows) closed between that review and this one, cause
+unconfirmed; **DEN's `Hard Cap` diff is the one resolved in this session and is
+understood**: § 4.3's contagion rule was firing on cap-room-absorbed trades,
+which it shouldn't (see below) — Keldon Johnson's trade to DEN (2026-07-22)
+genuinely cleared via cap room once Marvin Bagley's renounce (logged 18s after
+the trade, but clearly meant to precede it) is credited, so the resulting First
+Apron hard cap was wrong. Fixed in `nbn-api` (shared `_cap_room_absorbed`
+predicate now gates both § 4.3 and § 4.4 contagion, not just
+`_check_salary_matching`) and reflected in the rulebook (§ 4.2/§ 4.3/§ 1.4);
+DEN's `team-state.json` corrected via an audited `set_hard_cap_level`
+transaction (txn `7ad3780dd6be8dc9`) rather than a silent edit.
 
-"Guaranteed Salary" now recurs on 9 of the 12 teams. The earlier hunch was that
-this is one systemic cause — partly right, but not a single missing addend: the
-deltas run in **both** directions and aren't a constant. The real tell is that 5
-of the 9 sheet values carry fractional cents while every site value is a clean
-integer:
+The remaining "Guaranteed Salary" diffs (PHI, UTA) still carry the same
+fractional-cent signature the sheet does that the site doesn't:
 
-    BKN  sheet 178,853,658.6  site 157,458,309
-    MEM  sheet 187,745,791.1  site 202,789,791
     PHI  sheet 177,974,132.5  site 180,125,050
-    TOR  sheet 211,462,407.4  site 200,902,663
     UTA  sheet 145,202,503.2  site 140,118,523
 
 The sheet is doing arithmetic the site isn't — proration or partial guarantees
-is the obvious suspect. Chase that before hand-fixing 31 rows.
+is the obvious suspect. Chase that before hand-fixing the rest.
 
 ### [P1] Picks conveyance — 88 picks still not cleanly modeled
 `poopoo.json` `picks.counts` as of 2026-08-07 — **every count identical to
