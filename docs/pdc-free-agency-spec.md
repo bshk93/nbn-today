@@ -265,6 +265,26 @@ committee of a few people.
 - `mode: "ffa"` — **every** player in the derived FA pool accepts offers,
   regardless of `players[...]`. `status` still governs sub-committee assignment.
 
+**The pool is not the offerable set** (learned the hard way, pinned by a test).
+`_fa_pool` returns every player with an actionable cap hold on file, keyed by the
+year that hold lands, so it spans future league years by design — it is what
+`/free-agency`'s year chips are built from, and on the day this was written it
+held **570 players of whom only 209 had actually reached free agency**. Read
+literally, "every player in the pool accepts offers" in FFA mode offers a
+contract to someone under contract for three more years.
+
+So `_accepts_offers` gates on `class_year <= current league year` **before** it
+looks at the mode — it is a fact about the player, not about the board, and the
+more useful of the two things to be told. `PUT /api/fa/players/{slug}` refuses
+to open one for the same reason: a player nobody can bid on, with a
+sub-committee that has nothing to review, is worse than an error. `<=` rather
+than `==`, because a hold that was never resolved leaves a player in an older
+class while they are still plainly a free agent.
+
+The lesson generalises past this bug: **anything reasoning about who can be
+signed has to filter the pool by class year.** The pool answers "who has a hold
+on file", not "who is a free agent today".
+
 **The FFA clock (decided).** The *first submitted* offer on a player in FFA mode
 stamps `ffa = {started_at, deadline: started_at + 24h, started_by_offer}`. A
 draft does not start it; later offers do **not** extend it.
