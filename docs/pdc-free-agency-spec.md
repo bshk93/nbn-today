@@ -281,9 +281,26 @@ sub-committee that has nothing to review, is worse than an error. `<=` rather
 than `==`, because a hold that was never resolved leaves a player in an older
 class while they are still plainly a free agent.
 
-The lesson generalises past this bug: **anything reasoning about who can be
-signed has to filter the pool by class year.** The pool answers "who has a hold
-on file", not "who is a free agent today".
+The lesson generalises past this bug, and it had to be applied twice: the head's
+**"+ Player" picker** listed all 570 as well, so the fix above only turned a bad
+open into a 422 — the list still offered players who were never openable. So
+`_fa_pool` now stamps **`current`** on every entry, computed by the same
+`_is_current_fa` the gate uses, and the picker filters on that one field rather
+than re-deriving the rule (the § 6.3 pattern, applied to the rule that most
+needed it). It also says how many it left out, because *"why isn't he in this
+list?"* is the obvious next question and the answer is a rule, not an omission.
+
+**`RENOUNCED` and `UNSIGNED` are current whatever their class year says.** They
+have no cap hold at all — that is what put them in those buckets — so they are
+signable now, and `_fa_pool` files them under the pool's *earliest* class as a
+bucket, not a date they are waiting on. A class-year test alone would call them
+"not free agents yet" in a league whose earliest real hold happened to be in a
+future year, inverting the truth for the only group with no hold to wait on.
+On live data they are 132 of the 209 current free agents, so this is not a
+corner case.
+
+The general rule: **the pool answers "who has a hold on file", not "who is a
+free agent today."** Read `current` for the second question.
 
 **The FFA clock (decided).** The *first submitted* offer on a player in FFA mode
 stamps `ffa = {started_at, deadline: started_at + 24h, started_by_offer}`. A

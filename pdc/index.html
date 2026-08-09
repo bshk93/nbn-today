@@ -687,20 +687,36 @@
   }
 
   function addPlayerModal() {
+    const onBoard = new Set(Object.keys(STATE.players || {}));
+    // `POOL` is everyone with a cap hold *on file*, which spans future league
+    // years — /free-agency's year chips are built from it. Only the current
+    // class has actually reached free agency, and opening anyone else produces a
+    // player no team can bid on with a sub-committee that has nothing to review
+    // (the API refuses it outright). `current` is stamped server-side by the
+    // same helper that gates offerability, so this isn't a second opinion.
+    const all = Object.keys(POOL);
+    const candidates = all
+      .filter(slug => POOL[slug].current)
+      .map(slug => ({ slug, name: nameOf(slug), pool: POOL[slug] }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const laterCount = all.length - candidates.length;
+
     const body = el('div');
     body.appendChild(el('p', 'note', 'Opening a player lets teams submit offers on them in the current round. '
-      + 'In FFA mode every pool player already accepts offers — opening one there is about the sub-committee, not the window.'));
+      + 'In FFA mode every free agent already accepts offers — opening one there is about the sub-committee, not the window.'));
+    if (laterCount) {
+      // Said out loud, because "why isn't he in this list?" is the obvious next
+      // question and the answer is a rule, not an omission.
+      body.appendChild(el('p', 'note', `Listing the ${candidates.length} players who are free agents in `
+        + `${SEASON || 'the current league year'}. Another ${laterCount} have a cap hold on file for a later `
+        + `year and can’t be signed yet, so they aren’t here.`));
+    }
     const search = el('input');
-    search.placeholder = 'Search the free-agent pool…';
+    search.placeholder = 'Search the free agents…';
     body.appendChild(search);
     const list = el('div', 'picklist');
     list.style.marginTop = '0.5rem';
     body.appendChild(list);
-
-    const onBoard = new Set(Object.keys(STATE.players || {}));
-    const candidates = Object.keys(POOL)
-      .map(slug => ({ slug, name: nameOf(slug), pool: POOL[slug] }))
-      .sort((a, b) => a.name.localeCompare(b.name));
 
     function draw() {
       const q = search.value.trim().toLowerCase();

@@ -583,9 +583,11 @@ Three rules this page holds and must keep holding:
 - **The FA pool is not the offerable set.** `GET /api/fa/pool` returns everyone
   with an actionable cap hold *on file*, keyed by the year it lands — it spans
   future league years, because `/free-agency`'s year chips are built from it
-  (570 entries, 209 of them current, as of 2026-08-09). Offerability is gated on
-  `class_year <= current league year` in `_accepts_offers`. Anything else
-  reasoning about who can be signed must filter the same way.
+  (570 entries, 209 of them current, as of 2026-08-09). Each entry carries
+  **`current`**, stamped by the same `_is_current_fa` that gates
+  `_accepts_offers`. **Read `current`; never re-derive it** — a `class_year`
+  comparison alone gets `RENOUNCED`/`UNSIGNED` wrong, and they are 132 of the
+  209. This caught out both the team ⋯ menu and the head's "+ Player" picker.
 - **Submission is final at the team's initiative** (§ 4.3). There is no withdraw
   endpoint and no post-submit edit — a submitted offer opens read-only. The only
   way back is a committee **remand**, after which the same form reopens with the
