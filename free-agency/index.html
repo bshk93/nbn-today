@@ -470,6 +470,8 @@
     let MY_OFFERS = {};                      // "TEAM|slug" -> live offer
     let POOL = {};
     let LEAGUE_YEAR = null;
+    let BIOS = {};         // slug -> bio, for draft_year (minimum-salary tier lookups)
+    let CAP_LEVELS = {};   // season -> { min_salary_scale, ... }, from GET /api/cap-levels
 
     // The `.nbn.today` session cookie covers /api/fa/* (§ 3.3), so a member who
     // has signed in anywhere on the site needs no token here. The header still
@@ -524,6 +526,71 @@
     function seasonAfter(s) {
       const [a, b] = s.split('-').map(Number);
       return `${String((a + 1) % 100).padStart(2, '0')}-${String((b + 1) % 100).padStart(2, '0')}`;
+    }
+
+    // ── § 3.12 minimum-salary lookups, mirroring nbn-api's
+    // _min_salary_for / _one_year_min_cap_hit (transactions.py), so the
+    // "Minimum" preset fills in the same figures the validator will check
+    // against rather than a second, driftable copy of the scale. ─────────────
+
+    function minScaleFor(season) {
+      // Falls back to the latest configured season at or before this one —
+      // scales only ever rise, so an older figure under-fills rather than
+      // ever overstating the floor (same reasoning as _min_salary_floor).
+      const direct = (CAP_LEVELS[season] || {}).min_salary_scale;
+      if (direct && direct['0']) return direct;
+      let best = null, bestYr = -1;
+      Object.keys(CAP_LEVELS).forEach(yr => {
+        const scale = (CAP_LEVELS[yr] || {}).min_salary_scale;
+        const start = parseInt(yr, 10) || 0;
+        if (scale && scale['0'] && start <= (parseInt(season, 10) || 0) && start > bestYr) {
+          best = scale; bestYr = start;
+        }
+      });
+      return best || direct || {};
+    }
+
+    function minTierKey(yearsExp) {
+      return yearsExp >= 10 ? '10+' : String(Math.max(0, yearsExp));
+    }
+
+    // Player's own experience-tier minimum for one season, or the league
+    // floor if experience can't be established (undrafted, no scale yet).
+    function tierMinimum(slug, season) {
+      const scale = minScaleFor(season);
+      const floor = scale['0'] || 0;
+      const draftYear = (BIOS[slug] || {}).draft_year;
+      if (!draftYear || !Object.keys(scale).length) return floor;
+      const yearsExp = (parseInt(season, 10) || 0) + 2000 - draftYear;
+      return scale[minTierKey(yearsExp)] || floor;
+    }
+
+    // A 1-year minimum deal's cap hit is capped at the 2-year veteran minimum
+    // regardless of actual tier (§ 3.12) — only relevant for a single-year
+    // contract; a multi-year minimum deal follows the per-year tier instead.
+    function oneYearMinCapHit(slug, season) {
+      const scale = minScaleFor(season);
+      const floor = scale['0'] || 0;
+      const draftYear = (BIOS[slug] || {}).draft_year;
+      if (!draftYear || !Object.keys(scale).length) return floor;
+      const yearsExp = (parseInt(season, 10) || 0) + 2000 - draftYear;
+      const key = minTierKey(yearsExp);
+      const tierAmt = scale[key] || floor;
+      const twoYrAmt = scale['2'] || 0;
+      if (key === '0' || key === '1' || !twoYrAmt) return tierAmt;
+      return Math.min(tierAmt, twoYrAmt);
+    }
+
+    function minimumSalaries(slug, years) {
+      // Year 1 only: a genuine 1-year deal gets the § 3.12 2-yr-cap-hit figure;
+      // a multi-year deal's Year 1 is the player's own tier minimum. Years 2+
+      // repeat Year 1 flat rather than climbing to each year's own (higher)
+      // tier floor — the scale's dollar jumps routinely exceed § 3.13's 5%/yr
+      // raise ceiling, which would make an escalating auto-fill illegal on
+      // its own. Flat only risks the non-blocking "below tier" warning.
+      const season = curYr();
+      const yr1 = years === 1 ? oneYearMinCapHit(slug, season) : tierMinimum(slug, season);
+      return new Array(years).fill(yr1);
     }
 
     function compactMoney(n) {
@@ -879,13 +946,20 @@
           r.appendChild(yl);
 
           const input = document.createElement('input');
-          input.type = 'number'; input.step = '1000'; input.min = '0';
+          // text, not number: a number input rejects "$" and "," outright —
+          // pasting a formatted figure (e.g. copied off the legality panel)
+          // left the field empty, which silently zeroed the salary.
+          // parseMoney() already strips both, so route through it here too.
+          input.type = 'text'; input.inputMode = 'decimal';
           input.value = F.salaries[i] || 0;
           input.disabled = readOnly;
           input.addEventListener('input', () => {
-            F.salaries[idx] = +input.value || 0;
+            F.salaries[idx] = parseMoney(input.value);
             drawRaises();
             revalidate();
+          });
+          input.addEventListener('blur', () => {
+            input.value = F.salaries[idx] || 0;
           });
           r.appendChild(input);
 
@@ -908,10 +982,11 @@
           yrs.appendChild(r);
           season = seasonAfter(season);
         }
-        if (F.hold) {
-          yrs.appendChild(el('div', 'hold-row',
-            `${season} — ${F.hold} hold (amount computed by the office, § 3.10)`));
-        }
+        // Filled in by paintHold off the validator's fact sheet — see there for
+        // why the figure can't be worked out here.
+        const holdLine = el('div', 'hold-row');
+        holdLine.id = 'hold-amount-row';
+        yrs.appendChild(holdLine);
         cf.appendChild(yrs);
 
         if (!readOnly) {
@@ -953,7 +1028,18 @@
         // § 5.4 — shown and disabled with the reason, not hidden, exactly like an
         // ineligible entry in the roster ⋯ menu.
         const methodOpts = METHODS.concat([['sign_and_trade', 'Sign-and-trade — not supported here', true]]);
-        const methodSel = select(methodOpts, F.method, v => { F.method = v; revalidate(); });
+        const methodSel = select(methodOpts, F.method, v => {
+          F.method = v;
+          // Fill in the § 3.12 figures for this player rather than leaving
+          // the salary boxes at whatever they held before (often $0 on a
+          // fresh offer) — the same numbers the validator will check against.
+          if (v === 'minimum' && F.type !== 'two-way') {
+            F.salaries = minimumSalaries(slug, F.years);
+            drawForm();
+            return;
+          }
+          revalidate();
+        });
         methodSel.title = 'Sign-and-trade requires a companion trade proposal and joint approval — '
           + 'not yet supported on the site (§ 3.14). Bring it to the committee directly.';
         fr.appendChild(field('Exception / method', methodSel));
@@ -1103,6 +1189,7 @@
             lastValidation = null;
             panel.className = 'panel bad';
             panel.textContent = 'Could not evaluate: ' + (d.detail || ('HTTP ' + res.status));
+            paintHold(null);
             gateSubmit();
             return;
           }
@@ -1112,12 +1199,42 @@
           lastValidation = null;
           panel.className = 'panel bad';
           panel.textContent = 'Could not reach the validator.';
+          paintHold(null);
           gateSubmit();
           return;
         }
         if (seq !== validateSeq) return;
         renderValidation(panel, lastValidation);
+        paintHold((lastValidation.fact_sheet || {}).trailing_hold);
         gateSubmit();
+      }
+
+      // § 3.10's trailing hold, priced live as the deal is built. The figure is
+      // the server's `trailing_hold` off the validate/sign fact sheet — produced
+      // by the same _autofill_fa_hold_amounts that writes it at signing time —
+      // never worked out here, same rule as every other dollar on this page.
+      const BIRD_LABEL = { QVFA: 'Full Bird', EQVFA: 'Early Bird', 'Non-QVFA': 'Non-Bird' };
+
+      function paintHold(h) {
+        const line = box.querySelector('#hold-amount-row');
+        if (!line) return;
+        line.title = '';
+        if (!F.hold) { line.textContent = ''; return; }
+        if (!h) {
+          line.textContent = `${F.hold} hold after the deal — amount pending the legality check`;
+          return;
+        }
+        const tier = BIRD_LABEL[h.bird_tier] || h.bird_tier || '';
+        let tail;
+        if (h.needs_eaps) {
+          tail = 'choose above/below EAPS to price it';
+        } else if (h.amount == null) {
+          tail = h.note || 'the office will price it';
+        } else {
+          tail = compactMoney(h.amount) + (tier ? ` · ${tier}` : '');
+          line.title = h.note || '';
+        }
+        line.textContent = `${h.season} — ${h.type} hold · ${tail}`;
       }
 
       function renderValidation(panel, data) {
@@ -1229,6 +1346,14 @@
           list.appendChild(el('div', 'checkline ok',
             `${s} — ${compactMoney(F.salaries[i] || 0)}${tag ? ' (' + tag + ')' : ''}`));
         });
+        // The trailing hold is part of what this offer commits the team to, so
+        // it is restated here with the rest of the years (§ 3.10).
+        const th = ((lastValidation || {}).fact_sheet || {}).trailing_hold;
+        if (th) {
+          list.appendChild(el('div', 'checkline ok',
+            `${th.season} — ${th.type} hold`
+            + (th.amount != null ? `, ${compactMoney(th.amount)}` : ', amount set by the office')));
+        }
         box.appendChild(list);
 
         const warn = el('div', 'panel warn');
@@ -1273,7 +1398,7 @@
       const statusEl = document.getElementById('status');
       try {
         const signedIn = maybeSignedIn();
-        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers] = await Promise.all([
+        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers, capLevelsJson] = await Promise.all([
           fetch('/api/fa/pool').then(r => r.ok ? r.json() : {}),
           fetch('/api/players').then(r => r.ok ? r.json() : {}),
           fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
@@ -1282,9 +1407,12 @@
           fetch('/api/fa/board').then(r => r.ok ? r.json() : null).catch(() => null),
           fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
           signedIn ? api('/fa/offers').catch(() => []) : Promise.resolve([]),
+          fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
         ]);
 
         POOL = pool;
+        BIOS = biosJson;
+        CAP_LEVELS = capLevelsJson || {};
         ME = me || ME;
         if (board) BOARD = board;
         LEAGUE_YEAR = (ly && ly.current_season) || null;

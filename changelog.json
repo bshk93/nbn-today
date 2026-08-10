@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.0.404",
+    "date": "2026-08-10",
+    "changes": [
+      "FA offers: the \u00a7 3.10 cap hold a contract rolls into is now priced live as you build the deal, instead of reading \"amount computed by the office\" \u2014 the figure moves with the years, salaries, Bird tier and EAPS toggle, and is restated on the submit confirmation",
+      "Transaction simulator: the \"Rolls into\" row now carries the hold's dollar amount",
+      "PDC dashboard: the committee's year table now shows the trailing UFA/RFA hold and what it costs \u2014 previously the hold season was missing from the reviewed deal entirely",
+      "API: new fact_sheet.trailing_hold on POST /api/validate/sign and /api/validate/offer_sheet, priced by the same helper that writes the hold at signing time, so no surface computes it independently",
+      "FA offers: choosing the Minimum method now auto-fills the \u00a7 3.12 figures for that player rather than leaving the salary boxes at $0",
+      "FA offers: salary boxes accept pasted figures with $ and commas instead of silently zeroing",
+      "Signings no longer hard-block a team sitting at 15 standard players: \u00a7 2.1's offseason shape (\u226415 passes, 16-20 warns, >20 blocks) now applies to FA signings, offer sheets and two-way conversions, matching what a trade adding the same player already allowed",
+      "Fixed the Bi-Annual Exception showing as available to a team that had already used it that season"
+    ]
+  },
+  {
     "version": "0.0.403",
     "date": "2026-08-09",
     "changes": [

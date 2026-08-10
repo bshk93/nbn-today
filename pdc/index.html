@@ -1075,8 +1075,12 @@
     if (o.version > 1) head.appendChild(el('span', 'chip', 'v' + o.version));
     card.appendChild(head);
 
+    // Cap position after the signing — every figure straight off the fact sheet
+    // the API built. The dashboard does no cap math of its own.
+    const sheet = (o.revalidation && o.revalidation.fact_sheet) || (o.validation && o.validation.fact_sheet);
+
     card.appendChild(el('div', 'shorthand', shorthand(o.offer.contract, season)));
-    card.appendChild(yearTable(o.offer.contract, season));
+    card.appendChild(yearTable(o.offer.contract, season, sheet && sheet.trailing_hold));
 
     const kv = el('dl', 'kv');
     const put = (k, v) => { kv.appendChild(el('dt', null, k)); kv.appendChild(el('dd', null, v)); };
@@ -1088,9 +1092,6 @@
 
     card.appendChild(legalityBlock(o));
 
-    // Cap position after the signing — every figure straight off the fact sheet
-    // the API built. The dashboard does no cap math of its own.
-    const sheet = (o.revalidation && o.revalidation.fact_sheet) || (o.validation && o.validation.fact_sheet);
     if (sheet) card.appendChild(capBlock(sheet));
 
     card.appendChild(promisesBlock(o.promises));
@@ -1122,7 +1123,11 @@
     return IS_HEAD || ((review.state || {}).subcommittee || []).includes(ME.name);
   }
 
-  function yearTable(contract, season) {
+  // `trailingHold` is the fact sheet's priced § 3.10 hold. The contract itself
+  // deliberately leaves that season out of `salaries` — the API prices it at
+  // signing time — so without this the hold the deal rolls into, and what it
+  // costs, was simply missing from the deal the committee reviews.
+  function yearTable(contract, season, trailingHold) {
     const t = el('table', 'years');
     const sals = contract.salaries || {};
     const caps = contract.cap_holds || {};
@@ -1141,6 +1146,16 @@
       tr.appendChild(td);
       t.appendChild(tr);
     });
+    if (trailingHold && !(sals[trailingHold.season])) {
+      const tr = el('tr', 'hold');
+      tr.appendChild(el('td', null, trailingHold.season));
+      tr.appendChild(el('td', 'amt', trailingHold.amount != null ? money(trailingHold.amount) : ''));
+      const td = el('td', 'tag', trailingHold.type);
+      td.title = trailingHold.note
+        || (trailingHold.needs_eaps ? 'Not priced: the team didn’t state whether the prior salary is above or below EAPS.' : '');
+      tr.appendChild(td);
+      t.appendChild(tr);
+    }
     return t;
   }
 

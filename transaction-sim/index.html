@@ -790,8 +790,14 @@ function renderSignResults(data, isOffer) {
         const opts = Object.keys(ch).filter(s => LBL[ch[s]]).sort()
           .map(s => `${s} ${LBL[ch[s]]}`).join(', ');
         const hold = Object.keys(ch).filter(s => ch[s] === 'UFA' || ch[s] === 'RFA').sort()[0];
+        // The hold's dollar figure comes off the fact sheet (§ 3.10), priced by
+        // the same helper that writes it at signing time — not computed here.
+        const th = f.trailing_hold;
+        const amt = !th ? ''
+          : th.needs_eaps ? ' — needs an EAPS assumption to price'
+          : th.amount != null ? ` — ${fmtM(th.amount)}` : '';
         return (opts ? row('Options', opts) : '')
-             + (hold ? row('Rolls into', `${hold} ${ch[hold]} hold`) : '');
+             + (hold ? row('Rolls into', `${hold} ${ch[hold]} hold${amt}`) : '');
       })()}
       ${f.existing_hold > 0
         ? row(f.existing_hold_is_fa ? 'Replaces FA hold' : 'Replaces salary', fmtM(f.existing_hold), 'var(--gold)')
