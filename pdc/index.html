@@ -545,7 +545,11 @@
       box.appendChild(el('h4', null, 'Running Free Agency'));
       box.appendChild(list([
         'Mode is the master switch. Closed takes no offers at all. Rounds takes them only on players you’ve opened. FFA opens every free agent at once.',
-        'FFA is the only clock the software enforces: the first submitted offer on a player starts 24 hours, later offers don’t extend it, and at the deadline he stops taking offers and comes to you. Nothing signs itself, ever.',
+        // No hours figure here on purpose: this renders before the board loads,
+        // so any number in it would be the default rather than your setting. The
+        // live figure is on the board bar and in the control itself.
+        'FFA is the only clock the software enforces: the first submitted offer on a player starts it, later offers don’t extend it, and at the deadline he stops taking offers and comes to you. Nothing signs itself, ever.',
+        'You set how long that window runs, in hours, next to the mode switch. It applies to clocks started from then on — a clock already running keeps the deadline it was stamped with, so changing it can never move a deadline teams are bidding against or close a window early.',
         'Rounds carry no clock. Opening Round N does not close Round N−1’s players, and a round’s “closes at” is a label — you close players by hand, on purpose, so you can leave one open across a boundary.',
         'Sub-committees default to empty. Nobody can ballot on a player until you assign one, and the picker flags anyone whose own team is bidding before you confirm.',
         'Finalize locks the ballots, records the totals, and archives that player’s offers — which is what lets those teams bid on him again in a later round. An unanswered remand warns you and does not block you.',
@@ -576,11 +580,27 @@
 
   // ── the board bar (mode, rounds) ────────────────────────────────────────────
 
+  // The FFA window length is the head's setting (§ 4.1), so no copy on this page
+  // may hardcode 24 — it reads the live figure the same way every string the API
+  // emits does.
+  function ffaHours() {
+    const h = Number(STATE && STATE.ffa_window_hours);
+    return h > 0 ? h : 24;
+  }
+  function ffaWindowLabel() {
+    const h = ffaHours();
+    return (Number.isInteger(h) ? h : Math.round(h * 10) / 10) + '-hour';
+  }
+
   const MODE_COPY = {
     closed: 'No offers are accepted.',
     rounds: 'Only players the head has opened accept offers.',
-    ffa: 'Every free agent accepts offers; the first offer on a player starts a 24-hour clock.',
   };
+  function modeCopy(m) {
+    return m === 'ffa'
+      ? `Every free agent accepts offers; the first offer on a player starts a ${ffaWindowLabel()} clock.`
+      : (MODE_COPY[m] || '');
+  }
 
   function currentRound() {
     const rs = (STATE.rounds || []);
@@ -598,8 +618,20 @@
     const modeBlock = el('div', 'bb-block');
     modeBlock.appendChild(el('span', 'bb-label', 'Mode'));
     modeBlock.appendChild(el('span', 'chip chip-live', STATE.mode === 'ffa' ? 'FFA' : STATE.mode[0].toUpperCase() + STATE.mode.slice(1)));
-    modeBlock.appendChild(el('span', 'bb-val', MODE_COPY[STATE.mode] || ''));
+    modeBlock.appendChild(el('span', 'bb-val', modeCopy(STATE.mode)));
     bar.appendChild(modeBlock);
+
+    // Shown to everyone, not just the head: a member reading a deadline needs to
+    // know what window it came from, and a team on /free-agency is bidding into it.
+    if (STATE.mode === 'ffa') {
+      const winBlock = el('div', 'bb-block');
+      winBlock.appendChild(el('span', 'bb-label', 'FFA window'));
+      const c = el('span', 'chip', ffaHours() + 'h');
+      c.title = 'Applies to clocks started from now on. A clock already running keeps '
+              + 'the deadline it was stamped with.';
+      winBlock.appendChild(c);
+      bar.appendChild(winBlock);
+    }
 
     const rnd = currentRound();
     const roundBlock = el('div', 'bb-block');
@@ -632,12 +664,29 @@
       const seg = el('div', 'seg');
       ['closed', 'rounds', 'ffa'].forEach(m => {
         const b = el('button', STATE.mode === m ? 'on' : '', m === 'ffa' ? 'FFA' : m[0].toUpperCase() + m.slice(1));
-        b.title = MODE_COPY[m];
+        b.title = modeCopy(m);
         b.addEventListener('click', () => setMode(m));
         seg.appendChild(b);
       });
       modeRow.appendChild(seg);
       zone.appendChild(modeRow);
+
+      const winRow = el('div', 'bb-block');
+      winRow.appendChild(el('span', 'bb-label', 'FFA window'));
+      const winInput = el('input');
+      winInput.type = 'number';
+      winInput.min = '1'; winInput.max = '168'; winInput.step = '1';
+      winInput.value = String(ffaHours());
+      winInput.style.width = '5rem';
+      const winBtn = el('button', 'btn-ghost', 'Set');
+      winBtn.addEventListener('click', () => setFfaWindow(winInput.value));
+      winRow.appendChild(winInput);
+      winRow.appendChild(el('span', 'bb-val', 'hours'));
+      winRow.appendChild(winBtn);
+      winRow.appendChild(el('p', 'note',
+        'Applies to clocks started from now on. Clocks already running keep the deadline '
+        + 'they were stamped with — this can’t move a deadline teams are bidding against.'));
+      zone.appendChild(winRow);
 
       const openBtn = el('button', 'btn-ghost', 'Open round…');
       openBtn.addEventListener('click', openRoundModal);
@@ -653,11 +702,23 @@
     if (mode === STATE.mode) return;
     if (mode === 'ffa' && !confirm(
       'Switch to FFA?\n\nEvery free agent in the pool becomes offerable immediately, and the first '
-      + 'submitted offer on a player starts a 24-hour clock that closes their window.')) return;
+      + `submitted offer on a player starts a ${ffaWindowLabel()} clock that closes their window.`)) return;
     try {
       await api('/fa/mode', { method: 'PUT', body: { mode } });
       await reload();
       toast('Mode is now ' + mode);
+    } catch (e) { toast(e.message, true); }
+  }
+
+  async function setFfaWindow(raw) {
+    const hours = Number(raw);
+    if (!(hours >= 1 && hours <= 168)) return toast('Window must be between 1 and 168 hours', true);
+    if (hours === ffaHours()) return;
+    try {
+      const r = await api('/fa/ffa-window', { method: 'PUT', body: { hours } });
+      await reload();
+      toast(`FFA window is now ${hours}h`
+            + (r.clocks_unaffected ? ` — ${r.clocks_unaffected} running clock(s) unchanged` : ''));
     } catch (e) { toast(e.message, true); }
   }
 
@@ -763,14 +824,23 @@
 
   // ── the player list ─────────────────────────────────────────────────────────
 
-  // Urgency, most pressing first: a running FFA clock (soonest deadline), then a
-  // window that has closed and is waiting on ballots, then open players, then the
-  // rest. The FFA window is the only clock the software enforces, so it is the
-  // only thing here that can actually run out.
+  // Work queue, most actionable first — *not* soonest-to-expire. A closed window
+  // is the committee's cue to start (§ 4.1): the clock governs additional offers
+  // and nothing else, so a player still collecting them needs nothing from anyone
+  // on this page, while one whose window has closed is waiting on a sub-committee
+  // and its ballots. Ordering by the clock put every player who needed work
+  // *below* every player who didn't, which is backwards for the only phase this
+  // list exists to run.
+  //
+  // Within the ready group, longest-waiting first (oldest deadline), so a player
+  // can't sit unassigned while later closures pile on top of him. Finalized
+  // players are done and sort last — they keep `ffa_expired` forever, so without
+  // this they would head the queue for the rest of the league year.
   function urgency(p) {
     const dl = (p.ffa || {}).deadline;
-    if (dl && !p.ffa_expired) return [0, new Date(dl).getTime()];
-    if (p.ffa_expired) return [1, 0];
+    if (p.finalized) return [5, 0];
+    if (p.ffa_expired) return [0, new Date(dl).getTime()];
+    if (dl) return [1, new Date(dl).getTime()];
     if (p.status === 'open') return [2, 0];
     if (p.status === 'held') return [3, 0];
     return [4, 0];
@@ -948,10 +1018,20 @@
     row.appendChild(assign);
     s.appendChild(row);
 
-    if ((review.state || {}).status === 'open' && !(review.state.subcommittee || []).length) {
+    // Fires on a closed FFA window as well as an open player, and the closed
+    // case is the one that matters: assignment happens *after* the window shuts
+    // (§ 4.1 — the clock governs additional offers, nothing else), so this is
+    // the head's cue at the exact moment the cue is due. Keyed on `status` alone
+    // it never fired for an FFA player at all, because `_start_ffa_clock`
+    // deliberately leaves `status` unset.
+    const st0 = review.state || {};
+    if ((st0.ffa_expired || st0.status === 'open') && !(st0.subcommittee || []).length) {
       const b = el('div', 'banner warn');
       b.style.marginTop = '0.6rem';
-      b.textContent = 'Nobody is assigned, so nobody can ballot on this player. Sub-committees default to empty by design — assign one.';
+      b.textContent = st0.ffa_expired
+        ? 'The window has closed and nobody is assigned, so nobody can ballot on this player. '
+          + 'Sub-committees default to empty by design — assign one to start deliberation.'
+        : 'Nobody is assigned, so nobody can ballot on this player. Sub-committees default to empty by design — assign one.';
       s.appendChild(b);
     }
 
@@ -1018,8 +1098,10 @@
   function offersSection(review) {
     const s = el('div', 'section');
     s.appendChild(el('h3', null, 'Offers'));
+    const voided = review.voided_offers || [];
     if (!review.offers.length) {
       s.appendChild(el('div', 'empty', 'No submitted offers on this player.'));
+      if (voided.length) s.appendChild(voidedBlock(voided));
       return s;
     }
     const wrap = el('div', 'offers');
@@ -1028,7 +1110,41 @@
       .sort((a, b) => a.number - b.number)
       .forEach(o => wrap.appendChild(offerCard(o, review)));
     s.appendChild(wrap);
+    if (voided.length) s.appendChild(voidedBlock(voided));
     return s;
+  }
+
+  // § 4.3b. Out of play — no revalidation, no ballot line, no exposure — but
+  // shown, because "the committee erased a bid" is exactly what a review page
+  // has to be able to answer for. Kept below the live offers so it reads as a
+  // record rather than as something still under consideration.
+  function voidedBlock(voided) {
+    const box = el('div', 'section');
+    box.style.marginTop = '0.8rem';
+    box.appendChild(el('div', 'mini-head', 'Voided — out of play, not deleted'));
+    voided.slice().sort((a, b) => a.number - b.number).forEach(o => {
+      const v = o.void || {};
+      const row = el('div', 'remand');
+      const head = el('div');
+      head.appendChild(el('span', 'offer-team', o.team));
+      head.appendChild(el('span', 'offer-num', ' #' + o.number));
+      head.appendChild(el('span', 'chip chip-bad', 'voided'));
+      row.appendChild(head);
+      row.appendChild(el('div', null, shorthand(o.offer.contract, SEASON)));
+      row.appendChild(el('div', null, '“' + (v.reason || '—') + '”'));
+      row.appendChild(el('div', 'meta',
+        'voided ' + ago(v.at) + ' by ' + (v.by || '?')
+        + ' · was ' + (v.from_status || 'submitted')
+        + ' · ' + o.team + ' may bid again'));
+      if (IS_HEAD) {
+        const b = el('button', 'btn-ghost', 'Undo the void…');
+        b.style.marginTop = '0.3rem';
+        b.addEventListener('click', () => restoreModal(o));
+        row.appendChild(b);
+      }
+      box.appendChild(row);
+    });
+    return box;
   }
 
   function offerCard(o, review) {
@@ -1054,6 +1170,13 @@
     const put = (k, v) => { kv.appendChild(el('dt', null, k)); kv.appendChild(el('dd', null, v)); };
     put('Method', METHOD_LABELS[o.offer.signing_method] || o.offer.signing_method || '—');
     if (o.offer.bird_rights_type) put('Bird', o.offer.bird_rights_type);
+    // § 3.12: on a minimum deal this is what every year's figure is derived
+    // from, and the team declared it — so it's a reviewable claim, not a
+    // detail. Shown only when stated, since it changes nothing otherwise.
+    const yx = (o.offer.contract || {}).years_experience;
+    if (yx !== null && yx !== undefined) {
+      put('NBA experience', `${yx} yr${yx === 1 ? '' : 's'} as of Year 1 (§ 3.12 scale tier)`);
+    }
     put('Submitted', when(o.submitted_at) + ' · ' + (o.submitted_by || '—'));
     if (o.created_by && o.created_by !== o.submitted_by) put('Drafted by', o.created_by);
     card.appendChild(kv);
@@ -1079,6 +1202,14 @@
     if (canRemand(review) && o.status === 'submitted') {
       const b = el('button', 'btn-danger', 'Send back for revision…');
       b.addEventListener('click', () => remandModal(o));
+      card.appendChild(b);
+    }
+    // § 4.3b, head-only — and offered on a `returned` offer too, which is where
+    // it earns its keep: a send-back the team never answers has no other end.
+    if (IS_HEAD) {
+      const b = el('button', 'btn-danger', 'Void…');
+      b.style.marginLeft = o.status === 'submitted' ? '0.4rem' : '';
+      b.addEventListener('click', () => voidModal(o));
       card.appendChild(b);
     }
     return card;
@@ -1280,6 +1411,12 @@
     if (prev.signing_method !== next.signing_method) {
       out.push(`method ${prev.signing_method || '—'}→${next.signing_method || '—'}`);
     }
+    // § 3.12: re-declaring experience moves every year onto a different scale
+    // row, so it is a change to the money even when the salaries are untouched.
+    const pe = prev.contract.years_experience, ne = next.contract.years_experience;
+    if ((pe ?? null) !== (ne ?? null)) {
+      out.push(`NBA experience ${pe ?? '—'}→${ne ?? '—'}`);
+    }
     return out;
   }
 
@@ -1316,6 +1453,12 @@
       labels[opt.key] = opt.kind === 'offer' ? `${opt.team} #${opt.number}`
         : opt.kind === 'qo' ? 'Qualifying offer'
         : 'No signing';
+    });
+    // A voided offer is no longer an option, but ballots cast before the void
+    // still name it and the totals still carry it (§ 4.3b — flagged, never
+    // rewritten). Without a label those rows would render as a raw offer id.
+    (review.voided_offers || []).forEach(o => {
+      labels[o.id] = `${o.team} #${o.number} (voided)`;
     });
     return labels;
   }
@@ -1372,6 +1515,11 @@
         f.appendChild(el('div', 'bb-val', 'Locked with '
           + ballots.final.outstanding_remands.length + ' unanswered remand(s).'));
       }
+      (ballots.final.voided_options || []).forEach(v => {
+        f.appendChild(el('div', 'bb-val', v.balls.toLocaleString('en-US')
+          + ' ball(s) above are on ' + v.team + ' #' + v.number
+          + ', an offer voided before the lock — counted as cast.'));
+      });
       // § 11.1 — the totals are the committee's decision, not a signing. Nothing
       // here signs anybody, by design, and the panel says so rather than leaving
       // a locked result looking like it executed itself.
@@ -1405,6 +1553,17 @@
         const w = el('div', 'banner warn');
         w.style.marginTop = '0.4rem';
         w.textContent = 'Revised after this ballot: ' + b.revised_since.map(id => labels[id] || id).join(', ');
+        card.appendChild(w);
+      }
+      if ((b.voided_since || []).length) {
+        // Same rule, harder case (§ 4.3b): the option left the board entirely.
+        // The balls stay where they were cast — redistributing them would be the
+        // software inventing a vote — so the head is told instead.
+        const w = el('div', 'banner bad');
+        w.style.marginTop = '0.4rem';
+        w.textContent = 'Balls on a voided offer: '
+          + b.voided_since.map(id => labels[id] || id).join(', ')
+          + '. They still count in the totals as cast.';
         card.appendChild(w);
       }
       grid.appendChild(card);
@@ -1446,6 +1605,16 @@
       w.textContent = 'Revised after you voted: '
         + mine.revised_since.map(id => labels[id] || id).join(', ')
         + '. Your ballot still stands — re-save it to clear this.';
+      box.appendChild(w);
+    }
+    // The stronger case: an option you backed is gone. Your balls are untouched
+    // and still counted, so re-saving is a choice rather than a repair (§ 4.3b).
+    if (mine && (mine.voided_since || []).length) {
+      const w = el('div', 'banner bad');
+      w.style.margin = '0.4rem 0';
+      w.textContent = 'You put balls on an offer the head has since voided: '
+        + mine.voided_since.map(id => labels[id] || id).join(', ')
+        + '. They still count as cast — re-save to put them somewhere else.';
       box.appendChild(w);
     }
 
@@ -1629,6 +1798,23 @@
       body.appendChild(b);
     }
 
+    // Balls sitting on an offer that has left the board (§ 4.3b). They are
+    // counted exactly as cast — the totals are the record of what members voted,
+    // not what the software thinks they'd have voted — so the head reads them
+    // knowing it, which means saying so before the lock, not after.
+    const gone = {};
+    (review.voided_offers || []).forEach(o => { gone[o.id] = o; });
+    const stranded = Object.entries(totals).filter(([k]) => gone[k]);
+    if (stranded.length) {
+      const b = el('div', 'banner bad');
+      b.style.marginTop = '0.6rem';
+      b.appendChild(el('div', 'mini-head', 'Balls on a voided offer — counted as cast'));
+      stranded.forEach(([k, v]) => b.appendChild(el('div', null,
+        `${v.toLocaleString('en-US')} ball(s) on ${gone[k].team} #${gone[k].number}, voided `
+        + ago((gone[k].void || {}).at) + '. Nothing redistributes them.')));
+      body.appendChild(b);
+    }
+
     modal('Finalize ' + nameOf(slug), body, [{
       label: 'Lock the ballots', cls: 'btn-primary', run: async () => {
         await api('/fa/players/' + encodeURIComponent(slug) + '/finalize', { method: 'POST' });
@@ -1692,6 +1878,58 @@
       },
     }]);
     ta.focus();
+  }
+
+  // § 4.3b. The dangerous one of the pair, and the copy says exactly what it
+  // does — a remand asks the team a question, this ends their bid without one.
+  function voidModal(o) {
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'A void takes the offer out of play as if it had never been submitted: off the ballot, out of '
+      + o.team + '’s exposure, and they are free to bid again. It is not a delete — the terms, the '
+      + 'versions and the remands all stay on the record, and you can undo it.'));
+    body.appendChild(el('p', 'note',
+      'Send it back instead if the terms need changing: a remand keeps the bid live and lets '
+      + o.team + ' answer. Nobody can answer a void.'));
+    const row = el('div', 'row');
+    row.appendChild(el('label', null, 'Why is this offer being voided? (required)'));
+    const ta = el('textarea');
+    ta.placeholder = 'e.g. Submitted on the wrong player, or duplicated during the outage.';
+    row.appendChild(ta);
+    body.appendChild(row);
+    modal('Void ' + o.team + ' #' + o.number, body, [{
+      label: 'Void this offer', cls: 'btn-danger', run: async () => {
+        const reason = ta.value.trim();
+        if (!reason) { toast('A void requires a reason — the team can’t answer it.', true); return false; }
+        await api('/fa/offers/' + o.id + '/void', { method: 'POST', body: { reason } });
+        await reload();
+        toast(o.team + ' #' + o.number + ' voided');
+      },
+    }]);
+    ta.focus();
+  }
+
+  function restoreModal(o) {
+    const v = o.void || {};
+    const back = v.from_status || 'submitted';
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'This puts the offer back as ' + back + ' — on the ballot and back in ' + o.team + '’s exposure. '
+      + (back === 'returned'
+         ? 'It was sent back before it was voided, so it returns with its remands still unanswered.'
+         : 'It returns exactly as it was submitted.')));
+    body.appendChild(el('div', 'banner info',
+      'Voided ' + when(v.at) + ' by ' + (v.by || '?') + ' — “' + (v.reason || '—') + '”'));
+    body.appendChild(el('p', 'note',
+      'It will be refused if ' + o.team + ' has already submitted another offer on this player, since a '
+      + 'team may only have one live offer per player.'));
+    modal('Undo the void — ' + o.team + ' #' + o.number, body, [{
+      label: 'Restore the offer', cls: 'btn-primary', run: async () => {
+        await api('/fa/offers/' + o.id + '/restore', { method: 'POST' });
+        await reload();
+        toast(o.team + ' #' + o.number + ' restored');
+      },
+    }]);
   }
 
   // ── modal plumbing ──────────────────────────────────────────────────────────

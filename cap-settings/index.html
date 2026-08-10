@@ -306,13 +306,41 @@
       container.appendChild(card);
     }
 
+    // Seasons added in this session with "+ Add season" — they have no record
+    // in cap-levels.json yet, so nothing else would keep them on the page. They
+    // become real on save, like any other card.
+    const extraSeasons = new Set();
+
     function renderSeasons(capLevels, canEdit, cur) {
       const next = nextSeason(cur);
-      const all  = new Set([...Object.keys(capLevels), cur, next]);
+      const all  = new Set([...Object.keys(capLevels), cur, next, ...extraSeasons]);
       const seasons = [...all].sort((a, b) => b.localeCompare(a));
 
       const container = document.getElementById('seasons');
       container.innerHTML = '';
+
+      // Contracts routinely run past the last season the office has figures
+      // for, and § 3.12 prices each year of a minimum deal on its own season's
+      // scale — so the out-years of a long deal need real seasons to sit on,
+      // not just the one-ahead the league year implies.
+      if (canEdit) {
+        const addWrap = document.createElement('div');
+        addWrap.style.cssText = 'display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap';
+        const addBtn = document.createElement('button');
+        addBtn.className = 'btn';
+        addBtn.textContent = '+ Add season';
+        const addNote = document.createElement('span');
+        addNote.style.cssText = 'color:var(--text-muted);font-size:0.8rem';
+        const latest = seasons[0];   // sorted newest-first just above
+        addNote.textContent = `Adds ${nextSeason(latest)}. Unsaved until you fill it in and hit Save.`;
+        addBtn.addEventListener('click', () => {
+          extraSeasons.add(nextSeason(latest));
+          renderSeasons(capLevels, canEdit, cur);
+        });
+        addWrap.appendChild(addBtn);
+        addWrap.appendChild(addNote);
+        container.appendChild(addWrap);
+      }
 
       seasons.forEach(season => {
         const data = capLevels[season] || {};

@@ -212,7 +212,9 @@
         <div class="sign-field">
           <label for="sign-method">Funded by (§ 3.1–3.6)</label>
           <select id="sign-method">
-            <option value="">— not declared —</option>
+            <!-- Required on a standard contract (§ 3.1–3.6); the validator errors
+                 on a blank, so this is the unfilled state, not a choice. -->
+            <option value="">— select one —</option>
             <option value="cap_space">Cap space</option>
             <option value="bird_rights">Bird Rights</option>
             <option value="minimum">Minimum</option>
@@ -222,6 +224,14 @@
             <option value="room_exception">Room Exception</option>
             <option value="bae">Bi-Annual Exception</option>
           </select>
+        </div>
+        <div class="sign-field">
+          <!-- § 3.12 prices each year of a minimum deal on the scale row for the
+               player's experience that season, so the tier is part of the
+               contract. Left blank the API falls back to the draft_year proxy,
+               which is null for most veterans. -->
+          <label for="sign-exp">NBA experience (Yr 1)</label>
+          <input type="number" id="sign-exp" min="0" max="25" step="1" placeholder="from draft year">
         </div>
         <div class="sign-field">
           <label for="sign-bird">Bird rights tier</label>
@@ -669,7 +679,7 @@ function setupSignForm() {
   document.getElementById('sign-eaps').addEventListener('change', e => {
     signState.eaps = e.target.value; updateCheckBtn();
   });
-  ['sign-team', 'sign-offering', 'sign-outcome', 'sign-type', 'sign-method', 'sign-bird']
+  ['sign-team', 'sign-offering', 'sign-outcome', 'sign-type', 'sign-method', 'sign-bird', 'sign-exp']
     .forEach(id => document.getElementById(id).addEventListener('change', updateCheckBtn));
   document.querySelectorAll('.preset-btn')
     .forEach(b => b.addEventListener('click', () => applyPreset(b.dataset.preset)));
@@ -706,6 +716,8 @@ async function runSignCheck() {
   if (signState.hold) cap_holds[os] = signState.hold;
 
   const contract = { type: document.getElementById('sign-type').value, salaries, cap_holds };
+  const expRaw = document.getElementById('sign-exp').value.trim();
+  if (expRaw !== '') contract.years_experience = Math.max(0, Math.min(25, parseInt(expRaw, 10) || 0));
   const method = document.getElementById('sign-method').value || null;
   const bird = document.getElementById('sign-bird').value || null;
   const body = isOffer

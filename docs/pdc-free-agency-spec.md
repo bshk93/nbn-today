@@ -8,7 +8,7 @@ the two Discord feeds, the team-facing ⋯ menu and offer form on `/free-agency`
 and the 1,000-ball ballot with per-player finalize. Both Discord env vars are
 set and both feeds are live (verified in the running process, 2026-08-09).
 
-**The pipeline is complete end to end: an owner can submit, the committee can
+**The pipeline is complete end to end: a team can submit, the committee can
 review, remand, ballot and lock**, and the dashboard is reachable from the main
 site's jump box for the members who hold the role (§ 3.4). What remains is not
 build work — it is the head putting the board into `rounds` or `ffa`, which is
@@ -22,7 +22,7 @@ cookie and the allowlist's placement, § 4 locking, § 4.2 archiving and
 the public-channel chokepoint, § 9.3 the once-only expiry guard); those notes
 are the record of what was learned, not decoration.
 
-Scope of *this* document: **free agency only** — an owner drafts and submits a
+Scope of *this* document: **free agency only** — a team drafts and submits a
 contract offer to a free agent, the Free Agency Committee (FAC) reviews the
 offers for that player, each assigned member splits 1,000 balls across them, and
 the FAC head locks the result. Trades and extensions get the same treatment
@@ -303,8 +303,26 @@ The general rule: **the pool answers "who has a hold on file", not "who is a
 free agent today."** Read `current` for the second question.
 
 **The FFA clock (decided).** The *first submitted* offer on a player in FFA mode
-stamps `ffa = {started_at, deadline: started_at + 24h, started_by_offer}`. A
-draft does not start it; later offers do **not** extend it.
+stamps `ffa = {started_at, deadline: started_at + window, window_hours,
+started_by_offer}`. A draft does not start it; later offers do **not** extend it.
+
+**The window's length is the FAC head's setting** (`PUT /api/fa/ffa-window`,
+default 24h, bounded 1–168), stored as `ffa_window_hours` on `fa-state.json` and
+published on both `GET /api/fa/board` (public — a team about to bid needs to know
+what clock it is starting) and `GET /api/fa/state`. It is board policy, not a
+league rule, which is why it sits with mode and rounds rather than in the
+rulebook.
+
+The property that makes it safe to expose: **the setting is read in exactly one
+place — `_start_ffa_clock` — and every clock then carries its own deadline.** So
+changing it applies to clocks started from then on and to nothing already
+running; it cannot move a deadline a team is already bidding against, and
+shortening it cannot retroactively close a window that is still open. If a
+reader is ever added that consults the setting instead of the stamp, that
+guarantee is gone. For the same reason every string naming a window's length —
+the § 8.1 refusal copy, both § 9.2 posts, the dashboard — derives it from
+`window_hours` on the clock being described, never from the current setting, so
+a change mid-round can't rewrite the history of windows that already ran.
 
 At `deadline` the player **stops accepting offers** and moves to the committee:
 `POST /api/fa/offers/{id}/submit` returns 422 for that player, and the dashboard
@@ -328,8 +346,8 @@ auto-close Round N−1's open players, and `closes_at` is a **display label only
 — the dashboard shows it, nothing acts on it. In practice a new round does
 supersede the old one, but the FAC head closes players by hand, because the
 flexibility to leave one open across a boundary is worth more than the
-automation. Consequence worth stating plainly: **the FFA 24-hour window is the
-only clock in this system that the software enforces.** Everything else is a
+automation. Consequence worth stating plainly: **the FFA window is the only
+clock in this system that the software enforces.** Everything else is a
 person deciding.
 
 ### 4.2 `fa-offers.json` — the offers themselves
@@ -343,13 +361,14 @@ A flat list (like `transactions.json`), newest appended:
   "player": "curry-stephen",
   "team": "PHX",
   "round_id": "r3",                 // or the FFA round marker
-  "status": "draft",                // draft | submitted | returned  (§ 4.3, § 4.3a)
+  "status": "draft",                // draft | submitted | returned | voided  (§ 4.3, § 4.3a, § 4.3b)
   "version": 1,                     // increments on each resubmission
   "versions": [],                   // frozen prior submitted versions
   "remands": [],                    // {at, by, note, from_version}
   "created_by": "memberName",       // who drafted it (may be a GM)
-  "submitted_by": null,             // who submitted it (always the owner)
+  "submitted_by": null,             // who sent it (any team-role holder — § 6.0)
   "created_at": "...", "updated_at": "...", "submitted_at": null,
+  "void": null,                     // § 4.3b {at, by, reason, from_status} while voided
 
   // Exactly SignDetails — see § 5.1. Nothing else may be added to this object.
   "offer": {
@@ -445,7 +464,7 @@ something that isn't what was decided.
 **The model: revision is a committee power, never a team power.** A team cannot
 edit, withdraw, or ask the API for another go. The committee returns the offer,
 and only then does it become editable — by the same people who could draft it,
-resubmitted by the same owner who submitted it.
+and resubmitted by any of them (§ 6.0).
 
 ```
 draft ──submit──▶ submitted ──remand──▶ returned ──resubmit──▶ submitted (v2)
@@ -492,7 +511,7 @@ Rules:
   sheet: the dashboard lists it as *returned, awaiting the team* with an age, so
   a send-back can't quietly become the state something died in. Nothing expires
   it automatically.
-- **The FFA window does not gate a remand.** The 24-hour clock governs *new*
+- **The FFA window does not gate a remand.** The clock governs *new*
   offers from other teams; a revision the committee itself asked for is part of
   its own review and may land after the window closes.
 
@@ -517,6 +536,84 @@ consistent with treating the head as the clock everywhere else (§ 4.1, D11).
 The finalize view lists every unanswered remand with its age, and the confirm
 step names them. A team that goes quiet cannot stall a player indefinitely; a
 head who locks early does so knowingly.
+
+### 4.3b Void — the committee takes an offer off the board (decided)
+
+**The gap this closes.** A remand hands an offer *back*, and the team can
+answer it. Meanwhile the offer is still a live bid: on the ballot, in the team's
+disclosed exposure (§ 5.3), holding that team's one-offer-per-player slot
+(§ 4.2/D5). That is the right tool when the terms need changing and the wrong
+one when the offer should never have counted at all — submitted on the wrong
+player, duplicated around an outage, a team ruled ineligible after the fact.
+Under § 4.3a alone those sit `returned` forever, listed as *awaiting the team*,
+waiting on a team that has nothing to say. The de-facto answer was for the head
+to lock over them (an unanswered remand warns, never blocks), which records the
+wrong thing: an offer nobody withdrew, counted in a round it had no business in.
+
+**The model: a status, not a delete.**
+
+```
+submitted ──void──▶ voided ──restore──▶ submitted
+returned  ──void──▶ voided ──restore──▶ returned
+```
+
+`voided` is deliberately **not** in `LIVE_STATUSES`, and that single fact is the
+whole implementation. Every consequence falls out of `_is_live`, which was
+already the one gate: the offer leaves the ballot options, leaves
+`_team_commitment`, stops creating a § 4.6 conflict, frees the team's
+one-live-offer slot, and can no longer be edited, resubmitted or remanded. There
+is no second rule to keep in step with the first — which is exactly how the
+archived/live distinction already works at § 4.2.
+
+| Field | Meaning |
+|---|---|
+| `status` | `voided` |
+| `void` | `{at, by, reason, from_status}` — `null` once restored |
+| `history[]` | Carries the void and the restore, with the reason, permanently |
+
+Rules:
+
+- **A void requires a reason**, for the same purpose a remand requires a note
+  and with more force: this one ends a team's bid with no reply, so the reason
+  is the whole of what they get. It is shown to the team in their ⋯ menu and
+  above the form when they bid again — server-composed, never restated by page
+  code, the same rule as every other refusal string on that page.
+- **Head-only, unlike a remand.** Any assigned reviewer may ask for a revision
+  (D14) precisely because the team can always answer. Nobody can answer a void,
+  so it sits with the head beside the other powers that end things — finalize,
+  unlock, assignment. Widening this later is one line; narrowing it after teams
+  have lost bids to it is not.
+- **Only `submitted` and `returned` can be voided.** A draft is the team's own
+  scratch pad, which the committee cannot see (§ 6.1) and therefore cannot act
+  on; the team deletes its own drafts.
+- **It is reversible**, and `restore` is to `void` what `unlock` is to
+  `finalize`. A power that ends something needs a way back or a misclick becomes
+  the one action on the board nobody can answer. It restores `from_status`, not
+  a guessed one — a voided *remand* comes back `returned` with its notes still
+  unanswered, or the void would have silently answered them.
+- **Restore is refused if the team has since bid again.** The void freed the
+  slot and the team used it; putting the old offer back would break the
+  one-live-offer invariant `create_offer` exists to hold.
+- **A void cannot follow a finalize**, same as a remand — reopening the player
+  (§ 4.1) is the escape hatch from a lock. Finalize archives voided offers
+  along with the live ones, since they belong to that round, and `unlock`
+  un-archives them with everything else.
+- **Ballots already cast are flagged, never rewritten**, extending § 4.3a's rule
+  to the harder case where the option leaves the board entirely. The balls stay
+  exactly where they were cast, `get_ballots` stamps `voided_since` on each
+  affected ballot, and `finalize` records `voided_options` beside the totals so
+  the head reads them knowing it. **Totals are never adjusted.** Redistributing
+  balls nobody redistributed would be the software inventing a vote — and a
+  member may well want the rest of their ballot to stand as it is.
+- **The record survives.** Terms, versions, remands and validation are all left
+  where they were, and the review page lists voided offers below the live ones.
+  § 4.3a's "nothing is overwritten" applies here with more force, not less: a
+  bid the committee erased is precisely the thing a record has to be able to
+  show.
+- **Announced privately only.** A void names a team and prices its bid, so it is
+  committee information under § 9.2 exactly as a submission is; nothing about it
+  being a *removal* makes it public. `_news` could not carry it in any case —
+  that is a property of its signature, not of caller discipline.
 
 ### 4.4 `fa-ballots.json` — the 1,000 balls
 
@@ -668,6 +765,7 @@ All under `/api/fa/`, new router `nbn-api/routers/free_agency.py`.
 | `GET /api/fa/board` | public | `mode`, open players, FFA deadlines. **No** contract details, offering teams, or offer counts |
 | `GET /api/fa/state` | `fac`/`poext`/admin | Full state incl. sub-committee assignments |
 | `PUT /api/fa/mode` | `fac_head` | `{mode}`; entering `ffa` is logged and announced (§ 9.3, 12.6) |
+| `PUT /api/fa/ffa-window` | `fac_head` | `{hours}` (1–168). Applies to clocks started from now on; running clocks keep their stamped deadline (§ 4.1) |
 | `POST /api/fa/rounds` | `fac_head` | Opens a round; optionally closes the previous |
 | `PUT /api/fa/players/{slug}` | `fac_head` | `{status, subcommittee[]}` |
 | `GET /api/fa/offers` | scoped | Filters `player`, `team`, `status`. **Visibility § 6.1** |
@@ -675,8 +773,10 @@ All under `/api/fa/`, new router `nbn-api/routers/free_agency.py`.
 | `PATCH /api/fa/offers/{id}` | **team role**, while `draft` | Contract, pitch, promises |
 | `PATCH /api/fa/offers/{id}` | **team role**, while `returned` | Revising a remanded offer — same editor, same gate (§ 4.3a) |
 | `DELETE /api/fa/offers/{id}` | **team role**, while `draft` | Drafts only — a submitted offer is final (§ 4.3) |
-| `POST /api/fa/offers/{id}/submit` | **team owner** | Validates, stores snapshot, notifies (§ 9). Also the resubmit path for a `returned` offer |
+| `POST /api/fa/offers/{id}/submit` | **team role** | Validates, stores snapshot, notifies (§ 9). Also the resubmit path for a `returned` offer |
 | `POST /api/fa/offers/{id}/remand` | assigned sub-committee member, `fac_head`, admin | Sends a submitted offer back for revision; **note required**; additive (§ 4.3a) |
+| `POST /api/fa/offers/{id}/void` | `fac_head`, admin | Takes a `submitted`/`returned` offer out of play; **reason required**; not a delete (§ 4.3b) |
+| `POST /api/fa/offers/{id}/restore` | `fac_head`, admin | Undoes a void, back to the status it held; refused if the team has since bid again (§ 4.3b) |
 | `GET /api/fa/commitment/{team}` | **team role** | § 5.3 exposure for the team's own form — the same helper the review page renders (§ 6.3) |
 | `GET /api/fa/players/{slug}/review` | sub-committee, `fac_head`, admin | Offers side by side + per-team cap + projected lineups |
 | `GET /api/fa/players/{slug}/ballots` | sub-committee, `fac_head`, admin | **All** ballots on that player, including in progress (§ 4.5) |
@@ -684,19 +784,28 @@ All under `/api/fa/`, new router `nbn-api/routers/free_agency.py`.
 | `POST /api/fa/players/{slug}/finalize` | `fac_head` | Locks ballots, writes `final.totals` |
 | `POST /api/fa/players/{slug}/unlock` | `fac_head` | Escape hatch; appends to history |
 
-### 6.0 Two gates on one object (decided)
-
-Drafting and submitting are separated:
+### 6.0 One gate on the object (revised 2026-08-10)
 
 | Action | Gate | Server check |
 |---|---|---|
 | Create / edit / delete a **draft** | any holder of the team's role | `has_role(info, team.lower())` |
-| **Submit** | the team's **owner** | `auth.is_team_owner(info, team)` |
+| **Submit** / resubmit | any holder of the team's role | `has_role(info, team.lower())` |
 
-A GM or coach can prepare the whole offer — contract, pitch, promises — and
-cannot pull the trigger. This is the same two-tier split already drawn on team
-pages between the trading block (team role) and renounce (owner tenure), so it
-needs no new concept and no new helper.
+**This was originally a two-tier split — draft on the team role, submit on
+`auth.is_team_owner` — and the owner tier was removed.** The split was borrowed
+from the team-page pattern (trading block on the role, renounce on owner
+tenure), but it doesn't transfer: a renounce destroys roster state immediately
+and irreversibly, whereas an offer goes to the committee, which reviews it and
+can remand it. There is a human gate downstream either way, and gating submit on
+the owner mostly meant a finished offer sitting in draft until the owner
+happened to log in — with an FFA clock running (§ 4.1) and no withdraw
+available, a slow trigger-pull costs the team the window.
+
+`submitted_by` still records who sent it, and `created_by` who drafted it, so
+attribution survives; the Discord embed names both when they differ (§ 9).
+
+The team is still never taken from the request body (below), so this widens
+*who on a team* may act, not *which team* a member may act for.
 
 The team is **derived from the draft's stored `team`**, never taken from the
 request body, exactly as `self_renounce` derives it from the roster. A caller
@@ -708,7 +817,7 @@ cannot name a team to claim authority over it.
 |---|---|
 | Public | Nothing. Not even that an offer exists (FFA clock aside — § 9.2) |
 | Team owner/front office | Their own team's offers, all statuses |
-| `fac` **assigned to that player** | Every submitted offer for that player, in full — and every ballot on them (§ 4.5) |
+| `fac` **assigned to that player** | Every submitted, returned or voided offer for that player, in full — and every ballot on them (§ 4.5). Voided included: a bid the committee erased is one it must be able to see (§ 4.3b) |
 | `fac` not assigned | The player is listed; neither offers nor ballots are readable |
 | `fac_head`, `admin` | Everything |
 
@@ -802,7 +911,8 @@ Menu items, with the disabled-with-reason convention:
 - **Offer a contract…** — enabled when the player accepts offers right now
   (mode + status + FFA clock). Disabled reasons: *"Free agency is closed."* /
   *"This player isn't open for offers in this round."* / *"The 24-hour FFA
-  window on this player closed at 5:00 PM."*
+  window on this player closed at 5:00 PM."* — the length in that last one is
+  the one **that player's** clock ran, not the current setting.
 - **Our draft offer…** — replaces the above once a draft exists for this team.
 - **Committee asked for changes…** — replaces both when the offer is `returned`,
   badged so it's unmissable. The form opens with the committee's note pinned
@@ -834,9 +944,9 @@ The form (a modal, same furniture as the renounce dialog):
 5. **Live legality panel** — checks + fact sheet from `/api/validate/sign`, plus
    the team's committed-offers total (§ 5.3).
 6. **Save draft** / **Submit**. Submit is disabled while any error-level check
-   fails, with the failing check named on the button's tooltip. For a non-owner
-   it is disabled with *"Only the team owner can submit this offer"* — shown,
-   not hidden, so a GM can see the draft is ready and hand it off.
+   fails, or while the player isn't accepting offers, with the reason on the
+   button's tooltip — shown, not hidden. Any holder of the team's role can both
+   draft and submit (§ 6.0).
 7. **Submit confirm** — a second step naming the player and total value, quoting
    § 3.14's wording: *once submitted to the committee, this offer cannot be
    withdrawn.*
@@ -860,6 +970,12 @@ Four things the build settled:
   beside the inputs** (`was $9M` / `new year` per year). A team answering
   "add a year, trim year 1" needs both asks and both baselines on screen; the
   round-trip is otherwise reconstructed from Discord.
+- **A voided offer (§ 4.3b) is kept apart from the live one, not in place of
+  it.** The ⋯ menu shows the void with the committee's reason as a disabled
+  line, and the offer action beneath it reads *Offer again…* — because a void
+  frees the team's one-offer slot, and the menu would otherwise still be
+  advertising a bid that no longer exists. The reason is repeated above the form
+  when they re-bid, and is `void.reason` from the server, never composed here.
 
 ### 8.2 Dashboard — FAC member view
 
@@ -888,6 +1004,11 @@ invariants the page holds and must keep holding:
 - **Version history** on any offer that was remanded: v1 → the committee's note
   → v2, with the figures that moved highlighted. A ballot cast before a revision
   carries the "revised after you voted" flag (§ 4.3a).
+- **Voided offers listed below the live ones** (§ 4.3b), with the head's reason,
+  who voided it and when, and — for the head — an *Undo the void* button. Below,
+  not among, so the block reads as a record rather than as something still under
+  consideration. A ballot with balls on a voided offer carries its own flag,
+  stronger than the revision one: those balls still count as cast.
 - **Ballot widget:** 1,000 balls — one slider *and* number per offer, plus the
   **QO** line for RFAs and a **No signing** line always. Live remainder; save
   disabled until it totals exactly 1,000, which is the same arithmetic the
@@ -977,7 +1098,7 @@ be told where to look. Keyed off `GET /api/auth/me`:
 | Viewer | Panel |
 |---|---|
 | `fac` only | How to read the comparison, what the 1,000 balls mean, that ballots stay editable until the head locks, that you can't see players you aren't assigned to |
-| `fac_head` (and `admin`) | The above **plus** modes/rounds, assigning sub-committees, when to flip to FFA, what finalize does and how to unlock |
+| `fac_head` (and `admin`) | The above **plus** modes/rounds, assigning sub-committees, when to flip to FFA and how long its windows run, what finalize does and how to unlock |
 | `poext` only | PO-EXT stub copy — what's coming |
 | Both | Both panels, sectioned |
 
@@ -1015,9 +1136,12 @@ Fires on **offer submitted**. Full detail — it's a private committee channel:
 player, team, contract year-by-year, signing method, promises, pitch,
 legality verdict with any failing/warning checks, link to the dashboard.
 Also fires on: mode change, round opened, FFA clock started/expired, player
-finalized (with totals), and **offer remanded / resubmitted** — the latter
-carrying the committee's note and a diff of what actually changed between
-versions (§ 4.3a). No withdrawal event exists (§ 4.3).
+finalized (with totals), **offer remanded / resubmitted** — the latter carrying
+the committee's note and a diff of what actually changed between versions
+(§ 4.3a) — and **offer voided / restored**, carrying the head's reason and the
+terms leaving the board (§ 4.3b). No withdrawal event exists (§ 4.3): a void is
+the committee's act, never the team's, which is why it is announced with the
+head's name on it.
 
 Three things the build settled:
 
@@ -1046,6 +1170,9 @@ Fires **only in FFA mode**, exactly twice per player (decided):
    > 🔒 The 24-hour window on **Stephen Curry** has closed. No further offers
    > are being accepted; the FAC will review.
 
+The stated length comes off `window_hours` on the clock being announced (§ 4.1),
+so a post always describes the window that player actually got.
+
 No team, no dollars, no offer count, in either. Both bodies are assembled from
 `player` + `deadline` only, so there is no path for contract data to reach them.
 **A test asserts each rendered payload contains no team abbreviation and no
@@ -1061,7 +1188,7 @@ a property a test can check. `tests/test_fa_notify.py` checks the rendered
 output instead, so the guarantee survives however a message gets built.
 
 The deadline renders as a Discord dynamic timestamp (`<t:…:f>`), not a fixed
-clock time — a league spread across timezones acting on a 24-hour window is
+clock time — a league spread across timezones acting on a same-day window is
 exactly what a literal "5:00 PM" gets wrong.
 
 ### 9.3 Clock expiry
@@ -1106,7 +1233,7 @@ runner, not pytest — pytest isn't installed).
 | **5** ✅ | Dashboard at **`nbn.today/pdc`**, unlinked from `nav.js`. Build and review the whole thing here | Anyone with the URL — and it shows only the forbidden screen without a role |
 | **5b** ✅ | nginx `pdc.nbn.today` block (same docroot, `/` → `/pdc/index.html`, `/api/` proxy) + certbot | Committee |
 | **6** ✅ | `discord_transport` + `fa_notify`, wired into every FA write path, shipped with both channels **unset**. Rollout is then two env vars, in order: `DISCORD_PDC_CHANNEL`, verify in the private channel, then `DISCORD_FA_NEWS_CHANNEL` | Nobody until an env var is set — then committee, then league |
-| **7** ✅ | Team-facing ⋯ menu + offer form on `/free-agency`, gated on team role (draft) / owner tenure (submit), plus `GET /api/fa/commitment/{team}` and the board listing closed players (§ 6.3) | Team front offices |
+| **7** ✅ | Team-facing ⋯ menu + offer form on `/free-agency`, gated on the team's role (draft and submit alike since 2026-08-10 — § 6.0), plus `GET /api/fa/commitment/{team}` and the board listing closed players (§ 6.3) | Team front offices |
 | **8** ✅ | Ball allocation + finalize/unlock UI; role-aware instructions (§ 8.5) | Committee |
 
 Rollback at every phase is deleting a role, unsetting an env var, removing one
@@ -1148,18 +1275,20 @@ Settled 2026-08-08. Each links to the section that implements it.
 | # | Question | Decision |
 |---|---|---|
 | D1 | Auth across the subdomain | Opaque session cookie on `.nbn.today`, minted by `token-badge.js`; honoured for `/api/fa/*` and `/api/auth/me` **only** (§ 3.3) |
-| D2 | Who may offer | Any team-role holder drafts; **owner** submits (§ 6.0) |
+| D2 | Who may offer | Any team-role holder, drafting and submitting alike — the owner-only submit tier was removed 2026-08-10 (§ 6.0) |
 | D3 | FFA clock at expiry | Closes the offer window; lazily evaluated; nothing auto-resolves (§ 4.1) |
 | D4 | Post-submission changes | None **at the team's initiative** — but the committee may remand an offer for revision (§ 4.3, § 4.3a) |
 | D14 | Who may remand | Any **assigned sub-committee member**, plus head/admin; remands are additive and attributed (§ 4.3a) |
 | D15 | Remand vs finalize | Warns, never blocks — unanswered remands listed on the finalize view (§ 4.3a) |
+| D16 | An offer that should never have counted | **Void it** — a `voided` status outside `LIVE_STATUSES`, head-only, reason required, reversible, record kept. Added 2026-08-10 because a remand leaves the bid live and awaiting a team with nothing to say (§ 4.3b) |
+| D17 | Balls cast on a voided offer | Left exactly as cast, flagged to the member and to the head at finalize. Redistributing them would be the software inventing a vote (§ 4.3b) |
 | D5 | Competing offers, same team + player | Not allowed — 409 (§ 4.2) |
 | D6 | Offers across players exceeding room | Allowed; disclosed on the dashboard and the form, never blocked (§ 5.3) |
 | D7 | Ballot options | Offers + `QO` (RFAs) + `NO_SIGNING` (always) (§ 4.4) |
 | D8 | Ballot visibility | Transparent inside a player's sub-committee, opaque outside it; head/admin see all (§ 4.5) |
 | D9 | Sub-committee default | Empty — the head assigns, nothing is balloted by default (§ 8.3) |
 | D10 | Conflicts of interest | Site warns at assignment, on the ballot, and at finalize; never blocks (§ 4.6) |
-| D11 | Round mechanics | No enforced round clock; head opens and closes by hand. The FFA 24h window is the only clock the software enforces (§ 4.1) |
+| D11 | Round mechanics | No enforced round clock; head opens and closes by hand. The FFA window is the only clock the software enforces (§ 4.1); its length is the head's setting, applied at clock start and never retroactively |
 | D12 | Leadership | No PDC-head role — `fac_head` and `poext_head` are peers; `admin` is above both (§ 2) |
 | D13 | `bod` and `fac` | `bod` does **not** imply `fac` (§ 2) |
 

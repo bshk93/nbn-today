@@ -218,7 +218,7 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
 | Change the suggestions board or its comment threads | `suggestions/index.html` + `nbn-api/routers/suggestions.py` (see "Suggestions board" below) |
 | Change the team-facing FA offer form (⋯ menu, contract editor, submit confirm) | `free-agency/index.html` — the block under "Team-facing offers"; endpoints `POST/PATCH/DELETE /api/fa/offers`, `POST /api/fa/offers/{id}/submit`, `GET /api/fa/commitment/{team}`. an offer's legality and every dollar shown come from `POST /api/validate/sign`, never from page code (see "Team-facing FA offers" below) |
-| Change the PDC committee dashboard (FA review, the 1,000-ball ballot, finalize/unlock, head controls) | `pdc/index.html`; data from `/api/fa/*` in `nbn-api/routers/free_agency.py`; design record in `docs/pdc-free-agency-spec.md`. Served at both `nbn.today/pdc` and `pdc.nbn.today` — the subdomain is `/etc/nginx/sites-available/pdc.nbn.today`, the **same docroot** with `/` → `/pdc/index.html`, so every fetch stays same-origin (no CORS, no static-asset CORS gap). Keep any new path rule in sync with the `nbn.today` block or it works on one host and 404s on the other |
+| Change the PDC committee dashboard (FA review, the 1,000-ball ballot, remand/void, finalize/unlock, head controls) | `pdc/index.html`; data from `/api/fa/*` in `nbn-api/routers/free_agency.py`; design record in `docs/pdc-free-agency-spec.md`. Served at both `nbn.today/pdc` and `pdc.nbn.today` — the subdomain is `/etc/nginx/sites-available/pdc.nbn.today`, the **same docroot** with `/` → `/pdc/index.html`, so every fetch stays same-origin (no CORS, no static-asset CORS gap). Keep any new path rule in sync with the `nbn.today` block or it works on one host and 404s on the other |
 
 ---
 
@@ -574,19 +574,21 @@ footer via `details._source`.
 
 ### Team-facing FA offers
 
-The ⋯ menu and offer form on `/free-agency` (spec § 8.1). **Two gates on one
-object, and they are genuinely different** (§ 6.0), mirroring the split team
-pages already draw between the trading block and renounce:
+The ⋯ menu and offer form on `/free-agency` (spec § 8.1). **One gate on the whole
+object** (§ 6.0) — any holder of the team's role drafts *and* submits:
 
 | Action | Gate | Endpoint |
 |---|---|---|
 | Create / edit / delete a **draft** | any holder of the team's role | `POST`/`PATCH`/`DELETE /api/fa/offers` |
-| **Submit** (and resubmit a remanded offer) | the team's **owner** (`is_team_owner`) | `POST /api/fa/offers/{id}/submit` |
+| **Submit** (and resubmit a remanded offer) | any holder of the team's role | `POST /api/fa/offers/{id}/submit` |
 
-So a GM can prepare the whole offer and cannot pull the trigger; the button is
-shown **disabled with that reason**, not hidden, so the draft can visibly be
-handed off. The team is always derived from the stored offer, never from the
-request body.
+Submit was owner-only (`is_team_owner`) until 2026-08-10, mirroring the split team
+pages draw between the trading block and renounce. **That split doesn't transfer**:
+a renounce destroys roster state immediately, while an offer goes to a committee
+that reviews and can remand it — so the owner tier bought no safety and cost the
+team its FFA window (§ 4.1) whenever the owner wasn't around. `submitted_by` and
+`created_by` still record who did which. The team is always derived from the stored
+offer, never from the request body, so the role is the only thing that widened.
 
 Three rules this page holds and must keep holding:
 
@@ -607,13 +609,50 @@ Three rules this page holds and must keep holding:
   209. This caught out both the team ⋯ menu and the head's "+ Player" picker.
 - **Submission is final at the team's initiative** (§ 4.3). There is no withdraw
   endpoint and no post-submit edit — a submitted offer opens read-only. The only
-  way back is a committee **remand**, after which the same form reopens with the
-  committee's notes pinned above it and the frozen prior figures beside each
-  year input.
+  ways back are both the committee's: a **remand**, after which the same form
+  reopens with the committee's notes pinned above it and the frozen prior figures
+  beside each year input, or a **void** (§ 4.3b, below), after which the team may
+  bid again from scratch.
 
 The client legality check is advisory: the server re-runs `_validate_sign` at
 submit and *that* verdict is what's stored. There is no `force` on this path,
 for the same reason `self_renounce` has none.
+
+### Voiding an offer (§ 4.3b) — a status, not a delete
+
+`POST /api/fa/offers/{id}/void` takes a `submitted`/`returned` offer out of play;
+`POST /api/fa/offers/{id}/restore` undoes it. **Head-only** (`fac_head`/admin),
+unlike a remand, which any assigned reviewer may issue: a remand asks the team a
+question and the team can answer, and nobody can answer a void.
+
+It exists because a remand leaves the bid **live** — on the ballot, in the team's
+§ 5.3 exposure, holding its one-offer-per-player slot — which is wrong when the
+offer should never have counted at all (wrong player, duplicate, team since ruled
+ineligible). Those otherwise sit `returned` forever, listed as awaiting a team
+with nothing to say.
+
+**The whole implementation is that `voided` is not in `LIVE_STATUSES`.** Every
+consequence falls out of the existing `_is_live` gate — off the ballot, out of
+`_team_commitment`, no § 4.6 conflict, slot freed, no edit/resubmit/remand. Don't
+add a parallel rule anywhere; extend `_is_live`'s callers instead.
+
+Four things that are load-bearing and pinned by `tests/test_fa_offers.py`:
+
+- **A reason is required**, and it is what the team is shown — in the ⋯ menu and
+  above the form when they re-bid. Server-composed, like every other refusal
+  string on `/free-agency`.
+- **Restore returns `void.from_status`, not a guess.** A voided *remand* comes
+  back `returned` with its notes still unanswered, or the void would have
+  silently answered them. Refused if the team has since bid again (D5).
+- **Ballots already cast are flagged, never rewritten** — `voided_since` on each
+  ballot, `voided_options` on the finalize record. **Totals are never adjusted**:
+  redistributing balls nobody redistributed is the software inventing a vote.
+- **Finalize archives voided offers with the live ones**; `unlock` un-archives
+  both. They belong to the round they were bid in.
+
+On `/free-agency`, `MY_VOIDED` is deliberately a second map beside `MY_OFFERS` —
+a void frees the slot, so one player can carry both a void and a fresh live
+offer, and one map would have them fighting over the key.
 
 **On the committee side, the ballot widget is gated on *assignment*, never on
 being the head.** `PUT /api/fa/players/{slug}/ballot` is the one endpoint in the
@@ -630,7 +669,7 @@ pipeline's events to two channels with deliberately different appetites:
 
 | Channel | Env var | Gets |
 |---|---|---|
-| `pdc-alerts` (private) | `DISCORD_PDC_CHANNEL` | Everything: offer submitted/resubmitted with a **diff vs the version frozen at the remand**, remands with their note and conflict flag, mode changes, rounds, clock start/expiry, finalize totals |
+| `pdc-alerts` (private) | `DISCORD_PDC_CHANNEL` | Everything: offer submitted/resubmitted with a **diff vs the version frozen at the remand**, remands with their note and conflict flag, voids/restores with the head's reason and the terms removed, mode changes, rounds, clock start/expiry, finalize totals |
 | `fa-news` (public) | `DISCORD_FA_NEWS_CHANNEL` | **FFA mode only**, exactly twice per player: clock started, window closed |
 
 Each is inert without its own env var, which is how it rolled out (module, then
@@ -641,6 +680,16 @@ bidding is committee information. This is enforced by signature, not by care:
 `_news(slug, text)` is the only function that can reach the public channel and
 it cannot be handed an offer. `tests/test_fa_notify.py` asserts it against
 rendered output.
+
+**How long an FFA window runs is the head's setting** (`PUT /api/fa/ffa-window`,
+default 24h, 1–168), not a constant and not a rulebook rule. It is read in exactly
+one place — `_start_ffa_clock`, which stamps `deadline` *and* `window_hours` onto
+the player's clock — so a change applies to clocks started from then on and to
+nothing already running: it can't move a deadline a team is bidding against, and
+shortening it can't retroactively close an open window. Every string naming a
+length (the § 8.1 refusal, both § 9.2 posts, the dashboard) goes through
+`ffa_window_label` on *that clock's* stamp, never the current setting. Don't add a
+reader of the setting anywhere else.
 
 Expiry has no scheduler (§ 4.1) — `free_agency._sweep_ffa_expiry` announces from
 whichever read request first observes a deadline has passed, stamping

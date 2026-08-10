@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions` (currently empty).
 
-Last reviewed: **2026-08-09** (against version 0.0.401).
+Last reviewed: **2026-08-10** (against version 0.0.401).
 
 Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** nice to have
 
@@ -65,20 +65,79 @@ blocker to trusting `/api/picks` end-to-end.
 Spec in `nbn-api/docs/discord-transaction-backfill.md`. The 538 skipped FA rows
 have never been triaged — decide whether they're genuinely out of scope or a gap.
 
-### [P3] 28 player slugs are still in first-last order
+### [P2] 29 player slugs are still in first-last order — re-key deferred
 e.g. `keaton-wallace`, `mark-sears`, `armando-bacot` instead of `wallace-keaton`.
-(32 flag on a naive check; 4 are false positives with multi-word last names —
-`da-silva-tristan`, `de-larrea-sergio`, etc.)
+Exactly 29 as of 2026-08-10, with no false positives: compare each key against
+its own `name` field slugified in place (`"WALLACE, KEATON"` → `wallace-keaton`),
+which resolves multi-word last names like `da-silva-tristan` correctly. The naive
+32/4-false-positive count in the earlier version of this entry was that check
+done wrong.
 
-This is a **different population** from the 2026 prospect re-key, which is done:
-24 of the 28 have `draft_year: null` (undrafted), the rest are scattered across
-2024/2025/2026. Duplicate `/players` cards are resolved either way — 0 duplicate
-names across 1018 bios.
+**The generator is fixed as of 2026-08-10** — `slugFromName` in
+`players/index.html` was running `displayName()` (which flips "LAST, FIRST" →
+"First Last") *before* slugifying, so the Add Player modal minted a first-last
+key every time. That is why this population kept regrowing after the 2026
+prospect re-key closed it. The form now slugifies the canonical name in place
+(verified: reproduces all 989 correct slugs exactly) and uppercases/normalizes
+the name on save. **The 29 already-created bios are what remains.**
 
-Slugs are permanent keys by design (CLAUDE.md § Data model); re-keying orphans
-stats/awards/OVR references. If none of these players ever accumulate stats, the
-cost of leaving them is zero. Probably accept and close rather than fix — but
-worth an explicit decision so it stops getting rediscovered.
+**Raised from P3: the "cost of leaving them is zero" premise has fallen.** That
+rested on none of them accumulating stats. Three already have:
+
+| Player | Stats under | Bio under |
+|---|---|---|
+| Ariel Hukporti | `hukporti-ariel` (5 playoff G) | `ariel-hukporti` |
+| Quenton Jackson | `jackson-quenton` (5) | `quenton-jackson` |
+| David Jones Garcia | `jones-garcia-david` (5) | `david-jones-garcia` |
+
+The R build derives slugs from the box-score name in canonical form, so stats
+land on one key and the live bio on the other — a split profile (stats card with
+no contract/cap holds/OVR/roster link, bio card with no stats). **26 of the 29
+are on current rosters**, so this goes from 3 players to ~26 as soon as 26-27 box
+scores land, and propagates into HOF/leaderboards/awards/compare as they build
+history.
+
+Scope is **not** at risk: rosters, cap math, transactions, team pages and the FA
+pipeline all join bios by the same wrong key, so they are internally consistent.
+Nothing is mis-costed. The damage is confined to the stats↔bio seam.
+
+Re-key surface is small — smaller than the prospect re-key, and with no live
+draft in flight: 29 bio keys · ~24 roster rows across 15 CSVs · 21 OVR history
+entries · 41 ledger entries (35 sign, 3 trade, 1 option, 2 release). Do it as one
+scripted pass: back up the four files, dry-run the full rename list, then write.
+Cheapest now, while these players have almost no history.
+
+Deferred by owner decision 2026-08-10 — understood and accepted, not forgotten.
+
+### [P1] 27-28/28-29/29-30 minimum salary scales are row-shifted — multi-year minimums fail
+Entered 2026-08-10 via `/cap-settings`. Each season's column is the 26-27 scale
+shifted **up one experience row** per year out, then escalated:
+`season_n[r] == 26-27[r+n] × (1 + 0.05n)` — verified 11/11 rows on 27-28, and
+all three seasons match within $4.
+
+That pre-bakes the experience diagonal into the table. The validator already
+walks it (`_contract_years_exp` steps the row one per contract year and reads
+that season's column), so it **double-steps**: Year 2 of a 3-year minimum reads
+$2,571,895 instead of $2,294,372. hkd's own worked example fails validation
+today and passes against unshifted tables. Confirmed both ways.
+
+Fix is data, not code — store the **true per-season scale** (same rows as
+26-27, escalated, no shift). Corrected tables computed and verified 2026-08-10;
+**not written, awaiting a go-ahead** since this is committee-entered data.
+Two independent reasons unshifting is the right direction rather than changing
+the code:
+
+- A deal signed *in* 27-28 reads that column directly and would be one tier too
+  high across the board. The shifted table is only valid for 26-27 signings.
+- § 2.1a's Empty Roster Charge takes `scale["0"]` for the current season. Once
+  27-28 is the live league year that returns $2,294,370 against a true rookie
+  minimum of $1,425,651 — a 61% overcharge per empty slot, counted as real
+  guaranteed salary against Hard Cap and both aprons.
+
+Also: all three seasons were saved with `cap`, aprons and EAPS at **0**. Harmless
+today (§ 3.11's max-salary check reads a 0 cap as "can't check" and skips rather
+than miscalculating) but it is a silent skip, and those fields are needed before
+27-28 goes live.
 
 ### [P3] Stale backups in NBS_DATA_DIR
 `player-bios.json.bak` ×4, `allstats-playoffs-26.csv.bak-round-fix`,
@@ -172,6 +231,47 @@ Needs: a § 3.12 subsection stating that in-season minimum signings prorate,
 the basis (days? games?), and a season-start date the validator can key off —
 at which point the warning can become a real computed check. Grant Williams'
 2026-04-11 signing ($39,820) is the live example.
+
+### [P2] § 3.12 minimum contracts track the scale, but nothing re-prices them
+Settled as league policy 2026-08-10 and written into § 3.12: a minimum
+contract's salary in any season is **the applicable minimum for that season**,
+not the dollar figure recorded when it was signed. The Minimum Salary Scale is
+re-set every league year (hkd: "something that will have to be modified on a
+yearly basis"), so each revision is worth real money to every minimum deal
+running through that season. This is the NBA model and was chosen deliberately
+over the alternative (figures fixed at signing).
+
+Nothing implements it. The recorded amounts are refreshed by hand, so a deal
+running past a revised season reads at its old figures — **and that season's
+Team Salary with it** — until someone updates it. § 3.12's "still manual
+review" paragraph says so rather than hiding it.
+
+Deliberately not built on 2026-08-10 because the population was **1**: only two
+`sign` transactions in the entire ledger set `signing_method: "minimum"`, and
+one of those is single-year. An engine that mutates roster state whenever a
+config value is edited is a bad trade for one contract — a typo in
+`/cap-settings` would silently re-price the league.
+
+Two things already established, worth not rediscovering:
+
+- **A minimum contract is a pure function of (first season, years of
+  experience, scale)** now that `contract.years_experience` exists (§ 3.12,
+  added 2026-08-10). The refresh is a job to run, not a deal to reconstruct, so
+  building it later costs the same as building it now.
+- **Identify them by the ledger's `signing_method`, never by salary level.** 58
+  rostered players carry a 27-28+ salary at or below the veteran minimum, but
+  they are overwhelmingly second-rounders on **rookie-scale** deals
+  (`barnhizer-brooks`, `brea-koby`, `brown-kobe`, …). Rookie scale is a
+  different table entirely and must never be re-priced by § 3.12.
+
+Revisit when minimum signings become common, or before any 27-28 cap planning —
+whichever comes first. Wants a preview-then-apply shape (show the diff, apply on
+confirmation), not an automatic hook on `PUT /api/cap-levels/{season}`.
+
+Related open question for the committee: the 27-28+ scales are projections
+using a **simple** 5%-of-base escalator (×1.05, ×1.10, ×1.15), not compounding.
+Immaterial at three years out, real by year five. Replace with published NBA
+figures when they exist.
 
 ### ~~[P2] `rescind_renounce` not implemented~~ — DONE 2026-08-08
 Built alongside owner self-serve renounce, which needed an undo path. Every

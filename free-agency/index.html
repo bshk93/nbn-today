@@ -103,6 +103,7 @@
     .offer-flag.draft { border-color: var(--muted-border); color: var(--accent-light); }
     .offer-flag.submitted { border-color: var(--success); color: var(--success); }
     .offer-flag.returned { border-color: var(--gold-border); color: var(--gold); }
+    .offer-flag.voided { border-color: var(--danger-border); color: var(--danger); text-decoration: line-through; }
 
     .move-menu {
       position: fixed; z-index: 10000; min-width: 230px; max-width: 320px;
@@ -449,12 +450,13 @@
 
     // ══ Team-facing offers (spec § 8.1 — Phase 7) ═════════════════════════════
     //
-    // The ⋯ menu and the offer form. Two gates on one object, and they are
-    // genuinely different (§ 6.0): any holder of the team's role may draft the
-    // whole offer; only the team's **owner** may submit it. Both are enforced by
-    // the API — everything here only decides which affordances to draw, and draws
-    // the ones it can't offer *disabled with the rule-citing reason* rather than
-    // hiding them, the same convention as the roster ⋯ menu.
+    // The ⋯ menu and the offer form. One gate on the object (§ 6.0): any holder
+    // of the team's role may draft *and* submit — drafting and sending are both
+    // team business, and a front office shouldn't be blocked on the owner being
+    // around. It is enforced by the API — everything here only decides which
+    // affordances to draw, and draws the ones it can't offer *disabled with the
+    // rule-citing reason* rather than hiding them, the same convention as the
+    // roster ⋯ menu.
     //
     // **No cap math in this page.** Every dollar in the legality panel comes off
     // the fact sheet `POST /api/validate/sign` returns, and the committed-vs-room
@@ -464,10 +466,11 @@
 
     const TEAM_ABBRS = new Set(Object.keys(TEAM_NAMES));
 
-    let ME = { name: null, roles: [], owner_of: [] };
+    let ME = { name: null, roles: [] };
     let MY_TEAMS = [];                       // team roles this member holds
     let BOARD = { mode: 'closed', players: {} };
     let MY_OFFERS = {};                      // "TEAM|slug" -> live offer
+    let MY_VOIDED = {};                      // "TEAM|slug" -> offer the committee voided (§ 4.3b)
     let POOL = {};
     let LEAGUE_YEAR = null;
     let BIOS = {};         // slug -> bio, for draft_year (minimum-salary tier lookups)
@@ -554,26 +557,33 @@
       return yearsExp >= 10 ? '10+' : String(Math.max(0, yearsExp));
     }
 
-    // Player's own experience-tier minimum for one season, or the league
-    // floor if experience can't be established (undrafted, no scale yet).
-    function tierMinimum(slug, season) {
+    // Years of NBA experience as of the current league year, from the bio's
+    // draft year — or null when there is nothing to go on. That is the common
+    // case, not the edge case: `draft_year` is the NBN draft and is null for
+    // every player who entered before it, and permanently null for UDFAs. The
+    // contract declares its own figure (F.exp) when this can't answer.
+    function derivedExp(slug) {
+      const draftYear = (BIOS[slug] || {}).draft_year;
+      if (!draftYear) return null;
+      return Math.max(0, (parseInt(curYr(), 10) || 0) + 2000 - draftYear);
+    }
+
+    // The minimum for one season at an explicit experience count, or the
+    // league floor when experience is unknown or no scale is configured.
+    function tierMinimum(season, yearsExp) {
       const scale = minScaleFor(season);
       const floor = scale['0'] || 0;
-      const draftYear = (BIOS[slug] || {}).draft_year;
-      if (!draftYear || !Object.keys(scale).length) return floor;
-      const yearsExp = (parseInt(season, 10) || 0) + 2000 - draftYear;
+      if (yearsExp === null || yearsExp === undefined || !Object.keys(scale).length) return floor;
       return scale[minTierKey(yearsExp)] || floor;
     }
 
     // A 1-year minimum deal's cap hit is capped at the 2-year veteran minimum
     // regardless of actual tier (§ 3.12) — only relevant for a single-year
     // contract; a multi-year minimum deal follows the per-year tier instead.
-    function oneYearMinCapHit(slug, season) {
+    function oneYearMinCapHit(season, yearsExp) {
       const scale = minScaleFor(season);
       const floor = scale['0'] || 0;
-      const draftYear = (BIOS[slug] || {}).draft_year;
-      if (!draftYear || !Object.keys(scale).length) return floor;
-      const yearsExp = (parseInt(season, 10) || 0) + 2000 - draftYear;
+      if (yearsExp === null || yearsExp === undefined || !Object.keys(scale).length) return floor;
       const key = minTierKey(yearsExp);
       const tierAmt = scale[key] || floor;
       const twoYrAmt = scale['2'] || 0;
@@ -581,16 +591,22 @@
       return Math.min(tierAmt, twoYrAmt);
     }
 
-    function minimumSalaries(slug, years) {
-      // Year 1 only: a genuine 1-year deal gets the § 3.12 2-yr-cap-hit figure;
-      // a multi-year deal's Year 1 is the player's own tier minimum. Years 2+
-      // repeat Year 1 flat rather than climbing to each year's own (higher)
-      // tier floor — the scale's dollar jumps routinely exceed § 3.13's 5%/yr
-      // raise ceiling, which would make an escalating auto-fill illegal on
-      // its own. Flat only risks the non-blocking "below tier" warning.
-      const season = curYr();
-      const yr1 = years === 1 ? oneYearMinCapHit(slug, season) : tierMinimum(slug, season);
-      return new Array(years).fill(yr1);
+    function minimumSalaries(years, yearsExp) {
+      // A genuine 1-year deal gets the § 3.12 2-yr-cap-hit figure. A multi-year
+      // deal climbs the scale — each year is the player's own tier minimum for
+      // *that* season, and one more season of the deal is one more year of
+      // service. That is what § 3.12 prescribes even though the scale's steps
+      // at the bottom (rookie → 1 year is +61%) dwarf § 3.13's 5% ladder; the
+      // validator exempts minimum-scale years from that ladder, so the honest
+      // fill is also the one that passes.
+      if (years === 1) return [oneYearMinCapHit(curYr(), yearsExp)];
+      const out = [];
+      let season = curYr();
+      for (let i = 0; i < years; i++) {
+        out.push(tierMinimum(season, yearsExp === null || yearsExp === undefined ? null : yearsExp + i));
+        season = seasonAfter(season);
+      }
+      return out;
     }
 
     function compactMoney(n) {
@@ -615,7 +631,11 @@
     }
 
     const METHODS = [
-      ['', '— not declared —'],
+      // Required on a standard contract (§ 3.1–§ 3.6) and enforced server-side,
+      // so this reads as the unfilled state rather than a legitimate choice —
+      // "not declared" invited nine offers through with no funding path at all.
+      // Two-ways are the real exemption: $0, outside Team Salary (§ 2.2).
+      ['', '— select one —'],
       ['cap_space', 'Cap space'],
       ['bird_rights', 'Bird Rights'],
       ['minimum', 'Minimum'],
@@ -634,16 +654,27 @@
     ];
 
     function offerFor(team, slug) { return MY_OFFERS[team + '|' + slug] || null; }
+    function voidedFor(team, slug) { return MY_VOIDED[team + '|' + slug] || null; }
 
     async function refreshOffers() {
       MY_OFFERS = {};
+      MY_VOIDED = {};
       if (!MY_TEAMS.length) return;
       let list = [];
       try { list = await api('/fa/offers'); } catch { return; }
       // The endpoint also returns offers on players this member reviews as a
       // committee assignee (§ 6.1). Those are not this team's to edit.
-      (list || []).filter(o => MY_TEAMS.includes(o.team))
-        .forEach(o => { MY_OFFERS[o.team + '|' + o.player] = o; });
+      //
+      // A voided offer (§ 4.3b) is kept in a map of its own rather than
+      // overwriting the live one. It is out of play — the team may bid again, so
+      // the menu must offer that — but it is not gone, and the team is owed the
+      // reason. Keyed the same way, so a void followed by a fresh offer leaves
+      // one entry in each map rather than two fighting over one slot.
+      (list || []).filter(o => MY_TEAMS.includes(o.team)).forEach(o => {
+        const key = o.team + '|' + o.player;
+        if (o.status === 'voided') MY_VOIDED[key] = o;
+        else MY_OFFERS[key] = o;
+      });
     }
 
     // ── the ⋯ menu ────────────────────────────────────────────────────────────
@@ -655,9 +686,12 @@
           // The most advanced state across this member's teams is what the row
           // flag shows; the menu itself breaks it down per team.
           const states = MY_TEAMS.map(t => (offerFor(t, row.slug) || {}).status).filter(Boolean);
+          // A void ranks below every live state: if the team has bid again since,
+          // that bid is the news, and the void is in the menu either way.
           const flagged = states.includes('returned') ? 'returned'
             : states.includes('submitted') ? 'submitted'
-            : states.includes('draft') ? 'draft' : null;
+            : states.includes('draft') ? 'draft'
+            : MY_TEAMS.some(t => voidedFor(t, row.slug)) ? 'voided' : null;
           if (flagged) {
             const f = document.createElement('span');
             f.className = 'offer-flag ' + flagged;
@@ -716,8 +750,20 @@
       MY_TEAMS.forEach(team => {
         const prefix = MY_TEAMS.length > 1 ? team + ' — ' : '';
         const existing = offerFor(team, row.slug);
+        // § 4.3b. Shown above the live actions and never hidden: the committee
+        // took a bid off the board and the team has no way to ask why, so the
+        // reason is the whole of what they get. Disabled, because there is
+        // nothing to do with it — the action is to bid again, below.
+        const voided = voidedFor(team, row.slug);
+        if (voided) {
+          addItem(prefix + 'Offer voided by the committee', {
+            enabled: false,
+            why: '“' + ((voided.void || {}).reason || '—') + '” — it no longer counts against you, '
+              + 'and you may offer again.',
+          });
+        }
         if (!existing) {
-          addItem(prefix + 'Offer a contract…', {
+          addItem(prefix + (voided ? 'Offer again…' : 'Offer a contract…'), {
             enabled: accepting, why,
             onClick: () => openOfferForm(team, row, null),
           });
@@ -754,6 +800,10 @@
       const F = {
         years: 1, salaries: [0], options: [''], hold: '', eaps: '',
         type: 'player', method: '', bird: '',
+        // § 3.12 years of NBA experience as of Year 1, declared on the contract
+        // because the bio usually can't supply it. Prefilled from the draft
+        // year when there is one; null means "not established yet".
+        exp: derivedExp(row.slug),
         pitch: '', promises: { mpg: null, playoffs: false, role: 'none' },
       };
       if (existing) {
@@ -770,6 +820,7 @@
         const after = deal.length ? seasonAfter(deal[deal.length - 1]) : y0;
         F.hold = (caps[after] === 'UFA' || caps[after] === 'RFA') ? caps[after] : '';
         F.type = c.type || 'player';
+        if (c.years_experience !== null && c.years_experience !== undefined) F.exp = c.years_experience;
         F.method = existing.offer.signing_method || '';
         F.bird = existing.offer.bird_rights_type || '';
         F.eaps = existing.offer.eaps_assumption || '';
@@ -798,7 +849,11 @@
       // _autofill_fa_hold_amounts computes the real § 3.10 figure from the prior
       // salary and Bird tier, and a typed placeholder would override it.
       if (F.hold) cap_holds[s] = F.hold;
-      return { type: F.type, salaries, cap_holds };
+      const c = { type: F.type, salaries, cap_holds };
+      // Stated as of Year 1, which is why it travels with the contract rather
+      // than the player — re-read in a later league year it still resolves.
+      if (F.exp !== null && F.exp !== undefined) c.years_experience = F.exp;
+      return c;
     }
 
     function offerBody(F, team, slug) {
@@ -820,7 +875,6 @@
     function openOfferForm(team, row, existing) {
       const slug = row.slug;
       const F = seedForm(row, existing);
-      const isOwner = (ME.owner_of || []).includes(team);
       const readOnly = !!existing && existing.status === 'submitted';
       const entry = (BOARD.players || {})[slug] || null;
       // A resubmission is exempt from the FFA window (§ 4.3a): the clock governs
@@ -906,6 +960,24 @@
           box.appendChild(b);
         }
 
+        // § 4.3b. If this team's previous bid was voided, the form it is about to
+        // fill in is a *re*-bid, and it should say so with the committee's reason
+        // — the same one the ⋯ menu carries, server-composed, never restated here.
+        const voided = voidedFor(team, slug);
+        if (voided && !existing) {
+          const b = el('div', 'panel bad');
+          b.style.marginTop = '0.7rem';
+          b.appendChild(el('div', 'fs-head',
+            `Your previous offer (#${voided.number}) was voided by the committee`));
+          const n = el('div', 'remand-note');
+          n.appendChild(el('div', null, (voided.void || {}).reason || '—'));
+          n.appendChild(el('div', 'meta',
+            `${(voided.void || {}).by || '?'} · ${whenLocal((voided.void || {}).at)}`
+            + ' · it no longer counts against your cap exposure'));
+          b.appendChild(n);
+          box.appendChild(b);
+        }
+
         if (readOnly) {
           const b = el('div', 'panel info');
           b.style.marginTop = '0.7rem';
@@ -929,6 +1001,13 @@
             }
             F.salaries.length = F.years;
             F.options.length = F.years;
+            // A minimum deal's figures are per-year and length-dependent — a
+            // 1-year deal's cap hit is the 2-yr veteran minimum (§ 3.12), a
+            // multi-year one climbs the scale — so re-derive rather than
+            // carrying the old year's numbers into a different-length deal.
+            if (F.method === 'minimum' && F.type !== 'two-way') {
+              F.salaries = minimumSalaries(F.years, F.exp);
+            }
             drawForm();
           })));
         topRow.appendChild(field('Type', select(
@@ -1034,7 +1113,7 @@
           // the salary boxes at whatever they held before (often $0 on a
           // fresh offer) — the same numbers the validator will check against.
           if (v === 'minimum' && F.type !== 'two-way') {
-            F.salaries = minimumSalaries(slug, F.years);
+            F.salaries = minimumSalaries(F.years, F.exp);
             drawForm();
             return;
           }
@@ -1043,6 +1122,35 @@
         methodSel.title = 'Sign-and-trade requires a companion trade proposal and joint approval — '
           + 'not yet supported on the site (§ 3.14). Bring it to the committee directly.';
         fr.appendChild(field('Exception / method', methodSel));
+
+        // § 3.12 puts each year of a minimum deal on the scale row for the
+        // player's experience *that* season, so the tier has to be known to
+        // price the deal at all. Only asked for on a minimum contract, where
+        // it changes the numbers — everywhere else it is noise.
+        if (F.method === 'minimum' && F.type !== 'two-way') {
+          const expIn = document.createElement('input');
+          expIn.type = 'number';
+          expIn.min = '0'; expIn.max = '25'; expIn.step = '1';
+          expIn.value = (F.exp === null || F.exp === undefined) ? '' : String(F.exp);
+          expIn.placeholder = 'unknown';
+          expIn.disabled = readOnly;
+          expIn.addEventListener('change', () => {
+            const v = expIn.value.trim();
+            F.exp = v === '' ? null : Math.max(0, Math.min(25, parseInt(v, 10) || 0));
+            F.salaries = minimumSalaries(F.years, F.exp);
+            drawForm();
+          });
+          expIn.title = 'Years of NBA experience in Year 1 of this deal. Sets which row of the '
+            + 'Minimum Salary Scale each year is priced on (§ 3.12); the tier steps up one row '
+            + 'per contract year.';
+          const expField = field('NBA experience (Yr 1)', expIn);
+          const note = el('div', 'sub', derivedExp(slug) === null
+            ? 'No draft year on file for this player, so this can\'t be derived — set it or every '
+              + 'year prices at the rookie minimum.'
+            : 'Prefilled from their draft year. Override if it\'s wrong.');
+          expField.appendChild(note);
+          fr.appendChild(expField);
+        }
         fr.appendChild(field('Bird rights tier', select(
           [['', '— none / not applicable —'], ['QVFA', 'Full Bird (QVFA)'],
            ['EQVFA', 'Early Bird (EQVFA)'], ['Non-QVFA', 'Non-Bird (Non-QVFA)']],
@@ -1293,7 +1401,6 @@
         let why = '';
         if (!lastValidation) why = 'Waiting on the legality check.';
         else if (errs.length) why = 'Fails a rule check: ' + (errs[0].message || errs[0].check);
-        else if (!isOwner) why = 'Only the team owner can submit this offer.';
         else if (!windowOpen) why = (entry && entry.reason) || 'This player isn’t accepting offers right now.';
         btn.disabled = !!why;
         btn.title = why || 'Review and submit to the committee';

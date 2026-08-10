@@ -686,8 +686,11 @@
     return i > 0 ? canonical.slice(i + 2) + ' ' + canonical.slice(0, i) : canonical;
   }
 
+  // Canonical slug is LAST-FIRST ("CURRY, STEPHEN" → "curry-stephen"), i.e. the
+  // bio name slugified in place. Do NOT run displayName() first — that flips it
+  // to first-last and produces a key nothing else in the site agrees with.
   function slugFromName(canonical) {
-    return displayName(canonical).toLowerCase()
+    return canonical.toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   }
@@ -1323,7 +1326,10 @@
         });
       }
       const payload = {
-        name:        fName.value.trim(),
+        // Canonical bio name is uppercase "LAST, FIRST" with the comma-space —
+        // normalize both here so a typed "Wallace,Keaton" can't land as-is and
+        // read differently from every other bio on the page.
+        name:        fName.value.trim().toUpperCase().replace(/\s*,\s*/, ', '),
         pos:         [...selectedPos],
         dob:         fDob.value.trim(),
         college:     fCollege.value.trim(),

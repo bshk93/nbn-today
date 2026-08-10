@@ -835,6 +835,18 @@
         <span id="mle-hint" style="display:none;font-size:0.75rem;margin-top:0.25rem"></span>
       </div>
 
+      <!-- sign / offer_sheet on the minimum: § 3.12 prices each year on the
+           scale row for the player's experience *that* season, so the tier has
+           to be stated. It rides on the contract rather than the bio because
+           `draft_year` is the NBN draft — null for everyone who predates it and
+           permanently null for UDFAs, which priced multi-year minimums flat at
+           the rookie row. Blank falls back to the draft_year proxy. -->
+      <div class="form-field" id="f-exp-field" style="display:none">
+        <label>NBA experience <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(years, as of Year 1)</span></label>
+        <input type="number" id="f-years-exp" min="0" max="25" step="1" placeholder="derive from draft year">
+        <span id="exp-hint" style="font-size:0.75rem;margin-top:0.25rem;color:var(--text-muted)"></span>
+      </div>
+
       <!-- sign / convert_twoway / offer_sheet: bird rights subtype -->
       <div class="form-field" id="f-bird-rights-field" style="display:none">
         <label>Bird Rights Type</label>
@@ -1364,6 +1376,11 @@ function setupTypeSwitch() {
         document.getElementById('f-bird-rights-field').style.display = 'none';
         document.getElementById('mle-hint').style.display = 'none';
       }
+      // Only sign/offer_sheet on the minimum asks for a § 3.12 experience tier.
+      if (!isSign && !isOfferSheet) {
+        document.getElementById('f-exp-field').style.display = 'none';
+        document.getElementById('f-years-exp').value = '';
+      }
       document.getElementById('f-pick-year-field').style.display     = isPick ? '' : 'none';
       document.getElementById('f-pick-sel-field').style.display      = isPick ? '' : 'none';
       document.getElementById('f-opt-year-field').style.display      = isOpt ? '' : 'none';
@@ -1410,6 +1427,9 @@ function setupTypeSwitch() {
       const v = document.getElementById('f-type').value;
       const needsContract = v === 'sign' || v === 'convert_twoway' || v === 'sign_pick' || v === 'offer_sheet';
       applyContractTypeVisibility(needsContract, v === 'convert_twoway');
+      // Two-way terms don't sit on the § 3.12 scale, so the experience field
+      // follows the radio too.
+      updateMleHint();
       // Pre-fill starting season when switching to two-way
       if (r.value === 'two-way') {
         const startEl = document.getElementById('f-twoway-start');
@@ -1504,6 +1524,32 @@ function updateMleHint() {
       : document.getElementById('f-team')?.value;
   const birdField = document.getElementById('f-bird-rights-field');
   if (birdField) birdField.style.display = method === 'bird_rights' ? '' : 'none';
+
+  // § 3.12 experience tier — asked for only on a minimum deal, where it decides
+  // every year's figure. Prefilled from the draft year when there is one, and
+  // says so plainly when there isn't, since that is the case that used to price
+  // a 12-year veteran at the rookie minimum without comment.
+  const expField = document.getElementById('f-exp-field');
+  if (expField) {
+    const onMin = method === 'minimum'
+      && (txnType === 'sign' || txnType === 'offer_sheet')
+      && document.querySelector('input[name="contract-type"]:checked')?.value !== 'two-way';
+    expField.style.display = onMin ? '' : 'none';
+    if (onMin) {
+      const slug = document.getElementById('f-player-slug').value;
+      const dy = (bios[slug] || {}).draft_year;
+      const expIn = document.getElementById('f-years-exp');
+      const derived = dy ? Math.max(0, parseInt(currentSeasonStr(), 10) + 2000 - dy) : null;
+      if (expIn && expIn.value === '' && derived !== null) expIn.value = String(derived);
+      const hint = document.getElementById('exp-hint');
+      if (hint) {
+        hint.textContent = derived !== null
+          ? `Prefilled from a ${dy} draft year. Override if it's wrong.`
+          : 'No draft year on file — set this, or every year prices at the rookie minimum.';
+        hint.style.color = derived !== null ? 'var(--text-muted)' : 'var(--danger)';
+      }
+    }
+  }
 
   const poolMethods = ['mle', 'bae'];
   if (!team || !poolMethods.includes(method)) { hint.style.display = 'none'; return; }
@@ -1714,6 +1760,13 @@ function seasonStart(s) {
 
 function onPlayerSelected(slug) {
   const type = document.getElementById('f-type').value;
+  // The § 3.12 experience prefill and its hint are per-player, so re-derive
+  // them whenever the player changes rather than only on a method change.
+  if (type === 'sign' || type === 'offer_sheet') {
+    const expIn = document.getElementById('f-years-exp');
+    if (expIn) expIn.value = '';   // clear the previous player's derived figure
+    updateMleHint();
+  }
   if (type === 'guarantee') { populateGuaranteeYears(slug); return; }
   if (type === 'convert_twoway') { updateMleHint(); return; }
   if (type === 'release') { updateReleaseStretchHint(slug); return; }
@@ -2043,6 +2096,19 @@ function collectSalaries() {
   return { salaries, cap_holds, guarantee_schedule };
 }
 
+// § 3.12 years of experience, as a contract fragment to spread in. Empty when
+// the field is blank or hidden, which leaves the API on its draft_year proxy —
+// the field is only shown for minimum deals, so an ordinary signing never
+// carries one.
+function collectYearsExp() {
+  const el = document.getElementById('f-years-exp');
+  const field = document.getElementById('f-exp-field');
+  if (!el || !field || field.style.display === 'none') return {};
+  const v = el.value.trim();
+  if (v === '') return {};
+  return { years_experience: Math.max(0, Math.min(25, parseInt(v, 10) || 0)) };
+}
+
 // ── Trade builder ──────────────────────────────────────────────────────────
 function setupTrade() {
   document.getElementById('add-leg-btn').addEventListener('click', () => { addTradeLeg(); refreshExceptionsSection(); scheduleRubric(); });
@@ -2093,7 +2159,7 @@ function collectSignValidationBody() {
     ? (document.getElementById('f-bird-rights-type').value || null) : null;
   const eaps = document.getElementById('f-eaps').value || null;
   const base = {
-    player, contract: { type: 'player', salaries, cap_holds },
+    player, contract: { type: 'player', salaries, cap_holds, ...collectYearsExp() },
     signing_method: method, bird_rights_type: bird, eaps_assumption: eaps,
   };
   return type === 'sign'
@@ -2688,6 +2754,7 @@ async function submitTransaction() {
     const { salaries, cap_holds, guarantee_schedule } = collectSalaries();
     contract = { type: contractType, salaries, cap_holds,
       ...(Object.keys(guarantee_schedule).length ? { guarantee_schedule } : {}),
+      ...collectYearsExp(),
     };
   }
   let date, details;
