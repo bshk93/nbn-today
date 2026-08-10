@@ -212,6 +212,8 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Change the Franchise Records cards | `records-wrap` block in `teams/team.js`; data comes from `build/job.R` ("Writing franchise records CSV") |
 | Change the transaction simulator's spreadsheet export | `buildTradeWorkbook` — `transaction-sim/index.html`; the .xlsx writer is `transaction-sim/xlsx.js`, and publishing to Google Sheets is `POST /api/trade-sheet` (`nbn-api/routers/google_sheets.py`). Export is trade-mode only |
 | Add a transaction type to the simulator | `setMode` / `runSignCheck` — `transaction-sim/index.html`, plus a `POST /api/validate/{type}` endpoint in `nbn-api/routers/transactions.py` (see "Transaction simulator" below) |
+| Change the contract shorthand (`2+1 PO, $150M`) or the cap-hold vocabulary | **`contract.js`** at the repo root — one grammar, loaded by team pages (via `contractReady` in `team.js`), `/pdc` and `/transactions`. `_contract_str` in `nbn-api/routers/discord_notify.py` is a deliberate Python mirror (it can't import JS) and is pinned to the same cases by `nbn-api/tests/test_contract_shorthand.py`. Don't add a fourth copy |
+| Change the office's contract entry form (salary rows, EAPS, live signing rubric) | `addSalaryRow` / `collectSalaries` / `collectSignValidationBody` — `transactions/index.html`. The signing rubric calls `POST /api/validate/sign` (or `/offer_sheet`) on a 300ms debounce, the same validator the submit path runs |
 | Add/change an owner's per-player roster move | `makeRosterMoveActions` / `openMovesMenu` — `teams/team.js` (see "Owner self-serve roster moves") |
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
 | Change the suggestions board or its comment threads | `suggestions/index.html` + `nbn-api/routers/suggestions.py` (see "Suggestions board" below) |
@@ -235,6 +237,10 @@ No framework or build step. Every page is a self-contained HTML file with inline
 - Handles **edit mode**: committee members can click an "Edit" button on roster/picks sections, enter a bearer token (stored in `localStorage` as `nbn_token`), and save changes via `PUT /api/roster/{ABB}` or `PUT /api/picks/{ABB}` against a backend API running at port 8001.
 
 > **Never edit `teams/{ABB}/index.html` directly.** All 30 files are identical 11-line shells (`<script src="../team.js"></script>`). All team page logic lives in `team.js`.
+
+**`contract.js`** (repo root) — the contract vocabulary and shorthand: `CONTRACT_HOLD_TYPES` (the one list of what a `cap_holds` year can be), `CONTRACT_TAGS`, `isFaHold`, `parseCapHoldMap`, and `summarizeContract`, which renders `2+1 PO, $150M`. Loaded by team pages (dynamically, via `contractReady`), `/pdc` (`<script src="/contract.js">`) and `/transactions`.
+
+Two things it settles, both of which had already gone wrong once: a **trailing UFA/RFA line is the hold the deal rolls into, not a contract year**, so it ends the deal rather than adding a year and inflating the total; and `summarizeContract` with **no `season`** summarizes the whole deal from its own first year (what a ledger row wants — the contract as signed), while passing a season gives the roster reading (what's left from here).
 
 **`teams/lineup.js`** — `DEPTH_SLOTS` + `computeStartingFive`, the best legal one-player-per-slot PG→C lineup. Extracted from `team.js` so pages other than a team page can project a lineup (`team.js` injects a whole page into `document.body` on load, so nothing can import from it). It reads exactly two fields off each row — `_posList` and `OVR` — so any caller producing objects with those can use it.
 

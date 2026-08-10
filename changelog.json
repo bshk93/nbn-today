@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.0.405",
+    "date": "2026-08-10",
+    "changes": [
+      "Transactions: added the \u00a7 3.10 EAPS question the API needs to price a Full Bird cap hold. Without it, re-signing any 3+ year tenured player into a trailing UFA/RFA hold was rejected at submit with an error naming a field this page didn't have",
+      "Transactions: signings now get a live rubric \u2014 the same POST /api/validate/sign the simulator and the FA offer form use, with the trailing hold's dollar figure \u2014 instead of no check at all until submit",
+      "Transactions: an option decline no longer demands a hand-typed cap hold amount; left blank the API computes the \u00a7 3.10 figure, and the box is an override",
+      "Transactions: contract summaries in the log now read \"2+1 PO, $150M\" like the rest of the site, and no longer count a trailing UFA/RFA hold as a contract year (which inflated both the year count and the total)",
+      "Fixed POST /api/validate/offer_sheet returning a 500 on every call \u2014 it still read an `outcome` field that was removed when offer sheets were split into two transactions. The simulator's offer-sheet mode was broken by the same bug",
+      "New shared contract.js: one cap-hold vocabulary and one shorthand grammar for team pages, the PDC dashboard and the transactions log, replacing three copies of the same code. The Discord embeds' Python version is now pinned to it by a test"
+    ]
+  },
+  {
     "version": "0.0.404",
     "date": "2026-08-10",
     "changes": [

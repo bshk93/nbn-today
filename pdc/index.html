@@ -243,6 +243,7 @@
   </div>
 
   <script src="/teams/lineup.js"></script>
+  <script src="/contract.js"></script>
   <script>
   // ══ PDC dashboard ═══════════════════════════════════════════════════════════
   //
@@ -360,45 +361,12 @@
     return fwd ? 'in ' + n : n + ' ago';
   }
 
-  const TAGS = { PLAYER_OPT: 'PO', TEAM_OPT: 'TO', NON_GTD: 'NG' };
-  const HOLD = t => t === 'UFA' || t === 'RFA';
-
-  // Mirrors summarizeContract's grammar in teams/team.js — "2+1 PO, $150M". The
-  // same shorthand appears on team pages and in the Discord embeds; divergent
-  // shorthand for the same deal is worse than none. A trailing UFA/RFA line is
-  // the hold the deal rolls into, not a contract year, so it ends the deal.
-  function shorthand(contract, season) {
-    const sals = contract.salaries || {};
-    const caps = contract.cap_holds || {};
-    const years = Object.keys(sals)
-      .filter(k => /^\d{2}-\d{2}$/.test(k) && k >= season && sals[k] !== '' && sals[k] != null)
-      .sort();
-    if (!years.length) return '—';
-    if (HOLD(caps[years[0]])) {
-      const amt = parseMoney(sals[years[0]]);
-      return `${caps[years[0]]} hold` + (amt >= 1000 ? `, ${compactMoney(amt)}` : '');
-    }
-    const deal = [];
-    for (const k of years) {
-      if (HOLD(caps[k])) break;
-      deal.push({ year: k, tag: TAGS[caps[k]] || null });
-    }
-    let base = 0;
-    while (base < deal.length && !deal[base].tag) base++;
-    const extras = [];
-    for (let i = base; i < deal.length;) {
-      const tag = deal[i].tag;
-      let n = 0;
-      while (i < deal.length && deal[i].tag === tag) { n++; i++; }
-      extras.push(n + (tag ? ' ' + tag : ''));
-    }
-    let yrs;
-    if (!extras.length) yrs = `${base} yr${base === 1 ? '' : 's'}`;
-    else if (base === 0) yrs = extras.join('+');
-    else yrs = `${base}+${extras.join('+')}`;
-    const total = deal.reduce((sum, d) => sum + parseMoney(sals[d.year]), 0);
-    return total ? `${yrs}, ${compactMoney(total)}` : yrs;
-  }
+  // TAGS / HOLD / shorthand all come from /contract.js (loaded above), so this
+  // page and team pages render the same deal identically instead of from two
+  // copies of one grammar that only a comment kept in step.
+  const TAGS = CONTRACT_TAGS;
+  const HOLD = isFaHold;
+  const shorthand = summarizeContract;
 
   const METHOD_LABELS = {
     cap_space: 'Cap space', bird_rights: 'Bird rights', mle: 'MLE', ntmle: 'Non-taxpayer MLE',

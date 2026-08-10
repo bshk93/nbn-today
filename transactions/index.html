@@ -845,6 +845,20 @@
         </select>
       </div>
 
+      <!-- sign / convert_twoway / offer_sheet / sign_pick / option-decline:
+           § 3.10 needs to know whether the prior salary sits above or below the
+           hold season's EAPS to pick 150% vs 190% on a Full Bird hold. No season
+           has a real EAPS on file yet, so without this the API can't price the
+           hold and rejects the whole transaction. -->
+      <div class="form-field" id="f-eaps-field" style="display:none">
+        <label>Prior salary vs. EAPS <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(Full Bird holds)</span></label>
+        <select id="f-eaps">
+          <option value="">— not specified —</option>
+          <option value="below">At or below EAPS (190%)</option>
+          <option value="above">Above EAPS (150%)</option>
+        </select>
+      </div>
+
       <!-- option-only -->
       <div class="form-field" id="f-opt-year-field" style="display:none">
         <label>Option Year</label>
@@ -873,9 +887,13 @@
         </select>
       </div>
 
+      <!-- Optional override. Left blank, _apply_option computes the § 3.10
+           figure from the last real salary and Bird tier — the same auto-fill a
+           signing gets. Typing a number here is how you override it, not how you
+           supply one that would otherwise be missing. -->
       <div class="form-field" id="f-opt-hold-amount-field" style="display:none">
-        <label>Cap Hold Amount</label>
-        <input type="text" id="f-opt-hold-amount" placeholder="$0,000,000">
+        <label>Cap Hold Amount <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(optional — computed if blank)</span></label>
+        <input type="text" id="f-opt-hold-amount" placeholder="auto (§ 3.10)">
       </div>
 
       <!-- guarantee-only -->
@@ -953,6 +971,18 @@
 
         <div class="salary-rows" id="salary-rows"></div>
         <button class="add-salary-btn" id="add-salary-btn" type="button">+ Add season</button>
+      </div>
+
+      <!-- Live § 3.1–§ 3.13 check of the signing as built, off the same
+           /api/validate/sign the simulator and the FA offer form use. Only
+           `sign` and `offer_sheet` have validator endpoints — the other
+           contract-carrying types stay silent rather than showing a verdict
+           drawn from zero checks. -->
+      <div class="form-field full legality-section" id="sign-rubric" style="display:none">
+        <div class="legality-header">Signing rubric · live</div>
+        <div class="rubric-body" id="sign-rubric-body">
+          <div class="rubric-empty">Pick a player and fill in the salary years to evaluate this signing.</div>
+        </div>
       </div>
 
       <div class="form-field full">
@@ -1080,19 +1110,20 @@
 </div>
 
 <script src="/league-time.js"></script>
+<script src="/contract.js"></script>
 <script>
 const TOKEN_KEY = 'nbn_token';
 
-const HOLD_OPTIONS = [
-  ['', 'Guaranteed'],
-  ['UFA', 'UFA Hold'],
-  ['RFA', 'RFA Hold'],
-  ['PLAYER_OPT', 'Player Option'],
-  ['TEAM_OPT', 'Team Option'],
-  ['NON_GTD', 'Non-Guaranteed'],
-];
+// From /contract.js, so a hold type can't exist in one page's dropdown and not
+// another's.
+const HOLD_OPTIONS = CONTRACT_HOLD_TYPES.map(t => [t.value, t.label]);
 
 // ── State ──────────────────────────────────────────────────────────────────
+// Declared up here, not beside runSignRubric: setupTypeSwitch's initial
+// onTypeChange() calls scheduleSignRubric() during page init, which is before
+// a `let` further down the file has left its temporal dead zone.
+let signRubricTimer = null;
+let signRubricSeq = 0;
 let allTransactions = [];
 let bios = {};
 let allPicks = [];
@@ -1325,6 +1356,10 @@ function setupTypeSwitch() {
       document.getElementById('f-offer-outcome-field').style.display = isOfferSheet ? '' : 'none';
       document.getElementById('f-hardcap-level-field').style.display = isSetHardCap ? '' : 'none';
       document.getElementById('f-signing-method-field').style.display = (isSign || isConvertTwoWay || isOfferSheet) ? '' : 'none';
+      // Shown for every type that can produce a § 3.10 hold, including an
+      // option decline (which rolls straight into one).
+      document.getElementById('f-eaps-field').style.display =
+        (needsContract || isOpt) ? '' : 'none';
       if (!isSign && !isConvertTwoWay && !isOfferSheet) {
         document.getElementById('f-bird-rights-field').style.display = 'none';
         document.getElementById('mle-hint').style.display = 'none';
@@ -1341,6 +1376,8 @@ function setupTypeSwitch() {
       if (isRelease) updateReleaseStretchHint(); else document.getElementById('f-release-stretch').value = '';
       document.getElementById('f-contract-type-field').style.display   = (needsContract && !isConvertTwoWay) ? '' : 'none';
       applyContractTypeVisibility(needsContract, isConvertTwoWay);
+      document.getElementById('sign-rubric').style.display = (isSign || isOfferSheet) ? '' : 'none';
+      scheduleSignRubric();
     }
 
     document.getElementById('f-player-display').value = '';
@@ -1382,6 +1419,13 @@ function setupTypeSwitch() {
   });
 
   onTypeChange();
+
+  // Same delegated wiring the trade builder uses: rows are added and removed
+  // dynamically, so listening on the container covers inputs that don't exist
+  // yet. collectSignValidationBody() decides whether there's anything to check.
+  const grid = document.getElementById('form-grid-fields');
+  grid.addEventListener('change', scheduleSignRubric);
+  grid.addEventListener('input', scheduleSignRubric);
 }
 
 function currentSeasonStr() {
@@ -1648,6 +1692,9 @@ function setupPlayerSearch() {
     displayInput.value = name;
     dropdown.classList.remove('open');
     onPlayerSelected(slug);
+    // The slug lives in a hidden input, so assigning it fires no event the
+    // form-level listener could pick up.
+    scheduleSignRubric();
   }
 }
 
@@ -1957,6 +2004,7 @@ function generateContractRows() {
     season = nextSeasonStr(season);
   }
   setStatus('ok', `Generated ${totalYears} salary row(s).`);
+  scheduleSignRubric();
 }
 
 function nextSalaryYear() {
@@ -2010,6 +2058,116 @@ function setupTrade() {
   const builder = document.getElementById('trade-builder');
   builder.addEventListener('change', () => { refreshExceptionsSection(); scheduleRubric(); });
   builder.addEventListener('input', scheduleRubric);
+}
+
+// ── Live signing rubric (same validator the submit path runs) ────────────────
+// The trade builder has had a live rubric for a while; signings had none, even
+// though /api/validate/sign has existed the whole time and both the simulator
+// and the FA offer form call it. So the one page that actually writes was the
+// only one entering a contract blind.
+function scheduleSignRubric() {
+  clearTimeout(signRubricTimer);
+  signRubricTimer = setTimeout(runSignRubric, 300);
+}
+
+// The same details the submit path would send, minus the parts the validator
+// doesn't read. Returns null when the form isn't far enough along to evaluate —
+// a verdict on an empty contract is noise, not information.
+function collectSignValidationBody() {
+  const type = document.getElementById('f-type').value;
+  if (type !== 'sign' && type !== 'offer_sheet') return null;
+  const player = document.getElementById('f-player-slug').value;
+  if (!player) return null;
+  const team = type === 'sign'
+    ? document.getElementById('f-team').value
+    : document.getElementById('f-offer-team').value;
+  if (!team) return null;
+
+  const isTwoWay = document.querySelector('input[name="contract-type"]:checked')?.value === 'two-way';
+  if (isTwoWay) return null;   // two-way terms are generated, not typed here
+  const { salaries, cap_holds } = collectSalaries();
+  if (!Object.keys(salaries).length) return null;
+
+  const method = document.getElementById('f-signing-method').value || null;
+  const bird = method === 'bird_rights'
+    ? (document.getElementById('f-bird-rights-type').value || null) : null;
+  const eaps = document.getElementById('f-eaps').value || null;
+  const base = {
+    player, contract: { type: 'player', salaries, cap_holds },
+    signing_method: method, bird_rights_type: bird, eaps_assumption: eaps,
+  };
+  return type === 'sign'
+    ? { url: '/api/validate/sign', body: { ...base, team } }
+    : { url: '/api/validate/offer_sheet', body: { ...base, offering_team: team } };
+}
+
+async function runSignRubric() {
+  const body = document.getElementById('sign-rubric-body');
+  if (!body) return;
+  const req = collectSignValidationBody();
+  if (!req) {
+    body.innerHTML = '<div class="rubric-empty">Pick a player and fill in the salary years to evaluate this signing.</div>';
+    return;
+  }
+  const seq = ++signRubricSeq;
+  try {
+    const res = await fetch(req.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    });
+    if (seq !== signRubricSeq) return;   // superseded by a newer edit
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      body.innerHTML = `<div class="rubric-empty err">${escHtml(d.detail || `Validation error (HTTP ${res.status}).`)}</div>`;
+      return;
+    }
+    renderSignRubric(await res.json());
+  } catch (e) {
+    if (seq !== signRubricSeq) return;
+    body.innerHTML = '<div class="rubric-empty err">Could not reach the validator.</div>';
+  }
+}
+
+function renderSignRubric(data) {
+  const body = document.getElementById('sign-rubric-body');
+  const { checks = [], fact_sheet: f = {} } = data;
+  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+
+  // An unpriceable Full Bird hold passes every § 3.1-§ 3.13 check — the
+  // validator doesn't run the hold auto-fill — and then fails at submit with a
+  // 422. A green verdict above a row saying it will be rejected is worse than
+  // no verdict, so it counts against legality here.
+  const needsEaps = !!(f.trailing_hold && f.trailing_hold.needs_eaps);
+  const legal = data.legal && !needsEaps;
+
+  const verdict = `<div class="rubric-verdict ${legal ? 'ok' : 'bad'}">${
+    legal ? '✓ Legal as currently built' : '✗ Not legal yet — resolve the errors below'
+  }</div>`;
+
+  const rows = checks.map(c => {
+    const kind = c.passed ? 'pass' : (c.level || 'error');
+    return `<div class="check-row ${kind}"><span class="check-icon">${ICON[kind] || '?'}</span><span class="check-msg">${escHtml(c.message)}</span></div>`;
+  }).join('');
+
+  // The § 3.10 hold this deal rolls into, priced by the same helper that writes
+  // it when the transaction is applied — so the figure is visible before
+  // submitting rather than discovered afterwards. `needs_eaps` is the case that
+  // used to fail at submit with an error naming a field this page didn't have.
+  const th = f.trailing_hold;
+  let hold = '';
+  if (th) {
+    const kind = th.needs_eaps ? 'error' : 'pass';
+    const tail = th.needs_eaps
+      ? `needs the EAPS answer above to price (Full Bird, § 3.10) — submitting without it will be rejected`
+      : th.amount != null
+        ? `${fmtDollarsShort(th.amount)}${th.bird_tier ? ` · ${escHtml(th.bird_tier)}` : ''}`
+        : escHtml(th.note || 'the office will price it');
+    hold = `<div class="check-row ${kind}"><span class="check-icon">${ICON[kind]}</span>`
+         + `<span class="check-msg">Rolls into a ${escHtml(th.season)} ${escHtml(th.type)} hold · ${tail}</span></div>`;
+  }
+
+  body.innerHTML = verdict + rows + hold;
 }
 
 // ── Live trade rubric (same validator the submit path runs) ──────────────────
@@ -2533,6 +2691,9 @@ async function submitTransaction() {
     };
   }
   let date, details;
+  // § 3.10: needed only when the deal rolls into a Full Bird hold, but harmless
+  // otherwise — the API consults it solely for the 150%/190% split.
+  const eapsAssumption = document.getElementById('f-eaps').value || null;
 
   if (type === 'sign') {
     date = document.getElementById('f-date').value;
@@ -2546,6 +2707,7 @@ async function submitTransaction() {
       player: playerSlug, team, contract,
       ...(signingMethod ? { signing_method: signingMethod } : {}),
       ...(birdRightsType ? { bird_rights_type: birdRightsType } : {}),
+      ...(eapsAssumption ? { eaps_assumption: eapsAssumption } : {}),
     };
   } else if (type === 'offer_sheet') {
     date = document.getElementById('f-date').value;
@@ -2561,6 +2723,7 @@ async function submitTransaction() {
     details = { player: playerSlug, offering_team, contract,
       ...(signingMethod ? { signing_method: signingMethod } : {}),
       ...(birdRightsType ? { bird_rights_type: birdRightsType } : {}),
+      ...(eapsAssumption ? { eaps_assumption: eapsAssumption } : {}),
     };
   } else if (type === 'pick') {
     date = document.getElementById('f-date').value;
@@ -2583,8 +2746,12 @@ async function submitTransaction() {
     const cap_hold_amount = document.getElementById('f-opt-hold-amount').value.trim() || null;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     if (!year || !option_type) { setStatus('err', 'Select a player with an option year.'); return; }
-    if (decision === 'decline' && !cap_hold_amount) { setStatus('err', 'Cap hold amount is required for a decline.'); return; }
-    details = { player: playerSlug, decision, option_type, year, cap_hold_type, cap_hold_amount };
+    // No longer required: left blank, _apply_option prices the hold from the
+    // last real salary and Bird tier, the same § 3.10 auto-fill a signing gets.
+    // Demanding a number here is what pushed operators into typing placeholder
+    // figures for a hold the API can compute exactly.
+    details = { player: playerSlug, decision, option_type, year, cap_hold_type, cap_hold_amount,
+      ...(eapsAssumption ? { eaps_assumption: eapsAssumption } : {}) };
   } else if (type === 'guarantee') {
     date = document.getElementById('f-date').value;
     const year = document.getElementById('f-gtd-year').value;
@@ -2611,6 +2778,7 @@ async function submitTransaction() {
       player: playerSlug,
       contract: { type: 'player', salaries: contract.salaries, cap_holds: contract.cap_holds },
       ...(signingMethod ? { signing_method: signingMethod } : {}),
+      ...(eapsAssumption ? { eaps_assumption: eapsAssumption } : {}),
     };
   } else if (type === 'sign_pick') {
     date = document.getElementById('f-date').value;
@@ -2618,7 +2786,8 @@ async function submitTransaction() {
     if (contractType !== 'two-way' && !Object.keys(contract.salaries || {}).length) {
       setStatus('err', 'At least one salary year is required.'); return;
     }
-    details = { player: playerSlug, contract };
+    details = { player: playerSlug, contract,
+      ...(eapsAssumption ? { eaps_assumption: eapsAssumption } : {}) };
   } else if (type === 'void_player') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -2721,7 +2890,12 @@ function resetForm() {
   document.getElementById('f-opt-hold-field').style.display        = 'none';
   document.getElementById('f-opt-hold-amount-field').style.display = 'none';
   document.getElementById('f-opt-hold-amount').value = '';
+  document.getElementById('f-eaps').value = '';
   document.getElementById('f-gtd-year').innerHTML = '<option value="">— select a player —</option>';
+  const signRubricBody = document.getElementById('sign-rubric-body');
+  if (signRubricBody) {
+    signRubricBody.innerHTML = '<div class="rubric-empty">Pick a player and fill in the salary years to evaluate this signing.</div>';
+  }
   // Re-populate pick selector to reflect newly assigned pick
   const yearSel = document.getElementById('f-pick-year-sel');
   if (yearSel.value) populatePickSel(+yearSel.value);
@@ -2916,9 +3090,7 @@ function renderOpenOffers() {
     <div class="offers-panel${anyOverdue ? ' overdue' : ''}">
       <h2>${openOffers.length} open offer sheet${openOffers.length === 1 ? '' : 's'}${anyOverdue ? ' — decision overdue' : ''}</h2>
       ${openOffers.map(o => {
-        const money = Object.values((o.contract || {}).salaries || {})
-          .reduce((sum, v) => sum + (parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0), 0);
-        const yrs = Object.keys((o.contract || {}).salaries || {}).length;
+        const terms = ledgerContractStr(o.contract || {});
         return `
         <div class="offer-row">
           <div class="grow">
@@ -2926,7 +3098,7 @@ function renderOpenOffers() {
             — <a href="/teams/${escHtml(o.offering_team)}">${escHtml(o.offering_team)}</a> offering,
             <a href="/teams/${escHtml(o.retaining_team)}">${escHtml(o.retaining_team)}</a> to decide
             <div class="offer-meta">
-              ${yrs}yr / $${(money / 1e6).toFixed(1)}M · offered ${escHtml(o.date)}
+              ${escHtml(terms)} · offered ${escHtml(o.date)}
               · ${escHtml(o.offering_team)} holds $${(o.hold / 1e6).toFixed(1)}M against the cap
               ${o.deadline ? ` · due ${escHtml(o.deadline)}` : ''}
               ${o.overdue ? ' <span class="offer-overdue-tag">overdue</span>' : ''}
@@ -3165,18 +3337,22 @@ function renderPlayerCell(slug) {
   return `<a href="/players/?p=${slug}">${escHtml(name)}</a>`;
 }
 
+// A ledger row records the contract **as signed**, so the shorthand runs over
+// the whole deal from its own first year rather than from today. Same grammar
+// as team pages and /pdc — this page used to count raw salary keys and sum
+// them, which counted a trailing UFA/RFA hold as a contract year and inflated
+// both the year count and the total on every deal that had one.
+function ledgerContractStr(contract) {
+  const s = summarizeContract(contract);
+  if (s !== '—') return s;
+  return (contract || {}).type === 'two-way' ? 'Two-Way' : '';
+}
+
 function renderDetailsCell(t) {
   const d = t.details || {};
   if (t.type === 'sign' || t.type === 'pick') {
     const c = d.contract || {};
-    const years = Object.keys(c.salaries || {}).length;
-    const total = Object.values(c.salaries || {}).reduce((sum, v) => {
-      const n = parseInt(v.replace(/[^0-9]/g, ''), 10) || 0;
-      return sum + n;
-    }, 0);
-    const contractStr = years
-      ? `${years}yr / $${(total / 1e6).toFixed(1)}M`
-      : (c.type === 'two-way' ? 'Two-Way' : '');
+    const contractStr = ledgerContractStr(c);
 
     if (t.type === 'pick' && d.pick) {
       const p = d.pick;
@@ -3206,12 +3382,7 @@ function renderDetailsCell(t) {
   }
   if (t.type === 'convert_twoway' || t.type === 'sign_pick') {
     const c = d.contract || {};
-    const years = Object.keys(c.salaries || {}).length;
-    const total = Object.values(c.salaries || {}).reduce((sum, v) => {
-      const n = parseInt(v.replace(/[^0-9]/g, ''), 10) || 0;
-      return sum + n;
-    }, 0);
-    let contractStr2 = years ? `${years}yr / $${(total / 1e6).toFixed(1)}M` : (c.type === 'two-way' ? 'Two-Way' : '');
+    let contractStr2 = ledgerContractStr(c);
     if (t.type === 'convert_twoway' && d.signing_method && d.signing_method !== 'cap_space') {
       const methodLabels = { bird_rights: 'Bird Rights', mle: 'MLE', ntmle: 'NTMLE', tmle: 'TMLE', minimum: 'Minimum',
         room_exception: 'Room Exc.', bae: 'BAE', sign_and_trade: 'S&T' };
@@ -3233,12 +3404,7 @@ function renderDetailsCell(t) {
   }
   if (t.type === 'offer_sheet') {
     const c = d.contract || {};
-    const years = Object.keys(c.salaries || {}).length;
-    const total = Object.values(c.salaries || {}).reduce((sum, v) => {
-      const n = parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0;
-      return sum + n;
-    }, 0);
-    const contractStr = years ? `${years}yr / $${(total / 1e6).toFixed(1)}M` : '';
+    const contractStr = ledgerContractStr(c);
     const outcomeStr = d.outcome === 'matched' ? 'Matched' : 'Not Matched';
     const methodLabels = { bird_rights: 'Bird Rights', mle: 'MLE', ntmle: 'NTMLE', tmle: 'TMLE', minimum: 'Minimum',
       room_exception: 'Room Exc.', bae: 'BAE' };

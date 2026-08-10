@@ -6,6 +6,7 @@
 //   RETIRED_JERSEYS             109   per-team retired number records
 //   ratingsPopupReady           135   resolves once /ratings-popup.js has loaded
 //   lineupReady                 148   resolves once /teams/lineup.js has loaded
+//   contractReady               161   resolves once /contract.js has loaded
 //   CAP_HOLD_CSS                730   cap-hold type → td class
 //   CAP_HOLD_LABELS             738   cap-hold type → legend label
 //   SWATCH_COLORS               746   cap-hold type → legend swatch color
@@ -153,6 +154,17 @@ const lineupReady = new Promise(resolve => {
   _lu.onload = resolve;
   _lu.onerror = () => { console.error('teams/lineup.js failed to load — depth chart unavailable'); resolve(); };
   document.head.appendChild(_lu);
+});
+
+// CONTRACT_TAGS / summarizeContract / the cap-hold vocabulary, shared with
+// /pdc and /transactions so one deal reads the same everywhere. Hard dependency
+// like lineup.js: the Rosters mode calls summarizeContract on every row.
+const contractReady = new Promise(resolve => {
+  const _ct = document.createElement('script');
+  _ct.src = '/contract.js';
+  _ct.onload = resolve;
+  _ct.onerror = () => { console.error('/contract.js failed to load — contract shorthand unavailable'); resolve(); };
+  document.head.appendChild(_ct);
 });
 
 { const _s = document.createElement('style'); _s.textContent = `
@@ -1351,7 +1363,12 @@ const SWATCH_COLORS = {
   NON_GTD:    'var(--border)',
 };
 
+// Thin alias for contract.js's parseCapHoldMap, kept because seven call sites
+// here use the shorter name. Falls back to a local copy if contract.js hasn't
+// loaded — a few of these run off CSV rows before the render awaits
+// contractReady, and a missing shorthand is better than a broken roster table.
 function parseCapHolds(val) {
+  if (typeof parseCapHoldMap === 'function') return parseCapHoldMap(val);
   if (val && typeof val === 'object') return val;
   const map = {};
   if (!val) return map;
@@ -1821,61 +1838,11 @@ function computeStatFields(seasonRow) {
   };
 }
 
-const CONTRACT_TAGS = { PLAYER_OPT: 'PO', TEAM_OPT: 'TO', NON_GTD: 'NG' };
-
-function compactMoney(n) {
-  if (!n) return '$0';
-  if (n >= 1e6) return '$' + (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K';
-  return '$' + Math.round(n);
-}
-
-// One-line contract summary for the Rosters mode: guaranteed years, then any
-// option / non-guaranteed years, then total remaining money — "2+1 PO, $150M".
-// Years run from the current league year forward; a UFA/RFA line is a cap hold
-// rather than a contract year, so it ends the deal (or is the whole story, if
-// the player has nothing but a hold).
-function summarizeContract(row, curYr) {
-  const caps = parseCapHolds(row._cap_holds || {});
-  const sals = row._salaries || {};
-  const years = Object.keys(sals)
-    .filter(k => /^\d{2}-\d{2}$/.test(k) && k >= curYr && sals[k] !== '' && sals[k] != null)
-    .sort();
-  if (!years.length) return '—';
-
-  const isHold = k => caps[k] === 'UFA' || caps[k] === 'RFA';
-  if (isHold(years[0])) {
-    // Placeholder holds carry a nominal $1 — a figure worth hiding, not showing.
-    const amt = parseSalaryNum(sals[years[0]]);
-    return `${caps[years[0]]} hold` + (amt >= 1000 ? `, ${compactMoney(amt)}` : '');
-  }
-
-  const deal = [];
-  for (const k of years) {
-    if (isHold(k)) break;
-    deal.push({ year: k, tag: CONTRACT_TAGS[caps[k]] || null });
-  }
-
-  let base = 0;
-  while (base < deal.length && !deal[base].tag) base++;
-
-  // everything after the guaranteed run, collapsed into runs of like years
-  const extras = [];
-  for (let i = base; i < deal.length;) {
-    const tag = deal[i].tag;
-    let n = 0;
-    while (i < deal.length && deal[i].tag === tag) { n++; i++; }
-    extras.push(n + (tag ? ' ' + tag : ''));
-  }
-
-  let yrs;
-  if (!extras.length)  yrs = `${base} yr${base === 1 ? '' : 's'}`;
-  else if (base === 0) yrs = extras.join('+');
-  else                 yrs = `${base}+${extras.join('+')}`;
-
-  const total = deal.reduce((sum, d) => sum + parseSalaryNum(sals[d.year]), 0);
-  return total ? `${yrs}, ${compactMoney(total)}` : yrs;
-}
+// CONTRACT_TAGS, compactMoney and summarizeContract all moved to /contract.js
+// so /pdc and /transactions render the same shorthand from the same code rather
+// than from three copies of the same grammar. The roster row's `_salaries` /
+// `_cap_holds` are adapted to the shared `{salaries, cap_holds}` shape at the
+// call site in buildRosterTable.
 
 // Roster table for a team page. `mode` selects which columns follow Player /
 // Pos / Age / OVR: 'contracts' (default) shows salary years, 'stats' shows
@@ -2207,7 +2174,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       if (col.key === '_slot') {
         td.textContent = row._slot || '';
       } else if (col.key === '_contract') {
-        td.textContent = row._emptySlot ? '' : summarizeContract(row, curYr);
+        td.textContent = row._emptySlot ? ''
+          : summarizeContract({ salaries: row._salaries, cap_holds: row._cap_holds }, curYr);
       } else if (row._emptySlot) {
         td.textContent = col.key === '_name' ? row._name : '';
       } else if (col.key === '_name') {
@@ -5391,6 +5359,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
   await ratingsPopupReady;
   await lineupReady;
+  await contractReady;
 
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
   if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
