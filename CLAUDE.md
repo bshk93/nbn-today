@@ -346,7 +346,18 @@ it with. When adding a check, reuse the helper rather than recomputing.
 `_require_validatable` rejects unknown teams/players with a 400 instead of
 scoring them — a validator handed an unknown team reads its salary as $0 and
 every check passes vacuously, which would print a confident "LEGAL" for a
-transaction that was never evaluated.
+transaction that was never evaluated. `_require_trade_validatable` is the same
+guard for a trade, which has many teams and players rather than one of each;
+`/api/validate/trade` had none until 2026-08-10 and was scoring unknown teams
+(reporting a passing hard-cap check and a roster count of -1).
+
+**`tests/test_validate_endpoints.py` is the only suite that goes through HTTP.**
+Every other suite calls the validators directly, which left the endpoint
+functions wrapping them — the code that reads the request model and assembles
+the response — never executed under test. That is precisely where both of the
+above bugs lived. Add a case here when adding a `/api/validate/*` endpoint; it
+asserts shape, not legality (never 5xx, `{legal, checks, fact_sheet}` back,
+unknown subjects refused with 400, junk bodies 422).
 
 Coverage is uneven and the UI says so: `sign`/`offer_sheet`/`offer_sheet_decision`/
 `trade`/`renounce` have real validators, while `release`, `option` and `pick` are stubs returning

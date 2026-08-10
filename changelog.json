@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.0.406",
+    "date": "2026-08-10",
+    "changes": [
+      "Fixed the trade validator scoring teams that don't exist: an unknown abbreviation was reported as passing its hard-cap check with a roster count of -1, so a trade whose salaries happened to match could have come back LEGAL for a team that isn't in the league",
+      "Added the first tests that call the /api/validate/* endpoints over HTTP rather than the validator functions underneath them \u2014 the layer where both of this week's simulator bugs actually lived"
+    ]
+  },
+  {
     "version": "0.0.405",
     "date": "2026-08-10",
     "changes": [
