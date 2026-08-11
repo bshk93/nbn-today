@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.0.408",
+    "date": "2026-08-11",
+    "changes": [
+      "The four channels a roster-log entry can come from \u2014 #fa-news, #transactions, #waivers and the site\u2019s own #roster-log-nbn-today \u2014 are now mirrored into #roster-log automatically, within a minute of the message being posted. That copying was being done by hand, from four places, which is the kind of job that gets skipped on a busy day",
+      "The mirror relays, it never interprets: the message that lands in #roster-log is the source message\u2019s own text, unedited. It doesn\u2019t summarise, doesn\u2019t re-parse a contract, and doesn\u2019t try to judge whether a message counts as a transaction \u2014 a human reads the line and enters it, and a wrong paraphrase there is worse than a line that turned out not to need entering",
+      "Only humans are mirrored from #fa-news, since the site\u2019s own FFA clock posts there are not sheet changes; everything the humans post is, including the team options and guarantees a keyword filter would have dropped. The site\u2019s own transaction posts are mirrored in full, flattened from a card to text and keeping their year-by-year salary breakdown",
+      "Each entry arrives as a plain bordered card carrying nothing but the text, so consecutive entries have an edge \u2014 a multi-line trade followed by three one-line renounces used to read as one blob",
+      "Role pings survive the trip as text but no longer notify anyone a second time, and a message forwarded into a source channel is mirrored as what it forwarded rather than as an empty message",
+      "Nothing is mirrored retroactively: the mirror starts from the moment it is switched on and skips anything older than a day, so it can never dump a channel\u2019s history into #roster-log. Carrying an older message across is deliberate and admin-only"
+    ]
+  },
+  {
     "version": "0.0.407",
     "date": "2026-08-10",
     "changes": [

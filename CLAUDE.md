@@ -698,6 +698,25 @@ produce one post. Nothing consults that stamp for offerability, so it can't
 reopen a player; and a window that expired more than a day ago is stamped but
 never announced.
 
+### The #roster-log mirror
+
+`routers/roster_log_relay.py` is the one place the API **reads** Discord. It
+polls `#fa-news`, `#transactions`, `#waivers` and `#roster-log-nbn-today` every
+60s and reposts new **parent** messages into `#roster-log`
+(`DISCORD_ROSTER_LOG_CHANNEL`) verbatim, replacing the hand-copying that fed that
+channel. Bot posts are relayed per source: skipped on `#fa-news` (our FFA clock
+posts aren't sheet changes; the humans there post the signings, renounces, team
+options and guarantees, and all of those go through untouched), relayed on
+`#roster-log-nbn-today`, whose embeds are collapsed to text. Each entry lands as a
+bare card (description + colour, no title or source label) purely so consecutive
+entries have an edge. The same event arriving from two sources is relayed twice on
+purpose.
+
+It relays, it never interprets — no summarizing and no deciding whether a message
+"is" a transaction, because a human enters what the line says. Full rules, the
+four anti-dump gates, and the admin endpoints for carrying an older message
+across (`GET/POST /api/roster-log/*`) are in `nbn-api/CLAUDE.md`.
+
 ### Suggestions board
 
 `/suggestions` is the member-facing idea board (`routers/suggestions.py`,
