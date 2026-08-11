@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.1.0",
+    "date": "2026-08-11",
+    "changes": [
+      "The rookie scale is on the site. /rookie-scale has always existed and has never had anything in it, so every first-round pick signing was typed in by hand off the spreadsheet; it now holds the real per-pick figures for the 2025 and 2026 drafts, and it is a normal page in the nav rather than something only the League Office could reach",
+      "Each pick shows five figures, not four: the four contract years (Years 3 and 4 as team options) plus the RFA cap hold the deal rolls into under \u00a7 3.10, which is 250% or 300% of the Year 4 salary depending on where that salary sits against the season's average. The hold is part of what the scale prescribes, so it is shown with it, and each row names the seasons it applies to",
+      "Signing a first-round pick on /transactions now fills the contract in for you \u2014 all five years, with the option and hold tags already set, from that player's own draft slot. The rows stay editable, so an off-scale deal is still possible if the league has ruled that way; it will just be flagged as off-scale",
+      "Draft pick signings are checked before they are submitted. They previously ran no checks at all: a pick signing could put a team over its hard cap or past the roster limit and the system would accept it without comment, despite \u00a7 1.3 saying it blocks exactly that. It now checks the hard cap, the roster ceiling, that the player really does hold unsigned draft rights, and that the terms match the \u00a7 7.1 scale year by year \u2014 live, as you type, the same way a free-agent signing has been",
+      "Second-round picks say so rather than sitting silent \u2014 they are not on the scale, so the form explains the \u00a7 7.1 structure to enter instead of pretending it has nothing to offer",
+      "The \"prior salary vs. EAPS\" question is only asked when it changes a number. It was being shown on every contract, and it only ever matters for a Full Bird cap hold in a season with no average-salary figure on file \u2014 which is a small minority of signings. It now appears when the hold actually needs it, stays put once answered, and disappears if the hold does",
+      "The 2024 rookie scale is deliberately not loaded: its cap-hold multiplier runs the opposite way to 2025 and 2026, giving the biggest holds to the most expensive contracts, and the league sheet and the site disagree about two players. Nothing about the 2024 contracts themselves is in question \u2014 only the 28-29 holds \u2014 and it is on the backlog pending a fix to the sheet"
+    ]
+  },
+  {
     "version": "0.0.408",
     "date": "2026-08-11",
     "changes": [

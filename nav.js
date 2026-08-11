@@ -159,6 +159,7 @@ const SITE_PAGES = [
   { title: 'Hall of Fame', href: '/hof', icon: '⭐' },
   { title: 'Awards', href: '/awards/', icon: '🎖️' },
   { title: 'Draft', href: '/draft', icon: '📋' },
+  { title: 'Rookie Scale', href: '/rookie-scale/', icon: '📐' },
   { title: 'Teams', href: '/teams', icon: '🏀' },
   { title: 'Players', href: '/players', icon: '⛹️' },
   { title: 'Owners', href: '/owners', icon: '🏛️' },

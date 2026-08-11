@@ -140,6 +140,15 @@
 
     /* ── Salary rows ── */
     .salary-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+    .scale-note {
+      font-size: 0.78rem; line-height: 1.45; margin-bottom: 0.6rem;
+      padding: 0.55rem 0.75rem; border-radius: 6px;
+      background: var(--accent-panel-bg); color: var(--text-muted);
+      border-left: 3px solid var(--accent);
+    }
+    .scale-note strong { color: var(--text-primary); font-weight: 600; }
+    .scale-note.manual { border-left-color: var(--text-muted); background: transparent;
+                         padding-left: 0; border-left-width: 0; }
 
     .salary-row {
       display: flex;
@@ -981,6 +990,11 @@
           </div>
         </div>
 
+        <!-- § 7.1 prefill notice, shown only for a pick signing. The terms come
+             from /api/rookie-scale/contract/{slug}; the page never derives
+             them. -->
+        <div class="scale-note" id="scale-note" style="display:none"></div>
+
         <div class="salary-rows" id="salary-rows"></div>
         <button class="add-salary-btn" id="add-salary-btn" type="button">+ Add season</button>
       </div>
@@ -1368,10 +1382,12 @@ function setupTypeSwitch() {
       document.getElementById('f-offer-outcome-field').style.display = isOfferSheet ? '' : 'none';
       document.getElementById('f-hardcap-level-field').style.display = isSetHardCap ? '' : 'none';
       document.getElementById('f-signing-method-field').style.display = (isSign || isConvertTwoWay || isOfferSheet) ? '' : 'none';
-      // Shown for every type that can produce a § 3.10 hold, including an
-      // option decline (which rolls straight into one).
-      document.getElementById('f-eaps-field').style.display =
-        (needsContract || isOpt) ? '' : 'none';
+      // An option decline rolls straight into a § 3.10 hold and has no
+      // validator to ask, so it always offers the question. Contract-carrying
+      // types start hidden and are revealed by `syncEapsVisibility` off the
+      // rubric's fact sheet, which knows whether EAPS actually prices anything.
+      document.getElementById('f-eaps-field').style.display = isOpt ? '' : 'none';
+      if (!isOpt) document.getElementById('f-eaps').value = '';
       if (!isSign && !isConvertTwoWay && !isOfferSheet) {
         document.getElementById('f-bird-rights-field').style.display = 'none';
         document.getElementById('mle-hint').style.display = 'none';
@@ -1393,7 +1409,13 @@ function setupTypeSwitch() {
       if (isRelease) updateReleaseStretchHint(); else document.getElementById('f-release-stretch').value = '';
       document.getElementById('f-contract-type-field').style.display   = (needsContract && !isConvertTwoWay) ? '' : 'none';
       applyContractTypeVisibility(needsContract, isConvertTwoWay);
-      document.getElementById('sign-rubric').style.display = (isSign || isOfferSheet) ? '' : 'none';
+      // sign_pick joined this once it had a validator of its own; the types
+      // still without one stay silent rather than showing a verdict drawn from
+      // zero checks.
+      document.getElementById('sign-rubric').style.display =
+        (isSign || isOfferSheet || isSignPick) ? '' : 'none';
+      const scaleNote = document.getElementById('scale-note');
+      if (scaleNote && !isSignPick) scaleNote.style.display = 'none';
       scheduleSignRubric();
     }
 
@@ -1770,6 +1792,7 @@ function onPlayerSelected(slug) {
   if (type === 'guarantee') { populateGuaranteeYears(slug); return; }
   if (type === 'convert_twoway') { updateMleHint(); return; }
   if (type === 'release') { updateReleaseStretchHint(slug); return; }
+  if (type === 'sign_pick') { prefillRookieScale(slug); return; }
   if (type !== 'option') return;
   const bio = bios[slug];
   if (!bio) return;
@@ -1784,6 +1807,73 @@ function onPlayerSelected(slug) {
     earliest.type === 'PLAYER_OPT' ? 'Player Option' : 'Team Option';
   const optSalary = bio.salaries && bio.salaries[earliest.year] ? bio.salaries[earliest.year] : '';
   document.getElementById('f-opt-hold-amount').value = optSalary;
+}
+
+// ── § 7.1 rookie scale prefill ──────────────────────────────────────────────
+// A first-rounder's contract is not a negotiation — § 7.1 fixes all four years
+// and the RFA hold they roll into, off the pick slot. Typing those five figures
+// by hand off a spreadsheet is how they were entered before the scale existed
+// on the site, and it is the one part of this form where a typo produces a
+// contract that is simply wrong rather than merely unwise.
+//
+// The figures come off /api/rookie-scale/contract/{slug} — the same
+// `_rookie_scale_contract` the validator scores against, so the prefill and the
+// verdict can never disagree. Rows stay editable: the office still has to be
+// able to enter an off-scale deal and force it through if the league rules that
+// way, which is why this fills the form rather than locking it.
+async function prefillRookieScale(slug) {
+  const note = document.getElementById('scale-note');
+  // The form always carries one blank row from init, so "are there rows?" is
+  // the wrong question — only rows someone actually typed into are worth
+  // protecting with a prompt.
+  const filled = [...document.querySelectorAll('.salary-row')].filter(r =>
+    r.querySelector('.amount-input').value.trim() || r.querySelector('.hold-select').value).length;
+  note.style.display = 'none';
+  note.className = 'scale-note';
+
+  let data;
+  try {
+    const res = await fetch(`/api/rookie-scale/contract/${encodeURIComponent(slug)}`);
+    if (!res.ok) return;
+    data = await res.json();
+  } catch { return; }
+
+  // The player may have changed while this was in flight.
+  if (document.getElementById('f-player-slug').value !== slug) return;
+  if (document.getElementById('f-type').value !== 'sign_pick') return;
+
+  if (!data.scale) {
+    note.className = 'scale-note manual';
+    note.textContent = data.draft_round === 2
+      ? `Second-round pick (${data.draft_year} #${data.draft_pick || '?'}) — not on the rookie scale. `
+        + 'Enter the § 7.1 three- or four-year minimum structure, or a two-way.'
+      : `No rookie scale loaded for the ${data.draft_year || '—'} draft — enter the terms by hand.`;
+    note.style.display = '';
+    return;
+  }
+
+  // Don't silently discard terms already typed; the office may be mid-entry on
+  // a deliberate off-scale deal.
+  if (filled && !confirm(`Replace the ${filled} salary row(s) you've entered with the § 7.1 `
+                         + `rookie scale for pick ${data.draft_pick} of ${data.draft_year}?`)) {
+    note.className = 'scale-note manual';
+    note.textContent = 'Kept the rows you entered — they will be scored against the § 7.1 scale.';
+    note.style.display = '';
+    return;
+  }
+
+  document.getElementById('salary-rows').innerHTML = '';
+  const holds = data.scale.cap_holds || {};
+  Object.entries(data.scale.salaries).forEach(([season, amount]) => {
+    addSalaryRow(season, amount, holds[season] || '');
+  });
+
+  const seasons = data.scale.seasons || Object.keys(data.scale.salaries);
+  note.innerHTML = `<strong>§ 7.1 rookie scale — pick ${data.draft_pick} of ${data.draft_year}.</strong> `
+    + `Four years (${seasons[0]}–${seasons[3]}), Years 3 and 4 as team options, then the `
+    + `${seasons[4]} RFA cap hold. Editable if the league has ruled otherwise.`;
+  note.style.display = '';
+  scheduleSignRubric();
 }
 
 // Populate the guarantee year dropdown with the player's NON_GTD years (the only
@@ -2141,16 +2231,29 @@ function scheduleSignRubric() {
 // a verdict on an empty contract is noise, not information.
 function collectSignValidationBody() {
   const type = document.getElementById('f-type').value;
-  if (type !== 'sign' && type !== 'offer_sheet') return null;
+  if (type !== 'sign' && type !== 'offer_sheet' && type !== 'sign_pick') return null;
   const player = document.getElementById('f-player-slug').value;
   if (!player) return null;
+
+  const isTwoWay = document.querySelector('input[name="contract-type"]:checked')?.value === 'two-way';
+  if (isTwoWay) return null;   // two-way terms are generated, not typed here
+
+  // A pick signing names no team — the API derives it from whoever holds the
+  // rights, so asking the page for one would only invite the two to disagree.
+  if (type === 'sign_pick') {
+    const { salaries, cap_holds } = collectSalaries();
+    if (!Object.keys(salaries).length) return null;
+    const eaps = document.getElementById('f-eaps').value || null;
+    return { url: '/api/validate/sign_pick',
+             body: { player, contract: { type: 'player', salaries, cap_holds },
+                     eaps_assumption: eaps } };
+  }
+
   const team = type === 'sign'
     ? document.getElementById('f-team').value
     : document.getElementById('f-offer-team').value;
   if (!team) return null;
 
-  const isTwoWay = document.querySelector('input[name="contract-type"]:checked')?.value === 'two-way';
-  if (isTwoWay) return null;   // two-way terms are generated, not typed here
   const { salaries, cap_holds } = collectSalaries();
   if (!Object.keys(salaries).length) return null;
 
@@ -2195,6 +2298,31 @@ async function runSignRubric() {
   }
 }
 
+// Show the § 3.10 EAPS question only when it changes a number.
+//
+// The field used to be shown for every contract-carrying type unconditionally,
+// which meant it was on screen for the large majority of signings it has no
+// bearing on: the server consults `eaps_assumption` in exactly one place, and
+// only when the trailing hold is Full Bird *and* that season has no real EAPS
+// on file. Everything else ignores it entirely.
+//
+// The server already reports both halves of that condition on the fact sheet,
+// so this reads them rather than re-deriving the rule. `needs_eaps` means the
+// hold can't be priced until the question is answered; a `note` mentioning
+// EAPS means it has been answered and the figure is resting on that answer —
+// which must keep the field visible, or picking an option would make the
+// control that produced it vanish.
+function syncEapsVisibility(factSheet) {
+  const field = document.getElementById('f-eaps-field');
+  if (!field) return;
+  const type = document.getElementById('f-type').value;
+  if (type === 'option') return;   // no validator to ask; § 3.10 decline always shows it
+  const th = factSheet && factSheet.trailing_hold;
+  const matters = !!th && (th.needs_eaps === true || /EAPS/i.test(th.note || ''));
+  field.style.display = matters ? '' : 'none';
+  if (!matters) document.getElementById('f-eaps').value = '';
+}
+
 function renderSignRubric(data) {
   const body = document.getElementById('sign-rubric-body');
   const { checks = [], fact_sheet: f = {} } = data;
@@ -2206,6 +2334,7 @@ function renderSignRubric(data) {
   // no verdict, so it counts against legality here.
   const needsEaps = !!(f.trailing_hold && f.trailing_hold.needs_eaps);
   const legal = data.legal && !needsEaps;
+  syncEapsVisibility(f);
 
   const verdict = `<div class="rubric-verdict ${legal ? 'ok' : 'bad'}">${
     legal ? '✓ Legal as currently built' : '✗ Not legal yet — resolve the errors below'

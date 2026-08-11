@@ -213,7 +213,8 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Change the transaction simulator's spreadsheet export | `buildTradeWorkbook` — `transaction-sim/index.html`; the .xlsx writer is `transaction-sim/xlsx.js`, and publishing to Google Sheets is `POST /api/trade-sheet` (`nbn-api/routers/google_sheets.py`). Export is trade-mode only |
 | Add a transaction type to the simulator | `setMode` / `runSignCheck` — `transaction-sim/index.html`, plus a `POST /api/validate/{type}` endpoint in `nbn-api/routers/transactions.py` (see "Transaction simulator" below) |
 | Change the contract shorthand (`2+1 PO, $150M`) or the cap-hold vocabulary | **`contract.js`** at the repo root — one grammar, loaded by team pages (via `contractReady` in `team.js`), `/pdc` and `/transactions`. `_contract_str` in `nbn-api/routers/discord_notify.py` is a deliberate Python mirror (it can't import JS) and is pinned to the same cases by `nbn-api/tests/test_contract_shorthand.py`. Don't add a fourth copy |
-| Change the office's contract entry form (salary rows, EAPS, live signing rubric) | `addSalaryRow` / `collectSalaries` / `collectSignValidationBody` — `transactions/index.html`. The signing rubric calls `POST /api/validate/sign` (or `/offer_sheet`) on a 300ms debounce, the same validator the submit path runs |
+| Change the office's contract entry form (salary rows, EAPS, live signing rubric) | `addSalaryRow` / `collectSalaries` / `collectSignValidationBody` — `transactions/index.html`. The signing rubric calls `POST /api/validate/sign` (or `/offer_sheet`, `/sign_pick`) on a 300ms debounce, the same validator the submit path runs. The **EAPS field is not always shown** — `syncEapsVisibility` reveals it off the fact sheet's `trailing_hold` only when it actually prices something (Full Bird hold, season with no real EAPS), and keeps it up once answered so the control that produced the figure doesn't vanish |
+| Change the rookie scale table, or how a pick signing is prefilled | `build/load_rookie_scale.py` (loader) · `rookie-scale/index.html` (page) · `_rookie_scale_contract` + `GET /api/rookie-scale/contract/{slug}` (nbn-api) · `prefillRookieScale` — `transactions/index.html`. See "The § 7.1 rookie scale" below |
 | Add/change an owner's per-player roster move | `makeRosterMoveActions` / `openMovesMenu` — `teams/team.js` (see "Owner self-serve roster moves") |
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
 | Change the suggestions board or its comment threads | `suggestions/index.html` + `nbn-api/routers/suggestions.py` (see "Suggestions board" below) |
@@ -328,8 +329,9 @@ simulator to an actual submission.
 | `POST /api/validate/offer_sheet` | `_validate_offer_sheet` | `_signing_fact_sheet` |
 | `POST /api/validate/offer_sheet_decision` | `_validate_offer_sheet_decision` | inline |
 | `POST /api/validate/renounce` | `_validate_renounce` | `_renounce_fact_sheet` |
+| `POST /api/validate/sign_pick` | `_validate_sign_pick` | `_signing_fact_sheet` + `rookie_scale` |
 
-All four are public (no auth), take the same body shape as the corresponding
+All of them are public (no auth), take the same body shape as the corresponding
 `details` in `POST /api/transactions`, and return
 `{legal, checks[], fact_sheet}`. They share their validators with the submit
 path, so a "legal" verdict here is what the office accepts — **but they never
@@ -360,12 +362,54 @@ asserts shape, not legality (never 5xx, `{legal, checks, fact_sheet}` back,
 unknown subjects refused with 400, junk bodies 422).
 
 Coverage is uneven and the UI says so: `sign`/`offer_sheet`/`offer_sheet_decision`/
-`trade`/`renounce` have real validators, while `release`, `option` and `pick` are stubs returning
-`[]` — those types are deliberately **not** offered in the simulator, since a
+`trade`/`renounce`/`sign_pick` have real validators, while `release`, `option` and `pick` are stubs
+returning `[]` — those types are deliberately **not** offered in the simulator, since a
 verdict off zero checks is worse than no verdict. § 3.7 (DPE) remains unmodeled.
 (`renounce` is validated but still isn't wired into the simulator UI; its
 validator exists to serve the roster page's confirm dialog. Adding it there is
 now just UI work.)
+
+`sign_pick` was itself one of those silent stubs until 2026-08-11 — it wasn't in
+`_VALIDATORS` at all, so a pick signing ran **zero** checks, against § 1.3's
+explicit promise to block "any signing, trade, draft pick signing, or two-way
+conversion" that breaches a ceiling. It now checks the hard cap, the roster
+ceiling, that the player actually holds draft rights, and § 7.1 scale conformity.
+It is wired into `/transactions`' live rubric (not the simulator, which doesn't
+offer the type). Note it is deliberately **not** run through
+`_check_contract_raises`: the scale's own Year 1 → Year 2 step lands either side
+of exactly 5% (pick 1 of 2026 rises 5.0024%), so the § 3.9 ladder rejects about
+half the contracts § 7.1 prescribes.
+
+### The § 7.1 rookie scale
+
+`rookie-scale.json` in NBS_DATA_DIR, keyed by draft year, 30 rows of **five**
+figures. Served by `GET /api/rookie-scale`; `/rookie-scale` renders it (public
+read, editing gated on `rosters`) and `GET /api/rookie-scale/contract/{slug}`
+returns one player's prescribed deal ready to load into a contract form.
+
+**Five figures, not four.** Years 1–4 are the contract (§ 7.1: Years 3 and 4 are
+team options); the fifth is the **§ 3.10 RFA cap hold** the deal rolls into, at
+250% of Year 4 for picks 1–2 and 300% for picks 3–30. Season keys are derived
+from the draft year (2026 → 26-27 … 30-31), never read from the sheet's header
+row, which has been stale by a year before.
+
+`_rookie_scale_contract` is the one reader: the validator scores against it and
+the office form prefills from it, so the prescribed deal is stated once.
+
+**Loading it:** `build/load_rookie_scale.py` reads the league sheet's
+`{year} Rookie Contracts` tabs. Two things it refuses to do, both because the
+data has actually been wrong: it reads **columns F–J only** (L–P are the
+underlying NBA figures and are stale on the 2026 tab, so re-deriving 120% × base
+yields last year's contract), and it verifies each table against every already-
+signed contract from that draft plus a § 3.10 direction check before writing.
+Years that fail are skipped and named, not written.
+
+**2024 is deliberately not loaded.** Its multiplier is inverted — picks 1–9 take
+300% and 10–30 take 250%, where § 3.10 puts the *higher* multiplier on the
+*lower* salary (2025 and 2026 both do). Its boundary sits at ~$7.7M against
+~$16M for the other two years, and two 2024 bios (McCain #10, Carter #11) already
+carry the corrected convention while picks 12–30 don't. Needs a league ruling,
+not a code fix.
 
 ### § 3.8 Bird Rights tenure
 

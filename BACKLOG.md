@@ -139,6 +139,49 @@ today (§ 3.11's max-salary check reads a 0 cap as "can't check" and skips rathe
 than miscalculating) but it is a silent skip, and those fields are needed before
 27-28 goes live.
 
+### [P1] 2024 rookie scale has the § 3.10 hold multiplier inverted — not loaded
+Found 2026-08-11 while populating `rookie-scale.json` (which had never held
+anything; 2025 and 2026 are now loaded and verified to the dollar against every
+signed contract in those classes).
+
+A first-rounder's deal rolls into an RFA cap hold worth **250% or 300% of the
+Year 4 salary** (§ 3.10's rookie carve-out), and which one turns on whether
+Year 4 sits above or below that season's EAPS. § 3.10's direction is consistent
+everywhere: the **higher** multiplier belongs to the **lower** salary (150%
+above EAPS, 190% at-or-below).
+
+| Draft | Top picks | Rest | Implied boundary |
+|---|---|---|---|
+| 2026 | 2.5× (1–2) | 3.0× (3–30) | $16.5M–$18.3M |
+| 2025 | 2.5× (1–2) | 3.0× (3–30) | $15.4M–$17.2M |
+| 2024 | **3.0×** | **2.5×** | **~$7.5M** |
+
+2024 is backwards on both counts — the most expensive deals take the biggest
+multiplier, and the implied EAPS is half the neighbouring years'. **The sheet
+and the site also disagree on where the line falls**: the sheet splits at picks
+9/10, the bios at 11/12, because McCain (#10) and Carter (#11) were re-entered
+by hand at some point using the corrected convention.
+
+Affects **only the 28-29 cap holds** for the 2024 first round — Years 1–4 match
+the sheet exactly for all 30 picks and are not in question. Correcting the
+direction moves 11 players' holds down (−$61.7M, biggest Sarr/WAS −$8.7M) and
+19 up (+$56.4M), netting −$5.3M. Most exposed: WAS (1, 4), SAC (2, 5, 25),
+CHA (3, 7, 15), DAL (9, 16, 19).
+
+**Decided 2026-08-11: correct 2024 to match 2025/2026 — but blocked on the
+sheet being resolved first**, since that's where the figures are maintained and
+fixing only the site would just re-open the same divergence from the other end.
+Someone also has to choose where the boundary belongs, because 28-29 has no
+EAPS on file (`cap-levels.json` has it at 0 — same gap as the minimum-scale
+item above; setting a real 28-29 EAPS would make the split compute itself and
+would also retire the `eaps_assumption` placeholder `/transactions` has to ask
+about).
+
+`build/load_rookie_scale.py` refuses to write any year that fails its § 3.10
+direction check or its cross-check against signed contracts, so 2024 stays out
+until this is settled and re-running it will pick the year up automatically
+once the sheet is fixed. Nothing to change in code.
+
 ### [P3] Stale backups in NBS_DATA_DIR
 `player-bios.json.bak` ×4, `allstats-playoffs-26.csv.bak-round-fix`,
 `allstats.csv`, `tokens.json`, and `rules/` (retired per CLAUDE.md, 8 files

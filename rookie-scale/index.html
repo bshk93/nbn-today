@@ -66,6 +66,13 @@
     .card-footer {
       display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem;
     }
+    .col-season {
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em;
+      color: var(--link); margin-top: 0.15rem; text-transform: none;
+      font-family: ui-monospace, 'Cascadia Code', monospace;
+    }
+    .hold-mult { color: var(--text-muted); font-size: 0.72rem; margin-left: 0.3rem; }
+
     .status { font-size: 0.78rem; }
     .status.ok  { color: var(--success-alt); }
     .status.err { color: var(--danger); }
@@ -76,7 +83,10 @@
     <nav class="nav"></nav>
     <header>
       <h1>Rookie Scale</h1>
-      <p>First-round rookie contract amounts by pick. Scale indexes annually with the salary cap. 2nd round picks are not on the scale.</p>
+      <p>First-round rookie contract amounts by pick (§ 7.1) — four years, with Years 3 and 4
+         as team options, plus the § 3.10 RFA cap hold the deal rolls into. The scale indexes
+         annually with the salary cap. Second-round picks are not on the scale; they sign off
+         the minimum scale (§ 3.12) via the Second Round Exception.</p>
     </header>
 
     <div class="auth-banner" id="auth-banner" style="display:none">
@@ -90,9 +100,26 @@
   </div>
 
   <script>
-    const COL_LABELS = ['Year 1', 'Year 2', 'Year 3 (Opt)', 'Year 4 (Opt)'];
+    // § 7.1: four contract years, then the § 3.10 hold the deal rolls into.
+    // The fifth figure is deliberately not a contract year — it's the RFA cap
+    // hold, 250% or 300% of Year 4 depending on where Year 4 sits against that
+    // season's EAPS. It lives in the same table because it's part of the same
+    // scale, and `cap_holds` marks it RFA so nothing reads it as salary.
+    const COL_LABELS = ['Year 1', 'Year 2', 'Year 3 (TO)', 'Year 4 (TO)', 'RFA Hold'];
+    const YEARS_PER_DEAL = COL_LABELS.length;
 
     function currentDraftYear() { return new Date().getFullYear(); }
+
+    // 2026, 0 -> '26-27'. Derived from the draft year rather than stored, so a
+    // table can't drift out of sync with the seasons it's meant to price.
+    function seasonKey(draftYear, offset) {
+      const s = (draftYear + offset) % 100;
+      return String(s).padStart(2, '0') + '-' + String((s + 1) % 100).padStart(2, '0');
+    }
+
+    function fmtMoney(n) {
+      return n ? '$' + Number(n).toLocaleString('en-US') : '—';
+    }
 
     function getToken() { return localStorage.getItem('nbn_token'); }
     function setToken(t) { localStorage.setItem('nbn_token', t); }
@@ -103,7 +130,14 @@
     }
 
     function emptyPicks(n) {
-      return Array.from({ length: n }, () => [0, 0, 0, 0]);
+      return Array.from({ length: n }, () => Array(YEARS_PER_DEAL).fill(0));
+    }
+
+    // Rows can be short if a table predates the fifth column.
+    function padRow(row) {
+      const out = (row || []).slice(0, YEARS_PER_DEAL);
+      while (out.length < YEARS_PER_DEAL) out.push(0);
+      return out;
     }
 
     function buildYearCard(year, picks, canEdit) {
@@ -118,9 +152,16 @@
 
       const thead = document.createElement('thead');
       const headerRow = document.createElement('tr');
-      ['#', ...COL_LABELS].forEach(label => {
+      const pickTh = document.createElement('th');
+      pickTh.textContent = '#';
+      headerRow.appendChild(pickTh);
+      COL_LABELS.forEach((label, j) => {
         const th = document.createElement('th');
-        th.textContent = label;
+        th.appendChild(document.createTextNode(label));
+        const sub = document.createElement('div');
+        sub.className = 'col-season';
+        sub.textContent = seasonKey(year, j);
+        th.appendChild(sub);
         headerRow.appendChild(th);
       });
       thead.appendChild(headerRow);
@@ -129,7 +170,8 @@
       const tbody = document.createElement('tbody');
       const inputs = [];
 
-      picks.forEach((row, i) => {
+      picks.forEach((rawRow, i) => {
+        const row = padRow(rawRow);
         const tr = document.createElement('tr');
 
         const pickTd = document.createElement('td');
@@ -138,16 +180,30 @@
 
         const rowInputs = row.map((val, j) => {
           const td = document.createElement('td');
-          const inp = document.createElement('input');
-          inp.type = 'number';
-          inp.value = val || '';
-          inp.placeholder = '0';
-          inp.disabled = !canEdit;
-          td.appendChild(inp);
+          if (canEdit) {
+            const inp = document.createElement('input');
+            inp.type = 'number';
+            inp.value = val || '';
+            inp.placeholder = '0';
+            td.appendChild(inp);
+            tr.appendChild(td);
+            return inp;
+          }
+          // Read-only: this page's whole job is to have the figures handy, and
+          // a grid of disabled number inputs is the least readable way to show
+          // a dollar amount.
+          td.textContent = fmtMoney(val);
+          if (j === YEARS_PER_DEAL - 1 && val && row[3]) {
+            const mult = document.createElement('span');
+            mult.className = 'hold-mult';
+            mult.textContent = ` ${(val / row[3]).toFixed(1)}×`;
+            mult.title = '§ 3.10 multiplier on the Year 4 salary';
+            td.appendChild(mult);
+          }
           tr.appendChild(td);
-          return inp;
+          return null;
         });
-        inputs.push(rowInputs);
+        if (canEdit) inputs.push(rowInputs);
         tbody.appendChild(tr);
       });
 
@@ -203,12 +259,22 @@
     }
 
     function renderYears(scaleData, canEdit) {
-      const cur  = currentDraftYear();
-      const all  = new Set([...Object.keys(scaleData).map(Number), cur, cur + 1]);
+      const loaded = Object.keys(scaleData).map(Number);
+      // Blank cards for the current and next draft exist so an editor has
+      // somewhere to enter a table that doesn't exist yet. A reader gets
+      // nothing from 30 rows of em-dashes, so they only see real tables.
+      const all = new Set(canEdit
+        ? [...loaded, currentDraftYear(), currentDraftYear() + 1]
+        : loaded);
       const years = [...all].sort((a, b) => b - a);
 
       const container = document.getElementById('years');
       container.innerHTML = '';
+      if (!years.length) {
+        container.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;">'
+          + 'No rookie scale tables have been loaded yet.</p>';
+        return;
+      }
       years.forEach(year => {
         const picks = scaleData[String(year)] || emptyPicks(30);
         container.appendChild(buildYearCard(year, picks, canEdit));
