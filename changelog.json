@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.1.1",
+    "date": "2026-08-11",
+    "changes": [
+      "The FAC head can give a player's free-agency window more time without throwing away the bidding that has already happened. Every offer already submitted stands, the sub-committee's ballots stay exactly as cast, and only the deadline moves",
+      "This works on a window that has already closed, which is the case it was built for \u2014 reopening a lapsed window used to mean starting a fresh round, which quietly left the votes already cast behind. Extending a closed window counts the hours from now, so \"six more hours\" means six more hours either way",
+      "Both ways of putting a player back in front of teams now sit together on the head's own controls on that player's page, with the difference spelled out: extending keeps the round as it stands, while opening the player starts a genuine second window with a clean ballot. Previously the reopen was only reachable from the \"+ Player\" picker, which skips anyone already on the board \u2014 that is, exactly the players a head would want to reopen \u2014 and the Open button gave no hint that it would discard the ballots",
+      "Extending requires a reason, and that reason is shown to every team along with the new deadline, in the public free-agency channel as well as the committee one. A deadline that moves without explanation is worse than one that doesn't move",
+      "The window's stated length follows it, so a window extended from 24 hours to 30 stops describing itself as a 24-hour window everywhere it is named"
+    ]
+  },
+  {
     "version": "0.1.0",
     "date": "2026-08-11",
     "changes": [

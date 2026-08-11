@@ -341,6 +341,35 @@ The FAC head can reopen a player (`PUT /api/fa/players/{slug}` → `status:
 "open"`), which clears `ffa` and lets the next submitted offer start a fresh
 clock. The reopen is recorded with who did it.
 
+**Extending a window is a second, different power (added 2026-08-11).**
+`POST /api/fa/players/{slug}/ffa-extend` (head-only, `{hours, reason}`, reason
+required) moves the deadline on the clock that is already there. Both operations
+put a closed player back in front of teams and they are not interchangeable:
+
+|  | reopen (`status: "open"`) | `ffa-extend` |
+|---|---|---|
+| `ffa` clock | cleared; next offer starts a new one | deadline moved out |
+| `round_id` | fresh (`ffa-<hex>`) | unchanged |
+| Ballots already cast | left in the old bucket — new window votes clean | still live |
+| Offers already submitted | still live (a reopen doesn't archive) | still live |
+| Intent | a genuine **second** window | **more time** on this one |
+
+Extend works on a lapsed clock as well as a running one, measuring from
+`max(now, deadline)` so "six more hours" means six hours from now either way —
+that is the case that motivated it, since a lapsed window otherwise had no route
+back except a reopen that throws the deliberation away. It recomputes
+`window_hours` (so `ffa_window_label` keeps describing the window that actually
+ran rather than the one originally stamped), clears `closed_posted` so a revived
+window's next expiry is still announced, and appends to `ffa.extensions` with
+who, why and how much.
+
+This is the **one** deliberate exception to "the window length can never move a
+running deadline" above. That rule guards against the *setting* leaking into
+clocks teams are bidding against — invisible, global, retroactive. This is none
+of those: one named player, by the head, with a reason shown to every team, and
+announced on both Discord channels before anyone can act on it. `_start_ffa_clock`
+still reads the setting exactly once and still never re-reads it.
+
 **Rounds carry no enforced clock (decided).** Opening Round N does *not*
 auto-close Round N−1's open players, and `closes_at` is a **display label only**
 — the dashboard shows it, nothing acts on it. In practice a new round does
@@ -1158,7 +1187,7 @@ Three things the build settled:
 
 ### 9.2 `fa-news` (public, `1517304922847055994`)
 
-Fires **only in FFA mode**, exactly twice per player (decided):
+Fires **only in FFA mode**, and only for clock events (decided):
 
 1. **Clock started** — on the offer that starts it:
 
@@ -1170,13 +1199,26 @@ Fires **only in FFA mode**, exactly twice per player (decided):
    > 🔒 The 24-hour window on **Stephen Curry** has closed. No further offers
    > are being accepted; the FAC will review.
 
+3. **Window extended / reopened** — when the head moves the deadline (§ 4.1):
+
+   > 🕐 The window on **Stephen Curry** has been **extended** by 6 hours —
+   > offers now close **Aug 9, 11:00 PM**. Reason: giving the last two teams a
+   > chance to respond.
+
+   A lapsed window says *reopened* rather than *extended*, because a team that
+   had stopped watching needs to know the player is back on the board rather
+   than merely running longer.
+
 The stated length comes off `window_hours` on the clock being announced (§ 4.1),
 so a post always describes the window that player actually got.
 
-No team, no dollars, no offer count, in either. Both bodies are assembled from
-`player` + `deadline` only, so there is no path for contract data to reach them.
+No team, no dollars, no offer count, in any of them. The bodies are assembled from
+`player` + `deadline` (+ the head's own reason string on an extension), so there is no path for contract data to reach them.
 **A test asserts each rendered payload contains no team abbreviation and no
-`$`.** The FFA mode flip itself is not announced here (it goes to `pdc-alerts`)
+`$`.** The one exception is the head's own `reason` on an extension, which is
+free text they type and read before sending — the test asserts the
+machine-composed part of that post specifically, since what must never leak is
+anything the *system* adds. The FFA mode flip itself is not announced here (it goes to `pdc-alerts`)
 — the clock posts are what the league actually needs to act on.
 
 **The boundary is structural, not careful.** `_news(slug, text)` is the only

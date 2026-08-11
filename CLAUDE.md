@@ -714,7 +714,7 @@ pipeline's events to two channels with deliberately different appetites:
 | Channel | Env var | Gets |
 |---|---|---|
 | `pdc-alerts` (private) | `DISCORD_PDC_CHANNEL` | Everything: offer submitted/resubmitted with a **diff vs the version frozen at the remand**, remands with their note and conflict flag, voids/restores with the head's reason and the terms removed, mode changes, rounds, clock start/expiry, finalize totals |
-| `fa-news` (public) | `DISCORD_FA_NEWS_CHANNEL` | **FFA mode only**, exactly twice per player: clock started, window closed |
+| `fa-news` (public) | `DISCORD_FA_NEWS_CHANNEL` | **FFA mode only**, and only clock events: clock started, window closed, and window extended/reopened by the head |
 
 Each is inert without its own env var, which is how it rolled out (module, then
 private channel, then public last).
@@ -734,6 +734,24 @@ shortening it can't retroactively close an open window. Every string naming a
 length (the § 8.1 refusal, both § 9.2 posts, the dashboard) goes through
 `ffa_window_label` on *that clock's* stamp, never the current setting. Don't add a
 reader of the setting anywhere else.
+
+**One named exception, and only one: `POST /api/fa/players/{slug}/ffa-extend`**
+(head-only, required reason). It moves *one* player's deadline — the thing the
+setting may never do — and is safe for the reasons the setting isn't: one player,
+by a named actor, with a reason, announced on both channels before anyone can act
+on it. It works on a lapsed clock as well as a live one (extending from
+`max(now, deadline)`), recomputes `window_hours` so `ffa_window_label` keeps
+describing the window that actually ran, and clears `closed_posted` so a revived
+window's second expiry is still announced. `_start_ffa_clock` is untouched and
+still reads the setting exactly once.
+
+**Extending is not reopening, and confusing the two loses a round of votes.**
+`PUT /api/fa/players/{slug}` with `status: "open"` clears `ffa` and mints a fresh
+`round_id` — a deliberate *second* window, with ballots already cast left in the
+old bucket. `ffa-extend` keeps `round_id`, the offers and the ballots, and only
+buys time. Both are on the player view's "FAC Head controls" (`windowControls` /
+`extendModal` in `pdc/index.html`), and the Open button confirms what it will
+discard when a clock exists.
 
 Expiry has no scheduler (§ 4.1) — `free_agency._sweep_ffa_expiry` announces from
 whichever read request first observes a deadline has passed, stamping

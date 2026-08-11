@@ -1005,6 +1005,19 @@
       const b = el('button', (review.state || {}).status === status ? 'btn-primary' : 'btn-ghost',
         status === 'open' ? 'Open' : status === 'held' ? 'Hold' : 'Close');
       b.addEventListener('click', async () => {
+        // In FFA, "Open" is not the mild thing its label suggests: it clears the
+        // clock and mints a fresh round id, so a second window starts from
+        // scratch and the ballots already cast are left in the old bucket. A
+        // head reaching for it to buy a few more hours wants Extend instead, so
+        // say which is which before doing it rather than after.
+        const clock = ((review.state || {}).ffa) || null;
+        if (status === 'open' && STATE.mode === 'ffa' && clock && clock.deadline
+            && !confirm(
+              `Open ${nameOf(slug)} for a NEW window?\n\n`
+              + 'This clears the current clock and starts a fresh round: the next submitted offer '
+              + 'begins a new window, and ballots already cast stay with the old one.\n\n'
+              + 'To keep this round and just add time, cancel and use '
+              + `"${(review.state || {}).ffa_expired ? 'Reopen for…' : 'Extend…'}" instead.`)) return;
         try {
           await api('/fa/players/' + encodeURIComponent(slug), { method: 'PUT', body: { status } });
           await reload();
@@ -1017,6 +1030,8 @@
     assign.addEventListener('click', () => assignModal(slug, review));
     row.appendChild(assign);
     s.appendChild(row);
+
+    if (STATE.mode === 'ffa') s.appendChild(windowControls(slug, review));
 
     // Fires on a closed FFA window as well as an open player, and the closed
     // case is the one that matters: assignment happens *after* the window shuts
@@ -1055,6 +1070,101 @@
       s.appendChild(actionRow);
     }
     return s;
+  }
+
+  // The head has two ways to put a closed player back in front of teams, they
+  // do materially different things, and neither was reachable from this view —
+  // the reopen lived only in the "+ Player" picker, which skips anyone already
+  // on the board, i.e. exactly the players a head would want to reopen. Both
+  // are surfaced here, side by side, with the difference stated: an extension
+  // keeps the round (offers, ballots, deliberation) and buys time, while a
+  // reopen deliberately starts a second window with a clean ballot.
+  function windowControls(slug, review) {
+    const st = review.state || {};
+    const ffa = st.ffa || null;
+    const wrap = el('div', 'bb-block');
+    wrap.style.marginTop = '0.6rem';
+    wrap.style.flexWrap = 'wrap';
+
+    wrap.appendChild(el('span', 'bb-label', 'Window'));
+    if (!ffa || !ffa.deadline) {
+      wrap.appendChild(el('span', 'bb-val',
+        'Not started — the first submitted offer starts one.'));
+      return wrap;
+    }
+
+    const expired = !!st.ffa_expired;
+    wrap.appendChild(el('span', expired ? 'chip chip-warn' : 'chip chip-live',
+      expired ? 'closed' : 'running'));
+    wrap.appendChild(el('span', 'bb-val',
+      (expired ? 'Closed ' : 'Closes ') + when(ffa.deadline)
+      + (ffa.window_hours ? ` · ${Math.round(ffa.window_hours * 10) / 10}h window` : '')));
+
+    const ext = el('button', 'btn-ghost', expired ? 'Reopen for…' : 'Extend…');
+    ext.addEventListener('click', () => extendModal(slug, review));
+    wrap.appendChild(ext);
+
+    const note = el('div', 'bb-val');
+    note.style.flexBasis = '100%';
+    note.style.marginTop = '0.35rem';
+    note.textContent = expired
+      ? 'Reopening for N more hours keeps every offer already submitted and the ballots already cast. '
+        + 'The "Open" button above is the other thing — it starts a fresh window with a new ballot, '
+        + 'and the votes on this one stay behind.'
+      : 'Extending keeps the round as it stands — same offers, same ballots, just more time.';
+    if ((ffa.extensions || []).length) {
+      const last = ffa.extensions[ffa.extensions.length - 1];
+      note.textContent += `  Last ${last.reopened ? 'reopened' : 'extended'} by ${last.by} `
+        + `(+${last.hours}h): ${last.reason}`;
+    }
+    wrap.appendChild(note);
+    return wrap;
+  }
+
+  function extendModal(slug, review) {
+    const st = review.state || {};
+    const expired = !!st.ffa_expired;
+    const body = el('div');
+    body.appendChild(el('p', 'note', expired
+      ? 'This window has closed. Reopening it puts the player back on the board for the hours you '
+        + 'give, counted from now — every offer already submitted stands, and the sub-committee\'s '
+        + 'ballots stay exactly as cast.'
+      : 'Adds time to the deadline teams are currently bidding against. Offers and ballots are '
+        + 'untouched.'));
+
+    const r1 = el('div', 'row');
+    r1.appendChild(el('label', null, 'Hours'));
+    const hours = el('input');
+    hours.type = 'number'; hours.min = '1'; hours.max = '168'; hours.step = '1'; hours.value = '24';
+    r1.appendChild(hours);
+    body.appendChild(r1);
+
+    const r2 = el('div', 'row');
+    r2.appendChild(el('label', null, 'Reason (shown to every team)'));
+    const reason = el('input');
+    reason.placeholder = expired ? 'e.g. clock lapsed overnight, teams had no chance to bid'
+                                 : 'e.g. giving the last two teams a chance to respond';
+    r2.appendChild(reason);
+    body.appendChild(r2);
+
+    const go = el('button', 'btn-primary', expired ? 'Reopen window' : 'Extend window');
+    go.addEventListener('click', async () => {
+      const h = Number(hours.value);
+      if (!(h > 0 && h <= 168)) return toast('Hours must be between 1 and 168', true);
+      if (!reason.value.trim()) return toast('A reason is required — teams are shown it', true);
+      go.disabled = true;
+      try {
+        const r = await api('/fa/players/' + encodeURIComponent(slug) + '/ffa-extend',
+                            { method: 'POST', body: { hours: h, reason: reason.value.trim() } });
+        closeModal();
+        await reload();
+        await openPlayer(slug, true);
+        toast(`${nameOf(slug)}'s window ${r.reopened ? 'reopened' : 'extended'} — now closes `
+              + when(r.ffa.deadline));
+      } catch (e) { toast(e.message, true); go.disabled = false; }
+    });
+    modal(expired ? 'Reopen this window' : 'Extend this window', body, [go]);
+    reason.focus();
   }
 
   function assignModal(slug, review) {
