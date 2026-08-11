@@ -779,6 +779,15 @@ It relays, it never interprets — no summarizing and no deciding whether a mess
 four anti-dump gates, and the admin endpoints for carrying an older message
 across (`GET/POST /api/roster-log/*`) are in `nbn-api/CLAUDE.md`.
 
+**Per-transaction opt-out.** The office form at `/transactions` has a "Also post
+to #roster-log" checkbox, **off by default** — most transactions are typed into
+#roster-log by hand as part of working them, so mirroring by default would
+double every one up. Checking it sends `relay_to_roster_log: true` on
+`POST /api/transactions`; `discord_notify` stamps the decision into that
+transaction's embed footer rather than storing it anywhere the relay would have
+to look up separately, and the relay's `_opted_out` reads it back off the same
+message it's already relaying.
+
 ### Suggestions board
 
 `/suggestions` is the member-facing idea board (`routers/suggestions.py`,

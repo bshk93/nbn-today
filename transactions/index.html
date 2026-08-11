@@ -1061,6 +1061,9 @@
     </div>
 
     <div class="form-actions">
+      <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;color:var(--text-muted);font-weight:normal;text-transform:none;margin-right:auto">
+        <input type="checkbox" id="f-relay-roster-log"> Also post to #roster-log <span style="color:var(--text-muted)">(off by default — check this only if it isn't already logged there)</span>
+      </label>
       <button class="btn-submit" id="submit-btn" type="button">Submit Transaction</button>
       <span class="form-status" id="form-status"></span>
     </div>
@@ -3011,7 +3014,8 @@ async function submitTransaction() {
     setStatus('err', 'Unsupported transaction type.'); return;
   }
 
-  const body = { type, date, description, details, force: false };
+  const relayToRosterLog = document.getElementById('f-relay-roster-log').checked;
+  const body = { type, date, description, details, force: false, relay_to_roster_log: relayToRosterLog };
 
   btn.disabled = true;
   setStatus('', 'Submitting…');
@@ -3069,6 +3073,7 @@ function resetForm() {
   document.getElementById('f-bird-rights-field').style.display = 'none';
   document.getElementById('mle-hint').style.display = 'none';
   document.getElementById('f-description').value = '';
+  document.getElementById('f-relay-roster-log').checked = false;
   document.getElementById('salary-rows').innerHTML = '';
   addSalaryRow();
   document.getElementById('ch-start-season').value = '';
