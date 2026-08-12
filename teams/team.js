@@ -1452,7 +1452,11 @@ function computeCapSummary(rosterRows, deadCapRows, biosData, capLevels, season)
 }
 
 function computeMleType(teamSalaryFull, teamSalaryExHolds, capLevels, season, teamState) {
-  if (teamState?.mle_type) return teamState.mle_type;
+  // team-state.json's schema is the short "room" form, but a record written
+  // by a declared `room_exception` signing_method stamped the long form
+  // before that was normalized on write — accept both so an old record
+  // doesn't fall through to '—' below.
+  if (teamState?.mle_type) return teamState.mle_type === 'room_exception' ? 'room' : teamState.mle_type;
   const cl = capLevels?.[season];
   if (!cl?.ntmle_amount) return null;
   // Room Exception eligibility is Cap-based and still counts holds (§ 3.2);
@@ -5799,10 +5803,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         const fMleTypeLbl = document.createElement('label');
         fMleTypeLbl.textContent = 'MLE Type';
         const fMleType = document.createElement('select');
+        const curMleType = curState.mle_type === 'room_exception' ? 'room' : curState.mle_type;
         [['', 'Auto (calculated)'], ['room', 'Room Exception'], ['ntmle', 'Non-Taxpayer MLE'], ['tmle', 'Taxpayer MLE']].forEach(([v, l]) => {
           const o = document.createElement('option');
           o.value = v; o.textContent = l;
-          if (v === (curState.mle_type || '')) o.selected = true;
+          if (v === (curMleType || '')) o.selected = true;
           fMleType.appendChild(o);
         });
         fMleTypeLbl.appendChild(fMleType);

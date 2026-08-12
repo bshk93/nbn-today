@@ -635,7 +635,10 @@
     // Mirrors teams/team.js computeMleType/mleTypeLabel — kept in sync manually
     // since this page has no shared-script dependency on team.js.
     function computeMleType(teamSalaryFull, teamSalaryExHolds, levels, teamState) {
-      if (teamState?.mle_type) return teamState.mle_type;
+      // Accept the long "room_exception" form too — a record stamped before
+      // it was normalized to the short "room" form on write shouldn't fall
+      // through mleTypeLabel to '—'.
+      if (teamState?.mle_type) return teamState.mle_type === 'room_exception' ? 'room' : teamState.mle_type;
       if (!levels?.ntmle_amount) return null;
       if (levels.cap - teamSalaryFull > levels.ntmle_amount) return 'room';
       if (levels.apron1 - teamSalaryExHolds >= levels.ntmle_amount) return 'ntmle';

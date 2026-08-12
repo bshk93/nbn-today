@@ -1612,8 +1612,18 @@ function updateMleHint() {
     return;
   }
 
-  // MLE: resolve type from team state
-  const mleType = state.mle_type || 'ntmle';
+  // MLE: resolve type from team state. If the team hasn't locked into a
+  // bucket yet this season, don't guess NTMLE — this page has no roster/bios
+  // data to run the § 3.2 zone test with, and defaulting to NTMLE here is
+  // exactly the bug that showed the wrong exception for a TMLE-zone team.
+  // The live rubric below (POST /api/validate/sign) knows the real answer.
+  const mleType = state.mle_type === 'room_exception' ? 'room' : state.mle_type;
+  if (!mleType) {
+    hint.style.display = '';
+    hint.style.color = 'var(--text-muted)';
+    hint.textContent = 'MLE: exact exception shown in the rubric below once evaluated';
+    return;
+  }
   const total = mleType === 'tmle' ? (cl.tmle_amount || 0)
               : mleType === 'room' ? (cl.room_amount || 0)
               : (cl.ntmle_amount || 0);
