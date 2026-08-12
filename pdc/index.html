@@ -262,7 +262,7 @@
   const BALLOT_TOTAL = 1000;   // § 4.4 — a ballot must sum to exactly this
 
   let ME = { name: null, roles: [], owner_of: [] };
-  let IS_FAC = false, IS_HEAD = false, IS_POEXT = false;
+  let IS_FAC = false, IS_HEAD = false, IS_POEXT = false, IS_AGENT = false;
   let STATE = null;                 // GET /api/fa/state
   let POOL = {}, BIOS = {}, OVR = {}, TEAMMAP = {};
   let SEASON = '';
@@ -399,13 +399,16 @@
     const admin = roles.has('admin');
     IS_HEAD = admin || roles.has('fac_head');
     IS_FAC = IS_HEAD || roles.has('fac');
+    // § 4.7. `fac_head → agent` in ROLE_IMPLIES, which is what lets a head act
+    // on a player nobody has claimed; mirrored here so the two agree.
+    IS_AGENT = IS_HEAD || roles.has('agent');
     IS_POEXT = admin || roles.has('poext') || roles.has('poext_head');
     renderWhoami();
 
-    if (!IS_FAC && !IS_POEXT) { renderGate(ME.name ? 'forbidden' : 'anon'); return; }
+    if (!IS_FAC && !IS_AGENT && !IS_POEXT) { renderGate(ME.name ? 'forbidden' : 'anon'); return; }
     renderHowto();
     if (IS_POEXT) renderPoext();
-    if (!IS_FAC) return;
+    if (!IS_FAC && !IS_AGENT) return;
 
     document.getElementById('app').hidden = false;
     document.getElementById('detail').appendChild(el('div', 'empty', 'Pick a player to review.'));
@@ -420,7 +423,8 @@
     ]);
     STATE = state; POOL = pool; BIOS = bios; OVR = ovr; TEAMMAP = teamMap;
     SEASON = ly.current_season || '';
-    LIST_MODE = IS_HEAD ? 'all' : 'mine';
+    // An agent's work starts at the queue, a reviewer's at their assignments.
+    LIST_MODE = IS_HEAD ? 'all' : (IS_AGENT && !IS_FAC) ? 'queue' : 'mine';
     renderBoard();
     renderList();
     routeFromHash();
@@ -433,6 +437,7 @@
   const ROLE_EXPLAIN = {
     admin: 'Admin — full access to every control on this page, FAC and PO-EXT alike.',
     fac: 'FAC — reviews offers and casts ballots on players you’re assigned to.',
+    agent: 'Agent — claims free agents whose offer window has closed, negotiates the offers down to a final set, then advances the survivors to a sub-committee or finalizes an uncontested one. Claiming a player permanently bars your own team from bidding on him.',
     fac_head: 'FAC Head — runs Free Agency: mode, rounds, sub-committee assignment, finalize/unlock. These live in the boxed "FAC Head controls" areas on the page.',
     poext: 'PO-EXT — granted, but this page is a stub for PO-EXT for now. Nothing to do yet.',
     poext_head: 'PO-EXT Head — granted, but this page is a stub for PO-EXT for now. Nothing to do yet.',
@@ -520,10 +525,13 @@
     };
 
     const intro = el('p', 'note',
-      'Two tiers on FAC: fac reviews offers and ballots on players you’re assigned to — that’s '
-      + '"Reviewing a player" below, and it’s the same page for everyone on the committee. fac_head '
-      + '(or admin) additionally runs Free Agency — everything under "Running Free Agency", which on '
-      + 'the page itself lives in the boxed "FAC Head controls" areas, set apart from the rest of the UI. '
+      'Three roles on the FA side, and a free agent passes through them in order. agent claims him '
+      + 'once his offer window closes and negotiates the offers down to a final set — that’s '
+      + '"Working as an agent". fac then reviews what was advanced and ballots on it — "Reviewing a '
+      + 'player". fac_head (or admin) runs the whole thing: mode, rounds, sub-committee assignment, '
+      + 'finalize/unlock, and sending a player back to his agent — "Running Free Agency", which on '
+      + 'the page lives in the boxed controls set apart from the rest of the UI. agent and fac are '
+      + 'meant to be different people: an agent has already exercised judgment by choosing the slate. '
       + 'PO-EXT (poext/poext_head) is granted but this dashboard is a stub for it for now.');
     box.appendChild(intro);
 
@@ -533,11 +541,26 @@
         '"My assigned free agents" is the players the head has put you on. You cannot see the offers or the ballots for a player you aren’t assigned to — a sub-committee is transparent to itself and opaque to everyone outside it.',
         'Offers sit side by side: the contract year by year, how it’s funded, the team’s cap position after signing, their projected starting five with this player in it, the promises made, and the pitch.',
         'Legality is re-checked every time you open the page. “Legal at submit · illegal now” means the team’s cap position moved since they offered. They cannot withdraw it — you decide what that’s worth.',
-        'Any of you can send an offer back for revision with a note. It’s additive: a second note from someone else joins yours and the team answers both in one go.',
+        'The offers you see have already been curated by an agent: they negotiated with the teams, sent bids back for changes, and dropped the ones that were out. You are choosing between finalists, not sifting.',
+        'Sending an offer back is no longer yours to do — ask the agent, or ask the head to send the whole player back to them. A player only reaches you once his slate is advanced.',
         'The 1,000 balls are yours to split across the offers, plus “no signing” always and the qualifying offer for a restricted free agent. It must total exactly 1,000.',
         '“No signing” is there so that thinking every offer is bad is something you can actually say. Without it the least-bad offer wins by default.',
         'Ballots stay editable until the head locks the player, and everyone on the sub-committee can see each other’s as they go — including when they were last touched.',
         'If your own team is bidding, you’ll see a banner. You may still vote; the head sees it flagged.',
+      ]));
+    }
+
+    if (IS_AGENT) {
+      box.appendChild(el('h4', null, 'Working as an agent'));
+      box.appendChild(list([
+        'The Queue is every free agent whose offer window has closed and who nobody has picked up yet. You claim from it — there is no head handing players out.',
+        'A claim is exclusive: while you hold him, no other agent can, and his offers open to you in full. Until you claim, you only see how many offers he has drawn.',
+        'You cannot claim a player your own team is bidding on, and claiming one permanently bars your team from bidding on him — including after you release the claim, and after he is reopened. That is the whole reason releasing is allowed at all.',
+        'Sending an offer back with a note is how you negotiate: the team can edit and resubmit it. Voiding one drops it from the running, and the reason you give is exactly what that team is shown.',
+        'The negotiating itself happens in Discord. What belongs here is what it changes — the send-back, the revision, and which bids are still standing.',
+        'When you are done: Advance hands the survivors to a sub-committee to ballot. If curation left a single bid, Finalize closes him with no ballot instead — a sub-committee splitting 1,000 balls across one option is ceremony.',
+        'Advancing is one-way for you. Your powers on him end there and only the FAC head can send him back.',
+        'You never see ballots, on any player. Nothing signs itself either — a finalize is a decision, and the FAC still enters the transaction by hand.',
       ]));
     }
 
@@ -552,6 +575,7 @@
         'You set how long that window runs, in hours, next to the mode switch. It applies to clocks started from then on — a clock already running keeps the deadline it was stamped with, so changing it can never move a deadline teams are bidding against or close a window early.',
         'Rounds carry no clock. Opening Round N does not close Round N−1’s players, and a round’s “closes at” is a label — you close players by hand, on purpose, so you can leave one open across a boundary.',
         'Sub-committees default to empty. Nobody can ballot on a player until you assign one, and the picker flags anyone whose own team is bidding before you confirm.',
+        'A player reaches a sub-committee only after an agent advances him. You can act as agent yourself on anyone nobody has claimed, which is the fallback when every agent is conflicted out, and you can send an advanced player back to his agent with a reason — ballots already cast survive that and are flagged.',
         'Finalize locks the ballots, records the totals, and archives that player’s offers — which is what lets those teams bid on him again in a later round. An unanswered remand warns you and does not block you.',
         'Unlock reverses a finalize, ballots and offers together. What you undid stays on the record.',
         'The totals are a decision, not a transaction. The signing is still entered by hand on /transactions.',
@@ -836,14 +860,21 @@
   // can't sit unassigned while later closures pile on top of him. Finalized
   // players are done and sort last — they keep `ffa_expired` forever, so without
   // this they would head the queue for the rest of the league year.
+  // Reworked for the agent stage (§ 4.7): the stage *is* "who is this waiting
+  // on", which is what the ordering was reaching for by reading the clock. A
+  // player nobody has picked up leads, then one whose slate is ready to ballot,
+  // then one an agent is already working, then one still collecting offers.
   function urgency(p) {
     const dl = (p.ffa || {}).deadline;
+    const t = dl ? new Date(dl).getTime() : 0;
     if (p.finalized) return [5, 0];
-    if (p.ffa_expired) return [0, new Date(dl).getTime()];
-    if (dl) return [1, new Date(dl).getTime()];
-    if (p.status === 'open') return [2, 0];
-    if (p.status === 'held') return [3, 0];
-    return [4, 0];
+    if (p.stage === 'awaiting_agent') return [0, t];
+    if (p.stage === 'with_committee') return [1, t];
+    if (p.stage === 'with_agent') return [2, t];
+    if (dl) return [3, t];
+    if (p.status === 'open') return [3, 0];
+    if (p.status === 'held') return [4, 0];
+    return [4, 1];
   }
 
   function renderList() {
@@ -851,7 +882,20 @@
     tabs.innerHTML = '';
     const entries = Object.entries(STATE.players || {});
     const mineCount = entries.filter(([, p]) => p.mine).length;
-    [['mine', `My free agents (${mineCount})`], ['all', `All players (${entries.length})`]].forEach(([id, label]) => {
+    // § 4.7. "Queue" is everyone whose window has shut and who hasn't been
+    // advanced — claimable, held by someone else, or blocked. "Holding" is the
+    // agent's own. Both are derived from the server's `stage`, never from a
+    // local reading of the clock.
+    const queueCount = entries.filter(([, p]) => p.stage === 'awaiting_agent').length;
+    const holdCount = entries.filter(([, p]) => p.claimed_by === ME.name).length;
+    const tabDefs = [];
+    if (IS_FAC) tabDefs.push(['mine', `My free agents (${mineCount})`]);
+    if (IS_AGENT) {
+      tabDefs.push(['queue', `Queue (${queueCount})`]);
+      tabDefs.push(['holding', `Holding (${holdCount})`]);
+    }
+    tabDefs.push(['all', `All players (${entries.length})`]);
+    tabDefs.forEach(([id, label]) => {
       const b = el('button', LIST_MODE === id ? 'on' : '', label);
       b.addEventListener('click', () => { LIST_MODE = id; renderList(); });
       tabs.appendChild(b);
@@ -859,16 +903,25 @@
 
     const list = document.getElementById('player-list');
     list.innerHTML = '';
-    let rows = entries.filter(([, p]) => LIST_MODE === 'all' || p.mine);
+    let rows = entries.filter(([slug, p]) =>
+      LIST_MODE === 'all' ? true
+      : LIST_MODE === 'queue' ? p.stage === 'awaiting_agent'
+      : LIST_MODE === 'holding' ? p.claimed_by === ME.name
+      : p.mine);
     rows.sort((a, b) => {
       const ua = urgency(a[1]), ub = urgency(b[1]);
       return ua[0] - ub[0] || ua[1] - ub[1] || nameOf(a[0]).localeCompare(nameOf(b[0]));
     });
 
     if (!rows.length) {
-      list.appendChild(el('div', 'empty', LIST_MODE === 'mine'
-        ? 'You aren’t assigned to any player yet. The FAC head assigns sub-committees.'
-        : 'No players have been opened for Free Agency yet.'));
+      list.appendChild(el('div', 'empty',
+        LIST_MODE === 'mine'
+          ? 'You aren’t assigned to any player yet. The FAC head assigns sub-committees.'
+        : LIST_MODE === 'queue'
+          ? 'Nothing waiting. A free agent joins the queue when his offer window closes.'
+        : LIST_MODE === 'holding'
+          ? 'You aren’t holding anybody. Claim one from the queue to start work on his offers.'
+          : 'No players have been opened for Free Agency yet.'));
       return;
     }
 
@@ -881,7 +934,12 @@
       const meta = el('div', 'prow-meta');
       meta.appendChild(el('span', null, (POOL[slug] || {}).hold_type || '—'));
       meta.appendChild(el('span', null, '·'));
-      meta.appendChild(el('span', null, p.offer_count === 1 ? '1 offer' : p.offer_count + ' offers'));
+      // `offer_count` comes back null when the viewer's own team is bidding on
+      // this player (§ 6.1) — the count is itself intelligence, and this is the
+      // one player they can never claim. Suppressed by the server; the page
+      // just renders what it was given rather than re-deriving the rule.
+      meta.appendChild(el('span', null, p.offer_count == null ? 'offers hidden'
+        : p.offer_count === 1 ? '1 offer' : p.offer_count + ' offers'));
       const dl = (p.ffa || {}).deadline;
       if (dl) {
         meta.appendChild(el('span', null, '·'));
@@ -896,9 +954,23 @@
 
       const tags = el('div', 'prow-tags');
       if (p.finalized) tags.appendChild(el('span', 'chip chip-ok', 'locked'));
-      else if (p.ffa_expired) tags.appendChild(el('span', 'chip chip-warn', 'ready'));
+      else if (p.stage === 'awaiting_agent') tags.appendChild(el('span', 'chip chip-warn', 'needs an agent'));
+      else if (p.stage === 'with_agent') {
+        tags.appendChild(el('span', 'chip chip-live',
+          p.claimed_by === ME.name ? 'yours' : 'with ' + p.claimed_by));
+      } else if (p.stage === 'with_committee') tags.appendChild(el('span', 'chip chip-warn', 'ready'));
       else tags.appendChild(el('span', 'chip' + (p.status === 'open' ? ' chip-live' : ''), p.status || '—'));
-      if (p.mine && !p.balloted && !p.finalized) tags.appendChild(el('span', 'chip chip-warn', 'ballot'));
+      // Blocked entries stay on the queue, greyed with the reason on hover —
+      // "why can't I take this one?" is a rules question, and hiding the row
+      // answers it with silence (the § 8.1 disabled-with-reason convention).
+      if (p.claim_refusal && p.stage === 'awaiting_agent') {
+        const c = el('span', 'chip chip-bad', 'blocked');
+        c.title = p.claim_refusal;
+        tags.appendChild(c);
+      }
+      if (p.mine && !p.balloted && !p.finalized && p.stage === 'with_committee') {
+        tags.appendChild(el('span', 'chip chip-warn', 'ballot'));
+      }
       if (p.mine && p.balloted) tags.appendChild(el('span', 'chip chip-ok', 'voted'));
       row.appendChild(tags);
 
@@ -948,18 +1020,32 @@
     if (err) {
       const s = el('div', 'section');
       s.appendChild(el('div', 'banner ' + (err.status === 403 ? 'info' : 'bad'),
-        err.status === 403
-          ? 'You aren’t on this player’s sub-committee, so their offers and ballots aren’t readable to you. '
-            + 'A sub-committee is transparent to itself and opaque to everyone outside it (§ 4.5).'
-          : err.message));
+        err.status !== 403 ? err.message
+        : (IS_AGENT && !IS_FAC)
+          ? 'You haven’t claimed this player, so his offers aren’t readable to you yet. Claiming '
+            + 'him opens every one of them in full (§ 4.7).'
+          : 'You aren’t on this player’s sub-committee, so their offers and ballots aren’t readable to you. '
+            + 'A sub-committee is transparent to itself and opaque to everyone outside it (§ 4.5).'));
+      // The claim control lives in the agent panel, which needs a review payload
+      // it can't have yet — so on a 403 the panel is rebuilt from list state.
+      if (IS_AGENT && !IS_FAC) {
+        const p = (STATE.players || {})[slug] || {};
+        box.appendChild(agentPanel(slug, entry, { state: { ...entry, stage: p.stage,
+                                                           claimed_by: p.claimed_by,
+                                                           is_agent: p.claimed_by === ME.name },
+                                                  offers: [] }));
+      }
       box.appendChild(s);
       return;
     }
 
+    if (IS_AGENT) box.appendChild(agentPanel(slug, entry, review));
     if (IS_HEAD) box.appendChild(headControls(slug, entry, review, ballots));
     box.appendChild(offersSection(review));
     box.appendChild(commitmentsSection(review));
-    box.appendChild(ballotsSection(review, ballots));
+    // An agent who isn't also on the FAC sees no ballot section at all, rather
+    // than one explaining a 403 they will never resolve (§ 4.5).
+    if (IS_FAC) box.appendChild(ballotsSection(review, ballots));
   }
 
   function detailHead(slug, entry, review) {
@@ -993,6 +1079,251 @@
     }
     head.appendChild(sub);
     return head;
+  }
+
+
+  // ── the agent panel (§ 8.6) ─────────────────────────────────────────────────
+  //
+  // Every branch below reads `state.stage` — the server's derivation — rather
+  // than working out from the clock and the claim what an agent is allowed to
+  // do. There is one rule and it lives in `_agent_stage`.
+
+  function agentPanel(slug, entry, review) {
+    const st = review.state || {};
+    const s = el('div', 'section head-section');
+    s.appendChild(el('h3', null, 'Agent'));
+
+    const live = (review.offers || []).length;
+    const held = st.is_agent && !st.advanced_at;
+
+    if (st.stage === 'open') {
+      s.appendChild(el('div', 'empty',
+        'His offer window is still open. A free agent reaches the agents’ queue when it closes — '
+        + 'until then he may still draw bids nobody has seen.'));
+      return s;
+    }
+
+    if (st.stage === 'decided') {
+      s.appendChild(el('div', 'empty', 'Finalized. Nothing left for an agent to do here.'));
+      return s;
+    }
+
+    if (st.stage === 'with_committee') {
+      const b = el('div', 'banner info');
+      b.appendChild(el('div', null,
+        'Advanced to the sub-committee ' + ago(st.advanced_at) + ' by ' + (st.claimed_by || '?')
+        + '. The agent’s powers on him have ended — only the FAC head can send him back.'));
+      if (st.agent_note) b.appendChild(el('div', null, 'Agent’s note: “' + st.agent_note + '”'));
+      s.appendChild(b);
+      if (IS_HEAD) {
+        const back = el('button', 'btn-danger', 'Send back to the agent…');
+        back.addEventListener('click', () => returnToAgentModal(slug, st));
+        s.appendChild(back);
+      }
+      return s;
+    }
+
+    if (st.stage === 'awaiting_agent') {
+      const refusal = (STATE.players[slug] || {}).claim_refusal;
+      if (refusal && !IS_HEAD) {
+        // Disabled with the server's own reason, never hidden and never a
+        // string composed here (§ 8.1's convention).
+        const b = el('div', 'banner warn');
+        b.textContent = refusal;
+        s.appendChild(b);
+        return s;
+      }
+      s.appendChild(el('p', 'note',
+        'Claiming opens every offer on him in full and makes you the one who negotiates them. '
+        + 'It is exclusive, and it permanently bars your own team from bidding on him — that bar '
+        + 'survives releasing the claim and survives him being reopened.'));
+      const b = el('button', 'btn-primary', 'Claim ' + nameOf(slug) + '…');
+      b.addEventListener('click', () => claimModal(slug));
+      s.appendChild(b);
+      return s;
+    }
+
+    // stage === 'with_agent'
+    if (!held) {
+      const b = el('div', 'banner info');
+      b.textContent = (st.claimed_by || 'Another agent') + ' is the agent on this player, since '
+        + ago(st.claimed_at || (st.agent || {}).claimed_at) + '.';
+      s.appendChild(b);
+      if (!IS_HEAD) return s;
+      s.appendChild(el('p', 'note', 'You can still act on his offers as head.'));
+      return s;
+    }
+
+    const bar = el('div', 'bb-block');
+    if ((st.returns || []).length) {
+      const r = st.returns[st.returns.length - 1];
+      const w = el('div', 'banner warn');
+      w.appendChild(el('div', 'mini-head', 'Sent back by ' + r.by + ' ' + ago(r.at)));
+      w.appendChild(el('div', null, '“' + r.reason + '”'));
+      w.appendChild(el('div', 'meta',
+        'Ballots cast on the earlier slate still stand and are flagged for their members.'));
+      s.appendChild(w);
+    }
+
+    s.appendChild(el('p', 'note', live === 1
+      ? 'One offer left standing. You can finalize him here rather than sending a single option '
+        + 'to a sub-committee to ballot — or advance anyway if you want the committee on it.'
+      : live === 0
+        ? 'Every offer has been voided. Finalize him — there is no slate to advance.'
+        : live + ' offers still live. Send them back for changes, void the ones that are out, '
+          + 'then advance what survives to the sub-committee.'));
+
+    if (live) {
+      const adv = el('button', 'btn-primary', 'Advance ' + live + ' offer' + (live === 1 ? '' : 's') + '…');
+      adv.addEventListener('click', () => advanceModal(slug, review));
+      bar.appendChild(adv);
+    }
+    const fin = el('button', live > 1 ? 'btn-ghost' : 'btn-primary', 'Finalize without a ballot…');
+    fin.addEventListener('click', () => agentFinalizeModal(slug, review));
+    bar.appendChild(fin);
+    const rel = el('button', 'btn-ghost', 'Release…');
+    rel.addEventListener('click', () => releaseModal(slug));
+    bar.appendChild(rel);
+    s.appendChild(bar);
+    return s;
+  }
+
+  function claimModal(slug) {
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'You become the agent for ' + nameOf(slug) + ': every offer on him opens to you, and the '
+      + 'remands, voids and the final slate are yours. No other agent can take him while you hold him.'));
+    body.appendChild(el('p', 'note',
+      'Your own team is barred from bidding on him from now on. That is permanent — releasing the '
+      + 'claim does not lift it, because by then you have read every rival’s figure.'));
+    modal('Claim ' + nameOf(slug), body, [{
+      label: 'Claim him', cls: 'btn-primary', run: async () => {
+        const res = await api('/fa/players/' + encodeURIComponent(slug) + '/claim', { method: 'POST' });
+        await reload();
+        const blocked = (res.blocked_teams || []).map(b => b.team);
+        toast(blocked.length ? 'Claimed — ' + blocked.join(', ') + ' can no longer bid on him'
+                             : 'Claimed');
+      },
+    }]);
+  }
+
+  function releaseModal(slug) {
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'He goes back on the queue for another agent to claim. Anything you have already done — '
+      + 'remands, voids, notes — stays exactly as it is.'));
+    body.appendChild(el('p', 'note',
+      'Your team stays barred from bidding on him. A release does not undo that.'));
+    modal('Release ' + nameOf(slug), body, [{
+      label: 'Release him', cls: 'btn-danger', run: async () => {
+        await api('/fa/players/' + encodeURIComponent(slug) + '/release', { method: 'POST' });
+        await reload();
+        toast('Released');
+      },
+    }]);
+  }
+
+  function advanceModal(slug, review) {
+    const offers = (review.offers || []).slice().sort((a, b) => a.number - b.number);
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'These are the offers the sub-committee will see and ballot on. Nothing else on this player '
+      + 'reaches them. You cannot remand, void or note after this — only the FAC head can send him back.'));
+    const ul = el('ul');
+    offers.forEach(o => ul.appendChild(el('li', null,
+      o.team + ' #' + o.number + ' — ' + shorthand(o.offer.contract, SEASON))));
+    body.appendChild(ul);
+    const row = el('div', 'row');
+    row.appendChild(el('label', null, 'A note for the sub-committee (optional)'));
+    const ta = el('textarea');
+    ta.placeholder = 'e.g. PHX is the strongest fit; CLE would not move off two years.';
+    row.appendChild(ta);
+    body.appendChild(row);
+    modal('Advance ' + nameOf(slug), body, [{
+      label: 'Advance to the sub-committee', cls: 'btn-primary', run: async () => {
+        await api('/fa/players/' + encodeURIComponent(slug) + '/advance',
+                  { method: 'POST', body: { note: ta.value.trim() } });
+        await reload();
+        toast('Advanced — the head assigns the sub-committee');
+      },
+    }]);
+    ta.focus();
+  }
+
+  // D24. Guarded harder than Advance, and worded so the trade-off is explicit:
+  // this closes the player with no vote at all.
+  function agentFinalizeModal(slug, review) {
+    const offers = (review.offers || []).slice().sort((a, b) => a.number - b.number);
+    const body = el('div');
+    body.appendChild(el('p', 'note', offers.length === 1
+      ? 'One bid survived curation, so there is nothing for a sub-committee to choose between. '
+        + 'This locks the player with no ballot.'
+      : offers.length === 0
+        ? 'No bid survived. This closes him out with nothing on the table.'
+        : 'There are still ' + offers.length + ' live offers. Finalizing now locks him with no '
+          + 'ballot at all — if you want them weighed, advance instead.'));
+    if (offers.length) {
+      const ul = el('ul');
+      offers.forEach(o => ul.appendChild(el('li', null,
+        o.team + ' #' + o.number + ' — ' + shorthand(o.offer.contract, SEASON))));
+      body.appendChild(ul);
+    }
+    body.appendChild(el('p', 'note',
+      'Nothing is signed by this. The FAC still enters the transaction by hand on /transactions.'));
+    modal('Finalize ' + nameOf(slug) + ' without a ballot', body, [{
+      label: 'Lock him', cls: 'btn-danger', run: async () => {
+        await api('/fa/players/' + encodeURIComponent(slug) + '/finalize', { method: 'POST' });
+        await reload();
+        toast('Finalized — recorded as uncontested');
+      },
+    }]);
+  }
+
+  function returnToAgentModal(slug, st) {
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'The slate goes back to ' + (st.claimed_by || 'the agent') + ', who can remand, void and '
+      + 're-advance it. Ballots already cast are kept and flagged for their members as voted on '
+      + 'an earlier slate — nothing is discarded.'));
+    const row = el('div', 'row');
+    row.appendChild(el('label', null, 'Why is it going back? (required)'));
+    const ta = el('textarea');
+    ta.placeholder = 'e.g. CLE’s year 3 went illegal after they signed elsewhere.';
+    row.appendChild(ta);
+    body.appendChild(row);
+    modal('Send ' + nameOf(slug) + ' back to the agent', body, [{
+      label: 'Send back', cls: 'btn-danger', run: async () => {
+        const reason = ta.value.trim();
+        if (!reason) { toast('A send-back requires a reason.', true); return false; }
+        await api('/fa/players/' + encodeURIComponent(slug) + '/return-to-agent',
+                  { method: 'POST', body: { reason } });
+        await reload();
+        toast('Sent back to ' + (st.claimed_by || 'the agent'));
+      },
+    }]);
+    ta.focus();
+  }
+
+  function agentNoteModal(o) {
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'Advice that travels with this offer to the sub-committee. It is not a ranking and it does '
+      + 'not change the ballot — they still vote.'));
+    const row = el('div', 'row');
+    row.appendChild(el('label', null, 'Note (leave empty to remove)'));
+    const ta = el('textarea');
+    ta.value = o.agent_note || '';
+    row.appendChild(ta);
+    body.appendChild(row);
+    modal('Note on ' + o.team + ' #' + o.number, body, [{
+      label: 'Save', cls: 'btn-primary', run: async () => {
+        await api('/fa/offers/' + o.id + '/agent-note',
+                  { method: 'PUT', body: { note: ta.value.trim() } });
+        await reload();
+        toast('Note saved');
+      },
+    }]);
+    ta.focus();
   }
 
   // ── head controls (§ 8.3) ───────────────────────────────────────────────────
@@ -1211,7 +1542,7 @@
     const voided = review.voided_offers || [];
     if (!review.offers.length) {
       s.appendChild(el('div', 'empty', 'No submitted offers on this player.'));
-      if (voided.length) s.appendChild(voidedBlock(voided));
+      if (voided.length) s.appendChild(voidedBlock(voided, review));
       return s;
     }
     const wrap = el('div', 'offers');
@@ -1220,7 +1551,7 @@
       .sort((a, b) => a.number - b.number)
       .forEach(o => wrap.appendChild(offerCard(o, review)));
     s.appendChild(wrap);
-    if (voided.length) s.appendChild(voidedBlock(voided));
+    if (voided.length) s.appendChild(voidedBlock(voided, review));
     return s;
   }
 
@@ -1228,7 +1559,7 @@
   // shown, because "the committee erased a bid" is exactly what a review page
   // has to be able to answer for. Kept below the live offers so it reads as a
   // record rather than as something still under consideration.
-  function voidedBlock(voided) {
+  function voidedBlock(voided, review) {
     const box = el('div', 'section');
     box.style.marginTop = '0.8rem';
     box.appendChild(el('div', 'mini-head', 'Voided — out of play, not deleted'));
@@ -1246,7 +1577,8 @@
         'voided ' + ago(v.at) + ' by ' + (v.by || '?')
         + ' · was ' + (v.from_status || 'submitted')
         + ' · ' + o.team + ' may bid again'));
-      if (IS_HEAD) {
+      // Restore follows void (§ 4.7): whoever could drop the bid can put it back.
+      if (canCurate(review)) {
         const b = el('button', 'btn-ghost', 'Undo the void…');
         b.style.marginTop = '0.3rem';
         b.addEventListener('click', () => restoreModal(o));
@@ -1309,27 +1641,46 @@
     }
     if (o.versions && o.versions.length) card.appendChild(historyBlock(o, season));
 
-    if (canRemand(review) && o.status === 'submitted') {
+    // § 4.7 — the agent's advice to the sub-committee, shown to everyone who
+    // can see the offer and editable only by the agent holding the player.
+    if (o.agent_note) {
+      const n = el('div', 'banner info');
+      n.appendChild(el('div', 'mini-head', 'Agent’s note · ' + (o.agent_note_by || '?')));
+      n.appendChild(el('div', null, o.agent_note));
+      card.appendChild(n);
+    }
+
+    if (canCurate(review) && o.status === 'submitted') {
       const b = el('button', 'btn-danger', 'Send back for revision…');
       b.addEventListener('click', () => remandModal(o));
       card.appendChild(b);
     }
-    // § 4.3b, head-only — and offered on a `returned` offer too, which is where
-    // it earns its keep: a send-back the team never answers has no other end.
-    if (IS_HEAD) {
+    // § 4.3b — and offered on a `returned` offer too, which is where it earns
+    // its keep: a send-back the team never answers has no other end.
+    if (canCurate(review)) {
       const b = el('button', 'btn-danger', 'Void…');
       b.style.marginLeft = o.status === 'submitted' ? '0.4rem' : '';
       b.addEventListener('click', () => voidModal(o));
       card.appendChild(b);
     }
+    if (canCurate(review) && !IS_HEAD) {
+      const b = el('button', 'btn-ghost', o.agent_note ? 'Edit note…' : 'Add a note…');
+      b.style.marginLeft = '0.4rem';
+      b.addEventListener('click', () => agentNoteModal(o));
+      card.appendChild(b);
+    }
     return card;
   }
 
-  // Any assigned sub-committee member may remand, plus the head (D14) — the FAC
-  // reviews as a group, so a reviewer who wants a term changed shouldn't have to
-  // route through the head.
-  function canRemand(review) {
-    return IS_HEAD || ((review.state || {}).subcommittee || []).includes(ME.name);
+  // § 4.7, reversing D14. Remand and void are the claiming agent's while they
+  // hold the player and haven't advanced him, plus head and admin. An assigned
+  // sub-committee member has neither: they review a set the agent has already
+  // curated, and a term they want changed goes through the agent or the head.
+  // `is_agent` is the server's own answer (`_claim_holder == you`), not a local
+  // comparison, so the button and the endpoint can't disagree.
+  function canCurate(review) {
+    const st = review.state || {};
+    return IS_HEAD || (st.is_agent && !st.advanced_at);
   }
 
   // `trailingHold` is the fact sheet's priced § 3.10 hold. The contract itself
@@ -1593,6 +1944,18 @@
   function ballotsSection(review, ballots) {
     const s = el('div', 'section');
     s.appendChild(el('h3', null, 'Ballots'));
+    // § 4.7 — nothing is balloted before the agent advances the slate. The API
+    // refuses too; this is so the page says why rather than showing inputs that
+    // 422. An already-finalized player keeps his ballot record on show.
+    const st = review.state || {};
+    if (!st.advanced_at && !(ballots && ballots.final)) {
+      s.appendChild(el('div', 'empty', st.stage === 'with_agent'
+        ? (st.claimed_by || 'An agent') + ' is still curating the offers on this player. '
+          + 'The ballot opens when the slate is advanced.'
+        : 'No ballot yet. A player is balloted once an agent has curated his offers and '
+          + 'advanced the survivors to a sub-committee.'));
+      return s;
+    }
     if (!ballots || ballots._unavailable) {
       s.appendChild(el('div', 'empty', ballots && ballots._unavailable
         ? ballots._unavailable

@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.1.7",
+    "date": "2026-08-12",
+    "changes": [
+      "Free agency has a third committee role: agents. A free agent whose offer window closes now goes to the agents before any sub-committee sees him \u2014 they claim him off a shared queue, negotiate the offers down, and either advance the survivors to a ballot or finalize an uncontested one",
+      "Claiming a player is exclusive and opens every offer on him in full. An agent cannot claim a player their own team is bidding on, and claiming one permanently bars that team from bidding on him \u2014 the bar survives releasing the claim and survives the player being reopened",
+      "Sending an offer back for revision is now the agent's, along with voiding one; assigned sub-committee members no longer do either. The FAC head keeps both everywhere, and can send an advanced player back to his agent with a reason",
+      "Nothing is balloted until an agent advances the slate. Ballots already cast survive a send-back and are flagged for their members rather than discarded, the same way a revision or a void already flagged them",
+      "The PDC dashboard has an agent view: the queue of players waiting to be picked up, with blocked ones shown greyed and the reason on them, and offer counts hidden on the players your own team is bidding on"
+    ]
+  },
+  {
     "version": "0.1.6",
     "date": "2026-08-12",
     "changes": [

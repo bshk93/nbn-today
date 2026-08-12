@@ -196,6 +196,27 @@
              background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
              padding: 0.5rem 0.9rem; font-size: 0.8rem; color: var(--text-secondary); }
     .toast.bad { border-color: var(--danger-border-strong); color: var(--danger-light); }
+
+    /* § 5.1 waiver wire */
+    .waivers-section { margin: 0 0 1.1rem; }
+    .waivers-section h2 { font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.03em; margin: 0 0 0.5rem; }
+    .waiver-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.85rem;
+      display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 0.5rem;
+      background: var(--bg-card); }
+    .waiver-card .wc-main { flex: 1; min-width: 12rem; }
+    .waiver-card .wc-player { font-weight: 700; font-size: 0.88rem; }
+    .waiver-card .wc-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .waiver-card .wc-deadline { font-size: 0.76rem; color: var(--text-muted); min-width: 8rem; text-align: right; }
+    .waiver-card .wc-deadline.urgent { color: var(--danger); font-weight: 600; }
+    .waiver-card .wc-status { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 999px;
+      border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
+    .waiver-card .wc-status.mine { border-color: var(--accent); color: var(--accent); }
+    .waiver-card .wc-status.pdc { border-color: var(--gold-border); color: var(--gold); }
+    .waiver-card button { padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg-hover); color: var(--text-primary); font-size: 0.76rem; cursor: pointer; white-space: nowrap; }
+    .waiver-card button:hover { border-color: var(--accent); }
+    .waiver-card button.danger:hover { border-color: var(--danger); color: var(--danger); }
   </style>
 </head>
 <body>
@@ -205,6 +226,8 @@
       <h1>Free Agency</h1>
       <p>Players with non-guaranteed salary, plus renounced and never-signed free agents with no cap hold. Click any column to sort.</p>
     </header>
+
+    <div id="waivers-wrap"></div>
 
     <div class="filter-row" id="year-filter"></div>
     <div class="filter-row" id="pos-filter"></div>
@@ -1535,6 +1558,247 @@
       }
     }
 
+    // ── § 5.1 waiver wire ────────────────────────────────────────────────────
+    // Design record: nbn-today/docs/waiver-wire-spec.md. A released player is
+    // "on waivers" for 48 hours; other teams can claim the untouched contract.
+    // Claims are sealed (spec § 2) — GET /api/waivers never says who else has
+    // claimed, only whether *my* team(s) have. The claim methods offered
+    // deliberately drop 'bird_rights'/'minimum'/'sign_and_trade' from METHODS:
+    // a claim assumes an existing contract rather than negotiating one, so
+    // Bird Rights and a minimum-scale choice don't apply the way they do to a
+    // fresh signing.
+    const CLAIM_METHODS = METHODS.filter(([v]) => !['bird_rights', 'minimum'].includes(v));
+
+    let WAIVERS = [];
+
+    function timeLeft(deadlineIso) {
+      if (!deadlineIso) return { text: '', urgent: false };
+      const ms = new Date(deadlineIso).getTime() - Date.now();
+      if (ms <= 0) return { text: 'resolving…', urgent: true };
+      const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+      const d = Math.floor(h / 24);
+      const text = d >= 1 ? `${d}d ${h % 24}h left` : `${h}h ${m}m left`;
+      return { text, urgent: ms < 6 * 3600000 };
+    }
+
+    async function loadWaivers() {
+      try { WAIVERS = await api('/waivers'); } catch { WAIVERS = []; }
+      renderWaivers();
+    }
+
+    function renderWaivers() {
+      const wrap = document.getElementById('waivers-wrap');
+      wrap.innerHTML = '';
+      if (!WAIVERS.length) return;
+      const section = document.createElement('div');
+      section.className = 'waivers-section';
+      const h = document.createElement('h2');
+      h.textContent = `On Waivers (${WAIVERS.length})`;
+      section.appendChild(h);
+
+      WAIVERS.forEach(w => {
+        const card = document.createElement('div');
+        card.className = 'waiver-card';
+
+        const main = document.createElement('div');
+        main.className = 'wc-main';
+        const name = document.createElement('div');
+        name.className = 'wc-player';
+        name.textContent = displayName((BIOS[w.player] || {}).name || w.player);
+        main.appendChild(name);
+        const sub = document.createElement('div');
+        sub.className = 'wc-sub';
+        const sal = (w.contract.salaries || {})[Object.keys(w.contract.salaries || {}).sort()[0]];
+        sub.textContent = `Waived by ${w.released_by}` + (sal ? ` · ${formatSalary(sal)} this season` : '');
+        main.appendChild(sub);
+        card.appendChild(main);
+
+        if (w.awaiting_pdc) {
+          const badge = document.createElement('span');
+          badge.className = 'wc-status pdc';
+          badge.textContent = 'tied — awaiting PDC';
+          card.appendChild(badge);
+        }
+
+        const dl = document.createElement('div');
+        dl.className = 'wc-deadline';
+        const tl = timeLeft(w.deadline);
+        dl.textContent = tl.text;
+        if (tl.urgent) dl.classList.add('urgent');
+        card.appendChild(dl);
+
+        if (!MY_TEAMS.length) {
+          // Public viewer — informational only, no action to offer.
+        } else if (w.released_by && MY_TEAMS.includes(w.released_by) && MY_TEAMS.length === 1) {
+          // A team may not claim a player it just released — same rule the
+          // server enforces; not worth showing a button that would 422.
+        } else {
+          MY_TEAMS.forEach(team => {
+            if (team === w.released_by) return;
+            const mine = (w.my_claims || []).includes(team);
+            const btn = document.createElement('button');
+            if (mine) {
+              btn.className = 'danger';
+              btn.textContent = MY_TEAMS.length > 1 ? `Withdraw (${team})` : 'Withdraw claim';
+              btn.addEventListener('click', () => withdrawClaim(w, team));
+            } else {
+              btn.textContent = MY_TEAMS.length > 1 ? `Claim… (${team})` : 'Claim…';
+              btn.addEventListener('click', () => openClaimModal(w, team));
+            }
+            card.appendChild(btn);
+          });
+        }
+
+        section.appendChild(card);
+      });
+      wrap.appendChild(section);
+    }
+
+    async function withdrawClaim(w, team) {
+      if (!confirm(`Withdraw ${team}'s waiver claim on ${displayName((BIOS[w.player] || {}).name || w.player)}?`)) return;
+      try {
+        await api(`/waivers/${w.txn_id}/claim?team=${team}`, { method: 'DELETE' });
+        toast('Claim withdrawn.');
+        await loadWaivers();
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    function openClaimModal(w, team) {
+      const playerName = displayName((BIOS[w.player] || {}).name || w.player);
+      let method = '';
+      let validateTimer = null, validateSeq = 0;
+
+      const scrim = document.createElement('div');
+      scrim.className = 'scrim';
+      const box = document.createElement('div');
+      box.className = 'offer-modal';
+      scrim.appendChild(box);
+      const close = () => { scrim.remove(); document.removeEventListener('keydown', onKey); };
+      const onKey = e => { if (e.key === 'Escape') close(); };
+      document.addEventListener('keydown', onKey);
+      scrim.addEventListener('click', e => { if (e.target === scrim) close(); });
+      document.body.appendChild(scrim);
+
+      function el(tag, cls, text) {
+        const n = document.createElement(tag);
+        if (cls) n.className = cls;
+        if (text != null) n.textContent = text;
+        return n;
+      }
+
+      function draw() {
+        box.innerHTML = '';
+        box.appendChild(el('h3', null, `${team} — claim ${playerName}`));
+        box.appendChild(el('div', 'sub',
+          `${team} assumes the contract as it stood — not a new deal. ` +
+          `Priority against other claims goes to the worst qualifying record, ` +
+          `tie-broken by head-to-head; the window resolves automatically 48 hours ` +
+          `after the release.`));
+
+        const list = el('div', 'panel');
+        list.style.marginTop = '0.7rem';
+        Object.keys(w.contract.salaries || {}).sort().forEach(s => {
+          const tag = (w.contract.cap_holds || {})[s];
+          list.appendChild(el('div', 'checkline ok',
+            `${s} — ${formatSalary(w.contract.salaries[s])}${tag ? ' (' + tag + ')' : ''}`));
+        });
+        box.appendChild(list);
+
+        const methodField = el('div');
+        methodField.style.marginTop = '0.7rem';
+        methodField.appendChild(el('label', null, 'Funding method'));
+        const sel = document.createElement('select');
+        CLAIM_METHODS.forEach(([v, label]) => {
+          const o = document.createElement('option');
+          o.value = v; o.textContent = label;
+          if (v === method) o.selected = true;
+          sel.appendChild(o);
+        });
+        sel.addEventListener('change', () => { method = sel.value; revalidate(true); });
+        methodField.appendChild(sel);
+        box.appendChild(methodField);
+
+        const panel = el('div', 'panel');
+        panel.id = 'claim-legality-panel';
+        panel.style.marginTop = '0.7rem';
+        panel.textContent = 'Choose a funding method to check legality.';
+        box.appendChild(panel);
+
+        const actions = el('div', 'modal-actions');
+        const errSpan = el('div', 'spacer');
+        actions.appendChild(errSpan);
+        const cancel = el('button', null, 'Cancel');
+        cancel.addEventListener('click', close);
+        actions.appendChild(cancel);
+        const go = el('button', 'primary', 'Submit claim');
+        go.disabled = true;
+        go.addEventListener('click', async () => {
+          go.disabled = true; cancel.disabled = true; errSpan.textContent = '';
+          go.textContent = 'Submitting…';
+          try {
+            await api(`/waivers/${w.txn_id}/claim`, {
+              method: 'POST',
+              body: { team, signing_method: method || null },
+            });
+            close();
+            toast(`${team}'s waiver claim on ${playerName} is filed.`);
+            await loadWaivers();
+          } catch (e) {
+            errSpan.textContent = (e.data && e.data.detail && e.data.detail.checks)
+              ? 'Fails a rule check — see below.' : e.message;
+            go.disabled = false; cancel.disabled = false; go.textContent = 'Submit claim';
+          }
+        });
+        actions.appendChild(go);
+        box.appendChild(actions);
+
+        function revalidate(immediate) {
+          clearTimeout(validateTimer);
+          validateTimer = setTimeout(runValidation, immediate ? 0 : 250);
+        }
+
+        async function runValidation() {
+          if (!method) {
+            panel.className = 'panel';
+            panel.textContent = 'Choose a funding method to check legality.';
+            go.disabled = true;
+            return;
+          }
+          const seq = ++validateSeq;
+          let data;
+          try {
+            const res = await fetch(`/api/validate/waiver_claim?txn_id=${w.txn_id}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ team, signing_method: method }),
+            });
+            if (seq !== validateSeq) return;
+            data = await res.json();
+            if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+          } catch (e) {
+            if (seq !== validateSeq) return;
+            panel.className = 'panel bad';
+            panel.textContent = 'Could not evaluate: ' + e.message;
+            go.disabled = true;
+            return;
+          }
+          if (seq !== validateSeq) return;
+          const failing = (data.checks || []).filter(c => !c.passed);
+          panel.className = 'panel' + (data.legal ? '' : ' bad');
+          panel.innerHTML = '';
+          panel.appendChild(el('div', 'fs-head', data.legal ? 'Legal as it stands' : 'Fails a rule check'));
+          if (!failing.length) panel.appendChild(el('div', 'checkline ok', '✓ No constraint is triggered.'));
+          failing.forEach(c => panel.appendChild(el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
+            (c.level === 'error' ? '✗ ' : '⚠ ') + (c.message || c.check))));
+          go.disabled = !data.legal;
+        }
+      }
+
+      draw();
+    }
+
     // ── Main ─────────────────────────────────────────────────────────────────
 
     (async () => {
@@ -1562,6 +1826,12 @@
         MY_TEAMS = (ME.roles || []).map(r => r.toUpperCase()).filter(r => TEAM_ABBRS.has(r)).sort();
         (myOffers || []).filter(o => MY_TEAMS.includes(o.team))
           .forEach(o => { MY_OFFERS[o.team + '|' + o.player] = o; });
+
+        // § 5.1 waiver wire. Independent of the FA pool load above — a release
+        // can happen with the FA pool otherwise empty — so failures here don't
+        // block the rest of the page.
+        loadWaivers();
+        setInterval(loadWaivers, 30000);
 
         // The pool (class_year, hold_type, prior_salary per player) is derived
         // server-side by GET /api/fa/pool — see nbn-api routers/free_agency.py.

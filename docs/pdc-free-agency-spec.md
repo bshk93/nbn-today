@@ -1,4 +1,22 @@
-# PDC — Free Agency offer pipeline (spec v0.4)
+# PDC — Free Agency offer pipeline (spec v0.5)
+
+**Amended 2026-08-12 — the agent stage (§ 4.7), Phase 9, decisions D18–D27.**
+A third role, `agent`, sits between a closed offer window and a sub-committee
+ballot: agents claim players off a shared queue, negotiate the offers down to a
+final set, and either advance the survivors or finalize an uncontested one. It
+reverses D14 (sub-committee members no longer remand), widens D16 (the claiming
+agent may void), and introduces the **one hard block** in a spec that otherwise
+only warns about conflicts of interest (D21).
+
+**Phases 9a–9d are built and deployed** (role, backend, Discord, dashboard);
+**9e — granting the role — is not**, so the stage is dormant: no claim exists,
+so no team is barred and no ballot is gated on an advance that matters. The two
+invariants 9b depended on were re-verified against the live board immediately
+before deploying, as § 10 instructs: **zero ballots ever cast** and **zero
+sub-committee seats assigned** across all 61 tracked players, so gating the
+ballot on the advance invalidated no vote and reversing D14 took away a power
+nobody had used. Live stage census on deploy: 27 decided, 16 awaiting an agent,
+18 still collecting offers.
 
 **Status:** v1.1, 2026-08-09. Fifteen decisions settled (§ 12); no design
 questions outstanding. **All eight phases are built** — the roles, the
@@ -54,12 +72,23 @@ Add to `VALID_ROLES` (`routers/constants.py`):
 |---|---|---|
 | `fac` | FAC member | Read the PDC dashboard's FA side; cast a ballot on players they're assigned to |
 | `fac_head` | FAC head | Everything `fac` can do + set FA mode, open rounds, mark players open/closed, assign sub-committees, finalize allocations |
+| `agent` | Agent | Claim a player whose window has closed, curate the offers on him, and hand the survivors to a sub-committee — or finalize an uncontested one (§ 4.7) |
 | `poext` | PO-EXT member | Placeholder now — PDC dashboard access, PO-EXT view is a stub |
 | `poext_head` | PO-EXT head | Placeholder now |
 
-`ROLE_IMPLIES`: `fac_head → {fac}`, `poext_head → {poext}`. `admin` already
-satisfies every check in `auth.py` and keeps doing so. A member may hold both
-`fac` and `poext`; the dashboard renders both sections for them.
+`ROLE_IMPLIES`: `fac_head → {fac, agent}`, `poext_head → {poext}`. `admin`
+already satisfies every check in `auth.py` and keeps doing so. A member may hold
+both `fac` and `poext`; the dashboard renders both sections for them.
+
+**`fac` and `agent` are meant to be disjoint sets, and that is a convention, not
+a check (decided).** An agent has already exercised judgment by choosing the
+slate, so they have no business voting on it; the league assigns the roles so
+that nobody holds both. Nothing in the API enforces it, because the one place it
+would matter — `PUT /api/fa/players/{slug}/ballot` — is already gated on
+sub-committee assignment, and the head simply doesn't assign an agent. The
+implication above is the deliberate exception: `fac_head → agent` exists so the
+head can always act as agent on a player nobody has claimed (§ 4.7), which is
+what keeps the stage from deadlocking.
 
 `bod` deliberately does **not** imply `fac` (decided) — committee membership is a
 specific assignment, and a bod-wide implication would silently put the whole
@@ -68,8 +97,11 @@ board on every sub-committee ballot roster.
 **There is no PDC-head role (decided).** `fac_head` and `poext_head` are peers —
 a two-headed leadership model over the PDC, each governing their own committee
 and neither holding authority on the other's side. `admin` is the only role
-above both, which is already true of every check in `auth.py`. So the four roles
-above are the complete set; nothing else needs adding for the PDC.
+above both, which is already true of every check in `auth.py`. **There is no
+agent head either** — the agents work as a committee, claiming players off a
+shared queue rather than being assigned to them (§ 4.7), so there is nothing for
+a head of them to allocate. So the five roles above are the complete set;
+nothing else needs adding for the PDC.
 
 **Ordering constraint:** `POST /api/members` rejects unknown role names, so the
 constant change ships *before* anyone tries to grant the role. This is Phase 0
@@ -254,7 +286,17 @@ committee of a few people.
       "round_id": "r3",
       "subcommittee": ["memberA", "memberB", "memberC"],
       "opened_at": "...", "opened_by": "skim",
-      "ffa": null                   // in FFA: {started_at, deadline, started_by_offer}
+      "ffa": null,                  // in FFA: {started_at, deadline, started_by_offer}
+
+      // § 4.7 — the agent stage. `agent` is round-scoped; `blocked_teams` is not.
+      "agent": { "round_id": "r3",
+                 "claimed_by": "Avatar", "claimed_at": "...",
+                 "released_at": null, "released_by": null,
+                 "advanced_at": null, "advanced_by": null, "note": "",
+                 "returns": [] },   // head send-backs: {at, by, reason}
+      "blocked_teams": [            // permanent — survives release and reopen
+        { "team": "WAS", "member": "Avatar", "at": "...", "reason": "claim" }
+      ]
     }
   }
 }
@@ -544,10 +586,21 @@ Rules:
   offers from other teams; a revision the committee itself asked for is part of
   its own review and may land after the window closes.
 
-**Who may remand: any assigned sub-committee member** (plus the head and admin)
-— decided. The committee reviews as a group, so any reviewer who wants a term
-changed can ask for it without routing through the head. Two consequences the
-build must handle rather than discover:
+**Who may remand: superseded by § 4.7 (2026-08-12).** Remand is now the
+**claiming agent's**, on a player they hold and have not advanced, plus head and
+admin. Assigned sub-committee members no longer have it — they review a set the
+agent has already curated, and two parties negotiating the same offer with the
+same owner is the ambiguity the agent stage exists to remove. The rest of this
+section stands unchanged: the note requirement, the additive behaviour, the
+version freeze, the diff, the ballot flag and the finalize warning all apply
+identically whoever issues the remand. The original decision and its reasoning
+are kept below, since the additive rule it motivated is still load-bearing.
+
+~~**Who may remand: any assigned sub-committee member** (plus the head and
+admin) — decided. The committee reviews as a group, so any reviewer who wants a
+term changed can ask for it without routing through the head.~~ Two consequences
+the build must handle rather than discover — **both still apply**, since several
+agents plus the head can still remand the same offer:
 
 - **Remands are additive, not a queue of round-trips.** The first remand flips
   `status` to `returned`; a second member remanding the same offer appends
@@ -612,6 +665,15 @@ Rules:
   so it sits with the head beside the other powers that end things — finalize,
   unlock, assignment. Widening this later is one line; narrowing it after teams
   have lost bids to it is not.
+
+  **Widened once, as predicted (§ 4.7, 2026-08-12):** the **claiming agent** may
+  void on the player they hold. Dropping a bid from the slate *is* the agent's
+  filter, and giving it a separate status would have duplicated everything
+  `voided` already does. It stays head-only on every unclaimed player and on
+  every player already advanced. Note what did not widen — a void still ends a
+  team's bid with no reply, so the reason requirement below binds an agent
+  exactly as it binds the head, and `void.by` is what tells the team which of
+  them did it.
 - **Only `submitted` and `returned` can be voided.** A draft is the team's own
   scratch pad, which the committee cannot see (§ 6.1) and therefore cannot act
   on; the team deletes its own drafts.
@@ -711,6 +773,16 @@ So a sub-committee is transparent to itself and opaque to everyone outside it.
 Ballots carry `updated_at`, so a member can tell a considered ballot from one
 cast a minute ago in response to theirs.
 
+**Agents see no ballots at all, on any player, including one they claimed and
+advanced** (§ 4.7). The table above is already restrictive and this keeps it
+that way: the agent's judgment is spent on the slate, and watching how it is
+voted on invites relitigating it. There is also nothing they could do with the
+information — the powers that could act on it end at the advance.
+
+**Nothing is balloted before the advance.** `PUT /api/fa/players/{slug}/ballot`
+refuses on a player still with an agent, so the visibility rules above only ever
+describe an advanced player.
+
 ### 4.6 Conflicts of interest — warn, don't block (decided)
 
 The FAC head is expected to avoid assigning a member to a player their own team
@@ -724,6 +796,206 @@ is bidding on, but the site backstops it rather than trusting it:
 
 Nothing is refused. A one-team league member is not automatically compromised,
 and hard-blocking would make some players unballotable in a league this size.
+
+**One exception, added with the agent stage: an agent's claim is blocked, and it
+blocks their whole team from bidding** (§ 4.7). The rule above is right for a
+*vote*, which is one of several and visible to the rest of the sub-committee. It
+is wrong for an agent, who chooses single-handedly which rival bids survive to
+reach a ballot at all, with no peer in the room. Warning would be worth nothing
+there — by the time the conflict is visible on the slate, the bids it disposed of
+are gone. So that is where the line moved, and nowhere else.
+
+---
+
+### 4.7 The agent stage (added 2026-08-12)
+
+**The gap this closes.** As built, a submitted offer went straight to a
+sub-committee ballot: every bid a player drew, priced exactly as typed, voted on
+as one slate. That is not how the FAC actually works. Somebody talks to the
+owners first — trims the field to the bids that are really competitive, tells a
+team its third year is short and gets it fixed, and hands over only what
+survived. The sub-committee's job is to choose between finalists, not to sift.
+With no stage for the sifting, it happened in Discord and the ballot showed a
+slate nobody had curated.
+
+**The model: a stage, not a filter.** A player whose offer window has closed
+does not go to a sub-committee; he goes to the **agents**, who curate, and only
+then does he move on — or get decided on the spot, if only one bid is left
+standing.
+
+```
+window closes ──▶ awaiting agent ──claim──▶ with agent ──advance──▶ with committee ──▶ finalized
+                                                  │                                       ▲
+                                                  ├────────── finalize (uncontested) ─────┤
+                                                  │                                       │
+                                                  └◀──── head returns to agent ───────────┘
+```
+
+The four stage names are **derived, never stored** — from `status`, the FFA
+clock, `agent.advanced_at` and the finalize record, in one server-side helper —
+for the same reason `_is_live` is the one gate on offer liveness (§ 4.3b). A
+stored stage is a second copy of a fact the other four already determine, and it
+would be the copy that goes stale.
+
+| Stage | Means | Who acts |
+|---|---|---|
+| `awaiting_agent` | Window closed, nobody has claimed him | any `agent` may claim |
+| `with_agent` | Claimed, not yet advanced | the claiming agent |
+| `with_committee` | Advanced; the ballot is open | assigned sub-committee, head |
+| `decided` | Finalized (§ 4.4) | head, via `unlock` only |
+
+#### Agents are a committee, not an assignment (decided)
+
+There is no per-player agent roster and no head handing players out. Agents
+**claim** off a shared queue of everyone whose window has closed. With a handful
+of agents and sixty free agents in a window, an assignment step would be a
+bottleneck staffed by a person who has no more information than the agents do.
+
+**Ready to claim means the offer window has shut** — the FFA clock has expired
+in `ffa` mode, or the player's round has closed in `rounds` mode. This is the
+same set the dashboard already lists as *closed — ready for ballots*; that list
+becomes *ready for an agent*. Deliberately not earlier: an agent working a
+player mid-window would be negotiating against bids that haven't all arrived.
+
+**A claim is exclusive.** One agent holds a player at a time; a second agent's
+claim is a 409 naming the holder. The agents divide the queue by taking from it,
+which only works if taking is real.
+
+#### The claim is what blocks the bid, and the block is permanent
+
+A claim opens every offer on that player, in full, to the person claiming. So
+the claim is gated, and it gates in both directions:
+
+- **An agent cannot claim a player their own team has a live offer on.** 422,
+  with a server-composed reason naming the offer. "Their team" is **either** a
+  current `owner`/`gm`/`coach` tenure **or** a held team role — the union, not
+  the intersection, because either one is enough to make the conflict real and
+  requiring both would let a GM with no role slip through (the § 6.2
+  `your_conflict` mistake, which was the opposite error).
+- **Claiming blocks that agent's whole team from bidding on that player**, from
+  then on. `POST /api/fa/offers` and `POST /api/fa/offers/{id}/submit` both
+  refuse, with the same composed string. **The team, not the person** — blocking
+  only the individual would be theatre, since an owner-agent's GM could submit
+  the offer and the conflict would be exactly where it started.
+- **The block survives release, and survives a reopen.** `blocked_teams` is
+  stored at the player level and is never round-scoped, unlike the claim itself.
+  This is the whole reason release is safe to allow: otherwise an agent claims,
+  reads every rival's number, releases, and bids into a field they alone can
+  see. The peek happened; a second window does not unsee it.
+- **The barred team is told on the board, not by a 422.** `GET /api/fa/board`
+  carries `your_block` — the same composed string, `accepting` forced to false
+  with it as the `reason` — so § 8.1's ⋯ menu greys out with an explanation
+  through the machinery it already uses, and `/free-agency` needed no change at
+  all (the § 6.3 payoff). It is the one authenticated field on an otherwise
+  public payload, and it is **scoped to the team it stops**: *which agent
+  claimed whom* is committee information, announced on `pdc-alerts` and nowhere
+  else, so a stranger and a rival both read `null`. The read is opportunistic —
+  `_optional_info` returns `None` rather than 401ing — because the endpoint has
+  to stay public.
+
+Consequence worth stating, because it will be felt: **an agent's team is locked
+out of everyone they work on.** On the board as it stands, WAS has 8 live offers
+and ORL 6, so those fourteen players are off-limits to their respective agent
+and must be claimed by the other. It is a real cost and it is the point — the
+alternative is an agent disposing of bids against their own team's.
+
+Head and admin are **not** subject to any of this. They may act on any player
+without claiming, exactly as they may already remand and void anywhere, and
+that unclaimed-player fallback (§ 2) is what keeps the stage from deadlocking
+when every agent is conflicted out. Their actions are logged and announced like
+anyone's.
+
+#### What an agent may do with a claimed player
+
+| Action | Notes |
+|---|---|
+| Read every offer in full | Terms, pitch, promises, validation — the § 6.1 grant a claim carries |
+| **Remand** | The negotiation tool. Note required, additive, unchanged from § 4.3a otherwise |
+| **Void** / restore | The filter. Reason required; the offer leaves the board (§ 4.3b) |
+| **Note** an offer | Optional `agent_note`, free text, carried to the sub-committee |
+| **Advance** | Hands the survivors on. Optional summary note |
+| **Finalize** | Only when uncontested — see below |
+
+**Filtering an offer out is a void, and that is the whole mechanism** — no new
+terminal status. `voided` is already outside `LIVE_STATUSES`, so a bid the agent
+drops leaves the ballot, leaves § 5.3 exposure, stops raising a § 4.6 conflict
+and frees the team's one-offer slot, all of it falling out of `_is_live` with no
+second rule to keep in step (§ 4.3b). It also answers *how the team finds out*,
+which needed no new machinery: a void's reason is required and is already shown
+to the team in their ⋯ menu and above the form when they bid again,
+server-composed like every other refusal string on `/free-agency`. `void.by`
+records the agent, so the team is told who dropped the bid and why.
+
+**Negotiation happens in Discord; the site models the moving parts.** No message
+thread on an offer — the remand note is the artifact, and duplicating a
+conversation that lives in Discord would produce a worse copy of it. What the
+site has to hold is what the negotiation *changes*: the returned status, the
+revision, the version history, and the diff (§ 4.3a), all of which it already
+does. An agent cannot put a counter-*number* on the table either; the note
+carries "your third year is short" perfectly well, and a counter the team
+accepts or declines is a second offer object with its own lifecycle.
+
+Once a player is advanced, the agent's powers on him end — the slate is the
+committee's now. The route back is the head's (below), not the agent's.
+
+#### Two exits: advance, or finalize
+
+**Advance** (`POST /api/fa/players/{slug}/advance`) stamps `advanced_at`/`by`
+and an optional note, and is what opens the ballot. Before it, there is no
+ballot: `PUT /api/fa/players/{slug}/ballot` refuses on a player who hasn't been
+advanced, and the widget doesn't render. Gated server-side, not just in the
+dashboard, so the stage is a rule rather than a layout.
+
+The head assigns the sub-committee as they always have (§ 8.3) — advancing does
+not auto-assign, and D9's empty default stands. An advanced player with no
+sub-committee is simply waiting on the head, and the dashboard says so.
+
+**Finalize by the agent** is the uncontested case, and it is why the stage has
+two exits rather than one. When curation leaves a single offer standing, routing
+it to a sub-committee to ballot 1,000 balls at one option is ceremony. So an
+agent may finalize a player they hold **and have not advanced**; the head may
+finalize as they always could. It costs nothing structurally: `finalize` names
+no winner and never did — it locks the ballots, records the totals, archives the
+offers and closes the player. With no ballots cast, the record is one surviving
+offer and empty totals, which reads correctly as *this was uncontested*. The
+finalize record stamps `path: "agent"` or `"committee"` so the two are never
+confused later, and **nothing signs itself** here either: the FAC still enters
+the signing on `/transactions` by hand (§ 11.1).
+
+An agent who has advanced a player cannot finalize him. That decision belongs to
+the round they handed over.
+
+#### The head can send a player back
+
+`POST /api/fa/players/{slug}/return-to-agent` — head only, **reason required**.
+Clears `advanced_at`/`by`, appends to `agent.returns`, and puts the player back
+in front of the agent who holds him. It exists because "advance" is otherwise
+one-way, and a slate that turns out to be wrong (a survivor goes illegal, a
+voided bid should not have been) would otherwise need an `unlock` on a player
+who was never finalized.
+
+**Ballots already cast are kept and flagged, never discarded** — the third
+application of the § 4.3a rule, after `revised_since` and `voided_since`. Each
+ballot gets `returned_since`; the member is shown that the slate went back for
+more work and is nudged to revisit. Derived server-side in `get_ballots`, like
+the other two, so the rule keeps one implementation.
+
+#### What the sub-committee loses
+
+**Assigned sub-committee members no longer remand — this reverses D14.** The
+committee now sees a curated set, and a reviewer who wants a term changed asks
+the agent, or asks the head to send the player back. Leaving remand with the
+sub-committee would put two parties negotiating with the same owner over the
+same offer, which is exactly the ambiguity the stage exists to remove. Remand is
+now the claiming agent's (on a claimed, un-advanced player), plus head and
+admin, who keep it everywhere as they keep everything.
+
+Void stays **head-only outside a claim** (D16 unchanged) and is additionally the
+claiming agent's on their own player. Restore follows void.
+
+In practice this reversal costs nothing today: `subcommittee` is `[]` on all 60
+players on the live board and no ballot has ever been cast, so no assigned
+member has ever exercised D14.
 
 ---
 
@@ -792,7 +1064,7 @@ All under `/api/fa/`, new router `nbn-api/routers/free_agency.py`.
 |---|---|---|
 | `GET /api/fa/pool` | public | The derived FA pool (§ 7.1). No offers, no committee data |
 | `GET /api/fa/board` | public | `mode`, open players, FFA deadlines. **No** contract details, offering teams, or offer counts |
-| `GET /api/fa/state` | `fac`/`poext`/admin | Full state incl. sub-committee assignments |
+| `GET /api/fa/state` | `fac`/`agent`/`poext`/admin | Full state incl. sub-committee assignments, derived stage, claims (§ 4.7) |
 | `PUT /api/fa/mode` | `fac_head` | `{mode}`; entering `ffa` is logged and announced (§ 9.3, 12.6) |
 | `PUT /api/fa/ffa-window` | `fac_head` | `{hours}` (1–168). Applies to clocks started from now on; running clocks keep their stamped deadline (§ 4.1) |
 | `POST /api/fa/rounds` | `fac_head` | Opens a round; optionally closes the previous |
@@ -803,14 +1075,19 @@ All under `/api/fa/`, new router `nbn-api/routers/free_agency.py`.
 | `PATCH /api/fa/offers/{id}` | **team role**, while `returned` | Revising a remanded offer — same editor, same gate (§ 4.3a) |
 | `DELETE /api/fa/offers/{id}` | **team role**, while `draft` | Drafts only — a submitted offer is final (§ 4.3) |
 | `POST /api/fa/offers/{id}/submit` | **team role** | Validates, stores snapshot, notifies (§ 9). Also the resubmit path for a `returned` offer |
-| `POST /api/fa/offers/{id}/remand` | assigned sub-committee member, `fac_head`, admin | Sends a submitted offer back for revision; **note required**; additive (§ 4.3a) |
-| `POST /api/fa/offers/{id}/void` | `fac_head`, admin | Takes a `submitted`/`returned` offer out of play; **reason required**; not a delete (§ 4.3b) |
-| `POST /api/fa/offers/{id}/restore` | `fac_head`, admin | Undoes a void, back to the status it held; refused if the team has since bid again (§ 4.3b) |
+| `POST /api/fa/offers/{id}/remand` | **claiming agent**, `fac_head`, admin | Sends a submitted offer back for revision; **note required**; additive (§ 4.3a, revised § 4.7) |
+| `POST /api/fa/offers/{id}/void` | **claiming agent**, `fac_head`, admin | Takes a `submitted`/`returned` offer out of play; **reason required**; not a delete (§ 4.3b) |
+| `POST /api/fa/offers/{id}/restore` | **claiming agent**, `fac_head`, admin | Undoes a void, back to the status it held; refused if the team has since bid again (§ 4.3b) |
+| `PUT /api/fa/offers/{id}/agent-note` | **claiming agent**, admin | Optional note carried to the sub-committee (§ 4.7) |
+| `POST /api/fa/players/{slug}/claim` | `agent` | Exclusive claim on a player whose window has closed; refused if the agent's team has a live offer; blocks that team from bidding, permanently (§ 4.7) |
+| `POST /api/fa/players/{slug}/release` | claiming agent, `fac_head`, admin | Drops the claim. **`blocked_teams` is not cleared** (§ 4.7) |
+| `POST /api/fa/players/{slug}/advance` | claiming agent, `fac_head`, admin | Hands the surviving offers to the sub-committee; optional note. Opens the ballot (§ 4.7) |
+| `POST /api/fa/players/{slug}/return-to-agent` | `fac_head`, admin | Undoes an advance; **reason required**; ballots kept and flagged `returned_since` (§ 4.7) |
 | `GET /api/fa/commitment/{team}` | **team role** | § 5.3 exposure for the team's own form — the same helper the review page renders (§ 6.3) |
 | `GET /api/fa/players/{slug}/review` | sub-committee, `fac_head`, admin | Offers side by side + per-team cap + projected lineups |
 | `GET /api/fa/players/{slug}/ballots` | sub-committee, `fac_head`, admin | **All** ballots on that player, including in progress (§ 4.5) |
-| `PUT /api/fa/players/{slug}/ballot` | assigned sub-committee member | Own ballot only; must total 1,000 |
-| `POST /api/fa/players/{slug}/finalize` | `fac_head` | Locks ballots, writes `final.totals` |
+| `PUT /api/fa/players/{slug}/ballot` | assigned sub-committee member | Own ballot only; must total 1,000. **422 before the advance** (§ 4.7) |
+| `POST /api/fa/players/{slug}/finalize` | `fac_head`; **claiming agent** while un-advanced | Locks ballots, writes `final.totals`. Stamps `path: "agent" \| "committee"` (§ 4.7) |
 | `POST /api/fa/players/{slug}/unlock` | `fac_head` | Escape hatch; appends to history |
 
 ### 6.0 One gate on the object (revised 2026-08-10)
@@ -846,12 +1123,23 @@ cannot name a team to claim authority over it.
 |---|---|
 | Public | Nothing. Not even that an offer exists (FFA clock aside — § 9.2) |
 | Team owner/front office | Their own team's offers, all statuses |
-| `fac` **assigned to that player** | Every submitted, returned or voided offer for that player, in full — and every ballot on them (§ 4.5). Voided included: a bid the committee erased is one it must be able to see (§ 4.3b) |
+| `fac` **assigned to that player**, once advanced | Every submitted, returned or voided offer for that player, in full — and every ballot on them (§ 4.5). Voided included: a bid the committee erased is one it must be able to see (§ 4.3b) |
 | `fac` not assigned | The player is listed; neither offers nor ballots are readable |
+| `agent`, unclaimed player | The queue entry: player, stage, **offer count**, who holds the claim. No terms, no teams |
+| `agent`, **claimed by them** | Every submitted, returned or voided offer in full — the grant the claim carries. **Never a ballot**, on this or any player (§ 4.5) |
+| `agent`, claimed by another agent | As unclaimed — the count and the holder's name, nothing more |
 | `fac_head`, `admin` | Everything |
 
 Enforced server-side per request. The dashboard's grouping is a rendering of
 what the endpoint already filtered, never a client-side hide.
+
+**One subtlety in the agent rows: the queue's offer count is itself information,
+so a conflicted agent doesn't get it.** An agent needs the count to triage what
+to claim, but on a player their own team is bidding on — the one player they can
+never claim — *"six teams are in on him"* is exactly the intelligence the block
+in § 4.7 exists to withhold, and it would arrive without them doing anything.
+The count is suppressed on those entries, which the queue shows as blocked
+anyway. Same rule, same helper as the claim gate; not a second list to maintain.
 
 ### 6.2 Three read-side fields Phase 5 added
 
@@ -1126,10 +1414,60 @@ be told where to look. Keyed off `GET /api/auth/me`:
 
 | Viewer | Panel |
 |---|---|
-| `fac` only | How to read the comparison, what the 1,000 balls mean, that ballots stay editable until the head locks, that you can't see players you aren't assigned to |
-| `fac_head` (and `admin`) | The above **plus** modes/rounds, assigning sub-committees, when to flip to FFA and how long its windows run, what finalize does and how to unlock |
+| `fac` only | How to read the comparison, what the 1,000 balls mean, that ballots stay editable until the head locks, that you can't see players you aren't assigned to, **and that the slate has already been curated by an agent — a term you want changed goes through them or the head** (§ 4.7) |
+| `agent` | The queue and what makes a player claimable; that a claim is exclusive and **permanently bars your team from bidding on him**; remand vs void and what each tells the team; when to finalize instead of advancing; that the advance is one-way for you |
+| `fac_head` (and `admin`) | The above **plus** modes/rounds, assigning sub-committees, when to flip to FFA and how long its windows run, what finalize does and how to unlock, and that you may act as agent on any unclaimed player |
 | `poext` only | PO-EXT stub copy — what's coming |
 | Both | Both panels, sectioned |
+
+### 8.6 Dashboard — agent view (§ 4.7)
+
+A third section beside the member and head views, rendered for `agent` holders.
+Two lists and one detail panel:
+
+**The queue** — every player whose window has closed and who hasn't been
+advanced, newest closure first. Each row: player, when the window shut, the
+offer count, and its state.
+
+- *Claimable* → a **Claim** button.
+- *Held by another agent* → their name, no button.
+- *Blocked* → disabled, with the composed reason naming your team's live offer,
+  and **no offer count** (§ 6.1). Disabled-with-reason, not hidden: "why can't I
+  take this one?" is a rules question and the queue is where it gets answered —
+  the same convention as `makeRosterMoveActions` and the § 8.1 ⋯ menu.
+
+**Mine** — players this agent holds, with what's outstanding on each: offers
+still unanswered, remands the team hasn't come back on (with an age, like § 4.3a
+requires of the head's view), and whether anything is left to decide.
+
+**The player panel**, on a claimed player, is the § 8.2 comparison view — the
+same offers side by side, same per-team cap, same projected lineups; the agent
+needs exactly what a reviewer needs. What it adds is the per-offer actions
+(remand, void, note) and the two exits, and what it removes is every ballot
+(§ 4.5). **Finalize is the guarded one**: it is offered only while the player is
+un-advanced, and its confirm names the surviving offers and states that no
+sub-committee will see them. Advancing is the ordinary path and reads that way.
+
+Release sits in the panel, not the queue, with its consequence spelled out —
+*your team still cannot bid on this player* — since that is the part someone
+will otherwise assume a release undoes.
+
+**Built (Phase 9d), verified in a real browser.** Rendered as an `agent`
+holding the `cle` role against the live board: tabs read *Queue (16) · Holding
+(0) · All players (61)* with no "My free agents" tab (not `fac`), nine of the
+sixteen queue rows carry a **blocked** chip whose tooltip is the server's own
+`claim_refusal`, and those nine read *offers hidden* rather than a count — CLE
+is bidding on them. Opening one shows the agent panel with the claim control and
+the 403 rewritten for agents (*"you haven't claimed this player…"*), and **no
+ballot section at all**. Zero console errors, and the head's view is unchanged
+except for the two new tabs and the ballot section explaining the new gate.
+
+One thing the build settled that the section above didn't specify: **the
+`urgency` sort is now keyed on `stage`, not on the clock.** It was reading
+`ffa_expired` to guess "is this waiting on someone", which the stage now answers
+outright — awaiting an agent, then ready to ballot, then with an agent, then
+still collecting offers. Keeping the clock-based reading beside a real stage
+field would have been two answers to one question.
 
 ---
 
@@ -1184,6 +1522,23 @@ Three things the build settled:
 - **Legality shows the warnings, not just the verdict.** The submit path
   refuses an illegal offer outright and has no `force`, so a posted offer is
   legal by construction — the informative half is what passed *conditionally*.
+
+**Agent-stage events (§ 4.7) all land here and nowhere else:** claimed,
+released, advanced (with the surviving offers and the agent's note), returned to
+the agent by the head (with the reason), and finalized-by-agent, which is
+labelled as such so the uncontested path is never mistaken for a ballot nobody
+filled in. Remands and voids issued by an agent use the existing posts — the
+event is the same event, and `by` already names whoever did it, so adding a
+parallel format would be two renderings of one thing.
+
+A **claim is announced**, which is worth stating as a decision rather than an
+oversight: it is the moment a team is barred from bidding on a player, so the
+committee finding out about it later, from a refusal the team hits, is strictly
+worse. It names the agent and the team now blocked.
+
+**None of it can reach `fa-news`.** That remains a property of `_news`'s
+signature (§ 9.2), not of remembering to be careful here — every one of these
+events names a team, an agent, or a set of bids.
 
 ### 9.2 `fa-news` (public, `1517304922847055994`)
 
@@ -1277,6 +1632,11 @@ runner, not pytest — pytest isn't installed).
 | **6** ✅ | `discord_transport` + `fa_notify`, wired into every FA write path, shipped with both channels **unset**. Rollout is then two env vars, in order: `DISCORD_PDC_CHANNEL`, verify in the private channel, then `DISCORD_FA_NEWS_CHANNEL` | Nobody until an env var is set — then committee, then league |
 | **7** ✅ | Team-facing ⋯ menu + offer form on `/free-agency`, gated on the team's role (draft and submit alike since 2026-08-10 — § 6.0), plus `GET /api/fa/commitment/{team}` and the board listing closed players (§ 6.3) | Team front offices |
 | **8** ✅ | Ball allocation + finalize/unlock UI; role-aware instructions (§ 8.5) | Committee |
+| **9a** ✅ | `agent` in `VALID_ROLES`/`ROLE_IMPLIES`/`NAMED_ROLES`. Nothing granted yet | Nobody |
+| **9b** ✅ | Backend § 4.7: claim/release/advance/return-to-agent, the `blocked_teams` gate on create+submit, remand/void re-gating, agent finalize, `returned_since`, derived stage on `GET /api/fa/state`, tests | API only — and inert until a claim exists |
+| **9c** ✅ | `fa_notify` for the agent events (§ 9.1) | Committee channel |
+| **9d** ✅ | § 8.6 agent view + the § 8.5 panel; ballot widget gated on advance | Committee |
+| **9e** | Grant `agent` to Avatar and hkd; **remove their temporary `fac_head`** and their `fac`, leaving Jonny and chuck as heads | The agents |
 
 Rollback at every phase is deleting a role, unsetting an env var, removing one
 `nav.js` line, or — for 5b — unlinking `sites-enabled/pdc.nbn.today` and
@@ -1286,6 +1646,27 @@ Nothing before Phase 7 changes what a logged-out visitor sees.
 **Ordering note:** Phase 7 (owners can submit) must not precede Phase 6's
 private channel and Phase 8's review tooling, or the first real offer lands
 somewhere nobody is looking.
+
+**Phase 9 and the live board.** Phase 9 lands mid-free-agency, so what it does
+to work already in flight was checked before it was designed rather than after.
+The board on 2026-08-12: `ffa` mode, 48-hour windows, 60 players with clocks, 25
+already finalized with their offers correctly archived, and 71 live submitted
+offers across the 35 that aren't. Those 35 enter the new pipeline as
+`awaiting_agent` — decided, in preference to grandfathering them onto the old
+path, which would have meant two pipelines running at once over one board.
+
+The one behaviour change to anything existing is 9b's ballot gate, and it is
+free here: `subcommittee` is `[]` on all 60 players and **no ballot has ever
+been cast**, all 25 finalizes having been locked with empty totals. So no vote
+is invalidated and no assigned member loses a power they had used — including
+D14's remand, which no sub-committee member has ever exercised for the same
+reason. Verify both counts again immediately before shipping 9b rather than
+trusting this paragraph; if either is non-zero the gate needs a grandfather
+clause for players already balloted.
+
+9e is last on purpose. Until the role is granted the whole phase is dormant: no
+claims exist, so no team is blocked, no ballot is gated on an advance that
+matters, and the queue renders for nobody.
 
 **Where that note stands now that all eight are built.** Phase 7 shipped ahead
 of Phase 8 and Phase 8 followed the same day, so the ordering held in the only
@@ -1334,9 +1715,33 @@ Settled 2026-08-08. Each links to the section that implements it.
 | D12 | Leadership | No PDC-head role — `fac_head` and `poext_head` are peers; `admin` is above both (§ 2) |
 | D13 | `bod` and `fac` | `bod` does **not** imply `fac` (§ 2) |
 
+Settled 2026-08-12, adding the agent stage (§ 4.7).
+
+| # | Question | Decision |
+|---|---|---|
+| D18 | Who curates the offers a sub-committee sees | A third role, `agent`. Offers go to the agents first; the sub-committee only ever sees a curated set (§ 4.7) |
+| D19 | Agents per player | No — they work as a committee and **claim** off a shared queue. Exclusive claim, no head assigning them |
+| D20 | When a player becomes claimable | When the offer window shuts — FFA clock expired, or the round closed. Not during the window |
+| D21 | Agent conflict of interest | The **one** hard block in a spec that otherwise warns (D10): an agent may not claim a player their team is bidding on, and a claim bars **their whole team** from bidding on him **permanently**, surviving release and reopen |
+| D22 | Dropping an offer from the slate | It is a **void** — no new status. Reason required, shown to the team, `void.by` names the agent (§ 4.3b widened) |
+| D23 | Who may remand | **Reverses D14.** The claiming agent, plus head/admin. Assigned sub-committee members no longer may |
+| D24 | Uncontested players | The agent may **finalize** one they hold and haven't advanced, rather than balloting a single option. `final.path` records which route was taken |
+| D25 | Undoing an advance | Head-only `return-to-agent`, reason required. Ballots kept and flagged `returned_since`, extending D17's rule a third time |
+| D26 | Agents and ballots | Agents see no ballots on any player, ever, and `fac`/`agent` are held by disjoint people **by convention, not by check** (§ 2) |
+| D27 | Negotiation | Happens in Discord. The site models what it *changes* — remand, revision, versions, diff — and adds no message thread and no counter-offer object (§ 4.7) |
+
 ## 13. Open items
 
 Nothing blocking, and no design questions left.
+
+0. **Agent supply vs. the conflict block** (§ 4.7, D21) — not a design question,
+   a staffing one, flagged because the software will express it as players
+   nobody can claim. Two agents, both team owners with live bids, means each is
+   locked out of the players their own team is chasing and the other must take
+   them; a player *both* their teams bid on is claimable by neither, and falls to
+   the head's fallback. On the 2026-08-12 board WAS's 8 and ORL's 6 don't
+   overlap, so it doesn't bite yet. A third agent with no team, or the head
+   picking up the overlap, both solve it; nothing in the build needs to change.
 
 1. ~~**"Live" offer scoping across rounds** (§ 4.2)~~ — **settled in Phase 2.**
    Finalize archives; a reopen does not. See § 4.2 for why the two differ.

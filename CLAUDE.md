@@ -219,7 +219,7 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
 | Change the suggestions board or its comment threads | `suggestions/index.html` + `nbn-api/routers/suggestions.py` (see "Suggestions board" below) |
 | Change the team-facing FA offer form (⋯ menu, contract editor, submit confirm) | `free-agency/index.html` — the block under "Team-facing offers"; endpoints `POST/PATCH/DELETE /api/fa/offers`, `POST /api/fa/offers/{id}/submit`, `GET /api/fa/commitment/{team}`. an offer's legality and every dollar shown come from `POST /api/validate/sign`, never from page code (see "Team-facing FA offers" below) |
-| Change the PDC committee dashboard (FA review, the 1,000-ball ballot, remand/void, finalize/unlock, head controls) | `pdc/index.html`; data from `/api/fa/*` in `nbn-api/routers/free_agency.py`; design record in `docs/pdc-free-agency-spec.md`. Served at both `nbn.today/pdc` and `pdc.nbn.today` — the subdomain is `/etc/nginx/sites-available/pdc.nbn.today`, the **same docroot** with `/` → `/pdc/index.html`, so every fetch stays same-origin (no CORS, no static-asset CORS gap). Keep any new path rule in sync with the `nbn.today` block or it works on one host and 404s on the other |
+| Change the PDC committee dashboard (FA review, the 1,000-ball ballot, remand/void, finalize/unlock, the agent queue, head controls) | `pdc/index.html`; data from `/api/fa/*` in `nbn-api/routers/free_agency.py`; design record in `docs/pdc-free-agency-spec.md`. Three roles, and a free agent passes through them in order — `agent` curates, `fac` ballots, `fac_head` runs it (see "The agent stage" below). Served at both `nbn.today/pdc` and `pdc.nbn.today` — the subdomain is `/etc/nginx/sites-available/pdc.nbn.today`, the **same docroot** with `/` → `/pdc/index.html`, so every fetch stays same-origin (no CORS, no static-asset CORS gap). Keep any new path rule in sync with the `nbn.today` block or it works on one host and 404s on the other |
 
 ---
 
@@ -332,6 +332,7 @@ simulator to an actual submission.
 | `POST /api/validate/offer_sheet_decision` | `_validate_offer_sheet_decision` | inline |
 | `POST /api/validate/renounce` | `_validate_renounce` | `_renounce_fact_sheet` |
 | `POST /api/validate/sign_pick` | `_validate_sign_pick` | `_signing_fact_sheet` + `rookie_scale` |
+| `POST /api/validate/convert_twoway` | `_validate_convert_twoway` | `_signing_fact_sheet` |
 
 All of them are public (no auth), take the same body shape as the corresponding
 `details` in `POST /api/transactions`, and return
@@ -381,6 +382,18 @@ offer the type). Note it is deliberately **not** run through
 `_check_contract_raises`: the scale's own Year 1 → Year 2 step lands either side
 of exactly 5% (pick 1 of 2026 rises 5.0024%), so the § 3.9 ladder rejects about
 half the contracts § 7.1 prescribes.
+
+`convert_twoway` had the same gap `sign_pick` did, but on the fact-sheet side
+rather than the checks: `_validate_convert_twoway` was always in `_VALIDATORS`,
+so a two-way conversion was never unchecked — but with no `/api/validate/*`
+endpoint, `/transactions`' live rubric had no fact sheet to read `needs_eaps`
+off of, so `f-eaps-field` never appeared even though `_apply_convert_twoway`
+prices the trailing § 3.10 hold through the same `_autofill_fa_hold_amounts` a
+signing does, and a Full Bird hold with no EAPS on file rejects at submit with
+a 422 asking for `eaps_assumption`. The office form could ask for an answer it
+had nowhere to collect. Fixed 2026-08-12 by adding the endpoint and wiring
+`collectSignValidationBody`/the rubric section to `convert_twoway` the same
+way `sign_pick` joined them.
 
 ### The § 7.1 rookie scale
 
@@ -456,6 +469,28 @@ validation entirely *and* unlock § 3.13's 8% raise ceiling.
 The ledger index is cached against `transactions.json`'s (mtime, size) —
 the simulator revalidates on a 250ms debounce, and re-parsing ~2MB per
 keystroke is pure waste.
+
+**`_preview_fa_hold` must simulate the apply-time bio, not the current one.**
+`_apply_sign`/`_apply_sign_pick`/`_apply_convert_twoway` all append the deal
+being signed to `bio["contracts"]` *before* pricing its own trailing § 3.10
+hold, on purpose — a player signing a 3-year deal will, by the time its
+trailing hold season arrives, actually have played those 3 years, so they
+count toward the tenure that prices it. `_derive_bird_tier`'s ledger path
+(`_bird_tenure`) gets this for free from real elapsed calendar time, but its
+fallback (no acquisition record on the ledger — `_bird_tenure` reports
+`"unknown"`) scans `bio["contracts"]` directly, so it only sees those extra
+years if they're actually in there. `_preview_fa_hold` used to derive tier
+from the bio exactly as it stood, never the deal being typed — so a fresh
+signing to a player with no ledger history could preview as Non-QVFA (no
+EAPS needed, `f-eaps-field` hidden, verdict green) purely because apply
+hadn't yet appended the years that would flip the fallback to QVFA, and then
+422 at submit demanding `eaps_assumption` from a form that had no reason to
+ask for it. Fixed 2026-08-12 by having the preview build the same probe bio
+apply will (`bio["contracts"] + [{team, salaries}]`) before calling
+`_derive_bird_tier`, so the two paths can no longer disagree about the tier.
+`tests/test_fa_hold_calc.py` pins `_preview_fa_hold`'s no-mutation guarantee,
+which this still holds — the probe's `contracts` list is a new list, never
+`bio["contracts"]` appended in place.
 
 ### Owner self-serve roster moves
 
@@ -663,6 +698,42 @@ Three rules this page holds and must keep holding:
 The client legality check is advisory: the server re-runs `_validate_sign` at
 submit and *that* verdict is what's stored. There is no `force` on this path,
 for the same reason `self_renounce` has none.
+
+### The agent stage (§ 4.7) — who curates what the committee sees
+
+A third role, `agent`, sits between a closed offer window and a sub-committee
+ballot. Agents **claim** free agents off a shared queue (no per-player
+assignment, no head handing them out), negotiate the offers down to a final set,
+then either **advance** the survivors to a sub-committee or **finalize** an
+uncontested one. `fac_head → {fac, agent}`, which is the fallback that keeps the
+stage from deadlocking; `agent` and `fac` are meant to be **different people**,
+by role-grant convention rather than by a check.
+
+Four things to know before touching it:
+
+- **The stage is derived, never stored** — `_agent_stage` reads `status`, the
+  FFA clock, `agent.advanced_at` and the finalize record. `open` →
+  `awaiting_agent` → `with_agent` → `with_committee` → `decided`.
+- **A claim bars the agent's own team from bidding, permanently.** It survives
+  a release *and* a reopen (`blocked_teams` lives on the player, not the claim),
+  which is the only reason releasing is safe to allow — otherwise it's a way to
+  read every rival's figure and then bid. This is the **one hard block** in a
+  subsystem that otherwise only warns about conflicts (§ 4.6 / D21). The barred
+  team reads it as `your_block` on `GET /api/fa/board` — the one authenticated
+  field on a public payload, scoped to the team it stops, since *which agent
+  claimed whom* is committee information.
+- **Filtering an offer out is a void, not a new status** — so the team is told
+  why through the same `void.reason` machinery that already reaches their ⋯ menu
+  and their re-bid form. This **reverses D14**: remand/void/restore are the
+  claiming agent's plus head/admin, and assigned sub-committee members have
+  none of them. A reviewer who wants a term changed asks the agent, or asks the
+  head to `return-to-agent`.
+- **Nothing is balloted before the advance**, gated in the API and not only in
+  the dashboard. Agents never see a ballot, on any player. `final.path` records
+  `agent` vs `committee` — the route, not the actor.
+
+Negotiation itself happens in Discord; the site models only what it *changes*
+(remand → revision → version diff). No message thread, no counter-offer object.
 
 ### Voiding an offer (§ 4.3b) — a status, not a delete
 
