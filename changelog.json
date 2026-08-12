@@ -1,9 +1,16 @@
 [
   {
+    "version": "0.1.9",
+    "date": "2026-08-12",
+    "changes": [
+      "The office's Signing Method field now hides itself when a sign's contract type is two-way, since a two-way carries no funding method to declare \u2014 it was previously left visible and looked required for a field the validator ignores"
+    ]
+  },
+  {
     "version": "0.1.8",
     "date": "2026-08-12",
     "changes": [
-      "Added the waiver wire design spec (docs/waiver-wire-spec.md) — a 48-hour claim window on every release, with priority by worst qualifying record and a head-to-head tiebreak. Design only; nothing implemented yet on this side"
+      "Added the waiver wire design spec (docs/waiver-wire-spec.md) \u2014 a 48-hour claim window on every release, with priority by worst qualifying record and a head-to-head tiebreak. Design only; nothing implemented yet on this side"
     ]
   },
   {

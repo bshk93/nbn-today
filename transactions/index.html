@@ -1372,11 +1372,19 @@ function setDefaultDate() {
 
 function setupTypeSwitch() {
   function applyContractTypeVisibility(needsContract, isConvertTwoWay) {
+    const v = document.getElementById('f-type').value;
     const isTwoWay = needsContract && !isConvertTwoWay &&
       document.querySelector('input[name="contract-type"]:checked')?.value === 'two-way';
     document.getElementById('f-salaries-field').style.display       = needsContract && !isTwoWay ? '' : 'none';
     document.getElementById('f-twoway-years-field').style.display   = isTwoWay ? '' : 'none';
     document.getElementById('f-twoway-start-field').style.display   = isTwoWay ? '' : 'none';
+    // A two-way carries no funding method — § 2.2 puts it outside Team Salary
+    // entirely, so there's nothing for signing_method to fund (mirrors the
+    // backend's exemption in _check_signing_method_declared). Hide the field
+    // rather than leave a live-looking control the validator ignores.
+    document.getElementById('f-signing-method-field').style.display =
+      (v === 'sign' || isConvertTwoWay || v === 'offer_sheet') && !isTwoWay ? '' : 'none';
+    if (isTwoWay) document.getElementById('f-signing-method').value = '';
   }
 
   function onTypeChange() {
@@ -1410,7 +1418,8 @@ function setupTypeSwitch() {
       document.getElementById('f-offer-team-field').style.display    = isOfferSheet ? '' : 'none';
       document.getElementById('f-offer-outcome-field').style.display = isOfferSheet ? '' : 'none';
       document.getElementById('f-hardcap-level-field').style.display = isSetHardCap ? '' : 'none';
-      document.getElementById('f-signing-method-field').style.display = (isSign || isConvertTwoWay || isOfferSheet) ? '' : 'none';
+      // f-signing-method-field's visibility is set by applyContractTypeVisibility
+      // below, which also knows whether the contract type is two-way.
       // An option decline rolls straight into a § 3.10 hold and has no
       // validator to ask, so it always offers the question. Contract-carrying
       // types start hidden and are revealed by `syncEapsVisibility` off the
@@ -1439,11 +1448,11 @@ function setupTypeSwitch() {
       document.getElementById('f-contract-type-field').style.display   = (needsContract && !isConvertTwoWay) ? '' : 'none';
       applyContractTypeVisibility(needsContract, isConvertTwoWay);
       updateContractEntryMode();
-      // sign_pick joined this once it had a validator of its own; the types
-      // still without one stay silent rather than showing a verdict drawn from
-      // zero checks.
+      // sign_pick and convert_twoway joined this once each had a validator of
+      // its own; the types still without one stay silent rather than showing
+      // a verdict drawn from zero checks.
       document.getElementById('sign-rubric').style.display =
-        (isSign || isOfferSheet || isSignPick) ? '' : 'none';
+        (isSign || isOfferSheet || isSignPick || isConvertTwoWay) ? '' : 'none';
       const scaleNote = document.getElementById('scale-note');
       if (scaleNote && !isSignPick) scaleNote.style.display = 'none';
       scheduleSignRubric();
@@ -2325,7 +2334,7 @@ function scheduleSignRubric() {
 // a verdict on an empty contract is noise, not information.
 function collectSignValidationBody() {
   const type = document.getElementById('f-type').value;
-  if (type !== 'sign' && type !== 'offer_sheet' && type !== 'sign_pick') return null;
+  if (type !== 'sign' && type !== 'offer_sheet' && type !== 'sign_pick' && type !== 'convert_twoway') return null;
   const player = document.getElementById('f-player-slug').value;
   if (!player) return null;
 
@@ -2341,6 +2350,20 @@ function collectSignValidationBody() {
     return { url: '/api/validate/sign_pick',
              body: { player, contract: { type: 'player', salaries, cap_holds },
                      eaps_assumption: eaps } };
+  }
+
+  // A two-way conversion names no team either — same reasoning as sign_pick,
+  // the player is already on exactly one roster.
+  if (type === 'convert_twoway') {
+    const { salaries, cap_holds } = collectSalaries();
+    if (!Object.keys(salaries).length) return null;
+    const method = document.getElementById('f-signing-method').value || null;
+    const bird = method === 'bird_rights'
+      ? (document.getElementById('f-bird-rights-type').value || null) : null;
+    const eaps = document.getElementById('f-eaps').value || null;
+    return { url: '/api/validate/convert_twoway',
+             body: { player, contract: { type: 'player', salaries, cap_holds },
+                     signing_method: method, bird_rights_type: bird, eaps_assumption: eaps } };
   }
 
   const team = type === 'sign'
