@@ -991,8 +991,17 @@
                 <input type="number" id="ch-opt-years" value="1" min="1" max="3">
               </label>
             </div>
+            <div class="ch-row">
+              <label>After the contract (§ 3.10)
+                <select id="ch-trailing-hold">
+                  <option value="">No trailing hold</option>
+                  <option value="UFA" selected>UFA hold</option>
+                  <option value="RFA">RFA hold</option>
+                </select>
+              </label>
+            </div>
             <button type="button" class="ch-generate-btn" id="ch-generate-btn">Generate rows</button>
-            <div class="ch-hint">Replaces the rows below. Raises are flat — each year adds raise% × Year 1 salary (not compounded on the prior year), matching rulebook § 3.9. Doesn't check max/min salary or cap rules — verify against the rulebook before submitting.</div>
+            <div class="ch-hint">Replaces the rows below. Raises are flat — each year adds raise% × Year 1 salary (not compounded on the prior year), matching rulebook § 3.9. Doesn't check max/min salary or cap rules — verify against the rulebook before submitting. The trailing hold gets its own row with no salary typed in — the office prices it off the § 3.10 auto-fill once the deal is legal.</div>
           </div>
         </div>
 
@@ -2205,6 +2214,7 @@ function generateContractRows() {
   const gtdYears = parseInt(document.getElementById('ch-gtd-years').value, 10) || 0;
   const optType = document.getElementById('ch-opt-type').value;
   const optYears = optType ? (parseInt(document.getElementById('ch-opt-years').value, 10) || 0) : 0;
+  const trailingHold = document.getElementById('ch-trailing-hold').value;
 
   if (!/^\d{2}-\d{2}$/.test(startSeason)) { setStatus('err', 'Contract helper: start season must be like 25-26.'); return; }
   if (!year1) { setStatus('err', 'Contract helper: enter a Year 1 salary.'); return; }
@@ -2222,8 +2232,15 @@ function generateContractRows() {
     addSalaryRow(season, `$${amount.toLocaleString('en-US')}`, holdType);
     season = nextSeasonStr(season);
   }
+  // The trailing hold is the § 3.10 status the deal rolls into, not a
+  // contract year — no salary typed in, so _autofill_fa_hold_amounts prices
+  // it server-side rather than a placeholder overriding the real figure.
+  // Left out entirely if the generator produced no rows at all to trail.
+  if (trailingHold && totalYears > 0) {
+    addSalaryRow(season, '', trailingHold);
+  }
   updateContractEntryMode();
-  setStatus('ok', `Generated ${totalYears} salary row(s).`);
+  setStatus('ok', `Generated ${totalYears} salary row(s)${trailingHold ? ` + a trailing ${trailingHold} hold` : ''}.`);
   scheduleSignRubric();
 }
 
@@ -3156,6 +3173,7 @@ function resetForm() {
   document.getElementById('ch-gtd-years').value = '2';
   document.getElementById('ch-opt-type').value = '';
   document.getElementById('ch-opt-years-field').style.display = 'none';
+  document.getElementById('ch-trailing-hold').value = 'UFA';
   document.getElementById('contract-helper').classList.remove('open');
   document.getElementById('ch-custom-mode').checked = false;
   updateContractEntryMode();
