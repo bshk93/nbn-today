@@ -966,8 +966,14 @@
               <label>Year 1 salary
                 <input type="text" id="ch-year1" placeholder="$25,000,000">
               </label>
-              <label>Raise % <span style="text-transform:none;font-weight:normal">(of Yr 1, per yr)</span>
-                <input type="number" id="ch-raise" value="5" step="0.5">
+              <label>Raise <span style="text-transform:none;font-weight:normal">(of Yr 1, per yr)</span>
+                <select id="ch-raise">
+                  <option value="-8">-8%</option>
+                  <option value="-5">-5%</option>
+                  <option value="0">Flat</option>
+                  <option value="5" selected>+5%</option>
+                  <option value="8">+8%</option>
+                </select>
               </label>
             </div>
             <div class="ch-row">
@@ -988,6 +994,17 @@
             <button type="button" class="ch-generate-btn" id="ch-generate-btn">Generate rows</button>
             <div class="ch-hint">Replaces the rows below. Raises are flat — each year adds raise% × Year 1 salary (not compounded on the prior year), matching rulebook § 3.9. Doesn't check max/min salary or cap rules — verify against the rulebook before submitting.</div>
           </div>
+        </div>
+
+        <!-- Free agent / RFA offer sheet signings default to the preset raise
+             above; minimum-salary deals (own § 3.12 scale) and rookie-scale
+             sign_picks never show this. Explicit opt-in only, so a typed
+             off-menu contract is a deliberate choice, not the default path. -->
+        <div class="form-field" id="f-custom-mode-field" style="display:none;margin:0 0 0.6rem">
+          <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal;text-transform:none;letter-spacing:0">
+            <input type="checkbox" id="ch-custom-mode" style="width:auto">
+            Enter custom year-by-year amounts instead of the preset raise
+          </label>
         </div>
 
         <!-- § 7.1 prefill notice, shown only for a pick signing. The terms come
@@ -1412,6 +1429,7 @@ function setupTypeSwitch() {
       if (isRelease) updateReleaseStretchHint(); else document.getElementById('f-release-stretch').value = '';
       document.getElementById('f-contract-type-field').style.display   = (needsContract && !isConvertTwoWay) ? '' : 'none';
       applyContractTypeVisibility(needsContract, isConvertTwoWay);
+      updateContractEntryMode();
       // sign_pick joined this once it had a validator of its own; the types
       // still without one stay silent rather than showing a verdict drawn from
       // zero checks.
@@ -1455,6 +1473,7 @@ function setupTypeSwitch() {
       // Two-way terms don't sit on the § 3.12 scale, so the experience field
       // follows the radio too.
       updateMleHint();
+      updateContractEntryMode();
       // Pre-fill starting season when switching to two-way
       if (r.value === 'two-way') {
         const startEl = document.getElementById('f-twoway-start');
@@ -1607,7 +1626,7 @@ function updateMleHint() {
 }
 
 // Wire up signing method + team change → hint update
-document.getElementById('f-signing-method').addEventListener('change', updateMleHint);
+document.getElementById('f-signing-method').addEventListener('change', () => { updateMleHint(); updateContractEntryMode(); });
 document.getElementById('f-team').addEventListener('change', updateMleHint);
 document.getElementById('f-offer-team').addEventListener('change', updateMleHint);
 
@@ -2123,6 +2142,50 @@ function setupContractHelper() {
     document.getElementById('ch-opt-years-field').style.display = e.target.value ? '' : 'none';
   });
   document.getElementById('ch-generate-btn').addEventListener('click', generateContractRows);
+  document.getElementById('ch-custom-mode').addEventListener('change', updateContractEntryMode);
+}
+
+// A `sign`/`offer_sheet` on anything but the § 3.12 minimum defaults to the
+// preset raise picker above (Year 1 $ + one of -8/-5/flat/+5/+8%, applied to
+// every year off the Year 1 base) rather than free-typed year-by-year
+// amounts — matching the rulebook's own § 3.9/§ 3.13 raise ladder, which only
+// ever recognizes those step sizes for a Bird vs. non-Bird deal. Minimums
+// follow their own per-year scale (§ 3.12) and never fit a flat step, and
+// rookie-scale sign_picks and two-way contracts already have their own
+// prefill/shorthand paths — none of those three show the picker at all, so
+// there's nothing to opt out of. Everywhere it does show, custom year-by-year
+// entry stays available, but only behind the explicit checkbox: a typed-in
+// off-menu contract has to be a deliberate choice, not what you get by
+// default.
+function updateContractEntryMode() {
+  const type = document.getElementById('f-type').value;
+  const isSign = type === 'sign', isOfferSheet = type === 'offer_sheet';
+  const isTwoWay = document.querySelector('input[name="contract-type"]:checked')?.value === 'two-way';
+  const method = document.getElementById('f-signing-method').value;
+  const applies = (isSign || isOfferSheet) && !isTwoWay && method !== 'minimum';
+
+  document.getElementById('f-custom-mode-field').style.display = applies ? '' : 'none';
+
+  const helper = document.getElementById('contract-helper');
+  if (!applies) {
+    helper.classList.remove('open');
+    setSalaryRowsLocked(false);
+    return;
+  }
+
+  const custom = document.getElementById('ch-custom-mode').checked;
+  helper.classList.toggle('open', !custom);
+  setSalaryRowsLocked(!custom);
+}
+
+// Locked rows are generator-owned: every field disabled and no manual add,
+// so the only way to change a year is to change the preset terms and
+// regenerate. Unlocking (custom mode) hands the rows back for direct editing,
+// starting from whatever the generator last produced.
+function setSalaryRowsLocked(locked) {
+  document.querySelectorAll('#salary-rows .salary-row input, #salary-rows .salary-row select, #salary-rows .salary-row button')
+    .forEach(el => { el.disabled = locked; });
+  document.getElementById('add-salary-btn').style.display = locked ? 'none' : '';
 }
 
 function generateContractRows() {
@@ -2149,6 +2212,7 @@ function generateContractRows() {
     addSalaryRow(season, `$${amount.toLocaleString('en-US')}`, holdType);
     season = nextSeasonStr(season);
   }
+  updateContractEntryMode();
   setStatus('ok', `Generated ${totalYears} salary row(s).`);
   scheduleSignRubric();
 }
@@ -3083,6 +3147,8 @@ function resetForm() {
   document.getElementById('ch-opt-type').value = '';
   document.getElementById('ch-opt-years-field').style.display = 'none';
   document.getElementById('contract-helper').classList.remove('open');
+  document.getElementById('ch-custom-mode').checked = false;
+  updateContractEntryMode();
   setDefaultDate();
   document.getElementById('f-opt-year').value = '';
   document.getElementById('f-opt-type').value = '';

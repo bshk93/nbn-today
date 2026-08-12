@@ -55,6 +55,12 @@
     tbody tr:nth-child(even) { background: var(--bg-card); }
     tbody tr:hover { background: var(--bg-hover); }
 
+    /* Window for offers is shut (GET /api/fa/board: accepting === false) —
+       greyed and italicized rather than hidden, same convention as the
+       disabled ⋯-menu entry it shares a reason string with. */
+    tbody tr.window-closed { opacity: 0.5; font-style: italic; }
+    tbody tr.window-closed:hover { opacity: 0.75; }
+
     td { padding: 0.55rem 1rem; color: var(--text-secondary); border-top: 1px solid var(--bg-card); }
     td.right  { text-align: right; }
     td.center { text-align: center; }
@@ -330,6 +336,15 @@
 
       rows.forEach(row => {
         const tr = currentTbody.insertRow();
+        // Every pool player has a board entry (GET /api/fa/board lists closed
+        // players too, see its own comment) — `accepting: false` means the
+        // window for offers on this player is shut, so the row reads as
+        // inactive rather than looking like a normal open listing.
+        const boardEntry = (BOARD.players || {})[row.slug];
+        if (boardEntry && boardEntry.accepting === false) {
+          tr.classList.add('window-closed');
+          tr.title = boardEntry.reason || 'This player isn’t accepting offers right now.';
+        }
         COLS.forEach(col => {
           const td = tr.insertCell();
           col.cls.split(' ').forEach(c => c && td.classList.add(c));
@@ -800,6 +815,10 @@
       const F = {
         years: 1, salaries: [0], options: [''], hold: '', eaps: '',
         type: 'player', method: '', bird: '',
+        // Off by default: Years 2+ default to a preset raise off Year 1
+        // (below), same as the office's own contract-entry form. Explicit
+        // opt-in only, so typed off-menu figures are a deliberate choice.
+        customMode: false,
         // § 3.12 years of NBA experience as of Year 1, declared on the contract
         // because the bio usually can't supply it. Prefilled from the draft
         // year when there is one; null means "not established yet".
@@ -1031,7 +1050,12 @@
           // parseMoney() already strips both, so route through it here too.
           input.type = 'text'; input.inputMode = 'decimal';
           input.value = F.salaries[i] || 0;
-          input.disabled = readOnly;
+          // Year 1 is always the typed base. Years 2+ default to whatever the
+          // preset raise below last generated, and only unlock for direct
+          // typing once "custom" is explicitly checked — except on a minimum
+          // deal, which never goes through the preset (§ 3.12 prices it,
+          // below).
+          input.disabled = readOnly || (idx > 0 && F.method !== 'minimum' && !F.customMode);
           input.addEventListener('input', () => {
             F.salaries[idx] = parseMoney(input.value);
             drawRaises();
@@ -1068,16 +1092,19 @@
         yrs.appendChild(holdLine);
         cf.appendChild(yrs);
 
-        if (!readOnly) {
+        // Minimum deals never reach this — § 3.12 prices every year off the
+        // experience scale below, and a flat step off Year 1 doesn't fit it.
+        if (!readOnly && F.method !== 'minimum' && F.years > 1) {
           const presets = el('div', 'presets');
           presets.appendChild(el('span', null, 'Fill:'));
-          [['flat', 'Flat'], ['5', '5% raises'], ['8', '8% raises (Bird)']].forEach(([k, label]) => {
+          [['-8', '-8%'], ['-5', '-5%'], ['flat', 'Flat'], ['5', '+5%'], ['8', '+8% (Bird)']].forEach(([k, label]) => {
             const b = el('button', null, label);
             b.type = 'button';
             b.addEventListener('click', () => {
               const base = F.salaries[0] || 0;
+              const pct = k === 'flat' ? 0 : parseInt(k, 10);
+              const step = Math.round(base * (pct / 100));
               for (let i = 1; i < F.years; i++) {
-                const step = k === 'flat' ? 0 : Math.round(base * (k === '8' ? 0.08 : 0.05));
                 F.salaries[i] = (F.salaries[i - 1] || 0) + step;
               }
               drawForm();
@@ -1085,6 +1112,15 @@
             presets.appendChild(b);
           });
           cf.appendChild(presets);
+
+          const customLine = el('label', 'checkbox-line');
+          const customBox = document.createElement('input');
+          customBox.type = 'checkbox';
+          customBox.checked = F.customMode;
+          customBox.addEventListener('change', () => { F.customMode = customBox.checked; drawForm(); });
+          customLine.appendChild(customBox);
+          customLine.appendChild(document.createTextNode('Enter custom year-by-year amounts instead of a preset raise'));
+          cf.appendChild(customLine);
         }
 
         const holdRow = el('div', 'grid-row');
