@@ -316,6 +316,8 @@ The token itself never enters the cookie, which is what makes a session revocabl
 
 Data stored in `/var/lib/nothing-but-stats/trading-block.json`. The page at `tradeblock/index.html` fetches this API plus the relevant teams' roster CSVs (for team membership) and `player-bios.json`/`GET /api/ovr/current` to join player metadata (POS, OVR, AGE, salary columns).
 
+The whole-block `PUT` also takes an unpersisted `notify_discord` flag — see "Tradeblock Discord notifications" below.
+
 ### Validation endpoints (Transaction Simulator)
 
 `/transaction-sim/` models a transaction and reports the legal checks against
@@ -787,6 +789,28 @@ double every one up. Checking it sends `relay_to_roster_log: true` on
 transaction's embed footer rather than storing it anywhere the relay would have
 to look up separately, and the relay's `_opted_out` reads it back off the same
 message it's already relaying.
+
+### Tradeblock Discord notifications
+
+`/tradeblock`'s edit panel has an "Also post to Discord" checkbox, **off by
+default**, next to Save. Checked, it sends `notify_discord: true` on
+`PUT /api/trading-block/{team}`; `roster_picks.put_trading_block` diffs the
+save against the block as it was before writing, and — only if something
+actually changed — `routers/tradeblock_notify.py` posts a plain-text line to
+`DISCORD_TRADEBLOCK_CHANNEL`: `**{member}** ({TEAM}) added X, Y to the
+tradeblock and removed Z.` Players and picks share one added/removed list;
+a pick reads `2027 1st` for the team's own or `2028 2nd (NYK)` for one it
+acquired.
+
+**This is for manual edits only, and there is no separate flag that makes
+that true — it falls out of who calls the notify function.** A player also
+comes off the block automatically when they're traded away
+(`_scrub_trading_block`, called from `transactions.py`'s apply paths), and
+that path never touches `tradeblock_notify` — only the `/tradeblock` save
+button does, and only when the box is checked. Extending notification to any
+other write path (the roster-page ⋯ menu's scoped `PUT`/`DELETE
+/api/trading-block/{team}/player/{slug}`, say) means adding a call there
+deliberately, not toggling a shared setting.
 
 ### Suggestions board
 

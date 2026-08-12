@@ -1245,6 +1245,19 @@
       body.appendChild(pickAddRow);
 
       // ── Save ──────────────────────────────────────────────────────────────
+      const notifyLabel = document.createElement('label');
+      notifyLabel.style.cssText = 'display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;color:var(--text-muted);font-weight:normal;margin:0.9rem 0 0.6rem;';
+      const notifyCheckbox = document.createElement('input');
+      notifyCheckbox.type = 'checkbox';
+      notifyCheckbox.id = 'notify-discord-checkbox';
+      notifyLabel.appendChild(notifyCheckbox);
+      notifyLabel.append(' Also post to Discord ');
+      const notifyHint = document.createElement('span');
+      notifyHint.style.color = 'var(--text-muted)';
+      notifyHint.textContent = '(off by default — announces what changed in this save)';
+      notifyLabel.appendChild(notifyHint);
+      body.appendChild(notifyLabel);
+
       const actions = document.createElement('div');
       actions.className = 'panel-actions';
       const saveBtn = document.createElement('button');
@@ -1258,7 +1271,7 @@
           const res = await fetch(`/api/trading-block/${myTeam}`, {
             method: 'PUT',
             headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ players: pendingEntries, picks: pendingPicks }),
+            body: JSON.stringify({ players: pendingEntries, picks: pendingPicks, notify_discord: notifyCheckbox.checked }),
           });
           if (res.status === 403) {
             localStorage.removeItem(TOKEN_KEY);
