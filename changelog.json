@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.10",
+    "date": "2026-08-14",
+    "changes": [
+      "The transactions log's type filter now has pills for Two-Way Conversions, Voids, and Hard Cap Sets \u2014 those three types were fully wired into the feed and the entry form but had no way to isolate them via the filter row",
+      "Offer sheet decisions (matched/not matched) now render with a proper \"Offer Sheet Decision\" badge, team columns, and a details cell showing the contract and who signed \u2014 previously the badge fell back to the raw type string and the team/details columns were blank because the renderer didn't know that type stores its teams under `teams` rather than `team`"
+    ]
+  },
+  {
     "version": "0.1.9",
     "date": "2026-08-12",
     "changes": [

@@ -562,6 +562,7 @@
     .badge-void_player    { background: #1f1f1f; color: var(--text-muted); }
     .badge-set_hard_cap_level { background: var(--gold-bg); color: var(--gold); }
     .badge-offer_sheet    { background: #1e1b4b; color: #a5b4fc; }
+    .badge-offer_sheet_decision { background: #1e1b4b; color: #818cf8; }
     .badge-callup  { background: #451a03; color: var(--danger-alt); }
     .badge-calldown { background: #451a03; color: var(--danger-alt); }
     .badge-trade   { background: var(--purple-light-bg); color: #c084fc; }
@@ -1110,6 +1111,9 @@
     <span class="chip" data-filter="type" data-value="release">Releases</span>
     <span class="chip" data-filter="type" data-value="renounce">Renounces</span>
     <span class="chip" data-filter="type" data-value="trade">Trades</span>
+    <span class="chip" data-filter="type" data-value="convert_twoway">Two-Way Conversions</span>
+    <span class="chip" data-filter="type" data-value="void_player">Voids</span>
+    <span class="chip" data-filter="type" data-value="set_hard_cap_level">Hard Cap Sets</span>
 
     <span class="filter-label" style="margin-left:0.75rem">Team:</span>
     <select id="team-filter-sel" class="trade-team-sel">
@@ -2966,7 +2970,7 @@ function setupFilters() {
 // transactions once a player has since changed teams.
 function txnTeams(t) {
   const d = t.details || {};
-  if (t.type === 'trade' || t.type === 'offer_sheet') return d.teams || [];
+  if (t.type === 'trade' || t.type === 'offer_sheet' || t.type === 'offer_sheet_decision') return d.teams || [];
   return d.team ? [d.team] : [];
 }
 
@@ -3631,7 +3635,7 @@ function renderRow(t) {
   const badge = `<span class="badge badge-${t.type}">${typeLabel(t.type)}</span>`;
   let teamCell, playerCell;
   const teams = txnTeams(t);
-  const sep = t.type === 'offer_sheet' ? ' → ' : ' · ';
+  const sep = (t.type === 'offer_sheet' || t.type === 'offer_sheet_decision') ? ' → ' : ' · ';
   teamCell = teams.length ? teams.map(tm => `<a href="/teams/${tm}">${escHtml(tm)}</a>`).join(sep) : '—';
   playerCell = t.type === 'trade' ? '—' : renderPlayerCell(d.player);
   const detailsCell = renderDetailsCell(t);
@@ -3733,6 +3737,13 @@ function renderDetailsCell(t) {
     }
     return escHtml(`${contractStr}${contractStr ? ' · ' : ''}${outcomeStr}${methodStr}`);
   }
+  if (t.type === 'offer_sheet_decision') {
+    const c = d.contract || {};
+    const contractStr = ledgerContractStr(c);
+    const outcomeStr = d.outcome === 'matched' ? 'Matched' : 'Not Matched';
+    const signedBy = d.signing_team ? ` — signed by ${escHtml(d.signing_team)}` : '';
+    return `${escHtml(contractStr)}${contractStr ? ' · ' : ''}${escHtml(outcomeStr)}${signedBy}`;
+  }
   if (t.type === 'void_player') {
     return d.reason ? `Voided — ${escHtml(d.reason)}` : 'Voided — no cap hit';
   }
@@ -3830,7 +3841,7 @@ function fmtDate(iso) {
 }
 
 function typeLabel(type) {
-  const labels = { sign: 'Signing', offer_sheet: 'Offer Sheet', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', guarantee: 'Guarantee', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion', void_player: 'Void Player', set_hard_cap_level: 'Set Hard Cap' };
+  const labels = { sign: 'Signing', offer_sheet: 'Offer Sheet', offer_sheet_decision: 'Offer Sheet Decision', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', guarantee: 'Guarantee', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion', void_player: 'Void Player', set_hard_cap_level: 'Set Hard Cap' };
   return labels[type] || type;
 }
 
