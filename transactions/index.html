@@ -1006,14 +1006,62 @@
           </div>
         </div>
 
-        <!-- Free agent / RFA offer sheet signings default to the preset raise
-             above; minimum-salary deals (own § 3.12 scale) and rookie-scale
-             sign_picks never show this. Explicit opt-in only, so a typed
-             off-menu contract is a deliberate choice, not the default path. -->
+        <!-- Minimum-only generator: § 3.12 makes a minimum contract a pure
+             function of (start season, years of NBA experience, that
+             season's scale) — no dollar figure to type in, since the scale
+             already has it. Reads years of experience off f-years-exp
+             (above, prefilled from draft_year), applied flat to every year
+             the same way _contract_years_exp prices it server-side. A
+             genuine 1-year deal also gets the § 3.12 veteran-minimum
+             hardship cap (2-year-veteran figure), mirroring
+             _one_year_min_cap_hit. -->
+        <div class="contract-helper" id="min-contract-helper" style="display:none">
+          <div class="contract-helper-header" id="min-contract-helper-toggle">
+            <span>Minimum contract (§ 3.12 scale)</span>
+            <span class="chevron">▾</span>
+          </div>
+          <div class="contract-helper-body">
+            <div class="ch-row">
+              <label>Start season
+                <input type="text" id="mch-start-season" placeholder="25-26" maxlength="5">
+              </label>
+              <label>Guaranteed years
+                <input type="number" id="mch-gtd-years" value="1" min="1" max="4">
+              </label>
+            </div>
+            <div class="ch-row">
+              <label>Option type
+                <select id="mch-opt-type">
+                  <option value="">None</option>
+                  <option value="PLAYER_OPT">Player Option</option>
+                  <option value="TEAM_OPT">Team Option</option>
+                </select>
+              </label>
+              <label id="mch-opt-years-field" style="display:none">Option years
+                <input type="number" id="mch-opt-years" value="1" min="1" max="3">
+              </label>
+              <label>After the contract (§ 3.10)
+                <select id="mch-trailing-hold">
+                  <option value="">No trailing hold</option>
+                  <option value="UFA" selected>UFA hold</option>
+                  <option value="RFA">RFA hold</option>
+                </select>
+              </label>
+            </div>
+            <button type="button" class="ch-generate-btn" id="mch-generate-btn">Generate rows from scale</button>
+            <div class="ch-hint">Each year's salary comes straight off that season's § 3.12 Minimum Salary Scale at the "NBA experience" tier above, applied flat across every contract year (no tier climbing). A 1-year deal is further capped at the 2-year veteran minimum, per § 3.12's hardship exception. Not a placeholder — it's the same figures <code>_check_minimum_salary</code>/<code>_check_minimum_contract_cap_hit</code> check against. Replaces the rows below; the trailing hold row is left unpriced for the § 3.10 auto-fill, same as the regular contract helper.</div>
+          </div>
+        </div>
+
+        <!-- Every sign/offer_sheet defaults to a generator — the preset raise
+             picker above for a normal deal, the § 3.12 scale generator for a
+             minimum one. Rookie-scale sign_picks never show this (own
+             prefill path). Explicit opt-in only, so a typed off-menu
+             contract is a deliberate choice, not the default path. -->
         <div class="form-field" id="f-custom-mode-field" style="display:none;margin:0 0 0.6rem">
           <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal;text-transform:none;letter-spacing:0">
             <input type="checkbox" id="ch-custom-mode" style="width:auto">
-            Enter custom year-by-year amounts instead of the preset raise
+            Enter custom year-by-year amounts instead of the generator
           </label>
         </div>
 
@@ -2175,38 +2223,60 @@ function setupContractHelper() {
   });
   document.getElementById('ch-generate-btn').addEventListener('click', generateContractRows);
   document.getElementById('ch-custom-mode').addEventListener('change', updateContractEntryMode);
+
+  const minHelper = document.getElementById('min-contract-helper');
+  document.getElementById('min-contract-helper-toggle').addEventListener('click', () => {
+    minHelper.classList.toggle('open');
+  });
+  document.getElementById('mch-opt-type').addEventListener('change', e => {
+    document.getElementById('mch-opt-years-field').style.display = e.target.value ? '' : 'none';
+  });
+  document.getElementById('mch-generate-btn').addEventListener('click', generateMinimumContractRows);
 }
 
-// A `sign`/`offer_sheet` on anything but the § 3.12 minimum defaults to the
-// preset raise picker above (Year 1 $ + one of -8/-5/flat/+5/+8%, applied to
-// every year off the Year 1 base) rather than free-typed year-by-year
-// amounts — matching the rulebook's own § 3.9/§ 3.13 raise ladder, which only
-// ever recognizes those step sizes for a Bird vs. non-Bird deal. Minimums
-// follow their own per-year scale (§ 3.12) and never fit a flat step, and
-// rookie-scale sign_picks and two-way contracts already have their own
-// prefill/shorthand paths — none of those three show the picker at all, so
-// there's nothing to opt out of. Everywhere it does show, custom year-by-year
-// entry stays available, but only behind the explicit checkbox: a typed-in
-// off-menu contract has to be a deliberate choice, not what you get by
-// default.
+// Every `sign`/`offer_sheet` defaults to a generator rather than free-typed
+// year-by-year amounts: the preset raise picker (Year 1 $ + one of
+// -8/-5/flat/+5/+8%) for an ordinary deal, matching the rulebook's own
+// § 3.9/§ 3.13 raise ladder, which only ever recognizes those step sizes for
+// a Bird vs. non-Bird deal — or the § 3.12 scale generator for a minimum
+// deal, since a minimum contract's salary is a pure function of (start
+// season, years of NBA experience, that season's scale) and never fits a
+// flat step either. Rookie-scale sign_picks and two-way contracts have their
+// own prefill/shorthand paths and show neither. Everywhere a generator does
+// show, custom year-by-year entry stays available, but only behind the
+// explicit checkbox: a typed-in off-menu contract has to be a deliberate
+// choice, not what you get by default — which is exactly how a minimum
+// signing used to end up submitted with zero salary rows at all (§ 3.12
+// backlog item, Battle/ATL 2026-08-12).
 function updateContractEntryMode() {
   const type = document.getElementById('f-type').value;
   const isSign = type === 'sign', isOfferSheet = type === 'offer_sheet';
   const isTwoWay = document.querySelector('input[name="contract-type"]:checked')?.value === 'two-way';
   const method = document.getElementById('f-signing-method').value;
-  const applies = (isSign || isOfferSheet) && !isTwoWay && method !== 'minimum';
+  const isMinimum = method === 'minimum';
+  const applies = (isSign || isOfferSheet) && !isTwoWay;
 
   document.getElementById('f-custom-mode-field').style.display = applies ? '' : 'none';
 
   const helper = document.getElementById('contract-helper');
+  const minHelper = document.getElementById('min-contract-helper');
   if (!applies) {
     helper.classList.remove('open');
+    minHelper.classList.remove('open');
+    helper.style.display = '';
+    minHelper.style.display = 'none';
     setSalaryRowsLocked(false);
     return;
   }
 
+  helper.style.display = isMinimum ? 'none' : '';
+  minHelper.style.display = isMinimum ? '' : 'none';
+
   const custom = document.getElementById('ch-custom-mode').checked;
-  helper.classList.toggle('open', !custom);
+  const activeHelper = isMinimum ? minHelper : helper;
+  const inactiveHelper = isMinimum ? helper : minHelper;
+  activeHelper.classList.toggle('open', !custom);
+  inactiveHelper.classList.remove('open');
   setSalaryRowsLocked(!custom);
 }
 
@@ -2254,6 +2324,85 @@ function generateContractRows() {
   }
   updateContractEntryMode();
   setStatus('ok', `Generated ${totalYears} salary row(s)${trailingHold ? ` + a trailing ${trailingHold} hold` : ''}.`);
+  scheduleSignRubric();
+}
+
+// Mirrors _min_salary_scale_tier in nbn-api/routers/transactions.py: raw
+// years-of-experience -> a min_salary_scale key ("0".."9","10+").
+function minSalaryScaleTier(yearsExp) {
+  return yearsExp >= 10 ? '10+' : String(Math.max(0, yearsExp));
+}
+
+// Mirrors _min_scale_for_season: that season's scale, or the latest
+// configured season's when this one has none of its own (a deal signed past
+// the last season the office has entered figures for).
+function minScaleForSeason(season) {
+  const direct = capLevelsData[season]?.min_salary_scale;
+  if (direct) return direct;
+  const seasons = Object.keys(capLevelsData)
+    .filter(s => capLevelsData[s]?.min_salary_scale)
+    .sort();
+  const last = seasons[seasons.length - 1];
+  return last ? capLevelsData[last].min_salary_scale : null;
+}
+
+// § 3.12: a minimum contract is a pure function of (start season, years of
+// NBA experience, that season's scale) — no dollar figure to type in. Reads
+// years of experience off f-years-exp (prefilled from draft_year elsewhere)
+// and applies it FLAT to every year of the deal — matching _contract_years_exp
+// server-side, which stopped escalating one tier per contract year 2026-08-13
+// (reversed against Jamison Battle's live contract; see BACKLOG). The raise
+// from one contract year to the next comes only from that season's own scale
+// moving, never from climbing a tier.
+//
+// A genuine 1-year deal (no option) gets one more adjustment: § 3.12's
+// veteran-minimum hardship exception caps a 1-yr minimum's cap hit at that
+// season's 2-year-veteran figure regardless of actual tier — mirrors
+// _one_year_min_cap_hit server-side, which _check_minimum_contract_cap_hit
+// checks the submission against.
+function generateMinimumContractRows() {
+  const startSeason = document.getElementById('mch-start-season').value.trim() || nextSalaryYear();
+  const gtdYears = parseInt(document.getElementById('mch-gtd-years').value, 10) || 0;
+  const optType = document.getElementById('mch-opt-type').value;
+  const optYears = optType ? (parseInt(document.getElementById('mch-opt-years').value, 10) || 0) : 0;
+  const trailingHold = document.getElementById('mch-trailing-hold').value;
+  const baseExpRaw = document.getElementById('f-years-exp').value.trim();
+
+  if (!/^\d{2}-\d{2}$/.test(startSeason)) { setStatus('err', 'Minimum contract: start season must be like 25-26.'); return; }
+  if (gtdYears < 1) { setStatus('err', 'Minimum contract: at least 1 guaranteed year is required.'); return; }
+  if (baseExpRaw === '') { setStatus('err', 'Minimum contract: set NBA experience above (no draft year on file to derive it from).'); return; }
+  const baseExp = Math.max(0, Math.min(25, parseInt(baseExpRaw, 10) || 0));
+
+  const totalYears = gtdYears + optYears;
+  const isOneYearDeal = totalYears === 1;
+  const existingRows = document.querySelectorAll('.salary-row').length;
+  if (existingRows && !confirm(`This replaces the ${existingRows} salary row(s) below with ${totalYears} generated row(s). Continue?`)) return;
+
+  let season = startSeason;
+  const rows = [];
+  for (let i = 0; i < totalYears; i++) {
+    const scale = minScaleForSeason(season);
+    if (!scale) { setStatus('err', `Minimum contract: no § 3.12 scale configured for ${season} or earlier.`); return; }
+    const tier = minSalaryScaleTier(baseExp);
+    let amount = scale[tier];
+    if (!amount) { setStatus('err', `Minimum contract: ${season}'s scale has no "${tier}" tier.`); return; }
+    if (isOneYearDeal && scale['2'] && tier !== '0' && tier !== '1') {
+      amount = Math.min(amount, scale['2']);
+    }
+    const holdType = i >= gtdYears ? optType : '';
+    rows.push({ season, amount, holdType });
+    season = nextSeasonStr(season);
+  }
+
+  document.getElementById('salary-rows').innerHTML = '';
+  rows.forEach(r => addSalaryRow(r.season, `$${r.amount.toLocaleString('en-US')}`, r.holdType));
+  // Same § 3.10 auto-fill deferral as the regular contract helper — no
+  // salary typed in for the trailing hold row.
+  if (trailingHold && totalYears > 0) {
+    addSalaryRow(season, '', trailingHold);
+  }
+  updateContractEntryMode();
+  setStatus('ok', `Generated ${totalYears} salary row(s) off the § 3.12 scale${trailingHold ? ` + a trailing ${trailingHold} hold` : ''}.`);
   scheduleSignRubric();
 }
 

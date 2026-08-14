@@ -99,6 +99,39 @@ document.addEventListener('click', e => {
   }
 });
 
+// ── Inbox button ─────────────────────────────────────────────────────────────
+// Lives beside the theme picker rather than the old bottom-corner token badge —
+// same real estate as search/theme, so it's part of the nav chrome every page
+// already has instead of a separate floating element. The unread count is only
+// fetched when a token is on hand; a signed-out visitor still gets the button
+// (clicking takes them to /inbox/, which prompts sign-in itself), just no badge.
+function _buildInboxButton() {
+  const btn = document.createElement('button');
+  btn.className = 'inbox-btn';
+  btn.setAttribute('aria-label', 'Inbox');
+  btn.setAttribute('title', 'Inbox');
+  btn.textContent = '✉';
+  btn.addEventListener('click', () => { window.location.href = '/inbox/'; });
+
+  const badge = document.createElement('span');
+  badge.className = 'inbox-badge';
+  btn.appendChild(badge);
+
+  const token = localStorage.getItem('nbn_token');
+  if (token) {
+    fetch('/api/inbox', { headers: { Authorization: 'Bearer ' + token } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d && d.unread_count > 0) {
+          badge.textContent = d.unread_count > 99 ? '99+' : String(d.unread_count);
+          badge.classList.add('show');
+        }
+      })
+      .catch(() => {});
+  }
+  return btn;
+}
+
 // ── Nav injection ────────────────────────────────────────────────────────────
 
 document.addEventListener('keydown', function (e) {
@@ -126,6 +159,7 @@ function _initNav() {
       actions.appendChild(btn);
     }
 
+    actions.appendChild(_buildInboxButton());
     actions.appendChild(_buildThemePicker());
     nav.appendChild(actions);
     _refreshThemeMenu();
@@ -184,6 +218,7 @@ const SITE_PAGES = [
   { title: 'Changelog', href: '/changelog', icon: '🔖' },
   { title: 'Proposals', href: '/proposals/', icon: '🗳️' },
   { title: 'Suggestions', href: '/suggestions/', icon: '💡' },
+  { title: 'Inbox', href: '/inbox/', icon: '📥' },
 ];
 
 // Pages that only exist for people holding a specific role. Kept out of

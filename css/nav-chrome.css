@@ -21,6 +21,17 @@
 .search-btn { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0.1rem 0.35rem; transition: border-color 0.1s, color 0.1s; }
 .search-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
 
+/* Inbox */
+.inbox-btn { position: relative; background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0.1rem 0.35rem; transition: border-color 0.1s, color 0.1s; }
+.inbox-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+.inbox-badge {
+  display: none; position: absolute; top: -0.4rem; right: -0.4rem;
+  background: var(--gold-chip-border); color: var(--bg-page);
+  font-size: 0.6rem; font-weight: 700; line-height: 1; letter-spacing: 0;
+  border-radius: 999px; padding: 0.15rem 0.32rem; min-width: 0.9rem;
+}
+.inbox-badge.show { display: block; }
+
 /* Search overlay */
 .search-overlay { position: fixed; inset: 0; background: var(--overlay-scrim); display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh; z-index: 9999; }
 .search-modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; width: min(620px, 90vw); overflow: hidden; box-shadow: 0 24px 64px var(--shadow-color-strong); }

@@ -316,6 +316,102 @@ using a **simple** 5%-of-base escalator (×1.05, ×1.10, ×1.15), not compoundin
 Immaterial at three years out, real by year five. Replace with published NBA
 figures when they exist.
 
+### ~~[P2] § 3.12 minimum-scale years escalated in the model but not in the league's own sheet~~ — REVERSED 2026-08-13
+Jamison Battle's ATL `sign` (txn `c90cd99d35ad3cc0`, `minimum`, § 3.12) had gone
+through with a fully empty contract — see the DONE item below — and was
+hand-corrected to a 2-year deal: 26-27 guaranteed $2,449,421, 27-28 player
+option $2,664,401, `years_experience: 2`, plus the § 3.10 trailing UFA hold
+(Early Bird tier, via `_autofill_fa_hold_amounts`) for 28-29 at $3,463,721.
+
+$2,664,401 is the tier-**2** figure for 27-28, flat off the declared
+`years_experience: 2` — not tier **3** ($2,756,912), which is what
+`_check_minimum_salary` used to compute by escalating one tier per contract
+year off the anchor (the "pure function of (first season, years of
+experience, scale)" model settled 2026-08-10). Checked against the league's
+live source of truth — the **"NBN Rosters and Salaries 2026-27"** Google
+Sheet — which already carried Battle's row at exactly `$2,449,421 |
+$2,664,401 | $3,463,721`. Flat, not escalating, is the real convention.
+
+Treated Battle's contract as the barometer and reversed the model rather than
+the data: `_contract_years_exp` (`nbn-api/routers/transactions.py`) no longer
+adds one year of experience per elapsed contract year off the declared
+anchor — it returns the declared `years_experience` unchanged for every
+season of that contract. A multi-year minimum still raises year over year;
+that now comes entirely from each season's own § 3.12 scale table moving
+(cap growth), not from the tier climbing. The draft_year proxy fallback
+(no `years_experience` declared) is untouched — it still climbs naturally,
+because that's real elapsed calendar time, not a contract-year count.
+`tests/test_minimum_contract_raises.py` rewritten to pin the flat behavior
+(previously pinned the escalating one); full suite green. Verified live:
+`POST /api/validate/sign` on Battle's actual contract now reports
+`minimum_salary: passed=true` with no tier warning.
+
+### ~~[P1] `sign` accepts a contract with zero salary years~~ — DONE 2026-08-13
+Discovered from the Battle signing above: `_apply_sign` (`nbn-api/routers/
+transactions.py`) never checked that `contract.salaries` was non-empty before
+writing it. A `sign` submitted with `salaries: {}` silently succeeded — no
+year got added to the bio, `cap_holds` got *replaced* with whatever was sent
+(so an empty submission also erased any existing cap hold on the player), and
+the player sat on the roster with no salary at all until someone noticed.
+
+`_check_minimum_salary` had the same hole from the validator side: its loop
+is `for yr, raw in (contract.salaries or {}).items()`, so zero years meant
+zero iterations, and it fell through to `passed=True, "Every contract year
+meets the § 3.12 minimum salary"` — a lie when there were no years to check.
+Same vacuous-pass shape as the `_require_validatable`/`_require_trade_validatable`
+bugs already fixed for `/api/validate/trade`.
+
+`offer_sheet` already guarded this (`_apply_offer_sheet` hard-rejects `len(
+salaries) < 2` per § 3.15's 2-year minimum); plain `sign` had nothing. Fixed
+with a `contract_has_salary_years` error `CheckResult` in `_validate_sign`
+(so the office's live rubric catches it before submit) plus the same guard
+as a hard 422 in `_apply_sign` (the rubric is advisory; the real gate has to
+be at apply time). `tests/test_sign_requires_salary.py` pins both the failing
+and the passing case through the real `/api/validate/sign` endpoint.
+
+Also fixed while in this code: the office's contract form used to hide the
+Year-1-+-raise% contract helper entirely for `signing_method: "minimum"`,
+which is how a minimum signing ended up hand-typed one row at a time with
+nothing pre-filled — the direct path to submitting empty. § 3.12 pricing is a
+pure function of (season, years of experience, scale), so the minimum method
+now gets its own generator (`min-contract-helper` / `generateMinimumContractRows`
+in `transactions/index.html`) — guaranteed years + trailing option type/years
++ the existing `years_experience` field — that pulls dollar figures from
+`GET /api/cap-levels`'s `min_salary_scale`, instead of asking for typed-in
+amounts. Verified end-to-end in a headless browser against the live page.
+(Originally escalated one tier per contract year; corrected to flat 2026-08-13
+below, same day as the `_contract_years_exp` reversal.)
+
+### ~~[P1] Minimum-contract generator and `_check_minimum_salary` both stale against the 2026-08-13 flat/hardship-cap fixes~~ — DONE 2026-08-13
+Caught live entering Nahshon Hyland's 1-yr minimum with GSW (5 years
+experience, 26-27): the office's `min-contract-helper` generator prefilled
+$2,845,883 (the raw tier-5 figure), but the league's own sheet had $2,449,421
+— the § 3.12 veteran-minimum hardship cap, which caps a *genuine 1-year*
+minimum deal's cap hit at that season's 2-year-veteran figure regardless of
+actual experience tier (`_one_year_min_cap_hit`, `_check_minimum_contract_cap_hit`).
+The generator never mirrored that exception, and separately was still
+escalating one tier per contract year — stale against the same-day
+`_contract_years_exp` flattening (previous entry above). Fixed both in
+`generateMinimumContractRows` (`transactions/index.html`): tier is now applied
+flat across every generated year, and a genuine 1-year deal (no option) is
+additionally capped at that season's `"2"` tier when the player's own tier
+sits above it.
+
+Re-submitting at the corrected $2,449,421 then surfaced a second, backend bug:
+`_check_minimum_salary` (the `minimum_salary` check) still compared the
+submission against the raw uncapped tier via `_min_salary_for`, so it warned
+"below this player's minimum for their experience tier" on the *exact same
+contract* that `_check_minimum_contract_cap_hit` had just passed as correct —
+two checks disagreeing about the same dollar figure. Fixed by threading
+`signing_method` into `_check_minimum_salary`: a genuine 1-year `minimum`
+deal (single salary year) is now checked against `_one_year_min_cap_hit`
+instead of the raw tier, matching the cap-hit check. Multi-year minimums are
+untouched — the hardship cap is § 3.12's exception for a 1-year deal only.
+`nbn-api/tests/test_one_year_min_cap_hit_consistency.py` pins the fix,
+including that a multi-year minimum still warns uncapped and that callers
+which don't pass `signing_method` keep the old behavior. Verified live via
+`POST /api/validate/sign` before/after.
+
 ### ~~[P2] `rescind_renounce` not implemented~~ — DONE 2026-08-08
 Built alongside owner self-serve renounce, which needed an undo path. Every
 `renounce` now stores a `_snapshot` of the bio state it erases, and

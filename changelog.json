@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.1.11",
+    "date": "2026-08-14",
+    "changes": [
+      "Added a member inbox: a new /inbox page plus a mailbox button in the nav (next to the theme picker) with an unread badge, backed by GET/POST /api/inbox on the API; members now get a notification for role/tenure changes, suggestion status changes and comments, FA offer remand/void/restore and finalize, waiver claim results, and being sent an FA player back from committee review",
+      "The office's contract form gained a \u00a7 3.12 minimum-contract generator (start season, guaranteed years, trailing option/hold) that pulls dollar figures straight off that season's minimum salary scale instead of typing them in by hand, including the \u00a7 3.12 one-year veteran-minimum hardship cap",
+      "Fixed a gap where `sign` accepted a contract with zero salary years, silently wiping any existing cap hold and leaving the player on the roster with no salary; both the live rubric and the submit path now refuse it",
+      "Fixed the minimum-salary check disagreeing with the cap-hit check on a correctly hardship-capped one-year veteran minimum \u2014 both now agree on the same figure",
+      "Reversed the minimum-scale model to price every year of a multi-year minimum contract flat off the declared experience tier (matching the league's own rosters sheet) instead of climbing a tier per contract year"
+    ]
+  },
+  {
     "version": "0.1.10",
     "date": "2026-08-14",
     "changes": [

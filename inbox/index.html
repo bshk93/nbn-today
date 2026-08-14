@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Inbox — NBN</title>
+  <style>
+    .page { max-width: 760px; margin: 0 auto; }
+
+    .top-bar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
+    .top-bar h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    .top-bar p { color: var(--text-muted); margin-top: 0.35rem; font-size: 0.9rem; }
+
+    .right-bar { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    .auth-label { font-size: 0.8rem; color: var(--text-muted); }
+    .auth-name { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+
+    button {
+      font-family: inherit; cursor: pointer; border-radius: 6px;
+      font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.8rem;
+      border: 1px solid transparent; transition: background 0.1s;
+    }
+    .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--bg-card); color: var(--text-primary); }
+    .btn-ghost:disabled { opacity: 0.5; cursor: default; }
+
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--text-dim); font-size: 0.9rem; }
+
+    .item-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .item {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.85rem 1.1rem; display: flex; align-items: flex-start; gap: 0.75rem;
+    }
+    .item.unread { border-color: var(--accent-dark); }
+    .item-dot {
+      width: 8px; height: 8px; border-radius: 50%; margin-top: 0.4rem; flex-shrink: 0;
+      background: var(--accent); visibility: hidden;
+    }
+    .item.unread .item-dot { visibility: visible; }
+    .item-body { flex: 1; min-width: 0; }
+    .item-text { font-size: 0.88rem; color: var(--text-secondary); }
+    .item.unread .item-text { color: var(--text-primary); }
+    .item-meta { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.3rem; display: flex; align-items: center; gap: 0.5rem; }
+    .item-meta a { color: var(--link); text-decoration: none; }
+    .item-meta a:hover { text-decoration: underline; }
+    .item-actions { flex-shrink: 0; }
+    .item-actions button { background: none; border: none; padding: 0; font-size: 0.72rem; color: var(--text-dim); font-family: inherit; text-decoration: underline; }
+    .item-actions button:hover { color: var(--text-secondary); }
+
+    .signin-hint { color: var(--text-dim); font-size: 0.9rem; }
+
+    /* Modal (token sign-in) */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 100; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.5rem; width: 100%; max-width: 420px; margin: 1rem;
+    }
+    .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .modal input {
+      width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
+      border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+      margin-bottom: 0.75rem; font-family: monospace;
+    }
+    .modal input:focus { outline: none; border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .modal p.note { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav"></nav>
+
+  <div class="top-bar">
+    <div>
+      <h1>Inbox</h1>
+      <p>Notifications addressed to you — offer remands, voids, and the like.</p>
+    </div>
+    <div class="right-bar">
+      <span class="auth-label" id="auth-label">Not signed in</span>
+      <span class="auth-name" id="auth-name"></span>
+      <button class="btn-ghost" id="btn-auth" onclick="openAuthModal()">Sign in</button>
+      <button class="btn-ghost" id="btn-mark-all" style="display:none;" onclick="markAllRead()">Mark all read</button>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="empty">Loading…</div>
+  </div>
+</div>
+
+<!-- Auth modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeAuthModal(event)">
+  <div class="modal">
+    <h2>Sign in with your member token</h2>
+    <p class="note">A member token is required to view your inbox. It's stored locally in your browser.</p>
+    <input type="password" id="token-input" placeholder="Paste your token" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeAuthModal()">Cancel</button>
+      <button class="btn-primary" onclick="doSignIn()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let me = null;
+let items = [];
+
+function fmtDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function authHeaders() {
+  const token = localStorage.getItem('nbn_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function loadInbox() {
+  const content = document.getElementById('content');
+  if (!me) {
+    content.innerHTML = '<div class="empty signin-hint">Sign in to see your inbox.</div>';
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/inbox`, { headers: authHeaders() });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    items = data.items || [];
+  } catch {
+    content.innerHTML = '<div class="empty">Could not load your inbox.</div>';
+    return;
+  }
+  document.getElementById('btn-mark-all').style.display = items.some(i => !i.read) ? '' : 'none';
+  renderItems();
+}
+
+function renderItems() {
+  const content = document.getElementById('content');
+  if (!items.length) {
+    content.innerHTML = '<div class="empty">Nothing here yet.</div>';
+    return;
+  }
+  const list = document.createElement('div');
+  list.className = 'item-list';
+  items.forEach(it => list.appendChild(renderItem(it)));
+  content.innerHTML = '';
+  content.appendChild(list);
+}
+
+function renderItem(it) {
+  const el = document.createElement('div');
+  el.className = 'item' + (it.read ? '' : ' unread');
+
+  const dot = document.createElement('div');
+  dot.className = 'item-dot';
+  el.appendChild(dot);
+
+  const body = document.createElement('div');
+  body.className = 'item-body';
+  const text = document.createElement('div');
+  text.className = 'item-text';
+  text.textContent = it.text;
+  body.appendChild(text);
+
+  const meta = document.createElement('div');
+  meta.className = 'item-meta';
+  meta.innerHTML = `<span>${fmtDateTime(it.ts)}</span>`
+    + (it.link ? `<span>&middot;</span><a href="${escHtml(it.link)}">Open &rarr;</a>` : '');
+  body.appendChild(meta);
+  el.appendChild(body);
+
+  if (!it.read) {
+    const actions = document.createElement('div');
+    actions.className = 'item-actions';
+    const btn = document.createElement('button');
+    btn.textContent = 'Mark read';
+    btn.addEventListener('click', () => markRead(it.id));
+    actions.appendChild(btn);
+    el.appendChild(actions);
+  }
+
+  return el;
+}
+
+async function markRead(id) {
+  try {
+    await fetch(`${API}/inbox/${id}/read`, { method: 'POST', headers: authHeaders() });
+  } catch { return; }
+  const it = items.find(i => i.id === id);
+  if (it) it.read = true;
+  document.getElementById('btn-mark-all').style.display = items.some(i => !i.read) ? '' : 'none';
+  renderItems();
+}
+
+async function markAllRead() {
+  try {
+    await fetch(`${API}/inbox/read-all`, { method: 'POST', headers: authHeaders() });
+  } catch { return; }
+  items.forEach(i => i.read = true);
+  document.getElementById('btn-mark-all').style.display = 'none';
+  renderItems();
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+async function initAuth() {
+  const token = localStorage.getItem('nbn_token');
+  if (!token) { updateAuthUI(null); return; }
+  try {
+    const res = await fetch(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) {
+      me = await res.json();
+      updateAuthUI(me);
+    } else {
+      localStorage.removeItem('nbn_token');
+      updateAuthUI(null);
+    }
+  } catch {
+    me = { name: '…', roles: [] };
+    updateAuthUI(me);
+  }
+}
+
+function updateAuthUI(info) {
+  const label = document.getElementById('auth-label');
+  const name = document.getElementById('auth-name');
+  const btn = document.getElementById('btn-auth');
+  if (info) {
+    label.textContent = 'Signed in as';
+    name.textContent = info.name;
+    btn.textContent = 'Sign out';
+    btn.onclick = doSignOut;
+  } else {
+    label.textContent = 'Not signed in';
+    name.textContent = '';
+    btn.textContent = 'Sign in';
+    btn.onclick = openAuthModal;
+    document.getElementById('btn-mark-all').style.display = 'none';
+  }
+}
+
+function openAuthModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('token-input').focus(), 50);
+}
+
+function closeAuthModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('token-input').value = '';
+}
+
+async function doSignIn() {
+  const token = document.getElementById('token-input').value.trim();
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { alert('Invalid token.'); return; }
+    me = await res.json();
+    localStorage.setItem('nbn_token', token);
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.getElementById('token-input').value = '';
+    updateAuthUI(me);
+    loadInbox();
+  } catch { alert('Could not sign in. Check your connection.'); }
+}
+
+function doSignOut() {
+  localStorage.removeItem('nbn_token');
+  me = null;
+  updateAuthUI(null);
+  loadInbox();
+}
+
+document.getElementById('token-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSignIn();
+  if (e.key === 'Escape') closeAuthModal();
+});
+
+(async () => {
+  await initAuth();
+  await loadInbox();
+})();
+</script>
+<script src="/nav.js"></script>
+</body>
+</html>
