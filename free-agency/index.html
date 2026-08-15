@@ -157,6 +157,21 @@
     .yr-was { font-size: 0.66rem; color: var(--gold); margin-left: 0.3rem; }
     .yr-raise { font-size: 0.66rem; color: var(--text-muted); }
     .hold-row { font-size: 0.74rem; color: var(--gold-dim); padding: 0.15rem 0 0 3.8rem; }
+
+    .gtd-steps { display: none; flex-direction: column; gap: 0.3rem; margin: 0 0 0.5rem 3.8rem; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.2); border-left: 2px solid var(--border); border-radius: 0 4px 4px 0; }
+    .gtd-steps.visible { display: flex; }
+    .gtd-steps-desc { font-size: 0.68rem; color: var(--text-muted); font-style: italic; margin-bottom: 0.15rem; }
+    .gtd-step { display: flex; gap: 0.35rem; align-items: center; }
+    .gtd-step-conn { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+    .gtd-step input { background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.5rem; outline: none; }
+    .gtd-step input:focus { border-color: var(--accent); }
+    .gtd-step .gtd-step-amount { width: 9rem; }
+    .gtd-step .gtd-step-date { width: 9.5rem; }
+    .gtd-step .gtd-step-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0 0.2rem; line-height: 1; width: auto; }
+    .gtd-step .gtd-step-remove:hover { color: var(--danger); }
+    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: 3px; color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; width: auto; }
+    .add-step-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+
     .presets { display: flex; gap: 0.35rem; align-items: center; margin-top: 0.35rem; }
     .presets button {
       background: var(--bg-page); border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted);
@@ -836,7 +851,7 @@
     function seedForm(row, existing) {
       const y0 = curYr();
       const F = {
-        years: 1, salaries: [0], options: [''], hold: '', eaps: '',
+        years: 1, salaries: [0], options: [''], guaranteeSchedule: [[]], hold: '', eaps: '',
         type: 'player', method: '', bird: '',
         // Off by default: Years 2+ default to a preset raise off Year 1
         // (below), same as the office's own contract-entry form. Explicit
@@ -850,7 +865,7 @@
       };
       if (existing) {
         const c = existing.offer.contract || {};
-        const sals = c.salaries || {}, caps = c.cap_holds || {};
+        const sals = c.salaries || {}, caps = c.cap_holds || {}, sched = c.guarantee_schedule || {};
         const seasons = Object.keys(sals).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= y0).sort();
         // A trailing UFA/RFA line is the hold the deal rolls into, not a
         // contract year — same reading as summarizeContract and the Discord
@@ -859,6 +874,8 @@
         F.years = Math.max(1, deal.length);
         F.salaries = deal.map(s => parseMoney(sals[s]));
         F.options = deal.map(s => (caps[s] === 'UFA' || caps[s] === 'RFA') ? '' : (caps[s] || ''));
+        F.guaranteeSchedule = deal.map(s => Array.isArray(sched[s])
+          ? sched[s].map(step => ({ amount: step.amount || '', date: step.date || '' })) : []);
         const after = deal.length ? seasonAfter(deal[deal.length - 1]) : y0;
         F.hold = (caps[after] === 'UFA' || caps[after] === 'RFA') ? caps[after] : '';
         F.type = c.type || 'player';
@@ -876,15 +893,27 @@
       }
       while (F.salaries.length < F.years) F.salaries.push(0);
       while (F.options.length < F.years) F.options.push('');
+      while (F.guaranteeSchedule.length < F.years) F.guaranteeSchedule.push([]);
       return F;
     }
 
     function contractFromForm(F) {
-      const salaries = {}, cap_holds = {};
+      const salaries = {}, cap_holds = {}, guarantee_schedule = {};
       let s = curYr();
       for (let i = 0; i < F.years; i++) {
         salaries[s] = '$' + (F.salaries[i] || 0);
         if (F.options[i]) cap_holds[s] = F.options[i];
+        if (F.options[i] === 'NON_GTD' && (F.guaranteeSchedule[i] || []).length) {
+          const steps = F.guaranteeSchedule[i]
+            .filter(step => step.amount || step.date)
+            .map(step => {
+              const entry = {};
+              if (step.amount) entry.amount = step.amount;
+              if (step.date)   entry.date   = step.date;
+              return entry;
+            });
+          if (steps.length) guarantee_schedule[s] = steps;
+        }
         s = seasonAfter(s);
       }
       // The hold's season is deliberately left out of `salaries`: the API's
@@ -892,6 +921,7 @@
       // salary and Bird tier, and a typed placeholder would override it.
       if (F.hold) cap_holds[s] = F.hold;
       const c = { type: F.type, salaries, cap_holds };
+      if (Object.keys(guarantee_schedule).length) c.guarantee_schedule = guarantee_schedule;
       // Stated as of Year 1, which is why it travels with the contract rather
       // than the player — re-read in a later league year it still resolves.
       if (F.exp !== null && F.exp !== undefined) c.years_experience = F.exp;
@@ -1040,9 +1070,11 @@
             for (let i = 0; i < F.years; i++) {
               F.salaries[i] = F.salaries[i] || 0;
               F.options[i] = F.options[i] || '';
+              F.guaranteeSchedule[i] = F.guaranteeSchedule[i] || [];
             }
             F.salaries.length = F.years;
             F.options.length = F.years;
+            F.guaranteeSchedule.length = F.years;
             // A minimum deal's figures are per-year and length-dependent — a
             // 1-year deal's cap hit is the 2-yr veteran minimum (§ 3.12), a
             // multi-year one climbs the scale — so re-derive rather than
@@ -1089,10 +1121,21 @@
           });
           r.appendChild(input);
 
+          if (!F.guaranteeSchedule[idx]) F.guaranteeSchedule[idx] = [];
+          const stepsDiv = el('div', 'gtd-steps' + (F.options[i] === 'NON_GTD' ? ' visible' : ''));
+
           r.appendChild(select(
             [['', '— guaranteed —'], ['PLAYER_OPT', 'Player option'],
              ['TEAM_OPT', 'Team option'], ['NON_GTD', 'Non-guaranteed']],
-            F.options[i] || '', v => { F.options[idx] = v; revalidate(); }));
+            F.options[i] || '', v => {
+              F.options[idx] = v;
+              stepsDiv.classList.toggle('visible', v === 'NON_GTD');
+              if (v !== 'NON_GTD') {
+                F.guaranteeSchedule[idx] = [];
+                stepsDiv.querySelectorAll('.gtd-step').forEach(row => row.remove());
+              }
+              revalidate();
+            }));
 
           const raise = el('span', 'yr-raise');
           raise.dataset.idx = String(i);
@@ -1106,6 +1149,70 @@
             }
           }
           yrs.appendChild(r);
+
+          // Partial-guarantee schedule for a non-guaranteed year — what's owed
+          // if released, separate from the cap-hit salary above. Only meaningful
+          // once the year is marked NON_GTD; CSS hides it otherwise. Mirrors the
+          // step editor in players/index.html so the same shape reaches the API
+          // (guarantee_schedule) whether entered by the office or by a team here.
+          const stepsDesc = el('div', 'gtd-steps-desc',
+            'What’s owed if released. Leave amount blank to guarantee the full remaining salary.');
+          stepsDiv.appendChild(stepsDesc);
+
+          function addStepRow(step) {
+            const stepRow = el('div', 'gtd-step');
+            const amtIn = document.createElement('input');
+            amtIn.type = 'text'; amtIn.className = 'gtd-step-amount';
+            amtIn.placeholder = '$ partial amount';
+            amtIn.title = 'Dollar amount that vests on this date. Leave blank to guarantee the full remaining salary.';
+            amtIn.value = step.amount || '';
+            amtIn.disabled = readOnly;
+            amtIn.addEventListener('input', () => { step.amount = amtIn.value; });
+
+            const connOn = el('span', 'gtd-step-conn', 'on');
+
+            const dateIn = document.createElement('input');
+            dateIn.type = 'date'; dateIn.className = 'gtd-step-date';
+            dateIn.title = 'Date this amount vests. Leave blank for "at signing".';
+            dateIn.value = step.date || '';
+            dateIn.disabled = readOnly;
+            dateIn.addEventListener('input', () => { step.date = dateIn.value; });
+
+            const dateHint = el('span', 'gtd-step-conn', '(blank = at signing)');
+
+            stepRow.appendChild(amtIn);
+            stepRow.appendChild(connOn);
+            stepRow.appendChild(dateIn);
+            stepRow.appendChild(dateHint);
+
+            if (!readOnly) {
+              const rmBtn = document.createElement('button');
+              rmBtn.type = 'button'; rmBtn.className = 'gtd-step-remove'; rmBtn.textContent = '×';
+              rmBtn.addEventListener('click', () => {
+                const steps = F.guaranteeSchedule[idx];
+                const pos = steps.indexOf(step);
+                if (pos !== -1) steps.splice(pos, 1);
+                stepRow.remove();
+              });
+              stepRow.appendChild(rmBtn);
+            }
+            stepsDiv.insertBefore(stepRow, addStepBtn);
+          }
+
+          const addStepBtn = document.createElement('button');
+          addStepBtn.type = 'button'; addStepBtn.className = 'add-step-btn';
+          addStepBtn.textContent = '+ guarantee step';
+          addStepBtn.style.display = readOnly ? 'none' : '';
+          addStepBtn.addEventListener('click', () => {
+            const step = {};
+            F.guaranteeSchedule[idx].push(step);
+            addStepRow(step);
+          });
+          stepsDiv.appendChild(addStepBtn);
+
+          F.guaranteeSchedule[idx].forEach(step => addStepRow(step));
+          yrs.appendChild(stepsDiv);
+
           season = seasonAfter(season);
         }
         // Filled in by paintHold off the validator's fact sheet — see there for
@@ -1509,8 +1616,14 @@
         list.style.marginTop = '0.7rem';
         seasons.forEach((s, i) => {
           const tag = contract.cap_holds[s];
+          const steps = (contract.guarantee_schedule || {})[s];
+          const stepsNote = (tag === 'NON_GTD' && steps && steps.length)
+            ? ' — ' + steps.map(step => step.amount
+                ? compactMoney(parseMoney(step.amount)) + ' vests' + (step.date ? ' ' + step.date : '')
+                : 'fully guarantees' + (step.date ? ' ' + step.date : '')).join(', ')
+            : '';
           list.appendChild(el('div', 'checkline ok',
-            `${s} — ${compactMoney(F.salaries[i] || 0)}${tag ? ' (' + tag + ')' : ''}`));
+            `${s} — ${compactMoney(F.salaries[i] || 0)}${tag ? ' (' + tag + ')' : ''}${stepsNote}`));
         });
         // The trailing hold is part of what this offer commits the team to, so
         // it is restated here with the rest of the years (§ 3.10).

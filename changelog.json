@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.1.12",
+    "date": "2026-08-15",
+    "changes": [
+      "Non-guaranteed contract years can now carry a multi-step guarantee schedule (specific dates/amounts that vest over time) instead of a single partial-guarantee figure \u2014 added a step editor to the team-facing FA offer form on /free-agency and surfaced the schedule on hover in the PDC review page's per-offer year table",
+      "Renounce (\u00a7 3.10) now also covers a team's unsigned draft rights to a player it drafted but never signed (\u00a7 7.1), not just a UFA/RFA cap hold \u2014 updated the roster-page renounce dialog, eligibility check, and rulebook language to match",
+      "Surfaced waiver-wire transactions (claimed/unclaimed clearances and PDC-flagged ties) in the /transactions log with dedicated badges, filters, and detail text",
+      "Made RFA vs UFA status visually distinct in the PDC dashboard \u2014 gold badges in the player list and player detail header, where both used to render as identical plain text/chips"
+    ]
+  },
+  {
     "version": "0.1.11",
     "date": "2026-08-14",
     "changes": [

@@ -932,7 +932,15 @@
       body.appendChild(el('div', 'prow-name', nameOf(slug)));
 
       const meta = el('div', 'prow-meta');
-      meta.appendChild(el('span', null, (POOL[slug] || {}).hold_type || '—'));
+      // RFA vs UFA is the first thing a reviewer needs off this row — an RFA
+      // carries matching rights and a QO the ballot must price (§ 3.9), a UFA
+      // doesn't. Both other renderers (`hold_type`) show the same raw value;
+      // this is the one spot compact enough that it read as plain text before,
+      // indistinguishable from a scan.
+      const holdType = (POOL[slug] || {}).hold_type;
+      meta.appendChild(holdType === 'RFA' ? el('span', 'chip chip-warn', 'RFA')
+        : holdType === 'UFA' ? el('span', 'chip', 'UFA')
+        : el('span', null, holdType || '—'));
       meta.appendChild(el('span', null, '·'));
       // `offer_count` comes back null when the viewer's own team is bidding on
       // this player (§ 6.1) — the count is itself intelligence, and this is the
@@ -1056,7 +1064,10 @@
     const sub = el('div', 'detail-sub');
     const bits = [(bio.pos || []).join('/'), age(bio.dob) ? age(bio.dob) + ' yrs' : '', OVR[slug] ? OVR[slug] + ' OVR' : ''];
     sub.appendChild(el('span', null, bits.filter(Boolean).join(' · ')));
-    if (pool.hold_type) sub.appendChild(el('span', 'chip', pool.hold_type + ' ' + (pool.class_year || '')));
+    if (pool.hold_type) {
+      sub.appendChild(el('span', 'chip' + (pool.hold_type === 'RFA' ? ' chip-warn' : ''),
+        pool.hold_type + ' ' + (pool.class_year || '')));
+    }
     if (pool.rfa) {
       // The § 3.9 QO formula is flagged "proposed, pending BOD confirmation" in
       // the rulebook itself, so the figure is labelled rather than asserted. The
@@ -1687,11 +1698,28 @@
   // deliberately leaves that season out of `salaries` — the API prices it at
   // signing time — so without this the hold the deal rolls into, and what it
   // costs, was simply missing from the deal the committee reviews.
+  // guarantee_schedule is the current, richer format (a list of vesting steps —
+  // see free-agency/index.html's step editor and teams/team.js's buildNonGtdTip);
+  // `guaranteed` is the older flat-amount field some contracts still carry. The
+  // schedule wins when both are present.
+  function gtdStepsSummary(steps) {
+    function fmtDate(d) {
+      if (!d) return '';
+      const dt = new Date(d + 'T00:00:00');
+      return isNaN(dt) ? d : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    return steps.map(step => step.amount
+      ? money(parseMoney(step.amount)) + ' vests' + (step.date ? ' ' + fmtDate(step.date) : ' at signing')
+      : 'Fully guaranteed' + (step.date ? ' ' + fmtDate(step.date) : ' at signing')
+    ).join(' · ');
+  }
+
   function yearTable(contract, season, trailingHold) {
     const t = el('table', 'years');
     const sals = contract.salaries || {};
     const caps = contract.cap_holds || {};
     const gtd = contract.guaranteed || {};
+    const sched = contract.guarantee_schedule || {};
     Object.keys(sals).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= season).sort().forEach(yr => {
       const isHold = HOLD(caps[yr]);
       const tr = el('tr', isHold ? 'hold' : '');
@@ -1699,9 +1727,17 @@
       tr.appendChild(el('td', 'amt', isHold ? '' : money(parseMoney(sals[yr]))));
       const tag = isHold ? caps[yr] : (TAGS[caps[yr]] || '');
       const td = el('td', 'tag', tag);
-      if (!isHold && gtd[yr] != null && parseMoney(gtd[yr]) < parseMoney(sals[yr])) {
-        td.textContent = (tag ? tag + ' ' : '') + 'PG';
-        td.title = 'Partially guaranteed: ' + money(parseMoney(gtd[yr]));
+      if (!isHold && caps[yr] === 'NON_GTD') {
+        const steps = sched[yr];
+        if (steps && steps.length) {
+          td.textContent = (tag ? tag + ' ' : '') + 'PG';
+          td.title = gtdStepsSummary(steps);
+        } else if (gtd[yr] != null && parseMoney(gtd[yr]) < parseMoney(sals[yr])) {
+          td.textContent = (tag ? tag + ' ' : '') + 'PG';
+          td.title = 'Partially guaranteed: ' + money(parseMoney(gtd[yr]));
+        } else {
+          td.title = '$0 guaranteed — fully non-guaranteed';
+        }
       }
       tr.appendChild(td);
       t.appendChild(tr);

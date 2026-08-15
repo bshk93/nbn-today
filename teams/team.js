@@ -3232,6 +3232,12 @@ const blockNameFor = bio => displayNameFromBio((bio && bio.name) || '');
 // as a hold for *next* season, and that is the common renounceable case. The
 // test is on the player's EARLIEST hold, not the current year's.
 function renounceEligibility(bio) {
+  // Unsigned draft rights carry no cap hold at all — the rights themselves
+  // are what's given up, so they're renounceable without one (§ 7.1's
+  // "retaining unsigned draft rights").
+  if (bio && bio.type === 'draft-rights') {
+    return { ok: true, why: '', holdType: 'DRAFT_RIGHTS', holdSeason: null };
+  }
   const holds = (bio && bio.cap_holds) || {};
   const years = Object.keys(holds).sort();
   if (!years.length) return { ok: false, why: 'No cap hold on file — nothing to renounce (§ 3.10).' };
@@ -3283,9 +3289,12 @@ function openRenounceDialog(slug, bio, abbr) {
   // one is a committee `rescind_renounce` — so a stray click must not be enough.
   const surname = String(bio.name || '').split(',')[0].trim() || name;
 
+  const sub = bio.type === 'draft-rights'
+    ? `${abbr} gives up ${name}'s unsigned draft rights under § 3.10. Checking against the rulebook…`
+    : `${abbr} gives up this cap hold under § 3.10. Checking against the rulebook…`;
   openConfirmModal({
     title: `Renounce ${name}?`,
-    sub: `${abbr} gives up this cap hold under § 3.10. Checking against the rulebook…`,
+    sub,
     confirmLabel: 'Renounce',
     danger: true,
     render: async (body, ctl) => {
@@ -3306,8 +3315,11 @@ function openRenounceDialog(slug, bio, abbr) {
       loading.remove();
 
       const f = data.fact_sheet || {};
+      const isDraftRights = f.hold_type === 'DRAFT_RIGHTS';
       const facts = document.createElement('div'); facts.className = 'confirm-facts';
-      facts.appendChild(factRow('Cap hold', `${f.hold_type || '—'} · ${f.hold_season || '—'}`));
+      facts.appendChild(isDraftRights
+        ? factRow('Status', 'Unsigned draft rights')
+        : factRow('Cap hold', `${f.hold_type || '—'} · ${f.hold_season || '—'}`));
       facts.appendChild(factRow('Hold removed', formatSalary(f.hold_amount)));
       if (f.cap_room_before != null) {
         facts.appendChild(factRow('Cap room', `${formatSalary(f.cap_room_before)} → ${formatSalary(f.cap_room_after)}`));
@@ -3449,8 +3461,9 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange) {
     onClick: () => openBlockDialog(slug, bio, abbr, onBlock, blockState.notes, afterBlockChange),
   });
 
-  // § 3.10: only a UFA/RFA cap hold is renounceable. A player under contract is
-  // released (§ 5.1); one with a live option has it declined first (§ 6.1).
+  // § 3.10: a UFA/RFA cap hold is renounceable, and so are unsigned draft
+  // rights (§ 7.1). A player under contract is released (§ 5.1); one with a
+  // live option has it declined first (§ 6.1).
   const elig = renounceEligibility(bio);
   const owner = canRenounce(abbr);
   addItem('Renounce…', {

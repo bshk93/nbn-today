@@ -557,6 +557,8 @@
       color: var(--text-secondary); font: inherit; padding: 0.2rem 0.4rem;
     }
     .badge-release        { background: var(--danger-bg); color: var(--danger); }
+    .badge-waiver_clear   { background: #0c2a3d; color: #38bdf8; }
+    .badge-waiver_flagged { background: var(--gold-bg); color: var(--gold); }
     .badge-renounce       { background: #3b2f0a; color: #fcd34d; }
     .badge-convert_twoway { background: #1c1917; color: #a8a29e; }
     .badge-void_player    { background: #1f1f1f; color: var(--text-muted); }
@@ -1157,6 +1159,7 @@
     <span class="chip" data-filter="type" data-value="option">Options</span>
     <span class="chip" data-filter="type" data-value="guarantee">Guarantees</span>
     <span class="chip" data-filter="type" data-value="release">Releases</span>
+    <span class="chip" data-filter="type" data-value="waiver_clear">Waivers</span>
     <span class="chip" data-filter="type" data-value="renounce">Renounces</span>
     <span class="chip" data-filter="type" data-value="trade">Trades</span>
     <span class="chip" data-filter="type" data-value="convert_twoway">Two-Way Conversions</span>
@@ -3120,6 +3123,10 @@ function setupFilters() {
 function txnTeams(t) {
   const d = t.details || {};
   if (t.type === 'trade' || t.type === 'offer_sheet' || t.type === 'offer_sheet_decision') return d.teams || [];
+  if (t.type === 'waiver_clear') {
+    return d.claimed_by ? [d.released_by, d.claimed_by] : [d.released_by];
+  }
+  if (t.type === 'waiver_flagged') return d.tied_teams || [];
   return d.team ? [d.team] : [];
 }
 
@@ -3784,7 +3791,8 @@ function renderRow(t) {
   const badge = `<span class="badge badge-${t.type}">${typeLabel(t.type)}</span>`;
   let teamCell, playerCell;
   const teams = txnTeams(t);
-  const sep = (t.type === 'offer_sheet' || t.type === 'offer_sheet_decision') ? ' → ' : ' · ';
+  const sep = (t.type === 'offer_sheet' || t.type === 'offer_sheet_decision'
+    || (t.type === 'waiver_clear' && d.claimed_by)) ? ' → ' : ' · ';
   teamCell = teams.length ? teams.map(tm => `<a href="/teams/${tm}">${escHtml(tm)}</a>`).join(sep) : '—';
   playerCell = t.type === 'trade' ? '—' : renderPlayerCell(d.player);
   const detailsCell = renderDetailsCell(t);
@@ -3872,6 +3880,17 @@ function renderDetailsCell(t) {
   }
   if (t.type === 'renounce') {
     return 'Renounced — free agent, no dead cap';
+  }
+  if (t.type === 'waiver_clear') {
+    const manualNote = d.resolution === 'manual' ? ' (manual)' : '';
+    const titleAttr = d.notes ? ` title="${escHtml(d.notes)}"` : '';
+    const text = d.outcome === 'claimed'
+      ? `Claimed by ${escHtml(d.claimed_by || '')}${manualNote}`
+      : `Unclaimed — dead cap stands${manualNote}`;
+    return `<span${titleAttr}>${text}</span>`;
+  }
+  if (t.type === 'waiver_flagged') {
+    return `Tied — needs PDC decision (${escHtml((d.tied_teams || []).join(' vs '))})`;
   }
   if (t.type === 'offer_sheet') {
     const c = d.contract || {};
@@ -3990,7 +4009,7 @@ function fmtDate(iso) {
 }
 
 function typeLabel(type) {
-  const labels = { sign: 'Signing', offer_sheet: 'Offer Sheet', offer_sheet_decision: 'Offer Sheet Decision', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', guarantee: 'Guarantee', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion', void_player: 'Void Player', set_hard_cap_level: 'Set Hard Cap' };
+  const labels = { sign: 'Signing', offer_sheet: 'Offer Sheet', offer_sheet_decision: 'Offer Sheet Decision', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', guarantee: 'Guarantee', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion', void_player: 'Void Player', set_hard_cap_level: 'Set Hard Cap', waiver_clear: 'Waivers', waiver_flagged: 'Waiver Tie' };
   return labels[type] || type;
 }
 
