@@ -29,10 +29,13 @@ const DEPTH_SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
 // Picking each slot greedily in PG→C order would strand slots — the best SF on
 // a team listed "SF · C" can leave C empty even when they were the only player
 // eligible there. So every legal assignment is scored and the best one wins,
-// ranked by: most slots filled first, then highest OVR at PG, then SG, and so
-// on down the order. With no conflicts that reduces to exactly "the highest
-// rated player at each position, in order"; with conflicts it prefers a full
-// five, and breaks the remaining ties in favour of the earlier slot.
+// ranked by: most slots filled first, then highest total OVR across the five
+// slots. With no conflicts that reduces to exactly "the highest rated player
+// at each position, in order"; with conflicts it prefers a full five, then the
+// strongest lineup as a whole — a dual-eligible big (e.g. C/PF) slots wherever
+// he raises the team's total most, rather than always claiming the earlier of
+// his two positions regardless of what that leaves for the later one. Only a
+// genuine tie in both falls back to preferring the earlier slot.
 //
 // Candidates per slot are capped at the top 5 by OVR — five slots can never
 // need a sixth-deep option at any one position — so the search is at most 6^5.
@@ -45,9 +48,12 @@ function computeStartingFive(players) {
       .slice(0, DEPTH_SLOTS.length)
   );
 
-  // [filled, ovr@PG, ovr@SG, …]; an empty slot scores -1 so any filled slot beats it.
+  // [filled, totalOvr, ovr@PG, ovr@SG, …]; an empty slot scores -1 so any
+  // filled slot beats it, and the per-slot values only matter as a final
+  // tiebreaker once filled count and total OVR are both already equal.
   const scoreOf = assign => [
     assign.filter(Boolean).length,
+    assign.reduce((sum, p) => sum + (p ? ovrOf(p) : 0), 0),
     ...assign.map(p => (p ? ovrOf(p) : -1)),
   ];
   const better = (a, b) => {
