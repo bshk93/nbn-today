@@ -10,7 +10,7 @@
 //   const shared = NBNAch.prepare({ ownerStatsCsv, standingsCsv, bios, awardsCsv,
 //                                   allTxns, playerSeasonsCsv, h2hOwnersCsv });
 //   const achData = NBNAch.computeAchData(member, shared,
-//                                   { betsStats, investStats, tipsReceived });
+//                                   { betsStats, investStats, tipsReceived, cleanupStats });
 //   NBNAch.countUnlocked(achData);   // -> number unlocked
 //   NBNAch.renderAchievements(achData); // -> HTML string (profile only)
 //
@@ -494,6 +494,17 @@
         { label: 'Shorted', tierClass: 'tier-on', sub: 'Profitable short', unlock: d => !!d.invest.ever_shorted_profitably },
       ],
     },
+
+    // === Community ===
+    {
+      id: 'archivist', name: 'Archivist', icon: '🧹', cat: 'community',
+      desc: 'Approved "Clean Up the Poo Poo" submissions',
+      tiers: [
+        { label: 'Bronze', tierClass: 'tier-bronze', sub: '5 approved', unlock: d => (d.cleanup.approved_count || 0) >= 5 },
+        { label: 'Silver', tierClass: 'tier-silver', sub: '25 approved', unlock: d => (d.cleanup.approved_count || 0) >= 25 },
+        { label: 'Gold', tierClass: 'tier-gold', sub: '100 approved', unlock: d => (d.cleanup.approved_count || 0) >= 100 },
+      ],
+    },
   ];
 
   const CAT_LABELS = {
@@ -505,8 +516,9 @@
     rivalries: 'Rivalries',
     betting: 'Betting',
     investing: 'Investing',
+    community: 'Community',
   };
-  const CAT_ORDER = ['gm', 'longevity', 'draft', 'development', 'trades', 'rivalries', 'betting', 'investing'];
+  const CAT_ORDER = ['gm', 'longevity', 'draft', 'development', 'trades', 'rivalries', 'betting', 'investing', 'community'];
 
   // Parse all the shared (member-agnostic) data once. Cheap to call per page load,
   // and lets computeAchData stay fast enough to run for every member.
@@ -556,7 +568,7 @@
 
   // Compute the achievement data object for one member.
   //   shared    — result of prepare()
-  //   perMember — { betsStats, investStats, tipsReceived }
+  //   perMember — { betsStats, investStats, tipsReceived, cleanupStats }
   function computeAchData(member, shared, perMember) {
     perMember = perMember || {};
     const tenures = member.tenures || [];
@@ -702,6 +714,7 @@
       bets: perMember.betsStats || {},
       invest: perMember.investStats || {},
       tipsReceived: perMember.tipsReceived || 0,
+      cleanup: perMember.cleanupStats || {},
     };
   }
 

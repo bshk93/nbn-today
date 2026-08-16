@@ -63,14 +63,32 @@ function buildShared() {
   });
 }
 
+// Approved-submission counts per member, read straight off cleanup-submissions.json
+// (same file cleanup.py writes) rather than the API — this job already reads every
+// other input as a local file, and Archivist isn't excluded like betting/investing
+// so it needs real per-member data, not the {} every other non-excluded stat gets.
+function cleanupCounts() {
+  const path = `${DATA}/cleanup-submissions.json`;
+  if (!fs.existsSync(path)) return {};
+  const items = rj(path).items || [];
+  const out = {};
+  for (const it of items) {
+    if (it.status !== 'approved') continue;
+    out[it.submitted_by] = out[it.submitted_by] || { approved_count: 0 };
+    out[it.submitted_by].approved_count++;
+  }
+  return out;
+}
+
 // Current highest tier index per included achievement, per member with a tenure.
 function scoreAll(shared, members) {
   const included = new Set(NBNAch.ACHIEVEMENTS.filter(a => !EXCLUDE_CATS.has(a.cat)).map(a => a.id));
+  const cleanup = cleanupCounts();
   const out = {};
   for (const name in members) {
     const tenures = members[name].tenures || [];
     if (!tenures.length) continue;                       // skip non-GMs
-    const ad = NBNAch.computeAchData({ name, ...members[name] }, shared, {});
+    const ad = NBNAch.computeAchData({ name, ...members[name] }, shared, { cleanupStats: cleanup[name] });
     const ts = NBNAch.tierStatus(ad);
     const unlocked = {};
     for (const id in ts) if (included.has(id) && ts[id] >= 0) unlocked[id] = ts[id];

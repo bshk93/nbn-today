@@ -1290,7 +1290,7 @@ async function loadAchievements() {
   if (!window.NBNAch) return;
   try {
     const [ownerStatsCsv, standingsCsv, bios, awardsCsv, txnResp,
-           playerSeasonsCsv, h2hOwnersCsv, betsAll, investAll, tipsAll] = await Promise.all([
+           playerSeasonsCsv, h2hOwnersCsv, betsAll, investAll, tipsAll, cleanupAll] = await Promise.all([
       fetch('/data/owner_stats.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
       fetch('/standings/standings-history.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
       fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
@@ -1301,6 +1301,7 @@ async function loadAchievements() {
       fetch('/api/bets/stats').then(r => r.ok ? r.json() : {}).catch(() => ({})),
       fetch('/api/invest/stats').then(r => r.ok ? r.json() : {}).catch(() => ({})),
       fetch('/api/tips/totals').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      fetch('/api/cleanup/stats').then(r => r.ok ? r.json() : {}).catch(() => ({})),
     ]);
     const shared = NBNAch.prepare({
       ownerStatsCsv, standingsCsv, bios, awardsCsv,
@@ -1311,6 +1312,7 @@ async function loadAchievements() {
     for (const m of allMembers) {
       const ad = NBNAch.computeAchData(m, shared, {
         betsStats: betsAll[m.name], investStats: investAll[m.name], tipsReceived: tipsAll[m.name] || 0,
+        cleanupStats: cleanupAll[m.name],
       });
       map[m.name] = NBNAch.countUnlocked(ad);
     }

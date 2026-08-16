@@ -60,10 +60,16 @@ is the obvious suspect. Chase that before hand-fixing the rest.
 blocker to trusting `/api/picks` end-to-end.
 
 ### [P2] Discord backfill not finished
-- Trades: 437 of 485 raw messages submitted; 153 flagged unresolved.
-- FA signings: 1498 of 2081 submitted; 162 flagged, 538 skipped.
-Spec in `nbn-api/docs/discord-transaction-backfill.md`. The 538 skipped FA rows
-have never been triaged — decide whether they're genuinely out of scope or a gap.
+- Trades: 437 of 485 raw messages submitted; ~50 multi-team trades still
+  flagged, needing a human from/to judgment call per trade. Not crowd-source-able
+  (see `docs/clean-up-the-poopoo-spec.md` § 7) — needs an admin/committee pass.
+- FA signings: 1498 of 2081 submitted; 162 flagged (**now member-facing** at
+  `/cleanup`, "Discord Backfill" — live 2026-08-16), 538 skipped.
+Spec in `nbn-api/docs/discord-transaction-backfill.md`. **The 538 skipped FA
+rows' open question is resolved**, checked against the real file 2026-08-16:
+496 of 538 have no sign/option language at all (renounce/waiver/retirement/
+trade-block chatter) — the parser correctly excluded them, this is not a
+hidden gap pool. Not worth a full re-audit for v1.
 
 ### [P2] 27 of 29 first-last player slugs re-keyed; 2 held for a live FFA window
 **Done 2026-08-16.** 27 of the 29 mis-keyed slugs (e.g. `keaton-wallace` →
@@ -789,10 +795,14 @@ them and `GET /api/rookie-scale/contract/{slug}` prefills the office form.
 - **Search over transactions** — `/transactions` lists them; there's no way to
   ask "every trade involving this pick" or "everything TOR did in the 25-26
   league year".
-- ~~**"Clean Up the Poo Poo"**~~ — **Phase 1 live 2026-08-16** at `/cleanup`.
-  Members answer auto-generated questions pulled from real missing bio data
-  (height, wingspan, weight, college, country, dob, photo, draft info —
-  ~2,288 gaps at ship), admin approves, approval writes the real field and
-  pays tiered NB¥ (25/50). Discord-backfill triage (the 538 never-triaged
-  rows) and the Archivist achievement tier are **not built yet** — see
-  `docs/clean-up-the-poopoo-spec.md` (v0.3) § 6 for the remaining phases.
+- ~~**"Clean Up the Poo Poo"**~~ — **Phases 1–3 live 2026-08-16** at `/cleanup`.
+  ~2,288 missing bio-field gaps (height, wingspan, weight, college, country,
+  dob, photo, draft info) plus 162 flagged Discord FA-signing candidates
+  (§ "Discord backfill" below); admin approves, approval writes the real
+  data (bio field, or a historical transaction) and pays tiered NB¥
+  (25/50/100). Approved submissions also count toward a new Archivist
+  achievement tier. **Correction to the original entry:** the 538 skipped
+  FA rows are not a hidden gap pool — they were correctly excluded as
+  non-signing chatter, not never-triaged; see
+  `docs/clean-up-the-poopoo-spec.md` (v0.5) § 7 for the full scope
+  correction (trades also permanently out of scope, not deferred).

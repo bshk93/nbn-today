@@ -295,6 +295,7 @@ async function init() {
     fetch('/standings/standings-history.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
     fetch(`/api/bets/stats/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch(`/api/invest/stats/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(`/api/cleanup/stats/${encodeURIComponent(memberName)}`).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('/players/player_awards.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
     fetch('/api/transactions?limit=2000').then(r => r.ok ? r.json() : { transactions: [] }).catch(() => ({ transactions: [] })),
@@ -304,7 +305,7 @@ async function init() {
 
   const [results1, results2] = await Promise.all([Promise.all(req1), Promise.all(req2)]);
   const [allMembers, tips, balData, me] = results1;
-  const [ownerStatsCsv, standingsCsv, betsStats, investStats, bios, awardsCsv, txnResp, playerSeasonsCsv, h2hOwnersCsv] = results2;
+  const [ownerStatsCsv, standingsCsv, betsStats, investStats, cleanupStats, bios, awardsCsv, txnResp, playerSeasonsCsv, h2hOwnersCsv] = results2;
   const nameLower = memberName.toLowerCase();
   const ownerRow = parseCSV(ownerStatsCsv).find(r => r.owner.toLowerCase() === nameLower) || null;
 
@@ -334,7 +335,7 @@ async function init() {
     allTxns: (txnResp && txnResp.transactions) || [],
     playerSeasonsCsv, h2hOwnersCsv,
   });
-  const achData = NBNAch.computeAchData(member, achShared, { betsStats, investStats, tipsReceived });
+  const achData = NBNAch.computeAchData(member, achShared, { betsStats, investStats, tipsReceived, cleanupStats });
 
   let html = '';
 

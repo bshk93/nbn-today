@@ -994,6 +994,17 @@ failed award retries next run. The first run (no snapshot) seeds silently, so
 existing achievements are **not** awarded retroactively. No Discord/webhook
 output — the ledger entry (`Achievement: …`) is the record.
 
+Every included achievement except **Archivist** (the "Clean Up the Poo Poo"
+tier — § its own doc, `docs/clean-up-the-poopoo-spec.md`) is scored from
+`computeAchData`'s `shared` argument alone, so `scoreAll` can feed every
+member `{}` for `perMember` and still get a correct score. Archivist needs a
+real per-member `cleanupStats.approved_count`, so `scoreAll` reads
+`cleanup-submissions.json` directly (same file `nbn-api/routers/cleanup.py`
+writes) and builds it per member before scoring — the one category that
+isn't just `{}`. Client-side rendering (member profile, members index) gets
+the same numbers over `GET /api/cleanup/stats`, since the browser can't read
+NBS_DATA_DIR directly.
+
 Run by a systemd timer every 10 min. `DRY_RUN=1` previews without granting,
 `NBN_ACH_STATE` overrides the snapshot path, `NBN_API_BASE` the API URL.
 

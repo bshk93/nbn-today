@@ -1,9 +1,12 @@
-# Clean Up the Poo Poo — design spec (v0.3)
+# Clean Up the Poo Poo — design spec (v0.5)
 
-**Status:** v0.3, 2026-08-16. **Phase 1 is built and live** at `/cleanup`
-(`nbn-api/routers/cleanup.py`, `cleanup-submissions.json`, pinned by
-`nbn-api/tests/test_cleanup.py`). Bio-field gaps only — no Discord-backfill
-triage yet, no Archivist achievement yet (§ 6, phases 2–5 unbuilt).
+**Status:** v0.5, 2026-08-16. **Phases 1–3 are built and live**: the
+`/cleanup` submission queue, the Archivist achievement tier, and Discord-FA
+backfill triage as a second gap type (`nbn-api/routers/cleanup.py`,
+`cleanup-submissions.json`, pinned by 46 assertions in
+`nbn-api/tests/test_cleanup.py`, verified end-to-end against the live service
+and reverted — see § 7). Only widening the reviewer pool (phase 5, not
+currently needed) remains unbuilt.
 
 ## 1. Scope
 
@@ -28,9 +31,9 @@ new one) and pays NB¥.
 | `player-bios.json` | `country` | 35 / 1023 missing | |
 | `player-bios.json` | `photo_url` | 61 / 1023 missing | |
 | `player-bios.json` | `dob` | 41 / 1023 missing | |
-| Discord backfill | flagged trades | 153 (of 485) | `nbn-api/docs/discord-transaction-backfill.md` |
-| Discord backfill | flagged FA signings | 162 (of 2081) | same |
-| Discord backfill | skipped FA signings | 538 (of 2081) | never triaged — may include out-of-scope rows |
+| Discord backfill | flagged FA signings, non-`"exact"` candidates | 162 | Built as `gap_type: "discord_fa"` — see § 7 |
+| Discord backfill | flagged trades (multi-team from/to) | ~50 remaining | **Ruled out — see § 7's correction below** |
+| Discord backfill | skipped FA signings | 538 | **Ruled out — see § 7's correction below** |
 
 **Resolved 2026-08-16, checked against live data:** "undrafted" already has a
 real encoding — `draft_year` set, `draft_round`/`draft_pick` null (87 players
@@ -124,9 +127,11 @@ backfill files it's describing.
 
 ## 5. Open implementation questions (not yet answered, need more thought before Phase 1)
 
-- Discord-backfill triage needs a UI to search old messages — does that reuse
-  anything from the existing backfill tooling, or is it new surface entirely?
-  **Still open — not built in Phase 1.**
+- ~~Discord-backfill triage needs a UI to search old messages~~ **Resolved —
+  see § 7.** No searching needed: the existing `resolve_discord_fa_signings.py`
+  pipeline already narrows 2081 raw messages down to 162 flagged candidates
+  with the raw text attached: the UI just has to display that text and take
+  an answer, not search anything.
 - ~~Does a bio-field submission need a mandatory `source_note`?~~ **Resolved
   in the build:** optional. It's shown to the reviewer when present
   (`review-note` in the Review tab) but nothing blocks a submission without
@@ -158,10 +163,73 @@ backfill files it's describing.
 
 1. ~~Bio-field gaps only (no photo/discord), tiered reward, admin-only review,
    self-approval blocked~~ — **done, live 2026-08-16.**
-2. Add the Archivist achievement tier once real submission volume exists to
-   compute tiers against. **Not yet started.**
-3. Add Discord-backfill triage as a second `gap_type`. **Not yet started.**
+2. ~~Add the Archivist achievement tier~~ — **done, live 2026-08-16.** Built
+   ahead of "real submission volume" existing (the queue was empty at ship)
+   since the thresholds (5/25/100) were already a placeholder either way —
+   revisit the numbers once real usage exists, not whether the tier exists.
+   `members/achievements.js` (`cat: 'community'`), fed by a new public
+   `GET /api/cleanup/stats` (client-side rendering) and a direct read of
+   `cleanup-submissions.json` in `build/achievement-notify.js` (the awarder;
+   every other included achievement scores off `shared` alone and gets `{}`
+   for `perMember`, so Archivist needed its own real feed — see
+   `CLAUDE.md` "Achievement NB¥ awards").
+3. ~~Add Discord-backfill triage as a second `gap_type`~~ — **done, live
+   2026-08-16.** Scope narrowed from the original plan — see § 7.
 4. ~~Revisit photo submissions once/if file upload exists~~ — moot, photo
    already shipped as a URL field in Phase 1.
 5. Revisit reviewer pool (admin-only → `bod`+`admin`) if the queue backs up
    in practice. **Not yet needed** — queue is empty as of ship.
+
+## 7. Discord-FA triage — what actually shipped (2026-08-16)
+
+Building this required reading `nbn-api/docs/discord-transaction-backfill.md`
+and the real `discord-fa-signings-resolved.json` first — the § 1 table above
+was written from that doc's summary numbers, and the real data told a
+different, better story once actually opened.
+
+**Scope correction: trades and the skipped bucket are out, permanently, not
+just deferred.**
+
+- **Multi-team trades never went in scope.** Assigning from/to per player in
+  a 3+-team trade isn't a lookup — the source text only states what each team
+  *receives*, never who sent it, so even the admin's own tooling refuses to
+  auto-resolve these (`resolve_discord_trades.py`'s documented reason). That's
+  the same "needs committee judgment" bar § 1 already uses to exclude the
+  cap-sheet diffs and the picks-conveyance gaps. Left alone entirely.
+- **The 538 "skipped" FA rows are not a hidden gap pool.** They were skipped
+  because they don't contain sign/option language at all (renounce/waiver/
+  retirement/trade-block chatter) — i.e. the parser was already right to
+  exclude them. Auditing 538 correctly-skipped messages on the chance a few
+  were wrongly excluded is a real but much lower-value, differently-shaped
+  task (confirm a negative, not supply an answer) — not worth building for v1.
+
+**What the real 162 flagged FA-signing messages actually needed, once
+inspected:** every one of them already has `kind`/`team`/`decision`/
+`option_type`/`year` parsed correctly — the *only* thing flagging it is an
+uncertain or missing player-slug match. So the question reduces to exactly
+one thing per candidate: "who is this player" (with a pre-filled guess to
+confirm when the parser had one). A message can hold several candidates when
+it's a batch announcement — only the ones that didn't match "exact" are
+gaps; sibling candidates in the same message that already resolved cleanly
+are excluded (`_discord_fa_flagged_candidates` in `cleanup.py`).
+
+**Write path is 100% reuse, not reimplementation.** Approval calls
+`_create_historical_sign`/`_create_historical_option` directly — the exact
+functions `submit_discord_fa_signings.py` already calls through the API —
+and then writes the same candidate key into
+`discord-fa-signings-submitted.json` that script's own de-dup check reads,
+so a future run of the standalone backfill scripts can never resubmit the
+same candidate as a duplicate transaction. No new write logic for the
+transaction ledger exists anywhere in `cleanup.py`.
+
+**Reward:** flat 100 NB¥ (finding an obscure historical player from prose is
+real work, more than a bio lookup), unchanged from the original plan.
+
+**Verified end-to-end against the live service, then fully reverted** —
+submitted and approved one real flagged candidate (Jevonte/Javonte Green's
+2020-21 option decline), confirmed the transaction landed correctly in
+`transactions.json`, then deleted it, removed its key from
+`discord-fa-signings-submitted.json`, reversed the submitter's NB¥ via a
+paired ledger entry (not a silent balance edit), and deleted the test-only
+`cleanup-submissions.json`. Same test-then-revert pattern the backfill doc
+itself used before submitting at scale.
