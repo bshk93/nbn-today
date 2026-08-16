@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions` (currently empty).
 
-Last reviewed: **2026-08-10** (against version 0.0.401).
+Last reviewed: **2026-08-16** (against version 0.1.13).
 
 Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** nice to have
 
@@ -65,13 +65,28 @@ blocker to trusting `/api/picks` end-to-end.
 Spec in `nbn-api/docs/discord-transaction-backfill.md`. The 538 skipped FA rows
 have never been triaged — decide whether they're genuinely out of scope or a gap.
 
-### [P2] 29 player slugs are still in first-last order — re-key deferred
-e.g. `keaton-wallace`, `mark-sears`, `armando-bacot` instead of `wallace-keaton`.
-Exactly 29 as of 2026-08-10, with no false positives: compare each key against
-its own `name` field slugified in place (`"WALLACE, KEATON"` → `wallace-keaton`),
-which resolves multi-word last names like `da-silva-tristan` correctly. The naive
-32/4-false-positive count in the earlier version of this entry was that check
-done wrong.
+### [P2] 27 of 29 first-last player slugs re-keyed; 2 held for a live FFA window
+**Done 2026-08-16.** 27 of the 29 mis-keyed slugs (e.g. `keaton-wallace` →
+`wallace-keaton`, `mark-sears` → `sears-mark`) were re-keyed in one scripted
+pass across `player-bios.json`, `ovr-history.json`, `transactions.json`,
+`player-attributes.json`, 15 roster CSVs and 4 dead-cap CSVs. Every file was
+backed up first (`*.bak-rekey29-20260816-130436` in NBS_DATA_DIR); verified
+afterward that zero old-form keys remain in any of them and the live API
+serves the corrected slugs. `player-attributes.json`'s `source_slug` field
+was deliberately **not** touched — it's 2K's own site slug, not ours, and
+happened to share the same first-last shape by coincidence.
+
+**Held back:** `jamaree-bouyea` and `ariel-hukporti` — both were mid-FFA-clock
+at the time (deadline 2026-08-17), with live team bids in `fa-offers.json`
+and `fa-state.json`. Re-key those two once that window closes; same script,
+just the remaining 2-entry mapping.
+
+**Scope was larger than this entry originally documented** — discovered
+5 live dead-cap CSVs and `player-attributes.json` (drives Team Settings'
+"Primary Position") that the original writeup missed entirely. Two Discord
+backfill bookkeeping files (`discord-fa-signings-resolved.json`,
+`discord-transactions-promoted.json`) also carry old-form refs but are
+offline-script-only, never read at request time — left as-is.
 
 **The generator is fixed as of 2026-08-10** — `slugFromName` in
 `players/index.html` was running `displayName()` (which flips "LAST, FIRST" →
@@ -79,35 +94,14 @@ done wrong.
 key every time. That is why this population kept regrowing after the 2026
 prospect re-key closed it. The form now slugifies the canonical name in place
 (verified: reproduces all 989 correct slugs exactly) and uppercases/normalizes
-the name on save. **The 29 already-created bios are what remains.**
+the name on save.
 
-**Raised from P3: the "cost of leaving them is zero" premise has fallen.** That
-rested on none of them accumulating stats. Three already have:
-
-| Player | Stats under | Bio under |
-|---|---|---|
-| Ariel Hukporti | `hukporti-ariel` (5 playoff G) | `ariel-hukporti` |
-| Quenton Jackson | `jackson-quenton` (5) | `quenton-jackson` |
-| David Jones Garcia | `jones-garcia-david` (5) | `david-jones-garcia` |
-
-The R build derives slugs from the box-score name in canonical form, so stats
-land on one key and the live bio on the other — a split profile (stats card with
-no contract/cap holds/OVR/roster link, bio card with no stats). **26 of the 29
-are on current rosters**, so this goes from 3 players to ~26 as soon as 26-27 box
-scores land, and propagates into HOF/leaderboards/awards/compare as they build
-history.
-
-Scope is **not** at risk: rosters, cap math, transactions, team pages and the FA
-pipeline all join bios by the same wrong key, so they are internally consistent.
-Nothing is mis-costed. The damage is confined to the stats↔bio seam.
-
-Re-key surface is small — smaller than the prospect re-key, and with no live
-draft in flight: 29 bio keys · ~24 roster rows across 15 CSVs · 21 OVR history
-entries · 41 ledger entries (35 sign, 3 trade, 1 option, 2 release). Do it as one
-scripted pass: back up the four files, dry-run the full rename list, then write.
-Cheapest now, while these players have almost no history.
-
-Deferred by owner decision 2026-08-10 — understood and accepted, not forgotten.
+**Remaining risk is scoped to the 2 held-back players.** `ariel-hukporti`
+already had 5 playoff games land under the box-score-derived key
+`hukporti-ariel` before this pass — the split-card symptom (stats card with no
+contract/cap holds/OVR/roster link, bio card with no stats) — and will keep
+splitting further until its re-key happens post-FFA. `jamaree-bouyea` has no
+stats history yet, so its cost of waiting really is zero.
 
 ### [P1] 27-28/28-29/29-30 minimum salary scales are row-shifted — multi-year minimums fail
 Entered 2026-08-10 via `/cap-settings`. Each season's column is the 26-27 scale
@@ -186,6 +180,10 @@ once the sheet is fixed. Nothing to change in code.
 `player-bios.json.bak` ×4, `allstats-playoffs-26.csv.bak-round-fix`,
 `allstats.csv`, `tokens.json`, and `rules/` (retired per CLAUDE.md, 8 files
 still on disk). Nothing reads them; they're a "which one is real?" trap.
+
+**Don't clear these until real backups exist** (§3, "Nothing backs up
+NBS_DATA_DIR") — junk as they are, they are currently the only historical copies
+of `player-bios.json` on the machine.
 
 ---
 
@@ -443,6 +441,64 @@ false positives against the 14 real Bird signings on file. Closed alongside it:
 near-empty (47/1018) — harmless now that tenure doesn't read it, but it means
 contract *terms* history is thin for pre-2026 deals.
 
+### ~~[P2] § 5.1 waiver claims described in the rulebook but never implemented~~ — BUILT 2026-08-12/13
+Never listed here (spec landed two days after the 2026-08-10 review), recorded
+now so it isn't re-proposed. The rulebook had always said a claimed player's
+contract transfers, with no code behind it. Spec: `docs/waiver-wire-spec.md`
+(v0.2, six decisions settled). Built: `routers/waivers.py` — `GET /api/waivers`,
+`POST /api/validate/waiver_claim`, claim / withdraw / resolve — plus the
+`#waivers` relay and the surface on `/free-agency`. `tests/test_waivers.py`.
+
+Follows the established shapes rather than inventing new ones: pending claims
+are enumerable from the ledger (as `_open_offer_sheets` is), expiry sweeps on
+read with no scheduler (as `_sweep_ffa_expiry` does), and claims are **sealed**
+— only `pdc-alerts` sees them before the window resolves.
+
+### [P2] The rulebook's 🔒/👁 badges are hand-maintained and keep going stale
+Entered 2026-08-16. The badges are the site's only answer to "is this rule
+actually enforced?", and they are curated by hand against code that moves
+underneath them. This has already gone wrong twice: § 7.2 read 👁-only for two
+and a half weeks after Stepien went live (closed 2026-08-09, above), and
+§ 3.12's enforcement story changed twice *in one day* on 2026-08-13.
+
+The inputs to compute them already exist. `transactions.py` names its checks
+(`check="roster_size"`, `"two_way_slots"`, `"rookie_scale"`,
+`"bird_rights_forfeited"`, … — 20+ literal ids) and its check messages cite
+32 distinct `§ x.y` sections. Emit a coverage manifest from `_VALIDATORS` plus
+those ids → sections, render the rulebook badges from it, and have
+`build/smoke_test.py` fail when a section's badge disagrees with what the code
+checks.
+
+Worth more than the badges themselves: it turns this entire section of the
+backlog from a curated list into a computed one, which is the only version that
+stays true between reviews.
+
+### [P2] No league-wide compliance board — § 2.1 shortfalls are invisible today
+Entered 2026-08-16. `/poopoo` answers "does the site match the sheet". Nothing
+answers "does the league match the rulebook". Counting `type` off
+`player-bios.json` against all 30 `{abbr}-roster.csv` on 2026-08-16:
+
+| Condition | Teams |
+|---|---|
+| Below § 2.1's **14-player minimum** (year-round; two-ways excluded per § 2.2) | **6** — DAL 10, CHI 12, HOU 12, NYK 12, OKC 12, WAS 12 |
+| Below § 2.1a's **12-player Empty Roster Charge floor** | **1** — DAL, at 10, so 2 charged slots |
+| Above 15, owing a trim before opening night (§ 2.1 offseason ceiling of 20) | **4** — ATL 16, LAC 16, CLE 17, POR 18 |
+
+The four over 15 are fine for now — § 2.1's offseason ceiling is 20 — but owe a
+trim, and no deadline for it appears anywhere on the site. The six under 14 are
+a different matter: **§ 2.1's minimum is year-round, so they are under the line
+today**, and only DAL is low enough to actually be charged for it (§ 2.1a's real
+floor is 12). DAL's charge presumably computes correctly on its own page.
+
+The point is that **the only place any of this is visible is one team page at a
+time** — nothing states how many teams are out of compliance, or with what.
+
+One board covering § 2.1 floor/ceiling, § 2.2 two-way slots, hard cap/apron
+position, Stepien exposure, open offer sheets and open waiver windows is mostly
+assembly of helpers that already exist. It is also the natural home for "who
+still has to cut" once a regular-season start date is set, and it fills the
+"per-team cap health" nice-to-have (§ 4) from the league side.
+
 ### [P3] Other standing manual-review items
 Roughly in order of how often they bite:
 - § 4.5 trade restrictions, § 4.6 Touch Rule (multi-team trades)
@@ -460,8 +516,13 @@ worth an explicit decision so it stops resurfacing.
 
 ### [P3] § 7.3 second-apron pick freeze — auto-compute deferred
 Currently a manual `FROZEN` flag. The four-year lookback needs 4 seasons of
-team-state history; we have 1. Genuinely blocked on time, not effort — revisit
-around 2029.
+team-state history; we have 1. Genuinely blocked on time, not effort.
+
+**Corrected 2026-08-16: "revisit around 2029" was the wrong conclusion from the
+right diagnosis.** Nothing is recording team-state history *now*, so waiting
+until 2029 to start collecting means shipping around 2033. Start the nightly
+snapshot (§ 3, "Nothing records team-state over time") and this becomes a
+waiting problem instead of a blocked one.
 
 ---
 
@@ -492,6 +553,18 @@ per-player finalize/unlock.
 `rounds` or `ffa`** — it is `closed` today, so every offer menu reads "Free
 agency is closed." and `POST /api/fa/offers` 422s.
 
+Built since (2026-08-12/13), none of it reflected in the 2026-08-10 review:
+
+- **§ 4.7 agent stage** — a third role (`agent`) between a closed offer window
+  and a sub-committee ballot: claim off a shared queue, negotiate, then advance
+  or finalize. A claim permanently bars the agent's own team from bidding on
+  that player. Documented in CLAUDE.md; spec in `docs/pdc-free-agency-spec.md`.
+- **§ 4.3b void/restore** — head-only, reason required, `voided` simply left out
+  of `LIVE_STATUSES`. `tests/test_fa_offers.py`.
+- **`ffa-extend`** — the one path allowed to move a single player's deadline.
+- **Member inbox** — `routers/inbox.py` (`GET /api/inbox`, read / read-all) and
+  `/inbox`. Closes the "Member inbox system" suggestion on the member board.
+
 The dashboard is now in the Ctrl+K jump box as "PDC Committee", role-gated via
 `ROLE_PAGES` in `nav.js` — resolved lazily when search is first opened, and not
 at all for a logged-out visitor, so nav.js still makes no request on an ordinary
@@ -504,6 +577,58 @@ One thing to do before the first round:
   the board is operable today, but **admin does not get a ballot**: `cast_ballot`
   gates on being *assigned*, not on a role, so even admin has to put themselves
   on a sub-committee to vote. Grant the real roles at `/members/`.
+
+### [P1] Nothing backs up NBS_DATA_DIR — the league's whole state is single-copy
+Entered 2026-08-16. The "disk failure loses ~4 weeks of work" risk was closed
+below for the two **git repos**. The data those repos are meaningless without
+never had that protection and still doesn't.
+
+Verified 2026-08-16 — no backup job exists anywhere (`crontab -l`,
+`systemctl list-timers`: perry, poopoo, achievements, dota2stats, certbot,
+nothing that copies `/var/lib/nothing-but-stats` off this disk). Single copies
+of `transactions.json` (2.0 MB — the only record of how every contract and pick
+got where it is), `player-bios.json` (664 KB), `fa-offers.json` (672 KB),
+`members.json` (61 members and their tokens), `team-state.json`,
+`ovr-history.json`. The nearest thing to a backup is five hand-made `.bak-*`
+files, newest **2026-07-15** — which this file already lists as a P3 *"which one
+is real?"* trap.
+
+**What the risk is not:** torn writes. `storage.py:_atomic_write` does tmp-file
++ `os.replace` for every write in the API (0 direct `json.dump()` call sites
+outside it), so readers never see a half-written file. The exposure is a bad
+*logical* write — a migration script, a hand-fix, a bulk re-key like the 29
+first-last slugs above — and hardware.
+
+Cheapest fix: a nightly `git commit` of the JSON/CSV subset into a private
+snapshot repo, with the `.rds`/`allstats` bulk (~90 MB, rarely changes) tar'd
+weekly instead. Total is ~100 MB, so retention is a non-issue.
+
+**Second payoff, and the reason to rank this first:** §1 above currently says of
+the poopoo cap diffs *"most of that gap closed between that review and this one,
+cause unconfirmed."* Daily snapshots turn that into a `git diff`. Same for the
+27-28/28-29/29-30 scales that were entered with cap and aprons at 0 — you would
+be able to see when, and in which save.
+
+### [P1] Cap side-doors leave no diff — only a one-line journald entry
+Entered 2026-08-16. `POST /api/transactions` is audited to the dollar. These
+change the same state, bypass the ledger entirely, and record almost nothing:
+
+- `PUT /api/players/{slug}` — rewrites `salaries`, `cap_holds`, `guaranteed`,
+  `guarantee_dates` (rosters role)
+- `PUT /api/roster/{team}`, `PUT /api/deadcap/{team}`, `PUT /api/picks/...`
+
+Each writes a `log_write(info, "PUT players/{slug} (NAME)")`
+(`routers/players.py:224`, `roster_picks.py:49,84`) → `logger.info` → journald.
+That records *who touched what*, never *what it was before* or *what it became*.
+So "who moved UTA's Guaranteed Salary, and when" is unanswerable today — which
+is exactly what the two remaining fractional-cent poopoo diffs in §1 need.
+
+Unusually cheap because there is already one choke point: **every** write in the
+API funnels through `storage.py:_atomic_write`. Have `_save_json` / `write_csv`
+append a `{ts, actor, path, diff}` line to an append-only `edits.jsonl` before
+replacing. Obvious surface later: an "Edits" tab beside the ledger on the player
+page. Pairs with the backup item above — one is recovery, this is forensics, and
+neither exists.
 
 ### [P1] Production runs off an unmerged feature branch
 `nbn-api` is on branch `picks-conveyance-phase0`, **58 commits ahead of
@@ -547,13 +672,64 @@ changelog's newest at 0.0.400; corrected by hand. Fix: skip the bump when
 nothing user-facing shipped.
 
 ### [P2] No frontend test coverage
-`build/smoke_test.py` (165 checks, currently green) guards the *data contract*
-only — that pages can still find the columns they read. Nothing checks that a
-page renders. The API side has 5 test files (`stepien_rule`, `tpe_and_hardcap`,
-`picks_matching`, `signing_method_funding`, `exception_absorption_split`).
+`build/smoke_test.py` (165 checks, re-run green 2026-08-16) guards the *data
+contract* only — that pages can still find the columns they read. Nothing checks
+that a page renders. The API side is now at **31** test files (was 5 when this
+was written), so the imbalance is sharper than it reads: the backend is well
+covered and the 114 pages have nothing.
 Puppeteer + Chromium does work in this environment; a handful of
 "page loads, table has rows, no console errors" checks would catch a whole class
 of breakage the smoke test can't see.
+
+### [P2] Nothing records team-state over time
+Entered 2026-08-16. Every cap figure the site shows is *now* — there is no
+history of where a team sat. A nightly append of each team's cap total, apron
+position and hard-cap level is ~20 lines against helpers that already exist
+(`_compute_team_salary*`), and it pays three ways:
+
+- It is the missing input for § 7.3's second-apron pick freeze (§2 above), which
+  is otherwise waiting on time that isn't being banked.
+- Cap position over time on the team page, and "when did this team cross the
+  first apron" — currently unanswerable.
+- The same forensic material the two P1s above want.
+
+Consistent with the standing rule to snapshot state *at* the moment it is true
+rather than reconstructing it later by replaying the ledger.
+
+### [P3] Client-side errors are invisible, and there is no `/api/health`
+Entered 2026-08-16. `GET /api/health` 404s — there is no liveness check on a
+service every interactive page depends on. `Restart=always` is set on
+`nbn-api.service`, which covers a crash but not a wedged process.
+
+Separately, 114 pages each carry their own inline boot, and a member who hits a
+broken one has no way to tell anyone and no way for us to find out. The PDC
+uncaught-rejection item below is one instance of a general condition.
+
+`nav.js` already loads on every page, so a `window.onerror` +
+`unhandledrejection` shim posting to a small `/api/clientlog` covers all 114 at
+once. Complements the frontend-test item above rather than duplicating it —
+tests catch what we thought to check, this catches what members actually hit.
+
+### [P3] Fifth copy of the same frontend primitives — `nbn-data.js` is overdue
+Entered 2026-08-16. `contract.js` exists because the contract grammar had
+already diverged twice; `teams/lineup.js` exists for the same reason. The rest
+of the shared primitives never got that treatment (counted 2026-08-16):
+
+| Helper | Copies |
+|---|---|
+| `TEAMS` abbr → name map | **13 files** |
+| `displayName()` | **11 files** |
+| `parseCSV()` | **10 files** |
+| `parseSalary` / `fmtMoney` | **7 files** |
+
+Same failure mode as the contract shorthand, just quieter — one page renders
+"Wallace, Keaton" and another "Keaton Wallace". A root `nbn-data.js` carrying
+those six, adopted first in the four heaviest consumers (`teams/team.js`,
+`players/index.html`, `cap-summary/`, `transaction-sim/`), then opportunistically.
+
+Note the constraint in CLAUDE.md: the 30 team shells load only `team.js`, so it
+has to be pulled in the same injected-script + awaited-promise way
+`lineupReady` / `contractReady` are, not by touching the shells.
 
 ### [P3] PDC dashboard boots with an uncaught rejection if any fetch fails
 `pdc/index.html`'s boot does `await Promise.all([...])` over `/fa/state`,
@@ -583,10 +759,12 @@ deliberately internal (`/poopoo`, `/cap-settings`); others look like they were
 just forgotten (`/how-to-rosters`, `/rookie-scale`). Worth a pass to decide
 which are intentional and note it, so the next reviewer doesn't re-ask.
 
-### [P3] `/api/rookie-scale` returns empty
-Real figures live in the cached league sheet's "{year} Rookie Contracts" tab
-(columns shifted +1 season). Either populate the endpoint or drop it — an empty
-endpoint that looks authoritative is worse than none.
+### ~~[P3] `/api/rookie-scale` returns empty~~ — DONE 2026-08-11
+Populated by `build/load_rookie_scale.py` from the league sheet's
+"{year} Rookie Contracts" tabs. 2025 and 2026 are loaded and verified to the
+dollar against every signed contract in those classes; `/rookie-scale` renders
+them and `GET /api/rookie-scale/contract/{slug}` prefills the office form.
+**2024 is deliberately still out** — see the § 3.10 multiplier item in §1.
 
 ---
 
@@ -600,6 +778,8 @@ endpoint that looks authoritative is worse than none.
   there is intentionally no path from it to a submission. Decided 2026-08-07.
 - **Per-team cap health on the team page** — `/poopoo` diffs are league-wide and
   internal; a team's own owner can't see that their sheet disagrees with the site.
+  The league-wide compliance board in §2 is the same need from the other end;
+  do them together if either gets picked up.
 - **Franchise records beyond single games** — season-level franchise records
   (best team season, best individual season per franchise) using data the build
   already computes.
@@ -609,3 +789,10 @@ endpoint that looks authoritative is worse than none.
 - **Search over transactions** — `/transactions` lists them; there's no way to
   ask "every trade involving this pick" or "everything TOR did in the 25-26
   league year".
+- ~~**"Clean Up the Poo Poo"**~~ — **Phase 1 live 2026-08-16** at `/cleanup`.
+  Members answer auto-generated questions pulled from real missing bio data
+  (height, wingspan, weight, college, country, dob, photo, draft info —
+  ~2,288 gaps at ship), admin approves, approval writes the real field and
+  pays tiered NB¥ (25/50). Discord-backfill triage (the 538 never-triaged
+  rows) and the Archivist achievement tier are **not built yet** — see
+  `docs/clean-up-the-poopoo-spec.md` (v0.3) § 6 for the remaining phases.

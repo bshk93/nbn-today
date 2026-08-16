@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Clean Up the Poo Poo — NBN</title>
+  <style>
+    .page { max-width: 900px; margin: 0 auto; }
+
+    .top-bar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+    .top-bar h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    .top-bar p { color: var(--text-muted); margin-top: 0.35rem; font-size: 0.9rem; max-width: 46rem; }
+
+    .right-bar { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    .auth-label { font-size: 0.8rem; color: var(--text-muted); }
+    .auth-name { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+
+    button {
+      font-family: inherit; cursor: pointer; border-radius: 6px;
+      font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.8rem;
+      border: 1px solid transparent; transition: background 0.1s;
+    }
+    .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-primary:disabled { opacity: 0.5; cursor: default; }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--bg-card); color: var(--text-primary); }
+    .btn-danger { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+    .btn-sm { font-size: 0.72rem; padding: 0.25rem 0.55rem; }
+
+    .tabs {
+      display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border);
+      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: var(--text-muted); padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; margin-bottom: -1px;
+      letter-spacing: 0.02em; white-space: nowrap; flex-shrink: 0;
+    }
+    .tab:hover { color: var(--text-secondary); }
+    .tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+    .tab-count { color: var(--text-dim); font-weight: 500; }
+    .tab.active .tab-count { color: var(--text-muted); }
+
+    .chips { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .chip {
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);
+      border-radius: 999px; padding: 0.3rem 0.75rem; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .chip:hover { border-color: var(--text-dim); color: var(--text-secondary); }
+    .chip.active { background: var(--accent-panel-bg); border-color: var(--accent-dark); color: var(--accent-light); }
+    .chip .n { color: var(--text-dim); font-weight: 500; }
+    .chip.active .n { color: var(--accent-light); opacity: 0.8; }
+
+    .list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .row-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.85rem 1.1rem;
+    }
+    .row-top { display: flex; align-items: center; gap: 0.75rem; }
+    .row-body { flex: 1; min-width: 0; }
+    .row-name { font-size: 0.9rem; font-weight: 600; }
+    .row-meta { font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.15rem; }
+    .row-meta .sep { color: var(--border); }
+
+    .field-badge {
+      display: inline-block; font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase; padding: 0.15rem 0.5rem;
+      border-radius: 4px; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .reward-badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 700; color: var(--success);
+    }
+
+    .badge {
+      display: inline-block; font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.5rem;
+      border-radius: 4px; flex-shrink: 0;
+    }
+    .badge-pending    { background: #3b1f00; border: 1px solid var(--gold-dim); color: var(--gold); }
+    .badge-approved   { background: var(--success-dark-bg); border: 1px solid #16a34a; color: var(--success); }
+    .badge-rejected   { background: #1a1f2e; border: 1px solid var(--border); color: var(--text-dim); }
+    .badge-superseded { background: #1a1f2e; border: 1px solid var(--border); color: var(--text-dim); }
+
+    .answer-form { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-subtle); display: none; }
+    .answer-form.open { display: block; }
+    .answer-form input, .answer-form select, .answer-form textarea {
+      width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
+      border-radius: 6px; padding: 0.45rem 0.7rem; font-size: 0.85rem; font-family: inherit;
+      margin-bottom: 0.5rem;
+    }
+    .answer-form input:focus, .answer-form select:focus, .answer-form textarea:focus { outline: none; border-color: var(--accent); }
+    .draft-row { display: flex; gap: 0.5rem; }
+    .draft-row > * { flex: 1; }
+    .answer-actions { display: flex; align-items: center; gap: 0.6rem; }
+    .answer-error { font-size: 0.75rem; color: var(--danger); margin-bottom: 0.4rem; display: none; }
+    .field-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem; display: block; }
+
+    .review-value { font-size: 0.85rem; color: var(--text-primary); background: var(--bg-page); border-radius: 6px; padding: 0.5rem 0.7rem; margin-top: 0.5rem; }
+    .review-note { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem; font-style: italic; }
+    .reject-reason { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem; }
+
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--text-dim); font-size: 0.9rem; }
+    .load-more { display: flex; justify-content: center; margin-top: 1rem; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 420px; margin: 1rem; }
+    .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .modal input, .modal textarea {
+      width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
+      border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem; margin-bottom: 0.75rem; font-family: inherit;
+    }
+    .modal input#token-input { font-family: monospace; }
+    .modal textarea { resize: vertical; min-height: 4.5rem; }
+    .modal input:focus, .modal textarea:focus { outline: none; border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .modal p.note { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav"></nav>
+
+  <div class="top-bar">
+    <div>
+      <h1>Clean Up the Poo Poo</h1>
+      <p>Missing player facts, sitting empty right now — height, wingspan, college, draft year, and more. Answer one, an admin checks it, and it goes on the record. NB¥ for every approved answer.</p>
+    </div>
+    <div class="right-bar">
+      <span class="auth-label" id="auth-label">Not signed in</span>
+      <span class="auth-name" id="auth-name"></span>
+      <button class="btn-ghost" id="btn-auth" onclick="openAuthModal()">Sign in</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="play" onclick="setTab('play')">Play <span class="tab-count" id="count-play"></span></button>
+    <button class="tab" data-tab="mine" onclick="setTab('mine')">My Submissions <span class="tab-count" id="count-mine"></span></button>
+    <button class="tab" data-tab="review" id="tab-review" style="display:none;" onclick="setTab('review')">Review <span class="tab-count" id="count-review"></span></button>
+  </div>
+
+  <div id="panel-play">
+    <div class="chips" id="field-chips"></div>
+    <div class="list" id="gap-list"><div class="empty">Loading…</div></div>
+    <div class="load-more" id="load-more" style="display:none;">
+      <button class="btn-ghost" onclick="showMoreGaps()">Show more</button>
+    </div>
+  </div>
+
+  <div id="panel-mine" style="display:none;">
+    <div class="list" id="mine-list"><div class="empty">Sign in to see your submissions.</div></div>
+  </div>
+
+  <div id="panel-review" style="display:none;">
+    <div class="list" id="review-list"><div class="empty">Loading…</div></div>
+  </div>
+</div>
+
+<!-- Auth modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeAuthModal(event)">
+  <div class="modal">
+    <h2>Sign in with your member token</h2>
+    <p class="note">A member token is required to submit answers. It's stored locally in your browser.</p>
+    <input type="password" id="token-input" placeholder="Paste your token" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeAuthModal()">Cancel</button>
+      <button class="btn-primary" onclick="doSignIn()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject reason modal -->
+<div class="modal-overlay" id="reject-modal-overlay" onclick="closeRejectModal(event)">
+  <div class="modal">
+    <h2>Reject submission</h2>
+    <p class="note">This is shown to the member who submitted it.</p>
+    <textarea id="reject-reason" placeholder="Why doesn't this hold up?"></textarea>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeRejectModal()">Cancel</button>
+      <button class="btn-danger" onclick="confirmReject()">Reject</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let me = null;
+let bioNames = {}; // slug -> display name
+let allGaps = [];
+let visibleCount = 30;
+const PAGE_SIZE = 30;
+let currentTab = 'play';
+let fieldFilter = 'all';
+let mineItems = [];
+let reviewItems = [];
+let rejectTargetId = null;
+
+const FIELD_LABELS = {
+  college: 'College', country: 'Country', height: 'Height', weight: 'Weight',
+  wingspan: 'Wingspan', dob: 'Date of Birth', photo_url: 'Photo URL', draft_info: 'Draft Info',
+};
+// Mirrors CLEANUP_FIELD_REWARDS in nbn-api/routers/cleanup.py — display only.
+const FIELD_REWARDS = {
+  college: 25, country: 25, height: 25, weight: 25, wingspan: 25,
+  dob: 50, photo_url: 50, draft_info: 50,
+};
+const STATUS_LABELS = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected', superseded: 'Superseded' };
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function displayName(slug) { return bioNames[slug] || slug; }
+function fmtDateTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function badge(status) { return `<span class="badge badge-${status}">${STATUS_LABELS[status] || status}</span>`; }
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+function isAdmin() { return !!me && (me.roles || []).includes('admin'); }
+
+async function initAuth() {
+  const token = localStorage.getItem('nbn_token');
+  if (!token) { updateAuthUI(null); return; }
+  try {
+    const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) { me = await res.json(); updateAuthUI(me); }
+    else { localStorage.removeItem('nbn_token'); updateAuthUI(null); }
+  } catch { me = { name: '…', roles: [] }; updateAuthUI(me); }
+}
+
+function updateAuthUI(info) {
+  const label = document.getElementById('auth-label');
+  const name = document.getElementById('auth-name');
+  const btn = document.getElementById('btn-auth');
+  const reviewTab = document.getElementById('tab-review');
+  if (info) {
+    label.textContent = 'Signed in as';
+    name.textContent = info.name;
+    btn.textContent = 'Sign out';
+    btn.onclick = doSignOut;
+  } else {
+    label.textContent = 'Not signed in';
+    name.textContent = '';
+    btn.textContent = 'Sign in';
+    btn.onclick = openAuthModal;
+  }
+  reviewTab.style.display = isAdmin() ? '' : 'none';
+  if (!isAdmin() && currentTab === 'review') setTab('play');
+}
+
+function openAuthModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('token-input').focus(), 50);
+}
+function closeAuthModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('token-input').value = '';
+}
+async function doSignIn() {
+  const token = document.getElementById('token-input').value.trim();
+  if (!token) return;
+  try {
+    const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { alert('Invalid token.'); return; }
+    me = await res.json();
+    localStorage.setItem('nbn_token', token);
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.getElementById('token-input').value = '';
+    updateAuthUI(me);
+    renderGaps();
+    if (currentTab === 'mine') loadMine();
+    if (currentTab === 'review') loadReview();
+  } catch { alert('Could not sign in. Check your connection.'); }
+}
+function doSignOut() {
+  localStorage.removeItem('nbn_token');
+  me = null;
+  updateAuthUI(null);
+  renderGaps();
+}
+document.getElementById('token-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSignIn();
+  if (e.key === 'Escape') closeAuthModal();
+});
+
+async function apiSend(path, method, body) {
+  const token = localStorage.getItem('nbn_token');
+  const opts = { method, headers: { Authorization: `Bearer ${token}` } };
+  if (body !== undefined) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(`${API}${path}`, opts);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || 'Request failed.');
+  }
+  return res.json();
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('panel-play').style.display = tab === 'play' ? '' : 'none';
+  document.getElementById('panel-mine').style.display = tab === 'mine' ? '' : 'none';
+  document.getElementById('panel-review').style.display = tab === 'review' ? '' : 'none';
+  if (tab === 'mine') loadMine();
+  if (tab === 'review') loadReview();
+}
+
+// ── Play: gaps ───────────────────────────────────────────────────────────────
+
+function renderChips() {
+  const wrap = document.getElementById('field-chips');
+  const counts = {};
+  allGaps.forEach(g => counts[g.field] = (counts[g.field] || 0) + 1);
+  const fields = Object.keys(FIELD_LABELS).filter(f => counts[f]);
+  let html = `<button class="chip ${fieldFilter === 'all' ? 'active' : ''}" onclick="setFieldFilter('all')">All <span class="n">${allGaps.length}</span></button>`;
+  fields.forEach(f => {
+    html += `<button class="chip ${fieldFilter === f ? 'active' : ''}" onclick="setFieldFilter('${f}')">${FIELD_LABELS[f]} <span class="n">${counts[f]}</span></button>`;
+  });
+  wrap.innerHTML = html;
+}
+
+function setFieldFilter(f) {
+  fieldFilter = f;
+  visibleCount = PAGE_SIZE;
+  renderChips();
+  renderGaps();
+}
+
+function filteredGaps() {
+  return fieldFilter === 'all' ? allGaps : allGaps.filter(g => g.field === fieldFilter);
+}
+
+function answerFormHTML(g, formId) {
+  const f = g.field;
+  if (f === 'draft_info') {
+    return `
+      <div class="answer-form" id="${formId}">
+        <div class="answer-error" id="${formId}-error"></div>
+        <div class="draft-row">
+          <div>
+            <span class="field-label">Draft Year</span>
+            <input type="number" id="${formId}-year" placeholder="2019" min="1946" max="2035">
+          </div>
+          <div>
+            <span class="field-label">Round (blank = undrafted)</span>
+            <select id="${formId}-round" onchange="syncPickDisabled('${formId}')">
+              <option value="">Undrafted</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+            </select>
+          </div>
+          <div>
+            <span class="field-label">Pick #</span>
+            <input type="number" id="${formId}-pick" placeholder="—" min="1" disabled>
+          </div>
+        </div>
+        <span class="field-label">Source (optional)</span>
+        <textarea id="${formId}-note" placeholder="Where'd you find this? (optional)"></textarea>
+        <div class="answer-actions">
+          <button class="btn-primary btn-sm" onclick="submitAnswer('${g.slug}','${f}','${formId}')">Submit</button>
+          <button class="btn-ghost btn-sm" onclick="closeAnswerForm('${formId}')">Cancel</button>
+          <span class="reward-badge">+${FIELD_REWARDS[f]} NB¥ if approved</span>
+        </div>
+      </div>`;
+  }
+  const inputType = f === 'weight' ? 'number' : f === 'dob' ? 'date' : f === 'photo_url' ? 'url' : 'text';
+  const placeholder = { height: `6'8"`, wingspan: `7'1"`, weight: '215', college: 'Duke', country: 'USA', photo_url: 'https://…' }[f] || '';
+  return `
+    <div class="answer-form" id="${formId}">
+      <div class="answer-error" id="${formId}-error"></div>
+      <span class="field-label">${FIELD_LABELS[f]}</span>
+      <input type="${inputType}" id="${formId}-value" placeholder="${placeholder}">
+      <span class="field-label">Source (optional)</span>
+      <textarea id="${formId}-note" placeholder="Where'd you find this? (optional)"></textarea>
+      <div class="answer-actions">
+        <button class="btn-primary btn-sm" onclick="submitAnswer('${g.slug}','${f}','${formId}')">Submit</button>
+        <button class="btn-ghost btn-sm" onclick="closeAnswerForm('${formId}')">Cancel</button>
+        <span class="reward-badge">+${FIELD_REWARDS[f]} NB¥ if approved</span>
+      </div>
+    </div>`;
+}
+
+function syncPickDisabled(formId) {
+  const round = document.getElementById(`${formId}-round`).value;
+  const pick = document.getElementById(`${formId}-pick`);
+  pick.disabled = !round;
+  if (!round) pick.value = '';
+}
+
+function renderGapRow(g) {
+  const el = document.createElement('div');
+  el.className = 'row-card';
+  const formId = `form-${g.slug}-${g.field}`;
+  el.innerHTML = `
+    <div class="row-top">
+      <div class="row-body">
+        <div class="row-name">${escHtml(displayName(g.slug))}</div>
+        <div class="row-meta"><span class="field-badge">${FIELD_LABELS[g.field]}</span>
+          <span class="sep">•</span><span class="reward-badge">+${FIELD_REWARDS[g.field]} NB¥</span></div>
+      </div>
+      <button class="btn-primary btn-sm" id="${formId}-toggle">Answer</button>
+    </div>
+    ${answerFormHTML(g, formId)}`;
+  el.querySelector(`#${CSS.escape(formId + '-toggle')}`).addEventListener('click', () => {
+    if (!me) { openAuthModal(); return; }
+    document.getElementById(formId).classList.toggle('open');
+  });
+  return el;
+}
+
+function renderGaps() {
+  const list = document.getElementById('gap-list');
+  const filtered = filteredGaps();
+  list.innerHTML = '';
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">No gaps left here — nice work.</div>';
+    document.getElementById('load-more').style.display = 'none';
+    return;
+  }
+  filtered.slice(0, visibleCount).forEach(g => list.appendChild(renderGapRow(g)));
+  document.getElementById('load-more').style.display = filtered.length > visibleCount ? '' : 'none';
+  document.getElementById('count-play').textContent = `(${allGaps.length})`;
+}
+
+function showMoreGaps() {
+  visibleCount += PAGE_SIZE;
+  renderGaps();
+}
+
+function closeAnswerForm(formId) {
+  document.getElementById(formId).classList.remove('open');
+}
+
+async function submitAnswer(slug, field, formId) {
+  const errEl = document.getElementById(`${formId}-error`);
+  errEl.style.display = 'none';
+  let value;
+  if (field === 'draft_info') {
+    const year = parseInt(document.getElementById(`${formId}-year`).value, 10);
+    const roundRaw = document.getElementById(`${formId}-round`).value;
+    const pickRaw = document.getElementById(`${formId}-pick`).value;
+    if (!year) { errEl.textContent = 'Draft year is required.'; errEl.style.display = 'block'; return; }
+    value = {
+      draft_year: year,
+      draft_round: roundRaw ? parseInt(roundRaw, 10) : null,
+      draft_pick: roundRaw ? (pickRaw ? parseInt(pickRaw, 10) : null) : null,
+    };
+    if (roundRaw && !pickRaw) { errEl.textContent = 'Pick # is required when a round is set.'; errEl.style.display = 'block'; return; }
+  } else {
+    const raw = document.getElementById(`${formId}-value`).value.trim();
+    if (!raw) { errEl.textContent = 'This field is required.'; errEl.style.display = 'block'; return; }
+    value = field === 'weight' ? parseInt(raw, 10) : raw;
+  }
+  const source_note = document.getElementById(`${formId}-note`).value.trim();
+
+  try {
+    await apiSend('/cleanup/submissions', 'POST', { slug, field, value, source_note });
+    await loadGaps();
+    if (currentTab === 'mine') loadMine();
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function loadGaps() {
+  try {
+    const res = await fetch(`${API}/cleanup/gaps`);
+    if (!res.ok) throw new Error('failed');
+    allGaps = shuffle(await res.json());
+    renderChips();
+    renderGaps();
+  } catch {
+    document.getElementById('gap-list').innerHTML = '<div class="empty">Failed to load gaps.</div>';
+  }
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── My Submissions ───────────────────────────────────────────────────────────
+
+function formatValue(field, value) {
+  if (field === 'draft_info' && value && typeof value === 'object') {
+    return value.draft_round
+      ? `${value.draft_year}, Round ${value.draft_round}, Pick ${value.draft_pick}`
+      : `${value.draft_year}, undrafted`;
+  }
+  return String(value);
+}
+
+function renderMineRow(it) {
+  const el = document.createElement('div');
+  el.className = 'row-card';
+  el.innerHTML = `
+    <div class="row-top">
+      <div class="row-body">
+        <div class="row-name">${escHtml(displayName(it.slug))}</div>
+        <div class="row-meta"><span class="field-badge">${FIELD_LABELS[it.field]}</span>
+          <span class="sep">•</span>${badge(it.status)}
+          <span class="sep">•</span><span>${fmtDateTime(it.submitted_at)}</span>
+          ${it.reward_nby ? `<span class="sep">•</span><span class="reward-badge">+${it.reward_nby} NB¥</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="review-value">${escHtml(formatValue(it.field, it.value))}</div>
+    ${it.status === 'rejected' && it.reject_reason ? `<div class="reject-reason">Rejected: ${escHtml(it.reject_reason)}</div>` : ''}
+  `;
+  return el;
+}
+
+async function loadMine() {
+  const list = document.getElementById('mine-list');
+  if (!me) { list.innerHTML = '<div class="empty">Sign in to see your submissions.</div>'; return; }
+  list.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    mineItems = await apiSend('/cleanup/submissions/mine', 'GET');
+    document.getElementById('count-mine').textContent = `(${mineItems.length})`;
+    list.innerHTML = '';
+    if (!mineItems.length) { list.innerHTML = '<div class="empty">No submissions yet — head to Play.</div>'; return; }
+    mineItems.forEach(it => list.appendChild(renderMineRow(it)));
+  } catch {
+    list.innerHTML = '<div class="empty">Failed to load your submissions.</div>';
+  }
+}
+
+// ── Review (admin) ───────────────────────────────────────────────────────────
+
+function renderReviewRow(it) {
+  const el = document.createElement('div');
+  el.className = 'row-card';
+  el.innerHTML = `
+    <div class="row-top">
+      <div class="row-body">
+        <div class="row-name">${escHtml(displayName(it.slug))}</div>
+        <div class="row-meta"><span class="field-badge">${FIELD_LABELS[it.field]}</span>
+          <span class="sep">•</span><span>${escHtml(it.submitted_by)}</span>
+          <span class="sep">•</span><span>${fmtDateTime(it.submitted_at)}</span></div>
+      </div>
+    </div>
+    <div class="review-value">${escHtml(formatValue(it.field, it.value))}</div>
+    ${it.source_note ? `<div class="review-note">${escHtml(it.source_note)}</div>` : ''}
+    <div class="answer-actions" style="margin-top:0.6rem;">
+      <button class="btn-primary btn-sm">Approve</button>
+      <button class="btn-danger btn-sm">Reject</button>
+    </div>`;
+  const [approveBtn, rejectBtn] = el.querySelectorAll('.answer-actions button');
+  if (it.submitted_by === (me && me.name)) {
+    approveBtn.disabled = true;
+    approveBtn.title = "Can't approve your own submission.";
+  }
+  approveBtn.addEventListener('click', () => approveSubmission(it.id));
+  rejectBtn.addEventListener('click', () => openRejectModal(it.id));
+  return el;
+}
+
+async function loadReview() {
+  const list = document.getElementById('review-list');
+  if (!isAdmin()) { list.innerHTML = '<div class="empty">Admin only.</div>'; return; }
+  list.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    reviewItems = await apiSend('/cleanup/submissions?status=pending', 'GET');
+    document.getElementById('count-review').textContent = `(${reviewItems.length})`;
+    list.innerHTML = '';
+    if (!reviewItems.length) { list.innerHTML = '<div class="empty">Nothing pending review.</div>'; return; }
+    reviewItems.forEach(it => list.appendChild(renderReviewRow(it)));
+  } catch {
+    list.innerHTML = '<div class="empty">Failed to load the review queue.</div>';
+  }
+}
+
+async function approveSubmission(id) {
+  try {
+    await apiSend(`/cleanup/submissions/${id}/approve`, 'POST');
+    await loadReview();
+    await loadGaps();
+  } catch (e) { alert(e.message); }
+}
+
+function openRejectModal(id) {
+  rejectTargetId = id;
+  document.getElementById('reject-reason').value = '';
+  document.getElementById('reject-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('reject-reason').focus(), 50);
+}
+function closeRejectModal(e) {
+  if (e && e.target !== document.getElementById('reject-modal-overlay')) return;
+  document.getElementById('reject-modal-overlay').classList.remove('open');
+  rejectTargetId = null;
+}
+async function confirmReject() {
+  const reason = document.getElementById('reject-reason').value.trim();
+  if (!reason) return;
+  try {
+    await apiSend(`/cleanup/submissions/${rejectTargetId}/reject`, 'POST', { reason });
+    closeRejectModal();
+    await loadReview();
+  } catch (e) { alert(e.message); }
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+
+async function loadBioNames() {
+  try {
+    const res = await fetch(`${API}/players`);
+    const bios = await res.json();
+    Object.entries(bios).forEach(([slug, b]) => { bioNames[slug] = b.name || slug; });
+  } catch { /* names fall back to slugs */ }
+}
+
+(async () => {
+  await Promise.all([initAuth(), loadBioNames()]);
+  await loadGaps();
+})();
+</script>
+  <script src="/nav.js"></script>
+</body>
+</html>

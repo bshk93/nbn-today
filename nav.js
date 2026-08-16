@@ -218,6 +218,7 @@ const SITE_PAGES = [
   { title: 'Changelog', href: '/changelog', icon: '🔖' },
   { title: 'Proposals', href: '/proposals/', icon: '🗳️' },
   { title: 'Suggestions', href: '/suggestions/', icon: '💡' },
+  { title: 'Clean Up the Poo Poo', href: '/cleanup/', icon: '🧹' },
   { title: 'Inbox', href: '/inbox/', icon: '📥' },
 ];
 
