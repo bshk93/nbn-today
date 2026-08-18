@@ -80,6 +80,7 @@
     .rb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
     .rb-fac       { background: #500724; color: #f9a8d4; }
     .rb-fac-head   { background: #500724; color: #f9a8d4; border: 1px solid #ec4899; }
+    .rb-agent      { background: #431407; color: #fdba74; }
     .rb-poext      { background: #1e1b4b; color: #a5b4fc; }
     .rb-poext-head { background: #1e1b4b; color: #a5b4fc; border: 1px solid #818cf8; }
     .rb-team    { background: #1c2c1e; color: var(--success-light); }
@@ -616,6 +617,7 @@ function roleClass(r) {
   if (r === 'bookie')  return 'rb-bookie';
   if (r === 'fac_head')   return 'rb-fac-head';
   if (r === 'fac')        return 'rb-fac';
+  if (r === 'agent')      return 'rb-agent';
   if (r === 'poext_head') return 'rb-poext-head';
   if (r === 'poext')      return 'rb-poext';
   return 'rb-team';

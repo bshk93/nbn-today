@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Trade Votes — NBN</title>
+  <style>
+
+    .page {
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 1.25rem;
+    }
+
+    header h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+      max-width: 68ch;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    #search {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      padding: 0.4rem 0.7rem;
+      font-size: 0.85rem;
+      width: 220px;
+    }
+
+    #search:focus {
+      outline: none;
+      border-color: var(--text-muted);
+    }
+
+    .meta {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+    }
+
+    .table-scroll {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: auto;
+      max-height: 76vh;
+    }
+
+    table {
+      border-collapse: collapse;
+      white-space: nowrap;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--bg-card);
+      padding: 0.45rem 0.35rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      min-width: 58px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover {
+      color: var(--text-secondary);
+    }
+
+    thead th[data-active="true"] {
+      color: var(--text-primary);
+    }
+
+    .sort-arrow {
+      display: inline-block;
+      margin-left: 2px;
+      opacity: 0.6;
+      font-size: 0.6rem;
+    }
+
+    thead th:nth-child(1),
+    thead th:nth-child(2),
+    thead th:nth-child(3) {
+      position: sticky;
+      z-index: 3;
+      background: var(--bg-card);
+      text-align: left;
+      padding-left: 0.6rem;
+    }
+
+    thead th:nth-child(1) { left: 0; min-width: 150px; }
+    thead th:nth-child(2) { left: 150px; min-width: 54px; }
+    thead th:nth-child(3) { left: 204px; min-width: 64px; border-right: 1px solid var(--border); }
+
+    tbody tr {
+      border-bottom: 1px solid #1e2a3b;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody tr:hover td { background: var(--bg-hover); }
+    tbody tr:hover td:nth-child(1),
+    tbody tr:hover td:nth-child(2),
+    tbody tr:hover td:nth-child(3) { background: var(--bg-hover); }
+
+    td {
+      padding: 0.28rem 0.35rem;
+      text-align: center;
+      min-width: 58px;
+      vertical-align: middle;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td:nth-child(1),
+    td:nth-child(2),
+    td:nth-child(3) {
+      position: sticky;
+      z-index: 1;
+      background: var(--bg-card);
+    }
+
+    td:nth-child(1) {
+      left: 0;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-align: left;
+      padding-left: 0.6rem;
+      font-size: 0.75rem;
+    }
+
+    td:nth-child(2) {
+      left: 150px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    td:nth-child(3) {
+      left: 204px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      border-right: 1px solid var(--border);
+    }
+
+    .unlinked {
+      color: var(--text-dim);
+      font-weight: 500;
+      font-style: italic;
+    }
+
+    .cell-record {
+      font-size: 0.65rem;
+      font-weight: 500;
+      line-height: 1.25;
+    }
+
+    .cell-pct {
+      font-size: 0.68rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .cell-dash {
+      color: var(--text-dim);
+      opacity: 0.5;
+    }
+
+    #status {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    footer.note {
+      margin-top: 1rem;
+      color: var(--text-dim);
+      font-size: 0.72rem;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"></nav>
+
+    <header>
+      <h1>Trade Votes</h1>
+      <p>For every trade message a member reacted to, they're scored FOR each team in that trade whose logo emoji they also reacted with, and AGAINST every other team named in the same trade. Click a column header to sort.</p>
+    </header>
+
+    <div class="controls">
+      <input id="search" type="text" placeholder="Filter by name…">
+      <span class="meta" id="meta"></span>
+    </div>
+
+    <div class="table-scroll" id="table-wrap">
+      <div id="status">Loading…</div>
+    </div>
+
+    <footer class="note" id="note"></footer>
+  </div>
+
+  <script>
+    let ALL_ROWS = [];
+    let TEAMS = [];
+    let sortField = 'total';
+    let sortDir = -1;
+    let filterText = '';
+
+    function sortVal(row, field) {
+      if (field === 'name') return row.name.toLowerCase();
+      if (field === 'total') return row.overall.total;
+      if (field === 'pct') return row.overall.pct ?? -1;
+      const t = row.teams[field];
+      return t ? (t.pct ?? -1) : -1;
+    }
+
+    function sortedRows() {
+      let rows = ALL_ROWS;
+      if (filterText) {
+        const f = filterText.toLowerCase();
+        rows = rows.filter(r => r.name.toLowerCase().includes(f));
+      }
+      rows = rows.slice().sort((a, b) => {
+        const va = sortVal(a, sortField);
+        const vb = sortVal(b, sortField);
+        if (va < vb) return -sortDir;
+        if (va > vb) return sortDir;
+        return a.name.localeCompare(b.name);
+      });
+      return rows;
+    }
+
+    function pctCell(td, forCount, total) {
+      if (!total) {
+        td.innerHTML = '<span class="cell-dash">—</span>';
+        return;
+      }
+      const pct = forCount / total;
+      const hue = Math.round(pct * 120);
+      td.style.background = `hsl(${hue}, 45%, 16%)`;
+      td.style.color = `hsl(${hue}, 70%, 70%)`;
+
+      const recDiv = document.createElement('div');
+      recDiv.className = 'cell-record';
+      recDiv.textContent = `${forCount}-${total - forCount}`;
+
+      const pctDiv = document.createElement('div');
+      pctDiv.className = 'cell-pct';
+      pctDiv.textContent = Math.round(pct * 100) + '%';
+
+      td.appendChild(recDiv);
+      td.appendChild(pctDiv);
+    }
+
+    function rebuildBody(tbody) {
+      tbody.innerHTML = '';
+      sortedRows().forEach(row => {
+        const tr = tbody.insertRow();
+
+        const nameCell = tr.insertCell();
+        nameCell.textContent = row.name;
+        if (!row.linked) nameCell.classList.add('unlinked');
+
+        const totalCell = tr.insertCell();
+        totalCell.textContent = row.overall.total;
+
+        const pctCellEl = tr.insertCell();
+        pctCell(pctCellEl, row.overall.for, row.overall.total);
+
+        TEAMS.forEach(abbr => {
+          const td = tr.insertCell();
+          const t = row.teams[abbr];
+          pctCell(td, t ? t.for : 0, t ? t.total : 0);
+        });
+      });
+    }
+
+    function buildTable() {
+      const table = document.createElement('table');
+      const thead = table.createTHead();
+      const hr = thead.insertRow();
+
+      const cols = [
+        { field: 'name', label: 'Name', defaultDir: 1 },
+        { field: 'total', label: 'Votes', defaultDir: -1 },
+        { field: 'pct', label: 'Overall %', defaultDir: -1 },
+        ...TEAMS.map(abbr => ({ field: abbr, label: abbr, defaultDir: -1 })),
+      ];
+
+      const tbody = table.createTBody();
+
+      cols.forEach(col => {
+        const th = document.createElement('th');
+        th.appendChild(document.createTextNode(col.label));
+        const arrow = document.createElement('span');
+        arrow.className = 'sort-arrow';
+        th.appendChild(arrow);
+        const isActive = col.field === sortField;
+        th.dataset.active = isActive;
+        arrow.textContent = isActive ? (sortDir === -1 ? '↓' : '↑') : '';
+        th.addEventListener('click', () => {
+          if (sortField === col.field) {
+            sortDir *= -1;
+          } else {
+            sortField = col.field;
+            sortDir = col.defaultDir;
+          }
+          thead.querySelectorAll('th').forEach(t => {
+            t.dataset.active = false;
+            t.querySelector('.sort-arrow').textContent = '';
+          });
+          th.dataset.active = true;
+          arrow.textContent = sortDir === -1 ? '↓' : '↑';
+          rebuildBody(tbody);
+        });
+        hr.appendChild(th);
+      });
+
+      rebuildBody(tbody);
+      return table;
+    }
+
+    (async () => {
+      const status = document.getElementById('status');
+      const wrap = document.getElementById('table-wrap');
+      const meta = document.getElementById('meta');
+      const note = document.getElementById('note');
+      const search = document.getElementById('search');
+
+      try {
+        const res = await fetch('/data/trade-votes.json');
+        if (!res.ok) throw new Error(res.statusText);
+        const data = await res.json();
+
+        ALL_ROWS = data.users || [];
+        const teamSet = new Set();
+        ALL_ROWS.forEach(r => Object.keys(r.teams).forEach(t => teamSet.add(t)));
+        TEAMS = Array.from(teamSet).sort();
+
+        meta.textContent = `${ALL_ROWS.length} members`;
+        note.innerHTML = `Scope: ${data.scored_messages} trade messages scored across ${data.channels.length} channel(s) matching "transactions" ` +
+          `(${data.channels.join(', ')}); ${data.skipped_messages} skipped because the team headers in the message text didn't parse. ` +
+          `A cell reads FOR-AGAINST. Names in <em>italics</em> aren't linked to an NBN member account and show the raw Discord username instead. ` +
+          `Generated ${new Date(data.generated_at).toLocaleString()}.`;
+
+        status.remove();
+        wrap.appendChild(buildTable());
+
+        search.addEventListener('input', () => {
+          filterText = search.value;
+          rebuildBody(wrap.querySelector('tbody'));
+        });
+      } catch (e) {
+        status.textContent = 'Failed to load trade votes: ' + e.message;
+      }
+    })();
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

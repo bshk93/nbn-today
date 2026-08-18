@@ -206,6 +206,38 @@ the API. `transactions.py` implements: `sign`, `pick`, `option`, `guarantee`,
 loses the fact that it was an extension and skips every § 6.2 constraint.
 This is the largest single hole in transaction coverage.
 
+Two specs now cover it: `nbn-api/docs/extensions.md` (rules and validator, written
+2026-08-07) and `docs/poext-extension-pipeline.md` (the pipeline built on the
+free-agency infra, 2026-08-18). The second corrects the first on eligibility
+derivation — contract length is **not** derivable from `salaries` + `cap_holds`
+(zero rostered players have a salary row before 25-26, so the naive read finds
+0 of 502 eligible); it needs the ledger, as § 3.8 Bird tenure did. Real eligible
+population is ~32 players. Hardest blocker is that cap levels for 27-28 onward
+are all zero, and every extension targets one of those seasons.
+
+### [P3] Extension eligibility backfill — 161 rostered players missing an acquisition record
+`_player_acquisition_index` (§ 3.8's ledger scan, reused for § 6.2 eligibility)
+can't find a `sign`/`sign_pick`/`convert_twoway`/`offer_sheet_decision` entry for
+161 of 502 rostered players, so their contract start date is unknown and
+eligibility can't be derived from the ledger.
+
+**No longer a blocker for shipping extensions** (decided 2026-08-19,
+`docs/poext-extension-pipeline.md` § 2.3a/D1) — a proposal now packages
+whatever partial ledger history the player has, plus the submitting team's own
+attestation of when the deal began, and the eligibility check runs off that at
+warn severity. Still worth doing properly when there's time, since it's mostly
+free:
+
+- **97** recoverable by re-running the existing Discord resolver against
+  `discord-fa-signings-raw` / `discord-transactions-raw` — flagged/skipped
+  residue from the earlier ledger backfill, not new research.
+- **59** rule-derivable from `draft_year` alone: no signing record anywhere +
+  a known draft year means they're still on the rookie deal (the earlier
+  backfill was thorough enough that absence of a record is itself the
+  evidence), so contract start = draft year.
+- **5** have no draft year and no mention anywhere — need a person to just
+  state it.
+
 ### [P1] Qualifying Offers don't exist in the system at all
 § 3.9 defines the QO — it's what makes a sub-4-year free agent an **RFA** rather
 than a UFA — but nothing in the API represents one. Three separate consequences,

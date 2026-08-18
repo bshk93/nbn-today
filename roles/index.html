@@ -52,6 +52,11 @@
     .badge-curator { background: var(--purple-light-bg); color: var(--purple-light); }
     .badge-stats   { background: #0d2a33; color: #5eead4; }
     .badge-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
+    .badge-fac        { background: #500724; color: #f9a8d4; }
+    .badge-fac-head   { background: #500724; color: #f9a8d4; border: 1px solid #ec4899; }
+    .badge-agent      { background: #431407; color: #fdba74; }
+    .badge-poext      { background: #1e1b4b; color: #a5b4fc; }
+    .badge-poext-head { background: #1e1b4b; color: #a5b4fc; border: 1px solid #818cf8; }
     .badge-team    { background: #1c2c1e; color: var(--success-light); }
 
     .role-card h2 {
@@ -175,6 +180,11 @@
     .trb-curator { background: var(--purple-light-bg); color: var(--purple-light); }
     .trb-stats   { background: #0d2a33; color: #5eead4; }
     .trb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
+    .trb-fac        { background: #500724; color: #f9a8d4; }
+    .trb-fac-head   { background: #500724; color: #f9a8d4; border: 1px solid #ec4899; }
+    .trb-agent      { background: #431407; color: #fdba74; }
+    .trb-poext      { background: #1e1b4b; color: #a5b4fc; }
+    .trb-poext-head { background: #1e1b4b; color: #a5b4fc; border: 1px solid #818cf8; }
     .trb-team    { background: #1c2c1e; color: var(--success-light); }
 
     .empty-state { text-align: center; color: var(--text-muted); padding: 2rem; }
@@ -454,6 +464,47 @@
 
     <div class="role-card">
       <div class="role-card-header">
+        <span class="role-badge badge-fac">FAC</span>
+        <span class="role-badge badge-fac-head">FAC_HEAD</span>
+        <h2>Free Agency Committee</h2>
+      </div>
+      <p>Reviews and ballots on team-submitted free-agent offers at pdc.nbn.today (§ 4.6 / § 4.7). Assigned per player, not standing.</p>
+      <ul>
+        <li>FAC — vote on the sub-committee ballots you're assigned to; never waved through by admin, since a ballot is a vote, not an administrative action</li>
+        <li>FAC_HEAD — everything FAC can do, plus: assign reviewers, remand/void/restore offers, control FFA windows, finalize results</li>
+      </ul>
+      <p class="inherits">FAC_HEAD implies FAC and Agent (below) — the fallback that keeps the process from deadlocking if every agent is conflicted out of a negotiation.</p>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
+        <span class="role-badge badge-agent">Agent</span>
+        <h2>Agent</h2>
+      </div>
+      <p>Represents the player's side, not either committee's — the same person acts as agent whether a player is heading to free agency or negotiating a contract extension.</p>
+      <ul>
+        <li>Claim a free agent, or an extension-eligible player, off the shared queue — no per-player assignment, first come</li>
+        <li>Negotiate the claimed player's offers or extension terms down to a final set</li>
+        <li>Advance a contested case to a sub-committee ballot, or finalize an uncontested one outright</li>
+      </ul>
+      <p class="inherits">Claiming a player permanently blocks the agent's own team from bidding on or extending them — the one hard rule in an otherwise advisory role, and why releasing a claim is safe to allow. Free agency and extension claims are tracked separately even for the same player; claiming one side never blocks the other.</p>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
+        <span class="role-badge badge-poext">POEXT</span>
+        <span class="role-badge badge-poext-head">POEXT_HEAD</span>
+        <h2>Extension Committee <span style="font-weight:400;color:var(--text-muted);font-size:0.875rem">(not yet live)</span></h2>
+      </div>
+      <p>The § 6.2 / § 6.3 contract-extension equivalent of the Free Agency Committee. Roles are reserved and can be granted now, but the pipeline itself is still a stub on /pdc — see <code>docs/poext-extension-pipeline.md</code>.</p>
+      <ul>
+        <li>Will mirror FAC / FAC_HEAD's review-and-decide shape once built, on extension proposals rather than FA offers</li>
+        <li>POEXT_HEAD implies POEXT and Agent, same fallback reasoning as FAC_HEAD</li>
+      </ul>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
         <span class="role-badge badge-team">Team Roles</span>
         <h2>Team Roles <span style="font-weight:400;color:var(--text-muted);font-size:0.875rem">(atl, bkn, bos, …)</span></h2>
       </div>
@@ -499,6 +550,11 @@ function roleBadgeClass(role) {
   if (role === 'curator') return 'trb-curator';
   if (role === 'stats')   return 'trb-stats';
   if (role === 'bookie')  return 'trb-bookie';
+  if (role === 'fac_head')   return 'trb-fac-head';
+  if (role === 'fac')        return 'trb-fac';
+  if (role === 'agent')      return 'trb-agent';
+  if (role === 'poext_head') return 'trb-poext-head';
+  if (role === 'poext')      return 'trb-poext';
   return 'trb-team';
 }
 
