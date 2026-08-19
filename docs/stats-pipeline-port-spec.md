@@ -182,6 +182,48 @@ data_dir, args)`. Until it exists `run_python` raises `NotImplementedError`
 rather than writing an empty tree, which would diff as 86 missing files and
 read like a broken run instead of an absent one.
 
+## Phase 2 — in progress, started 2026-08-19
+
+**The writer came first** (`stats_build/csvio.py`). Every aggregation inherits
+it, so a formatting bug would fail every slice for the same reason and invite
+someone to loosen the comparison. Its rules were measured from the 86 real
+output files, not read off readr's documentation, and two of them were not
+guessable: **negative zero keeps its sign** (`-0` in three files, a point
+differential that reached zero from below), and **an empty field is not `NA`**
+(14,903 NAs and 403 genuine empties — the h2h diagonal). 159,363 numeric
+values across all 86 files now render identically, and all 86 re-render
+byte-identically for quoting, escaping and line endings.
+
+**One named exception, and it is not a tolerance.** readr/vroom 1.6.5 does not
+always emit the shortest round-trip form for a double — measured, 244 of
+150,000 doubles written from R carry one extra significant digit. Both
+renderings parse to the *same* IEEE double, so no computed value differs, only
+the text. The harness accepts that class and nothing else: exact double
+equality (never an epsilon, so a wrong number is still a different double) and
+both sides at ≥15 significant digits (so `0.50` against `0.5`, or `2790.0`
+against `2790`, still fail as the writer bugs they are). It reaches exactly one
+value, in `OFF_RTG`, in two files; the test re-measures that scope on every
+run, so the day it stops being two cells a test fails. This is the "name them
+explicitly rather than loosening the comparison globally" answer the open
+question below asked for.
+
+**Slice order changed: gateable slices first.** Porting the loaders first was
+the natural dependency order and the wrong call — loaders produce no output
+file, so the acceptance test would not have applied to the first slice. Slices
+are output files instead, starting with the 52 of 86 that carry no
+full-precision doubles (the other 34 are the `-seasons` files,
+`standings-history` and `league-history`, all via `OFF_RTG`/`DEF_RTG`), so
+early progress doesn't depend on the rendering question above.
+
+**stdlib only — no pandas.** It would be a new dependency in the API's venv for
+a service that never imports it at runtime, and numpy's own float and NaN
+rendering would fight the one thing the gate turns on. Revisit if a later slice
+genuinely needs it.
+
+**Ported so far:** `data/h2h-alltime.csv`, `data/h2h-playoffs.csv` — byte-identical
+to R, and thin enough over the loaders that they drag season labelling and the
+current-season injection behind a real gate. 84 files to go.
+
 ## What's actually hard
 
 Not the dataframe work — the league semantics buried in it: award
@@ -196,7 +238,7 @@ reason a from-scratch rewrite is the wrong idea.
    "Current state, measured."
 1. ~~**Harness.**~~ **Done 2026-08-19** — run-both-and-diff, plus R
    determinism confirmed. See "Phase 1" above.
-2. **Port in dependency order** *(next)* — loaders → standings → team seasons →
+2. **Port in dependency order** *(in progress — 2 of 86 files)* — loaders → standings → team seasons →
    player seasons → awards → derived tables (highs, totals, h2h, franchise
    records) → HOF. R stays authoritative throughout; each aggregation
    flips only once its output matches byte for byte.
