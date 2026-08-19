@@ -14,6 +14,8 @@ any other hook has to live here too rather than in `.git/hooks`.
 
 - Run build/smoke_test.py; abort the commit if a page reads a column or file
   that no longer exists. Bypass with `git commit --no-verify` if needed.
+- Run build/test_build_sh.py; abort if build.sh has stopped defaulting to the
+  Python stats engine, or grown a second copy of the season rule.
 - If version.json is already staged (manual minor/major bump), leave it alone.
 - If the only staged file is changelog.json (retroactive fix), skip the bump.
 - Otherwise, increment the patch digit and stage version.json.
@@ -28,6 +30,14 @@ if smoke.exists():
     if result.returncode != 0:
         print('\nCommit aborted: the data contract is broken (see FAIL lines above).')
         print('Fix the mismatch, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+build_sh_test = Path('build/test_build_sh.py')
+if build_sh_test.exists():
+    result = subprocess.run(['python3', str(build_sh_test)])
+    if result.returncode != 0:
+        print('\nCommit aborted: build.sh no longer holds its contract (see FAIL lines above).')
+        print('Fix it, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 vpath = Path('version.json')

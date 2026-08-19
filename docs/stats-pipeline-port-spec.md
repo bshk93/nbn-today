@@ -260,6 +260,86 @@ path. The cost is pure-Python loops plus exact rationals in the ratings.
 - The bios join to stat lines by **uppercase name**, not slug — box scores
   carry no slug.
 
+## Phase 3 — cutover, done 2026-08-19
+
+`build.sh` runs `python3 -m stats_build` instead of `Rscript job.R`. Everything
+that triggers a build — `POST /api/boxscores/submit`, `POST /api/build/trigger`,
+a person on the box — is unchanged: `build.sh` was kept as the entry-point
+contract exactly so nothing else had to move on the day.
+
+Done in the offseason, two months after the last box score (2026-06-18), which
+is the quiet window the cutover wanted.
+
+**What the switch actually is.** `NBN_STATS_ENGINE`, defaulting to `python`,
+with `r` reaching the dormant engine. Both branches share the tail — the same
+`link-public.sh` and the same `smoke_test.py`, whose status is still the
+build's exit status — so the rollback is a real path and not a hopeful one. It
+was run end to end against a scratch data directory before the cutover, not
+just left in place: R 13.9s, Python 35.7s, 173 files published and 166 smoke
+checks passing on both. An unrecognised engine exits 2 rather than defaulting
+to either.
+
+**One resolver, finally.** The Sep 30 season cutoff existed three times (bash
+in `build.sh`, Python in `harness.py`, and R in `job.R`). It is now
+`stats_build/buildargs.py`, which the entry point and the harness both import;
+`build/test_build_sh.py` fails the commit if a copy reappears on the live path.
+The bash copy survives only on the R branch and goes with it in Phase 4.
+
+**What reading `job.R` for the last time settled:** of its three positional
+arguments, only `season` is used. `playoffs_from` and `through` are parsed,
+defaulted, and never read again — playoff rows come from their own
+`allstats-playoffs-{YY}.csv` files, so nothing splits a season by date. They
+are still passed to R verbatim (the dormant engine is invoked exactly as it
+always was) and still recorded in the harness manifest, because R defaults
+`through` to `Sys.Date()` and a comparison must pin it. But `seasons.conf`,
+which `build.sh` grepped on every build to produce `playoffs_from`, has fed
+nothing for as long as it has existed.
+
+**One guard the R build did not have.** The entry point refuses to run when the
+season's `allstats-{season}.csv` is missing. The pipeline would otherwise
+aggregate zero rows perfectly happily and write 86 empty CSVs over 86 good
+ones — the failure mode of a wrong season or an unmounted data directory, and
+the one way a *full recompute* can destroy rather than heal. `derived/` is not
+backed up precisely because the build is its restore path, so a vacuous success
+is the expensive bug here.
+
+**What changed on the site**, both of them the deliberate fix landing:
+`league-history.csv` now names one champion per season instead of every team
+with about two playoff wins, and three players named Will are no longer
+`Barton, will`.
+
+**Tests.** `tests/test_stats_cutover.py` (in `tests.run_all`) pins the entry
+point: the shared resolver, `--dry-run` writing nothing, and the empty-league
+guard. `build/test_build_sh.py` pins build.sh's half and runs from the
+pre-commit hook. They are deliberately in **different repos** — an nbn-api test
+asserting on `build.sh` would fail until the *site* repo deployed, which is the
+cross-repo coupling this port exists to remove.
+
+**Deploy order is load-bearing:** nbn-api first. `build.sh` runs the engine out
+of the API checkout, so a site deploy that lands first gives every build `No
+module named stats_build`. Caught in rehearsal, before it could be caught in
+production.
+
+## Phase 4 — deleting R *(next, not before the 26-27 playoffs)*
+
+R stays dormant for one full season so every seasonal path — playoffs, awards,
+rings, championship attribution — has run at least once under Python. Nothing
+about those paths is untested, but they are the code that runs least often and
+the harness can only compare what today's data exercises.
+
+When it goes: `build/job.R`, `build/build-utils.R`, `build/seasons.conf`, the
+bash season inference in `build.sh`, `harness.run_r` and everything downstream
+of it (`KNOWN_FIXES`, `RATING_TOLERANCE`, the accepted-cell lists — all of them
+describe R and become meaningless without it), `BuildArgs.playoffs_from` and
+`.through`, and the R installation itself. The harness keeps `determinism` and
+`diff`, which are useful against Python alone.
+
+**The acceptance test dies with R**, and that is the thing to plan for rather
+than notice later. Byte-comparison against R is the only oracle the derived
+files have ever had; `smoke_test.py` still asserts no values. The open question
+below — whether it should grow value assertions — stops being optional at
+Phase 4 and should be answered before, not after, the comparison disappears.
+
 ## What's actually hard
 
 Not the dataframe work — the league semantics buried in it: award
@@ -278,10 +358,11 @@ reason a from-scratch rewrite is the wrong idea.
    player seasons → awards → derived tables (highs, totals, h2h, franchise
    records) → HOF. R stays authoritative throughout; each aggregation
    flips only once its output matches byte for byte.
-3. **Cutover** *(next)*. The API triggers Python. R is kept, dormant, for one full
-   season so any seasonal path (playoffs, awards, rings) has run at least
-   once under the new code.
-4. **Delete R**, and the R dependency from the box.
+3. ~~**Cutover.**~~ **Done 2026-08-19** — `build.sh` runs
+   `python3 -m stats_build`; R is dormant behind `NBN_STATS_ENGINE=r`. See
+   "Phase 3" above.
+4. **Delete R** *(next)*, and the R dependency from the box — not before the
+   26-27 playoffs. See "Phase 4" above.
 
 ## Open questions
 
@@ -290,9 +371,10 @@ reason a from-scratch rewrite is the wrong idea.
 - Does R's CSV writer have formatting quirks that make byte-identical
   output impractical for specific columns? If so, name them explicitly
   rather than loosening the comparison globally.
-- Should `smoke_test.py` grow value assertions during the port? The harness
-  makes them cheap to derive, and it would leave a real regression test
-  behind once R is gone.
+- Should `smoke_test.py` grow value assertions? The harness makes them cheap
+  to derive. **This needs answering before Phase 4, not after**: comparison
+  against R is the only value-level oracle the 86 files have, and deleting R
+  deletes it. Still open.
 
 ## Not in scope
 

@@ -233,9 +233,15 @@ three times and they do not agree:
 
 | Where | Rule | Says today (2026-08-19) |
 |---|---|---|
-| `build/build.sh` | rolls over **Sep 30**, America/New_York | `25-26` |
+| `nbn-api` `stats_build/buildargs.py` | rolls over **Sep 30**, America/New_York | `25-26` |
 | `nbn-api` `storage._current_season_str` | rolls over **Jul 1**, UTC | `26-27` |
 | `boxscores/submit/index.html:520` | hardcoded string | `25-26` |
+
+**Down from three to two definitions, and the two that remain now live in the
+same process.** The stats cutover (2026-08-19) folded `build.sh`'s bash copy
+into `stats_build/buildargs.py`, so `nbn-api` imports both rules and they still
+disagree by three months — which makes this cheaper to fix than it was, and
+more obviously wrong.
 
 So for three months every year — July through September — the API files a box
 score under a different season than the build aggregates it as, and the submit
@@ -247,8 +253,12 @@ new season tips off before October, which is when `POST /api/boxscores/commit`
 
 The integrity check works around it rather than depending on it (it treats the
 newest season on disk as live alongside the current one), but the fix is one
-shared definition. `build/seasons.conf` already exists and already knows each
-season's real dates.
+shared definition.
+
+Note `build/seasons.conf` is **not** the place to put it, despite knowing each
+season's real dates: the cutover established that nothing has ever read it —
+`job.R` parsed `playoffs_from` and never used it, because playoff rows come
+from their own files. It is a dormant file on a dormant path.
 
 ### [P3] 48MB of June 1 copies left by the retired stats mirror
 Found 2026-08-19 closing Phase 2 item 13. `stats.nbn.today` is **already dead** —

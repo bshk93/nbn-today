@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.1.35",
+    "date": "2026-08-19",
+    "changes": [
+      "The stats build \u2014 everything behind standings, player pages, records, leaderboards and the Hall of Fame \u2014 now runs on Python instead of R, after checking it produces the same numbers file for file",
+      "Fixed: the league history page listed nearly every playoff team as that season's champion. The old build counted playoff wins once per player instead of once per game, so any team with about two wins passed for a title winner",
+      "Fixed: three players named Will were recorded as \"will\" throughout the stats pages",
+      "The old R build is kept as a one-command fallback for a full season, in case anything the new one hasn't seen yet \u2014 a playoff run, an awards vote \u2014 comes out differently"
+    ]
+  },
+  {
     "version": "0.1.28",
     "date": "2026-08-19",
     "changes": [
