@@ -58,7 +58,7 @@ Two checkouts of this repo, both on `main`, both plain clones of the same remote
 | | Path | What it is |
 |---|---|---|
 | **live** | `/home/skim/projects/nbn-today` | what `nbn.today` serves — `/var/www/nbn.today` is a symlink to it |
-| **dev** | `/home/skim/projects/nbn-today-dev` | what `dev.nbn.today` serves, behind basic auth |
+| **dev** | `/home/skim/projects/nbn-today-dev` | what `https://dev.nbn.today` serves, behind basic auth (user `dev`, `/etc/nginx/.htpasswd-dev`) |
 
 **Edit in `-dev`, run ops in live.** Saving a file in the live checkout deploys
 it, instantly and with no review step; that is the whole reason the dev copy
@@ -120,7 +120,14 @@ All pages fetch CSVs at runtime relative to the site root, so the server must al
 For anything authenticated, this is not enough and `dev.nbn.today` is the answer:
 `http.server` does not proxy `/api` (so relative fetches 404), and the session
 cookie is `Domain=.nbn.today; Secure`, so a `localhost` origin can never carry
-it — `/pdc`, `/free-agency` and team edit mode are untestable from it.
+it — `/pdc`, `/free-agency` and team edit mode are untestable from it. On
+`dev.nbn.today` they work: a session minted on `nbn.today` is sent there
+automatically and the API accepts it (verified 2026-08-19).
+
+> If you ever add another authenticated vhost under this domain, give it
+> `location ^~ /.well-known/acme-challenge/ { auth_basic off; }`. A host-wide
+> `auth_basic` 401s the ACME challenge, and the failure shows up as an expired
+> certificate two months later rather than as anything at setup time.
 
 ## Data files
 

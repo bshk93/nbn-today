@@ -15,7 +15,8 @@
       "Added a deploy script to both live checkouts \u2014 it refuses to deploy over uncommitted changes and prints the exact command to roll back",
       "There is now a separate dev copy of the site to work in, so editing a file no longer puts it live the instant it is saved",
       "Pinned the API's dependency list, which did not exist \u2014 a fresh checkout can now rebuild the exact same environment and run all 39 test suites green",
-      "The deploy script now refuses to run from the dev copy, where it would have pulled into one tree and restarted another"
+      "The deploy script now refuses to run from the dev copy, where it would have pulled into one tree and restarted another",
+      "dev.nbn.today is live over HTTPS behind a password, and signing in on the main site now signs you in there too \u2014 so committee and team pages can finally be tested before they go live"
     ]
   },
   {

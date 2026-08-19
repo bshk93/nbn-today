@@ -735,8 +735,9 @@ there.
 Screenshot retention is **not** on this list. See "Why the screenshots stay
 deleted."
 
-**Phase 3 — dev/live** — **done 2026-08-19**, except the one step that is not
-this box's to take: `dev.nbn.today` has **no DNS record yet** (see 18).
+**Phase 3 — dev/live** — **done 2026-08-19**, all five items.
+`dev.nbn.today` is live on HTTPS behind basic auth, and a session minted on
+`nbn.today` is accepted there — which was the point of the subdomain.
 
 15. ~~Track the pre-commit hook; set `core.hooksPath` in live.~~ **Done** —
     `build/hooks/pre-commit`, with `core.hooksPath` set in both the live and
@@ -752,21 +753,25 @@ this box's to take: `dev.nbn.today` has **no DNS record yet** (see 18).
     not a reproducible instruction. `requirements.txt` now pins all 32 packages
     from the live venv; the dev venv was built from it and ran all 39 test
     modules green.
-18. ~~nginx `dev.nbn.today` with auth.~~ **Configured and enabled**, verified by
-    `Host:` header: every path 401s without credentials, 200s with, `/api`
-    proxies to the live API, CSVs come off the same `public/` view, and live
-    hosts are unaffected. `/robots.txt` is deliberately the one open path.
-    Basic auth is `/etc/nginx/.htpasswd-dev` (user `dev`).
+18. ~~nginx `dev.nbn.today` with auth.~~ **Done and live on HTTPS**, DNS added
+    by the owner and certificate issued 2026-08-19 (expires 2026-11-17).
+    Verified end to end: every path 401s without credentials and 200s with,
+    `http://` 301s to `https://`, `/api` proxies to the live API, CSVs come off
+    the same `public/` view, and the live hosts are unaffected. `/robots.txt`
+    is deliberately the one open path. Basic auth is `/etc/nginx/.htpasswd-dev`
+    (user `dev`).
 
-    **Two steps remain and the first is not on this box:**
+    **The acceptance test is the session cookie, and it passes:** a session
+    minted on `nbn.today` was sent to `dev.nbn.today` and
+    `GET /api/auth/me` returned the member with their roles. That is the whole
+    reason this is a subdomain rather than a localhost port — `/pdc`,
+    `/free-agency` and team edit mode are now testable on dev.
 
-    1. Add a DNS **A record** `dev.nbn.today` → `162.243.70.105`. There is no
-       wildcard — every subdomain here has its own record (`randomtest.nbn.today`
-       is NXDOMAIN), so nothing resolves until this exists.
-    2. Then `sudo certbot --nginx -d dev.nbn.today`, which converts the block
-       to 443 and adds the port-80 redirect, exactly as on `pdc`. Until then it
-       is HTTP-only, and the `Secure` session cookie will not be sent — so the
-       authenticated pages this host exists for are still untestable.
+    **One trap, fixed before it could bite:** `auth_basic` covers the whole
+    host, which would have 401'd the ACME HTTP-01 challenge and failed **every
+    renewal** — silently, sixty days out, long after anyone remembers why.
+    `location ^~ /.well-known/acme-challenge/` carries `auth_basic off`. Any
+    future authenticated vhost here needs the same exemption.
 19. ~~`CLAUDE.md` notes in both repos, including the retired-Shiny note.~~
     **Done** — "Dev and live" sections in both, covering which checkout to edit,
     the scratch-copy build command, why there is no second API instance, and the
