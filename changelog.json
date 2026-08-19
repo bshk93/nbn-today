@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.21",
+    "date": "2026-08-18",
+    "changes": [
+      "Data files no longer live in the site repo: the stats build writes to the data directory and nginx serves from there, so this repo is now purely code and deploys are a plain git pull",
+      "No change to any URL, page or CSV \u2014 every file the site fetches is served from the same address as before"
+    ]
+  },
+  {
     "version": "0.1.20",
     "date": "2026-08-18",
     "changes": [

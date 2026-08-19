@@ -16,7 +16,12 @@ BUILD_DIR <- Sys.getenv("NBN_BUILD_DIR", {
 source(file.path(BUILD_DIR, "build-utils.R"))
 
 DATA_DIR  <- Sys.getenv("NBS_DATA_DIR",  "/var/lib/nothing-but-stats")
-REPO_ROOT <- Sys.getenv("NBN_REPO_ROOT", dirname(BUILD_DIR))
+# Derived output goes to the data directory, NOT into this repo. The repo used
+# to hold symlinks that pointed here, so the build wrote through the git working
+# tree; that made `git pull` an unsafe deploy and let a dev build reach live data.
+OUT_ROOT <- Sys.getenv("NBN_OUT_DIR", file.path(DATA_DIR, "derived"))
+for (.d in c("data", "players", "standings", "nbntv-classics"))
+  dir.create(file.path(OUT_ROOT, .d), recursive = TRUE, showWarnings = FALSE)
 
 today        <- Sys.Date()
 current_year <- as.numeric(format(today, "%Y"))
@@ -265,28 +270,28 @@ owner_stats <- wl_stats %>%
          off_rtg, def_rtg) %>%
   arrange(desc(total_pct), desc(total_w))
 
-write_csv(owner_stats, file.path(REPO_ROOT, "data", "owner_stats.csv"))
+write_csv(owner_stats, file.path(OUT_ROOT, "data", "owner_stats.csv"))
 inform(" * DONE")
 
 start_time <- Sys.time()
 inform("Calculating league stats....")
 
 inform("Writing league history CSV....")
-write_league_history(dfs, dfs_playoffs, team_ratings, file.path(REPO_ROOT, "data"))
+write_league_history(dfs, dfs_playoffs, team_ratings, file.path(OUT_ROOT, "data"))
 inform(" * DONE")
 
 inform("Writing per-team profile CSVs....")
-write_team_profiles(dfs, dfs_playoffs, standings_list, team_ratings, file.path(REPO_ROOT, "data"))
+write_team_profiles(dfs, dfs_playoffs, standings_list, team_ratings, file.path(OUT_ROOT, "data"))
 inform(" * DONE")
 
 inform("Writing standings-history.csv....")
 standings_history <- map_dfr(sort(unique(dfs$TEAM)), function(team) {
-  fp <- file.path(REPO_ROOT, "data", paste0(tolower(team), "-seasons.csv"))
+  fp <- file.path(OUT_ROOT, "data", paste0(tolower(team), "-seasons.csv"))
   if (!file.exists(fp)) return(NULL)
   read_csv(fp, show_col_types = FALSE) %>% mutate(TEAM = team)
 }) %>%
   arrange(SEASON, SEED_NUM)
-write_csv(standings_history, file.path(REPO_ROOT, "standings", "standings-history.csv"))
+write_csv(standings_history, file.path(OUT_ROOT, "standings", "standings-history.csv"))
 inform(" * DONE")
 
 inform("Writing playoff-brackets.csv....")
@@ -314,7 +319,7 @@ if (nrow(dfs_playoffs) > 0) {
     rename(T2_SEED = SEED, T2_SEED_NUM = SEED_NUM) %>%
     rename(SEASON = SEASON_BASE) %>%
     arrange(SEASON, ROUND, T1_SEED_NUM)
-  write_csv(playoff_series, file.path(REPO_ROOT, "standings", "playoff-brackets.csv"))
+  write_csv(playoff_series, file.path(OUT_ROOT, "standings", "playoff-brackets.csv"))
 
   playoff_margins <- dfs_playoffs %>%
     filter(!is.na(ROUND), !is.na(OPP_TEAM), OPP_TEAM != "") %>%
@@ -341,21 +346,21 @@ if (nrow(dfs_playoffs) > 0) {
     ) %>%
     filter(pmax(T1_W, T2_W) >= 4) %>%
     arrange(AVG_MARGIN)
-  write_csv(playoff_margins, file.path(REPO_ROOT, "nbntv-classics", "playoff-series-margins.csv"))
+  write_csv(playoff_margins, file.path(OUT_ROOT, "nbntv-classics", "playoff-series-margins.csv"))
 } else {
   write_csv(
     tibble(SEASON=character(), ROUND=character(), T1=character(), T2=character(),
            T1_W=integer(), T2_W=integer(), WINNER=character(),
            T1_SEED=character(), T1_SEED_NUM=integer(),
            T2_SEED=character(), T2_SEED_NUM=integer()),
-    file.path(REPO_ROOT, "standings", "playoff-brackets.csv")
+    file.path(OUT_ROOT, "standings", "playoff-brackets.csv")
   )
 }
 inform(" * DONE")
 
 inform("Writing head-to-head matrix CSVs....")
-write_h2h_matrix(dfs, dfs_playoffs, file.path(REPO_ROOT, "data"))
-write_owner_h2h_matrix(dfs, dfs_playoffs, owner_data, file.path(REPO_ROOT, "data"))
+write_h2h_matrix(dfs, dfs_playoffs, file.path(OUT_ROOT, "data"))
+write_owner_h2h_matrix(dfs, dfs_playoffs, owner_data, file.path(OUT_ROOT, "data"))
 inform(" * DONE")
 
 inform("Writing player seasons CSV....")
@@ -424,7 +429,7 @@ player_seasons <- dfs %>%
     SLUG   = gsub("[^a-z0-9-]", "", gsub(" ", "-", gsub(", ", "-", tolower(PLAYER))))
   ) %>%
   arrange(PLAYER, SEASON, LAST_DATE)
-write_csv(player_seasons, file.path(REPO_ROOT, "players", "player_seasons.csv"))
+write_csv(player_seasons, file.path(OUT_ROOT, "players", "player_seasons.csv"))
 inform(" * DONE")
 
 inform("Writing player seasons playoffs CSV....")
@@ -463,7 +468,7 @@ player_seasons_playoffs <- dfs_playoffs %>%
     SLUG   = gsub("[^a-z0-9-]", "", gsub(" ", "-", gsub(", ", "-", tolower(PLAYER))))
   ) %>%
   arrange(PLAYER, SEASON, LAST_DATE)
-write_csv(player_seasons_playoffs, file.path(REPO_ROOT, "players", "player_seasons_playoffs.csv"))
+write_csv(player_seasons_playoffs, file.path(OUT_ROOT, "players", "player_seasons_playoffs.csv"))
 inform(" * DONE")
 
 inform("Writing player awards CSV....")
@@ -478,7 +483,7 @@ bind_rows(
     SLUG   = gsub("[^a-z0-9-]", "", gsub(" ", "-", gsub(", ", "-", tolower(PLAYER))))
   ) %>%
   select(SLUG, PLAYER, SEASON, AWARD) %>%
-  write_csv(file.path(REPO_ROOT, "players", "player_awards.csv"))
+  write_csv(file.path(OUT_ROOT, "players", "player_awards.csv"))
 inform(" * DONE")
 
 inform("Writing career stat totals CSVs....")
@@ -508,7 +513,7 @@ list(
       slice_head(n = 250) %>%
       mutate(RANK = row_number()) %>%
       select(RANK, PLAYER, all_of(col)) %>%
-      write_csv(file.path(REPO_ROOT, "data", glue("{name}.csv")))
+      write_csv(file.path(OUT_ROOT, "data", glue("{name}.csv")))
   })
 inform(" * DONE")
 
@@ -530,7 +535,7 @@ list(
       slice_head(n = 50) %>%
       mutate(RANK = row_number()) %>%
       select(RANK, DATE, SEASON, PLAYER, TEAM, OPP, gametype, ROUND, GAME, P, R, A, S, B, `3PM`) %>%
-      write_csv(file.path(REPO_ROOT, "data", glue("{name}.csv")))
+      write_csv(file.path(OUT_ROOT, "data", glue("{name}.csv")))
   })
 inform(" * DONE")
 
@@ -555,7 +560,7 @@ c("P", "R", "A", "S", "B", "3PM", "GMSC") %>%
   }) %>%
   bind_rows() %>%
   arrange(TEAM, STAT, RANK) %>%
-  write_csv(file.path(REPO_ROOT, "data", "franchise-records.csv"))
+  write_csv(file.path(OUT_ROOT, "data", "franchise-records.csv"))
 inform(" * DONE")
 
 inform("Writing playoff classics CSV....")
@@ -582,7 +587,7 @@ dfs_playoffs %>%
     OPP    = str_replace(OPP, "@", "")
   ) %>%
   select(RANK, SEASON, DATE, PLAYER, TEAM, OPP, ROUND, GAME, P, R, A, S, B, `3PM`, FGM, FGA, GMSC) %>%
-  write_csv(file.path(REPO_ROOT, "nbntv-classics", "playoff-classics.csv"))
+  write_csv(file.path(OUT_ROOT, "nbntv-classics", "playoff-classics.csv"))
 inform(" * DONE")
 
 inform("Writing hof.csv....")
@@ -674,7 +679,7 @@ hof_csv <- dfs_all %>%
          SIX_MOY, ROY, MIP,
          G, M, P, R, A, S, B, ACTIVE)
 
-write_csv(hof_csv, file.path(REPO_ROOT, "data", "hof.csv"))
+write_csv(hof_csv, file.path(OUT_ROOT, "data", "hof.csv"))
 inform(" * DONE")
 
 inform(glue(" * DONE [{round(Sys.time() - start_time, 1)}s]"))

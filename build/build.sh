@@ -13,7 +13,7 @@ trap 'echo "Error at $(date). Exiting!"; exit 1' ERR
 trap 'echo "Build exited at $(date)"' EXIT
 
 export NBS_DATA_DIR="${NBS_DATA_DIR:-/var/lib/nothing-but-stats}"
-export NBN_REPO_ROOT="$REPO_ROOT"
+export NBN_OUT_DIR="${NBN_OUT_DIR:-$NBS_DATA_DIR/derived}"
 export NBN_BUILD_DIR="$SCRIPT_DIR"
 
 # Infer current season (Sep 30 cutoff).
@@ -48,6 +48,9 @@ Rscript "$JOB_R" "$SEASON" "${PLAYOFFS_FROM:-}" ""
 # Verify the build's output still satisfies what the pages read. The docroot is
 # a symlink to this tree, so anything broken here is already live — surface it
 # loudly rather than letting a renamed column ship silently.
+echo "--- publishing the served view ---"
+bash "$SCRIPT_DIR/link-public.sh"
+
 echo "--- verifying data contract ---"
 SMOKE_STATUS=0
 python3 "$SCRIPT_DIR/smoke_test.py" --quiet || SMOKE_STATUS=$?

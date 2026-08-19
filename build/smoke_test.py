@@ -23,11 +23,19 @@ Exit status is 1 if any check failed, 0 otherwise.
 
 import argparse
 import csv
+import os
 import re
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+
+# Data files are no longer in the repo: the build writes them to
+# $NBS_DATA_DIR/derived and nginx serves them through $NBS_DATA_DIR/public.
+# Checking the public view (rather than derived/) means this validates exactly
+# what the site serves, including that each symlink resolves.
+DATA_DIR = Path(os.environ.get("NBS_DATA_DIR", "/var/lib/nothing-but-stats"))
+SERVED = DATA_DIR / "public"
 
 TEAMS = [
     "atl", "bkn", "bos", "cha", "chi", "cle", "dal", "den", "det", "gsw",
@@ -169,7 +177,7 @@ def is_blank(value):
 
 def check_csv(relpath, required, min_rows, consumer, report):
     report.checked += 1
-    path = REPO / relpath
+    path = SERVED / relpath
 
     if not path.exists():
         report.error(relpath, f"missing (read by {consumer})")
@@ -241,7 +249,11 @@ def check_fetch_targets(report):
         # API routes are served by nbn-api, not from disk.
         if target.startswith("/api/"):
             continue
-        if not (REPO / target.lstrip("/")).exists():
+        # A fetched path is either a page asset still in the repo
+        # (version.json, changelog.json, the cluster JSONs) or a data file
+        # served out of the public view. Accept either.
+        rel = target.lstrip("/")
+        if not ((REPO / rel).exists() or (SERVED / rel).exists()):
             report.error(
                 target, f"fetched by {', '.join(sorted(sources))} but not on disk"
             )
