@@ -764,7 +764,14 @@ replacing. Obvious surface later: an "Edits" tab beside the ledger on the player
 page. Pairs with the backup item above — one is recovery, this is forensics, and
 neither exists.
 
-### [P1] Production runs off an unmerged feature branch
+### ~~[P1] Production runs off an unmerged feature branch~~ — RESOLVED, confirmed 2026-08-19
+`nbn-api` is on `main`, `picks-conveyance-phase0` is fully merged into it
+(`git merge-base --is-ancestor` confirms), and both repos push cleanly to
+`origin/main`. `main` describes what is running again. The dev/live split built
+on 2026-08-19 depends on that being true — a dev checkout clones `origin/main`,
+so a live tree on some other branch would have made the two checkouts silently
+different at the same "version". Original entry follows.
+
 `nbn-api` is on branch `picks-conveyance-phase0`, **58 commits ahead of
 `main`** — and the systemd service serves directly out of that working
 directory, so that branch *is* production. `main` no longer describes what's

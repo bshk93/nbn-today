@@ -51,6 +51,62 @@ League-wide constants (cap thresholds, roster limits, apron triggers) are in Art
 
 **NBN (Nothing But Net)** is a static website for a fantasy basketball simulation GM league. It hosts owner history stats, team pages, player profiles, standings, draft history, stats leaderboards, and NBNTV Classics (curated playoff highlights).
 
+## Dev and live — which checkout am I in?
+
+Two checkouts of this repo, both on `main`, both plain clones of the same remote:
+
+| | Path | What it is |
+|---|---|---|
+| **live** | `/home/skim/projects/nbn-today` | what `nbn.today` serves — `/var/www/nbn.today` is a symlink to it |
+| **dev** | `/home/skim/projects/nbn-today-dev` | what `dev.nbn.today` serves, behind basic auth |
+
+**Edit in `-dev`, run ops in live.** Saving a file in the live checkout deploys
+it, instantly and with no review step; that is the whole reason the dev copy
+exists. Ops commands (`build/build.sh`, `systemctl`, the manual build trigger)
+genuinely mean live and stay pointed there.
+
+The loop:
+
+```bash
+cd ~/projects/nbn-today-dev && git checkout -b some-change   # edit, commit
+git push -u origin some-change && git checkout main && git merge some-change && git push
+cd ~/projects/nbn-today && ./deploy.sh                       # ff-only, refuses a dirty tree
+```
+
+`deploy.sh` prints the rollback command (`git reset --hard <sha>`) on every
+deploy. It rolls back **code only** — data lives in `/var/lib/nothing-but-stats`
+and is recovered from its own git repo (`docs/dev-deploy-setup-spec.md`).
+
+Two things about dev that bite if you forget them:
+
+- **`dev.nbn.today` proxies `/api` to the LIVE API.** There is no second
+  instance, deliberately (the spec's "No second API instance" explains why: a
+  dev instance posts real Discord embeds and relays real `#roster-log`
+  messages). Reads are safe. **Any write path exercised from a dev page is a
+  real write** — `POST /api/transactions` applies for real when its checks
+  pass. Dev is for read-path and UI work.
+- **Never run `build/build.sh` from dev against the live data dir.** Point it
+  at a scratch copy, which is safe by construction because both the build's
+  inputs and its outputs follow the same variable:
+
+  ```bash
+  rsync -a --delete --exclude=.git --exclude=derived/ \
+        /var/lib/nothing-but-stats/ ~/nbs-scratch/
+  NBS_DATA_DIR=~/nbs-scratch bash build/build.sh
+  ```
+
+  `--exclude=.git` matters: the data directory is a git work tree, and copying
+  its `.git` would have the scratch copy committing to the backup repo.
+
+The pre-commit hook is tracked at `build/hooks/pre-commit` (`.git/hooks` is not
+cloned, so a fresh checkout would silently lose the smoke test and the version
+bump). A new clone needs one command: `git config core.hooksPath build/hooks`.
+
+> **The Shiny app is orphaned, not deleted.** `~/projects/nothing-but-stats` and
+> `/srv/shiny/nothing-but-stats` are retired. Nothing is removed from them and
+> nothing accommodates them either — they are not a consumer of this repo's data
+> any more. Don't restore a symlink or a write path on their behalf.
+
 ## Running locally
 
 No build step. Serve with any static file server from the project root:
@@ -60,6 +116,11 @@ python3 -m http.server 8080
 ```
 
 All pages fetch CSVs at runtime relative to the site root, so the server must always be rooted at the project root.
+
+For anything authenticated, this is not enough and `dev.nbn.today` is the answer:
+`http.server` does not proxy `/api` (so relative fetches 404), and the session
+cookie is `Domain=.nbn.today; Secure`, so a `localhost` origin can never carry
+it — `/pdc`, `/free-agency` and team edit mode are untestable from it.
 
 ## Data files
 

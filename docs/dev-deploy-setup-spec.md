@@ -735,11 +735,39 @@ there.
 Screenshot retention is **not** on this list. See "Why the screenshots stay
 deleted."
 
-**Phase 3 — dev/live** — **not started**
+**Phase 3 — dev/live** — **done 2026-08-19**, except the one step that is not
+this box's to take: `dev.nbn.today` has **no DNS record yet** (see 18).
 
-15. Track the pre-commit hook; set `core.hooksPath` in live.
-16. `deploy.sh` in both live directories.
-17. Clone both `-dev` checkouts; create `nbn-api-dev/venv`; run
-    `tests.run_all` from it to confirm green off a fresh clone.
-18. nginx `dev.nbn.today` with auth.
-19. `CLAUDE.md` notes in both repos, including the retired-Shiny note.
+15. ~~Track the pre-commit hook; set `core.hooksPath` in live.~~ **Done** —
+    `build/hooks/pre-commit`, with `core.hooksPath` set in both the live and
+    dev checkouts of `nbn-today`. Verified by committing through it.
+16. ~~`deploy.sh` in both live directories.~~ **Done.** Refuses a dirty tree,
+    pulls `--ff-only`, prints the rollback command. The API's variant restarts
+    the service and fails loudly if it does not come back — a pull without a
+    restart leaves uvicorn holding the old modules, which is the worst of both.
+17. ~~Clone both `-dev` checkouts; venv; suite green off a fresh clone.~~
+    **Done.** Both clones are byte-identical to live at the same SHA (only
+    untracked `.claude/` local files differ). This step also turned up a real
+    gap: **`nbn-api` had no dependency list at all**, so "create a venv" was
+    not a reproducible instruction. `requirements.txt` now pins all 32 packages
+    from the live venv; the dev venv was built from it and ran all 39 test
+    modules green.
+18. ~~nginx `dev.nbn.today` with auth.~~ **Configured and enabled**, verified by
+    `Host:` header: every path 401s without credentials, 200s with, `/api`
+    proxies to the live API, CSVs come off the same `public/` view, and live
+    hosts are unaffected. `/robots.txt` is deliberately the one open path.
+    Basic auth is `/etc/nginx/.htpasswd-dev` (user `dev`).
+
+    **Two steps remain and the first is not on this box:**
+
+    1. Add a DNS **A record** `dev.nbn.today` → `162.243.70.105`. There is no
+       wildcard — every subdomain here has its own record (`randomtest.nbn.today`
+       is NXDOMAIN), so nothing resolves until this exists.
+    2. Then `sudo certbot --nginx -d dev.nbn.today`, which converts the block
+       to 443 and adds the port-80 redirect, exactly as on `pdc`. Until then it
+       is HTTP-only, and the `Secure` session cookie will not be sent — so the
+       authenticated pages this host exists for are still untestable.
+19. ~~`CLAUDE.md` notes in both repos, including the retired-Shiny note.~~
+    **Done** — "Dev and live" sections in both, covering which checkout to edit,
+    the scratch-copy build command, why there is no second API instance, and the
+    fact that a write from a dev page is a real write.
