@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""
+Verify the data contract, then auto-bump patch version on every commit.
+
+**Tracked in the repo, not in .git/hooks** — `.git/hooks` is not cloned, so a
+dev checkout would silently get neither half of this: `main` would start
+collecting `"version": "pending"` changelog entries and unverified data-contract
+changes. Both checkouts point here with:
+
+    git config core.hooksPath build/hooks
+
+Note that setting `core.hooksPath` replaces the hooks directory wholesale, so
+any other hook has to live here too rather than in `.git/hooks`.
+
+- Run build/smoke_test.py; abort the commit if a page reads a column or file
+  that no longer exists. Bypass with `git commit --no-verify` if needed.
+- If version.json is already staged (manual minor/major bump), leave it alone.
+- If the only staged file is changelog.json (retroactive fix), skip the bump.
+- Otherwise, increment the patch digit and stage version.json.
+- If changelog.json's latest entry has "version": "pending", fill it in and re-stage.
+"""
+import json, subprocess, sys
+from pathlib import Path
+
+smoke = Path('build/smoke_test.py')
+if smoke.exists():
+    result = subprocess.run(['python3', str(smoke), '--quiet'])
+    if result.returncode != 0:
+        print('\nCommit aborted: the data contract is broken (see FAIL lines above).')
+        print('Fix the mismatch, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+vpath = Path('version.json')
+cpath = Path('changelog.json')
+
+staged = subprocess.run(
+    ['git', 'diff', '--cached', '--name-only'],
+    capture_output=True, text=True
+).stdout.split()
+
+data = json.loads(vpath.read_text())
+parts = data['version'].split('.')
+
+if 'version.json' in staged:
+    # Manual bump — leave it alone
+    pass
+elif staged == ['changelog.json']:
+    # Retroactive changelog fix — don't bump
+    pass
+else:
+    parts[2] = str(int(parts[2]) + 1)
+    data['version'] = '.'.join(parts)
+    vpath.write_text(json.dumps(data) + '\n')
+    subprocess.run(['git', 'add', 'version.json'])
+
+new_version = data['version']
+
+if cpath.exists():
+    changelog = json.loads(cpath.read_text())
+    if changelog and changelog[0].get('version') == 'pending':
+        changelog[0]['version'] = new_version
+        cpath.write_text(json.dumps(changelog, indent=2) + '\n')
+        subprocess.run(['git', 'add', 'changelog.json'])
+
+sys.exit(0)
