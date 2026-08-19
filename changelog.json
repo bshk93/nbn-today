@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.18",
+    "date": "2026-08-18",
+    "changes": [
+      "Team logos are now real files in this repo instead of symlinks into the retired stats app, so the site no longer depends on a project it has outgrown (pixels unchanged)",
+      "Added a 10-minute snapshot job that commits the league data and pushes it off-box, with a guard that refuses to mirror a mass deletion into the backup"
+    ]
+  },
+  {
     "version": "0.1.17",
     "date": "2026-08-18",
     "changes": [
