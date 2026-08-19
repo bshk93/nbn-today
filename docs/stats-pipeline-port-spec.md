@@ -136,6 +136,52 @@ Two rules that keep this honest:
   own reasoning. A diff must never mix "ported" with "improved" — otherwise
   every mismatch needs adjudication instead of just being a bug.
 
+## Phase 1 — the harness, done 2026-08-19
+
+`nbn-api/stats_build/harness.py`, with `tests/test_stats_harness.py` in
+`tests.run_all`. It runs either engine into a scratch tree and diffs:
+
+```
+python3 -m stats_build.harness determinism        # R twice, then diff
+python3 -m stats_build.harness port               # R vs Python, then diff
+python3 -m stats_build.harness diff DIR_A DIR_B
+```
+
+Byte equality decides pass/fail. For a CSV that differs it names the file, the
+row, the column and both values; a difference where both sides parse to the
+same number is labelled *formatting only* to shorten the fix but **still
+fails**, per the rule above. The test module pins that specifically, because
+that assertion is the one a future tolerance would quietly delete.
+
+It invokes `Rscript job.R` directly rather than `build.sh` — `build.sh` also
+runs `sync_owners.py` and `link-public.sh`, both of which write into the live
+data directory, and the harness must stay read-only against it. Verified by
+reading every write path in `job.R` and `build-utils.R`: output goes only
+under `NBN_OUT_DIR`.
+
+**Three things it established:**
+
+- **The R build is deterministic.** Two runs into separate trees: 86/86
+  byte-identical. The whole acceptance test rests on this and it had never
+  been checked; had it been false, the port would have needed a different
+  oracle before a line of Python was worth writing.
+- **The harness reproduces live output exactly.** Its scratch tree diffs
+  clean against `$NBS_DATA_DIR/derived` as the running site serves it — so it
+  is the real oracle, not a second opinion assembled differently.
+- **`through` must be pinned.** `job.R` defaults it to `Sys.Date()`, so two
+  builds on different days can legitimately differ. `BuildArgs` resolves all
+  three arguments (season, `playoffs_from` from `seasons.conf`, `through`) and
+  records them in a manifest beside the output; the Python pipeline takes the
+  same three explicitly. An unpinned comparison measures the calendar.
+
+Timing reconfirmed at 24.7s / 24.3s, against 22s on 2026-08-18 — same
+ballpark, no drift worth chasing.
+
+**The contract Phase 2 fills in:** `stats_build.pipeline.build(out_dir,
+data_dir, args)`. Until it exists `run_python` raises `NotImplementedError`
+rather than writing an empty tree, which would diff as 86 missing files and
+read like a broken run instead of an absent one.
+
 ## What's actually hard
 
 Not the dataframe work — the league semantics buried in it: award
@@ -146,11 +192,11 @@ reason a from-scratch rewrite is the wrong idea.
 
 ## Phases
 
-0. **Measure.** Time a full build; profile which aggregations dominate.
-   Answers whether anything about the design needs to change or only the
-   language.
-1. **Harness.** Run-both-and-diff, so every subsequent step is verifiable.
-2. **Port in dependency order** — loaders → standings → team seasons →
+0. ~~**Measure.**~~ **Done 2026-08-18** — 22 seconds, no network. See
+   "Current state, measured."
+1. ~~**Harness.**~~ **Done 2026-08-19** — run-both-and-diff, plus R
+   determinism confirmed. See "Phase 1" above.
+2. **Port in dependency order** *(next)* — loaders → standings → team seasons →
    player seasons → awards → derived tables (highs, totals, h2h, franchise
    records) → HOF. R stays authoritative throughout; each aggregation
    flips only once its output matches byte for byte.
@@ -161,7 +207,8 @@ reason a from-scratch rewrite is the wrong idea.
 
 ## Open questions
 
-- Where does the 10 minutes actually go? (Phase 0.)
+- ~~Where does the 10 minutes actually go?~~ **Answered:** there is no 10
+  minutes. 22 seconds, no network at all.
 - Does R's CSV writer have formatting quirks that make byte-identical
   output impractical for specific columns? If so, name them explicitly
   rather than loosening the comparison globally.
