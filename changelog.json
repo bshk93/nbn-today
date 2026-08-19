@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.1.28",
+    "date": "2026-08-19",
+    "changes": [
+      "The raw box score files \u2014 the one thing here that can't be regenerated \u2014 are now append-only: the site refuses any save that would shorten one, rewrite games already recorded, or quietly drop a column an older season keeps",
+      "A weekly check now verifies that no completed season's box scores have changed and that no file has lost rows, alerting on Discord and failing loudly if either ever happens",
+      "Closed the standing 'nothing backs up the league data' item \u2014 the off-box snapshot has been running since yesterday; what's left is a second copy at another provider and a practice restore",
+      "Filed a bug: the site has three different answers for which season it is between July and September, which will bite the first time a season starts before October"
+    ]
+  },
+  {
     "version": "0.1.22",
     "date": "2026-08-19",
     "changes": [

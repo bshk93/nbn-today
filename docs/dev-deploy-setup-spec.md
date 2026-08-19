@@ -636,17 +636,40 @@ start until a copy exists somewhere else.
 8. Drop the 180 data symlinks from the repo. Leave the flat originals in
    place for a month, then move them to `pre-migration/` — not `rm`.
 
-**Phase 2 — protecting the box scores** — **not started** (independent of
-everything above; can start immediately)
+**Phase 2 — protecting the box scores** — **items 9 and 10 done 2026-08-19**;
+11-14 not started (independent of everything above)
 
-9. Append-only guard on `allstats_path()` writes.
-10. Weekly integrity check (row-count monotonicity + `sha256` manifest) with
-    a Discord alert on violation.
+9. ~~Append-only guard on `allstats_path()` writes.~~ **Done** —
+   `nbn-api/routers/allstats_guard.py`. Refuses a shrinking write, a write
+   whose first N rows aren't the N on disk, and a header list that would drop
+   a column the file has. The third refusal earned its place during the build:
+   the pre-24-25 files have real header drift (no `OPP_RAW`, `...27` for the
+   blank column, a trailing `SEASON`), so committing a game to an old season
+   with the current header constant would have erased a column across the
+   whole file. Override is `allow_shrink=True` per call, and logs.
+10. ~~Weekly integrity check~~ **Done** — `nbn-api/check_stats_integrity.py`,
+    `nbs-integrity.timer`, Mondays. Manifest is `stats-integrity.json` in the
+    data dir (tracked, so its history is off-box with the files). A violation
+    is **not** written into the manifest — the next run compares against the
+    last good state and alerts again, rather than adopting the damage as its
+    new floor; `--accept` re-baselines once a human has resolved it. Alerts
+    want `DISCORD_ALERT_CHANNEL` in `nbn-api/.env`; **it is currently unset**,
+    so today a violation is journal-only (the unit exits non-zero). Two
+    seasons count as live, not one: the stats clock rolls July 1 but the 25-26
+    finals were played 2026-06-18, so a slower postseason would land in July
+    against a clock already reading 26-27.
 11. Weekly Google Drive tarball of the tracked set.
 12. Per-game provenance JSONL (replaces the screenshots as an audit trail).
 13. Refresh or retire the `stats.nbn.today` mirror.
 14. First quarterly restore drill: clone `nbn-data`, build from it, confirm
     the site's CSVs regenerate.
+
+**`raw/` stays deferred, and now has a date.** Phase 1 step 6 left it to be
+paired with item 9; item 9 is done and the move still wasn't taken, because it
+changes the build's *read* path — which the R→Python cutover
+(`stats-pipeline-port-spec.md` Phase 3) is about to change anyway. Doing both
+in one window is one verification instead of two against the same files. Do it
+there.
 
 Screenshot retention is **not** on this list. See "Why the screenshots stay
 deleted."

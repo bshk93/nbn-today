@@ -205,6 +205,30 @@ direction check or its cross-check against signed contracts, so 2024 stays out
 until this is settled and re-running it will pick the year up automatically
 once the sheet is fixed. Nothing to change in code.
 
+### [P2] Three different answers to "what season is it?"
+Found 2026-08-19 while building the box score integrity check, which needs to
+know which files are still being appended to. The stats clock is written down
+three times and they do not agree:
+
+| Where | Rule | Says today (2026-08-19) |
+|---|---|---|
+| `build/build.sh` | rolls over **Sep 30**, America/New_York | `25-26` |
+| `nbn-api` `storage._current_season_str` | rolls over **Jul 1**, UTC | `26-27` |
+| `boxscores/submit/index.html:520` | hardcoded string | `25-26` |
+
+So for three months every year — July through September — the API files a box
+score under a different season than the build aggregates it as, and the submit
+page agrees with neither by accident. Nothing has broken yet only because no
+games are played in that window: 25-26 ended 2026-04-12, its playoffs
+2026-06-18, and `allstats-26-27.csv` does not exist. It breaks the first time a
+new season tips off before October, which is when `POST /api/boxscores/commit`
+404s on a file nobody created.
+
+The integrity check works around it rather than depending on it (it treats the
+newest season on disk as live alongside the current one), but the fix is one
+shared definition. `build/seasons.conf` already exists and already knows each
+season's real dates.
+
 ### [P3] Stale backups in NBS_DATA_DIR
 `player-bios.json.bak` ×4, `allstats-playoffs-26.csv.bak-round-fix`,
 `allstats.csv`, `tokens.json`, and `rules/` (retired per CLAUDE.md, 8 files
@@ -639,7 +663,19 @@ One thing to do before the first round:
   gates on being *assigned*, not on a role, so even admin has to put themselves
   on a sub-committee to vote. Grant the real roles at `/members/`.
 
-### [P1] Nothing backs up NBS_DATA_DIR — the league's whole state is single-copy
+### ~~[P1] Nothing backs up NBS_DATA_DIR — the league's whole state is single-copy~~ — DONE 2026-08-18
+Closed by the dev-deploy spec's Phases 0-1: `/var/lib/nbs-backup.git` (git dir
+outside the work tree) commits the classified set every 10 minutes via
+`nbs-snapshot.timer` and pushes to the private `bshk93/nbn-data`, with a
+mass-deletion guard that refuses rather than mirroring a wipe. The "cause
+unconfirmed" gaps this entry wanted to turn into a `git diff` now are one.
+
+Two pieces of the same argument are still open, both Phase 2: the **second
+destination** in a different failure domain (item 11, weekly Drive tarball) and
+the **restore drill** (item 14) — a backup nobody has restored is not a backup.
+Logical corruption is separately covered as of 2026-08-19 by the append-only
+guard and `nbs-integrity.timer`. Original entry follows.
+
 Entered 2026-08-16. The "disk failure loses ~4 weeks of work" risk was closed
 below for the two **git repos**. The data those repos are meaningless without
 never had that protection and still doesn't.

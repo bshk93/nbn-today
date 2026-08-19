@@ -201,6 +201,15 @@ Stats flow from game submission to the live site in one automated step:
 **Stays in `/var/lib/nothing-but-stats/` (written by the API, read by the build):**
 - `allstats-{YY-YY}.csv` — raw game-level rows for each regular season
 - `allstats-playoffs-{YY}.csv` — raw playoff rows
+
+> These two are the only files on the box that cannot be rebuilt, and they are
+> **append-only by contract**: the API writes them through
+> `nbn-api/routers/allstats_guard.py`, which refuses a write that shrinks one,
+> that rewrites rows already on disk, or that would drop a column an older
+> season has (they do differ — no `OPP_RAW` before 24-25). A weekly
+> `nbs-integrity.timer` re-checks row counts and hashes a closed season can
+> never change. Details in `nbn-api/CLAUDE.md` § "Protecting the raw box
+> scores"; the plan they come from is `docs/dev-deploy-setup-spec.md` Phase 2.
 - `player-bios.json`, `members.json`, `owners.csv`, `awards-history.json`
 
 **Written to `$NBS_DATA_DIR/derived/` by the build** (served through the `public/` view at the paths below — the build is the only author, so nothing here is backed up):
