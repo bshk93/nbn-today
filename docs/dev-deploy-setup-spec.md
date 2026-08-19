@@ -59,12 +59,14 @@ dev split becomes trivial; skipped, it needs workarounds.
 >   zero call sites, plus the `_atomic_write` fix so the mode actually sticks
 >   (`nbn-api` `ba928b3`). `members.json` is still backed up whole — it carries
 >   roles and tenures, not only tokens.
-> - **`raw/` is deferred.** Moving `allstats-*.csv` would have touched the box
+> - **`raw/` was deferred, and is now dropped** (2026-08-19 — see "`raw/` is
+>   dropped" under Phase 2). Moving `allstats-*.csv` would have touched the box
 >   score append path *and* `job.R`'s read path in the same window as the
 >   derived move — two concepts and doubled failure modes over the one asset
->   that cannot be rebuilt. It is organizational, not protective. Do it as its
->   own step, paired with the append-only guard (Phase 2 item 9), which is the
->   change that actually protects those files.
+>   that cannot be rebuilt. It is organizational, not protective. It was left
+>   to be paired with the append-only guard (Phase 2 item 9); that guard is what
+>   actually protects those files, and once it landed the move had nothing left
+>   to add.
 
 ### Today
 
@@ -102,7 +104,7 @@ So:
 
 ```
 /var/lib/nothing-but-stats/
-  raw/        allstats-*.csv                        — MOVED (2 call sites)
+  allstats-*.csv                                — STAY PUT (`raw/` dropped)
   derived/    R build output, mirroring URL paths:  — MOVED (1 line in job.R)
                 data/  players/  standings/  nbntv-classics/
   public/     symlink view for nginx (below)        — new, generated, untracked
@@ -112,11 +114,13 @@ So:
   pending-boxscores/ build-status.json              — STAY PUT, gitignored
 ```
 
-Only the two families with a real problem move: `raw/` because it must be
-provably append-only and separately backed up, and `derived/` because the
-build currently writes it into a git working tree. Everything else is
-classified by **gitignore rules rather than by directory**, which achieves
-the same thing for backup purposes at zero risk.
+As built, **only `derived/` moved** — because the build was writing it into a
+git working tree, which is a real problem. `raw/` was to move as well, to be
+"provably append-only and separately backed up"; that turned out to be
+achievable by mechanism instead (`allstats_guard.py`, `nbs-integrity`, the
+backup repo), so it was dropped. Everything else is classified by **gitignore
+rules rather than by directory**, which achieves the same thing for backup
+purposes at zero risk.
 
 `avatars/` (user-uploaded, not regenerable), `rules/`, and the
 `discord-*-raw/` scrape corpora are state and get tracked. `pending-
@@ -253,7 +257,7 @@ Copy them into the repo as real tracked files (1.8MB) and drop the
 symlinks. The originals stay put.
 
 `allstats.csv` (26MB, referenced by nothing since the per-season split)
-also stays — under the rule below, nothing in `raw/` gets deleted.
+also stays — under the rule below, no raw box score file gets deleted.
 
 ---
 
@@ -341,7 +345,7 @@ Everything below concerns the **3.4MB that actually can't be rebuilt.**
 `nbs-snapshot` script. That keeps `.git` out of a directory that gets
 rsync'd, `find`-ed and served, and means a stray `git` command run from a
 shell sitting in the data dir does nothing at all. Tracked:
-`raw/`, the state JSON, the per-team state CSVs, `avatars/`, `rules/`,
+`allstats-*.csv`, the state JSON, the per-team state CSVs, `avatars/`, `rules/`,
 `discord-*-raw/` (~29MB, nearly all text; appends and small JSON edits
 delta-compress well). Ignored: `derived/`, `public/`, `pending-boxscores/`,
 `build-status.json` — **the build is `derived/`'s restore path**, so
@@ -390,8 +394,8 @@ copied — only `secrets/` is excluded, always.
   as proof that the tracked set is a *complete* one — if the build succeeds
   from it alone, nothing essential was left in an ignored path.
 
-**5. Append-only by contract.** The `raw/` files only ever grow. Any code
-path that would shrink one needs an explicit override flag, checked where
+**5. Append-only by contract.** The `allstats-*.csv` files only ever grow. Any
+code path that would shrink one needs an explicit override flag, checked where
 `allstats_path()` (`boxscores.py:39`) is written. Cheap, and it makes the
 most likely catastrophe impossible rather than merely detectable.
 
@@ -408,9 +412,10 @@ third, public copy) or take it down.
 The loop that must not break:
 
 ```
-POST /api/boxscores/submit  →  append raw/allstats-{season}.csv
+POST /api/boxscores/submit  →  append allstats-{season}.csv
                             →  trigger build/build.sh
-                            →  R reads raw/ + state/, writes derived/
+                            →  stats_build reads the raw + state files,
+                                 writes derived/
                             →  public/ symlinks make it live immediately
 ```
 
@@ -601,9 +606,9 @@ live. `CLAUDE.md`'s data-file tables also need updating for the new layout.
    testable without it.
 4. **Shiny is orphaned, not deleted.** Nothing of it is removed; it just
    stops being a consumer anything accommodates.
-5. **Nothing in `raw/` is ever deleted**, including files believed
-   redundant (`allstats.csv`). 26MB is not worth a judgement call about
-   irreplaceable data.
+5. **No raw box score file is ever deleted** (`allstats-*.csv`), including
+   ones believed redundant (`allstats.csv`). 26MB is not worth a judgement
+   call about irreplaceable data.
 
 ## Build order
 
@@ -618,7 +623,7 @@ start until a copy exists somewhere else.
    it back into a temp directory and diffing.**
 2. Only then proceed.
 
-**Phase 1 — data layout** — **done 2026-08-18**, except step 6's `raw/` (deferred, see above) and step 8's month-later `pre-migration/` sweep
+**Phase 1 — data layout** — **done 2026-08-18**, except step 6's `raw/` (dropped 2026-08-19, see above) and step 8's month-later `pre-migration/` sweep
 
 3. `chmod 600 members.json sessions.json tokens.json`. Zero call sites; do
    it now, independent of everything else.
@@ -628,6 +633,7 @@ start until a copy exists somewhere else.
    the unclassified-file guard; 10-minute commit timer (skip-if-unchanged,
    periodic `gc`), push-to-GitHub on commit.
 6. Create `raw/` and `derived/` beside the flat files — `cp`, not `mv`, so
+   *(as built: `derived/` only; `raw/` dropped — see above)*
    the flat copies survive the cutover; generate `public/` via
    `link-public.sh` and add that call to the end of `build.sh`.
 7. Cutover between games: three code changes (`allstats_path`, `job.R`,
@@ -725,12 +731,40 @@ Three things a real restore needs that the drill surfaced:
 - **`owners.csv` is absent and that is correct** — `build.sh` regenerates it
   from `members.json` via `sync_owners.py` before calling R.
 
-**`raw/` stays deferred, and now has a date.** Phase 1 step 6 left it to be
-paired with item 9; item 9 is done and the move still wasn't taken, because it
-changes the build's *read* path — which the R→Python cutover
-(`stats-pipeline-port-spec.md` Phase 3) is about to change anyway. Doing both
-in one window is one verification instead of two against the same files. Do it
-there.
+**`raw/` is dropped — decided 2026-08-19, at the cutover window it was waiting
+for.** Not deferred again; not happening. Three reasons, and the first is this
+document's own argument:
+
+- **Classification by gitignore already does the work.** That is exactly why
+  `state/`, `secrets/` and `var/` were dropped above. The same is now true of
+  `raw/`, which it wasn't when this was written: `routers/allstats_guard.py`
+  (Phase 2 item 9) enforces append-only at the *write* path, `nbs-integrity`
+  re-checks counts and closed-season hashes weekly, and all 14 `allstats-*.csv`
+  are tracked in the backup repo. "Provably append-only and separately backed
+  up" — the stated reason for the move — is delivered, by mechanism rather than
+  by directory. What's left is what this document already called it:
+  organizational, not protective.
+- **The pairing rationale expired.** The point of waiting for the R→Python
+  cutover was one verification instead of two. The cutover landed; it is two
+  either way now.
+- **The cost was measured and the estimate above ("2 call sites") is stale by
+  an order of magnitude** — 14 files and ~71 references, since `invest.py`,
+  `waivers.py`, `check_stats_integrity.py`, `discord.py` and the Python
+  pipeline all read these files now. **Six of those sites are globs**
+  (`DATA_DIR.glob("allstats-??-??.csv")`, R's `list.files`), and a glob that
+  matches nothing returns an empty list rather than an error — so a missed site
+  goes quiet, not loud: `/api/boxscores` would report zero games instead of
+  failing. And since R is now kept permanently as the stats oracle
+  (`stats-pipeline-port-spec.md`, "R stays"), both readers would have to move
+  in lockstep or `harness port` breaks.
+
+Editing the write path of the one asset on the box that cannot be rebuilt,
+across 14 files, with silent-empty failure modes, to buy a tidier `ls`.
+
+**If it is ever revived**, the shape is: copy rather than move, update all 14
+with the readers last, verify with `harness port` plus a full box-score round
+trip, and delete the originals a month later — never a compatibility symlink,
+for the `os.replace` reason given above.
 
 Screenshot retention is **not** on this list. See "Why the screenshots stay
 deleted."
