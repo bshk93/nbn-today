@@ -91,7 +91,7 @@ Runs automatically after each box score commit, or manually. Source data: `allst
 | `players/player_seasons.csv` | `players/index.html` | Per-player, per-season regular season totals + bio snapshot |
 | `players/player_seasons_playoffs.csv` | `players/index.html` | Same for playoffs |
 | `players/player_awards.csv` | `players/index.html` | One row per award per player per season |
-| `data/game-highs-{p,r,a,s,b,3pm}.csv` | `stats/highs/{stat}/index.html` | Top 20 single-game performances per stat category |
+| `data/game-highs-{p,r,a,s,b,3pm}.csv` | `stats/highs/{stat}/index.html` | Top 50 single-game performances per stat category (the doc said 20; the build writes 50) |
 | `data/franchise-records.csv` | `teams/team.js` (All-Time tab) | Top 5 single games **per team** per stat (P/R/A/S/B/3PM/GMSC) — one combined file for all 30 teams. Unlike `game-highs-*`, which is league-wide, every franchise appears here |
 | `data/totals-{p,r,a,s,b,3pm}.csv` | `stats/totals/{stat}/index.html` | Top 250 career totals per stat category |
 | `data/h2h-alltime.csv` | `h2h/index.html` | All-time head-to-head W/L matrix (teams vs teams) |

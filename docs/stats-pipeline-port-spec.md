@@ -220,9 +220,20 @@ a service that never imports it at runtime, and numpy's own float and NaN
 rendering would fight the one thing the gate turns on. Revisit if a later slice
 genuinely needs it.
 
-**Ported so far:** `data/h2h-alltime.csv`, `data/h2h-playoffs.csv` — byte-identical
-to R, and thin enough over the loaders that they drag season labelling and the
-current-season injection behind a real gate. 84 files to go.
+**Ported so far — 14 of 86, all byte-identical to R:**
+
+| Files | Slice | What it pinned down |
+|---|---|---|
+| 2 | `h2h-alltime`, `h2h-playoffs` | season labelling, the current-season dedup, empty-vs-NA on the diagonal |
+| 6 | `totals-*` | career totals; ties keep alphabetical player order |
+| 6 | `game-highs-*` | single-game highs; ties go to the earlier date, NA sorts last |
+
+The 16 player-name corrections came with them, and they are load-bearing:
+career totals group on that string, so an unfixed alias splits a player's
+career in two.
+
+72 files to go, though far fewer computations — 60 of the 86 are the per-team
+`{abbr}-seasons` / `{abbr}-players` splits of two tables.
 
 ## What's actually hard
 
