@@ -11,6 +11,29 @@ Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** ni
 
 ## 1. Data integrity / open reconciliation
 
+### [P1] Plaintext GitHub token in the retired Shiny checkout
+`/srv/shiny/nothing-but-stats/.git/config` has `origin` set to
+`https://ghp_…@github.com/bshk93/nothing-but-stats` — a personal access token
+in plaintext, still valid on the account. Flagged 2026-08-18, unanswered,
+re-confirmed present 2026-08-19. The project is retired; rotate the token and
+switch that remote to SSH (or delete it).
+
+### [P3] The data backup commits 144 no-op snapshots a day
+Every `nbs-snapshot` commit since the backup was created touches only
+`poopoo.json`, and only its `generated_at` line — `poopoo.timer` rewrites the
+file every 10 minutes whether or not the diff changed. 53 of 53 commits, so the
+backup's history is pure churn, which defeats its main purpose: the fragility
+plan names *logical corruption* as threat #1 and relies on being able to read
+that history. Fix by writing the file only when its content changes, or by
+excluding the timestamp from the comparison.
+
+### [P3] Retire season-summary's league-history workaround
+`season-summary/index.html` deduplicates league-history rows by season and
+overrides CHAMPION from bracket data, calling them "CSV join artifacts". The
+cause is now known and fixed in the Python build (R counted playoff wins per
+player row). Once the stats cutover lands, that workaround is dead code.
+
+
 ### [P1] 9 cap-sheet diffs across 6 teams still unreconciled
 `/poopoo` (`build/poopoo.py` → `poopoo.json`, regenerated 2026-08-09) reports:
 
