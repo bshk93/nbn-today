@@ -2,7 +2,7 @@
 """
 Smoke test for the build's data contract.
 
-The R build writes CSVs; the HTML pages read specific column names out of them.
+The build writes CSVs; the HTML pages read specific column names out of them.
 Nothing else checks that those two halves still agree, and the live docroot is a
 symlink to this working tree — so a renamed column ships broken immediately.
 

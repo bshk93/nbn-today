@@ -2,7 +2,7 @@ Write a blurb for the NBNTV Classics entry at rank $ARGUMENTS.
 
 ## Steps
 
-1. Read `/home/skim/projects/nbn-today/nbntv-classics/playoff-classics.csv`. Find the row where RANK = $ARGUMENTS. Extract: SEASON, DATE, PLAYER, TEAM, OPP, ROUND, GAME, P, R, A, S, B, 3PM, FGM, FGA, GMSC.
+1. Read `/var/lib/nothing-but-stats/derived/nbntv-classics/playoff-classics.csv`. Find the row where RANK = $ARGUMENTS. Extract: SEASON, DATE, PLAYER, TEAM, OPP, ROUND, GAME, P, R, A, S, B, 3PM, FGM, FGA, GMSC.
 
 2. Derive the season file suffix: take the last two digits of the SEASON string (e.g. "20-21 Playoffs" → "21"). Read `/var/lib/nothing-but-stats/allstats-playoffs-{suffix}.csv`. Filter to rows where DATE matches the game date. This gives you the full box score for both teams — every player who played. Use this to understand the full story of the game (teammates' contributions, how the opponent was held, who else stood out).
 

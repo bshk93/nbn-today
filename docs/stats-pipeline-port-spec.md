@@ -56,7 +56,7 @@ change with worse caching, and is out of scope.
 | Dead code | 9 functions / 661 lines (removed separately — see "Prerequisite") |
 | Inputs | `allstats-*.csv` (12 files, 157,442 rows), `owners.csv`, `player-bios.json` |
 | Outputs | 86 CSVs |
-| Trigger | `POST /api/boxscores/submit` → subprocess → `build.sh` |
+| Trigger | `POST /api/boxscore/commit` → subprocess → `build.sh` |
 | Duration | **22 seconds** (measured 2026-08-18, three runs: 21.8s / 23.1s / 22.5s) |
 
 **On duration — Phase 0 is done, and the answer overturns the premise.** The
@@ -263,7 +263,7 @@ path. The cost is pure-Python loops plus exact rationals in the ratings.
 ## Phase 3 — cutover, done 2026-08-19
 
 `build.sh` runs `python3 -m stats_build` instead of `Rscript job.R`. Everything
-that triggers a build — `POST /api/boxscores/submit`, `POST /api/build/trigger`,
+that triggers a build — `POST /api/boxscore/commit`, `POST /api/build/trigger`,
 a person on the box — is unchanged: `build.sh` was kept as the entry-point
 contract exactly so nothing else had to move on the day.
 

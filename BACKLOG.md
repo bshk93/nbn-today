@@ -229,7 +229,7 @@ direction check or its cross-check against signed contracts, so 2024 stays out
 until this is settled and re-running it will pick the year up automatically
 once the sheet is fixed. Nothing to change in code.
 
-### [P2] Three different answers to "what season is it?"
+### [P2] Two different answers to "what season is it?" (was three)
 Found 2026-08-19 while building the box score integrity check, which needs to
 know which files are still being appended to. The stats clock is written down
 three times and they do not agree:
@@ -251,7 +251,7 @@ score under a different season than the build aggregates it as, and the submit
 page agrees with neither by accident. Nothing has broken yet only because no
 games are played in that window: 25-26 ended 2026-04-12, its playoffs
 2026-06-18, and `allstats-26-27.csv` does not exist. It breaks the first time a
-new season tips off before October, which is when `POST /api/boxscores/commit`
+new season tips off before October, which is when `POST /api/boxscore/commit`
 404s on a file nobody created.
 
 The integrity check works around it rather than depending on it (it treats the

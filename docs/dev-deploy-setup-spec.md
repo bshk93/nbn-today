@@ -412,7 +412,7 @@ third, public copy) or take it down.
 The loop that must not break:
 
 ```
-POST /api/boxscores/submit  →  append allstats-{season}.csv
+POST /api/boxscore/commit   →  append allstats-{season}.csv
                             →  trigger build/build.sh
                             →  stats_build reads the raw + state files,
                                  writes derived/

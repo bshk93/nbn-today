@@ -186,7 +186,7 @@ Runs automatically after each box score commit, or manually. Source data: `allst
 | `data/h2h-playoffs.csv` | `h2h/index.html` | Same, playoffs only |
 | `data/h2h-owners.csv` | `h2h/index.html` | Head-to-head W/L matrix (owners vs teams) |
 | `data/hof.csv` | `hof/index.html` | Hall of Fame scores + career counting stats, top 250 players |
-| `data/league-history.csv` | `history/index.html` | Per-season champion, award winners, stat leaders, best ratings |
+| `data/league-history.csv` | `season-summary/index.html` | Per-season champion, award winners, stat leaders, best ratings |
 
 `data/owner_stats.csv` headers: `owner, teams, seasons, best_reg_season, best_reg_pct, worst_reg_season, worst_reg_pct, reg_w, reg_l, reg_pct, playoff_w, playoff_l, playoff_pct, total_w, total_l, total_pct, playoff_appearances, po_r2, po_conf_finals, po_finals, championships, off_rtg, def_rtg`
 
@@ -194,7 +194,7 @@ Runs automatically after each box score commit, or manually. Source data: `allst
 
 ### Written by the nbn-api on roster/picks edits
 
-Updated whenever a team owner saves changes in the team page edit mode (`PUT /api/roster/{team}`, `PUT /api/picks/{team}`).
+Updated whenever a team owner saves changes in the team page edit mode (`PUT /api/roster/{team}` for the roster; picks are written one at a time via `PUT /api/picks/{year}/{rnd}/{orig}`, since the conveyance model has no whole-team picks write).
 
 | File | Used by | What it contains |
 |---|---|---|
@@ -348,14 +348,14 @@ No framework or build step. Every page is a self-contained HTML file with inline
 
 | Task | Where to edit |
 |---|---|
-| Add/change a roster table column | `buildRosterTable` — `teams/team.js:893` |
-| Add/change a draft picks column | `buildPicksTable` — `teams/team.js:1365` |
-| Add/change a season history column | `makeSeasonRenderCell` — `teams/team.js:1478` |
+| Add/change a roster table column | `buildRosterTable` — `teams/team.js:1857` |
+| Add/change a draft picks column | `buildPicksTable` — `teams/team.js:2636` |
+| Add/change a season history column | `makeSeasonRenderCell` — `teams/team.js:2843` |
 | Add/change an owners table column | `COLS` array — `owners/index.html:173` |
 | Change team page layout or HTML structure | `teams/team.js` (the injected HTML, not per-team files) |
-| Change cap/MLE/exception display | `renderHardCapBanner` / `renderExceptionsSection` — `teams/team.js:806` |
-| Change edit mode behavior | `enterEditMode` / `setupEditable` — `teams/team.js:2041` |
-| Change the Team Settings tab (jersey #, secondary position) | `setupTeamSettingsTab` — `teams/team.js:3458` |
+| Change cap/MLE/exception display | `renderHardCapBanner` / `renderExceptionsSection` — `teams/team.js:1473` |
+| Change edit mode behavior | `enterEditMode` / `setupEditable` — `teams/team.js:3844` |
+| Change the Team Settings tab (jersey #, secondary position) | `setupTeamSettingsTab` — `teams/team.js:4164` |
 | Change stats highs table | `stats/highs/table.js` (not the per-stat HTML files) |
 | Change stats totals table | `stats/totals/table.js` (not the per-stat HTML files) |
 | Add/edit a NBNTV blurb | `BLURBS` object — `nbntv-classics/index.html` |
@@ -363,7 +363,7 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Change player index display | `players/index.html` |
 | Change HOF display | `hof/index.html` |
 | Change H2H display | `h2h/index.html` |
-| Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js:109` |
+| Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js:116` |
 | Change the Franchise Records cards | `records-wrap` block in `teams/team.js`; data comes from `franchise_records` in `nbn-api/stats_build/pipeline.py` |
 | Change the transaction simulator's spreadsheet export | `buildTradeWorkbook` — `transaction-sim/index.html`; the .xlsx writer is `transaction-sim/xlsx.js`, and publishing to Google Sheets is `POST /api/trade-sheet` (`nbn-api/routers/google_sheets.py`). Export is trade-mode only |
 | Add a transaction type to the simulator | `setMode` / `runSignCheck` — `transaction-sim/index.html`, plus a `POST /api/validate/{type}` endpoint in `nbn-api/routers/transactions.py` (see "Transaction simulator" below) |
@@ -390,7 +390,7 @@ No framework or build step. Every page is a self-contained HTML file with inline
 - Injects all CSS and HTML into `document.body`
 - Fetches the four per-team CSVs in parallel (`Promise.allSettled`)
 - Exports reusable helpers: `buildTable(cols, rows, sortField, sortDir, renderCell)`, `buildRosterTable`, `buildPicksTable`, `buildEditableGrid`, `setupEditable`
-- Handles **edit mode**: committee members can click an "Edit" button on roster/picks sections, enter a bearer token (stored in `localStorage` as `nbn_token`), and save changes via `PUT /api/roster/{ABB}` or `PUT /api/picks/{ABB}` against a backend API running at port 8001.
+- Handles **edit mode**: committee members can click an "Edit" button on roster/picks sections, enter a bearer token (stored in `localStorage` as `nbn_token`), and save changes via `PUT /api/roster/{ABB}`, or `PUT`/`DELETE /api/picks/{year}/{rnd}/{orig}` per pick, against a backend API running at port 8001.
 
 > **Never edit `teams/{ABB}/index.html` directly.** All 30 files are identical 11-line shells (`<script src="../team.js"></script>`). All team page logic lives in `team.js`.
 
@@ -414,7 +414,7 @@ Two things it settles, both of which had already gone wrong once: a **trailing U
 
 ### COLS array (owners/index.html)
 
-Each entry in `COLS` (`owners/index.html:164`) defines a column:
+Each entry in `COLS` (`owners/index.html:173`) defines a column:
 - `key` — CSV field name (used as fallback cell text)
 - `sortField` — the CSV field actually sorted on (may differ from `key`)
 - `cls` — space-separated CSS classes applied to both `<th>` and `<td>`
@@ -435,7 +435,7 @@ RTG/DIFF columns get heat-map coloring via inline `td.style` (hue 0–120 mapped
 
 ### Edit mode (team pages)
 
-The "Edit" button on Roster and Draft Picks sections in team pages calls `setupEditable`, which uses `buildEditableGrid` for in-browser table editing. Saves go to the API backend (`/api/roster/{ABB}` and `/api/picks/{ABB}`) with a `Bearer` token. Token is prompted via a modal and persisted in `localStorage`. A 403 response clears the stored token.
+The "Edit" button on Roster and Draft Picks sections in team pages calls `setupEditable`, which uses `buildEditableGrid` for in-browser table editing. Saves go to the API backend (`PUT /api/roster/{ABB}`, and `PUT`/`DELETE /api/picks/{year}/{rnd}/{orig}` one pick at a time) with a `Bearer` token. Token is prompted via a modal and persisted in `localStorage`. A 403 response clears the stored token.
 
 ## API backend (`/home/skim/projects/nbn-api/`)
 
@@ -445,7 +445,7 @@ FastAPI app running as a systemd service on port 8001, proxied through nginx. So
 
 | Role | Permissions |
 |---|---|
-| `rosters` | `PUT /api/roster/{team}`, `PUT /api/picks/{team}` |
+| `rosters` | `PUT /api/roster/{team}`, `PUT`/`DELETE /api/picks/{year}/{rnd}/{orig}` |
 | `bod` | Everything `rosters` can do + early award access + edit member tenures |
 | `admin` | Everything + member management (`GET/POST/PATCH/DELETE /api/members`) |
 | `atl`, `bkn`, `bos`, `cha`, `chi`, `cle`, `dal`, `den`, `det`, `gsw`, `hou`, `ind`, `lac`, `lal`, `mem`, `mia`, `mil`, `min`, `nop`, `nyk`, `okc`, `orl`, `phi`, `phx`, `por`, `sac`, `sas`, `tor`, `uta`, `was` | `PUT /api/trading-block/{team}` for their own team only |
@@ -1320,7 +1320,7 @@ Real ownership is a resolvable tree, not one mutable field (this replaced a flat
 
 **Concrete worked example, verified against real production data (2026-07-23):** HOU's and DET's 2027 1st both show `group_id` set, `owner: "DET|HOU"`. Reading `leaves` on either row gives the complete, correct picture in one step: `{"team": "DET", "description": "swap priority (better pick)"}` and `{"team": "HOU", "description": "swap priority (worse pick)"}`. That's the whole story — two teams, DET guaranteed the better of the two physical picks, HOU guaranteed the worse, no third party, no ambiguity, no need to trace transaction history. (The pick numerically labeled `orig: "LAL"` is not LAL's concern at all — LAL traded it away in 2020; DET already owns it outright and is only deciding whether to keep it or swap into HOU's own pick instead.)
 
-The flat, legacy `{abbr}-picks.csv` (`YEAR, ROUND, TEAM, TYPE`, `TEAM` values like `Own`, `from NYK`, a trailing `*` for "has conditions") is a coarse write-side/display artifact, not the model — used by `PUT /api/picks/{team}` and older code paths. Anything reasoning about *why* a pick is owned by whom goes through `/api/picks` and reads `leaves`, never this file.
+The flat, legacy `{abbr}-picks.csv` (`YEAR, ROUND, TEAM, TYPE`, `TEAM` values like `Own`, `from NYK`, a trailing `*` for "has conditions") is a coarse write-side/display artifact, not the model — used by `PUT /api/picks/{year}/{rnd}/{orig}` and older code paths. Anything reasoning about *why* a pick is owned by whom goes through `/api/picks` and reads `leaves`, never this file.
 
 ### Player season
 
