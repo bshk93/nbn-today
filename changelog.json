@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.20",
+    "date": "2026-08-18",
+    "changes": [
+      "Deleted 650 lines of dead code from the stats build, including every remaining line that could pull rosters from a Google Sheet \u2014 the build can no longer make a network call at all",
+      "Measured the build for the first time: 22 seconds, not the 10 minutes assumed, and it provably touches only generated files (rosters, bios and the transaction ledger are untouched)"
+    ]
+  },
+  {
     "version": "0.1.19",
     "date": "2026-08-18",
     "changes": [

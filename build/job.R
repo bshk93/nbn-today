@@ -14,7 +14,6 @@ BUILD_DIR <- Sys.getenv("NBN_BUILD_DIR", {
   if (length(script_flag)) dirname(sub("^--file=", "", script_flag[1])) else "build"
 })
 source(file.path(BUILD_DIR, "build-utils.R"))
-source(file.path(BUILD_DIR, "preprocess-utils.R"))
 
 DATA_DIR  <- Sys.getenv("NBS_DATA_DIR",  "/var/lib/nothing-but-stats")
 REPO_ROOT <- Sys.getenv("NBN_REPO_ROOT", dirname(BUILD_DIR))

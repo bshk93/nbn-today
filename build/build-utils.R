@@ -10,45 +10,6 @@ library(lubridate)
 
 # ── Data loading / cleaning ───────────────────────────────────────────────────
 
-check_allstats <- function(allstats) {
-  bad_minute_games <- allstats %>%
-    group_by(TEAM, DATE, OPP) %>%
-    summarize(t_min = sum(M)) %>%
-    filter(t_min != 240 & t_min != 265 & t_min != 290 & t_min != 315)
-
-  if (nrow(bad_minute_games) > 0) {
-    warning(glue("There are {nrow(bad_minute_games)} game(s) where total minutes doesn't make sense: {str_c(bad_minute_games$t_min, collapse = ', ')}"))
-  }
-
-  bad_sanity_checks <- allstats %>%
-    filter(OR > R | DR > R | FGM > FGA | `3PM` > `3PA` | FTM > FTA | PF > 6 | P != FTM + 2*FGM + 1*`3PM`)
-
-  if (nrow(bad_sanity_checks) > 0) {
-    warning(glue("There are {nrow(bad_sanity_checks)} row(s) where the numbers don't make sense: {str_c(bad_sanity_checks$PLAYER, collapse = ', ')}"))
-  }
-
-  bad_missing <- allstats %>%
-    filter(if_any(c(DATE, PLAYER, M, P, R, A, S, B, TO, FGA, FGM, `3PA`, `3PM`, FTM, FTA, PF), is.na))
-
-  if (nrow(bad_missing) > 0) {
-    warning(glue("There are {nrow(bad_missing)} row(s) with missing data."))
-  }
-
-  list(
-    data = allstats,
-    errors = list(
-      bad_minute_games  = bad_minute_games,
-      bad_sanity_checks = bad_sanity_checks,
-      bad_missing       = bad_missing,
-      games = bind_rows(
-        select(bad_minute_games,  "TEAM", "DATE") %>% mutate(REASON = "bad total minutes"),
-        select(bad_sanity_checks, "TEAM", "DATE") %>% mutate(REASON = "data don't make sense"),
-        select(bad_missing,       "TEAM", "DATE") %>% mutate(REASON = "missing data")
-      ) %>% distinct()
-    )
-  )
-}
-
 clean_allstats <- function(dfs) {
   dfs_bind <- dfs %>%
     bind_rows() %>%
@@ -519,6 +480,62 @@ write_team_profiles <- function(dfs, dfs_playoffs, standings_list, team_ratings,
   }
 }
 
+
+
+# ── moved here from preprocess-utils.R (2026-08-18) ──────────────────────────
+# preprocess-utils.R was a Shiny-era helper file: 7 of its 10 functions were
+# dead, including the path that rebuilt roster/picks CSVs from a Google Sheet.
+# These three are what job.R calls. write_h2h_matrix/write_owner_h2h_matrix
+# were duplicated in both files; job.R sourced preprocess-utils second, so
+# these copies are the ones that were running.
+
+calculate_team_offense_defense <- function(dfs) {
+  
+  x <- dfs %>% 
+    #filter(SEASON == input$pr_season) %>% 
+    mutate(OPP_RAW = str_replace(OPP, "@", "")) %>%
+    group_by(SEASON, TEAM, OPP, OPP_RAW, DATE) %>% 
+    summarize(P = sum(P)) %>% 
+    ungroup()
+  
+  y <- x %>% 
+    group_by(TEAM, SEASON) %>% 
+    arrange(TEAM, SEASON, DATE) %>% 
+    mutate(CUM_PPG = cumsum(P)/row_number()) %>% 
+    ungroup()
+  
+  z <- y %>%
+    inner_join(
+      y %>% select(OPP_RAW = TEAM, DATE, OPP_P = P, OPP_CUM_PPG = CUM_PPG),
+      by = c('OPP_RAW', 'DATE')
+    ) %>%
+    
+    group_by(SEASON, TEAM) %>% 
+    arrange(SEASON, TEAM, DATE) %>% 
+    mutate(CUM_ALLOWED = cumsum(OPP_P)/row_number()) %>% 
+    ungroup()
+  
+  z2 <- z %>% 
+    inner_join(
+      z %>% select(OPP_RAW = TEAM, DATE, OPP_CUM_ALLOWED = CUM_ALLOWED),
+      by = c('OPP_RAW', 'DATE')
+    ) %>% 
+    
+    mutate(
+      DIFF_OFF = P - OPP_CUM_ALLOWED,
+      DIFF_DEF = OPP_CUM_PPG - OPP_P
+    )
+  
+  z2 %>%
+    group_by(TEAM, SEASON) %>%
+    summarize(
+      OFF_RTG = mean(DIFF_OFF),
+      DEF_RTG = mean(DIFF_DEF),
+      TOT_RTG = OFF_RTG + DEF_RTG
+    )
+
+}
+
 write_h2h_matrix <- function(dfs, dfs_playoffs, output_dir) {
   teams <- sort(unique(dfs$TEAM))
 
@@ -539,7 +556,10 @@ write_h2h_matrix <- function(dfs, dfs_playoffs, output_dir) {
     expand.grid(TEAM = teams, OPP_RAW = teams, stringsAsFactors = FALSE) %>%
       filter(TEAM != OPP_RAW) %>%
       left_join(counts, by = c("TEAM", "OPP_RAW" = "OPP_CLEAN")) %>%
-      mutate(W = coalesce(W, 0L), L = coalesce(L, 0L), RECORD = paste0(W, "-", L)) %>%
+      mutate(
+        W = coalesce(W, 0L), L = coalesce(L, 0L),
+        RECORD = paste0(W, "-", L)
+      ) %>%
       select(TEAM, OPP_RAW, RECORD) %>%
       pivot_wider(names_from = OPP_RAW, values_from = RECORD, values_fill = "") %>%
       arrange(TEAM) %>%
@@ -554,7 +574,7 @@ write_h2h_matrix <- function(dfs, dfs_playoffs, output_dir) {
 }
 
 write_owner_h2h_matrix <- function(dfs, dfs_playoffs, owner_data, output_dir) {
-  teams  <- sort(unique(dfs$TEAM))
+  teams <- sort(unique(dfs$TEAM))
   owners <- sort(unique(owner_data$owner))
 
   games <- bind_rows(dfs, dfs_playoffs) %>%
@@ -576,7 +596,10 @@ write_owner_h2h_matrix <- function(dfs, dfs_playoffs, owner_data, output_dir) {
 
   expand.grid(owner = owners, OPP_CLEAN = teams, stringsAsFactors = FALSE) %>%
     left_join(owner_game_counts, by = c("owner", "OPP_CLEAN")) %>%
-    mutate(W = coalesce(W, 0L), L = coalesce(L, 0L), RECORD = paste0(W, "-", L)) %>%
+    mutate(
+      W = coalesce(W, 0L), L = coalesce(L, 0L),
+      RECORD = paste0(W, "-", L)
+    ) %>%
     select(owner, OPP_CLEAN, RECORD) %>%
     pivot_wider(names_from = OPP_CLEAN, values_from = RECORD, values_fill = "") %>%
     arrange(owner) %>%

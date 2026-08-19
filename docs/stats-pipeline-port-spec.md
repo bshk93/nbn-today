@@ -57,22 +57,50 @@ change with worse caching, and is out of scope.
 | Inputs | `allstats-*.csv` (12 files, 157,442 rows), `owners.csv`, `player-bios.json` |
 | Outputs | 86 CSVs |
 | Trigger | `POST /api/boxscores/submit` → subprocess → `build.sh` |
-| Duration | ~10 minutes, believed — **unverified, and the common explanation is wrong** |
+| Duration | **22 seconds** (measured 2026-08-18, three runs: 21.8s / 23.1s / 22.5s) |
 
-**On duration:** the standing assumption is that most of the 10 minutes is
-pulling from Google Sheets. It cannot be — `write_roster_picks` and
-`get_cap_hold_flags` are never called, and the live build makes no network
-calls at all. That memory predates rosters moving to the API. So the real
-cost is somewhere in the aggregation, unprofiled. **Phase 0 measures it**,
-because "R is slow" and "we recompute six seasons of per-player aggregates
-several times over" imply very different ports.
+**On duration — Phase 0 is done, and the answer overturns the premise.** The
+standing assumption was ~10 minutes, mostly Google Sheets. It is **22
+seconds**, and there is no network activity at all: `write_roster_picks`
+and `get_cap_hold_flags` are never called. The 10-minute memory dates from
+when rosters really were pulled from the sheet, before the API owned them.
 
-## Prerequisite
+Two consequences:
 
-Delete the 661 lines of dead code first (`preprocess-utils.R` is 8
-functions, 7 dead; plus `check_allstats` and `.get_award_rows`). Porting
-code that nothing calls is the most avoidable kind of wasted work, and the
-dead set includes the sheet-writing path that must never run again.
+- **There is no performance problem to solve.** Nothing about the design
+  needs to change; the port is purely about language, testability and
+  location. This removes the only argument that could have justified
+  incremental aggregation.
+- **The full-recompute model is cheaper than assumed**, which makes it
+  easier to defend: 22 seconds to rebuild six seasons from raw rows is a
+  bargain for the idempotence it buys.
+
+Also measured, by hashing all 322 files in the data directory before and
+after a build: the build changes **only** derived output. Rosters, picks,
+`player-bios.json`, `transactions.json` and every other piece of league
+state are byte-identical afterwards. And a second consecutive run changes
+**nothing at all** — the build is deterministic.
+
+## Prerequisite — done 2026-08-18
+
+Deleted 8 dead functions / 650 lines, including the entire Google Sheets
+write path. `preprocess-utils.R` is gone; its three live functions moved
+into `build-utils.R`. Build is now 1,289 lines across two files, verified
+by byte-identical output across all 322 data files.
+
+Two things that turned up while doing it, both worth remembering for the
+port:
+
+- **`write_h2h_matrix` and `write_owner_h2h_matrix` were defined in *both*
+  files.** `job.R` sourced `build-utils.R` first and `preprocess-utils.R`
+  second, so the preprocess copies silently won at runtime. They differed
+  only in whitespace, but the same shadowing could have hidden a real
+  divergence indefinitely. The port should assert that no name is defined
+  twice.
+- **Reachability analysis lied twice** — once on `h2h` names (a character
+  class that excluded digits) and once on `.get_award_rows` (a leading dot
+  defeats `\b`), which is called by 11 live award functions and was nearly
+  deleted. Static analysis proposes; byte-identical output disposes.
 
 ## Where it lands
 
