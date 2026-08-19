@@ -51,6 +51,11 @@ League-wide constants (cap thresholds, roster limits, apron triggers) are in Art
 
 **NBN (Nothing But Net)** is a static website for a fantasy basketball simulation GM league. It hosts owner history stats, team pages, player profiles, standings, draft history, stats leaderboards, and NBNTV Classics (curated playoff highlights).
 
+> **New here, or need the operating picture?** `docs/runbook.md` is one page:
+> what lives where, what runs on a timer, the three flows (box score, transaction,
+> deploy), how to restore, and what to do when something breaks. This file is the
+> per-topic detail; the runbook is the map.
+
 ## Dev and live — which checkout am I in?
 
 Two checkouts of this repo, both on `main`, both plain clones of the same remote:
