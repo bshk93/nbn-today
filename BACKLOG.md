@@ -288,6 +288,19 @@ still on disk). Nothing reads them; they're a "which one is real?" trap.
 NBS_DATA_DIR") — junk as they are, they are currently the only historical copies
 of `player-bios.json` on the machine.
 
+**Not to be confused with the 86 root-level derived copies, which were removed
+2026-08-19.** The data-dir root also held a complete shadow set of the build's
+86 outputs (`league-history.csv`, `hof.csv`, `{abbr}-seasons.csv`, …) left by the
+last R run before the cutover — the build writes to `derived/` and had stopped
+maintaining them. Nothing read them: `public/` resolved every one into
+`derived/`, no code path referenced a root copy, and the data dir's own
+`.gitignore` names them, so they were never in the backup set. They were an
+active trap rather than dead weight — the classics skill was reading the root
+`league-history.csv` and would have reported eleven 20-21 champions. Different
+class from the entries above, which are the *only* copies of unrebuildable
+state; these were regenerable in 35s and both engines honour `NBN_OUT_DIR`, so
+neither the Python path nor the R rollback recreates them.
+
 ---
 
 ## 2. Rule automation gaps
