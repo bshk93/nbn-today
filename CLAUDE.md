@@ -63,9 +63,15 @@ All pages fetch CSVs at runtime relative to the site root, so the server must al
 
 ## Data files
 
-Every data file the site depends on is a **symlink** from the repo directory into `/var/lib/nothing-but-stats/` (NBS_DATA_DIR). The site reads them as if they were local files; the API and build pipeline write to NBS_DATA_DIR and the changes are immediately visible.
+**This repo contains no data files.** Everything below lives in `/var/lib/nothing-but-stats/` (NBS_DATA_DIR) and is served from there, not from the docroot — the 149 tracked symlinks that used to fake it were removed on 2026-08-18, which is what makes `git pull` a safe deploy and `git reset --hard` a safe rollback.
 
-Files are grouped below by what generates them.
+How a file reaches the browser:
+
+- The build writes to `$NBS_DATA_DIR/derived/**` (`NBN_OUT_DIR`). League state the API writes (rosters, picks, deadcap, `poopoo.json`, `trade-votes.json`) stays at the data-dir root.
+- `build/link-public.sh` regenerates `$NBS_DATA_DIR/public`, a symlink view unifying both under the URL paths pages already fetch. It runs at the end of every build, so a newly generated file is published rather than 404ing.
+- nginx serves that view: `location ~* \.csv$ { root /var/lib/nothing-but-stats/public; }` plus `location =` rules for the two JSONs. **Both `nbn.today` and `pdc.nbn.today` need the block.** Note `/etc/nginx/sites-enabled/nbn.today` is a **real file, not a symlink** into `sites-available`, and the two have diverged — edit `sites-enabled`.
+
+No URL changed in the move; every path below is what the page fetches. Files are grouped by what generates them.
 
 ---
 
@@ -176,8 +182,8 @@ Stats flow from game submission to the live site in one automated step:
 |---|---|
 | `build.sh` | Entry point. Infers season, syncs `owners.csv` from `members.json`, calls Rscript. |
 | `job.R` | Orchestrator. Loads allstats CSVs, computes all aggregations, writes outputs. |
-| `build-utils.R` | Utility functions: data loading/cleaning, standings, award metadata, CSV write helpers. |
-| `preprocess-utils.R` | Additional helpers: win streaks, newsfeed, team offense/defense rating. |
+| `build-utils.R` | Utility functions: data loading/cleaning, standings, award metadata, CSV write helpers, team offense/defense rating. |
+| `link-public.sh` | Regenerates `$NBS_DATA_DIR/public`, the symlink view nginx serves. Called at the end of `build.sh`. |
 | `sync_owners.py` | Regenerates `$NBS_DATA_DIR/owners.csv` from `members.json` tenure data. |
 | `seasons.conf` | Maps season strings to playoff start dates (`25-26=2026-04-13`). |
 
@@ -188,7 +194,7 @@ Stats flow from game submission to the live site in one automated step:
 - `allstats-playoffs-{YY}.csv` — raw playoff rows
 - `player-bios.json`, `members.json`, `owners.csv`, `awards-history.json`
 
-**Written into this repo by the build (served statically):**
+**Written to `$NBS_DATA_DIR/derived/` by the build** (served through the `public/` view at the paths below — the build is the only author, so nothing here is backed up):
 - `data/owner_stats.csv`, `data/{abbr}-seasons.csv`, `data/{abbr}-players.csv`
 - `standings/standings-history.csv`, `standings/playoff-brackets.csv`
 - `players/player_seasons.csv`, `players/player_seasons_playoffs.csv`, `players/player_awards.csv`

@@ -4,7 +4,8 @@
     "date": "2026-08-19",
     "changes": [
       "Built the test harness for retiring the R stats build: it runs both engines and compares every generated file byte for byte, so a ported piece can only be adopted once it produces exactly what R produced",
-      "Confirmed the stats build is deterministic \u2014 two runs produce byte-identical output across all 86 files, and a harness run reproduces the live site's data exactly"
+      "Confirmed the stats build is deterministic \u2014 two runs produce byte-identical output across all 86 files, and a harness run reproduces the live site's data exactly",
+      "Corrected the project guide, which still described data files as living in this repo \u2014 they moved out yesterday, and the guide is what every future session reads first"
     ]
   },
   {

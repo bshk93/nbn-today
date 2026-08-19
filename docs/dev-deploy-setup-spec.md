@@ -45,6 +45,27 @@ between sessions.
 Everything else in this document falls out of this phase. Done first, the
 dev split becomes trivial; skipped, it needs workarounds.
 
+> **Landed 2026-08-18** (`0292c01`, `2b1fefc`), with three deviations from
+> what's written below — recorded here rather than rewritten, so the reasoning
+> stays visible:
+>
+> - **`derived/` and `public/` only.** The five-lifecycle tree (`state/`,
+>   `raw/`, `secrets/`, `var/`) was dropped: moving the state JSON meant ~100
+>   call sites across `constants.py`, the routers and seven standalone scripts,
+>   on the irreplaceable data, to buy a tidier `ls`. Classification is by
+>   gitignore rule instead, with the unclassified-file guard doing the work the
+>   directories would have.
+> - **`secrets/` became a `chmod`.** `chmod 600` on the three credential files,
+>   zero call sites, plus the `_atomic_write` fix so the mode actually sticks
+>   (`nbn-api` `ba928b3`). `members.json` is still backed up whole — it carries
+>   roles and tenures, not only tokens.
+> - **`raw/` is deferred.** Moving `allstats-*.csv` would have touched the box
+>   score append path *and* `job.R`'s read path in the same window as the
+>   derived move — two concepts and doubled failure modes over the one asset
+>   that cannot be rebuilt. It is organizational, not protective. Do it as its
+>   own step, paired with the append-only guard (Phase 2 item 9), which is the
+>   change that actually protects those files.
+
 ### Today
 
 `/var/lib/nothing-but-stats` is one flat directory, 100MB, holding five
@@ -586,7 +607,7 @@ live. `CLAUDE.md`'s data-file tables also need updating for the new layout.
 
 ## Build order
 
-**Phase 0 — get the box scores off this box (before touching anything)**
+**Phase 0 — get the box scores off this box (before touching anything)** — **done 2026-08-18**
 
 The reorg is the riskiest handling this data has ever had. It does not
 start until a copy exists somewhere else.
@@ -597,7 +618,7 @@ start until a copy exists somewhere else.
    it back into a temp directory and diffing.**
 2. Only then proceed.
 
-**Phase 1 — data layout**
+**Phase 1 — data layout** — **done 2026-08-18**, except step 6's `raw/` (deferred, see above) and step 8's month-later `pre-migration/` sweep
 
 3. `chmod 600 members.json sessions.json tokens.json`. Zero call sites; do
    it now, independent of everything else.
@@ -615,8 +636,8 @@ start until a copy exists somewhere else.
 8. Drop the 180 data symlinks from the repo. Leave the flat originals in
    place for a month, then move them to `pre-migration/` — not `rm`.
 
-**Phase 2 — protecting the box scores** (independent of everything above;
-can start immediately)
+**Phase 2 — protecting the box scores** — **not started** (independent of
+everything above; can start immediately)
 
 9. Append-only guard on `allstats_path()` writes.
 10. Weekly integrity check (row-count monotonicity + `sha256` manifest) with
@@ -630,7 +651,7 @@ can start immediately)
 Screenshot retention is **not** on this list. See "Why the screenshots stay
 deleted."
 
-**Phase 3 — dev/live**
+**Phase 3 — dev/live** — **not started**
 
 15. Track the pre-commit hook; set `core.hooksPath` in live.
 16. `deploy.sh` in both live directories.
