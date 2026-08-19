@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.1.17",
+    "date": "2026-08-18",
+    "changes": [
+      "Specced the dev/live split and data layout (docs/dev-deploy-setup-spec.md): work moves to -dev checkouts with git pull as the deploy step, the R build stops writing into the git working tree, and the box score data gets a real backup story",
+      "Backed up the league data off-box for the first time \u2014 all six seasons of box scores, the transaction ledger, rosters and member records now push to a private repo, verified byte-identical by clone-back diff and checksum",
+      "Locked down the credential files (members.json, sessions.json, tokens.json) to owner-only, and fixed the API's atomic write so it stops resetting file permissions on every save"
+    ]
+  },
+  {
     "version": "0.1.16",
     "date": "2026-08-18",
     "changes": [
