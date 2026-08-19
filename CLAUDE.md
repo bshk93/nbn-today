@@ -346,16 +346,22 @@ No framework or build step. Every page is a self-contained HTML file with inline
 
 ## Common task lookup
 
+Entries name a **symbol and a file, deliberately without a line number** — `grep`
+finds the symbol in one step, and a line number in a 5,000-line file is wrong
+again within a few edits. Every number this table used to carry had drifted by
+thousands of lines before anyone noticed, which is worse than none: it reads as
+precise.
+
 | Task | Where to edit |
 |---|---|
-| Add/change a roster table column | `buildRosterTable` — `teams/team.js:1857` |
-| Add/change a draft picks column | `buildPicksTable` — `teams/team.js:2636` |
-| Add/change a season history column | `makeSeasonRenderCell` — `teams/team.js:2843` |
-| Add/change an owners table column | `COLS` array — `owners/index.html:173` |
+| Add/change a roster table column | `buildRosterTable` — `teams/team.js` |
+| Add/change a draft picks column | `buildPicksTable` — `teams/team.js` |
+| Add/change a season history column | `makeSeasonRenderCell` — `teams/team.js` |
+| Add/change an owners table column | `COLS` array — `owners/index.html` |
 | Change team page layout or HTML structure | `teams/team.js` (the injected HTML, not per-team files) |
-| Change cap/MLE/exception display | `renderHardCapBanner` / `renderExceptionsSection` — `teams/team.js:1473` |
-| Change edit mode behavior | `enterEditMode` / `setupEditable` — `teams/team.js:3844` |
-| Change the Team Settings tab (jersey #, secondary position) | `setupTeamSettingsTab` — `teams/team.js:4164` |
+| Change cap/MLE/exception display | `renderHardCapBanner` / `renderExceptionsSection` — `teams/team.js` |
+| Change edit mode behavior | `enterEditMode` / `setupEditable` — `teams/team.js` |
+| Change the Team Settings tab (jersey #, secondary position) | `setupTeamSettingsTab` — `teams/team.js` |
 | Change stats highs table | `stats/highs/table.js` (not the per-stat HTML files) |
 | Change stats totals table | `stats/totals/table.js` (not the per-stat HTML files) |
 | Add/edit a NBNTV blurb | `BLURBS` object — `nbntv-classics/index.html` |
@@ -363,7 +369,7 @@ No framework or build step. Every page is a self-contained HTML file with inline
 | Change player index display | `players/index.html` |
 | Change HOF display | `hof/index.html` |
 | Change H2H display | `h2h/index.html` |
-| Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js:116` |
+| Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js` |
 | Change the Franchise Records cards | `records-wrap` block in `teams/team.js`; data comes from `franchise_records` in `nbn-api/stats_build/pipeline.py` |
 | Change the transaction simulator's spreadsheet export | `buildTradeWorkbook` — `transaction-sim/index.html`; the .xlsx writer is `transaction-sim/xlsx.js`, and publishing to Google Sheets is `POST /api/trade-sheet` (`nbn-api/routers/google_sheets.py`). Export is trade-mode only |
 | Add a transaction type to the simulator | `setMode` / `runSignCheck` — `transaction-sim/index.html`, plus a `POST /api/validate/{type}` endpoint in `nbn-api/routers/transactions.py` (see "Transaction simulator" below) |
@@ -414,7 +420,7 @@ Two things it settles, both of which had already gone wrong once: a **trailing U
 
 ### COLS array (owners/index.html)
 
-Each entry in `COLS` (`owners/index.html:173`) defines a column:
+Each entry in `COLS` (`owners/index.html`) defines a column:
 - `key` — CSV field name (used as fallback cell text)
 - `sortField` — the CSV field actually sorted on (may differ from `key`)
 - `cls` — space-separated CSS classes applied to both `<th>` and `<td>`

@@ -6,11 +6,11 @@ Write a blurb for the NBNTV Classics entry at rank $ARGUMENTS.
 
 2. Derive the season file suffix: take the last two digits of the SEASON string (e.g. "20-21 Playoffs" → "21"). Read `/var/lib/nothing-but-stats/allstats-playoffs-{suffix}.csv`. Filter to rows where DATE matches the game date. This gives you the full box score for both teams — every player who played. Use this to understand the full story of the game (teammates' contributions, how the opponent was held, who else stood out).
 
-3. Read `/var/lib/nothing-but-stats/league-history.csv`. Find the row for the base season (strip " Playoffs" from SEASON). Use the champion, MVP, award winners, and stat leaders for narrative context about the season.
+3. Read `/var/lib/nothing-but-stats/derived/data/league-history.csv` — **the `derived/` copy, not the one at the data-dir root**, which is a pre-cutover leftover that lists every playoff team as champion. Find the row for the base season (strip " Playoffs" from SEASON). One row per season, with `CHAMPION`, `RUNNER_UP`, `MVP`, `DPOY`, `ROTY`, `MIP`, `FOTY`, `COTY` and the stat leaders — use them for narrative context.
 
 4. Read `/var/lib/nothing-but-stats/owners.csv`. Find who owned the featured TEAM on the game DATE (match team, check start_date ≤ DATE ≤ next owner's start_date). Also find the owner of the opposing team (OPP). Use owner names to humanize the rivalry.
 
-5. Check `/home/skim/projects/nothing-but-stats/app/R/metadata.R` for `get_champion_list()` to determine whether the featured team ultimately won the championship that year, and how far they went.
+5. Read `/var/lib/nothing-but-stats/derived/standings/playoff-brackets.csv` to trace how far the featured TEAM went. Filter to the base SEASON and the rows where TEAM appears as `T1` or `T2`; `ROUND` is 1 (first round), 2 (conference semis), 3 (conference finals), 4 (Finals), and `WINNER` says who advanced. The last round they appear in, and whether they won it, is their run — cross-check against `CHAMPION` from step 3.
 
 6. Compute the stable key: `{DATE}_{player-slug}` where the slug is the PLAYER name lowercased with any run of non-alphanumeric characters replaced by a single hyphen (e.g. "Curry, Stephen" → "curry-stephen", so key = "2021-06-20_curry-stephen").
 
