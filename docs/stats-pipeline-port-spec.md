@@ -220,20 +220,45 @@ a service that never imports it at runtime, and numpy's own float and NaN
 rendering would fight the one thing the gate turns on. Revisit if a later slice
 genuinely needs it.
 
-**Ported so far — 14 of 86, all byte-identical to R:**
+**All 86 files ported, 2026-08-19.** 47 byte-identical to R, 38 differing only
+by accepted cells, 1 deliberately corrected.
 
-| Files | Slice | What it pinned down |
+| Accepted difference | Cells | Form |
 |---|---|---|
-| 2 | `h2h-alltime`, `h2h-playoffs` | season labelling, the current-season dedup, empty-vs-NA on the diagonal |
-| 6 | `totals-*` | career totals; ties keep alphabetical player order |
-| 6 | `game-highs-*` | single-game highs; ties go to the earlier date, NA sorts last |
+| readr's double rendering | 2 | same double, printed longer |
+| `.xx5` mean ties | 6 | enumerated cell by cell |
+| R's `will` name bug | 10 | enumerated, with the fix |
+| Rating noise (`OFF_RTG`/`DEF_RTG`) | 465 | tolerance, scoped to two columns, 1e-11 |
+| `league-history.csv` | whole file | R's version is broken — below |
 
-The 16 player-name corrections came with them, and they are load-bearing:
-career totals group on that string, so an unfixed alias splits a player's
-career in two.
+**The one file the port refuses to reproduce.** R builds `league-history.csv`
+by summing `WL == "W"` over *player* rows rather than distinct games, so any
+team with about two playoff wins clears the 16-win champion test: the live file
+carries 64 rows for 6 seasons and names eleven champions for 20-21.
+`season-summary` had already papered over it, deduplicating by season and
+taking the champion from the bracket ("CSV join artifacts"), which is why
+nobody chased the cause. The port counts games; every other cell matches R
+exactly and every champion matches the finals winner. It is listed in
+`harness.KNOWN_FIXED_FILES`, so `tests/test_stats_pipeline.py` carries its
+verification instead of the byte gate.
 
-72 files to go, though far fewer computations — 60 of the 86 are the per-team
-`{abbr}-seasons` / `{abbr}-players` splits of two tables.
+**Timing:** Python 36.7s against R's 24s. Slower, and irrelevant — Phase 0
+established there is no performance problem, and nothing here sits on a request
+path. The cost is pure-Python loops plus exact rationals in the ratings.
+
+**Semantics worth knowing, each found as a diff rather than by reading R:**
+
+- Career-total ties keep alphabetical player order; game-high ties go to the
+  earlier date. Both fall out of R's stable sorts over a grouped frame, so
+  `clean_allstats`' closing `arrange(PLAYER, DATE)` is a tie-break, not tidying.
+- `round()` and `mean()` both differ from Python's — see `stats_build/rmath.py`.
+- Playoff depth is credited by **season span**, not game day: a GM who takes
+  over in the summer owns that season's playoff run, and two owners can be
+  credited with one season's.
+- Negative zero is real data (`-0` for a differential that reached zero from
+  below), in the writer and in rounding.
+- The bios join to stat lines by **uppercase name**, not slug — box scores
+  carry no slug.
 
 ## What's actually hard
 
@@ -249,11 +274,11 @@ reason a from-scratch rewrite is the wrong idea.
    "Current state, measured."
 1. ~~**Harness.**~~ **Done 2026-08-19** — run-both-and-diff, plus R
    determinism confirmed. See "Phase 1" above.
-2. **Port in dependency order** *(in progress — 2 of 86 files)* — loaders → standings → team seasons →
+2. ~~**Port in dependency order**~~ **Done 2026-08-19 — all 86 files** — loaders → standings → team seasons →
    player seasons → awards → derived tables (highs, totals, h2h, franchise
    records) → HOF. R stays authoritative throughout; each aggregation
    flips only once its output matches byte for byte.
-3. **Cutover.** The API triggers Python. R is kept, dormant, for one full
+3. **Cutover** *(next)*. The API triggers Python. R is kept, dormant, for one full
    season so any seasonal path (playoffs, awards, rings) has run at least
    once under the new code.
 4. **Delete R**, and the R dependency from the box.
