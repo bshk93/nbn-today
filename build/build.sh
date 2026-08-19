@@ -17,10 +17,11 @@ export NBN_OUT_DIR="${NBN_OUT_DIR:-$NBS_DATA_DIR/derived}"
 export NBN_BUILD_DIR="$SCRIPT_DIR"
 
 # The aggregation is Python, in nbn-api (`stats_build`), since 2026-08-19 —
-# see docs/stats-pipeline-port-spec.md. R is kept dormant for one full season
-# so every seasonal path (playoffs, awards, rings) runs at least once under
-# the new code before it goes; `NBN_STATS_ENGINE=r bash build.sh` is how you
-# reach it, and it is the rollback if the Python build ever misbehaves.
+# see docs/stats-pipeline-port-spec.md. R is kept dormant and is NOT being
+# removed: `NBN_STATS_ENGINE=r bash build.sh` is the rollback if the Python
+# build ever misbehaves, and the R build is also the only value-level check on
+# the 86 output files (smoke_test.py asserts schema and no values), via
+# `python3 -m stats_build.harness port`.
 NBN_STATS_ENGINE="${NBN_STATS_ENGINE:-python}"
 NBN_API_DIR="${NBN_API_DIR:-/home/skim/projects/nbn-api}"
 
@@ -41,8 +42,9 @@ if [[ "$NBN_STATS_ENGINE" == "python" ]]; then
   ( cd "$NBN_API_DIR" && "$PY" -m stats_build )
 
 elif [[ "$NBN_STATS_ENGINE" == "r" ]]; then
-  # Dormant path. The season inference below is the last copy of the cutoff
-  # rule outside Python, and it goes when R does (port spec Phase 4).
+  # Dormant path, kept indefinitely. The season inference below is the last
+  # copy of the cutoff rule outside Python; test_build_sh.py pins it to this
+  # branch so it can never come back to the live one.
   current_year=$(TZ=America/New_York date +%Y)
   current_month=$(TZ=America/New_York date +%-m)
   if [[ "$current_month" -le 9 ]]; then

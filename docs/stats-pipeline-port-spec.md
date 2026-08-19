@@ -1,4 +1,4 @@
-# Retiring job.R — porting stats aggregation off R
+# Moving stats aggregation off R (job.R kept as the oracle)
 
 ## What this is
 
@@ -320,25 +320,52 @@ of the API checkout, so a site deploy that lands first gives every build `No
 module named stats_build`. Caught in rehearsal, before it could be caught in
 production.
 
-## Phase 4 — deleting R *(next, not before the 26-27 playoffs)*
+## R stays — decided 2026-08-19, and it retires "Phase 4"
 
-R stays dormant for one full season so every seasonal path — playoffs, awards,
-rings, championship attribution — has run at least once under Python. Nothing
-about those paths is untested, but they are the code that runs least often and
-the harness can only compare what today's data exercises.
+The plan through Phase 3 ended with "delete R, and the R dependency from the
+box." **That is not happening, and dropping it makes the port stronger rather
+than unfinished.**
 
-When it goes: `build/job.R`, `build/build-utils.R`, `build/seasons.conf`, the
-bash season inference in `build.sh`, `harness.run_r` and everything downstream
-of it (`KNOWN_FIXES`, `RATING_TOLERANCE`, the accepted-cell lists — all of them
-describe R and become meaningless without it), `BuildArgs.playoffs_from` and
-`.through`, and the R installation itself. The harness keeps `determinism` and
-`diff`, which are useful against Python alone.
+Uninstalling R would buy a little disk and one less thing to patch. It would
+cost the only *value-level* oracle these 86 files have ever had:
+`smoke_test.py` asserts columns, row-count floors and no values at all, so
+byte-comparison against a second independent implementation is the entire
+reason anyone can believe the numbers. Trading a permanent regression gate for
+a tidier package list is a bad trade, and it is one that cannot be undone
+cheaply — reconstructing `job.R` later means reconstructing six seasons of
+league semantics from the thing it was supposed to check.
 
-**The acceptance test dies with R**, and that is the thing to plan for rather
-than notice later. Byte-comparison against R is the only oracle the derived
-files have ever had; `smoke_test.py` still asserts no values. The open question
-below — whether it should grow value assertions — stops being optional at
-Phase 4 and should be answered before, not after, the comparison disappears.
+So the arrangement is standing, not transitional:
+
+- **R stays installed**, and `build/job.R`, `build/build-utils.R` and
+  `harness.run_r` stay with it. Keeping the runtime while deleting the source
+  would be incoherent — the source *is* the oracle; the runtime just runs it.
+- **`python3 -m stats_build.harness port` stays the gate**, available forever
+  rather than until a deletion date. Run it after any change to `pipeline.py`.
+- **`seasons.conf`, `BuildArgs.playoffs_from` and `.through`** stay too. They
+  feed nothing (see Phase 3), but they are how R is invoked, and R is invoked.
+- The bash season inference in `build.sh` stays on the R branch only, where
+  `build/test_build_sh.py` already pins it out of the live path.
+
+**The open question below stops being urgent**, which is the real consequence.
+Whether `smoke_test.py` should grow value assertions was going to become
+blocking the moment the comparison disappeared. It doesn't disappear, so it
+goes back to being a genuine improvement worth making when convenient, not a
+prerequisite for anything.
+
+**What it costs, stated honestly.** The accepted-difference lists are
+enumerated cell by cell and re-measured on every harness run, on purpose — so a
+new season's data can turn up a seventh `.xx5` tie or a new rating cell and
+fail the gate until a person looks at it. That is the design working, not
+breaking, but it is a real recurring cost and the reason to keep those lists
+enumerated rather than letting them decay into a tolerance.
+
+**One thing from the old Phase 4 survives, as a watch item rather than a
+countdown.** Playoffs, awards, rings and championship attribution are the code
+that runs least often, and the harness can only compare what today's data
+exercises. The first time each runs under Python on new data — the 26-27
+playoffs — run `harness port` and confirm R agrees. After that there is nothing
+pending.
 
 ## What's actually hard
 
@@ -361,8 +388,8 @@ reason a from-scratch rewrite is the wrong idea.
 3. ~~**Cutover.**~~ **Done 2026-08-19** — `build.sh` runs
    `python3 -m stats_build`; R is dormant behind `NBN_STATS_ENGINE=r`. See
    "Phase 3" above.
-4. **Delete R** *(next)*, and the R dependency from the box — not before the
-   26-27 playoffs. See "Phase 4" above.
+4. ~~**Delete R.**~~ **Dropped 2026-08-19** — R stays, permanently, as the
+   oracle. The port is complete at Phase 3. See "R stays" above.
 
 ## Open questions
 
@@ -372,9 +399,8 @@ reason a from-scratch rewrite is the wrong idea.
   output impractical for specific columns? If so, name them explicitly
   rather than loosening the comparison globally.
 - Should `smoke_test.py` grow value assertions? The harness makes them cheap
-  to derive. **This needs answering before Phase 4, not after**: comparison
-  against R is the only value-level oracle the 86 files have, and deleting R
-  deletes it. Still open.
+  to derive, and it would be a faster gate than running both engines. No longer
+  blocking anything now that R stays — worth doing, not urgent. Still open.
 
 ## Not in scope
 

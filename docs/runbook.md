@@ -152,10 +152,12 @@ in a code checkout.
 - **The backup repo carries live credentials** — member tokens, the Google
   refresh token, and session ids in the history from before 2026-08-19. Private
   repo; filed P2 in `BACKLOG.md`.
-- **R is still installed**, kept dormant as the stats build's rollback for one
-  full season (through the 26-27 playoffs) so every seasonal path runs at least
-  once under Python first. Reached only by `NBN_STATS_ENGINE=r`. Removing R and
-  `build/*.R` is spec Phase 4.
+- **R is still installed, and stays** — not a gap, a decision (2026-08-19). It
+  is the stats build's rollback (`NBN_STATS_ENGINE=r`) *and* its only
+  value-level oracle: `smoke_test.py` asserts schema and no values, so
+  `harness port` diffing both engines is the one thing that checks the numbers.
+  Watch item, not a countdown: the first time the playoff/awards/rings paths
+  run on new data (26-27 playoffs), run `harness port` and confirm R agrees.
 - **Two different answers to "what season is it?"** — the API and the submit
   page. The build's third copy went at the cutover; it now shares the API's
   process but not its function (`stats_build/buildargs.py`). `BACKLOG.md` P2.

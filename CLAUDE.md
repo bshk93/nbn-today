@@ -153,10 +153,12 @@ No URL changed in the move; every path below is what the page fetches. Files are
 > **The aggregation is Python, since 2026-08-19.** All 86 files below are
 > written by `nbn-api/stats_build/`, checked byte for byte against the R build
 > it replaced (see `docs/stats-pipeline-port-spec.md` and `nbn-api/CLAUDE.md`).
-> R is kept **dormant** for one full season, so every seasonal path (playoffs,
-> awards, rings) runs at least once under the new code before it goes:
-> `NBN_STATS_ENGINE=r bash build/build.sh` is the rollback, and it is exercised
-> on the same `link-public.sh` + `smoke_test.py` tail as the live path.
+> R is kept **dormant and permanent** (decided 2026-08-19 — it is not being
+> uninstalled). It is the rollback, `NBN_STATS_ENGINE=r bash build/build.sh`,
+> exercised on the same `link-public.sh` + `smoke_test.py` tail as the live
+> path; and it is the only value-level check the 86 files have, since
+> `smoke_test.py` asserts schema and no values. Run
+> `python3 -m stats_build.harness port` after any change to the pipeline.
 >
 > Two R bugs the cutover fixed, so these files read differently than they did
 > before it: `league-history.csv` listed every playoff team as a champion (R
