@@ -18,6 +18,27 @@ in plaintext, still valid on the account. Flagged 2026-08-18, unanswered,
 re-confirmed present 2026-08-19. The project is retired; rotate the token and
 switch that remote to SSH (or delete it).
 
+### [P2] The data backup carries live credentials, and its history keeps them
+Found 2026-08-19 while building the off-site tarball. `bshk93/nbn-data` is
+private, which is why this is P2 and not P1, but it holds working credentials:
+
+- **`members.json`** — 61 members' bearer tokens, every commit.
+- **`google-oauth.json`** — the Google refresh token *and* client secret.
+- **`sessions.json` / `tokens.json`** — untracked on 2026-08-19, but they were
+  tracked until then even though `.gitignore` named both from the start
+  (gitignore does not untrack what is already tracked), so every live session
+  id was pushed on each change. **They remain in the pushed history.**
+
+Three ways forward, and it wants a decision rather than a default: accept it
+(private repo, SSH-only push, the blast radius is one GitHub account), rotate
+the Google credential and the member tokens now that they've been in a remote,
+or rewrite the history — cheap today at ~60 commits from 2026-08-18, expensive
+later.
+
+The weekly Drive tarball deliberately does **not** carry any of this: the
+credential files are excluded and `members.json` goes in redacted, tokens
+blanked and tenures kept.
+
 ### [P3] The data backup commits 144 no-op snapshots a day
 Every `nbs-snapshot` commit since the backup was created touches only
 `poopoo.json`, and only its `generated_at` line — `poopoo.timer` rewrites the
@@ -228,6 +249,22 @@ The integrity check works around it rather than depending on it (it treats the
 newest season on disk as live alongside the current one), but the fix is one
 shared definition. `build/seasons.conf` already exists and already knows each
 season's real dates.
+
+### [P3] 48MB of June 1 copies left by the retired stats mirror
+Found 2026-08-19 closing Phase 2 item 13. `stats.nbn.today` is **already dead** —
+its vhost sits in `sites-available` unenabled, the host does not resolve, and
+nothing in the site links to it. `/var/www/stats.nbn.today/files/` still holds
+184 files (48MB) from June 1.
+
+Verified before filing this: 11 of the 12 `allstats-*.csv` there are exact byte
+prefixes of the live files, and the twelfth (`allstats-playoffs-26.csv`) is a
+CRLF-converted, pre-round-fix, 1,400-row copy whose original is kept as
+`.bak-round-fix` in the data dir. **Nothing there is unique.**
+
+Left in place deliberately — the dev-deploy spec's rule is that a copy of the
+unrebuildable data is never deleted on a judgement call, and 48MB on a disk at
+61% is not urgent. This is a disk-space cleanup for whenever someone wants it,
+not a data question. Same "which one is real?" trap as the entry below.
 
 ### [P3] Stale backups in NBS_DATA_DIR
 `player-bios.json.bak` ×4, `allstats-playoffs-26.csv.bak-round-fix`,

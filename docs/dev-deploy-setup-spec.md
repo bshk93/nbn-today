@@ -636,8 +636,9 @@ start until a copy exists somewhere else.
 8. Drop the 180 data symlinks from the repo. Leave the flat originals in
    place for a month, then move them to `pre-migration/` — not `rm`.
 
-**Phase 2 — protecting the box scores** — **items 9 and 10 done 2026-08-19**;
-11-14 not started (independent of everything above)
+**Phase 2 — protecting the box scores** — **done 2026-08-19** (items 9-14).
+The restore drill at the end of it passed: a bare clone of the backup rebuilds
+every derived file byte-identically.
 
 9. ~~Append-only guard on `allstats_path()` writes.~~ **Done** —
    `nbn-api/routers/allstats_guard.py`. Refuses a shrinking write, a write
@@ -658,11 +659,71 @@ start until a copy exists somewhere else.
     seasons count as live, not one: the stats clock rolls July 1 but the 25-26
     finals were played 2026-06-18, so a slower postseason would land in July
     against a clock already reading 26-27.
-11. Weekly Google Drive tarball of the tracked set.
-12. Per-game provenance JSONL (replaces the screenshots as an audit trail).
-13. Refresh or retire the `stats.nbn.today` mirror.
-14. First quarterly restore drill: clone `nbn-data`, build from it, confirm
-    the site's CSVs regenerate.
+11. ~~Weekly Google Drive tarball~~ **Done** — `nbn-api/backup_to_drive.py`,
+    `nbs-drive-backup.timer`, Sundays. Tars exactly what the snapshot repo
+    tracks (`git ls-files`), so the two backups can never describe different
+    sets: 214 files, 64.3MB → **12.1MB gzipped**. Credentials are the one
+    exclusion and it is not all-or-nothing — `google-oauth.json` is dropped,
+    but `members.json` is **redacted**: tokens blanked, roles and all 72
+    tenures kept, because a token is one rotation to replace and a tenure
+    history is not. The tarball is re-opened and checked before upload, so a
+    shape change in members.json fails the run instead of shipping tokens.
+    Nothing is shared — unlike the trade-sheet export, no Drive permission is
+    granted. Old backups are **trashed** (30-day grace), never deleted, only
+    when they match this script's own name pattern, and only beyond the newest
+    12. First upload 2026-08-19.
+12. ~~Per-game provenance JSONL~~ **Done** — `nbn-api/routers/boxscore_provenance.py`,
+    one line per committed game into `boxscore-provenance-{season}.jsonl`.
+    Records who committed it, who uploaded it (recovered by matching the still-
+    pending screenshot upload, since the commit request carries no upload id),
+    the score, the rows added and the file's row count after. It is a log and
+    nothing reads it to decide anything, which is why every failure in it is
+    swallowed — a provenance write must never be why a real box score fails.
+13. ~~Refresh or retire the `stats.nbn.today` mirror~~ **Retired — it was
+    already dead.** Checked 2026-08-19: the vhost is in `sites-available` but
+    **not enabled**, and the host does not resolve, so it has not been serving
+    anything at all; nothing in the site repo links to it. This section's claim
+    that it "serves 2.5-month-old files as though they were current" was
+    already stale when written. What remains is 48MB of June 1 copies in
+    `/var/www/stats.nbn.today/files/`. Verified: 11 of the 12 `allstats-*.csv`
+    there are exact byte prefixes of the live files, and the twelfth
+    (`allstats-playoffs-26.csv`) is a CRLF-converted, pre-round-fix, 1,400-row
+    copy whose original is kept as `.bak-round-fix` in the data dir. So nothing
+    there is unique. **The bytes are left in place anyway**, per this document's
+    own rule about never deleting a copy of the unrebuildable data; it is
+    filed in `BACKLOG.md` as a disk-space cleanup, not a data question.
+14. ~~First restore drill~~ **Done 2026-08-19, and it passed cleanly.** Cloned
+    `nbn-data` to a scratch directory, pointed `NBS_DATA_DIR`/`NBN_OUT_DIR` at
+    it, ran `build/build.sh`: **all 86 derived CSVs came out byte-identical to
+    the live ones**, 173 files published, 166 smoke checks passed, and nothing
+    in the live data directory was touched. That is the proof the tracked set
+    is *complete* — the build needed nothing the backup lacked. Procedure
+    below; next drill due ~2026-11-19.
+
+### Restoring from the backup
+
+Verified end to end on 2026-08-19. Takes about three minutes.
+
+```bash
+git clone git@github.com:bshk93/nbn-data.git /home/skim/nbs-restore-drill
+NBS_DATA_DIR=/home/skim/nbs-restore-drill \
+NBN_OUT_DIR=/home/skim/nbs-restore-drill/derived \
+  bash /home/skim/projects/nbn-today/build/build.sh
+# then diff derived/ against the live derived/ — expect 86/86 identical
+```
+
+Three things a real restore needs that the drill surfaced:
+
+- **`chmod 600 members.json` immediately.** Git does not preserve file modes
+  beyond the exec bit, so a clone hands back the credential files
+  world-readable (0664) no matter what they were on disk.
+- **`sessions.json` and `tokens.json` are not in the backup** and should not
+  be. Every member simply signs in again. (They *were* tracked until
+  2026-08-19 — named in `.gitignore` from the start, but added before the rule
+  existed, and gitignore does not untrack what is already tracked. Every live
+  session id had been pushed to the remote on each change.)
+- **`owners.csv` is absent and that is correct** — `build.sh` regenerates it
+  from `members.json` via `sync_owners.py` before calling R.
 
 **`raw/` stays deferred, and now has a date.** Phase 1 step 6 left it to be
 paired with item 9; item 9 is done and the move still wasn't taken, because it

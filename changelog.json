@@ -6,7 +6,11 @@
       "The raw box score files \u2014 the one thing here that can't be regenerated \u2014 are now append-only: the site refuses any save that would shorten one, rewrite games already recorded, or quietly drop a column an older season keeps",
       "A weekly check now verifies that no completed season's box scores have changed and that no file has lost rows, alerting on Discord and failing loudly if either ever happens",
       "Closed the standing 'nothing backs up the league data' item \u2014 the off-box snapshot has been running since yesterday; what's left is a second copy at another provider and a practice restore",
-      "Filed a bug: the site has three different answers for which season it is between July and September, which will bite the first time a season starts before October"
+      "Filed a bug: the site has three different answers for which season it is between July and September, which will bite the first time a season starts before October",
+      "Every committed game now leaves a record of who submitted it, who entered it and when \u2014 the audit trail the box score screenshots used to be, at a fraction of the space",
+      "The league data now gets a weekly copy to a second provider, with every member token stripped out of it first but names, roles and tenures kept",
+      "Practised restoring the whole site from that backup: it rebuilt all 86 generated files exactly, which is the first real proof the backup is complete",
+      "Retired the long-dead stats.nbn.today file mirror, and stopped the backup from carrying live sign-in sessions"
     ]
   },
   {
