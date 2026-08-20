@@ -96,6 +96,12 @@
       margin-bottom: 0.5rem;
     }
     .answer-form input:focus, .answer-form select:focus, .answer-form textarea:focus { outline: none; border-color: var(--accent); }
+    .draft-help {
+      font-size: 0.78rem; color: var(--text-muted); margin: 0 0 0.6rem;
+      padding: 0.5rem 0.65rem; background: var(--bg-page); border-left: 3px solid var(--accent-dark);
+      border-radius: 4px; line-height: 1.4;
+    }
+    .draft-help strong { color: var(--text-secondary); }
     .draft-row { display: flex; gap: 0.5rem; }
     .draft-row > * { flex: 1; }
     .answer-actions { display: flex; align-items: center; gap: 0.6rem; }
@@ -207,7 +213,7 @@ let rejectTargetId = null;
 
 const FIELD_LABELS = {
   college: 'College', country: 'Country', height: 'Height', weight: 'Weight',
-  wingspan: 'Wingspan', dob: 'Date of Birth', photo_url: 'Photo URL', draft_info: 'Draft Info',
+  wingspan: 'Wingspan', dob: 'Date of Birth', photo_url: 'Photo URL', draft_info: 'NBN Draft Info',
 };
 // Mirrors CLEANUP_FIELD_REWARDS in nbn-api/routers/cleanup.py — display only.
 const FIELD_REWARDS = {
@@ -378,13 +384,14 @@ function answerFormHTML(g, formId) {
     return `
       <div class="answer-form" id="${formId}">
         <div class="answer-error" id="${formId}-error"></div>
+        <p class="draft-help">This is the player's <strong>NBN</strong> draft position — this league's own draft, not their real-life NBA draft. Every player needs a <strong>Draft Year</strong>, even one who went undrafted in the NBN; leave <strong>Round</strong> and <strong>Pick #</strong> blank only in that case.</p>
         <div class="draft-row">
           <div>
-            <span class="field-label">Draft Year</span>
+            <span class="field-label">Draft Year (required)</span>
             <input type="number" id="${formId}-year" placeholder="2019" min="1946" max="2035">
           </div>
           <div>
-            <span class="field-label">Round (blank = undrafted)</span>
+            <span class="field-label">Round (blank = undrafted in the NBN)</span>
             <select id="${formId}-round" onchange="syncPickDisabled('${formId}')">
               <option value="">Undrafted</option>
               <option value="1">1</option>
