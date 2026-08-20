@@ -58,7 +58,6 @@ from pathlib import Path
 import openpyxl
 import requests
 
-REPO = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.environ.get("NBS_DATA_DIR", "/var/lib/nothing-but-stats"))
 API_BASE = os.environ.get("NBN_API_BASE", "http://127.0.0.1:8001")
 OUT_FILE = DATA_DIR / "poopoo.json"
@@ -412,11 +411,15 @@ def load_site(season, players):
 
     result = {}
     for team in TEAMS:
-        try:
-            roster_csv = (REPO / "data" / f"{team.lower()}-roster.csv").read_text()
-            roster_rows = [r for r in parse_csv(roster_csv) if r.get("SLUG")]
-        except Exception:
-            roster_rows = []
+        # Via the API, not a file path. This used to read
+        # the repo's own `data/{team}-roster.csv`, which stopped existing 2026-08-19
+        # when the data moved out of the repo — and because the failure was
+        # swallowed below, every team silently read as an empty roster and the
+        # report claimed all ~430 rostered players were missing from the site.
+        # The API is the same source nginx serves and cannot be moved out from
+        # under this script.
+        roster_rows = [r for r in http_json(f"/api/roster/{team}")["rows"]
+                       if r.get("SLUG")]
         try:
             dead_rows = http_json(f"/api/deadcap/{team}")
         except Exception:

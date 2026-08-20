@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.1.42",
+    "date": "2026-08-20",
+    "changes": [
+      "Fixed the /poopoo cap-sheet report, which had been reading rosters from a repo path that stopped existing when the data moved out \u2014 it silently treated every team as empty and reported all ~430 rostered players as missing"
+    ]
+  },
+  {
     "version": "0.1.41",
     "date": "2026-08-19",
     "changes": [
