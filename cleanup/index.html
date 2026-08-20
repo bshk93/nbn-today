@@ -418,7 +418,7 @@ function answerFormHTML(g, formId) {
     <div class="answer-form" id="${formId}">
       <div class="answer-error" id="${formId}-error"></div>
       <span class="field-label">${FIELD_LABELS[f]}</span>
-      <input type="${inputType}" id="${formId}-value" placeholder="${placeholder}">
+      <input type="${inputType}" id="${formId}-value" placeholder="${escHtml(placeholder)}">
       <span class="field-label">Source (optional)</span>
       <textarea id="${formId}-note" placeholder="Where'd you find this? (optional)"></textarea>
       <div class="answer-actions">
