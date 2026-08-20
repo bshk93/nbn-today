@@ -22,7 +22,17 @@ Compares, per team, for the site's current league year (from
     color is read to tell a cap hold apart from a real contract (see
     LEGEND_COLORS) -- reading raw values without this produces false
     conclusions, since the sheet lists holds in the same table as real
-    contracts and only distinguishes them by row color.
+    contracts and only distinguishes them by row color. This is
+    checked for every season column the sheet carries (currently
+    the current year plus five more, read off the Players table's own
+    header row rather than assumed), not just the current one -- a
+    disagreement over what a player is owed in 28-29 is just as real
+    as one over what they're owed right now, and used to be invisible
+    until that season actually arrived. Per-player, per-season
+    disagreements are collapsed into one "player_future_years" row
+    (all differing out-years for that player, semicolon-joined) rather
+    than one row per season, so a single stale extension doesn't
+    balloon a team's diff table.
 
 Separately, build_picks_report() does a full reconciliation of every
 future draft pick (every year beyond the current draft class, both
@@ -34,10 +44,18 @@ site's own trade-transaction log (/api/transactions) before being
 flagged, so a sheet that's merely lagging a real, already-logged trade
 reads differently from a genuine open question.
 
+Also, independent of the sheet entirely, build_completeness_report() audits
+every currently-rostered player's bio for missing fields (draft year,
+height/weight/wingspan, dob, college, country, position, OVR) -- these are
+gaps in the site's own data, not disagreements with the sheet, so they're
+reported under a separate "completeness" key rather than mixed into a
+team's sheet-diff list.
+
 Writes a single JSON snapshot to $NBS_DATA_DIR/poopoo.json for the
 /poopoo/ page to render (cap/roster diffs under "teams", the picks
-reconciliation under "picks"). Run on a timer (see poopoo.timer) aligned
-to the clock (:00/:10/:20/...) so refreshes are predictable.
+reconciliation under "picks", the bio audit under "completeness"). Run on
+a timer (see poopoo.timer) aligned to the clock (:00/:10/:20/...) so
+refreshes are predictable.
 
 Env:
   NBN_API_BASE   override the API base URL (default http://127.0.0.1:8001)
@@ -311,10 +329,34 @@ def build_legend(ws):
     return legend
 
 
-def sheet_players(ws, legend):
+def sheet_season_headers(ws, row=4, start_col=6):
+    """Reads the Players table's own header row for its season columns
+    (normally F:K, "2026-27".."2031-32") instead of assuming a fixed count --
+    read dynamically so a sheet that adds or drops a future year doesn't
+    silently truncate/misalign the comparison. Returns an ordered list of
+    (column_index, season_key) with season_key normalized to the site's
+    "YY-YY" convention ("2026-27" -> "26-27"); stops at the first column
+    that isn't a bare "YYYY-YY" label."""
+    cols = []
+    c = start_col
+    while True:
+        v = ws.cell(row=row, column=c).value
+        if not v or not re.match(r"^\d{4}-\d{2}$", str(v).strip()):
+            break
+        cols.append((c, str(v).strip()[2:]))
+        c += 1
+    return cols
+
+
+def sheet_players(ws, legend, season_cols):
     """Parses the main 'Players' section (row 5 through 'Two-Way Contracts').
-    Returns a list of {name, salary, hold, pick_num} dicts. `hold` is 'UFA',
-    'RFA', or None (real/conditional-real contract, see build_legend).
+    Returns a list of {name, salary, hold, pick_num, years} dicts. `hold` is
+    'UFA', 'RFA', or None (real/conditional-real contract, see build_legend);
+    `salary`/`hold` reflect the first (current) season column only, kept for
+    every caller that only ever cared about the current year. `years` carries
+    the same {salary, hold} shape for every column in season_cols, keyed by
+    season -- fill color is read per-cell, not just for column F, since a
+    trailing UFA/RFA hold color can land on any out-year column.
     'Pick#N' placeholder rows (an unsigned pick's rookie-scale cap hold, no
     real name yet) and 'Empty Roster Charge' rows (a roster-spot hold, not a
     player at all) are surfaced separately from named players -- pick_num is
@@ -327,18 +369,23 @@ def sheet_players(ws, legend):
         if not label:
             continue
         name = str(label).strip()
-        cell = ws.cell(row=r, column=6)
-        salary = cell.value if isinstance(cell.value, (int, float)) else 0
-        fill = cell.fill
-        rgb = fill.fgColor.rgb if fill.fill_type == "solid" and fill.fgColor else None
-        hold = legend.get(rgb)
+        years = {}
+        for col_idx, season_key in season_cols:
+            cell = ws.cell(row=r, column=col_idx)
+            cell_salary = cell.value if isinstance(cell.value, (int, float)) else 0
+            fill = cell.fill
+            rgb = fill.fgColor.rgb if fill.fill_type == "solid" and fill.fgColor else None
+            years[season_key] = {"salary": cell_salary, "hold": legend.get(rgb)}
+        cur_key = season_cols[0][1] if season_cols else None
+        cur = years.get(cur_key, {"salary": 0, "hold": None})
+        salary, hold = cur["salary"], cur["hold"]
         pick_match = re.match(r"pick\s*#\s*(\d+)", name, re.IGNORECASE)
         if pick_match:
-            rows.append({"name": name, "salary": salary, "hold": hold, "pick_num": int(pick_match.group(1))})
+            rows.append({"name": name, "salary": salary, "hold": hold, "pick_num": int(pick_match.group(1)), "years": years})
         elif name.lower() == "empty roster charge":
             continue
         else:
-            rows.append({"name": name, "salary": salary, "hold": hold, "pick_num": None})
+            rows.append({"name": name, "salary": salary, "hold": hold, "pick_num": None, "years": years})
     return rows
 
 
@@ -381,28 +428,33 @@ def load_sheet():
     wb = openpyxl.load_workbook(tmp, read_only=False, data_only=True)
     result = {}
     legend = None
+    season_cols = None
     for team in TEAMS:
         if team not in wb.sheetnames:
             continue
         ws = wb[team]
         if legend is None:
             legend = build_legend(ws)
+        if season_cols is None:
+            # Read once off the first team's tab, same as the legend --
+            # every tab shares the same template layout for this header.
+            season_cols = sheet_season_headers(ws)
         result[team] = {
             "aggregate": sheet_aggregate(ws),
             "mle": sheet_mle(ws),
             "bae_year_used": sheet_bae(ws),
             "tpe_remaining": sheet_tpe(ws),
             "picks": sheet_original_picks(ws),
-            "players": sheet_players(ws, legend or {}),
+            "players": sheet_players(ws, legend or {}, season_cols or []),
             "dead_cap": sheet_dead_cap(ws),
         }
     tmp.unlink(missing_ok=True)
-    return result
+    return result, (season_cols or [])
 
 
 # ── Site-side extraction ────────────────────────────────────────────────
 
-def load_site(season, players):
+def load_site(season, players, season_keys):
     cap_levels = http_json("/api/cap-levels")
     team_state = http_json("/api/team-state")
     all_picks = http_json("/api/picks")
@@ -450,10 +502,24 @@ def load_site(season, players):
                 continue
             cat = classify(bio, season)
             cats[cat] += salary
+            # Same {salary, hold, cat} shape as the current season, but for
+            # every season the sheet's Players table carries a column for --
+            # cheap to build (bio is already loaded whole) and is what lets
+            # diff_players compare out-year salaries/holds, not just this one.
+            years = {}
+            for skey in season_keys:
+                s_sal = parse_salary((bio.get("salaries") or {}).get(skey))
+                s_cat = classify(bio, skey)
+                years[skey] = {
+                    "salary": s_sal,
+                    "hold": "UFA" if s_cat == "ufa" else ("RFA" if s_cat == "rfa" else None),
+                    "cat": s_cat,
+                }
             team_players.append({
                 "slug": r["SLUG"], "name": bio.get("name", ""), "salary": salary,
                 "hold": "UFA" if cat == "ufa" else ("RFA" if cat == "rfa" else None),
                 "cat": cat, "draft_pick": bio.get("draft_pick"), "draft_year": bio.get("draft_year"),
+                "years": years,
             })
         for r in dead_rows:
             cats["dead"] += parse_salary(r.get(season))
@@ -534,6 +600,60 @@ def describe_player(p):
     return f"signed {fmt_money(p['salary'])}"
 
 
+def compare_season_cell(sp_year, wp_year):
+    """One out-year's {salary, hold[, cat]} cell, sheet vs site. Returns
+    None if they agree (or neither side has anything on file for that
+    season -- most out-years past a contract's real length are just blank,
+    not a claim of $0). Otherwise returns a dict:
+      {"kind": "uncalculated", "sheet": label} -- both sides agree it's a
+        hold, but the site has never priced it (a $0/$1 placeholder, same
+        systemic gap diff_players already reports for the current season
+        as player_hold_uncalculated -- the caller folds this into that
+        same grouped category rather than a fresh per-player dispute).
+      {"kind": "mismatch", "sheet": label, "site": label, "mag": dollars-or-None}
+        -- a real disagreement. mag is the dollar magnitude when both sides
+        gave a comparable number, else None (status/presence disagreement,
+        nothing to subtract).
+    Mirrors the current-season status -> hold -> signed-amount comparison
+    in diff_players, collapsed to one verdict per season since mismatches
+    get joined into one row per player rather than exploding the table by
+    season."""
+    s_sal, s_hold = sp_year.get("salary", 0) or 0, sp_year.get("hold")
+    w_sal, w_hold, w_cat = wp_year.get("salary", 0) or 0, wp_year.get("hold"), wp_year.get("cat")
+
+    s_has = bool(s_hold) or s_sal > 0
+    w_has = bool(w_hold) or w_sal > 0
+    if not s_has and not w_has:
+        return None
+
+    def sheet_label():
+        if s_hold:
+            return f"{s_hold} {fmt_money(s_sal)}"
+        return fmt_money(s_sal) if s_sal else "no data"
+
+    def site_label():
+        if w_hold:
+            return f"{w_hold} {fmt_money(w_sal)}"
+        if w_cat in ("team_opt", "player_opt") and w_sal:
+            return f"{w_cat.upper()} {fmt_money(w_sal)}"
+        return fmt_money(w_sal) if w_sal else "no data"
+
+    if s_hold and w_hold and w_sal <= 1:
+        if s_sal <= 1:
+            return None  # neither side has a real figure -- nothing to flag either way
+        return {"kind": "uncalculated", "sheet": sheet_label()}
+
+    if not s_has or not w_has:
+        return {"kind": "mismatch", "sheet": sheet_label(), "site": site_label(), "mag": None}
+    if bool(s_hold) != bool(w_hold):
+        return {"kind": "mismatch", "sheet": sheet_label(), "site": site_label(), "mag": None}
+    if s_hold and w_hold and s_hold != w_hold:
+        return {"kind": "mismatch", "sheet": sheet_label(), "site": site_label(), "mag": None}
+    if money_diff(s_sal, w_sal):
+        return {"kind": "mismatch", "sheet": sheet_label(), "site": site_label(), "mag": abs(s_sal - w_sal)}
+    return None
+
+
 def build_site_name_index(site_data):
     """slug/team lookup by normalized name, across the whole league, for
     cross-team conflict detection (a player the sheet and site disagree
@@ -568,7 +688,7 @@ def find_fuzzy(name_key, candidates_by_key):
     return best
 
 
-def diff_players(team, sheet_players_list, site_players_list, site_name_index, sheet_name_index, sheet_dead_cap):
+def diff_players(team, sheet_players_list, site_players_list, site_name_index, sheet_name_index, sheet_dead_cap, season_keys, current_season):
     diffs = []
     dead_cap_by_key = {normalize_name(name): salary for name, salary in sheet_dead_cap.items()}
     site_by_key = {}
@@ -639,6 +759,34 @@ def diff_players(team, sheet_players_list, site_players_list, site_name_index, s
                         "category": "player_salary", "field": sp["name"],
                         "sheet": fmt_money(sp["salary"]), "site": fmt_money(wp["salary"]),
                     })
+
+            # Out-years: every season beyond the current one, collapsed into
+            # one row for this player rather than one row per season (see
+            # compare_season_cell docstring). Uncalculated future holds fold
+            # into the existing player_hold_uncalculated grouped category
+            # instead of padding out this player's own combined row.
+            future_hits = []
+            for skey in season_keys:
+                if skey == current_season:
+                    continue
+                cmp = compare_season_cell(sp.get("years", {}).get(skey, {}), wp.get("years", {}).get(skey, {}))
+                if not cmp:
+                    continue
+                if cmp["kind"] == "uncalculated":
+                    diffs.append({
+                        "category": "player_hold_uncalculated", "field": f"{sp['name']} ({skey})",
+                        "sheet": cmp["sheet"], "site": "not yet calculated",
+                    })
+                else:
+                    future_hits.append((skey, cmp))
+            if future_hits:
+                mags = [c["mag"] for _, c in future_hits if c["mag"] is not None]
+                diffs.append({
+                    "category": "player_future_years", "field": sp["name"],
+                    "sheet": [f"{skey}: {c['sheet']}" for skey, c in future_hits],
+                    "site": [f"{skey}: {c['site']}" for skey, c in future_hits],
+                    "mag": sum(mags) if mags else None,
+                })
             continue
 
         # Not on this team's site roster at all -- check league-wide.
@@ -868,7 +1016,7 @@ def build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current
     return {"counts": counts, "rows": itemized}
 
 
-def diff_team(team, sheet, site, site_name_index, sheet_name_index, current_draft_year):
+def diff_team(team, sheet, site, site_name_index, sheet_name_index, current_draft_year, season_keys, current_season):
     diffs = []
 
     s_agg, w_agg = sheet["aggregate"], site["aggregate"]
@@ -905,17 +1053,73 @@ def diff_team(team, sheet, site, site_name_index, sheet_name_index, current_draf
     # Draft picks live in their own dedicated Picks tab (see build_picks_report)
     # -- richer than a same-team diff row, so not duplicated into this list.
 
-    diffs.extend(diff_players(team, sheet["players"], site["players"], site_name_index, sheet_name_index, sheet["dead_cap"]))
+    diffs.extend(diff_players(team, sheet["players"], site["players"], site_name_index, sheet_name_index, sheet["dead_cap"], season_keys, current_season))
     diffs.extend(diff_picks_signed(team, sheet["players"], site["players"], current_draft_year))
 
     return diffs
 
 
+# ── Data-quality tab: bio-field audit, independent of the sheet ─────────
+# Not a sheet comparison at all -- a self-check of the site's own
+# player-bios.json against a currently-rostered player's own name. Reported
+# separately (poopoo.json's "completeness" key) rather than folded into a
+# team's sheet-diff list, since these aren't disagreements with anything.
+
+COMPLETENESS_FIELDS = [
+    ("draft_year", "Draft Year"),
+    ("pos", "Position"),
+    ("ovr", "OVR"),
+    ("height", "Height"),
+    ("weight", "Weight"),
+    ("wingspan", "Wingspan"),
+    ("dob", "DOB"),
+    ("college", "College"),
+    ("country", "Country"),
+]
+
+
+def load_rosters():
+    return {team: [r["SLUG"] for r in http_json(f"/api/roster/{team}")["rows"] if r.get("SLUG")] for team in TEAMS}
+
+
+def build_completeness_report(players, ovr_current, rosters):
+    """For every currently-rostered, non-dead player, which of
+    COMPLETENESS_FIELDS is empty on their bio. Reported as raw missing
+    counts, not filtered for "this one's legitimately blank" (e.g. an
+    undrafted player has no real draft_year) -- the page already frames
+    these as gaps worth a look, not confirmed errors, and a judgment call
+    baked into the query would just hide real gaps behind the same excuse."""
+    counts = {key: 0 for key, _ in COMPLETENESS_FIELDS}
+    rows = []
+    checked = 0
+    seen_slugs = set()
+    for team in TEAMS:
+        for slug in rosters.get(team, []):
+            if slug in seen_slugs:
+                continue  # a player can't be SLUG-listed on two team rosters at once in practice, but guard anyway
+            seen_slugs.add(slug)
+            bio = players.get(slug)
+            if not bio or bio.get("type") == "dead":
+                continue
+            checked += 1
+            missing = []
+            for key, _ in COMPLETENESS_FIELDS:
+                has = (slug in ovr_current) if key == "ovr" else bool(bio.get(key))
+                if not has:
+                    missing.append(key)
+                    counts[key] += 1
+            if missing:
+                rows.append({"team": team, "slug": slug, "name": bio.get("name", slug), "missing": missing})
+    rows.sort(key=lambda r: (r["team"], r["name"]))
+    return {"checked_total": checked, "counts": counts, "rows": rows}
+
+
 def main():
     season = http_json("/api/league-year")["current_season"]
     players = http_json("/api/players")
-    sheet_data = load_sheet()
-    site_data, picks_by_orig = load_site(season, players)
+    sheet_data, season_cols = load_sheet()
+    season_keys = [key for _, key in season_cols]
+    site_data, picks_by_orig = load_site(season, players, season_keys)
 
     site_name_index = build_site_name_index(site_data)
     sheet_name_index = build_sheet_name_index(sheet_data)
@@ -925,7 +1129,7 @@ def main():
     for team in TEAMS:
         if team not in sheet_data or team not in site_data:
             continue
-        diffs = diff_team(team, sheet_data[team], site_data[team], site_name_index, sheet_name_index, current_draft_year)
+        diffs = diff_team(team, sheet_data[team], site_data[team], site_name_index, sheet_name_index, current_draft_year, season_keys, season)
         teams_out.append({
             "team": team,
             "diff_count": len(diffs),
@@ -938,16 +1142,22 @@ def main():
     sheet_picks_by_team = {team: sheet_data[team]["picks"] for team in sheet_data}
     picks_report = build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current_draft_year)
 
+    rosters = load_rosters()
+    ovr_current = http_json("/api/ovr/current")
+    completeness_report = build_completeness_report(players, ovr_current, rosters)
+
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "season": season,
         "teams": teams_out,
         "picks": picks_report,
+        "completeness": completeness_report,
     }
     OUT_FILE.write_text(json.dumps(out, indent=2))
     print(
         f"poopoo: wrote {OUT_FILE} ({sum(t['diff_count'] for t in teams_out)} cap diffs across "
-        f"{len(teams_out)} teams, {len(picks_report['rows'])} flagged picks)"
+        f"{len(teams_out)} teams, {len(picks_report['rows'])} flagged picks, "
+        f"{len(completeness_report['rows'])}/{completeness_report['checked_total']} players with a bio gap)"
     )
 
 

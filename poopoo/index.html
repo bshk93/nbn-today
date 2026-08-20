@@ -493,6 +493,39 @@
       .pick-row .pick-id { flex-direction: row; gap: 0.5rem; align-items: baseline; }
     }
 
+    /* A player_future_years cell packs one line per differing season --
+       let it wrap/stack instead of forcing the table's usual nowrap. */
+    td.diff-multiline { white-space: normal; }
+
+    /* ── Data Quality tab ─────────────────────────────────────────── */
+
+    .gap-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .gap-row {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--pc);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 0.15rem 1rem;
+      align-items: center;
+    }
+
+    .gap-row .team {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight: 800;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .gap-row .name { font-weight: 700; font-size: 0.85rem; }
+
+    @media (max-width: 560px) {
+      .gap-row { grid-template-columns: 1fr; }
+    }
+
   </style>
 </head>
 <body>
@@ -509,6 +542,7 @@
     <div class="tabs" id="tabs">
       <button type="button" class="tab-btn active" data-tab="cap">Cap &amp; Salaries</button>
       <button type="button" class="tab-btn" data-tab="picks">Draft Picks</button>
+      <button type="button" class="tab-btn" data-tab="completeness">Data Quality</button>
     </div>
 
     <div class="tab-panel" id="panel-cap">
@@ -527,6 +561,13 @@
       <p class="picks-intro">Every team's future draft pick (2027 and on, both rounds) reconciled between the cached league sheet's Details column + attached cell notes and the live <code>/api/picks</code> ledger.</p>
       <div class="chip-row" id="picks-chips"></div>
       <div id="picks-groups"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-completeness" hidden>
+      <p class="picks-intro">Bio fields missing on <code>nbn.today</code> for every currently rostered player (dead-cap entries excluded). Not a sheet comparison, and not necessarily wrong — an undrafted player has no real draft year — just worth a look.</p>
+      <p class="picks-intro" id="completeness-summary"></p>
+      <div class="chip-row" id="completeness-chips"></div>
+      <div class="gap-rows" id="completeness-rows"></div>
     </div>
   </div>
 
@@ -555,7 +596,8 @@
       mle:                      { label: "MLE",               color: "#38bdf8", desc: "Mid-level exception usage disagrees." },
       bae:                      { label: "BAE",               color: "#38bdf8", desc: "Bi-annual exception availability disagrees." },
       tpe:                      { label: "TPE",               color: "#38bdf8", desc: "Trade exception remaining amount disagrees." },
-      player_salary:            { label: "Salary",            color: "var(--danger)", desc: "A signed player's real contract amount disagrees between sheet and site." },
+      player_salary:            { label: "Salary",            color: "var(--danger)", desc: "A signed player's real contract amount disagrees between sheet and site, for the current season." },
+      player_future_years:      { label: "Future Salary",     color: "#fb923c", desc: "This player's salary or free-agent status disagrees with the sheet in one or more seasons beyond the current one. One row per player — every differing season is listed inside it." },
       player_hold:              { label: "Cap Hold",          color: "var(--danger-alt)", desc: "A free agent's cap-hold amount disagrees — both sides have computed a real number, they just don't match (e.g. a Bird-rights tier dispute)." },
       player_hold_uncalculated: { label: "Hold Not Calculated", color: "var(--gold-alt)", desc: "The site has never computed a real cap-hold amount for this free agent — it's sitting at a $1 placeholder. A known, systemic gap, not a fresh dispute.", grouped: true },
       player_status:            { label: "Status",            color: "#e879f9", desc: "One side treats this player as signed to a contract, the other as an unsigned free-agent hold." },
@@ -568,7 +610,7 @@
 
     const CATEGORY_ORDER = [
       "pick_signed", "player_status", "player_dead_cap_mismatch", "player_team_conflict", "aggregate",
-      "player_salary", "player_hold", "mle", "bae", "tpe",
+      "player_salary", "player_future_years", "player_hold", "mle", "bae", "tpe",
       "player_missing", "player_extra", "player_hold_uncalculated",
     ];
 
@@ -602,6 +644,11 @@
     }
 
     function diffMagnitude(d) {
+      // player_future_years pre-computes its own total magnitude server-side
+      // (summed across every differing season) — a multi-season sheet/site
+      // string has more than one "$..." in it, so the regex fallback below
+      // would only ever catch the first and misreport the rest.
+      if (d.mag !== undefined) return d.mag;
       const a = parseMoneyLike(d.sheet);
       const b = parseMoneyLike(d.site);
       if (a === null || b === null) return null;
@@ -611,6 +658,7 @@
     function fmtVal(field, v) {
       if (field === 'Hard Cap') return v || 'none';
       if (field === 'BAE Availability') return v;
+      if (Array.isArray(v)) return v.map(escapeHtml).join('<br>');
       if (typeof v === 'number') return fmtMoney(v);
       return v ?? '—';
     }
@@ -702,12 +750,13 @@
             <tbody>
               ${individual.map(d => {
                 const mag = diffMagnitude(d);
+                const multiline = d.category === 'player_future_years' ? ' diff-multiline' : '';
                 return `
                 <tr>
                   <td>${badge(d.category)}</td>
                   <td>${d.field}</td>
-                  <td>${fmtVal(d.field, d.sheet)}</td>
-                  <td>${fmtVal(d.field, d.site)}</td>
+                  <td class="${multiline}">${fmtVal(d.field, d.sheet)}</td>
+                  <td class="${multiline}">${fmtVal(d.field, d.site)}</td>
                   <td class="diff-mag">${mag === null ? '<span class="mag">—</span>' : fmtMoney(mag)}</td>
                 </tr>
               `;
@@ -878,14 +927,83 @@
       renderPicksGroups();
     }
 
+    // ── Data Quality tab ─────────────────────────────────────────────
+
+    const COMPLETENESS_FIELD_META = {
+      draft_year: { label: "Draft Year", color: "#38bdf8" },
+      pos:        { label: "Position",   color: "var(--danger)" },
+      ovr:        { label: "OVR",        color: "var(--gold-alt)" },
+      height:     { label: "Height",     color: "#a78bfa" },
+      weight:     { label: "Weight",     color: "#a78bfa" },
+      wingspan:   { label: "Wingspan",   color: "#a78bfa" },
+      dob:        { label: "DOB",        color: "#e879f9" },
+      college:    { label: "College",    color: "#94a3b8" },
+      country:    { label: "Country",    color: "#94a3b8" },
+    };
+    const COMPLETENESS_FIELD_ORDER = ["draft_year", "pos", "ovr", "height", "weight", "wingspan", "dob", "college", "country"];
+
+    let completenessFilter = 'all';
+    let completenessRowsGlobal = [];
+
+    function completenessChip(key) {
+      const m = COMPLETENESS_FIELD_META[key] || { label: key, color: 'var(--text-muted)' };
+      return `<span class="pick-flag" style="color:${m.color};border-color:${m.color}">${m.label}</span>`;
+    }
+
+    function renderCompletenessChips(counts) {
+      const items = [
+        { key: 'all', label: 'Any gap', n: completenessRowsGlobal.length, color: 'var(--purple)' },
+        ...COMPLETENESS_FIELD_ORDER.filter(k => counts[k]).map(k => ({
+          key: k, label: COMPLETENESS_FIELD_META[k].label, n: counts[k], color: COMPLETENESS_FIELD_META[k].color,
+        })),
+      ];
+      document.getElementById('completeness-chips').innerHTML = items.map(it => `
+        <button type="button" class="pchip ${completenessFilter === it.key ? 'active' : ''}" data-key="${it.key}" style="--pc:${it.color}">
+          <span class="n">${it.n}</span><span>${it.label}</span>
+        </button>`).join('');
+      document.querySelectorAll('#completeness-chips .pchip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          completenessFilter = btn.dataset.key;
+          renderCompletenessRows();
+          renderCompletenessChips(counts);
+        });
+      });
+    }
+
+    function renderCompletenessRows() {
+      const list = completenessFilter === 'all'
+        ? completenessRowsGlobal
+        : completenessRowsGlobal.filter(r => r.missing.includes(completenessFilter));
+      const html = list.map(r => `
+        <div class="gap-row" style="--pc:${(COMPLETENESS_FIELD_META[r.missing[0]] || {}).color || 'var(--text-muted)'}">
+          <span class="team">${r.team}</span>
+          <div>
+            <a href="/players/?p=${encodeURIComponent(r.slug)}" class="team-link name">${escapeHtml(r.name)}</a>
+            <div class="pick-flags">${r.missing.map(completenessChip).join('')}</div>
+          </div>
+        </div>`).join('');
+      document.getElementById('completeness-rows').innerHTML = html || '<p style="color:var(--text-muted);padding:1rem 0;">Nothing in this category.</p>';
+    }
+
+    function renderCompletenessTab(completeness) {
+      if (!completeness) {
+        document.getElementById('completeness-rows').innerHTML = '<p style="color:var(--text-muted);">No data yet — the job hasn\'t run with the new report.</p>';
+        return;
+      }
+      completenessRowsGlobal = completeness.rows;
+      document.getElementById('completeness-summary').textContent =
+        `${completeness.checked_total} rostered players checked — ${completeness.rows.length} have at least one gap.`;
+      renderCompletenessChips(completeness.counts);
+      renderCompletenessRows();
+    }
+
     function setupTabs() {
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           const tab = btn.dataset.tab;
-          document.getElementById('panel-cap').hidden = tab !== 'cap';
-          document.getElementById('panel-picks').hidden = tab !== 'picks';
+          document.querySelectorAll('.tab-panel').forEach(p => { p.hidden = p.id !== `panel-${tab}`; });
         });
       });
     }
@@ -924,6 +1042,7 @@
       }
 
       renderPicksTab(data.picks);
+      renderCompletenessTab(data.completeness);
       setupTabs();
     }
 
