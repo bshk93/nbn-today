@@ -706,8 +706,12 @@
         return {
           abbr, teamName: TEAMS[abbr], cats, total,
           roomCap:    (levels.cap    || 0) - total,
-          roomApron1: (levels.apron1 || 0) - total,
-          roomApron2: (levels.apron2 || 0) - total,
+          // Apron room excludes pure FA holds (§ 1.3) — same basis the MLE zone
+          // above already uses, and the same figure the API compares against in
+          // _compute_team_salary_ex_holds. Cap room keeps the full total, since an
+          // unrenounced hold does still occupy spendable room.
+          roomApron1: (levels.apron1 || 0) - teamSalaryExHolds,
+          roomApron2: (levels.apron2 || 0) - teamSalaryExHolds,
           hardCap: ts.hard_cap || null,
           tpeAll, tpeActive, tpeTotal,
           mleType, mleTotal, mleUsed, mleRemaining,
@@ -1044,10 +1048,14 @@
         totalTd.textContent = fmtMoney(edited.total);
         if (row.total > 0) attachCellTooltip(totalTd, () => tooltipHtmlForTotal(row, edited, hasEdit));
 
-        // Room columns (reflect the edited total)
+        // Room columns (reflect the edited total). Apron room excludes pure FA
+        // holds (§ 1.3), so the exclusion scratchpad has to net them out of the
+        // edited figure too — otherwise toggling a hold moves the apron columns.
+        const editedExHolds = edited.total
+          - edited.catTotals.rfa - edited.catTotals.ufa;
         const roomCap    = (levels.cap    || 0) - edited.total;
-        const roomApron1 = (levels.apron1 || 0) - edited.total;
-        const roomApron2 = (levels.apron2 || 0) - edited.total;
+        const roomApron1 = (levels.apron1 || 0) - editedExHolds;
+        const roomApron2 = (levels.apron2 || 0) - editedExHolds;
         [roomCap, roomApron1, roomApron2].forEach(v => {
           const td = tr.insertCell();
           td.textContent = fmtRoom(v);
