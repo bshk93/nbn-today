@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.1.47",
+    "date": "2026-08-20",
+    "changes": [
+      "Removed /cleanup's disabled state on approving your own submission \u2014 the API now allows self-approval (see nbn-api), and the button was the last thing still blocking it client-side"
+    ]
+  },
+  {
     "version": "0.1.46",
     "date": "2026-08-20",
     "changes": [

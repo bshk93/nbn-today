@@ -674,10 +674,6 @@ function renderReviewRow(it) {
       <button class="btn-danger btn-sm">Reject</button>
     </div>`;
   const [approveBtn, rejectBtn] = el.querySelectorAll('.answer-actions button');
-  if (it.submitted_by === (me && me.name)) {
-    approveBtn.disabled = true;
-    approveBtn.title = "Can't approve your own submission.";
-  }
   approveBtn.addEventListener('click', () => approveSubmission(it.id));
   rejectBtn.addEventListener('click', () => openRejectModal(it.id));
   return el;
