@@ -520,6 +520,11 @@
       color: var(--text-secondary);
     }
 
+    .gap-row .team.team-none {
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
     .gap-row .name { font-weight: 700; font-size: 0.85rem; }
 
     @media (max-width: 560px) {
@@ -564,7 +569,7 @@
     </div>
 
     <div class="tab-panel" id="panel-completeness" hidden>
-      <p class="picks-intro">Bio fields missing on <code>nbn.today</code> for every currently rostered player (dead-cap entries excluded). Not a sheet comparison, and not necessarily wrong — an undrafted player has no real draft year — just worth a look.</p>
+      <p class="picks-intro">Bio fields missing on <code>nbn.today</code> across the whole player database — every current roster, free agent, and past player (dead-cap placeholders excluded). Not a sheet comparison, and not necessarily wrong — an undrafted player has no real draft year — just worth a look.</p>
       <p class="picks-intro" id="completeness-summary"></p>
       <div class="chip-row" id="completeness-chips"></div>
       <div class="gap-rows" id="completeness-rows"></div>
@@ -976,7 +981,7 @@
         : completenessRowsGlobal.filter(r => r.missing.includes(completenessFilter));
       const html = list.map(r => `
         <div class="gap-row" style="--pc:${(COMPLETENESS_FIELD_META[r.missing[0]] || {}).color || 'var(--text-muted)'}">
-          <span class="team">${r.team}</span>
+          <span class="team${r.team ? '' : ' team-none'}">${r.team || '—'}</span>
           <div>
             <a href="/players/?p=${encodeURIComponent(r.slug)}" class="team-link name">${escapeHtml(r.name)}</a>
             <div class="pick-flags">${r.missing.map(completenessChip).join('')}</div>
@@ -992,7 +997,7 @@
       }
       completenessRowsGlobal = completeness.rows;
       document.getElementById('completeness-summary').textContent =
-        `${completeness.checked_total} rostered players checked — ${completeness.rows.length} have at least one gap.`;
+        `${completeness.checked_total} players checked — ${completeness.rows.length} have at least one gap.`;
       renderCompletenessChips(completeness.counts);
       renderCompletenessRows();
     }

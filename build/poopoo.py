@@ -45,11 +45,12 @@ flagged, so a sheet that's merely lagging a real, already-logged trade
 reads differently from a genuine open question.
 
 Also, independent of the sheet entirely, build_completeness_report() audits
-every currently-rostered player's bio for missing fields (draft year,
-height/weight/wingspan, dob, college, country, position, OVR) -- these are
-gaps in the site's own data, not disagreements with the sheet, so they're
-reported under a separate "completeness" key rather than mixed into a
-team's sheet-diff list.
+every player in player-bios.json (the site's whole player database, not
+just current rosters -- see its own docstring) for missing fields (draft
+year, height/weight/wingspan, dob, college, country, position, OVR) --
+these are gaps in the site's own data, not disagreements with the sheet,
+so they're reported under a separate "completeness" key rather than mixed
+into a team's sheet-diff list.
 
 Writes a single JSON snapshot to $NBS_DATA_DIR/poopoo.json for the
 /poopoo/ page to render (cap/roster diffs under "teams", the picks
@@ -1083,34 +1084,35 @@ def load_rosters():
 
 
 def build_completeness_report(players, ovr_current, rosters):
-    """For every currently-rostered, non-dead player, which of
-    COMPLETENESS_FIELDS is empty on their bio. Reported as raw missing
-    counts, not filtered for "this one's legitimately blank" (e.g. an
-    undrafted player has no real draft_year) -- the page already frames
+    """For every player in the site's whole database (player-bios.json --
+    current rosters, free agents, and the far larger set of past/retired
+    players who aren't on any roster today), which of COMPLETENESS_FIELDS
+    is empty on their bio. Only "dead" entries are excluded -- those are
+    cap-charge placeholders, not real profiles anyone browses on /players.
+    `rosters` is used only to label a row with its *current* team when it
+    has one (most of the database doesn't -- historical players are the
+    majority, see the module docstring's real counts). Reported as raw
+    missing counts, not filtered for "this one's legitimately blank" (e.g.
+    an undrafted player has no real draft_year) -- the page already frames
     these as gaps worth a look, not confirmed errors, and a judgment call
     baked into the query would just hide real gaps behind the same excuse."""
+    slug_team = {slug: team for team, slugs in rosters.items() for slug in slugs}
     counts = {key: 0 for key, _ in COMPLETENESS_FIELDS}
     rows = []
     checked = 0
-    seen_slugs = set()
-    for team in TEAMS:
-        for slug in rosters.get(team, []):
-            if slug in seen_slugs:
-                continue  # a player can't be SLUG-listed on two team rosters at once in practice, but guard anyway
-            seen_slugs.add(slug)
-            bio = players.get(slug)
-            if not bio or bio.get("type") == "dead":
-                continue
-            checked += 1
-            missing = []
-            for key, _ in COMPLETENESS_FIELDS:
-                has = (slug in ovr_current) if key == "ovr" else bool(bio.get(key))
-                if not has:
-                    missing.append(key)
-                    counts[key] += 1
-            if missing:
-                rows.append({"team": team, "slug": slug, "name": bio.get("name", slug), "missing": missing})
-    rows.sort(key=lambda r: (r["team"], r["name"]))
+    for slug, bio in players.items():
+        if bio.get("type") == "dead":
+            continue
+        checked += 1
+        missing = []
+        for key, _ in COMPLETENESS_FIELDS:
+            has = (slug in ovr_current) if key == "ovr" else bool(bio.get(key))
+            if not has:
+                missing.append(key)
+                counts[key] += 1
+        if missing:
+            rows.append({"team": slug_team.get(slug), "slug": slug, "name": bio.get("name", slug), "missing": missing})
+    rows.sort(key=lambda r: (r["team"] is None, r["team"] or "", r["name"]))
     return {"checked_total": checked, "counts": counts, "rows": rows}
 
 
