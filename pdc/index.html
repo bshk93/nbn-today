@@ -28,6 +28,8 @@
     .top-bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
     .top-bar h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
     .right-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+    #poext { margin-top: 1.75rem; }
+    .poext-h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
     .who { font-size: 0.8rem; color: var(--text-muted); }
     .who b { color: var(--text-secondary); font-weight: 600; }
 
@@ -262,7 +264,7 @@
   const BALLOT_TOTAL = 1000;   // § 4.4 — a ballot must sum to exactly this
 
   let ME = { name: null, roles: [], owner_of: [] };
-  let IS_FAC = false, IS_HEAD = false, IS_POEXT = false, IS_AGENT = false;
+  let IS_FAC = false, IS_HEAD = false, IS_POEXT = false, IS_POEXT_HEAD = false, IS_AGENT = false;
   let STATE = null;                 // GET /api/fa/state
   let POOL = {}, BIOS = {}, OVR = {}, TEAMMAP = {};
   let SEASON = '';
@@ -403,26 +405,30 @@
     // on a player nobody has claimed; mirrored here so the two agree.
     IS_AGENT = IS_HEAD || roles.has('agent');
     IS_POEXT = admin || roles.has('poext') || roles.has('poext_head');
+    IS_POEXT_HEAD = admin || roles.has('poext_head');
     renderWhoami();
 
     if (!IS_FAC && !IS_AGENT && !IS_POEXT) { renderGate(ME.name ? 'forbidden' : 'anon'); return; }
     renderHowto();
-    if (IS_POEXT) renderPoext();
+
+    // BIOS/OVR/TEAMMAP are shared, public, and cheap — fetched once regardless
+    // of which committee(s) a member sits on, so a poext-only member (no fac,
+    // no agent) still gets names and current teams rather than bare slugs.
+    const [bios, ovr, teamMap, ly] = await Promise.all([
+      api('/players'), api('/ovr/current'), api('/team-map'),
+      api('/league-year').catch(() => ({})),
+    ]);
+    BIOS = bios; OVR = ovr; TEAMMAP = teamMap;
+    SEASON = ly.current_season || '';
+
+    if (IS_POEXT) await renderPoext();
     if (!IS_FAC && !IS_AGENT) return;
 
     document.getElementById('app').hidden = false;
     document.getElementById('detail').appendChild(el('div', 'empty', 'Pick a player to review.'));
 
-    const [state, pool, bios, ovr, teamMap, ly] = await Promise.all([
-      api('/fa/state'),
-      api('/fa/pool'),
-      api('/players'),
-      api('/ovr/current'),
-      api('/team-map'),
-      api('/league-year').catch(() => ({})),
-    ]);
-    STATE = state; POOL = pool; BIOS = bios; OVR = ovr; TEAMMAP = teamMap;
-    SEASON = ly.current_season || '';
+    const [state, pool] = await Promise.all([api('/fa/state'), api('/fa/pool')]);
+    STATE = state; POOL = pool;
     // An agent's work starts at the queue, a reviewer's at their assignments.
     LIST_MODE = IS_HEAD ? 'all' : (IS_AGENT && !IS_FAC) ? 'queue' : 'mine';
     renderBoard();
@@ -439,8 +445,8 @@
     fac: 'FAC — reviews offers and casts ballots on players you’re assigned to.',
     agent: 'Agent — claims free agents whose offer window has closed, negotiates the offers down to a final set, then advances the survivors to a sub-committee or finalizes an uncontested one. Claiming a player permanently bars your own team from bidding on him.',
     fac_head: 'FAC Head — runs Free Agency: mode, rounds, sub-committee assignment, finalize/unlock. These live in the boxed "FAC Head controls" areas on the page.',
-    poext: 'PO-EXT — granted, but this page is a stub for PO-EXT for now. Nothing to do yet.',
-    poext_head: 'PO-EXT Head — granted, but this page is a stub for PO-EXT for now. Nothing to do yet.',
+    poext: 'PO-EXT — claims and negotiates extension proposals off the shared "agent" role, or votes on proposals your sub-committee is assigned to.',
+    poext_head: 'PO-EXT Head — runs extensions: sub-committee assignment, finalize/unlock, void/restore. Lives in the PO-EXT panel below.',
   };
   const HEAD_ROLES = new Set(['admin', 'fac_head', 'poext_head']);
 
@@ -532,7 +538,8 @@
       + 'finalize/unlock, and sending a player back to his agent — "Running Free Agency", which on '
       + 'the page lives in the boxed controls set apart from the rest of the UI. agent and fac are '
       + 'meant to be different people: an agent has already exercised judgment by choosing the slate. '
-      + 'PO-EXT (poext/poext_head) is granted but this dashboard is a stub for it for now.');
+      + 'PO-EXT (poext/poext_head) runs the same agent stage on § 6.2 contract extensions instead of '
+      + 'free agency — agent is the same shared role either side.');
     box.appendChild(intro);
 
     if (IS_FAC) {
@@ -583,23 +590,329 @@
     }
 
     if (IS_POEXT) {
-      box.appendChild(el('h4', null, 'PO-EXT'));
+      box.appendChild(el('h4', null, 'PO-EXT: extensions (§ 6.2 / § 6.3)'));
       box.appendChild(list([
-        'Player options and extensions come to this dashboard after free agency. Your role is granted and does nothing yet.',
+        'A team drafts and submits an extension proposal at /extensions — only the incumbent may propose (no rival bids, unlike free agency).',
+        'An agent claims a submitted proposal and negotiates it via remand (free — asks the team to revise) or void (drops it, with a reason). Claiming is refused if you hold a role with the same team you’d be representing the player against.',
+        'Advance hands it to a sub-committee, who vote accept or reject — no 1,000 balls, just a majority. A tie refuses to finalize rather than picking a side.',
+        'A majority reject burns one of the player’s three lifetime proposal opportunities (§ 6.3). After the third, no further proposal may be drafted for that player — permanently, unless the PO-EXT head unlocks it.',
+        'Finalize never signs anything — same as free agency, the agreed extension is entered on /transactions by hand, checked against the same validator.',
       ]));
     }
     document.getElementById('howto').hidden = false;
   }
 
-  function renderPoext() {
+  // ── PO-EXT: extensions (§ 6.2 / § 6.3) ──────────────────────────────────────
+  // Deliberately its own self-contained section rather than woven into the FA
+  // list/detail machinery above: a proposal is a different object, claim/votes
+  // are scoped to a negotiation *cycle* (routers/poext.py's _current_cycle),
+  // not a round_id, and finalize is a plain accept/reject majority, not 1,000
+  // balls. What's genuinely shared — el/api/toast/modal/nameOf/money/ago,
+  // BIOS/TEAMMAP, the shorthand() contract renderer — is reused, not redrawn.
+
+  let POEXT_ELIGIBLE = [];
+  let POEXT_PROPOSALS = [];
+  let POEXT_OPEN = null;   // slug currently shown in the detail panel
+
+  async function renderPoext() {
     const box = document.getElementById('poext');
     box.hidden = false;
     box.innerHTML = '';
-    const b = el('div', 'banner info');
-    b.style.marginTop = '1rem';
-    b.textContent = 'PO-EXT: player options and extensions come to this dashboard after free agency. '
-      + 'Your role is granted and does nothing yet — nothing is being missed.';
-    box.appendChild(b);
+    box.appendChild(el('h2', 'poext-h2', 'PO-EXT — Extensions'));
+    const sub = el('div', 'note', 'Only the incumbent may propose (§ 6.2) — no rival bids, so there is one live proposal per player, not several. Submitting is at /extensions.');
+    sub.style.marginBottom = '0.75rem';
+    box.appendChild(sub);
+
+    const list = el('div', 'pane'); list.id = 'poext-list';
+    const detail = el('div', 'pane'); detail.id = 'poext-detail';
+    detail.style.marginTop = '0.9rem';
+    box.appendChild(list);
+    box.appendChild(detail);
+    await poextReload();
+  }
+
+  async function poextReload() {
+    try {
+      const [eligible, proposals] = await Promise.all([api('/poext/eligible'), api('/poext/proposals')]);
+      POEXT_ELIGIBLE = eligible;
+      POEXT_PROPOSALS = proposals;
+    } catch (e) {
+      document.getElementById('poext-list').innerHTML = '';
+      document.getElementById('poext-list').appendChild(el('div', 'banner bad', 'Could not load PO-EXT data: ' + e.message));
+      return;
+    }
+    poextRenderList();
+    if (POEXT_OPEN) poextOpen(POEXT_OPEN, true);
+  }
+
+  function poextStatusChip(status) {
+    const map = { draft: 'chip', submitted: 'chip chip-live', returned: 'chip chip-warn',
+                  voided: 'chip chip-bad', agreed: 'chip chip-ok', rejected: 'chip chip-bad' };
+    return el('span', map[status] || 'chip', status);
+  }
+
+  function poextRenderList() {
+    const box = document.getElementById('poext-list');
+    box.innerHTML = '';
+
+    const live = POEXT_PROPOSALS.filter(p => ['draft', 'submitted', 'returned'].includes(p.status));
+    const decided = POEXT_PROPOSALS.filter(p => ['agreed', 'rejected', 'voided'].includes(p.status));
+    const proposedSlugs = new Set(POEXT_PROPOSALS.map(p => p.player));
+    const myTeams = new Set((ME.roles || []).map(r => r.toUpperCase()));
+
+    // Eligible players nobody has proposed for yet — mainly useful to a team
+    // role holder deciding whether to go propose one, but shown to everyone
+    // for context, same as the FA pool being public.
+    const unproposed = POEXT_ELIGIBLE.filter(e => e.eligible && !proposedSlugs.has(e.player));
+    if (unproposed.length) {
+      const sec = el('div', 'section');
+      sec.appendChild(el('h3', null, `Eligible, no proposal yet (${unproposed.length})`));
+      unproposed.slice(0, 25).forEach(e => {
+        const row = el('div', 'prow');
+        const body = el('div', 'prow-body');
+        body.appendChild(el('div', 'prow-name', nameOf(e.player)));
+        const meta = el('div', 'prow-meta');
+        meta.appendChild(el('span', null, e.team));
+        meta.appendChild(el('span', null, '·'));
+        meta.appendChild(el('span', null, e.basis));
+        body.appendChild(meta);
+        row.appendChild(body);
+        if (myTeams.has(e.team)) {
+          const btn = el('button', 'btn-primary', 'Propose');
+          btn.addEventListener('click', () => { location.href = '/extensions/?player=' + encodeURIComponent(e.player); });
+          row.appendChild(btn);
+        }
+        sec.appendChild(row);
+      });
+      if (unproposed.length > 25) sec.appendChild(el('div', 'note', `+ ${unproposed.length - 25} more.`));
+      box.appendChild(sec);
+    }
+
+    const renderGroup = (title, rows, emptyMsg) => {
+      const sec = el('div', 'section');
+      sec.appendChild(el('h3', null, `${title} (${rows.length})`));
+      if (!rows.length) { sec.appendChild(el('div', 'empty', emptyMsg)); box.appendChild(sec); return; }
+      rows.forEach(p => {
+        const row = el('div', 'prow' + (p.player === POEXT_OPEN ? ' on' : ''));
+        row.dataset.slug = p.player;
+        const body = el('div', 'prow-body');
+        body.appendChild(el('div', 'prow-name', `#${p.number} · ${nameOf(p.player)} · ${p.team}`));
+        const meta = el('div', 'prow-meta');
+        meta.appendChild(poextStatusChip(p.status));
+        meta.appendChild(el('span', null, ago(p.updated_at)));
+        body.appendChild(meta);
+        row.appendChild(body);
+        row.addEventListener('click', () => poextOpen(p.player));
+        sec.appendChild(row);
+      });
+      box.appendChild(sec);
+    };
+
+    renderGroup('Live proposals', live, 'Nothing live right now.');
+    if (decided.length) renderGroup('Decided recently', decided.slice(0, 15), '');
+  }
+
+  async function poextOpen(slug, silent) {
+    POEXT_OPEN = slug;
+    if (!silent) poextRenderList();
+    const box = document.getElementById('poext-detail');
+    if (!silent) { box.innerHTML = ''; box.appendChild(el('div', 'empty', 'Loading…')); }
+    let review;
+    try {
+      review = await api('/poext/players/' + encodeURIComponent(slug) + '/review');
+    } catch (e) {
+      box.innerHTML = '';
+      box.appendChild(el('div', 'banner bad', e.message));
+      return;
+    }
+    poextRenderDetail(slug, review);
+  }
+
+  function poextRenderDetail(slug, review) {
+    const box = document.getElementById('poext-detail');
+    box.innerHTML = '';
+    const p = review.proposal;
+    const st = review.state;
+
+    const head = el('div', 'section');
+    const h = el('div', 'prow-name', nameOf(slug) + (p ? ` · #${p.number} · ${p.team}` : ''));
+    head.appendChild(h);
+    const stageChip = el('span', 'chip chip-head', st.stage.replace('_', ' '));
+    head.appendChild(stageChip);
+    if (st.exhausted) head.appendChild(el('div', 'banner bad', `§ 6.3: three proposals rejected — no further extension opportunities arise for ${nameOf(slug)} unless the PO-EXT head unlocks it.`));
+    else if (st.rejections) head.appendChild(el('div', 'banner warn', `${st.rejections} of 3 proposals rejected so far.`));
+    box.appendChild(head);
+
+    if (!p) { box.appendChild(el('div', 'empty', 'No live proposal on this player.')); return; }
+
+    // ── the proposal itself ────────────────────────────────────────────────
+    const psec = el('div', 'section');
+    psec.appendChild(el('h3', null, 'Proposal'));
+    const shorthandStr = (() => {
+      try { return shorthand({ salaries: p.contract.salaries, cap_holds: p.contract.cap_holds }); }
+      catch { return ''; }
+    })();
+    psec.appendChild(el('div', null, `${p.kind.replace('_', ' ')} · ${shorthandStr || Object.keys(p.contract.salaries || {}).join(', ')}`));
+    if (p.bird_rights_type) psec.appendChild(el('div', 'note', 'Bird tier: ' + p.bird_rights_type));
+    if (p.attested_contract_start) psec.appendChild(el('div', 'note', 'Team attests contract began: ' + p.attested_contract_start));
+    if (review.outstanding_remands && review.outstanding_remands.length) {
+      review.outstanding_remands.forEach(r => psec.appendChild(el('div', 'banner warn', `Remand (${r.by}): ${r.note}`)));
+    }
+    box.appendChild(psec);
+
+    // ── legality ────────────────────────────────────────────────────────────
+    if (review.revalidation) {
+      const vsec = el('div', 'section');
+      const legal = review.revalidation.legal;
+      vsec.appendChild(el('div', 'banner ' + (legal ? 'info' : 'bad'),
+        (legal ? '✓ Legal as last checked' : '✗ Not legal') + (p.validation ? ` — submitted as ${p.validation.legal ? 'legal' : 'illegal (forced?)'}` : '')));
+      (review.revalidation.checks || []).filter(c => !c.passed).forEach(c => {
+        vsec.appendChild(el('div', 'note', (c.level === 'error' ? '✗ ' : '⚠ ') + c.message));
+      });
+      box.appendChild(vsec);
+    }
+
+    // ── agent actions ───────────────────────────────────────────────────────
+    const asec = el('div', 'section');
+    asec.appendChild(el('h3', null, 'Agent'));
+    if (st.claimed_by) {
+      asec.appendChild(el('div', null, `Claimed by ${st.claimed_by}` + (st.is_agent ? ' (you)' : '')));
+    } else if (['submitted'].includes(p.status)) {
+      asec.appendChild(el('div', 'note', 'Unclaimed — any PO-EXT agent may claim.'));
+    }
+    const abar = el('div', 'modal-actions'); abar.style.justifyContent = 'flex-start';
+    if (!st.claimed_by && p.status === 'submitted') {
+      const b = el('button', 'btn-primary', 'Claim');
+      b.addEventListener('click', () => poextAct(() => api('/poext/players/' + slug + '/claim', { method: 'POST' })));
+      abar.appendChild(b);
+    }
+    if (st.is_agent && st.stage === 'with_agent') {
+      const remand = el('button', 'btn-ghost', 'Remand');
+      remand.addEventListener('click', () => poextRemandModal(p));
+      abar.appendChild(remand);
+      const voidBtn = el('button', 'btn-danger', 'Void');
+      voidBtn.addEventListener('click', () => poextVoidModal(p));
+      abar.appendChild(voidBtn);
+      const advance = el('button', 'btn-primary', 'Advance to committee');
+      advance.addEventListener('click', () => poextAdvanceModal(slug));
+      abar.appendChild(advance);
+      const release = el('button', 'btn-ghost', 'Release claim');
+      release.addEventListener('click', () => poextAct(() => api('/poext/players/' + slug + '/release', { method: 'POST' })));
+      abar.appendChild(release);
+    }
+    if (IS_POEXT_HEAD && p.status === 'voided') {
+      const restore = el('button', 'btn-ghost', 'Restore');
+      restore.addEventListener('click', () => poextAct(() => api('/poext/proposals/' + p.id + '/restore', { method: 'POST' })));
+      abar.appendChild(restore);
+    }
+    if (abar.children.length) asec.appendChild(abar);
+    box.appendChild(asec);
+
+    // ── committee: assignment + votes ──────────────────────────────────────
+    const csec = el('div', 'section' + (IS_POEXT_HEAD ? ' head-section' : ''));
+    csec.appendChild(el('h3', null, 'Sub-committee'));
+    csec.appendChild(el('div', null, review.assigned.length ? review.assigned.join(', ') : 'Nobody assigned yet.'));
+    if (IS_POEXT_HEAD) {
+      const assign = el('button', 'btn-ghost', 'Assign');
+      assign.addEventListener('click', () => poextAssignModal(slug, review.assigned));
+      assign.style.marginTop = '0.4rem';
+      csec.appendChild(assign);
+    }
+    if (st.stage === 'with_committee' || review.final) {
+      const votes = review.votes || {};
+      const rows = Object.entries(votes);
+      if (rows.length) {
+        const vt = el('div'); vt.style.marginTop = '0.5rem';
+        rows.forEach(([name, v]) => {
+          vt.appendChild(el('div', 'note', `${name}: ${v.vote}` + (v.conflict ? ` (conflict: ${v.conflict})` : '') + (v.note ? ` — "${v.note}"` : '')));
+        });
+        csec.appendChild(vt);
+      }
+      const assignedSet = new Set(review.assigned);
+      if (assignedSet.has(ME.name) && !review.final) {
+        const vbar = el('div', 'modal-actions'); vbar.style.justifyContent = 'flex-start'; vbar.style.marginTop = '0.5rem';
+        const mine = votes[ME.name];
+        ['accept', 'reject'].forEach(choice => {
+          const b = el('button', mine && mine.vote === choice ? 'btn-primary' : 'btn-ghost', choice[0].toUpperCase() + choice.slice(1));
+          b.addEventListener('click', () => poextAct(() => api('/poext/players/' + slug + '/vote', { method: 'PUT', body: { vote: choice } })));
+          vbar.appendChild(b);
+        });
+        csec.appendChild(vbar);
+      }
+      if (IS_POEXT_HEAD && !review.final) {
+        const fin = el('button', 'btn-primary', 'Finalize');
+        fin.style.marginTop = '0.5rem';
+        fin.addEventListener('click', () => poextAct(() => api('/poext/players/' + slug + '/finalize', { method: 'POST' })));
+        csec.appendChild(fin);
+      }
+      if (review.final) {
+        csec.appendChild(el('div', 'banner ' + (review.final.outcome === 'agreed' ? 'info' : 'bad'),
+          `Finalized: ${review.final.outcome} (${review.final.accept}–${review.final.reject}) by ${review.final.locked_by}` +
+          (review.final.outcome === 'agreed' ? ' — enter the extension on /transactions by hand, checked against the same validator.' : '')));
+        if (IS_POEXT_HEAD) {
+          const unlock = el('button', 'btn-ghost', 'Unlock');
+          unlock.addEventListener('click', () => poextAct(() => api('/poext/players/' + slug + '/unlock', { method: 'POST' })));
+          csec.appendChild(unlock);
+        }
+      }
+    }
+    box.appendChild(csec);
+  }
+
+  async function poextAct(run) {
+    try {
+      await run();
+      toast('Done.');
+      await poextReload();
+    } catch (e) {
+      toast(e.message, true);
+    }
+  }
+
+  function poextRemandModal(p) {
+    const body = el('div');
+    body.appendChild(el('div', 'note', 'A remand is free — it doesn’t count against the three-proposal limit.'));
+    const ta = el('textarea'); ta.placeholder = 'What should change?';
+    body.appendChild(ta);
+    modal('Remand proposal #' + p.number, body, [{
+      label: 'Send back', cls: 'btn-primary',
+      run: () => poextAct(() => api('/poext/proposals/' + p.id + '/remand', { method: 'POST', body: { note: ta.value } })),
+    }]);
+  }
+
+  function poextVoidModal(p) {
+    const body = el('div');
+    body.appendChild(el('div', 'note', 'Takes the proposal out of play entirely — wrong player, duplicate, or a team ruled ineligible. Restorable by the PO-EXT head.'));
+    const ta = el('textarea'); ta.placeholder = 'Reason (shown to the team)';
+    body.appendChild(ta);
+    modal('Void proposal #' + p.number, body, [{
+      label: 'Void', cls: 'btn-danger',
+      run: () => poextAct(() => api('/poext/proposals/' + p.id + '/void', { method: 'POST', body: { reason: ta.value } })),
+    }]);
+  }
+
+  function poextAdvanceModal(slug) {
+    const body = el('div');
+    body.appendChild(el('div', 'note', 'Hands the proposal to the sub-committee for a vote. One-way for you — only the PO-EXT head can send it back.'));
+    const ta = el('textarea'); ta.placeholder = 'Note for the committee (optional)';
+    body.appendChild(ta);
+    modal('Advance ' + nameOf(slug), body, [{
+      label: 'Advance', cls: 'btn-primary',
+      run: () => poextAct(() => api('/poext/players/' + slug + '/advance', { method: 'POST', body: { note: ta.value } })),
+    }]);
+  }
+
+  function poextAssignModal(slug, current) {
+    const body = el('div');
+    body.appendChild(el('div', 'note', 'Comma-separated member names.'));
+    const inp = el('input'); inp.value = (current || []).join(', ');
+    body.appendChild(inp);
+    modal('Assign sub-committee — ' + nameOf(slug), body, [{
+      label: 'Save', cls: 'btn-primary',
+      run: () => poextAct(() => api('/poext/players/' + slug + '/assign', {
+        method: 'PUT', body: { subcommittee: inp.value.split(',').map(s => s.trim()).filter(Boolean) },
+      })),
+    }]);
   }
 
   // ── the board bar (mode, rounds) ────────────────────────────────────────────

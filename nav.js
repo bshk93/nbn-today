@@ -186,6 +186,7 @@ const SITE_PAGES = [
   { title: 'Trade Retrospectives', href: '/trade-retros/', icon: '🔍' },
   { title: 'Compare Players', href: '/compare/', icon: '⇆' },
   { title: 'Free Agency', href: '/free-agency/', icon: '✍️' },
+  { title: 'Extensions', href: '/extensions/', icon: '📄' },
   { title: 'Transactions', href: '/transactions', icon: '📝' },
   { title: 'Cap Summary', href: '/cap-summary/', icon: '💰' },
   { title: 'Season Summary', href: '/season-summary', icon: '📜' },

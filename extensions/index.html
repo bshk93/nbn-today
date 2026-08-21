@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Extensions — NBN</title>
+  <!--
+    Team-facing § 6.2/6.3 extension proposals — Phase D of
+    nbn-today/docs/poext-extension-pipeline.md. Only the incumbent may
+    propose (no rival bids, unlike /free-agency), so this is simpler than
+    that page: one form, one team's queue, no board.
+
+    No cap math here — every dollar comes off POST /api/validate/extension's
+    fact sheet, the same rubric the office runs at /transactions and the
+    PO-EXT committee sees in review. This page renders figures, it never
+    derives them.
+  -->
+  <style>
+    .page { max-width: 900px; margin: 0 auto; }
+    header { margin-bottom: 1.5rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .gate { max-width: 480px; margin: 4rem auto; text-align: center; }
+    .gate p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1rem; }
+
+    .pane { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 1rem; }
+    .pane-head { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border-subtle); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 700; }
+    .prow { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 0.6rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .prow:last-child { border-bottom: none; }
+    .prow-name { font-size: 0.88rem; font-weight: 600; }
+    .prow-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .empty { padding: 1.25rem 0.9rem; color: var(--text-dim); font-size: 0.82rem; text-align: center; }
+
+    .chip { display: inline-block; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+            padding: 0.12rem 0.4rem; border-radius: 4px; border: 1px solid var(--border); color: var(--text-muted); }
+    .chip-live { border-color: var(--accent); color: var(--accent-light); }
+    .chip-warn { border-color: var(--gold-border); color: var(--gold); }
+    .chip-ok { border-color: var(--success); color: var(--success); }
+    .chip-bad { border-color: var(--danger-border-strong); color: var(--danger); }
+
+    button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.78rem; font-weight: 600; padding: 0.35rem 0.75rem; border: 1px solid transparent; }
+    .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .btn-danger { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+    button:disabled { opacity: 0.45; cursor: default; }
+
+    input, select, textarea { font-family: inherit; font-size: 0.85rem; background: var(--bg-page); color: var(--text-primary);
+      border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.55rem; outline: none; width: 100%; }
+    textarea { resize: vertical; min-height: 4.5rem; }
+    label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 0.25rem; }
+
+    .form-row { display: flex; gap: 0.8rem; flex-wrap: wrap; padding: 0.7rem 0.9rem; }
+    .field { flex: 1 1 160px; min-width: 140px; }
+    .field.narrow { flex: 0 1 130px; }
+
+    .salary-years { display: flex; flex-wrap: wrap; gap: 0.6rem; padding: 0 0.9rem 0.7rem; }
+    .salary-year { display: flex; flex-direction: column; gap: 0.25rem; min-width: 130px; }
+    .salary-year label { margin: 0; }
+
+    .note { font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; }
+    .banner { border: 1px solid var(--border); border-radius: 7px; padding: 0.55rem 0.7rem; font-size: 0.78rem; color: var(--text-secondary); margin: 0.7rem 0.9rem; }
+    .banner.warn { border-color: var(--gold-border); background: var(--gold-bg); color: var(--gold); }
+    .banner.bad { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-light); }
+    .banner.info { border-color: var(--muted-border); background: var(--accent-panel-bg); color: var(--text-secondary); }
+
+    .check-row { display: flex; gap: 0.4rem; align-items: flex-start; padding: 0.3rem 0.9rem; font-size: 0.78rem; }
+    .check-row.error { color: var(--danger-light); }
+    .check-row.warning { color: var(--gold); }
+    .check-row.pass { color: var(--text-secondary); }
+
+    .actions-row { display: flex; gap: 0.5rem; flex-wrap: wrap; padding: 0.7rem 0.9rem; }
+    .toast { position: fixed; bottom: 1.2rem; right: 1.2rem; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.82rem; color: var(--text-primary); z-index: 999; }
+    .toast.bad { border-color: var(--danger); color: var(--danger-light); }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <a href="/" style="color:var(--text-muted);font-size:0.85rem;text-decoration:none">&larr; Home</a>
+    <h1>Extensions</h1>
+    <p>§ 6.2 / § 6.3. Only the incumbent may propose — submit here, PO-EXT reviews at <a href="/pdc">/pdc</a>.</p>
+  </header>
+
+  <div id="gate" style="display:none" class="gate"></div>
+  <div id="app" style="display:none">
+    <div class="pane" id="eligible-pane">
+      <div class="pane-head">Your eligible players</div>
+      <div id="eligible-list"></div>
+    </div>
+    <div class="pane" id="proposals-pane">
+      <div class="pane-head">Your proposals</div>
+      <div id="proposals-list"></div>
+    </div>
+    <div class="pane" id="form-pane" style="display:none"></div>
+  </div>
+</div>
+
+<script src="/contract.js"></script>
+<script>
+const API = '/api';
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+function token() { try { return localStorage.getItem('nbn_token'); } catch { return null; } }
+async function api(path, opts) {
+  const o = Object.assign({ credentials: 'same-origin' }, opts || {});
+  o.headers = Object.assign({}, o.headers || {});
+  const t = token();
+  if (t) o.headers.Authorization = 'Bearer ' + t;
+  if (o.body && typeof o.body !== 'string') { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(o.body); }
+  const res = await fetch(API + path, o);
+  let data = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) {
+    const err = new Error((data && (data.detail && data.detail.detail || data.detail)) || res.statusText);
+    err.status = res.status; err.data = data;
+    throw err;
+  }
+  return data;
+}
+function toast(msg, bad) {
+  const t = el('div', 'toast' + (bad ? ' bad' : ''), msg);
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4200);
+}
+function displayName(raw) {
+  if (!raw) return '';
+  const [last, first] = raw.split(', ');
+  const tc = s => s.toLowerCase().replace(/(^|[\s\-'’])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
+  return first ? `${tc(first)} ${tc(last)}` : tc(last);
+}
+function fmtM(n) { if (!n) return '$0'; return '$' + (n / 1e6).toFixed(1) + 'M'; }
+function seasonAfter(s) {
+  const [a, b] = s.split('-').map(Number);
+  return `${String((a + 1) % 100).padStart(2, '0')}-${String((b + 1) % 100).padStart(2, '0')}`;
+}
+
+let ME = { name: null, roles: [] };
+let MY_TEAMS = [];
+let BIOS = {};
+let ELIGIBLE = [];
+let PROPOSALS = [];
+let FORM = null;   // { player, team, editingId, firstSeason, years, salaries[], options[], kind, bird, eaps, attest }
+let validateSeq = 0;
+
+async function boot() {
+  let me;
+  try { me = await api('/auth/me'); } catch { me = { name: null, roles: [] }; }
+  ME = me;
+  const TEAMS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW','HOU','IND','LAC','LAL','MEM','MIA',
+                 'MIL','MIN','NOP','NYK','OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'];
+  MY_TEAMS = (ME.roles || []).map(r => r.toUpperCase()).filter(r => TEAMS.includes(r));
+  if (!MY_TEAMS.length) {
+    document.getElementById('gate').style.display = '';
+    document.getElementById('gate').innerHTML = ME.name
+      ? '<p>Signed in, but no team role — extensions are proposed by the team\'s own front office.</p>'
+      : '<p>Sign in with a team role to propose an extension. Use the account icon in the top-right nav.</p>';
+    return;
+  }
+  document.getElementById('app').style.display = '';
+
+  BIOS = await api('/players');
+  await reload();
+
+  const p = new URLSearchParams(location.search).get('player');
+  if (p && BIOS[p]) openForm(p);
+}
+
+async function reload() {
+  const [eligible, proposals] = await Promise.all([
+    api('/poext/eligible'),
+    Promise.all(MY_TEAMS.map(t => api('/poext/proposals?team=' + t))).then(arrs => arrs.flat()),
+  ]);
+  ELIGIBLE = eligible.filter(e => MY_TEAMS.includes(e.team));
+  PROPOSALS = proposals;
+  renderEligible();
+  renderProposals();
+}
+
+function renderEligible() {
+  const box = document.getElementById('eligible-list');
+  box.innerHTML = '';
+  const proposed = new Set(PROPOSALS.filter(p => ['draft','submitted','returned'].includes(p.status)).map(p => p.player));
+  const rows = ELIGIBLE.filter(e => !proposed.has(e.player));
+  if (!rows.length) { box.appendChild(el('div', 'empty', 'No eligible players without a live proposal right now.')); return; }
+  rows.forEach(e => {
+    const row = el('div', 'prow');
+    const body = el('div');
+    body.appendChild(el('div', 'prow-name', displayName((BIOS[e.player] || {}).name || e.player)));
+    const meta = el('div', 'prow-meta', `${e.team} · ${e.eligible ? '' : 'not yet eligible — '}${e.reason}`);
+    body.appendChild(meta);
+    row.appendChild(body);
+    const btn = el('button', 'btn-primary', 'New proposal');
+    btn.disabled = !e.eligible;
+    btn.addEventListener('click', () => openForm(e.player));
+    row.appendChild(btn);
+    box.appendChild(row);
+  });
+}
+
+const STATUS_CHIP = { draft: 'chip', submitted: 'chip chip-live', returned: 'chip chip-warn',
+                      voided: 'chip chip-bad', agreed: 'chip chip-ok', rejected: 'chip chip-bad' };
+
+function renderProposals() {
+  const box = document.getElementById('proposals-list');
+  box.innerHTML = '';
+  if (!PROPOSALS.length) { box.appendChild(el('div', 'empty', 'No proposals yet.')); return; }
+  PROPOSALS.slice().sort((a, b) => b.number - a.number).forEach(p => {
+    const row = el('div', 'prow');
+    const body = el('div');
+    body.appendChild(el('div', 'prow-name', `#${p.number} · ${displayName((BIOS[p.player] || {}).name || p.player)}`));
+    const meta = el('div', 'prow-meta');
+    meta.appendChild(el('span', STATUS_CHIP[p.status] || 'chip', p.status));
+    meta.appendChild(document.createTextNode('  ' + (p.kind || '').replace('_', ' ')));
+    body.appendChild(meta);
+    row.appendChild(body);
+    if (['draft', 'returned'].includes(p.status)) {
+      const edit = el('button', 'btn-ghost', p.status === 'returned' ? 'Revise' : 'Edit');
+      edit.addEventListener('click', () => openForm(p.player, p));
+      row.appendChild(edit);
+    }
+    box.appendChild(row);
+  });
+}
+
+function openForm(player, existing) {
+  const bio = BIOS[player] || {};
+  FORM = {
+    player, team: MY_TEAMS[0], editingId: existing ? existing.id : null,
+    firstSeason: null, years: 2,
+    salaries: existing ? Object.values(existing.contract.salaries || {}).map(v => parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0) : [0, 0],
+    options: existing ? Object.keys(existing.contract.salaries || {}).map(s => (existing.contract.cap_holds || {})[s] || '') : ['', ''],
+    kind: existing ? existing.kind : 'veteran',
+    bird: existing ? (existing.bird_rights_type || '') : '',
+    eaps: existing ? (existing.eaps_assumption || '') : '',
+    attest: existing ? (existing.attested_contract_start || '') : '',
+    hold: '',
+  };
+  const seasons = existing ? Object.keys(existing.contract.salaries || {}) : [];
+  if (seasons.length) FORM.firstSeason = seasons.sort()[0];
+  document.getElementById('form-pane').style.display = '';
+  renderForm();
+  fetchFactSheetAndRevalidate();
+  document.getElementById('form-pane').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderForm() {
+  const box = document.getElementById('form-pane');
+  box.innerHTML = '';
+  box.appendChild(el('div', 'pane-head', (FORM.editingId ? 'Editing proposal' : 'New proposal') + ' — ' + displayName((BIOS[FORM.player] || {}).name || FORM.player)));
+
+  const row1 = el('div', 'form-row');
+  const teamField = el('div', 'field narrow');
+  teamField.appendChild(el('label', null, 'Team'));
+  teamField.appendChild(el('div', null, FORM.team));
+  row1.appendChild(teamField);
+
+  const kindField = el('div', 'field narrow');
+  kindField.appendChild(el('label', null, 'Kind (§ 6.2/6.3)'));
+  const kindSel = el('select');
+  [['veteran', 'Veteran'], ['rookie_scale', 'Rookie scale'], ['extend_and_trade', 'Extend-and-trade (5% raises)']]
+    .forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if (v === FORM.kind) o.selected = true; kindSel.appendChild(o); });
+  kindSel.addEventListener('change', () => { FORM.kind = kindSel.value; scheduleValidate(); });
+  kindField.appendChild(kindSel);
+  row1.appendChild(kindField);
+
+  const yearsField = el('div', 'field narrow');
+  yearsField.appendChild(el('label', null, 'New years'));
+  const yearsSel = el('select');
+  [1, 2, 3, 4, 5].forEach(n => { const o = el('option', null, n + (n > 1 ? ' years' : ' year')); o.value = n; if (n === FORM.years) o.selected = true; yearsSel.appendChild(o); });
+  yearsSel.addEventListener('change', () => {
+    FORM.years = +yearsSel.value;
+    FORM.salaries.length = FORM.years; FORM.options.length = FORM.years;
+    for (let i = 0; i < FORM.years; i++) { FORM.salaries[i] = FORM.salaries[i] || 0; FORM.options[i] = FORM.options[i] || ''; }
+    renderForm(); scheduleValidate();
+  });
+  yearsField.appendChild(yearsSel);
+  row1.appendChild(yearsField);
+
+  const birdField = el('div', 'field narrow');
+  birdField.appendChild(el('label', null, 'Bird rights tier'));
+  const birdSel = el('select');
+  [['', '— none —'], ['QVFA', 'Full Bird'], ['EQVFA', 'Early Bird'], ['Non-QVFA', 'Non-Bird']]
+    .forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if (v === FORM.bird) o.selected = true; birdSel.appendChild(o); });
+  birdSel.addEventListener('change', () => { FORM.bird = birdSel.value; scheduleValidate(); });
+  birdField.appendChild(birdSel);
+  row1.appendChild(birdField);
+  box.appendChild(row1);
+
+  if (FORM.attestNeeded) {
+    const row2 = el('div', 'form-row');
+    const attestField = el('div', 'field');
+    attestField.appendChild(el('label', null, 'Team attests deal began (season)'));
+    const attestIn = el('input'); attestIn.placeholder = 'e.g. 22-23'; attestIn.value = FORM.attest;
+    attestIn.addEventListener('input', () => { FORM.attest = attestIn.value.trim(); scheduleValidate(); });
+    attestField.appendChild(attestIn);
+    attestField.appendChild(el('div', 'note', 'No acquisition record on file for this player — only asked when the ledger can\'t say. Never trusted as fact.'));
+    row2.appendChild(attestField);
+    box.appendChild(row2);
+  }
+
+  if (FORM.existingNote) box.appendChild(el('div', 'banner info', FORM.existingNote));
+
+  const salWrap = el('div', 'salary-years');
+  let season = FORM.firstSeason || '26-27';
+  for (let i = 0; i < FORM.years; i++) {
+    const cell = el('div', 'salary-year');
+    cell.appendChild(el('label', null, season));
+    const inp = el('input'); inp.type = 'number'; inp.step = '1000'; inp.min = '0'; inp.value = FORM.salaries[i] || 0;
+    const idx = i;
+    inp.addEventListener('input', () => { FORM.salaries[idx] = +inp.value || 0; scheduleValidate(); });
+    cell.appendChild(inp);
+    const opt = el('select');
+    [['', '— guaranteed —'], ['PLAYER_OPT', 'Player option'], ['TEAM_OPT', 'Team option'], ['NON_GTD', 'Non-guaranteed']]
+      .forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if ((FORM.options[idx] || '') === v) o.selected = true; opt.appendChild(o); });
+    opt.addEventListener('change', () => { FORM.options[idx] = opt.value; scheduleValidate(); });
+    cell.appendChild(opt);
+    salWrap.appendChild(cell);
+    season = seasonAfter(season);
+  }
+  box.appendChild(salWrap);
+
+  const row3 = el('div', 'form-row');
+  const holdField = el('div', 'field');
+  holdField.appendChild(el('label', null, 'After the extension (§ 3.10)'));
+  const holdSel = el('select');
+  [['', '— no trailing hold —'], ['UFA', 'UFA hold'], ['RFA', 'RFA hold']]
+    .forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if (v === FORM.hold) o.selected = true; holdSel.appendChild(o); });
+  holdSel.addEventListener('change', () => { FORM.hold = holdSel.value; scheduleValidate(); });
+  holdField.appendChild(holdSel);
+  row3.appendChild(holdField);
+  // Always in the DOM, visibility toggled by runValidate() once the fact
+  // sheet says whether it actually prices anything — same "reveal only when
+  // it matters" discipline transactions/index.html's f-eaps-field uses.
+  // Built here rather than only when FORM.eapsNeeded so toggling it doesn't
+  // require a full renderForm() (which would wipe rubric-body and steal
+  // focus mid-keystroke on every 300ms revalidation).
+  const eapsField = el('div', 'field'); eapsField.id = 'eaps-field';
+  eapsField.style.display = FORM.eapsNeeded ? '' : 'none';
+  eapsField.appendChild(el('label', null, 'Prior salary vs. EAPS'));
+  const eapsSel = el('select');
+  [['', '— not specified —'], ['below', 'At or below EAPS'], ['above', 'Above EAPS']]
+    .forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if (v === FORM.eaps) o.selected = true; eapsSel.appendChild(o); });
+  eapsSel.addEventListener('change', () => { FORM.eaps = eapsSel.value; scheduleValidate(); });
+  eapsField.appendChild(eapsSel);
+  row3.appendChild(eapsField);
+  box.appendChild(row3);
+
+  box.appendChild(el('div', null)).id = 'rubric-body';
+
+  const actions = el('div', 'actions-row');
+  const saveDraft = el('button', 'btn-ghost', FORM.editingId ? 'Save changes' : 'Save as draft');
+  saveDraft.addEventListener('click', saveDraftHandler);
+  actions.appendChild(saveDraft);
+  const submit = el('button', 'btn-primary', 'Submit');
+  submit.id = 'submit-btn';
+  submit.addEventListener('click', submitHandler);
+  actions.appendChild(submit);
+  if (FORM.editingId) {
+    const del = el('button', 'btn-danger', 'Discard draft');
+    del.addEventListener('click', discardHandler);
+    actions.appendChild(del);
+  }
+  const cancel = el('button', 'btn-ghost', 'Cancel');
+  cancel.addEventListener('click', () => { FORM = null; document.getElementById('form-pane').style.display = 'none'; });
+  actions.appendChild(cancel);
+  box.appendChild(actions);
+}
+
+function buildContract() {
+  const salaries = {}; let season = FORM.firstSeason || '26-27';
+  for (let i = 0; i < FORM.years; i++) { salaries[season] = `$${FORM.salaries[i] || 0}`; season = seasonAfter(season); }
+  const cap_holds = {}; let os = FORM.firstSeason || '26-27';
+  for (let i = 0; i < FORM.years; i++) { if (FORM.options[i]) cap_holds[os] = FORM.options[i]; os = seasonAfter(os); }
+  if (FORM.hold) cap_holds[os] = FORM.hold;
+  return { salaries, cap_holds };
+}
+
+// A first fetch, with an empty contract, purely to learn the season new
+// money has to start at (§ 6.2 rule 10) and whether the ledger has any
+// record for this player at all — same trick transaction-sim/the office
+// form use. Runs once when the form opens, not on every keystroke.
+async function fetchFactSheetAndRevalidate() {
+  try {
+    const data = await api('/validate/extension', {
+      method: 'POST', body: { player: FORM.player, team: FORM.team, contract: { type: 'player', salaries: {}, cap_holds: {} } },
+    });
+    const f = data.fact_sheet || {};
+    const ec = f.existing_contract || {};
+    if (!FORM.firstSeason) FORM.firstSeason = f.extended_term && f.extended_term.first_season;
+    FORM.attestNeeded = ec.basis === 'unknown';
+    FORM.existingNote = (ec.start || ec.end)
+      ? `Existing contract ${ec.start || '?'}–${ec.end || '?'} · final guaranteed year ${ec.final_guaranteed_year || '?'} (basis: ${ec.basis}) · new money should start ${FORM.firstSeason || '?'}` +
+        (f.prior_salary ? ` · prior salary ${fmtM(f.prior_salary)}, 140% ceiling ${fmtM(f.max_year1_ceiling)}` : '')
+      : 'No acquisition record on file — state below when the team believes the deal began.';
+    renderForm();
+  } catch (e) { /* fall through, live validate below still runs */ }
+  scheduleValidate();
+}
+
+let validateTimer = null;
+function scheduleValidate() {
+  clearTimeout(validateTimer);
+  validateTimer = setTimeout(runValidate, 300);
+}
+
+async function runValidate() {
+  const body = document.getElementById('rubric-body');
+  if (!body || !FORM) return;
+  const { salaries, cap_holds } = buildContract();
+  const reqBody = {
+    player: FORM.player, team: FORM.team, kind: FORM.kind,
+    contract: { type: 'player', salaries, cap_holds },
+    bird_rights_type: FORM.bird || null, eaps_assumption: FORM.eaps || null,
+    attested_contract_start: FORM.attest || null,
+  };
+  const seq = ++validateSeq;
+  try {
+    const res = await fetch(API + '/validate/extension', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody) });
+    if (seq !== validateSeq) return;
+    const data = await res.json();
+    if (!res.ok) { body.innerHTML = ''; body.appendChild(el('div', 'banner bad', data.detail || 'Validation error')); return; }
+    const th = data.fact_sheet && data.fact_sheet.trailing_hold;
+    FORM.eapsNeeded = !!(th && th.needs_eaps);
+    const eapsField = document.getElementById('eaps-field');
+    if (eapsField) eapsField.style.display = FORM.eapsNeeded ? '' : 'none';
+    body.innerHTML = '';
+    const legal = data.legal;
+    body.appendChild(el('div', 'banner ' + (legal ? 'info' : 'bad'), legal ? '✓ Legal as currently built' : '✗ Not legal yet — resolve the errors below'));
+    (data.checks || []).forEach(c => {
+      const kind = c.level === 'warning' ? 'warning' : (c.passed ? 'pass' : 'error');
+      body.appendChild(el('div', 'check-row ' + kind, (kind === 'error' ? '✗ ' : kind === 'warning' ? '⚠ ' : '✓ ') + c.message));
+    });
+    document.getElementById('submit-btn').disabled = !legal;
+  } catch (e) {
+    if (seq !== validateSeq) return;
+    body.innerHTML = '';
+    body.appendChild(el('div', 'banner bad', 'Network error — could not reach the validator.'));
+  }
+}
+
+async function saveDraftHandler() {
+  const { salaries, cap_holds } = buildContract();
+  const payload = {
+    player: FORM.player, team: FORM.team, kind: FORM.kind,
+    contract: { salaries, cap_holds },
+    bird_rights_type: FORM.bird || null, eaps_assumption: FORM.eaps || null,
+    attested_contract_start: FORM.attest || null,
+  };
+  try {
+    if (FORM.editingId) {
+      await api('/poext/proposals/' + FORM.editingId, { method: 'PATCH', body: payload });
+      toast('Saved.');
+    } else {
+      const created = await api('/poext/proposals', { method: 'POST', body: payload });
+      FORM.editingId = created.id;
+      toast('Draft saved.');
+    }
+    await reload();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function submitHandler() {
+  try {
+    if (!FORM.editingId) {
+      const { salaries, cap_holds } = buildContract();
+      const created = await api('/poext/proposals', {
+        method: 'POST',
+        body: { player: FORM.player, team: FORM.team, kind: FORM.kind, contract: { salaries, cap_holds },
+                bird_rights_type: FORM.bird || null, eaps_assumption: FORM.eaps || null, attested_contract_start: FORM.attest || null },
+      });
+      FORM.editingId = created.id;
+    } else {
+      const { salaries, cap_holds } = buildContract();
+      await api('/poext/proposals/' + FORM.editingId, {
+        method: 'PATCH',
+        body: { kind: FORM.kind, contract: { salaries, cap_holds }, bird_rights_type: FORM.bird || null,
+                eaps_assumption: FORM.eaps || null, attested_contract_start: FORM.attest || null },
+      });
+    }
+    await api('/poext/proposals/' + FORM.editingId + '/submit', { method: 'POST' });
+    toast('Submitted — visible to PO-EXT once an agent claims it.');
+    FORM = null;
+    document.getElementById('form-pane').style.display = 'none';
+    await reload();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function discardHandler() {
+  if (!FORM.editingId) return;
+  if (!confirm('Discard this draft?')) return;
+  try {
+    await api('/poext/proposals/' + FORM.editingId, { method: 'DELETE' });
+    toast('Discarded.');
+    FORM = null;
+    document.getElementById('form-pane').style.display = 'none';
+    await reload();
+  } catch (e) { toast(e.message, true); }
+}
+
+boot();
+</script>
+<script src="/nav.js"></script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

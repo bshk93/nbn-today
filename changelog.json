@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.1.57",
+    "date": "2026-08-21",
+    "changes": [
+      "Filled in the PO-EXT panel on /pdc (Phase C dashboard) \u2014 eligible-players queue, proposal review with legality checks, agent claim/remand/void/advance, sub-committee assignment and accept/reject voting, head finalize/unlock \u2014 off the poext API that shipped in nbn-api earlier today",
+      "Added /extensions (Phase D), the team-facing form for proposing a \u00a7 6.2/6.3 contract extension \u2014 draft/edit/submit against the same POST /api/validate/extension rubric the office and PO-EXT see, contract terms seeded at the correct starting season once a player is picked",
+      "nav.js: added an Extensions entry next to Free Agency"
+    ]
+  },
+  {
     "version": "0.1.56",
     "date": "2026-08-21",
     "changes": [
