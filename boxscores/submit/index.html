@@ -517,7 +517,12 @@
 
     // ── Default form values ──────────────────────────────────────
     document.getElementById("date").value = nbnToday();
-    document.getElementById("season").value = "25-26";
+    // Season default comes from the API's one season clock (season_clock.py,
+    // nbn-api) rather than being hardcoded here — it was a third, independent
+    // copy of the season-boundary rule until 2026-08-21, and drifted from it.
+    fetch("/api/league-year").then(r => r.json()).then(d => {
+      document.getElementById("season").value = d.current_season;
+    }).catch(() => {});
 
     // ── Playoff fields toggle ────────────────────────────────────
     document.querySelectorAll('input[name="game-type"]').forEach(r => {
