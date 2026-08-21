@@ -126,19 +126,6 @@
           el.appendChild(greetEl);
           startGreeting(greetEl, d.name.split(' ')[0]);
 
-          var balEl = document.createElement('span');
-          balEl.style.cssText = 'display:block;color:var(--gold-chip-border);text-align:right';
-          el.appendChild(balEl);
-
-          fetch('/api/bets/balance/' + encodeURIComponent(d.name))
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (b) {
-              if (b && b.balance != null) {
-                balEl.textContent = 'NB¥ ' + (+b.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-              }
-            })
-            .catch(function () {});
-
           sendSignal(token);
           ensureSession(token, fresh);
         } else {

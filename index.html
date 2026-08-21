@@ -161,6 +161,50 @@
       .home-search-kbd { display: none; }
     }
 
+    .member-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 820px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+    }
+
+    .member-banner-greeting {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .member-banner-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .member-banner-balance {
+      color: var(--gold-chip-border);
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .member-banner-profile-link {
+      color: var(--link);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .member-banner-profile-link:hover { text-decoration: underline; }
+
   </style>
 </head>
 <body>
@@ -171,6 +215,14 @@
     <h1>Nothing But Net</h1>
     <p>Basketball Simulation GM League</p>
   </header>
+
+  <div class="member-banner" id="member-banner" style="display:none">
+    <span class="member-banner-greeting" id="member-banner-greeting"></span>
+    <span class="member-banner-right">
+      <span class="member-banner-balance" id="member-banner-balance"></span>
+      <a class="member-banner-profile-link" href="/members/">My Profile →</a>
+    </span>
+  </div>
 
   <button class="home-search-btn" id="home-search-btn" aria-label="Search pages, teams, and players (Ctrl+K)">
     <span class="home-search-icon">⌕</span>
@@ -437,6 +489,22 @@
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (!data) return;
+
+          if (data.name) {
+            const banner = document.getElementById('member-banner');
+            document.getElementById('member-banner-greeting').textContent = `Welcome back, ${data.name.split(' ')[0]}`;
+            banner.style.display = '';
+            fetch(`/api/bets/balance/${encodeURIComponent(data.name)}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(b => {
+                if (b && b.balance != null) {
+                  document.getElementById('member-banner-balance').textContent =
+                    'NB¥ ' + (+b.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+              })
+              .catch(() => {});
+          }
+
           const isRosters = data.roles?.some(r => r === 'rosters' || r === 'admin');
           const isAdmin   = data.roles?.includes('admin');
           const isBod     = data.roles?.some(r => r === 'bod' || r === 'admin');
