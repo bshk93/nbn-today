@@ -327,10 +327,35 @@ it. Private `pdc-alerts` Discord posts on submit/remand/void/restore/
 finalize. 76 tests across `test_extensions.py`/`test_poext.py`/
 `test_poext_notify.py`.
 
+~~§ 4.5's six-month trade-freeze check isn't wired into `_validate_trade`~~ —
+shipped 2026-08-21, `_check_extension_trade_restriction` in `transactions.py`,
+15 tests in `test_extension_trade_freeze.py`.
+
+~~No public Discord announcement on an agreed extension~~ — shipped 2026-08-21
+(D9): `poext_notify.notify_player_finalized` posts full detail to
+`pdc-alerts` always, and on `outcome == "agreed"` also posts to `#roster-log`
+(full detail, via `roster_log_relay._send`) and `fa-news` (name-only, no team,
+no `$`, through the sole `_news()` choke point). 26 tests in
+`test_poext_notify.py`.
+
+Two more real bugs found in a follow-up audit (2026-08-21), both fixed and
+deployed same day:
+- `_extension_eligibility_check` scored a `trade_floor`-basis (lower-bound-
+  only) short derived length as a hard fail instead of "can't confirm" —
+  32 real rostered players, including Tyler Herro, read as ineligible off
+  a ledger gap rather than a real disqualification. Now warns and allows
+  when the basis isn't definite (`test_extensions.py`).
+- Neither `_validate_extension` nor `_apply_extension` checked that the
+  `team` field in the request actually holds the player — every sibling type
+  (`_apply_sign`, `sign_pick`, `convert_twoway`) does. A wrong-team request
+  would have priced and applied an extension against a player on someone
+  else's roster. Both now refuse with a named-holder 422/check
+  (`test_apply_extension.py`, `test_extensions.py`).
+- `discord_notify.py` had no `"extension"` case at all — an agreed extension
+  posted nothing (or malformed) to `pdc-alerts`. Fixed, tested
+  (`test_discord_notify.py`).
+
 **Real remaining gaps**, not just polish:
-- § 4.5's six-month trade-freeze check isn't wired into `_validate_trade`.
-- No public Discord announcement on an agreed extension (D9's "public gets
-  accept only") — deliberately deferred, not defaulted into existing.
 - The extend-and-trade mechanism (§ 2.11 — Team A proposing on Team B's
   behalf) is unbuilt; `kind="extend_and_trade"` is reserved but has no
   submission path of its own.
