@@ -1207,12 +1207,19 @@ function renderExtensionResults(data) {
       ${row('Prior salary', f.prior_salary ? fmtM(f.prior_salary) : '—')}
     </div>`;
 
+  const th = f.trailing_hold;
+  const holdRow = th
+    ? row('Rolls into', `${th.season} ${th.type} hold`
+        + (th.needs_eaps ? ' — needs an EAPS assumption to price' : th.amount != null ? ` — ${fmtM(th.amount)}` : ''),
+        th.needs_eaps ? 'var(--danger)' : '')
+    : '';
   const extendedCol = `
     <div class="result-col">
       <div class="result-team">${f.team} — extended term</div>
       ${row('First extended season', et.first_season || '—')}
       ${row('New years', Object.keys(et.salaries || {}).length)}
       ${row('140% ceiling', f.max_year1_ceiling ? fmtM(f.max_year1_ceiling) : (f.eaps ? `${fmtM(Math.round(f.eaps * 1.4))} (EAPS)` : '—'))}
+      ${holdRow}
     </div>`;
 
   const capCol = `
