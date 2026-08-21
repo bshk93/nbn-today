@@ -494,6 +494,7 @@ simulator to an actual submission.
 | `POST /api/validate/renounce` | `_validate_renounce` | `_renounce_fact_sheet` |
 | `POST /api/validate/sign_pick` | `_validate_sign_pick` | `_signing_fact_sheet` + `rookie_scale` |
 | `POST /api/validate/convert_twoway` | `_validate_convert_twoway` | `_signing_fact_sheet` |
+| `POST /api/validate/extension` | `_validate_extension` | `_extension_fact_sheet` |
 
 All of them are public (no auth), take the same body shape as the corresponding
 `details` in `POST /api/transactions`, and return
@@ -526,7 +527,7 @@ asserts shape, not legality (never 5xx, `{legal, checks, fact_sheet}` back,
 unknown subjects refused with 400, junk bodies 422).
 
 Coverage is uneven and the UI says so: `sign`/`offer_sheet`/`offer_sheet_decision`/
-`trade`/`renounce`/`sign_pick` have real validators, while `release`, `option` and `pick` are stubs
+`trade`/`renounce`/`sign_pick`/`extension` have real validators, while `release`, `option` and `pick` are stubs
 returning `[]` — those types are deliberately **not** offered in the simulator, since a
 verdict off zero checks is worse than no verdict. § 3.7 (DPE) remains unmodeled.
 (`renounce` is validated but still isn't wired into the simulator UI; its
@@ -555,6 +556,21 @@ a 422 asking for `eaps_assumption`. The office form could ask for an answer it
 had nowhere to collect. Fixed 2026-08-12 by adding the endpoint and wiring
 `collectSignValidationBody`/the rubric section to `convert_twoway` the same
 way `sign_pick` joined them.
+
+`extension` (§ 6.2 / § 6.3) shipped 2026-08-21 — Phase A + E of
+`docs/poext-extension-pipeline.md`. Deliberately does **not** reuse
+`_validate_sign`: an extension adds years to a live contract rather than
+replacing a current-season figure, and every cap figure in `_validate_sign`
+is built for replacement (measured against production 2026-08-07: that shape
+reported a team $18.9M *cheaper* for extending a player). Contract start is
+derived by reusing `_bird_tenure`'s ledger walk verbatim, including its
+synthetic draft-event seed, rather than the separate ledger backfill the
+pipeline doc originally sized — see the `[P3]` backlog item. Like
+`sign_pick`/`convert_twoway`, it is **not yet wired into `/transaction-sim`
+or the `/transactions` office form** — see the `[P2]` backlog items — so
+today it's reachable through `POST /api/validate/extension` and
+`POST /api/transactions` (type=`extension`) directly, not by clicking
+anything.
 
 ### The § 7.1 rookie scale
 

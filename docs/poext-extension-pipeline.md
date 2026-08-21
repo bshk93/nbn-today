@@ -1,10 +1,25 @@
 # Extensions (§ 6.2 / § 6.3) — building the pipeline on the free-agency infra
 
-**Status: PROPOSAL.** Written 2026-08-18. Companion to `nbn-api/docs/extensions.md`,
-which specs the *rules and validator*; this specs the *pipeline* — the negotiation
-object, the committee flow, and the surfaces — and says which parts of the
-free-agency machinery carry over unchanged, which need re-framing, and which are
-traps. It also corrects two things `extensions.md` gets wrong (§ 2.3, § 8).
+**Status: Phase A + E LIVE, deployed 2026-08-21** (§ 7's read-only validator
+and apply path — `_validate_extension`, `_extension_fact_sheet`,
+`_apply_extension`, `POST /api/validate/extension`, `extension` in
+`_VALIDATORS`/the type whitelist/`_detail_models`). The rest of this document
+— Phases B through G, i.e. the `/api/poext/*` committee pipeline
+(claim/negotiate/ballot/finalize), the `/extensions` team-facing page, and the
+§ 4.5 trade-freeze check — is still design only. Written 2026-08-18. Companion
+to `nbn-api/docs/extensions.md`, which specs the *rules and validator* (now
+built); this specs the *pipeline* — the negotiation object, the committee
+flow, and the surfaces — and says which parts of the free-agency machinery
+carry over unchanged, which need re-framing, and which are traps. It also
+corrects two things `extensions.md` gets wrong (§ 2.3, § 8).
+
+Until Phase C ships, a real extension goes through the same manual hand-off
+free agency already uses for a finalized offer: the committee decides
+(Discord, as today), and the office enters it via `/transactions`, checking
+legality first against `POST /api/validate/extension` (live) — either by hand
+with curl/the API directly, or once the office form and `/transaction-sim`
+grow an Extension mode (not yet built as of 2026-08-21; see BACKLOG.md).
+That's a real, working path today, just not yet a point-and-click one.
 
 The split mirrors free agency: `nbn-api/docs/extensions.md` : `nbn-today/docs/pdc-free-agency-spec.md`
 :: rules : pipeline.

@@ -279,22 +279,45 @@ neither the Python path nor the R rollback recreates them.
 The rulebook badges each section 🔒 system-enforced or 👁 manual review.
 19 sections carry an enforced badge; the ones below are the gaps worth closing.
 
-### [P1] No `extension` transaction type at all
-§ 6.2 and § 6.3 (extensions, submission windows) have **no** representation in
-the API. `transactions.py` implements: `sign`, `pick`, `option`, `guarantee`,
-`release`, `renounce`, `trade`, `convert_twoway`, `sign_pick`, `void_player`,
-`set_hard_cap`, `offer_sheet`. An extension today is entered as a `sign`, which
-loses the fact that it was an extension and skips every § 6.2 constraint.
-This is the largest single hole in transaction coverage.
+### ~~[P1] No `extension` transaction type at all~~ — Phase A + E shipped 2026-08-21
+`"extension"` is now in `_VALIDATORS`, the `create_transaction` type whitelist,
+and `_detail_models`. `POST /api/validate/extension` and `POST /api/transactions`
+(type=`extension`) both work against real production data — see
+`nbn-api/docs/extensions.md` for the check list and `nbn-api/tests/test_extensions.py`
+for the boundary tests. Eligibility derivation reuses `_bird_tenure`'s ledger
+walk (including its synthetic draft-event seed), which is what let this ship
+without the ledger backfill below as a prerequisite (D1 in the pipeline doc).
+Cap thresholds for 27-28+ are still zero in Cap Settings, so
+`extension_cap_position` correctly reports "cannot evaluate" until the
+committee enters real figures — that's the one thing still actually blocking
+a *real* extension from being scored end-to-end, not a code gap.
 
-Two specs now cover it: `nbn-api/docs/extensions.md` (rules and validator, written
-2026-08-07) and `docs/poext-extension-pipeline.md` (the pipeline built on the
-free-agency infra, 2026-08-18). The second corrects the first on eligibility
-derivation — contract length is **not** derivable from `salaries` + `cap_holds`
-(zero rostered players have a salary row before 25-26, so the naive read finds
-0 of 502 eligible); it needs the ledger, as § 3.8 Bird tenure did. Real eligible
-population is ~32 players. Hardest blocker is that cap levels for 27-28 onward
-are all zero, and every extension targets one of those seasons.
+**Still open, filed as its own items below:** an Extension mode in
+`/transaction-sim` and the office form at `/transactions` (today the
+validator is real but only reachable by hand — curl or the API directly, no
+point-and-click UI yet); the `/api/poext/*` committee pipeline (Phase C —
+claim/negotiate/ballot/finalize, filling the `/pdc` PO-EXT stub) and the
+`/extensions` team-facing page (Phase D); and the § 4.5 six-month trade-freeze
+check in `_validate_trade` (Phase F). See
+`docs/poext-extension-pipeline.md` § 7 for the full phase list.
+
+### [P2] No Extension mode in `/transaction-sim` or the `/transactions` office form
+The validator (`POST /api/validate/extension`) is live and correct, but
+nothing in the UI calls it yet — `transaction-sim/index.html`'s `setMode`
+only knows `trade` and `sign`/`offer_sheet`, and the office form at
+`/transactions` has no extension type in its dropdown. Until this exists, a
+committee-approved extension has to be entered by someone comfortable typing
+a raw API request. Follows the existing `sign_pick`/`convert_twoway` pattern
+(`nbn-today/CLAUDE.md`'s "Add a transaction type to the simulator" row).
+
+### [P2] The `/pdc` PO-EXT committee pipeline is still a stub
+`docs/poext-extension-pipeline.md` Phase C: `/api/poext/*` (claim, advance,
+ballot, finalize — a near-verbatim clone of the free-agency object per § 3 of
+that doc) and Phase D, the `/extensions` team-facing proposal page. The
+`#poext` div in `/pdc` still reads "granted, but this page is a stub for
+PO-EXT for now. Nothing to do yet." Until this ships, an extension is decided
+in Discord (as today) and entered by hand via `/transactions` once the UI
+item above exists — a real path, just not the dashboard the spec designs.
 
 ### [P3] Extension eligibility backfill — 161 rostered players missing an acquisition record
 `_player_acquisition_index` (§ 3.8's ledger scan, reused for § 6.2 eligibility)
