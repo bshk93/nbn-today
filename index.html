@@ -212,6 +212,19 @@
       flex-shrink: 0;
     }
 
+    .member-banner-team {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: #1c2c1e;
+      color: var(--success-light);
+      text-decoration: none;
+    }
+
     .member-banner-right {
       display: flex;
       align-items: center;
@@ -250,6 +263,7 @@
     <span class="member-banner-id">
       <span class="member-banner-avatar-wrap" id="member-banner-avatar-wrap"></span>
       <span class="member-banner-greeting" id="member-banner-greeting"></span>
+      <a class="member-banner-team" id="member-banner-team" style="display:none"></a>
     </span>
     <span class="member-banner-right">
       <span class="member-banner-balance" id="member-banner-balance"></span>
@@ -555,6 +569,23 @@
                 } else {
                   avatarWrap.innerHTML = `<span class="member-banner-avatar-placeholder">${data.name.charAt(0).toUpperCase()}</span>`;
                 }
+              })
+              .catch(() => {});
+
+            // Current team, if any — /api/members/me only reports position
+            // names (e.g. "owner"), not which team, so this reads it off the
+            // same tenures the /members/ directory already renders from.
+            fetch('/api/members/public')
+              .then(r => r.ok ? r.json() : null)
+              .then(members => {
+                const me = members?.find(m => m.name === data.name);
+                const active = me?.tenures?.filter(t => !t.end);
+                if (!active?.length) return;
+                const tenure = active.sort((a, b) => b.start.localeCompare(a.start))[0];
+                const teamEl = document.getElementById('member-banner-team');
+                teamEl.textContent = tenure.team;
+                teamEl.href = `/teams/${tenure.team.toLowerCase()}/`;
+                teamEl.style.display = '';
               })
               .catch(() => {});
           }
