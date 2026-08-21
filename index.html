@@ -177,9 +177,39 @@
       font-size: 0.9rem;
     }
 
+    .member-banner-id {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
     .member-banner-greeting {
       color: var(--text-primary);
       font-weight: 600;
+    }
+
+    .member-banner-avatar {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      vertical-align: middle;
+      display: block;
+    }
+
+    .member-banner-avatar-placeholder {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
     }
 
     .member-banner-right {
@@ -217,10 +247,13 @@
   </header>
 
   <div class="member-banner" id="member-banner" style="display:none">
-    <span class="member-banner-greeting" id="member-banner-greeting"></span>
+    <span class="member-banner-id">
+      <span class="member-banner-avatar-wrap" id="member-banner-avatar-wrap"></span>
+      <span class="member-banner-greeting" id="member-banner-greeting"></span>
+    </span>
     <span class="member-banner-right">
       <span class="member-banner-balance" id="member-banner-balance"></span>
-      <a class="member-banner-profile-link" href="/members/">My Profile →</a>
+      <a class="member-banner-profile-link" id="member-banner-profile-link" href="/members/">My Profile →</a>
     </span>
   </div>
 
@@ -492,14 +525,35 @@
 
           if (data.name) {
             const banner = document.getElementById('member-banner');
-            document.getElementById('member-banner-greeting').textContent = `Welcome back, ${data.name.split(' ')[0]}`;
+            const greetEl = document.getElementById('member-banner-greeting');
+            greetEl.textContent = `Welcome back, ${data.name.split(' ')[0]}`;
+            document.getElementById('member-banner-profile-link').href = `/members/${encodeURIComponent(data.name)}/`;
             banner.style.display = '';
+
             fetch(`/api/bets/balance/${encodeURIComponent(data.name)}`)
               .then(r => r.ok ? r.json() : null)
               .then(b => {
                 if (b && b.balance != null) {
                   document.getElementById('member-banner-balance').textContent =
                     'NB¥ ' + (+b.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+              })
+              .catch(() => {});
+
+            // Cosmetics purchased with NB¥ (name color, avatar) — /api/me doesn't
+            // carry these, so a second call to /api/members/me fetches them.
+            fetch('/api/members/me', { headers: { 'Authorization': `Bearer ${_loToken}` } })
+              .then(r => r.ok ? r.json() : null)
+              .then(profile => {
+                if (!profile) return;
+                const nameColor = profile.cosmetics?.name_color;
+                if (nameColor) greetEl.style.color = nameColor;
+
+                const avatarWrap = document.getElementById('member-banner-avatar-wrap');
+                if (profile.avatar_url) {
+                  avatarWrap.innerHTML = `<img class="member-banner-avatar" src="${profile.avatar_url}?v=${Date.now()}" alt="">`;
+                } else {
+                  avatarWrap.innerHTML = `<span class="member-banner-avatar-placeholder">${data.name.charAt(0).toUpperCase()}</span>`;
                 }
               })
               .catch(() => {});
