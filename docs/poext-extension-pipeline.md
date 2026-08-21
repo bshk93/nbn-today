@@ -16,10 +16,11 @@ corrects two things `extensions.md` gets wrong (§ 2.3, § 8).
 Until Phase C ships, a real extension goes through the same manual hand-off
 free agency already uses for a finalized offer: the committee decides
 (Discord, as today), and the office enters it via `/transactions`, checking
-legality first against `POST /api/validate/extension` (live) — either by hand
-with curl/the API directly, or once the office form and `/transaction-sim`
-grow an Extension mode (not yet built as of 2026-08-21; see BACKLOG.md).
-That's a real, working path today, just not yet a point-and-click one.
+legality live against `POST /api/validate/extension`. Both the office form
+and `/transaction-sim` got a real Extension UI 2026-08-21 (see BACKLOG.md's
+now-closed item) — team derived from the roster, the first salary row seeded
+at the correct starting season off the fact sheet. That's a real,
+point-and-click path today, not just an API call.
 
 The split mirrors free agency: `nbn-api/docs/extensions.md` : `nbn-today/docs/pdc-free-agency-spec.md`
 :: rules : pipeline.

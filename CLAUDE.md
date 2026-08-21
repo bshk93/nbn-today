@@ -565,12 +565,11 @@ is built for replacement (measured against production 2026-08-07: that shape
 reported a team $18.9M *cheaper* for extending a player). Contract start is
 derived by reusing `_bird_tenure`'s ledger walk verbatim, including its
 synthetic draft-event seed, rather than the separate ledger backfill the
-pipeline doc originally sized — see the `[P3]` backlog item. Like
-`sign_pick`/`convert_twoway`, it is **not yet wired into `/transaction-sim`
-or the `/transactions` office form** — see the `[P2]` backlog items — so
-today it's reachable through `POST /api/validate/extension` and
-`POST /api/transactions` (type=`extension`) directly, not by clicking
-anything.
+pipeline doc originally sized — see the `[P3]` backlog item. Wired into both
+`/transaction-sim` (its own "Extension" tab, not a variant of the signing one)
+and the `/transactions` office form (2026-08-21) the same way
+`sign_pick`/`convert_twoway` were — team derived from the roster, since § 6.2
+means only the incumbent may extend.
 
 ### The § 7.1 rookie scale
 

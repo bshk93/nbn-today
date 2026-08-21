@@ -301,23 +301,31 @@ claim/negotiate/ballot/finalize, filling the `/pdc` PO-EXT stub) and the
 check in `_validate_trade` (Phase F). See
 `docs/poext-extension-pipeline.md` § 7 for the full phase list.
 
-### [P2] No Extension mode in `/transaction-sim` or the `/transactions` office form
-The validator (`POST /api/validate/extension`) is live and correct, but
-nothing in the UI calls it yet — `transaction-sim/index.html`'s `setMode`
-only knows `trade` and `sign`/`offer_sheet`, and the office form at
-`/transactions` has no extension type in its dropdown. Until this exists, a
-committee-approved extension has to be entered by someone comfortable typing
-a raw API request. Follows the existing `sign_pick`/`convert_twoway` pattern
-(`nbn-today/CLAUDE.md`'s "Add a transaction type to the simulator" row).
+### ~~[P2] No Extension mode in `/transaction-sim` or the `/transactions` office form~~ — shipped 2026-08-21
+Both now call `POST /api/validate/extension`. `transaction-sim/index.html` got
+a fourth "Extension" tab (its own form, not a variant of the signing one — an
+extension adds years on top of a live contract rather than replacing a
+current-season figure). The office form at `/transactions` got a real
+Extension type: team is derived from the roster once a player is picked
+(§ 6.2 — only the incumbent may extend, same as `sign_pick`/`convert_twoway`),
+and picking a player calls the validator with an empty contract purely to
+read back the existing deal and seed the first salary row at the correct
+starting season (§ 6.2 rule 10). The live rubric and its EAPS-field reveal
+generalize for free — `_extension_fact_sheet` now carries `trailing_hold`
+(reusing `_preview_fa_hold`, same as a signing), closing the same "office form
+can ask for an EAPS answer it has nowhere to collect" gap fixed for
+`sign_pick`/`convert_twoway` on 2026-08-11/12. Verified end-to-end in a real
+headless browser against production (`barlow-dominick`/SAS) on both pages.
 
 ### [P2] The `/pdc` PO-EXT committee pipeline is still a stub
 `docs/poext-extension-pipeline.md` Phase C: `/api/poext/*` (claim, advance,
 ballot, finalize — a near-verbatim clone of the free-agency object per § 3 of
 that doc) and Phase D, the `/extensions` team-facing proposal page. The
 `#poext` div in `/pdc` still reads "granted, but this page is a stub for
-PO-EXT for now. Nothing to do yet." Until this ships, an extension is decided
-in Discord (as today) and entered by hand via `/transactions` once the UI
-item above exists — a real path, just not the dashboard the spec designs.
+PO-EXT for now. Nothing to do yet." A real extension today is decided in
+Discord (as before) and entered by the office via `/transactions`, checked
+live against the real rubric — a real path, just not the dashboard the spec
+designs.
 
 ### [P3] Extension eligibility backfill — 161 rostered players missing an acquisition record
 `_player_acquisition_index` (§ 3.8's ledger scan, reused for § 6.2 eligibility)
