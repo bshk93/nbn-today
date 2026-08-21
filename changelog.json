@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.1.53",
+    "date": "2026-08-21",
+    "changes": [
+      "transaction-sim: added an Extension mode (POST /api/validate/extension) alongside Trade/FA Signing/RFA Offer Sheet \u2014 its own form rather than a variant of the signing one, since an extension adds years on top of a live contract instead of replacing a current-season figure"
+    ]
+  },
+  {
     "version": "0.1.52",
     "date": "2026-08-21",
     "changes": [

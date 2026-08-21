@@ -163,6 +163,7 @@
     <button type="button" class="mode-tab active" data-mode="trade">Trade</button>
     <button type="button" class="mode-tab" data-mode="sign">FA Signing</button>
     <button type="button" class="mode-tab" data-mode="offer_sheet">RFA Offer Sheet</button>
+    <button type="button" class="mode-tab" data-mode="extension">Extension</button>
   </div>
 
   <section id="mode-trade">
@@ -280,6 +281,95 @@
     </div>
   </section>
 
+  <section id="mode-extension" hidden>
+    <div class="sign-card">
+      <div class="sign-row">
+        <div class="sign-field" style="flex:2 1 260px">
+          <label for="ext-player">Player</label>
+          <input id="ext-player" list="ext-player-list" autocomplete="off" placeholder="Type a name…">
+          <datalist id="ext-player-list"></datalist>
+          <span class="hint" id="ext-player-hint"></span>
+          <span class="hint" id="ext-player-count"></span>
+        </div>
+        <div class="sign-field narrow">
+          <label>Team</label>
+          <span class="hint" id="ext-team" style="display:block;padding:0.35rem 0;font-size:0.9rem;color:var(--text-primary)">— pick a player —</span>
+          <!-- § 6.2: only the incumbent may extend (no rival bid), so the team
+               is derived from the roster, never a free choice — same reasoning
+               as sign_pick/convert_twoway. -->
+        </div>
+        <div class="sign-field narrow">
+          <label for="ext-kind">Kind (§ 6.2/6.3)</label>
+          <select id="ext-kind">
+            <option value="veteran">Veteran</option>
+            <option value="rookie_scale">Rookie scale</option>
+            <option value="extend_and_trade">Extend-and-trade (§ 3.9: 5% raises)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sign-row" id="ext-existing" hidden>
+        <div class="sign-field" style="flex:1 1 100%">
+          <label>Existing contract on file</label>
+          <span class="hint" id="ext-existing-text"></span>
+        </div>
+      </div>
+
+      <div class="sign-row">
+        <div class="sign-field narrow">
+          <label for="ext-years">New years</label>
+          <select id="ext-years"></select>
+        </div>
+        <div class="sign-field" id="ext-f-attest" hidden>
+          <label for="ext-attest">Team attests deal began (season)</label>
+          <input id="ext-attest" placeholder="e.g. 22-23">
+          <span class="hint">No acquisition record on file for this player — only asked when the ledger can't say. Never trusted as fact; the committee sees it flagged.</span>
+        </div>
+        <div class="sign-field">
+          <label for="ext-bird">Bird rights tier</label>
+          <select id="ext-bird">
+            <option value="">— none / not applicable —</option>
+            <option value="QVFA">Full Bird (QVFA)</option>
+            <option value="EQVFA">Early Bird (EQVFA)</option>
+            <option value="Non-QVFA">Non-Bird (Non-QVFA)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sign-row">
+        <div class="sign-field" style="flex:1 1 100%">
+          <label>New-money salary by season (starts the season after the existing deal's final guaranteed year)</label>
+          <div class="salary-years" id="ext-salary-years"></div>
+          <div class="sign-presets">
+            <span class="hint">Fill:</span>
+            <button type="button" class="preset-btn" data-ext-preset="flat">Flat</button>
+            <button type="button" class="preset-btn" data-ext-preset="5">5% raises</button>
+            <button type="button" class="preset-btn" data-ext-preset="8">8% raises</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sign-row">
+        <div class="sign-field">
+          <label for="ext-hold">After the extension (§ 3.10)</label>
+          <select id="ext-hold">
+            <option value="">— no trailing hold —</option>
+            <option value="UFA">UFA hold</option>
+            <option value="RFA">RFA hold</option>
+          </select>
+        </div>
+        <div class="sign-field" id="ext-f-eaps" hidden>
+          <label for="ext-eaps">Prior salary vs. EAPS</label>
+          <select id="ext-eaps">
+            <option value="">— not specified —</option>
+            <option value="below">At or below EAPS</option>
+            <option value="above">Above EAPS</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div class="check-status" id="check-status">Select at least two teams and pick assets — the rubric evaluates live.</div>
 
   <div class="results" id="results" style="display:none"></div>
@@ -318,6 +408,30 @@
     <p class="doc-note">An offer sheet is validated against whichever team ends up signing the player: the <strong>retaining</strong> team if the outcome is a match, the <strong>offering</strong> team if not. A match keeps the player on a roster spot they already occupy, so it doesn't add to the roster count; a non-match does. Everything else about § 3.15 — the 48-hour match clock, good-faith fit, Gilbert Arenas eligibility — stays manual review and is <em>not</em> checked here.</p>
 
     <p class="doc-note">Not modeled: § 3.7 DPE (no exception type exists). Tenure derivation currently resolves 483 of 487 rostered players; where it can't, you get a warning rather than a verdict.</p>
+  </details>
+
+  <details class="checks-doc" id="doc-extension" hidden>
+    <summary>How extension validation works</summary>
+    <p class="doc-note">The page calls <code>POST /api/validate/extension</code>, which shares its validator with <code>POST /api/transactions</code>. An extension is fundamentally different from a signing: it <strong>adds years on top of a live contract</strong> rather than replacing a current-season figure, so this does not reuse the signing rubric — an earlier attempt at that reported a team getting $18.9M <em>cheaper</em> for extending a player. Only the incumbent may extend (§ 6.2 — no rival bid), so the team is derived from the roster once you pick a player.</p>
+
+    <h4>Eligibility (§ 6.2 rules 1–2)</h4>
+    <p class="doc-note">The existing contract must be at least 3 years, and the player must be in its <strong>final year</strong>, or <strong>Year 4 of a 5-year deal</strong>. Contract start is derived from the transaction ledger the same way § 3.8 Bird tenure is — including a drafted player with no signing record, whose clock starts at the draft. Where the ledger has no record at all, the team's own attestation of when the deal began is used instead, always at warning severity (never trusted as fact) unless it contradicts other partial history the player does have, which errors.</p>
+
+    <h4>Where the new money starts (§ 6.2 rule 10)</h4>
+    <p class="doc-note">New money must start the season <em>after</em> the existing deal's final guaranteed year — an option year (player or team) never counts as guaranteed, and is treated as declined outright by the act of extending, so the extension supersedes it. Submitting a different first season is an error naming the mismatch, since it corrupts every downstream cap figure.</p>
+
+    <h4>Terms (§ 6.2 rules 4, 6, 7, 8)</h4>
+    <ul>
+      <li><strong>Not at the minimum</strong> — same § 3.12 minimum-salary floor a signing checks.</li>
+      <li><strong>At least 2 guaranteed years.</strong></li>
+      <li><strong>Year 1 ≤ 140%</strong> of the player's prior salary (or of EAPS — unset for every season on file today, so that branch warns rather than blocks).</li>
+      <li><strong>Raises ≤ 8%</strong> of Year 1, or <strong>5%</strong> for an extend-and-trade.</li>
+    </ul>
+
+    <h4>Cap position (§ 6.2 rule 5)</h4>
+    <p class="doc-note">Measured in the <strong>first extended season</strong>, not the current one — every extension targets 27-28 or later. Salary Cap / apron / hard-cap thresholds for those seasons are still $0 in Cap Settings as of this writing, so this check correctly reports <em>cannot evaluate</em> rather than a silent pass, until the committee enters real figures.</p>
+
+    <p class="doc-note">Not yet built: the § 4.5 six-month trade-freeze check (belongs in the trade validator, not here), and § 6.3's submission-window deadlines beyond the expiring-veteran June 30 date, which need a regular-season start date the system doesn't track yet.</p>
   </details>
 
   <details class="checks-doc" open id="doc-trade">
@@ -478,24 +592,30 @@ function setMode(mode) {
   MODE = mode;
   document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.getElementById('mode-trade').hidden = (mode !== 'trade');
-  document.getElementById('mode-sign').hidden = (mode === 'trade');
+  document.getElementById('mode-sign').hidden = (mode === 'trade' || mode === 'extension');
+  document.getElementById('mode-extension').hidden = (mode !== 'extension');
   document.getElementById('doc-trade').hidden = (mode !== 'trade');
-  document.getElementById('doc-sign').hidden = (mode === 'trade');
+  document.getElementById('doc-sign').hidden = (mode === 'trade' || mode === 'extension');
+  document.getElementById('doc-extension').hidden = (mode !== 'extension');
   // An offer sheet is signed by the offering team unless it's matched, so the
   // team field is labelled and sourced differently from a plain signing.
   const isOffer = (mode === 'offer_sheet');
   document.getElementById('f-team').hidden = isOffer;
   document.getElementById('f-offering').hidden = !isOffer;
   document.getElementById('f-outcome').hidden = !isOffer;
-  rebuildPlayerList();
-  // A player valid in one mode may not be in the other (an RFA offer sheet
-  // accepts a far narrower set), so drop a selection the new mode can't use
-  // rather than leaving a stale name that will only fail validation.
-  const slug = currentSignSlug();
-  if (slug) {
-    const bio = allBios[slug] || {};
-    const ok = isOffer ? isRFA(slug, bio) : isSignable(slug, bio);
-    if (!ok) { document.getElementById('sign-player').value = ''; document.getElementById('player-hint').textContent = ''; }
+  if (mode !== 'extension') {
+    rebuildPlayerList();
+    // A player valid in one mode may not be in the other (an RFA offer sheet
+    // accepts a far narrower set), so drop a selection the new mode can't use
+    // rather than leaving a stale name that will only fail validation.
+    const slug = currentSignSlug();
+    if (slug) {
+      const bio = allBios[slug] || {};
+      const ok = isOffer ? isRFA(slug, bio) : isSignable(slug, bio);
+      if (!ok) { document.getElementById('sign-player').value = ''; document.getElementById('player-hint').textContent = ''; }
+    }
+  } else {
+    rebuildExtPlayerList();
   }
   document.getElementById('results').style.display = 'none';
   setStatus('');
@@ -852,6 +972,270 @@ function renderSignResults(data, isOffer) {
     </div>`;
 }
 
+// ── Extension mode ───────────────────────────────────────────────────────────
+// Calls POST /api/validate/extension, which shares _validate_extension with
+// POST /api/transactions. Deliberately its own form rather than a variant of
+// the signing one: an extension adds years on top of a live contract instead
+// of replacing a current-season figure, so "Year 1" here means the first
+// *extended* season, not the current one, and the salary-year labels can only
+// be known once the player is picked and the existing contract is read back
+// off the fact sheet.
+
+let extState = { years: 2, salaries: [0, 0], options: ['', ''], hold: '', eaps: '', firstSeason: null };
+
+// Any rostered, non-retired, non-dead, non-draft-rights player — unlike the
+// signing form's isSignable/isRFA filters, the ~32-player real eligible
+// population (§ 6.2 rules 1-2) is exactly what the validator determines, so
+// it isn't pre-filtered away here; ineligible picks just show why.
+function isExtendable(slug, bio) {
+  if (bio.retired) return false;
+  if (bio.type === 'dead' || bio.type === 'draft-rights') return false;
+  return !!teamMap[slug];
+}
+
+function rebuildExtPlayerList() {
+  const dl = document.getElementById('ext-player-list');
+  const frag = document.createDocumentFragment();
+  let n = 0;
+  Object.entries(allBios).forEach(([slug, bio]) => {
+    if (!isExtendable(slug, bio)) return;
+    const label = displayName(bio.name || slug);
+    if (!label) return;
+    nameToSlug[label.toLowerCase()] = slug;
+    const o = document.createElement('option');
+    o.value = label;
+    o.label = teamMap[slug] || '';
+    frag.appendChild(o); n++;
+  });
+  dl.replaceChildren(frag);
+  const el = document.getElementById('ext-player-count');
+  if (el) el.textContent = `${n} rostered player${n === 1 ? '' : 's'} — the ~32-player § 6.2 eligible set is what the checks below determine, not this list`;
+}
+
+function currentExtSlug() {
+  return nameToSlug[document.getElementById('ext-player').value.trim().toLowerCase()] || null;
+}
+
+function buildExtSalaryInputs() {
+  const wrap = document.getElementById('ext-salary-years');
+  wrap.innerHTML = '';
+  let season = extState.firstSeason || curYr();
+  for (let i = 0; i < extState.years; i++) {
+    const cell = document.createElement('div'); cell.className = 'salary-year';
+    const lab = document.createElement('label'); lab.textContent = season;
+    const input = document.createElement('input');
+    input.type = 'number'; input.step = '1000'; input.min = '0';
+    input.value = extState.salaries[i] || 0;
+    const idx = i;
+    input.addEventListener('input', () => { extState.salaries[idx] = +input.value || 0; updateCheckBtn(); });
+    const opt = document.createElement('select');
+    opt.className = 'year-opt';
+    [['', '— guaranteed —'], ['PLAYER_OPT', 'Player option'],
+     ['TEAM_OPT', 'Team option'], ['NON_GTD', 'Non-guaranteed']]
+      .forEach(([v, t]) => {
+        const o = document.createElement('option'); o.value = v; o.textContent = t;
+        if ((extState.options[idx] || '') === v) o.selected = true;
+        opt.appendChild(o);
+      });
+    opt.addEventListener('change', () => { extState.options[idx] = opt.value; updateCheckBtn(); });
+    cell.appendChild(lab); cell.appendChild(input); cell.appendChild(opt);
+    wrap.appendChild(cell);
+    season = seasonAfter(season);
+  }
+}
+
+function applyExtPreset(kind) {
+  const base = extState.salaries[0] || 0;
+  for (let i = 1; i < extState.years; i++) {
+    const step = kind === 'flat' ? 0 : Math.round(base * (kind === '8' ? 0.08 : 0.05));
+    extState.salaries[i] = (extState.salaries[i - 1] || 0) + step;
+  }
+  buildExtSalaryInputs();
+  updateCheckBtn();
+}
+
+// Picking a player fetches the fact sheet immediately (not debounced) purely
+// to learn the first extended season and the existing-contract summary — an
+// empty contract still gets a real fact_sheet back, since _extension_frame
+// doesn't need contract.salaries to compute it, only the checks do.
+async function onExtPlayerPicked() {
+  const slug = currentExtSlug();
+  const hint = document.getElementById('ext-player-hint');
+  const teamEl = document.getElementById('ext-team');
+  const existingRow = document.getElementById('ext-existing');
+  if (!slug) {
+    hint.textContent = document.getElementById('ext-player').value.trim() ? 'No player by that name.' : '';
+    teamEl.textContent = '— pick a player —';
+    existingRow.hidden = true;
+    extState.firstSeason = null;
+    updateCheckBtn();
+    return;
+  }
+  const team = teamMap[slug];
+  teamEl.textContent = team || '— not on a roster —';
+  hint.textContent = '';
+  if (!team) { existingRow.hidden = true; updateCheckBtn(); return; }
+
+  try {
+    const res = await fetch('/api/validate/extension', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player: slug, team, contract: { type: 'player', salaries: {}, cap_holds: {} } }),
+    });
+    if (!res.ok) { existingRow.hidden = true; updateCheckBtn(); return; }
+    const data = await res.json();
+    const f = data.fact_sheet || {};
+    const ec = f.existing_contract || {};
+    extState.firstSeason = f.extended_term?.first_season || null;
+    const attestField = document.getElementById('ext-f-attest');
+    attestField.hidden = ec.basis !== 'unknown';
+    if (ec.start || ec.end) {
+      existingRow.hidden = false;
+      document.getElementById('ext-existing-text').textContent =
+        `${ec.start || '?'}–${ec.end || '?'} · final guaranteed year ${ec.final_guaranteed_year || '?'} `
+        + `· new money should start ${extState.firstSeason || '?'} (basis: ${ec.basis})`
+        + (f.prior_salary ? ` · prior salary ${fmtM(f.prior_salary)}, 140% ceiling ${fmtM(f.max_year1_ceiling)}` : '');
+    } else {
+      existingRow.hidden = false;
+      document.getElementById('ext-existing-text').textContent =
+        'No acquisition record on file — enter the season the team attests the deal began, below.';
+    }
+    buildExtSalaryInputs();
+  } catch (e) { /* network error surfaces on the next real check */ }
+  updateCheckBtn();
+}
+
+function setupExtensionForm() {
+  const yearsSel = document.getElementById('ext-years');
+  yearsSel.innerHTML = [1, 2, 3, 4, 5].map(n => `<option value="${n}"${n === extState.years ? ' selected' : ''}>${n} year${n > 1 ? 's' : ''}</option>`).join('');
+  yearsSel.addEventListener('change', () => {
+    extState.years = +yearsSel.value;
+    extState.salaries.length = extState.years;
+    extState.options.length = extState.years;
+    for (let i = 0; i < extState.years; i++) {
+      extState.salaries[i] = extState.salaries[i] || 0;
+      extState.options[i] = extState.options[i] || '';
+    }
+    buildExtSalaryInputs();
+    updateCheckBtn();
+  });
+  document.getElementById('ext-player').addEventListener('input', onExtPlayerPicked);
+  document.getElementById('ext-hold').addEventListener('change', e => {
+    extState.hold = e.target.value;
+    document.getElementById('ext-f-eaps').hidden = !extState.hold;
+    updateCheckBtn();
+  });
+  document.getElementById('ext-eaps').addEventListener('change', e => { extState.eaps = e.target.value; updateCheckBtn(); });
+  ['ext-kind', 'ext-bird', 'ext-attest'].forEach(id => document.getElementById(id).addEventListener('change', updateCheckBtn));
+  document.querySelectorAll('[data-ext-preset]').forEach(b => b.addEventListener('click', () => applyExtPreset(b.dataset.extPreset)));
+  buildExtSalaryInputs();
+}
+
+async function runExtensionCheck() {
+  const el = document.getElementById('results');
+  const slug = currentExtSlug();
+  const team = teamMap[slug];
+
+  if (!slug) { el.style.display = 'none'; setStatus('Select a player.'); return; }
+  if (!team) { el.style.display = 'none'; setStatus('Selected player is not on a roster — only a rostered player can be extended.'); return; }
+  if (!(extState.salaries[0] > 0)) { el.style.display = 'none'; setStatus('Enter a Year 1 salary.'); return; }
+
+  const salaries = {};
+  let season = extState.firstSeason || curYr();
+  for (let i = 0; i < extState.years; i++) { salaries[season] = `$${extState.salaries[i] || 0}`; season = seasonAfter(season); }
+
+  const cap_holds = {};
+  let os = extState.firstSeason || curYr();
+  for (let i = 0; i < extState.years; i++) {
+    if (extState.options[i]) cap_holds[os] = extState.options[i];
+    os = seasonAfter(os);
+  }
+  if (extState.hold) cap_holds[os] = extState.hold;
+
+  const body = {
+    player: slug, team,
+    contract: { type: 'player', salaries, cap_holds },
+    kind: document.getElementById('ext-kind').value,
+    bird_rights_type: document.getElementById('ext-bird').value || null,
+    eaps_assumption: extState.eaps || null,
+    attested_contract_start: document.getElementById('ext-attest').value.trim() || null,
+  };
+
+  const seq = ++validateSeq;
+  setStatus('Evaluating…', 'evaluating');
+  try {
+    const res = await fetch('/api/validate/extension', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (seq !== validateSeq) return;
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      el.style.display = 'none';
+      setStatus(`Validation error — ${d.detail || ('HTTP ' + res.status)}`, 'err');
+      return;
+    }
+    setStatus('');
+    renderExtensionResults(await res.json());
+  } catch (e) {
+    if (seq !== validateSeq) return;
+    el.style.display = 'none';
+    setStatus('Network error — could not reach the validator.', 'err');
+  }
+}
+
+function renderExtensionResults(data) {
+  const el = document.getElementById('results');
+  el.style.display = '';
+  const { legal, checks = [], fact_sheet: f = {} } = data;
+  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+
+  const checkRows = checks.map(c => {
+    const kind = c.level === 'warning' ? 'warning' : (c.passed ? 'pass' : (c.level || 'error'));
+    return `<div class="vc-row ${kind}"><span class="vc-icon">${ICON[kind] || '?'}</span><span>${c.message}</span></div>`;
+  }).join('') || '<div class="vc-row pass"><span class="vc-icon">✓</span><span>No constraints triggered.</span></div>';
+
+  const row = (label, val, cls) =>
+    `<div class="result-row"><span class="label">${label}</span><span${cls ? ` style="color:${cls}"` : ''}>${val}</span></div>`;
+
+  const ec = f.existing_contract || {};
+  const et = f.extended_term || {};
+  const existingCol = `
+    <div class="result-col">
+      <div class="result-team">${displayName(f.player_name || '')} — existing deal</div>
+      ${row('Contract', `${ec.start || '?'}–${ec.end || '?'}`)}
+      ${row('Final guaranteed year', ec.final_guaranteed_year || '—')}
+      ${row('Basis', ec.basis || 'unknown')}
+      ${row('Prior salary', f.prior_salary ? fmtM(f.prior_salary) : '—')}
+    </div>`;
+
+  const extendedCol = `
+    <div class="result-col">
+      <div class="result-team">${f.team} — extended term</div>
+      ${row('First extended season', et.first_season || '—')}
+      ${row('New years', Object.keys(et.salaries || {}).length)}
+      ${row('140% ceiling', f.max_year1_ceiling ? fmtM(f.max_year1_ceiling) : (f.eaps ? `${fmtM(Math.round(f.eaps * 1.4))} (EAPS)` : '—'))}
+    </div>`;
+
+  const capCol = `
+    <div class="result-col">
+      <div class="result-team">${f.team} — cap position (${et.first_season || '?'})</div>
+      ${f.cap_position_evaluable
+        ? row('Team salary', f.team_salary_first_extended_season != null ? fmtM(f.team_salary_first_extended_season) : '—')
+          + row('Cap', f.cap_first_extended_season ? fmtM(f.cap_first_extended_season) : '—')
+          + row('Hard cap', f.hard_cap_first_extended_season ? fmtM(f.hard_cap_first_extended_season) : '—')
+        : row('Status', 'Cannot evaluate — thresholds unset for this season', 'var(--gold)')}
+    </div>`;
+
+  el.innerHTML = `
+    <div class="results-header"><span class="rh-title">Extension Analysis</span></div>
+    <div class="results-grid">${existingCol}${extendedCol}${capCol}</div>
+    <div class="vc-list">${checkRows}</div>
+    <div class="results-summary">
+      ${legal
+        ? `<strong style="color:var(--success)">✓ Extension is legal</strong> — every check the league office runs at submission passes. Nothing here has been submitted.`
+        : `<strong style="color:var(--danger)">✗ Extension is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.`}
+    </div>`;
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
@@ -866,6 +1250,7 @@ async function init() {
 
   document.getElementById('add-team-btn').addEventListener('click', () => { addTeamSlot(null); rebuildTeamSelectOptions(); });
   setupSignForm();
+  setupExtensionForm();
 
   // URL params for pre-loading: ?teams=OKC,BOS,DEN (new, any count) or the
   // legacy ?a=OKC&b=BOS (kept so old shared links still work).
@@ -880,9 +1265,9 @@ async function init() {
   preload.forEach(abbr => addTeamSlot(abbr));
   rebuildTeamSelectOptions();
 
-  // ?type=sign / ?type=offer_sheet opens straight into that transaction type.
+  // ?type=sign / ?type=offer_sheet / ?type=extension opens straight into that mode.
   const t = p.get('type');
-  if (t === 'sign' || t === 'offer_sheet') setMode(t);
+  if (t === 'sign' || t === 'offer_sheet' || t === 'extension') setMode(t);
 }
 
 // ── Team slot management ───────────────────────────────────────────────────────
@@ -1313,7 +1698,8 @@ let validateSeq = 0;   // guards against out-of-order responses
 // whichever transaction type is currently on screen.
 function updateCheckBtn() {
   clearTimeout(validateTimer);
-  validateTimer = setTimeout(MODE === 'trade' ? runCheck : runSignCheck, 250);
+  const fn = MODE === 'trade' ? runCheck : MODE === 'extension' ? runExtensionCheck : runSignCheck;
+  validateTimer = setTimeout(fn, 250);
 }
 
 function setStatus(msg, cls) {
