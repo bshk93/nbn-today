@@ -317,15 +317,37 @@ can ask for an EAPS answer it has nowhere to collect" gap fixed for
 `sign_pick`/`convert_twoway` on 2026-08-11/12. Verified end-to-end in a real
 headless browser against production (`barlow-dominick`/SAS) on both pages.
 
-### [P2] The `/pdc` PO-EXT committee pipeline is still a stub
-`docs/poext-extension-pipeline.md` Phase C: `/api/poext/*` (claim, advance,
-ballot, finalize — a near-verbatim clone of the free-agency object per § 3 of
-that doc) and Phase D, the `/extensions` team-facing proposal page. The
-`#poext` div in `/pdc` still reads "granted, but this page is a stub for
-PO-EXT for now. Nothing to do yet." A real extension today is decided in
-Discord (as before) and entered by the office via `/transactions`, checked
-live against the real rubric — a real path, just not the dashboard the spec
-designs.
+### ~~[P2] The `/pdc` PO-EXT committee pipeline is still a stub~~ — shipped 2026-08-21
+`routers/poext.py`: proposals, the agent stage (claim/release/advance/
+return-to-agent), sub-committee assignment, accept/reject voting, finalize/
+unlock, `GET /api/poext/eligible` and `GET /api/poext/proposals`. `/pdc`'s
+PO-EXT panel is a real dashboard, `/extensions` is the team-facing proposal
+page, and the roster page's ⋯ menu has a "Propose extension…" shortcut into
+it. Private `pdc-alerts` Discord posts on submit/remand/void/restore/
+finalize. 76 tests across `test_extensions.py`/`test_poext.py`/
+`test_poext_notify.py`.
+
+**Real remaining gaps**, not just polish:
+- § 4.5's six-month trade-freeze check isn't wired into `_validate_trade`.
+- No public Discord announcement on an agreed extension (D9's "public gets
+  accept only") — deliberately deferred, not defaulted into existing.
+- The extend-and-trade mechanism (§ 2.11 — Team A proposing on Team B's
+  behalf) is unbuilt; `kind="extend_and_trade"` is reserved but has no
+  submission path of its own.
+- Cap thresholds for 27-28+ are still $0 and EAPS is still unset in Cap
+  Settings, so `extension_cap_position` and the 140%-of-EAPS branch of
+  `extension_max_year1` report "cannot evaluate"/warn on every real
+  extension until the committee enters real figures — a data gap, not code.
+- § 6.3's rookie-scale and non-expiring-veteran windows need a regular-
+  season start date the system doesn't track anywhere (shared gap with
+  § 3.12 proration); only the expiring-veteran June 30 deadline is enforced.
+- Committee rulings still needed (`docs/poext-extension-pipeline.md` § 8):
+  Q3 (when 140%-of-EAPS applies instead of prior-salary), whether the
+  3-proposal cap applies outside the expiring-veteran bucket, and what
+  exactly defines an extend-and-trade.
+- The ledger backfill (`[P3]` below) is still unrun — lower urgency now that
+  both "no record" and `trade_floor` bases correctly warn-and-allow rather
+  than block.
 
 ### [P3] Extension eligibility backfill — 161 rostered players missing an acquisition record
 `_player_acquisition_index` (§ 3.8's ledger scan, reused for § 6.2 eligibility)
