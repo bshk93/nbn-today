@@ -561,6 +561,7 @@
     .badge-waiver_flagged { background: var(--gold-bg); color: var(--gold); }
     .badge-renounce       { background: #3b2f0a; color: #fcd34d; }
     .badge-convert_twoway { background: #1c1917; color: #a8a29e; }
+    .badge-extension      { background: #0c1f3d; color: #60a5fa; }
     .badge-void_player    { background: #1f1f1f; color: var(--text-muted); }
     .badge-set_hard_cap_level { background: var(--gold-bg); color: var(--gold); }
     .badge-offer_sheet    { background: #1e1b4b; color: #a5b4fc; }
@@ -743,6 +744,7 @@
           <option value="renounce">Renounce</option>
           <option value="trade">Trade</option>
           <option value="convert_twoway">Convert Two-Way</option>
+          <option value="extension">Extension</option>
           <option value="void_player">Void Player</option>
           <option value="set_hard_cap_level">Set Hard Cap Level</option>
         </select>
@@ -911,6 +913,23 @@
         </select>
       </div>
 
+      <!-- extension-only. Team is derived from the roster (§ 6.2: only the
+           incumbent may extend), not a free choice — same as sign_pick /
+           convert_twoway. -->
+      <div class="form-field" id="f-ext-kind-field" style="display:none">
+        <label>Kind (§ 6.2 / § 6.3)</label>
+        <select id="f-ext-kind">
+          <option value="veteran">Veteran</option>
+          <option value="rookie_scale">Rookie scale</option>
+          <option value="extend_and_trade">Extend-and-trade (§ 3.9: 5% raises)</option>
+        </select>
+      </div>
+      <div class="form-field" id="f-ext-attest-field" style="display:none">
+        <label>Team attests deal began <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(season, e.g. 22-23)</span></label>
+        <input type="text" id="f-ext-attest" maxlength="5" placeholder="YY-YY">
+        <span style="font-size:0.75rem;margin-top:0.25rem;color:var(--text-muted);display:block">Only asked when no acquisition record is on file. Never trusted as fact — flagged for the committee, and errors instead of warns if it contradicts other partial history the player does have.</span>
+      </div>
+
       <!-- Optional override. Left blank, _apply_option computes the § 3.10
            figure from the last real salary and Bird tier — the same auto-fill a
            signing gets. Typing a number here is how you override it, not how you
@@ -1072,6 +1091,12 @@
              them. -->
         <div class="scale-note" id="scale-note" style="display:none"></div>
 
+        <!-- extension-only: the existing contract read off
+             POST /api/validate/extension's fact sheet, so the office knows
+             what season the new money has to start at (§ 6.2 rule 10) before
+             typing the first row. -->
+        <div class="scale-note" id="ext-note" style="display:none"></div>
+
         <div class="salary-rows" id="salary-rows"></div>
         <button class="add-salary-btn" id="add-salary-btn" type="button">+ Add season</button>
       </div>
@@ -1163,6 +1188,7 @@
     <span class="chip" data-filter="type" data-value="renounce">Renounces</span>
     <span class="chip" data-filter="type" data-value="trade">Trades</span>
     <span class="chip" data-filter="type" data-value="convert_twoway">Two-Way Conversions</span>
+    <span class="chip" data-filter="type" data-value="extension">Extensions</span>
     <span class="chip" data-filter="type" data-value="void_player">Voids</span>
     <span class="chip" data-filter="type" data-value="set_hard_cap_level">Hard Cap Sets</span>
 
@@ -1449,14 +1475,16 @@ function setupTypeSwitch() {
     const isGtd = v === 'guarantee';
     const isConvertTwoWay = v === 'convert_twoway';
     const isSignPick = v === 'sign_pick';
+    const isExtension = v === 'extension';
     const isSetHardCap = v === 'set_hard_cap_level';
     const isOfferSheet = v === 'offer_sheet';
     // A draft pick conveys rights only — no contract at pick time (it's attached
     // later via the separate Sign Draft Pick step), so picks don't show the
     // contract section but sign_pick does. An offer_sheet does carry a contract
     // (the terms being offered), even though it's not the transaction that
-    // actually applies it — that's a follow-up `sign`.
-    const needsContract = isSign || isConvertTwoWay || isSignPick || isOfferSheet;
+    // actually applies it — that's a follow-up `sign`. An extension carries the
+    // extended term only — the live years already on the books are untouched.
+    const needsContract = isSign || isConvertTwoWay || isSignPick || isOfferSheet || isExtension;
 
     // Reset contract-type to player whenever transaction type changes
     const playerRadio = document.querySelector('input[name="contract-type"][value="player"]');
@@ -1481,8 +1509,11 @@ function setupTypeSwitch() {
       // rubric's fact sheet, which knows whether EAPS actually prices anything.
       document.getElementById('f-eaps-field').style.display = isOpt ? '' : 'none';
       if (!isOpt) document.getElementById('f-eaps').value = '';
-      if (!isSign && !isConvertTwoWay && !isOfferSheet) {
-        document.getElementById('f-bird-rights-field').style.display = 'none';
+      // Extension carries its own optional Bird tier (§ 6.2 rule 3), shown
+      // unconditionally rather than gated behind a funding method — there
+      // isn't one, unlike sign/convert_twoway/offer_sheet.
+      document.getElementById('f-bird-rights-field').style.display = isExtension ? '' : 'none';
+      if (!isSign && !isConvertTwoWay && !isOfferSheet && !isExtension) {
         document.getElementById('mle-hint').style.display = 'none';
       }
       // Only sign/offer_sheet on the minimum asks for a § 3.12 experience tier.
@@ -1500,16 +1531,29 @@ function setupTypeSwitch() {
       document.getElementById('f-gtd-year-field').style.display        = isGtd ? '' : 'none';
       document.getElementById('f-release-stretch-field').style.display = isRelease ? '' : 'none';
       if (isRelease) updateReleaseStretchHint(); else document.getElementById('f-release-stretch').value = '';
-      document.getElementById('f-contract-type-field').style.display   = (needsContract && !isConvertTwoWay) ? '' : 'none';
+      document.getElementById('f-ext-kind-field').style.display   = isExtension ? '' : 'none';
+      document.getElementById('f-ext-attest-field').style.display = 'none';   // revealed by prefillExtensionInfo when the ledger has no record
+      if (!isExtension) document.getElementById('f-ext-attest').value = '';
+      // No two-way choice on an extension — always a standard contract on top
+      // of the live deal (ExtensionDetails has no two-way shorthand path).
+      document.getElementById('f-contract-type-field').style.display   = (needsContract && !isConvertTwoWay && !isExtension) ? '' : 'none';
+      // Second arg only ever suppresses the two-way radio *and* the funding-
+      // method field for convert_twoway specifically. Extension's two-way
+      // path is already closed off by hiding f-contract-type-field above (the
+      // radio stays on its default 'player'), so this must stay the real
+      // isConvertTwoWay — passing isExtension here would wrongly reveal the
+      // funding-method field, which an extension has no use for.
       applyContractTypeVisibility(needsContract, isConvertTwoWay);
       updateContractEntryMode();
       // sign_pick and convert_twoway joined this once each had a validator of
       // its own; the types still without one stay silent rather than showing
       // a verdict drawn from zero checks.
       document.getElementById('sign-rubric').style.display =
-        (isSign || isOfferSheet || isSignPick || isConvertTwoWay) ? '' : 'none';
+        (isSign || isOfferSheet || isSignPick || isConvertTwoWay || isExtension) ? '' : 'none';
       const scaleNote = document.getElementById('scale-note');
       if (scaleNote && !isSignPick) scaleNote.style.display = 'none';
+      const extNote = document.getElementById('ext-note');
+      if (extNote && !isExtension) extNote.style.display = 'none';
       scheduleSignRubric();
     }
 
@@ -1814,6 +1858,11 @@ function setupPlayerSearch() {
     } else if (txnType === 'pick') {
       const draftYear = +document.getElementById('f-pick-year-sel').value;
       pool = Object.entries(bios).filter(([slug, bio]) => bio.draft_year === draftYear && !teamMap[slug]);
+    } else if (txnType === 'extension') {
+      // Any rostered player, not pre-filtered to the ~32-player § 6.2 eligible
+      // set — that's exactly what the live rubric below determines.
+      pool = Object.entries(bios).filter(([slug, bio]) =>
+        teamMap[slug] && !bio.retired && bio.type !== 'dead' && bio.type !== 'draft-rights');
     } else {
       pool = Object.entries(bios).filter(([, bio]) => !bio.retired);
     }
@@ -1898,6 +1947,7 @@ function onPlayerSelected(slug) {
   if (type === 'convert_twoway') { updateMleHint(); return; }
   if (type === 'release') { updateReleaseStretchHint(slug); return; }
   if (type === 'sign_pick') { prefillRookieScale(slug); return; }
+  if (type === 'extension') { prefillExtensionInfo(slug); return; }
   if (type !== 'option') return;
   const bio = bios[slug];
   if (!bio) return;
@@ -1977,6 +2027,65 @@ async function prefillRookieScale(slug) {
   note.innerHTML = `<strong>§ 7.1 rookie scale — pick ${data.draft_pick} of ${data.draft_year}.</strong> `
     + `Four years (${seasons[0]}–${seasons[3]}), Years 3 and 4 as team options, then the `
     + `${seasons[4]} RFA cap hold. Editable if the league has ruled otherwise.`;
+  note.style.display = '';
+  scheduleSignRubric();
+}
+
+// ── § 6.2 / § 6.3 extension prefill ─────────────────────────────────────────
+// An extension's Year 1 isn't the current season, unlike every other
+// contract-carrying type — it's the season after the existing deal's final
+// guaranteed year (§ 6.2 rule 10), which isn't knowable until the player is
+// picked. POST /api/validate/extension with an empty contract still returns
+// a real fact_sheet (the existing-contract read doesn't need contract terms
+// to compute), so this calls it purely to learn that season and seed the
+// first salary row with the right label rather than leaving the office to
+// work it out by hand.
+async function prefillExtensionInfo(slug) {
+  const note = document.getElementById('ext-note');
+  note.style.display = 'none';
+  const team = teamMap[slug];
+  if (!team) {
+    note.className = 'scale-note manual';
+    note.textContent = 'This player is not on a roster — only a rostered player can be extended.';
+    note.style.display = '';
+    return;
+  }
+
+  let data;
+  try {
+    const res = await fetch('/api/validate/extension', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player: slug, team, contract: { type: 'player', salaries: {}, cap_holds: {} } }),
+    });
+    if (!res.ok) return;
+    data = await res.json();
+  } catch { return; }
+
+  // The player or type may have changed while this was in flight.
+  if (document.getElementById('f-player-slug').value !== slug) return;
+  if (document.getElementById('f-type').value !== 'extension') return;
+
+  const f = data.fact_sheet || {};
+  const ec = f.existing_contract || {};
+  const firstSeason = f.extended_term && f.extended_term.first_season;
+
+  const attestField = document.getElementById('f-ext-attest-field');
+  attestField.style.display = ec.basis === 'unknown' ? '' : 'none';
+
+  document.getElementById('salary-rows').innerHTML = '';
+  addSalaryRow(firstSeason || nextSalaryYear(), '', '');
+
+  if (ec.start || ec.end) {
+    note.className = 'scale-note';
+    note.innerHTML = `<strong>Existing contract: ${escHtml(ec.start || '?')}–${escHtml(ec.end || '?')}.</strong> `
+      + `Final guaranteed year ${escHtml(ec.final_guaranteed_year || '?')} (basis: ${escHtml(ec.basis || 'unknown')}) — `
+      + `new money should start <strong>${escHtml(firstSeason || '?')}</strong> (§ 6.2 rule 10).`
+      + (f.prior_salary ? ` Prior salary ${fmtDollarsShort(f.prior_salary)}, 140% ceiling ${fmtDollarsShort(f.max_year1_ceiling)}.` : '');
+  } else {
+    note.className = 'scale-note manual';
+    note.textContent = 'No acquisition record on file for this player — enter the season the team '
+      + 'attests the deal began, below. Flagged for the committee, not trusted as fact.';
+  }
   note.style.display = '';
   scheduleSignRubric();
 }
@@ -2490,12 +2599,28 @@ function scheduleSignRubric() {
 // a verdict on an empty contract is noise, not information.
 function collectSignValidationBody() {
   const type = document.getElementById('f-type').value;
-  if (type !== 'sign' && type !== 'offer_sheet' && type !== 'sign_pick' && type !== 'convert_twoway') return null;
+  if (type !== 'sign' && type !== 'offer_sheet' && type !== 'sign_pick' && type !== 'convert_twoway' && type !== 'extension') return null;
   const player = document.getElementById('f-player-slug').value;
   if (!player) return null;
 
   const isTwoWay = document.querySelector('input[name="contract-type"]:checked')?.value === 'two-way';
   if (isTwoWay) return null;   // two-way terms are generated, not typed here
+
+  // Only the incumbent may extend (§ 6.2 — no rival bid), so the team is
+  // derived from the roster, same reasoning as sign_pick/convert_twoway below.
+  if (type === 'extension') {
+    const team = teamMap[player];
+    if (!team) return null;
+    const { salaries, cap_holds } = collectSalaries();
+    if (!Object.keys(salaries).length) return null;
+    const kind = document.getElementById('f-ext-kind').value;
+    const bird = document.getElementById('f-bird-rights-type').value || null;
+    const eaps = document.getElementById('f-eaps').value || null;
+    const attested = document.getElementById('f-ext-attest').value.trim() || null;
+    return { url: '/api/validate/extension',
+             body: { player, team, contract: { type: 'player', salaries, cap_holds }, kind,
+                     bird_rights_type: bird, eaps_assumption: eaps, attested_contract_start: attested } };
+  }
 
   // A pick signing names no team — the API derives it from whoever holds the
   // rights, so asking the page for one would only invite the two to disagree.
@@ -3261,6 +3386,21 @@ async function submitTransaction() {
     }
     details = { player: playerSlug, contract,
       ...(eapsAssumption ? { eaps_assumption: eapsAssumption } : {}) };
+  } else if (type === 'extension') {
+    date = document.getElementById('f-date').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
+    if (!Object.keys(contract.salaries || {}).length) { setStatus('err', 'At least one salary year is required.'); return; }
+    const team = teamMap[playerSlug];
+    if (!team) { setStatus('err', 'Selected player is not on a roster — only a rostered player can be extended.'); return; }
+    const kind = document.getElementById('f-ext-kind').value;
+    const birdRightsType = document.getElementById('f-bird-rights-type').value || null;
+    const attested = document.getElementById('f-ext-attest').value.trim() || null;
+    details = {
+      player: playerSlug, team, contract, kind,
+      ...(birdRightsType ? { bird_rights_type: birdRightsType } : {}),
+      ...(eapsAssumption ? { eaps_assumption: eapsAssumption } : {}),
+      ...(attested ? { attested_contract_start: attested } : {}),
+    };
   } else if (type === 'void_player') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -3869,6 +4009,14 @@ function renderDetailsCell(t) {
     }
     return escHtml(contractStr2);
   }
+  if (t.type === 'extension') {
+    const c = d.contract || {};
+    let extStr = ledgerContractStr(c);
+    if (d.kind && d.kind !== 'veteran') {
+      extStr += ` · ${d.kind === 'rookie_scale' ? 'rookie scale' : 'extend-and-trade'}`;
+    }
+    return escHtml(extStr);
+  }
   if (t.type === 'release') {
     const dc = d.dead_cap || {};
     const entries = Object.entries(dc);
@@ -4009,7 +4157,7 @@ function fmtDate(iso) {
 }
 
 function typeLabel(type) {
-  const labels = { sign: 'Signing', offer_sheet: 'Offer Sheet', offer_sheet_decision: 'Offer Sheet Decision', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', guarantee: 'Guarantee', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion', void_player: 'Void Player', set_hard_cap_level: 'Set Hard Cap', waiver_clear: 'Waivers', waiver_flagged: 'Waiver Tie' };
+  const labels = { sign: 'Signing', offer_sheet: 'Offer Sheet', offer_sheet_decision: 'Offer Sheet Decision', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', guarantee: 'Guarantee', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion', extension: 'Extension', void_player: 'Void Player', set_hard_cap_level: 'Set Hard Cap', waiver_clear: 'Waivers', waiver_flagged: 'Waiver Tie' };
   return labels[type] || type;
 }
 
