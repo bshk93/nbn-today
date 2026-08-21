@@ -348,20 +348,6 @@ Order of operations: get BOD to ratify or amend the § 3.9 formula first, then
 add the transaction type and the derived amount. Doing it the other way round
 bakes an unratified number into the ledger.
 
-### [P2] § 7.2 seven-year advance limit unenforced
-The Stepien half of § 7.2 *is* enforced (`_check_stepien_rule`,
-`transactions.py:2687`, with `tests/test_stepien_rule.py`). The companion rule —
-picks may only be traded 7 years out — has no check. Cheap to add next to the
-existing one.
-
-### [P2] § 7.2 rulebook badge is stale — CLOSED 2026-08-09
-Section read 👁 manual review only, despite Stepien going live 2026-07-23.
-Fixed: badge is now 🔒 + 👁 (matching the § 1.3/§ 3.14-style mixed-enforcement
-pattern), with a trailing "What's system-enforced / Still manual review"
-paragraph explaining the split — Stepien (`_check_stepien_rule`) is enforced on
-every trade; the companion 7-year advance limit is not (see next item, still
-open).
-
 ### [P2] Extend-and-trade is referenced but never defined
 § 3.9's raise table has an "Extend-and-trade" row (5% of Year 1, vs 8% for a
 normal extension), and § 6.2 repeats the 5% figure — but no section anywhere

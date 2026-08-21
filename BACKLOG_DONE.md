@@ -159,3 +159,29 @@ Populated by `build/load_rookie_scale.py` from the league sheet's
 dollar against every signed contract in those classes; `/rookie-scale` renders
 them and `GET /api/rookie-scale/contract/{slug}` prefills the office form.
 **2024 is deliberately still out** — see the § 3.10 multiplier item in §1.
+
+### ~~[P2] § 7.2 rulebook badge is stale~~ — CLOSED 2026-08-09, fully resolved 2026-08-21
+Section read 👁 manual review only, despite Stepien going live 2026-07-23.
+Fixed 2026-08-09: badge became 🔒 + 👁 with a "What's system-enforced / Still
+manual review" split, since only the Stepien half was actually checked. Once
+the companion 7-year advance limit was enforced too (2026-08-21, next entry),
+the split no longer applied — § 7.2 is now a single 🔒 system-enforced
+section, same as any other fully-covered one.
+
+### ~~[P2] § 7.2 seven-year advance limit unenforced~~ — DONE 2026-08-21
+The Stepien half of § 7.2 was enforced 2026-07-23 (`_check_stepien_rule`);
+the companion rule — picks may only be traded up to 7 years ahead of the
+current league year — had no check. Added `_check_pick_advance_limit`
+(nbn-api `routers/transactions.py`), wired into `_validate_trade` right next
+to Stepien, so both the submit path and the simulator get it for free. Any
+round, not just first-rounders — unlike Stepien.
+
+The horizon isn't a new number: `roster_picks.picks_horizon_target_year`
+already computes "current league year + 7" to decide how far the picks
+ledger stays populated. Split into `_pick_year_horizon(season)` so the
+validator checks a transaction against *its own* season rather than always
+today, and so the two can never define "7 years out" two different ways.
+`tests/test_pick_advance_limit.py` pins it. Confirmed against live picks
+data before deploying: the ledger's newest year (2033) already sits exactly
+at the horizon, so this can only ever reject a pick year with no real ledger
+row behind it — nothing already on the books was retroactively affected.
