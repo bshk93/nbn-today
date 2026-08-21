@@ -3425,7 +3425,7 @@ function openBlockDialog(slug, bio, abbr, onBlock, currentNotes, afterChange) {
   });
 }
 
-function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange) {
+function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, poextEntry) {
   document.querySelectorAll('.move-menu').forEach(m => m.remove());
   const menu = document.createElement('div');
   menu.className = 'move-menu';
@@ -3473,6 +3473,20 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange) {
     onClick: () => openRenounceDialog(slug, bio, abbr),
   });
 
+  // § 6.2 — same "team role, not owner-tenure" gate as the trade block, since
+  // proposing an extension is a front-office move, not one that touches a
+  // player's actual contract state the way renounce does. Deep-links into
+  // /extensions rather than duplicating the proposal form here — that page is
+  // also where a proposal's status (returned for revision, voided, decided)
+  // lives, so it's the one place to go either way, not a second entry point
+  // with its own copy of the form.
+  addItem('Propose extension…', {
+    enabled: canEditTradeBlock(abbr) && !!(poextEntry && poextEntry.eligible),
+    why: !canEditTradeBlock(abbr) ? 'Only this team’s front office can propose an extension.'
+       : (poextEntry ? poextEntry.reason : 'Not eligible for an extension right now.'),
+    onClick: () => { location.href = `/extensions/?player=${encodeURIComponent(slug)}`; },
+  });
+
   document.body.appendChild(menu);
   const r = anchor.getBoundingClientRect();
   const mr = menu.getBoundingClientRect();
@@ -3509,7 +3523,7 @@ function renderOfferSheetBanner(offers) {
 // Builds the `rowActions` callback for the live roster table. Returns null when
 // the viewer has no move available at all, which keeps the extra column off
 // every public page load.
-function makeRosterMoveActions(abbr, biosData, blockEntries) {
+function makeRosterMoveActions(abbr, biosData, blockEntries, poextEligible) {
   if (!canEditTradeBlock(abbr) && !canRenounce(abbr)) return null;
 
   // slug -> {on, notes}, seeded from the team's current block listing.
@@ -3542,7 +3556,8 @@ function makeRosterMoveActions(abbr, biosData, blockEntries) {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       openMovesMenu(btn, row.SLUG, bio, abbr, st,
-        (nowOn, notes) => { st.on = nowOn; st.notes = notes; syncFlag(); });
+        (nowOn, notes) => { st.on = nowOn; st.notes = notes; syncFlag(); },
+        (poextEligible || {})[row.SLUG]);
     });
     td.append(btn, flag);
   };
@@ -5350,7 +5365,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // from "signed in with a token that has since been revoked".
   const hadStoredToken = !!getToken();
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -5372,6 +5387,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/trading-block').then(r => r.ok ? r.json() : {}),
     fetch(`/api/offer-sheets/open?team=${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/data/franchise-records.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch('/api/poext/eligible').then(r => r.ok ? r.json() : []),
   ]);
 
   await ratingsPopupReady;
@@ -5412,6 +5428,12 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const tradeExceptions = ter.status === 'fulfilled' ? ter.value : [];
   const attributesData = attrr.status === 'fulfilled' ? attrr.value : {};
   const myBlockEntries = ((blockr.status === 'fulfilled' ? blockr.value : {})[abbr] || {}).players || [];
+  // slug -> {eligible, reason}, filtered to this team — GET /api/poext/eligible
+  // is league-wide, so the roster ⋯ menu only needs its own team's slice.
+  const poextEligible = {};
+  if (poextr.status === 'fulfilled' && Array.isArray(poextr.value)) {
+    poextr.value.forEach(e => { if (e.team === abbr) poextEligible[e.player] = e; });
+  }
   const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];
   renderOfferSheetBanner(openOffers);
   const currentRosterRowsParsed = rr.status === 'fulfilled' ? parseCSV(rr.value) : [];
@@ -5688,7 +5710,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     // Offered on both roster views: Rosters is the default tab, so gating it to
     // Contracts alone made the feature invisible to the owners it exists for.
     // Stats and Ratings are analytical views where an actions column is noise.
-    const moveActions = makeRosterMoveActions(abbr, biosData, myBlockEntries);
+    const moveActions = makeRosterMoveActions(abbr, biosData, myBlockEntries, poextEligible);
     const MOVE_MODES = ['depth', 'contracts'];
     const renderRoster = rowsForDisplay => buildRosterTable(
       rowsForDisplay, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, rosterMode, latestSeasonBySlug,
