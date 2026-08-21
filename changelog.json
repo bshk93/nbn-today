@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.1.60",
+    "date": "2026-08-21",
+    "changes": [
+      "BACKLOG.md: marked the § 4.5 trade-freeze check and the D9 public Discord announcement as shipped (both had already landed but were still listed as open gaps), and logged three more extension bugs found and fixed in a same-day follow-up audit: a trade_floor eligibility false-negative, a missing team-ownership check on the extension validator/apply path, and a missing discord_notify.py case for the extension type"
+    ]
+  },
+  {
     "version": "0.1.59",
     "date": "2026-08-21",
     "changes": [
