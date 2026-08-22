@@ -82,7 +82,7 @@
       padding: 0.6rem 0.75rem; min-width: 0;
     }
     .podium-slot.rank-1 { border-color: #92400e; background: #18160a; }
-    .podium-slot.rank-2 { border-color: var(--text-dim); background: #14181f; }
+    .podium-slot.rank-2 { border-color: var(--text-dim); background: var(--bg-page); }
     .podium-slot.rank-3 { border-color: var(--gold-chip-border); background: #17130e; }
     .podium-slot.empty  { border-style: dashed; border-color: var(--border-subtle); background: transparent; }
     .podium-rank {
@@ -102,7 +102,7 @@
     /* Tier row coloring for team award tables */
     tbody tr.tier-gold   td { background: #18160a; }
     tbody tr.tier-gold   td.player-name { color: var(--warning); }
-    tbody tr.tier-silver td { background: #14181f; }
+    tbody tr.tier-silver td { background: var(--bg-page); }
     tbody tr.tier-silver td.player-name { color: var(--text-muted); }
     tbody tr.tier-bronze td { background: #17130e; }
     tbody tr.tier-bronze td.player-name { color: var(--gold-dim); }
@@ -121,7 +121,7 @@
       cursor: default;
     }
     .ballot-chip.in      { background: var(--accent-panel-bg); color: var(--accent-light); }
-    .ballot-chip.partial { background: #2d2008; color: var(--warning); border: 1px solid var(--gold-chip-border); }
+    .ballot-chip.partial { background: var(--gold-bg); color: var(--warning); border: 1px solid var(--gold-chip-border); }
     .ballot-chip.out     { background: var(--bg-card); color: var(--text-dim); border: 1px solid var(--border); }
 
     /* Floating tooltip for partial ballots */
@@ -144,7 +144,7 @@
     .btt-team { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .btt-state { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.1rem 0.4rem; border-radius: 3px; flex-shrink: 0; }
     .btt-state-in      { background: var(--accent-panel-bg); color: var(--accent-light); }
-    .btt-state-partial { background: #2d2008; color: var(--warning); border: 1px solid var(--gold-chip-border); }
+    .btt-state-partial { background: var(--gold-bg); color: var(--warning); border: 1px solid var(--gold-chip-border); }
     .btt-state-out     { background: var(--bg-card); color: var(--text-dim); border: 1px solid var(--border); }
     .btt-awards { display: flex; flex-direction: column; gap: 0.3rem; }
     .btt-award { display: flex; gap: 0.5rem; align-items: flex-start; }

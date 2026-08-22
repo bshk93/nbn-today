@@ -53,7 +53,7 @@
     .banner {
       position: relative; border-radius: 16px; overflow: hidden;
       border: 1px solid var(--border); margin-bottom: 1.5rem;
-      background: #1a2231;
+      background: var(--bg-subtle);
     }
     .banner-glow { position: absolute; inset: 0; opacity: 0.22; pointer-events: none; }
     .banner-inner {
@@ -124,11 +124,11 @@
     .run-score .swept { color: var(--market-positive); }
     .run-chev { color: var(--text-muted); font-size: 0.7rem; width: 0.9rem; text-align: center; transition: transform 0.15s; }
     .run-series.open .run-chev { transform: rotate(180deg); color: var(--accent-light); }
-    .run-games { border-top: 1px solid #283344; background: #19212e; padding: 0.3rem 0.85rem 0.5rem; }
+    .run-games { border-top: 1px solid var(--border-subtle); background: var(--bg-subtle); padding: 0.3rem 0.85rem 0.5rem; }
     .run-games[hidden] { display: none; }
     .game-line {
       display: flex; align-items: center; gap: 0.6rem; padding: 0.32rem 0;
-      font-size: 0.82rem; border-bottom: 1px solid #232f42;
+      font-size: 0.82rem; border-bottom: 1px solid var(--border-subtle);
     }
     .game-line:last-child { border-bottom: none; }
     .game-no { color: var(--text-muted); width: 3.6rem; flex-shrink: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -145,7 +145,7 @@
       padding: 0.7rem 1rem; display: flex; flex-direction: column; gap: 0.15rem; min-width: 150px;
       text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s;
     }
-    .fo-card:hover { border-color: var(--muted-border); background: #232f42; text-decoration: none; }
+    .fo-card:hover { border-color: var(--muted-border); background: var(--bg-hover); text-decoration: none; }
     .fo-card .pos { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); font-weight: 700; }
     .fo-card .nm { font-size: 1rem; font-weight: 600; }
     .fo-card:hover .nm { color: var(--accent-light); }
@@ -154,9 +154,9 @@
     .table-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
     thead th { white-space: nowrap; }
-    tbody td { padding: 0.55rem 1rem; border-bottom: 1px solid #283344; vertical-align: middle; }
+    tbody td { padding: 0.55rem 1rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
     tbody tr:last-child td { border-bottom: none; }
-    tbody tr:hover { background: #232f42; }
+    tbody tr:hover { background: var(--bg-hover); }
     th.right, td.right { text-align: right; }
     th.center, td.center { text-align: center; }
     .ply { display: flex; align-items: center; gap: 0.6rem; }

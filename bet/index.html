@@ -27,7 +27,7 @@
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     .header-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 
-    .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: #1c1710; border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
+    .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
 
     .new-bet-btn { background: none; border: 1px solid var(--text-dim); color: var(--market-positive); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
     .new-bet-btn:hover { border-color: var(--market-positive); background: #0a1f15; }
@@ -63,8 +63,8 @@
 
     /* Bet card */
     .bet-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
-    .bet-card.locked { background: #16172a; border-color: #2d2d54; }
-    .bet-card.closed { background: #171f2a; border-color: var(--border-dark); }
+    .bet-card.locked { background: var(--bg-page); border-color: #2d2d54; }
+    .bet-card.closed { background: var(--bg-subtle); border-color: var(--border-dark); }
     .locked-notice { font-size: 0.78rem; color: #818cf8; margin-top: 0.6rem; }
     .bet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
     .bet-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
@@ -72,7 +72,7 @@
     .badge-open   { background: var(--market-positive-bg); color: var(--market-positive); }
     .badge-locked { background: var(--purple-bg); color: #818cf8; border: 1px solid #3730a3; }
     .badge-closed { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); }
-    .badge-voided { background: #292008; color: var(--warning); }
+    .badge-voided { background: var(--gold-bg); color: var(--warning); }
     .bet-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.75rem; }
     .bet-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem; }
     .pool-total { font-size: 0.75rem; color: var(--text-muted); margin: 0.5rem 0 0.9rem; }
@@ -90,10 +90,10 @@
     .bar-fill.zero   { background: var(--border); }
     .opt-pct  { font-size: 0.72rem; color: var(--text-muted); min-width: 36px; text-align: right; }
     .opt-amt  { font-size: 0.72rem; color: var(--gold); min-width: 60px; text-align: right; }
-    .opt-winner-badge { font-size: 0.6rem; font-weight: 700; color: var(--gold); background: #292008; border-radius: 3px; padding: 0.1rem 0.3rem; }
+    .opt-winner-badge { font-size: 0.6rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border-radius: 3px; padding: 0.1rem 0.3rem; }
 
     /* My current bet info */
-    .my-bet-info { font-size: 0.78rem; color: var(--accent-light); background: #0c1929; border: 1px solid var(--accent-dark); border-radius: 6px; padding: 0.4rem 0.75rem; margin: 0.75rem 0 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .my-bet-info { font-size: 0.78rem; color: var(--accent-light); background: var(--bg-page); border: 1px solid var(--accent-dark); border-radius: 6px; padding: 0.4rem 0.75rem; margin: 0.75rem 0 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .my-bet-info .nby { color: var(--gold); font-weight: 700; }
 
     /* Wager form */
@@ -145,7 +145,7 @@
     .balances-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
     .balances-table td.dim { color: var(--text-muted); }
     .balances-table tr:last-child td { border-bottom: none; }
-    .balances-table tr.me td { color: var(--text-primary); background: #1a2535; }
+    .balances-table tr.me td { color: var(--text-primary); background: var(--bg-card); }
     .rank-cell { color: var(--text-muted); font-size: 0.8rem; }
     .name-cell { font-weight: 500; }
     .bal-cell  { color: var(--gold); font-weight: 700; }
@@ -159,15 +159,15 @@
     /* How to earn NB¥ panel */
     .earn-link { font-size: 0.72rem; color: var(--text-dim); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; margin-bottom: 0.85rem; display: block; text-align: left; }
     .earn-link:hover { color: var(--text-muted); }
-    .earn-panel { background: #1a2030; border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
+    .earn-panel { background: var(--bg-subtle); border: 1px solid var(--border-dark); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
     .earn-panel-title { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.55rem; }
     .earn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 2rem; }
     @media (max-width: 480px) { .earn-grid { grid-template-columns: 1fr; } }
     .earn-item { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
     .earn-item .earn-amt { color: var(--gold); font-weight: 600; }
     .earn-item .earn-tag { font-size: 0.65rem; border-radius: 3px; padding: 0.05rem 0.3rem; margin-left: 0.25rem; vertical-align: middle; }
-    .earn-tag-auto   { background: #052e16; color: var(--market-positive); }
-    .earn-tag-manual { background: #1c1710; color: var(--text-muted); }
+    .earn-tag-auto   { background: var(--market-positive-bg); color: var(--market-positive); }
+    .earn-tag-manual { background: var(--bg-subtle); color: var(--text-muted); }
     .earn-item .earn-note { font-size: 0.68rem; color: var(--text-dim); display: block; margin-top: 0.1rem; }
 
     /* Ledger table */
@@ -201,10 +201,10 @@
 
     /* Canned bet button */
     .new-canned-btn { background: none; border: 1px solid var(--text-dim); color: var(--link); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
-    .new-canned-btn:hover { border-color: var(--link); background: #0c1929; }
+    .new-canned-btn:hover { border-color: var(--link); background: var(--bg-page); }
 
     /* Canned bet form — uses same .new-bet-form shell but with blue accent */
-    .canned-bet-form { background: #0c1929; border: 1px solid var(--accent-dark); }
+    .canned-bet-form { background: var(--bg-page); border: 1px solid var(--accent-dark); }
     .canned-bet-form label { color: var(--accent-light); }
     .canned-bet-form input[type="text"]:focus,
     .canned-bet-form textarea:focus,
@@ -213,7 +213,7 @@
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 5px;
       padding: 0.35rem 0.65rem; font-size: 0.85rem; outline: none; font-family: inherit; cursor: pointer; width: 100%;
     }
-    .canned-info { font-size: 0.78rem; color: var(--text-muted); background: #1a2535; border: 1px solid var(--accent-panel-bg); border-radius: 5px; padding: 0.4rem 0.75rem; }
+    .canned-info { font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--accent-panel-bg); border-radius: 5px; padding: 0.4rem 0.75rem; }
     .canned-opts-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: var(--text-muted); }
     .canned-opt-chip { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 0.15rem 0.5rem; color: var(--text-secondary); font-size: 0.75rem; }
     .canned-adj-row { display: flex; align-items: center; gap: 0.5rem; }

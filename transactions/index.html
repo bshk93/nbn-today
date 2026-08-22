@@ -564,10 +564,10 @@
     .offer-btn.pass  { border-color: var(--danger); color: var(--danger); }
     .offer-btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .txn-table.admin-mode .note-cell { cursor: pointer; }
-    .txn-table.admin-mode .note-cell:hover { background: #1a1f2e; }
+    .txn-table.admin-mode .note-cell:hover { background: var(--bg-subtle); }
     .txn-table.admin-mode .note-cell.empty::before { content: "+ Add note"; color: var(--text-dim); font-style: italic; }
     .note-edit-input {
-      width: 100%; background: #0f1420; border: 1px solid var(--accent); border-radius: 4px;
+      width: 100%; background: var(--bg-page); border: 1px solid var(--accent); border-radius: 4px;
       color: var(--text-secondary); font: inherit; padding: 0.2rem 0.4rem;
     }
     .badge-release        { background: var(--danger-bg); color: var(--danger); }
@@ -576,12 +576,12 @@
     .badge-renounce       { background: #3b2f0a; color: #fcd34d; }
     .badge-convert_twoway { background: #1c1917; color: #a8a29e; }
     .badge-extension      { background: #0c1f3d; color: #60a5fa; }
-    .badge-void_player    { background: #1f1f1f; color: var(--text-muted); }
+    .badge-void_player    { background: var(--bg-subtle); color: var(--text-muted); }
     .badge-set_hard_cap_level { background: var(--gold-bg); color: var(--gold); }
     .badge-offer_sheet    { background: #1e1b4b; color: #a5b4fc; }
     .badge-offer_sheet_decision { background: #1e1b4b; color: #818cf8; }
-    .badge-callup  { background: #451a03; color: var(--danger-alt); }
-    .badge-calldown { background: #451a03; color: var(--danger-alt); }
+    .badge-callup  { background: var(--danger-alt-bg); color: var(--danger-alt); }
+    .badge-calldown { background: var(--danger-alt-bg); color: var(--danger-alt); }
     .badge-trade   { background: var(--purple-light-bg); color: #c084fc; }
     .badge-tbd     { background: var(--border); color: var(--text-muted); font-size: 0.68rem; }
 
@@ -605,7 +605,7 @@
     .remove-leg-btn, .remove-asset-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.25rem; }
     .remove-leg-btn:hover, .remove-asset-btn:hover { color: var(--danger); }
     .legality-section { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-top: 1rem; margin-bottom: 0.75rem; }
-    .legality-header { background: #1a2535; padding: 0.45rem 0.75rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .legality-header { background: var(--bg-card); padding: 0.45rem 0.75rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
     .legality-row { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
     .legality-row:last-child { border-bottom: none; }
     /* § 4.2a per-player absorption picker — sits after the exception select,
@@ -625,7 +625,7 @@
     .rubric-verdict.bad { color: var(--danger); }
 
     .trade-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem; }
-    .trade-summary-card { background: #0d1420; border: 1px solid var(--bg-card); border-radius: 6px; padding: 0.55rem 0.65rem; }
+    .trade-summary-card { background: var(--bg-page); border: 1px solid var(--bg-card); border-radius: 6px; padding: 0.55rem 0.65rem; }
     .trade-summary-team { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
     .trade-summary-net { font-size: 0.78rem; font-weight: 600; margin-bottom: 0.35rem; }
     .trade-summary-net.pos { color: var(--danger); }

@@ -125,6 +125,17 @@
    "NBN Today" (grays that already read fine on either background, plus the
    modal scrim). */
 :root[data-theme="nbn-today-light"] {
+  /* These seven used to be absent, so they silently took the dark block's
+     value — which this file's own header says never happens. Four of them
+     happened to work on a light page anyway; --text-muted did not (4.47:1,
+     just under AA). Stated explicitly now so the choice is a choice. */
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --text-on-accent: #ffffff;
+  --muted-border: #c9cfd8;
+  --overlay-scrim: rgba(15, 23, 42, 0.45);
+  --text-muted: #5c6470;
+  --text-muted-rgb: 92, 100, 112;
   /* Backgrounds */
   --bg-page: #f5f6f8;
   --bg-card: #ffffff;
@@ -138,7 +149,14 @@
   /* Text */
   --text-primary: #10151f;
   --text-secondary: #3a4250;
-  --text-dim: #9aa1ac; /* lighter than --text-muted here — "recedes toward the page" flips direction on a light bg */
+  /* 2.41:1 before this, on 15 pages, carrying real copy and not just the "—"
+     placeholders it was meant for. #767e89 is 3.80 on the page background and
+     4.10 on a card: clears AA-Large but not the 4.5 AA wants for body text.
+     That is a deliberate stopping point — --text-dim has to stay visibly
+     lighter than --text-muted (5.53) or the two tiers collapse into one. The
+     real fix for the handful of places using it for actual messages is to
+     move those to --text-muted, which is page work, not a token value. */
+  --text-dim: #767e89; /* lighter than --text-muted here — "recedes toward the page" flips direction on a light bg */
 
   /* Accent (blue) */
   --link: #2563eb;
@@ -146,7 +164,7 @@
 
   /* Danger (red) */
   --danger: #dc2626;
-  --danger-light: #ef4444;
+  --danger-light: #b32020;
   --danger-bg: #fef2f2;
   --danger-border: #fca5a5;
   --danger-border-strong: #f87171;
@@ -169,7 +187,7 @@
   --warning: #b45309;
 
   /* Playoff-result decorative accents */
-  --champion-border: #d97706;
+  --champion-border: #8a6a10;
   --champion-bg: #fffbeb;
   --runnerup-border: #94a3b8;
   --runnerup-text: #334155;
@@ -183,7 +201,7 @@
   --accent-panel-bg: #eff6ff;
   --border-dark: #cbd5e1;
   --bg-deep: #ffffff;
-  --gold-alt: #ca8a04;
+  --gold-alt: #8f5f00;
   --success-alt: #047857;
   --success-dark-bg: #bbf7d0;
   --text-bright: #0b1220;
@@ -227,9 +245,9 @@
   /* Text */
   --text-primary: #3a2e3d;
   --text-secondary: #5c4a58;
-  --text-muted: #8a7387;
+  --text-muted: #7d647a;
   --text-muted-rgb: 138, 115, 135;
-  --text-dim: #c3aec0; /* lighter than --text-muted — recedes toward the page on a light bg */
+  --text-dim: #8f7d8c; /* lighter than --text-muted — recedes toward the page on a light bg */
 
   /* Accent (rose gold, replaces blue) */
   --accent: #b76e79;
@@ -240,7 +258,7 @@
 
   /* Danger (red, kept close to universal so it still reads as "alarm") */
   --danger: #c0392b;
-  --danger-light: #d9685c;
+  --danger-light: #b32020;
   --danger-bg: #fbe9e7;
   --danger-border: #eab4ac;
   --danger-border-strong: #d9685c;
@@ -263,7 +281,7 @@
   --warning: #a8621f;
 
   /* Playoff-result decorative accents */
-  --champion-border: #c9a227;
+  --champion-border: #8a6a10;
   --champion-bg: #faf3e0;
   --runnerup-border: #b8a8b3;
   --runnerup-text: #4a3d47;
@@ -279,7 +297,7 @@
   --muted-border: #b592ab;
   --border-dark: #d9c3d3;
   --bg-deep: #ffffff;
-  --gold-alt: #c99a1f;
+  --gold-alt: #8f5f00;
   --success-alt: #3f7a4d;
   --success-dark-bg: #cdeed3;
   --text-bright: #241a22;

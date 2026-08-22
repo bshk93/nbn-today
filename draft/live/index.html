@@ -208,7 +208,7 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--border);
-      background: #1a2336;
+      background: var(--bg-card);
       padding: 0.35rem 0.75rem;
       border-bottom: 1px solid var(--border);
     }
@@ -386,7 +386,7 @@
     .show-modal-pick-badge {
       font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em;
       text-transform: uppercase; color: var(--gold-alt);
-      background: #292308; border: 1px solid #713f12;
+      background: var(--gold-bg); border: 1px solid #713f12;
       border-radius: 4px; padding: 0.15rem 0.45rem;
       display: inline-block; margin-bottom: 0.35rem;
     }
@@ -415,7 +415,7 @@
       display: flex; gap: 0.5rem;
       padding: 0.6rem 1.5rem;
       border-top: 1px solid var(--bg-card);
-      background: #0d1117;
+      background: var(--bg-deep);
     }
     .highlight-url-form input {
       flex: 1;
@@ -436,7 +436,7 @@
     .depth-team-logo { width: 44px; height: 44px; object-fit: contain; }
     .depth-team-name { font-size: 1.2rem; font-weight: 800; color: var(--text-primary); }
     .depth-court-wrap {
-      position: relative; padding: 0.6rem; background: #090f1c; overflow: hidden;
+      position: relative; padding: 0.6rem; background: var(--bg-deep); overflow: hidden;
     }
     .depth-court-svg {
       position: absolute; inset: 0; width: 100%; height: 100%;
@@ -469,11 +469,11 @@
       letter-spacing: 0.05em; padding: 0.1rem 0.35rem;
       border-radius: 3px; vertical-align: middle; margin-left: 0.4rem;
     }
-    .ch-ufa   { background: #3d3200; color: var(--gold-alt); }
+    .ch-ufa   { background: var(--gold-bg); color: var(--gold-alt); }
     .ch-rfa   { background: var(--danger-alt-bg); color: var(--danger-alt); }
-    .ch-popt  { background: #14352a; color: var(--market-positive-light); }
+    .ch-popt  { background: var(--market-positive-bg); color: var(--market-positive-light); }
     .ch-topt  { background: var(--accent-panel-bg); color: var(--accent-light); }
-    .ch-ngtd  { background: #3b1919; color: var(--danger); }
+    .ch-ngtd  { background: var(--danger-bg); color: var(--danger); }
 
     /* ── Clickable name buttons ───────────────────────── */
     .name-btn {
@@ -527,7 +527,7 @@
       bottom: 0;
       width: 360px;
       max-width: 95vw;
-      background: #0d1117;
+      background: var(--bg-deep);
       border-left: 1px solid var(--border);
       z-index: 620;
       transform: translateX(100%);
@@ -603,8 +603,8 @@
     .log-entry:hover { background: var(--bg-page); }
     .log-time { font-size: 0.7rem; color: var(--text-dim); flex-shrink: 0; font-variant-numeric: tabular-nums; min-width: 4.5rem; }
     .log-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.15rem 0.45rem; border-radius: 4px; flex-shrink: 0; }
-    .log-badge-pick     { background: #172554; color: var(--link); }
-    .log-badge-reassign { background: #2d1b00; color: var(--danger-alt); }
+    .log-badge-pick     { background: var(--accent-panel-bg); color: var(--link); }
+    .log-badge-reassign { background: var(--danger-alt-bg); color: var(--danger-alt); }
     .log-badge-auto     { background: var(--success-dark-bg); color: var(--success); }
     .log-desc { flex: 1; color: var(--text-secondary); }
     .log-empty { padding: 2rem 1rem; text-align: center; color: var(--border); font-size: 0.85rem; }

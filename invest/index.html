@@ -29,7 +29,7 @@
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     .header-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 
-    .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: #1c1710; border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
+    .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
     .market-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 20px; padding: 0.2rem 0.65rem; white-space: nowrap; }
     .market-badge.open   { background: var(--market-positive-bg); color: var(--market-positive); border: 1px solid var(--market-positive-border); }
     .market-badge.locked { background: var(--purple-bg); color: var(--danger); border: 1px solid var(--danger-border-strong); }
@@ -43,14 +43,14 @@
     .tab-pane.active { display: block; }
 
     /* Market lock banner */
-    .lock-banner { background: #2d1b1b; border: 1px solid var(--danger-border); border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 1.25rem; font-size: 0.82rem; color: var(--danger); display: none; }
+    .lock-banner { background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 1.25rem; font-size: 0.82rem; color: var(--danger); display: none; }
 
     /* Market table */
     .market-table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     tbody tr { border-bottom: 1px solid var(--bg-card); cursor: pointer; }
-    tbody tr:hover { background: #1a2233; }
-    tbody tr.expanded { background: #182030; }
+    tbody tr:hover { background: var(--bg-subtle); }
+    tbody tr.expanded { background: var(--bg-subtle); }
     td { padding: 0.65rem 0.85rem; vertical-align: middle; }
     td.right { text-align: right; }
     .team-cell { display: flex; align-items: center; gap: 0.6rem; }
@@ -89,7 +89,7 @@
     .holdings-table-wrap { overflow-x: auto; }
 
     /* Login prompt */
-    .auth-prompt { background: #1a2233; border: 1px solid var(--border-dark); border-radius: 10px; padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+    .auth-prompt { background: var(--bg-subtle); border: 1px solid var(--border-dark); border-radius: 10px; padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
     .auth-prompt strong { color: var(--text-primary); }
 
     /* Leaderboard */
@@ -126,7 +126,7 @@
     .modal-err { font-size: 0.78rem; color: var(--danger); margin-top: 0.5rem; text-align: center; }
 
     /* Bookie controls */
-    .bookie-panel { background: #1a1a2e; border: 1px solid #2d2d54; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .bookie-panel { background: var(--bg-subtle); border: 1px solid #2d2d54; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
     .bookie-panel label { font-size: 0.78rem; color: #818cf8; font-weight: 600; }
     .lock-input { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 5px; padding: 0.3rem 0.6rem; font-size: 0.8rem; flex: 1; min-width: 150px; font-family: inherit; }
     .btn-lock   { background: var(--danger-border); border: none; color: var(--danger-light); border-radius: 5px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.78rem; font-weight: 600; }
@@ -156,7 +156,7 @@
     /* Indexes section */
     .index-section { margin-top: 1.75rem; }
     .index-section-title { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 0.6rem; }
-    .idx-group-row td { background: #0f172a; color: #475569; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.3rem 0.85rem; font-weight: 600; }
+    .idx-group-row td { background: var(--bg-page); color: #475569; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.3rem 0.85rem; font-weight: 600; }
     .idx-badge { font-size: 0.68rem; font-weight: 700; font-family: var(--font-mono); background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 0.1rem 0.35rem; color: var(--text-muted); margin-left: 0.4rem; }
     .idx-conf-row .team-abbr { font-weight: 700; color: var(--runnerup-text); }
     .idx-div-row td:first-child { padding-left: 1.75rem; }
@@ -852,7 +852,7 @@ function renderLeaderboard() {
   allHoldings.forEach((row, i) => {
     const plC = chgClass(row.pl);
     const isMe = row.member === me;
-    html += `<tr ${isMe ? 'style="background:#182030"' : ''}>
+    html += `<tr ${isMe ? 'style="background:var(--bg-subtle)"' : ''}>
       <td class="rank-col">${i + 1}</td>
       <td>${row.member}${isMe ? ' <span style="color:var(--link);font-size:0.75rem">(you)</span>' : ''}</td>
       <td class="right">${fmtNBY(row.equity)}</td>

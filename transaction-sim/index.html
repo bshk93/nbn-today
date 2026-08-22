@@ -34,7 +34,7 @@
     .team-sel:focus { border-color: var(--accent); }
     .team-logo { width: 24px; height: 24px; object-fit: contain; }
     .remove-team-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0.1rem 0.3rem; border-radius: 4px; }
-    .remove-team-btn:hover { color: var(--danger); background: #2d0a0a; }
+    .remove-team-btn:hover { color: var(--danger); background: var(--danger-bg); }
     .exc-sel { width: 100%; margin-top: 0.5rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); font-size: 0.78rem; padding: 0.3rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; display: none; }
     .exc-sel:focus { border-color: var(--accent); }
     .exc-sel option { color: var(--text-primary); }
@@ -62,9 +62,9 @@
 
     /* Player type badges */
     .type-badge { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.35rem; border-radius: 4px; margin-right: 0.4rem; flex-shrink: 0; }
-    .type-player     { background: #1e293b; color: var(--accent-light); }
-    .type-two-way     { background: #1e293b; color: var(--purple-light); }
-    .type-draft-rights { background: #1e293b; color: #fcd34d; }
+    .type-player     { background: var(--bg-card); color: var(--accent-light); }
+    .type-two-way     { background: var(--bg-card); color: var(--purple-light); }
+    .type-draft-rights { background: var(--bg-card); color: #fcd34d; }
     .type-cap-hold    { background: var(--gold-bg); color: var(--danger-alt); }
     .type-dead        { background: var(--danger-bg); color: var(--danger); }
 
@@ -133,9 +133,9 @@
     .result-row .label { color: var(--text-muted); }
     .result-divider { border: none; border-top: 1px solid var(--border); margin: 0.6rem 0; }
     .result-status { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 5px; margin-top: 0.5rem; }
-    .status-ok   { background: #052e16; color: var(--success); border: 1px solid var(--success-dark-bg); }
-    .status-warn { background: #1c1200; color: var(--gold); border: 1px solid var(--gold-chip-border); }
-    .status-err  { background: #2d0a0a; color: var(--danger); border: 1px solid var(--danger-border); }
+    .status-ok   { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-dark-bg); }
+    .status-warn { background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-chip-border); }
+    .status-err  { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
     .result-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; line-height: 1.5; }
     .results-summary { padding: 0.75rem 1.25rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--text-muted); }
     .results-summary strong { color: var(--text-primary); }

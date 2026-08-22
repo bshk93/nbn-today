@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.1.76",
+    "date": "2026-08-22",
+    "changes": [
+      "Light and Lavender themes: fixed 285 of 359 places where text was too faint or too dark to read against what was behind it \u2014 the Hall of Champions banner had the champion's name in near-black on a near-black card",
+      "The light theme was missing seven colour definitions entirely and had been silently borrowing them from the dark theme; they are now stated explicitly",
+      "Badges and status chips (playoff, submitted, voting, champion, and the rest) now change background with the theme instead of staying dark while their text flipped",
+      "New tool: build/contrast_audit.sh reports every piece of text on the site that fails contrast in a given theme"
+    ]
+  },
+  {
     "version": "0.1.75",
     "date": "2026-08-22",
     "changes": [

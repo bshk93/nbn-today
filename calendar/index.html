@@ -31,7 +31,7 @@
     .add-event-btn { background: none; border: 1px solid var(--text-dim); color: var(--purple); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
     .add-event-btn:hover { border-color: var(--purple); background: #1e1b2e; }
     .add-game-btn { background: none; border: 1px solid var(--text-dim); color: var(--link); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
-    .add-game-btn:hover { border-color: var(--link); background: #0c1929; }
+    .add-game-btn:hover { border-color: var(--link); background: var(--bg-page); }
 
     /* View toggle */
     .view-toggle { display: flex; background: var(--bg-card); border-radius: 6px; padding: 2px; gap: 2px; }
@@ -63,7 +63,7 @@
     .add-event-form .form-err { font-size: 0.75rem; color: var(--danger); width: 100%; }
 
     /* ── Add game(s) form ───────────────────────────────────────── */
-    .add-game-form { background: #0c1929; border: 1px solid var(--accent-dark); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.45rem; }
+    .add-game-form { background: var(--bg-page); border: 1px solid var(--accent-dark); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.45rem; }
     .game-rows { display: flex; flex-direction: column; gap: 0.35rem; }
     .game-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .game-row input[type="date"], .game-row select, .game-row input[type="text"] {
@@ -91,15 +91,15 @@
     .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
     .sched-schd-game:hover { background: var(--bg-card); }
     .sched-schd-teams { flex: 1; }
-    .sched-schd-note { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; background: #1a2535; border-radius: 3px; padding: 0.1rem 0.35rem; }
+    .sched-schd-note { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; background: var(--bg-card); border-radius: 3px; padding: 0.1rem 0.35rem; }
     .sched-schd-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; padding: 0 0.2rem; line-height: 1; opacity: 0; transition: opacity 0.1s; }
     .sched-schd-game:hover .sched-schd-del { opacity: 1; }
     .sched-schd-del:hover { color: var(--danger); }
     .schd-pip { font-size: 0.68rem; color: var(--link); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 
     .cal td.has-scheduled:not(.has-games) .day-num { color: var(--text-secondary); }
-    .cal td.has-scheduled:not(.has-games):not(.has-vesting):not(.has-custom) { background: #0d1929; }
-    .cal td.has-scheduled:not(.has-games):not(.has-vesting):not(.has-custom):hover { background: #111e33; }
+    .cal td.has-scheduled:not(.has-games):not(.has-vesting):not(.has-custom) { background: var(--bg-page); }
+    .cal td.has-scheduled:not(.has-games):not(.has-vesting):not(.has-custom):hover { background: var(--bg-subtle); }
 
     /* ── Schedule view ──────────────────────────────────────────── */
     .schedule { display: flex; flex-direction: column; }
@@ -122,7 +122,7 @@
     .sched-game:hover { background: var(--bg-card); }
     .sched-game-teams { flex: 1; }
     .sched-game-score { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .sched-game-type { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--champion-border); background: #292008; padding: 0.1rem 0.3rem; border-radius: 3px; white-space: nowrap; }
+    .sched-game-type { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--champion-border); background: var(--champion-bg); padding: 0.1rem 0.3rem; border-radius: 3px; white-space: nowrap; }
 
     .sched-vest { font-size: 0.82rem; color: var(--warning); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: baseline; gap: 0.5rem; }
     .sched-vest:hover { background: var(--bg-card); color: var(--gold); }
@@ -146,7 +146,7 @@
 
     .cal td.has-games .day-num    { color: var(--text-secondary); }
     .cal td.is-today .day-num     { color: var(--link); font-weight: 700; }
-    .cal td.other-month           { background: #0d1117; }
+    .cal td.other-month           { background: var(--bg-deep); }
     .cal td.other-month .day-num  { color: var(--border); }
     .cal td.future .day-num       { color: var(--border); }
 
@@ -155,9 +155,9 @@
     .cal td.has-vesting:not(.has-games):hover { background: #25200f; }
 
     .cal td.has-custom .day-num   { color: var(--text-secondary); }
-    .cal td.has-custom:not(.has-games):not(.has-vesting) { background: #13111e; }
+    .cal td.has-custom:not(.has-games):not(.has-vesting) { background: var(--bg-deep); }
 
-    .cal td.has-games { background: #1a2535; cursor: pointer; }
+    .cal td.has-games { background: var(--bg-card); cursor: pointer; }
     .cal td.has-games:hover { background: var(--accent-panel-bg); }
     .cal td.is-today { outline: 2px solid var(--accent); outline-offset: -2px; }
 

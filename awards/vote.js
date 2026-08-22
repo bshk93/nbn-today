@@ -65,7 +65,7 @@
     .pick-item[draggable="true"]:active { cursor: grabbing; }
     .pick-item.empty { opacity: 0.4; }
     .pick-item.dragging { opacity: 0.25; border-style: dashed; }
-    .pick-item.drag-over { border-color: var(--link); background: #1a2f4a; }
+    .pick-item.drag-over { border-color: var(--link); background: var(--bg-hover); }
 
     .pick-handle {
       color: var(--text-dim); font-size: 0.85rem; line-height: 1;
