@@ -127,7 +127,9 @@ const nextAbbr = _teamIdx >= 0 ? TEAM_ABBRS[(_teamIdx + 1) % TEAM_ABBRS.length] 
 const name = TEAMS[abbr] || "Unknown Team";
 const slug = abbr.toLowerCase();
 
-document.title = `${abbr} — NBN`;
+// The shell already ships this as a static <title> (and matching OG tags) so
+// crawlers see it; keep the two in step rather than downgrading to the abbr.
+document.title = `${name} — NBN`;
 
 { const _favicon = document.createElement('link'); _favicon.rel = 'icon'; _favicon.href = '/logo.png'; document.head.appendChild(_favicon); }
 

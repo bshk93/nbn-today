@@ -16,6 +16,9 @@ any other hook has to live here too rather than in `.git/hooks`.
   that no longer exists. Bypass with `git commit --no-verify` if needed.
 - Run build/test_build_sh.py; abort if build.sh has stopped defaulting to the
   Python stats engine, or grown a second copy of the season rule.
+- Run build/og_tags.py --check; abort if any page has missing or stale link-preview
+  tags. New pages are the case this catches: without it they ship with no Discord
+  unfurl and nothing says so.
 - If version.json is already staged (manual minor/major bump), leave it alone.
 - If the only staged file is changelog.json (retroactive fix), skip the bump.
 - Otherwise, increment the patch digit and stage version.json.
@@ -38,6 +41,14 @@ if build_sh_test.exists():
     if result.returncode != 0:
         print('\nCommit aborted: build.sh no longer holds its contract (see FAIL lines above).')
         print('Fix it, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+og_tags = Path('build/og_tags.py')
+if og_tags.exists():
+    result = subprocess.run(['python3', str(og_tags), '--check'])
+    if result.returncode != 0:
+        print('\nCommit aborted: link-preview tags are missing or stale.')
+        print('Add the page to PAGES in build/og_tags.py, then run: python3 build/og_tags.py')
         sys.exit(1)
 
 vpath = Path('version.json')
