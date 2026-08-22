@@ -1,4 +1,4 @@
-/* Color tokens shared by css/shared.css and teams/team.js.
+/* Design tokens shared by css/shared.css and teams/team.js.
    Load this before any stylesheet/injected CSS that uses var(--token).
    Near-duplicate shades found across the site (multiple grays used as
    "muted text", multiple reds for "danger", etc.) were collapsed here —
@@ -10,8 +10,23 @@
    :root[data-theme="..."] block further down. When adding a theme, every
    token below needs a value in the new block — there is no silent fallback
    to another theme's value, only to the bare :root ("NBN Today") one.
-   Current themes: NBN Today (dark), NBN Today Light, Lavender Rose. */
+   Current themes: NBN Today (dark), NBN Today Light, Lavender Rose.
+
+   The type tokens below are theme-independent and live outside those blocks:
+   a theme changes colour, not typeface. They are here rather than in
+   shared.css because this is the file every surface loads — shared.css is
+   only one of the five. */
+@import url("/css/fonts.css");
+
 :root {
+  /* Type. --font-sans is Inter (see css/fonts.css); --font-mono stays a
+     system stack deliberately — mono is used for IDs, code and numeric
+     scratch, never for reading, and a second webfont download is not worth
+     it. Both exist so the ~55 hand-written stacks that used to be scattered
+     across the site have one place to change. */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
   /* Backgrounds */
   --bg-page: #111827;
   --bg-card: #1f2937;

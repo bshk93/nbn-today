@@ -30,9 +30,9 @@
     var overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000';
     overlay.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;width:360px;max-width:90vw">'
-      + '<h3 style="font-size:1rem;font-weight:700;margin-bottom:0.4rem;color:var(--text-primary);font-family:system-ui,sans-serif">Enter your token</h3>'
-      + '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;font-family:system-ui,sans-serif">Paste the token you received. It will be saved in this browser.</p>'
-      + '<input type="password" placeholder="Paste token…" autocomplete="off" style="width:100%;background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.875rem;font-family:monospace;padding:0.5rem 0.75rem;margin-bottom:1rem;box-sizing:border-box;outline:none" />'
+      + '<h3 style="font-size:1rem;font-weight:700;margin-bottom:0.4rem;color:var(--text-primary);font-family:var(--font-sans)">Enter your token</h3>'
+      + '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;font-family:var(--font-sans)">Paste the token you received. It will be saved in this browser.</p>'
+      + '<input type="password" placeholder="Paste token…" autocomplete="off" style="width:100%;background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.875rem;font-family:var(--font-mono);padding:0.5rem 0.75rem;margin-bottom:1rem;box-sizing:border-box;outline:none" />'
       + '<div style="display:flex;gap:0.5rem;justify-content:flex-end">'
       + '<button id="tok-cancel" style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit">Cancel</button>'
       + '<button id="tok-submit" style="padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit">Continue</button>'
@@ -154,7 +154,7 @@
     el.style.cssText = [
       'position:fixed', 'bottom:0.6rem', 'right:0.8rem',
       'font-size:0.65rem', 'z-index:9999',
-      'font-family:monospace', 'letter-spacing:0.02em',
+      'font-family:var(--font-mono)', 'letter-spacing:0.02em',
     ].join(';');
     document.body.appendChild(el);
 

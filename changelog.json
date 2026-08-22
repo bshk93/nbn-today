@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.1.75",
+    "date": "2026-08-22",
+    "changes": [
+      "The site now has its own typeface. Every page used to render in whatever font your operating system happened to default to, so the same page looked different to each member \u2014 it is Inter everywhere now, self-hosted, no third-party dependency",
+      "Stat columns finally line up: the tables have always asked for tabular figures, but none of the system fallback fonts actually had them",
+      "The 70 hand-written font stacks scattered across the site collapse into two tokens, so type is now changed in one place"
+    ]
+  },
+  {
     "version": "0.1.74",
     "date": "2026-08-22",
     "changes": [

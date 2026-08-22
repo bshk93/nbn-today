@@ -48,7 +48,7 @@
     }
     .season-card h2 {
       font-size: 1rem; font-weight: 700; margin-bottom: 1rem;
-      color: var(--link); font-family: ui-monospace, 'Cascadia Code', monospace;
+      color: var(--link); font-family: var(--font-mono);
     }
     .fields {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem 1.25rem;
@@ -85,14 +85,14 @@
       font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;
     }
     .ly-current b {
-      color: var(--link); font-family: ui-monospace, 'Cascadia Code', monospace; font-weight: 700;
+      color: var(--link); font-family: var(--font-mono); font-weight: 700;
     }
     .ly-row {
       display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
       padding: 0.5rem 0; border-top: 1px solid #2b3544; font-size: 0.85rem;
     }
     .ly-row .ly-season {
-      font-family: ui-monospace, 'Cascadia Code', monospace; font-weight: 700;
+      font-family: var(--font-mono); font-weight: 700;
       color: var(--text-primary); width: 3.5rem;
     }
     .ly-row .ly-note { color: var(--text-muted); font-size: 0.75rem; }

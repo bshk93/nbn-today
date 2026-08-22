@@ -1,0 +1,46 @@
+/* Inter, self-hosted and subset. Imported from css/theme.css, which every
+   surface already loads — see the note there.
+
+   Why self-hosted rather than Google Fonts: the site has no third-party
+   runtime dependency anywhere else, and a webfont is the one that fails most
+   visibly when it breaks. These two files are served from our own nginx.
+
+   Why a webfont at all: the site was rendering in whatever the visitor's OS
+   defaults to (-apple-system → Segoe UI → Roboto → DejaVu Sans), so the same
+   page looked materially different to each member, and none of the fallbacks
+   have real tabular figures — which a page of stat columns needs. The site
+   already asks for `font-variant-numeric: tabular-nums` in 164 places; with
+   Inter those requests are finally honoured.
+
+   Subsetting: Latin-1 plus Latin Extended-A, general punctuation, arrows,
+   currency, and the geometric/dingbat glyphs the UI draws. Combining marks
+   and Latin Extended-B were measured and dropped — together they were 56K of
+   an otherwise 86K file, for characters nothing on the site uses. Emoji and
+   the non-Latin scripts in the greeting easter egg are deliberately NOT in
+   here either; they fall back to the system emoji/CJK fonts, as they always
+   did. build/build_fonts.py carries the per-range cost table and rebuilds
+   these files.
+
+   Ten codepoints the UI uses are not in Inter at all (★ ⓘ ⇄ ▴ ▾ ▸ ▤ ✕ ⋯ ℹ)
+   and fall back per-glyph, which is what happened to every glyph before this
+   existed.
+
+   Both faces are variable on weight (100–900) and optical size (14–32), so
+   one file covers every weight the site asks for. Italic is a separate file
+   and is only fetched by pages that actually render italics. */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/InterVariable.subset.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/InterVariable-Italic.subset.woff2') format('woff2');
+}

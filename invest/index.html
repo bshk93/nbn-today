@@ -56,7 +56,7 @@
     .team-cell { display: flex; align-items: center; gap: 0.6rem; }
     .team-logo { width: 24px; height: 24px; object-fit: contain; }
     .team-abbr { font-weight: 700; font-size: 0.9rem; }
-    .price-val { font-family: monospace; font-size: 0.9rem; }
+    .price-val { font-family: var(--font-mono); font-size: 0.9rem; }
     .chg-pos { color: var(--market-positive); }
     .chg-neg { color: var(--danger); }
     .chg-neu { color: var(--text-muted); }
@@ -78,7 +78,7 @@
     .summary-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
     .summary-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1.25rem; flex: 1; min-width: 130px; }
     .summary-card .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; }
-    .summary-card .val   { font-size: 1.15rem; font-weight: 700; font-family: monospace; }
+    .summary-card .val   { font-size: 1.15rem; font-weight: 700; font-family: var(--font-mono); }
     .summary-card .val.pos { color: var(--market-positive); }
     .summary-card .val.neg { color: var(--danger); }
 
@@ -149,15 +149,15 @@
     .mover-card { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; padding: 0.45rem 0.4rem; background: var(--bg-page); border-radius: 7px; text-align: center; }
     .mover-card .team-logo { width: 22px; height: 22px; object-fit: contain; }
     .mover-card .team-abbr { font-size: 0.78rem; font-weight: 700; }
-    .mover-card .mover-pct { font-size: 0.75rem; font-family: monospace; font-weight: 600; }
-    .mover-card .mover-abs { font-size: 0.67rem; color: var(--text-muted); font-family: monospace; }
+    .mover-card .mover-pct { font-size: 0.75rem; font-family: var(--font-mono); font-weight: 600; }
+    .mover-card .mover-abs { font-size: 0.67rem; color: var(--text-muted); font-family: var(--font-mono); }
     .mkt-summary-loading { color: var(--text-dim); font-size: 0.82rem; text-align: center; padding: 0.5rem 0; }
 
     /* Indexes section */
     .index-section { margin-top: 1.75rem; }
     .index-section-title { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 0.6rem; }
     .idx-group-row td { background: #0f172a; color: #475569; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.3rem 0.85rem; font-weight: 600; }
-    .idx-badge { font-size: 0.68rem; font-weight: 700; font-family: monospace; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 0.1rem 0.35rem; color: var(--text-muted); margin-left: 0.4rem; }
+    .idx-badge { font-size: 0.68rem; font-weight: 700; font-family: var(--font-mono); background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 0.1rem 0.35rem; color: var(--text-muted); margin-left: 0.4rem; }
     .idx-conf-row .team-abbr { font-weight: 700; color: var(--runnerup-text); }
     .idx-div-row td:first-child { padding-left: 1.75rem; }
   </style>

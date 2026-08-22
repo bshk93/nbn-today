@@ -36,7 +36,7 @@
     #auth-gate input {
       width: 100%; max-width: 340px; background: var(--bg-page); border: 1px solid var(--border);
       color: var(--text-primary); border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
-      font-family: monospace; margin-bottom: 0.75rem; display: block; margin: 0 auto 0.75rem;
+      font-family: var(--font-mono); margin-bottom: 0.75rem; display: block; margin: 0 auto 0.75rem;
     }
     #auth-gate input:focus { outline: none; border-color: var(--accent); }
 
@@ -128,7 +128,7 @@
     #body-write {
       display: block; width: 100%; min-height: 320px; background: transparent; border: none;
       color: var(--text-secondary); caret-color: var(--link); outline: none; resize: vertical;
-      font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, monospace;
+      font-family: var(--font-mono);
       font-size: 0.875rem; line-height: 1.8; padding: 1rem 1.25rem;
     }
     #body-write::placeholder { color: var(--border); }
@@ -152,7 +152,7 @@
     }
     #body-preview code {
       background: var(--bg-page); border-radius: 4px; color: #a5b4fc;
-      font-family: ui-monospace, monospace; font-size: 0.84em; padding: 0.1em 0.35em;
+      font-family: var(--font-mono); font-size: 0.84em; padding: 0.1em 0.35em;
     }
     #body-preview pre {
       background: var(--bg-page); border-radius: 6px; overflow-x: auto;

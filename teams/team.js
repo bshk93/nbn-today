@@ -174,7 +174,7 @@ const contractReady = new Promise(resolve => {
   @import url("/css/nav-chrome.css");
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-sans);
     background: var(--bg-page);
     color: var(--text-primary);
     min-height: 100vh;
@@ -578,7 +578,7 @@ const contractReady = new Promise(resolve => {
     border-radius: 6px;
     color: var(--text-primary);
     font-size: 0.875rem;
-    font-family: monospace;
+    font-family: var(--font-mono);
     padding: 0.5rem 0.75rem;
     margin-bottom: 1rem;
     box-sizing: border-box;
