@@ -136,11 +136,10 @@
     }
 
     function getToken() { return localStorage.getItem('nbn_token'); }
-    function setToken(t) { localStorage.setItem('nbn_token', t); }
 
-    function promptToken(cb) {
-      const t = window.prompt('Enter your NBN committee token:');
-      if (t && t.trim()) { setToken(t.trim()); cb(t.trim()); }
+    async function promptToken(cb) {
+      const t = await promptForToken({ label: 'Committee token' });
+      if (t) cb(t);
     }
 
     function emptyPicks(n) {

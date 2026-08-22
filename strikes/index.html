@@ -259,7 +259,7 @@ async function loadPage() {
     fetch('/api/members/public'),
     fetch('/api/strikes', { headers }),
   ]);
-  if (!membersRes.ok || !strikesRes.ok) { alert('Failed to load data.'); return; }
+  if (!membersRes.ok || !strikesRes.ok) { toast('Failed to load data.', true); return; }
   const membersData = await membersRes.json();
   const countMap    = await strikesRes.json();
 
@@ -460,7 +460,12 @@ async function doAddStrike(memberName, form, addBtn) {
 }
 
 async function doDeleteStrike(memberName, strikeId) {
-  if (!confirm('Remove this strike?')) return;
+  if (!await confirmDialog({
+    title: 'Remove this strike?',
+    body: 'It comes off the member\u2019s record. This cannot be undone.',
+    confirmLabel: 'Remove strike',
+    danger: true,
+  })) return;
   try {
     const res = await fetch(`/api/strikes/${encodeURIComponent(memberName)}/${strikeId}`, {
       method: 'DELETE',
@@ -469,7 +474,7 @@ async function doDeleteStrike(memberName, strikeId) {
     if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
     strikesMap[memberName] = (strikesMap[memberName] || []).filter(s => s.id !== strikeId);
     refreshCard(memberName);
-  } catch (err) { alert('Error: ' + err.message); }
+  } catch (err) { toast(err.message, true); }
 }
 
 function refreshCard(memberName) {

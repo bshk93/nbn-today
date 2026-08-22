@@ -473,27 +473,24 @@
           });
           if (res.status === 401 || res.status === 403) {
             localStorage.removeItem(TOKEN_KEY);
-            alert('Your access token is missing or invalid. Try grading again to re-enter it.');
+            toast('Your access token is missing or invalid. Try grading again to re-enter it.', true);
             return;
           }
-          if (!res.ok) { alert('Could not save your grade.'); return; }
+          if (!res.ok) { toast('Could not save your grade.', true); return; }
           gradeData[slug] = await res.json();
           if (td) renderGradeCell(td, slug, year);
-        } catch { alert('Could not save your grade.'); }
+        } catch { toast('Could not save your grade.', true); }
       });
     }
 
     const TOKEN_KEY = 'nbn_token';
     const getToken = () => localStorage.getItem(TOKEN_KEY);
-    const setToken = t => localStorage.setItem(TOKEN_KEY, t);
 
-    function withToken(fn) {
+    async function withToken(fn) {
       const t = getToken();
       if (t) { fn(t); return; }
-      const tok = prompt('Enter your NBN access token:');
-      if (!tok) return;
-      setToken(tok);
-      fn(tok);
+      const tok = await promptForToken({ label: 'Access token' });
+      if (tok) fn(tok);
     }
 
     // Only the `rosters` role (and bod/admin, which subsume it) can persist pick
@@ -1100,7 +1097,7 @@
           // Re-verify after a freshly entered token so a team-only token can't
           // open the (non-persistable) editor and look like real access.
           if (!await loadCanEditPicks()) {
-            alert('Your token does not have permission to edit draft picks.');
+            toast('Your token does not have permission to edit draft picks.', true);
             return;
           }
           renderFutureEditable(picks, y, bios, fresh => {

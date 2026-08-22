@@ -974,11 +974,9 @@
       document.getElementById('drawer-backdrop').classList.remove('open');
     }
 
-    function promptSignIn() {
-      const tok = prompt('Enter your NBN access token:');
-      if (!tok) return;
-      localStorage.setItem(TOKEN_KEY, tok);
-      loadAuth().then(render);
+    async function promptSignIn() {
+      const tok = await promptForToken({ label: 'Access token' });
+      if (tok) loadAuth().then(render);
     }
 
     // ── API calls ──────────────────────────────────────────────────────────────
@@ -1369,7 +1367,12 @@
     }
 
     async function cancelTrade(id) {
-      if (!confirm('Cancel this trade? Pick ownership reverts to the original team.')) return;
+      if (!await confirmDialog({
+        title: 'Cancel this trade?',
+        body: 'Pick ownership reverts to the original team.',
+        confirmLabel: 'Cancel trade',
+        danger: true,
+      })) return;
       const del = await fetch(`/api/draft/trade/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${getToken()}` },
@@ -1441,7 +1444,12 @@
     });
 
     document.getElementById('snapshot-restore-btn').addEventListener('click', async () => {
-      if (!confirm('Restore snapshot? This will revert all picks and draft state to the saved point.')) return;
+      if (!await confirmDialog({
+        title: 'Restore this snapshot?',
+        body: 'All picks and draft state revert to the saved point. Anything since is lost.',
+        confirmLabel: 'Restore snapshot',
+        danger: true,
+      })) return;
       const statusEl = document.getElementById('snapshot-status');
       const btn      = document.getElementById('snapshot-restore-btn');
       btn.disabled = true; statusEl.textContent = 'Restoring…';
@@ -1459,7 +1467,14 @@
     });
 
     document.getElementById('reset-btn').addEventListener('click', async () => {
-      if (!confirm('Reset the live draft to a clean slate?\n\nThis clears all picks, the event log, reveals, and queues, and re-seeds the board from the permanent draft order. Keeps date, highlights, and Best Available order.')) return;
+      if (!await confirmDialog({
+        title: 'Reset the live draft to a clean slate?',
+        body: 'This clears all picks, the event log, reveals and queues, and re-seeds the board from the permanent draft order. '
+            + 'Date, highlights and Best Available order are kept.',
+        confirmLabel: 'Reset the draft',
+        danger: true,
+        requireText: 'reset',
+      })) return;
       const statusEl = document.getElementById('reset-status');
       const btn      = document.getElementById('reset-btn');
       btn.disabled = true; statusEl.textContent = 'Resetting…';

@@ -762,6 +762,32 @@ function promptDialog(opts) {
   );
 }
 
+
+/**
+ * Ask for a member token and store it under `nbn_token` (the key every page
+ * already reads). Resolves the token, or null if cancelled.
+ *
+ * Nine pages had grown their own `prompt('Enter your NBN token:')` — each one
+ * collecting a credential in a system field that can't be masked. This is the
+ * one place that asks.
+ *
+ * It deliberately does **not** validate: pages differ on what a usable token
+ * means (any member, `rosters`, `bod`), so the caller checks and reports.
+ */
+async function promptForToken(opts) {
+  const o = opts || {};
+  const token = await promptDialog({
+    title: o.title || 'Sign in',
+    body: o.body || 'Paste the member token you were given. It is stored in this browser only.',
+    field: { label: o.label || 'Member token', type: 'password', placeholder: '••••••••' },
+    confirmLabel: o.confirmLabel || 'Sign in',
+  });
+  if (!token) return null;
+  try { localStorage.setItem('nbn_token', token); } catch { /* private browsing */ }
+  return token;
+}
+
+
 // ── CSV utilities ────────────────────────────────────────────────────────────
 
 function parseLine(line) {

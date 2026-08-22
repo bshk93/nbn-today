@@ -212,12 +212,16 @@ function fmtLink() {
   if (!sel) { ta.selectionStart = s + 1; ta.selectionEnd = s + 9; }
   ta.focus();
 }
-function fmtImage() {
-  const url = prompt('Image URL:');
-  if (!url) return;
+async function fmtImage() {
   const ta = document.getElementById('body-write');
-  const s = ta.selectionStart;
-  ta.setRangeText(`![](${url})`, s, ta.selectionEnd, 'end');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const url = await promptDialog({
+    title: 'Insert an image',
+    field: { label: 'Image URL', placeholder: 'https://…' },
+    confirmLabel: 'Insert',
+  });
+  if (!url) return;
+  ta.setRangeText(`![](${url})`, s, e, 'end');
   ta.focus();
 }
 document.addEventListener('keydown', e => {
@@ -276,10 +280,10 @@ async function gateSignIn() {
   if (!token) return;
   try {
     const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { alert('Invalid token.'); return; }
+    if (!res.ok) { toast('That token was not accepted.', true); return; }
     localStorage.setItem('nbn_token', token);
     init();
-  } catch { alert('Could not sign in. Check your connection.'); }
+  } catch { toast('Could not sign in. Check your connection.', true); }
 }
 document.getElementById('gate-token').addEventListener('keydown', e => { if (e.key === 'Enter') gateSignIn(); });
 
@@ -292,7 +296,7 @@ async function loadExisting(id) {
   const token = getToken();
   try {
     const res = await fetch(`${API}/news/${id}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-    if (!res.ok) { alert('Could not load article.'); return; }
+    if (!res.ok) { toast('Could not load article.', true); return; }
     const a = await res.json();
     articleId = a.id;
     document.getElementById('title-input').value = a.title || '';
@@ -315,7 +319,7 @@ async function loadExisting(id) {
       document.getElementById('btn-delete').style.display = '';
       document.getElementById('page-title').textContent = 'Edit Draft';
     }
-  } catch { alert('Failed to load article.'); }
+  } catch { toast('Failed to load article.', true); }
 }
 
 async function doSave() {
@@ -355,7 +359,11 @@ async function doPublish() {
   await doSave();
   if (!articleId) return;
   const token = getToken();
-  if (!confirm('Publish this article? It will be visible to everyone.')) return;
+  if (!await confirmDialog({
+    title: 'Publish this article?',
+    body: 'It becomes visible to everyone as soon as it is published.',
+    confirmLabel: 'Publish',
+  })) return;
   setLoading(true); setStatus('Publishing…');
   try {
     const res = await fetch(`${API}/news/${articleId}/publish`, {
@@ -377,7 +385,11 @@ async function doSubmit() {
   await doSave();
   if (!articleId) return;
   const token = getToken();
-  if (!confirm('Submit this article for review? An editor will publish it from the queue.')) return;
+  if (!await confirmDialog({
+    title: 'Submit this article for review?',
+    body: 'An editor will publish it from the queue.',
+    confirmLabel: 'Submit for review',
+  })) return;
   setLoading(true); setStatus('Submitting…');
   try {
     const res = await fetch(`${API}/news/${articleId}/submit`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
@@ -388,13 +400,18 @@ async function doSubmit() {
 
 async function doDelete() {
   if (!articleId) return;
-  if (!confirm('Delete this draft? This cannot be undone.')) return;
+  if (!await confirmDialog({
+    title: 'Delete this draft?',
+    body: 'This cannot be undone.',
+    confirmLabel: 'Delete draft',
+    danger: true,
+  })) return;
   const token = getToken();
   try {
     const res = await fetch(`${API}/news/${articleId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Delete failed'); }
     location.href = '/news/';
-  } catch (err) { alert(err.message); }
+  } catch (err) { toast(err.message, true); }
 }
 
 async function init() {

@@ -364,14 +364,14 @@ async function doSignIn() {
   if (!token) return;
   try {
     const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { alert('Invalid token.'); return; }
+    if (!res.ok) { toast('That token was not accepted.', true); return; }
     me = await res.json();
     localStorage.setItem('nbn_token', token);
     document.getElementById('modal-overlay').classList.remove('open');
     document.getElementById('token-input').value = '';
     updateAuthUI(me);
     loadProposals();
-  } catch { alert('Could not sign in. Check your connection.'); }
+  } catch { toast('Could not sign in. Check your connection.', true); }
 }
 
 function doSignOut() {

@@ -1043,9 +1043,12 @@
 
   async function setMode(mode) {
     if (mode === STATE.mode) return;
-    if (mode === 'ffa' && !confirm(
-      'Switch to FFA?\n\nEvery free agent in the pool becomes offerable immediately, and the first '
-      + `submitted offer on a player starts a ${ffaWindowLabel()} clock that closes their window.`)) return;
+    if (mode === 'ffa' && !await confirmDialog({
+      title: 'Switch to FFA?',
+      body: 'Every free agent in the pool becomes offerable immediately, and the first submitted offer '
+          + `on a player starts a ${ffaWindowLabel()} clock that closes their window.`,
+      confirmLabel: 'Switch to FFA',
+    })) return;
     try {
       await api('/fa/mode', { method: 'PUT', body: { mode } });
       await reload();
@@ -1673,12 +1676,15 @@
         // say which is which before doing it rather than after.
         const clock = ((review.state || {}).ffa) || null;
         if (status === 'open' && STATE.mode === 'ffa' && clock && clock.deadline
-            && !confirm(
-              `Open ${nameOf(slug)} for a NEW window?\n\n`
-              + 'This clears the current clock and starts a fresh round: the next submitted offer '
-              + 'begins a new window, and ballots already cast stay with the old one.\n\n'
-              + 'To keep this round and just add time, cancel and use '
-              + `"${(review.state || {}).ffa_expired ? 'Reopen for…' : 'Extend…'}" instead.`)) return;
+            && !await confirmDialog({
+              title: `Open ${nameOf(slug)} for a NEW window?`,
+              body: 'This clears the current clock and starts a fresh round: the next submitted offer '
+                  + 'begins a new window, and ballots already cast stay with the old one.\n\n'
+                  + 'To keep this round and just add time, cancel and use '
+                  + `"${(review.state || {}).ffa_expired ? 'Reopen for…' : 'Extend…'}" instead.`,
+              confirmLabel: 'Start a new window',
+              danger: true,
+            })) return;
         try {
           await api('/fa/players/' + encodeURIComponent(slug), { method: 'PUT', body: { status } });
           await reload();

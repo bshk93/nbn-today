@@ -297,7 +297,7 @@ async function doSignIn() {
   if (!token) return;
   try {
     const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { alert('Invalid token.'); return; }
+    if (!res.ok) { toast('That token was not accepted.', true); return; }
     me = await res.json();
     localStorage.setItem('nbn_token', token);
     document.getElementById('modal-overlay').classList.remove('open');
@@ -306,7 +306,7 @@ async function doSignIn() {
     renderGaps();
     if (currentTab === 'mine') loadMine();
     if (currentTab === 'review') loadReview();
-  } catch { alert('Could not sign in. Check your connection.'); }
+  } catch { toast('Could not sign in. Check your connection.', true); }
 }
 function doSignOut() {
   localStorage.removeItem('nbn_token');
@@ -713,7 +713,7 @@ async function approveSubmission(id) {
     await apiSend(`/cleanup/submissions/${id}/approve`, 'POST');
     await loadReview();
     await loadGaps();
-  } catch (e) { alert(e.message); }
+  } catch (e) { toast(e.message, true); }
 }
 
 function openRejectModal(id) {
@@ -734,7 +734,7 @@ async function confirmReject() {
     await apiSend(`/cleanup/submissions/${rejectTargetId}/reject`, 'POST', { reason });
     closeRejectModal();
     await loadReview();
-  } catch (e) { alert(e.message); }
+  } catch (e) { toast(e.message, true); }
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────

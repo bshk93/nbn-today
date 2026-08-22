@@ -358,10 +358,10 @@ async function gateSignIn() {
   if (!token) return;
   try {
     const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { alert('Invalid token.'); return; }
+    if (!res.ok) { toast('That token was not accepted.', true); return; }
     localStorage.setItem('nbn_token', token);
     init();
-  } catch { alert('Could not sign in. Check your connection.'); }
+  } catch { toast('Could not sign in. Check your connection.', true); }
 }
 
 document.getElementById('gate-token').addEventListener('keydown', e => {
@@ -379,7 +379,7 @@ async function loadExisting(id) {
     const res = await fetch(`${API}/proposals/${id}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!res.ok) { alert('Could not load proposal.'); return; }
+    if (!res.ok) { toast('Could not load proposal.', true); return; }
     const p = await res.json();
     proposalId = p.id;
     document.getElementById('title-input').value = p.title || '';
@@ -405,7 +405,7 @@ async function loadExisting(id) {
       document.getElementById('btn-delete').style.display = '';
       document.getElementById('page-title').textContent = 'Edit Draft';
     }
-  } catch { alert('Failed to load proposal.'); }
+  } catch { toast('Failed to load proposal.', true); }
 }
 
 async function doSave() {
@@ -455,7 +455,11 @@ async function doSubmit() {
   if (!proposalId) return;
 
   const token = getToken();
-  if (!confirm('Submit this proposal? It will be visible to all league members.')) return;
+  if (!await confirmDialog({
+    title: 'Submit this proposal?',
+    body: 'It becomes visible to all league members.',
+    confirmLabel: 'Submit',
+  })) return;
 
   setLoading(true);
   setStatus('Submitting…');
@@ -472,7 +476,12 @@ async function doSubmit() {
 
 async function doDelete() {
   if (!proposalId) return;
-  if (!confirm('Delete this draft? This cannot be undone.')) return;
+  if (!await confirmDialog({
+    title: 'Delete this draft?',
+    body: 'This cannot be undone.',
+    confirmLabel: 'Delete draft',
+    danger: true,
+  })) return;
   const token = getToken();
   try {
     const res = await fetch(`${API}/proposals/${proposalId}`, {
@@ -481,7 +490,7 @@ async function doDelete() {
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Delete failed'); }
     location.href = '/proposals/';
-  } catch (err) { alert(err.message); }
+  } catch (err) { toast(err.message, true); }
 }
 
 async function init() {

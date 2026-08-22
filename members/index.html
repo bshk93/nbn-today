@@ -1019,7 +1019,12 @@ document.getElementById('create-copy-btn').addEventListener('click', () => copyT
 // ── Rotate token ──────────────────────────────────────────────────────────────
 
 async function doRotateToken(name) {
-  if (!confirm(`Rotate token for "${name}"?\n\nTheir current token stops working immediately.`)) return;
+  if (!await confirmDialog({
+    title: `Rotate the token for "${name}"?`,
+    body: 'Their current token stops working immediately, and every session it minted is dropped.',
+    confirmLabel: 'Rotate token',
+    danger: true,
+  })) return;
   try {
     const res = await fetch(`/api/members/${encodeURIComponent(name)}/rotate-token`, {
       method: 'POST', headers: { Authorization: `Bearer ${currentToken}` },
@@ -1030,7 +1035,7 @@ async function doRotateToken(name) {
     document.getElementById('rotate-backdrop').classList.add('open');
     const r2 = await fetch('/api/members', { headers: { Authorization: `Bearer ${currentToken}` } });
     if (r2.ok) { allMembers = await r2.json(); renderTable(); }
-  } catch (err) { alert('Error: ' + err.message); }
+  } catch (err) { toast(err.message, true); }
 }
 document.getElementById('rotate-copy-btn').addEventListener('click', () => copyText('rotate-token-value', 'rotate-copy-btn'));
 document.getElementById('rotate-done').addEventListener('click', () =>
@@ -1039,7 +1044,13 @@ document.getElementById('rotate-done').addEventListener('click', () =>
 // ── Delete member ─────────────────────────────────────────────────────────────
 
 async function doDeleteMember(name) {
-  if (!confirm(`Delete member "${name}"?\n\nThis removes their account and all tenure history.`)) return;
+  if (!await confirmDialog({
+    title: `Delete member "${name}"?`,
+    body: 'This removes their account and all tenure history. It cannot be undone.',
+    confirmLabel: 'Delete member',
+    danger: true,
+    requireText: name,
+  })) return;
   try {
     const res = await fetch(`/api/members/${encodeURIComponent(name)}`, {
       method: 'DELETE', headers: { Authorization: `Bearer ${currentToken}` },
@@ -1047,7 +1058,7 @@ async function doDeleteMember(name) {
     if (!res.ok) throw new Error((await res.json()).detail);
     const r2 = await fetch('/api/members', { headers: { Authorization: `Bearer ${currentToken}` } });
     if (r2.ok) { allMembers = await r2.json(); renderTable(); }
-  } catch (err) { alert('Error: ' + err.message); }
+  } catch (err) { toast(err.message, true); }
 }
 
 // ── Roles modal ───────────────────────────────────────────────────────────────

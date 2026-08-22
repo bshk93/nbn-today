@@ -1103,7 +1103,7 @@
             });
             orphanedServerEntries = orphanedServerEntries.filter(e => e.id !== s.id);
             renderQueue();
-          } catch (e) { alert("Failed to remove: " + e.message); }
+          } catch (e) { toast("Failed to remove: " + e.message, true); }
         };
         item.appendChild(rm);
         list.appendChild(item);
@@ -1400,9 +1400,9 @@
           }
         } else {
           const err = await res.json().catch(() => ({}));
-          alert(err.detail || "Failed to remove.");
+          toast(err.detail || "Failed to remove.", true);
         }
-      } catch (e) { alert(e.message); }
+      } catch (e) { toast(e.message, true); }
     }
 
     async function loadPending() {

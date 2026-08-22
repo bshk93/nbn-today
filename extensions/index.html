@@ -504,7 +504,12 @@ async function submitHandler() {
 
 async function discardHandler() {
   if (!FORM.editingId) return;
-  if (!confirm('Discard this draft?')) return;
+  if (!await confirmDialog({
+    title: 'Discard this draft?',
+    body: 'Nothing has been sent to the committee. This cannot be undone.',
+    confirmLabel: 'Discard',
+    danger: true,
+  })) return;
   try {
     await api('/poext/proposals/' + FORM.editingId, { method: 'DELETE' });
     toast('Discarded.');

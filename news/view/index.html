@@ -286,41 +286,59 @@ function renderComments(a) {
 async function doPublish() {
   const token = getToken();
   const date = document.getElementById('pub-date')?.value || null;
-  if (!confirm('Publish this article? It will be visible to everyone.')) return;
+  if (!await confirmDialog({
+    title: 'Publish this article?',
+    body: 'It becomes visible to everyone as soon as it is published.',
+    confirmLabel: 'Publish',
+  })) return;
   try {
     const res = await fetch(`${API}/news/${ARTICLE_ID}/publish`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ publish_date: date }),
     });
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    if (!res.ok) { const e = await res.json(); toast(e.detail || 'Failed', true); return; }
     await reload();
-  } catch { alert('Failed. Please try again.'); }
+  } catch { toast('Failed. Please try again.', true); }
 }
 async function doReject() {
-  if (!confirm('Send this article back to the author as a draft?')) return;
+  if (!await confirmDialog({
+    title: 'Send this back to the author?',
+    body: 'The article returns to the author as a draft.',
+    confirmLabel: 'Send back',
+  })) return;
   await editorAction('reject');
 }
 async function doUnpublish() {
-  if (!confirm('Unpublish this article and return it to the queue?')) return;
+  if (!await confirmDialog({
+    title: 'Unpublish this article?',
+    body: 'It returns to the editorial queue and stops being visible to members.',
+    confirmLabel: 'Unpublish',
+    danger: true,
+  })) return;
   await editorAction('unpublish');
 }
 async function editorAction(action) {
   const token = getToken();
   try {
     const res = await fetch(`${API}/news/${ARTICLE_ID}/${action}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    if (!res.ok) { const e = await res.json(); toast(e.detail || 'Failed', true); return; }
     await reload();
-  } catch { alert('Failed. Please try again.'); }
+  } catch { toast('Failed. Please try again.', true); }
 }
 async function doDelete() {
-  if (!confirm('Delete this article? This cannot be undone.')) return;
+  if (!await confirmDialog({
+    title: 'Delete this article?',
+    body: 'This cannot be undone.',
+    confirmLabel: 'Delete',
+    danger: true,
+  })) return;
   const token = getToken();
   try {
     const res = await fetch(`${API}/news/${ARTICLE_ID}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    if (!res.ok) { const e = await res.json(); toast(e.detail || 'Failed', true); return; }
     location.href = '/news/';
-  } catch { alert('Failed. Please try again.'); }
+  } catch { toast('Failed. Please try again.', true); }
 }
 
 async function submitComment() {
@@ -343,26 +361,28 @@ async function submitComment() {
   finally { btn.disabled = false; }
 }
 async function deleteComment(id) {
-  if (!confirm('Delete this comment?')) return;
+  if (!await confirmDialog({
+    title: 'Delete this comment?',
+    body: 'This cannot be undone.',
+    confirmLabel: 'Delete',
+    danger: true,
+  })) return;
   const token = getToken();
   try {
     const res = await fetch(`${API}/news/${ARTICLE_ID}/comments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    if (!res.ok) { const e = await res.json(); toast(e.detail || 'Failed', true); return; }
     await reload();
-  } catch { alert('Failed. Please try again.'); }
+  } catch { toast('Failed. Please try again.', true); }
 }
 
-function openTokenPrompt() {
-  const token = prompt('Enter your member token:');
+async function openTokenPrompt() {
+  const token = await promptForToken();
   if (!token) return;
-  fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } })
-    .then(r => r.ok ? r.json() : null)
-    .then(info => {
-      if (!info) { alert('Invalid token.'); return; }
-      localStorage.setItem('nbn_token', token);
-      me = info;
-      render(article);
-    });
+  const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+  const info = res.ok ? await res.json() : null;
+  if (!info) { toast('That token was not accepted.', true); return; }
+  me = info;
+  render(article);
 }
 
 async function reload() {

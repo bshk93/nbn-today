@@ -596,12 +596,11 @@
         const ok = await checkBodAuth();
         if (ok) { showBodSection(); return; }
       }
-      const tok = prompt('Enter your NBN access token:');
+      const tok = await promptForToken({ label: 'Access token' });
       if (!tok) return;
-      localStorage.setItem(TOKEN_KEY, tok);
       const ok = await checkBodAuth();
       if (ok) { showBodSection(); }
-      else { alert('Token accepted but this account does not have BOD access.'); }
+      else { toast('That token works, but this account does not have BOD access.', true); }
     }
 
     // Auto-check on load; show sign-in prompt only if check fails

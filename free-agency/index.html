@@ -1390,7 +1390,12 @@
           if (existing && existing.status === 'draft') {
             const del = el('button', 'danger', 'Delete draft');
             del.addEventListener('click', async () => {
-              if (!confirm('Delete this draft? Nothing has been sent to the committee.')) return;
+              if (!await confirmDialog({
+                title: 'Delete this draft?',
+                body: 'Nothing has been sent to the committee. This cannot be undone.',
+                confirmLabel: 'Delete draft',
+                danger: true,
+              })) return;
               del.disabled = true;
               try {
                 await api('/fa/offers/' + existing.id, { method: 'DELETE' });
@@ -1771,7 +1776,12 @@
     }
 
     async function withdrawClaim(w, team) {
-      if (!confirm(`Withdraw ${team}'s waiver claim on ${displayName((BIOS[w.player] || {}).name || w.player)}?`)) return;
+      if (!await confirmDialog({
+        title: `Withdraw ${team}'s waiver claim on ${displayName((BIOS[w.player] || {}).name || w.player)}?`,
+        body: 'The claim is removed and cannot be re-entered after the window closes.',
+        confirmLabel: 'Withdraw claim',
+        danger: true,
+      })) return;
       try {
         await api(`/waivers/${w.txn_id}/claim?team=${team}`, { method: 'DELETE' });
         toast('Claim withdrawn.');

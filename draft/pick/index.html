@@ -448,7 +448,7 @@
       if (res.status === 422 && /already drafted/i.test(e.detail || '')) {
         await refreshState(); render(); return;
       }
-      alert(e.detail || `Error ${res.status}`);
+      toast(e.detail || `Error ${res.status}`, true);
     }
 
     // ── Auth ───────────────────────────────────────────────
@@ -466,11 +466,9 @@
       } catch {}
     }
 
-    function promptSignIn() {
-      const tok = prompt('Enter your NBN access token:');
-      if (!tok) return;
-      localStorage.setItem(TOKEN_KEY, tok);
-      loadAuth().then(render);
+    async function promptSignIn() {
+      const tok = await promptForToken({ label: 'Access token' });
+      if (tok) loadAuth().then(render);
     }
 
     // ── Data fetching ──────────────────────────────────────
@@ -674,7 +672,7 @@
             if (res.ok) { await refreshState(); render(); }
             else {
               const err = await res.json().catch(() => ({}));
-              alert(err.detail || `Error ${res.status}`);
+              toast(err.detail || `Error ${res.status}`, true);
               btn.disabled = false; btn.textContent = 'Submit →';
             }
           });
@@ -684,13 +682,17 @@
           btn.className = 'btn btn-ghost btn-sm';
           btn.textContent = 'Unstage';
           btn.addEventListener('click', async () => {
-            if (!confirm(`Unstage ${bioName(p.player)} from R${p.round} Pick ${p.pick}? It returns to the top of your queue and you can re-submit.`)) return;
+            if (!await confirmDialog({
+              title: `Unstage ${bioName(p.player)} from R${p.round} Pick ${p.pick}?`,
+              body: 'They return to the top of your queue and you can re-submit.',
+              confirmLabel: 'Unstage',
+            })) return;
             btn.disabled = true; btn.textContent = '…';
             const res = await apiPost('/api/draft/pick/unstage', { year, round: p.round, orig: p.orig });
             if (res.ok) { await refreshState(); render(); }
             else {
               const err = await res.json().catch(() => ({}));
-              alert(err.detail || `Error ${res.status}`);
+              toast(err.detail || `Error ${res.status}`, true);
               btn.disabled = false; btn.textContent = 'Unstage';
             }
           });

@@ -499,7 +499,7 @@
         if (!customEventsByDate[date].length) delete customEventsByDate[date];
         renderView();
       } catch(e) {
-        alert(`Could not delete event: ${e.message}`);
+        toast(`Could not delete event: ${e.message}`, true);
       }
     }
 
@@ -514,7 +514,7 @@
         if (!scheduledGamesByDate[date].length) delete scheduledGamesByDate[date];
         renderView();
       } catch(e) {
-        alert(`Could not delete scheduled game: ${e.message}`);
+        toast(`Could not delete scheduled game: ${e.message}`, true);
       }
     }
 

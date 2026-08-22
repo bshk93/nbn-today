@@ -645,22 +645,27 @@ async function changeStatus(id, status) {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     });
-    if (!res.ok) { alert('Could not update status.'); return; }
+    if (!res.ok) { toast('Could not update status.', true); return; }
     await loadSuggestions();
-  } catch { alert('Could not update status.'); }
+  } catch { toast('Could not update status.', true); }
 }
 
 async function deleteSuggestion(id) {
-  if (!confirm('Delete this suggestion?')) return;
+  if (!await confirmDialog({
+    title: 'Delete this suggestion?',
+    body: 'The suggestion and its whole comment thread go with it. This cannot be undone.',
+    confirmLabel: 'Delete',
+    danger: true,
+  })) return;
   const token = localStorage.getItem('nbn_token');
   try {
     const res = await fetch(`${API}/suggestions/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) { alert('Could not delete.'); return; }
+    if (!res.ok) { toast('Could not delete.', true); return; }
     await loadSuggestions();
-  } catch { alert('Could not delete.'); }
+  } catch { toast('Could not delete.', true); }
 }
 
 // ── Comments ─────────────────────────────────────────────────────────────────
@@ -685,7 +690,7 @@ async function postComment(id, body) {
     await apiSend(`/suggestions/${id}/comments`, 'POST', { body });
     expandedIds.add(id);
     await loadSuggestions();
-  } catch (e) { alert(e.message); }
+  } catch (e) { toast(e.message, true); }
 }
 
 async function saveComment(id, commentId, body) {
@@ -693,15 +698,20 @@ async function saveComment(id, commentId, body) {
   try {
     await apiSend(`/suggestions/${id}/comments/${commentId}`, 'PATCH', { body: body.trim() });
     await loadSuggestions();
-  } catch (e) { alert(e.message); }
+  } catch (e) { toast(e.message, true); }
 }
 
 async function deleteComment(id, commentId) {
-  if (!confirm('Delete this comment?')) return;
+  if (!await confirmDialog({
+    title: 'Delete this comment?',
+    body: 'This cannot be undone.',
+    confirmLabel: 'Delete',
+    danger: true,
+  })) return;
   try {
     await apiSend(`/suggestions/${id}/comments/${commentId}`, 'DELETE');
     await loadSuggestions();
-  } catch (e) { alert(e.message); }
+  } catch (e) { toast(e.message, true); }
 }
 
 // ── Edit suggestion modal ────────────────────────────────────────────────────
@@ -853,14 +863,14 @@ async function doSignIn() {
   if (!token) return;
   try {
     const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { alert('Invalid token.'); return; }
+    if (!res.ok) { toast('That token was not accepted.', true); return; }
     me = await res.json();
     localStorage.setItem('nbn_token', token);
     document.getElementById('modal-overlay').classList.remove('open');
     document.getElementById('token-input').value = '';
     updateAuthUI(me);
     renderSuggestions();
-  } catch { alert('Could not sign in. Check your connection.'); }
+  } catch { toast('Could not sign in. Check your connection.', true); }
 }
 
 function doSignOut() {

@@ -1059,7 +1059,12 @@
           delBtn.textContent = '✕ Delete bet';
           delBtn.style.cssText = 'display:block;margin-top:0.5rem;font-size:0.72rem;color:var(--text-dim);background:none;border:none;cursor:pointer;padding:0';
           delBtn.onclick = async () => {
-            if (!confirm(`Delete "${bet.title}"?`)) return;
+            if (!await confirmDialog({
+              title: `Delete "${bet.title}"?`,
+              body: 'The bet and every wager on it go with it. This cannot be undone.',
+              confirmLabel: 'Delete bet',
+              danger: true,
+            })) return;
             const res = await fetch(`/api/bets/${bet.id}`, {
               method: 'DELETE',
               headers: { 'Authorization': `Bearer ${TOKEN}` },
@@ -1069,7 +1074,7 @@
               renderView();
             } else {
               const err = await res.json().catch(() => ({}));
-              alert(err.detail || 'Delete failed');
+              toast(err.detail || 'Delete failed', true);
             }
           };
           card.appendChild(delBtn);
@@ -1199,7 +1204,11 @@
         lockBtn.textContent = '🔒 Lock Bet';
         lockBtn.style.cssText = 'border-color:#3730a3;color:#818cf8';
         lockBtn.onclick = async () => {
-          if (!confirm('Lock this bet? No more wagers will be accepted until an outcome is set.')) return;
+          if (!await confirmDialog({
+            title: 'Lock this bet?',
+            body: 'No more wagers will be accepted until an outcome is set.',
+            confirmLabel: 'Lock',
+          })) return;
           lockBtn.disabled = true;
           lockBtn.textContent = 'Locking…';
           try {
@@ -1213,7 +1222,7 @@
             if (idx !== -1) allBets[idx] = body;
             renderView();
           } catch(e) {
-            alert(e.message);
+            toast(e.message, true);
             lockBtn.disabled = false;
             lockBtn.textContent = '🔒 Lock Bet';
           }
@@ -1258,7 +1267,12 @@
         const selectedIds = winCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
         if (!selectedIds.length) { closeErr.textContent = 'Select at least one winning option.'; return; }
         const winLabels = selectedIds.map(id => optMap[id]).join(', ');
-        if (!confirm(`Set "${winLabels}" as the winning option${selectedIds.length > 1 ? 's' : ''} and pay out?`)) return;
+        if (!await confirmDialog({
+          title: `Pay out on "${winLabels}"?`,
+          body: `This settles the bet and pays every winning wager. It cannot be undone.`,
+          confirmLabel: 'Settle and pay out',
+          danger: true,
+        })) return;
         confirmBtn.disabled = true;
         confirmBtn.textContent = 'Closing…';
         closeErr.textContent = '';

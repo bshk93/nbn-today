@@ -66,7 +66,8 @@
 }
 .dlg h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
 .dlg-body { font-size: 0.85rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
-.dlg-body + .dlg-details, .dlg-body + .dlg-confirm-text { margin-top: 0.9rem; }
+.dlg-body + .dlg-details, .dlg-body + .dlg-confirm-text,
+.dlg-details + .dlg-confirm-text { margin-top: 0.9rem; }
 
 /* The flagged-check list. This is the case that most needed real markup:
    forced overrides in /transactions were passing "\n\n"-joined rule text

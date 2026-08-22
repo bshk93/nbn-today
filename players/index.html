@@ -711,13 +711,13 @@
 
   // ── Token helpers ────────────────────────────────────────────────────────────
 
-  function getToken() {
-    let t = localStorage.getItem('nbn_token');
-    if (!t) {
-      t = (prompt('Enter your NBN token:') || '').trim();
-      if (t) localStorage.setItem('nbn_token', t);
-    }
-    return t || null;
+  // Async because it may have to ask. Every caller is an event handler, so
+  // awaiting it costs nothing; the alternative is the browser's prompt box,
+  // which cannot mask a credential.
+  async function getToken() {
+    const stored = localStorage.getItem('nbn_token');
+    if (stored) return stored;
+    return await promptForToken();
   }
 
   function clearToken() { localStorage.removeItem('nbn_token'); }
@@ -1303,7 +1303,7 @@
 
     cancelBtn.addEventListener('click', onCancel);
     saveBtn.addEventListener('click', async () => {
-      const token = getToken();
+      const token = await getToken();
       if (!token) return;
       const salaries = {};
       const cap_holds = {};
@@ -1380,8 +1380,8 @@
 
   // ── Add player modal ──────────────────────────────────────────────────────────
 
-  function showAddPlayerModal() {
-    const token = getToken();
+  async function showAddPlayerModal() {
+    const token = await getToken();
     if (!token) return;
 
     const overlay = document.createElement('div');
@@ -2021,7 +2021,7 @@
               cancelRowBtn.addEventListener('click', () => rebuild());
 
               saveRowBtn.addEventListener('click', async () => {
-                const token = getToken();
+                const token = await getToken();
                 if (!token) return;
                 const dateVal = dateIn.value.trim();
                 const ovrVal = parseInt(ovrIn.value, 10);
@@ -2076,7 +2076,7 @@
       statusEl.style.cssText = 'font-size:0.75rem;color:var(--danger)';
 
       saveBtn.addEventListener('click', async () => {
-        const token = getToken();
+        const token = await getToken();
         if (!token) return;
         const dateVal = dateIn.value.trim();
         const ovrVal = parseInt(ovrIn.value, 10);
@@ -3094,9 +3094,9 @@
     editBioBtn.textContent = 'Edit Bio';
     if (canEditBios()) content.appendChild(editBioBtn);
     let bioFormEl = null;
-    editBioBtn.addEventListener('click', () => {
+    editBioBtn.addEventListener('click', async () => {
       if (bioFormEl) { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; return; }
-      const token = getToken(); if (!token) return;
+      const token = await getToken(); if (!token) return;
       bioFormEl = renderBioForm(
         { ...bio },
         async (token, payload) => {
@@ -3638,9 +3638,9 @@
     editBioBtn.textContent = 'Edit Bio';
     if (canEditBios()) content.appendChild(editBioBtn);
     let bioFormEl = null;
-    editBioBtn.addEventListener('click', () => {
+    editBioBtn.addEventListener('click', async () => {
       if (bioFormEl) { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; return; }
-      const token = getToken(); if (!token) return;
+      const token = await getToken(); if (!token) return;
       const cur = biosData[slug] || {};
       bioFormEl = renderBioForm(
         { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', retired: cur.retired || false, type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {}, guarantee_schedule: cur.guarantee_schedule || {} },

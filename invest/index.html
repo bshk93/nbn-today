@@ -1111,7 +1111,7 @@ async function toggleLock(lock) {
     if (!res.ok) throw new Error((await res.json()).detail);
     await loadAll();
   } catch (e) {
-    alert(e.message);
+    toast(e.message, true);
   }
 }
 
