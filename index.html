@@ -161,60 +161,83 @@
       .home-search-kbd { display: none; }
     }
 
-    .member-banner {
+    /* Profile button + dropdown. Moved into nav.js's .nav-actions once that
+       group exists (see the script below) so it sits in the same right-aligned
+       row as the inbox/theme icons rather than fighting them over its own
+       margin-left:auto — two independent auto margins on one flex line split
+       the free space between them instead of clustering flush together. */
+    .profile-picker {
+      position: relative;
+    }
+
+    .profile-btn {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
+      justify-content: center;
+      width: 2.1rem;
+      height: 2.1rem;
+      border-radius: 50%;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0;
+      overflow: hidden;
+      transition: border-color 0.1s, color 0.1s;
+    }
+
+    .profile-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+
+    .profile-btn-avatar-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       width: 100%;
-      max-width: 820px;
+      height: 100%;
+    }
+
+    .profile-btn-silhouette { font-size: 1.15rem; line-height: 1; }
+
+    .member-banner-avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .profile-menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 0.7rem 1rem;
-      margin-bottom: 1.5rem;
-      font-size: 0.9rem;
+      box-shadow: 0 8px 24px var(--shadow-color-strong);
+      min-width: 220px;
+      padding: 0.85rem 1rem;
+      z-index: 10000;
     }
 
-    .member-banner-id {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
+    .profile-menu.open { display: flex; }
 
     .member-banner-greeting {
       color: var(--text-primary);
       font-weight: 600;
+      font-size: 0.9rem;
     }
 
-    .member-banner-avatar {
-      width: 2rem;
-      height: 2rem;
-      border-radius: 50%;
-      object-fit: cover;
-      flex-shrink: 0;
-      vertical-align: middle;
-      display: block;
-    }
-
-    .member-banner-avatar-placeholder {
-      width: 2rem;
-      height: 2rem;
-      border-radius: 50%;
-      background: var(--border);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      flex-shrink: 0;
-    }
-
-    .member-banner-team {
-      display: inline-block;
-      font-size: 0.72rem;
+    /* .member-banner-team/.member-banner-profile-link are <a> tags nested
+       inside .nav (via .profile-menu), so the generic ".nav a" rule
+       (higher specificity: class+type vs. these plain single-class rules)
+       would otherwise override their color back to var(--text-muted) —
+       scope under .profile-menu to win that fight. */
+    .profile-menu .member-banner-team {
+      align-self: flex-start;
+      font-size: 0.7rem;
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -225,12 +248,9 @@
       text-decoration: none;
     }
 
-    .member-banner-right {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
+    /* ".nav a:hover" (higher specificity than a single ancestor+class rule)
+       would otherwise flip this chip's text to var(--text-primary) on hover. */
+    .profile-menu .member-banner-team:hover { color: var(--success-light); }
 
     .member-banner-balance {
       color: var(--gold-chip-border);
@@ -238,38 +258,39 @@
       font-size: 0.85rem;
     }
 
-    .member-banner-profile-link {
+    .profile-menu .member-banner-profile-link {
       color: var(--link);
       text-decoration: none;
       font-size: 0.85rem;
       font-weight: 600;
-      white-space: nowrap;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
     }
 
-    .member-banner-profile-link:hover { text-decoration: underline; }
+    .profile-menu .member-banner-profile-link:hover { text-decoration: underline; }
 
   </style>
 </head>
 <body>
   <div class="page-wrap">
-  <div class="nav" data-no-home data-no-search></div>
+  <div class="nav" data-no-home data-no-search>
+    <div class="profile-picker" id="profile-picker" style="display:none">
+      <button class="profile-btn" id="profile-btn" aria-label="Your profile" aria-haspopup="true" aria-expanded="false">
+        <span class="profile-btn-avatar-wrap" id="member-banner-avatar-wrap"><span class="profile-btn-silhouette">👤</span></span>
+      </button>
+      <div class="profile-menu" id="profile-menu">
+        <span class="member-banner-greeting" id="member-banner-greeting"></span>
+        <a class="member-banner-team" id="member-banner-team" style="display:none"></a>
+        <span class="member-banner-balance" id="member-banner-balance"></span>
+        <a class="member-banner-profile-link" id="member-banner-profile-link" href="/members/">My Profile →</a>
+      </div>
+    </div>
+  </div>
   <header>
     <img src="/logo.png" alt="NBN logo">
     <h1>Nothing But Net</h1>
     <p>Basketball Simulation GM League</p>
   </header>
-
-  <div class="member-banner" id="member-banner" style="display:none">
-    <span class="member-banner-id">
-      <span class="member-banner-avatar-wrap" id="member-banner-avatar-wrap"></span>
-      <span class="member-banner-greeting" id="member-banner-greeting"></span>
-      <a class="member-banner-team" id="member-banner-team" style="display:none"></a>
-    </span>
-    <span class="member-banner-right">
-      <span class="member-banner-balance" id="member-banner-balance"></span>
-      <a class="member-banner-profile-link" id="member-banner-profile-link" href="/members/">My Profile →</a>
-    </span>
-  </div>
 
   <button class="home-search-btn" id="home-search-btn" aria-label="Search pages, teams, and players (Ctrl+K)">
     <span class="home-search-icon">⌕</span>
@@ -515,6 +536,38 @@
 
     document.getElementById('home-search-btn').addEventListener('click', () => openSearch());
 
+    // nav.js builds .nav-actions (inbox + theme picker) asynchronously, after
+    // this script runs. Poll for it and move the profile button in once it
+    // exists, so it lands in the same right-aligned cluster instead of a
+    // separate one competing for the row's free space.
+    (function attachProfilePicker() {
+      const picker = document.getElementById('profile-picker');
+      const actions = document.querySelector('.nav .nav-actions');
+      if (actions) actions.appendChild(picker);
+      else requestAnimationFrame(attachProfilePicker);
+    })();
+
+    // Profile button — toggles the dropdown; closes on outside click or Escape.
+    const profileBtn = document.getElementById('profile-btn');
+    const profileMenu = document.getElementById('profile-menu');
+    profileBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = profileMenu.classList.toggle('open');
+      profileBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    document.addEventListener('click', e => {
+      if (profileMenu.classList.contains('open') && !document.getElementById('profile-picker').contains(e.target)) {
+        profileMenu.classList.remove('open');
+        profileBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        profileMenu.classList.remove('open');
+        profileBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
     // Typing anywhere on the homepage (outside a form field) jumps straight
     // into the site search, seeded with the character just typed.
     document.addEventListener('keydown', e => {
@@ -538,11 +591,11 @@
           if (!data) return;
 
           if (data.name) {
-            const banner = document.getElementById('member-banner');
+            const picker = document.getElementById('profile-picker');
             const greetEl = document.getElementById('member-banner-greeting');
             greetEl.textContent = `Welcome back, ${data.name.split(' ')[0]}`;
             document.getElementById('member-banner-profile-link').href = `/members/${encodeURIComponent(data.name)}/`;
-            banner.style.display = '';
+            picker.style.display = '';
 
             fetch(`/api/bets/balance/${encodeURIComponent(data.name)}`)
               .then(r => r.ok ? r.json() : null)
@@ -563,11 +616,10 @@
                 const nameColor = profile.cosmetics?.name_color;
                 if (nameColor) greetEl.style.color = nameColor;
 
-                const avatarWrap = document.getElementById('member-banner-avatar-wrap');
+                // No avatar_url: leave the default silhouette icon in place.
                 if (profile.avatar_url) {
+                  const avatarWrap = document.getElementById('member-banner-avatar-wrap');
                   avatarWrap.innerHTML = `<img class="member-banner-avatar" src="${profile.avatar_url}?v=${Date.now()}" alt="">`;
-                } else {
-                  avatarWrap.innerHTML = `<span class="member-banner-avatar-placeholder">${data.name.charAt(0).toUpperCase()}</span>`;
                 }
               })
               .catch(() => {});
