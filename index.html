@@ -217,40 +217,55 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       box-shadow: 0 8px 24px var(--shadow-color-strong);
-      min-width: 220px;
+      min-width: 240px;
       padding: 0.85rem 1rem;
       z-index: 10000;
     }
 
     .profile-menu.open { display: flex; }
 
+    .profile-menu-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
     .member-banner-greeting {
       color: var(--text-primary);
       font-weight: 600;
       font-size: 0.9rem;
+      white-space: nowrap;
     }
 
     /* .member-banner-team/.member-banner-profile-link are <a> tags nested
        inside .nav (via .profile-menu), so the generic ".nav a" rule
        (higher specificity: class+type vs. these plain single-class rules)
-       would otherwise override their color back to var(--text-muted) —
+       would otherwise override their border/background back to defaults —
        scope under .profile-menu to win that fight. */
     .profile-menu .member-banner-team {
-      align-self: flex-start;
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      background: #1c2c1e;
-      color: var(--success-light);
-      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.7rem;
+      height: 1.7rem;
+      border-radius: 6px;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      transition: border-color 0.1s, transform 0.1s;
     }
 
-    /* ".nav a:hover" (higher specificity than a single ancestor+class rule)
-       would otherwise flip this chip's text to var(--text-primary) on hover. */
-    .profile-menu .member-banner-team:hover { color: var(--success-light); }
+    .profile-menu .member-banner-team:hover { border-color: var(--text-muted); transform: scale(1.08); }
+
+    .member-banner-team img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 2px;
+      box-sizing: border-box;
+      display: block;
+    }
 
     .member-banner-balance {
       color: var(--gold-chip-border);
@@ -279,8 +294,12 @@
         <span class="profile-btn-avatar-wrap" id="member-banner-avatar-wrap"><span class="profile-btn-silhouette">👤</span></span>
       </button>
       <div class="profile-menu" id="profile-menu">
-        <span class="member-banner-greeting" id="member-banner-greeting"></span>
-        <a class="member-banner-team" id="member-banner-team" style="display:none"></a>
+        <div class="profile-menu-row">
+          <span class="member-banner-greeting" id="member-banner-greeting"></span>
+          <a class="member-banner-team" id="member-banner-team" style="display:none" aria-label="Go to your roster">
+            <img id="member-banner-team-logo" src="" alt="">
+          </a>
+        </div>
         <span class="member-banner-balance" id="member-banner-balance"></span>
         <a class="member-banner-profile-link" id="member-banner-profile-link" href="/members/">My Profile →</a>
       </div>
@@ -634,9 +653,12 @@
                 const active = me?.tenures?.filter(t => !t.end);
                 if (!active?.length) return;
                 const tenure = active.sort((a, b) => b.start.localeCompare(a.start))[0];
+                const teamAbbr = tenure.team.toLowerCase();
                 const teamEl = document.getElementById('member-banner-team');
-                teamEl.textContent = tenure.team;
-                teamEl.href = `/teams/${tenure.team.toLowerCase()}/`;
+                teamEl.href = `/teams/${teamAbbr}/`;
+                teamEl.title = `${tenure.team} roster`;
+                document.getElementById('member-banner-team-logo').src = `/logos/logo-${teamAbbr}.png`;
+                document.getElementById('member-banner-team-logo').alt = `${tenure.team} logo`;
                 teamEl.style.display = '';
               })
               .catch(() => {});
