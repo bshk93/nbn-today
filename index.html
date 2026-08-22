@@ -161,150 +161,11 @@
       .home-search-kbd { display: none; }
     }
 
-    /* Profile button + dropdown. Moved into nav.js's .nav-actions once that
-       group exists (see the script below) so it sits in the same right-aligned
-       row as the inbox/theme icons rather than fighting them over its own
-       margin-left:auto — two independent auto margins on one flex line split
-       the free space between them instead of clustering flush together. */
-    .profile-picker {
-      position: relative;
-    }
-
-    .profile-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2.1rem;
-      height: 2.1rem;
-      border-radius: 50%;
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 0;
-      overflow: hidden;
-      transition: border-color 0.1s, color 0.1s;
-    }
-
-    .profile-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
-
-    .profile-btn-avatar-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-    }
-
-    .profile-btn-silhouette { font-size: 1.15rem; line-height: 1; }
-
-    .member-banner-avatar {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .profile-menu {
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      right: 0;
-      display: none;
-      flex-direction: column;
-      gap: 0.5rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      box-shadow: 0 8px 24px var(--shadow-color-strong);
-      min-width: 240px;
-      padding: 0.85rem 1rem;
-      z-index: 10000;
-    }
-
-    .profile-menu.open { display: flex; }
-
-    .profile-menu-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
-
-    .member-banner-greeting {
-      color: var(--text-primary);
-      font-weight: 600;
-      font-size: 0.9rem;
-      white-space: nowrap;
-    }
-
-    /* .member-banner-team/.member-banner-profile-link are <a> tags nested
-       inside .nav (via .profile-menu), so the generic ".nav a" rule
-       (higher specificity: class+type vs. these plain single-class rules)
-       would otherwise override their border/background back to defaults —
-       scope under .profile-menu to win that fight. */
-    .profile-menu .member-banner-team {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.7rem;
-      height: 1.7rem;
-      border-radius: 6px;
-      background: var(--bg-page);
-      border: 1px solid var(--border);
-      flex-shrink: 0;
-      transition: border-color 0.1s, transform 0.1s;
-    }
-
-    .profile-menu .member-banner-team:hover { border-color: var(--text-muted); transform: scale(1.08); }
-
-    .member-banner-team img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      padding: 2px;
-      box-sizing: border-box;
-      display: block;
-    }
-
-    .member-banner-balance {
-      color: var(--gold-chip-border);
-      font-weight: 600;
-      font-size: 0.85rem;
-    }
-
-    .profile-menu .member-banner-profile-link {
-      color: var(--link);
-      text-decoration: none;
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding-top: 0.5rem;
-      border-top: 1px solid var(--border);
-    }
-
-    .profile-menu .member-banner-profile-link:hover { text-decoration: underline; }
-
   </style>
 </head>
 <body>
   <div class="page-wrap">
-  <div class="nav" data-no-home data-no-search>
-    <div class="profile-picker" id="profile-picker" style="display:none">
-      <button class="profile-btn" id="profile-btn" aria-label="Your profile" aria-haspopup="true" aria-expanded="false">
-        <span class="profile-btn-avatar-wrap" id="member-banner-avatar-wrap"><span class="profile-btn-silhouette">👤</span></span>
-      </button>
-      <div class="profile-menu" id="profile-menu">
-        <div class="profile-menu-row">
-          <span class="member-banner-greeting" id="member-banner-greeting"></span>
-          <a class="member-banner-team" id="member-banner-team" style="display:none" aria-label="Go to your roster">
-            <img id="member-banner-team-logo" src="" alt="">
-          </a>
-        </div>
-        <span class="member-banner-balance" id="member-banner-balance"></span>
-        <a class="member-banner-profile-link" id="member-banner-profile-link" href="/members/">My Profile →</a>
-      </div>
-    </div>
-  </div>
+  <div class="nav" data-no-home data-no-search></div>
   <header>
     <img src="/logo.png" alt="NBN logo">
     <h1>Nothing But Net</h1>
@@ -555,38 +416,6 @@
 
     document.getElementById('home-search-btn').addEventListener('click', () => openSearch());
 
-    // nav.js builds .nav-actions (inbox + theme picker) asynchronously, after
-    // this script runs. Poll for it and move the profile button in once it
-    // exists, so it lands in the same right-aligned cluster instead of a
-    // separate one competing for the row's free space.
-    (function attachProfilePicker() {
-      const picker = document.getElementById('profile-picker');
-      const actions = document.querySelector('.nav .nav-actions');
-      if (actions) actions.appendChild(picker);
-      else requestAnimationFrame(attachProfilePicker);
-    })();
-
-    // Profile button — toggles the dropdown; closes on outside click or Escape.
-    const profileBtn = document.getElementById('profile-btn');
-    const profileMenu = document.getElementById('profile-menu');
-    profileBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const isOpen = profileMenu.classList.toggle('open');
-      profileBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    });
-    document.addEventListener('click', e => {
-      if (profileMenu.classList.contains('open') && !document.getElementById('profile-picker').contains(e.target)) {
-        profileMenu.classList.remove('open');
-        profileBtn.setAttribute('aria-expanded', 'false');
-      }
-    });
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') {
-        profileMenu.classList.remove('open');
-        profileBtn.setAttribute('aria-expanded', 'false');
-      }
-    });
-
     // Typing anywhere on the homepage (outside a form field) jumps straight
     // into the site search, seeded with the character just typed.
     document.addEventListener('keydown', e => {
@@ -609,61 +438,9 @@
         .then(data => {
           if (!data) return;
 
-          if (data.name) {
-            const picker = document.getElementById('profile-picker');
-            const greetEl = document.getElementById('member-banner-greeting');
-            greetEl.textContent = `Welcome back, ${data.name.split(' ')[0]}`;
-            document.getElementById('member-banner-profile-link').href = `/members/${encodeURIComponent(data.name)}/`;
-            picker.style.display = '';
-
-            fetch(`/api/bets/balance/${encodeURIComponent(data.name)}`)
-              .then(r => r.ok ? r.json() : null)
-              .then(b => {
-                if (b && b.balance != null) {
-                  document.getElementById('member-banner-balance').textContent =
-                    'NB¥ ' + (+b.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                }
-              })
-              .catch(() => {});
-
-            // Cosmetics purchased with NB¥ (name color, avatar) — /api/me doesn't
-            // carry these, so a second call to /api/members/me fetches them.
-            fetch('/api/members/me', { headers: { 'Authorization': `Bearer ${_loToken}` } })
-              .then(r => r.ok ? r.json() : null)
-              .then(profile => {
-                if (!profile) return;
-                const nameColor = profile.cosmetics?.name_color;
-                if (nameColor) greetEl.style.color = nameColor;
-
-                // No avatar_url: leave the default silhouette icon in place.
-                if (profile.avatar_url) {
-                  const avatarWrap = document.getElementById('member-banner-avatar-wrap');
-                  avatarWrap.innerHTML = `<img class="member-banner-avatar" src="${profile.avatar_url}?v=${Date.now()}" alt="">`;
-                }
-              })
-              .catch(() => {});
-
-            // Current team, if any — /api/members/me only reports position
-            // names (e.g. "owner"), not which team, so this reads it off the
-            // same tenures the /members/ directory already renders from.
-            fetch('/api/members/public')
-              .then(r => r.ok ? r.json() : null)
-              .then(members => {
-                const me = members?.find(m => m.name === data.name);
-                const active = me?.tenures?.filter(t => !t.end);
-                if (!active?.length) return;
-                const tenure = active.sort((a, b) => b.start.localeCompare(a.start))[0];
-                const teamAbbr = tenure.team.toLowerCase();
-                const teamEl = document.getElementById('member-banner-team');
-                teamEl.href = `/teams/${teamAbbr}/`;
-                teamEl.title = `${tenure.team} roster`;
-                document.getElementById('member-banner-team-logo').src = `/logos/logo-${teamAbbr}.png`;
-                document.getElementById('member-banner-team-logo').alt = `${tenure.team} logo`;
-                teamEl.style.display = '';
-              })
-              .catch(() => {});
-          }
-
+          // Greeting/avatar/team/balance now live in nav.js's shared profile
+          // picker (its own independent /api/me call), so this handler only
+          // needs the role flags for the quick-links panel below.
           const isRosters = data.roles?.some(r => r === 'rosters' || r === 'admin');
           const isAdmin   = data.roles?.includes('admin');
           const isBod     = data.roles?.some(r => r === 'bod' || r === 'admin');

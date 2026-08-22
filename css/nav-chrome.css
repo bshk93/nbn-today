@@ -11,19 +11,30 @@
 .nav a { color: var(--text-muted); text-decoration: none; }
 .nav a:hover { color: var(--text-primary); }
 
-/* Wraps search-btn + theme-picker so the group gets pushed to the right
-   edge of .nav regardless of which of those two is actually present
+/* Wraps search-btn + inbox/theme/profile so the group gets pushed to the
+   right edge of .nav regardless of which pieces are actually present
    (e.g. the homepage suppresses search-btn since it has its own big
    search bar already) — the margin-left:auto belongs on the wrapper,
    not on whichever button happens to be first. */
-.nav-actions { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
+.nav-actions { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; }
 
-.search-btn { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0.1rem 0.35rem; transition: border-color 0.1s, color 0.1s; }
-.search-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+/* Shared circular treatment for every icon button in the action row (search,
+   inbox, theme, profile), so the row reads as one designed set of buttons
+   rather than whatever each one felt like individually. Each button also
+   keeps its own class for the bits that aren't shared (badge positioning,
+   dynamic icon text, avatar overflow). */
+.nav-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 2.1rem; height: 2.1rem; flex-shrink: 0;
+  border-radius: 50%; background: none; border: 1px solid var(--border);
+  color: var(--text-muted); cursor: pointer; padding: 0; overflow: hidden;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+.nav-icon-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); background: var(--bg-hover); }
+.nav-icon-btn svg { width: 1.05rem; height: 1.05rem; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Inbox */
-.inbox-btn { position: relative; background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0.1rem 0.35rem; transition: border-color 0.1s, color 0.1s; }
-.inbox-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+.inbox-btn { position: relative; }
 .inbox-badge {
   display: none; position: absolute; top: -0.4rem; right: -0.4rem;
   background: var(--gold-chip-border); color: var(--bg-page);
@@ -47,8 +58,7 @@
 
 /* Theme picker */
 .theme-picker { position: relative; display: inline-flex; }
-.theme-btn { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0.1rem 0.35rem; transition: border-color 0.1s, color 0.1s; }
-.theme-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+.theme-btn { font-size: 1.05rem; line-height: 1; }
 .theme-menu {
   position: absolute; top: calc(100% + 0.4rem); right: 0;
   background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
@@ -68,3 +78,40 @@
 .theme-menu-label { flex: 1; }
 .theme-menu-check { font-size: 0.75rem; color: var(--accent-light); flex-shrink: 0; opacity: 0; }
 .theme-menu-item.active .theme-menu-check { opacity: 1; }
+
+/* Profile picker — last in .nav-actions. Hidden (via inline style, set by
+   nav.js) until a signed-in member is confirmed, so a signed-out visitor
+   never sees an empty avatar circle. */
+.profile-picker { position: relative; }
+.profile-btn-avatar-wrap { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.member-banner-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+
+.profile-menu {
+  position: absolute; top: calc(100% + 0.5rem); right: 0;
+  display: none; flex-direction: column; gap: 0.5rem;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 24px var(--shadow-color-strong);
+  min-width: 240px; padding: 0.85rem 1rem; z-index: 10000;
+}
+.profile-menu.open { display: flex; }
+.profile-menu-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.member-banner-greeting { color: var(--text-primary); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
+
+/* .member-banner-team/.member-banner-profile-link are <a> tags nested inside
+   .nav (via .profile-menu), so the generic ".nav a" rule above would
+   otherwise override their border/background back to defaults — scope
+   under .profile-menu to win on specificity. */
+.profile-menu .member-banner-team {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.7rem; height: 1.7rem; border-radius: 6px;
+  background: var(--bg-page); border: 1px solid var(--border);
+  flex-shrink: 0; transition: border-color 0.1s, transform 0.1s;
+}
+.profile-menu .member-banner-team:hover { border-color: var(--text-muted); transform: scale(1.08); }
+.member-banner-team img { width: 100%; height: 100%; object-fit: contain; padding: 2px; box-sizing: border-box; display: block; }
+.member-banner-balance { color: var(--gold-chip-border); font-weight: 600; font-size: 0.85rem; }
+.profile-menu .member-banner-profile-link {
+  color: var(--link); text-decoration: none; font-size: 0.85rem; font-weight: 600;
+  padding-top: 0.5rem; border-top: 1px solid var(--border);
+}
+.profile-menu .member-banner-profile-link:hover { text-decoration: underline; }

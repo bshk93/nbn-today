@@ -1,5 +1,13 @@
 // Shared utilities: nav injection, site-wide player search, parseCSV, theming
 
+// ── Icons ────────────────────────────────────────────────────────────────────
+// Inline SVGs for the nav-action buttons, so search/inbox/profile render as
+// crisp stroked line icons instead of emoji glyphs (which vary in weight and
+// baseline across platforms/fonts and read as mismatched next to each other).
+const _ICON_SEARCH = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+const _ICON_INBOX = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>';
+const _ICON_PERSON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>';
+
 // ── Theme ────────────────────────────────────────────────────────────────────
 //
 // Named themes, chosen from the picker nav.js injects into every page's
@@ -68,7 +76,7 @@ function _buildThemePicker() {
   wrap.className = 'theme-picker';
 
   const btn = document.createElement('button');
-  btn.className = 'theme-btn';
+  btn.className = 'theme-btn nav-icon-btn';
   btn.setAttribute('aria-label', 'Choose theme');
   btn.setAttribute('title', 'Choose theme');
 
@@ -107,10 +115,10 @@ document.addEventListener('click', e => {
 // (clicking takes them to /inbox/, which prompts sign-in itself), just no badge.
 function _buildInboxButton() {
   const btn = document.createElement('button');
-  btn.className = 'inbox-btn';
+  btn.className = 'inbox-btn nav-icon-btn';
   btn.setAttribute('aria-label', 'Inbox');
   btn.setAttribute('title', 'Inbox');
-  btn.textContent = '✉';
+  btn.innerHTML = _ICON_INBOX;
   btn.addEventListener('click', () => { window.location.href = '/inbox/'; });
 
   const badge = document.createElement('span');
@@ -132,11 +140,127 @@ function _buildInboxButton() {
   return btn;
 }
 
+// ── Profile picker ───────────────────────────────────────────────────────────
+// Last in .nav-actions. Hidden until its own /api/me call confirms a signed-in
+// member (same token-gated, self-contained pattern as the inbox button above),
+// then shows a circular avatar button that opens a dropdown with the greeting,
+// current team badge, NB¥ balance, and a link to the member's profile page.
+// Ported from the homepage's old standalone "profile menu" (which only ever
+// existed on index.html) so every page gets it, not just the homepage.
+function _buildProfilePicker() {
+  const wrap = document.createElement('div');
+  wrap.className = 'profile-picker';
+  wrap.style.display = 'none';
+
+  const btn = document.createElement('button');
+  btn.className = 'profile-btn nav-icon-btn';
+  btn.setAttribute('aria-label', 'Your profile');
+  btn.setAttribute('aria-haspopup', 'true');
+  btn.setAttribute('aria-expanded', 'false');
+  const avatarWrap = document.createElement('span');
+  avatarWrap.className = 'profile-btn-avatar-wrap';
+  avatarWrap.innerHTML = _ICON_PERSON;
+  btn.appendChild(avatarWrap);
+
+  const menu = document.createElement('div');
+  menu.className = 'profile-menu';
+  menu.innerHTML = `
+    <div class="profile-menu-row">
+      <span class="member-banner-greeting"></span>
+      <a class="member-banner-team" style="display:none" aria-label="Go to your roster"><img alt=""></a>
+    </div>
+    <span class="member-banner-balance"></span>
+    <a class="member-banner-profile-link" href="/members/">My Profile →</a>
+  `;
+  const greetEl = menu.querySelector('.member-banner-greeting');
+  const teamEl = menu.querySelector('.member-banner-team');
+  const teamLogoEl = teamEl.querySelector('img');
+  const balanceEl = menu.querySelector('.member-banner-balance');
+  const profileLinkEl = menu.querySelector('.member-banner-profile-link');
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = menu.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+  document.addEventListener('click', e => {
+    if (menu.classList.contains('open') && !wrap.contains(e.target)) {
+      menu.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  wrap.appendChild(btn);
+  wrap.appendChild(menu);
+
+  const token = localStorage.getItem('nbn_token');
+  if (token) {
+    fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || !data.name) return;
+
+        greetEl.textContent = `Welcome back, ${data.name.split(' ')[0]}`;
+        profileLinkEl.href = `/members/${encodeURIComponent(data.name)}/`;
+        wrap.style.display = '';
+
+        fetch(`/api/bets/balance/${encodeURIComponent(data.name)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(b => {
+            if (b && b.balance != null) {
+              balanceEl.textContent = 'NB¥ ' + (+b.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+          })
+          .catch(() => {});
+
+        // Cosmetics purchased with NB¥ (name color, avatar) — /api/me doesn't
+        // carry these, so a second call to /api/members/me fetches them.
+        fetch('/api/members/me', { headers: { Authorization: 'Bearer ' + token } })
+          .then(r => r.ok ? r.json() : null)
+          .then(profile => {
+            if (!profile) return;
+            const nameColor = profile.cosmetics?.name_color;
+            if (nameColor) greetEl.style.color = nameColor;
+            if (profile.avatar_url) {
+              avatarWrap.innerHTML = `<img class="member-banner-avatar" src="${profile.avatar_url}?v=${Date.now()}" alt="">`;
+            }
+          })
+          .catch(() => {});
+
+        // Current team, if any — /api/members/me only reports position names
+        // (e.g. "owner"), not which team, so this reads it off the same
+        // tenures the /members/ directory already renders from.
+        fetch('/api/members/public')
+          .then(r => r.ok ? r.json() : null)
+          .then(members => {
+            const me = members?.find(m => m.name === data.name);
+            const active = me?.tenures?.filter(t => !t.end);
+            if (!active?.length) return;
+            const tenure = active.sort((a, b) => b.start.localeCompare(a.start))[0];
+            const teamAbbr = tenure.team.toLowerCase();
+            teamEl.href = `/teams/${teamAbbr}/`;
+            teamEl.title = `${tenure.team} roster`;
+            teamLogoEl.src = `/logos/logo-${teamAbbr}.png`;
+            teamLogoEl.alt = `${tenure.team} logo`;
+            teamEl.style.display = '';
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
+  }
+
+  return wrap;
+}
+
 // ── Nav injection ────────────────────────────────────────────────────────────
 
 document.addEventListener('keydown', function (e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
-  if (e.key === 'Escape') { closeSearch(); document.querySelector('.theme-menu')?.classList.remove('open'); }
+  if (e.key === 'Escape') {
+    closeSearch();
+    document.querySelector('.theme-menu')?.classList.remove('open');
+    document.querySelector('.profile-menu')?.classList.remove('open');
+  }
 });
 
 function _initNav() {
@@ -151,16 +275,17 @@ function _initNav() {
 
     if (!nav.hasAttribute('data-no-search')) {
       const btn = document.createElement('button');
-      btn.className = 'search-btn';
+      btn.className = 'search-btn nav-icon-btn';
       btn.setAttribute('aria-label', 'Search (Ctrl+K)');
       btn.setAttribute('title', 'Search (Ctrl+K)');
-      btn.textContent = '⌕';
+      btn.innerHTML = _ICON_SEARCH;
       btn.addEventListener('click', () => openSearch());
       actions.appendChild(btn);
     }
 
     actions.appendChild(_buildInboxButton());
     actions.appendChild(_buildThemePicker());
+    actions.appendChild(_buildProfilePicker());
     nav.appendChild(actions);
     _refreshThemeMenu();
   }
