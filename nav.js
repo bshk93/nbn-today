@@ -263,9 +263,15 @@ document.addEventListener('keydown', function (e) {
   }
 });
 
+// Idempotent by design (bails via the .nav-actions check below) — a page that
+// rewrites .nav's innerHTML wholesale after this first runs (players/index.html
+// does, to swap in a breadcrumb once its data loads) must call _initNav() again
+// afterward, or the rewrite silently wipes out search/inbox/theme/profile with
+// it. _initNav is a plain global (this file has no module wrapper), so any page
+// that includes nav.js can call it directly.
 function _initNav() {
   const nav = document.querySelector('.nav');
-  if (!nav || nav.id === 'nav') return;
+  if (!nav) return;
   if (!nav.children.length && !nav.textContent.trim() && !nav.hasAttribute('data-no-home')) {
     nav.innerHTML = '<a href="/">← Home</a>';
   }

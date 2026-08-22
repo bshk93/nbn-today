@@ -3021,6 +3021,10 @@
     document.title = `${name} — NBN`;
     document.getElementById('nav').innerHTML =
       '<a href="/">Home</a> / <a href="/players/">Players</a> / ' + name;
+    // Rewriting .nav's innerHTML above wipes out the search/inbox/theme/profile
+    // icons nav.js already built into it — rebuild them (see the comment on
+    // _initNav in nav.js).
+    if (typeof _initNav === 'function') _initNav();
     document.getElementById('page-title').textContent = name;
     document.getElementById('page-sub').textContent = 'No NBN stats yet.';
 
@@ -3103,6 +3107,7 @@
   function renderIndex(rows) {
     document.title = 'Players — NBN';
     document.getElementById('nav').innerHTML = '<a href="/">← Home</a>';
+    if (typeof _initNav === 'function') _initNav();
     document.getElementById('page-sub').textContent = 'Browse all players in NBN history.';
 
     // Collect teams per player in chronological order
@@ -3556,6 +3561,7 @@
     document.title = `${playerName} — NBN`;
     document.getElementById('nav').innerHTML =
       '<a href="/">Home</a> / <a href="/players/">Players</a> / ' + playerName;
+    if (typeof _initNav === 'function') _initNav();
     document.getElementById('page-title').textContent = playerName;
     const seasonCount = new Set(rows.map(r => r.SEASON)).size;
     document.getElementById('page-sub').textContent =
