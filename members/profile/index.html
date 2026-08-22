@@ -34,11 +34,27 @@
       padding-bottom: 0.5rem; border-bottom: 1px solid var(--accent-muted, var(--bg-card));
     }
 
-    /* Edit-your-profile section — shown only on your own page (isOwn).
-       Ported from members/index.html's "Profile & Customization" bar so the
-       same cosmetics (name color, status text, avatar) and DOB editing is
-       reachable without leaving the profile to find it on the members list. */
-    .profile-editor { display: flex; flex-direction: column; gap: 0.6rem; }
+    /* Edit-your-profile drawer — shown only on your own page (isOwn), collapsed
+       by default at the bottom of the page so it doesn't compete with the
+       stats/tenure/achievements someone actually came here to see. Same
+       cosmetics (name color, status text, avatar) + DOB editing as
+       members/index.html's "Profile & Customization" bar, styled as a low-key
+       settings drawer instead of a titled page section. */
+    .profile-editor-bar {
+      margin-top: 2.5rem; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden;
+    }
+    .pe-toggle {
+      width: 100%; display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1rem; background: none; border: none; cursor: pointer;
+      font-family: inherit; text-align: left; color: var(--text-muted);
+    }
+    .pe-toggle:hover { color: var(--text-secondary); }
+    .pe-chevron { font-size: 0.65rem; transition: transform 0.15s; flex-shrink: 0; }
+    .pe-toggle.open .pe-chevron { transform: rotate(90deg); }
+    .pe-toggle-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .pe-content { display: none; flex-direction: column; gap: 0.6rem; padding: 0 1rem 0.9rem; }
+    .pe-content.open { display: flex; }
     .pe-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
     .pe-label { color: var(--text-secondary); font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; }
     .pe-input {
@@ -398,41 +414,6 @@ async function init() {
   }
   html += `</div>`;
 
-  // Edit-your-profile — only on your own page
-  if (isOwn) {
-    html += `<div class="section">
-      <div class="section-title">Edit Your Profile</div>
-      <div class="profile-editor">
-        <div class="pe-row">
-          <label class="pe-label">Birthday
-            <input type="date" id="my-dob-input" class="pe-input" value="${esc(member.dob || '')}">
-          </label>
-          <button class="btn-sm" id="my-profile-save">Save</button>
-          <span id="my-profile-msg" class="pe-msg"></span>
-        </div>
-        <hr class="cosm-divider">
-        <div class="pe-row">
-          <span class="pe-group-label">Name color</span>
-          <div class="cosm-swatches" id="cosm-swatches"></div>
-          <input type="text" id="cosm-status" class="pe-input" style="width:12rem" maxlength="40" placeholder="Short tagline…" value="${esc(member.cosmetics?.status_text || '')}">
-          <button class="btn-sm" id="cosm-save">Save · 500 NB¥</button>
-          <span id="cosm-msg" class="pe-msg"></span>
-        </div>
-        <hr class="cosm-divider">
-        <div class="pe-row">
-          <span class="pe-group-label">Avatar</span>
-          <div class="avatar-upload-circle" id="avatar-upload-circle" title="Click to choose image">
-            ${member.avatar_url ? `<img src="${esc(member.avatar_url)}" alt="">` : '<span class="avatar-plus">+</span>'}
-          </div>
-          <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-          <span class="pe-hint">JPEG / PNG / WebP · max 512 KB</span>
-          <button class="btn-sm" id="avatar-save" style="display:none">Upload · 5,000 NB¥</button>
-          <span id="avatar-msg" class="pe-msg"></span>
-        </div>
-      </div>
-    </div>`;
-  }
-
   // Balance
   if (balance !== null) {
     html += `<div class="balance-pill">
@@ -509,6 +490,47 @@ async function init() {
   }
 
   html += `</div>`; // end tips section
+
+  // Edit-your-profile — own page only, tucked away below everything else as a
+  // collapsed drawer (closed by default) so it doesn't compete with the stuff
+  // you actually came to a profile page to look at.
+  if (isOwn) {
+    html += `<div class="profile-editor-bar">
+      <button type="button" id="pe-toggle" class="pe-toggle" aria-expanded="false">
+        <span id="pe-chevron" class="pe-chevron">&#9654;</span>
+        <span class="pe-toggle-label">Edit Your Profile</span>
+      </button>
+      <div id="pe-content" class="pe-content">
+        <div class="pe-row">
+          <label class="pe-label">Birthday
+            <input type="date" id="my-dob-input" class="pe-input" value="${esc(member.dob || '')}">
+          </label>
+          <button class="btn-sm" id="my-profile-save">Save</button>
+          <span id="my-profile-msg" class="pe-msg"></span>
+        </div>
+        <hr class="cosm-divider">
+        <div class="pe-row">
+          <span class="pe-group-label">Name color</span>
+          <div class="cosm-swatches" id="cosm-swatches"></div>
+          <input type="text" id="cosm-status" class="pe-input" style="width:12rem" maxlength="40" placeholder="Short tagline…" value="${esc(member.cosmetics?.status_text || '')}">
+          <button class="btn-sm" id="cosm-save">Save · 500 NB¥</button>
+          <span id="cosm-msg" class="pe-msg"></span>
+        </div>
+        <hr class="cosm-divider">
+        <div class="pe-row">
+          <span class="pe-group-label">Avatar</span>
+          <div class="avatar-upload-circle" id="avatar-upload-circle" title="Click to choose image">
+            ${member.avatar_url ? `<img src="${esc(member.avatar_url)}" alt="">` : '<span class="avatar-plus">+</span>'}
+          </div>
+          <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+          <span class="pe-hint">JPEG / PNG / WebP · max 512 KB</span>
+          <button class="btn-sm" id="avatar-save" style="display:none">Upload · 5,000 NB¥</button>
+          <span id="avatar-msg" class="pe-msg"></span>
+        </div>
+      </div>
+    </div>`;
+  }
+
   document.getElementById('root').innerHTML = html;
 
   // Tap/click (or Enter/Space) an achievement card to reveal its detail line.
@@ -560,6 +582,14 @@ async function init() {
   }
 
   if (isOwn) {
+    document.getElementById('pe-toggle').addEventListener('click', () => {
+      const btn = document.getElementById('pe-toggle');
+      const content = document.getElementById('pe-content');
+      const open = content.classList.toggle('open');
+      btn.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
     const COSM_PALETTE = ['var(--warning)','var(--danger)','#a855f7','var(--link)','var(--market-positive)','#f472b6','var(--danger-alt)','#2dd4bf'];
     let selectedColor = accentColor || '';
 
