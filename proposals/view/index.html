@@ -438,7 +438,11 @@ function decideButtons(p) {
 }
 
 async function doDecide(outcome) {
-  if (!confirm(`Mark this proposal as ${outcome}? This will be visible to everyone.`)) return;
+  if (!await confirmDialog({
+    title: `Mark this proposal as ${outcome}?`,
+    body: 'The decision is visible to everyone as soon as it is recorded.',
+    confirmLabel: `Mark ${outcome}`,
+  })) return;
   const token = getToken();
   try {
     const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/decide`, {
@@ -446,16 +450,22 @@ async function doDecide(outcome) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ outcome }),
     });
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    if (!res.ok) { const e = await res.json(); toast(e.detail || 'Failed', true); return; }
     await reload();
-  } catch { alert('Failed. Please try again.'); }
+  } catch { toast('Failed. Please try again.', true); }
 }
 
 async function doSetAllowAbstain(allow) {
-  const msg = allow
-    ? 'Re-enable "Abstain" as a vote choice?'
-    : 'Remove "Abstain" as a vote choice? Anyone who already voted Abstain will have that vote cleared so they can vote Yes or No instead.';
-  if (!confirm(msg)) return;
+  if (!await confirmDialog(allow ? {
+    title: 'Re-enable "Abstain"?',
+    body: 'Members will be able to abstain again on this proposal.',
+    confirmLabel: 'Re-enable',
+  } : {
+    title: 'Remove "Abstain" as a vote choice?',
+    body: 'Anyone who already voted Abstain will have that vote cleared, so they can vote Yes or No instead.',
+    confirmLabel: 'Remove Abstain',
+    danger: true,
+  })) return;
   const token = getToken();
   try {
     const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/allow-abstain`, {
@@ -463,11 +473,11 @@ async function doSetAllowAbstain(allow) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ allow_abstain: allow }),
     });
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    if (!res.ok) { const e = await res.json(); toast(e.detail || 'Failed', true); return; }
     const result = await res.json();
-    if (result.refunded) alert(`${result.refunded} abstain vote${result.refunded !== 1 ? 's' : ''} cleared.`);
+    if (result.refunded) toast(`${result.refunded} abstain vote${result.refunded !== 1 ? 's' : ''} cleared.`);
     await reload();
-  } catch { alert('Failed. Please try again.'); }
+  } catch { toast('Failed. Please try again.', true); }
 }
 
 function renderVoterBreakdown(p) {
@@ -691,33 +701,42 @@ async function doVote(vote) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ vote }),
     });
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Vote failed'); return; }
+    if (!res.ok) { const e = await res.json(); toast(e.detail || 'Vote failed', true); return; }
     await reload();
-  } catch { alert('Vote failed. Please try again.'); }
+  } catch { toast('Vote failed. Please try again.', true); }
 }
 
 async function doOpenVoting() {
-  if (!confirm('Open this proposal for voting? Members will be able to cast their votes.')) return;
+  if (!await confirmDialog({
+    title: 'Open this proposal for voting?',
+    body: 'Members will be able to cast their votes.',
+    confirmLabel: 'Open voting',
+  })) return;
   const token = getToken();
   try {
     const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/open-voting`, {
       method: 'POST', headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    if (!res.ok) { const e = await res.json(); toast(e.detail || 'Failed', true); return; }
     await reload();
-  } catch { alert('Failed. Please try again.'); }
+  } catch { toast('Failed. Please try again.', true); }
 }
 
 async function doCloseVoting() {
-  if (!confirm('Close voting? Results will be revealed to all members.')) return;
+  if (!await confirmDialog({
+    title: 'Close voting?',
+    body: 'Results are revealed to all members and no further votes can be cast.',
+    confirmLabel: 'Close voting',
+    danger: true,
+  })) return;
   const token = getToken();
   try {
     const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/close-voting`, {
       method: 'POST', headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    if (!res.ok) { const e = await res.json(); toast(e.detail || 'Failed', true); return; }
     await reload();
-  } catch { alert('Failed. Please try again.'); }
+  } catch { toast('Failed. Please try again.', true); }
 }
 
 async function submitComment() {
@@ -743,31 +762,39 @@ async function submitComment() {
 }
 
 async function deleteComment(commentId) {
-  if (!confirm('Delete this comment?')) return;
+  if (!await confirmDialog({
+    title: 'Delete this comment?',
+    body: 'This cannot be undone.',
+    confirmLabel: 'Delete',
+    danger: true,
+  })) return;
   const token = getToken();
   try {
     const res = await fetch(`${API}/proposals/${PROPOSAL_ID}/comments/${commentId}`, {
       method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+    if (!res.ok) { const e = await res.json(); toast(e.detail || 'Failed', true); return; }
     await reload();
-  } catch { alert('Failed. Please try again.'); }
+  } catch { toast('Failed. Please try again.', true); }
 }
 
-function openTokenPrompt() {
-  const token = prompt('Enter your member token:');
+async function openTokenPrompt() {
+  const token = await promptDialog({
+    title: 'Sign in',
+    body: 'Paste the member token you were given. It is stored in this browser only.',
+    field: { label: 'Member token', type: 'password', placeholder: '••••••••' },
+    confirmLabel: 'Sign in',
+  });
   if (!token) return;
-  fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } })
-    .then(r => r.ok ? r.json() : null)
-    .then(info => {
-      if (!info) { alert('Invalid token.'); return; }
-      localStorage.setItem('nbn_token', token);
-      me = info;
-      isBod = (me.roles || []).some(r => r === 'bod' || r === 'admin');
-      isAdmin = (me.roles || []).some(r => r === 'admin');
-      isEligibleVoter = checkEligibility(proposal);
-      render(proposal);
-    });
+  const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
+  const info = res.ok ? await res.json() : null;
+  if (!info) { toast('That token was not accepted.', true); return; }
+  localStorage.setItem('nbn_token', token);
+  me = info;
+  isBod = (me.roles || []).some(r => r === 'bod' || r === 'admin');
+  isAdmin = (me.roles || []).some(r => r === 'admin');
+  isEligibleVoter = checkEligibility(proposal);
+  render(proposal);
 }
 
 async function reload() {

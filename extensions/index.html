@@ -88,9 +88,6 @@
     .check-row.pass { color: var(--text-secondary); }
 
     .actions-row { display: flex; gap: 0.5rem; flex-wrap: wrap; padding: 0.7rem 0.9rem; }
-    .toast { position: fixed; bottom: 1.2rem; right: 1.2rem; background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.82rem; color: var(--text-primary); z-index: 999; }
-    .toast.bad { border-color: var(--danger); color: var(--danger-light); }
   </style>
 </head>
 <body>
@@ -141,11 +138,6 @@ async function api(path, opts) {
     throw err;
   }
   return data;
-}
-function toast(msg, bad) {
-  const t = el('div', 'toast' + (bad ? ' bad' : ''), msg);
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 4200);
 }
 function displayName(raw) {
   if (!raw) return '';

@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="/css/shared.css"><title>Dialog tests</title></head>
+<body>
+<!-- Behavioural tests for toast() / confirmDialog() / promptDialog() in nav.js.
+
+     Run with build/run_dialog_tests.sh, which serves the repo and drives this
+     page with headless Chrome. Not wired into the pre-commit hook: it needs a
+     Chrome binary, which a checkout is not guaranteed to have.
+
+     These assert the parts that are easy to break and impossible to see in a
+     screenshot — that cancelling really resolves false rather than hanging the
+     promise, that a gated confirm cannot be completed with Enter, that the
+     overlay is removed rather than left stacking up invisibly. -->
+<pre id="out"></pre>
+<script src="/nav.js"></script>
+<script>
+const out = [];
+const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+const key = k => document.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+const tick = () => new Promise(r => setTimeout(r, 0));
+
+window.addEventListener('load', async () => {
+  // Escape cancels
+  let p = confirmDialog('x'); await tick(); key('Escape');
+  ok('Escape resolves false', (await p) === false);
+  ok('overlay removed after Escape', !document.querySelector('.dlg-overlay'));
+
+  // clicking the scrim cancels, clicking the dialog does not
+  p = confirmDialog('x'); await tick();
+  document.querySelector('.dlg').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+  await tick();
+  ok('click inside does not close', !!document.querySelector('.dlg-overlay'));
+  document.querySelector('.dlg-overlay').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+  ok('scrim click resolves false', (await p) === false);
+
+  // confirm button resolves true
+  p = confirmDialog('x'); await tick();
+  document.querySelector('.dlg-ok').click();
+  ok('confirm resolves true', (await p) === true);
+
+  // requireText gates the button
+  p = confirmDialog({ body: 'x', requireText: 'Ibaka' }); await tick();
+  const okBtn = document.querySelector('.dlg-ok'), inp = document.querySelector('.dlg-confirm-text input');
+  ok('gated: disabled initially', okBtn.disabled);
+  inp.value = 'wrong'; inp.dispatchEvent(new Event('input'));
+  ok('gated: still disabled on mismatch', okBtn.disabled);
+  inp.value = ' ibaka '; inp.dispatchEvent(new Event('input'));
+  ok('gated: enabled on match (trim + case)', !okBtn.disabled);
+  key('Enter');
+  ok('Enter confirms once enabled', (await p) === true);
+
+  // Enter must not fire while gated
+  p = confirmDialog({ body: 'x', requireText: 'Ibaka' }); await tick();
+  key('Enter'); await tick();
+  ok('Enter inert while gated', !!document.querySelector('.dlg-overlay'));
+  key('Escape'); await p;
+
+  // promptDialog
+  p = promptDialog({ field: { label: 'Token', type: 'password' } }); await tick();
+  const pi = document.querySelector('.dlg-confirm-text input');
+  ok('prompt field is a password field', pi.type === 'password');
+  ok('prompt confirm disabled while empty', document.querySelector('.dlg-ok').disabled);
+  pi.value = '  abc123  '; pi.dispatchEvent(new Event('input'));
+  document.querySelector('.dlg-ok').click();
+  ok('prompt resolves the trimmed value', (await p) === 'abc123');
+
+  p = promptDialog({ field: { label: 'Token' } }); await tick(); key('Escape');
+  ok('prompt cancel resolves null', (await p) === null);
+
+  // no leaked nodes
+  ok('no overlay left behind', !document.querySelector('.dlg-overlay'));
+
+  // toasts
+  toast('a'); toast('b', true);
+  const ts = document.querySelectorAll('.toast-stack .toast');
+  ok('two toasts in one stack', ts.length === 2 && document.querySelectorAll('.toast-stack').length === 1);
+  ok('error toast marked', ts[1].classList.contains('bad') && ts[1].getAttribute('role') === 'alert');
+  ts[0].click(); await new Promise(r => setTimeout(r, 260));
+  ok('toast dismissed on click', document.querySelectorAll('.toast-stack .toast').length === 1);
+
+  document.getElementById('out').textContent = out.join('\n');
+});
+</script></body></html>

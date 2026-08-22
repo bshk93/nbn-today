@@ -1,0 +1,119 @@
+/* Toasts and modal dialogs — the site's replacements for the browser's
+   alert() / confirm() / prompt(), which render as OS chrome ("nbn.today
+   says:"), ignore the theme entirely, and freeze the tab until dismissed.
+
+   Imported from css/nav-chrome.css rather than css/shared.css because
+   nav-chrome.css is the one stylesheet guaranteed to be present wherever
+   nav.js is — and nav.js is what defines toast() and confirmDialog(). The
+   two must not be able to arrive separately. See nav.js § Dialogs.
+
+   The modal deliberately reuses the geometry of teams/team.js's
+   .token-overlay/.token-modal, which was the site's only good modal before
+   this existed. */
+
+/* ── Toasts ────────────────────────────────────────────────────────────── */
+
+.toast-stack {
+  position: fixed; bottom: 1.2rem; right: 1.2rem;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;
+  z-index: 1200; pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  max-width: min(30rem, calc(100vw - 2.4rem));
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.82rem; line-height: 1.45;
+  color: var(--text-primary);
+  box-shadow: 0 6px 20px var(--shadow-color);
+  cursor: pointer;
+  animation: toast-in 0.16s ease-out;
+}
+.toast:hover { border-color: var(--text-muted); }
+.toast.bad { border-left-color: var(--danger); color: var(--danger-light); }
+.toast.good { border-left-color: var(--success); }
+.toast-text { flex: 1; white-space: pre-wrap; overflow-wrap: anywhere; }
+.toast-dismiss { color: var(--text-muted); font-size: 0.95rem; line-height: 1; flex-shrink: 0; }
+.toast.leaving { animation: toast-out 0.16s ease-in forwards; }
+
+@keyframes toast-in  { from { opacity: 0; transform: translateY(6px); } }
+@keyframes toast-out { to   { opacity: 0; transform: translateY(6px); } }
+
+/* ── Modal dialog ──────────────────────────────────────────────────────── */
+
+.dlg-overlay {
+  position: fixed; inset: 0; z-index: 1300;
+  background: var(--overlay-scrim);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+  animation: dlg-fade 0.12s ease-out;
+}
+
+.dlg {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.4rem;
+  width: 100%; max-width: 30rem;
+  max-height: calc(100vh - 3rem); overflow-y: auto;
+  box-shadow: 0 18px 50px var(--shadow-color-strong);
+  animation: dlg-rise 0.14s ease-out;
+}
+.dlg h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
+.dlg-body { font-size: 0.85rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
+.dlg-body + .dlg-details, .dlg-body + .dlg-confirm-text { margin-top: 0.9rem; }
+
+/* The flagged-check list. This is the case that most needed real markup:
+   forced overrides in /transactions were passing "\n\n"-joined rule text
+   through confirm(), where it rendered as an undifferentiated blob. */
+.dlg-details {
+  list-style: none; display: flex; flex-direction: column; gap: 0.4rem;
+  background: var(--bg-subtle); border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 0.7rem 0.8rem;
+  font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary);
+  max-height: 15rem; overflow-y: auto;
+}
+.dlg-details li { display: flex; gap: 0.5rem; }
+.dlg-details li::before { content: '•'; color: var(--danger); flex-shrink: 0; }
+
+.dlg-confirm-text label { display: block; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.35rem; }
+.dlg-confirm-text input {
+  width: 100%; padding: 0.5rem 0.65rem;
+  background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
+}
+.dlg-confirm-text input:focus { outline: none; border-color: var(--accent); }
+
+.dlg-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.2rem; }
+.dlg-actions button {
+  padding: 0.45rem 0.9rem; border-radius: 6px; font-family: inherit;
+  font-size: 0.83rem; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg-page); color: var(--text-secondary);
+}
+.dlg-actions button:hover:not(:disabled) { border-color: var(--text-muted); color: var(--text-primary); }
+.dlg-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
+.dlg-actions .dlg-ok { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+.dlg-actions .dlg-ok:hover:not(:disabled) { background: var(--accent-dark); border-color: var(--accent-dark); color: var(--text-on-accent); }
+/* Destructive and override actions never get the default-button treatment:
+   cancel stays the visually easy choice. */
+.dlg-actions .dlg-ok.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.dlg-actions .dlg-ok.danger:hover:not(:disabled) { background: var(--danger-bg); color: var(--danger-light); }
+
+@keyframes dlg-fade { from { opacity: 0; } }
+@keyframes dlg-rise { from { opacity: 0; transform: translateY(8px) scale(0.99); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast, .toast.leaving, .dlg-overlay, .dlg { animation: none; }
+}
+
+@media (max-width: 480px) {
+  .toast-stack { left: 1rem; right: 1rem; bottom: 1rem; align-items: stretch; }
+  .toast { max-width: none; }
+  .dlg-actions { flex-direction: column-reverse; }
+  .dlg-actions button { width: 100%; }
+}

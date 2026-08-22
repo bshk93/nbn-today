@@ -221,10 +221,6 @@
     .modal-actions button.danger:hover { border-color: var(--danger); color: var(--danger); }
     .modal-actions button:disabled { opacity: 0.45; cursor: default; }
 
-    .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 10002;
-             background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
-             padding: 0.5rem 0.9rem; font-size: 0.8rem; color: var(--text-secondary); }
-    .toast.bad { border-color: var(--danger-border-strong); color: var(--danger-light); }
 
     /* § 5.1 waiver wire */
     .waivers-section { margin: 0 0 1.1rem; }
@@ -577,13 +573,6 @@
       return /(?:^|;\s*)nbn_session_live=/.test(document.cookie);
     }
 
-    function toast(msg, bad) {
-      const t = document.createElement('div');
-      t.className = 'toast' + (bad ? ' bad' : '');
-      t.textContent = msg;
-      document.body.appendChild(t);
-      setTimeout(() => t.remove(), 4500);
-    }
 
     function curYr() {
       if (LEAGUE_YEAR) return LEAGUE_YEAR;

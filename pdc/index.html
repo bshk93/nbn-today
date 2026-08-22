@@ -218,9 +218,6 @@
     .pickrow:last-child { border-bottom: none; }
     .pickrow input[type=checkbox] { width: auto; }
 
-    .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 10001;
-             background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.9rem; font-size: 0.8rem; }
-    .toast.bad { border-color: var(--danger-border-strong); color: var(--danger-light); }
   </style>
 </head>
 <body>
@@ -320,11 +317,6 @@
     return data;
   }
 
-  function toast(msg, bad) {
-    const t = el('div', 'toast' + (bad ? ' bad' : ''), msg);
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 4200);
-  }
 
   function displayName(canonical) {
     if (!canonical) return '';

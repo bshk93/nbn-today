@@ -2023,8 +2023,12 @@ async function prefillRookieScale(slug) {
 
   // Don't silently discard terms already typed; the office may be mid-entry on
   // a deliberate off-scale deal.
-  if (filled && !confirm(`Replace the ${filled} salary row(s) you've entered with the § 7.1 `
-                         + `rookie scale for pick ${data.draft_pick} of ${data.draft_year}?`)) {
+  if (filled && !await confirmDialog({
+    title: 'Replace the terms you have entered?',
+    body: `This overwrites the ${filled} salary row(s) you've entered with the § 7.1 rookie scale `
+        + `for pick ${data.draft_pick} of ${data.draft_year}.`,
+    confirmLabel: 'Use the § 7.1 scale',
+  })) {
     note.className = 'scale-note manual';
     note.textContent = 'Kept the rows you entered — they will be scored against the § 7.1 scale.';
     note.style.display = '';
@@ -2416,7 +2420,7 @@ function setSalaryRowsLocked(locked) {
   document.getElementById('add-salary-btn').style.display = locked ? 'none' : '';
 }
 
-function generateContractRows() {
+async function generateContractRows() {
   const startSeason = document.getElementById('ch-start-season').value.trim() || nextSalaryYear();
   const year1 = parseInt((document.getElementById('ch-year1').value || '').replace(/[^0-9]/g, ''), 10);
   const raisePct = parseFloat(document.getElementById('ch-raise').value) || 0;
@@ -2431,7 +2435,11 @@ function generateContractRows() {
 
   const totalYears = gtdYears + optYears;
   const existingRows = document.querySelectorAll('.salary-row').length;
-  if (existingRows && !confirm(`This replaces the ${existingRows} salary row(s) below with ${totalYears} generated row(s). Continue?`)) return;
+  if (existingRows && !await confirmDialog({
+    title: 'Replace the rows below?',
+    body: `This replaces the ${existingRows} salary row(s) below with ${totalYears} generated row(s).`,
+    confirmLabel: 'Replace rows',
+  })) return;
 
   document.getElementById('salary-rows').innerHTML = '';
   let season = startSeason;
@@ -2486,7 +2494,7 @@ function minScaleForSeason(season) {
 // season's 2-year-veteran figure regardless of actual tier — mirrors
 // _one_year_min_cap_hit server-side, which _check_minimum_contract_cap_hit
 // checks the submission against.
-function generateMinimumContractRows() {
+async function generateMinimumContractRows() {
   const startSeason = document.getElementById('mch-start-season').value.trim() || nextSalaryYear();
   const gtdYears = parseInt(document.getElementById('mch-gtd-years').value, 10) || 0;
   const optType = document.getElementById('mch-opt-type').value;
@@ -2502,7 +2510,11 @@ function generateMinimumContractRows() {
   const totalYears = gtdYears + optYears;
   const isOneYearDeal = totalYears === 1;
   const existingRows = document.querySelectorAll('.salary-row').length;
-  if (existingRows && !confirm(`This replaces the ${existingRows} salary row(s) below with ${totalYears} generated row(s). Continue?`)) return;
+  if (existingRows && !await confirmDialog({
+    title: 'Replace the rows below?',
+    body: `This replaces the ${existingRows} salary row(s) below with ${totalYears} generated row(s).`,
+    confirmLabel: 'Replace rows',
+  })) return;
 
   let season = startSeason;
   const rows = [];
@@ -3641,11 +3653,12 @@ document.getElementById('txn-tbody').addEventListener('click', async function(e)
   const d = (txn && txn.details) || {};
   const bio = bios[d.player];
   const who = bio ? bioDisplayName(bio) : (d.player || 'this player');
-  if (!confirm(
-    `Rescind the renounce of ${who}?\n\n` +
-    `${who} goes back onto ${d.team}'s roster with their cap hold, salary and guarantee terms exactly as they were before the renounce.\n\n` +
-    `This only works while they are still unsigned — if they have signed anywhere since, it will be refused.`
-  )) return;
+  if (!await confirmDialog({
+    title: `Rescind the renounce of ${who}?`,
+    body: `${who} goes back onto ${d.team}'s roster with their cap hold, salary and guarantee terms exactly as they were before the renounce.\n\n`
+        + `This only works while they are still unsigned — if they have signed anywhere since, it will be refused.`,
+    confirmLabel: 'Rescind renounce',
+  })) return;
   btn.disabled = true;
   try {
     const res = await fetch('/api/transactions', {
@@ -3667,8 +3680,14 @@ document.getElementById('txn-tbody').addEventListener('click', async function(e)
     // treats as force-able. Surface them and let the office decide.
     const detail = data.detail;
     if (detail && detail.validation && detail.can_force) {
-      const msgs = (detail.checks || []).filter(c => !c.passed).map(c => c.message).join('\n\n');
-      if (confirm(`§ 3.10 flagged this rescission:\n\n${msgs}\n\nRestore ${who} anyway?`)) {
+      const msgs = (detail.checks || []).filter(c => !c.passed).map(c => c.message);
+      if (await confirmDialog({
+        title: `§ 3.10 flagged this rescission`,
+        body: `Restoring ${who} to ${d.team} would break the following. The override is recorded on the transaction.`,
+        details: msgs,
+        confirmLabel: 'Restore anyway',
+        danger: true,
+      })) {
         const res2 = await fetch('/api/transactions', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
@@ -3681,14 +3700,14 @@ document.getElementById('txn-tbody').addEventListener('click', async function(e)
         });
         if (res2.ok) { location.reload(); return; }
         const d2 = await res2.json().catch(() => ({}));
-        alert(typeof d2.detail === 'string' ? d2.detail : `Error ${res2.status}`);
+        toast(typeof d2.detail === 'string' ? d2.detail : `Error ${res2.status}`, true);
       }
     } else {
-      alert(typeof detail === 'string' ? detail : `Error ${res.status}`);
+      toast(typeof detail === 'string' ? detail : `Error ${res.status}`, true);
     }
     btn.disabled = false;
   } catch {
-    alert('Network error.');
+    toast('Network error.', true);
     btn.disabled = false;
   }
 });
@@ -3755,10 +3774,16 @@ async function resolveOffer(btn) {
   if (!o) return;
   const who = o.player_name || o.player;
   const dest = outcome === 'matched' ? o.retaining_team : o.offering_team;
-  const msg = outcome === 'matched'
-    ? `${o.retaining_team} matches the offer for ${who}?\n\n${who} stays with ${o.retaining_team} on the offered terms, and ${o.offering_team}'s cap hold is released.`
-    : `${o.retaining_team} declines to match for ${who}?\n\n${who} signs with ${o.offering_team} on the offered terms.`;
-  if (!confirm(msg)) return;
+  if (!await confirmDialog(outcome === 'matched' ? {
+    title: `${o.retaining_team} matches the offer for ${who}?`,
+    body: `${who} stays with ${o.retaining_team} on the offered terms, and ${o.offering_team}'s cap hold is released.`,
+    confirmLabel: 'Record the match',
+  } : {
+    title: `${o.retaining_team} declines to match for ${who}?`,
+    body: `${who} signs with ${o.offering_team} on the offered terms.`,
+    confirmLabel: 'Record the decline',
+    danger: true,
+  })) return;
 
   wrap_disable(true);
   try {
@@ -3779,7 +3804,13 @@ async function resolveOffer(btn) {
       const bad = (detail.checks || []).filter(c => !c.passed);
       const errs = bad.filter(c => c.level === 'error');
       const text = bad.map(c => c.message).join('\n\n');
-      if (!errs.length && detail.can_force && confirm(`§ 3.15 flagged this:\n\n${text}\n\nProceed anyway?`)) {
+      if (!errs.length && detail.can_force && await confirmDialog({
+        title: '§ 3.15 flagged this decision',
+        body: 'These checks did not pass. The override is recorded on the transaction.',
+        details: bad.map(c => c.message),
+        confirmLabel: 'Proceed anyway',
+        danger: true,
+      })) {
         const res2 = await fetch('/api/transactions', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
@@ -3792,15 +3823,15 @@ async function resolveOffer(btn) {
         });
         if (res2.ok) { location.reload(); return; }
         const d2 = await res2.json().catch(() => ({}));
-        alert(typeof d2.detail === 'string' ? d2.detail : `Error ${res2.status}`);
+        toast(typeof d2.detail === 'string' ? d2.detail : `Error ${res2.status}`, true);
       } else {
-        alert(text || `Error ${res.status}`);
+        toast(text || `Error ${res.status}`, true);
       }
     } else {
-      alert(typeof detail === 'string' ? detail : `Error ${res.status}`);
+      toast(typeof detail === 'string' ? detail : `Error ${res.status}`, true);
     }
   } catch {
-    alert('Network error.');
+    toast('Network error.', true);
   }
   wrap_disable(false);
 }
@@ -3816,7 +3847,12 @@ document.getElementById('txn-tbody').addEventListener('click', async function(e)
   const btn = e.target.closest('.delete-txn-btn');
   if (!btn) return;
   const id = btn.dataset.id;
-  if (!confirm('Permanently delete this transaction record?\n\nThis removes the row from the log forever. It does not touch rosters, cap holds, or any other bio changes the transaction made.')) return;
+  if (!await confirmDialog({
+    title: 'Permanently delete this transaction record?',
+    body: 'This removes the row from the log forever. It does not touch rosters, cap holds, or any other bio changes the transaction made.',
+    confirmLabel: 'Delete record',
+    danger: true,
+  })) return;
   btn.disabled = true;
   try {
     const res = await fetch(`/api/transactions/${id}`, {
@@ -3828,11 +3864,11 @@ document.getElementById('txn-tbody').addEventListener('click', async function(e)
       renderTable();
     } else {
       const data = await res.json().catch(() => ({}));
-      alert(data.detail || `Error ${res.status}`);
+      toast(data.detail || `Error ${res.status}`, true);
       btn.disabled = false;
     }
   } catch {
-    alert('Network error.');
+    toast('Network error.', true);
     btn.disabled = false;
   }
 });
@@ -3882,10 +3918,10 @@ function startNoteEdit(cell) {
           if (txn) txn.description = newValue;
         } else {
           const data = await res.json().catch(() => ({}));
-          alert(data.detail || `Error ${res.status}`);
+          toast(data.detail || `Error ${res.status}`, true);
         }
       } catch {
-        alert('Network error.');
+        toast('Network error.', true);
       }
     }
     renderTable();

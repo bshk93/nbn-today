@@ -154,7 +154,9 @@ assert len(TEAMS) == 30
 
 changed = missing = stale = 0
 for p in sorted(ROOT.rglob('*.html')):
-    if '/node_modules/' in p.as_posix():
+    rel = p.relative_to(ROOT).as_posix()
+    # build/ holds test fixtures, not pages anyone links to or shares.
+    if rel.startswith('build/') or '/node_modules/' in rel:
         continue
     url = url_for(p)
     text = p.read_text()

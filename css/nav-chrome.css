@@ -6,6 +6,11 @@
    Built by nav.js, which runs on every page (directly or injected by one
    of those scripts) — see nav.js for the markup these rules target. */
 
+/* Toast/modal styling rides along here on purpose: this is the one stylesheet
+   guaranteed to be present wherever nav.js is, and nav.js is what defines
+   toast() and confirmDialog(). */
+@import url("/css/dialogs.css");
+
 /* Nav */
 .nav { margin-bottom: 1.75rem; font-size: .875rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; }
 .nav a { color: var(--text-muted); text-decoration: none; }

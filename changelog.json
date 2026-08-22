@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.1.73",
+    "date": "2026-08-22",
+    "changes": [
+      "Replaced the grey \"nbn.today says:\" browser dialogs with the site's own: errors now appear as themed toasts instead of blocking the tab, and confirmations as proper modals",
+      "Transactions: the \u00a7 3.10 and \u00a7 3.15 override prompts now list each failed check as its own line, and the override button is red rather than the default action \u2014 previously the rule text was jammed into a system dialog as one blob",
+      "Proposals: sign-in now uses a real password field instead of the browser's prompt box",
+      "Swept /transactions and /proposals/view (39 dialogs); free agency, extensions and the PDC dashboard now share one toast instead of three near-identical copies"
+    ]
+  },
+  {
     "version": "0.1.72",
     "date": "2026-08-22",
     "changes": [

@@ -553,6 +553,215 @@ async function _loadPlayerData() {
   }
 }
 
+// ── Dialogs ─────────────────────────────────────────────────────────────────
+//
+// The site's replacements for alert() / confirm() / prompt(). Those render as
+// OS chrome (Chrome prefixes every one with "nbn.today says:"), ignore the
+// theme, can't be laid out, and block the tab — which was actively bad for the
+// forced-override confirms in /transactions, where a rules decision was being
+// made from "\n\n"-joined text in a grey system box, and for the nine separate
+// "Enter your NBN token:" prompts, which collected a credential in an
+// unstyled, unmaskable system field.
+//
+// Styling lives in css/dialogs.css, imported from css/nav-chrome.css so it
+// cannot arrive without this file. Pages that pull nav.js in dynamically
+// (teams/team.js, awards/*.js) must await that load before calling these.
+
+/**
+ * Non-blocking status message, bottom-right.
+ *
+ * Signature-compatible with the per-page copies this replaced, so
+ * `toast(msg, true)` still means "this is an error".
+ *
+ * Errors linger noticeably longer than confirmations: an error is often the
+ * only place an API's `detail` string is shown, and a message you have to read
+ * fast is worse than the alert() it replaced. Either can be clicked away.
+ */
+function toast(msg, bad) {
+  let stack = document.querySelector('.toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+
+  const t = document.createElement('div');
+  t.className = 'toast' + (bad ? ' bad' : ' good');
+  t.setAttribute('role', bad ? 'alert' : 'status');
+
+  const text = document.createElement('span');
+  text.className = 'toast-text';
+  text.textContent = msg;
+  const x = document.createElement('span');
+  x.className = 'toast-dismiss';
+  x.textContent = '×';
+  t.append(text, x);
+
+  let done = false;
+  const dismiss = () => {
+    if (done) return;
+    done = true;
+    t.classList.add('leaving');
+    setTimeout(() => t.remove(), 200);
+  };
+  t.addEventListener('click', dismiss);
+  setTimeout(dismiss, bad ? 9000 : 4200);
+
+  stack.appendChild(t);
+  return t;
+}
+
+/**
+ * Shared modal core behind confirmDialog and promptDialog. Not exported —
+ * call one of those. `settle(ok, input)` turns the outcome into whatever the
+ * caller's promise should resolve to.
+ */
+function _dialog(o, settle) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'dlg-overlay';
+
+    const dlg = document.createElement('div');
+    dlg.className = 'dlg';
+    dlg.setAttribute('role', 'dialog');
+    dlg.setAttribute('aria-modal', 'true');
+
+    const h = document.createElement('h3');
+    h.textContent = o.title;
+    dlg.appendChild(h);
+
+    if (o.body) {
+      const b = document.createElement('div');
+      b.className = 'dlg-body';
+      b.textContent = o.body;
+      dlg.appendChild(b);
+    }
+
+    // The flagged-check list. This is the case that most needed real markup:
+    // forced overrides in /transactions were passing "\n\n"-joined rule text
+    // through confirm(), where it rendered as an undifferentiated blob.
+    if (o.details && o.details.length) {
+      const ul = document.createElement('ul');
+      ul.className = 'dlg-details';
+      for (const d of o.details) {
+        const li = document.createElement('li');
+        const span = document.createElement('span');
+        span.textContent = d;
+        li.appendChild(span);
+        ul.appendChild(li);
+      }
+      dlg.appendChild(ul);
+    }
+
+    let input = null;
+    if (o.field || o.requireText) {
+      const f = o.field || { label: `Type "${o.requireText}" to confirm` };
+      const wrap = document.createElement('div');
+      wrap.className = 'dlg-confirm-text';
+      const label = document.createElement('label');
+      label.textContent = f.label;
+      input = document.createElement('input');
+      input.type = f.type || 'text';
+      input.autocomplete = 'off';
+      input.spellcheck = false;
+      if (f.placeholder) input.placeholder = f.placeholder;
+      if (f.value) input.value = f.value;
+      label.htmlFor = input.id = 'dlg-field-' + Math.random().toString(36).slice(2, 8);
+      wrap.append(label, input);
+      dlg.appendChild(wrap);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'dlg-actions';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.textContent = o.cancelLabel || 'Cancel';
+    const ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'dlg-ok' + (o.danger ? ' danger' : '');
+    ok.textContent = o.confirmLabel || 'Confirm';
+    actions.append(cancel, ok);
+    dlg.appendChild(actions);
+
+    const gate = () => {
+      if (o.requireText) {
+        ok.disabled = input.value.trim().toLowerCase() !== o.requireText.toLowerCase();
+      } else if (input && o.field && o.field.required !== false) {
+        ok.disabled = !input.value.trim();
+      }
+    };
+    gate();
+
+    let settled = false;
+    const close = okd => {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('keydown', onKey, true);
+      overlay.remove();
+      resolve(settle(okd, input));
+    };
+    function onKey(e) {
+      if (e.key === 'Escape') { e.stopPropagation(); close(false); }
+      else if (e.key === 'Enter' && !ok.disabled && e.target !== cancel) { e.preventDefault(); close(true); }
+    }
+
+    cancel.addEventListener('click', () => close(false));
+    ok.addEventListener('click', () => close(true));
+    overlay.addEventListener('mousedown', e => { if (e.target === overlay) close(false); });
+    document.addEventListener('keydown', onKey, true);
+    if (input) input.addEventListener('input', gate);
+
+    overlay.appendChild(dlg);
+    document.body.appendChild(overlay);
+    // Focus the field if there is one, otherwise the *safe* control — a stray
+    // Enter or a held-down key must not be able to complete the action.
+    (input || cancel).focus();
+  });
+}
+
+/**
+ * Themed replacement for confirm(). Resolves true if the user confirmed;
+ * cancelling (button, Escape, or clicking the scrim) resolves false. It never
+ * rejects, so call sites read as `if (!await confirmDialog(…)) return;`.
+ *
+ *   await confirmDialog('Delete this comment?')
+ *   await confirmDialog({
+ *     title: 'Force this signing?',
+ *     body: '§ 3.15 flagged this offer sheet.',
+ *     details: ['Salary matching: …', 'Hard cap: …'],   // one <li> each
+ *     confirmLabel: 'Submit anyway',
+ *     danger: true,                                     // red, non-default button
+ *     requireText: 'Ibaka',                             // must be typed to enable
+ *   })
+ *
+ * `danger` is not decoration: it drops the confirm button out of the default
+ * blue so cancel stays the visually easy choice. Use it for anything
+ * destructive and for anything that overrides a rules check.
+ */
+function confirmDialog(opts) {
+  const o = typeof opts === 'string' ? { body: opts } : (opts || {});
+  return _dialog({ title: 'Are you sure?', ...o }, ok => ok === true);
+}
+
+/**
+ * Themed replacement for prompt(). Resolves the trimmed string, or null if
+ * cancelled. Pass `field.type: 'password'` for credentials.
+ *
+ *   await promptDialog({
+ *     title: 'Sign in',
+ *     body: 'Paste the member token you were given.',
+ *     field: { label: 'Member token', type: 'password' },
+ *     confirmLabel: 'Sign in',
+ *   })
+ */
+function promptDialog(opts) {
+  const o = opts || {};
+  return _dialog(
+    { title: 'Enter a value', confirmLabel: 'OK', ...o, field: { label: '', ...(o.field || {}) } },
+    (ok, input) => (ok ? input.value.trim() : null),
+  );
+}
+
 // ── CSV utilities ────────────────────────────────────────────────────────────
 
 function parseLine(line) {
