@@ -10,19 +10,67 @@ const _ICON_PERSON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12
 
 // ── Theme ────────────────────────────────────────────────────────────────────
 //
-// Named themes, chosen from the picker nav.js injects into every page's
-// .nav. Each id here must have a matching :root[data-theme="..."] block in
-// css/theme.css (the bare :root there is "nbn-today", the default/fallback).
-// Applied as early as possible (top-level, not waiting for DOMContentLoaded)
+// Named themes, chosen from the picker nav.js injects into every page's .nav.
+// Every id must have a matching :root[data-theme="..."] block in css/theme.css
+// (the bare :root there is "nbn-today", the default/fallback). The theme is
+// applied as early as possible — top-level, not waiting for DOMContentLoaded —
 // to minimize a flash of the wrong theme on load.
-
-const THEMES = [
-  { id: 'nbn-today',       label: 'NBN Today',       icon: '🌙' },
-  { id: 'nbn-today-light', label: 'NBN Today Light', icon: '☀️' },
-  { id: 'lavender-rose',   label: 'Lavender Rose',   icon: '🌹' },
+//
+// Two themes are free and are hardcoded here on purpose: nav.js is on every
+// page including the signed-out ones, and a picker that can't render without a
+// successful fetch is a picker that disappears whenever the API hiccups. Every
+// other theme is unlocked with NB¥ and comes from GET /api/themes, cached in
+// localStorage so it still renders on the first paint of the next page load.
+// Prices are never written here — the catalog is the price list, and the
+// server owns it (nbn-api/routers/themes.py).
+const FREE_THEMES = [
+  { id: 'nbn-today',       label: 'NBN Today',       icon: '🌙', free: true },
+  { id: 'nbn-today-light', label: 'NBN Today Light', icon: '☀️', free: true },
 ];
+let THEMES = FREE_THEMES.slice();
 const THEME_STORAGE_KEY = 'nbn_theme_pref'; // 'auto' or one of THEMES[].id
+const THEME_CATALOG_KEY = 'nbn_theme_catalog'; // cached GET /api/themes
+const THEME_OWNED_KEY = 'nbn_themes_owned';    // cached cosmetics.themes for this browser's member
 const DEFAULT_THEME_PREF = 'nbn-today'; // dark — used until a visitor explicitly picks something, incl. "Match System"
+
+// This browser's member's NB¥ balance, once the profile picker has fetched it.
+// Only used to tell someone what an unlock would leave them with; the server
+// is what actually refuses a purchase they can't afford.
+let _myBalance = null;
+
+function _readJson(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+}
+
+function _ownedThemes() { return _readJson(THEME_OWNED_KEY, []); }
+
+function _themeEntry(id) { return THEMES.find(t => t.id === id); }
+
+// A theme is usable if it's free, or if the owned-list cached from this
+// member's last /api/members/me says they bought it. The cache is what makes
+// the theme paintable before any fetch resolves; the fetch then corrects it,
+// which is why _applyTheme runs again when it lands.
+function _canUseTheme(id) {
+  const e = _themeEntry(id);
+  if (!e) return true;   // unknown id — a theme whose catalog entry hasn't loaded yet; don't fight it
+  return e.free || _ownedThemes().includes(id);
+}
+
+// Load the cached catalog immediately (before first paint), then refresh it.
+(function _initThemeCatalog() {
+  const cached = _readJson(THEME_CATALOG_KEY, null);
+  if (Array.isArray(cached) && cached.length) THEMES = cached;
+  fetch('/api/themes')
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d || !Array.isArray(d.themes)) return;
+      THEMES = d.themes;
+      try { localStorage.setItem(THEME_CATALOG_KEY, JSON.stringify(d.themes)); } catch { /* private browsing */ }
+      _rebuildThemeMenu();
+      _applyTheme();
+    })
+    .catch(() => {});
+})();
 
 function _systemTheme() {
   return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)
@@ -38,8 +86,18 @@ function _effectiveTheme() {
   return pref === 'auto' ? _systemTheme() : pref;
 }
 
+// The theme actually painted: the stored preference, unless it's one this
+// browser hasn't unlocked, in which case the default. That fallback is not
+// enforcement — every theme's CSS is public and localStorage is the visitor's
+// own — it is so a member on a fresh browser, or one who never bought the
+// theme their preference names, gets a coherent page instead of a bare one.
+function _activeTheme() {
+  const id = _effectiveTheme();
+  return _canUseTheme(id) ? id : DEFAULT_THEME_PREF;
+}
+
 function _applyTheme() {
-  document.documentElement.setAttribute('data-theme', _effectiveTheme());
+  document.documentElement.setAttribute('data-theme', _activeTheme());
   _refreshThemeMenu();
 }
 
@@ -66,9 +124,89 @@ function _refreshThemeMenu() {
   }
   const btn = document.querySelector('.theme-btn');
   if (btn) {
-    const active = THEMES.find(t => t.id === _effectiveTheme());
+    const active = _themeEntry(_activeTheme());
     btn.textContent = active ? active.icon : '🎨';
   }
+}
+
+function _fmtNby(n) {
+  return 'NB¥' + (+n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+/**
+ * Buy a theme. Locked themes stay in the menu, priced — the same "disabled
+ * with the reason, not hidden" rule the roster ⋯ menu and the suggestions
+ * Edit button follow: what it costs to unlock is the answer to why it's
+ * greyed out, and hiding it just makes the feature invisible.
+ */
+async function _unlockTheme(entry, menu) {
+  let token = null;
+  try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
+  if (!token) {
+    token = await promptForToken({ body: 'Themes are unlocked with NB¥ from your member balance, so this needs your token.' });
+    if (!token) return;
+  }
+
+  const price = _fmtNby(entry.price);
+  const after = _myBalance == null ? '' : ` You would have ${_fmtNby(_myBalance - entry.price)} left.`;
+  const ok = await confirmDialog({
+    title: `Unlock ${entry.label}?`,
+    body: `${entry.label} costs ${price}, once — it stays unlocked on your account after this.${after}`,
+    confirmLabel: `Spend ${price}`,
+  });
+  if (!ok) return;
+
+  let res, data;
+  try {
+    res = await fetch(`/api/members/me/themes/${encodeURIComponent(entry.id)}`,
+                      { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
+    data = await res.json();
+  } catch {
+    toast('Could not reach the server to unlock that theme', true);
+    return;
+  }
+  if (!res.ok) {
+    // The refusal string is the server's — it names the price and the
+    // balance, and this page never composes one of its own.
+    toast(data?.detail || 'Could not unlock that theme', true);
+    return;
+  }
+
+  try { localStorage.setItem(THEME_OWNED_KEY, JSON.stringify(data.owned || [])); } catch { /* private browsing */ }
+  _myBalance = data.new_balance;
+  _rebuildThemeMenu();
+  _setThemePref(entry.id);
+  menu?.classList.remove('open');
+  toast(`${entry.label} unlocked — ${_fmtNby(data.new_balance)} left`);
+}
+
+function _themeMenuItems(menu) {
+  menu.textContent = '';
+  const choices = [{ id: 'auto', label: 'Match System', icon: '🖥️', free: true }, ...THEMES];
+  choices.forEach(c => {
+    const locked = !c.free && !_ownedThemes().includes(c.id);
+    const item = document.createElement('div');
+    item.className = 'theme-menu-item' + (locked ? ' locked' : '');
+    item.dataset.themeChoice = c.id;
+    const price = locked ? `<span class="theme-menu-price">${_fmtNby(c.price)}</span>` : '';
+    item.innerHTML = `<span class="theme-menu-icon">${c.icon}</span>`
+      + `<span class="theme-menu-label"></span>${price}<span class="theme-menu-check">✓</span>`;
+    item.querySelector('.theme-menu-label').textContent = c.label;
+    item.title = locked ? `Unlock ${c.label} for ${_fmtNby(c.price)}` : c.label;
+    item.addEventListener('click', () => {
+      if (locked) { _unlockTheme(c, menu); return; }
+      _setThemePref(c.id);
+      menu.classList.remove('open');
+    });
+    menu.appendChild(item);
+  });
+}
+
+// Called when the catalog or the owned list arrives after the menu is already
+// on the page — both are fetched, and neither blocks the first paint.
+function _rebuildThemeMenu() {
+  const menu = document.querySelector('.theme-menu');
+  if (menu) { _themeMenuItems(menu); _refreshThemeMenu(); }
 }
 
 function _buildThemePicker() {
@@ -82,16 +220,7 @@ function _buildThemePicker() {
 
   const menu = document.createElement('div');
   menu.className = 'theme-menu';
-
-  const choices = [{ id: 'auto', label: 'Match System', icon: '🖥️' }, ...THEMES];
-  choices.forEach(c => {
-    const item = document.createElement('div');
-    item.className = 'theme-menu-item';
-    item.dataset.themeChoice = c.id;
-    item.innerHTML = `<span class="theme-menu-icon">${c.icon}</span><span class="theme-menu-label">${c.label}</span><span class="theme-menu-check">✓</span>`;
-    item.addEventListener('click', () => { _setThemePref(c.id); menu.classList.remove('open'); });
-    menu.appendChild(item);
-  });
+  _themeMenuItems(menu);
 
   btn.addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('open'); });
 
@@ -208,6 +337,7 @@ function _buildProfilePicker() {
           .then(r => r.ok ? r.json() : null)
           .then(b => {
             if (b && b.balance != null) {
+              _myBalance = +b.balance;
               balanceEl.textContent = 'NB¥ ' + (+b.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
           })
@@ -221,6 +351,13 @@ function _buildProfilePicker() {
             if (!profile) return;
             const nameColor = profile.cosmetics?.name_color;
             if (nameColor) greetEl.style.color = nameColor;
+            // Unlocked themes ride along on the cosmetics the picker already
+            // fetches. Caching them is what lets a paid theme paint on the
+            // next page load before this call resolves; re-applying here is
+            // what corrects the cache when it's wrong.
+            try { localStorage.setItem(THEME_OWNED_KEY, JSON.stringify(profile.cosmetics?.themes || [])); } catch { /* private browsing */ }
+            _rebuildThemeMenu();
+            _applyTheme();
             if (profile.avatar_url) {
               avatarWrap.innerHTML = `<img class="member-banner-avatar" src="${profile.avatar_url}?v=${Date.now()}" alt="">`;
             }

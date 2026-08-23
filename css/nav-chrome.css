@@ -83,6 +83,17 @@
 .theme-menu-label { flex: 1; }
 .theme-menu-check { font-size: 0.75rem; color: var(--accent-light); flex-shrink: 0; opacity: 0; }
 .theme-menu-item.active .theme-menu-check { opacity: 1; }
+/* Locked (not yet unlocked with NB¥). Dimmed but still clickable — clicking
+   is how you buy it — so this is not `pointer-events: none`, and the price
+   tag is the whole explanation of why it looks different. */
+.theme-menu-item.locked { color: var(--text-muted); }
+.theme-menu-item.locked .theme-menu-icon { opacity: 0.55; }
+.theme-menu-item.locked:hover { color: var(--text-secondary); }
+.theme-menu-price {
+  font-size: 0.7rem; color: var(--gold); background: var(--gold-bg);
+  border: 1px solid var(--gold-chip-border); border-radius: 999px;
+  padding: 0.05rem 0.4rem; white-space: nowrap; flex-shrink: 0;
+}
 
 /* Profile picker — last in .nav-actions. Hidden (via inline style, set by
    nav.js) until a signed-in member is confirmed, so a signed-out visitor

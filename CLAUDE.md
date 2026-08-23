@@ -380,6 +380,7 @@ precise.
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
 | Change the suggestions board or its comment threads | `suggestions/index.html` + `nbn-api/routers/suggestions.py` (see "Suggestions board" below) |
 | Change the team-facing FA offer form (⋯ menu, contract editor, submit confirm) | `free-agency/index.html` — the block under "Team-facing offers"; endpoints `POST/PATCH/DELETE /api/fa/offers`, `POST /api/fa/offers/{id}/submit`, `GET /api/fa/commitment/{team}`. an offer's legality and every dollar shown come from `POST /api/validate/sign`, never from page code (see "Team-facing FA offers" below) |
+| Add a theme, or change what one costs | Colours: `build/make_team_theme.py` → `css/theme.css` (the team blocks are **generated**, don't hand-edit). Catalog and price: `LIVE_TEAM_THEMES` / `THEME_PRICE` in `nbn-api/routers/themes.py`. Picker: `_themeMenuItems` / `_unlockTheme` — `nav.js`. Run `build/check_theme_catalog.sh` after (see "Unlockable themes" below) |
 | Change the PDC committee dashboard (FA review, the 1,000-ball ballot, remand/void, finalize/unlock, the agent queue, head controls) | `pdc/index.html`; data from `/api/fa/*` in `nbn-api/routers/free_agency.py`; design record in `docs/pdc-free-agency-spec.md`. Three roles, and a free agent passes through them in order — `agent` curates, `fac` ballots, `fac_head` runs it (see "The agent stage" below). Served at both `nbn.today/pdc` and `pdc.nbn.today` — the subdomain is `/etc/nginx/sites-available/pdc.nbn.today`, the **same docroot** with `/` → `/pdc/index.html`, so every fetch stays same-origin (no CORS, no static-asset CORS gap). Keep any new path rule in sync with the `nbn.today` block or it works on one host and 404s on the other |
 
 ---
@@ -1058,6 +1059,71 @@ button does, and only when the box is checked. Extending notification to any
 other write path (the roster-page ⋯ menu's scoped `PUT`/`DELETE
 /api/trading-block/{team}/player/{slug}`, say) means adding a call there
 deliberately, not toggling a shared setting.
+
+### Unlockable themes
+
+Two themes are free (`nbn-today` dark, `nbn-today-light`); **every other one is
+bought once with NB¥ at a flat 1,000** — Lavender Rose, and one theme per team.
+Priced flat on purpose, own-team included: 1,000 sits between the two existing
+NB¥ sinks (a cosmetics update at 500, an avatar at 5,000) against a median
+member balance of ~2,250.
+
+**Entitlement is server-side; selection is not.** `nbn-api/routers/themes.py` is
+the only thing that decides who paid for what, storing it in
+`members[name]["cosmetics"]["themes"]` beside the name colour, and returning it
+on the `/api/members/me` the nav already fetches. Which theme a browser is
+*showing* stays in `localStorage`, because `nav.js` applies the theme at the top
+of the file, before any fetch — waiting on the network to paint would put a
+flash of the wrong colours on every page load for every visitor, in exchange for
+guarding a palette whose CSS is public either way. So the page is trusted to
+render honestly and only the charge is guarded. `_canUseTheme` falls back to the
+default for a locked id, which is about a fresh browser rather than about theft.
+
+| Piece | Where |
+|---|---|
+| Catalog, price, purchase | `THEME_PRICE` / `LIVE_TEAM_THEMES` — `nbn-api/routers/themes.py`; `GET /api/themes` (public), `POST /api/members/me/themes/{id}` |
+| Picker, lock state, buy flow | `_themeMenuItems` / `_unlockTheme` — `nav.js` |
+| Colours | `css/theme.css`, one `:root[data-theme="…"]` block of 59 tokens each |
+| Team blocks | **generated** by `build/make_team_theme.py` from `build/team-colors.json` |
+
+Four things to know before touching it:
+
+- **`nav.js` hardcodes only the two free themes.** It is on every page including
+  signed-out ones, and a picker that can't render without a successful fetch
+  disappears whenever the API hiccups. Everything else comes from
+  `GET /api/themes`, cached in `localStorage` so it paints on first load. **No
+  price is ever written in the page**, and the 402 refusal string is the
+  server's — the same rule `/free-agency` follows.
+- **Locked themes stay in the menu with their price**, not hidden — the same
+  "disabled with the reason" pattern as the roster ⋯ menu and the suggestions
+  Edit button. The price *is* the reason.
+- **Team blocks are generated, and regenerating overwrites hand-edits.** The
+  recipe: keep the dark theme's *lightness* for every token and change only the
+  hue — primary hue for backgrounds/borders/text at a low chroma, accent hue for
+  the accent family, semantic colours (danger/success/gold) left alone so red
+  still means alarm. `--text-on-accent` is *computed* black-or-white, which is
+  what stops the gold and silver teams shipping unreadable buttons. Contrast
+  repair is capped at what the same token already achieved in the dark theme, so
+  a team theme inherits that theme's contrast character exactly — never worse,
+  and never silently better. Verified: `team-phx` and `nbn-today` return the
+  **same 38 failures** across the same audited pages.
+- **A team is only listed once its block exists.** `LIVE_TEAM_THEMES` in the API
+  is the gate; adding a team there without generating the CSS sells 1,000 NB¥ of
+  nothing. `bash build/check_theme_catalog.sh` checks the two repos agree, and
+  `bash build/contrast_audit.sh team-xxx` is what actually clears a new theme.
+
+Adding the remaining 29:
+
+```bash
+python3 build/make_team_theme.py --all --write   # or one abbr at a time
+bash build/contrast_audit.sh team-bos            # must match nbn-today's count
+# then add the abbr to LIVE_TEAM_THEMES in nbn-api/routers/themes.py
+```
+
+> `build/team-colors.json` is the generator's colour source. Three older
+> hardcoded copies of team colours still exist (`champions/index.html`,
+> `frivolities/index.html`, `nbn-api/routers/discord.py`) and are **not** fed
+> from it — unifying them is a separate job.
 
 ### Suggestions board
 
