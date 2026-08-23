@@ -6,6 +6,23 @@ where useful, the original problem statement below it.
 
 ---
 
+### ~~[P3] The data backup commits 144 no-op snapshots a day~~ — DONE 2026-08-23
+`poopoo.py` rewrote `poopoo.json` on every 10-minute run whether or not the
+diff had changed, and `nbs-snapshot` committed each rewrite. Re-measured on the
+day it was fixed: **558 of the backup's 646 commits** were one changed line,
+`generated_at`, and nothing else — 87% of a history whose reason for existing
+is that you can read it to spot logical corruption.
+
+Fixed by `write_report` in `build/poopoo.py`: the report is written only when
+its content minus `generated_at` differs from what is already on disk. Freshness
+is preserved without a diff — the file's mtime is bumped on every run either
+way, so nginx's `Last-Modified` says when the job last *ran* while
+`generated_at` now says when the answer last *changed*. `/poopoo` reads both,
+and shows "Unchanged since …" when they differ.
+
+The 558 commits already in the backup are left alone; rewriting that history
+would cost more than it returns, and it stops growing today.
+
 ### ~~[P2] Two different answers to "what season is it?" (was three)~~ — DONE 2026-08-21
 Found 2026-08-19 while building the box score integrity check. Three
 independent definitions of the season boundary existed and did not agree:

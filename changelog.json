@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.81",
+    "date": "2026-08-23",
+    "changes": [
+      "/poopoo now tells you when its answer last changed, not just when it last ran \u2014 the check still runs every 10 minutes, and the freshness bar reads \"Unchanged since \u2026\" on the runs that found nothing new",
+      "The cap-sheet diff is only rewritten when something in it actually changes, so the nightly data backup stops filling up with snapshots whose only difference is the clock"
+    ]
+  },
+  {
     "version": "0.1.80",
     "date": "2026-08-23",
     "changes": [

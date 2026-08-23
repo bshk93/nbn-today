@@ -691,12 +691,19 @@
       return `<span class="cat-badge" style="color:${m.color}"><span class="dot" style="background:${m.color}"></span>${m.label}</span>`;
     }
 
-    function nextRefreshLabel(generatedAt) {
-      const gen = new Date(generatedAt);
+    // A time on its own reads as today; the job can now go days without
+    // changing the file, so date it once it isn't.
+    function fmtWhen(d) {
+      const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      if (d.toDateString() === new Date().toDateString()) return time;
+      return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${time}`;
+    }
+
+    function nextRefreshLabel(checkedAt) {
+      const gen = new Date(checkedAt);
       const next = new Date(gen);
       next.setUTCMinutes(Math.ceil((gen.getUTCMinutes() + 1) / 10) * 10, 0, 0);
-      const fmt = d => d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      return { last: fmt(gen), next: fmt(next) };
+      return { last: fmtWhen(gen), next: fmtWhen(next) };
     }
 
     function renderLegend() {
@@ -1028,10 +1035,13 @@
     }
 
     async function load() {
-      let data;
+      let data, checkedAt;
       try {
         const r = await fetch('/data/poopoo.json', { cache: 'no-store' });
         if (!r.ok) throw new Error('not found');
+        // The job only rewrites the file when the answer changes, so
+        // generated_at is when it last changed; the mtime is when it last ran.
+        checkedAt = r.headers.get('Last-Modified');
         data = await r.json();
       } catch (e) {
         document.getElementById('status').textContent = 'No data yet — the job hasn\'t run.';
@@ -1040,11 +1050,14 @@
 
       renderLegend();
 
-      const { last, next } = nextRefreshLabel(data.generated_at);
+      const changedAt = new Date(data.generated_at);
+      const { last, next } = nextRefreshLabel(checkedAt || data.generated_at);
+      const unchanged = new Date(checkedAt || data.generated_at) - changedAt > 60000;
       document.getElementById('freshness').innerHTML = `
         <span>Season <b>${data.season}</b></span>
         <span>Last checked <b>${last}</b></span>
         <span>Next check <b>${next}</b></span>
+        ${unchanged ? `<span>Unchanged since <b>${fmtWhen(changedAt)}</b></span>` : ''}
       `;
 
       const teamsWithDiffs = data.teams.filter(t => t.diff_count > 0)

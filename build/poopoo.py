@@ -1116,6 +1116,37 @@ def build_completeness_report(players, ovr_current, rosters):
     return {"checked_total": checked, "counts": counts, "rows": rows}
 
 
+def _payload(raw):
+    """The report minus its timestamp, normalised so two runs can be compared."""
+    try:
+        doc = json.loads(raw)
+    except ValueError:
+        return None                     # unreadable: treat as changed, rewrite it
+    doc.pop("generated_at", None)
+    return json.dumps(doc, sort_keys=True)
+
+
+def write_report(out):
+    """Write the report only when something other than the clock moved.
+
+    The timer runs every 10 minutes, and on most of them nothing has changed —
+    so rewriting unconditionally moved `generated_at` alone 144 times a day, and
+    the data-dir backup dutifully committed each one (558 of its first 646
+    commits were exactly that, one line, no content). That history is what you
+    read to spot logical corruption, so filling it with churn defeats the
+    backup's main purpose.
+
+    The mtime is bumped either way, so `Last-Modified` still tells /poopoo when
+    the job last *ran* while `generated_at` says when the answer last *changed*.
+    """
+    text = json.dumps(out, indent=2)
+    if OUT_FILE.exists() and _payload(OUT_FILE.read_text()) == _payload(text):
+        os.utime(OUT_FILE)
+        return False
+    OUT_FILE.write_text(text)
+    return True
+
+
 def main():
     season = http_json("/api/league-year")["current_season"]
     players = http_json("/api/players")
@@ -1155,9 +1186,9 @@ def main():
         "picks": picks_report,
         "completeness": completeness_report,
     }
-    OUT_FILE.write_text(json.dumps(out, indent=2))
+    changed = write_report(out)
     print(
-        f"poopoo: wrote {OUT_FILE} ({sum(t['diff_count'] for t in teams_out)} cap diffs across "
+        f"poopoo: {'wrote' if changed else 'unchanged'} {OUT_FILE} ({sum(t['diff_count'] for t in teams_out)} cap diffs across "
         f"{len(teams_out)} teams, {len(picks_report['rows'])} flagged picks, "
         f"{len(completeness_report['rows'])}/{completeness_report['checked_total']} players with a bio gap)"
     )

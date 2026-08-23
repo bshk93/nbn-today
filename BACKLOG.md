@@ -44,15 +44,6 @@ The weekly Drive tarball deliberately does **not** carry any of this: the
 credential files are excluded and `members.json` goes in redacted, tokens
 blanked and tenures kept.
 
-### [P3] The data backup commits 144 no-op snapshots a day
-Every `nbs-snapshot` commit since the backup was created touches only
-`poopoo.json`, and only its `generated_at` line — `poopoo.timer` rewrites the
-file every 10 minutes whether or not the diff changed. 53 of 53 commits, so the
-backup's history is pure churn, which defeats its main purpose: the fragility
-plan names *logical corruption* as threat #1 and relies on being able to read
-that history. Fix by writing the file only when its content changes, or by
-excluding the timestamp from the comparison.
-
 ### [P3] Retire season-summary's league-history workaround
 `season-summary/index.html` deduplicates league-history rows by season and
 overrides CHAMPION from bracket data, calling them "CSV join artifacts". The
