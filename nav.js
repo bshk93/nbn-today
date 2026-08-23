@@ -163,11 +163,13 @@ async function _unlockTheme(entry, menu) {
   menu?.classList.remove('open');
   document.documentElement.setAttribute('data-theme', entry.id);
 
+  // The page behind the dialog is the pitch — it is the theme, applied. So the
+  // dialog is the question, the balance, and the two buttons; the price rides
+  // on the confirm button where the decision is. Nothing else to say.
   const price = _fmtNby(entry.price);
-  const after = _myBalance == null ? '' : ` You would have ${_fmtNby(_myBalance - entry.price)} left.`;
   const ok = await confirmDialog({
     title: `Keep the ${entry.label} theme?`,
-    body: `This is ${entry.label}, applied. Keeping it costs ${price}, once — it stays unlocked on your account.${after}`,
+    body: _myBalance == null ? '' : `Balance: ${_fmtNby(_myBalance)}`,
     confirmLabel: `Keep it — ${price}`,
     cancelLabel: 'Cancel',
   });
