@@ -134,10 +134,19 @@ function _fmtNby(n) {
 }
 
 /**
- * Buy a theme. Locked themes stay in the menu, priced — the same "disabled
- * with the reason, not hidden" rule the roster ⋯ menu and the suggestions
- * Edit button follow: what it costs to unlock is the answer to why it's
- * greyed out, and hiding it just makes the feature invisible.
+ * Try a theme, then decide. Clicking a locked theme paints it for real —
+ * whole page, and the confirm dialog is themed too, so it repaints with
+ * everything else — and the dialog asks whether to keep it. Cancel, Escape
+ * or clicking the scrim puts the old theme straight back.
+ *
+ * The preview is deliberately scoped to the dialog: it touches only the
+ * data-theme attribute, never localStorage, so there is no state to leave
+ * someone stranded in a theme they didn't buy, on this page or the next.
+ *
+ * Locked themes stay in the menu, priced — the same "disabled with the
+ * reason, not hidden" rule the roster ⋯ menu and the suggestions Edit button
+ * follow. Buying blind off a name is the thing this avoids: "Suns" tells you
+ * nothing about whether you want to read tables in it.
  */
 async function _unlockTheme(entry, menu) {
   let token = null;
@@ -147,14 +156,22 @@ async function _unlockTheme(entry, menu) {
     if (!token) return;
   }
 
+  // Paint it. Close the dropdown first so the page underneath is actually
+  // visible; restore() is the single way back, used by every exit below.
+  const previous = document.documentElement.getAttribute('data-theme');
+  const restore = () => document.documentElement.setAttribute('data-theme', previous);
+  menu?.classList.remove('open');
+  document.documentElement.setAttribute('data-theme', entry.id);
+
   const price = _fmtNby(entry.price);
   const after = _myBalance == null ? '' : ` You would have ${_fmtNby(_myBalance - entry.price)} left.`;
   const ok = await confirmDialog({
-    title: `Unlock ${entry.label}?`,
-    body: `${entry.label} costs ${price}, once — it stays unlocked on your account after this.${after}`,
-    confirmLabel: `Spend ${price}`,
+    title: `Keep the ${entry.label} theme?`,
+    body: `This is ${entry.label}, applied. Keeping it costs ${price}, once — it stays unlocked on your account.${after}`,
+    confirmLabel: `Keep it — ${price}`,
+    cancelLabel: 'Cancel',
   });
-  if (!ok) return;
+  if (!ok) { restore(); return; }
 
   let res, data;
   try {
@@ -162,12 +179,14 @@ async function _unlockTheme(entry, menu) {
                       { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
     data = await res.json();
   } catch {
+    restore();
     toast('Could not reach the server to unlock that theme', true);
     return;
   }
   if (!res.ok) {
     // The refusal string is the server's — it names the price and the
     // balance, and this page never composes one of its own.
+    restore();
     toast(data?.detail || 'Could not unlock that theme', true);
     return;
   }
@@ -176,7 +195,6 @@ async function _unlockTheme(entry, menu) {
   _myBalance = data.new_balance;
   _rebuildThemeMenu();
   _setThemePref(entry.id);
-  menu?.classList.remove('open');
   toast(`${entry.label} unlocked — ${_fmtNby(data.new_balance)} left`);
 }
 

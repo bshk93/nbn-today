@@ -1096,7 +1096,11 @@ Four things to know before touching it:
   server's — the same rule `/free-agency` follows.
 - **Locked themes stay in the menu with their price**, not hidden — the same
   "disabled with the reason" pattern as the roster ⋯ menu and the suggestions
-  Edit button. The price *is* the reason.
+  Edit button. The price *is* the reason. Clicking one **applies it for real**
+  and asks whether to keep it; the preview touches only the `data-theme`
+  attribute and never `localStorage`, so cancelling (or Escape, or the scrim)
+  reverts with nothing stored and nothing charged. Buying blind off a name was
+  the thing to avoid — "Suns" says nothing about reading tables in it.
 - **Team blocks are generated, and regenerating overwrites hand-edits.** The
   recipe: keep the dark theme's *lightness* for every token and change only the
   hue — primary hue for backgrounds/borders/text at a low chroma, accent hue for
