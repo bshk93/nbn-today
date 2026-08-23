@@ -125,7 +125,11 @@ function _refreshThemeMenu() {
   const btn = document.querySelector('.theme-btn');
   if (btn) {
     const active = _themeEntry(_activeTheme());
-    btn.textContent = active ? active.icon : '🎨';
+    btn.textContent = '';
+    // Same reason as the menu rows: a team theme reads as its own logo, not as
+    // the 🏀 every one of the 30 shares.
+    if (active) btn.append(_themeIcon(active, 'theme-btn-icon'));
+    else btn.textContent = '🎨';
   }
 }
 
@@ -200,6 +204,37 @@ async function _unlockTheme(entry, menu) {
   toast(`${entry.label} unlocked — ${_fmtNby(data.new_balance)} left`);
 }
 
+// A team theme's row shows that team's logo. The catalog's icon for all 30 is
+// the same 🏀, which identifies none of them; `team` (from GET /api/themes) is
+// what turns it into a specific one. The emoji is kept as the fallback node, so
+// a logo that fails to load leaves a readable row rather than a blank gap.
+function _themeIcon(c, cls, defer) {
+  cls = cls || 'theme-menu-icon';
+  const span = document.createElement('span');
+  span.className = cls;
+  span.textContent = c.icon;
+  if (!c.team) return span;
+  const img = document.createElement('img');
+  img.className = cls + ' theme-logo-icon';
+  img.alt = '';
+  img.addEventListener('error', () => img.replaceWith(span));
+  const src = `/logos/logo-${String(c.team).toLowerCase()}.png`;
+  // The 30 logos are ~1.6MB together and the menu is built on every page, so the
+  // rows carry the URL and fetch nothing until the menu is first opened. The
+  // button's own icon is visible immediately and is never deferred.
+  if (defer) img.dataset.src = src; else img.src = src;
+  return img;
+}
+
+// Turn the deferred rows into real image loads. Idempotent, so it is safe to
+// call on every open and after a rebuild.
+function _hydrateThemeLogos(menu) {
+  menu.querySelectorAll('img[data-src]').forEach(img => {
+    img.src = img.dataset.src;
+    delete img.dataset.src;
+  });
+}
+
 function _themeMenuItems(menu) {
   menu.textContent = '';
   const choices = [{ id: 'auto', label: 'Match System', icon: '🖥️', free: true }, ...THEMES];
@@ -209,8 +244,9 @@ function _themeMenuItems(menu) {
     item.className = 'theme-menu-item' + (locked ? ' locked' : '');
     item.dataset.themeChoice = c.id;
     const price = locked ? `<span class="theme-menu-price">${_fmtNby(c.price)}</span>` : '';
-    item.innerHTML = `<span class="theme-menu-icon">${c.icon}</span>`
-      + `<span class="theme-menu-label"></span>${price}<span class="theme-menu-check">✓</span>`;
+    item.innerHTML = `<span class="theme-menu-label"></span>${price}`
+      + `<span class="theme-menu-check">✓</span>`;
+    item.prepend(_themeIcon(c, 'theme-menu-icon', true));
     item.querySelector('.theme-menu-label').textContent = c.label;
     item.title = locked ? `Unlock ${c.label} for ${_fmtNby(c.price)}` : c.label;
     item.addEventListener('click', () => {
@@ -226,7 +262,11 @@ function _themeMenuItems(menu) {
 // on the page — both are fetched, and neither blocks the first paint.
 function _rebuildThemeMenu() {
   const menu = document.querySelector('.theme-menu');
-  if (menu) { _themeMenuItems(menu); _refreshThemeMenu(); }
+  if (menu) {
+    _themeMenuItems(menu);
+    if (menu.classList.contains('open')) _hydrateThemeLogos(menu);
+    _refreshThemeMenu();
+  }
 }
 
 function _buildThemePicker() {
@@ -242,7 +282,11 @@ function _buildThemePicker() {
   menu.className = 'theme-menu';
   _themeMenuItems(menu);
 
-  btn.addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('open'); });
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    _hydrateThemeLogos(menu);
+    menu.classList.toggle('open');
+  });
 
   wrap.appendChild(btn);
   wrap.appendChild(menu);
@@ -471,7 +515,6 @@ const SITE_PAGES = [
   { title: 'Standings & Playoffs', href: '/standings', icon: '🏅' },
   { title: 'Tradeblock', href: '/tradeblock/', icon: '🤝' },
   { title: 'Transaction Simulator', href: '/transaction-sim/', icon: '⚖️' },
-  { title: 'Trade Retrospectives', href: '/trade-retros/', icon: '🔍' },
   { title: 'Compare Players', href: '/compare/', icon: '⇆' },
   { title: 'Free Agency', href: '/free-agency/', icon: '✍️' },
   { title: 'Extensions', href: '/extensions/', icon: '📄' },
@@ -492,6 +535,7 @@ const SITE_PAGES = [
   { title: 'Single-Game Highs', href: '/stats/highs', icon: '🔝' },
   { title: 'Head to Head', href: '/h2h', icon: '⚔️' },
   { title: 'Frivolities & Viz', href: '/frivolities', icon: '📈' },
+  { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: '🔍' },
   { title: 'Bets', href: '/bet/', icon: '🎲' },
   { title: 'Daily Perry Game', href: '/perry/', icon: '🏀' },
   { title: 'Daily Poeltl', href: '/poeltl/', icon: '🕵️' },

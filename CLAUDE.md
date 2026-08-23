@@ -369,6 +369,7 @@ precise.
 | Change player index display | `players/index.html` |
 | Change HOF display | `hof/index.html` |
 | Change H2H display | `h2h/index.html` |
+| Change a Frivolities tab, incl. Trade Retros | `frivolities/index.html` — one file, one tab per `.tab-panel`; the router at the bottom maps `#hash` → tab. Trade Retros moved in from the standalone `/trade-retros/`, which is now a redirect stub, and keeps its own IIFE because it brings its own `esc`/`parseCSV`/`state` |
 | Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js` |
 | Change the Franchise Records cards | `records-wrap` block in `teams/team.js`; data comes from `franchise_records` in `nbn-api/stats_build/pipeline.py` |
 | Change the transaction simulator's spreadsheet export | `buildTradeWorkbook` — `transaction-sim/index.html`; the .xlsx writer is `transaction-sim/xlsx.js`, and publishing to Google Sheets is `POST /api/trade-sheet` (`nbn-api/routers/google_sheets.py`). Export is trade-mode only |
@@ -1086,7 +1087,7 @@ default for a locked id, which is about a fresh browser rather than about theft.
 | Colours | `css/theme.css`, one `:root[data-theme="…"]` block of 59 tokens each |
 | Team blocks | **generated** by `build/make_team_theme.py` from `build/team-colors.json` |
 
-Four things to know before touching it:
+Five things to know before touching it:
 
 - **`nav.js` hardcodes only the two free themes.** It is on every page including
   signed-out ones, and a picker that can't render without a successful fetch
@@ -1101,6 +1102,14 @@ Four things to know before touching it:
   attribute and never `localStorage`, so cancelling (or Escape, or the scrim)
   reverts with nothing stored and nothing charged. Buying blind off a name was
   the thing to avoid — "Suns" says nothing about reading tables in it.
+- **A team theme's row shows that team's logo**, from `/logos/logo-{abbr}.png`,
+  keyed off the catalog entry's `team` field — the catalog's icon is the same 🏀
+  for all 30 and identifies none of them. Built by `_themeIcon` in `nav.js`,
+  which also feeds the nav button when a team theme is active, and keeps the
+  emoji as the fallback node for a logo that fails to load. The rows carry the
+  URL in `data-src` and load nothing until the menu is first opened
+  (`_hydrateThemeLogos`): the 30 logos are ~1.6MB and the menu is built on every
+  page, so an eager `src` would put that on every page load.
 - **Team blocks are generated, and regenerating overwrites hand-edits.** The
   recipe: keep the dark theme's *lightness* for every token and change only the
   hue — primary hue for backgrounds/borders/text at a low chroma, accent hue for

@@ -64,11 +64,12 @@
 /* Theme picker */
 .theme-picker { position: relative; display: inline-flex; }
 .theme-btn { font-size: 1.05rem; line-height: 1; }
+.theme-btn .theme-logo-icon { height: 1.25rem; width: 1.25rem; display: block; }
 .theme-menu {
   position: absolute; top: calc(100% + 0.4rem); right: 0;
   background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
   box-shadow: 0 8px 24px var(--shadow-color-strong);
-  min-width: 200px; padding: 0.3rem; z-index: 10000;
+  min-width: 220px; padding: 0.3rem; z-index: 10000;
   display: none;
 }
 .theme-menu.open { display: block; }
@@ -79,8 +80,9 @@
 }
 .theme-menu-item:hover { background: var(--bg-hover); color: var(--text-primary); }
 .theme-menu-item.active { color: var(--text-primary); font-weight: 600; }
-.theme-menu-icon { font-size: 0.9rem; width: 1.1rem; text-align: center; flex-shrink: 0; }
-.theme-menu-label { flex: 1; }
+.theme-menu-icon { font-size: 0.95rem; width: 1.35rem; text-align: center; flex-shrink: 0; }
+.theme-logo-icon { height: 1.35rem; width: 1.35rem; object-fit: contain; }
+.theme-menu-label { flex: 1; white-space: nowrap; }
 .theme-menu-check { font-size: 0.75rem; color: var(--accent-light); flex-shrink: 0; opacity: 0; }
 .theme-menu-item.active .theme-menu-check { opacity: 1; }
 /* Locked (not yet unlocked with NB¥). Dimmed but still clickable — clicking
