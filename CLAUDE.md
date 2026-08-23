@@ -1109,20 +1109,42 @@ Four things to know before touching it:
   what stops the gold and silver teams shipping unreadable buttons. Contrast
   repair is capped at what the same token already achieved in the dark theme, so
   a team theme inherits that theme's contrast character exactly — never worse,
-  and never silently better. Verified: `team-phx` and `nbn-today` return the
-  **same 38 failures** across the same audited pages.
+  and never silently better.
+- **Two things the recipe gets wrong if you rebuild it from scratch**, both
+  found by shipping them:
+  - *Chroma is not inherited.* The first version reused the dark theme's own
+    background chroma (0.028) on the theory that it was already as strong as a
+    page could take. But that near-black is **blue**-tinted, so a hue swap at
+    the same strength moved PHX's page by **ΔE 0.9 — below the threshold of
+    vision**, and Suns rendered *identical* to the default. It hit every team
+    sitting near blue (UTA 0.6, DAL, DEN, MIN) and spared the ones far from it
+    (BOS 5.1), which is exactly how one hand-checked team hides it. `C_BG` is
+    0.075 now; every team lands between ΔE 2.6 and 9.4.
+  - *A grey has no hue.* `#1A1A1A` computes to hue 89.9 (olive) and `#A1A1A4`
+    to 286 (violet) — rounding noise, amplified to full saturation. BKN, SAS
+    and POR all came out the same olive-brown, and BKN's silver accent came out
+    cyan. `NEUTRAL_CHROMA` now sends a near-grey source to a near-grey output,
+    which for the black-and-silver teams *is* the identity.
 - **A team is only listed once its block exists.** `LIVE_TEAM_THEMES` in the API
   is the gate; adding a team there without generating the CSS sells 1,000 NB¥ of
-  nothing. `bash build/check_theme_catalog.sh` checks the two repos agree, and
-  `bash build/contrast_audit.sh team-xxx` is what actually clears a new theme.
+  nothing. `bash build/check_theme_catalog.sh` checks the two repos agree.
 
-Adding the remaining 29:
+Two checks, and they answer different questions:
 
 ```bash
-python3 build/make_team_theme.py --all --write   # or one abbr at a time
-bash build/contrast_audit.sh team-bos            # must match nbn-today's count
-# then add the abbr to LIVE_TEAM_THEMES in nbn-api/routers/themes.py
+python3 build/make_team_theme.py --all --check   # seconds, all 30
+bash build/contrast_audit.sh team-bos            # ~15 min, one theme
 ```
+
+`--check` compares each theme's tokens against the dark theme's and reports
+only a pair that **crosses** a WCAG bar the dark theme cleared — drift within a
+bar is meaningless and reporting it buries the real thing (team-phx reads
+0.2-0.4 lower on five pairs and still audited at exact parity). It cannot see
+interactions with colours a page hardcodes, which is what the rendered audit is
+for. **Run `--check` on every generation; run the audit on a sample.** All 30
+were shipped on PHX audited in full plus SAS/IND/BKN/POR/MIL sampled — the
+colours most likely to break a recipe: pale accents, near-black primaries,
+cream.
 
 > `build/team-colors.json` is the generator's colour source. Three older
 > hardcoded copies of team colours still exist (`champions/index.html`,

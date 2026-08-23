@@ -1,9 +1,25 @@
 [
   {
+    "version": "0.1.80",
+    "date": "2026-08-23",
+    "changes": [
+      "All 30 team themes are now unlockable, NB\u00a51,000 each \u2014 your team's page and card colours, its accent on links and buttons",
+      "Fixed the Suns theme looking identical to the default one: the team colour was being applied too faintly to see. Every team is now clearly its own colour",
+      "Fixed the black-and-silver teams (Nets, Spurs, Blazers) all coming out the same olive-brown, and the Nets' silver accent coming out cyan \u2014 a grey has no colour to amplify, and the code was amplifying the rounding error instead"
+    ]
+  },
+  {
+    "version": "0.1.79",
+    "date": "2026-08-23",
+    "changes": [
+      "The theme confirmation is now just the question, your balance, and the price on the button \u2014 the page behind it is already the theme, so there was nothing left to describe"
+    ]
+  },
+  {
     "version": "0.1.78",
     "date": "2026-08-23",
     "changes": [
-      "Trying a theme before buying it: clicking a locked theme now applies it to the whole page and asks whether to keep it, showing your balance and the price. Cancel puts your old theme straight back, and nothing is charged unless you keep it",
+      "Trying a theme before buying it: clicking a locked theme now applies it to the whole page and asks whether to keep it. Cancel puts your old theme straight back, and nothing is charged unless you keep it",
       "Primary buttons on six pages (Cap Settings, Rookie Scale, Poeltl, Perry, Live Draft, Trivia) were white text on a blue too light to read it comfortably; they now use the same darker blue the other 32 primary buttons on the site already used, and lighten on hover instead"
     ]
   },

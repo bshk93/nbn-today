@@ -167,11 +167,36 @@ def lighten_until(fg_hex, bg_hex, target):
 
 # ── Token recipe ─────────────────────────────────────────────────────────────
 #
-# Fixed chroma per family. These are the numbers that decide whether a theme
-# reads as "the site, in Suns colours" or as a novelty skin; the backgrounds
-# in particular are barely-there on purpose (0.028 is about as far as a page
-# can be pushed before long tables stop being restful).
-C_BG, C_BORDER, C_TEXT = 0.028, 0.030, 0.012
+# Fixed chroma per family — the numbers that decide whether a theme reads as
+# "the site, in Suns colours" or as a novelty skin.
+#
+# These started at the dark theme's own chroma (0.028) on the theory that its
+# backgrounds were already as far as a page could be pushed. That was wrong,
+# and measurably so: the dark theme's near-black is a *blue*-tinted one, so
+# substituting a hue at the same strength moved PHX's page by dE 0.9 — below
+# the threshold of vision. Suns rendered identical to the default theme, not
+# merely similar, and the same went for every team whose colour sits near
+# blue (UTA dE 0.6, DEN, MIN, DAL). Only teams far from blue on the wheel
+# (BOS 5.1, MIA 4.5) showed up at all, which is why one hand-checked team
+# hid it.
+#
+# 0.075 puts every team between dE 4 and 8 against the default — clearly its
+# own colour, still calm enough to read tables on for an evening. Text stays
+# near-neutral regardless: tinting a page is a mood, tinting body text is a
+# defect.
+C_BG, C_BORDER, C_TEXT = 0.075, 0.075, 0.012
+
+# Below this chroma a colour has no usable hue — it is grey, and whatever hue
+# the maths reports is rounding noise. Nets black (#1A1A1A) reports hue 89.9,
+# which is olive; Raptors grey (#A1A1A4) reports 286, which is violet. Imposing
+# the full background chroma on those gave Brooklyn, San Antonio and Portland
+# the same olive-brown page and Brooklyn a cyan accent, none of which is a
+# colour those teams own. A neutral source stays neutral instead: for the
+# black-and-silver teams that IS the identity, and a truly greyscale page still
+# reads as its own theme against a default that is blue-tinted.
+NEUTRAL_CHROMA = 0.025
+C_NEUTRAL_BG = 0.006
+C_NEUTRAL_ACCENT = 0.012
 
 PRIMARY_HUE = {"bg": C_BG, "border": C_BORDER, "text": C_TEXT}
 
@@ -211,8 +236,9 @@ def parse_root_block(css_text):
 
 def build_theme(primary, accent, base):
     """base: [(token, dark-theme value)] → {token: new value}."""
-    _, _, h_p = hex_to_lch(primary)
+    _, C_p, h_p = hex_to_lch(primary)
     _, C_a, h_a = hex_to_lch(accent)
+    p_neutral, a_neutral = C_p < NEUTRAL_CHROMA, C_a < NEUTRAL_CHROMA
     out = {}
 
     # Pass 1 — the hue-substituted families. Lightness is copied from the dark
@@ -223,17 +249,27 @@ def build_theme(primary, accent, base):
         if token in BG_TOKENS or token in BORDER_TOKENS or token in TEXT_TOKENS:
             L, _, _ = hex_to_lch(value) if value.startswith("#") else (0, 0, 0)
             C = C_BG if token in BG_TOKENS else C_BORDER if token in BORDER_TOKENS else C_TEXT
+            if p_neutral:
+                C = min(C, C_NEUTRAL_BG)
             # The info panel is an accent-tinted surface, not a neutral one.
             hue = h_a if token == "--accent-panel-bg" else h_p
             if token == "--accent-panel-bg":
-                C = C_BG * 2.2
+                C = C_NEUTRAL_ACCENT if a_neutral else C_BG * 2.2
             out[token] = lch_to_hex(L, C, hue)
         elif token in ACCENT_TOKENS:
             L, C_base, _ = hex_to_lch(value)
             # The accent proper carries the team's own saturation; --muted-border
             # is defined as "less saturated than --accent" and keeps the base's,
             # or a gold/orange team turns every secondary edge into a highlight.
-            C = C_base if token == "--muted-border" else max(C_base, min(C_a, 0.20))
+            # max(C_base, …) is the floor that made a silver accent come out
+            # cyan: silver's chroma is ~0.01, so the max picked the base blue's
+            # 0.19 and painted it at silver's noise hue.
+            if a_neutral:
+                C = C_NEUTRAL_ACCENT
+            elif token == "--muted-border":
+                C = C_base
+            else:
+                C = max(C_base, min(C_a, 0.20))
             out[token] = lch_to_hex(L, C, h_a)
         elif token.startswith("rgba") or not value.startswith("#"):
             out[token] = value
@@ -267,6 +303,15 @@ def build_theme(primary, accent, base):
             repair(token, 4.5 if token in ("--text-primary", "--text-secondary", "--text-muted") else 3.0)
         elif token in ("--link", "--accent-light"):
             out[token] = lighten_until(out[token], card, 4.5)
+
+    # --accent is rendered as plain text on the page background as well as
+    # being a fill, so it has to clear the text bar there. Eight of the thirty
+    # teams — every one with a red accent — landed at 4.45-4.49 against 4.5:
+    # invisible by eye, a real failure in an audit. Capped at what the dark
+    # theme itself achieves, per the rule in pass 2.
+    accent_bar = min(4.5, contrast(dict(base)["--accent"], dict(base)["--bg-page"]))
+    if contrast(out["--accent"], page) < accent_bar:
+        out["--accent"] = lighten_until(out["--accent"], page, accent_bar)
 
     # --text-on-accent is a label on a *surface*, and it lands on more than
     # one: the site paints its primary buttons with --accent-dark, not
@@ -333,6 +378,53 @@ def render_block(abbr, primary, accent, values, base_order, page, card):
     return "\n".join(lines)
 
 
+# Every pair the audit found to matter, plus the ones it would have found if
+# a team's colours had been shaped differently. Checking these against the
+# dark theme's own numbers costs a second for all 30; build/contrast_audit.sh
+# costs ~15 minutes per theme, so this is what runs on every generation and
+# the audit is what a sample gets.
+CHECK_PAIRS = [
+    ("--text-primary", "--bg-card"), ("--text-secondary", "--bg-card"),
+    ("--text-muted", "--bg-card"), ("--text-muted", "--bg-page"),
+    ("--text-dim", "--bg-card"), ("--text-bright", "--bg-page"),
+    ("--link", "--bg-card"), ("--link", "--bg-page"),
+    ("--accent", "--bg-page"), ("--accent", "--bg-card"),
+    ("--accent-light", "--bg-card"), ("--link", "--accent-panel-bg"),
+    ("--text-primary", "--accent-panel-bg"),
+    ("--text-on-accent", "--accent"), ("--text-on-accent", "--accent-dark"),
+    ("--danger", "--bg-card"), ("--success", "--bg-card"),
+    ("--gold", "--bg-card"), ("--purple", "--bg-card"),
+    ("--market-positive", "--bg-card"), ("--warning", "--bg-card"),
+]
+
+# WCAG's two bars: 4.5:1 for normal text, 3:1 for large text and non-text.
+# What gets reported is a pair CROSSING one of these that the dark theme was
+# on the good side of — not merely drifting. Drift is meaningless here and
+# reporting it buries the real thing: team-phx reads 0.2-0.4 lower than
+# nbn-today on five pairs and still returned exact parity over 86 rendered
+# pages, because none of those five crossed anything.
+THRESHOLDS = (4.5, 3.0)
+
+
+def check_theme(abbr, values, base):
+    """Report pairs where a generated theme drops below a bar the dark theme
+    cleared. Empty means nothing to look at."""
+    b = dict(base)
+    out = []
+    for fg, bg in CHECK_PAIRS:
+        # --text-on-accent is "#fff" in the base, spelled differently.
+        base_fg = "#ffffff" if b[fg] == "#fff" else b[fg]
+        new_fg = "#ffffff" if values[fg] == "#fff" else values[fg]
+        if not base_fg.startswith("#") or not b[bg].startswith("#"):
+            continue
+        was, now = contrast(base_fg, b[bg]), contrast(new_fg, values[bg])
+        for bar in THRESHOLDS:
+            if was >= bar > now:
+                out.append(f"{fg} on {bg}: {now:.2f}, under {bar} — nbn-today has {was:.2f}")
+                break
+    return out
+
+
 def upsert(css_text, abbr, block):
     marker = f':root[data-theme="team-{abbr.lower()}"]'
     if marker in css_text:
@@ -348,6 +440,8 @@ def main():
     ap.add_argument("teams", nargs="*", help="team abbreviations, e.g. PHX")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--write", action="store_true", help="insert into css/theme.css")
+    ap.add_argument("--check", action="store_true",
+                    help="report tokens that read worse than nbn-today, and print nothing else")
     args = ap.parse_args()
 
     colors = {k: v for k, v in json.loads(COLORS_JSON.read_text()).items() if not k.startswith("_")}
@@ -366,6 +460,15 @@ def main():
         missing = [t for t, _ in base if t not in SKIP and t not in values]
         if missing:
             sys.exit(f"{abbr}: recipe produced no value for {missing}")
+        complaints = check_theme(abbr, values, base)
+        if args.check:
+            if complaints:
+                print(f"{abbr}:")
+                for c in complaints:
+                    print(f"    {c}")
+            continue
+        for c in complaints:
+            print(f"  {abbr} WARNING  {c}", file=sys.stderr)
         block = render_block(abbr, primary, accent, values, base, page, card)
         if args.write:
             css_text = upsert(css_text, abbr, block)
