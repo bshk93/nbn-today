@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Power Rankings Ballot — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Rank all 30 teams and write the blurbs for an NBN power-rankings edition.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Power Rankings Ballot — NBN">
+  <meta property="og:description" content="Rank all 30 teams and write the blurbs for an NBN power-rankings edition.">
+  <meta property="og:url" content="https://nbn.today/news/rankings/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#111827">
+  <!-- /NBN:og -->
+  <style>
+    .page { max-width: 980px; margin: 0 auto; }
+
+    .badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.55rem; border-radius: 4px; }
+    .badge-setup { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
+    .badge-voting { background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light); }
+    .badge-blurbs { background: var(--gold-bg); border: 1px solid var(--gold-dim); color: var(--gold); }
+    .badge-final { background: var(--success-dark-bg); border: 1px solid #16a34a; color: var(--success); }
+
+    header h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.02em; margin: 0.5rem 0 0.4rem; line-height: 1.25; }
+    .sub { font-size: 0.85rem; color: var(--text-muted); display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .sub .sep { color: var(--border); }
+
+    button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.85rem; border: 1px solid transparent; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
+    .btn-success { background: var(--success-dark-bg); border-color: #16a34a; color: var(--success); }
+    .btn-secondary { background: var(--bg-card); border-color: var(--border); color: var(--text-secondary); }
+    .btn-secondary:hover:not(:disabled) { background: var(--bg-hover); border-color: var(--text-dim); }
+    .btn-danger { background: transparent; border-color: var(--border); color: var(--danger); }
+    .btn-tiny { font-size: 0.68rem; padding: 0.18rem 0.5rem; }
+
+    .panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.15rem; margin-bottom: 1.1rem; }
+    .panel-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.75rem; }
+    .panel-note { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; }
+    .row-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.8rem; }
+
+    /* Voter chips */
+    .chips { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+    .chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem 0.55rem; color: var(--text-secondary); }
+    .chip.done { border-color: #16a34a; color: var(--success); }
+    .chip button { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0; font-size: 0.9rem; line-height: 1; }
+    .chip button:hover { color: var(--danger); }
+    .voter-input { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.3rem 0.55rem; font-size: 0.8rem; font-family: inherit; min-width: 190px; }
+
+    /* Ballot */
+    .ballot-list { display: flex; flex-direction: column; gap: 0.3rem; }
+    .brow { display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: 0.6rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.6rem; cursor: grab; }
+    .brow.dragging { opacity: 0.35; }
+    .brow.drop-target { border-color: var(--accent); }
+    .brow-rank { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; color: var(--text-dim); text-align: right; }
+    .brow-team { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
+    .brow-team img { width: 26px; height: 26px; object-fit: contain; flex: none; }
+    .brow-name { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .brow-abbr { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); }
+    .brow-btns { display: flex; gap: 0.25rem; align-items: center; }
+    .brow-btns button { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-muted); padding: 0.1rem 0.4rem; font-size: 0.75rem; }
+    .brow-btns button:hover:not(:disabled) { color: var(--text-primary); border-color: var(--text-dim); }
+
+    /* Roster drawer */
+    .roster-drawer { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; background: var(--bg-page); padding: 0.7rem 0.8rem; margin-top: -0.3rem; }
+    .roster-drawer table { border-collapse: collapse; width: 100%; font-size: 0.78rem; }
+    .roster-drawer th { text-align: left; font-size: 0.63rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); padding: 0.2rem 0.4rem; border-bottom: 1px solid var(--border); }
+    .roster-drawer td { padding: 0.22rem 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text-secondary); }
+    .roster-drawer td.num { font-family: var(--font-mono); text-align: right; }
+    .roster-drawer tr.starter td { color: var(--text-primary); font-weight: 600; }
+    .drawer-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+
+    /* Consensus table */
+    .ctable { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .ctable th { text-align: left; font-size: 0.63rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); }
+    .ctable td { padding: 0.45rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
+    .ctable td.num { font-family: var(--font-mono); text-align: right; color: var(--text-muted); }
+    .ctable .rank { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: var(--text-primary); text-align: right; }
+    .move-up { color: var(--success); font-size: 0.72rem; font-family: var(--font-mono); }
+    .move-down { color: var(--danger); font-size: 0.72rem; font-family: var(--font-mono); }
+    .move-flat { color: var(--text-dim); font-size: 0.72rem; font-family: var(--font-mono); }
+    .move-new { color: var(--gold); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .team-cell { display: flex; align-items: center; gap: 0.5rem; }
+    .team-cell img { width: 24px; height: 24px; object-fit: contain; }
+
+    .blurb-box { margin-top: 0.4rem; }
+    .blurb-box textarea { width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 0.82rem; font-family: inherit; resize: vertical; min-height: 62px; }
+    .blurb-box textarea:focus { outline: none; border-color: var(--accent); }
+    .blurb-text { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.55; }
+    .blurb-meta { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.25rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .blurb-open { font-size: 0.72rem; color: var(--text-dim); font-style: italic; }
+    .tick { color: var(--success); }
+
+    .status-msg { font-size: 0.75rem; }
+    .status-msg.ok { color: var(--success); } .status-msg.err { color: var(--danger); }
+    .empty { color: var(--text-dim); font-size: 0.875rem; padding: 1rem 0; }
+    .sticky-save { position: sticky; bottom: 0; background: var(--bg-page); border-top: 1px solid var(--border); padding: 0.7rem 0; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; z-index: 5; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="nav"><a href="/news/">← News</a></div>
+  <div id="loading" style="color:var(--text-muted);font-size:0.9rem;">Loading…</div>
+  <div id="content" style="display:none;">
+    <header>
+      <div id="phase-badge"></div>
+      <h1 id="pr-title"></h1>
+      <div class="sub" id="pr-sub"></div>
+    </header>
+    <div id="author-panel"></div>
+    <div id="main-panel"></div>
+  </div>
+  <div id="error-msg" style="display:none;color:var(--danger);font-size:0.9rem;"></div>
+</div>
+<script src="/teams/lineup.js"></script>
+<script src="/news/rankings/rankings.js"></script>
+<script src="/nav.js"></script>
+</body>
+</html>

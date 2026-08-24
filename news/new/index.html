@@ -34,6 +34,18 @@
     #editor-form { display: none; }
     .field { margin-bottom: 1.25rem; }
     .field label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    /* Article-type picker. Only shown while creating — an article's type is
+       fixed once it exists, since a power-rankings article carries ballots a
+       plain one has nowhere to put. */
+    .type-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .type-tab { flex: 1 1 200px; text-align: left; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 10px; padding: 0.7rem 0.9rem; cursor: pointer; font-family: inherit; }
+    .type-tab:hover { border-color: var(--text-dim); }
+    .type-tab.active { border-color: var(--accent); background: var(--accent-panel-bg); color: var(--text-primary); }
+    .type-tab strong { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 0.15rem; }
+    .type-tab span { font-size: 0.73rem; color: var(--text-muted); line-height: 1.4; }
+    .pr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+    @media (max-width: 560px) { .pr-grid { grid-template-columns: 1fr; } }
+    .field select { width: 100%; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); border-radius: 8px; padding: 0.6rem 0.85rem; font-size: 0.95rem; font-family: inherit; }
     .field input[type="text"] { width: 100%; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); border-radius: 8px; padding: 0.6rem 0.85rem; font-size: 1rem; font-family: inherit; }
     .field input[type="text"]:focus { outline: none; border-color: var(--accent); }
     .field .hint { font-size: 0.73rem; color: var(--text-dim); margin-top: 0.35rem; }
@@ -114,6 +126,35 @@
       This article is in the submission queue awaiting editorial review. Edits are still allowed.
     </div>
 
+    <div class="field" id="type-field">
+      <label>Article type</label>
+      <div class="type-tabs" id="type-tabs">
+        <button type="button" class="type-tab active" data-type="custom" onclick="setType('custom')">
+          <strong>Article</strong><span>A written piece — reporting, analysis, a column.</span>
+        </button>
+        <button type="button" class="type-tab" data-type="power_rankings" onclick="setType('power_rankings')">
+          <strong>Power Rankings</strong><span>Invite members to rank all 30 teams. The published order is the average of their ballots.</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="pr-fields" style="display:none;">
+      <div class="field">
+        <div class="pr-grid">
+          <div>
+            <label for="series-input">Series</label>
+            <input type="text" id="series-input" placeholder="main" maxlength="40">
+            <div class="hint">Editions in the same series are chained together.</div>
+          </div>
+          <div>
+            <label for="prev-select">Previous edition</label>
+            <select id="prev-select"><option value="">None — this is the first</option></select>
+            <div class="hint">Where each team's ▲ / ▼ movement is measured from.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="field">
       <label for="title-input">Headline</label>
       <input type="text" id="title-input" placeholder="Article headline…" maxlength="200">
@@ -134,7 +175,7 @@
     </div>
 
     <div class="field">
-      <label>Body</label>
+      <label id="body-label">Body</label>
       <div class="editor-wrap">
         <div class="editor-bar">
           <button type="button" class="fmt-btn" title="Bold (Ctrl+B)" onclick="fmt('**','**')"><b>B</b></button>
@@ -177,6 +218,46 @@ const params = new URLSearchParams(location.search);
 let articleId = null;
 let isSubmitted = false;
 let tags = [];
+// Article type. Fixed once the article exists: a power-rankings article carries
+// ballots and blurbs that a plain article has nowhere to keep, so the picker is
+// a create-time choice only.
+let articleType = 'custom';
+
+function setType(t) {
+  if (articleId) return;
+  articleType = t;
+  document.querySelectorAll('.type-tab').forEach(b => b.classList.toggle('active', b.dataset.type === t));
+  const pr = t === 'power_rankings';
+  document.getElementById('pr-fields').style.display = pr ? 'block' : 'none';
+  document.getElementById('body-label').textContent = pr ? 'Intro' : 'Body';
+  document.getElementById('body-write').placeholder = pr
+    ? 'Set the table — what moved this week, what the voters argued about.\n\nOptional: a rankings article publishes fine with no intro at all.'
+    : 'Write your article in Markdown…';
+  document.getElementById('btn-submit').textContent = pr ? 'Create & open ballot' : 'Publish';
+  if (pr) loadSeries();
+}
+
+// Populate the "previous edition" picker from published editions, newest first,
+// and default to the latest edition of the series being typed.
+let seriesData = null;
+async function loadSeries() {
+  if (seriesData) return;
+  try {
+    const res = await fetch(`${API}/news/rankings/series`);
+    if (!res.ok) return;
+    seriesData = await res.json();
+  } catch { return; }
+  renderPrevOptions();
+  document.getElementById('series-input').addEventListener('input', renderPrevOptions);
+}
+function renderPrevOptions() {
+  const sel = document.getElementById('prev-select');
+  const series = (document.getElementById('series-input').value.trim() || 'main');
+  const editions = (seriesData?.[series] || []).slice().reverse();
+  sel.innerHTML = '<option value="">None — this is the first</option>'
+    + editions.map(e => `<option value="${escHtml(e.id)}">#${e.edition} — ${escHtml(e.title)}</option>`).join('');
+  if (editions.length) sel.value = editions[0].id;   // chain onto the latest by default
+}
 
 marked.use({ gfm: true, breaks: true });
 function getToken() { return localStorage.getItem('nbn_token'); }
@@ -267,12 +348,20 @@ function setStatus(msg, cls) { const el = document.getElementById('status-msg');
 function setLoading(on) { document.getElementById('btn-save').disabled = on; document.getElementById('btn-submit').disabled = on; }
 
 function payload() {
-  return {
+  const p = {
     title: document.getElementById('title-input').value.trim(),
     body: getEditorValue(),
     cover_image: document.getElementById('cover-input').value.trim() || null,
     tags,
   };
+  // Type and series are create-only — PATCH ignores them, and sending them on
+  // an edit would imply an article can change type, which it cannot.
+  if (!articleId && articleType === 'power_rankings') {
+    p.type = 'power_rankings';
+    p.series_id = document.getElementById('series-input').value.trim() || 'main';
+    p.prev_id = document.getElementById('prev-select').value || null;
+  }
+  return p;
 }
 
 async function gateSignIn() {
@@ -305,6 +394,18 @@ async function loadExisting(id) {
     updateCoverPreview();
     tags = (a.tags || []).slice(); renderTags();
     isSubmitted = a.status !== 'draft';
+    if (a.type === 'power_rankings') {
+      articleType = 'power_rankings';
+      // The type is settled and the series is fixed, so both pickers go away;
+      // everything else about this article now happens in the workspace.
+      document.getElementById('type-field').style.display = 'none';
+      document.getElementById('pr-fields').style.display = 'none';
+      document.getElementById('body-label').textContent = 'Intro';
+      const btn = document.getElementById('btn-submit');
+      btn.textContent = 'Ballot & blurbs →';
+      btn.onclick = () => { location.href = `/news/rankings/?id=${articleId}`; };
+      btn.style.display = '';
+    }
     if (isSubmitted) {
       const banner = document.getElementById('submitted-banner');
       banner.style.display = 'block';
@@ -356,8 +457,12 @@ async function doSave() {
 
 async function doPublish() {
   if (!payload().title) { setStatus('Headline is required.', 'err'); document.getElementById('title-input').focus(); return; }
+  const creatingRanking = !articleId && articleType === 'power_rankings';
   await doSave();
   if (!articleId) return;
+  // A ranking is never published from here — it has to collect ballots first,
+  // so creating one hands straight off to the workspace that runs the vote.
+  if (creatingRanking) { location.href = `/news/rankings/?id=${articleId}`; return; }
   const token = getToken();
   if (!await confirmDialog({
     title: 'Publish this article?',

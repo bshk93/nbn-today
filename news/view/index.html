@@ -23,6 +23,36 @@
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <style>
     .page { max-width: 760px; margin: 0 auto; }
+    /* A power-rankings article carries a 30-row table, which needs more room
+       than a column of prose. Set on <body> once we know the type. */
+    body.is-ranking .page { max-width: 940px; }
+
+    /* Power rankings */
+    .rank-row { display: grid; grid-template-columns: 2.6rem 2.2rem auto 1fr; gap: 0.75rem; align-items: start;
+                padding: 0.85rem 0; border-bottom: 1px solid var(--bg-card); }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-no { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 800; color: var(--text-primary); text-align: right; line-height: 1.2; }
+    .rank-move { text-align: right; padding-top: 0.35rem; }
+    .rank-logo img { width: 40px; height: 40px; object-fit: contain; display: block; }
+    .rank-team { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+    .rank-stats { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); margin-top: 0.1rem; }
+    .rank-blurb { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.35rem; }
+    .rank-blurb .by { color: var(--text-dim); font-size: 0.75rem; }
+    .move-up { color: var(--success); font-size: 0.78rem; font-family: var(--font-mono); }
+    .move-down { color: var(--danger); font-size: 0.78rem; font-family: var(--font-mono); }
+    .move-flat { color: var(--text-dim); font-size: 0.78rem; font-family: var(--font-mono); }
+    .move-new { color: var(--gold); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .method-note { font-size: 0.76rem; color: var(--text-muted); line-height: 1.55; background: var(--bg-card);
+                   border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1.25rem; }
+    details.ballots { margin-top: 1.5rem; }
+    details.ballots summary { cursor: pointer; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em;
+                              text-transform: uppercase; color: var(--text-dim); }
+    details.ballots summary:hover { color: var(--text-secondary); }
+    .btable { width: 100%; border-collapse: collapse; font-size: 0.72rem; margin-top: 0.9rem; display: block; overflow-x: auto; }
+    .btable th, .btable td { padding: 0.25rem 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; }
+    .btable th { text-align: left; color: var(--text-dim); font-size: 0.63rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .btable td.num { font-family: var(--font-mono); text-align: right; color: var(--text-muted); }
+    .btable td.voter { color: var(--text-secondary); font-weight: 600; }
 
     .badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.55rem; border-radius: 4px; }
     .badge-draft { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
@@ -126,6 +156,7 @@
 
     <hr class="divider">
     <div class="md-body" id="article-body"></div>
+    <div id="rankings-block"></div>
     <hr class="divider">
 
     <div>
@@ -251,7 +282,100 @@ function render(a) {
   } else { panel.style.display = 'none'; }
 
   document.getElementById('article-body').innerHTML = marked.parse(a.body || '');
+  renderRankings(a);
   renderComments(a);
+}
+
+const TEAM_NAMES = {
+  ATL: 'Atlanta Hawks',        BKN: 'Brooklyn Nets',       BOS: 'Boston Celtics',
+  CHA: 'Charlotte Hornets',    CHI: 'Chicago Bulls',       CLE: 'Cleveland Cavaliers',
+  DAL: 'Dallas Mavericks',     DEN: 'Denver Nuggets',      DET: 'Detroit Pistons',
+  GSW: 'Golden State Warriors',HOU: 'Houston Rockets',     IND: 'Indiana Pacers',
+  LAC: 'LA Clippers',          LAL: 'Los Angeles Lakers',  MEM: 'Memphis Grizzlies',
+  MIA: 'Miami Heat',           MIL: 'Milwaukee Bucks',     MIN: 'Minnesota Timberwolves',
+  NOP: 'New Orleans Pelicans', NYK: 'New York Knicks',     OKC: 'Oklahoma City Thunder',
+  ORL: 'Orlando Magic',        PHI: 'Philadelphia 76ers',  PHX: 'Phoenix Suns',
+  POR: 'Portland Trail Blazers', SAC: 'Sacramento Kings',  SAS: 'San Antonio Spurs',
+  TOR: 'Toronto Raptors',      UTA: 'Utah Jazz',           WAS: 'Washington Wizards',
+};
+
+function moveCell(r) {
+  if (r.prev == null) return '<span class="move-new">new</span>';
+  if (r.move > 0) return `<span class="move-up">▲${r.move}</span>`;
+  if (r.move < 0) return `<span class="move-down">▼${Math.abs(r.move)}</span>`;
+  return '<span class="move-flat">–</span>';
+}
+
+// The table under a power-rankings article. A published edition renders its
+// frozen `final`; an unpublished one renders the live consensus so the author
+// can see the shape of the piece, and offers the workspace link instead.
+function renderRankings(a) {
+  const host = document.getElementById('rankings-block');
+  host.innerHTML = '';
+  if (a.type !== 'power_rankings') { document.body.classList.remove('is-ranking'); return; }
+  document.body.classList.add('is-ranking');
+
+  const canWork = isAuthor || isEditor || a.viewer_is_voter;
+  if (a.status !== 'published' && canWork) {
+    const link = document.createElement('a');
+    link.href = `/news/rankings/?id=${a.id}`;
+    link.className = 'btn-ghost';
+    link.textContent = a.phase === 'voting' ? 'Open the ballot →' : 'Ballot & blurbs →';
+    document.getElementById('header-actions').appendChild(link);
+  }
+
+  const rows = a.final || a.consensus || [];
+  if (!rows.length) {
+    host.innerHTML = a.status === 'published' ? ''
+      : '<p class="empty">No ballots are in yet, so there is no ranking to show.</p>';
+    return;
+  }
+
+  const voters = (a.ballot_progress?.submitted || []);
+  host.innerHTML = `
+    <div class="method-note">
+      Ranked by <strong>average ballot position</strong> across ${rows[0].votes}
+      ballot${rows[0].votes === 1 ? '' : 's'} — ties break on first-place votes, then
+      alphabetically. No one reorders the result by hand, and voters could not see
+      each other's ballots while voting was open.
+      ${a.prev_id ? ` ▲▼ is movement from <a href="/news/view/?id=${escHtml(a.prev_id)}">the previous edition</a>.` : ''}
+    </div>
+    ${rows.map(r => {
+      const b = (a.blurbs || {})[r.team] || {};
+      return `<div class="rank-row">
+        <div class="rank-no">${r.rank}</div>
+        <div class="rank-move">${moveCell(r)}</div>
+        <div class="rank-logo"><img src="/logos/logo-${r.team.toLowerCase()}.png" alt="" loading="lazy"></div>
+        <div>
+          <div class="rank-team">${escHtml(TEAM_NAMES[r.team] || r.team)}</div>
+          <div class="rank-stats">avg ${r.avg.toFixed(2)} · high ${r.hi} · low ${r.lo}${r.firsts ? ` · ${r.firsts} first-place` : ''}</div>
+          ${b.body ? `<div class="rank-blurb">${escHtml(b.body)}
+            ${b.claimed_by ? `<span class="by">— ${escHtml(b.claimed_by)}</span>` : ''}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
+    ${voters.length ? renderBallotTable(a, rows, voters) : ''}`;
+}
+
+// Every individual ballot, collapsed by default. Blind voting is about
+// anchoring, not secrecy — once it closes, how each voter ranked each team is
+// part of the article.
+function renderBallotTable(a, rows, voters) {
+  const order = rows.map(r => r.team);
+  return `<details class="ballots">
+    <summary>Individual ballots (${voters.length})</summary>
+    <table class="btable">
+      <thead><tr><th>Voter</th>${order.map(t => `<th>${t}</th>`).join('')}</tr></thead>
+      <tbody>${voters.map(v => {
+        const ballot = a.ballots?.[v]?.order || [];
+        return `<tr><td class="voter">${escHtml(v)}</td>${
+          order.map(t => {
+            const pos = ballot.indexOf(t);
+            return `<td class="num">${pos < 0 ? '–' : pos + 1}</td>`;
+          }).join('')}</tr>`;
+      }).join('')}</tbody>
+    </table>
+  </details>`;
 }
 
 function renderComments(a) {

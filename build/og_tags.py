@@ -89,6 +89,7 @@ PAGES = {
  '/nbntv-classics/': (None, 'The greatest playoff performances in NBN history, ranked and annotated.'),
  '/news/': (None, 'League news, written by NBN members.'),
  '/news/new/': (None, 'Write an article for NBN News.'),
+ '/news/rankings/': ('Power Rankings Ballot — NBN', 'Rank all 30 teams and write the blurbs for an NBN power-rankings edition.'),
  '/news/view/': (None, 'An article from NBN News.'),
  '/owners/': (None, 'Career records, ratings and playoff résumés for every NBN general manager.'),
  '/pdc/': (None, 'The Player Decision Committee dashboard — free-agency review, ballots and rulings.'),
