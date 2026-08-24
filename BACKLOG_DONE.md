@@ -23,6 +23,305 @@ and shows "Unchanged since …" when they differ.
 The 558 commits already in the backup are left alone; rewriting that history
 would cost more than it returns, and it stops growing today.
 
+**Confirmed holding, 2026-08-24.** The measurement above was taken the day of
+the fix; this is the day after. The backup was committing 128–143 times a day
+through 2026-08-22, with 38 of the last 40 commits touching `poopoo.json` and
+nothing else. Since the fix landed at 20:57 on 2026-08-23 there have been
+**zero** snapshot commits, and `poopoo.json`'s `generated_at` has sat at 15:50
+while its mtime keeps moving. The history is readable again.
+
+### ~~[P2] PDC dashboard — committee review pipeline~~ — DONE, and now in use 2026-08-24
+**Closed 2026-08-24 on verification, not on the build being finished** — the
+build was done on 2026-08-09 and this entry stayed open on its own two
+conditions, both of which are now met:
+
+- **`fac` / `fac_head` are granted.** 13 members hold `fac`, 2 hold `fac_head`
+  (Jonny, chuck), 3 hold `agent`. The "nobody holds these roles" note below is
+  stale.
+- **The pipeline is open and has run.** `fa-state.json` reads `mode: "ffa"`,
+  not `closed`; 85 players have been through it (82 rounds closed, 3 open),
+  with real ballots finalized. The "it is `closed` today" paragraph below
+  described the state on 2026-08-09.
+
+Original entry, for the record:
+
+Owners submit trades / FA offers / extensions for committee approval, reviewed
+on `pdc.nbn.today`. Full spec for the **free agency** half in
+`docs/pdc-free-agency-spec.md` — data model, endpoints, Discord gates, and an
+8-phase build order where nothing before Phase 7 is visible to a logged-out
+visitor. Trades and extensions reuse the shape later.
+
+15 decisions settled, no design questions outstanding — session cookie on
+`.nbn.today` for cross-subdomain auth (scoped to `/api/fa/*` only); GM drafts an
+offer, owner submits; FFA's 24h clock closes the offer window; submission final
+per § 3.14 except that any sub-committee member may **remand** an offer back for
+revision.
+
+**All 8 phases built** (0–6 on 2026-08-08, 7–8 on 2026-08-09): roles, the
+server-side FA pool, the whole offer/ballot API, `teams/lineup.js`, the session
+cookie, the dashboard, its own host at **`pdc.nbn.today`** — same docroot,
+`/` → `/pdc/index.html`, so every fetch stays same-origin — the two Discord
+feeds (both channels set and live in the running process), the team-facing ⋯
+menu and offer form on `/free-agency`, and the 1,000-ball ballot with
+per-player finalize/unlock.
+
+**Nothing is left to build. The pipeline opens when the FAC head sets `mode` to
+`rounds` or `ffa`** — it is `closed` today, so every offer menu reads "Free
+agency is closed." and `POST /api/fa/offers` 422s.
+
+Built since (2026-08-12/13), none of it reflected in the 2026-08-10 review:
+
+- **§ 4.7 agent stage** — a third role (`agent`) between a closed offer window
+  and a sub-committee ballot: claim off a shared queue, negotiate, then advance
+  or finalize. A claim permanently bars the agent's own team from bidding on
+  that player. Documented in CLAUDE.md; spec in `docs/pdc-free-agency-spec.md`.
+- **§ 4.3b void/restore** — head-only, reason required, `voided` simply left out
+  of `LIVE_STATUSES`. `tests/test_fa_offers.py`.
+- **`ffa-extend`** — the one path allowed to move a single player's deadline.
+- **Member inbox** — `routers/inbox.py` (`GET /api/inbox`, read / read-all) and
+  `/inbox`. Closes the "Member inbox system" suggestion on the member board.
+
+The dashboard is now in the Ctrl+K jump box as "PDC Committee", role-gated via
+`ROLE_PAGES` in `nav.js` — resolved lazily when search is first opened, and not
+at all for a logged-out visitor, so nav.js still makes no request on an ordinary
+page load.
+
+One thing to do before the first round:
+
+- **Nobody holds `fac` or `fac_head`** (checked 2026-08-09 — `bryn` is the only
+  member with any of these roles, as `admin`). Admin passes every head check, so
+  the board is operable today, but **admin does not get a ballot**: `cast_ballot`
+  gates on being *assigned*, not on a role, so even admin has to put themselves
+  on a sub-committee to vote. Grant the real roles at `/members/`.
+
+### ~~[P1] No `extension` transaction type at all~~ — Phase A + E shipped 2026-08-21
+`"extension"` is now in `_VALIDATORS`, the `create_transaction` type whitelist,
+and `_detail_models`. `POST /api/validate/extension` and `POST /api/transactions`
+(type=`extension`) both work against real production data — see
+`nbn-api/docs/extensions.md` for the check list and `nbn-api/tests/test_extensions.py`
+for the boundary tests. Eligibility derivation reuses `_bird_tenure`'s ledger
+walk (including its synthetic draft-event seed), which is what let this ship
+without the ledger backfill below as a prerequisite (D1 in the pipeline doc).
+Cap thresholds for 27-28+ are still zero in Cap Settings, so
+`extension_cap_position` correctly reports "cannot evaluate" until the
+committee enters real figures — that's the one thing still actually blocking
+a *real* extension from being scored end-to-end, not a code gap.
+
+**Everything this paragraph listed as still open has since shipped** (all on
+2026-08-21, each closed in its own entry): the Extension mode in
+`/transaction-sim` and the office form at `/transactions`; the `/api/poext/*`
+committee pipeline (Phase C) and the `/extensions` team-facing page (Phase D);
+and the § 4.5 six-month trade-freeze check in `_validate_trade` (Phase F).
+
+**The one residual was split out rather than lost** — the zeroed 27-28+ cap and
+apron thresholds noted above are now their own `[P1]` entry in `BACKLOG.md`,
+since retiring this entry would otherwise have buried the only thing still
+stopping a live extension from being scored. Original text of the paragraph
+referred to below. See
+`docs/poext-extension-pipeline.md` § 7 for the full phase list.
+
+### ~~[P2] No Extension mode in `/transaction-sim` or the `/transactions` office form~~ — shipped 2026-08-21
+Both now call `POST /api/validate/extension`. `transaction-sim/index.html` got
+a fourth "Extension" tab (its own form, not a variant of the signing one — an
+extension adds years on top of a live contract rather than replacing a
+current-season figure). The office form at `/transactions` got a real
+Extension type: team is derived from the roster once a player is picked
+(§ 6.2 — only the incumbent may extend, same as `sign_pick`/`convert_twoway`),
+and picking a player calls the validator with an empty contract purely to
+read back the existing deal and seed the first salary row at the correct
+starting season (§ 6.2 rule 10). The live rubric and its EAPS-field reveal
+generalize for free — `_extension_fact_sheet` now carries `trailing_hold`
+(reusing `_preview_fa_hold`, same as a signing), closing the same "office form
+can ask for an EAPS answer it has nowhere to collect" gap fixed for
+`sign_pick`/`convert_twoway` on 2026-08-11/12. Verified end-to-end in a real
+headless browser against production (`barlow-dominick`/SAS) on both pages.
+
+### ~~[P2] The `/pdc` PO-EXT committee pipeline is still a stub~~ — shipped 2026-08-21
+`routers/poext.py`: proposals, the agent stage (claim/release/advance/
+return-to-agent), sub-committee assignment, accept/reject voting, finalize/
+unlock, `GET /api/poext/eligible` and `GET /api/poext/proposals`. `/pdc`'s
+PO-EXT panel is a real dashboard, `/extensions` is the team-facing proposal
+page, and the roster page's ⋯ menu has a "Propose extension…" shortcut into
+it. Private `pdc-alerts` Discord posts on submit/remand/void/restore/
+finalize. 76 tests across `test_extensions.py`/`test_poext.py`/
+`test_poext_notify.py`.
+
+~~§ 4.5's six-month trade-freeze check isn't wired into `_validate_trade`~~ —
+shipped 2026-08-21, `_check_extension_trade_restriction` in `transactions.py`,
+15 tests in `test_extension_trade_freeze.py`.
+
+~~No public Discord announcement on an agreed extension~~ — shipped 2026-08-21
+(D9): `poext_notify.notify_player_finalized` posts full detail to
+`pdc-alerts` always, and on `outcome == "agreed"` also posts to `#roster-log`
+(full detail, via `roster_log_relay._send`) and `fa-news` (name-only, no team,
+no `$`, through the sole `_news()` choke point). 26 tests in
+`test_poext_notify.py`.
+
+Two more real bugs found in a follow-up audit (2026-08-21), both fixed and
+deployed same day:
+- `_extension_eligibility_check` scored a `trade_floor`-basis (lower-bound-
+  only) short derived length as a hard fail instead of "can't confirm" —
+  32 real rostered players, including Tyler Herro, read as ineligible off
+  a ledger gap rather than a real disqualification. Now warns and allows
+  when the basis isn't definite (`test_extensions.py`).
+- Neither `_validate_extension` nor `_apply_extension` checked that the
+  `team` field in the request actually holds the player — every sibling type
+  (`_apply_sign`, `sign_pick`, `convert_twoway`) does. A wrong-team request
+  would have priced and applied an extension against a player on someone
+  else's roster. Both now refuse with a named-holder 422/check
+  (`test_apply_extension.py`, `test_extensions.py`).
+- `discord_notify.py` had no `"extension"` case at all — an agreed extension
+  posted nothing (or malformed) to `pdc-alerts`. Fixed, tested
+  (`test_discord_notify.py`).
+
+**Real remaining gaps**, not just polish:
+- The extend-and-trade mechanism (§ 2.11 — Team A proposing on Team B's
+  behalf) is unbuilt; `kind="extend_and_trade"` is reserved but has no
+  submission path of its own.
+- Cap thresholds for 27-28+ are still $0 and EAPS is still unset in Cap
+  Settings, so `extension_cap_position` and the 140%-of-EAPS branch of
+  `extension_max_year1` report "cannot evaluate"/warn on every real
+  extension until the committee enters real figures — a data gap, not code.
+- § 6.3's rookie-scale and non-expiring-veteran windows need a regular-
+  season start date the system doesn't track anywhere (shared gap with
+  § 3.12 proration); only the expiring-veteran June 30 deadline is enforced.
+- Committee rulings still needed (`docs/poext-extension-pipeline.md` § 8):
+  Q3 (when 140%-of-EAPS applies instead of prior-salary), whether the
+  3-proposal cap applies outside the expiring-veteran bucket, and what
+  exactly defines an extend-and-trade.
+- The ledger backfill (`[P3]` below) is still unrun — lower urgency now that
+  both "no record" and `trade_floor` bases correctly warn-and-allow rather
+  than block.
+
+### ~~[P1] Nothing backs up NBS_DATA_DIR — the league's whole state is single-copy~~ — DONE 2026-08-18
+Closed by the dev-deploy spec's Phases 0-1: `/var/lib/nbs-backup.git` (git dir
+outside the work tree) commits the classified set every 10 minutes via
+`nbs-snapshot.timer` and pushes to the private `bshk93/nbn-data`, with a
+mass-deletion guard that refuses rather than mirroring a wipe. The "cause
+unconfirmed" gaps this entry wanted to turn into a `git diff` now are one.
+
+**Both of the pieces this entry left open are now closed too** — re-checked
+2026-08-24, which is why it moved out of `BACKLOG.md`:
+
+- **Second destination** (item 11): `nbs-drive-backup.timer` exists and runs
+  weekly, last fired 2026-08-23.
+- **Restore drill** (item 14): done 2026-08-19 and it passed — a bare clone of
+  the backup rebuilt all 86 derived CSVs byte-identically, which is also the
+  proof that the tracked set is complete.
+
+Logical corruption is separately covered as of 2026-08-19 by the append-only
+guard and `nbs-integrity.timer`. Original entry follows.
+
+Entered 2026-08-16. The "disk failure loses ~4 weeks of work" risk was closed
+below for the two **git repos**. The data those repos are meaningless without
+never had that protection and still doesn't.
+
+Verified 2026-08-16 — no backup job exists anywhere (`crontab -l`,
+`systemctl list-timers`: perry, poopoo, achievements, dota2stats, certbot,
+nothing that copies `/var/lib/nothing-but-stats` off this disk). Single copies
+of `transactions.json` (2.0 MB — the only record of how every contract and pick
+got where it is), `player-bios.json` (664 KB), `fa-offers.json` (672 KB),
+`members.json` (61 members and their tokens), `team-state.json`,
+`ovr-history.json`. The nearest thing to a backup is five hand-made `.bak-*`
+files, newest **2026-07-15** — which this file already lists as a P3 *"which one
+is real?"* trap.
+
+**What the risk is not:** torn writes. `storage.py:_atomic_write` does tmp-file
++ `os.replace` for every write in the API (0 direct `json.dump()` call sites
+outside it), so readers never see a half-written file. The exposure is a bad
+*logical* write — a migration script, a hand-fix, a bulk re-key like the 29
+first-last slugs above — and hardware.
+
+Cheapest fix: a nightly `git commit` of the JSON/CSV subset into a private
+snapshot repo, with the `.rds`/`allstats` bulk (~90 MB, rarely changes) tar'd
+weekly instead. Total is ~100 MB, so retention is a non-issue.
+
+**Second payoff, and the reason to rank this first:** §1 above currently says of
+the poopoo cap diffs *"most of that gap closed between that review and this one,
+cause unconfirmed."* Daily snapshots turn that into a `git diff`. Same for the
+27-28/28-29/29-30 scales that were entered with cap and aprons at 0 — you would
+be able to see when, and in which save.
+
+### ~~[P2] 29 first-last player slugs re-keyed — the last 2 closed post-FFA~~ — DONE 2026-08-24
+**The last 2 are done 2026-08-24.** `jamaree-bouyea` → `bouyea-jamaree` and
+`ariel-hukporti` → `hukporti-ariel`, once both FFA rounds finalized
+(`fa-ballots.json` locked 2026-08-19; Bouyea has since signed with MIA on the
+18th). 31 references across 13 files: `player-bios.json`, `ovr-history.json`,
+`transactions.json` (6), `fa-offers.json` (7), `fa-state.json`,
+`fa-ballots.json`, `inboxes.json`, `bio-rewards.json`, `poopoo.json`,
+`player-attributes.json` (key only), `mia-roster.csv`, `phx-roster.csv`,
+`sac-deadcap.csv`. Backups `*.bak-rekey2-20260824-010951`; `nbn-api` was
+stopped for the write so nothing could land a concurrent update.
+
+**Six files the 2026-08-16 pass never had to touch**, because these two were
+the only held-back players and they were the ones with live FA state:
+`fa-offers.json`, `fa-state.json`, `fa-ballots.json`, `inboxes.json`,
+`bio-rewards.json` (composite `slug:field` keys) and `poopoo.json`. Two prose
+strings were rewritten along with the references — a frozen validator message
+in `fa-offers.json` and two inbox notifications — on the grounds that a dead
+slug in a message a member reads is a reference that no longer resolves, not a
+historical fact worth preserving.
+
+**Verified end to end**, not just by grep: all 13 files still parse, every diff
+against its backup is slug-lines-only (0 non-slug changed lines in any file),
+the live API serves both new keys on `/api/players` and `/api/ovr/current`, and
+`GET /api/players/hukporti-ariel/gamelog` returns his 5 playoff games — the
+split card is healed at the join, not just in the bio. Simulating
+`players/index.html`'s card build against live data gives **1 card each**, and
+a league-wide scan for the same shape (a bio whose reversed slug is a stats
+slug) returns **zero**. Separately, all **1,034** bio keys now equal
+`slugify(name)` exactly, so the population is closed, not merely reduced.
+
+**Left as-is, deliberately** (same call as the first pass):
+`discord-fa-signings-resolved.json` and `discord-fa-signings-submitted.json`
+still carry old-form refs. They are offline backfill bookkeeping, never read at
+request time, and `-submitted.json`'s keys are idempotency keys — rewriting one
+file and not the other would desync the dedupe and re-submit. The 27 players
+from the first pass are old-form in there too; these 2 now match them.
+`player-attributes.json`'s `source_slug` stays untouched for the original
+reason — it is 2K's own site slug.
+
+---
+
+Original entry, for the record:
+
+**Done 2026-08-16.** 27 of the 29 mis-keyed slugs (e.g. `keaton-wallace` →
+`wallace-keaton`, `mark-sears` → `sears-mark`) were re-keyed in one scripted
+pass across `player-bios.json`, `ovr-history.json`, `transactions.json`,
+`player-attributes.json`, 15 roster CSVs and 4 dead-cap CSVs. Every file was
+backed up first (`*.bak-rekey29-20260816-130436` in NBS_DATA_DIR); verified
+afterward that zero old-form keys remain in any of them and the live API
+serves the corrected slugs. `player-attributes.json`'s `source_slug` field
+was deliberately **not** touched — it's 2K's own site slug, not ours, and
+happened to share the same first-last shape by coincidence.
+
+**Held back:** `jamaree-bouyea` and `ariel-hukporti` — both were mid-FFA-clock
+at the time (deadline 2026-08-17), with live team bids in `fa-offers.json`
+and `fa-state.json`. Re-key those two once that window closes; same script,
+just the remaining 2-entry mapping.
+
+**Scope was larger than this entry originally documented** — discovered
+5 live dead-cap CSVs and `player-attributes.json` (drives Team Settings'
+"Primary Position") that the original writeup missed entirely. Two Discord
+backfill bookkeeping files (`discord-fa-signings-resolved.json`,
+`discord-transactions-promoted.json`) also carry old-form refs but are
+offline-script-only, never read at request time — left as-is.
+
+**The generator is fixed as of 2026-08-10** — `slugFromName` in
+`players/index.html` was running `displayName()` (which flips "LAST, FIRST" →
+"First Last") *before* slugifying, so the Add Player modal minted a first-last
+key every time. That is why this population kept regrowing after the 2026
+prospect re-key closed it. The form now slugifies the canonical name in place
+(verified: reproduces all 989 correct slugs exactly) and uppercases/normalizes
+the name on save.
+
+**Remaining risk is scoped to the 2 held-back players.** `ariel-hukporti`
+already had 5 playoff games land under the box-score-derived key
+`hukporti-ariel` before this pass — the split-card symptom (stats card with no
+contract/cap holds/OVR/roster link, bio card with no stats) — and will keep
+splitting further until its re-key happens post-FFA. `jamaree-bouyea` has no
+stats history yet, so its cost of waiting really is zero.
+
 ### ~~[P2] Two different answers to "what season is it?" (was three)~~ — DONE 2026-08-21
 Found 2026-08-19 while building the box score integrity check. Three
 independent definitions of the season boundary existed and did not agree:
