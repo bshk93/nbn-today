@@ -94,6 +94,76 @@
       padding: 2rem 2.25rem;
     }
 
+    /* table of contents */
+    #toc {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 1rem;
+    }
+    #toc[open] { padding-bottom: 1.1rem; }
+    #toc summary {
+      align-items: baseline;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      font-size: 0.85rem;
+      font-weight: 600;
+      gap: 0.5rem;
+      list-style: none;
+      padding: 0.7rem 1.25rem;
+      user-select: none;
+    }
+    #toc summary::-webkit-details-marker { display: none; }
+    #toc summary::before {
+      content: '\25B8';
+      color: var(--text-muted);
+      display: inline-block;
+      transition: transform 0.15s;
+    }
+    #toc[open] summary::before { transform: rotate(90deg); }
+    #toc summary .toc-count { color: var(--text-muted); font-weight: 400; font-size: 0.8rem; }
+    #toc-body {
+      column-gap: 2rem;
+      columns: 2;
+      padding: 0 1.25rem;
+    }
+    @media (max-width: 700px) { #toc-body { columns: 1; } }
+    .toc-sec { break-inside: avoid; margin-bottom: 1rem; }
+    .toc-sec > a {
+      color: var(--text-bright);
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .toc-sec > a:hover { color: var(--link); }
+    .toc-sec ul { list-style: none; margin: 0; padding: 0; }
+    .toc-sec li { margin-bottom: 0.25rem; }
+    .toc-sec li a {
+      align-items: baseline;
+      color: var(--text-secondary);
+      display: flex;
+      font-size: 0.82rem;
+      gap: 0.4rem;
+      line-height: 1.45;
+    }
+    .toc-sec li a:hover { color: var(--link); }
+    .toc-pri {
+      border: 1px solid;
+      border-radius: 4px;
+      flex: none;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 0.05rem 0.3rem;
+    }
+    .toc-pri-p1 { color: var(--danger); border-color: var(--danger-border); }
+    .toc-pri-p2 { color: var(--gold);   border-color: var(--gold-border); }
+    .toc-pri-p3 { color: var(--text-muted); border-color: var(--border); }
+    .toc-done a { color: var(--text-muted); }
+    .toc-done .toc-label { text-decoration: line-through; }
+
     /* markdown prose */
     #content h1 { display: none; } /* page already has a title */
     #content h2 {
@@ -105,6 +175,7 @@
       margin: 2.25rem 0 1rem;
     }
     #content h2:first-child { margin-top: 0; }
+    #content h2, #content h3, #content li[id] { scroll-margin-top: 1rem; }
     #content h3 {
       font-size: 1rem;
       font-weight: 600;
@@ -244,6 +315,11 @@
       <div class="match-info" id="match-info"></div>
     </div>
 
+    <details id="toc" open style="display:none">
+      <summary>Contents <span class="toc-count" id="toc-count"></span></summary>
+      <div id="toc-body"></div>
+    </details>
+
     <div class="card">
       <div id="loading">Loading…</div>
       <div id="content" style="display:none"></div>
@@ -358,14 +434,114 @@
     fetch('/BACKLOG.md')
       .then(r => r.text())
       .then(md => {
-        rawHTML = marked.parse(md);
-        contentEl.innerHTML = rawHTML;
+        contentEl.innerHTML = marked.parse(md);
+        buildToc();
+        // ids are assigned by buildToc, so snapshot *after* it — search resets
+        // #content to rawHTML and the anchors have to survive that.
+        rawHTML = contentEl.innerHTML;
         loadingEl.style.display = 'none';
         contentEl.style.display = '';
       })
       .catch(() => {
         loadingEl.textContent = 'Failed to load BACKLOG.md.';
       });
+  }
+
+  // ── Table of contents ─────────────────────────────────────────────────────
+  // Generated from the rendered headings, never stored in BACKLOG.md — a
+  // hand-written one goes stale the first time an item is added or closed.
+
+  function slugify(text) {
+    return text.toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .slice(0, 60) || 'section';
+  }
+
+  function buildToc() {
+    const tocEl   = document.getElementById('toc');
+    const bodyEl  = document.getElementById('toc-body');
+    const countEl = document.getElementById('toc-count');
+    const seen = new Map();
+    const sections = [];
+    let current = null;
+
+    contentEl.querySelectorAll('h2, h3').forEach(h => {
+      let id = slugify(h.textContent);
+      if (seen.has(id)) { const n = seen.get(id) + 1; seen.set(id, n); id += '-' + n; }
+      else seen.set(id, 1);
+      h.id = id;
+      const entry = { id, text: h.textContent.trim(), done: !!h.querySelector('del') };
+      if (h.tagName === 'H2') { current = Object.assign({ children: [] }, entry); sections.push(current); }
+      else if (current) current.children.push(entry);
+    });
+
+    // Section 4 is a bullet list rather than h3 items — pull its bolded lead-ins
+    // in so the TOC doesn't show a section with nothing under it.
+    sections.filter(sec => !sec.children.length).forEach(sec => {
+      let node = document.getElementById(sec.id);
+      while ((node = node.nextElementSibling) && node.tagName !== 'H2') {
+        if (node.tagName !== 'UL') continue;
+        [...node.children].forEach((li, i) => {
+          const lead = li.querySelector('strong');
+          if (!lead) return;
+          li.id = sec.id + '-' + (i + 1);
+          sec.children.push({ id: li.id, text: lead.textContent.trim(), done: !!li.querySelector('del') });
+        });
+      }
+    });
+
+    if (!sections.length) return;
+
+    const tally = { P1: 0, P2: 0, P3: 0 };
+    let items = 0;
+
+    bodyEl.innerHTML = '';
+    sections.forEach(sec => {
+      const wrap = document.createElement('div');
+      wrap.className = 'toc-sec';
+
+      const head = document.createElement('a');
+      head.href = '#' + sec.id;
+      head.textContent = sec.text;
+      wrap.appendChild(head);
+
+      if (sec.children.length) {
+        const ul = document.createElement('ul');
+        sec.children.forEach(item => {
+          items++;
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = '#' + item.id;
+
+          const m = item.text.match(/^\[(P[123])\]\s*/);
+          if (m) {
+            tally[m[1]]++;
+            const chip = document.createElement('span');
+            chip.className = 'toc-pri toc-pri-' + m[1].toLowerCase();
+            chip.textContent = m[1];
+            a.appendChild(chip);
+          }
+
+          const label = document.createElement('span');
+          label.className = 'toc-label';
+          label.textContent = item.text.slice(m ? m[0].length : 0);
+          a.appendChild(label);
+
+          if (item.done) li.className = 'toc-done';
+          li.appendChild(a);
+          ul.appendChild(li);
+        });
+        wrap.appendChild(ul);
+      }
+      bodyEl.appendChild(wrap);
+    });
+
+    const parts = [items + (items === 1 ? ' item' : ' items')];
+    ['P1', 'P2', 'P3'].forEach(p => { if (tally[p]) parts.push(tally[p] + ' ' + p); });
+    countEl.textContent = '· ' + parts.join(' · ');
+    tocEl.style.display = '';
   }
 
   // ── Search ────────────────────────────────────────────────────────────────
