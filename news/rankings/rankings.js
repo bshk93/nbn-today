@@ -536,8 +536,8 @@ function renderConsensus(host) {
   host.innerHTML = `
     <div class="panel">
       <div class="panel-title">Consensus · ${rows[0].votes} ballot${rows[0].votes === 1 ? '' : 's'}</div>
-      <div class="panel-note">Average rank across every submitted ballot. Ties break on
-        first-place votes, then alphabetically — nobody sets the order by hand.
+      <div class="panel-note">Average rank across every submitted ballot. Teams level on
+        the average share a rank (T) — nobody sets the order by hand.
         ${isVoter() || isEditor() ? 'Claim a team to write its blurb.' : ''}</div>
     </div>
     <table class="ctable">
@@ -553,7 +553,7 @@ function renderConsensus(host) {
 function renderConsensusRow(r) {
   const b = state.article.blurbs?.[r.team] || {};
   return `<tr>
-    <td class="rank">${r.rank}</td>
+    <td class="rank">${r.tied ? 'T-' : ''}${r.rank}</td>
     <td style="text-align:right">${moveCell(r)}</td>
     <td><div class="team-cell">${logo(r.team)}<span>${escHtml(TEAMS[r.team])}</span></div></td>
     <td class="num">${r.avg.toFixed(2)}</td>

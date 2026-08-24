@@ -32,6 +32,7 @@
                 padding: 0.85rem 0; border-bottom: 1px solid var(--bg-card); }
     .rank-row:last-child { border-bottom: none; }
     .rank-no { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 800; color: var(--text-primary); text-align: right; line-height: 1.2; }
+    .rank-no .tie { font-size: 0.72rem; font-weight: 700; color: var(--text-dim); vertical-align: 0.35em; margin-right: 0.05rem; }
     .rank-move { text-align: right; padding-top: 0.35rem; }
     .rank-logo img { width: 40px; height: 40px; object-fit: contain; display: block; }
     .rank-team { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
@@ -306,6 +307,26 @@ function moveCell(r) {
   return '<span class="move-flat">–</span>';
 }
 
+// A shared rank reads "T13" — the T is small so a two-digit tie still fits the
+// column. `tied` comes from the API, which is where the tie is decided.
+function rankLabel(r) {
+  return `${r.tied ? '<span class="tie">T</span>' : ''}${r.rank}`;
+}
+
+// What the arrows are measured against: the previous edition when this one is
+// chained to it, otherwise the outside ranking the author set as its baseline
+// (a league sheet from before the series existed). Neither, and every row is
+// "new", so there is nothing to say.
+function movementNote(a) {
+  if (a.prev_id) {
+    return ` ▲▼ is movement from <a href="/news/view/?id=${escHtml(a.prev_id)}">the previous edition</a>.`;
+  }
+  if (a.baseline?.label) {
+    return ` ▲▼ is movement from ${escHtml(a.baseline.label)}.`;
+  }
+  return '';
+}
+
 // The table under a power-rankings article. A published edition renders its
 // frozen `final`; an unpublished one renders the live consensus so the author
 // can see the shape of the piece, and offers the workspace link instead.
@@ -335,15 +356,15 @@ function renderRankings(a) {
   host.innerHTML = `
     <div class="method-note">
       Ranked by <strong>average ballot position</strong> across ${rows[0].votes}
-      ballot${rows[0].votes === 1 ? '' : 's'} — ties break on first-place votes, then
-      alphabetically. No one reorders the result by hand, and voters could not see
-      each other's ballots while voting was open.
-      ${a.prev_id ? ` ▲▼ is movement from <a href="/news/view/?id=${escHtml(a.prev_id)}">the previous edition</a>.` : ''}
+      ballot${rows[0].votes === 1 ? '' : 's'} — teams level on the average share a rank
+      (T). No one reorders the result by hand, and voters could not see each other's
+      ballots while voting was open.
+      ${movementNote(a)}
     </div>
     ${rows.map(r => {
       const b = (a.blurbs || {})[r.team] || {};
       return `<div class="rank-row">
-        <div class="rank-no">${r.rank}</div>
+        <div class="rank-no">${rankLabel(r)}</div>
         <div class="rank-move">${moveCell(r)}</div>
         <div class="rank-logo"><img src="/logos/logo-${r.team.toLowerCase()}.png" alt="" loading="lazy"></div>
         <div>
