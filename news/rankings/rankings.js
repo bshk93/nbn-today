@@ -41,7 +41,9 @@ const state = {
   bios: null,
   ovr: null,
   records: null,        // ABBR -> "48-34, East-3" from the latest season on file
-  openDrawer: null,     // ABBR whose roster drawer is expanded
+  openDrawers: new Set(),  // ABBRs whose roster drawers are expanded — a set,
+                           // because ranking is comparing, and two rosters side
+                           // by side is the whole reason the drawer exists
   editingBlurb: null,   // ABBR whose blurb textarea is open
 };
 
@@ -345,7 +347,8 @@ function renderBallot(host) {
     <div class="panel">
       <div class="panel-title">Your ballot</div>
       <div class="panel-note">Drag a team, or use ▲▼, to rank all 30 from best to worst.
-        Click a team to see its roster. Nobody — the author included — can see your ballot until voting closes.</div>
+        Click teams to open their rosters — as many at once as you want to compare.
+        Nobody — the author included — can see your ballot until voting closes.</div>
     </div>
     <div class="ballot-list" id="ballot-list"></div>
     <div class="sticky-save">
@@ -370,10 +373,10 @@ function drawBallotRows() {
         <button onclick="move(${i}, 1)" ${i === 29 ? 'disabled' : ''} title="Down">▼</button>
       </div>
     </div>
-    ${state.openDrawer === abbr ? `<div class="roster-drawer" id="drawer-${abbr}">Loading roster…</div>` : ''}
+    ${state.openDrawers.has(abbr) ? `<div class="roster-drawer" id="drawer-${abbr}">Loading roster…</div>` : ''}
   `).join('');
   wireDrag(list);
-  if (state.openDrawer) fillDrawer(state.openDrawer);
+  state.openDrawers.forEach(abbr => fillDrawer(abbr));
 }
 
 function move(i, delta) {
@@ -435,7 +438,7 @@ async function submitBallot() {
 // ── roster drawer ────────────────────────────────────────────────────────────
 
 function toggleDrawer(abbr) {
-  state.openDrawer = state.openDrawer === abbr ? null : abbr;
+  if (!state.openDrawers.delete(abbr)) state.openDrawers.add(abbr);
   drawBallotRows();
 }
 
