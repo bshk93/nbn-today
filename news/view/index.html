@@ -353,14 +353,9 @@ function renderRankings(a) {
   }
 
   const voters = (a.ballot_progress?.submitted || []);
+  const legend = movementNote(a).trim();
   host.innerHTML = `
-    <div class="method-note">
-      Ranked by <strong>average ballot position</strong> across ${rows[0].votes}
-      ballot${rows[0].votes === 1 ? '' : 's'} — teams level on the average share a rank
-      (T). No one reorders the result by hand, and voters could not see each other's
-      ballots while voting was open.
-      ${movementNote(a)}
-    </div>
+    ${legend ? `<div class="method-note">${legend}</div>` : ''}
     ${rows.map(r => {
       const b = (a.blurbs || {})[r.team] || {};
       return `<div class="rank-row">
