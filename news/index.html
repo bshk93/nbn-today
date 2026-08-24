@@ -50,6 +50,8 @@
     }
     .tag-chip:hover { border-color: var(--text-muted); color: var(--text-secondary); }
     .tag-chip.active { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
+    .pr-chip { color: var(--gold); border-color: var(--gold-dim); }
+    .pr-chip.active { background: var(--gold-bg); border-color: var(--gold); color: var(--gold); }
 
     /* Feed grid */
     .feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.1rem; }
@@ -160,6 +162,11 @@
 <script>
 const API = '/api';
 let articles = [];
+// The filter chip row is tag-driven, with one exception: a power-rankings
+// article carries its type rather than a tag, so PR_FILTER is a sentinel
+// "tag" that filters on type instead. Nothing else can collide with it — a
+// real tag is cleaned to plain text by the API.
+const PR_FILTER = '\u0000power_rankings';
 let activeTag = null;
 let me = null;
 
@@ -257,29 +264,35 @@ function renderTagFilter() {
   const counts = {};
   articles.forEach(a => (a.tags || []).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
   const tags = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  const hasRankings = articles.some(a => a.type === 'power_rankings');
   const wrap = document.getElementById('tag-filter');
   wrap.innerHTML = '';
-  if (!tags.length) return;
-  const allChip = document.createElement('button');
-  allChip.className = 'tag-chip' + (activeTag === null ? ' active' : '');
-  allChip.textContent = 'All';
-  allChip.onclick = () => { activeTag = null; renderFeed(); renderTagFilter(); };
-  wrap.appendChild(allChip);
-  tags.forEach(t => {
+  if (!tags.length && !hasRankings) return;
+  const addChip = (label, value, extraClass) => {
     const chip = document.createElement('button');
-    chip.className = 'tag-chip' + (activeTag === t ? ' active' : '');
-    chip.textContent = t;
-    chip.onclick = () => { activeTag = t; renderFeed(); renderTagFilter(); };
+    chip.className = 'tag-chip' + (extraClass ? ' ' + extraClass : '')
+      + (activeTag === value ? ' active' : '');
+    chip.textContent = label;
+    chip.onclick = () => { activeTag = value; renderFeed(); renderTagFilter(); };
     wrap.appendChild(chip);
-  });
+  };
+  addChip('All', null);
+  // Power Rankings leads the row, ahead of the tags — it is a section of the
+  // paper, not one more label someone typed on a column.
+  if (hasRankings) addChip('Power Rankings', PR_FILTER, 'pr-chip');
+  tags.forEach(t => addChip(t, t));
 }
 
 function renderFeed() {
   const feed = document.getElementById('feed');
   let list = articles;
-  if (activeTag) list = articles.filter(a => (a.tags || []).includes(activeTag));
+  if (activeTag === PR_FILTER) list = articles.filter(a => a.type === 'power_rankings');
+  else if (activeTag) list = articles.filter(a => (a.tags || []).includes(activeTag));
   feed.innerHTML = '';
-  if (!list.length) { feed.innerHTML = '<div class="empty">No articles published yet.</div>'; return; }
+  if (!list.length) {
+    feed.innerHTML = `<div class="empty">${activeTag ? 'Nothing here yet.' : 'No articles published yet.'}</div>`;
+    return;
+  }
   list.forEach(a => feed.appendChild(renderArticleCard(a)));
 }
 
