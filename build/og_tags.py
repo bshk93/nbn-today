@@ -8,6 +8,14 @@ These are deliberately **static** rather than injected by nav.js: the consumers
 are crawlers — Discord's unfurler above all, since that is where league links
 actually get pasted — and none of them run our JavaScript.
 
+One page is not fully covered by this map, for that same reason: /news/view/ is
+one shell for every article, so the tags below are a placeholder and every
+article unfurled as the same card. nginx routes /news/view/ to
+GET /api/og/news when the User-Agent is a known unfurler ($nbn_unfurler in
+/etc/nginx/sites-enabled/nbn.today), which renders the real article's head; the
+entry below is what everything else sees. Any other per-item page — a player, a
+proposal, a member — has the same gap and would want the same treatment.
+
 PAGES below is the source of truth for every page's description, so a new page
 means a new entry here. --check runs from the pre-commit hook and fails when
 one is missing, which is what stops the map from quietly rotting as pages are

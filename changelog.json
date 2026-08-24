@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.1.85",
+    "date": "2026-08-24",
+    "changes": [
+      "News articles pasted into Discord now unfurl as themselves \u2014 headline, byline, opening lines and the article's own cover image. Every article had been showing the same generic \"Article \u2014 NBN News\" card, because /news/view/ builds itself in the browser and no link-preview crawler runs JavaScript; nginx now hands those crawlers a rendered head instead. Unpublished drafts keep the generic card on purpose"
+    ]
+  },
+  {
     "version": "0.1.84",
     "date": "2026-08-24",
     "changes": [
