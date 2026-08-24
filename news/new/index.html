@@ -141,11 +141,10 @@
     <div id="pr-fields" style="display:none;">
       <div class="field">
         <div class="pr-grid">
-          <div>
-            <label for="series-input">Series</label>
-            <input type="text" id="series-input" placeholder="main" maxlength="40">
-            <div class="hint">Editions in the same series are chained together.</div>
-          </div>
+          <!-- The league runs one series, so its picker is hidden rather than
+               removed: everything downstream still reads #series-input, and a
+               second parallel column later is this input made visible again. -->
+          <input type="hidden" id="series-input" value="main">
           <div>
             <label for="prev-select">Previous edition</label>
             <select id="prev-select"><option value="">None — this is the first</option></select>
