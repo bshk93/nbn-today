@@ -59,6 +59,15 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// A draft is minutes old, not days — "Aug 24" would read as stale when it is
+// thirty seconds fresh. Today gets a clock, anything older gets the date too.
+function fmtTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const clock = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return d.toDateString() === new Date().toDateString() ? clock : `${fmtDate(iso)}, ${clock}`;
+}
+
 function logo(abbr) {
   return `<img src="/logos/logo-${abbr.toLowerCase()}.png" alt="" loading="lazy">`;
 }
@@ -158,8 +167,16 @@ function renderAuthorPanel() {
   const canEditVoters = a.phase === 'setup' || a.phase === 'voting';
 
   const chips = (a.voters || []).map(name => {
+    // Three states, because "hasn't submitted" covers both someone who is
+    // half-way down their ballot and someone who never opened it — and those
+    // want opposite things from an author.
     const done = (bp.submitted || []).includes(name);
-    return `<span class="chip ${done ? 'done' : ''}">${done ? '<span class="tick">✓</span>' : ''}${escHtml(name)}`
+    const started = !done && (bp.started || []).includes(name);
+    const mark = done ? '<span class="tick">✓</span>'
+      : started ? '<span class="part" title="Started a ballot, not submitted">◐</span>' : '';
+    return `<span class="chip ${done ? 'done' : started ? 'started' : ''}"`
+      + (started ? ' title="Part-way through — started but not submitted"' : '')
+      + `>${mark}${escHtml(name)}`
       + (canEditVoters ? `<button title="Remove" onclick="removeVoter('${escHtml(name)}')">×</button>` : '')
       + `</span>`;
   }).join('');
@@ -170,9 +187,14 @@ function renderAuthorPanel() {
     note = 'Voters can\'t see each other\'s ballots until you close voting.';
   } else if (a.phase === 'voting') {
     const pending = (bp.pending || []);
+    const started = (bp.started || []);
     controls = `<button class="btn-primary" onclick="setPhase('blurbs')" ${(bp.submitted || []).length ? '' : 'disabled'}>Close voting &amp; reveal</button>`;
     note = (pending.length
-      ? `Still waiting on ${pending.map(escHtml).join(', ')}. Closing now counts only the ballots that are in.`
+      ? `Still waiting on ${pending.map(escHtml).join(', ')}.`
+        + (started.length
+          ? ` ${started.map(escHtml).join(', ')} ${started.length === 1 ? 'has' : 'have'} a ballot part-way through — worth a nudge rather than closing on them.`
+          : '')
+        + ' Closing now counts only the ballots that are in.'
       : 'Everyone has voted.')
       + ' You can still add a voter — they just have to rank before you close.';
   } else {
@@ -319,41 +341,109 @@ function renderMain(phase) {
 
 // ── the ballot ───────────────────────────────────────────────────────────────
 
-// The working order lives in localStorage until it's submitted, so a reload
-// mid-ballot doesn't cost someone their 30-team ordering.
+// The working order is saved twice over: to the server as a draft (so it
+// follows someone from their phone to their desk) and to localStorage (so a
+// reload, or a dead connection, still can't cost them thirty drags). The
+// server copy wins on load, being the one that can be newer than this browser.
 const draftKey = () => `nbn_pr_draft_${state.id}`;
+
+const isFullOrder = o => Array.isArray(o) && o.length === 30 && o.every(t => TEAMS[t]);
 
 function initOrder() {
   if (state.order) return;
   const mine = state.article.ballots?.[state.me?.name]?.order;
-  if (mine?.length === 30) { state.order = mine.slice(); return; }
+  if (isFullOrder(mine)) { state.order = mine.slice(); return; }
   try {
     const saved = JSON.parse(localStorage.getItem(draftKey()) || 'null');
-    if (Array.isArray(saved) && saved.length === 30 && saved.every(t => TEAMS[t])) {
-      state.order = saved; return;
-    }
+    if (isFullOrder(saved)) { state.order = saved; return; }
   } catch { /* fall through to a fresh ballot */ }
-  state.order = ABBRS.slice();
+  // Last edition's finish — the API works it out (`seed_order`) precisely so
+  // nobody has to drag thirty rows to say "much the same as last week".
+  // Alphabetical is the floor under that, not the starting point.
+  const seed = state.article.seed_order;
+  state.order = isFullOrder(seed) ? seed.slice() : ABBRS.slice();
 }
+
+// Autosave. Debounced, because this fires on every drag and every ▲▼.
+let draftTimer = null, draftDirty = false;
 
 function saveDraft() {
   try { localStorage.setItem(draftKey(), JSON.stringify(state.order)); } catch { /* private mode */ }
+  draftDirty = true;
+  setBallotStatus('Saving…');
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(pushDraft, 700);
+}
+
+async function pushDraft() {
+  if (!draftDirty || !isVoter()) return;
+  draftDirty = false;
+  try {
+    // Deliberately no re-render: this lands mid-drag, and rebuilding the list
+    // under someone's cursor would be worse than a stale author panel.
+    state.article = await api(`/news/${state.id}/rankings/ballot/draft`, {
+      method: 'PUT', body: JSON.stringify({ order: state.order }),
+    });
+    setBallotStatus(ballotStatusText());
+  } catch (e) {
+    draftDirty = true;            // keep it dirty so the next edit retries
+    setBallotStatus(`Not saved to the server — ${e.message}`, 'err');
+  }
+}
+
+// Leaving the tab — closing it, or locking the phone — is exactly the moment a
+// debounce is about to lose something. `keepalive` lets the request outlive the
+// page; a plain fetch here would be cancelled on unload.
+function flushDraft() {
+  if (!draftDirty || !isVoter()) return;
+  draftDirty = false;
+  const token = getToken();
+  if (!token) return;
+  try {
+    fetch(`${API}/news/${state.id}/rankings/ballot/draft`, {
+      method: 'PUT', keepalive: true,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ order: state.order }),
+    });
+  } catch { /* nothing useful to do on the way out */ }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') flushDraft();
+});
+window.addEventListener('pagehide', flushDraft);
+
+function ballotStatusText() {
+  const b = state.article.ballots?.[state.me?.name] || {};
+  if (b.submitted_at) {
+    return `Submitted ${escHtml(fmtDate(b.submitted_at))} · edits save as you go until voting closes`;
+  }
+  if (b.saved_at) {
+    return `Draft saved ${escHtml(fmtTime(b.saved_at))} · not submitted, and only you can see it`;
+  }
+  return 'Not submitted yet — your order is saved as you go';
+}
+
+function setBallotStatus(text, cls) {
+  const el = $('ballot-status');
+  if (el) { el.innerHTML = text; el.className = `status-msg${cls ? ' ' + cls : ''}`; }
 }
 
 function renderBallot(host) {
   initOrder();
-  const submitted = state.article.ballots?.[state.me?.name]?.submitted_at;
+  const mine = state.article.ballots?.[state.me?.name] || {};
   host.innerHTML = `
     <div class="panel">
       <div class="panel-title">Your ballot</div>
       <div class="panel-note">Drag a team, or use ▲▼, to rank all 30 from best to worst.
         Click teams to open their rosters — as many at once as you want to compare.
-        Nobody — the author included — can see your ballot until voting closes.</div>
+        Your order saves itself as you go, so you can pick this up on another device —
+        it only counts once you submit. Nobody — the author included — can see your
+        ballot until voting closes.</div>
     </div>
     <div class="ballot-list" id="ballot-list"></div>
     <div class="sticky-save">
-      <span class="status-msg" id="ballot-status">${submitted ? `Submitted ${escHtml(fmtDate(submitted))} · you can keep changing it until voting closes` : 'Not submitted yet'}</span>
-      <button class="btn-primary" onclick="submitBallot()">${submitted ? 'Update ballot' : 'Submit ballot'}</button>
+      <span class="status-msg" id="ballot-status">${ballotStatusText()}</span>
+      <button class="btn-primary" onclick="submitBallot()">${mine.submitted_at ? 'Update ballot' : 'Submit ballot'}</button>
     </div>`;
   drawBallotRows();
 }
@@ -421,6 +511,8 @@ function wireDrag(list) {
 }
 
 async function submitBallot() {
+  clearTimeout(draftTimer);       // this write supersedes the pending draft
+  draftDirty = false;
   const el = $('ballot-status');
   el.textContent = 'Submitting…'; el.className = 'status-msg';
   try {
