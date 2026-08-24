@@ -23,6 +23,11 @@ const _ICON_PERSON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12
 // localStorage so it still renders on the first paint of the next page load.
 // Prices are never written here — the catalog is the price list, and the
 // server owns it (nbn-api/routers/themes.py).
+//
+// One theme is free for one member and priced for everyone else: their own
+// team's. That can't come from the catalog, which is public and cached across
+// whoever uses this browser, so it arrives per-member on /api/members/me as
+// `free_themes` and is cached separately from the bought ones.
 const FREE_THEMES = [
   { id: 'nbn-today',       label: 'NBN Today',       icon: '🌙', free: true },
   { id: 'nbn-today-light', label: 'NBN Today Light', icon: '☀️', free: true },
@@ -31,6 +36,7 @@ let THEMES = FREE_THEMES.slice();
 const THEME_STORAGE_KEY = 'nbn_theme_pref'; // 'auto' or one of THEMES[].id
 const THEME_CATALOG_KEY = 'nbn_theme_catalog'; // cached GET /api/themes
 const THEME_OWNED_KEY = 'nbn_themes_owned';    // cached cosmetics.themes for this browser's member
+const THEME_FREE_KEY = 'nbn_themes_free';      // cached free_themes for this browser's member — their own team's
 const DEFAULT_THEME_PREF = 'nbn-today'; // dark — used until a visitor explicitly picks something, incl. "Match System"
 
 // This browser's member's NB¥ balance, once the profile picker has fetched it.
@@ -44,6 +50,14 @@ function _readJson(key, fallback) {
 
 function _ownedThemes() { return _readJson(THEME_OWNED_KEY, []); }
 
+// Themes this member may use without buying: today, their own team's. The
+// server decides (routers/themes.py derives it from tenure) and sends it on
+// /api/members/me; this is the cache of that answer, kept separate from the
+// owned list because it is not a purchase — it lapses when the tenure does.
+function _freeThemes() { return _readJson(THEME_FREE_KEY, []); }
+
+function _hasTheme(id) { return _ownedThemes().includes(id) || _freeThemes().includes(id); }
+
 function _themeEntry(id) { return THEMES.find(t => t.id === id); }
 
 // A theme is usable if it's free, or if the owned-list cached from this
@@ -53,7 +67,7 @@ function _themeEntry(id) { return THEMES.find(t => t.id === id); }
 function _canUseTheme(id) {
   const e = _themeEntry(id);
   if (!e) return true;   // unknown id — a theme whose catalog entry hasn't loaded yet; don't fight it
-  return e.free || _ownedThemes().includes(id);
+  return e.free || _hasTheme(id);
 }
 
 // Load the cached catalog immediately (before first paint), then refresh it.
@@ -239,7 +253,8 @@ function _themeMenuItems(menu) {
   menu.textContent = '';
   const choices = [{ id: 'auto', label: 'Match System', icon: '🖥️', free: true }, ...THEMES];
   choices.forEach(c => {
-    const locked = !c.free && !_ownedThemes().includes(c.id);
+    const mine = !c.free && _freeThemes().includes(c.id);   // their own team's — free, and worth saying so
+    const locked = !c.free && !_hasTheme(c.id);
     const item = document.createElement('div');
     item.className = 'theme-menu-item' + (locked ? ' locked' : '');
     item.dataset.themeChoice = c.id;
@@ -248,7 +263,8 @@ function _themeMenuItems(menu) {
       + `<span class="theme-menu-check">✓</span>`;
     item.prepend(_themeIcon(c, 'theme-menu-icon', true));
     item.querySelector('.theme-menu-label').textContent = c.label;
-    item.title = locked ? `Unlock ${c.label} for ${_fmtNby(c.price)}` : c.label;
+    item.title = locked ? `Unlock ${c.label} for ${_fmtNby(c.price)}`
+                        : mine ? `${c.label} — your team, free` : c.label;
     item.addEventListener('click', () => {
       if (locked) { _unlockTheme(c, menu); return; }
       _setThemePref(c.id);
@@ -420,6 +436,7 @@ function _buildProfilePicker() {
             // next page load before this call resolves; re-applying here is
             // what corrects the cache when it's wrong.
             try { localStorage.setItem(THEME_OWNED_KEY, JSON.stringify(profile.cosmetics?.themes || [])); } catch { /* private browsing */ }
+            try { localStorage.setItem(THEME_FREE_KEY, JSON.stringify(profile.free_themes || [])); } catch { /* private browsing */ }
             _rebuildThemeMenu();
             _applyTheme();
             if (profile.avatar_url) {

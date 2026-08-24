@@ -6,11 +6,27 @@ regenerating overwrites hand-edits.
 
 ## Unlockable themes
 
-Two themes are free (`nbn-today` dark, `nbn-today-light`); **every other one is
-bought once with NB¥ at a flat 1,000** — Lavender Rose, and one theme per team.
-Priced flat on purpose, own-team included: 1,000 sits between the two existing
-NB¥ sinks (a cosmetics update at 500, an avatar at 5,000) against a median
-member balance of ~2,250.
+Two themes are free for everyone (`nbn-today` dark, `nbn-today-light`); **every
+other one is bought once with NB¥ at a flat 5,000** — Lavender Rose, and one
+theme per team. **A member's own team's theme is free for them**, and priced
+like any other for everyone else.
+
+The price was 1,000 flat, own team included, until 2026-08-24. Making the
+own-team theme free took the obvious purchase off the table, so the rest were
+re-priced upward to match an avatar (5,000) rather than a cosmetics update
+(500): against a median balance of ~2,250 a theme is now something to save for
+instead of something to collect, and the one a member would actually wear costs
+nothing.
+
+**Free-for-you is derived, not granted.** `own_team_theme` in
+`nbn-api/routers/themes.py` reads the member's open tenure every time it is
+asked — any position, owner/GM/coach alike — so the entitlement lapses when the
+tenure does and nothing is ever written into `cosmetics.themes`. Buying your own
+team's theme is a 400, not a 5,000 NB¥ donation; a member who *bought* that
+theme before joining the team keeps it afterwards, because the purchase is its
+own row. It reaches the picker as `free_themes` on `/api/members/me` rather than
+through the catalog, because `GET /api/themes` is public and cached per browser
+— a per-member price in it would be wrong for whoever signs in next.
 
 **Entitlement is server-side; selection is not.** `nbn-api/routers/themes.py` is
 the only thing that decides who paid for what, storing it in
@@ -26,18 +42,22 @@ default for a locked id, which is about a fresh browser rather than about theft.
 | Piece | Where |
 |---|---|
 | Catalog, price, purchase | `THEME_PRICE` / `LIVE_TEAM_THEMES` — `nbn-api/routers/themes.py`; `GET /api/themes` (public), `POST /api/members/me/themes/{id}` |
-| Picker, lock state, buy flow | `_themeMenuItems` / `_unlockTheme` — `nav.js` |
+| Your own team's theme, free | `own_team_theme` / `free_theme_ids` — `nbn-api/routers/themes.py`, returned as `free_themes` by `GET /api/members/me` |
+| Picker, lock state, buy flow | `_themeMenuItems` / `_unlockTheme` / `_hasTheme` — `nav.js` |
 | Colours | `css/theme.css`, one `:root[data-theme="…"]` block of 59 tokens each |
 | Team blocks | **generated** by `build/make_team_theme.py` from `build/team-colors.json` |
 
 Five things to know before touching it:
 
-- **`nav.js` hardcodes only the two free themes.** It is on every page including
+- **`nav.js` hardcodes only the two universally free themes.** It is on every page including
   signed-out ones, and a picker that can't render without a successful fetch
   disappears whenever the API hiccups. Everything else comes from
   `GET /api/themes`, cached in `localStorage` so it paints on first load. **No
   price is ever written in the page**, and the 402 refusal string is the
-  server's — the same rule `/free-agency` follows.
+  server's — the same rule `/free-agency` follows. The member's own team's
+  theme is cached separately (`nbn_themes_free`) from the bought ones
+  (`nbn_themes_owned`), for the same reason the server keeps them apart: one is
+  a purchase and one is a tenure.
 - **Locked themes stay in the menu with their price**, not hidden — the same
   "disabled with the reason" pattern as the roster ⋯ menu and the suggestions
   Edit button. The price *is* the reason. Clicking one **applies it for real**
@@ -78,8 +98,8 @@ Five things to know before touching it:
     cyan. `NEUTRAL_CHROMA` now sends a near-grey source to a near-grey output,
     which for the black-and-silver teams *is* the identity.
 - **A team is only listed once its block exists.** `LIVE_TEAM_THEMES` in the API
-  is the gate; adding a team there without generating the CSS sells 1,000 NB¥ of
-  nothing. `bash build/check_theme_catalog.sh` checks the two repos agree.
+  is the gate; adding a team there without generating the CSS sells 5,000 NB¥ of
+  nothing — and hands that team's own members a free theme that does nothing. `bash build/check_theme_catalog.sh` checks the two repos agree.
 
 Two checks, and they answer different questions:
 

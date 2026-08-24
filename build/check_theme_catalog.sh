@@ -6,7 +6,7 @@
 #
 # The two halves of the theme system live in different repos: prices and the
 # list of what exists are in nbn-api (routers/themes.py), the colours are here
-# (css/theme.css). Selling an id with no block takes 1,000 NB¥ for a theme
+# (css/theme.css). Selling an id with no block takes 5,000 NB¥ for a theme
 # that changes nothing on the page and has no refund path, which is the one
 # failure mode worth a script.
 #
