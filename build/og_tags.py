@@ -8,13 +8,18 @@ These are deliberately **static** rather than injected by nav.js: the consumers
 are crawlers — Discord's unfurler above all, since that is where league links
 actually get pasted — and none of them run our JavaScript.
 
-One page is not fully covered by this map, for that same reason: /news/view/ is
-one shell for every article, so the tags below are a placeholder and every
-article unfurled as the same card. nginx routes /news/view/ to
-GET /api/og/news when the User-Agent is a known unfurler ($nbn_unfurler in
-/etc/nginx/sites-enabled/nbn.today), which renders the real article's head; the
-entry below is what everything else sees. Any other per-item page — a player, a
-proposal, a member — has the same gap and would want the same treatment.
+Four pages are not fully covered by this map, for that same reason. Each is one
+shell serving many items:
+
+    /news/view/?id=    /players/?p=    /proposals/view/?id=    /members/{name}
+
+so the entries below are placeholders and every item unfurled as the same card.
+nginx routes those four to nbn-api's routers/og.py when the User-Agent is a
+known unfurler ($nbn_unfurler in /etc/nginx/sites-enabled/nbn.today), which
+renders the real item's head; the entries below are what everything else sees,
+and are also what og.py serves back when there is no item to render (it reads
+the block out of the shell rather than restating it). A fifth per-item page
+would want the same treatment — see nbn-api/CLAUDE.md § Link previews.
 
 PAGES below is the source of truth for every page's description, so a new page
 means a new entry here. --check runs from the pre-commit hook and fails when

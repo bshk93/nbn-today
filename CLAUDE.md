@@ -374,7 +374,7 @@ precise.
 | Change stats highs table | `stats/highs/table.js` (not the per-stat HTML files) |
 | Change stats totals table | `stats/totals/table.js` (not the per-stat HTML files) |
 | Add/edit a NBNTV blurb | `BLURBS` object — `nbntv-classics/index.html` |
-| Change a page's Open Graph tags (the card Discord shows for a pasted link) | `PAGES` in **`build/og_tags.py`**, then run it — the tags are static and a new page needs an entry or `--check` fails the hook. The card images are `build/og_cards.py`. **`/news/view/` is the exception**: it is one shell for every article, so nginx sends known unfurlers to `GET /api/og/news` (`news_og_html` — `nbn-api/routers/news.py`) for the real headline, excerpt and cover image, and the static entry is only what everything else sees |
+| Change a page's Open Graph tags (the card Discord shows for a pasted link) | `PAGES` in **`build/og_tags.py`**, then run it — the tags are static and a new page needs an entry or `--check` fails the hook. The card images are `build/og_cards.py`. **The four per-item pages are the exception** (`/news/view/`, `/players/`, `/proposals/view/`, `/members/{name}`): each is one shell serving many items, so nginx sends known unfurlers to `nbn-api/routers/og.py` for the real card, and the static entry is only what everything else sees |
 | Change standings display | `standings/index.html` |
 | Change player index display | `players/index.html` |
 | Change HOF display | `hof/index.html` |
