@@ -35,6 +35,7 @@ const state = {
   id: new URLSearchParams(location.search).get('id'),
   article: null,
   me: null,             // { name, roles } or null
+  members: null,        // every member name, for resolving what an author types
   order: null,          // the ballot being edited, local until submitted
   rosters: {},          // ABBR -> augmented roster rows, fetched on demand
   bios: null,
@@ -187,7 +188,13 @@ function renderAuthorPanel() {
   if (a.phase === 'setup') {
     loadMemberList();
     $('voter-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); addVoter(); }
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();
+      // Enter is also how a datalist suggestion is accepted, and the browser
+      // writes it into the input *after* keydown — reading the value here gets
+      // the prefix that was typed ("Sam" for "Samm"), which is then rejected as
+      // an unknown member. One tick's delay lets the selection land first.
+      setTimeout(addVoter, 0);
     });
   }
 }
@@ -195,6 +202,7 @@ function renderAuthorPanel() {
 async function loadMemberList() {
   try {
     const members = await api('/members/public');
+    state.members = members.map(m => m.name);
     const list = $('member-list');
     if (!list) return;
     const already = new Set(state.article.voters || []);
@@ -218,10 +226,24 @@ async function saveVoters(voters) {
 
 function addVoter() {
   const input = $('voter-input');
-  const name = input.value.trim();
-  if (!name) return;
+  const typed = input.value.trim();
+  if (!typed) return;
+  // Resolve what was typed against the real member list, so a difference in
+  // case reaches the API as the name it knows rather than as a rejection. With
+  // no list loaded (the fetch is allowed to fail) the typed name goes as-is and
+  // the API is the judge, which is what it is anyway.
+  const known = state.members || [];
+  const match = known.find(n => n.toLowerCase() === typed.toLowerCase());
+  if (known.length && !match) {
+    const el = $('author-status');
+    if (el) {
+      el.textContent = `No member named “${typed}” — pick one from the list.`;
+      el.className = 'status-msg err';
+    }
+    return;
+  }
   input.value = '';
-  saveVoters([...(state.article.voters || []), name]);
+  saveVoters([...(state.article.voters || []), match || typed]);
 }
 
 function removeVoter(name) {

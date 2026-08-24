@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.92",
+    "date": "2026-08-24",
+    "changes": [
+      "Fixed: picking a voter from the autofill list with Enter added the half-typed prefix instead \u2014 \"Samm\" went in as \"Sam\" and came back \"unknown member\".",
+      "A voter name typed in any case now resolves to the real member, and a name nobody has is refused on the page rather than by the server."
+    ]
+  },
+  {
     "version": "0.1.91",
     "date": "2026-08-24",
     "changes": [
