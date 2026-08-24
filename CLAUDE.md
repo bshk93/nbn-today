@@ -22,6 +22,12 @@ The site uses semantic versioning (`MAJOR.MINOR.PATCH`) stored in `version.json`
 
 The changelog is served at `/changelog` and the current version appears on the homepage card.
 
+> `changelog.json` is ~3,100 lines and 389 entries and grows every commit. **Only
+> the first ~10 lines are ever needed** — a new entry goes at the top, and the
+> hook rewrites only that entry. Read it with `head`, edit it in place, and never
+> re-serialize the whole file (that reflows all 389 entries into one unreviewable
+> diff).
+
 ---
 
 ## League rules and transaction rubrics
@@ -55,6 +61,13 @@ League-wide constants (cap thresholds, roster limits, apron triggers) are in Art
 > what lives where, what runs on a timer, the three flows (box score, transaction,
 > deploy), how to restore, and what to do when something breaks. This file is the
 > per-topic detail; the runbook is the map.
+
+> **The backlog is `BACKLOG.md`** (39KB, 39 items) — read it before proposing new
+> work, and update it when work lands. It is far too big to read whole for one
+> question: `grep -n '^### ' BACKLOG.md` lists every item with its priority in a
+> few hundred tokens, then read only the item that matters. Finished items move
+> to `BACKLOG_DONE.md`; a struck-through item still in `BACKLOG.md` is there
+> deliberately, because some part of it is still outstanding.
 
 ## Dev and live — which checkout am I in?
 
@@ -340,10 +353,6 @@ the API carries the engine before anything asks for it.
 
 ---
 
-## Architecture
-
-No framework or build step. Every page is a self-contained HTML file with inline `<style>` and `<script>`. Two shared JS files break the pattern as described below.
-
 ## Common task lookup
 
 Entries name a **symbol and a file, deliberately without a line number** — `grep`
@@ -376,13 +385,13 @@ precise.
 | Add a transaction type to the simulator | `setMode` / `runSignCheck` — `transaction-sim/index.html`, plus a `POST /api/validate/{type}` endpoint in `nbn-api/routers/transactions.py` (see "Transaction simulator" below) |
 | Change the contract shorthand (`2+1 PO, $150M`) or the cap-hold vocabulary | **`contract.js`** at the repo root — one grammar, loaded by team pages (via `contractReady` in `team.js`), `/pdc` and `/transactions`. `_contract_str` in `nbn-api/routers/discord_notify.py` is a deliberate Python mirror (it can't import JS) and is pinned to the same cases by `nbn-api/tests/test_contract_shorthand.py`. Don't add a fourth copy |
 | Change the office's contract entry form (salary rows, EAPS, live signing rubric) | `addSalaryRow` / `collectSalaries` / `collectSignValidationBody` — `transactions/index.html`. The signing rubric calls `POST /api/validate/sign` (or `/offer_sheet`, `/sign_pick`) on a 300ms debounce, the same validator the submit path runs. The **EAPS field is not always shown** — `syncEapsVisibility` reveals it off the fact sheet's `trailing_hold` only when it actually prices something (Full Bird hold, season with no real EAPS), and keeps it up once answered so the control that produced the figure doesn't vanish |
-| Change the rookie scale table, or how a pick signing is prefilled | `build/load_rookie_scale.py` (loader) · `rookie-scale/index.html` (page) · `_rookie_scale_contract` + `GET /api/rookie-scale/contract/{slug}` (nbn-api) · `prefillRookieScale` — `transactions/index.html`. See "The § 7.1 rookie scale" below |
-| Add/change an owner's per-player roster move | `makeRosterMoveActions` / `openMovesMenu` — `teams/team.js` (see "Owner self-serve roster moves") |
+| Change the rookie scale table, or how a pick signing is prefilled | `build/load_rookie_scale.py` (loader) · `rookie-scale/index.html` (page) · `_rookie_scale_contract` + `GET /api/rookie-scale/contract/{slug}` (nbn-api) · `prefillRookieScale` — `transactions/index.html`. See `docs/api-validation-notes.md` |
+| Add/change an owner's per-player roster move | `makeRosterMoveActions` / `openMovesMenu` — `teams/team.js` (see `docs/roster-moves.md`) |
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
-| Change the suggestions board or its comment threads | `suggestions/index.html` + `nbn-api/routers/suggestions.py` (see "Suggestions board" below) |
-| Change the team-facing FA offer form (⋯ menu, contract editor, submit confirm) | `free-agency/index.html` — the block under "Team-facing offers"; endpoints `POST/PATCH/DELETE /api/fa/offers`, `POST /api/fa/offers/{id}/submit`, `GET /api/fa/commitment/{team}`. an offer's legality and every dollar shown come from `POST /api/validate/sign`, never from page code (see "Team-facing FA offers" below) |
-| Add a theme, or change what one costs | Colours: `build/make_team_theme.py` → `css/theme.css` (the team blocks are **generated**, don't hand-edit). Catalog and price: `LIVE_TEAM_THEMES` / `THEME_PRICE` in `nbn-api/routers/themes.py`. Picker: `_themeMenuItems` / `_unlockTheme` — `nav.js`. Run `build/check_theme_catalog.sh` after (see "Unlockable themes" below) |
-| Change the PDC committee dashboard (FA review, the 1,000-ball ballot, remand/void, finalize/unlock, the agent queue, head controls) | `pdc/index.html`; data from `/api/fa/*` in `nbn-api/routers/free_agency.py`; design record in `docs/pdc-free-agency-spec.md`. Three roles, and a free agent passes through them in order — `agent` curates, `fac` ballots, `fac_head` runs it (see "The agent stage" below). Served at both `nbn.today/pdc` and `pdc.nbn.today` — the subdomain is `/etc/nginx/sites-available/pdc.nbn.today`, the **same docroot** with `/` → `/pdc/index.html`, so every fetch stays same-origin (no CORS, no static-asset CORS gap). Keep any new path rule in sync with the `nbn.today` block or it works on one host and 404s on the other |
+| Change the suggestions board or its comment threads | `suggestions/index.html` + `nbn-api/routers/suggestions.py` (see `docs/members-and-rewards.md`) |
+| Change the team-facing FA offer form (⋯ menu, contract editor, submit confirm) | `free-agency/index.html` — the block under "Team-facing offers"; endpoints `POST/PATCH/DELETE /api/fa/offers`, `POST /api/fa/offers/{id}/submit`, `GET /api/fa/commitment/{team}`. an offer's legality and every dollar shown come from `POST /api/validate/sign`, never from page code (see `docs/fa-offers-pipeline.md`) |
+| Add a theme, or change what one costs | Colours: `build/make_team_theme.py` → `css/theme.css` (the team blocks are **generated**, don't hand-edit). Catalog and price: `LIVE_TEAM_THEMES` / `THEME_PRICE` in `nbn-api/routers/themes.py`. Picker: `_themeMenuItems` / `_unlockTheme` — `nav.js`. Run `build/check_theme_catalog.sh` after (see `docs/themes.md`) |
+| Change the PDC committee dashboard (FA review, the 1,000-ball ballot, remand/void, finalize/unlock, the agent queue, head controls) | `pdc/index.html`; data from `/api/fa/*` in `nbn-api/routers/free_agency.py`; design record in `docs/pdc-free-agency-spec.md`. Three roles, and a free agent passes through them in order — `agent` curates, `fac` ballots, `fac_head` runs it (see `docs/fa-offers-pipeline.md`). Served at both `nbn.today/pdc` and `pdc.nbn.today` — the subdomain is `/etc/nginx/sites-available/pdc.nbn.today`, the **same docroot** with `/` → `/pdc/index.html`, so every fetch stays same-origin (no CORS, no static-asset CORS gap). Keep any new path rule in sync with the `nbn.today` block or it works on one host and 404s on the other |
 
 ---
 
@@ -449,6 +458,33 @@ The "Edit" button on Roster and Draft Picks sections in team pages calls `setupE
 
 FastAPI app running as a systemd service on port 8001, proxied through nginx. Source: `/home/skim/projects/nbn-api/main.py`. Reads/writes CSVs in `/var/lib/nothing-but-stats/`.
 
+### Subsystem detail lives in `docs/` — read it before changing that subsystem
+
+The reasoning behind each subsystem below — what broke once, what the shape is
+guarding against, what must never be reintroduced — was moved out of this file
+on 2026-08-24. It is **not optional** reading: it is exactly the context that
+stops a change from reinstating a bug that has already happened. It is *on
+demand* reading, because it only applies once you know which subsystem you are
+in.
+
+| Touching this | Read first |
+|---|---|
+| A `/api/validate/*` endpoint, the § 7.1 rookie scale, § 3.8 Bird tenure, or § 3.15 offer sheets | `docs/api-validation-notes.md` |
+| Any path between the API and Discord — transaction embeds, PDC FA feeds, the `#roster-log` mirror, tradeblock posts | `docs/discord-integrations.md` |
+| The team-facing FA offer form, the § 4.7 agent stage, or § 4.3b voiding | `docs/fa-offers-pipeline.md` |
+| A theme, what one costs, or `css/theme.css` | `docs/themes.md` |
+| Members, the suggestions board, or NB¥ achievement awards | `docs/members-and-rewards.md` |
+| The per-player ⋯ menu on team pages | `docs/roster-moves.md` |
+
+What stays in this file is what you need *before* you know which subsystem you
+are in: roles, endpoint tables, the data contract, the data model.
+
+> **Keep it that way.** This file is loaded in full at the start of every
+> session; `docs/` is not. It went from 37KB to 99KB in the three weeks to
+> 2026-08-24 by appending each feature's history here. When a change needs a
+> paragraph of reasoning to explain itself, that paragraph belongs in the
+> relevant `docs/` file, and this file gets at most a table row pointing at it.
+
 ### Roles
 
 | Role | Permissions |
@@ -479,7 +515,7 @@ The token itself never enters the cookie, which is what makes a session revocabl
 
 Data stored in `/var/lib/nothing-but-stats/trading-block.json`. The page at `tradeblock/index.html` fetches this API plus the relevant teams' roster CSVs (for team membership) and `player-bios.json`/`GET /api/ovr/current` to join player metadata (POS, OVR, AGE, salary columns).
 
-The whole-block `PUT` also takes an unpersisted `notify_discord` flag — see "Tradeblock Discord notifications" below.
+The whole-block `PUT` also takes an unpersisted `notify_discord` flag — see `docs/discord-integrations.md`.
 
 ### Validation endpoints (Transaction Simulator)
 
@@ -512,22 +548,6 @@ sheets are built from the same helpers the validators use
 `_trade_flows`), so the sim can't show a team room the validator didn't credit
 it with. When adding a check, reuse the helper rather than recomputing.
 
-`_require_validatable` rejects unknown teams/players with a 400 instead of
-scoring them — a validator handed an unknown team reads its salary as $0 and
-every check passes vacuously, which would print a confident "LEGAL" for a
-transaction that was never evaluated. `_require_trade_validatable` is the same
-guard for a trade, which has many teams and players rather than one of each;
-`/api/validate/trade` had none until 2026-08-10 and was scoring unknown teams
-(reporting a passing hard-cap check and a roster count of -1).
-
-**`tests/test_validate_endpoints.py` is the only suite that goes through HTTP.**
-Every other suite calls the validators directly, which left the endpoint
-functions wrapping them — the code that reads the request model and assembles
-the response — never executed under test. That is precisely where both of the
-above bugs lived. Add a case here when adding a `/api/validate/*` endpoint; it
-asserts shape, not legality (never 5xx, `{legal, checks, fact_sheet}` back,
-unknown subjects refused with 400, junk bodies 422).
-
 Coverage is uneven and the UI says so: `sign`/`offer_sheet`/`offer_sheet_decision`/
 `trade`/`renounce`/`sign_pick`/`extension` have real validators, while `release`, `option` and `pick` are stubs
 returning `[]` — those types are deliberately **not** offered in the simulator, since a
@@ -536,714 +556,8 @@ verdict off zero checks is worse than no verdict. § 3.7 (DPE) remains unmodeled
 validator exists to serve the roster page's confirm dialog. Adding it there is
 now just UI work.)
 
-`sign_pick` was itself one of those silent stubs until 2026-08-11 — it wasn't in
-`_VALIDATORS` at all, so a pick signing ran **zero** checks, against § 1.3's
-explicit promise to block "any signing, trade, draft pick signing, or two-way
-conversion" that breaches a ceiling. It now checks the hard cap, the roster
-ceiling, that the player actually holds draft rights, and § 7.1 scale conformity.
-It is wired into `/transactions`' live rubric (not the simulator, which doesn't
-offer the type). Note it is deliberately **not** run through
-`_check_contract_raises`: the scale's own Year 1 → Year 2 step lands either side
-of exactly 5% (pick 1 of 2026 rises 5.0024%), so the § 3.9 ladder rejects about
-half the contracts § 7.1 prescribes.
-
-`convert_twoway` had the same gap `sign_pick` did, but on the fact-sheet side
-rather than the checks: `_validate_convert_twoway` was always in `_VALIDATORS`,
-so a two-way conversion was never unchecked — but with no `/api/validate/*`
-endpoint, `/transactions`' live rubric had no fact sheet to read `needs_eaps`
-off of, so `f-eaps-field` never appeared even though `_apply_convert_twoway`
-prices the trailing § 3.10 hold through the same `_autofill_fa_hold_amounts` a
-signing does, and a Full Bird hold with no EAPS on file rejects at submit with
-a 422 asking for `eaps_assumption`. The office form could ask for an answer it
-had nowhere to collect. Fixed 2026-08-12 by adding the endpoint and wiring
-`collectSignValidationBody`/the rubric section to `convert_twoway` the same
-way `sign_pick` joined them.
-
-`extension` (§ 6.2 / § 6.3) shipped 2026-08-21 — Phase A + E of
-`docs/poext-extension-pipeline.md`. Deliberately does **not** reuse
-`_validate_sign`: an extension adds years to a live contract rather than
-replacing a current-season figure, and every cap figure in `_validate_sign`
-is built for replacement (measured against production 2026-08-07: that shape
-reported a team $18.9M *cheaper* for extending a player). Contract start is
-derived by reusing `_bird_tenure`'s ledger walk verbatim, including its
-synthetic draft-event seed, rather than the separate ledger backfill the
-pipeline doc originally sized — see the `[P3]` backlog item. Wired into both
-`/transaction-sim` (its own "Extension" tab, not a variant of the signing one)
-and the `/transactions` office form (2026-08-21) the same way
-`sign_pick`/`convert_twoway` were — team derived from the roster, since § 6.2
-means only the incumbent may extend.
-
-### The § 7.1 rookie scale
-
-`rookie-scale.json` in NBS_DATA_DIR, keyed by draft year, 30 rows of **five**
-figures. Served by `GET /api/rookie-scale`; `/rookie-scale` renders it (public
-read, editing gated on `rosters`) and `GET /api/rookie-scale/contract/{slug}`
-returns one player's prescribed deal ready to load into a contract form.
-
-**Five figures, not four.** Years 1–4 are the contract (§ 7.1: Years 3 and 4 are
-team options); the fifth is the **§ 3.10 RFA cap hold** the deal rolls into, at
-250% of Year 4 for picks 1–2 and 300% for picks 3–30. Season keys are derived
-from the draft year (2026 → 26-27 … 30-31), never read from the sheet's header
-row, which has been stale by a year before.
-
-`_rookie_scale_contract` is the one reader: the validator scores against it and
-the office form prefills from it, so the prescribed deal is stated once.
-
-**Loading it:** `build/load_rookie_scale.py` reads the league sheet's
-`{year} Rookie Contracts` tabs. Two things it refuses to do, both because the
-data has actually been wrong: it reads **columns F–J only** (L–P are the
-underlying NBA figures and are stale on the 2026 tab, so re-deriving 120% × base
-yields last year's contract), and it verifies each table against every already-
-signed contract from that draft plus a § 3.10 direction check before writing.
-Years that fail are skipped and named, not written.
-
-**2024 is deliberately not loaded.** Its multiplier is inverted — picks 1–9 take
-300% and 10–30 take 250%, where § 3.10 puts the *higher* multiplier on the
-*lower* salary (2025 and 2026 both do). Its boundary sits at ~$7.7M against
-~$16M for the other two years, and two 2024 bios (McCain #10, Carter #11) already
-carry the corrected convention while picks 12–30 don't. Needs a league ruling,
-not a code fix.
-
-### § 3.8 Bird Rights tenure
-
-`_bird_tenure(slug, team, season, bio)` derives continuous service from the
-**transaction ledger**, not from `bio["contracts"]`. That field is a
-projection of the ledger written only by `_apply_sign` / `_apply_sign_pick` /
-`_apply_convert_twoway` (each entry carries a `txn_id` back-pointer), so it is
-empty for ~95% of players, can never express a trade, and will never
-retroactively fill — the 1,178 backfilled signings went through
-`_append_historical`, which by design doesn't touch bios. Don't reintroduce it
-as a tenure source; it's the same denormalized-copy trap as the old roster-CSV
-`OVR` column. It remains the right place for contract *terms*.
-
-The model (`tests/test_bird_rights_tenure.py` pins all of it):
-
-- A **trade carries** the clock — § 6.2 recognises Bird Rights held "via trade".
-- **Re-signing your own free agent continues** the clock; § 3.8 is about teams
-  re-signing their own free agents, so a reset would make Bird rights
-  single-use.
-- Signing with a **different team**, or a **release**, resets it.
-- The **draft seeds** the timeline, so drafted-then-traded resolves to the
-  current holder.
-- A trade with **no earlier record** yields a lower bound only (`basis:
-  "trade_floor"`).
-
-**Only over-declaration errors, and only from a definite basis.** This
-asymmetry is the safety property: a ledger gap can only make derived tenure
-look *longer* (the most recent signing visible is an older one), so "declared
-above derived" cannot be manufactured by missing data. `trade_floor` and
-unknown bases warn instead. **Unknown is never Non-QVFA** — a player with no
-record is typically a long-tenured one, so defaulting them to Non-Bird would
-invert the truth.
-
-Coverage is 483/487 rostered players. Verified against all 14 real Bird
-signings in the ledger: 12 pass, 2 warn, 0 false-positive errors.
-
-`_check_bird_rights_declaration` also takes `method`, which closes a real hole:
-`_check_signing_method_funding` returns early for any method outside the
-cap-space/MLE family, so `signing_method="bird_rights"` used to bypass funding
-validation entirely *and* unlock § 3.13's 8% raise ceiling.
-
-The ledger index is cached against `transactions.json`'s (mtime, size) —
-the simulator revalidates on a 250ms debounce, and re-parsing ~2MB per
-keystroke is pure waste.
-
-**`_preview_fa_hold` must simulate the apply-time bio, not the current one.**
-`_apply_sign`/`_apply_sign_pick`/`_apply_convert_twoway` all append the deal
-being signed to `bio["contracts"]` *before* pricing its own trailing § 3.10
-hold, on purpose — a player signing a 3-year deal will, by the time its
-trailing hold season arrives, actually have played those 3 years, so they
-count toward the tenure that prices it. `_derive_bird_tier`'s ledger path
-(`_bird_tenure`) gets this for free from real elapsed calendar time, but its
-fallback (no acquisition record on the ledger — `_bird_tenure` reports
-`"unknown"`) scans `bio["contracts"]` directly, so it only sees those extra
-years if they're actually in there. `_preview_fa_hold` used to derive tier
-from the bio exactly as it stood, never the deal being typed — so a fresh
-signing to a player with no ledger history could preview as Non-QVFA (no
-EAPS needed, `f-eaps-field` hidden, verdict green) purely because apply
-hadn't yet appended the years that would flip the fallback to QVFA, and then
-422 at submit demanding `eaps_assumption` from a form that had no reason to
-ask for it. Fixed 2026-08-12 by having the preview build the same probe bio
-apply will (`bio["contracts"] + [{team, salaries}]`) before calling
-`_derive_bird_tier`, so the two paths can no longer disagree about the tier.
-`tests/test_fa_hold_calc.py` pins `_preview_fa_hold`'s no-mutation guarantee,
-which this still holds — the probe's `contracts` list is a new list, never
-`bio["contracts"]` appended in place.
-
-### Owner self-serve roster moves
-
-Team pages carry a per-player **⋯ menu** offering moves the viewer is actually
-entitled to make. Built by `makeRosterMoveActions` / `openMovesMenu` in
-`teams/team.js`. Actions the player is ineligible for are shown **disabled with the
-rule-citing reason**, not hidden — "why can't I renounce him?" is a rules question
-and the menu is where it gets answered.
-
-Rendered in the **Rosters and Contracts** roster views (`MOVE_MODES`), not Stats or
-Ratings. Rosters is the default tab, so gating it to Contracts alone made the
-feature invisible to the owners it exists for.
-
-**Getting a token in the first place:** the roster header has a `#team-signin-btn`
-shown only when `/api/auth/me` resolves to no roles. It is not decoration — every
-other affordance on a team page that prompts for a token (`attachEditBtn`, the
-Team Settings tab) is gated on roles that require a token to already be stored, so
-without it a team owner who isn't on the committee had no way into their own tools
-at all. `hadStoredToken` is snapshotted *before* the page's fetches, since the first
-request to 403 clears a stale token and would otherwise erase the difference between
-"never signed in" and "token revoked".
-
-Two permission tiers, and they are genuinely different:
-
-| Action | Gate | Endpoint |
-|---|---|---|
-| Add/remove from trade block | team's own role **or** admin (`canEditTradeBlock`) | `PUT`/`DELETE /api/trading-block/{team}/player/{slug}` |
-| Renounce (§ 3.10) | **owner tenure** (`canRenounce`, server: `auth.is_team_owner`) | `POST /api/self/renounce` |
-
-**Ownership is a tenure position, not a role.** Every front-office member of a
-team carries the team role (`phx`, `bkn`, …) — it gates cosmetic/soft writes like
-jersey numbers and the trading block. Only a member with a *current* `owner`-position
-tenure in members.json may move real roster state, so a GM or coach passes the role
-check and fails `is_team_owner`. `GET /api/auth/me` returns `owner_of` computed by
-that same function, so the UI can't offer a move the API would refuse. Admin passes
-everything, consistent with every other check in `auth.py`.
-
-The scoped trading-block endpoints exist because the whole-block `PUT` is a
-last-write-wins replace — fine for the `/tradeblock` editor which owns the entire
-form, wrong for a one-click add from the roster page, where a stale read would
-silently wipe the rest of the team's listing.
-
-Renounce is the dangerous one and is treated accordingly: the confirm dialog runs
-`POST /api/validate/renounce` and shows the room freed, the resulting roster count
-against the § 2.1/§ 2.1a floors, and the § 3.8 Bird tenure being forfeited, then
-requires typing the player's surname. Every renounce stores a `_snapshot` of the
-bio state it erases; `rescind_renounce` restores from it via the **undo** button on
-renounce rows in `/transactions`. See `nbn-api/docs/transactions.md` for both types.
-
-### Offer sheets are two transactions (§ 3.15)
-
-`offer_sheet` extends the offer; `offer_sheet_decision` records the incumbent's
-answer and does the signing. Two decisions by two different teams, so two records.
-
-**This is a deliberate return to a design that previously broke — read this before
-touching it.** An earlier two-step version was merged into one transaction because
-an offer could be submitted with no follow-up, silently leaving the player on
-nothing but their old RFA hold (it bit Dyson Daniels' matched sheet in production;
-`_apply_offer_sheet_decision`'s docstring carries the history). Three things make
-the split safe, and removing any one of them reintroduces the bug:
-
-1. **Pending is enumerable.** `_open_offer_sheets()` derives every unresolved
-   offer from the ledger — an offer is open exactly when no `offer_sheet_decision`
-   names it. No second store, so nothing can drift from the transactions it
-   describes.
-2. **Pending costs money.** `_pending_offer_hold` charges the offering team a cap
-   hold equal to the offer's **Year 1** salary, inside `_compute_team_salary`, for
-   as long as it's open. A hold is a single season's charge, so the multi-year
-   total isn't the figure § 3.15 means. Counted against the Cap but not hard
-   cap/apron, exactly like the UFA/RFA holds it sits beside (§ 3.10).
-3. **Pending is loud.** `GET /api/offer-sheets/open` backs a banner on both teams'
-   pages and a panel at the top of `/transactions`, flagged `overdue` past the
-   48-hour deadline. Nothing auto-resolves — silently moving a real player on a
-   timer is worse than a late decision.
-
-`_rfa_eligibility` is the single eligibility rule, shared by the validator and the
-apply path. It tests the **current** season on purpose: `_apply_sign` refuses a
-cross-team signing unless the player carries a current-season UFA/RFA hold, so an
-"earliest hold" reading accepts a player still under contract — the offer
-validates, holds real cap room, then fails at the decision. (Verified the hard
-way; `tests/test_offer_sheets.py` pins it.)
-
-Decision-time validation checks the **incumbent's** hard cap on a match — a team
-may exceed the Cap to keep its own free agent, but a hard cap still binds (§ 1.3).
-Nothing checked that before the split.
-
-Three legacy combined entries carry their own `outcome` and were applied on
-submission. They read as already-resolved everywhere and are not migrated.
-
-### Discord transaction notifications
-
-`routers/discord_notify.py` posts an embed to Discord for every **live**
-transaction, using the existing `DISCORD_BOT_TOKEN` (same channel-post endpoint
-as `misc._notify_join_discord`). Set `DISCORD_TXN_CHANNEL` in `.env` to the target
-channel id; **unset, the module is a complete no-op**, so it is safe to deploy
-before the channel exists.
-
-**Delivery lives in `routers/discord_transport.py`**, shared with `fa_notify`
-(below). One paced queue and one worker process-wide: two modules each pacing
-themselves correctly would still collectively exceed Discord's rate limit. The
-burst cap is keyed **by channel**, so a runaway on one feed can't silence
-another, and each module sizes its own. `transport.send` takes a callable
-payload built only *after* the gates pass — a transaction embed loads every
-player bio, and refusing a message has to stay cheap.
-
-The load-bearing requirement is negative — *the channel must never receive a
-dump*. 1,935 of the ledger's 2,241 entries are backfill, so any path that iterates
-it and notifies would fire ~2,000 messages and rate-limit the bot. Three
-independent gates enforce that; all three must be defeated at once for a flood:
-
-1. **Call-site opt-in.** Only the two live submit paths (`POST /api/transactions`,
-   `POST /api/self/renounce`) call `notify_transaction`. `_append_transaction` is
-   deliberately *not* the hook — it's also the append path for `_append_historical`.
-   There is no startup, replay, migration, or scheduled hook that notifies.
-2. **Freshness.** A transaction whose `created_at` is older than `MAX_AGE_SECONDS`
-   (300s) is never announced. This makes replaying old entries structurally silent
-   regardless of caller intent.
-3. **Burst cap.** `MAX_BURST` (250) messages per `BURST_WINDOW` (900s), plus a
-   `MAX_QUEUE` (400) backlog ceiling. A runaway loop posts 250 and then goes quiet
-   with a log line.
-
-**Sizing gate 3 is measured, not guessed** — get this wrong in either direction and
-you either spam the channel or silently lose a busy day. From the real ledger:
-busiest single day **52** live transactions (2026-06-21), tightest actual 10-minute
-burst **19**. Draft day is expected to beat both (~30 pick signings plus trades,
-50+). An earlier 20/300s setting would have clipped that real 19-transaction burst.
-`tests/test_discord_notify.py` pins those figures, so if league activity outgrows
-them a test fails rather than messages quietly going missing.
-
-**Delivery is a paced queue, not a thread per message.** Discord rate-limits channel
-messages at roughly 5 per 5 seconds; firing a draft day's worth concurrently would
-429 most of them, and a dropped announcement is worse than a late one. A single
-daemon worker drains `_queue` at `SEND_INTERVAL` (1.25s, ~4 per 5s) and honours the
-`retry_after` Discord returns, retrying up to `MAX_RETRIES`. A 4xx that isn't a rate
-limit (bad channel id, bot not in the guild, missing Send Messages) fails fast — it
-won't fix itself. A draft day drains in about two minutes.
-
-`tests/test_discord_notify.py` proves each gate independently — including that
-replaying all 2,241 entries sends zero messages, and that a 429'd message is
-delivered rather than dropped.
-
-**Contract shorthand mirrors `teams/team.js`'s `summarizeContract`** — `2+1 PO`,
-`1 NG+1 TO`, tags PO/TO/NG. Divergent shorthand for the same deal is worse than
-none, so `_contract_str` reimplements that function's rules, including treating a
-trailing UFA/RFA line as the hold the deal *rolls into* rather than a contract year
-(counting it would inflate the total on every deal that has one). Contract-carrying
-types also get a `Year by year` field: a code block of per-season figures with
-option/non-guaranteed years labelled.
-
-**Offer sheets name the destination, never an arrow.** `details.teams` is stored
-`[offering, retaining]`; joining them with `→` stated the opposite of what happened
-on a non-match, where the player leaves for the *offering* team. `_headline_team`
-resolves whoever actually ends up with the player, and the roles are labelled
-("CLE offering · SAC incumbent") rather than implied by ordering.
-
-Enqueueing happens outside the API lock, after the roster write and ledger append
-are already committed: Discord being down must never delay or fail a transaction.
-Forced transactions (`force: true` overriding a failed check) are posted with the
-overridden check names and a distinct colour — the override is already in the ledger
-as `_forced_checks`, this just surfaces it. Owner self-serve moves are marked in the
-footer via `details._source`.
-
-### Team-facing FA offers
-
-The ⋯ menu and offer form on `/free-agency` (spec § 8.1). **One gate on the whole
-object** (§ 6.0) — any holder of the team's role drafts *and* submits:
-
-| Action | Gate | Endpoint |
-|---|---|---|
-| Create / edit / delete a **draft** | any holder of the team's role | `POST`/`PATCH`/`DELETE /api/fa/offers` |
-| **Submit** (and resubmit a remanded offer) | any holder of the team's role | `POST /api/fa/offers/{id}/submit` |
-
-Submit was owner-only (`is_team_owner`) until 2026-08-10, mirroring the split team
-pages draw between the trading block and renounce. **That split doesn't transfer**:
-a renounce destroys roster state immediately, while an offer goes to a committee
-that reviews and can remand it — so the owner tier bought no safety and cost the
-team its FFA window (§ 4.1) whenever the owner wasn't around. `submitted_by` and
-`created_by` still record who did which. The team is always derived from the stored
-offer, never from the request body, so the role is the only thing that widened.
-
-Three rules this page holds and must keep holding:
-
-- **No cap math in the page.** Every dollar comes off the fact sheet
-  `POST /api/validate/sign` returns, or off `GET /api/fa/commitment/{team}` —
-  the same `_team_commitment` the committee's review page renders. A team can
-  never be shown room the validator didn't credit it with.
-- **No reason string is composed client-side.** The disabled ⋯-menu copy is
-  `reason` from `GET /api/fa/board`, i.e. the server's `_accepts_offers`. That
-  is why the board lists closed players too (§ 6.3).
-- **The FA pool is not the offerable set.** `GET /api/fa/pool` returns everyone
-  with an actionable cap hold *on file*, keyed by the year it lands — it spans
-  future league years, because `/free-agency`'s year chips are built from it
-  (570 entries, 209 of them current, as of 2026-08-09). Each entry carries
-  **`current`**, stamped by the same `_is_current_fa` that gates
-  `_accepts_offers`. **Read `current`; never re-derive it** — a `class_year`
-  comparison alone gets `RENOUNCED`/`UNSIGNED` wrong, and they are 132 of the
-  209. This caught out both the team ⋯ menu and the head's "+ Player" picker.
-- **Submission is final at the team's initiative** (§ 4.3). There is no withdraw
-  endpoint and no post-submit edit — a submitted offer opens read-only. The only
-  ways back are both the committee's: a **remand**, after which the same form
-  reopens with the committee's notes pinned above it and the frozen prior figures
-  beside each year input, or a **void** (§ 4.3b, below), after which the team may
-  bid again from scratch.
-
-The client legality check is advisory: the server re-runs `_validate_sign` at
-submit and *that* verdict is what's stored. There is no `force` on this path,
-for the same reason `self_renounce` has none.
-
-### The agent stage (§ 4.7) — who curates what the committee sees
-
-A third role, `agent`, sits between a closed offer window and a sub-committee
-ballot. Agents **claim** free agents off a shared queue (no per-player
-assignment, no head handing them out), negotiate the offers down to a final set,
-then either **advance** the survivors to a sub-committee or **finalize** an
-uncontested one. `fac_head → {fac, agent}`, which is the fallback that keeps the
-stage from deadlocking; `agent` and `fac` are meant to be **different people**,
-by role-grant convention rather than by a check.
-
-Four things to know before touching it:
-
-- **The stage is derived, never stored** — `_agent_stage` reads `status`, the
-  FFA clock, `agent.advanced_at` and the finalize record. `open` →
-  `awaiting_agent` → `with_agent` → `with_committee` → `decided`.
-- **A claim bars the agent's own team from bidding, permanently.** It survives
-  a release *and* a reopen (`blocked_teams` lives on the player, not the claim),
-  which is the only reason releasing is safe to allow — otherwise it's a way to
-  read every rival's figure and then bid. This is the **one hard block** in a
-  subsystem that otherwise only warns about conflicts (§ 4.6 / D21). The barred
-  team reads it as `your_block` on `GET /api/fa/board` — the one authenticated
-  field on a public payload, scoped to the team it stops, since *which agent
-  claimed whom* is committee information.
-- **Filtering an offer out is a void, not a new status** — so the team is told
-  why through the same `void.reason` machinery that already reaches their ⋯ menu
-  and their re-bid form. This **reverses D14**: remand/void/restore are the
-  claiming agent's plus head/admin, and assigned sub-committee members have
-  none of them. A reviewer who wants a term changed asks the agent, or asks the
-  head to `return-to-agent`.
-- **Nothing is balloted before the advance**, gated in the API and not only in
-  the dashboard. Agents never see a ballot, on any player. `final.path` records
-  `agent` vs `committee` — the route, not the actor.
-
-Negotiation itself happens in Discord; the site models only what it *changes*
-(remand → revision → version diff). No message thread, no counter-offer object.
-
-### Voiding an offer (§ 4.3b) — a status, not a delete
-
-`POST /api/fa/offers/{id}/void` takes a `submitted`/`returned` offer out of play;
-`POST /api/fa/offers/{id}/restore` undoes it. **Head-only** (`fac_head`/admin),
-unlike a remand, which any assigned reviewer may issue: a remand asks the team a
-question and the team can answer, and nobody can answer a void.
-
-It exists because a remand leaves the bid **live** — on the ballot, in the team's
-§ 5.3 exposure, holding its one-offer-per-player slot — which is wrong when the
-offer should never have counted at all (wrong player, duplicate, team since ruled
-ineligible). Those otherwise sit `returned` forever, listed as awaiting a team
-with nothing to say.
-
-**The whole implementation is that `voided` is not in `LIVE_STATUSES`.** Every
-consequence falls out of the existing `_is_live` gate — off the ballot, out of
-`_team_commitment`, no § 4.6 conflict, slot freed, no edit/resubmit/remand. Don't
-add a parallel rule anywhere; extend `_is_live`'s callers instead.
-
-Four things that are load-bearing and pinned by `tests/test_fa_offers.py`:
-
-- **A reason is required**, and it is what the team is shown — in the ⋯ menu and
-  above the form when they re-bid. Server-composed, like every other refusal
-  string on `/free-agency`.
-- **Restore returns `void.from_status`, not a guess.** A voided *remand* comes
-  back `returned` with its notes still unanswered, or the void would have
-  silently answered them. Refused if the team has since bid again (D5).
-- **Ballots already cast are flagged, never rewritten** — `voided_since` on each
-  ballot, `voided_options` on the finalize record. **Totals are never adjusted**:
-  redistributing balls nobody redistributed is the software inventing a vote.
-- **Finalize archives voided offers with the live ones**; `unlock` un-archives
-  both. They belong to the round they were bid in.
-
-On `/free-agency`, `MY_VOIDED` is deliberately a second map beside `MY_OFFERS` —
-a void frees the slot, so one player can carry both a void and a fresh live
-offer, and one map would have them fighting over the key.
-
-**On the committee side, the ballot widget is gated on *assignment*, never on
-being the head.** `PUT /api/fa/players/{slug}/ballot` is the one endpoint in the
-API that does not wave `admin` through — a ballot is a vote, not an
-administrative action — so gating the UI on "is head" would offer a vote the
-server refuses. A head who isn't on a player's sub-committee sees the totals and
-the finalize button and no inputs. Finalize, unlock and assignment are the
-head's real powers and are separate endpoints.
-
-### PDC free-agency Discord feeds
-
-`routers/fa_notify.py` (spec: `docs/pdc-free-agency-spec.md` § 9) posts the FA
-pipeline's events to two channels with deliberately different appetites:
-
-| Channel | Env var | Gets |
-|---|---|---|
-| `pdc-alerts` (private) | `DISCORD_PDC_CHANNEL` | Everything: offer submitted/resubmitted with a **diff vs the version frozen at the remand**, remands with their note and conflict flag, voids/restores with the head's reason and the terms removed, mode changes, rounds, clock start/expiry, finalize totals |
-| `fa-news` (public) | `DISCORD_FA_NEWS_CHANNEL` | **FFA mode only**, and only clock events: clock started, window closed, and window extended/reopened by the head |
-
-Each is inert without its own env var, which is how it rolled out (module, then
-private channel, then public last).
-
-**No team abbreviation and no `$` may ever reach `fa-news`** — that a team is
-bidding is committee information. This is enforced by signature, not by care:
-`_news(slug, text)` is the only function that can reach the public channel and
-it cannot be handed an offer. `tests/test_fa_notify.py` asserts it against
-rendered output.
-
-**How long an FFA window runs is the head's setting** (`PUT /api/fa/ffa-window`,
-default 24h, 1–168), not a constant and not a rulebook rule. It is read in exactly
-one place — `_start_ffa_clock`, which stamps `deadline` *and* `window_hours` onto
-the player's clock — so a change applies to clocks started from then on and to
-nothing already running: it can't move a deadline a team is bidding against, and
-shortening it can't retroactively close an open window. Every string naming a
-length (the § 8.1 refusal, both § 9.2 posts, the dashboard) goes through
-`ffa_window_label` on *that clock's* stamp, never the current setting. Don't add a
-reader of the setting anywhere else.
-
-**One named exception, and only one: `POST /api/fa/players/{slug}/ffa-extend`**
-(head-only, required reason). It moves *one* player's deadline — the thing the
-setting may never do — and is safe for the reasons the setting isn't: one player,
-by a named actor, with a reason, announced on both channels before anyone can act
-on it. It works on a lapsed clock as well as a live one (extending from
-`max(now, deadline)`), recomputes `window_hours` so `ffa_window_label` keeps
-describing the window that actually ran, and clears `closed_posted` so a revived
-window's second expiry is still announced. `_start_ffa_clock` is untouched and
-still reads the setting exactly once.
-
-**Extending is not reopening, and confusing the two loses a round of votes.**
-`PUT /api/fa/players/{slug}` with `status: "open"` clears `ffa` and mints a fresh
-`round_id` — a deliberate *second* window, with ballots already cast left in the
-old bucket. `ffa-extend` keeps `round_id`, the offers and the ballots, and only
-buys time. Both are on the player view's "FAC Head controls" (`windowControls` /
-`extendModal` in `pdc/index.html`), and the Open button confirms what it will
-discard when a clock exists.
-
-Expiry has no scheduler (§ 4.1) — `free_agency._sweep_ffa_expiry` announces from
-whichever read request first observes a deadline has passed, stamping
-`ffa.closed_posted` under the lock *before* sending so simultaneous observers
-produce one post. Nothing consults that stamp for offerability, so it can't
-reopen a player; and a window that expired more than a day ago is stamped but
-never announced.
-
-### The #roster-log mirror
-
-`routers/roster_log_relay.py` is the one place the API **reads** Discord. It
-polls `#fa-news`, `#transactions`, `#waivers` and `#roster-log-nbn-today` every
-60s and reposts new **parent** messages into `#roster-log`
-(`DISCORD_ROSTER_LOG_CHANNEL`) verbatim, replacing the hand-copying that fed that
-channel. Bot posts are relayed per source: skipped on `#fa-news` (our FFA clock
-posts aren't sheet changes; the humans there post the signings, renounces, team
-options and guarantees, and all of those go through untouched), relayed on
-`#roster-log-nbn-today`, whose embeds are collapsed to text. Each entry lands as a
-bare card (description + colour, no title or source label) purely so consecutive
-entries have an edge. The same event arriving from two sources is relayed twice on
-purpose.
-
-It relays, it never interprets — no summarizing and no deciding whether a message
-"is" a transaction, because a human enters what the line says. Full rules, the
-four anti-dump gates, and the admin endpoints for carrying an older message
-across (`GET/POST /api/roster-log/*`) are in `nbn-api/CLAUDE.md`.
-
-**Per-transaction opt-out.** The office form at `/transactions` has a "Also post
-to #roster-log" checkbox, **off by default** — most transactions are typed into
-#roster-log by hand as part of working them, so mirroring by default would
-double every one up. Checking it sends `relay_to_roster_log: true` on
-`POST /api/transactions`; `discord_notify` stamps the decision into that
-transaction's embed footer rather than storing it anywhere the relay would have
-to look up separately, and the relay's `_opted_out` reads it back off the same
-message it's already relaying.
-
-### Tradeblock Discord notifications
-
-`/tradeblock`'s edit panel has an "Also post to Discord" checkbox, **off by
-default**, next to Save. Checked, it sends `notify_discord: true` on
-`PUT /api/trading-block/{team}`; `roster_picks.put_trading_block` diffs the
-save against the block as it was before writing, and — only if something
-actually changed — `routers/tradeblock_notify.py` posts a plain-text line to
-`DISCORD_TRADEBLOCK_CHANNEL`: `**{member}** ({TEAM}) added X, Y to the
-tradeblock and removed Z.` Players and picks share one added/removed list;
-a pick reads `2027 1st` for the team's own or `2028 2nd (NYK)` for one it
-acquired.
-
-**This is for manual edits only, and there is no separate flag that makes
-that true — it falls out of who calls the notify function.** A player also
-comes off the block automatically when they're traded away
-(`_scrub_trading_block`, called from `transactions.py`'s apply paths), and
-that path never touches `tradeblock_notify` — only the `/tradeblock` save
-button does, and only when the box is checked. Extending notification to any
-other write path (the roster-page ⋯ menu's scoped `PUT`/`DELETE
-/api/trading-block/{team}/player/{slug}`, say) means adding a call there
-deliberately, not toggling a shared setting.
-
-### Unlockable themes
-
-Two themes are free (`nbn-today` dark, `nbn-today-light`); **every other one is
-bought once with NB¥ at a flat 1,000** — Lavender Rose, and one theme per team.
-Priced flat on purpose, own-team included: 1,000 sits between the two existing
-NB¥ sinks (a cosmetics update at 500, an avatar at 5,000) against a median
-member balance of ~2,250.
-
-**Entitlement is server-side; selection is not.** `nbn-api/routers/themes.py` is
-the only thing that decides who paid for what, storing it in
-`members[name]["cosmetics"]["themes"]` beside the name colour, and returning it
-on the `/api/members/me` the nav already fetches. Which theme a browser is
-*showing* stays in `localStorage`, because `nav.js` applies the theme at the top
-of the file, before any fetch — waiting on the network to paint would put a
-flash of the wrong colours on every page load for every visitor, in exchange for
-guarding a palette whose CSS is public either way. So the page is trusted to
-render honestly and only the charge is guarded. `_canUseTheme` falls back to the
-default for a locked id, which is about a fresh browser rather than about theft.
-
-| Piece | Where |
-|---|---|
-| Catalog, price, purchase | `THEME_PRICE` / `LIVE_TEAM_THEMES` — `nbn-api/routers/themes.py`; `GET /api/themes` (public), `POST /api/members/me/themes/{id}` |
-| Picker, lock state, buy flow | `_themeMenuItems` / `_unlockTheme` — `nav.js` |
-| Colours | `css/theme.css`, one `:root[data-theme="…"]` block of 59 tokens each |
-| Team blocks | **generated** by `build/make_team_theme.py` from `build/team-colors.json` |
-
-Five things to know before touching it:
-
-- **`nav.js` hardcodes only the two free themes.** It is on every page including
-  signed-out ones, and a picker that can't render without a successful fetch
-  disappears whenever the API hiccups. Everything else comes from
-  `GET /api/themes`, cached in `localStorage` so it paints on first load. **No
-  price is ever written in the page**, and the 402 refusal string is the
-  server's — the same rule `/free-agency` follows.
-- **Locked themes stay in the menu with their price**, not hidden — the same
-  "disabled with the reason" pattern as the roster ⋯ menu and the suggestions
-  Edit button. The price *is* the reason. Clicking one **applies it for real**
-  and asks whether to keep it; the preview touches only the `data-theme`
-  attribute and never `localStorage`, so cancelling (or Escape, or the scrim)
-  reverts with nothing stored and nothing charged. Buying blind off a name was
-  the thing to avoid — "Suns" says nothing about reading tables in it.
-- **A team theme's row shows that team's logo**, from `/logos/logo-{abbr}.png`,
-  keyed off the catalog entry's `team` field — the catalog's icon is the same 🏀
-  for all 30 and identifies none of them. Built by `_themeIcon` in `nav.js`,
-  which also feeds the nav button when a team theme is active, and keeps the
-  emoji as the fallback node for a logo that fails to load. The rows carry the
-  URL in `data-src` and load nothing until the menu is first opened
-  (`_hydrateThemeLogos`): the 30 logos are ~1.6MB and the menu is built on every
-  page, so an eager `src` would put that on every page load.
-- **Team blocks are generated, and regenerating overwrites hand-edits.** The
-  recipe: keep the dark theme's *lightness* for every token and change only the
-  hue — primary hue for backgrounds/borders/text at a low chroma, accent hue for
-  the accent family, semantic colours (danger/success/gold) left alone so red
-  still means alarm. `--text-on-accent` is *computed* black-or-white, which is
-  what stops the gold and silver teams shipping unreadable buttons. Contrast
-  repair is capped at what the same token already achieved in the dark theme, so
-  a team theme inherits that theme's contrast character exactly — never worse,
-  and never silently better.
-- **Two things the recipe gets wrong if you rebuild it from scratch**, both
-  found by shipping them:
-  - *Chroma is not inherited.* The first version reused the dark theme's own
-    background chroma (0.028) on the theory that it was already as strong as a
-    page could take. But that near-black is **blue**-tinted, so a hue swap at
-    the same strength moved PHX's page by **ΔE 0.9 — below the threshold of
-    vision**, and Suns rendered *identical* to the default. It hit every team
-    sitting near blue (UTA 0.6, DAL, DEN, MIN) and spared the ones far from it
-    (BOS 5.1), which is exactly how one hand-checked team hides it. `C_BG` is
-    0.075 now; every team lands between ΔE 2.6 and 9.4.
-  - *A grey has no hue.* `#1A1A1A` computes to hue 89.9 (olive) and `#A1A1A4`
-    to 286 (violet) — rounding noise, amplified to full saturation. BKN, SAS
-    and POR all came out the same olive-brown, and BKN's silver accent came out
-    cyan. `NEUTRAL_CHROMA` now sends a near-grey source to a near-grey output,
-    which for the black-and-silver teams *is* the identity.
-- **A team is only listed once its block exists.** `LIVE_TEAM_THEMES` in the API
-  is the gate; adding a team there without generating the CSS sells 1,000 NB¥ of
-  nothing. `bash build/check_theme_catalog.sh` checks the two repos agree.
-
-Two checks, and they answer different questions:
-
-```bash
-python3 build/make_team_theme.py --all --check   # seconds, all 30
-bash build/contrast_audit.sh team-bos            # ~15 min, one theme
-```
-
-`--check` compares each theme's tokens against the dark theme's and reports
-only a pair that **crosses** a WCAG bar the dark theme cleared — drift within a
-bar is meaningless and reporting it buries the real thing (team-phx reads
-0.2-0.4 lower on five pairs and still audited at exact parity). It cannot see
-interactions with colours a page hardcodes, which is what the rendered audit is
-for. **Run `--check` on every generation; run the audit on a sample.** All 30
-were shipped on PHX audited in full plus SAS/IND/BKN/POR/MIL sampled — the
-colours most likely to break a recipe: pale accents, near-black primaries,
-cream.
-
-> `build/team-colors.json` is the generator's colour source. Three older
-> hardcoded copies of team colours still exist (`champions/index.html`,
-> `frivolities/index.html`, `nbn-api/routers/discord.py`) and are **not** fed
-> from it — unifying them is a separate job.
-
-### Suggestions board
-
-`/suggestions` is the member-facing idea board (`routers/suggestions.py`,
-`suggestions.json`). `BACKLOG.md` is the internal list; this is the one members
-can write to. Suggestion **numbers come from a monotonic `seq`**, never from
-`max(existing)`, so a number is a permanent reference even after deletions.
-
-| Endpoint | Auth |
-|---|---|
-| `GET /api/suggestions` | public |
-| `POST /api/suggestions` | any member token |
-| `PATCH /api/suggestions/{id}` | author (title/description, while open) · bod/admin (anything, any status) |
-| `DELETE /api/suggestions/{id}` | author while open · bod/admin any time |
-| `POST /api/suggestions/{id}/comments` | any member token, **any status** |
-| `PATCH`/`DELETE /api/suggestions/{id}/comments/{cid}` | comment's author · bod/admin |
-
-**One thread, two kinds of entry.** `suggestion["comments"]` holds both
-`kind="comment"` and `kind="status"` entries in a single append-ordered list, so
-the ordering between a decision and the discussion around it is real rather than
-reconstructed at render time. A status entry (`{from, to, author}`) is appended
-by `PATCH` whenever the status actually changes — a no-op change appends
-nothing. **Status entries are the record: they are never editable or deletable**,
-by the author or by BOD. Only comments are.
-
-Commenting is deliberately allowed on every status, including `complete` and
-`closed` — posting updates as a suggestion is worked, and after it lands, is the
-whole point. Editing the suggestion *body* is not: once BOD triages it, the
-author can no longer rewrite what was triaged, and the page shows the Edit
-button **disabled with that reason** rather than hiding it, pointing at the
-comment thread instead.
-
-Suggestions predating comments have no `comments` key; `list_suggestions`
-defaults it in the response so no client guards for its absence, without
-writing the key back. `tests/test_suggestions.py` pins all of the above.
-
-### Member management
-
-Members are the canonical identity for all league participants. Stored in `/var/lib/nothing-but-stats/members.json` as `{ "username": { "token": "<hex>", "roles": [...], "tenures": [{team, start, end, position}] } }`.
-
-The member name (key) is the canonical name that matches `owner` in `owners.csv` and `owner_stats.csv` — this is the join key between the members system and the stats pipeline.
-
-**Tenure positions:** `owner`, `gm`, `coach`, `none`
-
-Member management UI is at `/members/`. Admin creates members (token auto-generated, shown once). BOD can edit tenures. Token rotation and deletion are admin-only.
-
-**Create a member** (use the UI at `/members/` — token is shown once in-browser):
-```bash
-curl -X POST https://nbn.today/api/members \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "username", "roles": ["rosters"], "tenures": []}'
-```
-
-**List all members (public):**
-```bash
-curl https://nbn.today/api/members/public
-```
-
-**List all members with tokens (admin):**
-```bash
-curl https://nbn.today/api/members -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
-```
-
-**Update member roles (admin) or tenures (admin/bod):**
-```bash
-curl -X PATCH https://nbn.today/api/members/username \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"roles": ["rosters", "phx"], "tenures": [{"team": "PHX", "start": "2020-07-01", "end": null, "position": "owner"}]}'
-```
-
-**Rotate a token:**
-```bash
-curl -X POST https://nbn.today/api/members/username/rotate-token \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
-```
-
-**Delete a member:**
-```bash
-curl -X DELETE https://nbn.today/api/members/username \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
-```
-
-The old `/api/tokens/*` endpoints remain as compatibility shims backed by members.json.
+How each type got its validator, and the two bugs the endpoint layer hid before
+`tests/test_validate_endpoints.py` existed, are in `docs/api-validation-notes.md`.
 
 ### Service management
 
@@ -1253,46 +567,6 @@ sudo systemctl restart nbn-api    # restart
 journalctl -u nbn-api -f          # live logs
 journalctl -u nbn-api -n 50       # last 50 log lines
 ```
-
-### Achievement NB¥ awards (background job)
-
-`build/achievement-notify.js` (Node) awards NB¥ whenever a member unlocks or
-upgrades an achievement. Achievements are computed statelessly in the browser,
-so this job recomputes them server-side using the **same** engine the site uses
-(`members/achievements.js`, which is `require()`-able under Node), diffs against
-the snapshot `achievement-state.json` in NBS_DATA_DIR, and awards on every tier
-upgrade by calling `POST /api/bets/admin/adjust` (which writes the balance +
-ledger under the API lock). It uses an admin token read from members.json.
-
-Reward scale (by tier): bronze 250, silver 500, gold 1000, single-tier 500.
-Betting/investing achievements are excluded. The snapshot is **monotonic** — an
-entry only advances after a successful award, so awards can't double-fire and a
-failed award retries next run. The first run (no snapshot) seeds silently, so
-existing achievements are **not** awarded retroactively. No Discord/webhook
-output — the ledger entry (`Achievement: …`) is the record.
-
-Every included achievement except **Archivist** (the "Clean Up the Poo Poo"
-tier — § its own doc, `docs/clean-up-the-poopoo-spec.md`) is scored from
-`computeAchData`'s `shared` argument alone, so `scoreAll` can feed every
-member `{}` for `perMember` and still get a correct score. Archivist needs a
-real per-member `cleanupStats.approved_count`, so `scoreAll` reads
-`cleanup-submissions.json` directly (same file `nbn-api/routers/cleanup.py`
-writes) and builds it per member before scoring — the one category that
-isn't just `{}`. Client-side rendering (member profile, members index) gets
-the same numbers over `GET /api/cleanup/stats`, since the browser can't read
-NBS_DATA_DIR directly.
-
-Run by a systemd timer every 10 min. `DRY_RUN=1` previews without granting,
-`NBN_ACH_STATE` overrides the snapshot path, `NBN_API_BASE` the API URL.
-
-```bash
-systemctl list-timers nbn-achievements.timer   # next run
-journalctl -u nbn-achievements.service -n 20    # recent runs / awards
-DRY_RUN=1 node build/achievement-notify.js       # preview pending awards
-```
-
-To re-baseline (e.g. after editing the achievement list), delete the snapshot
-and let the next run seed it: `rm $NBS_DATA_DIR/achievement-state.json`.
 
 ### Roster CSV columns
 
