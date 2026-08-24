@@ -148,10 +148,17 @@ function renderAuthorPanel() {
   const bp = a.ballot_progress || {};
   const blp = a.blurb_progress || {};
 
+  // The invite list stays editable through voting, not just setup: someone
+  // always turns up late, and the alternative — reopening, or going without
+  // them — is worse than adding them to a vote already in progress. It closes
+  // at `blurbs`, where the ballots are revealed and the consensus is on screen;
+  // changing who voted after everyone has read the result is a different act.
+  const canEditVoters = a.phase === 'setup' || a.phase === 'voting';
+
   const chips = (a.voters || []).map(name => {
     const done = (bp.submitted || []).includes(name);
     return `<span class="chip ${done ? 'done' : ''}">${done ? '<span class="tick">✓</span>' : ''}${escHtml(name)}`
-      + (a.phase === 'setup' ? `<button title="Remove" onclick="removeVoter('${escHtml(name)}')">×</button>` : '')
+      + (canEditVoters ? `<button title="Remove" onclick="removeVoter('${escHtml(name)}')">×</button>` : '')
       + `</span>`;
   }).join('');
 
@@ -162,9 +169,10 @@ function renderAuthorPanel() {
   } else if (a.phase === 'voting') {
     const pending = (bp.pending || []);
     controls = `<button class="btn-primary" onclick="setPhase('blurbs')" ${(bp.submitted || []).length ? '' : 'disabled'}>Close voting &amp; reveal</button>`;
-    note = pending.length
+    note = (pending.length
       ? `Still waiting on ${pending.map(escHtml).join(', ')}. Closing now counts only the ballots that are in.`
-      : 'Everyone has voted.';
+      : 'Everyone has voted.')
+      + ' You can still add a voter — they just have to rank before you close.';
   } else {
     controls = `<button class="btn-success" onclick="doPublish()">Publish edition</button>`
       + ` <button class="btn-secondary" onclick="setPhase('voting')">Reopen voting</button>`;
@@ -177,7 +185,7 @@ function renderAuthorPanel() {
     <div class="panel">
       <div class="panel-title">Author controls</div>
       <div class="chips">${chips || '<span class="empty">No voters invited yet.</span>'}
-        ${a.phase === 'setup' ? `<input class="voter-input" id="voter-input" list="member-list" placeholder="Add a voter by name…">
+        ${canEditVoters ? `<input class="voter-input" id="voter-input" list="member-list" placeholder="Add a voter by name…">
           <datalist id="member-list"></datalist>
           <button class="btn-secondary btn-tiny" onclick="addVoter()">Add</button>` : ''}
       </div>
@@ -185,7 +193,7 @@ function renderAuthorPanel() {
       <div class="panel-note" style="margin-top:0.6rem;">${note}</div>
     </div>`;
 
-  if (a.phase === 'setup') {
+  if (canEditVoters) {
     loadMemberList();
     $('voter-input').addEventListener('keydown', e => {
       if (e.key !== 'Enter' || e.isComposing) return;
@@ -247,6 +255,13 @@ function addVoter() {
 }
 
 function removeVoter(name) {
+  // Dropping a voter drops their ballot with them (set_voters, API side), so a
+  // stray × on someone who has already ranked destroys a submitted ballot. That
+  // is the one case worth stopping to ask about.
+  const voted = (state.article.ballot_progress?.submitted || []).includes(name);
+  if (voted && !confirm(`${name} has already voted.\n\n`
+      + `Removing them discards their ballot, and it can't be recovered — `
+      + `they would have to rank all 30 teams again.`)) return;
   saveVoters((state.article.voters || []).filter(v => v !== name));
 }
 
