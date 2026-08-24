@@ -123,6 +123,15 @@ function render() {
   if (a.series_id && a.series_id !== 'main') bits.push(`series “${escHtml(a.series_id)}”`);
   const bp = a.ballot_progress || {};
   bits.push(`${(bp.submitted || []).length} of ${bp.voters || 0} ballots in`);
+  // The way back to the compose page. The workspace only holds the ballot, the
+  // blurbs and the phase; the headline, intro and cover live in the editor, and
+  // the intro is usually written *here*, once the consensus is on the screen.
+  // PATCH has no phase or status gate, so this is live at every phase and after
+  // publish too — where it is the only route to editing the piece.
+  if (isEditor()) {
+    bits.push(`<a href="/news/new/?id=${encodeURIComponent(state.id)}">`
+      + `Edit intro &amp; cover →</a>`);
+  }
   $('pr-sub').innerHTML = bits.join('<span class="sep">·</span>');
 
   renderAuthorPanel();
