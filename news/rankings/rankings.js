@@ -213,7 +213,10 @@ function renderAuthorPanel() {
           <datalist id="member-list"></datalist>
           <button class="btn-secondary btn-tiny" onclick="addVoter()">Add</button>` : ''}
       </div>
-      <div class="row-actions">${controls}<span class="status-msg" id="author-status"></span></div>
+      <div class="row-actions">${controls}
+        <a class="btn-secondary" href="/news/view/?id=${encodeURIComponent(state.id)}" target="_blank"
+           title="Opens the published page as it stands — same renderer, nothing hidden">Preview →</a>
+        <span class="status-msg" id="author-status"></span></div>
       <div class="panel-note" style="margin-top:0.6rem;">${note}</div>
     </div>`;
 
@@ -437,8 +440,7 @@ function renderBallot(host) {
       <div class="panel-note">Drag a team, or use ▲▼, to rank all 30 from best to worst.
         Click teams to open their rosters — as many at once as you want to compare.
         Your order saves itself as you go, so you can pick this up on another device —
-        it only counts once you submit. Nobody — the author included — can see your
-        ballot until voting closes.</div>
+        it only counts once you submit. Other voters can't see it while voting is open.</div>
     </div>
     <div class="ballot-list" id="ballot-list"></div>
     <div class="sticky-save">
