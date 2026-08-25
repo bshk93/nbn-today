@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last reviewed: **2026-08-25** — **34 open items**: 7 P1, 12 P2, 10 P3, plus 5
+Last reviewed: **2026-08-25** — **34 open items**: 7 P1, 10 P2, 12 P3, plus 5
 nice-to-haves. (No version pin here on purpose: it went stale within two
 commits of being written. The date is what matters.)
 
@@ -224,6 +224,28 @@ Left in place deliberately — the dev-deploy spec's rule is that a copy of the
 unrebuildable data is never deleted on a judgement call, and 48MB on a disk at
 61% is not urgent. This is a disk-space cleanup for whenever someone wants it,
 not a data question. Same "which one is real?" trap as the entry below.
+
+### [P3] 9 players have `photo_url` set to the string `"NA"`
+Found 2026-08-25 by the first run of `tests/frontend/run.js`. Nine bios carry the
+literal three-character string `NA` where a URL belongs, so the page renders
+`<img src="NA">`, the browser resolves it against the current directory, and
+every load of `/players/` fires a **404 for `https://nbn.today/players/NA`**.
+
+`ajinca-melvin`, `bridges-jalen`, `dixon-eric`, `johnson-keshad`,
+`juzang-johnny` and four more — `python3 -c` over `player-bios.json` filtering
+`photo_url == "NA"` lists them.
+
+The fix is to set them to `""`, which is what **70 other bios already use** and
+which the page handles with its normal fallback. It is a data edit through
+`PUT /api/players/{slug}`, not a code change. Low severity — a broken image for
+nine players — but it is the only same-origin 404 the site serves on a normal
+page load, so it is also the thing standing between the frontend suite and a
+clean run.
+
+Separately and not our defect: `wagler-keaton`'s photo is a **~100KB base64
+data URI stored inline in `player-bios.json`**, and one player's photo is the
+only imgur-hosted image in the league (currently 429ing). Both are one-off
+oddities in the same field; worth normalising if anyone is in there anyway.
 
 ### [P3] Stale backups in NBS_DATA_DIR
 `player-bios.json.bak` ×4, `allstats-playoffs-26.csv.bak-round-fix`,
@@ -542,20 +564,26 @@ Two things that closed with it, and one that did not:
   answer them** — those edits predate it. This is forensics going forward only.
   Don't re-open this expecting it to explain an old diff.
 
-### [P2] `NBN_ADMIN_TOKEN` still wants rotating
-Leaked into a transcript by an accidental `export $VAR` typo during the Discord
-backfill work (2026-07-10). Flagged then, believed never done — verify before
-acting; if it's already rotated, delete this item.
+### [P3] Frontend smoke covers 15 pages of 114, and only when run by hand
+`tests/frontend/run.js` shipped 2026-08-25 — puppeteer against a real vhost,
+asking each page four things: 200, nothing thrown, every same-origin request
+succeeded, and the content the page exists to show actually appeared. It found a
+real defect on its first run (see the `photo_url` entry in §1), which is the
+argument for the rest of it.
 
-### [P2] No frontend test coverage
-`build/smoke_test.py` (166 checks, re-run green 2026-08-24) guards the *data
-contract* only — that pages can still find the columns they read. Nothing checks
-that a page renders. The API side is now at **31** test files (was 5 when this
-was written), so the imbalance is sharper than it reads: the backend is well
-covered and the 114 pages have nothing.
-Puppeteer + Chromium does work in this environment; a handful of
-"page loads, table has rows, no console errors" checks would catch a whole class
-of breakage the smoke test can't see.
+What is left:
+
+- **99 pages uncovered.** The 15 are the heavy data-driven ones. Adding a page
+  is one row in `PAGES`; the cost is picking a selector that is content rather
+  than chrome.
+- **Nothing runs it.** Deliberately not in the pre-commit hook — it launches a
+  browser and needs the site up and `npm ci` done, none of which belongs between
+  a commit and its author. But that means it only runs when someone remembers.
+  A timer, or a post-deploy hook in `deploy.sh`, is the obvious next step.
+- **No authenticated pages.** `/pdc`, `/free-agency` and team edit mode need a
+  `.nbn.today` session cookie. Covering them means minting a real session
+  against the live API, and a write path exercised from a dev page is a real
+  write — so this needs a decision, not just effort.
 
 ### [P3] Client-side errors are invisible
 Entered 2026-08-16, split 2026-08-25 when the `/api/health` half was done.

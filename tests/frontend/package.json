@@ -1,0 +1,12 @@
+{
+  "name": "nbn-frontend-smoke",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Page-render smoke tests for nbn.today. Run by hand, not by the pre-commit hook.",
+  "scripts": {
+    "test": "node run.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.43.1"
+  }
+}
