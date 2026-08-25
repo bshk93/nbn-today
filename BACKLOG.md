@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last reviewed: **2026-08-25** — **35 open items**: 8 P1, 13 P2, 9 P3, plus 5
+Last reviewed: **2026-08-25** — **34 open items**: 7 P1, 12 P2, 10 P3, plus 5
 nice-to-haves. (No version pin here on purpose: it went stale within two
 commits of being written. The date is what matters.)
 
@@ -506,38 +506,41 @@ worth an explicit decision so it stops resurfacing.
 
 ### [P3] § 7.3 second-apron pick freeze — auto-compute deferred
 Currently a manual `FROZEN` flag. The four-year lookback needs 4 seasons of
-team-state history; we have 1. Genuinely blocked on time, not effort.
+team-state history. Genuinely blocked on time, not effort — but the time is now
+being banked, which it wasn't before.
 
-**Corrected 2026-08-16: "revisit around 2029" was the wrong conclusion from the
-right diagnosis.** Nothing is recording team-state history *now*, so waiting
-until 2029 to start collecting means shipping around 2033. Start the nightly
-snapshot (§ 3, "Nothing records team-state over time") and this becomes a
-waiting problem instead of a blocked one.
+**The clock started 2026-08-25.** `nbn-cap-history.timer` now appends a row per
+team per day to `cap-history.jsonl` — Team Salary on both bases, apron position,
+hard-cap level, roster counts (`nbn-api/CLAUDE.md` § "Cap history"). The
+four-year lookback is satisfiable from **2030-08-25**, so this is now a waiting
+problem rather than a blocked one, and the earlier correction stands: had the
+snapshot waited until 2029 to start, it would have shipped around 2033.
+
+What this entry is still waiting on is only time. **The one thing that would
+lose it is a gap in the series** — the timer is `Persistent=true` so downtime
+catches up, but a stretch where it is disabled cannot be reconstructed, since
+the whole point is that this is observed, not replayed. If the timer is ever
+switched off, note the dates here.
 
 ---
 
 ## 3. Tooling / infrastructure
 
-### [P1] Cap side-doors leave no diff — only a one-line journald entry
-Entered 2026-08-16. `POST /api/transactions` is audited to the dollar. These
-change the same state, bypass the ledger entirely, and record almost nothing:
+### [P3] The edit log has no surface, and starts from 2026-08-25
+`edits.jsonl` went live 2026-08-25 — `storage._atomic_write` now records a
+value-level diff of every write that bypasses the ledger, and `GET /api/edits`
+reads it back by file, actor or key (`nbn-api/CLAUDE.md` § "The edit log").
+Two things that closed with it, and one that did not:
 
-- `PUT /api/players/{slug}` — rewrites `salaries`, `cap_holds`, `guaranteed`,
-  `guarantee_dates` (rosters role)
-- `PUT /api/roster/{team}`, `PUT /api/deadcap/{team}`, `PUT /api/picks/...`
-
-Each writes a `log_write(info, "PUT players/{slug} (NAME)")`
-(`routers/players.py:224`, `roster_picks.py:49,84`) → `logger.info` → journald.
-That records *who touched what*, never *what it was before* or *what it became*.
-So "who moved UTA's Guaranteed Salary, and when" is unanswerable today — which
-is exactly what the two remaining fractional-cent poopoo diffs in §1 need.
-
-Unusually cheap because there is already one choke point: **every** write in the
-API funnels through `storage.py:_atomic_write`. Have `_save_json` / `write_csv`
-append a `{ts, actor, path, diff}` line to an append-only `edits.jsonl` before
-replacing. Obvious surface later: an "Edits" tab beside the ledger on the player
-page. Pairs with the backup item above — one is recovery, this is forensics, and
-neither exists.
+- **Closed:** the four side doors (`PUT /api/players/{slug}`,
+  `PUT /api/roster/{team}`, `PUT /api/deadcap/{team}`, `PUT /api/picks/...`)
+  now record what a figure was and what it became, not just who touched it.
+- **Left:** there is no page. The plan named an "Edits" tab beside the ledger on
+  the player page; a member with a question still has to ask an admin to curl.
+- **Left, and permanent:** the log starts on 2026-08-25. **The two remaining
+  fractional-cent poopoo diffs in §1 were the motivating case and it cannot
+  answer them** — those edits predate it. This is forensics going forward only.
+  Don't re-open this expecting it to explain an old diff.
 
 ### [P2] `NBN_ADMIN_TOKEN` still wants rotating
 Leaked into a transcript by an accidental `export $VAR` typo during the Discord
@@ -553,21 +556,6 @@ covered and the 114 pages have nothing.
 Puppeteer + Chromium does work in this environment; a handful of
 "page loads, table has rows, no console errors" checks would catch a whole class
 of breakage the smoke test can't see.
-
-### [P2] Nothing records team-state over time
-Entered 2026-08-16. Every cap figure the site shows is *now* — there is no
-history of where a team sat. A nightly append of each team's cap total, apron
-position and hard-cap level is ~20 lines against helpers that already exist
-(`_compute_team_salary*`), and it pays three ways:
-
-- It is the missing input for § 7.3's second-apron pick freeze (§2 above), which
-  is otherwise waiting on time that isn't being banked.
-- Cap position over time on the team page, and "when did this team cross the
-  first apron" — currently unanswerable.
-- The same forensic material the two P1s above want.
-
-Consistent with the standing rule to snapshot state *at* the moment it is true
-rather than reconstructing it later by replaying the ledger.
 
 ### [P3] Client-side errors are invisible
 Entered 2026-08-16, split 2026-08-25 when the `/api/health` half was done.
@@ -631,7 +619,10 @@ job.
 - **Per-team cap health on the team page** — `/poopoo` diffs are league-wide and
   internal; a team's own owner can't see that their sheet disagrees with the site.
   The league-wide compliance board in §2 is the same need from the other end;
-  do them together if either gets picked up.
+  do them together if either gets picked up. **The history half is now data
+  rather than work:** `GET /api/cap-history?team=UTA` has served a per-day
+  series since 2026-08-25, so "when did this team cross the first apron" is a
+  chart over an existing endpoint, not a collection problem.
 - **Franchise records beyond single games** — season-level franchise records
   (best team season, best individual season per franchise) using data the build
   already computes.

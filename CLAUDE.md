@@ -268,6 +268,8 @@ These are fetched from nbn-api at runtime, not from flat files in the repo.
 | `GET /api/deadcap/{team}` | `teams/{ABB}/index.html` | `team-state.json` in NBS_DATA_DIR |
 | `GET /api/members/public` | `members/index.html` | `members.json` in NBS_DATA_DIR |
 | `GET /api/trade-exceptions` / `GET /api/trade-exceptions/{team}` | `teams/{ABB}/index.html` | `trade-exceptions.json` in NBS_DATA_DIR |
+| `GET /api/cap-history` / `GET /api/cap-history/current` | (no page yet) | `cap-history.jsonl` in NBS_DATA_DIR — a daily row per team: salary on both bases, apron position, hard cap, roster counts |
+| `GET /api/edits` | (no page yet, admin-only) | `edits.jsonl` in NBS_DATA_DIR — the value-level diff of every write that bypasses the ledger |
 
 ## Stats pipeline
 
@@ -480,6 +482,8 @@ in.
 | A theme, what one costs, or `css/theme.css` | `docs/themes.md` |
 | Members, the suggestions board, or NB¥ achievement awards | `docs/members-and-rewards.md` |
 | The per-player ⋯ menu on team pages | `docs/roster-moves.md` |
+| The daily cap/apron snapshot, or § 7.3's four-year lookback | `nbn-api/CLAUDE.md` § "Cap history" |
+| The audit log for writes that bypass the transaction ledger | `nbn-api/CLAUDE.md` § "The edit log" |
 
 What stays in this file is what you need *before* you know which subsystem you
 are in: roles, endpoint tables, the data contract, the data model.
