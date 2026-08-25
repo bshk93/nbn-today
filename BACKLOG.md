@@ -3,7 +3,9 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last reviewed: **2026-08-25** (against version 0.1.105). **35 open items** — 8 P1, 13 P2, 9 P3, plus 5 nice-to-haves.
+Last reviewed: **2026-08-25** — **35 open items**: 8 P1, 13 P2, 9 P3, plus 5
+nice-to-haves. (No version pin here on purpose: it went stale within two
+commits of being written. The date is what matters.)
 
 Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** nice to have
 
