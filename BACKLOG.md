@@ -3,14 +3,16 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last reviewed: **2026-08-25** (against version 0.1.105).
+Last reviewed: **2026-08-25** (against version 0.1.105). **35 open items** — 8 P1, 13 P2, 9 P3, plus 5 nice-to-haves.
 
 Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** nice to have
 
-Cleanly closed items move to `BACKLOG_DONE.md` rather than staying here struck
-through. A resolved entry that still names a real residual gap (a "Remaining
-gap" / "Residual" note, or an explicitly still-open sub-item) stays in this
-file instead — its title is struck through, but it's not fully done.
+**Everything in this file is open. There are no strikethroughs and no done
+section** — a finished item is deleted, and git history is where it lives
+afterwards. If a job is mostly done but leaves something real behind, the entry
+is retitled to name *what is left*, never the part that finished. The previous
+convention titled such items by their completed half and struck them through,
+which made the same list read as both done and open; it is not coming back.
 
 ---
 
@@ -380,30 +382,30 @@ using a **simple** 5%-of-base escalator (×1.05, ×1.10, ×1.15), not compoundin
 Immaterial at three years out, real by year five. Replace with published NBA
 figures when they exist.
 
-### ~~[P2] `rescind_renounce` not implemented~~ — DONE 2026-08-08
-Built alongside owner self-serve renounce, which needed an undo path. Every
-`renounce` now stores a `_snapshot` of the bio state it erases, and
-`rescind_renounce` restores from it (undo button on renounce rows in
-`/transactions`). § 3.10's cap restrictions are warnings, not errors, since the
-same mechanism doubles as the correction path for a mistaken renounce.
-Remaining gap: nothing links an RFA match back to the holds that funded the
-offer, so the office picks them out by hand, one renounce at a time. The
-trading-block entry a renounce scrubs also isn't restored.
+### [P2] An RFA match doesn't link back to the holds that funded the offer
+`rescind_renounce` shipped 2026-08-08 alongside owner self-serve renounce, and
+that part is done: every `renounce` stores a `_snapshot` of the bio state it
+erases, `rescind_renounce` restores from it, and `/transactions` has the undo
+button. § 3.10's cap restrictions are warnings rather than errors there, since
+the same mechanism doubles as the correction path for a mistaken renounce.
 
-**Kept in this file, not moved to `BACKLOG_DONE.md`** — re-checked 2026-08-24 against this file's own rule: a struck-through entry that still names a real residual stays here until the residual is closed.
+What is still open: **nothing ties an RFA match back to the holds that paid for
+the offer**, so the office picks them out by hand, one renounce at a time. A
+renounce also scrubs the player's trading-block entry and the undo does not put
+it back.
 
-### ~~[P2] § 3.8 Bird Rights tenure never verified~~ — DONE 2026-08-07
-Now derived from the transaction ledger (`_bird_tenure`), enforced on both the
-submit and simulator paths, badge updated to 🔒 + 👁. Over-declaration errors;
-lower-bound and unverifiable cases warn. 483/487 rostered players resolve; 0
-false positives against the 14 real Bird signings on file. Closed alongside it:
-`signing_method="bird_rights"` no longer bypasses funding validation.
+### [P2] 4 players' Bird tenure still unresolved, and `bio["contracts"]` is thin
+§ 3.8 tenure itself is settled (2026-08-07): derived from the transaction ledger
+via `_bird_tenure`, enforced on both the submit and simulator paths, badge at
+🔒 + 👁. 483 of 487 rostered players resolve, with 0 false positives against the
+14 real Bird signings on file, and `signing_method="bird_rights"` no longer
+bypasses funding validation.
 
-**Residual:** the 4 unresolved players, and `bio["contracts"]` is still
-near-empty (47/1018) — harmless now that tenure doesn't read it, but it means
-contract *terms* history is thin for pre-2026 deals.
-
-**Kept in this file, not moved to `BACKLOG_DONE.md`** — re-checked 2026-08-24 against this file's own rule: a struck-through entry that still names a real residual stays here until the residual is closed.
+What is still open: **the 4 players who don't resolve**, and `bio["contracts"]`
+is still near-empty at 47/1018. The latter is harmless for tenure — nothing
+reads it any more — but it means contract *terms* history is thin for every
+pre-2026 deal, so anything wanting to know what a deal actually looked like
+back then has nowhere to look.
 
 ### [P2] § 1.2 soft cap — partly enforced, gap is verification not blocking
 Corrected 2026-08-07: the original entry ("over-cap signings lacking a valid
@@ -562,8 +564,8 @@ Complements the frontend-test item above rather than duplicating it: tests
 catch what we thought to check, this catches what members actually hit.
 
 **The liveness half is done** — `GET /api/health` shipped 2026-08-25, public
-and unauthenticated, 503 when the data directory is unreachable. See
-`BACKLOG_DONE.md`.
+and unauthenticated, 503 when the data directory is unreachable
+(`nbn-api/tests/test_health.py`).
 
 ### [P3] Fifth copy of the same frontend primitives — `nbn-data.js` is overdue
 Entered 2026-08-16. `contract.js` exists because the contract grammar had
@@ -586,14 +588,15 @@ Note the constraint in CLAUDE.md: the 30 team shells load only `team.js`, so it
 has to be pulled in the same injected-script + awaited-promise way
 `lineupReady` / `contractReady` are, not by touching the shells.
 
-### ~~[P3] `/suggestions` board is empty~~ — no longer true 2026-08-08
-Two live suggestions (#4 MCP server, #5 comments/editing); seq is at 5. #5 is
-built — threads, status history, and an Edit button the UI had never exposed
-despite the PATCH existing since launch. Seeding the board with the
-member-facing subset of this file is still worth doing, but the page no longer
-reads as abandoned.
+### [P3] Seed `/suggestions` with the member-facing part of this file
+The board is no longer empty (checked 2026-08-08: two live suggestions, #4 MCP
+server and #5 comments/editing, seq at 5; #5 is built — threads, status history,
+and an Edit button the UI had never exposed despite the PATCH existing since
+launch).
 
-**Kept in this file, not moved to `BACKLOG_DONE.md`** — re-checked 2026-08-24 against this file's own rule: a struck-through entry that still names a real residual stays here until the residual is closed.
+What is still open: this file holds plenty that members would have opinions on,
+and none of it is in front of them. Seeding the board with that subset is the
+job.
 
 ---
 
@@ -603,10 +606,6 @@ reads as abandoned.
   transaction type on 2026-08-21, so the § 6.3 submission windows can now have
   the calendar surface FA has. This is the only part of the extension work
   still outstanding.
-- ~~**Trade sim → real transaction**~~ — **deliberately not doing this.** The
-  simulator (now `/transaction-sim/`, covering trades, FA signings and RFA
-  offer sheets) is read-only by design: `/api/validate/*` never writes, and
-  there is intentionally no path from it to a submission. Decided 2026-08-07.
 - **Per-team cap health on the team page** — `/poopoo` diffs are league-wide and
   internal; a team's own owner can't see that their sheet disagrees with the site.
   The league-wide compliance board in §2 is the same need from the other end;
@@ -620,14 +619,3 @@ reads as abandoned.
 - **Search over transactions** — `/transactions` lists them; there's no way to
   ask "every trade involving this pick" or "everything TOR did in the 25-26
   league year".
-- ~~**"Clean Up the Poo Poo"**~~ — **Phases 1–3 live 2026-08-16** at `/cleanup`.
-  ~2,288 missing bio-field gaps (height, wingspan, weight, college, country,
-  dob, photo, draft info) plus 162 flagged Discord FA-signing candidates
-  (§ "Discord backfill" below); admin approves, approval writes the real
-  data (bio field, or a historical transaction) and pays tiered NB¥
-  (25/50/100). Approved submissions also count toward a new Archivist
-  achievement tier. **Correction to the original entry:** the 538 skipped
-  FA rows are not a hidden gap pool — they were correctly excluded as
-  non-signing chatter, not never-triaged; see
-  `docs/clean-up-the-poopoo-spec.md` (v0.5) § 7 for the full scope
-  correction (trades also permanently out of scope, not deferred).

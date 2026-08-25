@@ -66,8 +66,11 @@ League-wide constants (cap thresholds, roster limits, apron triggers) are in Art
 > work, and update it when work lands. It is far too big to read whole for one
 > question: `grep -n '^### ' BACKLOG.md` lists every item with its priority in a
 > few hundred tokens, then read only the item that matters. Finished items move
-> to `BACKLOG_DONE.md`; a struck-through item still in `BACKLOG.md` is there
-> deliberately, because some part of it is still outstanding.
+> **Everything in it is open** — there are no strikethroughs and no done file
+> (`BACKLOG_DONE.md` was deleted 2026-08-25). A finished item is deleted; one
+> that leaves a real residual is retitled to name what is *left*, not the part
+> that finished. Don't reintroduce a struck-through entry: titling items by
+> their completed half made the list read as done and open at once.
 
 ## Dev and live — which checkout am I in?
 
