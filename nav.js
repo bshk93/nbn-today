@@ -553,6 +553,7 @@ const SITE_PAGES = [
   { title: 'Head to Head', href: '/h2h', icon: '⚔️' },
   { title: 'Frivolities & Viz', href: '/frivolities', icon: '📈' },
   { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: '🔍' },
+  { title: 'Archetypes', href: '/clusters/', icon: '🧬' },
   { title: 'Bets', href: '/bet/', icon: '🎲' },
   { title: 'Daily Perry Game', href: '/perry/', icon: '🏀' },
   { title: 'Daily Poeltl', href: '/poeltl/', icon: '🕵️' },
@@ -560,7 +561,7 @@ const SITE_PAGES = [
   { title: 'Wall Street', href: '/invest', icon: '📈' },
   { title: 'NBNTV Classics', href: '/nbntv-classics', icon: '📺' },
   { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: '▶️' },
-  { title: 'News', href: 'https://news.nbn.today', icon: '📰' },
+  { title: 'News', href: '/news/', icon: '📰' },
   { title: 'Members', href: '/members/', icon: '👥' },
   { title: 'Roles & Permissions', href: '/roles', icon: '🔑' },
   { title: 'Constitution', href: '/constitution/', icon: '📄' },
@@ -581,6 +582,14 @@ const SITE_PAGES = [
 const ROLE_PAGES = [
   { title: 'PDC Committee', href: '/pdc/', icon: '🗳️',
     roles: ['fac', 'fac_head', 'poext', 'poext_head', 'admin'] },
+  // These three are already role-gated cards on the homepage; they are here so
+  // Ctrl+K agrees with it rather than being the one place they can't be found.
+  { title: 'Cap Settings', href: '/cap-settings/', icon: '⚙️',
+    roles: ['rosters', 'admin'] },
+  { title: 'Strikes', href: '/strikes/', icon: '⚠️',
+    roles: ['bod', 'admin'] },
+  { title: 'poopoo — cap sheet diffs', href: '/poopoo/', icon: '🧻',
+    roles: ['admin'] },
 ];
 
 const TEAM_LIST = {

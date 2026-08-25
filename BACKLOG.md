@@ -589,16 +589,6 @@ reads as abandoned.
 
 **Kept in this file, not moved to `BACKLOG_DONE.md`** — re-checked 2026-08-24 against this file's own rule: a struck-through entry that still names a real residual stays here until the residual is closed.
 
-### [P3] Unlinked pages
-`/cap-settings`, `/clusters`, `/context`, `/how-to-rosters`, `/join`, `/legal`,
-`/poopoo`, `/strikes` exist but aren't in `nav.js`. Some are deliberately
-internal (`/poopoo`, `/cap-settings`); others look like they were just
-forgotten (`/how-to-rosters`). Worth a pass to decide which are intentional and
-note it, so the next reviewer doesn't re-ask.
-
-**`/rookie-scale` came off this list** — checked 2026-08-24, it is now in
-`SITE_PAGES` in `nav.js`, so it is reachable from Ctrl+K. Eight left.
-
 ---
 
 ## 4. Nice to have

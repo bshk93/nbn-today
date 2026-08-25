@@ -6,6 +6,47 @@ where useful, the original problem statement below it.
 
 ---
 
+### ~~[P3] Unlinked pages~~ — DONE 2026-08-25
+All eight decided, so the next reviewer doesn't re-ask.
+
+Three of them were never really unlinked: `/strikes`, `/cap-settings` and
+`/how-to-rosters` are role-gated cards on the homepage (`index.html`, revealed
+off `bod` / `rosters`). They were missing from `nav.js` only.
+
+**Added to `nav.js`:**
+
+- `/clusters/` → `SITE_PAGES` as "Archetypes", placed under Frivolities
+- `/cap-settings/` → `ROLE_PAGES` (`rosters`, `admin`)
+- `/strikes/` → `ROLE_PAGES` (`bod`, `admin`)
+- `/poopoo/` → `ROLE_PAGES` (`admin`), the same pattern `/backlog` already uses
+
+**Deliberately left unlinked**, each for its own reason:
+
+- `/join` — a recruiting URL meant to be pasted into Discord, not a nav
+  destination. The homepage prints it as text on purpose.
+- `/context` — project context for the codebase; internal dev page.
+- `/legal` — league decision, 2026-08-25: not to be surfaced in nav.
+- `/how-to-rosters` — league decision, 2026-08-25: unlinked is fine. It keeps
+  its `rosters`-gated homepage card; nothing was removed. Note the guide is
+  written for team owners but `rosters` is the committee role, so the owners it
+  addresses still can't reach it — left as-is knowingly, not overlooked.
+
+Also folded in: `SITE_PAGES` pointed News at `https://news.nbn.today`, which
+301s to `/news/`. Now points straight there. All five hrefs verified 200.
+
+The original entry:
+
+`/cap-settings`, `/clusters`, `/context`, `/how-to-rosters`, `/join`, `/legal`,
+`/poopoo`, `/strikes` exist but aren't in `nav.js`. Some are deliberately
+internal (`/poopoo`, `/cap-settings`); others look like they were just
+forgotten (`/how-to-rosters`). Worth a pass to decide which are intentional and
+note it, so the next reviewer doesn't re-ask.
+
+**`/rookie-scale` came off this list** — checked 2026-08-24, it is now in
+`SITE_PAGES` in `nav.js`, so it is reachable from Ctrl+K. Eight left.
+
+---
+
 ### ~~[P2] Pre-commit hook only fills the *top* changelog entry~~ — DONE 2026-08-25
 All three gaps closed in `build/hooks/pre-commit`, and the five stuck entries
 repaired.
