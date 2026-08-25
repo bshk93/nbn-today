@@ -6,6 +6,29 @@ where useful, the original problem statement below it.
 
 ---
 
+### ~~[P3] Retire season-summary's league-history workaround~~ — DONE 2026-08-25
+Removed. `season-summary/index.html` now takes the legacy rows straight off
+`league-history.csv` with a plain season filter; the per-season dedup map and
+the CHAMPION-from-brackets override are gone.
+
+Verified against live data before removing: the CSV has 6 rows, one per season,
+and every CHAMPION already matches its ROUND 4 bracket winner (20-21 ATL,
+21-22 ATL, 22-23 PHX, 23-24 CLE, 24-25 PHX, 25-26 ORL). Replaying both the old
+and the new code against the real files gives byte-identical rows, so nothing
+on the page moves.
+
+The original entry:
+
+`season-summary/index.html` deduplicates league-history rows by season and
+overrides CHAMPION from bracket data, calling them "CSV join artifacts". The
+cause is now known and fixed in the Python build (R counted playoff wins per
+player row). The cutover landed 2026-08-19, so `league-history.csv` now has 6
+rows — one champion per season, each matching the finals bracket winner — and
+**that workaround is dead code today**: it deduplicates rows that no longer
+duplicate and overrides a CHAMPION that is already right.
+
+---
+
 ### ~~[P3] The data backup commits 144 no-op snapshots a day~~ — DONE 2026-08-23
 `poopoo.py` rewrote `poopoo.json` on every 10-minute run whether or not the
 diff had changed, and `nbs-snapshot` committed each rewrite. Re-measured on the

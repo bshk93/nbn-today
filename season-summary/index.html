@@ -350,18 +350,8 @@
         });
 
         // Legacy rows: from CSV, only up to and including LEGACY_CUTOFF.
-        // CSV has one row per team-season; deduplicate to one row per SEASON.
-        const dedupedLegacy = {};
-        allCsvRows
-          .filter(r => r.SEASON <= LEGACY_CUTOFF)
-          .forEach(r => { if (!dedupedLegacy[r.SEASON]) dedupedLegacy[r.SEASON] = r; });
-        const legacyRows = Object.values(dedupedLegacy);
-        // Override CHAMPION from bracket data (more reliable than CSV join artifacts).
-        legacyRows.forEach(r => {
-          const done = b => parseInt(b.T1_W) === 4 || parseInt(b.T2_W) === 4;
-          const finals = allBrackets.find(b => b.SEASON === r.SEASON && b.ROUND === '4' && done(b));
-          if (finals) r.CHAMPION = finals.WINNER;
-        });
+        // One row per season, CHAMPION already correct — the Python build writes it that way.
+        const legacyRows = allCsvRows.filter(r => r.SEASON <= LEGACY_CUTOFF);
 
         // Awards reveal config.
         const awardsConfig = configRes.ok ? await configRes.json() : {};

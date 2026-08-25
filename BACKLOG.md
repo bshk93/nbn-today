@@ -44,15 +44,6 @@ The weekly Drive tarball deliberately does **not** carry any of this: the
 credential files are excluded and `members.json` goes in redacted, tokens
 blanked and tenures kept.
 
-### [P3] Retire season-summary's league-history workaround
-`season-summary/index.html` deduplicates league-history rows by season and
-overrides CHAMPION from bracket data, calling them "CSV join artifacts". The
-cause is now known and fixed in the Python build (R counted playoff wins per
-player row). The cutover landed 2026-08-19, so `league-history.csv` now has 6
-rows — one champion per season, each matching the finals bracket winner — and
-**that workaround is dead code today**: it deduplicates rows that no longer
-duplicate and overrides a CHAMPION that is already right.
-
 ### [P1] 9 cap-sheet diffs across 6 teams still unreconciled
 `/poopoo` (`build/poopoo.py` → `poopoo.json`, regenerated 2026-08-09) reports:
 
