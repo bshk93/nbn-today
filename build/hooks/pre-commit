@@ -19,10 +19,18 @@ any other hook has to live here too rather than in `.git/hooks`.
 - Run build/og_tags.py --check; abort if any page has missing or stale link-preview
   tags. New pages are the case this catches: without it they ship with no Discord
   unfurl and nothing says so.
-- If version.json is already staged (manual minor/major bump), leave it alone.
+- If no changelog entry is pending, nothing user-facing shipped: skip the bump
+  entirely. A docs-only commit used to advertise a version /changelog had no
+  entry for.
+- If version.json is staged AND differs from HEAD (a real manual minor/major
+  bump), leave it alone. Staged-but-unchanged is not a manual bump — treating it
+  as one stamped the new entry with the version that already shipped, and the
+  changelog came out with two 0.1.81 entries.
 - If the only staged file is changelog.json (retroactive fix), skip the bump.
 - Otherwise, increment the patch digit and stage version.json.
-- If changelog.json's latest entry has "version": "pending", fill it in and re-stage.
+- Fill in *every* pending entry, not just the top one. A commit that adds two
+  entries used to leave the second "pending" forever; five entries were stuck
+  that way before this was fixed.
 """
 import json, subprocess, sys
 from pathlib import Path
@@ -59,11 +67,32 @@ staged = subprocess.run(
     capture_output=True, text=True
 ).stdout.split()
 
+changelog = json.loads(cpath.read_text()) if cpath.exists() else []
+pending = [e for e in changelog if e.get('version') == 'pending']
+
+if not pending:
+    # Nothing user-facing shipped — a version with no changelog entry behind it
+    # is worse than no version at all.
+    sys.exit(0)
+
+
+def version_json_changed():
+    """True only if the staged version.json actually differs from HEAD's.
+
+    Staging it unchanged is an easy thing to do by accident, and it used to
+    read as "the author set the version" when all it means is "the file is in
+    the commit".
+    """
+    return subprocess.run(
+        ['git', 'diff', '--cached', '--quiet', '--', 'version.json']
+    ).returncode != 0
+
+
 data = json.loads(vpath.read_text())
 parts = data['version'].split('.')
 
-if 'version.json' in staged:
-    # Manual bump — leave it alone
+if 'version.json' in staged and version_json_changed():
+    # Manual minor/major bump — leave it alone
     pass
 elif staged == ['changelog.json']:
     # Retroactive changelog fix — don't bump
@@ -76,11 +105,9 @@ else:
 
 new_version = data['version']
 
-if cpath.exists():
-    changelog = json.loads(cpath.read_text())
-    if changelog and changelog[0].get('version') == 'pending':
-        changelog[0]['version'] = new_version
-        cpath.write_text(json.dumps(changelog, indent=2) + '\n')
-        subprocess.run(['git', 'add', 'changelog.json'])
+for entry in pending:
+    entry['version'] = new_version
+cpath.write_text(json.dumps(changelog, indent=2) + '\n')
+subprocess.run(['git', 'add', 'changelog.json'])
 
 sys.exit(0)

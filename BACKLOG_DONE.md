@@ -6,6 +6,76 @@ where useful, the original problem statement below it.
 
 ---
 
+### ~~[P2] Pre-commit hook only fills the *top* changelog entry~~ — DONE 2026-08-25
+All three gaps closed in `build/hooks/pre-commit`, and the five stuck entries
+repaired.
+
+- **Every** pending entry is filled now, not just index 0.
+- The bump is skipped outright when no entry is pending — a docs-only commit
+  no longer advertises a version `/changelog` has nothing for.
+- `version.json` counts as a manual bump only when it is staged **and** differs
+  from HEAD. Staged-but-unchanged was the third gap, and it is what produced
+  two 0.1.81 entries.
+
+The five stuck entries were each added by the same commit as the entry directly
+above them, confirmed one at a time against that commit's `version.json` diff —
+so each takes its sibling's number rather than a guessed one:
+
+    idx 129, 130  2026-07-24  0.0.370  (d00b8e6)
+    idx 150       2026-07-15  0.0.351  (ed3aa53)
+    idx 176       2026-06-25  0.0.326  (ce814ae)
+    idx 184       2026-06-23  0.0.315  (e6108f3)
+
+Zero pending entries remain. Tested against a throwaway repo before the hook
+went near a real commit: normal commit, docs-only, two entries in one commit,
+`version.json` staged unchanged, a real manual minor bump, and a retroactive
+changelog-only fix — six cases, all behaving.
+
+**One inherited behaviour left deliberately:** the retroactive branch stamps a
+resurrected `pending` entry with the *current* version, not the historical one
+it belonged to — the hook has no way to know the latter. Repairing an old entry
+therefore means writing its real number directly, which the hook then leaves
+alone (no pending entry, early exit). That is how the five above were fixed.
+
+The original entry:
+
+`.git/hooks/pre-commit` sets `changelog[0]['version']` if it's `"pending"`.
+A commit that adds two entries, or adds one below the top, leaves `"pending"`
+in the file forever. The same five entries are stuck, identified by date —
+**do not record their indices here, they shift every commit** (these five were
+listed as idx 9, 10, 30, 56, 64 on 2026-08-04 and are idx 14, 15, 35, 61, 69 as
+of 2026-08-07, purely from new entries landing on top):
+
+    2026-07-24  ×2  "Team pages: renamed the Overview tab to Roster…"
+                    "Draft Picks table: fixed Stepien lock indicator…"
+    2026-07-15      "Move the team Salaries chart from Frivolities…"
+    2026-06-25      "draft: show '→ TEAM' when draft rights were traded…"
+    2026-06-23      "Achievements now award NB¥ on every unlock…"
+
+Fix: fill in *every* pending entry, not just index 0. Then repair the five
+(they can be dated back to the commits that introduced them via `git log`).
+
+**Third gap, hit live on 2026-08-24 while committing this very review:** when
+`version.json` *is* staged, the hook takes the "manual minor/major bump" branch
+and skips the bump — but then still fills a `"pending"` changelog entry with
+whatever `version.json` currently says. Staging `version.json` unchanged (an
+easy thing to do deliberately, to dodge the second gap below on a docs-only
+commit) therefore stamps the new entry with the version that already shipped:
+the changelog came out with **two 0.1.81 entries**, and the newest release had
+no number of its own. Corrected by hand. The two branches disagree about what
+"already staged" means — one reads it as "the author set the version", the
+other as "the version is new" — and only the first is true.
+
+**Second gap, same hook (found 2026-08-09):** it bumps `version.json` even when
+there is *no* pending entry to stamp. A docs-only commit — BACKLOG, CLAUDE.md, a
+spec — therefore advertises a new version on the homepage that `/changelog` has
+no entry for. Hit it on `bb821f8`, which took the site to 0.0.401 with the
+changelog's newest at 0.0.400; corrected by hand. Fix: skip the bump when
+`changelog[0]['version'] != "pending"`, since that is exactly the case where
+nothing user-facing shipped.
+
+---
+
 ### ~~[P3] PDC dashboard boots with an uncaught rejection if any fetch fails~~ — DONE 2026-08-25
 Everything in `boot()` past the role gate now runs inside a `try/catch` that
 falls back to `renderGate('offline')` — the same screen a failed `/auth/me`

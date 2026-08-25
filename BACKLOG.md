@@ -520,42 +520,6 @@ Leaked into a transcript by an accidental `export $VAR` typo during the Discord
 backfill work (2026-07-10). Flagged then, believed never done — verify before
 acting; if it's already rotated, delete this item.
 
-### [P2] Pre-commit hook only fills the *top* changelog entry
-`.git/hooks/pre-commit` sets `changelog[0]['version']` if it's `"pending"`.
-A commit that adds two entries, or adds one below the top, leaves `"pending"`
-in the file forever. The same five entries are stuck, identified by date —
-**do not record their indices here, they shift every commit** (these five were
-listed as idx 9, 10, 30, 56, 64 on 2026-08-04 and are idx 14, 15, 35, 61, 69 as
-of 2026-08-07, purely from new entries landing on top):
-
-    2026-07-24  ×2  "Team pages: renamed the Overview tab to Roster…"
-                    "Draft Picks table: fixed Stepien lock indicator…"
-    2026-07-15      "Move the team Salaries chart from Frivolities…"
-    2026-06-25      "draft: show '→ TEAM' when draft rights were traded…"
-    2026-06-23      "Achievements now award NB¥ on every unlock…"
-
-Fix: fill in *every* pending entry, not just index 0. Then repair the five
-(they can be dated back to the commits that introduced them via `git log`).
-
-**Third gap, hit live on 2026-08-24 while committing this very review:** when
-`version.json` *is* staged, the hook takes the "manual minor/major bump" branch
-and skips the bump — but then still fills a `"pending"` changelog entry with
-whatever `version.json` currently says. Staging `version.json` unchanged (an
-easy thing to do deliberately, to dodge the second gap below on a docs-only
-commit) therefore stamps the new entry with the version that already shipped:
-the changelog came out with **two 0.1.81 entries**, and the newest release had
-no number of its own. Corrected by hand. The two branches disagree about what
-"already staged" means — one reads it as "the author set the version", the
-other as "the version is new" — and only the first is true.
-
-**Second gap, same hook (found 2026-08-09):** it bumps `version.json` even when
-there is *no* pending entry to stamp. A docs-only commit — BACKLOG, CLAUDE.md, a
-spec — therefore advertises a new version on the homepage that `/changelog` has
-no entry for. Hit it on `bb821f8`, which took the site to 0.0.401 with the
-changelog's newest at 0.0.400; corrected by hand. Fix: skip the bump when
-`changelog[0]['version'] != "pending"`, since that is exactly the case where
-nothing user-facing shipped.
-
 ### [P2] No frontend test coverage
 `build/smoke_test.py` (166 checks, re-run green 2026-08-24) guards the *data
 contract* only — that pages can still find the columns they read. Nothing checks

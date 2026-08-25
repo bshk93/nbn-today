@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.104",
+    "date": "2026-08-25",
+    "changes": [
+      "The changelog no longer strands entries: a commit adding two of them gets both numbered, and five entries stuck since June and July have been given their real versions",
+      "A commit that ships no changelog entry no longer bumps the version number"
+    ]
+  },
+  {
     "version": "0.1.103",
     "date": "2026-08-25",
     "changes": [
@@ -1133,7 +1141,7 @@
     ]
   },
   {
-    "version": "pending",
+    "version": "0.0.370",
     "date": "2026-07-24",
     "changes": [
       "Team pages: renamed the Overview tab to Roster and added a new Team Settings tab for editing jersey numbers and a player's owner-assigned secondary position (primary position stays read-only, shown as the first position from the 2K attribute scrape)",
@@ -1142,7 +1150,7 @@
     ]
   },
   {
-    "version": "pending",
+    "version": "0.0.370",
     "date": "2026-07-24",
     "changes": [
       "Draft Picks table: fixed Stepien lock indicator keying by year+orig only, which could cause a 2nd round pick to be wrongly flagged STEPIEN when a locked 1st round pick shared the same year and orig team (\u00a7 7.2 only ever applies to first-rounders)"
@@ -1307,7 +1315,7 @@
     ]
   },
   {
-    "version": "pending",
+    "version": "0.0.351",
     "date": "2026-07-15",
     "changes": [
       "Move the team Salaries chart from Frivolities into Cap Summary as its own tab, sharing one classification function with the cap table so a dollar is bucketed the same way in both views",
@@ -1507,7 +1515,7 @@
     ]
   },
   {
-    "version": "pending",
+    "version": "0.0.326",
     "date": "2026-06-25",
     "changes": [
       "draft: show '\u2192 TEAM' when draft rights were traded before signing, using transactions log for current class and first-season team for historical classes"
@@ -1565,7 +1573,7 @@
     ]
   },
   {
-    "version": "pending",
+    "version": "0.0.315",
     "date": "2026-06-23",
     "changes": [
       "Achievements now award NB\u00a5 on every unlock or tier upgrade (bronze/silver/gold = 250/500/1000, single-tier = 500), credited via the balance ledger with an \"Achievement: \u2026\" entry; the background job that previously posted Discord notifications now does the awarding instead (Discord output removed \u2014 too noisy). Existing achievements are not awarded retroactively."
