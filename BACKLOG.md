@@ -616,20 +616,6 @@ Note the constraint in CLAUDE.md: the 30 team shells load only `team.js`, so it
 has to be pulled in the same injected-script + awaited-promise way
 `lineupReady` / `contractReady` are, not by touching the shells.
 
-### [P3] PDC dashboard boots with an uncaught rejection if any fetch fails
-`pdc/index.html`'s boot does `await Promise.all([...])` over `/fa/state`,
-`/fa/pool`, `/players`, `/ovr/current`, `/team-map` with **no `catch`**. Any one
-of them failing leaves the page half-rendered — header and "How this works"
-panel drawn, no board, no queue — plus an unhandled rejection in the console and
-no message to the viewer. The realistic trigger is a role revoked mid-session or
-an API hiccup, since `/api/auth/me` has already resolved by then and the gate
-has passed.
-
-Note `/auth/me` itself *is* handled (it renders the "can't reach the league API"
-gate), so this is specifically the second wave of fetches. `renderGate('offline')`
-already exists and is the obvious thing to reuse. Found 2026-08-09 while building
-a test harness against the dashboard, not in real use.
-
 ### ~~[P3] `/suggestions` board is empty~~ — no longer true 2026-08-08
 Two live suggestions (#4 MCP server, #5 comments/editing); seq is at 5. #5 is
 built — threads, status history, and an Edit button the UI had never exposed

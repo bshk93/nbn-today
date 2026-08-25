@@ -417,30 +417,42 @@
     if (!IS_FAC && !IS_AGENT && !IS_POEXT) { renderGate(ME.name ? 'forbidden' : 'anon'); return; }
     renderHowto();
 
-    // BIOS/OVR/TEAMMAP are shared, public, and cheap — fetched once regardless
-    // of which committee(s) a member sits on, so a poext-only member (no fac,
-    // no agent) still gets names and current teams rather than bare slugs.
-    const [bios, ovr, teamMap, ly] = await Promise.all([
-      api('/players'), api('/ovr/current'), api('/team-map'),
-      api('/league-year').catch(() => ({})),
-    ]);
-    BIOS = bios; OVR = ovr; TEAMMAP = teamMap;
-    SEASON = ly.current_season || '';
+    // Everything past the role gate is guarded the same way /auth/me is: a
+    // revoked role or an API hiccup mid-boot would otherwise leave the header
+    // and the how-to drawn over no board and no queue, with the only sign of
+    // trouble an unhandled rejection in the console. Fail all the way back to
+    // the offline gate instead — a half-rendered dashboard is worse than none.
+    try {
+      // BIOS/OVR/TEAMMAP are shared, public, and cheap — fetched once regardless
+      // of which committee(s) a member sits on, so a poext-only member (no fac,
+      // no agent) still gets names and current teams rather than bare slugs.
+      const [bios, ovr, teamMap, ly] = await Promise.all([
+        api('/players'), api('/ovr/current'), api('/team-map'),
+        api('/league-year').catch(() => ({})),
+      ]);
+      BIOS = bios; OVR = ovr; TEAMMAP = teamMap;
+      SEASON = ly.current_season || '';
 
-    if (IS_POEXT) await renderPoext();
-    if (!IS_FAC && !IS_AGENT) return;
+      if (IS_POEXT) await renderPoext();
+      if (!IS_FAC && !IS_AGENT) return;
 
-    document.getElementById('app').hidden = false;
-    document.getElementById('detail').appendChild(el('div', 'empty', 'Pick a player to review.'));
+      document.getElementById('app').hidden = false;
+      document.getElementById('detail').appendChild(el('div', 'empty', 'Pick a player to review.'));
 
-    const [state, pool] = await Promise.all([api('/fa/state'), api('/fa/pool')]);
-    STATE = state; POOL = pool;
-    // An agent's work starts at the queue, a reviewer's at their assignments.
-    LIST_MODE = IS_HEAD ? 'all' : (IS_AGENT && !IS_FAC) ? 'queue' : 'mine';
-    renderBoard();
-    renderList();
-    routeFromHash();
-    window.addEventListener('hashchange', routeFromHash);
+      const [state, pool] = await Promise.all([api('/fa/state'), api('/fa/pool')]);
+      STATE = state; POOL = pool;
+      // An agent's work starts at the queue, a reviewer's at their assignments.
+      LIST_MODE = IS_HEAD ? 'all' : (IS_AGENT && !IS_FAC) ? 'queue' : 'mine';
+      renderBoard();
+      renderList();
+      routeFromHash();
+      window.addEventListener('hashchange', routeFromHash);
+    } catch (e) {
+      // renderGate draws above #app, so anything already revealed has to go
+      // back down or the gate reads as a banner over a broken page.
+      ['app', 'howto', 'poext'].forEach(id => { document.getElementById(id).hidden = true; });
+      renderGate('offline');
+    }
   })();
 
   // What each role actually grants on this page — shown as a tooltip on the

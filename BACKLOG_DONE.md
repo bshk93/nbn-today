@@ -6,6 +6,38 @@ where useful, the original problem statement below it.
 
 ---
 
+### ~~[P3] PDC dashboard boots with an uncaught rejection if any fetch fails~~ — DONE 2026-08-25
+Everything in `boot()` past the role gate now runs inside a `try/catch` that
+falls back to `renderGate('offline')` — the same screen a failed `/auth/me`
+already produced. The catch re-hides `#app`, `#howto` and `#poext` first,
+because `renderGate` draws into `#gate` above them and would otherwise read as
+a banner over a half-drawn dashboard.
+
+`poextReload` keeps its own inline banner for a PO-EXT fetch failure; that is a
+working panel reporting one bad section, not a broken boot, so it deliberately
+does not reach the new catch.
+
+Verified by syntax check and by confirming the three element ids exist. Not
+driven in a browser — `/pdc` needs a real session and neither jsdom nor the
+puppeteer package is installed on this box.
+
+The original entry:
+
+`pdc/index.html`'s boot does `await Promise.all([...])` over `/fa/state`,
+`/fa/pool`, `/players`, `/ovr/current`, `/team-map` with **no `catch`**. Any one
+of them failing leaves the page half-rendered — header and "How this works"
+panel drawn, no board, no queue — plus an unhandled rejection in the console and
+no message to the viewer. The realistic trigger is a role revoked mid-session or
+an API hiccup, since `/api/auth/me` has already resolved by then and the gate
+has passed.
+
+Note `/auth/me` itself *is* handled (it renders the "can't reach the league API"
+gate), so this is specifically the second wave of fetches. `renderGate('offline')`
+already exists and is the obvious thing to reuse. Found 2026-08-09 while building
+a test harness against the dashboard, not in real use.
+
+---
+
 ### ~~[P3] Retire season-summary's league-history workaround~~ — DONE 2026-08-25
 Removed. `season-summary/index.html` now takes the legacy rows straight off
 `league-history.csv` with a plain season filter; the per-season dedup map and
