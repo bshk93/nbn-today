@@ -6,6 +6,28 @@ where useful, the original problem statement below it.
 
 ---
 
+### ~~[P3] There is no `/api/health`~~ — DONE 2026-08-25
+Split off from "Client-side errors are invisible", which bundled two unrelated
+things; the client-error half is still open in `BACKLOG.md`.
+
+`GET /api/health` is live — public, unauthenticated, and cheap. It returns
+`{status, data_dir, time}` and answers **503**, not 200-with-a-field, when
+`NBS_DATA_DIR` is unreachable, so a monitor that only reads status codes
+catches it too.
+
+The data-directory check is the point of it. `Restart=always` on
+`nbn-api.service` already covers a crash; what it cannot see is a process still
+answering having lost the data directory underneath it, at which point every
+roster, bio and cap read returns nonsense rather than an error.
+
+`nbn-api/tests/test_health.py` pins all of it, including the degraded path
+(by pointing the module's `DATA_DIR` at a path that doesn't exist — the suite
+runs against live data and never touches the real one). Registered in
+`run_all.py`; full suite passes. Verified live on both `nbn.today` and
+`pdc.nbn.today` after the restart.
+
+---
+
 ### ~~[P3] Unlinked pages~~ — DONE 2026-08-25
 All eight decided, so the next reviewer doesn't re-ask.
 

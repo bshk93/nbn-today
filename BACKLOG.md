@@ -545,19 +545,25 @@ position and hard-cap level is ~20 lines against helpers that already exist
 Consistent with the standing rule to snapshot state *at* the moment it is true
 rather than reconstructing it later by replaying the ledger.
 
-### [P3] Client-side errors are invisible, and there is no `/api/health`
-Entered 2026-08-16. `GET /api/health` 404s — there is no liveness check on a
-service every interactive page depends on. `Restart=always` is set on
-`nbn-api.service`, which covers a crash but not a wedged process.
+### [P3] Client-side errors are invisible
+Entered 2026-08-16, split 2026-08-25 when the `/api/health` half was done.
 
-Separately, 114 pages each carry their own inline boot, and a member who hits a
-broken one has no way to tell anyone and no way for us to find out. The PDC
-uncaught-rejection item below is one instance of a general condition.
+114 pages each carry their own inline boot, and a member who hits a broken one
+has no way to tell anyone and no way for us to find out. The PDC
+uncaught-rejection item (fixed 2026-08-25) was one instance of a general
+condition, not the condition itself.
 
 `nav.js` already loads on every page, so a `window.onerror` +
-`unhandledrejection` shim posting to a small `/api/clientlog` covers all 114 at
-once. Complements the frontend-test item above rather than duplicating it —
-tests catch what we thought to check, this catches what members actually hit.
+`unhandledrejection` shim posting to a small `/api/clientlog` would cover all
+114 at once. **Not started deliberately** — it needs three answers first, and
+without them it is an unbounded write path any visitor can drive: where the
+log is stored, how long it is kept, and what rate limit it carries.
+Complements the frontend-test item above rather than duplicating it: tests
+catch what we thought to check, this catches what members actually hit.
+
+**The liveness half is done** — `GET /api/health` shipped 2026-08-25, public
+and unauthenticated, 503 when the data directory is unreachable. See
+`BACKLOG_DONE.md`.
 
 ### [P3] Fifth copy of the same frontend primitives — `nbn-data.js` is overdue
 Entered 2026-08-16. `contract.js` exists because the contract grammar had
