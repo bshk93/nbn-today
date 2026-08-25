@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.101",
+    "date": "2026-08-25",
+    "changes": [
+      "Corrected the transaction-entry runbook on RFA offer sheets: they are two transactions (offer_sheet, then offer_sheet_decision), not one. The old single-call instructions would have left an offer permanently open and never signed the player, because a stray outcome field is silently dropped rather than rejected.",
+      "Noted that a failed check at warning level blocks a transaction submit exactly like an error does, even though the validation endpoints report such a transaction as legal."
+    ]
+  },
+  {
     "version": "0.1.99",
     "date": "2026-08-24",
     "changes": [
