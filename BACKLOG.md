@@ -259,28 +259,48 @@ neither the Python path nor the R rollback recreates them.
 The rulebook badges each section 🔒 system-enforced or 👁 manual review.
 19 sections carry an enforced badge; the ones below are the gaps worth closing.
 
-### [P3] Extension eligibility backfill — 161 rostered players missing an acquisition record
+### [P3] Extension eligibility backfill — 116 rostered players still missing an acquisition record
 `_player_acquisition_index` (§ 3.8's ledger scan, reused for § 6.2 eligibility)
 can't find a `sign`/`sign_pick`/`convert_twoway`/`offer_sheet_decision` entry for
-161 of 502 rostered players, so their contract start date is unknown and
-eligibility can't be derived from the ledger.
+these players, so their contract start date is unknown and eligibility can't be
+derived from the ledger.
 
-**No longer a blocker for shipping extensions** (decided 2026-08-19,
-`docs/poext-extension-pipeline.md` § 2.3a/D1) — a proposal now packages
-whatever partial ledger history the player has, plus the submitting team's own
-attestation of when the deal began, and the eligibility check runs off that at
-warn severity. Still worth doing properly when there's time, since it's mostly
-free:
+**Not a blocker for shipping extensions** (decided 2026-08-19,
+`docs/poext-extension-pipeline.md` § 2.3a/D1) — a proposal packages whatever
+partial ledger history the player has plus the submitting team's own attestation
+of when the deal began, and the eligibility check runs off that at warn severity.
 
-- **97** recoverable by re-running the existing Discord resolver against
-  `discord-fa-signings-raw` / `discord-transactions-raw` — flagged/skipped
-  residue from the earlier ledger backfill, not new research.
-- **59** rule-derivable from `draft_year` alone: no signing record anywhere +
-  a known draft year means they're still on the rookie deal (the earlier
-  backfill was thorough enough that absence of a record is itself the
-  evidence), so contract start = draft year.
-- **5** have no draft year and no mention anywhere — need a person to just
-  state it.
+**Re-measured 2026-08-25** against the live ledger, and the previous numbers here
+(161 of 502, split 97/59/5) were wrong in a way that mattered — acting on them
+would have written 23 contracts that do not exist. What is actually true:
+
+| | Count |
+|---|---|
+| Rostered players | 517 |
+| Missing a signing record | **116** (was 151 before that day's backfill) |
+| — trade events only | 86 |
+| — no ledger events at all | 30 |
+
+- **35 were fixed** on 2026-08-25 by `nbn-api/backfill_rookie_acquisitions.py`:
+  2023-2025 draftees, still on the team that drafted them, salaries on file, no
+  ledger history at all. For those the absence of a record *is* the evidence —
+  the earlier backfill was thorough enough that a gap means they have never
+  signed anything but the rookie deal they were drafted into. Written with
+  `historical=true`, so no roster, cap or team-state was touched.
+- **86 have trade events but no signing.** Acquired by trade with the original
+  signing unrecorded, so no rule reaches them — this is the Discord resolver's
+  job, not an inference.
+- **23 are unsigned 2026 draftees** and are *correctly* recordless. All are
+  `type: "draft-rights"` with no salaries, and each already has a `pick`
+  transaction from the June 2026 draft. **This is what the old "59 rule-derivable
+  from draft_year" figure would have got wrong** — it would have invented a
+  rookie contract for every one of them. Nothing to do here; they get a real
+  signing when they sign one.
+- **7 need a person to state the answer**, not a rule: Giannis (2013), Booker
+  (2015), SGA (2018), Herb Jones (2021), Matkovic (2022) are far past a rookie
+  deal; `tomlin-naeqwan` has no `draft_team` on file; and `yang-hansen` rosters
+  at UTA having been drafted by DAL with no trade on record, so a DAL signing
+  would put the ledger at odds with the roster.
 
 ### [P1] Qualifying Offers don't exist in the system at all
 § 3.9 defines the QO — it's what makes a sub-4-year free agent an **RFA** rather
