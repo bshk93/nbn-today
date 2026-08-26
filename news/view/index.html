@@ -47,6 +47,22 @@
     details.ballots td.voter a:hover { color: var(--text-primary); text-decoration: underline; }
     .rank-blurb { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.35rem; }
     .rank-blurb .by { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* Roster strip: the team's top-rated players, filled in after the table
+       renders (see loadRosterStrips) so a slow roster fetch never blocks the
+       ranking itself. */
+    .rank-roster { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.5rem; }
+    .roster-chip { display: flex; flex-direction: column; align-items: center; width: 3.2rem; text-align: center; }
+    .roster-chip-avatar { width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
+                           background: var(--bg-card); border: 1px solid var(--border); flex: none; }
+    .roster-chip-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+    .roster-chip-avatar.empty {
+      background: radial-gradient(circle at 50% 38%, var(--text-dim) 0 5px, transparent 6px),
+                  radial-gradient(ellipse 9px 6px at 50% 100%, var(--text-dim) 0 100%, transparent 0);
+    }
+    .roster-chip-name { font-size: 0.62rem; color: var(--text-secondary); margin-top: 0.22rem; line-height: 1.15;
+                         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .roster-chip-ovr { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; color: var(--text-dim); }
     .move-up { color: var(--success); font-size: 0.78rem; font-family: var(--font-mono); }
     .move-down { color: var(--danger); font-size: 0.78rem; font-family: var(--font-mono); }
     .move-flat { color: var(--text-dim); font-size: 0.78rem; font-family: var(--font-mono); }
@@ -373,6 +389,7 @@ function renderRankings(a) {
         <div>
           <div class="rank-team">${escHtml(TEAM_NAMES[r.team] || r.team)}</div>
           <div class="rank-stats">avg ${r.avg.toFixed(2)} · high ${r.hi} · low ${r.lo}</div>
+          <div class="rank-roster" id="roster-strip-${r.team}"></div>
           ${voterCells(a, voters, r.team)}
           ${b.body ? `<div class="rank-blurb">${escHtml(b.body)}
             ${b.claimed_by ? `<span class="by">— ${escHtml(b.claimed_by)}</span>` : ''}</div>` : ''}
@@ -380,6 +397,74 @@ function renderRankings(a) {
       </div>`;
     }).join('')}
     ${voters.length ? renderBallotTable(a, rows, voters) : ''}`;
+
+  loadRosterStrips(rows.map(r => r.team));
+}
+
+// Minimal CSV reader — same shape other pages use. Roster CSVs here are
+// single-column (SLUG only), so no quoted-field handling is needed.
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const cells = line.split(',');
+    const row = {};
+    headers.forEach((h, i) => { row[h] = (cells[i] || '').trim(); });
+    return row;
+  });
+}
+
+function lastNameFromBio(canonical) {
+  if (!canonical) return '';
+  const toTitle = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  const last = canonical.includes(',') ? canonical.split(',', 1)[0] : canonical;
+  return toTitle(last.trim());
+}
+
+const ROSTER_STRIP_N = 5;
+let bioData = null, ovrData = null;   // fetched once, shared across every team's strip
+
+function rosterChipHtml(p) {
+  const avatar = p.photo
+    ? `<span class="roster-chip-avatar"><img src="${escHtml(p.photo)}" alt="" loading="lazy"
+         onerror="this.parentElement.classList.add('empty');this.remove();"></span>`
+    : `<span class="roster-chip-avatar empty"></span>`;
+  return `<span class="roster-chip">${avatar}
+    <span class="roster-chip-name">${escHtml(p.name)}</span>
+    <span class="roster-chip-ovr">${escHtml(p.ovr)}</span>
+  </span>`;
+}
+
+// Fills each team's placeholder in after the table itself has already
+// rendered — a slow or failed roster fetch degrades to an empty strip, never
+// a delay on the ranking readers came for.
+async function loadRosterStrips(teams) {
+  try {
+    if (!bioData) {
+      [bioData, ovrData] = await Promise.all([
+        fetch('/api/players').then(r => r.ok ? r.json() : {}),
+        fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
+      ]);
+    }
+    const results = await Promise.allSettled(
+      teams.map(t => fetch(`/data/${t.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : null))
+    );
+    teams.forEach((t, i) => {
+      const host = document.getElementById(`roster-strip-${t}`);
+      if (!host) return;
+      const res = results[i];
+      if (res.status !== 'fulfilled' || !res.value) return;
+      const top = parseCSV(res.value)
+        .map(row => {
+          const bio = bioData[row.SLUG] || {};
+          return { name: lastNameFromBio(bio.name || ''), ovr: ovrData[row.SLUG] ?? '', photo: bio.photo_url || '', type: bio.type || '' };
+        })
+        .filter(p => p.type !== 'dead' && p.name)
+        .sort((a, b) => (parseFloat(b.ovr) || 0) - (parseFloat(a.ovr) || 0))
+        .slice(0, ROSTER_STRIP_N);
+      host.innerHTML = top.map(rosterChipHtml).join('');
+    });
+  } catch { /* roster strip is a nice-to-have; leave placeholders empty on failure */ }
 }
 
 // Where each voter had this team, under its average. Names link to the member
