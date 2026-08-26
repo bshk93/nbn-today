@@ -65,7 +65,7 @@
     .action-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; flex-wrap: wrap; gap: 0.75rem; }
     .action-left { display: flex; gap: 0.5rem; }
     .action-right { display: flex; gap: 0.5rem; align-items: center; }
-    button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.85rem; font-weight: 500; padding: 0.45rem 1rem; border: 1px solid transparent; }
+    button, a.btn-secondary { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.85rem; font-weight: 500; padding: 0.45rem 1rem; border: 1px solid transparent; display: inline-block; text-decoration: none; }
     .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
     .btn-primary:hover { background: var(--accent-dark); }
     .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -202,6 +202,8 @@
         <button class="btn-danger" id="btn-delete" onclick="doDelete()" style="display:none;">Delete Draft</button>
       </div>
       <div class="action-right">
+        <a class="btn-secondary" id="btn-preview" href="#" target="_blank" style="display:none;"
+           title="Opens this article the way readers will see it — visible only to you until you publish">Preview →</a>
         <span class="status-msg" id="status-msg"></span>
         <button class="btn-secondary" id="btn-save" onclick="doSave()">Save Draft</button>
         <button class="btn-primary" id="btn-submit" onclick="doPublish()">Publish</button>
@@ -380,6 +382,14 @@ function showEditor() {
   document.getElementById('editor-form').style.display = 'block';
 }
 
+// Only meaningful once the draft exists server-side to fetch.
+function updatePreviewLink() {
+  const link = document.getElementById('btn-preview');
+  if (!articleId) { link.style.display = 'none'; return; }
+  link.href = `/news/view/?id=${articleId}`;
+  link.style.display = '';
+}
+
 async function loadExisting(id) {
   const token = getToken();
   try {
@@ -387,6 +397,7 @@ async function loadExisting(id) {
     if (!res.ok) { toast('Could not load article.', true); return; }
     const a = await res.json();
     articleId = a.id;
+    updatePreviewLink();
     document.getElementById('title-input').value = a.title || '';
     setEditorValue(a.body || '');
     document.getElementById('cover-input').value = a.cover_image || '';
@@ -446,6 +457,7 @@ async function doSave() {
       if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Create failed'); }
       const a = await res.json();
       articleId = a.id;
+      updatePreviewLink();
       history.replaceState(null, '', `/news/new/?id=${articleId}`);
       document.getElementById('btn-delete').style.display = '';
       setStatus('Draft saved.', 'ok');
