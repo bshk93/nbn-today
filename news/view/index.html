@@ -372,7 +372,7 @@ function renderRankings(a) {
         <div class="rank-logo"><img src="/logos/logo-${r.team.toLowerCase()}.png" alt="" loading="lazy"></div>
         <div>
           <div class="rank-team">${escHtml(TEAM_NAMES[r.team] || r.team)}</div>
-          <div class="rank-stats">avg ${r.avg.toFixed(2)} · high ${r.hi} · low ${r.lo}${r.firsts ? ` · ${r.firsts} first-place` : ''}</div>
+          <div class="rank-stats">avg ${r.avg.toFixed(2)} · high ${r.hi} · low ${r.lo}</div>
           ${voterCells(a, voters, r.team)}
           ${b.body ? `<div class="rank-blurb">${escHtml(b.body)}
             ${b.claimed_by ? `<span class="by">— ${escHtml(b.claimed_by)}</span>` : ''}</div>` : ''}
