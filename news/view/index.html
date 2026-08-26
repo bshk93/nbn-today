@@ -389,7 +389,7 @@ function renderRankings(a) {
         <div>
           <div class="rank-team">${escHtml(TEAM_NAMES[r.team] || r.team)}</div>
           <div class="rank-stats">avg ${r.avg.toFixed(2)} · high ${r.hi} · low ${r.lo}</div>
-          <div class="rank-roster" id="roster-strip-${r.team}"></div>
+          <div class="rank-roster" id="roster-strip-${r.team}">${r.roster_strip ? r.roster_strip.map(rosterChipHtml).join('') : ''}</div>
           ${voterCells(a, voters, r.team)}
           ${b.body ? `<div class="rank-blurb">${escHtml(b.body)}
             ${b.claimed_by ? `<span class="by">— ${escHtml(b.claimed_by)}</span>` : ''}</div>` : ''}
@@ -398,7 +398,13 @@ function renderRankings(a) {
     }).join('')}
     ${voters.length ? renderBallotTable(a, rows, voters) : ''}`;
 
-  loadRosterStrips(rows.map(r => r.team));
+  // A published edition's rows already carry a frozen roster_strip (stamped
+  // at publish time -- see publish_article in nbn-api's news.py), so there is
+  // nothing to fetch. Only a live, unpublished ballot preview (a.consensus,
+  // no a.final yet) needs the live client-side fetch+compute -- and an old
+  // edition published before this field existed simply shows no strip rather
+  // than one live-fetched under a stale date.
+  if (!a.final) loadRosterStrips(rows.map(r => r.team));
 }
 
 // Minimal CSV reader — same shape other pages use. Roster CSVs here are
