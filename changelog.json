@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.1.111",
+    "date": "2026-08-26",
+    "changes": [
+      "Box score validator now checks the screenshot's header row against the expected 2K column order, so a layout change in a new 2K release is caught instead of silently filing numbers under the wrong stats",
+      "Box score validator now checks every column against the printed TOTALS row \u2014 the only check covering REB/AST/STL/BLK/TO/OREB/PF",
+      "/parse-boxscores transcribes the header and totals rows, and reads the right admin token env var",
+      "A new season's raw stats file is now created on demand instead of having to exist first \u2014 the July league-year rollover had been failing every build since 2026-08-21, and would have blocked the season's first box score",
+      "Restored the old Sheets-era box score sanity checks over the whole stats corpus, now run weekly with Discord alerts: points identity, shooting bounds, team minutes, blank fields, plus two new ones for a player listed twice in a game and a name that matches no real player",
+      "Fixed a GSW playoff game that credited Will Riley's line to a player who does not exist"
+    ]
+  },
+  {
     "version": "0.1.110",
     "date": "2026-08-26",
     "changes": [

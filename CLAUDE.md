@@ -62,7 +62,7 @@ League-wide constants (cap thresholds, roster limits, apron triggers) are in Art
 > deploy), how to restore, and what to do when something breaks. This file is the
 > per-topic detail; the runbook is the map.
 
-> **The backlog is `BACKLOG.md`** (39KB, 39 items) — read it before proposing new
+> **The backlog is `BACKLOG.md`** (~44KB, 37 items) — read it before proposing new
 > work, and update it when work lands. It is far too big to read whole for one
 > question: `grep -n '^### ' BACKLOG.md` lists every item with its priority in a
 > few hundred tokens, then read only the item that matters. Finished items move
@@ -172,9 +172,19 @@ No URL changed in the move; every path below is what the page fetches. Files are
 > R is kept **dormant and permanent** (decided 2026-08-19 — it is not being
 > uninstalled). It is the rollback, `NBN_STATS_ENGINE=r bash build/build.sh`,
 > exercised on the same `link-public.sh` + `smoke_test.py` tail as the live
-> path; and it is the only value-level check the 86 files have, since
+> path; and it is the only value-level check on the 86 *derived* files, since
 > `smoke_test.py` asserts schema and no values. Run
 > `python3 -m stats_build.harness port` after any change to the pipeline.
+>
+> The **raw** corpus those files are built from is checked separately, by
+> `nbn-api/stats_build/checks.py` — the Sheets-era `check_allstats()` restored
+> on 2026-08-26 and run weekly from `check_stats_integrity.py` (alerts to
+> Discord, non-zero exit; `--skip-values` turns it off). Points identity,
+> made-vs-attempted bounds, OR+DR=R, PF≤6, per-team minutes, blank fields,
+> team score vs its players, W/L, valid team codes, plus two the R build never
+> had: **no player twice in one team-game**, and **every PLAYER name resolves
+> to a real bio once `PLAYER_FIXES` is applied**. Those last two exist because
+> they immediately found four errors nothing else could see.
 >
 > Two R bugs the cutover fixed, so these files read differently than they did
 > before it: `league-history.csv` listed every playoff team as a champion (R
@@ -307,8 +317,20 @@ Stats flow from game submission to the live site in one automated step:
 > that rewrites rows already on disk, or that would drop a column an older
 > season has (they do differ — no `OPP_RAW` before 24-25). A weekly
 > `nbs-integrity.timer` re-checks row counts and hashes a closed season can
-> never change. Details in `nbn-api/CLAUDE.md` § "Protecting the raw box
-> scores"; the plan they come from is `docs/dev-deploy-setup-spec.md` Phase 2.
+> never change, and runs the value-level checks in `stats_build/checks.py`.
+> Details in `nbn-api/CLAUDE.md` § "Protecting the raw box scores"; the plan
+> they come from is `docs/dev-deploy-setup-spec.md` Phase 2.
+>
+> **To correct a row that is already on disk, use `nbn-api/edit_allstats.py`.**
+> It is the one sanctioned way through the append contract, and it is a second
+> contract rather than an exemption: dry-run by default, it refuses a `--where`
+> matching more rows than you named, and it verifies the write against disk cell
+> by cell so it cannot change anything it did not declare. Every applied edit
+> needs a `--reason` and lands in `allstats-edits.jsonl` — the only record of
+> why a hand-corrected row differs from what was parsed, since the screenshots
+> are deleted. **Do not reach for `allow_shrink=True` instead**: it disables
+> every check at once, which is right for a migration and wrong for a cell.
+> Adding or removing rows is deliberately not supported.
 - `player-bios.json`, `members.json`, `owners.csv`, `awards-history.json`
 
 **Written to `$NBS_DATA_DIR/derived/` by the build** (served through the `public/` view at the paths below — the build is the only author, so nothing here is backed up):
@@ -350,11 +372,30 @@ the API carries the engine before anything asks for it.
 
 ### Adding a new season
 
-1. The build auto-infers the current season from today's date (Sep 30 cutoff),
-   in `nbn-api/stats_build/buildargs.py` — the one place that rule lives. No
-   config change is needed.
-2. `build/seasons.conf` can be updated with the new playoff start date for the
-   record, but nothing reads it any more (see the `build/` table above).
+**Nothing to do.** The season's raw file is created on demand, by whichever of
+the build or the first commit gets there first (`nbn-api/allstats_files.py`),
+with the header copied verbatim from the previous season. Same for
+`allstats-playoffs-<YY>.csv` at the start of a postseason.
+
+That is worth knowing about rather than ignoring, because the alternative bit
+once and would again. The rollover is the **July 1 league year**
+(`nbn-api/season_clock.py`, overridable per season in `league-state.json`) — not
+the September date the sim season starts on. So from July 1 the build resolves a
+season whose file cannot exist yet; before 2026-08-26 it exited 2 there, and
+`build.sh` runs under `set -e`, so **every build failed** from the rollover
+onward. Nothing triggers a build in the offseason, so it stayed invisible for
+five days and would have surfaced as the season's first box score never
+appearing on the site.
+
+What creation does *not* do is paper over a missing data directory. It requires
+the previous season's file to be present; two missing in a row still exits 2,
+which is the case the original refusal was really guarding (see
+`allstats_files.py`). A file that goes missing mid-season reads the same as a
+rollover here and is deliberately left to `check_stats_integrity.py`, which runs
+weekly and reports it precisely (`GONE — was N rows, no file on disk now`).
+
+`build/seasons.conf` can be updated with the new playoff start date for the
+record, but nothing reads it any more (see the `build/` table above).
 
 ---
 

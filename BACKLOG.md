@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last reviewed: **2026-08-25** — **34 open items**: 7 P1, 10 P2, 12 P3, plus 5
+Last reviewed: **2026-08-26** — **37 open items**: 8 P1, 10 P2, 14 P3, plus 5
 nice-to-haves. (No version pin here on purpose: it went stale within two
 commits of being written. The date is what matters.)
 
@@ -26,6 +26,64 @@ which made the same list read as both done and open; it is not coming back.
 in plaintext, still valid on the account. Flagged 2026-08-18, unanswered,
 re-confirmed present 2026-08-19. The project is retired; rotate the token and
 switch that remote to SSH (or delete it).
+
+### [P1] Three 24-25 games list one player twice — one row in each is someone else
+Found 2026-08-26 by `stats_build/checks.py` on its first run over the corpus.
+Three team-games carry the same player name twice with **different** stat lines:
+
+| File | Team | Date | Name | The two lines |
+|---|---|---|---|---|
+| `allstats-24-25.csv` | CLE | 2025-04-11 vs @NYK | HARTENSTEIN, ISAIAH | 15min/12pt · 12min/9pt |
+| `allstats-24-25.csv` | DAL | 2025-03-29 vs @CHI | WALKER, JABARI | 28min/14pt · 22min/7pt |
+| `allstats-24-25.csv` | DEN | 2024-10-29 vs @BKN | HOLIDAY, JRUE | 24min/13pt · 3min/3pt |
+
+Not duplicated rows: in all three the team minutes come to exactly 240 and the
+player points sum to `TEAM_PTS`, so the *game* is right and one of the two rows
+is **a different player entered under the wrong name**. Every other check passes
+— both lines are individually legal — which is why it sat for over a year.
+
+The effect is that one real player is missing a game and another has one that
+is not theirs, in career totals, game highs and HOF points alike.
+
+The screenshots were deleted after parsing (deliberately — see
+`boxscore_provenance.py`) and provenance only starts in 2026, so there is no
+record of the original. But "who was on this roster and did **not** play that
+night" narrows it hard, and it resolves two of the three:
+
+- **DEN 2024-10-29 → the second row is almost certainly `HOLIDAY, AARON`.**
+  He is the only other Holiday in the league that season and he was **on DEN**.
+  His first recorded game is 2024-11-23 — after this one — so a 3min/3pt cameo
+  logged under Jrue is exactly the game he is missing. Only the first name is
+  wrong.
+- **DAL 2025-03-29 → the second row is almost certainly `WALTER, JAKOBE`.**
+  35 games for DAL between 2025-01-22 and 2025-04-13, and he played **all six**
+  of the games either side of this one but not this one. Walker/Walter,
+  Jabari/Jakobe.
+- **CLE 2025-04-11 → genuinely unresolved.** There is no second Hartenstein
+  anywhere in 24-25. CLE rested four regulars that night (Allen, Garland,
+  Haliburton, Brandon Ingram all played the surrounding games) and dressed a
+  12-man bench, and every *other* CLE player's date range ended months earlier.
+  So the mystery line — 12min, 9pt, 2-3 FG of which 2-3 from three, 3-3 FT, 0
+  reb — is either one of those four resting starters, or a player who appears
+  nowhere else in the data. Allen is ruled out by the line (a centre with 0
+  rebounds and two threes); Garland or Haliburton fit it best.
+
+**Both fixes are edits to a raw, append-only file**, which `allstats_guard`
+refuses by design. Use `nbn-api/edit_allstats.py`, built 2026-08-26 for exactly
+this — it is dry-run by default, refuses a selector that matches more than the
+row you named, and verifies the write against disk cell by cell so it cannot
+change anything it did not declare. `allow_shrink=True` is **not** the tool:
+it turns off every check at once. Each edit wants its own `--reason`, which is
+the only record of why a hand-corrected row differs from what was parsed.
+
+    venv/bin/python edit_allstats.py --file allstats-24-25.csv \
+      --where TEAM=DEN DATE=2024-10-29 "PLAYER=HOLIDAY, JRUE" M=3 \
+      --set "PLAYER=HOLIDAY, AARON" --reason "..."     # add --apply to write
+
+Both confident fixes still need an explicit go-ahead. Rebuild afterwards — the
+derived files hold the old value until then.
+
+Until they are resolved, `check_stats_integrity` reports all three every week.
 
 ### [P2] The data backup carries live credentials, and its history keeps them
 Found 2026-08-19 while building the off-site tarball. `bshk93/nbn-data` is
@@ -547,6 +605,37 @@ switched off, note the dates here.
 ---
 
 ## 3. Tooling / infrastructure
+
+### [P3] `POST /api/boxscore/parse` is dead code with a live import
+Noticed 2026-08-26. The endpoint asks the Anthropic API to read a box score
+screenshot server-side. It is unreachable in practice: it needs
+`ANTHROPIC_API_KEY`, which is set nowhere (the whole point of the
+`/parse-boxscores` skill is that parsing runs through the CLI session, not paid
+API credits), and `boxscores/submit/index.html` never calls it — it posts to
+`/api/boxscore/upload`. It returns 503 for anyone who finds it.
+
+Two reasons it is not simply harmless:
+
+- It pins `model="claude-sonnet-4-6"`, a stale id nobody would notice was stale,
+  because the code path cannot run to fail.
+- `import anthropic` sits at module scope in `routers/boxscores.py`, so a venv
+  that loses the package takes down the *commit* path — the one that matters —
+  along with the dead one. The package is installed today (0.104.1); nothing
+  guarantees it stays.
+
+Either delete the endpoint and the import, or move the import inside
+`_parse_one_screenshot` so the dependency is scoped to the path that uses it.
+Deleting is the honest option unless server-side parsing is wanted back.
+
+### [P3] Box score upload accepts any image format the browser will offer
+`boxscores/submit/index.html` sets `accept="image/*"` and
+`POST /api/boxscore/upload` writes the file under whatever extension the
+filename carried. A phone upload can therefore land a `.heic` or `.avif` in the
+pending queue, which `/parse-boxscores` cannot read — the Read tool handles PNG,
+JPEG, GIF and WebP. Nothing has hit this (screenshots come off a PC or console),
+so it is P3: the fix is to narrow the `accept` list and reject or convert an
+unsupported type at upload, rather than discovering it mid-parse with the game
+already queued.
 
 ### [P3] The edit log has no surface, and starts from 2026-08-25
 `edits.jsonl` went live 2026-08-25 — `storage._atomic_write` now records a

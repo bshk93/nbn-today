@@ -16,6 +16,10 @@ any other hook has to live here too rather than in `.git/hooks`.
   that no longer exists. Bypass with `git commit --no-verify` if needed.
 - Run build/test_build_sh.py; abort if build.sh has stopped defaulting to the
   Python stats engine, or grown a second copy of the season rule.
+- Run build/test_validate_boxscore.py; abort if the box score validator has
+  stopped catching a moved column or a TOTALS mismatch. Those two failures put
+  plausible numbers in the wrong fields of an append-only file, so nothing
+  downstream would ever report them.
 - Run build/og_tags.py --check; abort if any page has missing or stale link-preview
   tags. New pages are the case this catches: without it they ship with no Discord
   unfurl and nothing says so.
@@ -49,6 +53,14 @@ if build_sh_test.exists():
     if result.returncode != 0:
         print('\nCommit aborted: build.sh no longer holds its contract (see FAIL lines above).')
         print('Fix it, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+box_test = Path('build/test_validate_boxscore.py')
+if box_test.exists():
+    result = subprocess.run(['python3', str(box_test)])
+    if result.returncode != 0:
+        print('\nCommit aborted: the box score validator no longer catches what it must.')
+        print('Fix build/validate_boxscore.py, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 og_tags = Path('build/og_tags.py')
