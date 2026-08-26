@@ -280,6 +280,7 @@ These are fetched from nbn-api at runtime, not from flat files in the repo.
 | `GET /api/trade-exceptions` / `GET /api/trade-exceptions/{team}` | `teams/{ABB}/index.html` | `trade-exceptions.json` in NBS_DATA_DIR |
 | `GET /api/cap-history` / `GET /api/cap-history/current` | (no page yet) | `cap-history.jsonl` in NBS_DATA_DIR — a daily row per team: salary on both bases, apron position, hard cap, roster counts |
 | `GET /api/edits` | (no page yet, admin-only) | `edits.jsonl` in NBS_DATA_DIR — the value-level diff of every write that bypasses the ledger |
+| `GET /api/ratings-changes` | `ratings-changes/index.html` | Not a stored file — computed per request by diffing consecutive snapshots in `player-attributes.json` (NBS_DATA_DIR). No separate log to keep in sync; a scrape run that changes nothing produces nothing here |
 
 ## Stats pipeline
 
@@ -433,6 +434,7 @@ precise.
 | Change the contract shorthand (`2+1 PO, $150M`) or the cap-hold vocabulary | **`contract.js`** at the repo root — one grammar, loaded by team pages (via `contractReady` in `team.js`), `/pdc` and `/transactions`. `_contract_str` in `nbn-api/routers/discord_notify.py` is a deliberate Python mirror (it can't import JS) and is pinned to the same cases by `nbn-api/tests/test_contract_shorthand.py`. Don't add a fourth copy |
 | Change the office's contract entry form (salary rows, EAPS, live signing rubric) | `addSalaryRow` / `collectSalaries` / `collectSignValidationBody` — `transactions/index.html`. The signing rubric calls `POST /api/validate/sign` (or `/offer_sheet`, `/sign_pick`) on a 300ms debounce, the same validator the submit path runs. The **EAPS field is not always shown** — `syncEapsVisibility` reveals it off the fact sheet's `trailing_hold` only when it actually prices something (Full Bird hold, season with no real EAPS), and keeps it up once answered so the control that produced the figure doesn't vanish |
 | Change the rookie scale table, or how a pick signing is prefilled | `build/load_rookie_scale.py` (loader) · `rookie-scale/index.html` (page) · `_rookie_scale_contract` + `GET /api/rookie-scale/contract/{slug}` (nbn-api) · `prefillRookieScale` — `transactions/index.html`. See `docs/api-validation-notes.md` |
+| Change the ratings-changes page (OVR/position/attribute/badge diffs from the 2K scrape) | `ratings-changes/index.html` (page, one self-contained file) · `_diff_2k_snapshots` + `GET /api/ratings-changes` — `nbn-api/routers/players.py`. Nothing to write on the scrape side — it diffs `player-attributes.json`'s existing snapshot history on the fly |
 | Add/change an owner's per-player roster move | `makeRosterMoveActions` / `openMovesMenu` — `teams/team.js` (see `docs/roster-moves.md`) |
 | Verify build output still matches what pages read | `build/smoke_test.py` — runs from `build.sh` and the pre-commit hook |
 | Verify a page still *renders* (not just that its columns exist) | `tests/frontend/run.js` — puppeteer, run by hand (`npm ci && node run.js`), deliberately not in the hook. Add a page as one row in `PAGES`; see `tests/frontend/README.md` |

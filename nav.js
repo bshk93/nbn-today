@@ -543,6 +543,7 @@ const SITE_PAGES = [
   { title: 'Awards', href: '/awards/', icon: '🎖️' },
   { title: 'Draft', href: '/draft', icon: '📋' },
   { title: 'Rookie Scale', href: '/rookie-scale/', icon: '📐' },
+  { title: 'Ratings Changes', href: '/ratings-changes/', icon: '📶' },
   { title: 'Teams', href: '/teams', icon: '🏀' },
   { title: 'Players', href: '/players', icon: '⛹️' },
   { title: 'Owners', href: '/owners', icon: '🏛️' },

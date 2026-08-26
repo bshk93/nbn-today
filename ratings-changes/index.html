@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Ratings Changes — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Every OVR, position, attribute and badge change the 2K ratings scrape has picked up, player by player.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Ratings Changes — NBN">
+  <meta property="og:description" content="Every OVR, position, attribute and badge change the 2K ratings scrape has picked up, player by player.">
+  <meta property="og:url" content="https://nbn.today/ratings-changes/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#111827">
+  <!-- /NBN:og -->
+  <style>
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header { margin-bottom: 1.25rem; }
+
+    header h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .search-box {
+      flex: 1;
+      max-width: 320px;
+      padding: 0.45rem 0.7rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+    }
+
+    .search-box:focus { outline: none; border-color: var(--accent); }
+
+    .result-count {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead th {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    thead th .sort-arrow {
+      margin-left: 4px;
+      font-size: 0.65rem;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg-hover); }
+
+    td {
+      padding: 0.6rem 0.75rem;
+      color: var(--text-secondary);
+      vertical-align: top;
+    }
+
+    td.date {
+      white-space: nowrap;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.8rem;
+    }
+
+    td.player-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    td.player-name a { color: inherit; }
+
+    .delta {
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .delta .up { color: var(--market-positive, #22c55e); }
+    .delta .down { color: var(--market-negative, #ef4444); }
+    .muted-cell { color: var(--text-dim); }
+
+    .tag {
+      display: inline-block;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      margin: 0.1rem 0.25rem 0.1rem 0;
+      white-space: nowrap;
+    }
+
+    .tag.gained { background: color-mix(in srgb, var(--market-positive, #22c55e) 18%, transparent); color: var(--market-positive, #22c55e); }
+    .tag.lost { background: color-mix(in srgb, var(--market-negative, #ef4444) 18%, transparent); color: var(--market-negative, #ef4444); }
+    .tag.retiered { background: color-mix(in srgb, var(--accent, #6366f1) 18%, transparent); color: var(--accent-light, #a5b4fc); }
+
+    .attr-details summary {
+      cursor: pointer;
+      list-style: none;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      user-select: none;
+    }
+
+    .attr-details summary::-webkit-details-marker { display: none; }
+    .attr-details summary::before { content: '▶ '; font-size: 0.6rem; }
+    .attr-details[open] summary::before { content: '▼ '; }
+    .attr-details summary:hover { color: var(--text-secondary); }
+
+    .attr-list {
+      margin-top: 0.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      font-size: 0.78rem;
+    }
+
+    .attr-list .attr-row { display: flex; gap: 0.4rem; white-space: nowrap; }
+    .attr-list .attr-key { color: var(--text-muted); min-width: 9rem; }
+
+    #status {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"></nav>
+
+    <header>
+      <h1>Ratings Changes</h1>
+      <p>Every OVR, position, attribute, and badge change the 2K ratings scrape has picked up for a player, since the last time it looked. Built from <code>player-attributes.json</code>'s own snapshot history — nothing here is a separate log, so it covers everything on record, not just changes from today forward.</p>
+    </header>
+
+    <div class="controls">
+      <input class="search-box" id="search" type="text" placeholder="Filter by player…" autocomplete="off" spellcheck="false">
+      <span class="result-count" id="result-count"></span>
+    </div>
+
+    <div class="table-wrap" id="table-wrap">
+      <div id="status">Loading…</div>
+    </div>
+  </div>
+
+  <script>
+    const ATTR_ACRONYMS = { iq: 'IQ' };
+    function attrLabel(key) {
+      if (key === 'three_point_shot') return '3PT Shot';
+      return key.split('_').map(w => ATTR_ACRONYMS[w] || (w.charAt(0).toUpperCase() + w.slice(1))).join(' ');
+    }
+
+    function playerSlugHref(slug) { return `/players/?p=${slug}`; }
+
+    let sortField = 'date';
+    let sortDir = -1;
+    let allEntries = [];
+    let filterText = '';
+    let tbody;
+    const thEls = {};
+
+    const COLS = [
+      { key: 'date',   label: 'Date',   defaultDir: -1 },
+      { key: 'name',   label: 'Player', defaultDir: 1 },
+      { key: 'ovr',    label: 'OVR',    defaultDir: -1, sortable: false },
+      { key: 'position', label: 'Position', sortable: false },
+      { key: 'badges', label: 'Badges', sortable: false },
+      { key: 'attributes', label: 'Attributes', sortable: false },
+    ];
+
+    function sortRows(rows) {
+      return [...rows].sort((a, b) => {
+        const va = a[sortField], vb = b[sortField];
+        if (va < vb) return -sortDir;
+        if (va > vb) return sortDir;
+        return 0;
+      });
+    }
+
+    function ovrCell(entry) {
+      if (!entry.ovr) return document.createTextNode('—');
+      const span = document.createElement('span');
+      span.className = 'delta';
+      const dir = entry.ovr.new > entry.ovr.old ? 'up' : 'down';
+      const arrow = entry.ovr.new > entry.ovr.old ? '▲' : '▼';
+      span.innerHTML = `${entry.ovr.old} → ${entry.ovr.new} <span class="${dir}">${arrow}</span>`;
+      return span;
+    }
+
+    function positionCell(entry) {
+      if (!entry.position) return document.createTextNode('—');
+      const span = document.createElement('span');
+      span.textContent = `${(entry.position.old || []).join('/')} → ${(entry.position.new || []).join('/')}`;
+      return span;
+    }
+
+    function badgesCell(entry) {
+      const frag = document.createDocumentFragment();
+      let any = false;
+      (entry.badges_gained || []).forEach(name => {
+        any = true;
+        const t = document.createElement('span');
+        t.className = 'tag gained';
+        t.textContent = `+ ${name}`;
+        frag.appendChild(t);
+      });
+      (entry.badges_lost || []).forEach(name => {
+        any = true;
+        const t = document.createElement('span');
+        t.className = 'tag lost';
+        t.textContent = `− ${name}`;
+        frag.appendChild(t);
+      });
+      Object.entries(entry.badges_retiered || {}).forEach(([name, d]) => {
+        any = true;
+        const t = document.createElement('span');
+        t.className = 'tag retiered';
+        t.textContent = `${name} ${d.old}→${d.new}`;
+        frag.appendChild(t);
+      });
+      if (!any) frag.appendChild(document.createTextNode('—'));
+      return frag;
+    }
+
+    function attributesCell(entry) {
+      const attrs = entry.attributes;
+      if (!attrs || !Object.keys(attrs).length) return document.createTextNode('—');
+      const keys = Object.keys(attrs);
+      const details = document.createElement('details');
+      details.className = 'attr-details';
+      const summary = document.createElement('summary');
+      summary.textContent = `${keys.length} attr${keys.length === 1 ? '' : 's'} changed`;
+      details.appendChild(summary);
+      const list = document.createElement('div');
+      list.className = 'attr-list';
+      keys.sort((a, b) => attrLabel(a).localeCompare(attrLabel(b))).forEach(key => {
+        const d = attrs[key];
+        const row = document.createElement('div');
+        row.className = 'attr-row';
+        const dir = d.new > d.old ? 'up' : 'down';
+        const arrow = d.new > d.old ? '▲' : '▼';
+        row.innerHTML = `<span class="attr-key">${attrLabel(key)}</span><span class="delta">${d.old} → ${d.new} <span class="${dir}">${arrow}</span></span>`;
+        list.appendChild(row);
+      });
+      details.appendChild(list);
+      return details;
+    }
+
+    function matchesFilter(entry) {
+      if (!filterText) return true;
+      return entry.name.toLowerCase().includes(filterText);
+    }
+
+    function rebuildBody() {
+      const rows = sortRows(allEntries.filter(matchesFilter));
+      document.getElementById('result-count').textContent = `${rows.length.toLocaleString()} change${rows.length === 1 ? '' : 's'}`;
+      tbody.innerHTML = '';
+      if (!rows.length) {
+        const tr = tbody.insertRow();
+        const td = tr.insertCell();
+        td.colSpan = COLS.length;
+        td.className = 'muted-cell';
+        td.style.textAlign = 'center';
+        td.style.padding = '2rem';
+        td.textContent = allEntries.length
+          ? 'No changes match that filter.'
+          : 'No changes recorded yet — every player currently has just one ratings snapshot on file. Changes will appear here once a later scrape (--refresh) picks up a real rating move.';
+        return;
+      }
+      rows.forEach(entry => {
+        const tr = tbody.insertRow();
+
+        const dateTd = tr.insertCell();
+        dateTd.className = 'date';
+        dateTd.textContent = entry.date;
+
+        const nameTd = tr.insertCell();
+        nameTd.className = 'player-name';
+        const a = document.createElement('a');
+        a.href = playerSlugHref(entry.slug);
+        a.textContent = entry.name;
+        nameTd.appendChild(a);
+
+        tr.insertCell().appendChild(ovrCell(entry));
+        tr.insertCell().appendChild(positionCell(entry));
+        tr.insertCell().appendChild(badgesCell(entry));
+        tr.insertCell().appendChild(attributesCell(entry));
+      });
+    }
+
+    function updateHeaders() {
+      COLS.forEach(col => {
+        const th = thEls[col.key];
+        if (!th) return;
+        const arrow = th.querySelector('.sort-arrow');
+        const active = col.key === sortField;
+        if (arrow) arrow.textContent = active ? (sortDir === -1 ? '↓' : '↑') : '';
+      });
+    }
+
+    function buildTable() {
+      const wrap = document.getElementById('table-wrap');
+      const table = document.createElement('table');
+      const thead = table.createTHead();
+      const hr = thead.insertRow();
+      COLS.forEach(col => {
+        const th = document.createElement('th');
+        th.appendChild(document.createTextNode(col.label));
+        if (col.sortable !== false) {
+          const arrow = document.createElement('span');
+          arrow.className = 'sort-arrow';
+          th.appendChild(arrow);
+          th.addEventListener('click', () => {
+            if (sortField === col.key) {
+              sortDir *= -1;
+            } else {
+              sortField = col.key;
+              sortDir = col.defaultDir;
+            }
+            updateHeaders();
+            rebuildBody();
+          });
+        } else {
+          th.style.cursor = 'default';
+        }
+        thEls[col.key] = th;
+        hr.appendChild(th);
+      });
+      tbody = table.createTBody();
+      wrap.innerHTML = '';
+      wrap.appendChild(table);
+      updateHeaders();
+      rebuildBody();
+    }
+
+    document.getElementById('search').addEventListener('input', e => {
+      filterText = e.target.value.trim().toLowerCase();
+      rebuildBody();
+    });
+
+    fetch('/api/ratings-changes')
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(data => {
+        allEntries = data.entries || [];
+        buildTable();
+      })
+      .catch(() => {
+        document.getElementById('table-wrap').innerHTML = '<div id="status">Failed to load data.</div>';
+      });
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>
