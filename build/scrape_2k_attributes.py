@@ -31,7 +31,13 @@ Player selection:
                   their stored source_slug directly (skips all matching --
                   use this to pick up rating changes/updates). Combine with
                   --slugs to refresh only specific players.
-  (default)       Every currently rostered player (data/*-roster.csv).
+  (default)       Every currently rostered player (data/*-roster.csv) plus
+                  every current free agent, via the same pool GET /api/fa/pool
+                  serves to free-agency/index.html (nbn-api's `_fa_pool`) --
+                  reused rather than re-derived. Future-year holds on players
+                  still under contract are excluded (already covered by the
+                  roster set); only players actually signable right now are
+                  added.
 
 Storage format:
   player-attributes.json is keyed by NBN slug -> a LIST of snapshots
@@ -56,12 +62,15 @@ import argparse
 import csv
 import glob
 import json
+import os
 import re
 import time
 import urllib.request
 from pathlib import Path
 
 DATA_DIR = Path("/var/lib/nothing-but-stats")
+# Same convention as build/poopoo.py.
+API_BASE = os.environ.get("NBN_API_BASE", "http://127.0.0.1:8001")
 REPO_DIR = Path("/home/skim/projects/nbn-today")
 OUT_FILE = DATA_DIR / "player-attributes.json"
 BIOS_FILE = DATA_DIR / "player-bios.json"
@@ -175,6 +184,19 @@ def load_roster_slugs():
                 if s:
                     slugs.add(s)
     return slugs
+
+
+def load_fa_pool_slugs():
+    """Current free agents, via the same pool GET /api/fa/pool serves to
+    free-agency/index.html (built by `_fa_pool` in nbn-api's free_agency.py) --
+    reused rather than re-derived so this can't drift from what that page
+    calls a free agent. Only `current: true` entries: the pool also carries
+    future-year holds for players still under contract elsewhere (already
+    covered by load_roster_slugs()), which aren't free agents yet."""
+    req = urllib.request.Request(f"{API_BASE}/api/fa/pool", headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        pool = json.loads(resp.read().decode())
+    return {slug for slug, entry in pool.items() if entry.get("current")}
 
 
 def extract_attributes(html):
@@ -359,8 +381,15 @@ def main():
             targets = [s.strip() for s in args.slugs.split(",") if s.strip()]
             print(f"Matching {len(targets)} specified player(s) (roster membership not required)...")
         else:
-            targets = sorted(load_roster_slugs())
-            print(f"Matching {len(targets)} rostered players...")
+            rostered = load_roster_slugs()
+            try:
+                fa = load_fa_pool_slugs()
+            except Exception as e:
+                print(f"  WARN: failed to fetch FA pool from {API_BASE}: {e}")
+                fa = set()
+            targets = sorted(rostered | fa)
+            print(f"Matching {len(targets)} players ({len(rostered)} rostered + "
+                  f"{len(fa - rostered)} current free agents)...")
         if args.limit:
             targets = targets[: args.limit]
 
