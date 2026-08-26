@@ -122,6 +122,7 @@ PAGES = {
  '/stats/totals/s/': (None, 'NBN career steals leaders.'),
  '/stats/totals/b/': (None, 'NBN career blocks leaders.'),
  '/stats/totals/3pm/': (None, 'NBN career three-point leaders.'),
+ '/skills/': (None, 'The Claude Code commands defined for this project.'),
  '/strikes/': (None, 'The NBN strike record — who has one and what for.'),
  '/suggestions/': (None, 'Suggest a change to NBN, and see what the league thinks of it.'),
  '/teams/': (None, 'All 30 NBN franchises — rosters, salary cap, draft picks and franchise history.'),

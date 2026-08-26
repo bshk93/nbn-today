@@ -23,6 +23,8 @@ any other hook has to live here too rather than in `.git/hooks`.
 - Run build/og_tags.py --check; abort if any page has missing or stale link-preview
   tags. New pages are the case this catches: without it they ship with no Discord
   unfurl and nothing says so.
+- Regenerate skills/manifest.json from .claude/commands/*.md and stage it, so
+  skills/index.html never needs a hand-maintained list of which commands exist.
 - If no changelog entry is pending, nothing user-facing shipped: skip the bump
   entirely. A docs-only commit used to advertise a version /changelog had no
   entry for.
@@ -70,6 +72,11 @@ if og_tags.exists():
         print('\nCommit aborted: link-preview tags are missing or stale.')
         print('Add the page to PAGES in build/og_tags.py, then run: python3 build/og_tags.py')
         sys.exit(1)
+
+skills_manifest = Path('build/gen_skills_manifest.py')
+if skills_manifest.exists():
+    subprocess.run(['python3', str(skills_manifest)])
+    subprocess.run(['git', 'add', 'skills/manifest.json'])
 
 vpath = Path('version.json')
 cpath = Path('changelog.json')
