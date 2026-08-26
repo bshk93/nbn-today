@@ -280,7 +280,7 @@ These are fetched from nbn-api at runtime, not from flat files in the repo.
 | `GET /api/trade-exceptions` / `GET /api/trade-exceptions/{team}` | `teams/{ABB}/index.html` | `trade-exceptions.json` in NBS_DATA_DIR |
 | `GET /api/cap-history` / `GET /api/cap-history/current` | (no page yet) | `cap-history.jsonl` in NBS_DATA_DIR — a daily row per team: salary on both bases, apron position, hard cap, roster counts |
 | `GET /api/edits` | (no page yet, admin-only) | `edits.jsonl` in NBS_DATA_DIR — the value-level diff of every write that bypasses the ledger |
-| `GET /api/ratings-changes` | `ratings-changes/index.html` | Not a stored file — computed per request by diffing consecutive snapshots in `player-attributes.json` (NBS_DATA_DIR). No separate log to keep in sync; a scrape run that changes nothing produces nothing here |
+| `GET /api/ratings-changes` | `ratings-changes/index.html` | Not a stored file — computed per request by diffing consecutive snapshots in `player-attributes.json` (NBS_DATA_DIR). No separate log to keep in sync; a scrape run that changes nothing produces nothing here. Each snapshot's `team` is stamped by the scrape at the time it ran (from `data/*-roster.csv`, never reconstructed from the transaction ledger, which has real backfill gaps) — `null` on snapshots taken before that field existed |
 
 ## Stats pipeline
 

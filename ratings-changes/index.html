@@ -188,7 +188,7 @@
 
     <header>
       <h1>Ratings Changes</h1>
-      <p>Every OVR, position, attribute, and badge change the 2K ratings scrape has picked up for a player, since the last time it looked. Built from <code>player-attributes.json</code>'s own snapshot history — nothing here is a separate log, so it covers everything on record, not just changes from today forward.</p>
+      <p>Every OVR, position, attribute, and badge change the 2K ratings scrape has picked up for a player, since the last time it looked. Built from <code>player-attributes.json</code>'s own snapshot history — nothing here is a separate log, so it covers everything on record, not just changes from today forward. Team is whichever roster the player was actually on at the moment the scrape ran (never reconstructed after the fact) — it shows as "—" for changes recorded before this column existed.</p>
     </header>
 
     <div class="controls">
@@ -221,6 +221,7 @@
       { key: 'date',   label: 'Date',   defaultDir: -1 },
       { key: 'name',   label: 'Player', defaultDir: 1 },
       { key: 'ovr',    label: 'OVR',    defaultDir: -1, sortable: false },
+      { key: 'team',   label: 'Team',   sortable: false },
       { key: 'position', label: 'Position', sortable: false },
       { key: 'badges', label: 'Badges', sortable: false },
       { key: 'attributes', label: 'Attributes', sortable: false },
@@ -239,10 +240,20 @@
       if (!entry.ovr) return document.createTextNode('—');
       const span = document.createElement('span');
       span.className = 'delta';
-      const dir = entry.ovr.new > entry.ovr.old ? 'up' : 'down';
-      const arrow = entry.ovr.new > entry.ovr.old ? '▲' : '▼';
-      span.innerHTML = `${entry.ovr.old} → ${entry.ovr.new} <span class="${dir}">${arrow}</span>`;
+      const diff = entry.ovr.new - entry.ovr.old;
+      const dir = diff > 0 ? 'up' : 'down';
+      const arrow = diff > 0 ? '▲' : '▼';
+      const signed = diff > 0 ? `+${diff}` : `${diff}`;
+      span.innerHTML = `${entry.ovr.old} → ${entry.ovr.new} <span class="${dir}">${arrow} ${signed}</span>`;
       return span;
+    }
+
+    function teamCell(entry) {
+      if (!entry.team) return document.createTextNode('—');
+      const a = document.createElement('a');
+      a.href = `/teams/${entry.team.toLowerCase()}/`;
+      a.textContent = entry.team;
+      return a;
     }
 
     function positionCell(entry) {
@@ -340,6 +351,7 @@
         nameTd.appendChild(a);
 
         tr.insertCell().appendChild(ovrCell(entry));
+        tr.insertCell().appendChild(teamCell(entry));
         tr.insertCell().appendChild(positionCell(entry));
         tr.insertCell().appendChild(badgesCell(entry));
         tr.insertCell().appendChild(attributesCell(entry));

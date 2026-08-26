@@ -44,13 +44,20 @@ Storage format:
   (append-only, oldest first), mirroring ovr-history.json's shape. Each
   snapshot also carries "2k_pos" (list of 2K position abbreviations, e.g.
   ["PG", "SG"], scraped from the page header -- not part of the JSON-LD
-  attribute block) and "badges" (list of {name, tier, category} for every
+  attribute block), "badges" (list of {name, tier, category} for every
   badge the player currently has -- tier is one of Bronze/Silver/Gold/HOF/
-  Legendary). A new snapshot is only appended when the 2K OVR, any
+  Legendary), and "team" (the roster abbr the player is on right now, or
+  null if a free agent -- stamped at scrape time from data/*-roster.csv
+  rather than ever reconstructed later, since the transaction ledger has
+  real backfill gaps for older history; GET /api/ratings-changes reads it
+  straight off each snapshot instead of resolving "team as of date D"
+  itself). A new snapshot is only appended when the 2K OVR, any
   attribute value, the position list, or the badge list has actually
   changed since the last recorded snapshot for that player -- re-running
   --refresh with no real-world rating change is a no-op, so the file only
-  grows when something meaningful happened.
+  grows when something meaningful happened. A team change alone (no rating
+  move) does NOT trigger a new snapshot -- "team" is metadata carried on
+  whatever snapshot a rating change produces, not a tracked field itself.
 
 Writing:
   Dry run by default -- writes a preview JSON to scratch, does not touch
@@ -175,15 +182,22 @@ def build_sitemap_index():
     return index
 
 
-def load_roster_slugs():
-    slugs = set()
-    for f in sorted(glob.glob(str(REPO_DIR / "data" / "*-roster.csv"))):
+def load_roster_team_map():
+    """slug -> team abbr for every currently rostered player, derived from the
+    {abbr}-roster.csv filename. Stamped onto each new snapshot below as "team"
+    -- the team a player is on *right now* is always a fact we know for certain
+    at scrape time, so recording it directly avoids ever having to reconstruct
+    "who was on what team on date D" later from the transaction ledger (which
+    has real backfill gaps for older history)."""
+    team_map = {}
+    for f in sorted(glob.glob(str(DATA_DIR / "*-roster.csv"))):
+        team = Path(f).stem.replace("-roster", "").upper()
         with open(f) as fh:
             for row in csv.DictReader(fh):
                 s = row.get("SLUG", "").strip()
                 if s:
-                    slugs.add(s)
-    return slugs
+                    team_map[s] = team
+    return team_map
 
 
 def load_fa_pool_slugs():
@@ -337,6 +351,8 @@ def main():
     bios = json.loads(BIOS_FILE.read_text())
     existing = json.loads(OUT_FILE.read_text()) if OUT_FILE.exists() else {}
 
+    team_map = load_roster_team_map()
+
     if args.refresh:
         targets = sorted(existing.keys())
         if args.slugs:
@@ -359,7 +375,7 @@ def main():
                     "date": time.strftime("%Y-%m-%d"),
                     "2k_name": name, "2k_ovr": ovr, "2k_pos": positions,
                     "source_slug": twok_slug, "match_method": last["match_method"],
-                    "attributes": attrs, "badges": badges,
+                    "attributes": attrs, "badges": badges, "team": team_map.get(slug),
                 }
             else:
                 failures.append((slug, twok_slug, status))
@@ -381,7 +397,7 @@ def main():
             targets = [s.strip() for s in args.slugs.split(",") if s.strip()]
             print(f"Matching {len(targets)} specified player(s) (roster membership not required)...")
         else:
-            rostered = load_roster_slugs()
+            rostered = set(team_map)
             try:
                 fa = load_fa_pool_slugs()
             except Exception as e:
@@ -414,7 +430,7 @@ def main():
                 "date": time.strftime("%Y-%m-%d"),
                 "2k_name": name, "2k_ovr": ovr, "2k_pos": positions,
                 "source_slug": twok_slug, "match_method": via,
-                "attributes": attrs, "badges": badges,
+                "attributes": attrs, "badges": badges, "team": team_map.get(slug),
             }
             if (i + 1) % 25 == 0:
                 print(f"  ...{i + 1}/{len(targets)} processed")
