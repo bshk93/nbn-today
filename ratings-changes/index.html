@@ -35,12 +35,6 @@
       letter-spacing: -0.02em;
     }
 
-    header p {
-      color: var(--text-muted);
-      margin-top: 0.4rem;
-      font-size: 0.9rem;
-    }
-
     .controls {
       display: flex;
       align-items: center;
@@ -60,6 +54,17 @@
     }
 
     .search-box:focus { outline: none; border-color: var(--accent); }
+
+    .date-select {
+      padding: 0.45rem 0.7rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+    }
+
+    .date-select:focus { outline: none; border-color: var(--accent); }
 
     .result-count {
       color: var(--text-muted);
@@ -110,13 +115,6 @@
       padding: 0.6rem 0.75rem;
       color: var(--text-secondary);
       vertical-align: top;
-    }
-
-    td.date {
-      white-space: nowrap;
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
-      font-size: 0.8rem;
     }
 
     td.player-name {
@@ -188,10 +186,10 @@
 
     <header>
       <h1>Ratings Changes</h1>
-      <p>Every OVR, position, attribute, and badge change the 2K ratings scrape has picked up for a player, since the last time it looked. Built from <code>player-attributes.json</code>'s own snapshot history — nothing here is a separate log, so it covers everything on record, not just changes from today forward. Team is whichever roster the player was actually on at the moment the scrape ran (never reconstructed after the fact) — it shows as "—" for changes recorded before this column existed.</p>
     </header>
 
     <div class="controls">
+      <select class="date-select" id="date-select"></select>
       <input class="search-box" id="search" type="text" placeholder="Filter by player…" autocomplete="off" spellcheck="false">
       <span class="result-count" id="result-count"></span>
     </div>
@@ -210,30 +208,48 @@
 
     function playerSlugHref(slug) { return `/players/?p=${slug}`; }
 
-    let sortField = 'date';
+    let sortField = 'ovr';
     let sortDir = -1;
     let allEntries = [];
     let filterText = '';
+    let selectedDate = '';
     let tbody;
     const thEls = {};
 
     const COLS = [
-      { key: 'date',   label: 'Date',   defaultDir: -1 },
-      { key: 'name',   label: 'Player', defaultDir: 1 },
-      { key: 'ovr',    label: 'OVR',    defaultDir: -1, sortable: false },
-      { key: 'team',   label: 'Team',   sortable: false },
-      { key: 'position', label: 'Position', sortable: false },
-      { key: 'badges', label: 'Badges', sortable: false },
-      { key: 'attributes', label: 'Attributes', sortable: false },
+      { key: 'name',   label: 'Player', defaultDir: 1,  sortValue: e => e.name || '' },
+      { key: 'ovr',    label: 'OVR',    defaultDir: -1, sortValue: e => e.ovr ? (e.ovr.new - e.ovr.old) : -Infinity },
+      { key: 'team',   label: 'Team',   defaultDir: 1,  sortValue: e => e.team || '' },
+      { key: 'position', label: 'Position', defaultDir: 1, sortValue: e => e.position ? (e.position.new || []).join('/') : '' },
+      { key: 'badges', label: 'Badges', defaultDir: -1, sortValue: e => (e.badges_gained || []).length + (e.badges_lost || []).length + Object.keys(e.badges_retiered || {}).length },
+      { key: 'attributes', label: 'Attributes', defaultDir: -1, sortValue: e => Object.keys(e.attributes || {}).length },
     ];
 
     function sortRows(rows) {
+      const col = COLS.find(c => c.key === sortField);
+      const getVal = col ? col.sortValue : e => e[sortField];
       return [...rows].sort((a, b) => {
-        const va = a[sortField], vb = b[sortField];
+        const va = getVal(a), vb = getVal(b);
         if (va < vb) return -sortDir;
         if (va > vb) return sortDir;
         return 0;
       });
+    }
+
+    function populateDateSelect() {
+      const counts = new Map();
+      allEntries.forEach(e => counts.set(e.date, (counts.get(e.date) || 0) + 1));
+      const dates = [...counts.keys()].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
+      const select = document.getElementById('date-select');
+      select.innerHTML = '';
+      dates.forEach(date => {
+        const opt = document.createElement('option');
+        opt.value = date;
+        opt.textContent = `${date} (${counts.get(date).toLocaleString()})`;
+        select.appendChild(opt);
+      });
+      selectedDate = dates[0] || '';
+      select.value = selectedDate;
     }
 
     function ovrCell(entry) {
@@ -316,6 +332,7 @@
     }
 
     function matchesFilter(entry) {
+      if (entry.date !== selectedDate) return false;
       if (!filterText) return true;
       return entry.name.toLowerCase().includes(filterText);
     }
@@ -338,10 +355,6 @@
       }
       rows.forEach(entry => {
         const tr = tbody.insertRow();
-
-        const dateTd = tr.insertCell();
-        dateTd.className = 'date';
-        dateTd.textContent = entry.date;
 
         const nameTd = tr.insertCell();
         nameTd.className = 'player-name';
@@ -408,10 +421,16 @@
       rebuildBody();
     });
 
+    document.getElementById('date-select').addEventListener('change', e => {
+      selectedDate = e.target.value;
+      rebuildBody();
+    });
+
     fetch('/api/ratings-changes')
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(data => {
         allEntries = data.entries || [];
+        populateDateSelect();
         buildTable();
       })
       .catch(() => {
