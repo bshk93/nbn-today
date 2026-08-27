@@ -65,13 +65,18 @@ Writing:
   (existing entries/history for players outside this run's scope are
   preserved; for players in scope, a snapshot is appended only if changed).
 
-  A scraped 2K OVR under STUB_OVR_THRESHOLD (50 -- 2K's own floor for a real
-  rating) still gets its player-attributes.json snapshot appended as normal,
-  but is skipped from the ovr-history.json sync that follows, so a
-  not-yet-rated stub can't clobber the live OVR badge/roster tables with a
-  garbage low number. This is re-checked from scratch on every --apply run,
-  not a persistent exclusion list, so re-running --refresh on an affected
-  player later picks up a real rating the moment 2K assigns one.
+  A snapshot flagged as a not-yet-rated stub -- either the scraped OVR is
+  under STUB_OVR_THRESHOLD (2K's own floor for a real rating), or it moved by
+  DIVERGENCE_THRESHOLD or more with the player's own attribute average
+  essentially unmoved since their last snapshot -- still gets appended to
+  player-attributes.json as normal (carrying "ovr_stub": true, so
+  /ratings-changes can call it out as a record rather than a real change),
+  but is skipped from the ovr-history.json sync that follows, so it can't
+  clobber the live OVR badge/roster tables with a number that isn't real.
+  Both checks are re-evaluated from scratch on every --apply run, not a
+  persistent exclusion list, so re-running --refresh on an affected player
+  later picks up a real rating (and syncs normally) the moment 2K assigns
+  one.
 """
 import argparse
 import csv
@@ -122,6 +127,33 @@ SUFFIX_RE = re.compile(r'\b(JR|SR|II|III|IV)\.?$')
 # assigns a real rating to syncs normally on their very next refresh with no
 # manual un-excluding needed.
 STUB_OVR_THRESHOLD = 50
+
+# A second, more general stub signal: this player's OVR moved by this much or
+# more than their own attribute average moved, since the immediately
+# preceding snapshot. A real rating update moves OVR roughly in proportion to
+# how much the underlying attributes actually moved -- 2K's real OVR formula
+# is position-weighted, not a flat average, so some per-player noise here is
+# normal (confirmed-legitimate Jonathan Kuminga sat at divergence 6.1 on
+# 2026-08-27's run, a real rating decision with no matching attribute move).
+# A not-yet-rated stub instead moves OVR with the attributes essentially
+# frozen, which was a much larger gap for every confirmed-broken case that
+# run (11.8-47.4) -- including several that land well above STUB_OVR_THRESHOLD
+# and so the floor check alone misses (Jonas Valanciunas's OVR crashed
+# 79->64, still nowhere near 50). Set comfortably above the largest
+# confirmed-legitimate divergence seen so far and below the smallest
+# confirmed-broken one. A case landing between the two -- Lonzo Ball and Maxi
+# Kleber that run, divergence 6.2/7.2, both confirmed real-life free agents
+# with their attribute average essentially flat despite a +6 OVR jump -- sits
+# too close to a confirmed-legitimate case (Kuminga, 6.1) for any single
+# number to separate automatically, and needed a human to cross-check the
+# free-agent tag by hand; expect that to recur occasionally rather than
+# raising this threshold to catch it, which would start flagging real moves.
+DIVERGENCE_THRESHOLD = 10
+
+
+def _avg_attrs(attrs):
+    vals = [int(v) for v in attrs.values() if str(v).lstrip("-").isdigit()]
+    return sum(vals) / len(vals) if vals else None
 
 # Manual overrides for name-matching exceptions the automated tiers can't
 # resolve (e.g. acronym-style nicknames that aren't a prefix/suffix of the
@@ -469,6 +501,33 @@ def main():
     print(f"\nPreview written to {preview_path}")
 
     if args.apply:
+        def _is_stub(slug, entry):
+            """(is_stub, reason) -- see STUB_OVR_THRESHOLD / DIVERGENCE_THRESHOLD above."""
+            ovr = entry.get("2k_ovr")
+            try:
+                if int(ovr) < STUB_OVR_THRESHOLD:
+                    return True, f"2K OVR {ovr} looks like a not-yet-rated stub (< {STUB_OVR_THRESHOLD})"
+            except (TypeError, ValueError):
+                pass
+            prior = existing.get(slug, [])
+            if not prior:
+                return False, None
+            last_snap = prior[-1]
+            old_avg = _avg_attrs(last_snap.get("attributes", {}))
+            new_avg = _avg_attrs(entry.get("attributes", {}))
+            try:
+                old_ovr, new_ovr = int(last_snap["2k_ovr"]), int(ovr)
+            except (TypeError, ValueError):
+                return False, None
+            if old_avg is None or new_avg is None:
+                return False, None
+            divergence = (new_ovr - old_ovr) - (new_avg - old_avg)
+            if abs(divergence) >= DIVERGENCE_THRESHOLD:
+                return True, (f"OVR moved {new_ovr - old_ovr:+d} vs an essentially flat attribute "
+                              f"average ({new_avg - old_avg:+.1f}); divergence {divergence:+.1f} "
+                              f">= {DIVERGENCE_THRESHOLD}")
+            return False, None
+
         merged = dict(existing)
         appended, unchanged = 0, 0
         for slug, entry in results.items():
@@ -480,6 +539,11 @@ def main():
                     and last.get("badges") == entry["badges"]):
                 unchanged += 1
                 continue
+            is_stub, stub_reason = _is_stub(slug, entry)
+            entry = dict(entry)
+            entry["ovr_stub"] = is_stub
+            if is_stub:
+                print(f"  STUB {slug}: {stub_reason}")
             if last:
                 changed_attrs = {
                     k: (last["attributes"].get(k), v)
@@ -518,14 +582,14 @@ def main():
             ovr = entry.get("2k_ovr")
             if ovr is None:
                 continue
-            try:
-                if int(ovr) < STUB_OVR_THRESHOLD:
-                    print(f"  SKIPPED ovr-history sync for {slug}: 2K OVR {ovr} looks like a not-yet-rated "
-                          f"stub (< {STUB_OVR_THRESHOLD}); kept last real OVR live")
-                    ovr_skipped_stub += 1
-                    continue
-            except (TypeError, ValueError):
-                pass
+            # Reuse the same stub verdict the append loop above already made and
+            # stored on the snapshot -- an "unchanged" player was never appended
+            # and so was never flagged, but that's fine: its ovr already matches
+            # ovr_history's last entry and the check just below skips it anyway.
+            if merged.get(slug, [{}])[-1].get("ovr_stub"):
+                print(f"  SKIPPED ovr-history sync for {slug}: not-yet-rated stub (kept last real OVR live)")
+                ovr_skipped_stub += 1
+                continue
             ovr_entries = ovr_history.get(slug, [])
             if ovr_entries and ovr_entries[-1]["ovr"] == ovr:
                 continue

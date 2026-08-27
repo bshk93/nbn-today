@@ -178,6 +178,37 @@
       color: var(--text-muted);
       font-size: 0.9rem;
     }
+
+    .stub-section {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px dashed var(--border);
+    }
+
+    .stub-section h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0 0 0.35rem;
+      color: var(--text-secondary);
+    }
+
+    .stub-count {
+      font-weight: 500;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .stub-note {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+      max-width: 70ch;
+      margin: 0 0 0.9rem;
+    }
+
+    .stub-section .table-wrap {
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
@@ -197,6 +228,12 @@
     <div class="table-wrap" id="table-wrap">
       <div id="status">Loading…</div>
     </div>
+
+    <section class="stub-section" id="stub-section" hidden>
+      <h2>Not yet rated <span class="stub-count" id="stub-count"></span></h2>
+      <p class="stub-note">2K hasn't assigned these players a real rating yet — the value shown is a placeholder tied to their real-world team status, not a skill change, so it was kept out of the live OVR badge and roster tables. Recorded here for the log; it'll move into the table above once 2K rates them for real.</p>
+      <div class="table-wrap" id="stub-table-wrap"></div>
+    </section>
   </div>
 
   <script>
@@ -208,13 +245,9 @@
 
     function playerSlugHref(slug) { return `/players/?p=${slug}`; }
 
-    let sortField = 'ovr';
-    let sortDir = -1;
     let allEntries = [];
     let filterText = '';
     let selectedDate = '';
-    let tbody;
-    const thEls = {};
 
     const COLS = [
       { key: 'name',   label: 'Player', defaultDir: 1,  sortValue: e => e.name || '' },
@@ -224,17 +257,6 @@
       { key: 'badges', label: 'Badges', defaultDir: -1, sortValue: e => (e.badges_gained || []).length + (e.badges_lost || []).length + Object.keys(e.badges_retiered || {}).length },
       { key: 'attributes', label: 'Attributes', defaultDir: -1, sortValue: e => Object.keys(e.attributes || {}).length },
     ];
-
-    function sortRows(rows) {
-      const col = COLS.find(c => c.key === sortField);
-      const getVal = col ? col.sortValue : e => e[sortField];
-      return [...rows].sort((a, b) => {
-        const va = getVal(a), vb = getVal(b);
-        if (va < vb) return -sortDir;
-        if (va > vb) return sortDir;
-        return 0;
-      });
-    }
 
     function populateDateSelect() {
       const counts = new Map();
@@ -331,65 +353,84 @@
       return details;
     }
 
-    function matchesFilter(entry) {
-      if (entry.date !== selectedDate) return false;
-      if (!filterText) return true;
-      return entry.name.toLowerCase().includes(filterText);
-    }
+    // One sortable table, reused for the real-changes section and the
+    // not-yet-rated-stub section below it -- same columns, same row markup,
+    // independent sort state and independent row set (split on ovr_stub).
+    function createSection({ wrapId, countId, countLabel, emptyBoth, emptyFiltered, includeEntry }) {
+      let sortField = 'ovr';
+      let sortDir = -1;
+      let tbody;
+      const thEls = {};
 
-    function rebuildBody() {
-      const rows = sortRows(allEntries.filter(matchesFilter));
-      document.getElementById('result-count').textContent = `${rows.length.toLocaleString()} change${rows.length === 1 ? '' : 's'}`;
-      tbody.innerHTML = '';
-      if (!rows.length) {
-        const tr = tbody.insertRow();
-        const td = tr.insertCell();
-        td.colSpan = COLS.length;
-        td.className = 'muted-cell';
-        td.style.textAlign = 'center';
-        td.style.padding = '2rem';
-        td.textContent = allEntries.length
-          ? 'No changes match that filter.'
-          : 'No changes recorded yet — every player currently has just one ratings snapshot on file. Changes will appear here once a later scrape (--refresh) picks up a real rating move.';
-        return;
+      function sortRows(rows) {
+        const col = COLS.find(c => c.key === sortField);
+        const getVal = col ? col.sortValue : e => e[sortField];
+        return [...rows].sort((a, b) => {
+          const va = getVal(a), vb = getVal(b);
+          if (va < vb) return -sortDir;
+          if (va > vb) return sortDir;
+          return 0;
+        });
       }
-      rows.forEach(entry => {
-        const tr = tbody.insertRow();
 
-        const nameTd = tr.insertCell();
-        nameTd.className = 'player-name';
-        const a = document.createElement('a');
-        a.href = playerSlugHref(entry.slug);
-        a.textContent = entry.name;
-        nameTd.appendChild(a);
+      function matchesFilter(entry) {
+        if (entry.date !== selectedDate) return false;
+        if (!includeEntry(entry)) return false;
+        if (!filterText) return true;
+        return entry.name.toLowerCase().includes(filterText);
+      }
 
-        tr.insertCell().appendChild(ovrCell(entry));
-        tr.insertCell().appendChild(teamCell(entry));
-        tr.insertCell().appendChild(positionCell(entry));
-        tr.insertCell().appendChild(badgesCell(entry));
-        tr.insertCell().appendChild(attributesCell(entry));
-      });
-    }
+      function updateHeaders() {
+        COLS.forEach(col => {
+          const th = thEls[col.key];
+          if (!th) return;
+          const arrow = th.querySelector('.sort-arrow');
+          const active = col.key === sortField;
+          if (arrow) arrow.textContent = active ? (sortDir === -1 ? '↓' : '↑') : '';
+        });
+      }
 
-    function updateHeaders() {
-      COLS.forEach(col => {
-        const th = thEls[col.key];
-        if (!th) return;
-        const arrow = th.querySelector('.sort-arrow');
-        const active = col.key === sortField;
-        if (arrow) arrow.textContent = active ? (sortDir === -1 ? '↓' : '↑') : '';
-      });
-    }
+      function rebuildBody() {
+        const rows = sortRows(allEntries.filter(matchesFilter));
+        const countEl = document.getElementById(countId);
+        if (countEl) countEl.textContent = countLabel(rows.length);
+        tbody.innerHTML = '';
+        if (!rows.length) {
+          const tr = tbody.insertRow();
+          const td = tr.insertCell();
+          td.colSpan = COLS.length;
+          td.className = 'muted-cell';
+          td.style.textAlign = 'center';
+          td.style.padding = '2rem';
+          td.textContent = allEntries.length ? emptyFiltered : emptyBoth;
+          return;
+        }
+        rows.forEach(entry => {
+          const tr = tbody.insertRow();
 
-    function buildTable() {
-      const wrap = document.getElementById('table-wrap');
-      const table = document.createElement('table');
-      const thead = table.createTHead();
-      const hr = thead.insertRow();
-      COLS.forEach(col => {
-        const th = document.createElement('th');
-        th.appendChild(document.createTextNode(col.label));
-        if (col.sortable !== false) {
+          const nameTd = tr.insertCell();
+          nameTd.className = 'player-name';
+          const a = document.createElement('a');
+          a.href = playerSlugHref(entry.slug);
+          a.textContent = entry.name;
+          nameTd.appendChild(a);
+
+          tr.insertCell().appendChild(ovrCell(entry));
+          tr.insertCell().appendChild(teamCell(entry));
+          tr.insertCell().appendChild(positionCell(entry));
+          tr.insertCell().appendChild(badgesCell(entry));
+          tr.insertCell().appendChild(attributesCell(entry));
+        });
+      }
+
+      function build() {
+        const wrap = document.getElementById(wrapId);
+        const table = document.createElement('table');
+        const thead = table.createTHead();
+        const hr = thead.insertRow();
+        COLS.forEach(col => {
+          const th = document.createElement('th');
+          th.appendChild(document.createTextNode(col.label));
           const arrow = document.createElement('span');
           arrow.className = 'sort-arrow';
           th.appendChild(arrow);
@@ -403,27 +444,56 @@
             updateHeaders();
             rebuildBody();
           });
-        } else {
-          th.style.cursor = 'default';
-        }
-        thEls[col.key] = th;
-        hr.appendChild(th);
-      });
-      tbody = table.createTBody();
-      wrap.innerHTML = '';
-      wrap.appendChild(table);
-      updateHeaders();
-      rebuildBody();
+          thEls[col.key] = th;
+          hr.appendChild(th);
+        });
+        tbody = table.createTBody();
+        wrap.innerHTML = '';
+        wrap.appendChild(table);
+        updateHeaders();
+        rebuildBody();
+      }
+
+      return { build, rebuildBody };
+    }
+
+    const mainSection = createSection({
+      wrapId: 'table-wrap',
+      countId: 'result-count',
+      countLabel: n => `${n.toLocaleString()} change${n === 1 ? '' : 's'}`,
+      emptyBoth: 'No changes recorded yet — every player currently has just one ratings snapshot on file. Changes will appear here once a later scrape (--refresh) picks up a real rating move.',
+      emptyFiltered: 'No changes match that filter.',
+      includeEntry: e => !e.ovr_stub,
+    });
+
+    const stubSection = createSection({
+      wrapId: 'stub-table-wrap',
+      countId: 'stub-count',
+      countLabel: n => n ? `(${n.toLocaleString()})` : '',
+      emptyBoth: 'None for this date.',
+      emptyFiltered: 'No entries match that filter.',
+      includeEntry: e => !!e.ovr_stub,
+    });
+
+    function updateStubVisibility() {
+      const stubCountForDate = allEntries.filter(e => e.date === selectedDate && e.ovr_stub).length;
+      document.getElementById('stub-section').hidden = stubCountForDate === 0;
+    }
+
+    function rebuildAll() {
+      mainSection.rebuildBody();
+      stubSection.rebuildBody();
+      updateStubVisibility();
     }
 
     document.getElementById('search').addEventListener('input', e => {
       filterText = e.target.value.trim().toLowerCase();
-      rebuildBody();
+      rebuildAll();
     });
 
     document.getElementById('date-select').addEventListener('change', e => {
       selectedDate = e.target.value;
-      rebuildBody();
+      rebuildAll();
     });
 
     fetch('/api/ratings-changes')
@@ -431,7 +501,9 @@
       .then(data => {
         allEntries = data.entries || [];
         populateDateSelect();
-        buildTable();
+        mainSection.build();
+        stubSection.build();
+        updateStubVisibility();
       })
       .catch(() => {
         document.getElementById('table-wrap').innerHTML = '<div id="status">Failed to load data.</div>';

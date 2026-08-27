@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.122",
+    "date": "2026-08-27",
+    "changes": [
+      "2K scrape: catch not-yet-rated stubs whose OVR moved far more than their attributes did, not just ones landing under 50; flag them (ovr_stub) instead of recomputing per-caller",
+      "/ratings-changes: split not-yet-rated stub entries into their own section instead of mixing them into the real changes"
+    ]
+  },
+  {
     "version": "0.1.121",
     "date": "2026-08-27",
     "changes": [
