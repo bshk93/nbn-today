@@ -221,6 +221,7 @@
 
     <div class="controls">
       <select class="date-select" id="date-select"></select>
+      <select class="date-select" id="team-select"></select>
       <input class="search-box" id="search" type="text" placeholder="Filter by player…" autocomplete="off" spellcheck="false">
       <span class="result-count" id="result-count"></span>
     </div>
@@ -248,6 +249,8 @@
     let allEntries = [];
     let filterText = '';
     let selectedDate = '';
+    let selectedTeam = '';
+    const NO_TEAM = '__fa__';
 
     const COLS = [
       { key: 'name',   label: 'Player', defaultDir: 1,  sortValue: e => e.name || '' },
@@ -272,6 +275,32 @@
       });
       selectedDate = dates[0] || '';
       select.value = selectedDate;
+    }
+
+    function populateTeamSelect() {
+      const teams = new Set();
+      let faCount = 0;
+      allEntries.forEach(e => e.team ? teams.add(e.team) : faCount++);
+      const select = document.getElementById('team-select');
+      select.innerHTML = '';
+      const allOpt = document.createElement('option');
+      allOpt.value = '';
+      allOpt.textContent = 'All teams';
+      select.appendChild(allOpt);
+      [...teams].sort().forEach(team => {
+        const opt = document.createElement('option');
+        opt.value = team;
+        opt.textContent = team;
+        select.appendChild(opt);
+      });
+      if (faCount) {
+        const faOpt = document.createElement('option');
+        faOpt.value = NO_TEAM;
+        faOpt.textContent = 'Free agent';
+        select.appendChild(faOpt);
+      }
+      selectedTeam = '';
+      select.value = selectedTeam;
     }
 
     function ovrCell(entry) {
@@ -376,6 +405,11 @@
       function matchesFilter(entry) {
         if (entry.date !== selectedDate) return false;
         if (!includeEntry(entry)) return false;
+        if (selectedTeam === NO_TEAM) {
+          if (entry.team) return false;
+        } else if (selectedTeam && entry.team !== selectedTeam) {
+          return false;
+        }
         if (!filterText) return true;
         return entry.name.toLowerCase().includes(filterText);
       }
@@ -496,11 +530,17 @@
       rebuildAll();
     });
 
+    document.getElementById('team-select').addEventListener('change', e => {
+      selectedTeam = e.target.value;
+      rebuildAll();
+    });
+
     fetch('/api/ratings-changes')
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(data => {
         allEntries = data.entries || [];
         populateDateSelect();
+        populateTeamSelect();
         mainSection.build();
         stubSection.build();
         updateStubVisibility();
