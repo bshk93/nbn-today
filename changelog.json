@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.1.120",
+    "date": "2026-08-27",
+    "changes": [
+      "2K ratings scrape: skip syncing a not-yet-rated stub OVR (below 50) into the live ovr-history.json, while still recording it on /ratings-changes"
+    ]
+  },
+  {
     "version": "0.1.119",
     "date": "2026-08-26",
     "changes": [

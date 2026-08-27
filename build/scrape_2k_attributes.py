@@ -64,6 +64,14 @@ Writing:
   NBS_DATA_DIR. Pass --apply to merge results into the real output file
   (existing entries/history for players outside this run's scope are
   preserved; for players in scope, a snapshot is appended only if changed).
+
+  A scraped 2K OVR under STUB_OVR_THRESHOLD (50 -- 2K's own floor for a real
+  rating) still gets its player-attributes.json snapshot appended as normal,
+  but is skipped from the ovr-history.json sync that follows, so a
+  not-yet-rated stub can't clobber the live OVR badge/roster tables with a
+  garbage low number. This is re-checked from scratch on every --apply run,
+  not a persistent exclusion list, so re-running --refresh on an affected
+  player later picks up a real rating the moment 2K assigns one.
 """
 import argparse
 import csv
@@ -101,6 +109,19 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 
 REQUEST_DELAY = 1.3  # seconds between live requests, be polite
 SUFFIX_RE = re.compile(r'\b(JR|SR|II|III|IV)\.?$')
+
+# 2K doesn't issue real OVRs below this -- a scraped value under it means the
+# player has no confirmed real-world team on 2K's books yet (seen first
+# 2026-08-27, at the 2K27 edition switchover: every sub-50 case that run also
+# showed a large mismatch between OVR and the player's own individual
+# attributes, which stayed at plausible real values). Such a snapshot still
+# gets appended to player-attributes.json unconditionally, so /ratings-changes
+# keeps a full dated record -- only the ovr-history.json sync below (which
+# drives the live OVR badge/roster tables) skips it. This is checked fresh
+# against each new scrape, not a persistent slug list, so a player 2K later
+# assigns a real rating to syncs normally on their very next refresh with no
+# manual un-excluding needed.
+STUB_OVR_THRESHOLD = 50
 
 # Manual overrides for name-matching exceptions the automated tiers can't
 # resolve (e.g. acronym-style nicknames that aren't a prefix/suffix of the
@@ -492,11 +513,19 @@ def main():
         # Keep the site's OVR badge / roster tables (ovr-history.json, via
         # GET /api/ovr/current) in sync -- 2K is the authoritative OVR now.
         ovr_history = json.loads(OVR_HISTORY_FILE.read_text()) if OVR_HISTORY_FILE.exists() else {}
-        ovr_synced = 0
+        ovr_synced, ovr_skipped_stub = 0, 0
         for slug, entry in results.items():
             ovr = entry.get("2k_ovr")
             if ovr is None:
                 continue
+            try:
+                if int(ovr) < STUB_OVR_THRESHOLD:
+                    print(f"  SKIPPED ovr-history sync for {slug}: 2K OVR {ovr} looks like a not-yet-rated "
+                          f"stub (< {STUB_OVR_THRESHOLD}); kept last real OVR live")
+                    ovr_skipped_stub += 1
+                    continue
+            except (TypeError, ValueError):
+                pass
             ovr_entries = ovr_history.get(slug, [])
             if ovr_entries and ovr_entries[-1]["ovr"] == ovr:
                 continue
@@ -510,7 +539,7 @@ def main():
             ovr_history[slug] = ovr_entries
             ovr_synced += 1
         OVR_HISTORY_FILE.write_text(json.dumps(ovr_history, indent=2))
-        print(f"Synced {ovr_synced} OVR change(s) into {OVR_HISTORY_FILE}")
+        print(f"Synced {ovr_synced} OVR change(s) into {OVR_HISTORY_FILE} ({ovr_skipped_stub} stub entries skipped)")
     else:
         print("Dry run only -- rerun with --apply to merge into NBS_DATA_DIR/player-attributes.json")
 
