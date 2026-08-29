@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last reviewed: **2026-08-29** — **35 open items**: 8 P1, 10 P2, 12 P3, plus 5
+Last reviewed: **2026-08-29** — **34 open items**: 8 P1, 10 P2, 11 P3, plus 5
 nice-to-haves. (No version pin here on purpose: it went stale within two
 commits of being written. The date is what matters.)
 
@@ -292,21 +292,40 @@ direction check or its cross-check against signed contracts, so 2024 stays out
 until this is settled and re-running it will pick the year up automatically
 once the sheet is fixed. Nothing to change in code.
 
-### [P3] 48MB of June 1 copies left by the retired stats mirror
-Found 2026-08-19 closing Phase 2 item 13. `stats.nbn.today` is **already dead** —
-its vhost sits in `sites-available` unenabled, the host does not resolve, and
-nothing in the site links to it. `/var/www/stats.nbn.today/files/` still holds
-184 files (48MB) from June 1.
+### [P3] Two empty directories left where the retired stats mirror was
+The 184 files (48MB) in `/var/www/stats.nbn.today/files/` were **deleted
+2026-08-29**, after re-verifying rather than trusting the 2026-08-19 check.
+Disk went 66% → 66% (it was never the problem); the data dir separately went
+109MB → 71MB in the same sweep.
 
-Verified before filing this: 11 of the 12 `allstats-*.csv` there are exact byte
-prefixes of the live files, and the twelfth (`allstats-playoffs-26.csv`) is a
-CRLF-converted, pre-round-fix, 1,400-row copy whose original is kept as
-`.bak-round-fix` in the data dir. **Nothing there is unique.**
+Two things the original entry got wrong, both worth knowing because the same
+reasoning will come up again:
 
-Left in place deliberately — the dev-deploy spec's rule is that a copy of the
-unrebuildable data is never deleted on a judgement call, and 48MB on a disk at
-61% is not urgent. This is a disk-space cleanup for whenever someone wants it,
-not a data question. Same "which one is real?" trap as the entry below.
+- **"The host does not resolve" was false.** `stats.nbn.today` resolves to the
+  box today. What is true is that no vhost is enabled for it, so it falls
+  through to the default server, and `/files/…` **404s** — the mirror was
+  unreachable, which is the fact that mattered. Check what a host *serves*, not
+  whether it resolves.
+- **"Exact byte prefixes of the live files" no longer held.** `allstats-24-25.csv`
+  differed by one byte, because the DEN Holiday correction landed in the middle
+  of it on 2026-08-26. A byte comparison would have read that as divergence.
+
+What replaced it is the check worth reusing: parse both sides and compare on
+the **stat line** (team, date, and the 16 counting stats) rather than on bytes
+or on the player name. Across all 12 raw files plus the mirror's `allstats.csv`
+— 157,221 rows — **zero rows the live corpus lacks**, with the only differences
+being the two names you had already corrected. Of the other 172 files, 171 had
+a live counterpart under the data-dir root or `derived/`; the one that didn't
+was `allstats.csv`, deleted from the data dir the same day and verified the
+same way.
+
+**What is left is cosmetic:** `files/` and its parent are still there, empty.
+`files/` is skim-owned so its contents went without sudo, but the parent
+`/var/www/stats.nbn.today` is root-owned:
+
+    sudo rmdir /var/www/stats.nbn.today/files /var/www/stats.nbn.today
+
+The unenabled vhost in `sites-available` can go with them.
 
 ### [P3] Two `photo_url` oddities left — an inline data URI and a dead imgur link
 Split out 2026-08-29 when the nine `"NA"` bios that this entry was about were
@@ -337,79 +356,6 @@ What is left is two one-offs in the same field, neither of them our defect:
   it, correctly — but it is a broken image on two real pages.
 
 Both are worth normalising if anyone is in that field anyway. Neither is urgent.
-
-### [P3] Stale backups in NBS_DATA_DIR — all verified, nothing left but the delete
-`player-bios.json.bak` ×4, the two slug-re-key passes
-(`*.bak-rekey29-20260816-130436` and `*.bak-rekey2-20260824-010951`, ~40 files
-between them), `allstats.csv`, `tokens.json`, `rules/`, and
-`allstats-playoffs-26.csv.bak-round-fix`. A "which one is real?" trap.
-
-**The old blocker was lifted 2026-08-24.** This entry said "don't clear these
-until real backups exist", and real backups have existed since 2026-08-18 —
-`/var/lib/nbs-backup.git` snapshots every 10 minutes and pushes off-site. Note
-none of these files are *in* that repo (checked 2026-08-29: zero `.bak` files
-tracked, and `tokens.json`, `allstats.csv` and `rules/` untracked), so deleting
-them is one-way. That is the point — the files they shadow are the backed-up
-ones.
-
-**Each was verified on 2026-08-29 rather than taken on faith**, which changed
-the answer for two of them:
-
-- **`allstats.csv` (27MB, Jun 1) is safe.** A pre-split combined snapshot:
-  157,221 rows, and against all 13 live raw files **zero rows the live corpus
-  lacks**. 433 rows looked absent on a name-keyed comparison and all 433 are
-  normalisations the live files have since applied — `BAMBA, MOHAMED`→`BAMBA,
-  MO`, plus `THOMAS, CAM`, `FREEDOM, ENES`, `REDDISH, CAM`, `PIPPEN, SCOTTY`
-  and 13 more, identical stat lines under both names. Compare on the stat line,
-  not the name, or this file reads as unique when it isn't.
-- **`tokens.json` is safe.** `TOKENS_FILE` is defined in
-  `routers/constants.py` and read by nothing; auth resolves bearer tokens out
-  of `members.json` via `_resolve_token`. `backup_to_drive.py` already excludes
-  it.
-- **`rules/` was NOT safe, and this entry was wrong to say nothing reads it.**
-  Three live endpoints did — `GET /api/rules`, `GET /api/rules/{slug}` and
-  `PUT /api/rules/{slug}` (`routers/roster_picks.py`, via `RULES_DIR`) — and
-  `GET /api/rules/trades` was returning real retired rule text on production,
-  a second and staler answer to "what are the rules" than the document that is
-  supposed to be canonical. Same shape as the box score parse endpoint: dead to
-  users, live to the API. **All three were deleted 2026-08-29** (nbn-api
-  `fe4f240`, along with `RULES_DIR` and `_rules_lock`), so the directory is now
-  safe to remove with the rest. Deleting it first would have left `GET`
-  answering `content: ""` instead of 404.
-- **`allstats-playoffs-26.csv.bak-round-fix` (182KB) is held back on purpose.**
-  It is the pre-round-fix state of a raw, unrebuildable playoff file, from
-  before the backup repo existed, so that state exists nowhere else. The
-  dev-deploy spec's rule is that a copy of unrebuildable data is never deleted
-  on a judgement call, and 182KB is not worth making one. Listed here so nobody
-  re-files it as an oversight.
-
-So everything here is cleared to delete except one file: the ~40 re-key
-backups, the 4 `player-bios.json` backups, `allstats.csv`, `tokens.json` and
-`rules/` — roughly 30MB. Only `allstats-playoffs-26.csv.bak-round-fix` stays.
-
-    rm -f /var/lib/nothing-but-stats/*.bak-rekey29-* \
-          /var/lib/nothing-but-stats/*.bak-rekey2-* \
-          /var/lib/nothing-but-stats/player-bios.json.bak* \
-          /var/lib/nothing-but-stats/allstats.csv \
-          /var/lib/nothing-but-stats/tokens.json
-    rm -rf /var/lib/nothing-but-stats/rules
-
-Note `player-bios.json.bak*` there also matches the `-draftrights`,
-`-draftteam-*` and `-renounce-fix-*` copies, which is intended — but it would
-match a *new* bio backup too, so check what it expands to before running it.
-
-**Not to be confused with the 86 root-level derived copies, which were removed
-2026-08-19.** The data-dir root also held a complete shadow set of the build's
-86 outputs (`league-history.csv`, `hof.csv`, `{abbr}-seasons.csv`, …) left by the
-last R run before the cutover — the build writes to `derived/` and had stopped
-maintaining them. Nothing read them: `public/` resolved every one into
-`derived/`, no code path referenced a root copy, and the data dir's own
-`.gitignore` names them, so they were never in the backup set. They were an
-active trap rather than dead weight — the classics skill was reading the root
-`league-history.csv` and would have reported eleven 20-21 champions. Different
-class from the entries above, which are the *only* copies of unrebuildable
-state; these were regenerable in 35s and both engines honour `NBN_OUT_DIR`, so
-neither the Python path nor the R rollback recreates them.
 
 ---
 

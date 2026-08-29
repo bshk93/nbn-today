@@ -311,6 +311,12 @@ Stats flow from game submission to the live site in one automated step:
 **Stays in `/var/lib/nothing-but-stats/` (written by the API, read by the build):**
 - `allstats-{YY-YY}.csv` — raw game-level rows for each regular season
 - `allstats-playoffs-{YY}.csv` — raw playoff rows
+- `allstats-playoffs-26.csv.bak-round-fix` — **kept on purpose, do not sweep it.**
+  The pre-round-fix state of that playoff file, from before `nbs-backup.git`
+  existed (2026-08-18), so it is the only copy of that state anywhere. Every
+  other stale `.bak` in this directory was deleted 2026-08-29; this one was held
+  back because the rule below is that a copy of unrebuildable data is never
+  deleted on a judgement call, and 182KB is not worth making one.
 
 > These two are the only files on the box that cannot be rebuilt, and they are
 > **append-only by contract**: the API writes them through
