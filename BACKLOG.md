@@ -20,16 +20,30 @@ which made the same list read as both done and open; it is not coming back.
 
 ## 1. Data integrity / open reconciliation
 
-### [P1] Plaintext GitHub token in the retired Shiny checkout
-`/srv/shiny/nothing-but-stats/.git/config` has `origin` set to
+### [P1] The leaked GitHub PAT still needs rotating — it is off disk, not revoked
+`/srv/shiny/nothing-but-stats/.git/config` had `origin` set to
 `https://ghp_…@github.com/bshk93/nothing-but-stats` — a personal access token
-in plaintext, still valid on the account. Flagged 2026-08-18, unanswered,
-re-confirmed present 2026-08-19. The project is retired; rotate the token and
-switch that remote to SSH (or delete it).
+in plaintext. Flagged 2026-08-18, re-confirmed 2026-08-19, still present when
+checked again **2026-08-29**, eleven days later.
 
-### [P1] Three 24-25 games list one player twice — one row in each is someone else
-Found 2026-08-26 by `stats_build/checks.py` on its first run over the corpus.
-Three team-games carry the same player name twice with **different** stat lines:
+**The remote was switched to SSH on 2026-08-29**, so the token is no longer in
+any `.git/config` on the box. A sweep of every checkout that day —
+`nbn-today`, `nbn-today-dev`, `nbn-api`, `nbn-api-dev`, `nothing-but-stats`,
+`footballgm`, `dota2gm` — found this was the only one; the rest were already
+SSH.
+
+**What is left is the part that matters: the token is still valid on the
+account and has to be rotated on GitHub.** Taking it off disk does not revoke
+it, and it was readable for months. It also reached at least two Claude Code
+session transcripts under `~/.claude/projects/` (2026-08-29 and an earlier
+one), which are not something to scrub — another reason the fix is revocation,
+not deletion. Same class as the four webhooks rotated 2026-08-27.
+
+### [P1] One 24-25 game still lists a player twice — CLE/Hartenstein, unresolved
+Found 2026-08-26 by `stats_build/checks.py` on its first run over the corpus,
+as three team-games carrying the same player name twice with **different** stat
+lines. Two are fixed (see below); the CLE one is what is left, and the other two
+are kept here because their reasoning is what a fix for the third would follow:
 
 | File | Team | Date | Name | The two lines |
 |---|---|---|---|---|
@@ -80,10 +94,21 @@ the only record of why a hand-corrected row differs from what was parsed.
       --where TEAM=DEN DATE=2024-10-29 "PLAYER=HOLIDAY, JRUE" M=3 \
       --set "PLAYER=HOLIDAY, AARON" --reason "..."     # add --apply to write
 
-Both confident fixes still need an explicit go-ahead. Rebuild afterwards — the
-derived files hold the old value until then.
+**Two of the three were applied on 2026-08-26** and this entry did not say so
+until 2026-08-29 — `allstats-edits.jsonl` records both, with the reasoning
+above as the `--reason`. DEN 2024-10-29 now reads `HOLIDAY, AARON` on the
+3min/3pt line; DAL 2025-03-29 now reads `WALTER, JAKOBE` on the 22min/7pt one.
+Re-checked league-wide on 2026-08-29 across all 13 raw files: **exactly one
+team-game still lists a player twice**, the CLE one.
 
-Until they are resolved, `check_stats_integrity` reports all three every week.
+So what is actually open is the third case alone, and it is open because it is
+genuinely unresolved rather than un-actioned — there is no second Hartenstein
+in 24-25, and the candidate list above (Garland or Haliburton fit the line
+best) is inference, not evidence. It needs a person to decide, or to stay as
+it is.
+
+`check_stats_integrity` reports it weekly until then. Rebuild after any fix —
+the derived files hold the old value until one runs.
 
 ### [P2] The data backup carries live credentials, and its history keeps them
 Found 2026-08-19 while building the off-site tarball. `bshk93/nbn-data` is
@@ -313,21 +338,53 @@ What is left is two one-offs in the same field, neither of them our defect:
 
 Both are worth normalising if anyone is in that field anyway. Neither is urgent.
 
-### [P3] Stale backups in NBS_DATA_DIR
-`player-bios.json.bak` ×4, `allstats-playoffs-26.csv.bak-round-fix`,
-`allstats.csv`, `tokens.json`, and `rules/` (retired per CLAUDE.md, 8 files
-still on disk). Nothing reads them; they're a "which one is real?" trap.
+### [P3] Stale backups in NBS_DATA_DIR — verified, cleared to delete except `rules/`
+`player-bios.json.bak` ×4, the two slug-re-key passes
+(`*.bak-rekey29-20260816-130436` and `*.bak-rekey2-20260824-010951`, ~40 files
+between them), `allstats.csv`, `tokens.json`, `rules/`, and
+`allstats-playoffs-26.csv.bak-round-fix`. A "which one is real?" trap.
 
-**That blocker is lifted as of 2026-08-24.** This entry said "don't clear these
+**The old blocker was lifted 2026-08-24.** This entry said "don't clear these
 until real backups exist", and real backups have existed since 2026-08-18 —
-`/var/lib/nbs-backup.git` snapshots every 10 minutes and pushes off-site, so
-`player-bios.json` now has proper history and these `.bak` files are no longer
-the only copies of it on the machine. Clearing them is a decision someone can
-just make now, not something waiting on other work.
+`/var/lib/nbs-backup.git` snapshots every 10 minutes and pushes off-site. Note
+none of these files are *in* that repo (checked 2026-08-29: zero `.bak` files
+tracked, and `tokens.json`, `allstats.csv` and `rules/` untracked), so deleting
+them is one-way. That is the point — the files they shadow are the backed-up
+ones.
 
-**13 more were added 2026-08-24** (`*.bak-rekey2-20260824-010951`) by the slug
-re-key, on the same principle the 2026-08-16 pass used. Sweep them with the
-rest once the re-key is trusted.
+**Each was verified on 2026-08-29 rather than taken on faith**, which changed
+the answer for two of them:
+
+- **`allstats.csv` (27MB, Jun 1) is safe.** A pre-split combined snapshot:
+  157,221 rows, and against all 13 live raw files **zero rows the live corpus
+  lacks**. 433 rows looked absent on a name-keyed comparison and all 433 are
+  normalisations the live files have since applied — `BAMBA, MOHAMED`→`BAMBA,
+  MO`, plus `THOMAS, CAM`, `FREEDOM, ENES`, `REDDISH, CAM`, `PIPPEN, SCOTTY`
+  and 13 more, identical stat lines under both names. Compare on the stat line,
+  not the name, or this file reads as unique when it isn't.
+- **`tokens.json` is safe.** `TOKENS_FILE` is defined in
+  `routers/constants.py` and read by nothing; auth resolves bearer tokens out
+  of `members.json` via `_resolve_token`. `backup_to_drive.py` already excludes
+  it.
+- **`rules/` is NOT safe, and this entry was wrong to say nothing reads it.**
+  Three live endpoints do — `GET /api/rules`, `GET /api/rules/{slug}` and
+  `PUT /api/rules/{slug}` (`routers/roster_picks.py`, via `RULES_DIR`) — and
+  `GET /api/rules/trades` returns real retired rule text on production today.
+  No page consumes them, so this is the same shape as the box score parse
+  endpoint: dead to users, live to the API, and serving content that
+  contradicts `rulebook/index.html`, which CLAUDE.md calls the single source of
+  truth. **Delete the three endpoints and the directory together** — dropping
+  the directory alone just leaves `GET` answering `content: ""`.
+- **`allstats-playoffs-26.csv.bak-round-fix` (182KB) is held back on purpose.**
+  It is the pre-round-fix state of a raw, unrebuildable playoff file, from
+  before the backup repo existed, so that state exists nowhere else. The
+  dev-deploy spec's rule is that a copy of unrebuildable data is never deleted
+  on a judgement call, and 182KB is not worth making one. Listed here so nobody
+  re-files it as an oversight.
+
+So the ~40 re-key backups, the 4 `player-bios.json` backups, `allstats.csv` and
+`tokens.json` are cleared to delete (~30MB). `rules/` wants the endpoint change
+first; the round-fix copy stays.
 
 **Not to be confused with the 86 root-level derived copies, which were removed
 2026-08-19.** The data-dir root also held a complete shadow set of the build's
