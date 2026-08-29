@@ -338,7 +338,7 @@ What is left is two one-offs in the same field, neither of them our defect:
 
 Both are worth normalising if anyone is in that field anyway. Neither is urgent.
 
-### [P3] Stale backups in NBS_DATA_DIR — verified, cleared to delete except `rules/`
+### [P3] Stale backups in NBS_DATA_DIR — all verified, nothing left but the delete
 `player-bios.json.bak` ×4, the two slug-re-key passes
 (`*.bak-rekey29-20260816-130436` and `*.bak-rekey2-20260824-010951`, ~40 files
 between them), `allstats.csv`, `tokens.json`, `rules/`, and
@@ -366,15 +366,16 @@ the answer for two of them:
   `routers/constants.py` and read by nothing; auth resolves bearer tokens out
   of `members.json` via `_resolve_token`. `backup_to_drive.py` already excludes
   it.
-- **`rules/` is NOT safe, and this entry was wrong to say nothing reads it.**
-  Three live endpoints do — `GET /api/rules`, `GET /api/rules/{slug}` and
+- **`rules/` was NOT safe, and this entry was wrong to say nothing reads it.**
+  Three live endpoints did — `GET /api/rules`, `GET /api/rules/{slug}` and
   `PUT /api/rules/{slug}` (`routers/roster_picks.py`, via `RULES_DIR`) — and
-  `GET /api/rules/trades` returns real retired rule text on production today.
-  No page consumes them, so this is the same shape as the box score parse
-  endpoint: dead to users, live to the API, and serving content that
-  contradicts `rulebook/index.html`, which CLAUDE.md calls the single source of
-  truth. **Delete the three endpoints and the directory together** — dropping
-  the directory alone just leaves `GET` answering `content: ""`.
+  `GET /api/rules/trades` was returning real retired rule text on production,
+  a second and staler answer to "what are the rules" than the document that is
+  supposed to be canonical. Same shape as the box score parse endpoint: dead to
+  users, live to the API. **All three were deleted 2026-08-29** (nbn-api
+  `fe4f240`, along with `RULES_DIR` and `_rules_lock`), so the directory is now
+  safe to remove with the rest. Deleting it first would have left `GET`
+  answering `content: ""` instead of 404.
 - **`allstats-playoffs-26.csv.bak-round-fix` (182KB) is held back on purpose.**
   It is the pre-round-fix state of a raw, unrebuildable playoff file, from
   before the backup repo existed, so that state exists nowhere else. The
@@ -382,9 +383,20 @@ the answer for two of them:
   on a judgement call, and 182KB is not worth making one. Listed here so nobody
   re-files it as an oversight.
 
-So the ~40 re-key backups, the 4 `player-bios.json` backups, `allstats.csv` and
-`tokens.json` are cleared to delete (~30MB). `rules/` wants the endpoint change
-first; the round-fix copy stays.
+So everything here is cleared to delete except one file: the ~40 re-key
+backups, the 4 `player-bios.json` backups, `allstats.csv`, `tokens.json` and
+`rules/` — roughly 30MB. Only `allstats-playoffs-26.csv.bak-round-fix` stays.
+
+    rm -f /var/lib/nothing-but-stats/*.bak-rekey29-* \
+          /var/lib/nothing-but-stats/*.bak-rekey2-* \
+          /var/lib/nothing-but-stats/player-bios.json.bak* \
+          /var/lib/nothing-but-stats/allstats.csv \
+          /var/lib/nothing-but-stats/tokens.json
+    rm -rf /var/lib/nothing-but-stats/rules
+
+Note `player-bios.json.bak*` there also matches the `-draftrights`,
+`-draftteam-*` and `-renounce-fix-*` copies, which is intended — but it would
+match a *new* bio backup too, so check what it expands to before running it.
 
 **Not to be confused with the 86 root-level derived copies, which were removed
 2026-08-19.** The data-dir root also held a complete shadow set of the build's
