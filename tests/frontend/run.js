@@ -72,6 +72,10 @@ const PAGES = [
   { path: '/draft/',                  selector: 'table tbody tr',  min: 30, what: 'draft history' },
   { path: '/boxscores/',              selector: 'table tbody tr',  min: 5,  what: 'recent box scores' },
   { path: '/cap-summary/',            selector: 'table tbody tr',  min: 30, what: 'a row per team' },
+  // A published power-rankings edition, by id — the only stable way to reach
+  // one, since /news/ lists whatever is newest. Editions are never deleted.
+  { path: '/news/view/?id=ee63b136-b6aa-4408-af8a-a5c3dbcbb93f',
+                                      selector: '.rank-row',       min: 30, what: 'the power-rankings table' },
 ];
 
 function findChrome() {
