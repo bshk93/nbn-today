@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last reviewed: **2026-08-26** — **37 open items**: 8 P1, 10 P2, 14 P3, plus 5
+Last reviewed: **2026-08-29** — **35 open items**: 8 P1, 10 P2, 12 P3, plus 5
 nice-to-haves. (No version pin here on purpose: it went stale within two
 commits of being written. The date is what matters.)
 
@@ -283,27 +283,35 @@ unrebuildable data is never deleted on a judgement call, and 48MB on a disk at
 61% is not urgent. This is a disk-space cleanup for whenever someone wants it,
 not a data question. Same "which one is real?" trap as the entry below.
 
-### [P3] 9 players have `photo_url` set to the string `"NA"`
-Found 2026-08-25 by the first run of `tests/frontend/run.js`. Nine bios carry the
-literal three-character string `NA` where a URL belongs, so the page renders
-`<img src="NA">`, the browser resolves it against the current directory, and
-every load of `/players/` fires a **404 for `https://nbn.today/players/NA`**.
+### [P3] Two `photo_url` oddities left — an inline data URI and a dead imgur link
+Split out 2026-08-29 when the nine `"NA"` bios that this entry was about were
+fixed. Those were the substance of it: `ajinca-melvin`, `bridges-jalen`,
+`dixon-eric`, `johnson-keshad`, `juzang-johnny`, `mccullar-kevin`,
+`newton-tristen`, `pate-dink` and `robinson-jaxson` each carried the literal
+three-character string `NA` where a URL belongs, so every load of `/players/`
+fired a 404 for `https://nbn.today/players/NA`. All nine are now `""`, which is
+what 70 other bios already used and which the page's normal fallback handles.
+**`tests/frontend/run.js` now passes all 15 pages** — that 404 was the only
+same-origin failure the suite had.
 
-`ajinca-melvin`, `bridges-jalen`, `dixon-eric`, `johnson-keshad`,
-`juzang-johnny` and four more — `python3 -c` over `player-bios.json` filtering
-`photo_url == "NA"` lists them.
+One thing worth keeping from how it was fixed, because the entry described the
+fix as a bio edit and that was only half of it: `/players/` reads
+`PHOTO_URL` out of `players/player_seasons.csv`, which snapshots the bio at
+**build** time. The bio write alone changed nothing on the page — it took a
+`build/build.sh` run to re-snapshot. Any future "just fix the bio" of a
+snapshotted field is the same two steps.
 
-The fix is to set them to `""`, which is what **70 other bios already use** and
-which the page handles with its normal fallback. It is a data edit through
-`PUT /api/players/{slug}`, not a code change. Low severity — a broken image for
-nine players — but it is the only same-origin 404 the site serves on a normal
-page load, so it is also the thing standing between the frontend suite and a
-clean run.
+What is left is two one-offs in the same field, neither of them our defect:
 
-Separately and not our defect: `wagler-keaton`'s photo is a **~100KB base64
-data URI stored inline in `player-bios.json`**, and one player's photo is the
-only imgur-hosted image in the league (currently 429ing). Both are one-off
-oddities in the same field; worth normalising if anyone is in there anyway.
+- `wagler-keaton`'s photo is a **~100KB base64 data URI stored inline in
+  `player-bios.json`** — it inflates every `GET /api/players` response for one
+  player.
+- One player's photo is the only **imgur-hosted** image in the league
+  (`i.imgur.com/SaK7v2z.png`), and it currently 429s. The frontend suite reports
+  it as a third-party warning on `/players/` and `/draft/` and does not fail on
+  it, correctly — but it is a broken image on two real pages.
+
+Both are worth normalising if anyone is in that field anyway. Neither is urgent.
 
 ### [P3] Stale backups in NBS_DATA_DIR
 `player-bios.json.bak` ×4, `allstats-playoffs-26.csv.bak-round-fix`,
@@ -606,37 +614,6 @@ switched off, note the dates here.
 
 ## 3. Tooling / infrastructure
 
-### [P3] `POST /api/boxscore/parse` is dead code with a live import
-Noticed 2026-08-26. The endpoint asks the Anthropic API to read a box score
-screenshot server-side. It is unreachable in practice: it needs
-`ANTHROPIC_API_KEY`, which is set nowhere (the whole point of the
-`/parse-boxscores` skill is that parsing runs through the CLI session, not paid
-API credits), and `boxscores/submit/index.html` never calls it — it posts to
-`/api/boxscore/upload`. It returns 503 for anyone who finds it.
-
-Two reasons it is not simply harmless:
-
-- It pins `model="claude-sonnet-4-6"`, a stale id nobody would notice was stale,
-  because the code path cannot run to fail.
-- `import anthropic` sits at module scope in `routers/boxscores.py`, so a venv
-  that loses the package takes down the *commit* path — the one that matters —
-  along with the dead one. The package is installed today (0.104.1); nothing
-  guarantees it stays.
-
-Either delete the endpoint and the import, or move the import inside
-`_parse_one_screenshot` so the dependency is scoped to the path that uses it.
-Deleting is the honest option unless server-side parsing is wanted back.
-
-### [P3] Box score upload accepts any image format the browser will offer
-`boxscores/submit/index.html` sets `accept="image/*"` and
-`POST /api/boxscore/upload` writes the file under whatever extension the
-filename carried. A phone upload can therefore land a `.heic` or `.avif` in the
-pending queue, which `/parse-boxscores` cannot read — the Read tool handles PNG,
-JPEG, GIF and WebP. Nothing has hit this (screenshots come off a PC or console),
-so it is P3: the fix is to narrow the `accept` list and reject or convert an
-unsupported type at upload, rather than discovering it mid-parse with the game
-already queued.
-
 ### [P3] The edit log has no surface, and starts from 2026-08-25
 `edits.jsonl` went live 2026-08-25 — `storage._atomic_write` now records a
 value-level diff of every write that bypasses the ledger, and `GET /api/edits`
@@ -657,8 +634,14 @@ Two things that closed with it, and one that did not:
 `tests/frontend/run.js` shipped 2026-08-25 — puppeteer against a real vhost,
 asking each page four things: 200, nothing thrown, every same-origin request
 succeeded, and the content the page exists to show actually appeared. It found a
-real defect on its first run (see the `photo_url` entry in §1), which is the
-argument for the rest of it.
+real defect on its first run — the nine `"NA"` `photo_url` bios, fixed
+2026-08-29 — which is the argument for the rest of it.
+
+**All 15 pages pass as of 2026-08-29**, the first clean run. The only thing it
+still reports is the imgur 429 on `/players/` and `/draft/`, a third-party
+warning it deliberately does not fail on (see the `photo_url` entry in §1). So
+a failure from here is a regression, which is what makes the two items below
+worth doing rather than academic.
 
 What is left:
 

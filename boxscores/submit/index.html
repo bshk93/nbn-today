@@ -369,7 +369,7 @@
         <h2>Upload Screenshots</h2>
         <div class="uploads">
           <div class="upload-zone" id="home-zone">
-            <input type="file" id="home-file" accept="image/*">
+            <input type="file" id="home-file" accept="image/png,image/jpeg,image/gif,image/webp">
             <div class="upload-label" id="home-team-label">Home Team</div>
             <div class="upload-icon">🏠</div>
             <div class="upload-hint">Click or drag screenshot here</div>
@@ -377,7 +377,7 @@
             <img class="preview-img" id="home-preview">
           </div>
           <div class="upload-zone" id="away-zone">
-            <input type="file" id="away-file" accept="image/*">
+            <input type="file" id="away-file" accept="image/png,image/jpeg,image/gif,image/webp">
             <div class="upload-label" id="away-team-label">Away Team</div>
             <div class="upload-icon">✈️</div>
             <div class="upload-hint">Click or drag screenshot here</div>
@@ -575,6 +575,19 @@
     });
 
     // ── Screenshot upload zones ──────────────────────────────────
+    // What /parse-boxscores can read. The server sniffs the bytes and is the
+    // real gate; these two checks just turn a file away before the upload
+    // rather than after it. A file whose type the browser can't name is let
+    // through on purpose — the server can still tell what it is.
+    const PARSEABLE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+    function unparseableReason(file) {
+      if (!file.type || PARSEABLE_TYPES.includes(file.type)) return "";
+      const label = file.type.startsWith("image/")
+        ? file.type.slice(6).toUpperCase()
+        : "That";
+      return `${label} can't be read — use a PNG, JPEG, GIF or WebP.`;
+    }
+
     function setupZone(zoneId, fileId, filenameId, previewId) {
       const zone = document.getElementById(zoneId);
       const input = document.getElementById(fileId);
@@ -587,16 +600,32 @@
         e.preventDefault();
         zone.classList.remove("drag-over");
         const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith("image/")) {
-          const dt = new DataTransfer();
-          dt.items.add(file);
-          input.files = dt.files;
-          onFileSelected(file, zone, fname, preview);
-        }
+        if (!file) return;
+        const bad = unparseableReason(file);
+        if (bad) { rejectFile(bad, zone, input, fname, preview); return; }
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        onFileSelected(file, zone, fname, preview);
       });
       input.addEventListener("change", () => {
-        if (input.files[0]) onFileSelected(input.files[0], zone, fname, preview);
+        const file = input.files[0];
+        if (!file) return;
+        const bad = unparseableReason(file);
+        if (bad) { rejectFile(bad, zone, input, fname, preview); return; }
+        onFileSelected(file, zone, fname, preview);
       });
+    }
+    // Clearing the input matters as much as the message: without it a file
+    // picked earlier stays selected, and the upload button would stay enabled
+    // for it while the zone reads "HEIC can't be read".
+    function rejectFile(msg, zone, input, fname, preview) {
+      input.value = "";
+      zone.classList.remove("has-file");
+      fname.textContent = msg;
+      preview.removeAttribute("src");
+      preview.style.display = "none";
+      checkUploadReady();
     }
     function onFileSelected(file, zone, fname, preview) {
       zone.classList.add("has-file");

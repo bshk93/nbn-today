@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.124",
+    "date": "2026-08-29",
+    "changes": [
+      "Box score upload: only accept image formats the parser can actually read (PNG, JPEG, GIF, WebP). The format is checked from the file's own bytes, so a HEIC renamed .png is turned away at upload instead of failing later with the game already queued",
+      "Fixed nine players whose photo made /players/ request a broken image on every load (Ajinca, Bridges, Dixon, Johnson, Juzang, McCullar, Newton, Pate, Robinson)"
+    ]
+  },
+  {
     "version": "0.1.123",
     "date": "2026-08-27",
     "changes": [
