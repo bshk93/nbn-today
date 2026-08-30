@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last reviewed: **2026-08-29** — **34 open items**: 8 P1, 10 P2, 11 P3, plus 5
+Last reviewed: **2026-08-30** — **34 open items**: 8 P1, 9 P2, 12 P3, plus 5
 nice-to-haves. (No version pin here on purpose: it went stale within two
 commits of being written. The date is what matters.)
 
@@ -362,7 +362,11 @@ Both are worth normalising if anyone is in that field anyway. Neither is urgent.
 ## 2. Rule automation gaps
 
 The rulebook badges each section 🔒 system-enforced or 👁 manual review.
-19 sections carry an enforced badge; the ones below are the gaps worth closing.
+Since 2026-08-30 the 🔒 half is **generated** from `nbn-api/rulebook_coverage.py`
+and the badges can no longer go stale — 34 sections are enforced, 23 still need
+a human, 17 carry both. The six that are manual-only (§ 1.2, 3.7, 4.6, 6.1, 7.3,
+7.4) and the partial coverage behind the 17 are the gaps worth closing; each
+one's `SECTION_REVIEW` note in that file says what is still missing.
 
 ### [P3] Extension eligibility backfill — 116 rostered players still missing an acquisition record
 `_player_acquisition_index` (§ 3.8's ledger scan, reused for § 6.2 eligibility)
@@ -542,24 +546,34 @@ verified** — a team can declare `bird_rights` on a player they have no Bird
 tenure with and pass clean. Closing it means § 3.8 tenure verification
 (below), not a new blocking rule.
 
-### [P2] The rulebook's 🔒/👁 badges are hand-maintained and keep going stale
-Entered 2026-08-16. The badges are the site's only answer to "is this rule
-actually enforced?", and they are curated by hand against code that moves
-underneath them. This has already gone wrong twice: § 7.2 read 👁-only for two
-and a half weeks after Stepien went live (closed 2026-08-09, above), and
-§ 3.12's enforcement story changed twice *in one day* on 2026-08-13.
+### [P3] The 👁 half of the rulebook badges is still declared by hand
+Entered 2026-08-16 as "the badges keep going stale", closed 2026-08-30 for the
+🔒 half. `nbn-api/rulebook_coverage.py` now computes it: an `ast` pass finds
+every `CheckResult` reachable from `_VALIDATORS` (plus the one in
+`routers/waivers.py`), `CHECK_SECTIONS` maps each of the 54 check ids to the
+§ it enforces, and `tests/test_rulebook_coverage.py` fails if those two sets
+disagree — so a new check cannot be added without declaring what it enforces.
+`build/check_rulebook_badges.py` rewrites the badges from that manifest and
+`build/smoke_test.py` fails when the page drifts. Fifteen badges were wrong the
+day it landed.
 
-The inputs to compute them already exist. `transactions.py` names its checks
-(`check="roster_size"`, `"two_way_slots"`, `"rookie_scale"`,
-`"bird_rights_forfeited"`, … — 20+ literal ids) and its check messages cite
-32 distinct `§ x.y` sections. Emit a coverage manifest from `_VALIDATORS` plus
-those ids → sections, render the rulebook badges from it, and have
-`build/smoke_test.py` fail when a section's badge disagrees with what the code
-checks.
+**What is still hand-declared**, and can't be computed:
 
-Worth more than the badges themselves: it turns this entire section of the
-backlog from a curated list into a computed one, which is the only version that
-stays true between reviews.
+- `SECTION_REVIEW` — *why* a section still needs a human. "Partially enforced"
+  is a judgement about the gap between a rule and the check covering it, and
+  nothing in the code knows it. The notes are reviewed prose, and the test only
+  asserts they exist and name a real §, not that they are still true.
+- `SECTION_ENFORCED_BY` — the one section (§ 5.2) the system enforces by simply
+  doing the thing, with no check to find.
+
+Closing this properly means the checks carrying their own § and their own
+"what's still manual" note at the emit site, so the whole manifest falls out of
+the code. That is a 134-site edit for a badge, which is why it wasn't done now.
+
+Three badges sit outside the generated set on purpose — the § 1.5 buyout
+bullet, the "Hard Cap Grace Period" sub-heading and § 3.1's "UFA / RFA
+Eligibility" sub-heading. Each is a claim about one clause rather than one
+section, so nothing keys them to a §, and they stay hand-written.
 
 ### [P2] No league-wide compliance board — § 2.1 shortfalls are invisible today
 Entered 2026-08-16. `/poopoo` answers "does the site match the sheet". Nothing

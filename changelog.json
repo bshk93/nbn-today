@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.136",
+    "date": "2026-08-30",
+    "changes": [
+      "Rulebook: the \ud83d\udd12 system-enforced badges are now generated from the transaction validators rather than maintained by hand, so they can no longer go stale. Fifteen sections were wrong \u2014 \u00a7 2.2, 3.2 and 4.1 carried no badge at all despite being checked, and \u00a7 3.1, 3.6, 3.10, 3.11, 3.13, 4.5, 5.1, 6.2, 6.3, 7.1, 1.5 and 1.6 read manual-review-only while the code was enforcing them",
+      "The \ud83d\udc41 manual-review badge now means something narrower and truer: a section carrying both badges is partly enforced, and the manifest records what is still left to a human"
+    ]
+  },
+  {
     "version": "0.1.135",
     "date": "2026-08-30",
     "changes": [

@@ -13,7 +13,10 @@ Note that setting `core.hooksPath` replaces the hooks directory wholesale, so
 any other hook has to live here too rather than in `.git/hooks`.
 
 - Run build/smoke_test.py; abort the commit if a page reads a column or file
-  that no longer exists. Bypass with `git commit --no-verify` if needed.
+  that no longer exists, or if the rulebook's 🔒/👁 enforcement badges have
+  drifted from what nbn-api's validators actually check
+  (build/check_rulebook_badges.py --fix rewrites them). Bypass with
+  `git commit --no-verify` if needed.
 - Run build/test_build_sh.py; abort if build.sh has stopped defaulting to the
   Python stats engine, or grown a second copy of the season rule.
 - Run build/test_validate_boxscore.py; abort if the box score validator has

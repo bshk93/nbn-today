@@ -13,7 +13,9 @@ This asserts, for every generated file:
   - no depended-on column is entirely blank (the failure mode that silently
     emptied the roster OVR column for the whole league)
 
-Then it checks that every literal data-file path fetched by a page exists on disk.
+Then it checks that every literal data-file path fetched by a page exists on disk,
+and that the rulebook's enforcement badges still agree with what the API's
+validators actually check (build/check_rulebook_badges.py).
 
 Usage:
     python3 build/smoke_test.py            # full run
@@ -25,6 +27,7 @@ import argparse
 import csv
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -261,6 +264,24 @@ def check_fetch_targets(report):
             report.ok(f"{target} (fetched by {len(sources)} page(s))")
 
 
+def check_rulebook_badges(report):
+    """The rulebook's 🔒/👁 badges are rendered from nbn-api's coverage manifest.
+    Hand-maintaining them against code in another repo did not work — see
+    build/check_rulebook_badges.py. Skips when no API checkout is present, since
+    the site has to stay buildable without one."""
+    script = REPO / "build" / "check_rulebook_badges.py"
+    report.checked += 1
+    proc = subprocess.run([sys.executable, str(script), "--quiet"],
+                          capture_output=True, text=True)
+    out = (proc.stdout + proc.stderr).strip()
+    if proc.returncode == 0:
+        report.ok(f"rulebook badges match the enforcement manifest{' (skipped)' if out.startswith('skip:') else ''}")
+    else:
+        report.error("rulebook/index.html", "badges disagree with nbn-api's "
+                     "enforcement manifest; run build/check_rulebook_badges.py "
+                     "--fix\n      " + out.replace("\n", "\n      "))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -278,6 +299,10 @@ def main():
     if not args.quiet:
         print("\nChecking fetched data paths…")
     check_fetch_targets(report)
+
+    if not args.quiet:
+        print("\nChecking rulebook enforcement badges…")
+    check_rulebook_badges(report)
 
     print()
     for path, msg in report.warnings:
