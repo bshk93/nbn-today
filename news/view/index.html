@@ -60,56 +60,81 @@
     .rank-blurb { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.35rem; }
     .rank-blurb .by { color: var(--text-dim); font-size: 0.75rem; }
 
-    /* Roster strip: the team's top-rated players, filled in after the table
-       renders (see loadRosterStrips) so a slow roster fetch never blocks the
-       ranking itself. */
-    .rank-roster { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.5rem; }
-    .roster-chip { display: flex; flex-direction: column; align-items: center; width: 3.2rem; text-align: center; }
-    .roster-chip-avatar { width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
-                           background: var(--bg-card); border: 1px solid var(--border); flex: none; }
+    /* The avatar is shared by the starting-five cards and the roster list. It
+       is a <span>, so anywhere its parent is not a flex/grid container it needs
+       display:block of its own or width/height never apply and the photo
+       escapes its box. */
+    .roster-chip-avatar { display: block; width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
+                           background: var(--bg-page); border: 1px solid var(--border); flex: none; }
     .roster-chip-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
     .roster-chip-avatar.empty {
       background: radial-gradient(circle at 50% 38%, var(--text-dim) 0 5px, transparent 6px),
                   radial-gradient(ellipse 9px 6px at 50% 100%, var(--text-dim) 0 100%, transparent 0);
     }
-    .roster-chip-name { font-size: 0.62rem; color: var(--text-secondary); margin-top: 0.22rem; line-height: 1.15;
-                         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-    .roster-chip-ovr { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; color: var(--text-dim); }
 
-    /* Expandable team panel. The strip above it is the top six; this is the
-       rest of the same frozen roster, plus the record the ranking was argued
-       over and the five those players project into. Built on first open (see
+    /* Expandable team panel — one card, so it reads as a single object rather
+       than three loose blocks under the row. Built on first open (see
        toggleRankRow) so 30 of these are not in the DOM to read one. */
-    .rank-panel { padding: 0.2rem 0 1.2rem 5.6rem; }
-    .panel-title { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
-                   color: var(--text-dim); margin: 0.9rem 0 0.5rem; }
-    .panel-season { font-family: var(--font-mono); font-size: 0.73rem; color: var(--text-muted);
-                    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
-                    padding: 0.45rem 0.7rem; display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: baseline; }
-    .panel-season b { color: var(--text-secondary); }
-    .panel-season .sep { color: var(--border); }
-    .panel-five { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .five-card { flex: 1 1 5.2rem; min-width: 5.2rem; max-width: 9rem; text-align: center; background: var(--bg-card);
-                 border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.3rem; }
-    .five-slot { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.08em; color: var(--accent-light); margin-bottom: 0.35rem; }
-    .five-card .roster-chip-avatar { display: block; margin: 0 auto; width: 44px; height: 44px; }
-    .five-name { font-size: 0.66rem; color: var(--text-secondary); margin-top: 0.3rem; line-height: 1.2;
+    .rank-panel { padding: 0 0 1.1rem 5.6rem; }
+    .panel-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+                  padding: 0.9rem 1rem 1rem; }
+    .panel-title { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+                   color: var(--text-dim); margin: 1rem 0 0.5rem; }
+    .panel-title:first-child { margin-top: 0; }
+
+    /* A KPI row, not a chart: six headline numbers about one team. The 1px grid
+       gap over a border-coloured background is what draws the dividers. */
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr));
+               gap: 1px; background: var(--border); border: 1px solid var(--border);
+               border-radius: 8px; overflow: hidden; }
+    .kpi { background: var(--bg-page); padding: 0.45rem 0.6rem 0.5rem; }
+    .kpi-label { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-dim); }
+    .kpi-value { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-top: 0.15rem; line-height: 1.2; }
+    /* Signed, and the sign is the point: these three are all "higher is better"
+       (see team_ratings in stats_build/pipeline.py). The +/- carries the
+       polarity on its own, so the colour is a second channel and never the
+       only one — which is what makes this pair legal at its CVD separation. */
+    .kpi-value.pos { color: var(--success); }
+    .kpi-value.neg { color: var(--danger); }
+    .kpi-sub { font-size: 0.6rem; font-family: var(--font-mono); color: var(--text-dim); margin-top: 0.1rem; }
+
+    .panel-five { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .five-card { flex: 1 1 5rem; min-width: 5rem; max-width: 9rem; text-align: center;
+                 background: var(--bg-page); border: 1px solid var(--border); border-radius: 8px;
+                 padding: 0.5rem 0.3rem 0.55rem; }
+    .five-slot { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.08em; color: var(--accent-light); margin-bottom: 0.4rem; }
+    .five-card .roster-chip-avatar { width: 42px; height: 42px; margin: 0 auto; }
+    .five-name { font-size: 0.65rem; color: var(--text-secondary); margin-top: 0.35rem; line-height: 1.2;
                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .five-ovr { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; color: var(--text-primary); }
     .five-card.vacant .five-name, .five-card.vacant .five-ovr { color: var(--text-dim); }
-    .ptable { width: 100%; max-width: 34rem; border-collapse: collapse; font-size: 0.75rem; }
-    .ptable th, .ptable td { padding: 0.28rem 0.45rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .ptable th { text-align: left; color: var(--text-dim); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; }
-    .ptable td.num, .ptable th.num { text-align: right; font-family: var(--font-mono); color: var(--text-muted); }
-    .ptable td.ovr { color: var(--text-primary); font-weight: 700; }
-    .ptable td.seq { color: var(--text-dim); font-family: var(--font-mono); width: 1.6rem; }
-    .ptable a { color: var(--text-secondary); text-decoration: none; }
-    .ptable a:hover { color: var(--text-primary); text-decoration: underline; }
-    .ptable .tw { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.05em; color: var(--gold);
-                  border: 1px solid var(--gold-dim); border-radius: 3px; padding: 0 0.22rem; margin-left: 0.3rem; }
-    .panel-link { display: inline-block; margin-top: 0.8rem; font-size: 0.73rem; color: var(--text-muted); text-decoration: none; }
+
+    .plist { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 0.1rem 1.5rem; }
+    .prow { display: grid; grid-template-columns: 1.2rem 30px minmax(0, 1fr) auto 1.8rem 2rem;
+            gap: 0.5rem; align-items: center; padding: 0.22rem 0.35rem; border-radius: 6px; }
+    .prow:hover { background: var(--bg-hover); }
+    .prow .seq { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); text-align: right; }
+    .prow .pname { font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prow .pname a { color: var(--text-secondary); text-decoration: none; }
+    .prow .pname a:hover { color: var(--text-primary); text-decoration: underline; }
+    .prow .ppos { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-muted); }
+    .prow .pag, .prow .povr { font-family: var(--font-mono); font-size: 0.72rem; text-align: right; }
+    .prow .pag { color: var(--text-dim); }
+    .prow .povr { color: var(--text-primary); font-weight: 700; }
+    .prow .tw { font-size: 0.52rem; font-weight: 700; letter-spacing: 0.05em; color: var(--gold);
+                border: 1px solid var(--gold-dim); border-radius: 3px; padding: 0 0.22rem; margin-left: 0.3rem; }
+    .panel-link { display: inline-block; margin-top: 0.85rem; font-size: 0.72rem; color: var(--text-muted); text-decoration: none; }
     .panel-link:hover { color: var(--text-primary); }
-    @media (max-width: 640px) { .rank-panel { padding-left: 0; } }
+    @media (max-width: 640px) {
+      .rank-panel { padding-left: 0; }
+      /* Reclaim the fixed rank/move/logo columns — on a phone they were taking
+         a third of the width off the blurb, which is the part people read. */
+      .rank-head { grid-template-columns: 1.9rem 1.5rem 26px 1fr; gap: 0.45rem; }
+      .rank-no { font-size: 1.15rem; }
+      .rank-logo img { width: 26px; height: 26px; }
+      .prow { grid-template-columns: 1.2rem 28px minmax(0, 1fr) auto 2rem; }
+      .prow .pag { display: none; }
+    }
     .move-up { color: var(--success); font-size: 0.78rem; font-family: var(--font-mono); }
     .move-down { color: var(--danger); font-size: 0.78rem; font-family: var(--font-mono); }
     .move-flat { color: var(--text-dim); font-size: 0.78rem; font-family: var(--font-mono); }
@@ -448,7 +473,6 @@ function renderRankings(a) {
           <div>
             <div class="rank-team">${escHtml(TEAM_NAMES[r.team] || r.team)}${canOpen ? '<span class="rank-chev">▶</span>' : ''}</div>
             <div class="rank-stats">avg ${r.avg.toFixed(2)} · high ${r.hi} · low ${r.lo}</div>
-            <div class="rank-roster" id="roster-strip-${r.team}">${rosterOf(r).slice(0, ROSTER_STRIP_N).map(rosterChipHtml).join('')}</div>
             ${voterCells(a, voters, r.team)}
             ${b.body ? `<div class="rank-blurb">${escHtml(b.body)}
               ${b.claimed_by ? `<span class="by">— ${escHtml(b.claimed_by)}</span>` : ''}</div>` : ''}
@@ -519,7 +543,7 @@ function buildTeamPanel(team, panel) {
   panel.dataset.stamp = stamp;
   panel.innerHTML = (!roster.length && !line)
     ? '<p class="empty">No roster was captured for this edition.</p>'
-    : seasonLineHtml(line) + startingFiveHtml(roster) + rosterTableHtml(team, roster);
+    : `<div class="panel-card">${kpiRowHtml(line)}${startingFiveHtml(roster)}${rosterListHtml(team, roster)}</div>`;
 }
 
 function fmtSigned(v, decimals = 1) {
@@ -528,21 +552,40 @@ function fmtSigned(v, decimals = 1) {
   return (n >= 0 ? '+' : '') + n.toFixed(decimals);
 }
 
-// The team's last completed season — its record, where it finished, and how
-// far it got. Shown the way the team page shows the same three ratings
-// (signed, undirected), so nothing here editorializes about which way is good.
-function seasonLineHtml(line) {
+// Six headline numbers about one team, so this is a KPI row of stat tiles and
+// not a chart of anything.
+//
+// All three ratings are "higher is better" — OFF_RTG is points scored above
+// what that opponent had been allowing, DEF_RTG is points held below what they
+// usually score (team_ratings, stats_build/pipeline.py), and DIFF is plain
+// point differential. So the sign can be coloured, and the sign is also printed,
+// which is what keeps the colour a second channel rather than the only one.
+function kpiTile(label, value, cls = '', sub = '') {
+  return `<div class="kpi"><div class="kpi-label">${escHtml(label)}</div>
+    <div class="kpi-value${cls ? ' ' + cls : ''}">${value}</div>
+    ${sub ? `<div class="kpi-sub">${sub}</div>` : ''}</div>`;
+}
+
+function signClass(v) {
+  const n = parseFloat(v);
+  if (isNaN(n) || Math.abs(n) < 0.05) return '';
+  return n > 0 ? 'pos' : 'neg';
+}
+
+function kpiRowHtml(line) {
   if (!line) return '';
   const pct = parseFloat(line.pct);
-  const bits = [`<b>${escHtml(line.season)}</b>`];
-  if (line.w !== '' && line.w != null) {
-    bits.push(`${escHtml(line.w)}–${escHtml(line.l)}` + (isNaN(pct) ? '' : ` (${pct.toFixed(3).replace(/^0/, '')})`));
-  }
-  if (line.seed) bits.push(escHtml(line.seed));
-  if (line.playoff_result) bits.push(escHtml(line.playoff_result));
-  bits.push(`Off ${fmtSigned(line.off_rtg, 1)}`, `Def ${fmtSigned(line.def_rtg, 1)}`, `Net ${fmtSigned(line.diff, 1)}`);
-  return `<div class="panel-title">Last season</div>
-    <div class="panel-season">${bits.join('<span class="sep">·</span>')}</div>`;
+  const tiles = [
+    kpiTile('Record', `${escHtml(line.w)}–${escHtml(line.l)}`, '',
+            isNaN(pct) ? '' : pct.toFixed(3).replace(/^0/, '')),
+    kpiTile('Seed', escHtml(line.seed) || '—'),
+    kpiTile('Finish', escHtml(line.playoff_result) || '—'),
+    kpiTile('Off rtg', fmtSigned(line.off_rtg, 1), signClass(line.off_rtg)),
+    kpiTile('Def rtg', fmtSigned(line.def_rtg, 1), signClass(line.def_rtg)),
+    kpiTile('Net', fmtSigned(line.diff, 1), signClass(line.diff)),
+  ];
+  return `<div class="panel-title">${escHtml(line.season)} season</div>
+    <div class="kpi-row">${tiles.join('')}</div>`;
 }
 
 // The best legal PG→C five out of this roster, via the same computeStartingFive
@@ -565,20 +608,26 @@ function startingFiveHtml(roster) {
     }).join('')}</div>`;
 }
 
-function rosterTableHtml(team, roster) {
+// The top of the roster, not all of it — the panel answers "who is on this
+// team", and the 9th-best player does not change that answer. The whole roster
+// is still frozen and still read: computeStartingFive above needs it, since the
+// only centre on a team can sit well outside the top 8.
+const ROSTER_PANEL_N = 8;
+
+function rosterListHtml(team, roster) {
   if (!roster.length) return '';
-  return `<div class="panel-title">Roster (${roster.length})</div>
-    <table class="ptable">
-      <thead><tr><th></th><th>Player</th><th>Pos</th><th class="num">Age</th><th class="num">OVR</th></tr></thead>
-      <tbody>${roster.map((p, i) => `<tr>
-        <td class="seq">${i + 1}</td>
-        <td><a href="/players/?p=${encodeURIComponent(p.slug)}">${escHtml(fullName(p))}</a>${
-          p.type === 'two-way' ? '<span class="tw">TW</span>' : ''}</td>
-        <td>${escHtml((p.pos || []).join('/'))}</td>
-        <td class="num">${p.age == null ? '—' : escHtml(p.age)}</td>
-        <td class="num ovr">${escHtml(p.ovr)}</td>
-      </tr>`).join('')}</tbody>
-    </table>
+  const shown = roster.slice(0, ROSTER_PANEL_N);
+  const more = roster.length - shown.length;
+  return `<div class="panel-title">Roster — top ${shown.length}${more > 0 ? ` of ${roster.length}` : ''}</div>
+    <div class="plist">${shown.map((p, i) => `<div class="prow">
+      <span class="seq">${i + 1}</span>
+      ${avatarHtml(p.photo)}
+      <span class="pname"><a href="/players/?p=${encodeURIComponent(p.slug)}">${escHtml(fullName(p))}</a>${
+        p.type === 'two-way' ? '<span class="tw">TW</span>' : ''}</span>
+      <span class="ppos">${escHtml((p.pos || []).join('/'))}</span>
+      <span class="pag">${p.age == null ? '—' : escHtml(p.age)}</span>
+      <span class="povr">${escHtml(p.ovr)}</span>
+    </div>`).join('')}</div>
     <a class="panel-link" href="/teams/${team}/">${escHtml(TEAM_NAMES[team] || team)} team page →</a>`;
 }
 
@@ -621,7 +670,6 @@ function ageFromDob(dob) {
   return age;
 }
 
-const ROSTER_STRIP_N = 6;             // how many of the roster the collapsed strip shows
 let bioData = null, ovrData = null;   // fetched once, shared across every team (preview path only)
 
 function avatarHtml(photo) {
@@ -629,13 +677,6 @@ function avatarHtml(photo) {
     ? `<span class="roster-chip-avatar"><img src="${escHtml(photo)}" alt="" loading="lazy"
          onerror="this.parentElement.classList.add('empty');this.remove();"></span>`
     : `<span class="roster-chip-avatar empty"></span>`;
-}
-
-function rosterChipHtml(p) {
-  return `<span class="roster-chip">${avatarHtml(p.photo)}
-    <span class="roster-chip-name">${escHtml(p.name)}</span>
-    <span class="roster-chip-ovr">${escHtml(p.ovr)}</span>
-  </span>`;
 }
 
 // The preview path only. A published edition reads the roster frozen onto its
@@ -681,8 +722,6 @@ async function loadTeamSnapshots(teams) {
           })
           .filter(p => p.type !== 'dead' && p.name)
           .sort((a, b) => (parseFloat(b.ovr) || 0) - (parseFloat(a.ovr) || 0));
-        const host = document.getElementById(`roster-strip-${t}`);
-        if (host) host.innerHTML = ROSTERS[t].slice(0, ROSTER_STRIP_N).map(rosterChipHtml).join('');
       }
       // A panel opened before the fetch landed is rebuilt now it has something
       // to show; buildTeamPanel no-ops if nothing actually changed.
