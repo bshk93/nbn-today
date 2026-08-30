@@ -55,6 +55,13 @@
     .rank-votes a { color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; }
     .rank-votes a:hover { color: var(--text-primary); border-bottom-color: var(--border); }
     .rank-votes b { font-family: var(--font-mono); font-weight: 600; color: var(--text-secondary); }
+    /* The best and worst ballot on each team. Diverging polarity, so the site's
+       existing success/danger pair — the same two the ▲▼ arrows use. The rank
+       number is printed either way, so this is a second channel, never the only
+       one carrying the meaning. */
+    .mark-hi, .rank-votes .rv-hi b, .btable td.num.rv-hi { color: var(--success); }
+    .mark-lo, .rank-votes .rv-lo b, .btable td.num.rv-lo { color: var(--danger); }
+    .rank-votes .rv-hi b, .rank-votes .rv-lo b { font-weight: 700; }
     details.ballots td.voter a { color: inherit; text-decoration: none; }
     details.ballots td.voter a:hover { color: var(--text-primary); text-decoration: underline; }
     .rank-blurb { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.35rem; }
@@ -451,7 +458,10 @@ function renderRankings(a) {
   }
 
   const voters = (a.ballot_progress?.submitted || []);
-  const legend = movementNote(a).trim();
+  const legend = [
+    movementNote(a).trim(),
+    voters.length ? 'Each team\'s <b class="mark-hi">highest</b> and <b class="mark-lo">lowest</b> ballot are marked.' : '',
+  ].filter(Boolean).join(' ');
   rows.forEach(r => {
     ROSTERS[r.team] = rosterOf(r);
     if (r.season_line) SEASON_LINES[r.team] = r.season_line;
@@ -460,6 +470,10 @@ function renderRankings(a) {
     ${legend ? `<div class="method-note">${legend}</div>` : ''}
     ${rows.map(r => {
       const b = (a.blurbs || {})[r.team] || {};
+      // The spread used to be spelled out as "high 2 · low 5". It is now the two
+      // marked ballots below, which say the same thing and also say *who* — so
+      // the text only comes back when no ballot is readable to mark.
+      const votes = voterCells(a, voters, r);
       // An edition published before any of this was frozen has nothing to open
       // into, so it stays a plain row rather than a control that opens an empty
       // panel. A preview is always expandable — its data arrives async.
@@ -472,8 +486,8 @@ function renderRankings(a) {
           <div class="rank-logo"><img src="/logos/logo-${r.team.toLowerCase()}.png" alt="" loading="lazy"></div>
           <div>
             <div class="rank-team">${escHtml(TEAM_NAMES[r.team] || r.team)}${canOpen ? '<span class="rank-chev">▶</span>' : ''}</div>
-            <div class="rank-stats">avg ${r.avg.toFixed(2)} · high ${r.hi} · low ${r.lo}</div>
-            ${voterCells(a, voters, r.team)}
+            <div class="rank-stats">avg ${r.avg.toFixed(2)}${votes ? '' : ` · high ${r.hi} · low ${r.lo}`}</div>
+            ${votes}
             ${b.body ? `<div class="rank-blurb">${escHtml(b.body)}
               ${b.claimed_by ? `<span class="by">— ${escHtml(b.claimed_by)}</span>` : ''}</div>` : ''}
           </div>
@@ -746,15 +760,31 @@ function seasonLineFor(team, standings) {
 // page: a ranking is a set of opinions with people attached, and the people are
 // the reason anyone argues about it afterwards.
 //
+// The best and worst ballot on each team are marked, which is the spread the
+// row used to spell out as "high 2 · low 5" — except this also says who cast
+// them. `hi` is the *best* rank, so numerically the smallest. The rank itself
+// is printed on every ballot, so the colour is reinforcement and never the only
+// thing carrying it; the title attribute names it for anyone the colour does
+// not reach.
+//
+// A team every voter placed identically has no spread and nothing to mark —
+// marking all six ballots as simultaneously highest and lowest is noise.
+//
 // A ballot that isn't readable — mid-vote, for anyone who isn't the author —
 // simply isn't listed, so this renders nothing at all rather than a row of
 // blanks.
-function voterCells(a, voters, team) {
+function voterCells(a, voters, row) {
+  const spread = row.hi !== row.lo;
   const cells = voters.map(v => {
-    const pos = (a.ballots?.[v]?.order || []).indexOf(team);
+    const pos = (a.ballots?.[v]?.order || []).indexOf(row.team);
     if (pos < 0) return '';
-    return `<span class="rv"><a href="/members/${encodeURIComponent(v)}/">${escHtml(v)}</a>`
-      + `<b>${pos + 1}</b></span>`;
+    const rank = pos + 1;
+    const [cls, title] = !spread ? ['', '']
+      : rank === row.hi ? [' rv-hi', ' title="highest ballot"']
+      : rank === row.lo ? [' rv-lo', ' title="lowest ballot"']
+      : ['', ''];
+    return `<span class="rv${cls}"${title}><a href="/members/${encodeURIComponent(v)}/">${escHtml(v)}</a>`
+      + `<b>${rank}</b></span>`;
   }).filter(Boolean);
   return cells.length ? `<div class="rank-votes">${cells.join('')}</div>` : '';
 }
@@ -771,9 +801,12 @@ function renderBallotTable(a, rows, voters) {
       <tbody>${voters.map(v => {
         const ballot = a.ballots?.[v]?.order || [];
         return `<tr><td class="voter"><a href="/members/${encodeURIComponent(v)}/">${escHtml(v)}</a></td>${
-          order.map(t => {
-            const pos = ballot.indexOf(t);
-            return `<td class="num">${pos < 0 ? '–' : pos + 1}</td>`;
+          rows.map(r => {
+            const pos = ballot.indexOf(r.team);
+            if (pos < 0) return '<td class="num">–</td>';
+            const rank = pos + 1;
+            const cls = r.hi === r.lo ? '' : rank === r.hi ? ' rv-hi' : rank === r.lo ? ' rv-lo' : '';
+            return `<td class="num${cls}">${rank}</td>`;
           }).join('')}</tr>`;
       }).join('')}</tbody>
     </table>
