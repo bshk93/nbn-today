@@ -142,7 +142,8 @@
     .five-ovr { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; color: var(--text-primary); }
     .five-card.vacant .five-name, .five-card.vacant .five-ovr { color: var(--text-dim); }
 
-    .plist { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 0.1rem 1.5rem; }
+    .plist { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 0.1rem 1.5rem;
+             margin-top: 0.75rem; }
     .prow { display: grid; grid-template-columns: 1.2rem 30px minmax(0, 1fr) auto 1.8rem 2rem;
             gap: 0.5rem; align-items: center; padding: 0.22rem 0.35rem; border-radius: 6px; }
     .prow:hover { background: var(--bg-hover); }
@@ -610,9 +611,10 @@ function buildTeamPanel(team, panel) {
   panel.dataset.stamp = stamp;
   // The piece leads; the numbers back it up. An edition with a blurb and
   // nothing else frozen still opens into the blurb alone.
+  const five = startingFive(roster);
   const body = (b.body ? blurbHtml(b) : '')
     + (roster.length || line
-       ? kpiRowHtml(line) + startingFiveHtml(roster) + rosterListHtml(team, roster)
+       ? kpiRowHtml(line) + startingFiveHtml(five) + rosterListHtml(team, roster, five)
        : '');
   panel.innerHTML = body
     ? `<div class="panel-card">${body}</div>`
@@ -663,12 +665,16 @@ function kpiRowHtml(line) {
 
 // The best legal PG→C five out of this roster, via the same computeStartingFive
 // the team page's depth chart uses (teams/lineup.js). A legacy six-player
-// roster_strip carries no positions, so no slot can be filled and the section
-// drops out entirely rather than showing five empty cards.
-function startingFiveHtml(roster) {
-  if (typeof computeStartingFive !== 'function') return '';
+// roster_strip carries no positions, so no slot can be filled — that returns
+// empty, and the panel falls back to listing the roster from 1.
+function startingFive(roster) {
+  if (typeof computeStartingFive !== 'function') return [];
   const five = computeStartingFive(roster.map(p => ({ ...p, _posList: p.pos || [], OVR: p.ovr || 0 })));
-  if (five.every(p => !p)) return '';
+  return five.every(p => !p) ? [] : five;
+}
+
+function startingFiveHtml(five) {
+  if (!five.length) return '';
   return `<div class="panel-title">Projected starting five</div>
     <div class="panel-five">${DEPTH_SLOTS.map((slot, i) => {
       const p = five[i];
@@ -681,19 +687,24 @@ function startingFiveHtml(roster) {
     }).join('')}</div>`;
 }
 
-// The top of the roster, not all of it — the panel answers "who is on this
-// team", and the 9th-best player does not change that answer. The whole roster
-// is still frozen and still read: computeStartingFive above needs it, since the
-// only centre on a team can sit well outside the top 8.
-const ROSTER_PANEL_N = 8;
-
-function rosterListHtml(team, roster) {
+// Everyone the five above does not already show, numbered on from 6 — so the
+// list needs no heading to explain itself, and nobody appears twice.
+//
+// It runs to the end of the roster rather than stopping at a count. A capped
+// list needs a label to admit what it is hiding ("top 8 of 16"), and a label is
+// the thing being removed here; ending where the roster ends is the version
+// where there is nothing left to disclose.
+//
+// The numbers are depth order, not OVR rank: the five are the best legal
+// lineup, so a centre rated 7th can start ahead of a guard rated 5th.
+function rosterListHtml(team, roster, five) {
   if (!roster.length) return '';
-  const shown = roster.slice(0, ROSTER_PANEL_N);
-  const more = roster.length - shown.length;
-  return `<div class="panel-title">Roster — top ${shown.length}${more > 0 ? ` of ${roster.length}` : ''}</div>
-    <div class="plist">${shown.map((p, i) => `<div class="prow">
-      <span class="seq">${i + 1}</span>
+  const starters = new Set(five.filter(Boolean).map(p => p.slug));
+  const rest = roster.filter(p => !starters.has(p.slug));
+  const from = five.length ? 6 : 1;
+  if (!rest.length) return '';
+  return `<div class="plist">${rest.map((p, i) => `<div class="prow">
+      <span class="seq">${i + from}</span>
       ${avatarHtml(p.photo)}
       <span class="pname"><a href="/players/?p=${encodeURIComponent(p.slug)}">${escHtml(fullName(p))}</a>${
         p.type === 'two-way' ? '<span class="tw">TW</span>' : ''}</span>
