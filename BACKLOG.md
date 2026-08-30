@@ -131,20 +131,43 @@ The weekly Drive tarball deliberately does **not** carry any of this: the
 credential files are excluded and `members.json` goes in redacted, tokens
 blanked and tenures kept.
 
-### [P1] 9 cap-sheet diffs across 6 teams still unreconciled
-`/poopoo` (`build/poopoo.py` → `poopoo.json`, regenerated 2026-08-09) reports:
+### [P1] 73 open cap-sheet diffs across 25 teams, and 17 teams disagree on Team Salary
+**Recounted 2026-08-30**, and it has got much worse rather than better: this
+entry read *9 diffs across 6 teams* on 2026-08-09. `/poopoo` now reports **136
+rows**, of which **73 are open** (this season, or about who is on the roster at
+all) and 63 are deferred (a future season's figure, or a hold the site has never
+computed — see the grouping in `nbn-api/routers/poopoo.py`).
 
-| Team | Diffs | Fields |
-|---|---|---|
-| PHI | 2 | Guaranteed Salary, MANON CHRIS |
-| UTA | 3 | Guaranteed Salary, HALL PJ, POST QUINTEN |
-| BKN | 1 | MLE Used |
-| LAC | 1 | MLE Used |
-| TOR | 1 | TPE Remaining |
-| WAS | 1 | MLE Used |
+Two thirds of the growth is new coverage rather than new drift: the job now
+compares *every* season column the sheet carries, not just the current one, and
+those out-year rows are 61 of the 136. **The current-season aggregate line is
+apples-to-apples with the old count, and it went from 2 teams to 17.** Free
+agency ran in between.
 
-Sharply down from 31 diffs / 12 teams on 2026-08-07 — most of that gap (TOR's
-Hard Cap/player rows, NOP, MEM, MIN, IND, PHX entirely, BKN's/WAS's/LAC's
+| Category | Rows |
+|---|---|
+| `player_future_years` (deferred) | 61 |
+| `aggregate` — 17 × Guaranteed Salary, 5 × Hard Cap | 22 |
+| `player_extra` — on the site, absent from the sheet | 18 |
+| `player_team_conflict` — the two sources disagree on whose player he is | 13 |
+| `mle` / `tpe` / `bae` | 14 |
+| `player_missing` / `player_salary` / `player_status` / `player_hold_uncalculated` | 8 |
+
+Worst Team Salary disagreements (site − sheet): BKN +$19.21M, OKC +$7.33M,
+UTA −$5.08M, MIA +$5.08M, LAL +$4.90M, PHI +$4.60M. **Four teams differ by
+exactly ±$2,449,421** (CHI, GSW, PHX, POR) — that is one contract type booked
+differently on the two sides, not four independent errors, and it is the
+cheapest thread to pull first.
+
+These are now visible to the team that owns them, on its own page (the Cap
+Health card, 2026-08-30), which is a reporting fix and not a reconciliation:
+every row below is still open.
+
+The 2026-08-09 state, kept because the two resolved cases below explain what a
+real fix looks like: 9 diffs across 6 teams — PHI 2 (Guaranteed Salary, MANON
+CHRIS), UTA 3 (Guaranteed Salary, HALL PJ, POST QUINTEN), BKN/LAC/WAS 1 each
+(MLE Used), TOR 1 (TPE Remaining). Sharply down from 31 diffs / 12 teams on
+2026-08-07 — most of that gap (TOR's Hard Cap/player rows, NOP, MEM, MIN, IND, PHX entirely, BKN's/WAS's/LAC's
 Guaranteed Salary rows) closed between that review and this one, cause
 unconfirmed; **DEN's `Hard Cap` diff is the one resolved in this session and is
 understood**: § 4.3's contagion rule was firing on cap-room-absorbed trades,
@@ -578,13 +601,14 @@ section, so nothing keys them to a §, and they stay hand-written.
 ### [P2] No league-wide compliance board — § 2.1 shortfalls are invisible today
 Entered 2026-08-16. `/poopoo` answers "does the site match the sheet". Nothing
 answers "does the league match the rulebook". Counting `type` off
-`player-bios.json` against all 30 `{abbr}-roster.csv`, **recounted 2026-08-24**:
+`player-bios.json` against all 30 `{abbr}-roster.csv`, **recounted 2026-08-30**:
 
 | Condition | Teams |
 |---|---|
-| Below § 2.1's **14-player minimum** (year-round; two-ways excluded per § 2.2) | **3** — DAL 11, BKN 13, HOU 13 |
-| Below § 2.1a's **12-player Empty Roster Charge floor** | **1** — DAL, at 11, so 1 charged slot |
-| Above 15, owing a trim before opening night (§ 2.1 offseason ceiling of 20) | **13** — ATL/BOS/CLE/LAC/MEM/PHI/SAS 16, CHA/MIN/UTA 17, MIL 18, LAL/POR 19 |
+| Below § 2.1's **14-player minimum** (year-round; two-ways excluded per § 2.2) | **5** — DAL 10, NYK 12, UTA 12, CHI 13, HOU 13 |
+| Below § 2.1a's **12-player Empty Roster Charge floor** | **1** — DAL, at 10, so 2 charged slots |
+| Above 15, owing a trim before opening night (§ 2.1 offseason ceiling of 20) | **6** — ATL/CLE/LAC/LAL 16, MIL 17, POR 19 |
+| Over § 2.2's **3 two-way slots** | **1** — DET, at 4 |
 
 The teams over 15 are fine for now — § 2.1's offseason ceiling is 20 — but owe a
 trim, and no deadline for it appears anywhere on the site. The ones under 14 are
@@ -603,8 +627,24 @@ time** — nothing states how many teams are out of compliance, or with what.
 One board covering § 2.1 floor/ceiling, § 2.2 two-way slots, hard cap/apron
 position, Stepien exposure, open offer sheets and open waiver windows is mostly
 assembly of helpers that already exist. It is also the natural home for "who
-still has to cut" once a regular-season start date is set, and it fills the
-"per-team cap health" nice-to-have (§ 4) from the league side.
+still has to cut" once a regular-season start date is set.
+
+**Most of it was built on 2026-08-30**, from the other end — the per-team Cap
+Health card (§ 4). What a board still needs is now assembly of two things that
+exist and are already the right shape for 30 teams at once:
+
+- `cap-health.js` — the § 1.3/1.4 cap/apron and § 2.1/2.1a/2.2 roster rules as
+  a pure function, deliberately taking salary figures and roster counts as
+  arguments rather than computing them, so it does not care whether they came
+  from one team page or from a 30-row fetch. Pinned by `tests/cap-health.test.js`.
+- `GET /api/cap-history/current` — public, live, and already returns exactly
+  those inputs for all 30 teams (salary on both bases, apron position, hard cap,
+  roster and two-way counts).
+
+The counts in the table above came out of a throwaway script; the point of the
+board is that nobody should have to write that script again. Don't re-derive the
+rules for it — a second copy is how the two surfaces start disagreeing about who
+is in violation.
 
 ### [P3] Other standing manual-review items
 Roughly in order of how often they bite:
@@ -745,13 +785,14 @@ job.
   transaction type on 2026-08-21, so the § 6.3 submission windows can now have
   the calendar surface FA has. This is the only part of the extension work
   still outstanding.
-- **Per-team cap health on the team page** — `/poopoo` diffs are league-wide and
-  internal; a team's own owner can't see that their sheet disagrees with the site.
-  The league-wide compliance board in §2 is the same need from the other end;
-  do them together if either gets picked up. **The history half is now data
-  rather than work:** `GET /api/cap-history?team=UTA` has served a per-day
-  series since 2026-08-25, so "when did this team cross the first apron" is a
-  chart over an existing endpoint, not a collection problem.
+- **Cap history chart on the team page** — the rest of per-team cap health
+  shipped 2026-08-30: the Cap Health card shows standing against the cap,
+  aprons, a hard cap and § 2.1/2.1a/2.2's roster limits, plus this team's own
+  rows from `/poopoo` (`cap-health.js` + `renderCapHealth`, fed by
+  `GET /api/poopoo/summary`). What is left is the *history*, and it is data
+  rather than work: `GET /api/cap-history?team=UTA` has served a per-day series
+  since 2026-08-25, so "when did this team cross the first apron" is a chart
+  over an existing endpoint, not a collection problem.
 - **Franchise records beyond single games** — season-level franchise records
   (best team season, best individual season per franchise) using data the build
   already computes.

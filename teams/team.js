@@ -7,6 +7,7 @@
 //   ratingsPopupReady           135   resolves once /ratings-popup.js has loaded
 //   lineupReady                 148   resolves once /teams/lineup.js has loaded
 //   contractReady               161   resolves once /contract.js has loaded
+//   capHealthReady              182   resolves once /cap-health.js has loaded
 //   CAP_HOLD_CSS                730   cap-hold type → td class
 //   CAP_HOLD_LABELS             738   cap-hold type → legend label
 //   SWATCH_COLORS               746   cap-hold type → legend swatch color
@@ -27,6 +28,7 @@
 //   currentSeasonYr             771   infers current season year
 //   parseSalaryNum              781   "$37,000,000" → 37000000
 //   fmtDollars                  787   number → "$37.0M"
+//   fmtDollarsShort            1475   number → "$37.0M" / "$450K"
 //
 // Tooltips
 //   _ttShow                     455   shows the shared tooltip element
@@ -37,6 +39,8 @@
 //   computeMleType              791   determines MLE type from team salary
 //   mleTypeLabel                802   MLE type → display label
 //   renderHardCapBanner         806   injects hard cap warning banner
+//   countRosterSlots           1653   roster rows → standard / two-way slot counts
+//   renderCapHealth            1757   injects the Cap Health card + summary strip
 //   renderExceptionsSection     816   renders MLE/BAE exceptions panel
 //   renderTradeExceptionsSection  866   renders the trade exceptions (TPE) panel
 //   buildNonGtdTip              631   builds the non-guaranteed salary tooltip text
@@ -167,6 +171,20 @@ const contractReady = new Promise(resolve => {
   _ct.onload = resolve;
   _ct.onerror = () => { console.error('/contract.js failed to load — contract shorthand unavailable'); resolve(); };
   document.head.appendChild(_ct);
+});
+
+// CapHealth — the standing rules (§ 1.3/1.4 cap and aprons, § 2.1/2.1a/2.2
+// roster limits) and the naming of build/poopoo.py's sheet-vs-site diff
+// categories. Shared with /poopoo so the same disagreement reads the same way
+// to an owner and to the committee. Soft dependency: if it fails to load the
+// Cap Health card stays hidden and the rest of the page is unaffected, which is
+// why every call site checks window.CapHealth first.
+const capHealthReady = new Promise(resolve => {
+  const _ch = document.createElement('script');
+  _ch.src = '/cap-health.js';
+  _ch.onload = resolve;
+  _ch.onerror = () => { console.error('/cap-health.js failed to load — cap health card unavailable'); resolve(); };
+  document.head.appendChild(_ch);
 });
 
 { const _s = document.createElement('style'); _s.textContent = `
@@ -484,6 +502,46 @@ const contractReady = new Promise(resolve => {
   .exc-mle-type { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.35rem; }
   .exc-remaining { color: var(--success); }
   .exc-used { color: var(--danger); }
+  .cap-health-strip {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    width: 100%; text-align: left; cursor: pointer; font-family: inherit;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.5rem 0.9rem; margin-bottom: 1.25rem; font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+  .cap-health-strip:hover { border-color: var(--text-muted); }
+  .cap-health-strip .ch-strip-label { font-weight: 700; text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.05em; color: var(--text-dim); }
+  .cap-health-strip .ch-strip-sep { color: var(--border); }
+  .cap-health-strip .ch-strip-caret { margin-left: auto; color: var(--text-dim); }
+  .ch-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1.25rem; font-size: 0.85rem; }
+  .ch-block + .ch-block { margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border); }
+  .ch-block-title { display: flex; align-items: baseline; gap: 0.6rem; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .ch-block-count { margin-left: auto; font-weight: 600; letter-spacing: normal; text-transform: none; font-size: 0.72rem; color: var(--text-muted); }
+  .ch-row { display: grid; grid-template-columns: 10rem minmax(6rem, auto) 1fr; align-items: baseline; gap: 0.5rem 1rem; padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle); }
+  .ch-row:last-child { border-bottom: none; }
+  .ch-row-label { color: var(--text-muted); font-size: 0.78rem; }
+  .ch-row-amount { font-variant-numeric: tabular-nums; }
+  .ch-row-note { font-size: 0.76rem; color: var(--text-dim); }
+  .ch-tone-over .ch-row-note { color: var(--danger); }
+  .ch-tone-under .ch-row-note { color: var(--success); }
+  .ch-tone-unknown .ch-row-amount, .ch-tone-unknown .ch-row-note { color: var(--text-dim); font-style: italic; }
+  .ch-tone-violation .ch-row-note, .ch-tone-violation .ch-row-amount { color: var(--danger); font-weight: 600; }
+  .ch-tone-caution .ch-row-note { color: var(--gold-alt); }
+  .ch-warning { font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0; color: var(--danger); }
+  .ch-warning.caution { color: var(--gold-alt); }
+  .ch-diff { display: grid; grid-template-columns: 9rem 1fr; gap: 0.35rem 1rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border-subtle); }
+  .ch-diff:last-child { border-bottom: none; }
+  .ch-diff-cat { font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; gap: 0.35rem; }
+  .ch-diff-cat .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .ch-diff-field { font-weight: 600; font-size: 0.8rem; }
+  .ch-diff-sides { font-size: 0.76rem; color: var(--text-secondary); margin-top: 0.1rem; }
+  .ch-diff-side-label { color: var(--text-dim); display: inline-block; min-width: 3.1rem; }
+  .ch-diff-mag { font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .ch-deferred > summary { cursor: pointer; font-size: 0.76rem; color: var(--text-muted); padding: 0.35rem 0; }
+  .ch-deferred > summary:hover { color: var(--text-secondary); }
+  .ch-foot { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.6rem; line-height: 1.5; }
+  .ch-clean { font-size: 0.8rem; color: var(--success); }
+  .ch-stale { color: var(--gold-alt); }
   .whatif-enter-btn, .whatif-exit-btn {
     padding: 0.3rem 0.7rem; border: 1px solid var(--danger-border); border-radius: 6px;
     font-size: 0.75rem; font-weight: 600; cursor: pointer; background: transparent;
@@ -851,6 +909,7 @@ document.body.innerHTML = `
     <div class="tab-panel" id="tab-overview">
       <div id="offer-sheet-banner" style="display:none"></div>
       <div id="hard-cap-banner" style="display:none"></div>
+      <button type="button" id="cap-health-strip" class="cap-health-strip" style="display:none"></button>
       <section>
         <div class="roster-header-row">
           <h2 class="section-title" id="roster-title">Roster</h2>
@@ -885,6 +944,10 @@ document.body.innerHTML = `
             <div id="whatif-exceptions-wrap" class="exceptions-card"></div>
           </div>
         </div>
+      </section>
+      <section id="cap-health-section" style="display:none">
+        <h2 class="section-title">Cap Health</h2>
+        <div id="cap-health-wrap" class="ch-card"></div>
       </section>
       <section id="exceptions-section" style="display:none">
         <h2 class="section-title">Cap Exceptions</h2>
@@ -1407,6 +1470,15 @@ function fmtDollars(v) {
   return v ? '$' + Math.round(v).toLocaleString('en-US') : '$0';
 }
 
+// Compact form, for lines where the exact dollar is noise: a one-line summary
+// strip, or a running total of how far apart two sources are.
+function fmtDollarsShort(v) {
+  const abs = Math.abs(v || 0);
+  if (abs >= 1e6) return '$' + (abs / 1e6).toFixed(abs >= 1e8 ? 0 : 1) + 'M';
+  if (abs >= 1e3) return '$' + Math.round(abs / 1e3) + 'K';
+  return fmtDollars(abs);
+}
+
 // Real, persisted Empty Roster Charge (rulebook § 2.1a) — distinct from the
 // 14-player standard-roster minimum (§ 2.1) and from the trade-legality mock
 // the backend runs against a 14-player floor (routers/transactions.py,
@@ -1546,6 +1618,318 @@ function computeStepienLocked(teamPicks, allPicks, teamAbbr) {
     if (prevMissing || nextMissing) c.rows.forEach(p => locked.add(`${p.round}:${p.year}:${p.orig}`));
   });
   return locked;
+}
+
+// -----------------------------------------------------------------------------
+// Cap Health
+//
+// Both halves of "is my team's cap in order", on the page whose owner has to
+// answer that:
+//
+//   1. Standing — where the team sits against § 1.3/1.4's cap and aprons, its
+//      own hard cap, and § 2.1/2.1a/2.2's roster limits.
+//   2. Reconciliation — every line where the site and the league's own cap
+//      sheet disagree about this team, from build/poopoo.py.
+//
+// The second half was only ever visible on /poopoo, which is league-wide and
+// nav-gated to admin, so the owner of a team whose Team Salary the sheet has
+// $19M lower than the site had no way to learn that. Both halves are read-only:
+// deciding which source is right when they disagree is a committee call, not a
+// page's (docs/clean-up-the-poopoo-spec.md § 1 rules cap-sheet diffs out of
+// member-fixable work for exactly that reason).
+//
+// The rules are in /cap-health.js, not here, so What-If Mode and a future
+// league-wide compliance board apply the same ones. This function only renders,
+// and it recomputes nothing: the salary figures are passed in from
+// computeCapSummary, the diff figures come from the job that produced them.
+// -----------------------------------------------------------------------------
+
+// The job runs every 10 minutes. An hour without a run is a stuck timer, and a
+// reconciliation nobody can date is worse than none — it reads as current.
+const CAP_HEALTH_STALE_MS = 60 * 60 * 1000;
+
+// § 2.1's "standard roster slot" — the same type filter computeEmptyRosterCharge
+// uses. Two-way, draft-rights and dead entries don't occupy one.
+function countRosterSlots(rosterRows, biosData) {
+  let standard = 0, twoWay = 0;
+  (rosterRows || []).forEach(row => {
+    const type = row.TYPE || (biosData[row.SLUG] || {}).type || '';
+    if (type === 'two-way') twoWay++;
+    else if (!ROSTER_EXEMPT_TYPES.has(type)) standard++;
+  });
+  return { standard, twoWay };
+}
+
+const CH_HARD_CAP_LABELS = { first_apron: 'First Apron', second_apron: 'Second Apron' };
+
+function chDiffValue(field, v) {
+  // 'none' rather than '—' for a hard cap: the sheet having no hard cap on
+  // file is a real position, not a missing value. The value itself is the
+  // stored enum, which is not what a team page should be showing anyone.
+  if (field === 'Hard Cap') return v ? (CH_HARD_CAP_LABELS[v] || v) : 'none';
+  if (Array.isArray(v)) return v.join(' · ');
+  if (typeof v === 'number') return fmtDollars(v);
+  return (v === null || v === undefined || v === '') ? '—' : String(v);
+}
+
+function chDiffRow(d) {
+  const meta = CapHealth.diffMeta(d.category);
+  const row = document.createElement('div');
+  row.className = 'ch-diff';
+
+  const cat = document.createElement('span');
+  cat.className = 'ch-diff-cat';
+  cat.style.color = meta.color;
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  dot.style.background = meta.color;
+  cat.append(dot, document.createTextNode(meta.label));
+
+  const body = document.createElement('div');
+  const field = document.createElement('div');
+  field.className = 'ch-diff-field';
+  field.textContent = d.field || '';
+  body.appendChild(field);
+
+  [['sheet', d.sheet], ['site', d.site]].forEach(([which, value]) => {
+    const line = document.createElement('div');
+    line.className = 'ch-diff-sides';
+    const label = document.createElement('span');
+    label.className = 'ch-diff-side-label';
+    label.textContent = which;
+    line.append(label, document.createTextNode(chDiffValue(d.field, value)));
+    body.appendChild(line);
+  });
+
+  // 0 is a real answer here — the two sides agree on the money and differ on
+  // the status — so only a missing magnitude is omitted.
+  if (d.mag !== null && d.mag !== undefined) {
+    const mag = document.createElement('div');
+    mag.className = 'ch-diff-mag';
+    mag.textContent = d.mag ? `${fmtDollarsShort(d.mag)} apart` : 'same amount, different status';
+    body.appendChild(mag);
+  }
+
+  row.append(cat, body);
+  return row;
+}
+
+function chBlockTitle(title, countText) {
+  const head = document.createElement('div');
+  head.className = 'ch-block-title';
+  head.appendChild(document.createTextNode(title));
+  if (countText) {
+    const c = document.createElement('span');
+    c.className = 'ch-block-count';
+    c.textContent = countText;
+    head.appendChild(c);
+  }
+  return head;
+}
+
+// "Checked 12:10" is the mtime of the report, not its generated_at: the job
+// rewrites the file only when the answer changes, so generated_at can be days
+// old on a perfectly healthy system and would read as a stalled job.
+function chFreshness(summary) {
+  const el = document.createElement('div');
+  el.className = 'ch-foot';
+  if (!summary.checked_at) return el;
+  const checked = new Date(summary.checked_at);
+  const changed = summary.generated_at ? new Date(summary.generated_at) : null;
+  const stale = Date.now() - checked.getTime() > CAP_HEALTH_STALE_MS;
+  const when = checked.toLocaleString('en-US', {
+    month: checked.toDateString() === new Date().toDateString() ? undefined : 'short',
+    day: checked.toDateString() === new Date().toDateString() ? undefined : 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+  if (stale) {
+    el.classList.add('ch-stale');
+    el.textContent = `Checked against the league sheet ${when} — the reconciliation job runs every 10 minutes, so it may be stuck.`;
+    return el;
+  }
+  const unchanged = changed && checked - changed > 60000
+    ? `, unchanged since ${changed.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    : '';
+  el.textContent = `Checked against the league sheet ${when}${unchanged}.`;
+  return el;
+}
+
+function renderCapHealth(opts) {
+  const section = document.getElementById('cap-health-section');
+  const wrap = document.getElementById('cap-health-wrap');
+  const strip = document.getElementById('cap-health-strip');
+  if (!section || !wrap || !window.CapHealth) return;
+
+  const counts = countRosterSlots(opts.rosterRows, opts.biosData);
+  const { rows, warnings } = CapHealth.standing({
+    season: opts.season,
+    capLevels: opts.capLevels,
+    teamState: opts.teamState,
+    teamSalaryFull: opts.teamSalaryFull,
+    teamSalaryExHolds: opts.teamSalaryExHolds,
+    standardCount: counts.standard,
+    twoWayCount: counts.twoWay,
+    erc: opts.erc,
+    fmt: fmtDollars,
+  });
+
+  section.style.display = '';
+  wrap.innerHTML = '';
+
+  const standingBlock = document.createElement('div');
+  standingBlock.className = 'ch-block';
+  standingBlock.appendChild(chBlockTitle('Standing', opts.season));
+  rows.forEach(r => {
+    const row = document.createElement('div');
+    row.className = `ch-row ch-tone-${r.tone || 'plain'}`;
+    const label = document.createElement('span');
+    label.className = 'ch-row-label';
+    label.textContent = r.label;
+    const amount = document.createElement('span');
+    amount.className = 'ch-row-amount';
+    amount.textContent = r.value !== undefined ? r.value : (r.amount === null ? '—' : fmtDollars(r.amount));
+    const note = document.createElement('span');
+    note.className = 'ch-row-note';
+    note.textContent = r.note || '';
+    row.append(label, amount, note);
+    standingBlock.appendChild(row);
+  });
+
+  // Only real problems get a warning line of their own. "Over the Salary Cap"
+  // is the normal condition for most of the league and the Standing rows above
+  // already say it in dollars; repeating it as a ⚠ would train owners to skip
+  // the whole card. What-If Mode renders the full set, where crossing a line is
+  // exactly the question being asked.
+  warnings.filter(w => w.severity !== 'note').forEach(w => {
+    const line = document.createElement('div');
+    line.className = 'ch-warning' + (w.severity === 'caution' ? ' caution' : '');
+    line.textContent = (w.severity === 'caution' ? '• ' : '⚠ ') + w.text;
+    standingBlock.appendChild(line);
+  });
+  wrap.appendChild(standingBlock);
+
+  const reconBlock = document.createElement('div');
+  reconBlock.className = 'ch-block';
+  reconBlock.innerHTML = '<div class="ch-block-title">Against the league sheet</div><div class="ch-foot">Checking…</div>';
+  wrap.appendChild(reconBlock);
+
+  const salaryPhrase = (() => {
+    const by = key => rows.find(r => r.key === key);
+    const hc = by('hard_cap');
+    if (hc && hc.tone === 'violation') return `hard cap exceeded by ${fmtDollarsShort(opts.teamSalaryExHolds - hc.amount)}`;
+    const a2 = by('apron2'), a1 = by('apron1'), cap = by('cap');
+    if (a2 && a2.tone === 'over') return `over the second apron by ${fmtDollarsShort(opts.teamSalaryExHolds - a2.amount)}`;
+    if (a1 && a1.tone === 'over') return `over the first apron by ${fmtDollarsShort(opts.teamSalaryExHolds - a1.amount)}`;
+    if (cap && cap.tone === 'over') return `over the cap by ${fmtDollarsShort(opts.teamSalaryFull - cap.amount)}`;
+    if (cap && cap.tone === 'under') return `${fmtDollarsShort(cap.amount - opts.teamSalaryFull)} of cap room`;
+    return null;
+  })();
+
+  const setStrip = sheetPhrase => {
+    if (!strip) return;
+    const flagged = warnings.filter(w => w.severity !== 'note');
+    const parts = [
+      salaryPhrase,
+      `${counts.standard} player${counts.standard === 1 ? '' : 's'}`,
+      flagged.length ? `${flagged.length} rule flag${flagged.length === 1 ? '' : 's'}` : null,
+      sheetPhrase,
+    ].filter(Boolean);
+    strip.textContent = '';
+    const label = document.createElement('span');
+    label.className = 'ch-strip-label';
+    label.textContent = 'Cap health';
+    strip.appendChild(label);
+    parts.forEach(text => {
+      const sep = document.createElement('span');
+      sep.className = 'ch-strip-sep';
+      sep.textContent = '·';
+      const span = document.createElement('span');
+      span.textContent = text;
+      strip.append(sep, span);
+    });
+    const caret = document.createElement('span');
+    caret.className = 'ch-strip-caret';
+    caret.textContent = '▾';
+    strip.appendChild(caret);
+    strip.style.display = '';
+  };
+
+  setStrip(null);
+  if (strip && !strip.dataset.wired) {
+    strip.dataset.wired = '1';
+    strip.addEventListener('click', () => section.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+
+  fetch(`/api/poopoo/summary?team=${opts.abbr}`)
+    .then(r => (r.ok ? r.json() : null))
+    .then(summary => {
+      reconBlock.innerHTML = '';
+      if (!summary || !summary.available) {
+        reconBlock.appendChild(chBlockTitle('Against the league sheet'));
+        const note = document.createElement('div');
+        note.className = 'ch-foot';
+        note.textContent = 'The reconciliation job has not produced a report, so there is nothing to compare against right now.';
+        reconBlock.appendChild(note);
+        setStrip('sheet check unavailable');
+        return;
+      }
+
+      const entry = summary.teams[0];
+      const open = CapHealth.sortDiffs((entry?.diffs || []).filter(d => d.group === 'open'));
+      const deferred = CapHealth.sortDiffs((entry?.diffs || []).filter(d => d.group === 'deferred'));
+      // The team-level disagreement, not a sum of the rows: the player and
+      // exception rows below are components of it, so adding them up reports a
+      // team as further out than its books actually are (see _headline_mag in
+      // nbn-api/routers/poopoo.py).
+      const magText = entry?.headline_mag
+        ? ` · ${fmtDollarsShort(entry.headline_mag)} apart on Team Salary` : '';
+      reconBlock.appendChild(chBlockTitle(
+        'Against the league sheet',
+        open.length ? `${open.length} line${open.length === 1 ? '' : 's'}${magText}` : '',
+      ));
+
+      if (!open.length) {
+        const clean = document.createElement('div');
+        clean.className = 'ch-clean';
+        clean.textContent = deferred.length
+          ? 'Nothing disagrees about this season.'
+          : 'Everything tracked matches the league sheet.';
+        reconBlock.appendChild(clean);
+      } else {
+        open.forEach(d => reconBlock.appendChild(chDiffRow(d)));
+      }
+
+      // Future seasons and figures the site has never computed are collapsed,
+      // not hidden: they are real, but they are the site's own known gaps
+      // rather than something this team's owner can act on, and left inline
+      // they outnumber the actionable rows.
+      if (deferred.length) {
+        const det = document.createElement('details');
+        det.className = 'ch-deferred';
+        const sum = document.createElement('summary');
+        sum.textContent = `${deferred.length} future-season or not-yet-computed line${deferred.length === 1 ? '' : 's'}`;
+        det.appendChild(sum);
+        deferred.forEach(d => det.appendChild(chDiffRow(d)));
+        reconBlock.appendChild(det);
+      }
+
+      if (open.length || deferred.length) {
+        const foot = document.createElement('div');
+        foot.className = 'ch-foot';
+        foot.textContent = 'These are bookkeeping disagreements between the site and the league’s cap sheet, not rulings. Which source is right is a committee call — raise it with the committee rather than editing around it.';
+        reconBlock.appendChild(foot);
+      }
+      reconBlock.appendChild(chFreshness(summary));
+
+      setStrip(open.length
+        ? `${open.length} line${open.length === 1 ? '' : 's'} don’t match the league sheet`
+        : 'matches the league sheet');
+    })
+    .catch(() => {
+      reconBlock.innerHTML = '<div class="ch-block-title">Against the league sheet</div>'
+        + '<div class="ch-foot">Could not reach the reconciliation report.</div>';
+      setStrip('sheet check unavailable');
+    });
 }
 
 function renderExceptionsSection(
@@ -5105,36 +5489,27 @@ function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDe
     addWrap.appendChild(customBtn);
   }
 
+  // The same rules the Cap Health card runs, against the hypothetical roster
+  // instead of the real one — /cap-health.js, so a move can't read as legal
+  // here and illegal there. Unlike the card, this shows every severity: "Over
+  // the Salary Cap by $2M" is background noise on a team page and is the whole
+  // answer when you have just added a contract to see what it costs.
   function renderWarnings(rows, mergedBios, teamSalaryFull, teamSalaryExHolds, season) {
-    const lines = [];
-
-    const standardCount = rows.filter(r => {
-      const type = r.TYPE || (mergedBios[r.SLUG] || {}).type || '';
-      return !ROSTER_EXEMPT_TYPES.has(type);
-    }).length;
-    if (standardCount > 15) lines.push(`Roster size ${standardCount} exceeds the 15-player in-season limit (§ 2.1)`);
-
-    // Apron/cap comparisons mirror computeMleType's convention: apron-level
-    // checks (and this team's own hard cap, if one applies — § 1.3/1.4)
-    // exclude pure UFA/RFA holds; the plain Salary Cap check does not. Only
-    // the single most severe threshold crossed is shown, since anything over
-    // the 2nd apron is necessarily over the 1st apron and the cap too.
-    const cl = capLevels?.[season];
-    if (cl) {
-      const hcApronKey = teamState?.hard_cap === 'second_apron' ? 'apron2' : teamState?.hard_cap === 'first_apron' ? 'apron1' : null;
-      const hcLevel = hcApronKey ? cl[hcApronKey] : null;
-      if (hcLevel && teamSalaryExHolds > hcLevel) {
-        lines.push(`Violates this team's Hard Cap (${hcApronKey === 'apron2' ? 'Second' : 'First'} Apron) by ${fmtDollars(teamSalaryExHolds - hcLevel)}`);
-      } else if (cl.apron2 && teamSalaryExHolds > cl.apron2) {
-        lines.push(`Over the Second Apron by ${fmtDollars(teamSalaryExHolds - cl.apron2)}`);
-      } else if (cl.apron1 && teamSalaryExHolds > cl.apron1) {
-        lines.push(`Over the First Apron by ${fmtDollars(teamSalaryExHolds - cl.apron1)}`);
-      } else if (cl.cap && teamSalaryFull > cl.cap) {
-        lines.push(`Over the Salary Cap by ${fmtDollars(teamSalaryFull - cl.cap)}`);
-      }
-    }
-
-    warningsEl.innerHTML = lines.map(l => `<div class="whatif-warning-line">⚠ ${l}</div>`).join('');
+    warningsEl.innerHTML = '';
+    if (!window.CapHealth) return;
+    const counts = countRosterSlots(rows, mergedBios);
+    const { warnings } = CapHealth.standing({
+      season, capLevels, teamState, teamSalaryFull, teamSalaryExHolds,
+      standardCount: counts.standard, twoWayCount: counts.twoWay,
+      erc: computeEmptyRosterCharge(rows, mergedBios, capLevels, season),
+      fmt: fmtDollars,
+    });
+    warnings.forEach(w => {
+      const line = document.createElement('div');
+      line.className = 'whatif-warning-line';
+      line.textContent = `⚠ ${w.text}`;
+      warningsEl.appendChild(line);
+    });
   }
 
   const ATTR_IMPACT_COLS = [
@@ -5395,6 +5770,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   await ratingsPopupReady;
   await lineupReady;
   await contractReady;
+  await capHealthReady;
 
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
   if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
@@ -5751,6 +6127,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     const curYr = currentSeasonYr();
     const { teamSalaryFull, teamSalaryExHolds } = computeCapSummary(rosterRows, deadCapRows, biosData, capLevels, curYr);
     renderHardCapBanner(teamState);
+    renderCapHealth({
+      abbr, rosterRows, biosData, capLevels, season: curYr, teamState,
+      teamSalaryFull, teamSalaryExHolds,
+      erc: computeEmptyRosterCharge(rosterRows, biosData, capLevels, curYr),
+    });
     renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, curYr);
     renderTradeExceptionsSection(tradeExceptions);
 

@@ -422,6 +422,7 @@ precise.
 | Add/change an owners table column | `COLS` array — `owners/index.html` |
 | Change team page layout or HTML structure | `teams/team.js` (the injected HTML, not per-team files) |
 | Change cap/MLE/exception display | `renderHardCapBanner` / `renderExceptionsSection` — `teams/team.js` |
+| Change the Cap Health card (standing vs the cap/aprons and § 2.1 roster limits, or the league-sheet diffs) | Rules: **`cap-health.js`** at the repo root — one rule set, shared by the card, What-If Mode's warnings and (next) a league-wide board, plus the diff-category vocabulary `/poopoo` reads from the same file. Rendering: `renderCapHealth` — `teams/team.js`. Data: `GET /api/poopoo/summary` (`nbn-api/routers/poopoo.py`), a slim slice of `poopoo.json` — the full report is 1.1MB and cannot be fetched per team page. **The card does no cap math**: the salary figures come from `computeCapSummary`, the dollar magnitudes from the job that produced the diffs. Pinned by `tests/cap-health.test.js` (pure node, runs from the hook) and `nbn-api/tests/test_poopoo_summary.py` |
 | Change edit mode behavior | `enterEditMode` / `setupEditable` — `teams/team.js` |
 | Change the Team Settings tab (jersey #, secondary position) | `setupTeamSettingsTab` — `teams/team.js` |
 | Change stats highs table | `stats/highs/table.js` (not the per-stat HTML files) |

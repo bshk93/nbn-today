@@ -1116,6 +1116,49 @@ def build_completeness_report(players, ovr_current, rosters):
     return {"checked_total": checked, "counts": counts, "rows": rows}
 
 
+# A dollar figure inside a diff value, whichever shape that value came in:
+# a bare number (aggregate/mle/tpe), a formatted string ("$51,975,000" for
+# player_salary) or a compound one with a status prefix ("UFA $2,450,000").
+# Mirrors parseMoneyLike in poopoo/index.html deliberately -- that page has
+# always derived magnitudes client-side, and this is the same rule moved to
+# where the diff is produced so every consumer reads one number instead of
+# writing a third copy of the parser.
+_MONEY_RE = re.compile(r"-?\$[\d,]+(?:\.\d+)?")
+
+
+def _money_like(v):
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    if not isinstance(v, str):
+        return None
+    m = _MONEY_RE.search(v)
+    return float(m.group(0).replace("$", "").replace(",", "")) if m else None
+
+
+def fill_magnitudes(diffs):
+    """Stamp `mag` -- how many dollars apart the two sides are -- on every diff.
+
+    Only player_future_years carried one before, because it is the one category
+    whose value is a list and so cannot be parsed by looking for a single "$"
+    (it has one per season, and reading only the first misreports the rest).
+    Every other category was left to the reader. That was fine while /poopoo
+    was the only reader; it stops being fine the moment a second surface wants
+    to say "$19.2M apart" without re-implementing the parse.
+
+    Categories with no dollar figure on either side (hard cap status, a
+    team conflict, missing/extra) get `mag: None` -- absent, not zero, since
+    zero would read as "the two sides agree on the amount".
+    """
+    for d in diffs:
+        if d.get("mag") is not None:
+            continue
+        sheet, site = _money_like(d.get("sheet")), _money_like(d.get("site"))
+        d["mag"] = abs(sheet - site) if sheet is not None and site is not None else None
+    return diffs
+
+
 def _payload(raw):
     """The report minus its timestamp, normalised so two runs can be compared."""
     try:
@@ -1162,7 +1205,9 @@ def main():
     for team in TEAMS:
         if team not in sheet_data or team not in site_data:
             continue
-        diffs = diff_team(team, sheet_data[team], site_data[team], site_name_index, sheet_name_index, current_draft_year, season_keys, season)
+        diffs = fill_magnitudes(diff_team(
+            team, sheet_data[team], site_data[team], site_name_index,
+            sheet_name_index, current_draft_year, season_keys, season))
         teams_out.append({
             "team": team,
             "diff_count": len(diffs),

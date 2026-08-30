@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.1.137",
+    "date": "2026-08-30",
+    "changes": [
+      "Team pages have a Cap Health card: where the team stands against the salary cap, both aprons, its own hard cap and \u00a7 2.1's roster floor and ceiling \u2014 with a one-line summary strip at the top of the roster tab",
+      "The card also shows every line where the site and the league's cap sheet disagree about that team. Those diffs existed only on /poopoo, which is league-wide and admin-only, so an owner had no way to see that the two sources differ by millions on their own Team Salary",
+      "Rows about a future season, or about a figure the site has never computed, are collapsed separately from live disagreements \u2014 they are the site's own known gaps rather than something a team can act on, and they outnumber the actionable rows",
+      "The headline dollar figure is the team-level disagreement, not the sum of the rows: the player and exception rows underneath are components of it, and adding them up overstated how far apart the two sources are",
+      "What If Mode's warnings now come from the same rule set as the card, so a hypothetical roster can't read as legal in one place and illegal in the other. It gained the \u00a7 2.1 roster floor and the \u00a7 2.1a Empty Roster Charge, which it never checked",
+      "Being over 15 players in the offseason no longer reads as a violation \u2014 \u00a7 2.1 allows 20 until opening night, and six teams are legitimately over 15 today"
+    ]
+  },
+  {
     "version": "0.1.136",
     "date": "2026-08-30",
     "changes": [

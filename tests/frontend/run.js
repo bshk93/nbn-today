@@ -62,6 +62,11 @@ const PAGES = [
   { path: '/players/',                selector: 'table tbody tr',  min: 500, what: 'the player index' },
   { path: '/players/?p=curry-stephen', selector: 'table tbody tr', min: 5,  what: 'a profile with season rows' },
   { path: '/teams/UTA/',              selector: 'table tbody tr',  min: 10, what: 'roster, picks and history tables' },
+  // The Cap Health card is built from an API call and a rules module loaded
+  // separately from team.js, so a page that renders its tables fine can still
+  // come up with no card at all. Standing rows only — the sheet-diff rows
+  // below them are legitimately zero on a team that agrees with the sheet.
+  { path: '/teams/UTA/',              selector: '#cap-health-section .ch-row', min: 5, what: 'the cap health standing rows' },
   { path: '/h2h/',                    selector: 'table tbody tr',  min: 30, what: 'the head-to-head matrix' },
   { path: '/hof/',                    selector: 'table tbody tr',  min: 100, what: 'the HOF board' },
   { path: '/stats/highs/p/',          selector: 'table tbody tr',  min: 40, what: 'single-game points highs' },
