@@ -59,8 +59,8 @@
        existing success/danger pair — the same two the ▲▼ arrows use. The rank
        number is printed either way, so this is a second channel, never the only
        one carrying the meaning. */
-    .mark-hi, .rank-votes .rv-hi b, .btable td.num.rv-hi { color: var(--success); }
-    .mark-lo, .rank-votes .rv-lo b, .btable td.num.rv-lo { color: var(--danger); }
+    .rank-votes .rv-hi b, .btable td.num.rv-hi { color: var(--success); }
+    .rank-votes .rv-lo b, .btable td.num.rv-lo { color: var(--danger); }
     .rank-votes .rv-hi b, .rank-votes .rv-lo b { font-weight: 700; }
     details.ballots td.voter a { color: inherit; text-decoration: none; }
     details.ballots td.voter a:hover { color: var(--text-primary); text-decoration: underline; }
@@ -458,10 +458,7 @@ function renderRankings(a) {
   }
 
   const voters = (a.ballot_progress?.submitted || []);
-  const legend = [
-    movementNote(a).trim(),
-    voters.length ? 'Each team\'s <b class="mark-hi">highest</b> and <b class="mark-lo">lowest</b> ballot are marked.' : '',
-  ].filter(Boolean).join(' ');
+  const legend = movementNote(a).trim();
   rows.forEach(r => {
     ROSTERS[r.team] = rosterOf(r);
     if (r.season_line) SEASON_LINES[r.team] = r.season_line;
