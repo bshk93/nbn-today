@@ -206,7 +206,7 @@ function renderAuthorPanel() {
   } else {
     controls = `<button class="btn-success" onclick="doPublish()">Publish edition</button>`
       + ` <button class="btn-secondary" onclick="setPhase('voting')">Reopen voting</button>`;
-    note = `${blp.approved || 0} of ${blp.written || 0} written blurbs approved`
+    note = `${blp.written || 0} of ${blp.total || 30} blurbs written`
       + (blp.unwritten?.length ? ` · ${blp.unwritten.length} team${blp.unwritten.length === 1 ? '' : 's'} still unwritten` : '')
       + '. Publishing freezes the order — later ballot edits won\'t change it.';
   }
@@ -731,9 +731,7 @@ function renderBlurbCell(team, b) {
     return `<div class="blurb-text">${escHtml(b.body)}</div>
       <div class="blurb-meta">
         <span>— ${escHtml(b.claimed_by || 'unknown')}</span>
-        ${b.approved ? '<span class="tick">✓ approved</span>' : '<span>pending approval</span>'}
         ${canWrite ? `<button class="btn-secondary btn-tiny" onclick="editBlurb('${team}')">Edit</button>` : ''}
-        ${editor ? `<button class="btn-secondary btn-tiny" onclick="approveBlurb('${team}', ${b.approved ? 'false' : 'true'})">${b.approved ? 'Unapprove' : 'Approve'}</button>` : ''}
       </div>`;
   }
 
@@ -777,15 +775,6 @@ async function saveBlurb(team) {
     state.editingBlurb = null;
     render();
   } catch (e) { el.textContent = e.message; el.className = 'status-msg err'; }
-}
-
-async function approveBlurb(team, approved) {
-  try {
-    state.article = await api(`/news/${state.id}/rankings/blurbs/${team}`, {
-      method: 'PUT', body: JSON.stringify({ approved }),
-    });
-    render();
-  } catch (e) { alert(e.message); }
 }
 
 // ── boot ─────────────────────────────────────────────────────────────────────
