@@ -648,8 +648,7 @@ function blurbBoardInner() {
     <div class="panel">
       <div class="panel-title">Blurbs</div>
       <div class="panel-note">Claim a team and write it whenever you like — you don't have to
-        wait for voting to close. Blurbs aren't blind the way ballots are: anyone
-        reading this page can see what's been written.</div>
+        wait for voting to close.</div>
     </div>
     <table class="ctable">
       <thead><tr><th>Team</th><th>Blurb</th></tr></thead>
