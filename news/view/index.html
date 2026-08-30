@@ -32,8 +32,10 @@
        once the row itself, so opening a team pushes the panel below the head
        rather than into a fifth grid column. */
     /* Where the text column starts, measured off .rank-head's own grid:
-       2.9 + 2.2 + 44px logo + three 0.75 gaps. The blurb and the expanded panel
-       both hang off it so the page has one content edge, not two. */
+       2.9 + 2.2 + 44px logo + three 0.75 gaps. The collapsed blurb hangs off it
+       so the copy lines up with the team name above it. The expanded panel does
+       not: it is a card about the whole row, so it runs the row's full width
+       rather than leaving a 10rem gutter down its left. */
     .rank-row { border-bottom: 1px solid var(--bg-card); --text-col: 10.1rem; }
     .rank-row:last-child { border-bottom: none; }
     .rank-head { display: grid; grid-template-columns: 2.9rem 2.2rem auto 1fr; gap: 0.75rem; align-items: start;
@@ -108,7 +110,7 @@
     /* Expandable team panel — one card, so it reads as a single object rather
        than three loose blocks under the row. Built on first open (see
        toggleRankRow) so 30 of these are not in the DOM to read one. */
-    .rank-panel { padding: 0 0 1.4rem var(--text-col); }
+    .rank-panel { padding: 0 0 1.4rem; }
     .panel-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
                   padding: 0.9rem 1rem 1rem; }
     .panel-title { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
@@ -160,7 +162,6 @@
     .panel-link { display: inline-block; margin-top: 0.85rem; font-size: 0.72rem; color: var(--text-muted); text-decoration: none; }
     .panel-link:hover { color: var(--text-primary); }
     @media (max-width: 640px) {
-      .rank-panel { padding-left: 0; }
       /* Reclaim the fixed rank/move/logo columns — on a phone they were taking
          a third of the width off the blurb, which is the part people read. */
       .rank-head { grid-template-columns: 2.2rem 1.5rem 28px 1fr; gap: 0.45rem; }
