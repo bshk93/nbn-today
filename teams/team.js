@@ -1922,7 +1922,7 @@ function renderCapHealth(opts) {
       reconBlock.appendChild(chFreshness(summary));
 
       setStrip(open.length
-        ? `${open.length} line${open.length === 1 ? '' : 's'} don’t match the league sheet`
+        ? `${open.length} line${open.length === 1 ? " doesn’t" : "s don’t"} match the league sheet`
         : 'matches the league sheet');
     })
     .catch(() => {
