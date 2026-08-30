@@ -721,7 +721,7 @@ function renderBlurbCell(team, b) {
       <div class="blurb-meta">
         <button class="btn-primary btn-tiny" onclick="saveBlurb('${team}')">Save</button>
         <button class="btn-secondary btn-tiny" onclick="cancelBlurb()">Cancel</button>
-        ${mine && !editor ? `<button class="btn-danger btn-tiny" onclick="releaseBlurb('${team}')">Give this team up</button>` : ''}
+        ${releaseBtn(team, b, mine, editor)}
         <span class="status-msg" id="blurb-status-${team}"></span>
       </div>
     </div>`;
@@ -732,18 +732,37 @@ function renderBlurbCell(team, b) {
       <div class="blurb-meta">
         <span>— ${escHtml(b.claimed_by || 'unknown')}</span>
         ${canWrite ? `<button class="btn-secondary btn-tiny" onclick="editBlurb('${team}')">Edit</button>` : ''}
+        ${releaseBtn(team, b, mine, editor)}
       </div>`;
   }
 
   if (b.claimed_by) {
-    return `<span class="blurb-open">Claimed by ${escHtml(b.claimed_by)}</span>
-      ${canWrite ? ` <button class="btn-secondary btn-tiny" onclick="editBlurb('${team}')">Write</button>` : ''}`;
+    return `<div class="blurb-meta">
+        <span class="blurb-open">Claimed by ${escHtml(b.claimed_by)}</span>
+        ${canWrite ? `<button class="btn-secondary btn-tiny" onclick="editBlurb('${team}')">Write</button>` : ''}
+        ${releaseBtn(team, b, mine, editor)}
+      </div>`;
   }
 
   const canClaim = (isVoter() || editor) && BLURB_PHASES.includes(state.article.phase);
   return canClaim
     ? `<button class="btn-secondary btn-tiny" onclick="claimBlurb('${team}')">Claim</button>`
     : '<span class="blurb-open">—</span>';
+}
+
+// Giving a team back sits on the cell itself, not only inside an open editor.
+// The usual case is a voter who claimed a team, wrote nothing, and wants to hand
+// it back — that cell has no editor to open, so the only way out was to click
+// Write first. An editor can release anyone's claim (the API allows the
+// reassignment); everyone else only their own.
+// Only while claiming is open, for the same reason claiming closes: a release
+// in `final` could not be undone — nobody can claim the team back — and would
+// quietly strip the byline off a blurb that is already published.
+function releaseBtn(team, b, mine, editor) {
+  if (!b.claimed_by || !(mine || editor)) return '';
+  if (!BLURB_PHASES.includes(state.article.phase)) return '';
+  const label = mine ? 'Give this team up' : `Unclaim (${escHtml(b.claimed_by)})`;
+  return `<button class="btn-danger btn-tiny" onclick="releaseBlurb('${team}')">${label}</button>`;
 }
 
 function editBlurb(team) { state.editingBlurb = team; redrawBlurbs(); }
@@ -757,7 +776,15 @@ async function claimBlurb(team) {
   } catch (e) { alert(e.message); }
 }
 
+// Releasing clears the claim and leaves any text behind — written work is not
+// something a misclick should destroy — so say so, since the edition then
+// publishes that blurb with no byline until someone else picks the team up.
 async function releaseBlurb(team) {
+  const b = state.article.blurbs?.[team] || {};
+  const warn = b.body
+    ? '\n\nWhat you wrote stays on the edition, but loses your byline until someone claims it.'
+    : '';
+  if (!confirm(`Give up ${TEAMS[team] || team}?${warn}\n\nAnyone else can claim it after this.`)) return;
   try {
     state.article = await api(`/news/${state.id}/rankings/blurbs/${team}/claim`, { method: 'DELETE' });
     state.editingBlurb = null;
