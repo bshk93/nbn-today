@@ -3,8 +3,10 @@
 // =============================================================================
 // Everything that happens to a power-rankings article between "created" and
 // "published": the author invites voters and moves the phase along, voters rank
-// all 30 teams, and once voting closes the consensus appears and voters claim
-// teams to write blurbs on. The published article itself is rendered by
+// all 30 teams, and once voting closes the consensus appears. Claiming a team
+// to write its blurb opens earlier than that, at `voting`, on its own board
+// under the ballot (renderBlurbBoard) — so writing does not queue behind the
+// whole vote. The published article itself is rendered by
 // news/view/index.html — this page is only the workshop.
 //
 // The phases mirror the API's (routers/news_rankings.py), which is the only
@@ -113,6 +115,10 @@ function isEditor() {
 const isVoter = () => !!state.article?.viewer_is_voter;
 
 // ── rendering ────────────────────────────────────────────────────────────────
+
+// Mirrors BLURB_PHASES in nbn-api's news_rankings.py — the server is the gate,
+// this only decides whether to draw a button that would be refused.
+const BLURB_PHASES = ['voting', 'blurbs'];
 
 const PHASE_LABEL = {
   setup: 'Setting up', voting: 'Voting open', blurbs: 'Writing blurbs', final: 'Ready to publish',
@@ -327,11 +333,12 @@ async function doPublish() {
 function renderMain(phase) {
   const host = $('main-panel');
   if (phase === 'voting') {
-    if (isVoter()) { renderBallot(host); return; }
+    if (isVoter()) { renderBallot(host); renderBlurbBoard(host); return; }
     host.innerHTML = `<div class="panel"><div class="panel-title">Voting in progress</div>
       <div class="panel-note">Ballots are blind until the author closes voting. ${
         (state.article.ballot_progress?.submitted || []).length} of ${
         state.article.ballot_progress?.voters || 0} are in.</div></div>`;
+    if (isEditor()) renderBlurbBoard(host);
     return;
   }
   if (phase === 'setup') {
@@ -620,6 +627,52 @@ function moveCell(row) {
   return '<span class="move-flat">–</span>';
 }
 
+// Blurbs open at `voting`, so this is the claim board for that phase — the same
+// blurb cells the consensus table carries, on a plain alphabetical list of all
+// 30 teams.
+//
+// Alphabetical, and with no rank, average or vote count anywhere, because the
+// consensus is exactly what a voter must not see mid-vote: ordering this board
+// by the standing would leak through the back door the thing `redact` closes at
+// the front. (`a.consensus` is null here for a voter anyway — the server does
+// not send it — so there is nothing to order it by even by accident.)
+function renderBlurbBoard(host) {
+  const wrap = document.createElement('div');
+  wrap.id = 'blurb-board';
+  wrap.innerHTML = blurbBoardInner();
+  host.appendChild(wrap);
+}
+
+function blurbBoardInner() {
+  return `
+    <div class="panel">
+      <div class="panel-title">Blurbs</div>
+      <div class="panel-note">Claim a team and write it whenever you like — you don't have to
+        wait for voting to close. Blurbs aren't blind the way ballots are: anyone
+        reading this page can see what's been written.</div>
+    </div>
+    <table class="ctable">
+      <thead><tr><th>Team</th><th>Blurb</th></tr></thead>
+      <tbody>${Object.keys(TEAMS).sort().map(team => {
+        const b = state.article.blurbs?.[team] || {};
+        return `<tr>
+          <td><div class="team-cell">${logo(team)}<span>${escHtml(TEAMS[team])}</span></div></td>
+          <td>${renderBlurbCell(team, b)}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+
+// Opening or closing a blurb editor redraws only the blurbs. During voting the
+// ballot is sitting right above them, and re-rendering it to open a textarea
+// would rebuild thirty draggable rows for no reason. Falls back to the whole
+// panel in the `blurbs` phase, where the cells live in the consensus table.
+function redrawBlurbs() {
+  const board = document.getElementById('blurb-board');
+  if (board) board.innerHTML = blurbBoardInner();
+  else renderMain(state.article.phase);
+}
+
 function renderConsensus(host) {
   const a = state.article;
   const rows = a.consensus || [];
@@ -690,14 +743,14 @@ function renderBlurbCell(team, b) {
       ${canWrite ? ` <button class="btn-secondary btn-tiny" onclick="editBlurb('${team}')">Write</button>` : ''}`;
   }
 
-  const canClaim = (isVoter() || editor) && state.article.phase === 'blurbs';
+  const canClaim = (isVoter() || editor) && BLURB_PHASES.includes(state.article.phase);
   return canClaim
     ? `<button class="btn-secondary btn-tiny" onclick="claimBlurb('${team}')">Claim</button>`
     : '<span class="blurb-open">—</span>';
 }
 
-function editBlurb(team) { state.editingBlurb = team; renderMain(state.article.phase); }
-function cancelBlurb() { state.editingBlurb = null; renderMain(state.article.phase); }
+function editBlurb(team) { state.editingBlurb = team; redrawBlurbs(); }
+function cancelBlurb() { state.editingBlurb = null; redrawBlurbs(); }
 
 async function claimBlurb(team) {
   try {
