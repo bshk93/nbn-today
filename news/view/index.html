@@ -31,20 +31,23 @@
     /* The row is the border-bottom container; .rank-head is the grid that was
        once the row itself, so opening a team pushes the panel below the head
        rather than into a fifth grid column. */
-    .rank-row { border-bottom: 1px solid var(--bg-card); }
+    /* Where the text column starts, measured off .rank-head's own grid:
+       2.9 + 2.2 + 44px logo + three 0.75 gaps. The blurb and the expanded panel
+       both hang off it so the page has one content edge, not two. */
+    .rank-row { border-bottom: 1px solid var(--bg-card); --text-col: 10.1rem; }
     .rank-row:last-child { border-bottom: none; }
-    .rank-head { display: grid; grid-template-columns: 2.6rem 2.2rem auto 1fr; gap: 0.75rem; align-items: start;
-                 padding: 0.85rem 0.6rem; margin: 0 -0.6rem; border-radius: 8px;
+    .rank-head { display: grid; grid-template-columns: 2.9rem 2.2rem auto 1fr; gap: 0.75rem; align-items: start;
+                 padding: 1rem 0.6rem; margin: 0 -0.6rem; border-radius: 8px;
                  cursor: pointer; transition: background 0.12s ease; }
     .rank-head:hover { background: var(--bg-card); }
     .rank-head.static { cursor: default; }
     .rank-head.static:hover { background: transparent; }
     .rank-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-    .rank-no { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 800; color: var(--text-primary); text-align: right; line-height: 1.2; }
+    .rank-no { font-family: var(--font-mono); font-size: 1.9rem; font-weight: 800; color: var(--text-primary); text-align: right; line-height: 1.2; }
     .rank-no .tie { font-size: 0.72rem; font-weight: 700; color: var(--text-dim); vertical-align: 0.35em; margin-right: 0.05rem; }
-    .rank-move { text-align: right; padding-top: 0.35rem; }
-    .rank-logo img { width: 40px; height: 40px; object-fit: contain; display: block; }
-    .rank-team { font-size: 1rem; font-weight: 700; color: var(--text-primary);
+    .rank-move { text-align: right; padding-top: 0.6rem; }
+    .rank-logo img { width: 44px; height: 44px; object-fit: contain; display: block; }
+    .rank-team { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary);
                  display: flex; align-items: center; gap: 0.4rem; }
     .rank-chev { font-size: 0.6rem; color: var(--text-dim); transition: transform 0.15s ease; }
     .rank-row.open .rank-chev { transform: rotate(90deg); color: var(--text-muted); }
@@ -64,8 +67,19 @@
     .rank-votes .rv-hi b, .rank-votes .rv-lo b { font-weight: 700; }
     details.ballots td.voter a { color: inherit; text-decoration: none; }
     details.ballots td.voter a:hover { color: var(--text-primary); text-decoration: underline; }
-    .rank-blurb { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.35rem; }
-    .rank-blurb .by { color: var(--text-dim); font-size: 0.75rem; }
+    /* Blurb copy is set like an article, not a caption. The measure is the
+       point: across a 940px column the old full-width paragraph ran ~110
+       characters a line, which is roughly double what anyone reads
+       comfortably, and it was the main reason the page read as a data dump
+       rather than as writing. */
+    .rank-blurb { max-width: 62ch; margin-top: 0.75rem; padding-left: 0.95rem;
+                  border-left: 2px solid var(--border); }
+    .rank-blurb p { font-size: 0.97rem; line-height: 1.72; color: var(--text-secondary); margin: 0 0 0.7rem; }
+    .rank-blurb p:last-of-type { margin-bottom: 0; }
+    /* The writer gets a credit line, not a dash trailing the last sentence. */
+    .rank-blurb .by { display: block; margin-top: 0.6rem; font-size: 0.68rem;
+                      letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
+    .rank-blurb .by b { color: var(--text-muted); font-weight: 700; }
 
     /* The avatar is shared by the starting-five cards and the roster list. It
        is a <span>, so anywhere its parent is not a flex/grid container it needs
@@ -82,7 +96,7 @@
     /* Expandable team panel — one card, so it reads as a single object rather
        than three loose blocks under the row. Built on first open (see
        toggleRankRow) so 30 of these are not in the DOM to read one. */
-    .rank-panel { padding: 0 0 1.1rem 5.6rem; }
+    .rank-panel { padding: 0 0 1.4rem var(--text-col); }
     .panel-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
                   padding: 0.9rem 1rem 1rem; }
     .panel-title { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
@@ -136,9 +150,14 @@
       .rank-panel { padding-left: 0; }
       /* Reclaim the fixed rank/move/logo columns — on a phone they were taking
          a third of the width off the blurb, which is the part people read. */
-      .rank-head { grid-template-columns: 1.9rem 1.5rem 26px 1fr; gap: 0.45rem; }
-      .rank-no { font-size: 1.15rem; }
-      .rank-logo img { width: 26px; height: 26px; }
+      .rank-head { grid-template-columns: 2.2rem 1.5rem 28px 1fr; gap: 0.45rem; }
+      .rank-no { font-size: 1.45rem; }
+      .rank-logo img { width: 28px; height: 28px; }
+      /* Same three columns as the grid above, so the copy can be pulled back
+         out of them. On a phone the indent was costing the blurb a third of
+         the screen, which no amount of good type survives. */
+      .rank-row { --text-col: calc(4.6rem + 28px); }
+      .rank-blurb { margin-left: calc(0px - var(--text-col)); padding-left: 0.7rem; }
       .prow { grid-template-columns: 1.2rem 28px minmax(0, 1fr) auto 2rem; }
       .prow .pag { display: none; }
     }
@@ -405,6 +424,18 @@ const TEAM_NAMES = {
   TOR: 'Toronto Raptors',      UTA: 'Utah Jazz',           WAS: 'Washington Wizards',
 };
 
+// A blurb is prose, so it is set as prose: blank lines become paragraphs and a
+// single newline becomes a break, rather than the whole thing collapsing into
+// one run of text the way `escHtml(body)` alone did. Escaping still happens
+// first — the tags below are added to already-escaped text, never to input.
+function blurbHtml(b) {
+  const paras = String(b.body || '').split(/\n\s*\n/).map(t => t.trim()).filter(Boolean);
+  return `<div class="rank-blurb">
+    ${paras.map(t => `<p>${escHtml(t).replace(/\n/g, '<br>')}</p>`).join('')}
+    ${b.claimed_by ? `<span class="by">By <b>${escHtml(b.claimed_by)}</b></span>` : ''}
+  </div>`;
+}
+
 function moveCell(r) {
   if (r.prev == null) return '<span class="move-new">new</span>';
   if (r.move > 0) return `<span class="move-up">▲${r.move}</span>`;
@@ -485,8 +516,7 @@ function renderRankings(a) {
             <div class="rank-team">${escHtml(TEAM_NAMES[r.team] || r.team)}${canOpen ? '<span class="rank-chev">▶</span>' : ''}</div>
             <div class="rank-stats">avg ${r.avg.toFixed(2)}${votes ? '' : ` · high ${r.hi} · low ${r.lo}`}</div>
             ${votes}
-            ${b.body ? `<div class="rank-blurb">${escHtml(b.body)}
-              ${b.claimed_by ? `<span class="by">— ${escHtml(b.claimed_by)}</span>` : ''}</div>` : ''}
+            ${b.body ? blurbHtml(b) : ''}
           </div>
         </div>
         <div class="rank-panel" id="panel-${r.team}" hidden></div>
