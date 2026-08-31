@@ -74,12 +74,23 @@ League-wide constants (cap thresholds, roster limits, apron triggers) are in Art
 
 ## Dev and live — which checkout am I in?
 
-Two checkouts of this repo, both on `main`, both plain clones of the same remote:
+**Both repos are paired. Four checkouts, not two** — and the `-dev` half of each
+is where you edit:
 
 | | Path | What it is |
 |---|---|---|
-| **live** | `/home/skim/projects/nbn-today` | what `nbn.today` serves — `/var/www/nbn.today` is a symlink to it |
-| **dev** | `/home/skim/projects/nbn-today-dev` | what `https://dev.nbn.today` serves, behind basic auth (user `dev`, `/etc/nginx/.htpasswd-dev`) |
+| **site, live** | `/home/skim/projects/nbn-today` | what `nbn.today` serves — `/var/www/nbn.today` is a symlink to it |
+| **site, dev** | `/home/skim/projects/nbn-today-dev` | what `https://dev.nbn.today` serves, behind basic auth (user `dev`, `/etc/nginx/.htpasswd-dev`) |
+| **api, live** | `/home/skim/projects/nbn-api` | what the `nbn-api` service runs. **Every other mention of `nbn-api` in this file is this path**, because ops (`stats_build`, `fetch_trade_votes.py`, `venv/`) genuinely means live — that is not permission to edit here |
+| **api, dev** | `/home/skim/projects/nbn-api-dev` | where API edits go. Has its own `venv/`, so the test suites run here |
+
+The api pair is the one that gets missed, and predictably: this file names the
+live api path a dozen times for ops and named the dev one nowhere, so a session
+that has only read this file has only ever been handed the live path. Editing
+there is less immediately destructive than on the site (uvicorn holds the old
+modules until a restart, so an edit does not deploy itself) — but the tree is
+then dirty, and `nbn-api/deploy.sh` refuses to deploy a dirty tree, so the
+change cannot ship from where it was made.
 
 **Edit in `-dev`, run ops in live.** Saving a file in the live checkout deploys
 it, instantly and with no review step; that is the whole reason the dev copy
@@ -93,6 +104,12 @@ cd ~/projects/nbn-today-dev && git checkout -b some-change   # edit, commit
 git push -u origin some-change && git checkout main && git merge some-change && git push
 cd ~/projects/nbn-today && ./deploy.sh                       # ff-only, refuses a dirty tree
 ```
+
+Same loop for the API, with `nbn-api-dev` / `nbn-api` in place of the two site
+paths. Its `deploy.sh` pulls **and restarts the service** — the restart is the
+deploy, since uvicorn holds the old modules until then. When a change spans both
+repos, **the API ships first**: the site is what would otherwise be live against
+a server that has not learned the new rule yet.
 
 `deploy.sh` prints the rollback command (`git reset --hard <sha>`) on every
 deploy. It rolls back **code only** — data lives in `/var/lib/nothing-but-stats`
