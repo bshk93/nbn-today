@@ -91,6 +91,7 @@
     .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
     .sched-schd-game:hover { background: var(--bg-card); }
     .sched-schd-teams { flex: 1; }
+    .sched-schd-time { font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sched-schd-note { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; background: var(--bg-card); border-radius: 3px; padding: 0.1rem 0.35rem; }
     .sched-schd-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; padding: 0 0.2rem; line-height: 1; opacity: 0; transition: opacity 0.1s; }
     .sched-schd-game:hover .sched-schd-del { opacity: 1; }
@@ -168,6 +169,9 @@
     .vest-count   { font-size: 0.68rem; color: var(--warning); line-height: 1.3; }
     .custom-pip   { font-size: 0.68rem; color: var(--purple); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 
+    .team-filter { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.8rem; cursor: pointer; }
+    .team-filter:focus { outline: none; border-color: var(--accent); }
+
     .loading { color: var(--text-muted); font-size: 0.875rem; }
   </style>
 </head>
@@ -179,6 +183,9 @@
       <div class="controls">
         <button class="add-event-btn" id="add-event-btn" style="display:none">+ Add event</button>
         <button class="add-game-btn"  id="add-game-btn"  style="display:none">+ Add game(s)</button>
+        <select class="team-filter" id="team-filter" title="Show only one team's games">
+          <option value="">All teams</option>
+        </select>
         <div class="view-toggle">
           <button class="view-btn active" id="btn-sched">Schedule</button>
           <button class="view-btn"        id="btn-month">Month</button>
@@ -204,7 +211,12 @@
     let gamesByDate          = {};   // "YYYY-MM-DD" → [{home_team, away_team, home_score, away_score, gametype}]
     let vestingByDate        = {};   // "YYYY-MM-DD" → [{slug, name, team, season, amount}]
     let customEventsByDate   = {};   // "YYYY-MM-DD" → [{id, date, label}]
-    let scheduledGamesByDate = {};   // "YYYY-MM-DD" → [{id, date, home_team, away_team, note}]
+    // Two sources land in here, tagged by `_src` so a delete goes back to the
+    // endpoint the game actually came from: 'schedule' is the league's own
+    // fixture list (/api/schedule, ~1,200 games a season, seeded from the NBA's
+    // and edited from there), 'calendar' is the handful a BOD member types in
+    // by hand (/api/calendar/games).
+    let scheduledGamesByDate = {};   // "YYYY-MM-DD" → [{id, date, home_team, away_team, time_et, note, _src}]
     let leagueToday          = null; // "YYYY-MM-DD"
     let isBoD                = false;
     let showAddForm          = false;
@@ -213,6 +225,11 @@
     let viewMode   = 'schedule';
     let viewYear, viewMonth;
     let shownPastIdx = 0;  // index into getPastEventDates()
+    // A full season is ~170 future dates. Rendering them all put well over a
+    // thousand rows on the page at once, so the future paginates the same way
+    // the past already did.
+    let shownFutureIdx = SCHED_PAGE;
+    let teamFilter = '';
 
     const storedToken = () => localStorage.getItem('nbn_token');
 
@@ -250,23 +267,64 @@
       return `${CAL_DAYS[dt.getDay()]}, ${MONTHS_SHORT[dt.getMonth()]} ${dt.getDate()}`;
     }
 
+    // "7:00p" → minutes past midnight, for ordering a day's games. Mirrors
+    // _time_key in nbn-api/routers/schedule.py; times come from the NBA and are
+    // always Eastern.
+    function tipKey(t) {
+      const m = /^(\d{1,2}):(\d{2})([ap])$/.exec(t || '');
+      if (!m) return 9999;
+      let hh = +m[1] % 12;
+      if (m[3] === 'p') hh += 12;
+      return hh * 60 + (+m[2]);
+    }
+
     function monthKey(dateStr)  { return dateStr.slice(0, 7); }
     function fmtMonthLabel(ym)  {
       const [y, m] = ym.split('-');
       return `${CAL_MONTHS[+m - 1]} ${y}`;
     }
 
+    // Every read of scheduledGamesByDate goes through here, so the team filter
+    // and the played-game suppression below can't be applied in one view and
+    // forgotten in another.
+    //
+    // A fixture stays on the schedule after it is played — /api/schedule is the
+    // plan, and nothing retracts a row once the box score lands. So a played
+    // game would otherwise appear twice on its date: once from the box scores
+    // and once as though it were still upcoming. Drop the fixture; the box
+    // score is the better row, since it carries the result.
+    function schedFor(dateStr) {
+      let list = scheduledGamesByDate[dateStr] || [];
+      if (teamFilter) list = list.filter(g => g.home_team === teamFilter || g.away_team === teamFilter);
+      const played = gamesByDate[dateStr] || [];
+      if (played.length) {
+        list = list.filter(g => !played.some(p => p.home_team === g.home_team && p.away_team === g.away_team));
+      }
+      return list.length ? list : null;
+    }
+
+    function gamesFor(dateStr) {
+      const list = gamesByDate[dateStr] || [];
+      if (!list.length) return null;
+      if (!teamFilter) return list;
+      const hit = list.filter(g => g.home_team === teamFilter || g.away_team === teamFilter);
+      return hit.length ? hit : null;
+    }
+
     function getPastEventDates() {
-      const gameDates   = Object.keys(gamesByDate).filter(d => d < leagueToday);
-      const customDates = Object.keys(customEventsByDate).filter(d => d < leagueToday);
-      const schedDates  = Object.keys(scheduledGamesByDate).filter(d => d < leagueToday);
+      const gameDates   = Object.keys(gamesByDate).filter(d => d < leagueToday && gamesFor(d));
+      const customDates = teamFilter ? [] : Object.keys(customEventsByDate).filter(d => d < leagueToday);
+      const schedDates  = Object.keys(scheduledGamesByDate).filter(d => d < leagueToday && schedFor(d));
       return [...new Set([...gameDates, ...customDates, ...schedDates])].sort();
     }
 
     function getFutureEventDates() {
-      const vestDates   = Object.keys(vestingByDate).filter(d => d >= leagueToday);
-      const customDates = Object.keys(customEventsByDate).filter(d => d >= leagueToday);
-      const schedDates  = Object.keys(scheduledGamesByDate).filter(d => d >= leagueToday);
+      const vestDates   = teamFilter
+        ? Object.keys(vestingByDate).filter(d => d >= leagueToday
+            && (vestingByDate[d] || []).some(v => v.team === teamFilter))
+        : Object.keys(vestingByDate).filter(d => d >= leagueToday);
+      const customDates = teamFilter ? [] : Object.keys(customEventsByDate).filter(d => d >= leagueToday);
+      const schedDates  = Object.keys(scheduledGamesByDate).filter(d => d >= leagueToday && schedFor(d));
       return [...new Set([...vestDates, ...customDates, ...schedDates])].sort();
     }
 
@@ -340,12 +398,13 @@
 
     async function init() {
       try {
-        const [gamesResult, vestResult, customResult, bodResult, schedResult] = await Promise.allSettled([
+        const [gamesResult, vestResult, customResult, bodResult, schedResult, leagueResult] = await Promise.allSettled([
           fetch('/api/boxscores/games').then(r => r.json()),
           loadVestingEvents(),
           loadCustomEvents(),
           checkAuth(),
           fetch('/api/calendar/games').then(r => r.json()),
+          fetch('/api/schedule').then(r => r.json()),
         ]);
 
         if (gamesResult.status === 'fulfilled') {
@@ -371,8 +430,16 @@
         if (schedResult.status === 'fulfilled') {
           schedResult.value.forEach(g => {
             if (!scheduledGamesByDate[g.date]) scheduledGamesByDate[g.date] = [];
-            scheduledGamesByDate[g.date].push(g);
+            scheduledGamesByDate[g.date].push({ ...g, _src: 'calendar' });
           });
+        }
+        if (leagueResult.status === 'fulfilled') {
+          (leagueResult.value.games || []).forEach(g => {
+            if (!scheduledGamesByDate[g.date]) scheduledGamesByDate[g.date] = [];
+            scheduledGamesByDate[g.date].push({ ...g, _src: 'schedule' });
+          });
+          Object.values(scheduledGamesByDate).forEach(list =>
+            list.sort((a, b) => (a.time_et ? tipKey(a.time_et) : 9999) - (b.time_et ? tipKey(b.time_et) : 9999)));
         }
 
         if (!leagueToday) {
@@ -395,6 +462,21 @@
           gameBtn.style.display = '';
           gameBtn.onclick = () => { showAddGameForm = !showAddGameForm; showAddForm = false; renderView(); };
         }
+
+        const filterEl = document.getElementById('team-filter');
+        TEAMS.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = opt.textContent = t.toUpperCase();
+          filterEl.appendChild(opt);
+        });
+        filterEl.onchange = () => {
+          teamFilter = filterEl.value;
+          // Both windows are indexes into lists the filter just rewrote, so
+          // reset them rather than carry an offset into a different list.
+          shownPastIdx   = getPastEventDates().length;
+          shownFutureIdx = SCHED_PAGE;
+          renderView();
+        };
 
         document.getElementById('btn-sched').onclick = () => switchView('schedule');
         document.getElementById('btn-month').onclick = () => switchView('month');
@@ -503,9 +585,10 @@
       }
     }
 
-    async function deleteScheduledGame(id, date) {
+    async function deleteScheduledGame(id, date, src) {
       try {
-        const res = await fetch(`/api/calendar/games/${id}`, {
+        const path = src === 'schedule' ? `/api/schedule/${id}` : `/api/calendar/games/${id}`;
+        const res = await fetch(path, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${storedToken()}` },
         });
@@ -619,7 +702,7 @@
             }
             const game = await res.json();
             if (!scheduledGamesByDate[game.date]) scheduledGamesByDate[game.date] = [];
-            scheduledGamesByDate[game.date].push(game);
+            scheduledGamesByDate[game.date].push({ ...game, _src: 'calendar' });
           }
           showAddGameForm = false;
           renderView();
@@ -670,10 +753,10 @@
         const mk = monthKey(date);
         if (mk !== lastMK) { wrap.appendChild(makeMonthHdr(mk)); lastMK = mk; }
         wrap.appendChild(makeSchedDay(date,
-          gamesByDate[date]          || null,
+          gamesFor(date),
           null,
-          customEventsByDate[date]   || null,
-          scheduledGamesByDate[date] || null,
+          teamFilter ? null : (customEventsByDate[date] || null),
+          schedFor(date),
         ));
       });
 
@@ -685,17 +768,29 @@
       todayDiv.appendChild(todayLbl);
       wrap.appendChild(todayDiv);
 
-      // Future dates
-      getFutureEventDates().forEach(date => {
+      // Future dates — capped, because a seeded season is ~170 of them
+      const allFuture = getFutureEventDates();
+      allFuture.slice(0, shownFutureIdx).forEach(date => {
         const mk = monthKey(date);
         if (mk !== lastMK) { wrap.appendChild(makeMonthHdr(mk)); lastMK = mk; }
+        const vest = teamFilter
+          ? (vestingByDate[date] || []).filter(v => v.team === teamFilter)
+          : (vestingByDate[date] || null);
         wrap.appendChild(makeSchedDay(date,
-          gamesByDate[date]          || null,
-          vestingByDate[date]        || null,
-          customEventsByDate[date]   || null,
-          scheduledGamesByDate[date] || null,
+          gamesFor(date),
+          (vest && vest.length) ? vest : null,
+          teamFilter ? null : (customEventsByDate[date] || null),
+          schedFor(date),
         ));
       });
+      const remaining = allFuture.length - shownFutureIdx;
+      if (remaining > 0) {
+        const more = document.createElement('button');
+        more.className = 'load-more-btn';
+        more.textContent = `↓ Load ${Math.min(remaining, SCHED_PAGE)} more`;
+        more.onclick = () => { shownFutureIdx += SCHED_PAGE; renderSchedule(); };
+        wrap.appendChild(more);
+      }
 
       content.innerHTML = '';
       content.appendChild(wrap);
@@ -755,6 +850,13 @@
           teams.textContent = `🏀 ${g.away_team} @ ${g.home_team}`;
           row.appendChild(teams);
 
+          if (g.time_et) {
+            const time = document.createElement('span');
+            time.className = 'sched-schd-time';
+            time.textContent = `${g.time_et}m ET`;
+            row.appendChild(time);
+          }
+
           if (g.note) {
             const note = document.createElement('span');
             note.className = 'sched-schd-note';
@@ -767,7 +869,7 @@
             del.className = 'sched-schd-del';
             del.textContent = '×';
             del.title = 'Remove scheduled game';
-            del.onclick = e => { e.stopPropagation(); deleteScheduledGame(g.id, g.date); };
+            del.onclick = e => { e.stopPropagation(); deleteScheduledGame(g.id, g.date, g._src); };
             row.appendChild(del);
           }
 
@@ -862,10 +964,10 @@
         if (cellCount && cellCount % 7 === 0) row = tbody.insertRow();
         const dateStr   = `${viewYear}-${String(viewMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const classes   = [];
-        const games     = gamesByDate[dateStr]          || null;
+        const games     = gamesFor(dateStr);
         const vesting   = vestingByDate[dateStr]        || null;
-        const custom    = customEventsByDate[dateStr]   || null;
-        const scheduled = scheduledGamesByDate[dateStr] || null;
+        const custom    = teamFilter ? null : (customEventsByDate[dateStr] || null);
+        const scheduled = schedFor(dateStr);
         if (games)     classes.push('has-games');
         if (vesting)   classes.push('has-vesting');
         if (custom)    classes.push('has-custom');
