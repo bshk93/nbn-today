@@ -95,8 +95,12 @@
     .team-cell { display: flex; align-items: center; gap: 0.5rem; }
     .team-cell img { width: 24px; height: 24px; object-fit: contain; }
 
-    .blurb-box { margin-top: 0.4rem; }
-    .blurb-box textarea { width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 0.82rem; font-family: inherit; resize: vertical; min-height: 62px; }
+    /* The editor is its own full-width row under the team, not a cell in the
+       blurb column — see blurbEditorRow in rankings.js. */
+    .blurb-edit-row td { background: var(--bg-card); padding: 0.7rem 0.8rem; }
+    .blurb-edit-head { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.45rem; }
+    .blurb-edit-head img { width: 22px; height: 22px; object-fit: contain; }
+    .blurb-box textarea { width: 100%; box-sizing: border-box; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.55rem 0.7rem; font-size: 0.88rem; line-height: 1.55; font-family: inherit; resize: vertical; min-height: 140px; }
     .blurb-box textarea:focus { outline: none; border-color: var(--accent); }
     .blurb-text { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.55; }
     .blurb-meta { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.25rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }

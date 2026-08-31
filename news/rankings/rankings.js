@@ -657,7 +657,7 @@ function blurbBoardInner() {
         return `<tr>
           <td><div class="team-cell">${logo(team)}<span>${escHtml(TEAMS[team])}</span></div></td>
           <td>${renderBlurbCell(team, b)}</td>
-        </tr>`;
+        </tr>${blurbEditorRow(team, b, 2)}`;
       }).join('')}</tbody>
     </table>`;
 }
@@ -706,7 +706,31 @@ function renderConsensusRow(r) {
     <td class="num">${r.hi}–${r.lo}</td>
     <td class="num">${r.firsts || ''}</td>
     <td>${renderBlurbCell(r.team, b)}</td>
-  </tr>`;
+  </tr>${blurbEditorRow(r.team, b, 7)}`;
+}
+
+function canWriteBlurb(b) { return b.claimed_by === state.me?.name || isEditor(); }
+
+// The editor is a row of its own, spanning every column, rather than the blurb
+// cell it used to live in: that cell is one of seven in the consensus table, so
+// on a phone it left a textarea about a word wide. Same reason the roster
+// drawer and the published table's expanded panel are full-width rows.
+function blurbEditorRow(team, b, cols) {
+  if (state.editingBlurb !== team || !canWriteBlurb(b)) return '';
+  const editor = isEditor();
+  const mine = b.claimed_by === state.me?.name;
+  return `<tr class="blurb-edit-row"><td colspan="${cols}">
+    <div class="blurb-box">
+      <div class="blurb-edit-head">${logo(team)}<span>${escHtml(TEAMS[team])}</span></div>
+      <textarea id="blurb-input-${team}" maxlength="1200" placeholder="What's the read on ${escHtml(TEAMS[team])}?">${escHtml(b.body || '')}</textarea>
+      <div class="blurb-meta">
+        <button class="btn-primary btn-tiny" onclick="saveBlurb('${team}')">Save</button>
+        <button class="btn-secondary btn-tiny" onclick="cancelBlurb()">Cancel</button>
+        ${releaseBtn(team, b, mine, editor)}
+        <span class="status-msg" id="blurb-status-${team}"></span>
+      </div>
+    </div>
+  </td></tr>`;
 }
 
 function renderBlurbCell(team, b) {
@@ -715,17 +739,9 @@ function renderBlurbCell(team, b) {
   const mine = b.claimed_by === me;
   const canWrite = mine || editor;
 
-  if (state.editingBlurb === team && canWrite) {
-    return `<div class="blurb-box">
-      <textarea id="blurb-input-${team}" maxlength="1200" placeholder="What's the read on ${escHtml(TEAMS[team])}?">${escHtml(b.body || '')}</textarea>
-      <div class="blurb-meta">
-        <button class="btn-primary btn-tiny" onclick="saveBlurb('${team}')">Save</button>
-        <button class="btn-secondary btn-tiny" onclick="cancelBlurb()">Cancel</button>
-        ${releaseBtn(team, b, mine, editor)}
-        <span class="status-msg" id="blurb-status-${team}"></span>
-      </div>
-    </div>`;
-  }
+  // Open in the row below: say so rather than repeating the text being edited,
+  // or offering an Edit button for an editor that is already open.
+  if (state.editingBlurb === team && canWrite) return '<span class="blurb-open">Editing…</span>';
 
   if (b.body) {
     return `<div class="blurb-text">${escHtml(b.body)}</div>
@@ -765,14 +781,25 @@ function releaseBtn(team, b, mine, editor) {
   return `<button class="btn-danger btn-tiny" onclick="releaseBlurb('${team}')">${label}</button>`;
 }
 
-function editBlurb(team) { state.editingBlurb = team; redrawBlurbs(); }
+function editBlurb(team) { state.editingBlurb = team; redrawBlurbs(); focusBlurbEditor(team); }
 function cancelBlurb() { state.editingBlurb = null; redrawBlurbs(); }
+
+// Opening the editor pushes it a row below the team, which on a phone can be
+// off the bottom of the screen — put the caret in it and bring it into view.
+function focusBlurbEditor(team) {
+  const el = $(`blurb-input-${team}`);
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  el.setSelectionRange(el.value.length, el.value.length);
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
 
 async function claimBlurb(team) {
   try {
     state.article = await api(`/news/${state.id}/rankings/blurbs/${team}/claim`, { method: 'POST' });
     state.editingBlurb = team;
     render();
+    focusBlurbEditor(team);
   } catch (e) { alert(e.message); }
 }
 

@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.1.139",
+    "date": "2026-08-31",
+    "changes": [
+      "The power-rankings blurb editor is now a full-width row under the team it belongs to, instead of a textarea crammed into the blurb column \u2014 in the consensus table that column is one of seven, which left about a word of writing space on a phone",
+      "The textarea is taller and set in a larger type size to match, and the row it opens in reads as a card attached to the team above it",
+      "Opening a blurb editor now puts the cursor in it and scrolls it into view, since it sits a row lower than the button that opened it",
+      "While an editor is open its cell reads \u201cEditing\u2026\u201d rather than repeating the text being edited or offering a second Edit button"
+    ]
+  },
+  {
     "version": "0.1.138",
     "date": "2026-08-30",
     "changes": [
