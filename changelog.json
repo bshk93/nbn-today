@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.1.140",
+    "date": "2026-08-31",
+    "changes": [
+      "A power-rankings blurb can now run to 2,500 characters instead of 1,200 \u2014 about 400 words rather than 200",
+      "The blurb editor shows how much room is left as you write, and turns amber near the end. The limit was previously enforced by silently refusing keystrokes, which read like the box had broken",
+      "On a published edition, each team's row lists the voters in the order they ranked that team, best placement first \u2014 so the spread reads as the distance between the first number and the last, and the marked best and worst ballots sit at the two ends. It used to be listed in the order the ballots were submitted",
+      "Reading one voter across every team is what the individual-ballots table underneath already does better, so nothing is lost"
+    ]
+  },
+  {
     "version": "0.1.139",
     "date": "2026-08-31",
     "changes": [

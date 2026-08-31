@@ -120,6 +120,11 @@ const isVoter = () => !!state.article?.viewer_is_voter;
 // this only decides whether to draw a button that would be refused.
 const BLURB_PHASES = ['voting', 'blurbs'];
 
+// Mirrors MAX_BLURB_LEN in news_rankings.py — again the server is the gate; this
+// is here so the wall arrives as a counter rather than as a rejected save.
+const MAX_BLURB_LEN = 2500;
+const BLURB_NEAR = 150;        // characters left before the counter goes amber
+
 const PHASE_LABEL = {
   setup: 'Setting up', voting: 'Voting open', blurbs: 'Writing blurbs', final: 'Ready to publish',
 };
@@ -711,6 +716,18 @@ function renderConsensusRow(r) {
 
 function canWriteBlurb(b) { return b.claimed_by === state.me?.name || isEditor(); }
 
+// A maxlength on its own is a silent wall — it stops taking keystrokes and says
+// nothing, which reads like the box broke. The counter is the announcement.
+function blurbCountNear(n) { return MAX_BLURB_LEN - n <= BLURB_NEAR; }
+function blurbCountText(n) { return `${n.toLocaleString()} / ${MAX_BLURB_LEN.toLocaleString()}`; }
+
+function updateBlurbCount(team) {
+  const ta = $(`blurb-input-${team}`), el = $(`blurb-count-${team}`);
+  if (!ta || !el) return;
+  el.textContent = blurbCountText(ta.value.length);
+  el.classList.toggle('near', blurbCountNear(ta.value.length));
+}
+
 // The editor is a row of its own, spanning every column, rather than the blurb
 // cell it used to live in: that cell is one of seven in the consensus table, so
 // on a phone it left a textarea about a word wide. Same reason the roster
@@ -722,12 +739,15 @@ function blurbEditorRow(team, b, cols) {
   return `<tr class="blurb-edit-row"><td colspan="${cols}">
     <div class="blurb-box">
       <div class="blurb-edit-head">${logo(team)}<span>${escHtml(TEAMS[team])}</span></div>
-      <textarea id="blurb-input-${team}" maxlength="1200" placeholder="What's the read on ${escHtml(TEAMS[team])}?">${escHtml(b.body || '')}</textarea>
+      <textarea id="blurb-input-${team}" maxlength="${MAX_BLURB_LEN}" oninput="updateBlurbCount('${team}')"
+        placeholder="What's the read on ${escHtml(TEAMS[team])}?">${escHtml(b.body || '')}</textarea>
       <div class="blurb-meta">
         <button class="btn-primary btn-tiny" onclick="saveBlurb('${team}')">Save</button>
         <button class="btn-secondary btn-tiny" onclick="cancelBlurb()">Cancel</button>
         ${releaseBtn(team, b, mine, editor)}
         <span class="status-msg" id="blurb-status-${team}"></span>
+        <span class="blurb-count${blurbCountNear((b.body || '').length) ? ' near' : ''}"
+          id="blurb-count-${team}">${blurbCountText((b.body || '').length)}</span>
       </div>
     </div>
   </td></tr>`;

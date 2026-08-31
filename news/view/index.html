@@ -844,20 +844,31 @@ function seasonLineFor(team, standings) {
 // A ballot that isn't readable — mid-vote, for anyone who isn't the author —
 // simply isn't listed, so this renders nothing at all rather than a row of
 // blanks.
+// Ordered by the rank each voter gave this team, best first — not by voter, the
+// order the ballots happen to have been submitted in. The question a reader is
+// asking of this strip is "how split were they on this team", and sorted chips
+// answer it at a glance: the spread is the distance from the first number to the
+// last, and the marked best and worst ballots land on the two ends instead of
+// somewhere in the middle. Voters tied on a team keep submission order between
+// them (the sort is stable).
+//
+// Reading one voter *across* teams is what this ordering gives up, and that is
+// what the individual-ballots table below does better anyway — voters are its
+// rows, so a whole ballot reads in one line.
 function voterCells(a, voters, row) {
   const spread = row.hi !== row.lo;
   const cells = voters.map(v => {
     const pos = (a.ballots?.[v]?.order || []).indexOf(row.team);
-    if (pos < 0) return '';
+    if (pos < 0) return null;
     const rank = pos + 1;
     const [cls, title] = !spread ? ['', '']
       : rank === row.hi ? [' rv-hi', ' title="highest ballot"']
       : rank === row.lo ? [' rv-lo', ' title="lowest ballot"']
       : ['', ''];
-    return `<span class="rv${cls}"${title}><a href="/members/${encodeURIComponent(v)}/">${escHtml(v)}</a>`
-      + `<b>${rank}</b></span>`;
-  }).filter(Boolean);
-  return cells.length ? `<div class="rank-votes">${cells.join('')}</div>` : '';
+    return { rank, html: `<span class="rv${cls}"${title}><a href="/members/${encodeURIComponent(v)}/">${escHtml(v)}</a>`
+      + `<b>${rank}</b></span>` };
+  }).filter(Boolean).sort((x, y) => x.rank - y.rank);
+  return cells.length ? `<div class="rank-votes">${cells.map(c => c.html).join('')}</div>` : '';
 }
 
 // Every individual ballot, collapsed by default. Blind voting is about
