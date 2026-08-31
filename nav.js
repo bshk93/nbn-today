@@ -529,6 +529,7 @@ if (document.readyState === 'loading') {
 
 const SITE_PAGES = [
   { title: 'Calendar', href: '/calendar', icon: '📅' },
+  { title: 'Schedule', href: '/schedule/', icon: '🗓' },
   { title: 'Standings & Playoffs', href: '/standings', icon: '🏅' },
   { title: 'Tradeblock', href: '/tradeblock/', icon: '🤝' },
   { title: 'Transaction Simulator', href: '/transaction-sim/', icon: '⚖️' },

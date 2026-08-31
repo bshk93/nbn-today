@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Schedule — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Every NBN game on the schedule, one season at a time, filterable by team.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Schedule — NBN">
+  <meta property="og:description" content="Every NBN game on the schedule, one season at a time, filterable by team.">
+  <meta property="og:url" content="https://nbn.today/schedule/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#111827">
+  <!-- /NBN:og -->
+  <style>
+    .page { max-width: 900px; margin: 0 auto; }
+
+    header { margin-bottom: 1.25rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    .sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
+
+    .controls select {
+      padding: 0.45rem 0.7rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      font-family: inherit;
+    }
+    .controls select:focus { outline: none; border-color: var(--accent); }
+
+    .seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg button {
+      background: var(--bg-card);
+      border: none;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.78rem;
+      padding: 0.45rem 0.8rem;
+      cursor: pointer;
+    }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button:hover { color: var(--text-secondary); }
+    .seg button.active { background: var(--accent-dark); color: var(--text-on-accent); }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem 0.9rem;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.55rem 0.8rem;
+      margin-bottom: 1rem;
+    }
+    .summary:empty { display: none; }
+    .summary b { color: var(--text-primary); font-weight: 600; }
+    .summary .dim { color: var(--text-muted); }
+
+    .month-hdr {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-dim); padding: 1.1rem 0 0.5rem; display: flex; align-items: center; gap: 0.75rem;
+    }
+    .month-hdr:first-child { padding-top: 0; }
+    .month-hdr::after { content: ''; flex: 1; height: 1px; background: var(--bg-card); }
+
+    .day { padding: 0.5rem 0; border-bottom: 1px solid var(--bg-card); }
+    .day:last-child { border-bottom: none; }
+    .day-hdr { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .day-rows { display: flex; flex-direction: column; gap: 0.1rem; }
+
+    .game { display: flex; align-items: center; gap: 0.55rem; padding: 0.3rem 0.5rem; border-radius: 6px; }
+    .game:hover { background: var(--bg-subtle); }
+    .game.played { color: var(--text-muted); }
+
+    .g-num { width: 2rem; flex: none; text-align: right; font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+    .g-time { width: 5.6rem; flex: none; font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .g-match { flex: 1; display: flex; align-items: center; gap: 0.35rem; min-width: 0; font-size: 0.85rem; }
+    .g-match a { color: var(--text-secondary); }
+    .game.played .g-match a { color: var(--text-muted); }
+    .g-logo { width: 18px; height: 18px; flex: none; object-fit: contain; }
+    .g-at { color: var(--text-dim); font-size: 0.75rem; }
+    .g-note {
+      flex: none; font-size: 0.65rem; color: var(--gold); background: var(--gold-bg);
+      border-radius: 3px; padding: 0.1rem 0.35rem; white-space: nowrap;
+    }
+    .g-arena { flex: none; font-size: 0.7rem; color: var(--text-dim); max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .g-score { flex: none; font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .g-score.win { color: var(--success); }
+    .g-score.loss { color: var(--danger); }
+    .g-next { flex: none; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--link); }
+
+    .more-wrap { display: flex; justify-content: center; padding: 1.5rem 0 0.5rem; }
+    .more-btn {
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+      border-radius: 8px; padding: 0.5rem 1.1rem; font-family: inherit; font-size: 0.8rem; cursor: pointer;
+    }
+    .more-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+
+    .empty { color: var(--text-muted); font-size: 0.85rem; padding: 2rem 0; text-align: center; }
+    .source { font-size: 0.68rem; color: var(--text-dim); margin-top: 2rem; }
+
+    @media (max-width: 700px) {
+      .g-arena { display: none; }
+      .g-time { width: 4.6rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"></nav>
+
+    <header>
+      <h1>Schedule</h1>
+      <p class="sub" id="sub">Loading…</p>
+    </header>
+
+    <div class="controls">
+      <select id="season-sel" aria-label="Season"></select>
+      <select id="team-sel" aria-label="Team"></select>
+      <div class="seg" id="scope-seg">
+        <button data-scope="upcoming">Upcoming</button>
+        <button data-scope="all">Full season</button>
+      </div>
+    </div>
+
+    <div class="summary" id="summary"></div>
+    <div id="list"><div class="empty">Loading…</div></div>
+    <div id="more"></div>
+    <p class="source" id="source"></p>
+  </div>
+
+  <script>
+    const TEAMS = {
+      ATL: "Atlanta Hawks", BKN: "Brooklyn Nets", BOS: "Boston Celtics",
+      CHA: "Charlotte Hornets", CHI: "Chicago Bulls", CLE: "Cleveland Cavaliers",
+      DAL: "Dallas Mavericks", DEN: "Denver Nuggets", DET: "Detroit Pistons",
+      GSW: "Golden State Warriors", HOU: "Houston Rockets", IND: "Indiana Pacers",
+      LAC: "LA Clippers", LAL: "Los Angeles Lakers", MEM: "Memphis Grizzlies",
+      MIA: "Miami Heat", MIL: "Milwaukee Bucks", MIN: "Minnesota Timberwolves",
+      NOP: "New Orleans Pelicans", NYK: "New York Knicks", OKC: "Oklahoma City Thunder",
+      ORL: "Orlando Magic", PHI: "Philadelphia 76ers", PHX: "Phoenix Suns",
+      POR: "Portland Trail Blazers", SAC: "Sacramento Kings", SAS: "San Antonio Spurs",
+      TOR: "Toronto Raptors", UTA: "Utah Jazz", WAS: "Washington Wizards",
+    };
+    const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+    // Pagination is counted in games, not dates, and only ever cuts on a date
+    // boundary — a full season is ~1,200 rows across ~170 dates, which is too
+    // much DOM at once, but a team's 82 games land inside one page so the
+    // filtered view (the common case) never shows a "load more" at all.
+    const PAGE = 160;
+
+    let seasons    = [];    // [{season, games}] from /api/schedule/seasons
+    let season     = null;
+    let games      = [];    // the selected season's fixtures, date order
+    let results    = new Map();  // "date|AWAY|HOME" → box score row for the same fixture
+    let teamFilter = '';
+    let scope      = 'upcoming';
+    let shown      = PAGE;
+
+    // ── Helpers ──────────────────────────────────────────────────────
+
+    // "7:00p" → minutes past midnight. Mirrors _time_key in
+    // nbn-api/routers/schedule.py; times come from the NBA and are always ET.
+    function tipKey(t) {
+      const m = /^(\d{1,2}):(\d{2})([ap])$/.exec(t || '');
+      if (!m) return 9999;
+      let hh = +m[1] % 12;
+      if (m[3] === 'p') hh += 12;
+      return hh * 60 + (+m[2]);
+    }
+
+    function fmtTime(t)      { return t ? `${t}m ET` : 'TBD'; }
+    function monthKey(d)     { return d.slice(0, 7); }
+    function fmtMonth(ym)    { const [y, m] = ym.split('-'); return `${MONTHS[+m - 1]} ${y}`; }
+    function fmtDayHdr(d)    { const dt = new Date(d + 'T00:00:00'); return `${DAYS[dt.getDay()]}, ${MONTHS_SHORT[dt.getMonth()]} ${dt.getDate()}`; }
+    function fmtShort(d)     { const dt = new Date(d + 'T00:00:00'); return `${MONTHS_SHORT[dt.getMonth()]} ${dt.getDate()}`; }
+    function fmtSeason(s)    { const [a, b] = s.split('-'); return `20${a}-${b}`; }
+
+    // A fixture is "played" when a box score exists for the same matchup on the
+    // same date — /api/schedule is the plan and nothing retracts a row once the
+    // result lands. Deliberately not a date comparison: the sim runs behind the
+    // real calendar (a season's games are simmed over months), so "in the past"
+    // and "already played" are different questions, and only this one is right.
+    function resultFor(g) { return results.get(`${g.date}|${g.away_team}|${g.home_team}`); }
+
+    function teamGames()  { return teamFilter ? games.filter(g => g.home_team === teamFilter || g.away_team === teamFilter) : games; }
+    function visible()    { const l = teamGames(); return scope === 'upcoming' ? l.filter(g => !resultFor(g)) : l; }
+
+    function logo(abbr) {
+      const img = document.createElement('img');
+      img.className = 'g-logo';
+      img.src = `/logos/logo-${abbr.toLowerCase()}.png`;
+      img.alt = '';
+      img.onerror = () => { img.style.display = 'none'; };
+      return img;
+    }
+
+    function teamLink(abbr) {
+      const a = document.createElement('a');
+      a.href = `/teams/${abbr.toLowerCase()}/`;
+      a.textContent = abbr;
+      a.title = TEAMS[abbr] || abbr;
+      return a;
+    }
+
+    function div(cls, text) {
+      const d = document.createElement('div');
+      d.className = cls;
+      if (text !== undefined) d.textContent = text;
+      return d;
+    }
+
+    function span(cls, text) {
+      const s = document.createElement('span');
+      s.className = cls;
+      if (text !== undefined) s.textContent = text;
+      return s;
+    }
+
+    // ── URL state ────────────────────────────────────────────────────
+
+    function syncUrl() {
+      const p = new URLSearchParams();
+      if (season) p.set('season', season);
+      if (teamFilter) p.set('team', teamFilter);
+      if (scope !== 'upcoming') p.set('scope', scope);
+      const q = p.toString();
+      history.replaceState(null, '', q ? `?${q}` : location.pathname);
+    }
+
+    // ── Rendering ────────────────────────────────────────────────────
+
+    function makeRow(g, num) {
+      const row = document.createElement('div');
+      row.className = 'game';
+      const res = resultFor(g);
+      if (res) row.classList.add('played');
+
+      if (teamFilter) row.appendChild(span('g-num', num ? `${num}` : ''));
+      row.appendChild(span('g-time', fmtTime(g.time_et)));
+
+      const match = span('g-match');
+      if (teamFilter) {
+        // A team's own schedule reads from its side: "vs OPP" at home, "@ OPP"
+        // on the road, rather than the neutral away-at-home ordering below.
+        const home = g.home_team === teamFilter;
+        const opp  = home ? g.away_team : g.home_team;
+        match.appendChild(span('g-at', home ? 'vs' : '@'));
+        match.appendChild(logo(opp));
+        match.appendChild(teamLink(opp));
+      } else {
+        match.appendChild(logo(g.away_team));
+        match.appendChild(teamLink(g.away_team));
+        match.appendChild(span('g-at', '@'));
+        match.appendChild(logo(g.home_team));
+        match.appendChild(teamLink(g.home_team));
+      }
+      row.appendChild(match);
+
+      if (g.note) row.appendChild(span('g-note', g.note));
+      if (g.arena) row.appendChild(span('g-arena', g.arena));
+
+      if (res) {
+        const link = document.createElement('a');
+        link.className = 'g-score';
+        link.href = `/boxscores/?date=${g.date}`;
+        if (teamFilter) {
+          // The row already reads from this team's side ("vs OPP"), so an
+          // away–home score beside it would be ambiguous. Score it their way.
+          const own = g.home_team === teamFilter ? +res.home_score : +res.away_score;
+          const opp = g.home_team === teamFilter ? +res.away_score : +res.home_score;
+          link.textContent = `${own > opp ? 'W' : 'L'} ${own}–${opp}`;
+          link.classList.add(own > opp ? 'win' : 'loss');
+        } else {
+          link.textContent = `${res.away_score}–${res.home_score}`;
+        }
+        row.appendChild(link);
+      }
+      return row;
+    }
+
+    function render() {
+      const list = document.getElementById('list');
+      const more = document.getElementById('more');
+      list.innerHTML = '';
+      more.innerHTML = '';
+
+      const rows = visible();
+      if (!rows.length) {
+        list.appendChild(div('empty', emptyMessage()));
+        renderSummary();
+        return;
+      }
+
+      // Game numbers are the team's place in its own full season, so they stay
+      // stable when the Upcoming filter hides the games already played.
+      const numbers = new Map();
+      if (teamFilter) teamGames().forEach((g, i) => numbers.set(g.id, i + 1));
+
+      // The first unplayed game in the current view, marked NEXT.
+      const nextId = (rows.find(g => !resultFor(g)) || {}).id;
+
+      let count = 0, lastMonth = null, dayEl = null, dayRows = null, lastDate = null;
+      for (const g of rows) {
+        if (count >= shown && g.date !== lastDate) break;
+        if (g.date !== lastDate) {
+          const ym = monthKey(g.date);
+          if (ym !== lastMonth) { list.appendChild(div('month-hdr', fmtMonth(ym))); lastMonth = ym; }
+          dayEl = div('day');
+          dayEl.appendChild(div('day-hdr', fmtDayHdr(g.date)));
+          dayRows = div('day-rows');
+          dayEl.appendChild(dayRows);
+          list.appendChild(dayEl);
+          lastDate = g.date;
+        }
+        const row = makeRow(g, numbers.get(g.id));
+        if (g.id === nextId && scope === 'all') row.appendChild(span('g-next', 'next'));
+        dayRows.appendChild(row);
+        count++;
+      }
+
+      if (count < rows.length) {
+        const wrap = document.createElement('div');
+        wrap.className = 'more-wrap';
+        const btn = document.createElement('button');
+        btn.className = 'more-btn';
+        btn.textContent = `Show more (${rows.length - count} game${rows.length - count === 1 ? '' : 's'} left)`;
+        btn.onclick = () => { shown += PAGE; render(); };
+        wrap.appendChild(btn);
+        more.appendChild(wrap);
+      }
+
+      renderSummary();
+    }
+
+    function emptyMessage() {
+      const label = fmtSeason(season);
+      if (!games.length) return `No schedule on file for ${label}.`;
+      if (scope === 'upcoming') {
+        return teamFilter
+          ? `Every ${TEAMS[teamFilter]} game in ${label} has been played.`
+          : `Every game in ${label} has been played.`;
+      }
+      return teamFilter ? `No ${TEAMS[teamFilter]} games in ${label}.` : `No games in ${label}.`;
+    }
+
+    function renderSummary() {
+      const el = document.getElementById('summary');
+      el.innerHTML = '';
+      if (!teamFilter || !games.length) return;
+
+      const mine   = teamGames();
+      const home   = mine.filter(g => g.home_team === teamFilter).length;
+      const played = mine.filter(g => resultFor(g)).length;
+      const next   = mine.find(g => !resultFor(g));
+
+      const add = (label, value, dim) => {
+        const s = span(dim ? 'dim' : '');
+        s.appendChild(document.createTextNode(label ? `${label} ` : ''));
+        const b = document.createElement('b');
+        b.textContent = value;
+        s.appendChild(b);
+        el.appendChild(s);
+      };
+
+      const head = span('');
+      const b = document.createElement('b');
+      b.textContent = TEAMS[teamFilter];
+      head.appendChild(b);
+      el.appendChild(head);
+      add('', `${mine.length} games`);
+      add('', `${home} home · ${mine.length - home} away`);
+      if (played) add('played', `${played}`, true);
+      if (next) {
+        const at = next.home_team === teamFilter ? 'vs' : '@';
+        const opp = next.home_team === teamFilter ? next.away_team : next.home_team;
+        add('next', `${fmtShort(next.date)} ${at} ${opp}`, true);
+      }
+    }
+
+    function renderControls() {
+      const seasonSel = document.getElementById('season-sel');
+      seasonSel.innerHTML = '';
+      seasons.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s.season;
+        o.textContent = `${fmtSeason(s.season)} season`;
+        seasonSel.appendChild(o);
+      });
+      seasonSel.value = season;
+
+      const teamSel = document.getElementById('team-sel');
+      teamSel.innerHTML = '';
+      const all = document.createElement('option');
+      all.value = '';
+      all.textContent = 'All teams';
+      teamSel.appendChild(all);
+      Object.keys(TEAMS).forEach(abbr => {
+        const o = document.createElement('option');
+        o.value = abbr;
+        o.textContent = TEAMS[abbr];
+        teamSel.appendChild(o);
+      });
+      teamSel.value = teamFilter;
+
+      document.querySelectorAll('#scope-seg button').forEach(b =>
+        b.classList.toggle('active', b.dataset.scope === scope));
+    }
+
+    // ── Data ─────────────────────────────────────────────────────────
+
+    async function loadSeason(s) {
+      season = s;
+      shown = PAGE;
+      document.getElementById('list').innerHTML = '<div class="empty">Loading…</div>';
+      document.getElementById('more').innerHTML = '';
+
+      const [schedRes, boxRes] = await Promise.allSettled([
+        fetch(`/api/schedule?season=${encodeURIComponent(s)}`).then(r => r.json()),
+        fetch(`/api/boxscores/games?season=${encodeURIComponent(s)}`).then(r => r.json()),
+      ]);
+
+      let source = '';
+      if (schedRes.status === 'fulfilled') {
+        games = (schedRes.value.games || []).slice()
+          .sort((a, b) => a.date.localeCompare(b.date) || tipKey(a.time_et) - tipKey(b.time_et)
+                          || a.home_team.localeCompare(b.home_team));
+        source = schedRes.value.source || '';
+      } else {
+        games = [];
+      }
+
+      results = new Map();
+      if (boxRes.status === 'fulfilled') {
+        (boxRes.value || []).forEach(r => results.set(`${r.date}|${r.away_team}|${r.home_team}`, r));
+      }
+
+      const upcoming = games.filter(g => !resultFor(g)).length;
+      document.getElementById('sub').textContent = games.length
+        ? `${games.length.toLocaleString()} games in ${fmtSeason(season)} · ${upcoming.toLocaleString()} still to play`
+        : `No schedule on file for ${fmtSeason(season)}.`;
+      document.getElementById('source').textContent = source ? `Source: ${source}` : '';
+
+      renderControls();
+      render();
+      syncUrl();
+    }
+
+    async function init() {
+      const p = new URLSearchParams(location.search);
+      const wantTeam = (p.get('team') || '').toUpperCase();
+      if (TEAMS[wantTeam]) teamFilter = wantTeam;
+      if (p.get('scope') === 'all') scope = 'all';
+
+      try {
+        seasons = await fetch('/api/schedule/seasons').then(r => r.json());
+      } catch (e) {
+        seasons = [];
+      }
+      if (!Array.isArray(seasons) || !seasons.length) {
+        document.getElementById('sub').textContent = 'No schedule has been loaded yet.';
+        document.getElementById('list').innerHTML =
+          '<div class="empty">No season schedule is on file. Once one is loaded it shows up here.</div>';
+        return;
+      }
+      // Newest first — the season anyone is asking about is almost always the
+      // one being played now.
+      seasons.sort((a, b) => b.season.localeCompare(a.season));
+
+      const wantSeason = p.get('season');
+      const chosen = seasons.some(s => s.season === wantSeason) ? wantSeason : seasons[0].season;
+
+      document.getElementById('season-sel').onchange = e => loadSeason(e.target.value);
+      document.getElementById('team-sel').onchange = e => {
+        teamFilter = e.target.value;
+        shown = PAGE;
+        render();
+        syncUrl();
+      };
+      document.querySelectorAll('#scope-seg button').forEach(btn => {
+        btn.onclick = () => {
+          scope = btn.dataset.scope;
+          shown = PAGE;
+          renderControls();
+          render();
+          syncUrl();
+        };
+      });
+
+      await loadSeason(chosen);
+    }
+
+    init();
+  </script>
+
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

@@ -76,6 +76,9 @@ const PAGES = [
   { path: '/tradeblock/',             selector: 'table tbody tr',  min: 5,  what: 'blocked players' },
   { path: '/draft/',                  selector: 'table tbody tr',  min: 30, what: 'draft history' },
   { path: '/boxscores/',              selector: 'table tbody tr',  min: 5,  what: 'recent box scores' },
+  // scope=all, not the default Upcoming view: that one legitimately empties
+  // out once the season has been played, and this should outlive the season.
+  { path: '/schedule/?scope=all',     selector: '.game',           min: 20, what: 'scheduled games' },
   { path: '/cap-summary/',            selector: 'table tbody tr',  min: 30, what: 'a row per team' },
   // A published power-rankings edition, by id — the only stable way to reach
   // one, since /news/ lists whatever is newest. Editions are never deleted.

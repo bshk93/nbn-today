@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.1.142",
+    "date": "2026-08-31",
+    "changes": [
+      "A Schedule page at /schedule \u2014 every game on the league's fixture list, one season at a time, filterable to a single team",
+      "Filtering to a team reads from that team's side: numbered 1 to 80, vs or @ the opponent, with its home/away split and next game up top",
+      "Defaults to what is still to play. A game counts as played when its box score exists, not when its date has passed \u2014 the sim runs months behind the calendar, so the date would be the wrong question",
+      "Full season shows the games already played too, each with its score linked to the box score",
+      "The season and team you pick stay in the URL, so a team's schedule is a link you can paste"
+    ]
+  },
+  {
     "version": "0.1.141",
     "date": "2026-08-31",
     "changes": [
