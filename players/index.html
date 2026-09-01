@@ -538,6 +538,13 @@
     .txn-history-wrap { overflow-x: auto; }
     .txn-history-table { table-layout: fixed; min-width: 480px; }
     .txn-history-table td { vertical-align: top; }
+    .edit-history { margin-top: 0.75rem; }
+    .edit-history summary { cursor: pointer; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; user-select: none; }
+    .edit-history summary:hover { color: var(--text-secondary); }
+    .edit-history .txn-history-wrap { margin-top: 0.5rem; }
+    .edit-history-table { min-width: 420px; }
+    .edit-added { color: var(--market-positive); }
+    .edit-removed { color: var(--danger); }
     .txn-note-cell { text-align: center; vertical-align: middle !important; }
     .txn-note-icon {
       display: inline-flex; align-items: center; justify-content: center;
@@ -2128,6 +2135,34 @@
     function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
+    function fmtEditTs(ts) {
+      if (!ts) return '—';
+      const datePart = fmtDate((ts.split('T')[0]) || '');
+      const d = new Date(ts);
+      if (isNaN(d)) return datePart;
+      const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      return `${datePart}, ${timePart}`;
+    }
+    function fmtEditFile(file) {
+      if (file === 'player-bios.json') return 'Bio';
+      const m = /^([a-z]{2,4})-(roster|deadcap|picks)\.csv$/.exec(file || '');
+      if (m) {
+        const label = { roster: 'Roster', deadcap: 'Dead Cap', picks: 'Picks' }[m[2]];
+        return `${label} (${m[1].toUpperCase()})`;
+      }
+      return file || '—';
+    }
+    function fmtEditField(key, slug) {
+      let s = (key || '').startsWith(slug) ? key.slice(slug.length) : (key || '');
+      s = s.replace(/^\.+/, '');
+      return s || '(row)';
+    }
+    function fmtEditChange(from, to) {
+      const has = v => v !== undefined && v !== null;
+      const fromStr = has(from) ? esc(String(from)) : '<span class="edit-added">(new)</span>';
+      const toStr = has(to) ? esc(String(to)) : '<span class="edit-removed">(removed)</span>';
+      return `${fromStr} &rarr; ${toStr}`;
+    }
     function playerLink(slug) {
       if (!slug) return '';
       const bio = biosData[slug];
@@ -2344,8 +2379,9 @@
     Promise.all([
       fetch(`/api/transactions?player=${encodeURIComponent(playerSlug)}`).then(r => r.ok ? r.json() : { transactions: [] }),
       fetch('/api/picks').then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`/api/edits?key=${encodeURIComponent(playerSlug)}&limit=500`).then(r => r.ok ? r.json() : { entries: [] }).catch(() => ({ entries: [] })),
     ])
-      .then(([{ transactions }, picks]) => {
+      .then(([{ transactions }, picks, { entries: edits }]) => {
         currentPicks = picks;
         const entries = [
           ...transactions.map(t => ({ kind: 'txn', date: t.date, t })),
@@ -2355,12 +2391,29 @@
         const retirementEntry = buildRetirementEntry();
         if (retirementEntry) entries.unshift(retirementEntry);
 
-        if (!entries.length) return;
+        // Flatten to one row per diff line — an edit entry can touch several
+        // fields (or several players, on a roster/deadcap CSV write) at once,
+        // and only the lines actually naming this player belong here.
+        const editRows = [];
+        (edits || []).forEach(e => {
+          (e.diff || []).forEach(d => {
+            if ((d.key || '').includes(playerSlug)) {
+              editRows.push({ ts: e.ts, actor: e.actor, file: e.file, key: d.key, from: d.from, to: d.to });
+            }
+          });
+        });
+
+        if (!entries.length && !editRows.length) return;
 
         const h2 = document.createElement('h2');
         h2.className = 'section-heading';
         h2.textContent = 'Player History';
         container.appendChild(h2);
+
+        if (!entries.length) {
+          renderEditHistory();
+          return;
+        }
 
         const table = document.createElement('table');
         table.className = 'salary-table txn-history-table';
@@ -2458,7 +2511,48 @@
           pagination.querySelector('#ph-next-btn').addEventListener('click', () => { currentPage++; renderPage(); });
         }
 
+        function renderEditHistory() {
+          if (!editRows.length) return;
+          const det = document.createElement('details');
+          det.className = 'edit-history';
+          const summary = document.createElement('summary');
+          summary.textContent = `Edit history (${editRows.length})`;
+          det.appendChild(summary);
+
+          const editTable = document.createElement('table');
+          editTable.className = 'salary-table edit-history-table';
+          editTable.style.cssText = 'font-size:0.75rem';
+          const ethead = editTable.createTHead();
+          const ehr = ethead.insertRow();
+          ['Date', 'Source', 'Field', 'Change', 'By'].forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            ehr.appendChild(th);
+          });
+          const etbody = editTable.createTBody();
+          editRows
+            .slice()
+            .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0))
+            .forEach(row => {
+              const tr = etbody.insertRow();
+              tr.innerHTML = `
+                <td style="white-space:nowrap;color:var(--text-muted)">${esc(fmtEditTs(row.ts))}</td>
+                <td style="white-space:nowrap" class="txn-table-details">${esc(fmtEditFile(row.file))}</td>
+                <td style="white-space:nowrap" class="txn-table-details">${esc(fmtEditField(row.key, playerSlug))}</td>
+                <td class="txn-table-details">${fmtEditChange(row.from, row.to)}</td>
+                <td style="white-space:nowrap;color:var(--text-muted)">${esc(row.actor || 'system')}</td>
+              `;
+            });
+
+          const wrap = document.createElement('div');
+          wrap.className = 'txn-history-wrap';
+          wrap.appendChild(editTable);
+          det.appendChild(wrap);
+          container.appendChild(det);
+        }
+
         renderPage();
+        renderEditHistory();
       })
       .catch(() => {});
   }

@@ -683,17 +683,15 @@ switched off, note the dates here.
 
 ## 3. Tooling / infrastructure
 
-### [P3] The edit log has no surface, and starts from 2026-08-25
-`edits.jsonl` went live 2026-08-25 — `storage._atomic_write` now records a
-value-level diff of every write that bypasses the ledger, and `GET /api/edits`
-reads it back by file, actor or key (`nbn-api/CLAUDE.md` § "The edit log").
-Two things that closed with it, and one that did not:
+### [P3] The edit log starts from 2026-08-25, permanently
+`edits.jsonl` went live 2026-08-25 — `storage._atomic_write` records a
+value-level diff of every write that bypasses the ledger, from the four side
+doors (`PUT /api/players/{slug}`, `PUT /api/roster/{team}`,
+`PUT /api/deadcap/{team}`, `PUT /api/picks/...`). `GET /api/edits` reads it
+back by file, actor or key, and is now public — the player page's "Edit
+history" disclosure (below the transactions table, same "Player History" card)
+calls it scoped to `key=<slug>` (`nbn-api/CLAUDE.md` § "The edit log").
 
-- **Closed:** the four side doors (`PUT /api/players/{slug}`,
-  `PUT /api/roster/{team}`, `PUT /api/deadcap/{team}`, `PUT /api/picks/...`)
-  now record what a figure was and what it became, not just who touched it.
-- **Left:** there is no page. The plan named an "Edits" tab beside the ledger on
-  the player page; a member with a question still has to ask an admin to curl.
 - **Left, and permanent:** the log starts on 2026-08-25. **The two remaining
   fractional-cent poopoo diffs in §1 were the motivating case and it cannot
   answer them** — those edits predate it. This is forensics going forward only.
