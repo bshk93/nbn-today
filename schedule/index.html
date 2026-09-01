@@ -152,18 +152,19 @@
     .empty { color: var(--text-muted); font-size: 0.85rem; padding: 2rem 0; text-align: center; }
     .source { font-size: 0.68rem; color: var(--text-dim); margin-top: 2rem; }
 
+    .g-break { flex-basis: 0; width: 0; height: 0; }
+
     @media (max-width: 700px) {
       .g-arena { display: none; }
       .g-time { width: 4.6rem; }
       .game { flex-wrap: wrap; row-gap: 0.2rem; }
-      /* .g-match's flex-basis is 0% on desktop so it fills the row; that same
-         0% is also what the wrap algorithm uses to decide what fits on a
-         line, so it counts as taking no room at all and everything else
-         piles on top of it instead of actually wrapping. Give it a real
-         (content-based) basis here so a full line of badges and buttons
-         wraps onto their own line(s) instead of squeezing the match info
-         down to nothing. */
       .g-match { flex: 1 1 auto; }
+      /* A zero-size flex item with a 100% basis never fits on the current
+         line — flexbox always starts a fresh line for it — so everything
+         after it (note, streamer chip, stream badge, buttons, next tag,
+         score) is forced onto line two as a group, instead of whichever of
+         them happen to fit trailing after the matchup on line one. */
+      .g-break { flex-basis: 100%; }
     }
   </style>
 </head>
@@ -402,6 +403,9 @@
         match.appendChild(teamLink(g.home_team));
       }
       row.appendChild(match);
+      // Forces everything after it onto its own line on narrow screens —
+      // see the .g-break rule.
+      row.appendChild(span('g-break'));
 
       if (g.note) row.appendChild(span('g-note', g.note));
 
