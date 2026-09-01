@@ -315,41 +315,6 @@ direction check or its cross-check against signed contracts, so 2024 stays out
 until this is settled and re-running it will pick the year up automatically
 once the sheet is fixed. Nothing to change in code.
 
-### [P3] Two empty directories left where the retired stats mirror was
-The 184 files (48MB) in `/var/www/stats.nbn.today/files/` were **deleted
-2026-08-29**, after re-verifying rather than trusting the 2026-08-19 check.
-Disk went 66% → 66% (it was never the problem); the data dir separately went
-109MB → 71MB in the same sweep.
-
-Two things the original entry got wrong, both worth knowing because the same
-reasoning will come up again:
-
-- **"The host does not resolve" was false.** `stats.nbn.today` resolves to the
-  box today. What is true is that no vhost is enabled for it, so it falls
-  through to the default server, and `/files/…` **404s** — the mirror was
-  unreachable, which is the fact that mattered. Check what a host *serves*, not
-  whether it resolves.
-- **"Exact byte prefixes of the live files" no longer held.** `allstats-24-25.csv`
-  differed by one byte, because the DEN Holiday correction landed in the middle
-  of it on 2026-08-26. A byte comparison would have read that as divergence.
-
-What replaced it is the check worth reusing: parse both sides and compare on
-the **stat line** (team, date, and the 16 counting stats) rather than on bytes
-or on the player name. Across all 12 raw files plus the mirror's `allstats.csv`
-— 157,221 rows — **zero rows the live corpus lacks**, with the only differences
-being the two names you had already corrected. Of the other 172 files, 171 had
-a live counterpart under the data-dir root or `derived/`; the one that didn't
-was `allstats.csv`, deleted from the data dir the same day and verified the
-same way.
-
-**What is left is cosmetic:** `files/` and its parent are still there, empty.
-`files/` is skim-owned so its contents went without sudo, but the parent
-`/var/www/stats.nbn.today` is root-owned:
-
-    sudo rmdir /var/www/stats.nbn.today/files /var/www/stats.nbn.today
-
-The unenabled vhost in `sites-available` can go with them.
-
 ### [P3] Two `photo_url` oddities left — an inline data URI and a dead imgur link
 Split out 2026-08-29 when the nine `"NA"` bios that this entry was about were
 fixed. Those were the substance of it: `ajinca-melvin`, `bridges-jalen`,
