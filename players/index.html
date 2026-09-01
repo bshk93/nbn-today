@@ -1706,7 +1706,10 @@
             const fullyGtd = gDate && today >= gDate;
             return { guaranteedNow: fullyGtd ? total : Math.min(ctlDollar(gtd), total), nextDate: fullyGtd ? null : (gDate || null) };
           }
-          return { guaranteedNow: total, nextDate: null };
+          // NON_GTD with no schedule and no legacy guarantee fields at all —
+          // nothing has actually vested (same reading renderSalaryTable gives:
+          // a bare "Non-Guaranteed" label, never a guaranteed dollar amount).
+          return { guaranteedNow: 0, nextDate: null };
         }
 
         const bars = seasons.map((season, i) => {
