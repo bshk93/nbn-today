@@ -66,6 +66,7 @@
     .badge-curator { background: var(--purple-light-bg); color: var(--purple-light); }
     .badge-stats   { background: #0d2a33; color: #5eead4; }
     .badge-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
+    .badge-streamer { background: var(--purple-light-bg); color: var(--purple-light); }
     .badge-fac        { background: #500724; color: #f9a8d4; }
     .badge-fac-head   { background: #500724; color: #f9a8d4; border: 1px solid #ec4899; }
     .badge-agent      { background: #431407; color: #fdba74; }
@@ -194,6 +195,7 @@
     .trb-curator { background: var(--purple-light-bg); color: var(--purple-light); }
     .trb-stats   { background: #0d2a33; color: #5eead4; }
     .trb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
+    .trb-streamer { background: var(--purple-light-bg); color: var(--purple-light); }
     .trb-fac        { background: #500724; color: #f9a8d4; }
     .trb-fac-head   { background: #500724; color: #f9a8d4; border: 1px solid #ec4899; }
     .trb-agent      { background: #431407; color: #fdba74; }
@@ -478,6 +480,19 @@
 
     <div class="role-card">
       <div class="role-card-header">
+        <span class="role-badge badge-streamer">Streamer</span>
+        <h2>Streamer</h2>
+      </div>
+      <p>For members who broadcast league games. Claims are made on the <a href="/schedule/">Schedule</a> and are public the moment they land — everyone sees who is streaming what, signed in or not.</p>
+      <ul>
+        <li>Claim any upcoming game that nobody has claimed yet, as its streamer</li>
+        <li>Drop your own claim, at any time</li>
+      </ul>
+      <p class="inherits">One streamer per game — a game someone already holds offers no claim button, and going at it directly gets an error naming who has it. A streamer can only ever claim under their own name; the endpoint takes no member argument, so the role cannot sign anyone else up, which is why it needs no board standing behind it. Dropping someone <em>else's</em> claim is a BOD action. Grants nothing beyond this.</p>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
         <span class="role-badge badge-fac">FAC</span>
         <span class="role-badge badge-fac-head">FAC_HEAD</span>
         <h2>Free Agency Committee</h2>
@@ -565,6 +580,7 @@ function roleBadgeClass(role) {
   if (role === 'curator') return 'trb-curator';
   if (role === 'stats')   return 'trb-stats';
   if (role === 'bookie')  return 'trb-bookie';
+  if (role === 'streamer') return 'trb-streamer';
   if (role === 'fac_head')   return 'trb-fac-head';
   if (role === 'fac')        return 'trb-fac';
   if (role === 'agent')      return 'trb-agent';

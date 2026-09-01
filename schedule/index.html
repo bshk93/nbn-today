@@ -98,11 +98,41 @@
       flex: none; font-size: 0.65rem; color: var(--gold); background: var(--gold-bg);
       border-radius: 3px; padding: 0.1rem 0.35rem; white-space: nowrap;
     }
-    .g-arena { flex: none; font-size: 0.7rem; color: var(--text-dim); max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .g-score { flex: none; font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .g-arena { flex: none; width: 11rem; text-align: right; font-size: 0.7rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .g-score { flex: none; width: 4rem; text-align: right; font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .g-score.win { color: var(--success); }
     .g-score.loss { color: var(--danger); }
     .g-next { flex: none; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--link); }
+
+    .g-streams { flex: none; display: flex; align-items: center; gap: 0.3rem; }
+    .stream-chip {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      font-size: 0.68rem; color: var(--purple-light); background: var(--purple-light-bg);
+      border-radius: 3px; padding: 0.1rem 0.4rem; white-space: nowrap;
+    }
+    .stream-chip.mine { color: var(--accent-light); background: var(--accent-panel-bg); }
+    .chip-x {
+      background: none; border: none; padding: 0; cursor: pointer; line-height: 1;
+      color: inherit; opacity: 0.6; font-size: 0.8rem; font-family: inherit;
+    }
+    .chip-x:hover { opacity: 1; }
+
+    .g-claim {
+      flex: none; width: 4rem; text-align: right; background: none; border: none;
+      color: var(--text-muted); font-family: inherit; font-size: 0.65rem;
+      padding: 0; cursor: pointer; line-height: 1;
+      opacity: 0.3; transition: opacity 0.1s, color 0.1s;
+    }
+    .game:hover .g-claim, .g-claim:focus { opacity: 1; color: var(--accent-light); }
+    .g-claim[disabled] { cursor: default; }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.6rem 1rem; font-size: 0.8rem; color: var(--text-primary);
+      box-shadow: 0 4px 16px var(--shadow-color); z-index: 50; max-width: 90vw;
+    }
+    .toast.bad { border-color: var(--danger-border-strong); color: var(--danger-light); }
 
     .more-wrap { display: flex; justify-content: center; padding: 1.5rem 0 0.5rem; }
     .more-btn {
@@ -174,6 +204,14 @@
     let teamFilter = '';
     let scope      = 'upcoming';
     let shown      = PAGE;
+    let me         = { name: null, roles: [] };
+    let nextId     = null;  // first unplayed game in the current view, set by render()
+
+    const storedToken = () => localStorage.getItem('nbn_token');
+    // `admin` implicitly satisfies any role check server-side, so the button
+    // has to appear for an admin too or the page would hide an action the API
+    // would have allowed.
+    const canStream = () => me.roles.includes('streamer') || me.roles.includes('admin');
 
     // ── Helpers ──────────────────────────────────────────────────────
 
@@ -235,6 +273,51 @@
       return s;
     }
 
+    // ── Streaming claims ─────────────────────────────────────────────
+
+    let toastTimer = null;
+    function toast(msg, bad) {
+      document.querySelectorAll('.toast').forEach(t => t.remove());
+      const el = div('toast' + (bad ? ' bad' : ''), msg);
+      document.body.appendChild(el);
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.remove(), 4000);
+    }
+
+    // The row is rebuilt in place rather than re-rendering the list, so a claim
+    // made halfway down a 160-row page doesn't move the page under the cursor.
+    function replaceRow(g, num, oldRow) {
+      const fresh = makeRow(g, num);
+      oldRow.replaceWith(fresh);
+      return fresh;
+    }
+
+    async function setClaim(g, num, rowEl, claiming) {
+      const token = storedToken();
+      const url = `/api/schedule/${g.id}/streamer?season=${encodeURIComponent(season)}`;
+      rowEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      try {
+        const r = await fetch(url, {
+          method: claiming ? 'POST' : 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!r.ok) {
+          const detail = await r.json().then(j => j.detail).catch(() => null);
+          throw new Error(detail || `HTTP ${r.status}`);
+        }
+        // Trust the server's copy rather than patching it locally — someone
+        // else may have claimed the same game in between, and a 409 is exactly
+        // how that arrives.
+        const updated = await r.json();
+        g.streamer = updated.streamer || null;
+        replaceRow(g, num, rowEl);
+      } catch (e) {
+        rowEl.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        toast(claiming ? `Could not claim that game: ${e.message}`
+                       : `Could not drop that claim: ${e.message}`, true);
+      }
+    }
+
     // ── URL state ────────────────────────────────────────────────────
 
     function syncUrl() {
@@ -276,7 +359,41 @@
       row.appendChild(match);
 
       if (g.note) row.appendChild(span('g-note', g.note));
-      if (g.arena) row.appendChild(span('g-arena', g.arena));
+
+      // One streamer per game, so one chip. `mine` also gates the × — a BOD
+      // member can drop someone else's claim, but through the API rather than
+      // a button that sits next to 29 other people's names.
+      const held = g.streamer || null;
+      if (held) {
+        const wrap = span('g-streams');
+        const chip = span('stream-chip' + (held === me.name ? ' mine' : ''));
+        chip.appendChild(document.createTextNode(`📺 ${held}`));
+        if (held === me.name) {
+          const x = document.createElement('button');
+          x.className = 'chip-x';
+          x.textContent = '×';
+          x.title = 'Drop this stream';
+          x.onclick = () => setClaim(g, num, row, false);
+          chip.appendChild(x);
+        }
+        wrap.appendChild(chip);
+        row.appendChild(wrap);
+      }
+
+      row.appendChild(span('g-arena', g.arena || ''));
+
+      // No claim button on a game already played, and none on one somebody
+      // holds — theirs comes off via the chip's ×, anyone else's via a BOD.
+      if (canStream() && !res && !held) {
+        const btn = document.createElement('button');
+        btn.className = 'g-claim';
+        btn.textContent = 'stream';
+        btn.title = 'Claim this game to stream';
+        btn.setAttribute('aria-label', `Claim ${g.away_team} at ${g.home_team} to stream`);
+        btn.onclick = () => setClaim(g, num, row, true);
+        row.appendChild(btn);
+      }
+      if (g.id === nextId && scope === 'all') row.appendChild(span('g-next', 'next'));
 
       if (res) {
         const link = document.createElement('a');
@@ -316,7 +433,7 @@
       if (teamFilter) teamGames().forEach((g, i) => numbers.set(g.id, i + 1));
 
       // The first unplayed game in the current view, marked NEXT.
-      const nextId = (rows.find(g => !resultFor(g)) || {}).id;
+      nextId = (rows.find(g => !resultFor(g)) || {}).id;
 
       let count = 0, lastMonth = null, dayEl = null, dayRows = null, lastDate = null;
       for (const g of rows) {
@@ -331,9 +448,7 @@
           list.appendChild(dayEl);
           lastDate = g.date;
         }
-        const row = makeRow(g, numbers.get(g.id));
-        if (g.id === nextId && scope === 'all') row.appendChild(span('g-next', 'next'));
-        dayRows.appendChild(row);
+        dayRows.appendChild(makeRow(g, numbers.get(g.id)));
         count++;
       }
 
@@ -464,6 +579,21 @@
       syncUrl();
     }
 
+    // Who is looking. Always 200, empty when signed out, and it accepts the
+    // .nbn.today session cookie as well as the token — so this works on
+    // pdc.nbn.today, where there is no localStorage token to find.
+    async function loadMe() {
+      const token = storedToken();
+      try {
+        me = await fetch('/api/auth/me', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).then(r => r.json());
+        me.roles = me.roles || [];
+      } catch (e) {
+        me = { name: null, roles: [] };
+      }
+    }
+
     async function init() {
       const p = new URLSearchParams(location.search);
       const wantTeam = (p.get('team') || '').toUpperCase();
@@ -471,7 +601,10 @@
       if (p.get('scope') === 'all') scope = 'all';
 
       try {
-        seasons = await fetch('/api/schedule/seasons').then(r => r.json());
+        [seasons] = await Promise.all([
+          fetch('/api/schedule/seasons').then(r => r.json()),
+          loadMe(),
+        ]);
       } catch (e) {
         seasons = [];
       }
