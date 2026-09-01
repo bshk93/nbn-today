@@ -797,6 +797,3 @@ job.
 - **Player page: contract timeline** — salaries/cap_holds/guarantees are all in
   the bio; a visual year-by-year bar would make option and guarantee dates read
   at a glance.
-- **Search over transactions** — `/transactions` lists them; there's no way to
-  ask "every trade involving this pick" or "everything TOR did in the 25-26
-  league year".

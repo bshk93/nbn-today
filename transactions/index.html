@@ -1218,6 +1218,14 @@
       <option>POR</option><option>SAC</option><option>SAS</option><option>TOR</option>
       <option>UTA</option><option>WAS</option>
     </select>
+
+    <span class="filter-label" style="margin-left:0.75rem">Season:</span>
+    <select id="season-filter-sel" class="trade-team-sel">
+      <option value="">All seasons</option>
+    </select>
+
+    <span class="filter-label" style="margin-left:0.75rem">Search:</span>
+    <input type="text" id="txn-search" class="trade-team-sel" placeholder="player, team, pick (e.g. 2027 R1 TOR), note…" style="min-width:260px">
   </div>
 
   <!-- Log table -->
@@ -1283,6 +1291,8 @@ let capLevelsData = {}; // season → { cap, apron1, ntmle_amount, ... }
 let legCounter = 0;
 let activeTypeFilter = '';
 let activeTeamFilter = '';
+let activeSeasonFilter = '';
+let activeSearchQuery = '';
 let currentPage = 0;
 const TXN_PAGE_SIZE = 25;
 let currentToken = localStorage.getItem(TOKEN_KEY) || '';
@@ -1382,6 +1392,7 @@ async function fetchAllTransactions() {
   }
   if (capRes.status === 'fulfilled') capLevelsData = capRes.value;
   populatePickYears();
+  populateSeasonFilter();
 
   renderTable();
 })();
@@ -3264,6 +3275,66 @@ function setupFilters() {
     currentPage = 0;
     renderTable();
   });
+
+  document.getElementById('season-filter-sel').addEventListener('change', function() {
+    activeSeasonFilter = this.value;
+    currentPage = 0;
+    renderTable();
+  });
+
+  document.getElementById('txn-search').addEventListener('input', function() {
+    activeSearchQuery = this.value.trim().toLowerCase();
+    currentPage = 0;
+    renderTable();
+  });
+}
+
+// Every league year that appears among the loaded transactions, newest first —
+// populated once transactions + rollovers are in, so "25-26" resolves the same
+// way it does everywhere else on this page (seasonForDate, not a date range).
+function populateSeasonFilter() {
+  const sel = document.getElementById('season-filter-sel');
+  const seasons = new Set();
+  allTransactions.forEach(t => { if (t.date) seasons.add(seasonForDate(t.date, LEAGUE_ROLLOVERS)); });
+  Array.from(seasons).sort().reverse().forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = s;
+    sel.appendChild(opt);
+  });
+}
+
+// One flat, lowercased haystack per transaction — teams, description, and every
+// player/pick named anywhere in it (including every leg of a trade), so a search
+// for "2027 R1 TOR" or a player's name finds it regardless of which side of a
+// multi-team trade it's on. Memoized on the transaction object since the list is
+// otherwise static between loads.
+function txnSearchText(t) {
+  if (t._searchText != null) return t._searchText;
+  const d = t.details || {};
+  const parts = [typeLabel(t.type), t.description || '', ...txnTeams(t)];
+  const addPlayer = slug => {
+    if (!slug) return;
+    const bio = bios[slug];
+    parts.push(slug, bio ? bioDisplayName(bio) : '', (bio && bio.name) || '');
+  };
+  const addPick = p => {
+    if (!p) return;
+    parts.push(`${p.year} R${p.round} ${p.orig}`);
+  };
+  addPlayer(d.player);
+  addPick(d.pick);
+  if (t.type === 'trade') {
+    (d.transfers || []).forEach(({ from_team, to_team, assets }) => {
+      parts.push(from_team, to_team);
+      (assets || []).forEach(a => {
+        if (a.type === 'player') addPlayer(a.slug);
+        if (a.type === 'pick') addPick(a);
+      });
+    });
+  }
+  t._searchText = parts.filter(Boolean).join(' ').toLowerCase();
+  return t._searchText;
 }
 
 // The set of team abbrs actually party to a transaction. Prefer the team(s)
@@ -3946,9 +4017,17 @@ function renderTable() {
   if (activeTeamFilter) {
     txns = txns.filter(t => txnTeams(t).includes(activeTeamFilter));
   }
+  if (activeSeasonFilter) {
+    txns = txns.filter(t => t.date && seasonForDate(t.date, LEAGUE_ROLLOVERS) === activeSeasonFilter);
+  }
+  if (activeSearchQuery) {
+    txns = txns.filter(t => txnSearchText(t).includes(activeSearchQuery));
+  }
 
   if (!txns.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No transactions yet.</td></tr>';
+    const msg = (activeTypeFilter || activeTeamFilter || activeSeasonFilter || activeSearchQuery)
+      ? 'No transactions match these filters.' : 'No transactions yet.';
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${msg}</td></tr>`;
     pagination.style.display = 'none';
     return;
   }
