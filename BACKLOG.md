@@ -756,6 +756,3 @@ job.
   rather than work: `GET /api/cap-history?team=UTA` has served a per-day series
   since 2026-08-25, so "when did this team cross the first apron" is a chart
   over an existing endpoint, not a collection problem.
-- **Player page: contract timeline** — salaries/cap_holds/guarantees are all in
-  the bio; a visual year-by-year bar would make option and guarantee dates read
-  at a glance.
