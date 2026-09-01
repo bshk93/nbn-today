@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.144",
+    "date": "2026-09-01",
+    "changes": [
+      "Fixed the page-render test harness reporting a false failure on the team page. It checks /teams/UTA/ twice on purpose \u2014 once for its tables, once for the Cap Health card \u2014 and browser tabs share one cache, so the second load came back 304 from cache and tripped the \"expected 200\" assertion. Nothing was ever wrong with the page",
+      "The real cost was the hidden half: that second check was bailing at the status line, so the Cap Health assertion it existed for had not actually been running. Each check now does its own uncached fetch, and all 18 pages pass"
+    ]
+  },
+  {
     "version": "0.1.143",
     "date": "2026-09-01",
     "changes": [

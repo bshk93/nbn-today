@@ -109,6 +109,12 @@ async function checkPage(browser, spec) {
   // The box is small; a wide viewport costs nothing but a tiny one can collapse
   // layouts into a state no real visitor sees.
   await page.setViewport({ width: 1280, height: 900 });
+  // Every check does its own fetch. Tabs share one browser cache, so a path
+  // listed twice — /teams/UTA/ is, deliberately, once for its tables and once
+  // for the Cap Health card — had its second load answered 304 from cache.
+  // That failed the `expected 200` assertion below, and worse, it meant the
+  // second check never exercised the fetch it was there to exercise.
+  await page.setCacheEnabled(false);
 
   const uncaught = [];
   const sameOrigin = [];
