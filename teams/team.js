@@ -261,6 +261,8 @@ const capHealthReady = new Promise(resolve => {
   .rec-row .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .rec-row .when { margin-left: auto; color: var(--text-dim); white-space: nowrap; font-size: 0.7rem; }
   .rec-po { color: var(--gold); font-weight: 700; }
+  .rec-group-title { font-size: 0.85rem; font-weight: 700; margin: 0 0 0.5rem; }
+  .rec-group-title:not(:first-child) { margin-top: 1.25rem; }
   table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
   thead th {
     padding: 0.7rem 1rem;
@@ -999,8 +1001,9 @@ document.body.innerHTML = `
       </section>
       <section>
         <h2 class="section-title">Franchise Records</h2>
-        <p class="section-sub">Best single games in franchise history · regular season and playoffs</p>
+        <p class="section-sub">Best single games, best seasons, in franchise history · regular season and playoffs</p>
         <div id="records-wrap"><div class="status">Loading…</div></div>
+        <div id="season-records-wrap" style="margin-top:1.5rem"><div class="status">Loading…</div></div>
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-history">
@@ -5906,6 +5909,94 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
   const allSeasons = psr.status === 'fulfilled' ? parseCSV(psr.value) : [];
   const latestSeasonBySlug = computeLatestSeasonBySlug(allSeasons);
+
+  // Season Records — the season-total analog of the single-game records above:
+  // this franchise's best regular season, and the best single season by any
+  // player who wore its jersey, per stat. Built entirely from data the build
+  // already computes and this page already fetches for other tabs —
+  // `seasonRows` (Season History) and `allSeasons`/player_seasons.csv (Draft
+  // History's career join) — so no new build output was needed for this.
+  {
+    const seasonRecordsWrap = document.getElementById('season-records-wrap');
+    const escAttr = s => String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    // Best team season: highest win% among seasons this team actually played
+    // (guards the 0-0 row a season-in-progress or expansion year can leave in
+    // {abbr}-seasons.csv), point differential as the tiebreak.
+    const playedSeasons = seasonRows.filter(r => (parseInt(r.W) || 0) + (parseInt(r.L) || 0) > 0);
+    const bestSeasons = [...playedSeasons].sort((a, b) => {
+      const pctDiff = (parseFloat(b.PCT) || 0) - (parseFloat(a.PCT) || 0);
+      return pctDiff || ((parseFloat(b.DIFF) || 0) - (parseFloat(a.DIFF) || 0));
+    });
+
+    const teamSeasonCard = (() => {
+      if (!bestSeasons.length) return '';
+      const [top, ...rest] = bestSeasons.slice(0, 3);
+      const badges = r => `${r.FOTY === 'TRUE' ? ' ⭐' : ''}${r.COTY === 'TRUE' ? ' 🏅' : ''}`;
+      const line = r => `${escAttr(r.W)}-${escAttr(r.L)} (${fmtPct(r.PCT)}) · ${escAttr(r.PLAYOFF_RESULT || '—')}${badges(r)}`;
+      return `
+        <div class="rec-card">
+          <div class="rec-stat">Best Regular Season</div>
+          <div class="rec-top">
+            <span class="val">${escAttr(top.SEASON)}</span>
+            <span class="who">${line(top)}</span>
+          </div>
+          ${rest.length ? `<div class="rec-rest">${rest.map(r => `
+            <div class="rec-row">
+              <span class="val">${escAttr(r.SEASON)}</span>
+              <span class="who">${line(r)}</span>
+            </div>`).join('')}</div>` : ''}
+        </div>`;
+    })();
+
+    // Best individual seasons: season *totals* (not per-game averages), same
+    // counting-stat flavor as the single-game cards above — "most points in a
+    // season for this franchise", not a rate stat.
+    const SEASON_REC_STATS = [
+      ['PTS', 'Points'], ['REB', 'Rebounds'], ['AST', 'Assists'], ['STL', 'Steals'],
+      ['BLK', 'Blocks'], ['3PM', '3-Pointers'], ['GMSC', 'Game Score'],
+    ];
+    const mySeasons = allSeasons.filter(r => r.TEAM === abbr && (parseInt(r.G) || 0) > 0);
+    const seasonNameLink = r =>
+      `<a href="/players/?p=${encodeURIComponent(r.SLUG)}">${escAttr(displayNameFromBio(r.PLAYER))}</a>`;
+
+    const seasonCards = SEASON_REC_STATS.map(([key, label]) => {
+      const withValue = mySeasons
+        .map(r => ({ r, v: parseFloat(r[key]) }))
+        .filter(x => !isNaN(x.v));
+      if (!withValue.length) return '';
+      // LAST_DATE as the tiebreak keeps ordering stable and deterministic,
+      // same role it plays for single-game ties in franchise_records().
+      withValue.sort((a, b) => b.v - a.v || (a.r.LAST_DATE || '').localeCompare(b.r.LAST_DATE || ''));
+      const [top, ...rest] = withValue.slice(0, 5);
+      const val = v => key === 'GMSC' ? v.toFixed(1) : String(Math.round(v));
+      return `
+        <div class="rec-card">
+          <div class="rec-stat">${escAttr(label)}</div>
+          <div class="rec-top">
+            <span class="val">${escAttr(val(top.v))}</span>
+            <span class="who">${seasonNameLink(top.r)}</span>
+          </div>
+          <div class="rec-when">${escAttr(top.r.SEASON)}</div>
+          ${rest.length ? `<div class="rec-rest">${rest.map(x => `
+            <div class="rec-row">
+              <span class="val">${escAttr(val(x.v))}</span>
+              <span class="who">${seasonNameLink(x.r)}</span>
+              <span class="when">${escAttr(x.r.SEASON)}</span>
+            </div>`).join('')}</div>` : ''}
+        </div>`;
+    }).filter(Boolean).join('');
+
+    const groups = [];
+    if (teamSeasonCard) groups.push(`<div class="rec-group-title">Best Team Season</div><div class="rec-grid">${teamSeasonCard}</div>`);
+    if (seasonCards) groups.push(`<div class="rec-group-title">Best Individual Seasons</div><div class="rec-grid">${seasonCards}</div>`);
+
+    seasonRecordsWrap.innerHTML = groups.length
+      ? groups.join('')
+      : '<div class="status">No season data recorded for this franchise yet.</div>';
+  }
 
   // Draft History tab — sourced from player bios (/api/players via biosData),
   // the canonical per-player draft record: draft_team (who made the pick) plus
