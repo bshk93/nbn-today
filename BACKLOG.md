@@ -767,46 +767,6 @@ Note the constraint in CLAUDE.md: the 30 team shells load only `team.js`, so it
 has to be pulled in the same injected-script + awaited-promise way
 `lineupReady` / `contractReady` are, not by touching the shells.
 
-### [P3] `news.json` is one file for every article — split it per article
-Entered 2026-08-31, from the question "why is news one huge json instead of
-something more sane". It is the right question; the answer is that the shape is
-wrong but the format is not.
-
-Today `/var/lib/nothing-but-stats/news.json` is a single JSON list of every
-article (5 articles, 66KB, largest 24KB). `load_articles()` reads the whole file
-and `save_articles()` rewrites the whole file — 26 call sites across
-`routers/news.py` and `routers/og.py`. Three costs:
-
-- **Every write touches every article.** Posting a comment on a plain article
-  rewrites the published ranking's frozen roster snapshots alongside it. Nothing
-  is corrupted (the API lock serialises writers), but the blast radius of any
-  news write is the entire archive.
-- **No per-article history.** The data dir is a git work tree backed up to
-  `nbs-backup.git`, so every change lands as one diff on one 66KB blob. There is
-  no readable answer to "what changed on this edition, and when".
-- **Growth is shared, so per-record limits end up guarding the container.**
-  `MAX_BLURB_LEN` (raised 1200 → 2500 on 2026-08-31) exists partly because 30
-  unbounded blurbs per edition would be read by every `/api/news` call forever;
-  published editions are never pruned. A cap on a field to protect the file it
-  happens to live in is the smell that names this item.
-
-**The fix is `news/{id}.json`, one file per article — still JSON.** Independent
-writes, real per-article diffs in the backup repo, no shared ceiling. The list
-endpoint reads the directory; `_find` becomes a path.
-
-**Not markdown with frontmatter**, which is the obvious-looking version and is
-worse. Only `body` is prose. An article also carries `ballots` (per-voter
-ordered arrays of 30 teams), `blurbs` (30 objects with claim, byline,
-timestamps), `final` (frozen ranks plus a full roster snapshot per team),
-`comments`, `phase`, `voters`, `edition`, `series_id`, `prev_id`. In frontmatter
-that is all YAML — the same structure in a format that parses worse and hand-
-corrupts more easily. Prettier prose editing, worse data store. If prose editing
-is the actual want, that is a separate and much smaller job on `body` alone.
-
-Not urgent at 5 articles; strictly harder every edition. The work is a migration
-script plus the 26 call sites, and it should land while the archive is still
-small enough that the migration is verifiable by reading it.
-
 ### [P3] Seed `/suggestions` with the member-facing part of this file
 The board is no longer empty (checked 2026-08-08: two live suggestions, #4 MCP
 server and #5 comments/editing, seq at 5; #5 is built — threads, status history,
