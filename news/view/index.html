@@ -421,6 +421,7 @@ function render(a) {
   } else { panel.style.display = 'none'; }
 
   document.getElementById('article-body').innerHTML = marked.parse(a.body || '');
+  autoLinkArticleBody();
   renderRankings(a);
   renderComments(a);
 }
@@ -437,6 +438,162 @@ const TEAM_NAMES = {
   POR: 'Portland Trail Blazers', SAC: 'Sacramento Kings',  SAS: 'San Antonio Spurs',
   TOR: 'Toronto Raptors',      UTA: 'Utah Jazz',           WAS: 'Washington Wizards',
 };
+
+// Auto-link player names, team names/cities, and abbreviations in the article
+// body. Bare nicknames (Heat, Magic, Jazz, Thunder…) are ordinary English
+// words, so those only link written as "the Heat" — everything else here is
+// a proper noun and links on sight (case-insensitive, but the match itself
+// must start with a capital so a stray lowercase word can't false-positive).
+// cities is a list, not one string: LAC and LAL both go by "LA", so bare "LA"
+// must read as ambiguous while "LA Lakers" / "Los Angeles Lakers" both still
+// resolve — a single shared string couldn't tell those two cases apart.
+const TEAM_META = {
+  ATL: [['Atlanta'], 'Hawks'],                    BKN: [['Brooklyn'], 'Nets'],         BOS: [['Boston'], 'Celtics'],
+  CHA: [['Charlotte'], 'Hornets'],                CHI: [['Chicago'], 'Bulls'],         CLE: [['Cleveland'], 'Cavaliers'],
+  DAL: [['Dallas'], 'Mavericks'],                 DEN: [['Denver'], 'Nuggets'],        DET: [['Detroit'], 'Pistons'],
+  GSW: [['Golden State'], 'Warriors'],            HOU: [['Houston'], 'Rockets'],       IND: [['Indiana'], 'Pacers'],
+  LAC: [['LA'], 'Clippers'],                      LAL: [['LA', 'Los Angeles'], 'Lakers'], MEM: [['Memphis'], 'Grizzlies'],
+  MIA: [['Miami'], 'Heat'],                       MIL: [['Milwaukee'], 'Bucks'],       MIN: [['Minnesota'], 'Timberwolves'],
+  NOP: [['New Orleans'], 'Pelicans'],             NYK: [['New York'], 'Knicks'],       OKC: [['Oklahoma City'], 'Thunder'],
+  ORL: [['Orlando'], 'Magic'],                    PHI: [['Philadelphia'], '76ers'],    PHX: [['Phoenix'], 'Suns'],
+  POR: [['Portland'], 'Trail Blazers'],           SAC: [['Sacramento'], 'Kings'],      SAS: [['San Antonio'], 'Spurs'],
+  TOR: [['Toronto'], 'Raptors'],                  UTA: [['Utah'], 'Jazz'],             WAS: [['Washington'], 'Wizards'],
+};
+
+function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// player-bios.json names are "LAST, FIRST" uppercase (e.g. "GILGEOUS-ALEXANDER, SHAI");
+// title-case each side without disturbing hyphens/apostrophes.
+function titleCaseNamePart(s) {
+  return s.split(/([\s'-])/).map(seg => /^[A-Za-z]/.test(seg) ? seg[0].toUpperCase() + seg.slice(1).toLowerCase() : seg).join('');
+}
+
+let playersForLinkingPromise = null;
+function loadPlayersForLinking() {
+  if (!playersForLinkingPromise) {
+    playersForLinkingPromise = fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  }
+  return playersForLinkingPromise;
+}
+
+function buildAutoLinkMatchers(playersBySlug) {
+  const playerByLower = new Map();
+  for (const [slug, bio] of Object.entries(playersBySlug || {})) {
+    const comma = String(bio.name || '').indexOf(',');
+    if (comma < 0) continue;
+    const last = bio.name.slice(0, comma).trim();
+    const first = bio.name.slice(comma + 1).trim();
+    if (!first || !last) continue;
+    const full = `${titleCaseNamePart(first)} ${titleCaseNamePart(last)}`;
+    playerByLower.set(full.toLowerCase(), `/players/?p=${encodeURIComponent(slug)}`);
+  }
+
+  const cityCounts = new Map();
+  for (const [cities] of Object.values(TEAM_META)) {
+    for (const city of cities) cityCounts.set(city, (cityCounts.get(city) || 0) + 1);
+  }
+
+  const teamFullByLower = new Map();
+  const cityByLower = new Map(); // a city shared by two teams (LA) is too ambiguous to link on its own
+  const nicknameByExact = new Map();
+  const abbrByExact = new Map();
+  for (const [abbr, [cities, nickname]] of Object.entries(TEAM_META)) {
+    const href = `/teams/${abbr}/`;
+    for (const city of cities) {
+      teamFullByLower.set(`${city} ${nickname}`.toLowerCase(), href);
+      if (cityCounts.get(city) === 1) cityByLower.set(city.toLowerCase(), href);
+    }
+    nicknameByExact.set(nickname, href);
+    abbrByExact.set(abbr, href);
+  }
+
+  const matchers = [];
+  const altGroup = (keys) => `(?:${keys.map(escapeRegExp).join('|')})`;
+  if (playerByLower.size) {
+    matchers.push({ re: new RegExp(`\\b${altGroup([...playerByLower.keys()])}\\b`, 'gi'),
+      resolve: (m) => playerByLower.get(m.toLowerCase()), requireCapitalized: true });
+  }
+  if (teamFullByLower.size) {
+    matchers.push({ re: new RegExp(`\\b${altGroup([...teamFullByLower.keys()])}\\b`, 'gi'),
+      resolve: (m) => teamFullByLower.get(m.toLowerCase()), requireCapitalized: true });
+  }
+  if (cityByLower.size) {
+    matchers.push({ re: new RegExp(`\\b${altGroup([...cityByLower.keys()])}\\b`, 'gi'),
+      resolve: (m) => cityByLower.get(m.toLowerCase()), requireCapitalized: true });
+  }
+  matchers.push({ re: new RegExp(`\\b${altGroup([...abbrByExact.keys()])}\\b`, 'g'),
+    resolve: (m) => abbrByExact.get(m), requireCapitalized: false });
+  // Nicknames alone are ordinary English words (Heat, Magic, Jazz, Thunder…), so
+  // these only link as "the Heat" / "the Magic" — the lookbehind keeps "the"
+  // itself out of the link and out of the matched span.
+  matchers.push({ re: new RegExp(`(?<=\\b[Tt]he )${altGroup([...nicknameByExact.keys()])}\\b`, 'g'),
+    resolve: (m) => nicknameByExact.get(m), requireCapitalized: false });
+  return matchers;
+}
+
+function collectLinkSpans(text, matchers) {
+  const candidates = [];
+  for (const { re, resolve, requireCapitalized } of matchers) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(text))) {
+      const matched = m[0];
+      if (!requireCapitalized || /^[A-Z]/.test(matched)) {
+        const href = resolve(matched);
+        if (href) candidates.push({ start: m.index, end: m.index + matched.length, href });
+      }
+    }
+  }
+  // Longer / more specific matches win over shorter ones they overlap with
+  // (e.g. "Atlanta Hawks" over bare "Atlanta"); ties go to the earlier match.
+  candidates.sort((a, b) => (b.end - b.start) - (a.end - a.start) || a.start - b.start);
+  const accepted = [];
+  for (const c of candidates) {
+    if (accepted.some(a => c.start < a.end && a.start < c.end)) continue;
+    accepted.push(c);
+  }
+  accepted.sort((a, b) => a.start - b.start);
+  return accepted;
+}
+
+function autoLinkEntities(root, matchers) {
+  if (!matchers.length) return;
+  const SKIP_TAGS = new Set(['A', 'CODE', 'PRE', 'SCRIPT', 'STYLE']);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      for (let el = node.parentElement; el && el !== root; el = el.parentElement) {
+        if (SKIP_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  const targets = [];
+  let n;
+  while ((n = walker.nextNode())) targets.push(n);
+
+  for (const node of targets) {
+    const text = node.nodeValue;
+    const spans = collectLinkSpans(text, matchers);
+    if (!spans.length) continue;
+    const frag = document.createDocumentFragment();
+    let cursor = 0;
+    for (const s of spans) {
+      if (s.start > cursor) frag.appendChild(document.createTextNode(text.slice(cursor, s.start)));
+      const a = document.createElement('a');
+      a.href = s.href;
+      a.textContent = text.slice(s.start, s.end);
+      frag.appendChild(a);
+      cursor = s.end;
+    }
+    if (cursor < text.length) frag.appendChild(document.createTextNode(text.slice(cursor)));
+    node.parentNode.replaceChild(frag, node);
+  }
+}
+
+async function autoLinkArticleBody() {
+  const players = await loadPlayersForLinking();
+  autoLinkEntities(document.getElementById('article-body'), buildAutoLinkMatchers(players));
+}
 
 // A blurb is prose, so it is set as prose: blank lines become paragraphs and a
 // single newline becomes a break, rather than the whole thing collapsing into
