@@ -104,27 +104,35 @@
     .g-score.loss { color: var(--danger); }
     .g-next { flex: none; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--link); }
 
-    .g-streams { flex: none; display: flex; align-items: center; gap: 0.3rem; }
-    .stream-chip {
+    .g-streamer { flex: none; display: flex; align-items: center; gap: 0.3rem; }
+    .streamer-chip {
       display: inline-flex; align-items: center; gap: 0.25rem;
       font-size: 0.68rem; color: var(--purple-light); background: var(--purple-light-bg);
       border-radius: 3px; padding: 0.1rem 0.4rem; white-space: nowrap;
     }
-    .stream-chip.mine { color: var(--accent-light); background: var(--accent-panel-bg); }
+    .streamer-chip.mine { color: var(--accent-light); background: var(--accent-panel-bg); }
     .chip-x {
       background: none; border: none; padding: 0; cursor: pointer; line-height: 1;
       color: inherit; opacity: 0.6; font-size: 0.8rem; font-family: inherit;
     }
     .chip-x:hover { opacity: 1; }
 
-    .g-claim {
+    .stream-badge {
+      flex: none; display: inline-flex; align-items: center; gap: 0.2rem;
+      font-size: 0.65rem; font-weight: 600; color: var(--danger-light); background: var(--danger-bg);
+      border-radius: 3px; padding: 0.1rem 0.4rem; white-space: nowrap;
+    }
+
+    .g-claim, .g-stream-btn {
       flex: none; width: 4rem; text-align: right; background: none; border: none;
       color: var(--text-muted); font-family: inherit; font-size: 0.65rem;
       padding: 0; cursor: pointer; line-height: 1;
       opacity: 0.3; transition: opacity 0.1s, color 0.1s;
     }
-    .game:hover .g-claim, .g-claim:focus { opacity: 1; color: var(--accent-light); }
-    .g-claim[disabled] { cursor: default; }
+    .g-stream-btn { width: 4.5rem; }
+    .game:hover .g-claim, .g-claim:focus,
+    .game:hover .g-stream-btn, .g-stream-btn:focus { opacity: 1; color: var(--accent-light); }
+    .g-claim[disabled], .g-stream-btn[disabled] { cursor: default; }
 
     .toast {
       position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
@@ -210,8 +218,9 @@
     const storedToken = () => localStorage.getItem('nbn_token');
     // `admin` implicitly satisfies any role check server-side, so the button
     // has to appear for an admin too or the page would hide an action the API
-    // would have allowed.
-    const canStream = () => me.roles.includes('streamer') || me.roles.includes('admin');
+    // would have allowed. Gates both claiming a game as streamer and flagging
+    // one as a stream — same role, two independent actions.
+    const isStreamerRole = () => me.roles.includes('streamer') || me.roles.includes('admin');
 
     // ── Helpers ──────────────────────────────────────────────────────
 
@@ -273,7 +282,11 @@
       return s;
     }
 
-    // ── Streaming claims ─────────────────────────────────────────────
+    // ── Streamer claims & stream flag ────────────────────────────────
+    //
+    // Two independent things live on a game: `streamer` (who's claimed to
+    // broadcast it — one name, or none) and `stream` (whether the game itself
+    // is flagged as a stream). A game can have either, neither, or both.
 
     let toastTimer = null;
     function toast(msg, bad) {
@@ -315,6 +328,29 @@
         rowEl.querySelectorAll('button').forEach(b => { b.disabled = false; });
         toast(claiming ? `Could not claim that game: ${e.message}`
                        : `Could not drop that claim: ${e.message}`, true);
+      }
+    }
+
+    async function setStreamFlag(g, num, rowEl, marking) {
+      const token = storedToken();
+      const url = `/api/schedule/${g.id}/stream?season=${encodeURIComponent(season)}`;
+      rowEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      try {
+        const r = await fetch(url, {
+          method: marking ? 'POST' : 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!r.ok) {
+          const detail = await r.json().then(j => j.detail).catch(() => null);
+          throw new Error(detail || `HTTP ${r.status}`);
+        }
+        const updated = await r.json();
+        g.stream = !!updated.stream;
+        replaceRow(g, num, rowEl);
+      } catch (e) {
+        rowEl.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        toast(marking ? `Could not flag that game as a stream: ${e.message}`
+                      : `Could not clear that stream flag: ${e.message}`, true);
       }
     }
 
@@ -365,14 +401,14 @@
       // a button that sits next to 29 other people's names.
       const held = g.streamer || null;
       if (held) {
-        const wrap = span('g-streams');
-        const chip = span('stream-chip' + (held === me.name ? ' mine' : ''));
+        const wrap = span('g-streamer');
+        const chip = span('streamer-chip' + (held === me.name ? ' mine' : ''));
         chip.appendChild(document.createTextNode(`📺 ${held}`));
         if (held === me.name) {
           const x = document.createElement('button');
           x.className = 'chip-x';
           x.textContent = '×';
-          x.title = 'Drop this stream';
+          x.title = 'Drop as streamer';
           x.onclick = () => setClaim(g, num, row, false);
           chip.appendChild(x);
         }
@@ -380,18 +416,35 @@
         row.appendChild(wrap);
       }
 
+      // Independent of who (if anyone) is claimed as streamer: whether the
+      // game itself is flagged as a stream.
+      if (g.stream) row.appendChild(span('stream-badge', '📡 Stream'));
+
       row.appendChild(span('g-arena', g.arena || ''));
 
       // No claim button on a game already played, and none on one somebody
       // holds — theirs comes off via the chip's ×, anyone else's via a BOD.
-      if (canStream() && !res && !held) {
+      if (isStreamerRole() && !res && !held) {
         const btn = document.createElement('button');
         btn.className = 'g-claim';
-        btn.textContent = 'stream';
-        btn.title = 'Claim this game to stream';
-        btn.setAttribute('aria-label', `Claim ${g.away_team} at ${g.home_team} to stream`);
+        btn.textContent = 'claim';
+        btn.title = 'Claim this game as streamer';
+        btn.setAttribute('aria-label', `Claim ${g.away_team} at ${g.home_team} as streamer`);
         btn.onclick = () => setClaim(g, num, row, true);
         row.appendChild(btn);
+      }
+      // The stream flag toggles independently of the claim above — anyone
+      // with the streamer role can mark or unmark it, not just whoever (if
+      // anyone) holds the claim.
+      if (isStreamerRole() && !res) {
+        const btn2 = document.createElement('button');
+        btn2.className = 'g-stream-btn';
+        btn2.textContent = g.stream ? 'unflag' : 'stream';
+        btn2.title = g.stream ? 'Remove the stream flag from this game' : 'Flag this game as a stream';
+        btn2.setAttribute('aria-label',
+          `${g.stream ? 'Remove stream flag from' : 'Flag'} ${g.away_team} at ${g.home_team}${g.stream ? '' : ' as a stream'}`);
+        btn2.onclick = () => setStreamFlag(g, num, row, !g.stream);
+        row.appendChild(btn2);
       }
       if (g.id === nextId && scope === 'all') row.appendChild(span('g-next', 'next'));
 
