@@ -1727,6 +1727,12 @@
             const { guaranteedNow, nextDate } = vestState(season, total);
             return { season, kind: 'split', total, guaranteedNow: Math.max(0, Math.min(guaranteedNow, total)), nextDate, seam };
           }
+          if (holdType === 'UFA' || holdType === 'RFA') {
+            // The dollar figure here (when present) is the cap-hold placeholder
+            // amount teams carry on the books for an unrenounced FA, not a signed
+            // salary — never render it as guaranteed money.
+            return { season, kind: 'hold', holdType, total, seam };
+          }
           return { season, kind: 'guaranteed', total, seam };
         });
 
@@ -1800,10 +1806,15 @@
 
       if (b.kind === 'hold') {
         present.hold = true;
-        const y = baselineY - HOLD_PILL_H;
+        // A hold's dollar figure (when present) is the cap-hold placeholder
+        // amount, not a signed salary — still worth scaling by magnitude (a
+        // $70M UFA hold and a $2M one are very different), but always drawn
+        // outlined/unfilled so it never reads as guaranteed money.
+        const h = b.total > 0 ? Math.max(4, Math.round((b.total / maxTotal) * MAX_BAR_PX)) : HOLD_PILL_H;
+        const y = baselineY - h;
         const rect = document.createElementNS(ns, 'rect');
         rect.setAttribute('x', barX); rect.setAttribute('y', y);
-        rect.setAttribute('width', BAR_W); rect.setAttribute('height', HOLD_PILL_H);
+        rect.setAttribute('width', BAR_W); rect.setAttribute('height', h);
         rect.setAttribute('rx', 4);
         rect.setAttribute('fill', 'none');
         rect.setAttribute('stroke', 'var(--text-dim)');
@@ -1813,7 +1824,8 @@
         g.appendChild(rect);
         segEls.push(rect);
         stackTopY = y;
-        tooltipLines = [null, CAP_HOLD_LABELS[b.holdType] || b.holdType || 'Hold'];
+        const holdLabel = CAP_HOLD_LABELS[b.holdType] || b.holdType || 'Hold';
+        tooltipLines = b.total > 0 ? [ctlCompact(b.total) + ' cap hold', holdLabel] : [null, holdLabel];
       } else {
         const segments = [];
         if (b.kind === 'split') {
@@ -1875,26 +1887,22 @@
         }
       }
 
-      // Value label at the tip (skipped for hold pills, which carry no dollar figure).
-      if (b.kind !== 'hold') {
-        const val = document.createElementNS(ns, 'text');
-        val.setAttribute('x', cx); val.setAttribute('y', stackTopY - 6);
-        val.setAttribute('text-anchor', 'middle');
-        val.setAttribute('font-size', '9');
-        val.setAttribute('font-weight', '600');
-        val.setAttribute('fill', 'var(--text-muted)');
-        val.textContent = ctlCompact(b.total);
-        g.appendChild(val);
-      } else {
-        const val = document.createElementNS(ns, 'text');
-        val.setAttribute('x', cx); val.setAttribute('y', stackTopY - 6);
-        val.setAttribute('text-anchor', 'middle');
+      // Value label at the tip. A hold with no dollar figure at all labels
+      // its hold type instead, since there's no magnitude to show.
+      const val = document.createElementNS(ns, 'text');
+      val.setAttribute('x', cx); val.setAttribute('y', stackTopY - 6);
+      val.setAttribute('text-anchor', 'middle');
+      val.setAttribute('font-weight', '600');
+      if (b.kind === 'hold' && b.total <= 0) {
         val.setAttribute('font-size', '8');
-        val.setAttribute('font-weight', '600');
         val.setAttribute('fill', 'var(--text-dim)');
         val.textContent = CAP_HOLD_LABELS[b.holdType] || b.holdType || '';
-        g.appendChild(val);
+      } else {
+        val.setAttribute('font-size', '9');
+        val.setAttribute('fill', 'var(--text-muted)');
+        val.textContent = ctlCompact(b.total);
       }
+      g.appendChild(val);
 
       // Season tick
       const tick = document.createElementNS(ns, 'text');
