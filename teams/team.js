@@ -8,6 +8,7 @@
 //   lineupReady                 148   resolves once /teams/lineup.js has loaded
 //   contractReady               161   resolves once /contract.js has loaded
 //   capHealthReady              182   resolves once /cap-health.js has loaded
+//   coachingConfigReady         194   resolves once /coaching-config.js has loaded
 //   CAP_HOLD_CSS                730   cap-hold type → td class
 //   CAP_HOLD_LABELS             738   cap-hold type → legend label
 //   SWATCH_COLORS               746   cap-hold type → legend swatch color
@@ -69,6 +70,7 @@
 //   hasAuthRole                1683   true if the signed-in member holds a role
 //   canEditRosters             1690   true if the member may edit this team
 //   canEditTeamSettings                true only for the team's own role (jersey/secondary pos)
+//   canEditCoachingSettings    3492   true only for the team's own role (2K coach profile)
 //   promptToken                1720   modal to enter/store bearer token
 //   withToken                  1751   wraps fn with stored token
 //   makeSelect                 1757   <select> helper
@@ -80,6 +82,7 @@
 //   enterEditMode              2041   swaps read view for edit grid
 //   setupPicksEditable         2145   wires edit mode for picks table
 //   setupTeamSettingsTab       3458   wires the Team Settings tab (jersey #, secondary pos)
+//   setupCoachingSettingsTab   4786   wires the Coaching tab (2K coach profile) — schema-driven off /coaching-config.js
 //   setupEditable              2674   wires edit mode for roster table
 //   setupDeadCapEditable       2490   wires edit mode for the dead cap table
 // =============================================================================
@@ -185,6 +188,18 @@ const capHealthReady = new Promise(resolve => {
   _ch.onload = resolve;
   _ch.onerror = () => { console.error('/cap-health.js failed to load — cap health card unavailable'); resolve(); };
   document.head.appendChild(_ch);
+});
+
+// CoachingSettings — the 2K coach-profile field/option schema, shared with the
+// streamer dashboard on /schedule so a team's settings render the same way in
+// both places. Soft dependency, like CapHealth: the Coaching tab reports
+// itself unavailable rather than throwing if this fails to load.
+const coachingConfigReady = new Promise(resolve => {
+  const _cs = document.createElement('script');
+  _cs.src = '/coaching-config.js';
+  _cs.onload = resolve;
+  _cs.onerror = () => { console.error('/coaching-config.js failed to load — Coaching tab unavailable'); resolve(); };
+  document.head.appendChild(_cs);
 });
 
 { const _s = document.createElement('style'); _s.textContent = `
@@ -903,6 +918,7 @@ document.body.innerHTML = `
     <div class="tabs">
       <button class="tab active" data-tab="overview">Roster</button>
       <button class="tab" data-tab="settings">Team Settings</button>
+      <button class="tab" data-tab="coaching">Coaching</button>
       <button class="tab" data-tab="franchise">Franchise</button>
       <button class="tab" data-tab="draft">Draft History</button>
       <button class="tab" data-tab="alltime">All-Time Players</button>
@@ -969,6 +985,13 @@ document.body.innerHTML = `
         <h2 class="section-title" id="team-settings-title">Team Settings</h2>
         <p class="section-sub">Jersey numbers and secondary positions. Primary position is scraped from 2K and can't be edited here.</p>
         <div class="table-wrap" id="team-settings-wrap"><div class="status">Loading…</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-coaching">
+      <section>
+        <h2 class="section-title" id="coaching-settings-title">Coaching Settings</h2>
+        <p class="section-sub">This team's 2K coach profile, entered into the game by whoever streams your games.</p>
+        <div id="coaching-settings-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-franchise">
@@ -3466,6 +3489,10 @@ const canEditRosters = () => hasAuthRole('rosters');
 // since these are the team's own cosmetic identity choices, not league-administered
 // roster data.
 const canEditTeamSettings = abbr => AUTH_ROLES.includes(abbr.toLowerCase());
+// Coaching Settings is the same "this team's own call" predicate as Team
+// Settings, for the same reason — a team's coach profile isn't
+// league-administered data, so admin is deliberately not OR'd in here.
+const canEditCoachingSettings = abbr => AUTH_ROLES.includes(abbr.toLowerCase());
 // The trading block takes the team's own role OR admin — mirroring
 // put_trading_block in roster_picks.py. Deliberately not the same predicate as
 // canEditTeamSettings above, which excludes admin on purpose: a jersey number is
@@ -4753,6 +4780,251 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
   renderReadView();
 }
 
+// Coaching Settings tab — a team's 2K coach profile (schema in
+// /coaching-config.js), entered into the game by a streamer from the
+// dashboard on /schedule. Structurally mirrors setupTeamSettingsTab just
+// above (read/edit toggle, withToken-gated Edit button, same 403 handling),
+// but every field renders off window.CoachingSettings' config rather than
+// being hand-written, since that vocabulary is expected to change yearly.
+function setupCoachingSettingsTab(wrapId, rosterRows, biosData, record) {
+  const wrapEl = document.getElementById(wrapId);
+  const CS = window.CoachingSettings;
+  if (!CS) {
+    wrapEl.innerHTML = '<div class="status">Coaching settings unavailable — /coaching-config.js failed to load.</div>';
+    return;
+  }
+  const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
+  const activeRows = hasSlug ? rosterRows.filter(r => r.SLUG) : [];
+  const canEdit = canEditCoachingSettings(abbr);
+  const resolveName = slug => displayNameFromBio((biosData[slug] || {}).name || '') || slug;
+
+  function renderReadView() {
+    CS.renderReadOnly(wrapEl, record, { resolveName });
+    if (canEdit) {
+      const btn = document.createElement('button');
+      btn.className = 'edit-toggle-btn';
+      btn.style.cssText = 'margin-top:0.5rem;font-size:0.72rem;padding:0.15rem 0.45rem';
+      btn.textContent = record ? 'Edit' : 'Enter coaching settings';
+      btn.addEventListener('click', () => withToken(() => renderEditView()));
+      wrapEl.appendChild(btn);
+    }
+  }
+
+  function makeRangeNumberPair(min, max, step, initial, onChange) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:0.5rem;flex:1';
+    const range = document.createElement('input');
+    range.type = 'range'; range.min = String(min); range.max = String(max); range.step = String(step);
+    range.value = String(initial);
+    range.style.cssText = 'flex:1';
+    const num = document.createElement('input');
+    num.type = 'number'; num.min = String(min); num.max = String(max); num.step = String(step);
+    num.value = String(initial);
+    num.style.cssText = 'width:4rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+    range.addEventListener('input', () => { num.value = range.value; onChange(+range.value); });
+    num.addEventListener('input', () => {
+      const v = Math.max(min, Math.min(max, +num.value || 0));
+      range.value = String(v);
+      onChange(v);
+    });
+    wrap.appendChild(range);
+    wrap.appendChild(num);
+    return wrap;
+  }
+
+  function renderEditView() {
+    const values = record && record.values ? JSON.parse(JSON.stringify(record.values)) : CS.emptyValues();
+    const minutes = record && record.minutes ? JSON.parse(JSON.stringify(record.minutes)) : CS.emptyMinutes();
+    // A blank starting form starts under/over every pool's budget on purpose —
+    // Save stays disabled until the team actually allocates a legal total,
+    // same as the § 4.4 PDC ballot widget this borrows its shape from.
+    CS.FIELD_GROUPS.forEach(g => g.fields.forEach(f => { if (!(f.key in values)) values[f.key] = f.type === 'slider' ? (f.min || 0) : ''; }));
+
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem;position:sticky;top:0;background:var(--bg-page);padding:0.5rem 0;z-index:1';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save';
+    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
+
+    const statusEl = document.createElement('span');
+    statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
+
+    toolbar.appendChild(saveBtn);
+    toolbar.appendChild(cancelBtn);
+    toolbar.appendChild(statusEl);
+
+    const body = document.createElement('div');
+
+    function refreshSaveState() {
+      const poolsOk = CS.POINT_BUY_POOLS.every(p => CS.poolRemaining(p, values[p.key]) === 0);
+      const minutesOk = CS.minutesRemaining(minutes) === 0;
+      saveBtn.disabled = !(poolsOk && minutesOk);
+      saveBtn.title = saveBtn.disabled
+        ? 'Every point-buy pool and player minutes must exactly hit their totals before saving.'
+        : '';
+    }
+
+    function groupCard(title) {
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.9rem';
+      const h = document.createElement('div');
+      h.style.cssText = 'font-weight:700;font-size:0.95rem;margin-bottom:0.6rem';
+      h.textContent = title;
+      card.appendChild(h);
+      return card;
+    }
+
+    function fieldRow(labelText, control) {
+      const r = document.createElement('div');
+      r.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:0.3rem 0';
+      const l = document.createElement('span');
+      l.style.cssText = 'font-size:0.8rem;color:var(--text-muted)';
+      l.textContent = labelText;
+      r.appendChild(l);
+      r.appendChild(control);
+      return r;
+    }
+
+    // Plain select/slider field groups
+    CS.FIELD_GROUPS.forEach(group => {
+      const card = groupCard(group.label);
+      group.fields.forEach(f => {
+        let control;
+        if (f.type === 'select') {
+          const sel = makeSelect([{ value: '', label: '—' }, ...f.options.map(o => ({ value: o, label: o }))], values[f.key] || '');
+          sel.addEventListener('change', () => { values[f.key] = sel.value; });
+          control = sel;
+        } else {
+          control = makeRangeNumberPair(f.min, f.max, 1, values[f.key] || f.min, v => { values[f.key] = v; });
+        }
+        card.appendChild(fieldRow(f.label, control));
+      });
+      body.appendChild(card);
+    });
+
+    // Point-buy pools — running total + Save gating, per pool
+    CS.POINT_BUY_POOLS.forEach(pool => {
+      const card = groupCard(pool.label);
+      const poolValues = values[pool.key];
+      const totalLine = document.createElement('div');
+      totalLine.style.cssText = 'font-size:0.75rem;font-weight:700;margin-top:0.5rem';
+      function syncTotal() {
+        const total = CS.poolTotal(pool, poolValues);
+        const ok = total === pool.budget;
+        totalLine.style.color = ok ? 'var(--success-light,#4caf50)' : 'var(--gold,#c9a227)';
+        totalLine.textContent = ok
+          ? `${total} of ${pool.budget} allocated`
+          : `${total} of ${pool.budget} allocated · ${pool.budget - total > 0 ? (pool.budget - total) + ' left to place' : (total - pool.budget) + ' over'}`;
+        refreshSaveState();
+      }
+      pool.fields.forEach(f => {
+        const control = makeRangeNumberPair(f.min, f.max, 1, poolValues[f.key] || f.min, v => { poolValues[f.key] = v; syncTotal(); });
+        card.appendChild(fieldRow(f.label, control));
+      });
+      card.appendChild(totalLine);
+      syncTotal();
+      body.appendChild(card);
+    });
+
+    // Player minutes depth chart
+    const minutesCard = groupCard('Player Minutes');
+    const rosterOptions = [{ value: '', label: '—' }, ...activeRows.map(r => ({ value: r.SLUG, label: resolveName(r.SLUG) }))];
+    const minutesTotalLine = document.createElement('div');
+    minutesTotalLine.style.cssText = 'font-size:0.75rem;font-weight:700;margin-top:0.5rem';
+    function syncMinutesTotal() {
+      const total = CS.minutesTotal(minutes);
+      const ok = total === CS.MINUTES_BUDGET;
+      minutesTotalLine.style.color = ok ? 'var(--success-light,#4caf50)' : 'var(--gold,#c9a227)';
+      minutesTotalLine.textContent = ok
+        ? `${total} of ${CS.MINUTES_BUDGET} minutes allocated`
+        : `${total} of ${CS.MINUTES_BUDGET} minutes allocated · ${CS.MINUTES_BUDGET - total > 0 ? (CS.MINUTES_BUDGET - total) + ' left to place' : (total - CS.MINUTES_BUDGET) + ' over'}`;
+      refreshSaveState();
+    }
+    CS.MINUTES_SLOTS.forEach(slot => {
+      if (!minutes[slot]) minutes[slot] = { slug: '', minutes: 0, res: false };
+      const slotState = minutes[slot];
+      const rowWrap = document.createElement('div');
+      rowWrap.style.cssText = 'display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0';
+      const label = document.createElement('span');
+      label.style.cssText = 'font-size:0.75rem;color:var(--text-muted);width:2rem;flex-shrink:0';
+      label.textContent = slot;
+      const sel = makeSelect(rosterOptions, slotState.slug || '');
+      sel.style.flex = '1';
+      sel.addEventListener('change', () => { slotState.slug = sel.value; });
+      const minInput = document.createElement('input');
+      minInput.type = 'number'; minInput.min = '0'; minInput.max = '48';
+      minInput.value = String(slotState.minutes || 0);
+      minInput.style.cssText = 'width:3.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+      minInput.addEventListener('input', () => {
+        slotState.minutes = Math.max(0, Math.min(48, +minInput.value || 0));
+        syncMinutesTotal();
+      });
+      const resLabel = document.createElement('label');
+      resLabel.style.cssText = 'display:flex;align-items:center;gap:0.25rem;font-size:0.7rem;color:var(--text-muted);flex-shrink:0';
+      const resCheck = document.createElement('input');
+      resCheck.type = 'checkbox';
+      resCheck.checked = !!slotState.res;
+      resCheck.addEventListener('change', () => { slotState.res = resCheck.checked; syncMinutesTotal(); });
+      resLabel.appendChild(resCheck);
+      resLabel.appendChild(document.createTextNode('RES'));
+      rowWrap.appendChild(label);
+      rowWrap.appendChild(sel);
+      rowWrap.appendChild(minInput);
+      rowWrap.appendChild(resLabel);
+      minutesCard.appendChild(rowWrap);
+    });
+    minutesCard.appendChild(minutesTotalLine);
+    syncMinutesTotal();
+    body.appendChild(minutesCard);
+
+    wrapEl.innerHTML = '';
+    wrapEl.appendChild(toolbar);
+    wrapEl.appendChild(body);
+    refreshSaveState();
+
+    cancelBtn.addEventListener('click', () => renderReadView());
+
+    saveBtn.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      cancelBtn.disabled = true;
+      statusEl.textContent = 'Saving…';
+      try {
+        const token = getToken();
+        const resp = await fetch(`/api/coaching-settings/${abbr}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ values, minutes }),
+        });
+        if (!resp.ok) {
+          if (resp.status === 403) {
+            localStorage.removeItem(TOKEN_KEY);
+            statusEl.textContent = 'Invalid token — cleared. Try again.';
+          } else {
+            const err = await resp.json().catch(() => ({}));
+            statusEl.textContent = `Error: ${err.detail || resp.status}`;
+          }
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+          return;
+        }
+        statusEl.textContent = 'Saved!';
+        setTimeout(() => location.reload(), 700);
+      } catch {
+        statusEl.textContent = 'Network error';
+        saveBtn.disabled = false;
+        cancelBtn.disabled = false;
+      }
+    });
+  }
+
+  renderReadView();
+}
+
 function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
   if (!canEditRosters()) return;
 
@@ -5745,7 +6017,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // from "signed in with a token that has since been revoked".
   const hadStoredToken = !!getToken();
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -5768,12 +6040,14 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch(`/api/offer-sheets/open?team=${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/data/franchise-records.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch('/api/poext/eligible').then(r => r.ok ? r.json() : []),
+    fetch('/api/coaching-settings').then(r => r.ok ? r.json() : {}),
   ]);
 
   await ratingsPopupReady;
   await lineupReady;
   await contractReady;
   await capHealthReady;
+  await coachingConfigReady;
 
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
   if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
@@ -5815,6 +6089,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   if (poextr.status === 'fulfilled' && Array.isArray(poextr.value)) {
     poextr.value.forEach(e => { if (e.team === abbr) poextEligible[e.player] = e; });
   }
+  // GET /api/coaching-settings is league-wide (the streamer dashboard needs
+  // every team); this page only needs its own team's record, which is absent
+  // (undefined) until the team has ever saved one.
+  const coachingRecord = (coachr.status === 'fulfilled' && coachr.value && typeof coachr.value === 'object')
+    ? coachr.value[abbr] : undefined;
   const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];
   renderOfferSheetBanner(openOffers);
   const currentRosterRowsParsed = rr.status === 'fulfilled' ? parseCSV(rr.value) : [];
@@ -6233,6 +6512,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       return renderRoster(rows);
     }, rosterCellConfig(rosterHeaders, biosData));
     setupTeamSettingsTab('team-settings-wrap', rosterRows, biosData, attributesData);
+    setupCoachingSettingsTab('coaching-settings-wrap', rosterRows, biosData, coachingRecord);
 
     setupDeadCapEditable(
       document.getElementById('dead-cap-edit-wrap'),

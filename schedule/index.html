@@ -166,6 +166,27 @@
          them happen to fit trailing after the matchup on line one. */
       .g-break { flex-basis: 100%; }
     }
+
+    /* Coaching Settings — streamer dashboard. Independent of the season/team
+       controls above it, so it gets its own small block rather than living in
+       .controls/.summary. */
+    #coaching-dashboard { border: 1px solid var(--border-subtle); border-radius: 10px; padding: 0.9rem 1rem; }
+    #coaching-dashboard h2 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.15rem; }
+    #coaching-dashboard .sub { margin-bottom: 0.7rem; }
+    .cd-row { border-top: 1px solid var(--border-subtle); padding: 0.5rem 0; }
+    .cd-row:first-child { border-top: none; }
+    .cd-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .cd-team { font-weight: 600; min-width: 3.2rem; }
+    .cd-status { font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 999px; }
+    .cd-status.pending { background: var(--gold, #c9a227); color: #1a1400; }
+    .cd-status.entered { background: var(--success-bg, #133b1f); color: var(--success-light, #4caf50); }
+    .cd-status.none { background: var(--bg-subtle); color: var(--text-muted); }
+    .cd-when { font-size: 0.72rem; color: var(--text-muted); }
+    .cd-spacer { flex: 1; }
+    .cd-btn { font-size: 0.72rem; padding: 0.2rem 0.55rem; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+    .cd-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+    .cd-btn:disabled { opacity: 0.5; cursor: default; }
+    .cd-detail { margin-top: 0.6rem; }
   </style>
 </head>
 <body>
@@ -176,6 +197,12 @@
       <h1>Schedule</h1>
       <p class="sub" id="sub">Loading…</p>
     </header>
+
+    <section id="coaching-dashboard" style="display:none;margin-bottom:1.5rem">
+      <h2>Coaching Settings</h2>
+      <p class="sub">Teams' 2K coach profiles. Enter a team's settings into the game, then mark it entered.</p>
+      <div id="coaching-dash-list"></div>
+    </section>
 
     <div class="controls">
       <select id="season-sel" aria-label="Season"></select>
@@ -191,6 +218,13 @@
     <div id="more"></div>
     <p class="source" id="source"></p>
   </div>
+
+  <!-- The Coaching Settings dashboard's field/option vocabulary and read-only
+       renderer — shared with teams/team.js's Coaching tab so a team's
+       settings read the same way in both places. Loaded before the inline
+       script below (document order, no defer/async) so window.CoachingSettings
+       exists by the time init() needs it. -->
+  <script src="/coaching-config.js"></script>
 
   <script>
     const TEAMS = {
@@ -224,6 +258,7 @@
     let shown      = PAGE;
     let me         = { name: null, roles: [] };
     let nextId     = null;  // first unplayed game in the current view, set by render()
+    let coachingSettings = {};  // team abbr -> record, from GET /api/coaching-settings
 
     const storedToken = () => localStorage.getItem('nbn_token');
     // `admin` implicitly satisfies any role check server-side, so the button
@@ -231,6 +266,134 @@
     // would have allowed. Gates both claiming a game as streamer and flagging
     // one as a stream — same role, two independent actions.
     const isStreamerRole = () => me.roles.includes('streamer') || me.roles.includes('admin');
+
+    // ── Coaching Settings dashboard ──────────────────────────────────────────
+    // Independent of the season/team filters above — a team's coach profile
+    // isn't season-scoped, so this loads once and doesn't react to loadSeason.
+
+    async function loadCoachingDashboard() {
+      if (!isStreamerRole()) return;
+      try {
+        coachingSettings = await fetch('/api/coaching-settings').then(r => r.ok ? r.json() : {});
+      } catch (e) {
+        coachingSettings = {};
+      }
+      renderCoachingDashboard();
+    }
+
+    function coachingRowMeta(team) {
+      const rec = coachingSettings[team];
+      if (!rec) return { status: 'none', label: 'No settings saved' };
+      if (rec.pending) return { status: 'pending', label: 'Pending entry' };
+      return { status: 'entered', label: 'Entered' };
+    }
+
+    function renderCoachingDashboard() {
+      const section = document.getElementById('coaching-dashboard');
+      if (!isStreamerRole()) { section.style.display = 'none'; return; }
+      section.style.display = '';
+      const list = document.getElementById('coaching-dash-list');
+      list.innerHTML = '';
+
+      // Pending first (most recently saved first within that group), then
+      // entered (most recently entered first), then teams with nothing saved.
+      const order = { pending: 0, entered: 1, none: 2 };
+      const teams = Object.keys(TEAMS).sort((a, b) => {
+        const ma = coachingRowMeta(a), mb = coachingRowMeta(b);
+        if (order[ma.status] !== order[mb.status]) return order[ma.status] - order[mb.status];
+        const ra = coachingSettings[a], rb = coachingSettings[b];
+        const ta = (ra && (ra.updated_at || '')) || '';
+        const tb = (rb && (rb.updated_at || '')) || '';
+        return tb.localeCompare(ta);
+      });
+
+      teams.forEach(team => list.appendChild(coachingDashRow(team)));
+    }
+
+    function coachingDashRow(team) {
+      const rec = coachingSettings[team] || null;
+      const meta = coachingRowMeta(team);
+      const rowEl = div('cd-row');
+      const head = div('cd-head');
+
+      head.appendChild(teamLink(team));
+      const nameSpan = span('cd-team', TEAMS[team]);
+      head.appendChild(nameSpan);
+      head.appendChild(span('cd-status ' + meta.status, meta.label));
+
+      if (rec) {
+        const savedWhen = rec.updated_at ? new Date(rec.updated_at).toLocaleString() : 'unknown';
+        head.appendChild(span('cd-when', `saved ${savedWhen} by ${rec.updated_by || 'unknown'}`));
+        if (rec.entered_at) {
+          head.appendChild(span('cd-when', `· entered ${new Date(rec.entered_at).toLocaleString()} by ${rec.entered_by}`));
+        }
+      }
+
+      head.appendChild(div('cd-spacer'));
+
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'cd-btn';
+      viewBtn.textContent = 'View';
+      const detail = div('cd-detail');
+      detail.style.display = 'none';
+      viewBtn.onclick = () => {
+        const showing = detail.style.display !== 'none';
+        if (showing) { detail.style.display = 'none'; viewBtn.textContent = 'View'; return; }
+        if (window.CoachingSettings) {
+          window.CoachingSettings.renderReadOnly(detail, rec, {});
+        } else {
+          detail.textContent = 'Coaching settings vocabulary unavailable — /coaching-config.js failed to load.';
+        }
+        detail.style.display = '';
+        viewBtn.textContent = 'Hide';
+      };
+      head.appendChild(viewBtn);
+
+      if (rec && rec.pending) {
+        const enterBtn = document.createElement('button');
+        enterBtn.className = 'cd-btn';
+        enterBtn.textContent = 'Mark entered';
+        enterBtn.onclick = () => markEntered(team, rec, enterBtn);
+        head.appendChild(enterBtn);
+      }
+
+      rowEl.appendChild(head);
+      rowEl.appendChild(detail);
+      return rowEl;
+    }
+
+    async function markEntered(team, rec, btn) {
+      btn.disabled = true;
+      const token = storedToken();
+      try {
+        const r = await fetch(`/api/coaching-settings/${team}/enter`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ expected_updated_at: rec.updated_at }),
+        });
+        if (r.status === 409) {
+          // Trust the server's copy rather than patching it locally — the team
+          // saved again since this dashboard loaded, which is exactly what the
+          // 409 is for. Refresh so the streamer sees the version they'd
+          // actually be entering.
+          alert('These settings changed since the dashboard loaded. Refreshing the list.');
+          await loadCoachingDashboard();
+          return;
+        }
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          alert(`Error: ${err.detail || r.status}`);
+          btn.disabled = false;
+          return;
+        }
+        const updated = await r.json();
+        coachingSettings[team] = updated;
+        renderCoachingDashboard();
+      } catch (e) {
+        alert('Network error');
+        btn.disabled = false;
+      }
+    }
 
     // ── Helpers ──────────────────────────────────────────────────────
 
@@ -674,6 +837,9 @@
       } catch (e) {
         seasons = [];
       }
+      // Independent of whether a schedule is on file at all — a team's coach
+      // profile isn't season-scoped, so this isn't gated on `seasons`.
+      loadCoachingDashboard();
       if (!Array.isArray(seasons) || !seasons.length) {
         document.getElementById('sub').textContent = 'No schedule has been loaded yet.';
         document.getElementById('list').innerHTML =
