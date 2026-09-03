@@ -4907,10 +4907,16 @@ function setupCoachingSettingsTab(wrapId, rosterRows, biosData, record) {
       body.appendChild(card);
     });
 
-    // Point-buy pools — running total + Save gating, per pool
+    // Point-buy pools — running total + Save gating, per pool. A record saved
+    // before a pool (or one field within it) existed in the schema is missing
+    // the key outright, not just holding a stale value — backfill it into
+    // `values` itself (not just the widget's initial display) so the total
+    // this pool starts at actually matches what's shown, rather than counting
+    // an untouched field as 0 while its slider visibly reads f.min.
     CS.POINT_BUY_POOLS.forEach(pool => {
       const card = groupCard(pool.label);
-      const poolValues = values[pool.key];
+      const poolValues = values[pool.key] || (values[pool.key] = {});
+      pool.fields.forEach(f => { if (!(f.key in poolValues)) poolValues[f.key] = f.min || 0; });
       const totalLine = document.createElement('div');
       totalLine.style.cssText = 'font-size:0.75rem;font-weight:700;margin-top:0.5rem';
       function syncTotal() {
