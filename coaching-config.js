@@ -184,6 +184,28 @@
     return minutes;
   }
 
+  // A record (or a live in-progress {values, minutes} pair) is never blocked
+  // from saving over an unbalanced point-buy pool or minutes grid — a team
+  // should never lose partial work because one slider is off. Instead this is
+  // the one place "unbalanced" is decided, so the edit form's warning, the
+  // read view's warning, and the streamer dashboard's badge can never
+  // disagree about which saved settings are actually usable as-is.
+  function validityIssues(record) {
+    const values = (record && record.values) || {};
+    const minutes = (record && record.minutes) || {};
+    const issues = [];
+    POINT_BUY_POOLS.forEach(pool => {
+      const poolValues = values[pool.key];
+      if (poolRemaining(pool, poolValues) !== 0) {
+        issues.push(`${pool.label}: ${poolTotal(pool, poolValues)}/${pool.budget}`);
+      }
+    });
+    if (minutesRemaining(minutes) !== 0) {
+      issues.push(`Player Minutes: ${minutesTotal(minutes)}/${MINUTES_BUDGET}`);
+    }
+    return issues;
+  }
+
   // ── Read-only rendering, shared by the team page's Coaching tab and the
   // streamer dashboard on /schedule so the vocabulary and its display logic
   // stay in this one file rather than duplicated between team.js and
@@ -238,6 +260,14 @@
     status.textContent = `${savedLine} · ${enteredLine}${record.pending ? ' · PENDING ENTRY' : ''}`;
     container.appendChild(status);
 
+    const issues = validityIssues(record);
+    if (issues.length) {
+      const warn = document.createElement('div');
+      warn.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--gold,#c9a227);margin:-0.5rem 0 1rem';
+      warn.textContent = '⚠ Not balanced — ' + issues.join(' · ');
+      container.appendChild(warn);
+    }
+
     const values = record.values || {};
     FIELD_GROUPS.forEach(group => {
       const card = groupCard(group.label);
@@ -267,7 +297,7 @@
 
   global.CoachingSettings = {
     FIELD_GROUPS, POINT_BUY_POOLS, MINUTES_SLOTS, MINUTES_BUDGET,
-    poolTotal, poolRemaining, minutesTotal, minutesRemaining,
+    poolTotal, poolRemaining, minutesTotal, minutesRemaining, validityIssues,
     emptyValues, emptyMinutes, renderReadOnly,
   };
 

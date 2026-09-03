@@ -321,6 +321,20 @@
       head.appendChild(nameSpan);
       head.appendChild(span('cd-status ' + meta.status, meta.label));
 
+      // A save is never blocked on an unbalanced point-buy pool or minutes
+      // grid (the team shouldn't lose partial work over one slider), so this
+      // is the streamer's warning that what they're about to enter isn't
+      // internally consistent — computed the same way team.js's edit form
+      // warns the team that saved it, off the same shared helper.
+      if (rec && window.CoachingSettings) {
+        const issues = window.CoachingSettings.validityIssues(rec);
+        if (issues.length) {
+          const warnBadge = span('cd-status pending', '⚠ Unbalanced');
+          warnBadge.title = issues.join(' · ');
+          head.appendChild(warnBadge);
+        }
+      }
+
       if (rec) {
         const savedWhen = rec.updated_at ? new Date(rec.updated_at).toLocaleString() : 'unknown';
         head.appendChild(span('cd-when', `saved ${savedWhen} by ${rec.updated_by || 'unknown'}`));

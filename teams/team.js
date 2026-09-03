@@ -4852,7 +4852,7 @@ function setupCoachingSettingsTab(wrapId, rosterRows, biosData, record) {
     cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
 
     const statusEl = document.createElement('span');
-    statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
+    statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto;text-align:right';
 
     toolbar.appendChild(saveBtn);
     toolbar.appendChild(cancelBtn);
@@ -4860,13 +4860,20 @@ function setupCoachingSettingsTab(wrapId, rosterRows, biosData, record) {
 
     const body = document.createElement('div');
 
+    // Save is never blocked on an unbalanced pool or minutes grid — a team
+    // should never lose partial work because one slider is off. It's flagged
+    // instead, here and (via CS.validityIssues on the saved record) in the
+    // read view and the streamer dashboard, so an unbalanced save is obvious
+    // to both the person who entered it and whoever enters it into the game.
     function refreshSaveState() {
-      const poolsOk = CS.POINT_BUY_POOLS.every(p => CS.poolRemaining(p, values[p.key]) === 0);
-      const minutesOk = CS.minutesRemaining(minutes) === 0;
-      saveBtn.disabled = !(poolsOk && minutesOk);
-      saveBtn.title = saveBtn.disabled
-        ? 'Every point-buy pool and player minutes must exactly hit their totals before saving.'
-        : '';
+      const issues = CS.validityIssues({ values, minutes });
+      if (issues.length) {
+        statusEl.style.color = 'var(--gold,#c9a227)';
+        statusEl.textContent = '⚠ Not balanced — ' + issues.join(' · ');
+      } else {
+        statusEl.style.color = 'var(--text-muted)';
+        statusEl.textContent = '';
+      }
     }
 
     function groupCard(title) {
