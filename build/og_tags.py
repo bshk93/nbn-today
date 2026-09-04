@@ -126,6 +126,7 @@ PAGES = {
  '/stats/totals/3pm/': (None, 'NBN career three-point leaders.'),
  '/skills/': (None, 'The Claude Code commands defined for this project.'),
  '/strikes/': (None, 'The NBN strike record — who has one and what for.'),
+ '/stream/': (None, 'The streamer dashboard — claim games to broadcast and enter team coaching settings into the game.'),
  '/suggestions/': (None, 'Suggest a change to NBN, and see what the league thinks of it.'),
  '/teams/': (None, 'All 30 NBN franchises — rosters, salary cap, draft picks and franchise history.'),
  '/trade-retros/': (None, 'Moved — trade retrospectives are now a tab on /frivolities.'),

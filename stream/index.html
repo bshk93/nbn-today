@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Schedule — NBN</title>
+  <title>Stream — NBN</title>
   <!-- NBN:og -->
-  <meta name="description" content="Every NBN game on the schedule, one season at a time, filterable by team.">
+  <meta name="description" content="The streamer dashboard — claim games to broadcast and enter team coaching settings into the game.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Schedule — NBN">
-  <meta property="og:description" content="Every NBN game on the schedule, one season at a time, filterable by team.">
-  <meta property="og:url" content="https://nbn.today/schedule/">
+  <meta property="og:title" content="Stream — NBN">
+  <meta property="og:description" content="The streamer dashboard — claim games to broadcast and enter team coaching settings into the game.">
+  <meta property="og:url" content="https://nbn.today/stream/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -26,6 +26,39 @@
     header { margin-bottom: 1.25rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     .sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+
+    /* ── gate ─────────────────────────────────────────────────────────── */
+    .gate { max-width: 480px; margin: 3rem auto; text-align: center; }
+    .gate h2 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+    .gate p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1rem; }
+    .gate a { color: var(--link); font-size: 0.85rem; }
+
+    /* ── tabs (same shape as teams/team.js) ──────────────────────────────── */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.6rem 1.25rem;
+      font-family: inherit;
+      transition: color 0.12s;
+      margin-bottom: -1px;
+      white-space: nowrap;
+    }
+    .tab:hover { color: var(--text-secondary); }
+    .tab.active { color: var(--text-primary); border-bottom-color: var(--accent); font-weight: 600; }
+    .tab-panel.hidden { display: none; }
 
     .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
 
@@ -110,12 +143,37 @@
       font-size: 0.68rem; color: var(--purple-light); background: var(--purple-light-bg);
       border-radius: 3px; padding: 0.1rem 0.4rem; white-space: nowrap;
     }
+    .streamer-chip.mine { color: var(--accent-light); background: var(--accent-panel-bg); }
+    .chip-x {
+      background: none; border: none; padding: 0; cursor: pointer; line-height: 1;
+      color: inherit; opacity: 0.6; font-size: 0.8rem; font-family: inherit;
+    }
+    .chip-x:hover { opacity: 1; }
 
     .stream-badge {
       flex: none; display: inline-flex; align-items: center; gap: 0.2rem;
       font-size: 0.65rem; font-weight: 600; color: var(--danger-light); background: var(--danger-bg);
       border-radius: 3px; padding: 0.1rem 0.4rem; white-space: nowrap;
     }
+
+    .g-claim, .g-stream-btn {
+      flex: none; width: 4rem; text-align: right; background: none; border: none;
+      color: var(--text-muted); font-family: inherit; font-size: 0.65rem;
+      padding: 0; cursor: pointer; line-height: 1;
+      opacity: 0.3; transition: opacity 0.1s, color 0.1s;
+    }
+    .g-stream-btn { width: 4.5rem; }
+    .game:hover .g-claim, .g-claim:focus,
+    .game:hover .g-stream-btn, .g-stream-btn:focus { opacity: 1; color: var(--accent-light); }
+    .g-claim[disabled], .g-stream-btn[disabled] { cursor: default; }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.6rem 1rem; font-size: 0.8rem; color: var(--text-primary);
+      box-shadow: 0 4px 16px var(--shadow-color); z-index: 50; max-width: 90vw;
+    }
+    .toast.bad { border-color: var(--danger-border-strong); color: var(--danger-light); }
 
     .more-wrap { display: flex; justify-content: center; padding: 1.5rem 0 0.5rem; }
     .more-btn {
@@ -134,13 +192,25 @@
       .g-time { width: 4.6rem; }
       .game { flex-wrap: wrap; row-gap: 0.2rem; }
       .g-match { flex: 1 1 auto; }
-      /* A zero-size flex item with a 100% basis never fits on the current
-         line — flexbox always starts a fresh line for it — so everything
-         after it (note, streamer chip, stream badge, next tag, score) is
-         forced onto line two as a group, instead of whichever of them happen
-         to fit trailing after the matchup on line one. */
       .g-break { flex-basis: 100%; }
     }
+
+    /* ── Coaching Settings tab ────────────────────────────────────────── */
+    #coaching-dash-wrap h2 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.15rem; }
+    .cd-row { border-top: 1px solid var(--border-subtle); padding: 0.5rem 0; }
+    .cd-row:first-child { border-top: none; }
+    .cd-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .cd-team { font-weight: 600; min-width: 3.2rem; }
+    .cd-status { font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 999px; }
+    .cd-status.pending { background: var(--gold, #c9a227); color: #1a1400; }
+    .cd-status.entered { background: var(--success-bg, #133b1f); color: var(--success-light, #4caf50); }
+    .cd-status.none { background: var(--bg-subtle); color: var(--text-muted); }
+    .cd-when { font-size: 0.72rem; color: var(--text-muted); }
+    .cd-spacer { flex: 1; }
+    .cd-btn { font-size: 0.72rem; padding: 0.2rem 0.55rem; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+    .cd-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+    .cd-btn:disabled { opacity: 0.5; cursor: default; }
+    .cd-detail { margin-top: 0.6rem; }
   </style>
 </head>
 <body>
@@ -148,24 +218,48 @@
     <nav class="nav"></nav>
 
     <header>
-      <h1>Schedule</h1>
-      <p class="sub" id="sub">Loading…</p>
+      <h1>Stream</h1>
+      <p class="sub">Claim games to broadcast and manage each team's in-game coaching settings.</p>
     </header>
 
-    <div class="controls">
-      <select id="season-sel" aria-label="Season"></select>
-      <select id="team-sel" aria-label="Team"></select>
-      <div class="seg" id="scope-seg">
-        <button data-scope="upcoming">Upcoming</button>
-        <button data-scope="all">Full season</button>
+    <div id="gate"></div>
+
+    <div id="app" hidden>
+      <div class="tabs">
+        <button class="tab active" data-tab="claim">Claim Games</button>
+        <button class="tab" data-tab="coaching">Coaching Settings</button>
+      </div>
+
+      <div class="tab-panel" id="tab-claim">
+        <p class="sub" id="sub">Loading…</p>
+        <div class="controls">
+          <select id="season-sel" aria-label="Season"></select>
+          <select id="team-sel" aria-label="Team"></select>
+          <div class="seg" id="scope-seg">
+            <button data-scope="upcoming">Upcoming</button>
+            <button data-scope="all">Full season</button>
+          </div>
+        </div>
+        <div class="summary" id="summary"></div>
+        <div id="list"><div class="empty">Loading…</div></div>
+        <div id="more"></div>
+        <p class="source" id="source"></p>
+      </div>
+
+      <div class="tab-panel hidden" id="tab-coaching">
+        <div id="coaching-dash-wrap">
+          <h2>Coaching Settings</h2>
+          <p class="sub">Teams' 2K coach profiles. Enter a team's settings into the game, then mark it entered.</p>
+          <div id="coaching-dash-list"></div>
+        </div>
       </div>
     </div>
-
-    <div class="summary" id="summary"></div>
-    <div id="list"><div class="empty">Loading…</div></div>
-    <div id="more"></div>
-    <p class="source" id="source"></p>
   </div>
+
+  <!-- The Coaching Settings tab's field/option vocabulary and read-only
+       renderer — shared with teams/team.js's Coaching tab so a team's
+       settings read the same way in both places. -->
+  <script src="/coaching-config.js"></script>
 
   <script>
     const TEAMS = {
@@ -197,7 +291,153 @@
     let teamFilter = '';
     let scope      = 'upcoming';
     let shown      = PAGE;
+    let me         = { name: null, roles: [] };
     let nextId     = null;  // first unplayed game in the current view, set by render()
+    let coachingSettings = {};  // team abbr -> record, from GET /api/coaching-settings
+
+    const storedToken = () => localStorage.getItem('nbn_token');
+    // `admin` implicitly satisfies any role check server-side, so the button
+    // has to appear for an admin too or the page would hide an action the API
+    // would have allowed. Gates both claiming a game as streamer and flagging
+    // one as a stream — same role, two independent actions — and the whole
+    // page below the header, since this page exists only for that role.
+    const isStreamerRole = () => me.roles.includes('streamer') || me.roles.includes('admin');
+
+    // ── Coaching Settings tab ────────────────────────────────────────
+
+    async function loadCoachingDashboard() {
+      try {
+        coachingSettings = await fetch('/api/coaching-settings').then(r => r.ok ? r.json() : {});
+      } catch (e) {
+        coachingSettings = {};
+      }
+      renderCoachingDashboard();
+    }
+
+    function coachingRowMeta(team) {
+      const rec = coachingSettings[team];
+      if (!rec) return { status: 'none', label: 'No settings saved' };
+      if (rec.pending) return { status: 'pending', label: 'Pending entry' };
+      return { status: 'entered', label: 'Entered' };
+    }
+
+    function renderCoachingDashboard() {
+      const list = document.getElementById('coaching-dash-list');
+      list.innerHTML = '';
+
+      // Pending first (most recently saved first within that group), then
+      // entered (most recently entered first), then teams with nothing saved.
+      const order = { pending: 0, entered: 1, none: 2 };
+      const teams = Object.keys(TEAMS).sort((a, b) => {
+        const ma = coachingRowMeta(a), mb = coachingRowMeta(b);
+        if (order[ma.status] !== order[mb.status]) return order[ma.status] - order[mb.status];
+        const ra = coachingSettings[a], rb = coachingSettings[b];
+        const ta = (ra && (ra.updated_at || '')) || '';
+        const tb = (rb && (rb.updated_at || '')) || '';
+        return tb.localeCompare(ta);
+      });
+
+      teams.forEach(team => list.appendChild(coachingDashRow(team)));
+    }
+
+    function coachingDashRow(team) {
+      const rec = coachingSettings[team] || null;
+      const meta = coachingRowMeta(team);
+      const rowEl = div('cd-row');
+      const head = div('cd-head');
+
+      head.appendChild(teamLink(team));
+      const nameSpan = span('cd-team', TEAMS[team]);
+      head.appendChild(nameSpan);
+      head.appendChild(span('cd-status ' + meta.status, meta.label));
+
+      // A save is never blocked on an unbalanced point-buy pool or minutes
+      // grid (the team shouldn't lose partial work over one slider), so this
+      // is the streamer's warning that what they're about to enter isn't
+      // internally consistent — computed the same way team.js's edit form
+      // warns the team that saved it, off the same shared helper.
+      if (rec && window.CoachingSettings) {
+        const issues = window.CoachingSettings.validityIssues(rec);
+        if (issues.length) {
+          const warnBadge = span('cd-status pending', '⚠ Unbalanced');
+          warnBadge.title = issues.join(' · ');
+          head.appendChild(warnBadge);
+        }
+      }
+
+      if (rec) {
+        const savedWhen = rec.updated_at ? new Date(rec.updated_at).toLocaleString() : 'unknown';
+        head.appendChild(span('cd-when', `saved ${savedWhen} by ${rec.updated_by || 'unknown'}`));
+        if (rec.entered_at) {
+          head.appendChild(span('cd-when', `· entered ${new Date(rec.entered_at).toLocaleString()} by ${rec.entered_by}`));
+        }
+      }
+
+      head.appendChild(div('cd-spacer'));
+
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'cd-btn';
+      viewBtn.textContent = 'View';
+      const detail = div('cd-detail');
+      detail.style.display = 'none';
+      viewBtn.onclick = () => {
+        const showing = detail.style.display !== 'none';
+        if (showing) { detail.style.display = 'none'; viewBtn.textContent = 'View'; return; }
+        if (window.CoachingSettings) {
+          window.CoachingSettings.renderReadOnly(detail, rec, {});
+        } else {
+          detail.textContent = 'Coaching settings vocabulary unavailable — /coaching-config.js failed to load.';
+        }
+        detail.style.display = '';
+        viewBtn.textContent = 'Hide';
+      };
+      head.appendChild(viewBtn);
+
+      if (rec && rec.pending) {
+        const enterBtn = document.createElement('button');
+        enterBtn.className = 'cd-btn';
+        enterBtn.textContent = 'Mark entered';
+        enterBtn.onclick = () => markEntered(team, rec, enterBtn);
+        head.appendChild(enterBtn);
+      }
+
+      rowEl.appendChild(head);
+      rowEl.appendChild(detail);
+      return rowEl;
+    }
+
+    async function markEntered(team, rec, btn) {
+      btn.disabled = true;
+      const token = storedToken();
+      try {
+        const r = await fetch(`/api/coaching-settings/${team}/enter`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ expected_updated_at: rec.updated_at }),
+        });
+        if (r.status === 409) {
+          // Trust the server's copy rather than patching it locally — the team
+          // saved again since this dashboard loaded, which is exactly what the
+          // 409 is for. Refresh so the streamer sees the version they'd
+          // actually be entering.
+          alert('These settings changed since the dashboard loaded. Refreshing the list.');
+          await loadCoachingDashboard();
+          return;
+        }
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          alert(`Error: ${err.detail || r.status}`);
+          btn.disabled = false;
+          return;
+        }
+        const updated = await r.json();
+        coachingSettings[team] = updated;
+        renderCoachingDashboard();
+      } catch (e) {
+        alert('Network error');
+        btn.disabled = false;
+      }
+    }
 
     // ── Helpers ──────────────────────────────────────────────────────
 
@@ -259,6 +499,97 @@
       return s;
     }
 
+    function renderGate() {
+      const g = document.getElementById('gate');
+      g.innerHTML = '';
+      const wrap = div('gate');
+      const h = document.createElement('h2');
+      h.textContent = 'This page is for the streamer role';
+      wrap.appendChild(h);
+      const p = document.createElement('p');
+      p.textContent = me.name
+        ? "Your member account doesn't hold the streamer role, so there's nothing to do here."
+        : "Sign in on nbn.today in this browser and you're signed in here automatically, or paste your member token via the profile menu.";
+      wrap.appendChild(p);
+      const a = document.createElement('a');
+      a.href = '/schedule/';
+      a.textContent = '← Back to the schedule';
+      wrap.appendChild(a);
+      g.appendChild(wrap);
+    }
+
+    // ── Streamer claims & stream flag ────────────────────────────────
+    //
+    // Two independent things live on a game: `streamer` (who's claimed to
+    // broadcast it — one name, or none) and `stream` (whether the game itself
+    // is flagged as a stream). A game can have either, neither, or both.
+
+    let toastTimer = null;
+    function toast(msg, bad) {
+      document.querySelectorAll('.toast').forEach(t => t.remove());
+      const el = div('toast' + (bad ? ' bad' : ''), msg);
+      document.body.appendChild(el);
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.remove(), 4000);
+    }
+
+    // The row is rebuilt in place rather than re-rendering the list, so a claim
+    // made halfway down a 160-row page doesn't move the page under the cursor.
+    function replaceRow(g, num, oldRow) {
+      const fresh = makeRow(g, num);
+      oldRow.replaceWith(fresh);
+      return fresh;
+    }
+
+    async function setClaim(g, num, rowEl, claiming) {
+      const token = storedToken();
+      const url = `/api/schedule/${g.id}/streamer?season=${encodeURIComponent(season)}`;
+      rowEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      try {
+        const r = await fetch(url, {
+          method: claiming ? 'POST' : 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!r.ok) {
+          const detail = await r.json().then(j => j.detail).catch(() => null);
+          throw new Error(detail || `HTTP ${r.status}`);
+        }
+        // Trust the server's copy rather than patching it locally — someone
+        // else may have claimed the same game in between, and a 409 is exactly
+        // how that arrives.
+        const updated = await r.json();
+        g.streamer = updated.streamer || null;
+        replaceRow(g, num, rowEl);
+      } catch (e) {
+        rowEl.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        toast(claiming ? `Could not claim that game: ${e.message}`
+                       : `Could not drop that claim: ${e.message}`, true);
+      }
+    }
+
+    async function setStreamFlag(g, num, rowEl, marking) {
+      const token = storedToken();
+      const url = `/api/schedule/${g.id}/stream?season=${encodeURIComponent(season)}`;
+      rowEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      try {
+        const r = await fetch(url, {
+          method: marking ? 'POST' : 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!r.ok) {
+          const detail = await r.json().then(j => j.detail).catch(() => null);
+          throw new Error(detail || `HTTP ${r.status}`);
+        }
+        const updated = await r.json();
+        g.stream = !!updated.stream;
+        replaceRow(g, num, rowEl);
+      } catch (e) {
+        rowEl.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        toast(marking ? `Could not flag that game as a stream: ${e.message}`
+                      : `Could not clear that stream flag: ${e.message}`, true);
+      }
+    }
+
     // ── URL state ────────────────────────────────────────────────────
 
     function syncUrl() {
@@ -271,11 +602,6 @@
     }
 
     // ── Rendering ────────────────────────────────────────────────────
-    //
-    // Read-only: who's streaming a game (📺) and whether it's flagged as a
-    // stream (📡) are shown here since both are public data already returned
-    // to everyone, but claiming a game or flagging one happens on /stream —
-    // that's the streamer role's own page, not this one.
 
     function makeRow(g, num) {
       const row = document.createElement('div');
@@ -309,10 +635,22 @@
 
       if (g.note) row.appendChild(span('g-note', g.note));
 
-      if (g.streamer) {
+      // One streamer per game, so one chip. `mine` also gates the × — a BOD
+      // member can drop someone else's claim, but through the API rather than
+      // a button that sits next to 29 other people's names.
+      const held = g.streamer || null;
+      if (held) {
         const wrap = span('g-streamer');
-        const chip = span('streamer-chip');
-        chip.appendChild(document.createTextNode(`📺 ${g.streamer}`));
+        const chip = span('streamer-chip' + (held === me.name ? ' mine' : ''));
+        chip.appendChild(document.createTextNode(`📺 ${held}`));
+        if (held === me.name) {
+          const x = document.createElement('button');
+          x.className = 'chip-x';
+          x.textContent = '×';
+          x.title = 'Drop as streamer';
+          x.onclick = () => setClaim(g, num, row, false);
+          chip.appendChild(x);
+        }
         wrap.appendChild(chip);
         row.appendChild(wrap);
       }
@@ -323,6 +661,30 @@
 
       row.appendChild(span('g-arena', g.arena || ''));
 
+      // No claim button on a game already played, and none on one somebody
+      // holds — theirs comes off via the chip's ×, anyone else's via a BOD.
+      if (!res && !held) {
+        const btn = document.createElement('button');
+        btn.className = 'g-claim';
+        btn.textContent = 'claim';
+        btn.title = 'Claim this game as streamer';
+        btn.setAttribute('aria-label', `Claim ${g.away_team} at ${g.home_team} as streamer`);
+        btn.onclick = () => setClaim(g, num, row, true);
+        row.appendChild(btn);
+      }
+      // The stream flag toggles independently of the claim above — anyone
+      // with the streamer role can mark or unmark it, not just whoever (if
+      // anyone) holds the claim.
+      if (!res) {
+        const btn2 = document.createElement('button');
+        btn2.className = 'g-stream-btn';
+        btn2.textContent = g.stream ? 'unflag' : 'stream';
+        btn2.title = g.stream ? 'Remove the stream flag from this game' : 'Flag this game as a stream';
+        btn2.setAttribute('aria-label',
+          `${g.stream ? 'Remove stream flag from' : 'Flag'} ${g.away_team} at ${g.home_team}${g.stream ? '' : ' as a stream'}`);
+        btn2.onclick = () => setStreamFlag(g, num, row, !g.stream);
+        row.appendChild(btn2);
+      }
       if (g.id === nextId && scope === 'all') row.appendChild(span('g-next', 'next'));
 
       if (res) {
@@ -509,11 +871,41 @@
       syncUrl();
     }
 
+    // Who is looking. Always 200, empty when signed out, and it accepts the
+    // .nbn.today session cookie as well as the token — so this works on
+    // pdc.nbn.today, where there is no localStorage token to find.
+    async function loadMe() {
+      const token = storedToken();
+      try {
+        me = await fetch('/api/auth/me', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).then(r => r.json());
+        me.roles = me.roles || [];
+      } catch (e) {
+        me = { name: null, roles: [] };
+      }
+    }
+
     async function init() {
       const p = new URLSearchParams(location.search);
       const wantTeam = (p.get('team') || '').toUpperCase();
       if (TEAMS[wantTeam]) teamFilter = wantTeam;
       if (p.get('scope') === 'all') scope = 'all';
+
+      await loadMe();
+      if (!isStreamerRole()) { renderGate(); return; }
+      document.getElementById('app').hidden = false;
+
+      document.querySelectorAll('.tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-panel').forEach(tp => tp.classList.add('hidden'));
+          btn.classList.add('active');
+          document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+        });
+      });
+
+      loadCoachingDashboard();
 
       try {
         seasons = await fetch('/api/schedule/seasons').then(r => r.json());

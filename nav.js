@@ -584,6 +584,8 @@ const SITE_PAGES = [
 const ROLE_PAGES = [
   { title: 'PDC Committee', href: '/pdc/', icon: '🗳️',
     roles: ['fac', 'fac_head', 'poext', 'poext_head', 'admin'] },
+  { title: 'Stream — claim games & coaching settings', href: '/stream/', icon: '📺',
+    roles: ['streamer', 'admin'] },
   // These three are already role-gated cards on the homepage; they are here so
   // Ctrl+K agrees with it rather than being the one place they can't be found.
   { title: 'Cap Settings', href: '/cap-settings/', icon: '⚙️',
