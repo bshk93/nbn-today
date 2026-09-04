@@ -228,6 +228,7 @@
       <div class="tabs">
         <button class="tab active" data-tab="claim">Claim Games</button>
         <button class="tab" data-tab="coaching">Coaching Settings</button>
+        <button class="tab" data-tab="days">Days</button>
       </div>
 
       <div class="tab-panel" id="tab-claim">
@@ -252,6 +253,12 @@
           <p class="sub">Teams' 2K coach profiles. Enter a team's settings into the game, then mark it entered.</p>
           <div id="coaching-dash-list"></div>
         </div>
+      </div>
+
+      <div class="tab-panel hidden" id="tab-days">
+        <h2>Days</h2>
+        <p class="sub">Mark a day's slate of claimed/flagged games done once you've streamed it, and attach a YouTube VOD — shown publicly on /calendar.</p>
+        <div id="days-list"></div>
       </div>
     </div>
   </div>
@@ -294,6 +301,7 @@
     let me         = { name: null, roles: [] };
     let nextId     = null;  // first unplayed game in the current view, set by render()
     let coachingSettings = {};  // team abbr -> record, from GET /api/coaching-settings
+    let streamingDays = {};  // "YYYY-MM-DD" -> {done, done_at, done_by, youtube_url, ...}, from GET /api/streaming-days
 
     const storedToken = () => localStorage.getItem('nbn_token');
     // `admin` implicitly satisfies any role check server-side, so the button
@@ -321,14 +329,33 @@
       return { status: 'entered', label: 'Entered' };
     }
 
+    // The earliest not-yet-played game a team has in the currently loaded
+    // season (`games`/`resultFor` are the Claim Games tab's own state,
+    // shared across tabs on this page). Null once a team's slate is done for
+    // the loaded season, or before a season has loaded at all.
+    function nextGameFor(team) {
+      const upcoming = games.filter(g => (g.home_team === team || g.away_team === team) && !resultFor(g));
+      if (!upcoming.length) return null;
+      upcoming.sort((a, b) => a.date.localeCompare(b.date) || tipKey(a.time_et) - tipKey(b.time_et));
+      return upcoming[0];
+    }
+
     function renderCoachingDashboard() {
       const list = document.getElementById('coaching-dash-list');
       list.innerHTML = '';
 
-      // Pending first (most recently saved first within that group), then
-      // entered (most recently entered first), then teams with nothing saved.
+      // Soonest next game first — that's the order a streamer actually needs
+      // to work down. Pending/entered/none is now only the tiebreaker, for
+      // teams with the same next-game date or none at all.
       const order = { pending: 0, entered: 1, none: 2 };
       const teams = Object.keys(TEAMS).sort((a, b) => {
+        const ga = nextGameFor(a), gb = nextGameFor(b);
+        if (ga && gb) {
+          const cmp = ga.date.localeCompare(gb.date) || tipKey(ga.time_et) - tipKey(gb.time_et);
+          if (cmp) return cmp;
+        } else if (ga || gb) {
+          return ga ? -1 : 1; // a team with a next game sorts before one with none
+        }
         const ma = coachingRowMeta(a), mb = coachingRowMeta(b);
         if (order[ma.status] !== order[mb.status]) return order[ma.status] - order[mb.status];
         const ra = coachingSettings[a], rb = coachingSettings[b];
@@ -350,6 +377,13 @@
       const nameSpan = span('cd-team', TEAMS[team]);
       head.appendChild(nameSpan);
       head.appendChild(span('cd-status ' + meta.status, meta.label));
+
+      const nextGame = nextGameFor(team);
+      if (nextGame) {
+        const opp = nextGame.home_team === team ? nextGame.away_team : nextGame.home_team;
+        const at = nextGame.home_team === team ? 'vs' : '@';
+        head.appendChild(span('cd-when', `Next: ${fmtShort(nextGame.date)} ${at} ${opp}`));
+      }
 
       // A save is never blocked on an unbalanced point-buy pool or minutes
       // grid (the team shouldn't lose partial work over one slider), so this
@@ -435,6 +469,174 @@
         renderCoachingDashboard();
       } catch (e) {
         alert('Network error');
+        btn.disabled = false;
+      }
+    }
+
+    // ── Days tab ─────────────────────────────────────────────────────
+    //
+    // `done` is one shared flag per date (whoever marks it is stamped, not
+    // who's allowed to) and the YouTube link is independent of it — same
+    // shapes routers/streaming_days.py enforces server-side.
+
+    async function loadStreamingDays() {
+      try {
+        streamingDays = await fetch('/api/streaming-days').then(r => r.ok ? r.json() : {});
+      } catch (e) {
+        streamingDays = {};
+      }
+      renderDaysTab();
+    }
+
+    // Only dates with at least one claimed or flagged game — the ~170 dates
+    // in a season would otherwise bury the handful anyone actually needs to
+    // mark. Sourced from `games`, the Claim Games tab's own state.
+    function relevantDates() {
+      const dates = new Set();
+      games.forEach(g => { if (g.stream || g.streamer) dates.add(g.date); });
+      return Array.from(dates).sort((a, b) => b.localeCompare(a)); // most recent first
+    }
+
+    function renderDaysTab() {
+      const list = document.getElementById('days-list');
+      if (!list) return;
+      list.innerHTML = '';
+      const dates = relevantDates();
+      if (!dates.length) {
+        list.appendChild(div('empty', 'No claimed or flagged games in the loaded season yet.'));
+        return;
+      }
+      dates.forEach(date => list.appendChild(daysDashRow(date)));
+    }
+
+    function daysDashRow(date) {
+      const rec = streamingDays[date] || null;
+      const done = !!(rec && rec.done);
+      const rowEl = div('cd-row');
+      const head = div('cd-head');
+
+      head.appendChild(span('cd-team', fmtDayHdr(date)));
+      head.appendChild(span('cd-status ' + (done ? 'entered' : 'none'), done ? 'Done' : 'Not done'));
+      if (done) {
+        head.appendChild(span('cd-when', `by ${rec.done_by} · ${new Date(rec.done_at).toLocaleString()}`));
+      }
+      head.appendChild(div('cd-spacer'));
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'cd-btn';
+      toggleBtn.textContent = done ? 'Undo' : 'Mark day done';
+      toggleBtn.onclick = () => (done ? unmarkDayDone(date, toggleBtn) : markDayDone(date, toggleBtn));
+      head.appendChild(toggleBtn);
+      rowEl.appendChild(head);
+
+      // That date's claimed/flagged games, compact — same 📺/📡 shorthand as
+      // the calendar's fixture pip.
+      const gamesLine = span('cd-when');
+      gamesLine.style.cssText = 'display:block;margin-top:0.3rem';
+      const dayGames = games.filter(g => g.date === date && (g.stream || g.streamer));
+      gamesLine.textContent = dayGames.map(g => {
+        let s = `${g.away_team} @ ${g.home_team}`;
+        if (g.streamer) s += ` 📺 ${g.streamer}`;
+        if (g.stream) s += ' 📡';
+        return s;
+      }).join('   ');
+      rowEl.appendChild(gamesLine);
+
+      // YouTube link — independent of done, so it's editable whether or not
+      // the day is marked.
+      const ytRow = document.createElement('div');
+      ytRow.style.cssText = 'display:flex;gap:0.4rem;align-items:center;margin-top:0.5rem';
+      const ytInput = document.createElement('input');
+      ytInput.type = 'text';
+      ytInput.placeholder = 'YouTube VOD link';
+      ytInput.value = (rec && rec.youtube_url) || '';
+      ytInput.style.cssText = 'flex:1;background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:0.78rem;padding:0.3rem 0.5rem;font-family:inherit;outline:none';
+      const ytBtn = document.createElement('button');
+      ytBtn.className = 'cd-btn';
+      ytBtn.textContent = 'Save link';
+      const ytStatus = span('cd-when');
+      ytBtn.onclick = () => saveYoutubeUrl(date, ytInput, ytBtn, ytStatus);
+      ytRow.appendChild(ytInput);
+      ytRow.appendChild(ytBtn);
+      ytRow.appendChild(ytStatus);
+      if (rec && rec.youtube_url) {
+        const openLink = document.createElement('a');
+        openLink.href = rec.youtube_url;
+        openLink.target = '_blank';
+        openLink.rel = 'noopener';
+        openLink.textContent = '▶️';
+        openLink.title = 'Open the linked video';
+        ytRow.appendChild(openLink);
+      }
+      rowEl.appendChild(ytRow);
+
+      return rowEl;
+    }
+
+    async function markDayDone(date, btn) {
+      btn.disabled = true;
+      const token = storedToken();
+      try {
+        const r = await fetch(`/api/streaming-days/${date}/done`, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          alert(`Error: ${err.detail || r.status}`);
+          btn.disabled = false;
+          return;
+        }
+        streamingDays[date] = await r.json();
+        renderDaysTab();
+      } catch (e) {
+        alert('Network error');
+        btn.disabled = false;
+      }
+    }
+
+    async function unmarkDayDone(date, btn) {
+      btn.disabled = true;
+      const token = storedToken();
+      try {
+        const r = await fetch(`/api/streaming-days/${date}/done`, {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          alert(`Error: ${err.detail || r.status}`);
+          btn.disabled = false;
+          return;
+        }
+        streamingDays[date] = await r.json();
+        renderDaysTab();
+      } catch (e) {
+        alert('Network error');
+        btn.disabled = false;
+      }
+    }
+
+    async function saveYoutubeUrl(date, input, btn, statusEl) {
+      btn.disabled = true;
+      statusEl.textContent = 'Saving…';
+      const token = storedToken();
+      try {
+        const r = await fetch(`/api/streaming-days/${date}/youtube`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ url: input.value.trim() || null }),
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          statusEl.textContent = `Error: ${err.detail || r.status}`;
+          btn.disabled = false;
+          return;
+        }
+        streamingDays[date] = await r.json();
+        renderDaysTab();
+      } catch (e) {
+        statusEl.textContent = 'Network error';
         btn.disabled = false;
       }
     }
@@ -869,6 +1071,11 @@
       renderControls();
       render();
       syncUrl();
+      // Both tabs below sort/filter off `games`, which just changed — a
+      // fetch that resolved before this season loaded rendered against an
+      // empty list, so re-render now that there's something to sort by.
+      renderCoachingDashboard();
+      renderDaysTab();
     }
 
     // Who is looking. Always 200, empty when signed out, and it accepts the
@@ -906,6 +1113,7 @@
       });
 
       loadCoachingDashboard();
+      loadStreamingDays();
 
       try {
         seasons = await fetch('/api/schedule/seasons').then(r => r.json());

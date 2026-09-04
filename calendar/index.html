@@ -168,6 +168,8 @@
     .vest-pip:hover  { color: var(--gold); text-decoration: underline; }
     .vest-count   { font-size: 0.68rem; color: var(--warning); line-height: 1.3; }
     .custom-pip   { font-size: 0.68rem; color: var(--purple); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+    .yt-pip       { display: block; font-size: 0.68rem; color: var(--danger-light); text-decoration: none; line-height: 1.3; }
+    .yt-pip:hover { text-decoration: underline; }
 
     .team-filter { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.8rem; cursor: pointer; }
     .team-filter:focus { outline: none; border-color: var(--accent); }
@@ -217,6 +219,7 @@
     // and edited from there), 'calendar' is the handful a BOD member types in
     // by hand (/api/calendar/games).
     let scheduledGamesByDate = {};   // "YYYY-MM-DD" → [{id, date, home_team, away_team, time_et, note, _src}]
+    let streamingDaysByDate  = {};   // "YYYY-MM-DD" → {done, done_at, done_by, youtube_url, ...}, from GET /api/streaming-days
     let leagueToday          = null; // "YYYY-MM-DD"
     let isBoD                = false;
     let showAddForm          = false;
@@ -398,13 +401,14 @@
 
     async function init() {
       try {
-        const [gamesResult, vestResult, customResult, bodResult, schedResult, leagueResult] = await Promise.allSettled([
+        const [gamesResult, vestResult, customResult, bodResult, schedResult, leagueResult, streamingDaysResult] = await Promise.allSettled([
           fetch('/api/boxscores/games').then(r => r.json()),
           loadVestingEvents(),
           loadCustomEvents(),
           checkAuth(),
           fetch('/api/calendar/games').then(r => r.json()),
           fetch('/api/schedule').then(r => r.json()),
+          fetch('/api/streaming-days').then(r => r.json()),
         ]);
 
         if (gamesResult.status === 'fulfilled') {
@@ -441,6 +445,9 @@
           Object.values(scheduledGamesByDate).forEach(list =>
             list.sort((a, b) => (a.time_et ? tipKey(a.time_et) : 9999) - (b.time_et ? tipKey(b.time_et) : 9999)));
         }
+        // Already date-keyed server-side — unlike the two sources above, no
+        // per-item push/merge needed.
+        if (streamingDaysResult.status === 'fulfilled') streamingDaysByDate = streamingDaysResult.value;
 
         if (!leagueToday) {
           // Derive the view month from the league date itself, so the calendar
@@ -1007,6 +1014,23 @@
         lbl.className = 'today-label';
         lbl.textContent = 'Today';
         cell.appendChild(lbl);
+      }
+
+      // A day's VOD, attached from /stream's Days tab — independent of any
+      // individual game's streamer/stream flags, since it covers the whole
+      // date's slate. stopPropagation so it doesn't also trigger the cell's
+      // own boxscore-navigation click handler, below.
+      const ytUrl = dateStr && streamingDaysByDate[dateStr] && streamingDaysByDate[dateStr].youtube_url;
+      if (ytUrl) {
+        const yt = document.createElement('a');
+        yt.className = 'yt-pip';
+        yt.href = ytUrl;
+        yt.target = '_blank';
+        yt.rel = 'noopener';
+        yt.textContent = '▶️ VOD';
+        yt.title = 'Watch this day’s games';
+        yt.addEventListener('click', e => e.stopPropagation());
+        cell.appendChild(yt);
       }
 
       if (custom) {
