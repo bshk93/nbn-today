@@ -171,21 +171,27 @@
     }
     .chip-x:hover { opacity: 1; }
 
-    .stream-badge {
-      display: inline-flex; align-items: center; gap: 0.2rem;
-      font-size: 0.65rem; font-weight: 600; color: var(--danger-light); background: var(--danger-bg);
-      border-radius: 3px; padding: 0.1rem 0.4rem; white-space: nowrap;
-    }
-
-    .g-claim, .g-stream-btn {
+    .g-claim {
       background: none; border: 1px solid var(--border); border-radius: 6px;
       color: var(--text-muted); font-family: inherit; font-size: 0.68rem;
       padding: 0.15rem 0.5rem; cursor: pointer; line-height: 1.2;
       opacity: 0.5; transition: opacity 0.1s, color 0.1s, border-color 0.1s;
     }
-    .games-table tbody tr.game-row:hover .g-claim, .g-claim:focus,
-    .games-table tbody tr.game-row:hover .g-stream-btn, .g-stream-btn:focus { opacity: 1; color: var(--accent-light); border-color: var(--accent); }
-    .g-claim[disabled], .g-stream-btn[disabled] { cursor: default; }
+    .games-table tbody tr.game-row:hover .g-claim, .g-claim:focus { opacity: 1; color: var(--accent-light); border-color: var(--accent); }
+    .g-claim[disabled] { cursor: default; }
+
+    /* Sim/Stream picker — "stream" pops with color so a flagged game reads
+       at a glance, without needing a separate badge next to it. */
+    .stream-select {
+      width: 100%; font-family: inherit; font-size: 0.72rem; padding: 0.2rem 0.35rem;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-card); color: var(--text-muted); cursor: pointer;
+    }
+    .stream-select:hover { border-color: var(--accent); color: var(--text-secondary); }
+    .stream-select:disabled { cursor: default; opacity: 0.6; }
+    .stream-select.is-stream {
+      background: var(--danger-bg); border-color: var(--danger-light); color: var(--danger-light); font-weight: 700;
+    }
 
     .toast {
       position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
@@ -788,7 +794,7 @@
     async function setClaim(g, num, rowEl, claiming) {
       const token = storedToken();
       const url = `/api/schedule/${g.id}/streamer?season=${encodeURIComponent(season)}`;
-      rowEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      rowEl.querySelectorAll('button, select').forEach(b => { b.disabled = true; });
       try {
         const r = await fetch(url, {
           method: claiming ? 'POST' : 'DELETE',
@@ -805,7 +811,7 @@
         g.streamer = updated.streamer || null;
         replaceRow(g, num, rowEl);
       } catch (e) {
-        rowEl.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        rowEl.querySelectorAll('button, select').forEach(b => { b.disabled = false; });
         toast(claiming ? `Could not claim that game: ${e.message}`
                        : `Could not drop that claim: ${e.message}`, true);
       }
@@ -814,7 +820,7 @@
     async function setStreamFlag(g, num, rowEl, marking) {
       const token = storedToken();
       const url = `/api/schedule/${g.id}/stream?season=${encodeURIComponent(season)}`;
-      rowEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      rowEl.querySelectorAll('button, select').forEach(b => { b.disabled = true; });
       try {
         const r = await fetch(url, {
           method: marking ? 'POST' : 'DELETE',
@@ -828,7 +834,7 @@
         g.stream = !!updated.stream;
         replaceRow(g, num, rowEl);
       } catch (e) {
-        rowEl.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        rowEl.querySelectorAll('button, select').forEach(b => { b.disabled = false; });
         toast(marking ? `Could not flag that game as a stream: ${e.message}`
                       : `Could not clear that stream flag: ${e.message}`, true);
       }
@@ -922,19 +928,29 @@
       // Independent of who (if anyone) is claimed as streamer: whether the
       // game itself is flagged as a stream. Anyone with the streamer role can
       // mark or unmark it, not just whoever (if anyone) holds the claim.
+      // A two-value picker rather than a toggle button, since "sim"/"stream"
+      // names both states in place — no separate badge needed to say which
+      // one is current.
       const tdStream = document.createElement('td');
       tdStream.className = 'gt-stream';
-      if (g.stream) tdStream.appendChild(span('stream-badge', '📡 Stream'));
-      if (!res) {
-        const btn2 = document.createElement('button');
-        btn2.className = 'g-stream-btn';
-        btn2.textContent = g.stream ? 'unflag' : 'flag';
-        btn2.title = g.stream ? 'Remove the stream flag from this game' : 'Flag this game as a stream';
-        btn2.setAttribute('aria-label',
-          `${g.stream ? 'Remove stream flag from' : 'Flag'} ${g.away_team} at ${g.home_team}${g.stream ? '' : ' as a stream'}`);
-        btn2.onclick = () => setStreamFlag(g, num, row, !g.stream);
-        tdStream.appendChild(btn2);
+      const sel = document.createElement('select');
+      sel.className = 'stream-select' + (g.stream ? ' is-stream' : '');
+      const optSim = document.createElement('option');
+      optSim.value = 'sim';
+      optSim.textContent = 'Sim';
+      const optStream = document.createElement('option');
+      optStream.value = 'stream';
+      optStream.textContent = 'Stream';
+      sel.appendChild(optSim);
+      sel.appendChild(optStream);
+      sel.value = g.stream ? 'stream' : 'sim';
+      sel.setAttribute('aria-label', `Stream status for ${g.away_team} at ${g.home_team}`);
+      if (res) {
+        sel.disabled = true;
+      } else {
+        sel.onchange = () => setStreamFlag(g, num, row, sel.value === 'stream');
       }
+      tdStream.appendChild(sel);
       row.appendChild(tdStream);
 
       const tdResult = document.createElement('td');
