@@ -283,16 +283,23 @@
       container.appendChild(card);
     });
 
-    const minutes = record.minutes || {};
-    const mCard = groupCard('Player Minutes');
-    MINUTES_SLOTS.forEach(slot => {
-      const m = minutes[slot];
-      if (!m || (!m.slug && !m.minutes)) return;
-      const name = m.slug ? ((opts.resolveName && opts.resolveName(m.slug)) || m.slug) : '—';
-      mCard.appendChild(row(`${slot} — ${name}`, m.res ? 'RES' : String(m.minutes || 0)));
-    });
-    mCard.appendChild(row('Total', `${minutesTotal(minutes)} / ${MINUTES_BUDGET}`));
-    container.appendChild(mCard);
+    // `opts.skipMinutesCard` lets a caller that already renders minutes
+    // itself, merged into a player-indexed table elsewhere on the page (the
+    // team page's Roster Settings), skip the duplicate slot-indexed card
+    // here. Default false — the streamer dashboard on /stream has no such
+    // table and still needs this card as its only view of minutes.
+    if (!opts.skipMinutesCard) {
+      const minutes = record.minutes || {};
+      const mCard = groupCard('Player Minutes');
+      MINUTES_SLOTS.forEach(slot => {
+        const m = minutes[slot];
+        if (!m || (!m.slug && !m.minutes)) return;
+        const name = m.slug ? ((opts.resolveName && opts.resolveName(m.slug)) || m.slug) : '—';
+        mCard.appendChild(row(`${slot} — ${name}`, m.res ? 'RES' : String(m.minutes || 0)));
+      });
+      mCard.appendChild(row('Total', `${minutesTotal(minutes)} / ${MINUTES_BUDGET}`));
+      container.appendChild(mCard);
+    }
   }
 
   global.CoachingSettings = {

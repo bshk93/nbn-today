@@ -995,8 +995,8 @@ document.body.innerHTML = `
         <p class="section-sub">Jersey numbers, secondary positions, and this team's 2K coach profile — entered into the game by whoever streams your games.</p>
         <div class="settings-card">
           <div class="settings-subsection">
-            <h3 class="settings-subtitle" id="team-settings-title">Team Settings</h3>
-            <p class="settings-subsub">Primary position is scraped from 2K and can't be edited here.</p>
+            <h3 class="settings-subtitle" id="team-settings-title">Roster Settings</h3>
+            <p class="settings-subsub">Jersey numbers, secondary positions, and player minutes. Primary position is scraped from 2K and can't be edited here.</p>
             <div class="table-wrap" id="team-settings-wrap"><div class="status">Loading…</div></div>
           </div>
           <div class="settings-subsection">
@@ -4604,7 +4604,17 @@ function primaryPosFromAttrs(attrSnap) {
   return (Array.isArray(pos) && pos.length) ? pos[0] : '—';
 }
 
-function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
+// Roster Settings — jersey #, secondary position (both from player-bios.json,
+// via /api/players/{slug}/team-settings) merged with Player Minutes (from the
+// coaching-settings record, via /api/coaching-settings/{team}), one row per
+// roster player. Both were separately "list every player, edit something
+// about them" tables; merging them means a player's name/position context is
+// established once instead of twice. Minutes are stored slot-indexed (one of
+// the 15 CS.MINUTES_SLOTS holds a slug), not player-indexed, so this table
+// flips that lookup direction — each row picks its own slot rather than each
+// slot picking a player — while leaving the stored shape untouched, since
+// that shape is also what the streamer dashboard on /stream reads.
+function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coachingRecord) {
   const wrapEl = document.getElementById(wrapId);
   const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
   const activeRows = hasSlug ? rosterRows.filter(r => r.SLUG) : [];
@@ -4615,17 +4625,46 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
   }
 
   const canEdit = canEditTeamSettings(abbr);
+  // Minutes columns only appear if the shared vocabulary loaded — same
+  // graceful-degradation the Coaching Profile section uses, but here it's a
+  // narrower miss (three columns absent) rather than the whole section.
+  const CS = window.CoachingSettings || null;
 
-  function renderReadView() {
-    const table = document.createElement('table');
-    const thead = table.createTHead();
-    const hr = thead.insertRow();
-    ['Player', 'Primary Pos', 'Secondary Pos', '#'].forEach(label => {
+  function slotForSlug(minutes, slug) {
+    return CS.MINUTES_SLOTS.find(slot => minutes[slot] && minutes[slot].slug === slug) || '';
+  }
+
+  function minutesTotalLine(minutes) {
+    const el = document.createElement('div');
+    const total = CS.minutesTotal(minutes);
+    const ok = total === CS.MINUTES_BUDGET;
+    el.style.cssText = `font-size:0.75rem;font-weight:700;margin-top:0.5rem;color:${ok ? 'var(--success-light,#4caf50)' : 'var(--gold,#c9a227)'}`;
+    el.textContent = ok
+      ? `${total} of ${CS.MINUTES_BUDGET} minutes allocated`
+      : `${total} of ${CS.MINUTES_BUDGET} minutes allocated · ${CS.MINUTES_BUDGET - total > 0 ? (CS.MINUTES_BUDGET - total) + ' left to place' : (total - CS.MINUTES_BUDGET) + ' over'}`;
+    return el;
+  }
+
+  function headerCols() {
+    const cols = ['Player', 'Primary Pos', 'Secondary Pos', '#'];
+    if (CS) cols.push('Slot', 'Minutes', 'RES');
+    return cols;
+  }
+
+  function buildHead(table) {
+    const hr = table.createTHead().insertRow();
+    headerCols().forEach(label => {
       const th = document.createElement('th');
       th.textContent = label;
-      if (label === '#') th.classList.add('right');
+      if (label === '#' || label === 'Minutes') th.classList.add('right');
       hr.appendChild(th);
     });
+  }
+
+  function renderReadView() {
+    const minutes = (coachingRecord && coachingRecord.minutes) || {};
+    const table = document.createElement('table');
+    buildHead(table);
 
     const tbody = table.createTBody();
     activeRows.forEach(row => {
@@ -4640,6 +4679,16 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
       const numTd = tr.insertCell();
       numTd.className = 'right';
       numTd.textContent = bio.jersey_number ?? '—';
+
+      if (CS) {
+        const slot = slotForSlug(minutes, row.SLUG);
+        const m = slot ? minutes[slot] : null;
+        tr.insertCell().textContent = slot || '—';
+        const minTd = tr.insertCell();
+        minTd.className = 'right';
+        minTd.textContent = m ? (m.res ? 'RES' : String(m.minutes || 0)) : '—';
+        tr.insertCell().textContent = m && m.res ? '✓' : '';
+      }
     });
 
     const gridWrap = document.createElement('div');
@@ -4649,6 +4698,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
 
     wrapEl.innerHTML = '';
     wrapEl.appendChild(gridWrap);
+    if (CS) wrapEl.appendChild(minutesTotalLine(minutes));
 
     if (canEdit) {
       const btn = document.createElement('button');
@@ -4661,6 +4711,11 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
   }
 
   function renderEditView() {
+    const minutes = CS && coachingRecord && coachingRecord.minutes
+      ? JSON.parse(JSON.stringify(coachingRecord.minutes))
+      : (CS ? CS.emptyMinutes() : {});
+    let minutesDirty = false;
+
     const toolbar = document.createElement('div');
     toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem';
 
@@ -4680,17 +4735,18 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
     toolbar.appendChild(statusEl);
 
     const table = document.createElement('table');
-    const thead = table.createTHead();
-    const hr = thead.insertRow();
-    ['Player', 'Primary Pos', 'Secondary Pos', '#'].forEach(label => {
-      const th = document.createElement('th');
-      th.textContent = label;
-      if (label === '#') th.classList.add('right');
-      hr.appendChild(th);
-    });
+    buildHead(table);
 
     const tbody = table.createTBody();
     const fields = [];
+    const rowCtlBySlug = {};
+    let totalLineEl = CS ? minutesTotalLine(minutes) : null;
+    function refreshMinutesTotal() {
+      if (!CS) return;
+      const fresh = minutesTotalLine(minutes);
+      totalLineEl.replaceWith(fresh);
+      totalLineEl = fresh;
+    }
 
     activeRows.forEach(row => {
       const bio = biosData[row.SLUG] || {};
@@ -4725,6 +4781,71 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
       jerseyInput.addEventListener('blur',  () => { jerseyInput.style.borderColor = 'var(--border)'; });
       numTd.appendChild(jerseyInput);
 
+      if (CS) {
+        let currentSlot = slotForSlug(minutes, row.SLUG);
+
+        const slotSel = makeSelect([{ value: '', label: '—' }, ...CS.MINUTES_SLOTS], currentSlot);
+        tr.insertCell().appendChild(slotSel);
+
+        const minInput = document.createElement('input');
+        minInput.type = 'number'; minInput.min = '0'; minInput.max = '48';
+        minInput.value = String(currentSlot ? (minutes[currentSlot].minutes || 0) : 0);
+        minInput.disabled = !currentSlot;
+        minInput.style.cssText = 'width:3.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+        const minTd = tr.insertCell();
+        minTd.className = 'right';
+        minTd.appendChild(minInput);
+
+        const resCheck = document.createElement('input');
+        resCheck.type = 'checkbox';
+        resCheck.checked = !!(currentSlot && minutes[currentSlot].res);
+        resCheck.disabled = !currentSlot;
+        tr.insertCell().appendChild(resCheck);
+
+        // A slot can hold at most one player. Picking a slot already held by
+        // another row vacates it there — this is what lets a picker per row
+        // stand in for what used to be a picker per slot.
+        function clearSlot() {
+          if (currentSlot && minutes[currentSlot]) minutes[currentSlot] = { slug: '', minutes: 0, res: false };
+          currentSlot = '';
+          slotSel.value = '';
+          minInput.value = '0'; minInput.disabled = true;
+          resCheck.checked = false; resCheck.disabled = true;
+        }
+
+        slotSel.addEventListener('change', () => {
+          const newSlot = slotSel.value;
+          minutesDirty = true;
+          if (currentSlot && minutes[currentSlot]) minutes[currentSlot] = { slug: '', minutes: 0, res: false };
+          if (newSlot) {
+            const prevSlug = minutes[newSlot] && minutes[newSlot].slug;
+            if (prevSlug && prevSlug !== row.SLUG && rowCtlBySlug[prevSlug]) rowCtlBySlug[prevSlug].clearSlot();
+            minutes[newSlot] = { slug: row.SLUG, minutes: +minInput.value || 0, res: resCheck.checked };
+            minInput.disabled = false;
+            resCheck.disabled = false;
+          } else {
+            minInput.value = '0'; minInput.disabled = true;
+            resCheck.checked = false; resCheck.disabled = true;
+          }
+          currentSlot = newSlot;
+          refreshMinutesTotal();
+        });
+        minInput.addEventListener('input', () => {
+          if (!currentSlot) return;
+          minutesDirty = true;
+          minutes[currentSlot].minutes = Math.max(0, Math.min(48, +minInput.value || 0));
+          refreshMinutesTotal();
+        });
+        resCheck.addEventListener('change', () => {
+          if (!currentSlot) return;
+          minutesDirty = true;
+          minutes[currentSlot].res = resCheck.checked;
+          refreshMinutesTotal();
+        });
+
+        rowCtlBySlug[row.SLUG] = { clearSlot };
+      }
+
       fields.push({
         slug: row.SLUG, jerseyInput, secSel,
         originalJersey: String(jersey), originalSecondaryPos: secondaryPos,
@@ -4739,6 +4860,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
     wrapEl.innerHTML = '';
     wrapEl.appendChild(toolbar);
     wrapEl.appendChild(gridWrap);
+    if (totalLineEl) wrapEl.appendChild(totalLineEl);
 
     cancelBtn.addEventListener('click', () => renderReadView());
 
@@ -4746,7 +4868,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
       const changed = fields.filter(({ jerseyInput, secSel, originalJersey, originalSecondaryPos }) =>
         String(jerseyInput.value.trim()) !== originalJersey || secSel.value !== originalSecondaryPos
       );
-      if (!changed.length) { renderReadView(); return; }
+      if (!changed.length && !minutesDirty) { renderReadView(); return; }
 
       saveBtn.disabled = true;
       cancelBtn.disabled = true;
@@ -4754,7 +4876,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
 
       try {
         const token = getToken();
-        const results = await Promise.all(changed.map(({ slug, jerseyInput, secSel }) => {
+        const requests = changed.map(({ slug, jerseyInput, secSel }) => {
           const val = jerseyInput.value.trim();
           const jersey_number = val === '' ? null : val;
           const secondary_pos = secSel.value === '' ? null : secSel.value;
@@ -4763,7 +4885,21 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ jersey_number, secondary_pos }),
           });
-        }));
+        });
+        // Minutes live on the coaching-settings record alongside `values`
+        // (points of emphasis, sliders, pools — edited in the Coaching
+        // Profile section below, untouched here). PUT replaces both fields
+        // together, so this always resends the team's current `values` as
+        // loaded — saving a jersey number alone must not wipe them.
+        if (minutesDirty && CS) {
+          const values = (coachingRecord && coachingRecord.values) || CS.emptyValues();
+          requests.push(fetch(`/api/coaching-settings/${abbr}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ values, minutes }),
+          }));
+        }
+        const results = await Promise.all(requests);
 
         const failed = results.find(r => !r.ok);
         if (failed) {
@@ -4798,20 +4934,21 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData) {
 // above (read/edit toggle, withToken-gated Edit button, same 403 handling),
 // but every field renders off window.CoachingSettings' config rather than
 // being hand-written, since that vocabulary is expected to change yearly.
-function setupCoachingSettingsTab(wrapId, rosterRows, biosData, record) {
+function setupCoachingSettingsTab(wrapId, biosData, record) {
   const wrapEl = document.getElementById(wrapId);
   const CS = window.CoachingSettings;
   if (!CS) {
     wrapEl.innerHTML = '<div class="status">Coaching settings unavailable — /coaching-config.js failed to load.</div>';
     return;
   }
-  const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
-  const activeRows = hasSlug ? rosterRows.filter(r => r.SLUG) : [];
   const canEdit = canEditCoachingSettings(abbr);
   const resolveName = slug => displayNameFromBio((biosData[slug] || {}).name || '') || slug;
 
   function renderReadView() {
-    CS.renderReadOnly(wrapEl, record, { resolveName });
+    // Minutes render merged into the roster table in the Roster Settings
+    // section above (setupTeamSettingsTab) — skip the standalone card here
+    // so a player's minutes aren't shown twice on the same team page.
+    CS.renderReadOnly(wrapEl, record, { resolveName, skipMinutesCard: true });
     if (canEdit) {
       const btn = document.createElement('button');
       btn.className = 'edit-toggle-btn';
@@ -4872,13 +5009,21 @@ function setupCoachingSettingsTab(wrapId, rosterRows, biosData, record) {
 
     const body = document.createElement('div');
 
-    // Save is never blocked on an unbalanced pool or minutes grid — a team
-    // should never lose partial work because one slider is off. It's flagged
-    // instead, here and (via CS.validityIssues on the saved record) in the
-    // read view and the streamer dashboard, so an unbalanced save is obvious
-    // to both the person who entered it and whoever enters it into the game.
+    // Save is never blocked on an unbalanced pool — a team should never lose
+    // partial work because one slider is off. It's flagged instead, here and
+    // (via CS.validityIssues on the saved record) in the read view and the
+    // streamer dashboard, so an unbalanced save is obvious to both the person
+    // who entered it and whoever enters it into the game. Minutes aren't
+    // edited in this form any more (see Roster Settings above), so this only
+    // checks the pools this form actually controls — not CS.validityIssues'
+    // full record, which would also flag an unrelated minutes imbalance.
     function refreshSaveState() {
-      const issues = CS.validityIssues({ values, minutes });
+      const issues = [];
+      CS.POINT_BUY_POOLS.forEach(pool => {
+        if (CS.poolRemaining(pool, values[pool.key]) !== 0) {
+          issues.push(`${pool.label}: ${CS.poolTotal(pool, values[pool.key])}/${pool.budget}`);
+        }
+      });
       if (issues.length) {
         statusEl.style.color = 'var(--gold,#c9a227)';
         statusEl.textContent = '⚠ Not balanced — ' + issues.join(' · ');
@@ -4956,56 +5101,11 @@ function setupCoachingSettingsTab(wrapId, rosterRows, biosData, record) {
       body.appendChild(card);
     });
 
-    // Player minutes depth chart
-    const minutesCard = groupCard('Player Minutes');
-    const rosterOptions = [{ value: '', label: '—' }, ...activeRows.map(r => ({ value: r.SLUG, label: resolveName(r.SLUG) }))];
-    const minutesTotalLine = document.createElement('div');
-    minutesTotalLine.style.cssText = 'font-size:0.75rem;font-weight:700;margin-top:0.5rem';
-    function syncMinutesTotal() {
-      const total = CS.minutesTotal(minutes);
-      const ok = total === CS.MINUTES_BUDGET;
-      minutesTotalLine.style.color = ok ? 'var(--success-light,#4caf50)' : 'var(--gold,#c9a227)';
-      minutesTotalLine.textContent = ok
-        ? `${total} of ${CS.MINUTES_BUDGET} minutes allocated`
-        : `${total} of ${CS.MINUTES_BUDGET} minutes allocated · ${CS.MINUTES_BUDGET - total > 0 ? (CS.MINUTES_BUDGET - total) + ' left to place' : (total - CS.MINUTES_BUDGET) + ' over'}`;
-      refreshSaveState();
-    }
-    CS.MINUTES_SLOTS.forEach(slot => {
-      if (!minutes[slot]) minutes[slot] = { slug: '', minutes: 0, res: false };
-      const slotState = minutes[slot];
-      const rowWrap = document.createElement('div');
-      rowWrap.style.cssText = 'display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0';
-      const label = document.createElement('span');
-      label.style.cssText = 'font-size:0.75rem;color:var(--text-muted);width:2rem;flex-shrink:0';
-      label.textContent = slot;
-      const sel = makeSelect(rosterOptions, slotState.slug || '');
-      sel.style.flex = '1';
-      sel.addEventListener('change', () => { slotState.slug = sel.value; });
-      const minInput = document.createElement('input');
-      minInput.type = 'number'; minInput.min = '0'; minInput.max = '48';
-      minInput.value = String(slotState.minutes || 0);
-      minInput.style.cssText = 'width:3.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
-      minInput.addEventListener('input', () => {
-        slotState.minutes = Math.max(0, Math.min(48, +minInput.value || 0));
-        syncMinutesTotal();
-      });
-      const resLabel = document.createElement('label');
-      resLabel.style.cssText = 'display:flex;align-items:center;gap:0.25rem;font-size:0.7rem;color:var(--text-muted);flex-shrink:0';
-      const resCheck = document.createElement('input');
-      resCheck.type = 'checkbox';
-      resCheck.checked = !!slotState.res;
-      resCheck.addEventListener('change', () => { slotState.res = resCheck.checked; syncMinutesTotal(); });
-      resLabel.appendChild(resCheck);
-      resLabel.appendChild(document.createTextNode('RES'));
-      rowWrap.appendChild(label);
-      rowWrap.appendChild(sel);
-      rowWrap.appendChild(minInput);
-      rowWrap.appendChild(resLabel);
-      minutesCard.appendChild(rowWrap);
-    });
-    minutesCard.appendChild(minutesTotalLine);
-    syncMinutesTotal();
-    body.appendChild(minutesCard);
+    // Player minutes are edited in the Roster Settings section above
+    // (setupTeamSettingsTab) now, merged into its per-player table — not
+    // here. `minutes` itself is still carried through this form's Save
+    // payload untouched, since PUT /api/coaching-settings/{team} replaces
+    // both fields together and this form must not clobber it.
 
     wrapEl.innerHTML = '';
     wrapEl.appendChild(toolbar);
@@ -6536,8 +6636,8 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       liveRosterRows = rows;
       return renderRoster(rows);
     }, rosterCellConfig(rosterHeaders, biosData));
-    setupTeamSettingsTab('team-settings-wrap', rosterRows, biosData, attributesData);
-    setupCoachingSettingsTab('coaching-settings-wrap', rosterRows, biosData, coachingRecord);
+    setupTeamSettingsTab('team-settings-wrap', rosterRows, biosData, attributesData, coachingRecord);
+    setupCoachingSettingsTab('coaching-settings-wrap', biosData, coachingRecord);
 
     setupDeadCapEditable(
       document.getElementById('dead-cap-edit-wrap'),
