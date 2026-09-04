@@ -125,6 +125,19 @@
     .games-table tbody tr.day-row td {
       padding: 0.5rem 0.6rem 0.25rem; font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
     }
+    .day-row-inner { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+
+    /* Per-date "done"/VOD controls, shown on a day divider only when that
+       date has at least one claimed or flagged game — same shared, one-per-
+       date flag `routers/streaming_days.py` enforces server-side. */
+    .day-slate { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin-left: auto; }
+    .day-slate .cd-btn { font-size: 0.68rem; padding: 0.15rem 0.5rem; }
+    .day-yt-input {
+      width: 11rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text-secondary); font-size: 0.72rem; padding: 0.2rem 0.45rem; font-family: inherit; outline: none;
+    }
+    .day-yt-input:focus { border-color: var(--accent); }
+    .day-meta { font-size: 0.68rem; color: var(--text-dim); white-space: nowrap; font-weight: 400; text-transform: none; letter-spacing: normal; }
 
     .gt-num { width: 2rem; text-align: right; font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
     .gt-time { width: 5rem; font-size: 0.75rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -199,33 +212,29 @@
 
     /* ── Coaching Settings tab ────────────────────────────────────────── */
     #coaching-dash-wrap h2 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.15rem; }
-    .cd-row { border-top: 1px solid var(--border-subtle); padding: 0.5rem 0; }
-    .cd-row:first-child { border-top: none; }
-    .cd-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-    .cd-team { font-weight: 600; min-width: 3.2rem; }
-    .cd-status { font-size: 0.72rem; padding: 0.1rem 0.5rem; border-radius: 999px; }
-    .cd-status.pending { background: var(--gold, #c9a227); color: #1a1400; }
-    .cd-status.entered { background: var(--success-bg, #133b1f); color: var(--success-light, #4caf50); }
-    .cd-status.none { background: var(--bg-subtle); color: var(--text-muted); }
     .cd-when { font-size: 0.72rem; color: var(--text-muted); }
-    .cd-spacer { flex: 1; }
     .cd-btn { font-size: 0.72rem; padding: 0.2rem 0.55rem; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
     .cd-btn:hover { border-color: var(--accent); color: var(--text-primary); }
     .cd-btn:disabled { opacity: 0.5; cursor: default; }
     .cd-detail { margin-top: 0.6rem; }
 
-    /* Coaching Settings tab: table layout. `.cd-row`/`.cd-head`/`.cd-team`/
-       `.cd-spacer` above stay flex-based for the Days tab, which still uses
-       them — these are scoped to the coaching table only. */
     .cd-table tbody tr.cd-trow { border-bottom: 1px solid var(--bg-card); }
     .cd-table tbody tr.cd-trow:hover { background: var(--bg-subtle); }
-    .cd-team-cell a { font-weight: 600; margin-right: 0.4rem; }
-    .cd-team-name { color: var(--text-secondary); }
-    #coaching-dash-list .cd-when { display: block; }
-    #coaching-dash-list .cd-when + .cd-when { margin-top: 0.15rem; }
+    .cd-team-cell { display: flex; align-items: center; gap: 0.4rem; }
+    .cd-team-cell a { font-weight: 600; }
     .cd-actions { text-align: right; white-space: nowrap; }
     .cd-actions .cd-btn + .cd-btn { margin-left: 0.4rem; }
     .cd-detail-row td { padding-top: 0; padding-bottom: 0.8rem; background: var(--bg-subtle); }
+
+    /* Indicator cells: a colored dot for entry status, a bare glyph for the
+       incomplete warning — text lives in the title tooltip, not the cell. */
+    .cd-dot {
+      display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%;
+      background: transparent; border: 1px solid var(--border);
+    }
+    .cd-dot.pending { background: var(--gold, #c9a227); border-color: var(--gold, #c9a227); }
+    .cd-dot.entered { background: var(--success-light, #4caf50); border-color: var(--success-light, #4caf50); }
+    .cd-incomplete-flag { font-size: 0.8rem; line-height: 1; cursor: default; }
 
     .tab-badge {
       display: inline-block; min-width: 1.1rem; margin-left: 0.35rem; padding: 0 0.35rem;
@@ -240,7 +249,7 @@
 
     <header>
       <h1>Stream</h1>
-      <p class="sub">Claim games to broadcast and manage each team's in-game coaching settings.</p>
+      <p class="sub">Claim games to broadcast, mark a night's slate done with a VOD link, and manage each team's in-game coaching settings.</p>
     </header>
 
     <div id="gate"></div>
@@ -249,7 +258,6 @@
       <div class="tabs">
         <button class="tab active" data-tab="claim">Claim Games</button>
         <button class="tab" data-tab="coaching">Coaching Settings<span class="tab-badge" id="coaching-tab-badge" hidden></span></button>
-        <button class="tab" data-tab="days">Days</button>
       </div>
 
       <div class="tab-panel" id="tab-claim">
@@ -287,15 +295,14 @@
       <div class="tab-panel hidden" id="tab-coaching">
         <div id="coaching-dash-wrap">
           <h2>Coaching Settings</h2>
-          <p class="sub">Teams' 2K coach profiles. Enter a team's settings into the game, then mark it entered.</p>
           <div class="table-wrap">
             <table class="data-table cd-table">
               <thead>
                 <tr>
                   <th>Team</th>
                   <th>Status</th>
+                  <th>Incomplete</th>
                   <th>Next Game</th>
-                  <th>Saved</th>
                   <th></th>
                 </tr>
               </thead>
@@ -303,12 +310,6 @@
             </table>
           </div>
         </div>
-      </div>
-
-      <div class="tab-panel hidden" id="tab-days">
-        <h2>Days</h2>
-        <p class="sub">Mark a day's slate of claimed/flagged games done once you've streamed it, and attach a YouTube VOD — shown publicly on /calendar.</p>
-        <div id="days-list"></div>
       </div>
     </div>
   </div>
@@ -437,27 +438,41 @@
 
       const tdTeam = document.createElement('td');
       tdTeam.className = 'cd-team-cell';
+      tdTeam.appendChild(logo(team));
       tdTeam.appendChild(teamLink(team));
-      tdTeam.appendChild(span('cd-team-name', TEAMS[team]));
       rowEl.appendChild(tdTeam);
 
+      // Status is a dot, not a text badge — the label plus who/when saved
+      // and entered lives in its title tooltip.
       const tdStatus = document.createElement('td');
-      tdStatus.appendChild(span('cd-status ' + meta.status, meta.label));
-      // A save is never blocked on an unbalanced point-buy pool or minutes
+      const dot = span('cd-dot ' + meta.status);
+      let statusTitle = meta.label;
+      if (rec) {
+        const savedWhen = rec.updated_at ? new Date(rec.updated_at).toLocaleString() : 'unknown';
+        statusTitle += ` — saved ${savedWhen} by ${rec.updated_by || 'unknown'}`;
+        if (rec.entered_at) {
+          statusTitle += ` · entered ${new Date(rec.entered_at).toLocaleString()} by ${rec.entered_by}`;
+        }
+      }
+      dot.title = statusTitle;
+      tdStatus.appendChild(dot);
+      rowEl.appendChild(tdStatus);
+
+      // A save is never blocked on an incomplete point-buy pool or minutes
       // grid (the team shouldn't lose partial work over one slider), so this
       // is the streamer's warning that what they're about to enter isn't
       // internally consistent — computed the same way team.js's edit form
       // warns the team that saved it, off the same shared helper.
+      const tdIncomplete = document.createElement('td');
       if (rec && window.CoachingSettings) {
         const issues = window.CoachingSettings.validityIssues(rec);
         if (issues.length) {
-          const warnBadge = span('cd-status pending', '⚠ Unbalanced');
-          warnBadge.title = issues.join(' · ');
-          warnBadge.style.marginLeft = '0.35rem';
-          tdStatus.appendChild(warnBadge);
+          const flag = span('cd-incomplete-flag', '⚠');
+          flag.title = 'Incomplete: ' + issues.join(' · ');
+          tdIncomplete.appendChild(flag);
         }
       }
-      rowEl.appendChild(tdStatus);
+      rowEl.appendChild(tdIncomplete);
 
       const tdNext = document.createElement('td');
       const nextGame = nextGameFor(team);
@@ -467,16 +482,6 @@
         tdNext.appendChild(span('cd-when', `${fmtShort(nextGame.date)} ${at} ${opp}`));
       }
       rowEl.appendChild(tdNext);
-
-      const tdSaved = document.createElement('td');
-      if (rec) {
-        const savedWhen = rec.updated_at ? new Date(rec.updated_at).toLocaleString() : 'unknown';
-        tdSaved.appendChild(span('cd-when', `saved ${savedWhen} by ${rec.updated_by || 'unknown'}`));
-        if (rec.entered_at) {
-          tdSaved.appendChild(span('cd-when', `entered ${new Date(rec.entered_at).toLocaleString()} by ${rec.entered_by}`));
-        }
-      }
-      rowEl.appendChild(tdSaved);
 
       const detailRow = document.createElement('tr');
       detailRow.className = 'cd-detail-row';
@@ -551,11 +556,15 @@
       }
     }
 
-    // ── Days tab ─────────────────────────────────────────────────────
+    // ── Day slate controls ──────────────────────────────────────────────
     //
-    // `done` is one shared flag per date (whoever marks it is stamped, not
-    // who's allowed to) and the YouTube link is independent of it — same
-    // shapes routers/streaming_days.py enforces server-side.
+    // Inline on each day divider in Claim Games, not a separate tab: `done`
+    // and the YouTube link are attributes of the whole date's slate, not any
+    // one game, but the divider row is exactly that — one row per date,
+    // already sitting above the date's games. `done` is one shared flag per
+    // date (whoever marks it is stamped, not who's allowed to) and the
+    // YouTube link is independent of it — same shapes
+    // routers/streaming_days.py enforces server-side.
 
     async function loadStreamingDays() {
       try {
@@ -563,80 +572,45 @@
       } catch (e) {
         streamingDays = {};
       }
-      renderDaysTab();
+      render();
     }
 
-    // Only dates with at least one claimed or flagged game — the ~170 dates
-    // in a season would otherwise bury the handful anyone actually needs to
-    // mark. Sourced from `games`, the Claim Games tab's own state.
-    function relevantDates() {
-      const dates = new Set();
-      games.forEach(g => { if (g.stream || g.streamer) dates.add(g.date); });
-      return Array.from(dates).sort((a, b) => b.localeCompare(a)); // most recent first
+    // Controls appear only once a date has at least one claimed or flagged
+    // game — the ~170 dates in a season would otherwise all carry controls
+    // nobody needs. Sourced from the full `games` list rather than the
+    // currently filtered/visible rows, so a date's controls don't disappear
+    // just because the team filter hides its games.
+    function dayHasSlate(date) {
+      return games.some(g => g.date === date && (g.stream || g.streamer));
     }
 
-    function renderDaysTab() {
-      const list = document.getElementById('days-list');
-      if (!list) return;
-      list.innerHTML = '';
-      const dates = relevantDates();
-      if (!dates.length) {
-        list.appendChild(div('empty', 'No claimed or flagged games in the loaded season yet.'));
-        return;
-      }
-      dates.forEach(date => list.appendChild(daysDashRow(date)));
-    }
-
-    function daysDashRow(date) {
+    function daySlateControls(date) {
       const rec = streamingDays[date] || null;
       const done = !!(rec && rec.done);
-      const rowEl = div('cd-row');
-      const head = div('cd-head');
-
-      head.appendChild(span('cd-team', fmtDayHdr(date)));
-      head.appendChild(span('cd-status ' + (done ? 'entered' : 'none'), done ? 'Done' : 'Not done'));
-      if (done) {
-        head.appendChild(span('cd-when', `by ${rec.done_by} · ${new Date(rec.done_at).toLocaleString()}`));
-      }
-      head.appendChild(div('cd-spacer'));
+      const wrap = div('day-slate');
 
       const toggleBtn = document.createElement('button');
       toggleBtn.className = 'cd-btn';
       toggleBtn.textContent = done ? 'Undo' : 'Mark day done';
       toggleBtn.onclick = () => (done ? unmarkDayDone(date, toggleBtn) : markDayDone(date, toggleBtn));
-      head.appendChild(toggleBtn);
-      rowEl.appendChild(head);
-
-      // That date's claimed/flagged games, compact — same 📺/📡 shorthand as
-      // the calendar's fixture pip.
-      const gamesLine = span('cd-when');
-      gamesLine.style.cssText = 'display:block;margin-top:0.3rem';
-      const dayGames = games.filter(g => g.date === date && (g.stream || g.streamer));
-      gamesLine.textContent = dayGames.map(g => {
-        let s = `${g.away_team} @ ${g.home_team}`;
-        if (g.streamer) s += ` 📺 ${g.streamer}`;
-        if (g.stream) s += ' 📡';
-        return s;
-      }).join('   ');
-      rowEl.appendChild(gamesLine);
+      wrap.appendChild(toggleBtn);
+      if (done) wrap.appendChild(span('day-meta', `done by ${rec.done_by}`));
 
       // YouTube link — independent of done, so it's editable whether or not
       // the day is marked.
-      const ytRow = document.createElement('div');
-      ytRow.style.cssText = 'display:flex;gap:0.4rem;align-items:center;margin-top:0.5rem';
       const ytInput = document.createElement('input');
       ytInput.type = 'text';
+      ytInput.className = 'day-yt-input';
       ytInput.placeholder = 'YouTube VOD link';
       ytInput.value = (rec && rec.youtube_url) || '';
-      ytInput.style.cssText = 'flex:1;background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:0.78rem;padding:0.3rem 0.5rem;font-family:inherit;outline:none';
       const ytBtn = document.createElement('button');
       ytBtn.className = 'cd-btn';
-      ytBtn.textContent = 'Save link';
-      const ytStatus = span('cd-when');
+      ytBtn.textContent = 'Save';
+      const ytStatus = span('day-meta');
       ytBtn.onclick = () => saveYoutubeUrl(date, ytInput, ytBtn, ytStatus);
-      ytRow.appendChild(ytInput);
-      ytRow.appendChild(ytBtn);
-      ytRow.appendChild(ytStatus);
+      wrap.appendChild(ytInput);
+      wrap.appendChild(ytBtn);
+      wrap.appendChild(ytStatus);
       if (rec && rec.youtube_url) {
         const openLink = document.createElement('a');
         openLink.href = rec.youtube_url;
@@ -644,11 +618,10 @@
         openLink.rel = 'noopener';
         openLink.textContent = '▶️';
         openLink.title = 'Open the linked video';
-        ytRow.appendChild(openLink);
+        wrap.appendChild(openLink);
       }
-      rowEl.appendChild(ytRow);
 
-      return rowEl;
+      return wrap;
     }
 
     async function markDayDone(date, btn) {
@@ -666,7 +639,7 @@
           return;
         }
         streamingDays[date] = await r.json();
-        renderDaysTab();
+        render();
       } catch (e) {
         alert('Network error');
         btn.disabled = false;
@@ -688,7 +661,7 @@
           return;
         }
         streamingDays[date] = await r.json();
-        renderDaysTab();
+        render();
       } catch (e) {
         alert('Network error');
         btn.disabled = false;
@@ -712,7 +685,7 @@
           return;
         }
         streamingDays[date] = await r.json();
-        renderDaysTab();
+        render();
       } catch (e) {
         statusEl.textContent = 'Network error';
         btn.disabled = false;
@@ -1008,6 +981,21 @@
       return tr;
     }
 
+    // The day divider carries the date label, plus that date's day-slate
+    // controls (mark done / VOD link) when it has a claimed or flagged game.
+    function dayRowEl(date) {
+      const tr = document.createElement('tr');
+      tr.className = 'day-row';
+      const td = document.createElement('td');
+      td.colSpan = 7;
+      const inner = div('day-row-inner');
+      inner.appendChild(span('day-row-label', fmtDayHdr(date)));
+      if (dayHasSlate(date)) inner.appendChild(daySlateControls(date));
+      td.appendChild(inner);
+      tr.appendChild(td);
+      return tr;
+    }
+
     function render() {
       const list = document.getElementById('list');
       const more = document.getElementById('more');
@@ -1041,7 +1029,7 @@
         if (g.date !== lastDate) {
           const ym = monthKey(g.date);
           if (ym !== lastMonth) { list.appendChild(dividerRow('month-row', fmtMonth(ym))); lastMonth = ym; }
-          list.appendChild(dividerRow('day-row', fmtDayHdr(g.date)));
+          list.appendChild(dayRowEl(g.date));
           lastDate = g.date;
         }
         list.appendChild(makeRow(g, numbers.get(g.id)));
@@ -1177,11 +1165,10 @@
       renderControls();
       render();
       syncUrl();
-      // Both tabs below sort/filter off `games`, which just changed — a
+      // The Coaching Settings tab sorts off `games`, which just changed — a
       // fetch that resolved before this season loaded rendered against an
       // empty list, so re-render now that there's something to sort by.
       renderCoachingDashboard();
-      renderDaysTab();
     }
 
     // Who is looking. Always 200, empty when signed out, and it accepts the
