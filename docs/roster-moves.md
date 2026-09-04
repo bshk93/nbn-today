@@ -18,7 +18,7 @@ feature invisible to the owners it exists for.
 **Getting a token in the first place:** the roster header has a `#team-signin-btn`
 shown only when `/api/auth/me` resolves to no roles. It is not decoration — every
 other affordance on a team page that prompts for a token (`attachEditBtn`, the
-Team Settings tab) is gated on roles that require a token to already be stored, so
+Team Settings section) is gated on roles that require a token to already be stored, so
 without it a team owner who isn't on the committee had no way into their own tools
 at all. `hadStoredToken` is snapshotted *before* the page's fetches, since the first
 request to 403 clears a stale token and would otherwise erase the difference between

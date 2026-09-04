@@ -81,8 +81,9 @@
 //   rosterCellConfig           2017   cell config map for roster editing
 //   enterEditMode              2041   swaps read view for edit grid
 //   setupPicksEditable         2145   wires edit mode for picks table
-//   setupTeamSettingsTab       3458   wires the Team Settings tab (jersey #, secondary pos)
-//   setupCoachingSettingsTab   4786   wires the Coaching tab (2K coach profile) — schema-driven off /coaching-config.js
+//   setupTeamSettingsTab       3458   wires the Team Settings section (jersey #, secondary pos)
+//   setupCoachingSettingsTab   4786   wires the Coaching Settings section (2K coach profile) — schema-driven off /coaching-config.js
+//                                     Both sections share the Coaching tab (#tab-coaching), folded together 2026-09-04.
 //   setupEditable              2674   wires edit mode for roster table
 //   setupDeadCapEditable       2490   wires edit mode for the dead cap table
 // =============================================================================
@@ -917,7 +918,6 @@ document.body.innerHTML = `
     </div>
     <div class="tabs">
       <button class="tab active" data-tab="overview">Roster</button>
-      <button class="tab" data-tab="settings">Team Settings</button>
       <button class="tab" data-tab="coaching">Coaching</button>
       <button class="tab" data-tab="franchise">Franchise</button>
       <button class="tab" data-tab="draft">Draft History</button>
@@ -980,14 +980,12 @@ document.body.innerHTML = `
         <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
-    <div class="tab-panel hidden" id="tab-settings">
+    <div class="tab-panel hidden" id="tab-coaching">
       <section>
         <h2 class="section-title" id="team-settings-title">Team Settings</h2>
         <p class="section-sub">Jersey numbers and secondary positions. Primary position is scraped from 2K and can't be edited here.</p>
         <div class="table-wrap" id="team-settings-wrap"><div class="status">Loading…</div></div>
       </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-coaching">
       <section>
         <h2 class="section-title" id="coaching-settings-title">Coaching Settings</h2>
         <p class="section-sub">This team's 2K coach profile, entered into the game by whoever streams your games.</p>
