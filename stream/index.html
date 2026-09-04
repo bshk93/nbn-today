@@ -104,40 +104,48 @@
     .summary b { color: var(--text-primary); font-weight: 600; }
     .summary .dim { color: var(--text-muted); }
 
-    .month-hdr {
-      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
-      color: var(--text-dim); padding: 1.1rem 0 0.5rem; display: flex; align-items: center; gap: 0.75rem;
+    .table-wrap { overflow-x: auto; }
+    table.data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .data-table thead th {
+      padding: 0.55rem 0.6rem; text-align: left; font-size: 0.66rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim);
+      border-bottom: 1px solid var(--border); cursor: default; white-space: nowrap;
     }
-    .month-hdr:first-child { padding-top: 0; }
-    .month-hdr::after { content: ''; flex: 1; height: 1px; background: var(--bg-card); }
+    .data-table thead th.right { text-align: right; }
+    .data-table tbody td { padding: 0.4rem 0.6rem; color: var(--text-secondary); vertical-align: middle; }
 
-    .day { padding: 0.5rem 0; border-bottom: 1px solid var(--bg-card); }
-    .day:last-child { border-bottom: none; }
-    .day-hdr { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
-    .day-rows { display: flex; flex-direction: column; gap: 0.1rem; }
+    .games-table tbody tr.game-row { border-bottom: 1px solid var(--bg-card); }
+    .games-table tbody tr.game-row:hover { background: var(--bg-subtle); }
+    .games-table tbody tr.game-row.played { color: var(--text-muted); }
+    .games-table tbody tr.month-row td {
+      padding: 1rem 0.6rem 0.4rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-dim); border-bottom: 1px solid var(--bg-card);
+    }
+    .games-table tbody tr.month-row:first-child td { padding-top: 0.4rem; }
+    .games-table tbody tr.day-row td {
+      padding: 0.5rem 0.6rem 0.25rem; font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+    }
 
-    .game { display: flex; align-items: center; gap: 0.55rem; padding: 0.3rem 0.5rem; border-radius: 6px; }
-    .game:hover { background: var(--bg-subtle); }
-    .game.played { color: var(--text-muted); }
+    .gt-num { width: 2rem; text-align: right; font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+    .gt-time { width: 5rem; font-size: 0.75rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .gt-arena { width: 11rem; max-width: 11rem; font-size: 0.72rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gt-streamer, .gt-stream { width: 8rem; white-space: nowrap; }
+    .gt-result { width: 5rem; text-align: right; font-size: 0.78rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-    .g-num { width: 2rem; flex: none; text-align: right; font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
-    .g-time { width: 5.6rem; flex: none; font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .g-match { flex: 1; display: flex; align-items: center; gap: 0.35rem; min-width: 0; font-size: 0.85rem; }
+    .g-match { display: flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; }
     .g-match a { color: var(--text-secondary); }
-    .game.played .g-match a { color: var(--text-muted); }
+    .game-row.played .g-match a { color: var(--text-muted); }
     .g-logo { width: 18px; height: 18px; flex: none; object-fit: contain; }
     .g-at { color: var(--text-dim); font-size: 0.75rem; }
     .g-note {
-      flex: none; font-size: 0.65rem; color: var(--gold); background: var(--gold-bg);
+      display: inline-block; margin-left: 0.4rem; font-size: 0.65rem; color: var(--gold); background: var(--gold-bg);
       border-radius: 3px; padding: 0.1rem 0.35rem; white-space: nowrap;
     }
-    .g-arena { flex: none; width: 11rem; text-align: right; font-size: 0.7rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .g-score { flex: none; width: 4rem; text-align: right; font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .g-score { font-size: 0.78rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .g-score.win { color: var(--success); }
     .g-score.loss { color: var(--danger); }
-    .g-next { flex: none; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--link); }
+    .g-next { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--link); }
 
-    .g-streamer { flex: none; display: flex; align-items: center; gap: 0.3rem; }
     .streamer-chip {
       display: inline-flex; align-items: center; gap: 0.25rem;
       font-size: 0.68rem; color: var(--purple-light); background: var(--purple-light-bg);
@@ -151,20 +159,19 @@
     .chip-x:hover { opacity: 1; }
 
     .stream-badge {
-      flex: none; display: inline-flex; align-items: center; gap: 0.2rem;
+      display: inline-flex; align-items: center; gap: 0.2rem;
       font-size: 0.65rem; font-weight: 600; color: var(--danger-light); background: var(--danger-bg);
       border-radius: 3px; padding: 0.1rem 0.4rem; white-space: nowrap;
     }
 
     .g-claim, .g-stream-btn {
-      flex: none; width: 4rem; text-align: right; background: none; border: none;
-      color: var(--text-muted); font-family: inherit; font-size: 0.65rem;
-      padding: 0; cursor: pointer; line-height: 1;
-      opacity: 0.3; transition: opacity 0.1s, color 0.1s;
+      background: none; border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text-muted); font-family: inherit; font-size: 0.68rem;
+      padding: 0.15rem 0.5rem; cursor: pointer; line-height: 1.2;
+      opacity: 0.5; transition: opacity 0.1s, color 0.1s, border-color 0.1s;
     }
-    .g-stream-btn { width: 4.5rem; }
-    .game:hover .g-claim, .g-claim:focus,
-    .game:hover .g-stream-btn, .g-stream-btn:focus { opacity: 1; color: var(--accent-light); }
+    .games-table tbody tr.game-row:hover .g-claim, .g-claim:focus,
+    .games-table tbody tr.game-row:hover .g-stream-btn, .g-stream-btn:focus { opacity: 1; color: var(--accent-light); border-color: var(--accent); }
     .g-claim[disabled], .g-stream-btn[disabled] { cursor: default; }
 
     .toast {
@@ -185,14 +192,9 @@
     .empty { color: var(--text-muted); font-size: 0.85rem; padding: 2rem 0; text-align: center; }
     .source { font-size: 0.68rem; color: var(--text-dim); margin-top: 2rem; }
 
-    .g-break { flex-basis: 0; width: 0; height: 0; }
-
     @media (max-width: 700px) {
-      .g-arena { display: none; }
-      .g-time { width: 4.6rem; }
-      .game { flex-wrap: wrap; row-gap: 0.2rem; }
-      .g-match { flex: 1 1 auto; }
-      .g-break { flex-basis: 100%; }
+      .gt-arena { display: none; }
+      .gt-time { width: 4rem; }
     }
 
     /* ── Coaching Settings tab ────────────────────────────────────────── */
@@ -211,6 +213,20 @@
     .cd-btn:hover { border-color: var(--accent); color: var(--text-primary); }
     .cd-btn:disabled { opacity: 0.5; cursor: default; }
     .cd-detail { margin-top: 0.6rem; }
+
+    /* Coaching Settings tab: table layout. `.cd-row`/`.cd-head`/`.cd-team`/
+       `.cd-spacer` above stay flex-based for the Days tab, which still uses
+       them — these are scoped to the coaching table only. */
+    .cd-table tbody tr.cd-trow { border-bottom: 1px solid var(--bg-card); }
+    .cd-table tbody tr.cd-trow:hover { background: var(--bg-subtle); }
+    .cd-team-cell a { font-weight: 600; margin-right: 0.4rem; }
+    .cd-team-name { color: var(--text-secondary); }
+    #coaching-dash-list .cd-when { display: block; }
+    #coaching-dash-list .cd-when + .cd-when { margin-top: 0.15rem; }
+    .cd-actions { text-align: right; white-space: nowrap; }
+    .cd-actions .cd-btn + .cd-btn { margin-left: 0.4rem; }
+    .cd-detail-row td { padding-top: 0; padding-bottom: 0.8rem; background: var(--bg-subtle); }
+
     .tab-badge {
       display: inline-block; min-width: 1.1rem; margin-left: 0.35rem; padding: 0 0.35rem;
       border-radius: 999px; background: var(--gold, #c9a227); color: #1a1400;
@@ -247,7 +263,23 @@
           </div>
         </div>
         <div class="summary" id="summary"></div>
-        <div id="list"><div class="empty">Loading…</div></div>
+        <div class="table-wrap" id="games-table-wrap">
+          <table class="data-table games-table">
+            <thead>
+              <tr>
+                <th class="gt-num">#</th>
+                <th class="gt-time">Time</th>
+                <th>Matchup</th>
+                <th class="gt-arena">Arena</th>
+                <th class="gt-streamer">Streamer</th>
+                <th class="gt-stream">Stream</th>
+                <th class="gt-result right">Result</th>
+              </tr>
+            </thead>
+            <tbody id="list"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="list-empty" hidden>Loading…</div>
         <div id="more"></div>
         <p class="source" id="source"></p>
       </div>
@@ -256,7 +288,20 @@
         <div id="coaching-dash-wrap">
           <h2>Coaching Settings</h2>
           <p class="sub">Teams' 2K coach profiles. Enter a team's settings into the game, then mark it entered.</p>
-          <div id="coaching-dash-list"></div>
+          <div class="table-wrap">
+            <table class="data-table cd-table">
+              <thead>
+                <tr>
+                  <th>Team</th>
+                  <th>Status</th>
+                  <th>Next Game</th>
+                  <th>Saved</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="coaching-dash-list"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -369,7 +414,11 @@
         return tb.localeCompare(ta);
       });
 
-      teams.forEach(team => list.appendChild(coachingDashRow(team)));
+      teams.forEach(team => {
+        const [row, detailRow] = coachingDashRow(team);
+        list.appendChild(row);
+        list.appendChild(detailRow);
+      });
 
       const pendingCount = teams.filter(team => coachingRowMeta(team).status === 'pending').length;
       const badge = document.getElementById('coaching-tab-badge');
@@ -377,24 +426,23 @@
       badge.hidden = pendingCount === 0;
     }
 
+    // Returns [row, detailRow] — a normal row plus a hidden full-width detail
+    // row toggled by the View button, since a <tr> can't grow a child panel
+    // the way a flex row (see Days tab below) can.
     function coachingDashRow(team) {
       const rec = coachingSettings[team] || null;
       const meta = coachingRowMeta(team);
-      const rowEl = div('cd-row');
-      const head = div('cd-head');
+      const rowEl = document.createElement('tr');
+      rowEl.className = 'cd-trow';
 
-      head.appendChild(teamLink(team));
-      const nameSpan = span('cd-team', TEAMS[team]);
-      head.appendChild(nameSpan);
-      head.appendChild(span('cd-status ' + meta.status, meta.label));
+      const tdTeam = document.createElement('td');
+      tdTeam.className = 'cd-team-cell';
+      tdTeam.appendChild(teamLink(team));
+      tdTeam.appendChild(span('cd-team-name', TEAMS[team]));
+      rowEl.appendChild(tdTeam);
 
-      const nextGame = nextGameFor(team);
-      if (nextGame) {
-        const opp = nextGame.home_team === team ? nextGame.away_team : nextGame.home_team;
-        const at = nextGame.home_team === team ? 'vs' : '@';
-        head.appendChild(span('cd-when', `Next: ${fmtShort(nextGame.date)} ${at} ${opp}`));
-      }
-
+      const tdStatus = document.createElement('td');
+      tdStatus.appendChild(span('cd-status ' + meta.status, meta.label));
       // A save is never blocked on an unbalanced point-buy pool or minutes
       // grid (the team shouldn't lose partial work over one slider), so this
       // is the streamer's warning that what they're about to enter isn't
@@ -405,49 +453,69 @@
         if (issues.length) {
           const warnBadge = span('cd-status pending', '⚠ Unbalanced');
           warnBadge.title = issues.join(' · ');
-          head.appendChild(warnBadge);
+          warnBadge.style.marginLeft = '0.35rem';
+          tdStatus.appendChild(warnBadge);
         }
       }
+      rowEl.appendChild(tdStatus);
 
+      const tdNext = document.createElement('td');
+      const nextGame = nextGameFor(team);
+      if (nextGame) {
+        const opp = nextGame.home_team === team ? nextGame.away_team : nextGame.home_team;
+        const at = nextGame.home_team === team ? 'vs' : '@';
+        tdNext.appendChild(span('cd-when', `${fmtShort(nextGame.date)} ${at} ${opp}`));
+      }
+      rowEl.appendChild(tdNext);
+
+      const tdSaved = document.createElement('td');
       if (rec) {
         const savedWhen = rec.updated_at ? new Date(rec.updated_at).toLocaleString() : 'unknown';
-        head.appendChild(span('cd-when', `saved ${savedWhen} by ${rec.updated_by || 'unknown'}`));
+        tdSaved.appendChild(span('cd-when', `saved ${savedWhen} by ${rec.updated_by || 'unknown'}`));
         if (rec.entered_at) {
-          head.appendChild(span('cd-when', `· entered ${new Date(rec.entered_at).toLocaleString()} by ${rec.entered_by}`));
+          tdSaved.appendChild(span('cd-when', `entered ${new Date(rec.entered_at).toLocaleString()} by ${rec.entered_by}`));
         }
       }
+      rowEl.appendChild(tdSaved);
 
-      head.appendChild(div('cd-spacer'));
+      const detailRow = document.createElement('tr');
+      detailRow.className = 'cd-detail-row';
+      detailRow.hidden = true;
+      const detailTd = document.createElement('td');
+      detailTd.colSpan = 5;
+      const detail = div('cd-detail');
+      detailTd.appendChild(detail);
+      detailRow.appendChild(detailTd);
+
+      const tdActions = document.createElement('td');
+      tdActions.className = 'cd-actions';
 
       const viewBtn = document.createElement('button');
       viewBtn.className = 'cd-btn';
       viewBtn.textContent = 'View';
-      const detail = div('cd-detail');
-      detail.style.display = 'none';
       viewBtn.onclick = () => {
-        const showing = detail.style.display !== 'none';
-        if (showing) { detail.style.display = 'none'; viewBtn.textContent = 'View'; return; }
+        const showing = !detailRow.hidden;
+        if (showing) { detailRow.hidden = true; viewBtn.textContent = 'View'; return; }
         if (window.CoachingSettings) {
           window.CoachingSettings.renderReadOnly(detail, rec, {});
         } else {
           detail.textContent = 'Coaching settings vocabulary unavailable — /coaching-config.js failed to load.';
         }
-        detail.style.display = '';
+        detailRow.hidden = false;
         viewBtn.textContent = 'Hide';
       };
-      head.appendChild(viewBtn);
+      tdActions.appendChild(viewBtn);
 
       if (rec && rec.pending) {
         const enterBtn = document.createElement('button');
         enterBtn.className = 'cd-btn';
         enterBtn.textContent = 'Mark entered';
         enterBtn.onclick = () => markEntered(team, rec, enterBtn);
-        head.appendChild(enterBtn);
+        tdActions.appendChild(enterBtn);
       }
+      rowEl.appendChild(tdActions);
 
-      rowEl.appendChild(head);
-      rowEl.appendChild(detail);
-      return rowEl;
+      return [rowEl, detailRow];
     }
 
     async function markEntered(team, rec, btn) {
@@ -816,14 +884,22 @@
     // ── Rendering ────────────────────────────────────────────────────
 
     function makeRow(g, num) {
-      const row = document.createElement('div');
-      row.className = 'game';
+      const row = document.createElement('tr');
+      row.className = 'game-row';
       const res = resultFor(g);
       if (res) row.classList.add('played');
 
-      if (teamFilter) row.appendChild(span('g-num', num ? `${num}` : ''));
-      row.appendChild(span('g-time', fmtTime(g.time_et)));
+      const tdNum = document.createElement('td');
+      tdNum.className = 'gt-num';
+      if (teamFilter && num) tdNum.textContent = num;
+      row.appendChild(tdNum);
 
+      const tdTime = document.createElement('td');
+      tdTime.className = 'gt-time';
+      tdTime.textContent = fmtTime(g.time_et);
+      row.appendChild(tdTime);
+
+      const tdMatch = document.createElement('td');
       const match = span('g-match');
       if (teamFilter) {
         // A team's own schedule reads from its side: "vs OPP" at home, "@ OPP"
@@ -840,19 +916,22 @@
         match.appendChild(logo(g.home_team));
         match.appendChild(teamLink(g.home_team));
       }
-      row.appendChild(match);
-      // Forces everything after it onto its own line on narrow screens —
-      // see the .g-break rule.
-      row.appendChild(span('g-break'));
+      tdMatch.appendChild(match);
+      if (g.note) tdMatch.appendChild(span('g-note', g.note));
+      row.appendChild(tdMatch);
 
-      if (g.note) row.appendChild(span('g-note', g.note));
+      const tdArena = document.createElement('td');
+      tdArena.className = 'gt-arena';
+      tdArena.textContent = g.arena || '';
+      row.appendChild(tdArena);
 
       // One streamer per game, so one chip. `mine` also gates the × — a BOD
       // member can drop someone else's claim, but through the API rather than
       // a button that sits next to 29 other people's names.
+      const tdStreamer = document.createElement('td');
+      tdStreamer.className = 'gt-streamer';
       const held = g.streamer || null;
       if (held) {
-        const wrap = span('g-streamer');
         const chip = span('streamer-chip' + (held === me.name ? ' mine' : ''));
         chip.appendChild(document.createTextNode(`📺 ${held}`));
         if (held === me.name) {
@@ -863,30 +942,25 @@
           x.onclick = () => setClaim(g, num, row, false);
           chip.appendChild(x);
         }
-        wrap.appendChild(chip);
-        row.appendChild(wrap);
-      }
-
-      // Independent of who (if anyone) is claimed as streamer: whether the
-      // game itself is flagged as a stream.
-      if (g.stream) row.appendChild(span('stream-badge', '📡 Stream'));
-
-      row.appendChild(span('g-arena', g.arena || ''));
-
-      // No claim button on a game already played, and none on one somebody
-      // holds — theirs comes off via the chip's ×, anyone else's via a BOD.
-      if (!res && !held) {
+        tdStreamer.appendChild(chip);
+      } else if (!res) {
+        // No claim button on a game already played.
         const btn = document.createElement('button');
         btn.className = 'g-claim';
         btn.textContent = 'claim';
         btn.title = 'Claim this game as streamer';
         btn.setAttribute('aria-label', `Claim ${g.away_team} at ${g.home_team} as streamer`);
         btn.onclick = () => setClaim(g, num, row, true);
-        row.appendChild(btn);
+        tdStreamer.appendChild(btn);
       }
-      // The stream flag toggles independently of the claim above — anyone
-      // with the streamer role can mark or unmark it, not just whoever (if
-      // anyone) holds the claim.
+      row.appendChild(tdStreamer);
+
+      // Independent of who (if anyone) is claimed as streamer: whether the
+      // game itself is flagged as a stream. Anyone with the streamer role can
+      // mark or unmark it, not just whoever (if anyone) holds the claim.
+      const tdStream = document.createElement('td');
+      tdStream.className = 'gt-stream';
+      if (g.stream) tdStream.appendChild(span('stream-badge', '📡 Stream'));
       if (!res) {
         const btn2 = document.createElement('button');
         btn2.className = 'g-stream-btn';
@@ -895,10 +969,12 @@
         btn2.setAttribute('aria-label',
           `${g.stream ? 'Remove stream flag from' : 'Flag'} ${g.away_team} at ${g.home_team}${g.stream ? '' : ' as a stream'}`);
         btn2.onclick = () => setStreamFlag(g, num, row, !g.stream);
-        row.appendChild(btn2);
+        tdStream.appendChild(btn2);
       }
-      if (g.id === nextId && scope === 'all') row.appendChild(span('g-next', 'next'));
+      row.appendChild(tdStream);
 
+      const tdResult = document.createElement('td');
+      tdResult.className = 'gt-result right';
       if (res) {
         const link = document.createElement('a');
         link.className = 'g-score';
@@ -913,23 +989,43 @@
         } else {
           link.textContent = `${res.away_score}–${res.home_score}`;
         }
-        row.appendChild(link);
+        tdResult.appendChild(link);
+      } else if (g.id === nextId && scope === 'all') {
+        tdResult.appendChild(span('g-next', 'next'));
       }
+      row.appendChild(tdResult);
+
       return row;
+    }
+
+    function dividerRow(cls, text) {
+      const tr = document.createElement('tr');
+      tr.className = cls;
+      const td = document.createElement('td');
+      td.colSpan = 7;
+      td.textContent = text;
+      tr.appendChild(td);
+      return tr;
     }
 
     function render() {
       const list = document.getElementById('list');
       const more = document.getElementById('more');
+      const tableWrap = document.getElementById('games-table-wrap');
+      const emptyEl = document.getElementById('list-empty');
       list.innerHTML = '';
       more.innerHTML = '';
 
       const rows = visible();
       if (!rows.length) {
-        list.appendChild(div('empty', emptyMessage()));
+        tableWrap.hidden = true;
+        emptyEl.hidden = false;
+        emptyEl.textContent = emptyMessage();
         renderSummary();
         return;
       }
+      tableWrap.hidden = false;
+      emptyEl.hidden = true;
 
       // Game numbers are the team's place in its own full season, so they stay
       // stable when the Upcoming filter hides the games already played.
@@ -939,20 +1035,16 @@
       // The first unplayed game in the current view, marked NEXT.
       nextId = (rows.find(g => !resultFor(g)) || {}).id;
 
-      let count = 0, lastMonth = null, dayEl = null, dayRows = null, lastDate = null;
+      let count = 0, lastMonth = null, lastDate = null;
       for (const g of rows) {
         if (count >= shown && g.date !== lastDate) break;
         if (g.date !== lastDate) {
           const ym = monthKey(g.date);
-          if (ym !== lastMonth) { list.appendChild(div('month-hdr', fmtMonth(ym))); lastMonth = ym; }
-          dayEl = div('day');
-          dayEl.appendChild(div('day-hdr', fmtDayHdr(g.date)));
-          dayRows = div('day-rows');
-          dayEl.appendChild(dayRows);
-          list.appendChild(dayEl);
+          if (ym !== lastMonth) { list.appendChild(dividerRow('month-row', fmtMonth(ym))); lastMonth = ym; }
+          list.appendChild(dividerRow('day-row', fmtDayHdr(g.date)));
           lastDate = g.date;
         }
-        dayRows.appendChild(makeRow(g, numbers.get(g.id)));
+        list.appendChild(makeRow(g, numbers.get(g.id)));
         count++;
       }
 
@@ -1049,7 +1141,11 @@
     async function loadSeason(s) {
       season = s;
       shown = PAGE;
-      document.getElementById('list').innerHTML = '<div class="empty">Loading…</div>';
+      document.getElementById('list').innerHTML = '';
+      document.getElementById('games-table-wrap').hidden = true;
+      const loadingEl = document.getElementById('list-empty');
+      loadingEl.hidden = false;
+      loadingEl.textContent = 'Loading…';
       document.getElementById('more').innerHTML = '';
 
       const [schedRes, boxRes] = await Promise.allSettled([
