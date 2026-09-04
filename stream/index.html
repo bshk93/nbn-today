@@ -928,7 +928,7 @@
       if (!res) {
         const btn2 = document.createElement('button');
         btn2.className = 'g-stream-btn';
-        btn2.textContent = g.stream ? 'unflag' : 'stream';
+        btn2.textContent = g.stream ? 'unflag' : 'flag';
         btn2.title = g.stream ? 'Remove the stream flag from this game' : 'Flag this game as a stream';
         btn2.setAttribute('aria-label',
           `${g.stream ? 'Remove stream flag from' : 'Flag'} ${g.away_team} at ${g.home_team}${g.stream ? '' : ' as a stream'}`);
