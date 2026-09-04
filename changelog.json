@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.18",
+    "date": "2026-09-04",
+    "changes": [
+      "Roster Settings drag-to-reorder switched from Pointer Events to explicit touch/mouse listeners with non-passive touchmove, since the browser was silently ignoring preventDefault() on the passive-by-default touchmove and letting the page scroll win over the drag"
+    ]
+  },
+  {
     "version": "0.2.17",
     "date": "2026-09-04",
     "changes": [

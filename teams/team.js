@@ -4821,16 +4821,29 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       });
     }
 
-    // Pointer Events (not native HTML5 drag-and-drop) so this works with a
-    // finger, not just a mouse — the native `draggable` attribute has no
-    // touch equivalent at all on iOS Safari. `setPointerCapture` keeps every
-    // move/up event routed to the handle that started the drag regardless of
-    // where the pointer travels, so a dedicated `draggedTr` variable isn't
-    // even needed to disambiguate; `elementFromPoint` finds whatever row is
-    // currently under the pointer to reorder against.
+    // Raw mouse/touch events, listening on `document` while a drag is live,
+    // rather than native HTML5 drag-and-drop (no touch equivalent at all on
+    // iOS Safari) or Pointer Events (setPointerCapture + touch-action:none
+    // still left this not reliably suppressing the page's own scroll on
+    // real devices — a captured pointer's touchmove can still be treated as
+    // passive by the browser, silently no-opping preventDefault). Explicit
+    // `{ passive: false }` on touchmove is what actually stops the page
+    // scrolling under the drag; without it, calling preventDefault() there
+    // does nothing in current Chrome/Safari, which is the likelier reason
+    // the previous attempt didn't work on a real phone.
     let draggedTr = null;
 
-    function endDrag(tr) {
+    function pointFromEvent(e) {
+      if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function endDrag(tr, onMove, onEnd) {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
       if (draggedTr !== tr) return;
       tr.classList.remove('dragging');
       draggedTr = null;
@@ -4840,22 +4853,30 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     }
 
     function attachDrag(tr, handle) {
-      handle.addEventListener('pointerdown', e => {
-        handle.setPointerCapture(e.pointerId);
+      function onMove(e) {
+        if (draggedTr !== tr) return;
+        if (e.cancelable) e.preventDefault();
+        const { x, y } = pointFromEvent(e);
+        const targetRow = document.elementFromPoint(x, y);
+        const tbodyRow = targetRow && targetRow.closest('tr');
+        if (!tbodyRow || tbodyRow === tr || tbodyRow.parentElement !== tbody) return;
+        const rect = tbodyRow.getBoundingClientRect();
+        const before = (y - rect.top) < rect.height / 2;
+        tbody.insertBefore(tr, before ? tbodyRow : tbodyRow.nextSibling);
+      }
+      function onEnd() { endDrag(tr, onMove, onEnd); }
+      function onStart(e) {
+        if (e.type === 'mousedown' && e.button !== 0) return;
         draggedTr = tr;
         tr.classList.add('dragging');
-      });
-      handle.addEventListener('pointermove', e => {
-        if (draggedTr !== tr) return;
-        const target = document.elementFromPoint(e.clientX, e.clientY);
-        const targetRow = target && target.closest('tr');
-        if (!targetRow || targetRow === tr || targetRow.parentElement !== tbody) return;
-        const rect = targetRow.getBoundingClientRect();
-        const before = (e.clientY - rect.top) < rect.height / 2;
-        tbody.insertBefore(tr, before ? targetRow : targetRow.nextSibling);
-      });
-      handle.addEventListener('pointerup', () => endDrag(tr));
-      handle.addEventListener('pointercancel', () => endDrag(tr));
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onEnd);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onEnd);
+        document.addEventListener('touchcancel', onEnd);
+      }
+      handle.addEventListener('mousedown', onStart);
+      handle.addEventListener('touchstart', onStart, { passive: true });
     }
 
     orderedRows(startMinutes).forEach((row, i) => {
