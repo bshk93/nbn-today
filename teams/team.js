@@ -261,10 +261,15 @@ const coachingConfigReady = new Promise(resolve => {
     display: inline-block; min-width: 1.5rem; margin-right: 0.5rem;
     color: var(--text-dim); font-weight: 400; font-variant-numeric: tabular-nums;
   }
-  .drag-handle-cell { width: 1.4rem; padding-right: 0 !important; }
-  .drag-handle { cursor: grab; color: var(--text-dim); font-size: 0.85rem; user-select: none; }
+  .drag-handle-cell { width: 1.8rem; padding: 0.3rem 0.2rem !important; }
+  .drag-handle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.6rem; height: 1.6rem; cursor: grab; color: var(--text-dim);
+    font-size: 1rem; user-select: none; touch-action: none;
+  }
   .drag-handle:active { cursor: grabbing; }
   #team-settings-wrap tr.dragging { opacity: 0.4; }
+  .roster-slot { color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .table-wrap {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -4672,15 +4677,17 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     return el;
   }
 
-  // Jersey # folds into the Player cell (as a small prefix rather than its
-  // own column), primary/secondary position share one Pos cell ("PG / SG"),
-  // and Minutes/RES share one Min cell — a reserve player has no minutes
-  // figure to show alongside, so the two were never really independent.
-  // `forEdit` adds a leading drag-handle column, edit mode only.
+  // Slot leads (before Player) since it's the fixed anchor of the row — the
+  // player is what moves, dragged into or out of that slot, not the other
+  // way around. Jersey # folds into the Player cell (as a small prefix
+  // rather than its own column), primary/secondary position share one Pos
+  // cell ("PG / SG"), and Minutes/RES share one Min cell — a reserve player
+  // has no minutes figure to show alongside, so the two were never really
+  // independent. `forEdit` adds a leading drag-handle column, edit mode only.
   function buildHead(table, forEdit) {
     const hr = table.createTHead().insertRow();
     if (forEdit && CS) hr.appendChild(document.createElement('th'));
-    ['Player', 'Pos'].concat(CS ? ['Slot', 'Min'] : []).forEach(label => {
+    (CS ? ['Slot'] : []).concat(['Player', 'Pos'], CS ? ['Min'] : []).forEach(label => {
       const th = document.createElement('th');
       th.textContent = label;
       if (label === 'Min') th.classList.add('right');
@@ -4699,6 +4706,13 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const name = displayNameFromBio(bio.name || '') || row.SLUG || '—';
       const tr = tbody.insertRow();
 
+      const slot = CS ? (CS.MINUTES_SLOTS[i] || '') : '';
+      if (CS) {
+        const slotTd = tr.insertCell();
+        slotTd.className = 'roster-slot';
+        slotTd.textContent = slot || '—';
+      }
+
       const nameTd = tr.insertCell();
       nameTd.className = 'bold';
       if (bio.jersey_number != null && bio.jersey_number !== '') {
@@ -4713,9 +4727,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       tr.insertCell().textContent = bio.secondary_pos ? `${primary} / ${bio.secondary_pos}` : primary;
 
       if (CS) {
-        const slot = CS.MINUTES_SLOTS[i] || '';
         const m = slot ? minutes[slot] : null;
-        tr.insertCell().textContent = slot || '—';
         const minTd = tr.insertCell();
         minTd.className = 'right';
         minTd.textContent = m ? (m.res ? 'RES' : String(m.minutes || 0)) : '—';
@@ -4809,7 +4821,42 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       });
     }
 
+    // Pointer Events (not native HTML5 drag-and-drop) so this works with a
+    // finger, not just a mouse — the native `draggable` attribute has no
+    // touch equivalent at all on iOS Safari. `setPointerCapture` keeps every
+    // move/up event routed to the handle that started the drag regardless of
+    // where the pointer travels, so a dedicated `draggedTr` variable isn't
+    // even needed to disambiguate; `elementFromPoint` finds whatever row is
+    // currently under the pointer to reorder against.
     let draggedTr = null;
+
+    function endDrag(tr) {
+      if (draggedTr !== tr) return;
+      tr.classList.remove('dragging');
+      draggedTr = null;
+      minutesDirty = true;
+      relabelSlots();
+      refreshMinutesTotal();
+    }
+
+    function attachDrag(tr, handle) {
+      handle.addEventListener('pointerdown', e => {
+        handle.setPointerCapture(e.pointerId);
+        draggedTr = tr;
+        tr.classList.add('dragging');
+      });
+      handle.addEventListener('pointermove', e => {
+        if (draggedTr !== tr) return;
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        const targetRow = target && target.closest('tr');
+        if (!targetRow || targetRow === tr || targetRow.parentElement !== tbody) return;
+        const rect = targetRow.getBoundingClientRect();
+        const before = (e.clientY - rect.top) < rect.height / 2;
+        tbody.insertBefore(tr, before ? targetRow : targetRow.nextSibling);
+      });
+      handle.addEventListener('pointerup', () => endDrag(tr));
+      handle.addEventListener('pointercancel', () => endDrag(tr));
+    }
 
     orderedRows(startMinutes).forEach((row, i) => {
       const bio = biosData[row.SLUG] || {};
@@ -4827,37 +4874,15 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         handle.textContent = '⠿';
         handle.title = 'Drag to reorder — table order sets the depth chart slot';
         handleTd.appendChild(handle);
-        handle.addEventListener('mousedown', () => { tr.draggable = true; });
-        // A plain click (mousedown with no drag) never fires dragend, which
-        // is otherwise what turns `draggable` back off — without this, the
-        // whole row would stay natively draggable (breaking text selection
-        // in its other cells) after one click on the handle that didn't move.
-        handle.addEventListener('mouseup', () => { tr.draggable = false; });
-        // Relabeling on dragend (not drop) so it fires even if the row gets
-        // released past the last row or outside the table — dragend always
-        // fires after a real drag, drop only fires over a valid target.
-        tr.addEventListener('dragend', () => {
-          tr.draggable = false;
-          tr.classList.remove('dragging');
-          draggedTr = null;
-          minutesDirty = true;
-          relabelSlots();
-          refreshMinutesTotal();
-        });
-        tr.addEventListener('dragstart', e => {
-          draggedTr = tr;
-          tr.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', '');
-        });
-        tr.addEventListener('dragover', e => {
-          if (!draggedTr || draggedTr === tr) return;
-          e.preventDefault();
-          const rect = tr.getBoundingClientRect();
-          const before = (e.clientY - rect.top) < rect.height / 2;
-          tbody.insertBefore(draggedTr, before ? tr : tr.nextSibling);
-        });
-        tr.addEventListener('drop', e => e.preventDefault());
+        attachDrag(tr, handle);
+      }
+
+      // Slot leads (before Player) since it's the fixed anchor of the row —
+      // the player is what gets dragged into or out of it.
+      let slotTd = null;
+      if (CS) {
+        slotTd = tr.insertCell();
+        slotTd.className = 'roster-slot';
       }
 
       const nameTd = tr.insertCell();
@@ -4886,8 +4911,6 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       if (CS) {
         const slot = CS.MINUTES_SLOTS[i] || '';
         const existing = slot ? startMinutes[slot] : null;
-
-        const slotTd = tr.insertCell();
         slotTd.textContent = slot || '—';
 
         // Minutes and RES share one cell — a reserve player has no minutes
