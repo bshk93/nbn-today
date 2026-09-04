@@ -248,6 +248,15 @@ const coachingConfigReady = new Promise(resolve => {
   section { margin-bottom: 3rem; }
   .section-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.25rem; }
   .section-sub { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+
+  /* One integrated card for Team Settings + Coaching Profile, rather than two
+     independent sections (which carry their own 3rem gap and full-weight h2
+     each) — same bordered-card shape as .exceptions-card/.ch-card below. */
+  .settings-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; }
+  .settings-subsection + .settings-subsection { margin-top: 1.75rem; padding-top: 1.75rem; border-top: 1px solid var(--border-subtle); }
+  .settings-subtitle { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .settings-subsub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.65rem; }
+  .settings-card .table-wrap { border: none; padding: 0; }
   .table-wrap {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -982,14 +991,19 @@ document.body.innerHTML = `
     </div>
     <div class="tab-panel hidden" id="tab-coaching">
       <section>
-        <h2 class="section-title" id="team-settings-title">Team Settings</h2>
-        <p class="section-sub">Jersey numbers and secondary positions. Primary position is scraped from 2K and can't be edited here.</p>
-        <div class="table-wrap" id="team-settings-wrap"><div class="status">Loading…</div></div>
-      </section>
-      <section>
-        <h2 class="section-title" id="coaching-settings-title">Coaching Settings</h2>
-        <p class="section-sub">This team's 2K coach profile, entered into the game by whoever streams your games.</p>
-        <div id="coaching-settings-wrap"><div class="status">Loading…</div></div>
+        <h2 class="section-title">Settings</h2>
+        <p class="section-sub">Jersey numbers, secondary positions, and this team's 2K coach profile — entered into the game by whoever streams your games.</p>
+        <div class="settings-card">
+          <div class="settings-subsection">
+            <h3 class="settings-subtitle" id="team-settings-title">Team Settings</h3>
+            <p class="settings-subsub">Primary position is scraped from 2K and can't be edited here.</p>
+            <div class="table-wrap" id="team-settings-wrap"><div class="status">Loading…</div></div>
+          </div>
+          <div class="settings-subsection">
+            <h3 class="settings-subtitle" id="coaching-settings-title">Coaching Profile</h3>
+            <div id="coaching-settings-wrap"><div class="status">Loading…</div></div>
+          </div>
+        </div>
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-franchise">
