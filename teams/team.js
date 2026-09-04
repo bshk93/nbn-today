@@ -4627,7 +4627,7 @@ function primaryPosFromAttrs(attrSnap) {
 // flips that lookup direction — each row picks its own slot rather than each
 // slot picking a player — while leaving the stored shape untouched, since
 // that shape is also what the streamer dashboard on /stream reads.
-function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coachingRecord) {
+function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coachingRecord, currentOvr) {
   const wrapEl = document.getElementById(wrapId);
   const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
   const activeRows = hasSlug ? rosterRows.filter(r => r.SLUG) : [];
@@ -4773,6 +4773,15 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 
     toolbar.appendChild(saveBtn);
     toolbar.appendChild(cancelBtn);
+    if (CS) {
+      const autoSortBtn = document.createElement('button');
+      autoSortBtn.type = 'button';
+      autoSortBtn.textContent = 'Auto-sort by OVR';
+      autoSortBtn.title = 'Fill PG/SG/SF/PF/C with the best eligible player at each position, then rank the bench by OVR — a starting point to drag from, not a save';
+      autoSortBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
+      autoSortBtn.addEventListener('click', () => autoSort());
+      toolbar.appendChild(autoSortBtn);
+    }
     toolbar.appendChild(statusEl);
 
     const table = document.createElement('table');
@@ -4819,6 +4828,41 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         ctl.minInput.disabled = !slot;
         ctl.resCheck.disabled = !slot;
       });
+    }
+
+    // Auto-sort: the same best-legal-starting-five algorithm the Rosters
+    // tab's Depth mode already uses (computeStartingFive, teams/lineup.js —
+    // highest OVR at each position, without stranding a slot a dual-eligible
+    // player was needed elsewhere for), then everyone left over ranked by
+    // OVR into the bench slots. A starting point to drag from, not a save —
+    // nothing here writes anything until Save is clicked. Minutes/RES a
+    // player already had travel with their row, since a row is just moved,
+    // not rebuilt.
+    function autoSort() {
+      if (!CS || typeof computeStartingFive !== 'function') return;
+      const bySlug = new Map();
+      Array.from(tbody.rows).forEach(tr => { if (tr._rosterCtl) bySlug.set(tr._rosterCtl.slug, tr); });
+
+      const players = activeRows.map(row => ({
+        slug: row.SLUG,
+        OVR: currentOvr ? currentOvr[row.SLUG] : '',
+        _posList: (biosData[row.SLUG] || {}).pos || [],
+      }));
+      const five = computeStartingFive(players);
+      const startedSlugs = new Set(five.filter(Boolean).map(p => p.slug));
+      const bench = players
+        .filter(p => !startedSlugs.has(p.slug))
+        .sort((a, b) => (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0));
+
+      five.concat(bench).forEach(p => {
+        if (!p) return;
+        const tr = bySlug.get(p.slug);
+        if (tr) tbody.appendChild(tr); // re-appending an existing row moves it — this is the reorder
+      });
+
+      minutesDirty = true;
+      relabelSlots();
+      refreshMinutesTotal();
     }
 
     // Raw mouse/touch events, listening on `document` while a drag is live,
@@ -6754,7 +6798,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       liveRosterRows = rows;
       return renderRoster(rows);
     }, rosterCellConfig(rosterHeaders, biosData));
-    setupTeamSettingsTab('team-settings-wrap', rosterRows, biosData, attributesData, coachingRecord);
+    setupTeamSettingsTab('team-settings-wrap', rosterRows, biosData, attributesData, coachingRecord, currentOvr);
     setupCoachingSettingsTab('coaching-settings-wrap', biosData, coachingRecord);
 
     setupDeadCapEditable(
