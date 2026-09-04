@@ -257,6 +257,10 @@ const coachingConfigReady = new Promise(resolve => {
   .settings-subtitle { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; }
   .settings-subsub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.65rem; }
   .settings-card .table-wrap { border: none; padding: 0; }
+  .roster-num {
+    display: inline-block; min-width: 1.5rem; margin-right: 0.5rem;
+    color: var(--text-dim); font-weight: 400; font-variant-numeric: tabular-nums;
+  }
   .table-wrap {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -4645,9 +4649,14 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     return el;
   }
 
+  // Four columns, not seven: jersey # folds into the Player cell (as a small
+  // prefix rather than its own column), primary/secondary position share one
+  // Pos cell ("PG / SG"), and Minutes/RES share one Min cell — a reserve
+  // player has no minutes to show alongside, so the two were never really
+  // independent values needing independent columns.
   function headerCols() {
-    const cols = ['Player', 'Primary Pos', 'Secondary Pos', '#'];
-    if (CS) cols.push('Slot', 'Minutes', 'RES');
+    const cols = ['Player', 'Pos'];
+    if (CS) cols.push('Slot', 'Min');
     return cols;
   }
 
@@ -4656,7 +4665,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     headerCols().forEach(label => {
       const th = document.createElement('th');
       th.textContent = label;
-      if (label === '#' || label === 'Minutes') th.classList.add('right');
+      if (label === 'Min') th.classList.add('right');
       hr.appendChild(th);
     });
   }
@@ -4671,14 +4680,19 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const bio = biosData[row.SLUG] || {};
       const name = displayNameFromBio(bio.name || '') || row.SLUG || '—';
       const tr = tbody.insertRow();
+
       const nameTd = tr.insertCell();
-      nameTd.textContent = name;
       nameTd.className = 'bold';
-      tr.insertCell().textContent = primaryPosFromAttrs(attributesData[row.SLUG]);
-      tr.insertCell().textContent = bio.secondary_pos || '—';
-      const numTd = tr.insertCell();
-      numTd.className = 'right';
-      numTd.textContent = bio.jersey_number ?? '—';
+      if (bio.jersey_number != null && bio.jersey_number !== '') {
+        const numSpan = document.createElement('span');
+        numSpan.className = 'roster-num';
+        numSpan.textContent = bio.jersey_number;
+        nameTd.appendChild(numSpan);
+      }
+      nameTd.appendChild(document.createTextNode(name));
+
+      const primary = primaryPosFromAttrs(attributesData[row.SLUG]);
+      tr.insertCell().textContent = bio.secondary_pos ? `${primary} / ${bio.secondary_pos}` : primary;
 
       if (CS) {
         const slot = slotForSlug(minutes, row.SLUG);
@@ -4687,7 +4701,6 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         const minTd = tr.insertCell();
         minTd.className = 'right';
         minTd.textContent = m ? (m.res ? 'RES' : String(m.minutes || 0)) : '—';
-        tr.insertCell().textContent = m && m.res ? '✓' : '';
       }
     });
 
@@ -4755,31 +4768,29 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const secondaryPos = bio.secondary_pos || '';
 
       const tr = tbody.insertRow();
+
       const nameTd = tr.insertCell();
-      nameTd.textContent = name;
       nameTd.className = 'bold';
-
-      tr.insertCell().textContent = primaryPosFromAttrs(attributesData[row.SLUG]);
-
-      const secTd = tr.insertCell();
-      // Secondary position is restricted to positions this player is eligible at,
-      // i.e. their bio's `pos` array — not the full PG/SG/SF/PF/C set.
-      const eligiblePos = Array.isArray(bio.pos) ? bio.pos : [];
-      const secSel = makeSelect([{ value: '', label: '—' }, ...eligiblePos], secondaryPos);
-      secTd.appendChild(secSel);
-
-      const numTd = tr.insertCell();
-      numTd.className = 'right';
       const jerseyInput = document.createElement('input');
       jerseyInput.type = 'text';
       jerseyInput.maxLength = 2;
       jerseyInput.pattern = '\\d{1,2}';
       jerseyInput.value = jersey;
-      jerseyInput.placeholder = '—';
-      jerseyInput.style.cssText = 'width:3.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;text-align:right;outline:none';
+      jerseyInput.placeholder = '#';
+      jerseyInput.style.cssText = 'width:2.1rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:center;outline:none;margin-right:0.5rem';
       jerseyInput.addEventListener('focus', () => { jerseyInput.style.borderColor = 'var(--accent)'; });
       jerseyInput.addEventListener('blur',  () => { jerseyInput.style.borderColor = 'var(--border)'; });
-      numTd.appendChild(jerseyInput);
+      nameTd.appendChild(jerseyInput);
+      nameTd.appendChild(document.createTextNode(name));
+
+      const posTd = tr.insertCell();
+      posTd.appendChild(document.createTextNode(primaryPosFromAttrs(attributesData[row.SLUG]) + ' / '));
+      // Secondary position is restricted to positions this player is eligible at,
+      // i.e. their bio's `pos` array — not the full PG/SG/SF/PF/C set.
+      const eligiblePos = Array.isArray(bio.pos) ? bio.pos : [];
+      const secSel = makeSelect([{ value: '', label: '—' }, ...eligiblePos], secondaryPos);
+      secSel.style.width = 'auto';
+      posTd.appendChild(secSel);
 
       if (CS) {
         let currentSlot = slotForSlug(minutes, row.SLUG);
@@ -4787,20 +4798,28 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         const slotSel = makeSelect([{ value: '', label: '—' }, ...CS.MINUTES_SLOTS], currentSlot);
         tr.insertCell().appendChild(slotSel);
 
+        // Minutes and RES share one cell — a reserve player has no minutes
+        // figure to show alongside, so they were never independent columns.
+        const minWrap = document.createElement('div');
+        minWrap.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:0.35rem';
         const minInput = document.createElement('input');
         minInput.type = 'number'; minInput.min = '0'; minInput.max = '48';
         minInput.value = String(currentSlot ? (minutes[currentSlot].minutes || 0) : 0);
         minInput.disabled = !currentSlot;
-        minInput.style.cssText = 'width:3.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
-        const minTd = tr.insertCell();
-        minTd.className = 'right';
-        minTd.appendChild(minInput);
-
+        minInput.style.cssText = 'width:3rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+        const resLabel = document.createElement('label');
+        resLabel.style.cssText = 'display:flex;align-items:center;gap:0.15rem;font-size:0.65rem;color:var(--text-muted)';
         const resCheck = document.createElement('input');
         resCheck.type = 'checkbox';
         resCheck.checked = !!(currentSlot && minutes[currentSlot].res);
         resCheck.disabled = !currentSlot;
-        tr.insertCell().appendChild(resCheck);
+        resLabel.appendChild(resCheck);
+        resLabel.appendChild(document.createTextNode('RES'));
+        minWrap.appendChild(minInput);
+        minWrap.appendChild(resLabel);
+        const minTd = tr.insertCell();
+        minTd.className = 'right';
+        minTd.appendChild(minWrap);
 
         // A slot can hold at most one player. Picking a slot already held by
         // another row vacates it there — this is what lets a picker per row
