@@ -211,6 +211,11 @@
     .cd-btn:hover { border-color: var(--accent); color: var(--text-primary); }
     .cd-btn:disabled { opacity: 0.5; cursor: default; }
     .cd-detail { margin-top: 0.6rem; }
+    .tab-badge {
+      display: inline-block; min-width: 1.1rem; margin-left: 0.35rem; padding: 0 0.35rem;
+      border-radius: 999px; background: var(--gold, #c9a227); color: #1a1400;
+      font-size: 0.68rem; font-weight: 700; line-height: 1.3rem; text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -227,7 +232,7 @@
     <div id="app" hidden>
       <div class="tabs">
         <button class="tab active" data-tab="claim">Claim Games</button>
-        <button class="tab" data-tab="coaching">Coaching Settings</button>
+        <button class="tab" data-tab="coaching">Coaching Settings<span class="tab-badge" id="coaching-tab-badge" hidden></span></button>
         <button class="tab" data-tab="days">Days</button>
       </div>
 
@@ -365,6 +370,11 @@
       });
 
       teams.forEach(team => list.appendChild(coachingDashRow(team)));
+
+      const pendingCount = teams.filter(team => coachingRowMeta(team).status === 'pending').length;
+      const badge = document.getElementById('coaching-tab-badge');
+      badge.textContent = pendingCount;
+      badge.hidden = pendingCount === 0;
     }
 
     function coachingDashRow(team) {
