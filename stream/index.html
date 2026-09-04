@@ -575,15 +575,6 @@
       render();
     }
 
-    // Controls appear only once a date has at least one claimed or flagged
-    // game — the ~170 dates in a season would otherwise all carry controls
-    // nobody needs. Sourced from the full `games` list rather than the
-    // currently filtered/visible rows, so a date's controls don't disappear
-    // just because the team filter hides its games.
-    function dayHasSlate(date) {
-      return games.some(g => g.date === date && (g.stream || g.streamer));
-    }
-
     function daySlateControls(date) {
       const rec = streamingDays[date] || null;
       const done = !!(rec && rec.done);
@@ -981,8 +972,11 @@
       return tr;
     }
 
-    // The day divider carries the date label, plus that date's day-slate
-    // controls (mark done / VOD link) when it has a claimed or flagged game.
+    // The day divider carries the date label plus that date's day-slate
+    // controls (mark done / VOD link) — on every date, not just ones with a
+    // claimed or flagged game, since any streamer should be able to mark a
+    // night done or drop a VOD link regardless of who (if anyone) claimed
+    // what that night.
     function dayRowEl(date) {
       const tr = document.createElement('tr');
       tr.className = 'day-row';
@@ -990,7 +984,7 @@
       td.colSpan = 7;
       const inner = div('day-row-inner');
       inner.appendChild(span('day-row-label', fmtDayHdr(date)));
-      if (dayHasSlate(date)) inner.appendChild(daySlateControls(date));
+      inner.appendChild(daySlateControls(date));
       td.appendChild(inner);
       tr.appendChild(td);
       return tr;
