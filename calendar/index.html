@@ -1023,8 +1023,18 @@
         scheduled.forEach(g => {
           const pip = document.createElement('div');
           pip.className = 'schd-pip';
-          pip.textContent = `${g.away_team} @ ${g.home_team}`;
-          pip.title = g.note ? `${g.away_team} @ ${g.home_team} — ${g.note}` : `${g.away_team} @ ${g.home_team}`;
+          // `streamer`/`stream` come straight through from /api/schedule (see
+          // the merge into scheduledGamesByDate below) — public data, shown
+          // here since /schedule was retired in favor of this page for that.
+          let text = `${g.away_team} @ ${g.home_team}`;
+          if (g.streamer) text += ` 📺 ${g.streamer}`;
+          if (g.stream) text += ' 📡';
+          pip.textContent = text;
+          const titleParts = [`${g.away_team} @ ${g.home_team}`];
+          if (g.note) titleParts.push(g.note);
+          if (g.streamer) titleParts.push(`streamed by ${g.streamer}`);
+          if (g.stream) titleParts.push('flagged as a stream');
+          pip.title = titleParts.join(' — ');
           cell.appendChild(pip);
         });
       }

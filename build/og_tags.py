@@ -105,7 +105,7 @@ PAGES = {
  '/roles/': (None, 'Who can do what in NBN — roles, committees and permissions.'),
  '/rookie-scale/': (None, 'The § 7.1 rookie scale — what every first-round pick is owed.'),
  '/rulebook/': (None, 'The NBN rulebook: salary cap, trades, free agency, extensions and the draft.'),
- '/schedule/': (None, 'Every NBN game on the schedule, one season at a time, filterable by team.'),
+ '/schedule/': (None, 'Moved — the schedule is now on the calendar, streamer claims included.'),
  '/season-summary/': (None, 'Every NBN season at a glance — champion, award winners and statistical leaders.'),
  '/standings/': (None, 'NBN standings season by season, with every playoff bracket.'),
  '/stats/': (None, 'NBN leaderboards — career totals and single-game highs in every category.'),
