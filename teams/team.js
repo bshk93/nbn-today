@@ -261,6 +261,10 @@ const coachingConfigReady = new Promise(resolve => {
     display: inline-block; min-width: 1.5rem; margin-right: 0.5rem;
     color: var(--text-dim); font-weight: 400; font-variant-numeric: tabular-nums;
   }
+  .drag-handle-cell { width: 1.4rem; padding-right: 0 !important; }
+  .drag-handle { cursor: grab; color: var(--text-dim); font-size: 0.85rem; user-select: none; }
+  .drag-handle:active { cursor: grabbing; }
+  #team-settings-wrap tr.dragging { opacity: 0.4; }
   .table-wrap {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -4631,11 +4635,30 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   const canEdit = canEditTeamSettings(abbr);
   // Minutes columns only appear if the shared vocabulary loaded — same
   // graceful-degradation the Coaching Profile section uses, but here it's a
-  // narrower miss (three columns absent) rather than the whole section.
+  // narrower miss (two columns absent) rather than the whole section.
   const CS = window.CoachingSettings || null;
 
-  function slotForSlug(minutes, slug) {
-    return CS.MINUTES_SLOTS.find(slot => minutes[slot] && minutes[slot].slug === slug) || '';
+  // A slot is which row a player is in, not a field they pick — table order
+  // *is* the depth chart: row 0 is always PG, row 1 SG, ... row 4 C, row 5
+  // the 6th man, ... row 14 the 15th man (CS.MINUTES_SLOTS, in order). This
+  // orders the roster the same way for both views: whoever currently holds
+  // each slot first, in slot order, then anyone not in a slot at all after —
+  // so opening Edit shows the depth chart as last saved, not roster order.
+  function orderedRows(minutes) {
+    const bySlug = new Map(activeRows.map(r => [r.SLUG, r]));
+    const used = new Set();
+    const ordered = [];
+    if (CS) {
+      CS.MINUTES_SLOTS.forEach(slot => {
+        const slug = minutes[slot] && minutes[slot].slug;
+        if (slug && bySlug.has(slug) && !used.has(slug)) {
+          ordered.push(bySlug.get(slug));
+          used.add(slug);
+        }
+      });
+    }
+    activeRows.forEach(r => { if (!used.has(r.SLUG)) ordered.push(r); });
+    return ordered;
   }
 
   function minutesTotalLine(minutes) {
@@ -4649,20 +4672,15 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     return el;
   }
 
-  // Four columns, not seven: jersey # folds into the Player cell (as a small
-  // prefix rather than its own column), primary/secondary position share one
-  // Pos cell ("PG / SG"), and Minutes/RES share one Min cell — a reserve
-  // player has no minutes to show alongside, so the two were never really
-  // independent values needing independent columns.
-  function headerCols() {
-    const cols = ['Player', 'Pos'];
-    if (CS) cols.push('Slot', 'Min');
-    return cols;
-  }
-
-  function buildHead(table) {
+  // Jersey # folds into the Player cell (as a small prefix rather than its
+  // own column), primary/secondary position share one Pos cell ("PG / SG"),
+  // and Minutes/RES share one Min cell — a reserve player has no minutes
+  // figure to show alongside, so the two were never really independent.
+  // `forEdit` adds a leading drag-handle column, edit mode only.
+  function buildHead(table, forEdit) {
     const hr = table.createTHead().insertRow();
-    headerCols().forEach(label => {
+    if (forEdit && CS) hr.appendChild(document.createElement('th'));
+    ['Player', 'Pos'].concat(CS ? ['Slot', 'Min'] : []).forEach(label => {
       const th = document.createElement('th');
       th.textContent = label;
       if (label === 'Min') th.classList.add('right');
@@ -4673,10 +4691,10 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   function renderReadView() {
     const minutes = (coachingRecord && coachingRecord.minutes) || {};
     const table = document.createElement('table');
-    buildHead(table);
+    buildHead(table, false);
 
     const tbody = table.createTBody();
-    activeRows.forEach(row => {
+    orderedRows(minutes).forEach((row, i) => {
       const bio = biosData[row.SLUG] || {};
       const name = displayNameFromBio(bio.name || '') || row.SLUG || '—';
       const tr = tbody.insertRow();
@@ -4695,7 +4713,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       tr.insertCell().textContent = bio.secondary_pos ? `${primary} / ${bio.secondary_pos}` : primary;
 
       if (CS) {
-        const slot = slotForSlug(minutes, row.SLUG);
+        const slot = CS.MINUTES_SLOTS[i] || '';
         const m = slot ? minutes[slot] : null;
         tr.insertCell().textContent = slot || '—';
         const minTd = tr.insertCell();
@@ -4724,9 +4742,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   }
 
   function renderEditView() {
-    const minutes = CS && coachingRecord && coachingRecord.minutes
-      ? JSON.parse(JSON.stringify(coachingRecord.minutes))
-      : (CS ? CS.emptyMinutes() : {});
+    const startMinutes = (coachingRecord && coachingRecord.minutes) || {};
     let minutesDirty = false;
 
     const toolbar = document.createElement('div');
@@ -4748,26 +4764,101 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     toolbar.appendChild(statusEl);
 
     const table = document.createElement('table');
-    buildHead(table);
+    buildHead(table, true);
 
     const tbody = table.createTBody();
     const fields = [];
-    const rowCtlBySlug = {};
-    let totalLineEl = CS ? minutesTotalLine(minutes) : null;
+    let totalLineEl = null;
+
+    // Rebuilds a slot-indexed minutes object from the table's live DOM
+    // order — row index *is* slot assignment, so there's nothing to keep in
+    // sync as rows get dragged around; this just reads the current state.
+    function minutesFromDom() {
+      const out = {};
+      if (!CS) return out;
+      Array.from(tbody.rows).forEach((tr, i) => {
+        const slot = CS.MINUTES_SLOTS[i];
+        const ctl = tr._rosterCtl;
+        if (!slot || !ctl) return;
+        out[slot] = { slug: ctl.slug, minutes: +ctl.minInput.value || 0, res: ctl.resCheck.checked };
+      });
+      return out;
+    }
+
     function refreshMinutesTotal() {
       if (!CS) return;
-      const fresh = minutesTotalLine(minutes);
+      const fresh = minutesTotalLine(minutesFromDom());
       totalLineEl.replaceWith(fresh);
       totalLineEl = fresh;
     }
 
-    activeRows.forEach(row => {
+    // Relabels every row's Slot cell and enables/disables its Min controls
+    // to match its new position after a drag reorder. Values already typed
+    // in are left alone — a row bumped out of the top 15 just stops
+    // counting toward the save, and picks back up where it was if dragged
+    // back in.
+    function relabelSlots() {
+      if (!CS) return;
+      Array.from(tbody.rows).forEach((tr, i) => {
+        const ctl = tr._rosterCtl;
+        if (!ctl) return;
+        const slot = CS.MINUTES_SLOTS[i] || '';
+        ctl.slotTd.textContent = slot || '—';
+        ctl.minInput.disabled = !slot;
+        ctl.resCheck.disabled = !slot;
+      });
+    }
+
+    let draggedTr = null;
+
+    orderedRows(startMinutes).forEach((row, i) => {
       const bio = biosData[row.SLUG] || {};
       const name = displayNameFromBio(bio.name || '') || row.SLUG || '—';
       const jersey = bio.jersey_number ?? '';
       const secondaryPos = bio.secondary_pos || '';
 
       const tr = tbody.insertRow();
+
+      if (CS) {
+        const handleTd = tr.insertCell();
+        handleTd.className = 'drag-handle-cell';
+        const handle = document.createElement('span');
+        handle.className = 'drag-handle';
+        handle.textContent = '⠿';
+        handle.title = 'Drag to reorder — table order sets the depth chart slot';
+        handleTd.appendChild(handle);
+        handle.addEventListener('mousedown', () => { tr.draggable = true; });
+        // A plain click (mousedown with no drag) never fires dragend, which
+        // is otherwise what turns `draggable` back off — without this, the
+        // whole row would stay natively draggable (breaking text selection
+        // in its other cells) after one click on the handle that didn't move.
+        handle.addEventListener('mouseup', () => { tr.draggable = false; });
+        // Relabeling on dragend (not drop) so it fires even if the row gets
+        // released past the last row or outside the table — dragend always
+        // fires after a real drag, drop only fires over a valid target.
+        tr.addEventListener('dragend', () => {
+          tr.draggable = false;
+          tr.classList.remove('dragging');
+          draggedTr = null;
+          minutesDirty = true;
+          relabelSlots();
+          refreshMinutesTotal();
+        });
+        tr.addEventListener('dragstart', e => {
+          draggedTr = tr;
+          tr.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', '');
+        });
+        tr.addEventListener('dragover', e => {
+          if (!draggedTr || draggedTr === tr) return;
+          e.preventDefault();
+          const rect = tr.getBoundingClientRect();
+          const before = (e.clientY - rect.top) < rect.height / 2;
+          tbody.insertBefore(draggedTr, before ? tr : tr.nextSibling);
+        });
+        tr.addEventListener('drop', e => e.preventDefault());
+      }
 
       const nameTd = tr.insertCell();
       nameTd.className = 'bold';
@@ -4793,10 +4884,11 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       posTd.appendChild(secSel);
 
       if (CS) {
-        let currentSlot = slotForSlug(minutes, row.SLUG);
+        const slot = CS.MINUTES_SLOTS[i] || '';
+        const existing = slot ? startMinutes[slot] : null;
 
-        const slotSel = makeSelect([{ value: '', label: '—' }, ...CS.MINUTES_SLOTS], currentSlot);
-        tr.insertCell().appendChild(slotSel);
+        const slotTd = tr.insertCell();
+        slotTd.textContent = slot || '—';
 
         // Minutes and RES share one cell — a reserve player has no minutes
         // figure to show alongside, so they were never independent columns.
@@ -4804,15 +4896,17 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         minWrap.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:0.35rem';
         const minInput = document.createElement('input');
         minInput.type = 'number'; minInput.min = '0'; minInput.max = '48';
-        minInput.value = String(currentSlot ? (minutes[currentSlot].minutes || 0) : 0);
-        minInput.disabled = !currentSlot;
+        minInput.value = String(existing ? (existing.minutes || 0) : 0);
+        minInput.disabled = !slot;
         minInput.style.cssText = 'width:3rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+        minInput.addEventListener('input', () => { minutesDirty = true; refreshMinutesTotal(); });
         const resLabel = document.createElement('label');
         resLabel.style.cssText = 'display:flex;align-items:center;gap:0.15rem;font-size:0.65rem;color:var(--text-muted)';
         const resCheck = document.createElement('input');
         resCheck.type = 'checkbox';
-        resCheck.checked = !!(currentSlot && minutes[currentSlot].res);
-        resCheck.disabled = !currentSlot;
+        resCheck.checked = !!(existing && existing.res);
+        resCheck.disabled = !slot;
+        resCheck.addEventListener('change', () => { minutesDirty = true; refreshMinutesTotal(); });
         resLabel.appendChild(resCheck);
         resLabel.appendChild(document.createTextNode('RES'));
         minWrap.appendChild(minInput);
@@ -4821,48 +4915,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         minTd.className = 'right';
         minTd.appendChild(minWrap);
 
-        // A slot can hold at most one player. Picking a slot already held by
-        // another row vacates it there — this is what lets a picker per row
-        // stand in for what used to be a picker per slot.
-        function clearSlot() {
-          if (currentSlot && minutes[currentSlot]) minutes[currentSlot] = { slug: '', minutes: 0, res: false };
-          currentSlot = '';
-          slotSel.value = '';
-          minInput.value = '0'; minInput.disabled = true;
-          resCheck.checked = false; resCheck.disabled = true;
-        }
-
-        slotSel.addEventListener('change', () => {
-          const newSlot = slotSel.value;
-          minutesDirty = true;
-          if (currentSlot && minutes[currentSlot]) minutes[currentSlot] = { slug: '', minutes: 0, res: false };
-          if (newSlot) {
-            const prevSlug = minutes[newSlot] && minutes[newSlot].slug;
-            if (prevSlug && prevSlug !== row.SLUG && rowCtlBySlug[prevSlug]) rowCtlBySlug[prevSlug].clearSlot();
-            minutes[newSlot] = { slug: row.SLUG, minutes: +minInput.value || 0, res: resCheck.checked };
-            minInput.disabled = false;
-            resCheck.disabled = false;
-          } else {
-            minInput.value = '0'; minInput.disabled = true;
-            resCheck.checked = false; resCheck.disabled = true;
-          }
-          currentSlot = newSlot;
-          refreshMinutesTotal();
-        });
-        minInput.addEventListener('input', () => {
-          if (!currentSlot) return;
-          minutesDirty = true;
-          minutes[currentSlot].minutes = Math.max(0, Math.min(48, +minInput.value || 0));
-          refreshMinutesTotal();
-        });
-        resCheck.addEventListener('change', () => {
-          if (!currentSlot) return;
-          minutesDirty = true;
-          minutes[currentSlot].res = resCheck.checked;
-          refreshMinutesTotal();
-        });
-
-        rowCtlBySlug[row.SLUG] = { clearSlot };
+        tr._rosterCtl = { slug: row.SLUG, slotTd, minInput, resCheck };
       }
 
       fields.push({
@@ -4870,6 +4923,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         originalJersey: String(jersey), originalSecondaryPos: secondaryPos,
       });
     });
+
+    if (CS) totalLineEl = minutesTotalLine(minutesFromDom());
 
     const gridWrap = document.createElement('div');
     gridWrap.className = 'table-wrap';
@@ -4915,7 +4970,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
           requests.push(fetch(`/api/coaching-settings/${abbr}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ values, minutes }),
+            body: JSON.stringify({ values, minutes: minutesFromDom() }),
           }));
         }
         const results = await Promise.all(requests);
