@@ -257,6 +257,25 @@ const coachingConfigReady = new Promise(resolve => {
   .settings-subtitle { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; }
   .settings-subsub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.65rem; }
   .settings-card .table-wrap { border: none; padding: 0; }
+  /* Coaching Profile's group/pool cards default to a plain stack (mobile,
+     and narrow desktop windows). Wide screens switch to a masonry-style
+     multi-column flow instead, since each card is short but there are many
+     of them — one full-width column per card was the "too wide, too long"
+     complaint. CSS columns, not grid, on purpose: card heights vary a lot
+     (6-row group vs. 2-row pool) and grid would equalize row heights across
+     the whole set, reintroducing the wasted space this is fixing. */
+  .cs-cards-grid > div { break-inside: avoid; }
+  @media (min-width: 1100px) {
+    /* Roster Settings (the player table) stays the wide, primary panel on
+       the left; Coaching Profile becomes a narrower rail beside it instead
+       of a third full-width block stacked underneath. */
+    .settings-card { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 1.75rem; align-items: start; }
+    .settings-card .settings-subsection + .settings-subsection {
+      margin-top: 0; padding-top: 0; border-top: none;
+      border-left: 1px solid var(--border-subtle); padding-left: 1.75rem;
+    }
+    .cs-cards-grid { column-width: 260px; column-gap: 1rem; }
+  }
   .roster-num {
     display: inline-block; min-width: 1.5rem; margin-right: 0.5rem;
     color: var(--text-dim); font-weight: 400; font-variant-numeric: tabular-nums;
@@ -5197,6 +5216,7 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     toolbar.appendChild(statusEl);
 
     const body = document.createElement('div');
+    body.className = 'cs-cards-grid';
 
     // Save is never blocked on an unbalanced pool — a team should never lose
     // partial work because one slider is off. It's flagged instead, here and

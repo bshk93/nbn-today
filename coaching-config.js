@@ -268,11 +268,19 @@
       container.appendChild(warn);
     }
 
+    // Cards go in their own flow container, separate from the status/warning
+    // lines above, so a page styling it as a multi-column layout (see
+    // teams/team.js's `.cs-cards-grid`) doesn't pull those header lines into
+    // the columns along with the cards.
+    const cardsWrap = document.createElement('div');
+    cardsWrap.className = 'cs-cards-grid';
+    container.appendChild(cardsWrap);
+
     const values = record.values || {};
     FIELD_GROUPS.forEach(group => {
       const card = groupCard(group.label);
       group.fields.forEach(f => card.appendChild(row(f.label, fieldValueLabel(f, values[f.key]))));
-      container.appendChild(card);
+      cardsWrap.appendChild(card);
     });
 
     POINT_BUY_POOLS.forEach(pool => {
@@ -280,7 +288,7 @@
       const card = groupCard(pool.label);
       pool.fields.forEach(f => card.appendChild(row(f.label, fieldValueLabel(f, poolValues[f.key]))));
       card.appendChild(row('Total', `${poolTotal(pool, poolValues)} / ${pool.budget}`));
-      container.appendChild(card);
+      cardsWrap.appendChild(card);
     });
 
     // `opts.skipMinutesCard` lets a caller that already renders minutes
@@ -298,7 +306,7 @@
         mCard.appendChild(row(`${slot} — ${name}`, m.res ? 'RES' : String(m.minutes || 0)));
       });
       mCard.appendChild(row('Total', `${minutesTotal(minutes)} / ${MINUTES_BUDGET}`));
-      container.appendChild(mCard);
+      cardsWrap.appendChild(mCard);
     }
   }
 
