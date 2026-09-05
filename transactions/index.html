@@ -1269,6 +1269,7 @@
 
 <script src="/league-time.js"></script>
 <script src="/contract.js"></script>
+<script src="/feed-types.js"></script>
 <script>
 const TOKEN_KEY = 'nbn_token';
 
@@ -4285,9 +4286,12 @@ function fmtDate(iso) {
   return `${months[m - 1]} ${d}, ${y}`;
 }
 
+// The label map moved to /feed-types.js when the homepage feed needed the same
+// vocabulary — see that file. The `.badge-{type}` CSS above still owns the
+// colours on this page. Falls back to the raw id if the module fails to load,
+// so a badge is never blank.
 function typeLabel(type) {
-  const labels = { sign: 'Signing', offer_sheet: 'Offer Sheet', offer_sheet_decision: 'Offer Sheet Decision', pick: 'Draft Pick', sign_pick: 'Pick Signing', option: 'Option', guarantee: 'Guarantee', release: 'Release', renounce: 'Renounce', trade: 'Trade', convert_twoway: 'Two-Way Conversion', extension: 'Extension', void_player: 'Void Player', set_hard_cap_level: 'Set Hard Cap', waiver_clear: 'Waivers', waiver_flagged: 'Waiver Tie' };
-  return labels[type] || type;
+  return (typeof FeedTypes !== 'undefined') ? FeedTypes.label(type) : type;
 }
 
 function escHtml(s) {

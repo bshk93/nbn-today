@@ -256,9 +256,11 @@
     .dash-chip.ok        { color: var(--text-muted); }
 
     /* Band 2 — around the league */
-    .dash-row-3 {
+    .dash-row-league {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      /* The slate is a fixed short list; the feed is the long one and gets the
+         room, so a trade description does not wrap every three words. */
+      grid-template-columns: 1fr 2fr;
       gap: 0.75rem;
       /* Each card sizes to its own content. Stretched to a common height the
          short ones (a three-game slate next to four wrapped trade
@@ -270,6 +272,40 @@
     .dash-feed-item { font-size: 0.78rem; line-height: 1.4; color: var(--text-secondary); }
     .dash-feed-item .meta { color: var(--text-muted); font-size: 0.7rem; display: block; }
     a.dash-feed-item:hover { color: var(--text-primary); }
+
+    /* A merged feed row: tag, then the thing that happened, then when. The tag
+       is its own column so the badges line up and the column can be scanned;
+       inline they would start at a different x on every row. */
+    .dash-feed-row {
+      display: grid;
+      grid-template-columns: 6.2rem 1fr;
+      gap: 0.15rem 0.6rem;
+      align-items: baseline;
+    }
+    .dash-feed-tag {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em;
+      text-transform: uppercase; text-align: center;
+      padding: 0.12rem 0.35rem; border-radius: 4px;
+      /* Wraps rather than truncating. "Offer Sheet Decision" does not fit on
+         one line at any column width the text deserves, and "OFFER SHEE…" is
+         worse than two lines — the label is shared with /transactions, so
+         shortening it here would split the vocabulary this tag exists to keep
+         whole. */
+      line-height: 1.25;
+    }
+    .dash-feed-text { font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); }
+    a.dash-feed-row:hover .dash-feed-text { color: var(--text-primary); }
+    .dash-feed-when { grid-column: 2; font-size: 0.68rem; color: var(--text-muted); }
+    .dash-feed-score { font-variant-numeric: tabular-nums; }
+    .dash-feed-score .win { color: var(--text-primary); font-weight: 700; }
+
+    @media (max-width: 480px) {
+      /* The tag column costs a third of a phone's width; above the text it
+         costs a line and the description keeps the full measure. */
+      .dash-feed-row { grid-template-columns: 1fr; }
+      .dash-feed-tag { justify-self: start; }
+      .dash-feed-when { grid-column: 1; }
+    }
 
     /* Power rankings — a horizontal standing rather than a fourth column in
        the row above, which at 820px would leave each card too narrow to hold
@@ -329,7 +365,7 @@
     @keyframes dash-pulse { 0%,100% { opacity: 0.28; } 50% { opacity: 0.6; } }
 
     @media (max-width: 720px) {
-      .dash-row-3 { grid-template-columns: 1fr; }
+      .dash-row-league { grid-template-columns: 1fr; }
     }
 
   </style>
@@ -355,21 +391,17 @@
     <div class="dash-card" id="dash-team" hidden></div>
 
     <!-- Band 2 — around the league. Public, so it renders for visitors too. -->
-    <div class="dash-row-3" id="dash-league">
+    <div class="dash-row-league" id="dash-league">
       <div class="dash-card" id="dash-slate">
         <div class="dash-card-title" id="dash-slate-title">Next Up</div>
         <div class="dash-skel" style="width:80%"></div>
         <div class="dash-skel" style="width:65%"></div>
       </div>
-      <div class="dash-card" id="dash-txns">
-        <div class="dash-card-title">Latest Moves</div>
+      <div class="dash-card" id="dash-feed">
+        <div class="dash-card-title">Around the League</div>
         <div class="dash-skel" style="width:90%"></div>
         <div class="dash-skel" style="width:70%"></div>
-      </div>
-      <div class="dash-card" id="dash-news">
-        <div class="dash-card-title">Newsstand</div>
-        <div class="dash-skel" style="width:85%"></div>
-        <div class="dash-skel" style="width:60%"></div>
+        <div class="dash-skel" style="width:80%"></div>
       </div>
     </div>
 
@@ -897,6 +929,7 @@
   <script src="/token-badge.js"></script>
   <script src="/league-time.js"></script>
   <script src="/cap-health.js"></script>
+  <script src="/feed-types.js"></script>
   <script>
   // ── Homepage dashboard ──────────────────────────────────────────────────
   //
@@ -1016,20 +1049,137 @@
         '<a class="dash-feed-item" href="/calendar" style="display:block;margin-top:0.6rem">Full calendar →</a>');
     });
 
-    // Latest transactions — the ledger endpoint already hides sealed types
-    // (§ 5.1 waiver claims), so this can render whatever it is given.
-    jget('/api/transactions?limit=4').then(d => {
-      const card = $('dash-txns');
-      const txns = (d && d.transactions) || [];
-      card.innerHTML = '<div class="dash-card-title">Latest Moves</div>'
-        + (txns.length
-          ? '<div class="dash-feed">' + txns.map(t =>
-              `<a class="dash-feed-item" href="/transactions">${esc(t.description || t.type)}`
-              + `<span class="meta">${esc(shortDate(t.date))}</span></a>`).join('') + '</div>'
-          : '<div class="dash-empty">No transactions yet.</div>');
-    }).catch(() => {
-      $('dash-txns').innerHTML = '<div class="dash-card-title">Latest Moves</div>'
-        + '<div class="dash-empty">Unavailable.</div>';
+    // ── The merged feed ───────────────────────────────────────────────────
+    //
+    // Transactions, news and final scores in one list, newest first, each row
+    // tagged with what kind of thing it is. They were two separate cards
+    // ("Latest Moves" and "Newsstand") until 2026-09-05; splitting by source
+    // meant the reader had to merge them by eye to answer the only question
+    // they were asking, which is "what has happened since I last looked".
+    //
+    // Adding a fourth source is adding one function to SOURCES. Each returns
+    // items of the same shape and is allowed to fail — `allSettled`, so a
+    // source that 500s costs its own rows and not the feed.
+    //
+    //   ts    ISO instant, for ordering. Transactions carry `created_at` and
+    //         a civil `date`; a date alone sorts as midnight, which is right:
+    //         it is all the precision that exists for it.
+    //   type  a key in feed-types.js — a ledger type, or `news` / `score`.
+    //   text  already-escaped-at-render HTML-free string, or `html` for a row
+    //         that needs markup (a score bolds the winner).
+    const FEED_LIMIT = 9;
+
+    const feedFromTransactions = () =>
+      // The ledger endpoint already withholds sealed types (§ 5.1 waiver
+      // claims), so whatever it returns is safe to show.
+      jget('/api/transactions?limit=12').then(d => (d.transactions || []).map(t => ({
+        ts: t.created_at || (t.date ? t.date + 'T00:00:00Z' : ''),
+        date: t.date,
+        type: t.type,
+        text: t.description || FeedTypes.label(t.type),
+        href: '/transactions',
+      })));
+
+    const feedFromNews = () =>
+      jget('/api/news').then(d => (d.articles || [])
+        .filter(a => a.status === 'published')
+        .map(a => ({
+          ts: a.published_at || a.created_at || '',
+          date: String(a.published_at || a.created_at || '').slice(0, 10),
+          type: 'news',
+          text: a.title,
+          byline: a.author,
+          href: `/news/view/?id=${encodeURIComponent(a.id)}`,
+        })));
+
+    // Final scores. There is no "recent results" endpoint — /api/boxscores
+    // answers for one exact date — so the schedule is used to find which dates
+    // could have results, newest first, and those are asked for in turn.
+    //
+    // Walking back up to three dates rather than asking only for the newest:
+    // a night's games are entered when someone gets to them, so the most
+    // recent scheduled date is routinely still empty while the one before it
+    // has a full slate. Stopping at the first date that answers with games
+    // keeps that to one request on a normal day.
+    //
+    // In the offseason every scheduled date is in the future, so this makes no
+    // requests at all and contributes nothing — which is the correct empty.
+    const feedFromScores = () => schedulePromise.then(async sched => {
+      if (!sched || !sched.games) return [];
+      const past = [...new Set(sched.games.filter(g => g.date < today).map(g => g.date))]
+        .sort().reverse().slice(0, 3);
+      for (const date of past) {
+        const games = await jget(
+          `/api/boxscores?date=${encodeURIComponent(date)}`
+          + `&season=${encodeURIComponent(sched.season || '')}`).catch(() => []);
+        if (games && games.length) {
+          return games.map(g => {
+            const awayWon = g.away_score > g.home_score;
+            const side = (team, score, won) =>
+              `<span class="${won ? 'win' : ''}">${esc(team)} ${esc(String(score))}</span>`;
+            return {
+              ts: date + 'T23:59:59Z',   // after that day's transactions
+              date,
+              type: 'score',
+              html: '<span class="dash-feed-score">'
+                + side(g.away_team, g.away_score, awayWon) + ' · '
+                + side(g.home_team, g.home_score, !awayWon) + '</span>',
+              href: '/boxscores/',
+            };
+          });
+        }
+      }
+      return [];
+    });
+
+    // A full slate is 10-15 games. Left uncapped, one busy night fills every
+    // row and the feed becomes a scoreboard — the trade that happened that
+    // same day gets pushed off it, which is the one thing this card exists to
+    // prevent. Scores get at most this many, so there is always room for what
+    // else happened; the slate card and /boxscores are where a full night's
+    // results belong.
+    const SCORE_MAX = 4;
+
+    const SOURCES = [
+      feedFromTransactions,
+      feedFromNews,
+      () => feedFromScores().then(rows => rows.slice(0, SCORE_MAX)),
+    ];
+
+    Promise.allSettled(SOURCES.map(fn => fn())).then(results => {
+      // Ordered by the civil date each row *shows*, not by `ts`. A transaction
+      // carries both when it happened (`date`) and when someone entered it
+      // (`created_at`), and they are routinely weeks apart — a trade dated
+      // Aug 19 entered on Sep 3 sorts above an article published Aug 30 while
+      // displaying "Aug 19", and the feed reads as though it is not sorted at
+      // all. `ts` stays as the tie-break, which is what orders several moves
+      // filed on the same league day.
+      const items = results
+        .filter(r => r.status === 'fulfilled')
+        .flatMap(r => r.value || [])
+        .filter(it => it && (it.date || it.ts))
+        .sort((a, b) =>
+          String(b.date || '').localeCompare(String(a.date || ''))
+          || String(b.ts || '').localeCompare(String(a.ts || '')))
+        .slice(0, FEED_LIMIT);
+
+      const card = $('dash-feed');
+      if (!items.length) {
+        card.innerHTML = '<div class="dash-card-title">Around the League</div>'
+          + '<div class="dash-empty">Nothing yet.</div>';
+        return;
+      }
+      card.innerHTML = '<div class="dash-card-title">Around the League</div>'
+        + '<div class="dash-feed">' + items.map(it => {
+          const c = FeedTypes.colors(it.type);
+          const when = it.date ? shortDate(it.date) : '';
+          return `<a class="dash-feed-row" href="${esc(it.href)}">`
+            + `<span class="dash-feed-tag" style="background:${esc(c.bg)};color:${esc(c.fg)}">`
+            + `${esc(FeedTypes.label(it.type))}</span>`
+            + `<span class="dash-feed-text">${it.html || esc(it.text)}</span>`
+            + `<span class="dash-feed-when">${esc(when)}`
+            + (it.byline ? ` · ${esc(it.byline)}` : '') + `</span></a>`;
+        }).join('') + '</div>';
     });
 
     // The power-rankings standing, always the newest **published** edition
@@ -1074,24 +1224,6 @@
         $('dash-ranks').hidden = false;
       });
     }).catch(() => {});
-
-    // Newsstand — the articles themselves. The rankings edition is one of
-    // these too, and is deliberately also shown as its own standing above.
-    jget('/api/news').then(d => {
-      const card = $('dash-news');
-      const arts = ((d && d.articles) || []).filter(a => a.status === 'published').slice(0, 3);
-      card.innerHTML = '<div class="dash-card-title">Newsstand</div>'
-        + (arts.length
-          ? '<div class="dash-feed">' + arts.map(a =>
-              `<a class="dash-feed-item" href="/news/view/?id=${encodeURIComponent(a.id)}">`
-              + `${esc(a.title)}<span class="meta">${esc(a.author || '')}`
-              + (a.comment_count ? ` · ${plural(a.comment_count, 'comment')}` : '')
-              + `</span></a>`).join('') + '</div>'
-          : '<div class="dash-empty">Nothing published yet.</div>');
-    }).catch(() => {
-      $('dash-news').innerHTML = '<div class="dash-card-title">Newsstand</div>'
-        + '<div class="dash-empty">Unavailable.</div>';
-    });
 
     // ── Bands 1 and 3: signed-in only ─────────────────────────────────────
     if (!token) return;

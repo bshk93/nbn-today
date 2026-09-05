@@ -88,7 +88,7 @@ const PAGES = [
   // holds no token. That still covers the dashboard's public band: the slate,
   // the transaction feed and the newsstand all render from `.dash-feed-item`,
   // and a band that silently stopped fetching would come up at zero.
-  { path: '/',                        selector: '.dash-feed-item', min: 5,  what: 'the dashboard league feed' },
+  { path: '/',                        selector: '.dash-feed-row',  min: 5,  what: 'the merged league feed' },
   // The card grid still lives below the dashboard. Asserted separately so
   // "the dashboard took over the homepage" fails loudly rather than quietly.
   { path: '/',                        selector: 'main.grid .card', min: 30, what: 'the page directory grid' },
