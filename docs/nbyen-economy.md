@@ -47,10 +47,10 @@ than adding to it.
 |---|---|---|---|
 | Board & committee heads | `bod`, `fac_head`, `poext_head` | **12,500** | 1.25 |
 | Committee | `fac`, `poext`, `agent`, `curator`, `stats`, `bookie`, `streamer` | **7,500** | 0.75 |
-| Active member | an open tenure for the full league year, in good standing | **2,500** | 0.25 |
+| Active member | an open tenure during the league year | **2,500** | 0.25 |
 
 Prorated by months held, from the tenure and role history already in
-`members.json`. "In good standing" is defined in § 3.
+`members.json`. **`admin` draws no salary** — see § 3.
 
 ### 1c. Contributing (free, capped)
 
@@ -183,11 +183,21 @@ the fourth is proposed here.
   first dial to turn if that ratio needs to move.**
 - **Highest band only, never summed.** A `fac_head` who is also an `agent` and a
   `curator` would otherwise draw three salaries. One person, one salary.
-- **"Active" has to mean something or this becomes a tenure airdrop** — precisely
-  the trap the old achievement payouts fell into (§ 5). Proposed bar: an open
-  tenure across the league year, prorated by months held, and no outstanding
-  strikes (`nbn-api/routers/strikes.py` already tracks these, so the
-  disqualifier is a field that exists rather than a new judgement call).
+- **"Active" means holding a team, and nothing else.** No conduct bar, no strike
+  threshold, no participation test — an open tenure during the league year,
+  prorated by months held, full stop. This is deliberate: **the salary is pay for
+  a seat, not a reward for behaving**, and tying it to conduct would turn every
+  disciplinary decision into a decision about someone's money and give the board
+  a lever it has not asked for.
+- **That it resembles a tenure payment is the point, and it is not the trap the
+  old achievements were.** Those paid up to 77,000 NB¥ once, retroactively, for
+  things already true years ago. This pays 2,500 a year, forward-looking, and you
+  have to still be here next year to get it again. A bounded recurring stipend and
+  an unbounded retroactive airdrop are different animals despite both keying off
+  tenure.
+- **`admin` draws no salary** (decided 2026-09-05). The commissioner sets these
+  numbers; the cleanest way to keep that from being a conflict is for the
+  commissioner not to be in any band.
 - **Paid at the July 1 league-year rollover** (`nbn-api/season_clock.py`), not the
   calendar year — it is compensation for a season of work, so it should land on
   the season boundary.
@@ -394,9 +404,6 @@ payouts against −15,115 wagered.
   games have a real claim under the new peg. Recommendation: honour it. It is a
   small, one-time, genuinely-pegged mint and it is the clearest possible signal
   that the peg means something.
-- **Does the commissioner draw a salary?** `admin` is not in any § 1b band, which
-  is a deliberate omission rather than an oversight — someone has to decide, and
-  it should not be the person being paid.
 - **What is the reset's public story?** The balances being wiped are, for most
   members, achievement money they never asked for. This is the economy getting a
   real currency, not members being punished. Worth writing the announcement
