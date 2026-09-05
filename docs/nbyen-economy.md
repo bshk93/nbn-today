@@ -19,23 +19,17 @@ Sections § 1 and § 2 are the two complete lists — every way in, every way ou
 
 ### 1a. Paying (pegged)
 
-| Path | Member pays | League nets | NB¥ | NB¥ per member-$ |
-|---|---|---|---|---|
-| Prime sub | $0 | $2.25 | **2,250**/mo | — (free to give) |
-| Tier 1 sub | $5.99 | $3.00 | **3,000**/mo | 501 |
-| Tier 2 sub | $11.99 | $6.00 | **6,000**/mo | 500 |
-| Tier 3 sub | $24.99 | $12.59 | **12,500**/mo | 500 |
-| Bits (per 100) | ~$1.40 | $1.00 | **1,000** | 714 |
-| **Direct donation** | $X | ~$X | **1,000 × X** | **1,000** |
+| Path | Member pays | League nets | Rate | NB¥ | NB¥ per member-$ |
+|---|---|---|---|---|---|
+| Prime sub | $0 | $2.25 | ×1.00 | **2,250**/mo | — (free to give) |
+| Tier 1 sub | $5.99 | $3.00 | ×1.00 | **3,000**/mo | 501 |
+| Tier 2 sub | $11.99 | $6.00 | ×1.17 | **7,000**/mo | 584 |
+| Tier 3 sub | $24.99 | $12.59 | ×1.35 | **17,000**/mo | 680 |
+| **Direct donation** | $X | ~$X | ×1.00 | **1,000 × X** | **1,000** |
 
-Sub loyalty multiplier, applied to the monthly figure above:
-
-| Consecutive months subbed | Multiplier | Tier 1 pays |
-|---|---|---|
-| 1–2 | ×1.0 | 3,000 |
-| 3–5 | ×1.15 | 3,450 |
-| 6–11 | ×1.3 | 3,900 |
-| 12+ | ×1.5 | **4,500** |
+"Rate" is the premium on the base peg. Tier 1, Prime and direct donations convert
+at exactly 1,000 NB¥ per league-dollar; Tier 2 and Tier 3 earn a stated premium
+on top. Nothing is retroactive and nothing depends on how long you have subbed.
 
 ### 1b. Salary (annual, role-based)
 
@@ -141,19 +135,41 @@ the fourth is proposed here.
   What has to be bounded is the *unpegged* fraction, which is what the free cap
   (below) and the salary bands exist to do. This reframes the whole design: the
   goal is not a small money supply, it is a small unpegged one.
-- Tier 3 is rounded from 12,590 down to **12,500**. A round number is worth more
-  than the 90 NB¥.
+- **The premium on Tier 2 and Tier 3 softens the peg slightly, deliberately.**
+  Those tiers mint at 1,170 and 1,350 NB¥ per league-dollar, so a minority of NB¥
+  is created with less than a dollar behind it. This is a bounded, stated
+  deviation rather than a leak — Tier 1, Prime and direct donations all still
+  convert at exactly 1,000 — and it buys the tier ladder below. The alternative
+  that keeps the peg mathematically exact is to make Tier 1 convert at a
+  *discount* and Tier 3 at par (2,400 / 5,400 / 12,590). It is cleaner on paper
+  and worse in practice: identical relative incentives, uglier numbers, and it
+  reads as punishing the entry tier.
 
-### Why subs get a loyalty multiplier
+### Why higher tiers convert better
 
-- A pure A2 reading makes subscribing strictly worse than donating, which is the
-  wrong answer: **recurring revenue is worth more to the league than a one-off of
-  the same size**, and sub count is itself a growth lever on Twitch (emotes,
-  channel standing, discoverability).
-- The multiplier tops out at ×1.5, which brings Tier 1 to 750 NB¥ per
-  member-dollar — still below direct's 1,000. **Direct keeps the better rate, so
-  A2 holds; subs win on cumulative total and on not having to remember.** The
-  thing being paid for is retention, which is the behaviour actually worth buying.
+**Decided 2026-09-05.** Tier 2 earns a ×1.17 premium and Tier 3 a ×1.35 premium
+over the base rate. No loyalty or streak component — tier is the only thing that
+changes the rate.
+
+- **Twitch's own cut is flat, so without this there is no reason to upgrade.**
+  The league nets ~50% at every tier, so a flat peg makes Tier 3 exactly 4.17×
+  Tier 1 for exactly 4.17× the money. Nothing rewards the upgrade itself.
+- **Upgrading is the cheapest revenue the league can get.** No acquisition cost,
+  no new member to recruit, just an existing subscriber moving up. Paying
+  disproportionately for it is efficient in a way that paying for volume is not.
+- **The ladder is real: 501 → 584 → 680 NB¥ per member-dollar.** Paying 2× (T1→T2)
+  earns 2.33×; paying 4.17× (T1→T3) earns 5.67×. The premium is visible at the
+  moment of decision, which is the only moment it can work.
+- **The guardrail: the top tier must still not beat a direct donation per
+  member-dollar, or it inverts A2.** At 680 against direct's 1,000 there is
+  comfortable headroom. **If the Tier 3 premium is ever raised past ×1.98 it
+  overtakes direct donations and A2 breaks** — that is the ceiling, and it is
+  worth writing down because it is not obvious from the multiplier alone.
+- **No loyalty or streak multiplier** (dropped 2026-09-05). It rewarded elapsed
+  time rather than a decision, it needed per-member subscription history the
+  league does not currently store, and the tier premium already gives subs a
+  reason to exist alongside donations. Subs also carry non-NB¥ value — emotes,
+  the badge, channel standing — which does not need to be bought with currency.
 - **Prime is free money and the site should say so permanently.** It costs the
   member nothing beyond what they already pay Amazon and hands the league $2.25 a
   month. Any member with Prime who isn't subbed is the cheapest available win —
@@ -305,22 +321,27 @@ direct donations:
 
 | Source | NB¥/year | |
 |---|---|---|
-| Subs + donations | **537,000** | = $537 real |
+| Subs + donations | **549,000** | against $537 actually received |
 | Salaries | 260,000 | |
 | Contributions (bio, cleanup, box scores) | 36,000 | |
 | Achievement drip | 18,000 | |
 | Minigames | 0 | suspended |
-| **Total mint** | **851,000** | |
+| **Total mint** | **863,000** | |
 
-**Money is 63% of all minting** — A1 satisfied, and satisfied structurally rather
+**Money is 64% of all minting** — A1 satisfied, and satisfied structurally rather
 than by hope.
+
+The 549,000 against $537 is the tier premium showing up in the aggregate: about
+12,000 NB¥/year, 1.4% of the mint, is the cost of the Tier 2 and Tier 3 rates.
+Small enough not to matter, and it scales with exactly the behaviour it is meant
+to encourage.
 
 Sink capacity on the other side: four stream games a month (480,000/yr), rakes
 (~30,000), cosmetics and commissions (~180,000) ≈ **690,000**. That is capacity,
 not a forecast — it depends entirely on what members choose to buy.
 
 **Adding salaries flips the economy from sink-dominant to mildly faucet-dominant**
-— roughly 160,000 NB¥/year of slack, about 19% of the mint. Worth saying plainly
+— roughly 173,000 NB¥/year of slack, about 20% of the mint. Worth saying plainly
 because it is the cost of the § 1b decision, and there are three dials if it
 matters: lower the salary bands, raise the stream-game price, or sell more
 broadcasts. The third is the one that points the right way — **more streams sold
