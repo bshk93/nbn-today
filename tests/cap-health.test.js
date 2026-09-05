@@ -138,7 +138,7 @@ group('§ 2.2 — three two-way slots');
 {
   const ok = CH.standing({ ...base, standardCount: 14, twoWayCount: 3, teamSalaryFull: 150e6, teamSalaryExHolds: 150e6 });
   check('three is fine', ok.warnings.length === 0);
-  check('two-ways are shown beside the standard count', row(ok, 'roster').value === '14 + 3 two-way');
+  check('two-ways are shown beside the standard count', row(ok, 'roster').value === '14/15 + 3/3 two-way');
   const over = CH.standing({ ...base, standardCount: 14, twoWayCount: 4, teamSalaryFull: 150e6, teamSalaryExHolds: 150e6 });
   check('four is a violation', codes(over).join() === 'two_way_over_max');
   check('two-ways do not count toward the § 2.1 floor',

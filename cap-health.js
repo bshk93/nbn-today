@@ -238,7 +238,14 @@
       if (tone === 'ok') tone = 'violation';
     }
 
-    const label = twoWay ? `${standard} + ${twoWay} two-way` : `${standard}`;
+    // Against ROSTER_MAX_IN_SEASON specifically, not whichever ceiling binds
+    // today — the in-season number of 15 is the one owners think of as "a
+    // full roster," so it reads clearly counting up to it, even for the 13
+    // teams legitimately over 15 in the offseason (`note`, above, already
+    // says which phase's ceiling applies and that a trim isn't owed yet).
+    const label = twoWay
+      ? `${standard}/${ROSTER_MAX_IN_SEASON} + ${twoWay}/${TWO_WAY_MAX} two-way`
+      : `${standard}/${ROSTER_MAX_IN_SEASON}`;
     return { row: { key: 'roster', label: 'Roster', amount: null, value: label, note, tone }, warnings };
   }
 
