@@ -4826,6 +4826,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         const slot = CS.MINUTES_SLOTS[i] || '';
         ctl.slotTd.textContent = slot || '—';
         ctl.minInput.disabled = !slot;
+        ctl.minusBtn.disabled = !slot;
+        ctl.plusBtn.disabled = !slot;
         ctl.resCheck.disabled = !slot;
       });
     }
@@ -4981,13 +4983,36 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         // Minutes and RES share one cell — a reserve player has no minutes
         // figure to show alongside, so they were never independent columns.
         const minWrap = document.createElement('div');
-        minWrap.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:0.35rem';
+        minWrap.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:0.3rem';
         const minInput = document.createElement('input');
         minInput.type = 'number'; minInput.min = '0'; minInput.max = '48';
         minInput.value = String(existing ? (existing.minutes || 0) : 0);
         minInput.disabled = !slot;
-        minInput.style.cssText = 'width:3rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+        minInput.style.cssText = 'width:2.6rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
         minInput.addEventListener('input', () => { minutesDirty = true; refreshMinutesTotal(); });
+        // Plus/minus steppers so a coach can nudge a player's minutes by one
+        // without having to type over the field each time.
+        function stepMinutes(delta) {
+          const next = Math.min(48, Math.max(0, (+minInput.value || 0) + delta));
+          if (next === +minInput.value) return;
+          minInput.value = String(next);
+          minutesDirty = true;
+          refreshMinutesTotal();
+        }
+        const minusBtn = document.createElement('button');
+        minusBtn.type = 'button';
+        minusBtn.textContent = '−';
+        minusBtn.setAttribute('aria-label', 'Decrease minutes');
+        minusBtn.disabled = !slot;
+        minusBtn.style.cssText = 'width:1.1rem;height:1.1rem;line-height:1;padding:0;border:1px solid var(--border);border-radius:3px;background:transparent;color:var(--text-secondary);font-size:0.75rem;cursor:pointer;font-family:inherit';
+        minusBtn.addEventListener('click', () => stepMinutes(-1));
+        const plusBtn = document.createElement('button');
+        plusBtn.type = 'button';
+        plusBtn.textContent = '+';
+        plusBtn.setAttribute('aria-label', 'Increase minutes');
+        plusBtn.disabled = !slot;
+        plusBtn.style.cssText = minusBtn.style.cssText;
+        plusBtn.addEventListener('click', () => stepMinutes(1));
         const resLabel = document.createElement('label');
         resLabel.style.cssText = 'display:flex;align-items:center;gap:0.15rem;font-size:0.65rem;color:var(--text-muted)';
         const resCheck = document.createElement('input');
@@ -4997,13 +5022,15 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         resCheck.addEventListener('change', () => { minutesDirty = true; refreshMinutesTotal(); });
         resLabel.appendChild(resCheck);
         resLabel.appendChild(document.createTextNode('RES'));
+        minWrap.appendChild(minusBtn);
         minWrap.appendChild(minInput);
+        minWrap.appendChild(plusBtn);
         minWrap.appendChild(resLabel);
         const minTd = tr.insertCell();
         minTd.className = 'right';
         minTd.appendChild(minWrap);
 
-        tr._rosterCtl = { slug: row.SLUG, slotTd, minInput, resCheck };
+        tr._rosterCtl = { slug: row.SLUG, slotTd, minInput, minusBtn, plusBtn, resCheck };
       }
 
       fields.push({
