@@ -3,6 +3,13 @@
     "version": "0.2.24",
     "date": "2026-09-05",
     "changes": [
+      "Fixed the frontend render test that still looked for the game list on /schedule \u2014 it moved to /calendar when /schedule became a redirect stub"
+    ]
+  },
+  {
+    "version": "0.2.24",
+    "date": "2026-09-05",
+    "changes": [
       "Homepage: shortened the action chips \u2014 \"16 players (reg. season max 15)\" rather than the full rule; the full wording is now the chip's tooltip",
       "Homepage: added a chip for where your roster disagrees with the league sheet",
       "Homepage: your team's name and logo now link to your roster page, and five upcoming games show instead of three",
