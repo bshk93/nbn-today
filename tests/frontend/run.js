@@ -84,6 +84,14 @@ const PAGES = [
   // one, since /news/ lists whatever is newest. Editions are never deleted.
   { path: '/news/view/?id=ee63b136-b6aa-4408-af8a-a5c3dbcbb93f',
                                       selector: '.rank-row',       min: 30, what: 'the power-rankings table' },
+  // The homepage, signed out — which is all this harness can see, since it
+  // holds no token. That still covers the dashboard's public band: the slate,
+  // the transaction feed and the newsstand all render from `.dash-feed-item`,
+  // and a band that silently stopped fetching would come up at zero.
+  { path: '/',                        selector: '.dash-feed-item', min: 5,  what: 'the dashboard league feed' },
+  // The card grid still lives below the dashboard. Asserted separately so
+  // "the dashboard took over the homepage" fails loudly rather than quietly.
+  { path: '/',                        selector: 'main.grid .card', min: 30, what: 'the page directory grid' },
 ];
 
 function findChrome() {

@@ -175,6 +175,134 @@
       .home-search-kbd { display: none; }
     }
 
+    /* ── Dashboard ────────────────────────────────────────────────────────
+       Sits between the search box and the card grid. Every band renders
+       independently and hides itself if its data never arrives, so a slow or
+       failed endpoint costs one card rather than the page. */
+
+    .dash {
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .dash-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      min-width: 0;
+    }
+
+    .dash-card-title {
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+
+    /* Band 1 — your team */
+    .dash-team-head {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .dash-team-head img { height: 42px; width: 42px; object-fit: contain; }
+    .dash-team-name { font-size: 1.05rem; font-weight: 700; line-height: 1.2; }
+    .dash-team-sub  { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .dash-team-right { margin-left: auto; text-align: right; }
+    .dash-team-phase { font-size: 0.95rem; font-weight: 600; color: var(--gold-alt); }
+    .dash-team-phase-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+
+    .dash-sep { border-top: 1px solid var(--border-subtle); margin: 0.75rem 0; }
+
+    .dash-lines { display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem; font-size: 0.82rem; }
+    .dash-line-label { color: var(--text-muted); }
+    .dash-line-val   { color: var(--text-secondary); font-weight: 600; }
+
+    .dash-games { display: flex; flex-direction: column; gap: 0.3rem; }
+    .dash-game {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      font-size: 0.82rem; color: var(--text-secondary);
+    }
+    .dash-game-date { color: var(--text-muted); width: 4.2rem; flex: none; }
+    .dash-game-opp  { font-weight: 600; }
+    .dash-game-time { color: var(--text-muted); font-size: 0.75rem; margin-left: auto; }
+
+    /* Action chips — the obligations band. Tone matches cap-health.js's
+       severities so a violation reads the same here as on the team page. */
+    .dash-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .dash-chip {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.76rem; padding: 0.25rem 0.6rem; border-radius: 12px;
+      border: 1px solid var(--border); color: var(--text-secondary);
+      background: var(--bg-subtle); text-decoration: none;
+      /* cap-health.js's warning text is a full rule statement — "16 standard
+         players — § 2.1 allows 20 in the offseason, so this is legal now, but
+         1 must go before opening night". It is shown verbatim rather than
+         abbreviated here, because a shorter label would be a second copy of a
+         vocabulary that already exists in one place. So chips wrap. */
+      max-width: 100%; text-align: left; line-height: 1.35;
+    }
+    a.dash-chip:hover { border-color: var(--muted-border); color: var(--text-primary); }
+    .dash-chip.violation { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-light); }
+    .dash-chip.caution   { border-color: var(--gold-border);   background: var(--gold-bg);   color: var(--gold); }
+    .dash-chip.ok        { color: var(--text-muted); }
+
+    /* Band 2 — around the league */
+    .dash-row-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      /* Each card sizes to its own content. Stretched to a common height the
+         short ones (a three-game slate next to four wrapped trade
+         descriptions) are mostly dead space. */
+      align-items: start;
+    }
+
+    .dash-feed { display: flex; flex-direction: column; gap: 0.5rem; }
+    .dash-feed-item { font-size: 0.78rem; line-height: 1.4; color: var(--text-secondary); }
+    .dash-feed-item .meta { color: var(--text-muted); font-size: 0.7rem; display: block; }
+    a.dash-feed-item:hover { color: var(--text-primary); }
+
+    .dash-rank { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.78rem; }
+    .dash-rank-num { color: var(--text-muted); width: 1.2rem; flex: none; }
+
+    /* Band 3 — dailies */
+    .dash-dailies { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .dash-daily {
+      display: flex; align-items: center; gap: 0.45rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 999px; padding: 0.35rem 0.85rem;
+      font-size: 0.8rem; color: var(--text-secondary); text-decoration: none;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .dash-daily:hover { border-color: var(--muted-border); color: var(--text-primary); }
+    .dash-daily.done { color: var(--text-muted); }
+    .dash-daily.done .dash-daily-mark { color: var(--success); }
+    .dash-daily-mark { font-size: 0.7rem; }
+
+    .dash-empty { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* Skeleton — a card that has asked but not yet answered. */
+    .dash-skel {
+      height: 0.72rem; border-radius: 4px;
+      background: var(--bg-hover); opacity: 0.5;
+      animation: dash-pulse 1.3s ease-in-out infinite;
+      margin-bottom: 0.45rem;
+    }
+    @keyframes dash-pulse { 0%,100% { opacity: 0.28; } 50% { opacity: 0.6; } }
+
+    @media (max-width: 720px) {
+      .dash-row-3 { grid-template-columns: 1fr; }
+    }
+
   </style>
 </head>
 <body>
@@ -191,6 +319,34 @@
     <span class="home-search-text">Start typing anything…</span>
     <span class="home-search-kbd">Ctrl K</span>
   </button>
+
+  <section class="dash" id="dash">
+    <!-- Band 1 — your team. Signed-in members with an active tenure only;
+         stays hidden for everyone else rather than rendering an empty shell. -->
+    <div class="dash-card" id="dash-team" hidden></div>
+
+    <!-- Band 2 — around the league. Public, so it renders for visitors too. -->
+    <div class="dash-row-3" id="dash-league">
+      <div class="dash-card" id="dash-slate">
+        <div class="dash-card-title" id="dash-slate-title">Next Up</div>
+        <div class="dash-skel" style="width:80%"></div>
+        <div class="dash-skel" style="width:65%"></div>
+      </div>
+      <div class="dash-card" id="dash-txns">
+        <div class="dash-card-title">Latest Moves</div>
+        <div class="dash-skel" style="width:90%"></div>
+        <div class="dash-skel" style="width:70%"></div>
+      </div>
+      <div class="dash-card" id="dash-news">
+        <div class="dash-card-title">Newsstand</div>
+        <div class="dash-skel" style="width:85%"></div>
+        <div class="dash-skel" style="width:60%"></div>
+      </div>
+    </div>
+
+    <!-- Band 3 — dailies. Signed-in only: "played today" is per-member. -->
+    <div class="dash-dailies" id="dash-dailies" hidden></div>
+  </section>
 
   <main class="grid">
     <span class="section-label">League</span>
@@ -707,5 +863,437 @@
   </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
+  <script src="/league-time.js"></script>
+  <script src="/cap-health.js"></script>
+  <script>
+  // ── Homepage dashboard ──────────────────────────────────────────────────
+  //
+  // The homepage used to be a directory: ~40 equal-weight cards, which answers
+  // "where is X" (a question Ctrl-K already answers better) and never answers
+  // "what should I be doing". This band answers the second question; the grid
+  // below still answers the first.
+  //
+  // Three principles it is built on:
+  //
+  // 1. **No cap math here.** The salary figures come from
+  //    `GET /api/cap-history/current` and the reading of them from
+  //    `cap-health.js` — the same rules the team page's Cap Health card uses.
+  //    A surface that recomputes can show a team room the validator never
+  //    credited it with.
+  // 2. **Phase-aware, not games-first.** From the July 1 league-year rollover
+  //    until opening night there are no games to list, and the league is at its
+  //    busiest. The band leads with whatever the calendar says is happening.
+  // 3. **Every card fails alone.** Each renders off its own fetch and hides
+  //    itself if the data never comes, so one slow endpoint costs one card.
+  //
+  // Loaded after nav.js deliberately: `TEAM_LIST` is nav's, and BACKLOG.md
+  // already counts 13 copies of that map. This is not the 14th.
+
+  (function () {
+    'use strict';
+
+    const $ = id => document.getElementById(id);
+    const token = localStorage.getItem('nbn_token');
+    const auth = token ? { Authorization: 'Bearer ' + token } : {};
+
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const jget = (url, opts) =>
+      fetch(url, opts).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
+
+    // Dollars at homepage altitude — "$140.1M", not the exact figure the team
+    // page shows. Someone wanting the cent is one click from it.
+    const fmtM = v => '$' + (Math.abs(Number(v) || 0) / 1e6).toFixed(1) + 'M';
+
+    // Civil dates are parsed at noon UTC so a day never slips across a zone
+    // boundary. league-time.js owns "what day is it"; this only does arithmetic
+    // on dates it has already been handed.
+    const at = d => Date.parse(d + 'T12:00:00Z');
+    const daysUntil = (from, to) => Math.round((at(to) - at(from)) / 86400000);
+    const shortDate = d => {
+      const [y, m, day] = d.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, day))
+        .toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    };
+    const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+    const today = nbnToday();
+
+    // ── Band 2: around the league ─────────────────────────────────────────
+    //
+    // Public. Renders for signed-out visitors too, which is most of what makes
+    // the page worth loading when you have no team.
+
+    // One schedule fetch serves both this band and band 1's next-games list.
+    const schedulePromise = jget('/api/schedule').catch(() => null);
+
+    // Where the league is in its year, derived from the schedule's own date
+    // range rather than a stored flag — there is no phase field on the API, and
+    // the schedule is the thing that would have to agree with one anyway.
+    function phaseOf(games) {
+      if (!games || !games.length) return { phase: 'unknown' };
+      const dates = games.map(g => g.date).sort();
+      const first = dates[0], last = dates[dates.length - 1];
+      if (today < first) return { phase: 'preseason', first, last };
+      if (today > last) return { phase: 'offseason', first, last };
+      return { phase: 'in-season', first, last };
+    }
+
+    schedulePromise.then(sched => {
+      const card = $('dash-slate');
+      if (!sched || !sched.games || !sched.games.length) {
+        card.innerHTML = '<div class="dash-card-title">Next Up</div>'
+          + '<div class="dash-empty">No schedule on file.</div>';
+        return;
+      }
+      const ph = phaseOf(sched.games);
+      const upcoming = sched.games.filter(g => g.date >= today).sort((a, b) =>
+        a.date.localeCompare(b.date) || String(a.time_et).localeCompare(String(b.time_et)));
+
+      let title = 'Next Up', head = '', list = [];
+
+      if (ph.phase === 'preseason') {
+        const n = daysUntil(today, ph.first);
+        title = 'Opening Night';
+        head = `<div class="dash-team-phase">${n === 0 ? 'Tonight' : plural(n, 'day')}</div>`
+          + `<div class="dash-team-phase-sub">${esc(shortDate(ph.first))} · ${esc(sched.season)}</div>`;
+        list = upcoming.filter(g => g.date === ph.first).slice(0, 3);
+      } else if (ph.phase === 'offseason') {
+        title = 'Offseason';
+        head = '<div class="dash-empty">The season is complete. Free agency, extensions and '
+          + 'the draft run until next season\'s schedule lands.</div>';
+      } else {
+        const nextDate = upcoming.length ? upcoming[0].date : null;
+        title = nextDate === today ? 'Tonight' : 'Next Slate';
+        if (nextDate) {
+          head = `<div class="dash-team-phase-sub" style="margin-bottom:0.5rem">`
+            + `${esc(shortDate(nextDate))} · ${plural(upcoming.filter(g => g.date === nextDate).length, 'game')}</div>`;
+          list = upcoming.filter(g => g.date === nextDate).slice(0, 4);
+        }
+      }
+
+      card.innerHTML = `<div class="dash-card-title">${esc(title)}</div>${head}`
+        + (list.length ? '<div class="dash-games">' + list.map(g =>
+            `<div class="dash-game">`
+            + `<span class="dash-game-opp">${esc(g.away_team)} @ ${esc(g.home_team)}</span>`
+            + (g.stream ? '<span title="Marked as a stream">📺</span>' : '')
+            + `<span class="dash-game-time">${esc(g.time_et || '')}</span>`
+            + `</div>`).join('') + '</div>' : '');
+      card.insertAdjacentHTML('beforeend',
+        '<a class="dash-feed-item" href="/calendar" style="display:block;margin-top:0.6rem">Full calendar →</a>');
+    });
+
+    // Latest transactions — the ledger endpoint already hides sealed types
+    // (§ 5.1 waiver claims), so this can render whatever it is given.
+    jget('/api/transactions?limit=4').then(d => {
+      const card = $('dash-txns');
+      const txns = (d && d.transactions) || [];
+      card.innerHTML = '<div class="dash-card-title">Latest Moves</div>'
+        + (txns.length
+          ? '<div class="dash-feed">' + txns.map(t =>
+              `<a class="dash-feed-item" href="/transactions">${esc(t.description || t.type)}`
+              + `<span class="meta">${esc(shortDate(t.date))}</span></a>`).join('') + '</div>'
+          : '<div class="dash-empty">No transactions yet.</div>');
+    }).catch(() => {
+      $('dash-txns').innerHTML = '<div class="dash-card-title">Latest Moves</div>'
+        + '<div class="dash-empty">Unavailable.</div>';
+    });
+
+    // Newsstand. Deliberately not the power rankings: the only published
+    // edition is February 2026's, and a seven-month-old standing rendered as
+    // current is worse than none. Worth adding when a fresh edition publishes.
+    jget('/api/news').then(d => {
+      const card = $('dash-news');
+      const arts = ((d && d.articles) || []).filter(a => a.status === 'published').slice(0, 3);
+      card.innerHTML = '<div class="dash-card-title">Newsstand</div>'
+        + (arts.length
+          ? '<div class="dash-feed">' + arts.map(a =>
+              `<a class="dash-feed-item" href="/news/view/?id=${encodeURIComponent(a.id)}">`
+              + `${esc(a.title)}<span class="meta">${esc(a.author || '')}`
+              + (a.comment_count ? ` · ${plural(a.comment_count, 'comment')}` : '')
+              + `</span></a>`).join('') + '</div>'
+          : '<div class="dash-empty">Nothing published yet.</div>');
+    }).catch(() => {
+      $('dash-news').innerHTML = '<div class="dash-card-title">Newsstand</div>'
+        + '<div class="dash-empty">Unavailable.</div>';
+    });
+
+    // ── Bands 1 and 3: signed-in only ─────────────────────────────────────
+    if (!token) return;
+
+    // Which team is mine. Same derivation nav.js's profile picker uses:
+    // /api/members/me reports position names ("owner") but not which team, so
+    // the active tenure off /api/members/public is what names it.
+    const mePromise = jget('/api/me', { headers: auth })
+      .then(me => jget('/api/members/public')
+        .then(members => {
+          const mine = members.find(m => m.name === me.name);
+          const active = (mine && mine.tenures || []).filter(t => !t.end);
+          if (!active.length) return { me, team: null };
+          const tenure = active.sort((a, b) => b.start.localeCompare(a.start))[0];
+          return { me, team: tenure.team.toUpperCase() };
+        }))
+      .catch(() => null);
+
+    // ── Band 3: dailies ───────────────────────────────────────────────────
+    //
+    // Perry and Poeltl both report `your_entry` for the caller, which is what
+    // turns four identical cards into "you have two things left to play".
+    // Trivia and Bets have no per-day completion, so they stay plain links.
+    mePromise.then(ctx => {
+      if (!ctx) return;
+      const strip = $('dash-dailies');
+      const items = [
+        { href: '/perry/', icon: '🏀', label: 'Perry', url: '/api/perry/today' },
+        { href: '/poeltl/', icon: '🕵️', label: 'Poeltl', url: '/api/poeltl/today' },
+      ];
+      Promise.all(items.map(it =>
+        jget(it.url, { headers: auth })
+          .then(d => Object.assign({}, it, { done: !!(d && d.your_entry) }))
+          .catch(() => Object.assign({}, it, { done: null }))))
+        .then(results => {
+          const html = results.map(r =>
+            `<a class="dash-daily${r.done ? ' done' : ''}" href="${r.href}">`
+            + `<span>${r.icon}</span><span>${esc(r.label)}</span>`
+            + (r.done === null ? ''
+              : `<span class="dash-daily-mark">${r.done ? '✓' : '●'}</span>`)
+            + `</a>`).join('')
+            + '<a class="dash-daily" href="/trivia"><span>🧠</span><span>Trivia</span></a>'
+            + '<a class="dash-daily" href="/bet/"><span>🎲</span><span>Bets</span></a>';
+          strip.innerHTML = html;
+          strip.hidden = false;
+        });
+    });
+
+    // ── Band 1: your team ─────────────────────────────────────────────────
+    mePromise.then(async ctx => {
+      if (!ctx || !ctx.team) return;   // signed in, but no active tenure
+      const team = ctx.team;
+      const abbr = team.toLowerCase();
+      const card = $('dash-team');
+
+      const [sched, capRows, standings] = await Promise.all([
+        schedulePromise,
+        jget('/api/cap-history/current').catch(() => null),
+        fetch('/standings/standings-history.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+      ]);
+
+      const ph = phaseOf(sched && sched.games);
+      const season = (capRows && capRows.entries && capRows.entries[0] || {}).season
+        || (sched && sched.season) || '';
+
+      // ── Header: who you are, and where the league year is
+      const teamName = (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[team]) || team;
+
+      // Record for the current season if one exists; the last completed season
+      // otherwise. In the offseason standings-history has no row for the season
+      // about to start, which is exactly when the countdown is the useful thing.
+      let recordLine = '';
+      if (standings) {
+        const lines = standings.trim().split('\n');
+        const hdr = lines[0].split(',');
+        const iS = hdr.indexOf('SEASON'), iW = hdr.indexOf('W'), iL = hdr.indexOf('L');
+        const iT = hdr.indexOf('TEAM'), iR = hdr.indexOf('PLAYOFF_RESULT');
+        const rows = lines.slice(1).map(l => l.split(','))
+          .filter(c => c[iT] === team);
+        const cur = rows.find(c => c[iS] === season);
+        const prev = rows.sort((a, b) => b[iS].localeCompare(a[iS]))[0];
+        const use = cur || prev;
+        if (use) {
+          recordLine = `${use[iW]}–${use[iL]}`
+            + (use[iR] && use[iR] !== 'Missed' ? ` · ${use[iR]}` : '')
+            + (cur ? '' : ` (${use[iS]})`);
+        }
+      }
+
+      // Your team's own next games, also used for the header countdown below.
+      const mine = ((sched && sched.games) || [])
+        .filter(g => (g.home_team === team || g.away_team === team) && g.date >= today)
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      // In the preseason this counts to *your opener*, not to the league's
+      // opening night — the slate card beside it already owns that number, and
+      // the two are rarely the same day (UTA opens Oct 21, the league Oct 20).
+      let phaseHtml = '';
+      if (ph.phase === 'preseason' && mine.length) {
+        const n = daysUntil(today, mine[0].date);
+        phaseHtml = `<div class="dash-team-phase">${n === 0 ? 'Tonight' : plural(n, 'day')}</div>`
+          + `<div class="dash-team-phase-sub">${n === 0 ? '' : 'to your opener · '}${esc(season)}</div>`;
+      } else if (ph.phase === 'preseason') {
+        phaseHtml = `<div class="dash-team-phase-sub">${esc(season)}</div>`;
+      } else if (ph.phase === 'in-season') {
+        phaseHtml = `<div class="dash-team-phase-sub">${esc(season)} season</div>`;
+      }
+
+      let html = `<div class="dash-team-head">`
+        + `<img src="/logos/logo-${esc(abbr)}.png" alt="">`
+        + `<div><div class="dash-team-name">${esc(teamName)}</div>`
+        + `<div class="dash-team-sub">${esc(recordLine || 'Your team')}</div></div>`
+        + `<div class="dash-team-right">${phaseHtml}</div></div>`;
+
+      // ── Cap and roster, read through cap-health.js
+      const chips = [];
+      const entry = capRows && (capRows.entries || []).find(e => e.team === team);
+      if (entry && typeof CapHealth !== 'undefined') {
+        const st = CapHealth.standing({
+          season: entry.season,
+          capLevels: { [entry.season]: { cap: entry.cap, apron1: entry.apron1, apron2: entry.apron2 } },
+          teamState: { hard_cap: entry.hard_cap },
+          teamSalaryFull: entry.salary,
+          teamSalaryExHolds: entry.salary_ex_holds,
+          standardCount: entry.roster,
+          twoWayCount: entry.two_way,
+          // Homepage altitude for every figure it produces, so the notes read
+          // in the same units as the Team Salary line beside them rather than
+          // mixing "$135.0M" with "$29,915,676".
+          fmt: fmtM,
+        });
+        const row = k => st.rows.find(r => r.key === k);
+        const capRow = row('cap'), rosterRow = row('roster');
+        html += '<div class="dash-sep"></div><div class="dash-lines">'
+          + `<span><span class="dash-line-label">Team Salary</span> `
+          + `<span class="dash-line-val">${esc(fmtM(entry.salary))}</span></span>`
+          + (capRow ? `<span><span class="dash-line-label">Cap</span> `
+            + `<span class="dash-line-val">${esc(capRow.note)}</span></span>` : '')
+          + (rosterRow ? `<span><span class="dash-line-label">Roster</span> `
+            + `<span class="dash-line-val">${esc(rosterRow.value)}</span></span>` : '')
+          + '</div>';
+        // Only the rules that are actually binding. "Over the Salary Cap" is
+        // the normal condition for most of the league and the line above
+        // already says it in dollars, so notes are left out — same filter the
+        // team page's always-visible card applies.
+        st.warnings
+          .filter(w => w.severity === 'violation' || w.severity === 'caution')
+          .forEach(w => chips.push({ tone: w.severity, text: w.text, href: `/teams/${abbr}/` }));
+      }
+
+      // ── Next games
+      if (mine.length) {
+        html += '<div class="dash-sep"></div><div class="dash-games">'
+          + mine.slice(0, 3).map(g => {
+            const home = g.home_team === team;
+            const opp = home ? g.away_team : g.home_team;
+            return `<div class="dash-game">`
+              + `<span class="dash-game-date">${esc(shortDate(g.date))}</span>`
+              + `<span class="dash-game-opp">${home ? 'vs' : '@'} ${esc(opp)}</span>`
+              + (g.streamer ? `<span title="Claimed by ${esc(g.streamer)}">📺</span>` : '')
+              + `<span class="dash-game-time">${esc(g.time_et || '')}</span></div>`;
+          }).join('') + '</div>';
+      }
+
+      html += '<div class="dash-sep"></div><div class="dash-chips" id="dash-chips"></div>';
+      card.innerHTML = html;
+      card.hidden = false;
+
+      const chipBox = $('dash-chips');
+      let settled = 0;
+      const EXPECTED = 6;   // the async chip sources below
+      function paintChips() {
+        if (!chips.length) {
+          chipBox.innerHTML = settled >= EXPECTED
+            ? '<span class="dash-chip ok">✓ Nothing needs you right now</span>'
+            : '<span class="dash-chip ok">Checking…</span>';
+          return;
+        }
+        const rank = { violation: 0, caution: 1, note: 2 };
+        chipBox.innerHTML = chips
+          .slice()
+          .sort((a, b) => (rank[a.tone] ?? 3) - (rank[b.tone] ?? 3))
+          .map(c => `<a class="dash-chip ${esc(c.tone)}" href="${esc(c.href)}">${esc(c.text)}</a>`)
+          .join('');
+      }
+      const add = (tone, text, href) => { chips.push({ tone, text, href }); };
+      const done = () => { settled++; paintChips(); };
+      paintChips();
+
+      // Coaching settings. `pending` is the streamer's queue, not the team's
+      // obligation — the team's obligation is never having submitted at all,
+      // so the two read differently here.
+      // (Team pages have no hash routing, so these link to the page rather than
+      // to a `#tab-coaching` anchor that would only scroll to a hidden panel.)
+      jget('/api/coaching-settings').then(all => {
+        const rec = all && all[team];
+        if (!rec) add('caution', 'Coaching settings not submitted', `/teams/${abbr}/`);
+        else if (rec.pending) add('note', 'Coaching settings queued for entry', `/teams/${abbr}/`);
+      }).catch(() => {}).then(done);
+
+      // § 5.1 waiver wire. `my_claims` is scoped to the caller's own teams, so
+      // this can say "you have not claimed" without ever reading another
+      // team's sealed claim.
+      jget('/api/waivers', { headers: auth }).then(list => {
+        const open = (list || []).filter(w =>
+          w.deadline && Date.parse(w.deadline) > Date.now() && !(w.my_claims || []).length);
+        if (!open.length) return;
+        const hrs = Math.max(0, Math.round((Date.parse(open[0].deadline) - Date.now()) / 3.6e6));
+        add(hrs <= 24 ? 'caution' : 'note',
+          `${plural(open.length, 'player')} on waivers · next closes in ${plural(hrs, 'hour')}`,
+          '/transactions');
+      }).catch(() => {}).then(done);
+
+      // Free-agent offers. `draft` is yours to submit and `returned` was sent
+      // back to you; `submitted` is with the committee and needs nothing.
+      jget(`/api/fa/offers?team=${encodeURIComponent(team)}`, { headers: auth }).then(offers => {
+        const n = s => (offers || []).filter(o => o.status === s).length;
+        if (n('returned')) add('violation', `${plural(n('returned'), 'FA offer')} sent back to you`, '/free-agency/');
+        if (n('draft')) add('caution', `${plural(n('draft'), 'unsubmitted FA offer')}`, '/free-agency/');
+        if (n('submitted')) add('note', `${plural(n('submitted'), 'offer')} with the committee`, '/free-agency/');
+      }).catch(() => {}).then(done);
+
+      // Open FFA windows the league is bidding into. Public — § 9.2 already
+      // announces these deadlines, so this is a reminder, not a leak.
+      jget('/api/fa/board').then(board => {
+        const open = Object.entries((board && board.players) || [])
+          .filter(([, p]) => p.ffa_deadline && Date.parse(p.ffa_deadline) > Date.now())
+          .sort((a, b) => Date.parse(a[1].ffa_deadline) - Date.parse(b[1].ffa_deadline));
+        if (!open.length) return;
+        const hrs = Math.max(0, Math.round((Date.parse(open[0][1].ffa_deadline) - Date.now()) / 3.6e6));
+        add(hrs <= 24 ? 'caution' : 'note',
+          `${plural(open.length, 'FFA window')} open · next closes in ${plural(hrs, 'hour')}`,
+          '/free-agency/');
+      }).catch(() => {}).then(done);
+
+      // § 6.2 extension eligibility, computed by the API with its own reason
+      // string — nothing about the rule is re-derived here.
+      jget('/api/poext/eligible').then(list => {
+        const n = (list || []).filter(p => p.team === team && p.eligible).length;
+        if (n) add('note', `${plural(n, 'player')} extension-eligible`, '/extensions/');
+      }).catch(() => {}).then(done);
+
+      // Guarantee/vesting dates inside 30 days. Reads `guarantee_schedule`,
+      // the field /calendar renders from; its `guarantee_dates` fallback is
+      // dead league-wide (present on 625 players, non-empty on none), so
+      // leaving it out cannot change what shows. Deferred to an idle callback:
+      // /api/players is 83KB gzipped, by far the heaviest thing here, and no
+      // part of the visible page waits on it.
+      const soon = () => jget('/api/players').then(bios =>
+        fetch(`/data/${abbr}-roster.csv`).then(r => r.ok ? r.text() : '').then(csv => {
+          const lines = csv.trim().split('\n');
+          if (lines.length < 2) return;
+          const iSlug = lines[0].split(',').indexOf('SLUG');
+          if (iSlug < 0) return;
+          const slugs = new Set(lines.slice(1).map(l => l.split(',')[iSlug]).filter(Boolean));
+          const steps = [];
+          slugs.forEach(slug => {
+            const sch = (bios[slug] || {}).guarantee_schedule || {};
+            Object.values(sch).forEach(list => {
+              (Array.isArray(list) ? list : []).forEach(s => {
+                if (s && s.date && s.date >= today) steps.push({ slug, date: s.date, amount: s.amount });
+              });
+            });
+          });
+          steps.sort((a, b) => a.date.localeCompare(b.date));
+          if (!steps.length) return;
+          const d = daysUntil(today, steps[0].date);
+          if (d > 30) return;
+          const amt = steps[0].amount ? ` (${fmtM(steps[0].amount)})` : '';
+          add(d <= 7 ? 'caution' : 'note',
+            `Guarantee date in ${plural(d, 'day')}${amt}`, '/calendar');
+        })).catch(() => {}).then(done);
+      if (window.requestIdleCallback) requestIdleCallback(soon, { timeout: 3000 });
+      else setTimeout(soon, 800);
+    });
+  })();
+  </script>
 </body>
 </html>
