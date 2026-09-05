@@ -3,15 +3,15 @@
 **Status: draft, under discussion. Nothing here is implemented.** Written
 2026-09-05, restructured the same day. Balances are being wiped and the economy
 restarted, so everything here is a proposal for the *new* economy. The
-current-state figures in § 5 describe the old one and are evidence for why the
+current-state figures in § 6 describe the old one and are evidence for why the
 reset is happening, not a description of what is being kept.
 
 **The peg, which everything below is denominated in: 1,000 NB¥ = $1.00 net to
 the league.** Every mint traces back to a dollar the league actually received.
-§ 3 is why.
+§ 4 is why.
 
 Sections § 1 and § 2 are the two complete lists — every way in, every way out.
-§ 3 justifies each number. Read the tables; argue with the bullets.
+§ 4 justifies each number. Read the tables; argue with the bullets.
 
 ---
 
@@ -44,7 +44,7 @@ than adding to it.
 | Active member | an open tenure during the league year | **2,500** | 0.25 |
 
 Prorated by months held, from the tenure and role history already in
-`members.json`. **`admin` draws no salary** — see § 3.
+`members.json`. **`admin` draws no salary** — see § 4.
 
 ### 1c. Contributing (free, capped)
 
@@ -81,36 +81,100 @@ leaderboards keep running.
 ## 2. How you spend NB¥
 
 Every way NB¥ leaves a balance. Nothing on this list confers competitive
-advantage — see § 3.
+advantage — see § 4.
 
-| Sink | Price | Recurring |
-|---|---|---|
-| **Broadcast** | | |
-| **Stream a game** | **10,000** | ✅ flagship — flat price, first come first serve, max 2/team/month |
-| Pick a playoff game to be streamed | 25,000 | seasonal |
-| Alt uniform / court for your streamed games | 10,000/season | seasonal |
-| **Commissions** | | |
-| NBNTV hype segment for your team | 15,000 | ✅ |
-| Trade Retro on a trade you name | 5,000 | ✅ |
-| Sponsor a power-rankings blurb (byline credit) | 3,000 | ✅ |
-| Name a Poeltl puzzle day, or a league award | 25,000 | rare |
-| **Cosmetics** | | |
-| Team theme unlock | 5,000 (unchanged) | per theme |
-| Custom avatar | 5,000 first, 2,500 per change after | ✅ |
-| Name colour / status text | 500 per change (unchanged) | ✅ |
-| Profile banner | 1,500 | ✅ |
-| Sitewide custom flair/title beside your name | 2,000/season | ✅ |
-| Custom Discord role colour | 3,000/season | ✅ |
-| **Gameplay** | | |
-| Poeltl / Perry mulligan | 250 | ✅ daily |
-| **Rakes** — burned, not paid to a house account | | |
-| Pool bet rake | 5% of the pool | ✅ |
-| Tip burn | 5% on amounts over 1,000 | ✅ |
-| Invest transaction fee | 1% on buy **and** on sell | ✅ |
+Everything here except the stream game already exists and already has a price;
+the only new sink being proposed is the flagship one. Betting and the stock
+market are the two systems large enough to need their own treatment — § 3.
+
+| Sink | Price | Recurring | Status |
+|---|---|---|---|
+| **Stream a game** | **10,000** | ✅ flagship — flat price, first come first serve, max 2/team/month | new |
+| Team theme unlock | 5,000 | per theme | exists, unchanged |
+| Custom avatar | 5,000 | ✅ | exists, unchanged |
+| Name colour / status text | 500 per change | ✅ | exists, unchanged |
+| Tip burn | 5% on amounts over 1,000 | ✅ | new rake on an existing feature |
+| Betting and the stock market | see § 3 | ✅ | exists, needs work |
 
 ---
 
-## 3. Why these numbers
+## 3. Betting and the stock market
+
+The two systems where NB¥ moves in volume. Both are currently **net-positive to
+the money supply** when they should be net-negative, and both need more than a
+price — so they are here rather than in the table above.
+
+### Betting — `/bet`
+
+A `bookie` opens a bet, members wager, the bookie closes it against an outcome.
+Two bet types exist today and they behave completely differently:
+
+- **Pool bets are exactly zero-sum.** `close_bet` splits the whole pool among
+  whoever backed the winning option. Nothing is created. This is the correct
+  shape and it should be the only shape.
+- **Fixed-odds bets are house-funded.** Each winner is paid their
+  `potential_payout` out of nothing, and the gap is merely *recorded* as
+  `net_shortfall`. There is no vig and no cap on exposure, so **whoever writes the
+  odds decides how much money to print.** In the old economy this was +18,198 in
+  payouts against −15,115 wagered.
+
+Proposed:
+
+| | |
+|---|---|
+| **Fixed-odds bets** | **Removed.** If they are kept for flavour instead, the book must sum to ≥105% implied probability so the house has a vig, and each bet needs a hard exposure ceiling set at creation. |
+| **Pool rake** | **5% of the pool, burned** before distribution — winners split 95%. This is what turns betting from neutral into a drain, which is the right shape for gambling inside a currency you are trying to keep scarce. |
+| **Voided bets** | **No rake.** When no one backs the winning option the bet voids and everyone is refunded in full; taking 5% of a bet that never resolved is a fee for nothing. |
+| **Max wager** | **1,000**, up from `NBY_MAX_WAGER = 300`. 300 was set against an economy where the median balance was 2,250; against a 10,000 stream game and a 17,000/month Tier 3 sub it is loose change. Still a per-member-per-bet cap, so one large balance cannot swallow a pool. |
+
+### The stock market — `/invest`
+
+Thirty team tickers plus eight index tickers (conferences and divisions). Every
+price starts at 100 and moves with real game results. On top of the results-driven
+price sits a **sentiment** overlay driven by member trades:
+`market_price = algo_price × (1 + sentiment)`, where sentiment is
+`±nbyen / SENTIMENT_DIVISOR` per trade, `SENTIMENT_DIVISOR = 50_000`, capped at
+`SENTIMENT_CAP = 0.50` and decaying to zero over 82 games.
+
+**This is not a transfer system.** Unlike a pool bet, there is no counterparty —
+every NB¥ of profit is minted by the league and every loss is burned. That makes
+it a faucet or a drain depending entirely on how members trade, which is why it
+needs the most work of anything in this document.
+
+Four holes, in order of severity:
+
+1. **A member's own buy moves the price they are about to sell into.** Buy 25,000
+   NB¥ of one team, sentiment goes to +50%, sell into the price you just made.
+   The old ledger's ORL line — 18,533 in, 1,521 out — is someone standing at that
+   door. **Fix: sentiment must be computed from everyone else's trades, never the
+   trader's own.** This is the one that matters; the rest are hygiene.
+2. **No transaction fee.** Fix: 1% on buy and on sell, burned. Note this does not
+   close hole 1 on its own — a 50% pump clears a 1% fee without noticing it.
+3. **No position cap.** One member can put their entire balance into one ticker,
+   which is both the pump vector and a way to turn the market into a coin flip.
+   Fix: cap exposure to a single ticker as a share of the member's balance.
+4. **No settlement delay.** Buy and sell can happen in the same minute, against
+   the same unchanged game data. Fix: no selling a position until some number of
+   further games have been played.
+
+Two smaller things worth knowing, both of which tilt the system toward the
+member:
+
+- **Shorts have capped losses.** `_short_equity` is
+  `max(0, shares × (2 × avg_open − current))`, so a short can go to zero but never
+  negative, while the upside is uncapped. That is a positive-EV instrument, which
+  is fine as a design choice but should be a deliberate one.
+- **Betting and investing achievements pay no NB¥** (§ 1d, already the case).
+  Paying for gambling volume pays people to churn.
+
+**Recommendation: leave `/invest` closed at the reset and reopen it once holes
+1–4 are fixed.** It is the only system here that can mint without bound, the fix
+list is short and well understood, and there is no reason to race it into a
+brand-new economy on day one.
+
+---
+
+## 4. Why these numbers
 
 The four axioms everything is derived from. The first three are the league's;
 the fourth is proposed here.
@@ -194,7 +258,7 @@ changes the rate.
   has 61 members: 48 with an open tenure, 18 holding a committee role, 7 on the
   board or heading a committee. Non-stacking, that is 7 × 12,500 + ~13 × 7,500 +
   ~30 × 2,500 = **~260,000 NB¥/year**, against ~537,000 of pegged revenue at
-  § 6's assumptions. **A1 survives it — money stays the largest source by a wide
+  § 5's assumptions. **A1 survives it — money stays the largest source by a wide
   margin — but this is the single biggest unpegged mint in the design and the
   first dial to turn if that ratio needs to move.**
 - **Highest band only, never summed.** A `fac_head` who is also an `agent` and a
@@ -222,7 +286,7 @@ changes the rate.
 
 - **One shared allowance across every faucet is worth more than tuning any
   individual faucet, because it bounds the ones nobody has found yet.** The
-  trivia hole in § 5 becomes a 2,500/month bug instead of an unbounded one, and
+  trivia hole in § 6 becomes a 2,500/month bug instead of an unbounded one, and
   every future minigame is safe on the day it ships rather than after someone
   audits its reward curve.
 - **2,500 is set just above a Prime sub (2,250).** The target steady state, once
@@ -243,7 +307,7 @@ leaderboards, Discord results, all unchanged. They just stop minting.
 
 - **They were 30,000 NB¥ of the old mint** (Perry 14,500, Trivia 12,243, Poeltl
   3,200) and only some of that survives scrutiny — Trivia's reward was never
-  verified server-side at all (§ 5).
+  verified server-side at all (§ 6).
 - Rather than ship three reward curves nobody has confidence in alongside a
   brand-new peg, **launch with the peg and add the games back one at a time with
   numbers derived from observed behaviour.** This is a suspension, and the
@@ -273,10 +337,13 @@ leaderboards, Discord results, all unchanged. They just stop minting.
 
 ### Why the sinks are priced where they are
 
-- **Everything is anchored on the stream game, because it is the one price real
-  members have actually paid (A3).** $10 → 10,000 NB¥, and the rest of the
-  catalogue is positioned relative to it: a naming right is worth more than a
-  broadcast, a profile banner is worth a fraction of one.
+- **The stream game is the only new sink, and it is the one price real members
+  have actually paid (A3).** $10 → 10,000 NB¥. Everything else on the § 2 list
+  already exists at its current price and is left alone — a proposed catalogue of
+  banners, flair, commissions and naming rights was cut on 2026-09-05 as **stuff
+  the league does not actually want to sell.** A sink nobody wants to buy drains
+  nothing, so an invented catalogue is not a real answer to the sink problem
+  however good it looks in a table.
 - **Flat price, first come first serve** (decided 2026-09-05). An auction is the
   better price-discovery mechanism when you don't know the price — and nobody has
   bought a stream this year, so nobody does. But it is far more machinery, it is
@@ -298,23 +365,21 @@ leaderboards, Discord results, all unchanged. They just stop minting.
   have. A league where donations buy wins is worse than one with no currency at
   all, and this line is far easier to hold from the start than to walk back later.
 
-### Why the rakes exist
+### Why the tip burn exists
 
-- Betting, tipping and investing currently move NB¥ between members **without
-  destroying any**. The rake is burned rather than paid to a house account, which
-  is what makes each of them a genuine drain and puts them on a spend list at all.
-- **Pool bets, 5%.** Pool betting is currently exactly zero-sum. A rake makes it a
-  net drain, the correct shape for gambling inside a currency you are trying to
-  keep scarce.
-- **Tips, 5% over 1,000.** The threshold keeps small tips frictionless — tipping
-  is a social feature first — while discouraging the consolidation of balances
-  into one account.
-- **Invest, 1% each way.** Necessary but nowhere near sufficient: a 50% self-pump
-  (§ 5) clears a 1% fee without noticing it.
+- Tipping moves NB¥ between members **without destroying any**. The burn is
+  destroyed rather than paid to a house account, which is what makes it a drain
+  and puts it on the spend list at all.
+- **5% over 1,000.** The threshold keeps small tips frictionless — tipping is a
+  social feature first, and taxing a 50 NB¥ thank-you would just stop people
+  sending them — while discouraging the consolidation of balances into one
+  account.
+- The betting rake and the invest fee follow the same logic and are argued
+  where they belong, in § 3.
 
 ---
 
-## 4. Does it balance?
+## 5. Does it balance?
 
 Annual, at eight subscribers (3 Prime, 4 Tier 1, 1 Tier 2) and ~$20/month in
 direct donations:
@@ -336,22 +401,52 @@ The 549,000 against $537 is the tier premium showing up in the aggregate: about
 Small enough not to matter, and it scales with exactly the behaviour it is meant
 to encourage.
 
-Sink capacity on the other side: four stream games a month (480,000/yr), rakes
-(~30,000), cosmetics and commissions (~180,000) ≈ **690,000**. That is capacity,
-not a forecast — it depends entirely on what members choose to buy.
+Sink capacity on the other side:
 
-**Adding salaries flips the economy from sink-dominant to mildly faucet-dominant**
-— roughly 173,000 NB¥/year of slack, about 20% of the mint. Worth saying plainly
-because it is the cost of the § 1b decision, and there are three dials if it
-matters: lower the salary bands, raise the stream-game price, or sell more
-broadcasts. The third is the one that points the right way — **more streams sold
-means more streams aired, which means more subs.** The flagship sink and the
-primary faucet reinforce each other, and that loop is the part of this design
-most worth protecting.
+| Sink | NB¥/year | |
+|---|---|---|
+| Stream games | **480,000** | at four a month |
+| Existing cosmetics (themes, avatars, name colours) | ~30,000 | mostly one-time per member; runs dry |
+| Rakes and the tip burn | ~30,000 | scales with betting volume |
+| **Total capacity** | **~540,000** | |
+
+That is capacity, not a forecast, and it leaves **a gap of roughly 320,000
+NB¥/year — 37% of the mint.**
+
+### The economy has one real sink
+
+This is the honest headline of § 5 and it is worth stating flatly: after cutting
+the proposed catalogue, **stream games are 89% of all sink capacity.** Cosmetics
+run dry — a member buys one avatar and one theme and is done — and the rakes only
+scale with gambling volume the design is otherwise trying to shrink.
+
+That makes the whole economy's balance a function of one number: **how many
+broadcasts get sold.** At four a month there is a 320,000/year gap. At eight a
+month it closes entirely. Nothing else on the list can move enough to matter.
+
+Three things follow:
+
+- **The stream-game price and volume are now the only meaningful dial**, which
+  raises the stakes on the § 4 note about revisiting the price after real demand
+  data. Getting it wrong is no longer a minor mispricing.
+- **Salaries are the largest thing that could be cut** if the gap needs closing
+  from the faucet side — 260,000/year, almost exactly the size of the gap. That
+  is a real trade: the salary is what gives non-paying members any path at all,
+  so closing the gap that way reopens the problem it was added to solve.
+- **The gap may simply be acceptable.** A pegged mint does not inflate, and
+  members accumulating savings is not a crisis — it only becomes one if balances
+  grow so large that the sinks stop feeling meaningful. That is a thing to watch
+  after a season of real data, not to pre-solve now.
+
+The direction that points the right way is still the same one: **more streams
+sold means more streams aired, which means more subs.** The flagship sink and the
+primary faucet reinforce each other, and with the catalogue gone that loop is no
+longer just the most attractive part of the design — it is essentially the whole
+of it.
 
 ---
 
-## 5. Where the old economy stands, and what broke
+## 6. Where the old economy stands, and what broke
 
 Measured 2026-09-05 from `bets-ledger.json` (1,536 entries) and
 `member-balances.json`. This is the economy being replaced.
@@ -392,34 +487,24 @@ an answer or tracks a session server-side. `POST {"streak": 10}` in a loop pays
 `Trivia streak 30` rows are the fingerprint of a client that kept counting past
 the point the server stopped checking.
 
-**3. Invest is a self-pump loop.** `nbn-api/routers/invest.py` has no transaction
-fee, no position cap and no cooldown, and a member's own buy moves the price they
-will sell into: `sentiment_delta` is `±nbyen / SENTIMENT_DIVISOR` with
-`SENTIMENT_DIVISOR = 50_000` and `SENTIMENT_CAP = 0.50`, applied as
-`market_price = algo_price × (1 + sentiment)`. Buy 25,000 NB¥ of one team,
-sentiment goes to +50%, sell into the price you just made. The ORL line in the
-ledger (−18,533 in, +1,521 out) is someone standing at that door.
-
-**4. Fixed-odds bets are house-funded.** Pool bets are correctly zero-sum —
-`close_bet` divides the whole pool among the winners and creates nothing.
-Fixed-odds settlement pays each winner their `potential_payout` out of nothing
-and merely *records* the gap as `net_shortfall`. Whoever writes the odds sets the
-size of the mint, with no vig and no cap on exposure. That is the +18,198 in
-payouts against −15,115 wagered.
+**3. Invest is a self-pump loop**, and **4. fixed-odds bets are house-funded.**
+Both are dissected in § 3, where the fixes live; between them they account for
+the 18,198 in bet payouts and the 3,047 in share sales above. They are listed
+here only so the count of what went wrong is complete.
 
 ### Remove or fix before reopening
 
 | | Verdict |
 |---|---|
-| **Fixed-odds bets** | **Remove.** An unbacked mint whose size is set by whoever writes the odds. If kept for flavour, require the book to sum to ≥105% implied probability so the house has a vig, and cap exposure per bet. |
+| **Fixed-odds bets** | **Remove** — § 3. |
+| **Invest** | **Fix all four holes or leave it closed** — § 3. Recommended: closed at reset, reopened once fixed. |
 | **Trivia streak endpoint** | **Fix before it ever pays again.** Suspending the reward (§ 1c) closes the hole for now, but the fix is the precondition for reintroducing the game, not part of the work of reintroducing it. The server has to own the session. |
-| **Invest** | **Fix all four holes or leave it closed.** Transaction fee, position cap, settlement delay (no selling until N further games have been played), and — most important — **sentiment must exclude the trader's own trades**. The fee alone does not close this. |
 | **Tenure achievement payouts** | **Remove the NB¥**, keep the badge (§ 1d). |
-| **`POST /api/bets/admin/adjust`** | **Keep** — it is the achievement job's only channel — but require a structured reason category rather than free text. Every achievement mint currently lands in the ledger as `Admin adjustment: …`, indistinguishable from a manual grant, which is why § 5's numbers took a parser to recover. |
+| **`POST /api/bets/admin/adjust`** | **Keep** — it is the achievement job's only channel — but require a structured reason category rather than free text. Every achievement mint currently lands in the ledger as `Admin adjustment: …`, indistinguishable from a manual grant, which is why § 6's numbers took a parser to recover. |
 
 ---
 
-## 6. Open questions
+## 7. Open questions
 
 - **Do past donors get credit at reset?** Members who already paid ~$10 for stream
   games have a real claim under the new peg. Recommendation: honour it. It is a
@@ -429,7 +514,7 @@ payouts against −15,115 wagered.
   members, achievement money they never asked for. This is the economy getting a
   real currency, not members being punished. Worth writing the announcement
   before the code.
-- **When and in what order do the minigames come back?** § 3 sets the bar each has
+- **When and in what order do the minigames come back?** § 4 sets the bar each has
   to clear; it does not set a date. Poeltl first, Trivia last and only after real
   work.
 - **Calendar month for the free cap, league year for salaries** — two different
