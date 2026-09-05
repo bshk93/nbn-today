@@ -237,8 +237,19 @@
        rather than a second one invented for this card. */
     .dash-line-val.tone-over      { color: var(--danger); }
     .dash-line-val.tone-under     { color: var(--success); }
-    .dash-line-val.tone-violation { color: var(--danger); font-weight: 700; }
     .dash-line-val.tone-unknown   { color: var(--text-dim); font-style: italic; }
+    /* Flags whichever of the Apron 1/Apron 2 lines is this team's actual
+       hard cap (§ 1.4) — see the threshLine/hardCapKey comment below. Same
+       gold/red-by-apron-level vocabulary as .hardcap-chip and .hard-cap-banner
+       (teams/team.js) — a color this card hasn't invented on its own. */
+    .dash-line-hardcap {
+      display: inline-flex; align-items: baseline; gap: 0.35rem;
+      padding: 0.1rem 0.55rem; border-radius: 6px;
+      border: 1px solid var(--gold-border); background: var(--gold-bg);
+    }
+    .dash-line-hardcap.apron2 { border-color: var(--danger-border-strong); background: var(--danger-bg); }
+    .dash-line-hardcap .dash-line-label,
+    .dash-line-hardcap .dash-line-val { font-weight: 800; }
 
     .dash-games { display: flex; flex-direction: column; gap: 0.3rem; }
     .dash-game {
@@ -991,8 +1002,14 @@
       fetch(url, opts).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
 
     // Dollars at homepage altitude — "$140.1M", not the exact figure the team
-    // page shows. Someone wanting the cent is one click from it.
-    const fmtM = v => '$' + (Math.abs(Number(v) || 0) / 1e6).toFixed(1) + 'M';
+    // page shows. Someone wanting the cent is one click from it. Below $1M,
+    // "$0.2M" rounds away the only digits that matter (a $210,325 cap cushion
+    // and a $499,999 one would both read "$0.5M"), so that range spells the
+    // real number out instead.
+    const fmtM = v => {
+      const n = Math.abs(Number(v) || 0);
+      return n < 1e6 ? '$' + Math.round(n).toLocaleString('en-US') : '$' + (n / 1e6).toFixed(1) + 'M';
+    };
 
     // Civil dates are parsed at noon UTC so a day never slips across a zone
     // boundary. league-time.js owns "what day is it"; this only does arithmetic
@@ -1350,25 +1367,27 @@
           fmt: fmtM,
         });
         const row = k => st.rows.find(r => r.key === k);
-        const capRow = row('cap'), apron1Row = row('apron1'), apron2Row = row('apron2'),
-          hardCapRow = row('hard_cap'), rosterRow = row('roster');
-        // One line per threshold rather than a single "Cap" line: each of
-        // Soft Cap/Apron 1/Apron 2 carries its own over/under note from
-        // CapHealth.standing (§ 1.3/1.4 basis differs per line — see that
-        // function). Hard Cap only appears when this team actually has one
-        // set, same as the team page's own Cap Health card. Tone (over/under/
-        // violation) reuses the same class names as that card's .ch-tone-*.
-        const threshLine = (label, r) => r
-          ? `<span><span class="dash-line-label">${esc(label)}</span> `
+        const capRow = row('cap'), apron1Row = row('apron1'), apron2Row = row('apron2'), rosterRow = row('roster');
+        // A team's hard cap (§ 1.4) is never a number of its own — it's
+        // always pegged to the league's own Apron 1 or Apron 2 level, so a
+        // separate "Hard Cap" line necessarily repeats whichever apron line
+        // is already here. Boxing that line in place says the same thing
+        // without a fourth line that just duplicates a number already shown.
+        const hardCapKey = entry.hard_cap === 'first_apron' ? 'apron1'
+          : entry.hard_cap === 'second_apron' ? 'apron2' : null;
+        const threshLine = (label, r, key) => r
+          ? `<span${key === hardCapKey
+              ? ` class="dash-line-hardcap${key === 'apron2' ? ' apron2' : ''}" title="This team is hard-capped here"`
+              : ''}>`
+            + `<span class="dash-line-label">${esc(label)}</span> `
             + `<span class="dash-line-val tone-${esc(r.tone)}">${esc(r.note)}</span></span>`
           : '';
         html += '<div class="dash-sep"></div><div class="dash-lines">'
           + `<span><span class="dash-line-label">Team Salary</span> `
           + `<span class="dash-line-val">${esc(fmtM(entry.salary))}</span></span>`
-          + threshLine('Soft Cap', capRow)
-          + threshLine('Apron 1', apron1Row)
-          + threshLine('Apron 2', apron2Row)
-          + threshLine('Hard Cap', hardCapRow)
+          + threshLine('Soft Cap', capRow, 'cap')
+          + threshLine('Apron 1', apron1Row, 'apron1')
+          + threshLine('Apron 2', apron2Row, 'apron2')
           + (rosterRow ? `<span><span class="dash-line-label">Roster</span> `
             + `<span class="dash-line-val">${esc(rosterRow.value)}</span></span>` : '')
           + '</div>';
