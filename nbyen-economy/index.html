@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>NB¥ Economy Proposal — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="A draft proposal for pegging NB¥ to real dollars, rebuilding the sinks, and restarting balances.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NB¥ Economy Proposal — NBN">
+  <meta property="og:description" content="A draft proposal for pegging NB¥ to real dollars, rebuilding the sinks, and restarting balances.">
+  <meta property="og:url" content="https://nbn.today/nbyen-economy/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#111827">
+  <!-- /NBN:og -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    .page { max-width: 900px; margin: 0 auto; }
+
+    header { margin-bottom: 1.25rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .draft-banner {
+      background: var(--gold-bg, rgba(234,179,8,0.08));
+      border: 1px solid var(--gold-border);
+      border-radius: 10px;
+      color: var(--gold);
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+      padding: 0.8rem 1.1rem;
+    }
+    .draft-banner strong { color: var(--gold); font-weight: 700; }
+
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .search-row input {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      padding: 0.55rem 0.875rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-row input::placeholder { color: var(--text-muted); }
+    .search-row input:focus { border-color: var(--link); }
+
+    .match-info {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      min-width: 6rem;
+      text-align: right;
+    }
+
+    .nav-btns { display: flex; gap: 0.375rem; }
+    .nav-btns button {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 0.3rem 0.6rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-btns button:hover { background: var(--border); color: var(--text-primary); }
+    .nav-btns button:disabled { opacity: 0.3; cursor: default; }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 2.25rem;
+    }
+    @media (max-width: 700px) { .card { padding: 1.25rem 1rem; } }
+
+    /* table of contents */
+    #toc {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 1rem;
+    }
+    #toc[open] { padding-bottom: 1.1rem; }
+    #toc summary {
+      align-items: baseline;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      font-size: 0.85rem;
+      font-weight: 600;
+      gap: 0.5rem;
+      list-style: none;
+      padding: 0.7rem 1.25rem;
+      user-select: none;
+    }
+    #toc summary::-webkit-details-marker { display: none; }
+    #toc summary::before {
+      content: '\25B8';
+      color: var(--text-muted);
+      display: inline-block;
+      transition: transform 0.15s;
+    }
+    #toc[open] summary::before { transform: rotate(90deg); }
+    #toc summary .toc-count { color: var(--text-muted); font-weight: 400; font-size: 0.8rem; }
+    #toc-body {
+      column-gap: 2rem;
+      columns: 2;
+      padding: 0 1.25rem;
+    }
+    @media (max-width: 700px) { #toc-body { columns: 1; } }
+    .toc-sec { break-inside: avoid; margin-bottom: 1rem; }
+    .toc-sec > a {
+      color: var(--text-bright);
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .toc-sec > a:hover { color: var(--link); }
+    .toc-sec ul { list-style: none; margin: 0; padding: 0; }
+    .toc-sec li { margin-bottom: 0.25rem; }
+    .toc-sec li a {
+      color: var(--text-secondary);
+      display: block;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    .toc-sec li a:hover { color: var(--link); }
+
+    /* markdown prose */
+    #content h1 { display: none; } /* page already has a title */
+    #content h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.4rem;
+      margin: 2.25rem 0 1rem;
+    }
+    #content h2:first-child { margin-top: 0; }
+    #content h2, #content h3 { scroll-margin-top: 1rem; }
+    #content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin: 1.5rem 0 0.6rem;
+    }
+    #content h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin: 1.25rem 0 0.5rem;
+    }
+    #content p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      margin-bottom: 0.75rem;
+    }
+    #content ul, #content ol {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      margin: 0.5rem 0 0.75rem 1.5rem;
+    }
+    #content li { margin-bottom: 0.25rem; }
+    #content code {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.8em;
+      padding: 0.1em 0.35em;
+    }
+    #content pre {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow-x: auto;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0 1rem;
+    }
+    #content pre code {
+      background: none;
+      border: none;
+      font-size: 0.82rem;
+      padding: 0;
+    }
+    #content table {
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin: 0.75rem 0 1rem;
+      width: 100%;
+      display: block;
+      overflow-x: auto;
+    }
+    #content th {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 0.45rem 0.75rem;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    #content td {
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 0.4rem 0.75rem;
+      vertical-align: top;
+    }
+    #content tr:hover td { background: var(--bg-hover); }
+    #content strong { color: var(--text-bright); font-weight: 600; }
+    #content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0;
+    }
+    #content blockquote {
+      border-left: 3px solid var(--border);
+      color: var(--text-muted);
+      font-style: italic;
+      margin: 0.75rem 0;
+      padding-left: 1rem;
+    }
+
+    /* search highlights */
+    mark {
+      background: var(--gold-border);
+      border-radius: 2px;
+      color: #fef3c7;
+      padding: 0 2px;
+    }
+    mark.current {
+      background: var(--champion-border);
+      color: var(--text-on-accent);
+    }
+
+    #loading {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      padding: 2rem 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<script src="/nav.js"></script>
+
+<div class="page">
+  <nav class="nav"></nav>
+
+  <header>
+    <h1>The NB¥ Economy</h1>
+    <p>A proposal for pegging NB¥ to real dollars, rebuilding the sinks, and restarting balances from zero.</p>
+  </header>
+
+  <div class="draft-banner">
+    <strong>Draft — nothing here is implemented.</strong> This is a working proposal under
+    discussion, not a description of how NB¥ works today. Numbers are subject to change and
+    none of it has been built. The source lives at <code>docs/nbyen-economy.md</code>.
+  </div>
+
+  <div class="search-row">
+    <input type="text" id="search" placeholder="Search the proposal…" autocomplete="off" spellcheck="false">
+    <div class="nav-btns">
+      <button id="prev-btn" disabled>↑</button>
+      <button id="next-btn" disabled>↓</button>
+    </div>
+    <div class="match-info" id="match-info"></div>
+  </div>
+
+  <details id="toc" open style="display:none">
+    <summary>Contents <span class="toc-count" id="toc-count"></span></summary>
+    <div id="toc-body"></div>
+  </details>
+
+  <div class="card">
+    <div id="loading">Loading…</div>
+    <div id="content" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+  const contentEl = document.getElementById('content');
+  const loadingEl = document.getElementById('loading');
+  const searchEl  = document.getElementById('search');
+  const matchInfo = document.getElementById('match-info');
+  const prevBtn   = document.getElementById('prev-btn');
+  const nextBtn   = document.getElementById('next-btn');
+
+  let rawHTML = '';
+  let marks = [];
+  let currentIdx = -1;
+
+  // ── Doc loading ───────────────────────────────────────────────────────────
+  // The markdown file is the single source of truth and is served straight out
+  // of docs/ — this page renders it rather than restating it, so the doc and
+  // the page can't drift.
+
+  fetch('/docs/nbyen-economy.md')
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(md => {
+      contentEl.innerHTML = marked.parse(md);
+      buildToc();
+      // ids are assigned by buildToc, so snapshot *after* it — search resets
+      // #content to rawHTML and the anchors have to survive that.
+      rawHTML = contentEl.innerHTML;
+      loadingEl.style.display = 'none';
+      contentEl.style.display = '';
+      if (location.hash) {
+        const target = document.getElementById(location.hash.slice(1));
+        if (target) target.scrollIntoView();
+      }
+    })
+    .catch(() => {
+      loadingEl.textContent = 'Failed to load the proposal.';
+    });
+
+  // ── Table of contents ─────────────────────────────────────────────────────
+  // Generated from the rendered headings, never stored in the markdown — a
+  // hand-written one goes stale the first time a section is added.
+
+  function slugify(text) {
+    return text.toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .slice(0, 60) || 'section';
+  }
+
+  function buildToc() {
+    const tocEl   = document.getElementById('toc');
+    const bodyEl  = document.getElementById('toc-body');
+    const countEl = document.getElementById('toc-count');
+    const seen = new Map();
+    const sections = [];
+    let current = null;
+
+    contentEl.querySelectorAll('h2, h3').forEach(h => {
+      let id = slugify(h.textContent);
+      if (seen.has(id)) { const n = seen.get(id) + 1; seen.set(id, n); id += '-' + n; }
+      else seen.set(id, 1);
+      h.id = id;
+      const entry = { id, text: h.textContent.trim() };
+      if (h.tagName === 'H2') { current = Object.assign({ children: [] }, entry); sections.push(current); }
+      else if (current) current.children.push(entry);
+    });
+
+    if (!sections.length) return;
+
+    bodyEl.innerHTML = '';
+    sections.forEach(sec => {
+      const wrap = document.createElement('div');
+      wrap.className = 'toc-sec';
+
+      const head = document.createElement('a');
+      head.href = '#' + sec.id;
+      head.textContent = sec.text;
+      wrap.appendChild(head);
+
+      if (sec.children.length) {
+        const ul = document.createElement('ul');
+        sec.children.forEach(item => {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = '#' + item.id;
+          a.textContent = item.text;
+          li.appendChild(a);
+          ul.appendChild(li);
+        });
+        wrap.appendChild(ul);
+      }
+      bodyEl.appendChild(wrap);
+    });
+
+    countEl.textContent = '· ' + sections.length + ' sections';
+    tocEl.style.display = '';
+  }
+
+  // ── Search ────────────────────────────────────────────────────────────────
+
+  function clearHighlights() {
+    contentEl.innerHTML = rawHTML;
+    marks = [];
+    currentIdx = -1;
+  }
+
+  function highlight(query) {
+    clearHighlights();
+    if (!query) {
+      matchInfo.textContent = '';
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      return;
+    }
+
+    const walker = document.createTreeWalker(contentEl, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+
+    const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    textNodes.forEach(tn => {
+      const val = tn.nodeValue;
+      if (!re.test(val)) return;
+      re.lastIndex = 0;
+
+      const frag = document.createDocumentFragment();
+      let last = 0, m;
+      while ((m = re.exec(val)) !== null) {
+        if (m.index > last) frag.appendChild(document.createTextNode(val.slice(last, m.index)));
+        const mark = document.createElement('mark');
+        mark.textContent = m[0];
+        frag.appendChild(mark);
+        marks.push(mark);
+        last = re.lastIndex;
+      }
+      if (last < val.length) frag.appendChild(document.createTextNode(val.slice(last)));
+      tn.parentNode.replaceChild(frag, tn);
+    });
+
+    const count = marks.length;
+    if (count === 0) {
+      matchInfo.textContent = 'No matches';
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      return;
+    }
+
+    prevBtn.disabled = false;
+    nextBtn.disabled = false;
+    goTo(0);
+  }
+
+  function goTo(idx) {
+    if (!marks.length) return;
+    if (currentIdx >= 0) marks[currentIdx].classList.remove('current');
+    currentIdx = (idx + marks.length) % marks.length;
+    marks[currentIdx].classList.add('current');
+    marks[currentIdx].scrollIntoView({ block: 'center', behavior: 'smooth' });
+    matchInfo.textContent = `${currentIdx + 1} / ${marks.length}`;
+  }
+
+  let debounceTimer;
+  searchEl.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => highlight(searchEl.value.trim()), 150);
+  });
+
+  searchEl.addEventListener('keydown', e => {
+    if (!marks.length) return;
+    if (e.key === 'Enter') { e.preventDefault(); goTo(e.shiftKey ? currentIdx - 1 : currentIdx + 1); }
+  });
+
+  nextBtn.addEventListener('click', () => goTo(currentIdx + 1));
+  prevBtn.addEventListener('click', () => goTo(currentIdx - 1));
+</script>
+<script src="/token-badge.js"></script>
+</body>
+</html>
