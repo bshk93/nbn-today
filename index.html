@@ -271,8 +271,37 @@
     .dash-feed-item .meta { color: var(--text-muted); font-size: 0.7rem; display: block; }
     a.dash-feed-item:hover { color: var(--text-primary); }
 
-    .dash-rank { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.78rem; }
-    .dash-rank-num { color: var(--text-muted); width: 1.2rem; flex: none; }
+    /* Power rankings — a horizontal standing rather than a fourth column in
+       the row above, which at 820px would leave each card too narrow to hold
+       a trade description. */
+    .dash-ranks-head {
+      display: flex; align-items: baseline; gap: 0.75rem;
+      flex-wrap: wrap; margin-bottom: 0.7rem;
+    }
+    .dash-ranks-edition {
+      margin-left: auto; font-size: 0.72rem; color: var(--text-muted);
+    }
+    .dash-ranks-edition:hover { color: var(--text-secondary); }
+
+    .dash-ranks-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .dash-rank-team {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: var(--bg-subtle); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.3rem 0.6rem;
+      text-decoration: none; color: var(--text-secondary);
+      transition: border-color 0.15s;
+    }
+    .dash-rank-team:hover { border-color: var(--muted-border); }
+    .dash-rank-team img { height: 20px; width: 20px; object-fit: contain; }
+    .dash-rank-pos { color: var(--text-muted); font-size: 0.72rem; min-width: 0.9rem; }
+    .dash-rank-abbr { font-size: 0.8rem; font-weight: 600; }
+
+    /* Same vocabulary as the published table's moveCell(). */
+    .rank-move { font-size: 0.7rem; font-family: var(--font-mono); }
+    .rank-move.up   { color: var(--success); }
+    .rank-move.down { color: var(--danger); }
+    .rank-move.flat { color: var(--text-dim); }
+    .rank-move.new  { color: var(--gold); font-size: 0.62rem; text-transform: uppercase; }
 
     /* Band 3 — dailies */
     .dash-dailies { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -343,6 +372,9 @@
         <div class="dash-skel" style="width:60%"></div>
       </div>
     </div>
+
+    <!-- The current power-rankings standing. Hidden until it has one. -->
+    <div class="dash-card" id="dash-ranks" hidden></div>
 
     <!-- Band 3 — dailies. Signed-in only: "played today" is per-member. -->
     <div class="dash-dailies" id="dash-dailies" hidden></div>
@@ -1000,9 +1032,51 @@
         + '<div class="dash-empty">Unavailable.</div>';
     });
 
-    // Newsstand. Deliberately not the power rankings: the only published
-    // edition is February 2026's, and a seven-month-old standing rendered as
-    // current is worse than none. Worth adding when a fresh edition publishes.
+    // The power-rankings standing, always the newest **published** edition
+    // across every series — so publishing a new one replaces this with no edit
+    // here. The edition's own title and date are shown beside it rather than
+    // presenting the standing as undated: today's newest is February's, and a
+    // stale standing that names itself is honest where a bare top five is not.
+    jget('/api/news/rankings/series').then(series => {
+      const editions = Object.values(series || {}).flat()
+        .filter(e => e && e.published_at)
+        .sort((a, b) => String(a.published_at).localeCompare(String(b.published_at)));
+      if (!editions.length) return;
+      const latest = editions[editions.length - 1];
+      return jget(`/api/news/${encodeURIComponent(latest.id)}`).then(article => {
+        // Rank <= 5 rather than the first five rows: teams level on the average
+        // share a rank (T-4, T-4, 6), so a tie at the cut legitimately returns
+        // six teams and truncating would drop one of two equals.
+        const top = (article.final || []).filter(r => r.rank <= 5)
+          .sort((a, b) => a.rank - b.rank);
+        if (!top.length) return;
+
+        // Same movement vocabulary as the published table (`moveCell` in
+        // news/view/index.html): ▲ up, ▼ down, – level, "new" with no previous.
+        const move = r => r.prev == null ? '<span class="rank-move new">new</span>'
+          : r.move > 0 ? `<span class="rank-move up">▲${r.move}</span>`
+          : r.move < 0 ? `<span class="rank-move down">▼${Math.abs(r.move)}</span>`
+          : '<span class="rank-move flat">–</span>';
+
+        const when = String(latest.published_at).slice(0, 10);
+        $('dash-ranks').innerHTML =
+          `<div class="dash-ranks-head">`
+          + `<div class="dash-card-title" style="margin:0">Power Rankings</div>`
+          + `<a class="dash-ranks-edition" href="/news/view/?id=${encodeURIComponent(latest.id)}">`
+          + `${esc(latest.title || 'Latest edition')} · ${esc(shortDate(when))} →</a></div>`
+          + '<div class="dash-ranks-row">' + top.map(r =>
+              `<a class="dash-rank-team" href="/teams/${esc(String(r.team).toLowerCase())}/" `
+              + `title="${esc(r.team)}">`
+              + `<span class="dash-rank-pos">${r.tied ? 'T-' : ''}${r.rank}</span>`
+              + `<img src="/logos/logo-${esc(String(r.team).toLowerCase())}.png" alt="">`
+              + `<span class="dash-rank-abbr">${esc(r.team)}</span>${move(r)}</a>`).join('')
+          + '</div>';
+        $('dash-ranks').hidden = false;
+      });
+    }).catch(() => {});
+
+    // Newsstand — the articles themselves. The rankings edition is one of
+    // these too, and is deliberately also shown as its own standing above.
     jget('/api/news').then(d => {
       const card = $('dash-news');
       const arts = ((d && d.articles) || []).filter(a => a.status === 'published').slice(0, 3);

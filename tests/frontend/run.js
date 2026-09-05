@@ -92,6 +92,10 @@ const PAGES = [
   // The card grid still lives below the dashboard. Asserted separately so
   // "the dashboard took over the homepage" fails loudly rather than quietly.
   { path: '/',                        selector: 'main.grid .card', min: 30, what: 'the page directory grid' },
+  // The rankings strip resolves the newest published edition across every
+  // series and then fetches it — two chained calls, so it fails in ways the
+  // single-fetch cards cannot. Five, not 30: this is the top of the standing.
+  { path: '/',                        selector: '.dash-rank-team', min: 5,  what: 'the power-rankings top five' },
 ];
 
 function findChrome() {
