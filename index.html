@@ -232,6 +232,13 @@
     .dash-lines { display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem; font-size: 0.82rem; }
     .dash-line-label { color: var(--text-muted); }
     .dash-line-val   { color: var(--text-secondary); font-weight: 600; }
+    /* Same tone → color mapping as the team page's Cap Health card
+       (.ch-tone-* in teams/team.js) — one vocabulary for "over" vs "under"
+       rather than a second one invented for this card. */
+    .dash-line-val.tone-over      { color: var(--danger); }
+    .dash-line-val.tone-under     { color: var(--success); }
+    .dash-line-val.tone-violation { color: var(--danger); font-weight: 700; }
+    .dash-line-val.tone-unknown   { color: var(--text-dim); font-style: italic; }
 
     .dash-games { display: flex; flex-direction: column; gap: 0.3rem; }
     .dash-game {
@@ -1343,12 +1350,25 @@
           fmt: fmtM,
         });
         const row = k => st.rows.find(r => r.key === k);
-        const capRow = row('cap'), rosterRow = row('roster');
+        const capRow = row('cap'), apron1Row = row('apron1'), apron2Row = row('apron2'),
+          hardCapRow = row('hard_cap'), rosterRow = row('roster');
+        // One line per threshold rather than a single "Cap" line: each of
+        // Soft Cap/Apron 1/Apron 2 carries its own over/under note from
+        // CapHealth.standing (§ 1.3/1.4 basis differs per line — see that
+        // function). Hard Cap only appears when this team actually has one
+        // set, same as the team page's own Cap Health card. Tone (over/under/
+        // violation) reuses the same class names as that card's .ch-tone-*.
+        const threshLine = (label, r) => r
+          ? `<span><span class="dash-line-label">${esc(label)}</span> `
+            + `<span class="dash-line-val tone-${esc(r.tone)}">${esc(r.note)}</span></span>`
+          : '';
         html += '<div class="dash-sep"></div><div class="dash-lines">'
           + `<span><span class="dash-line-label">Team Salary</span> `
           + `<span class="dash-line-val">${esc(fmtM(entry.salary))}</span></span>`
-          + (capRow ? `<span><span class="dash-line-label">Cap</span> `
-            + `<span class="dash-line-val">${esc(capRow.note)}</span></span>` : '')
+          + threshLine('Soft Cap', capRow)
+          + threshLine('Apron 1', apron1Row)
+          + threshLine('Apron 2', apron2Row)
+          + threshLine('Hard Cap', hardCapRow)
           + (rosterRow ? `<span><span class="dash-line-label">Roster</span> `
             + `<span class="dash-line-val">${esc(rosterRow.value)}</span></span>` : '')
           + '</div>';
