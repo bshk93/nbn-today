@@ -213,6 +213,13 @@
       gap: 0.75rem;
     }
 
+    /* Logo, name and record are one link to the team's own page — the most
+       likely next click from this card by a distance. */
+    .dash-team-id {
+      display: flex; align-items: center; gap: 0.75rem;
+      text-decoration: none; color: inherit; min-width: 0;
+    }
+    .dash-team-id:hover .dash-team-name { color: var(--link); }
     .dash-team-head img { height: 42px; width: 42px; object-fit: contain; }
     .dash-team-name { font-size: 1.05rem; font-weight: 700; line-height: 1.2; }
     .dash-team-sub  { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; }
@@ -319,18 +326,43 @@
     }
     .dash-ranks-edition:hover { color: var(--text-secondary); }
 
-    .dash-ranks-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .dash-rank-team {
-      display: flex; align-items: center; gap: 0.4rem;
-      background: var(--bg-subtle); border: 1px solid var(--border);
-      border-radius: 8px; padding: 0.3rem 0.6rem;
-      text-decoration: none; color: var(--text-secondary);
-      transition: border-color 0.15s;
+    /* A table, not a row of pills. As chips these wrapped to one or two per
+       line on a phone, which is the least scannable possible shape for an
+       ordered list — the ranks ended up in a zigzag. Five equal columns on a
+       wide screen, one column of full-width rows on a narrow one; either way
+       every rank sits at the same x as the one above it. */
+    .dash-ranks-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.25rem;
     }
-    .dash-rank-team:hover { border-color: var(--muted-border); }
-    .dash-rank-team img { height: 20px; width: 20px; object-fit: contain; }
-    .dash-rank-pos { color: var(--text-muted); font-size: 0.72rem; min-width: 0.9rem; }
+    .dash-rank-team {
+      display: flex; align-items: center; gap: 0.45rem;
+      padding: 0.35rem 0.5rem; border-radius: 6px;
+      text-decoration: none; color: var(--text-secondary);
+      transition: background 0.15s;
+      min-width: 0;
+    }
+    .dash-rank-team:hover { background: var(--bg-hover); }
+    .dash-rank-team img { height: 20px; width: 20px; object-fit: contain; flex: none; }
+    .dash-rank-pos {
+      color: var(--text-muted); font-size: 0.72rem;
+      font-variant-numeric: tabular-nums; text-align: right;
+      min-width: 1.4rem; flex: none;
+    }
     .dash-rank-abbr { font-size: 0.8rem; font-weight: 600; }
+    .dash-rank-team .rank-move { flex: none; }
+
+    @media (max-width: 700px) {
+      .dash-ranks-row { grid-template-columns: 1fr; gap: 0; }
+      .dash-rank-team { border-radius: 0; padding: 0.4rem 0.35rem; }
+      .dash-rank-team + .dash-rank-team { border-top: 1px solid var(--border-subtle); }
+      /* Stacked, the rows read down the page, so the movement belongs in its
+         own right-hand column that lines up. Side by side across five columns
+         it must not: pushed right, PHX's "–" sits nearer "2 CHI" than PHX and
+         reads as CHI's. Each entry stays one group instead. */
+      .dash-rank-team .rank-move { margin-left: auto; }
+    }
 
     /* Same vocabulary as the published table's moveCell(). */
     .rank-move { font-size: 0.7rem; font-family: var(--font-mono); }
@@ -338,20 +370,6 @@
     .rank-move.down { color: var(--danger); }
     .rank-move.flat { color: var(--text-dim); }
     .rank-move.new  { color: var(--gold); font-size: 0.62rem; text-transform: uppercase; }
-
-    /* Band 3 — dailies */
-    .dash-dailies { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .dash-daily {
-      display: flex; align-items: center; gap: 0.45rem;
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 999px; padding: 0.35rem 0.85rem;
-      font-size: 0.8rem; color: var(--text-secondary); text-decoration: none;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    .dash-daily:hover { border-color: var(--muted-border); color: var(--text-primary); }
-    .dash-daily.done { color: var(--text-muted); }
-    .dash-daily.done .dash-daily-mark { color: var(--success); }
-    .dash-daily-mark { font-size: 0.7rem; }
 
     .dash-empty { font-size: 0.78rem; color: var(--text-muted); }
 
@@ -408,8 +426,6 @@
     <!-- The current power-rankings standing. Hidden until it has one. -->
     <div class="dash-card" id="dash-ranks" hidden></div>
 
-    <!-- Band 3 — dailies. Signed-in only: "played today" is per-member. -->
-    <div class="dash-dailies" id="dash-dailies" hidden></div>
   </section>
 
   <main class="grid">
@@ -1225,7 +1241,7 @@
       });
     }).catch(() => {});
 
-    // ── Bands 1 and 3: signed-in only ─────────────────────────────────────
+    // ── Band 1: signed-in only ────────────────────────────────────────────
     if (!token) return;
 
     // Which team is mine. Same derivation nav.js's profile picker uses:
@@ -1241,36 +1257,6 @@
           return { me, team: tenure.team.toUpperCase() };
         }))
       .catch(() => null);
-
-    // ── Band 3: dailies ───────────────────────────────────────────────────
-    //
-    // Perry and Poeltl both report `your_entry` for the caller, which is what
-    // turns four identical cards into "you have two things left to play".
-    // Trivia and Bets have no per-day completion, so they stay plain links.
-    mePromise.then(ctx => {
-      if (!ctx) return;
-      const strip = $('dash-dailies');
-      const items = [
-        { href: '/perry/', icon: '🏀', label: 'Perry', url: '/api/perry/today' },
-        { href: '/poeltl/', icon: '🕵️', label: 'Poeltl', url: '/api/poeltl/today' },
-      ];
-      Promise.all(items.map(it =>
-        jget(it.url, { headers: auth })
-          .then(d => Object.assign({}, it, { done: !!(d && d.your_entry) }))
-          .catch(() => Object.assign({}, it, { done: null }))))
-        .then(results => {
-          const html = results.map(r =>
-            `<a class="dash-daily${r.done ? ' done' : ''}" href="${r.href}">`
-            + `<span>${r.icon}</span><span>${esc(r.label)}</span>`
-            + (r.done === null ? ''
-              : `<span class="dash-daily-mark">${r.done ? '✓' : '●'}</span>`)
-            + `</a>`).join('')
-            + '<a class="dash-daily" href="/trivia"><span>🧠</span><span>Trivia</span></a>'
-            + '<a class="dash-daily" href="/bet/"><span>🎲</span><span>Bets</span></a>';
-          strip.innerHTML = html;
-          strip.hidden = false;
-        });
-    });
 
     // ── Band 1: your team ─────────────────────────────────────────────────
     mePromise.then(async ctx => {
@@ -1333,9 +1319,10 @@
       }
 
       let html = `<div class="dash-team-head">`
+        + `<a class="dash-team-id" href="/teams/${esc(abbr)}/">`
         + `<img src="/logos/logo-${esc(abbr)}.png" alt="">`
         + `<div><div class="dash-team-name">${esc(teamName)}</div>`
-        + `<div class="dash-team-sub">${esc(recordLine || 'Your team')}</div></div>`
+        + `<div class="dash-team-sub">${esc(recordLine || 'Your team')}</div></div></a>`
         + `<div class="dash-team-right">${phaseHtml}</div></div>`;
 
       // ── Cap and roster, read through cap-health.js
@@ -1369,15 +1356,22 @@
         // the normal condition for most of the league and the line above
         // already says it in dollars, so notes are left out — same filter the
         // team page's always-visible card applies.
+        //
+        // `short`, not `text`: a chip is a glance, and the full § citation is
+        // a paragraph in a pill. Both registers come from cap-health.js, so
+        // this is picking one rather than paraphrasing a rule here.
         st.warnings
           .filter(w => w.severity === 'violation' || w.severity === 'caution')
-          .forEach(w => chips.push({ tone: w.severity, text: w.text, href: `/teams/${abbr}/` }));
+          .forEach(w => chips.push({
+            tone: w.severity, text: w.short || w.text, title: w.text,
+            href: `/teams/${abbr}/`,
+          }));
       }
 
       // ── Next games
       if (mine.length) {
         html += '<div class="dash-sep"></div><div class="dash-games">'
-          + mine.slice(0, 3).map(g => {
+          + mine.slice(0, 5).map(g => {
             const home = g.home_team === team;
             const opp = home ? g.away_team : g.home_team;
             return `<div class="dash-game">`
@@ -1394,7 +1388,7 @@
 
       const chipBox = $('dash-chips');
       let settled = 0;
-      const EXPECTED = 6;   // the async chip sources below
+      const EXPECTED = 7;   // the async chip sources below
       function paintChips() {
         if (!chips.length) {
           chipBox.innerHTML = settled >= EXPECTED
@@ -1406,10 +1400,12 @@
         chipBox.innerHTML = chips
           .slice()
           .sort((a, b) => (rank[a.tone] ?? 3) - (rank[b.tone] ?? 3))
-          .map(c => `<a class="dash-chip ${esc(c.tone)}" href="${esc(c.href)}">${esc(c.text)}</a>`)
+          .map(c => `<a class="dash-chip ${esc(c.tone)}" href="${esc(c.href)}"`
+            + (c.title ? ` title="${esc(c.title)}"` : '')
+            + `>${esc(c.text)}</a>`)
           .join('');
       }
-      const add = (tone, text, href) => { chips.push({ tone, text, href }); };
+      const add = (tone, text, href, title) => { chips.push({ tone, text, href, title }); };
       const done = () => { settled++; paintChips(); };
       paintChips();
 
@@ -1420,8 +1416,34 @@
       // to a `#tab-coaching` anchor that would only scroll to a hidden panel.)
       jget('/api/coaching-settings').then(all => {
         const rec = all && all[team];
-        if (!rec) add('caution', 'Coaching settings not submitted', `/teams/${abbr}/`);
-        else if (rec.pending) add('note', 'Coaching settings queued for entry', `/teams/${abbr}/`);
+        if (!rec) add('caution', 'No coaching settings', `/teams/${abbr}/`,
+                      'This team has never submitted a coaching-settings blob');
+        else if (rec.pending) add('note', 'Coaching settings queued', `/teams/${abbr}/`,
+                      'Saved, waiting for a streamer to enter them into 2K');
+      }).catch(() => {}).then(done);
+
+      // Where this team's roster disagrees with the league sheet. Only the
+      // `open` group: `deferred` is a future season's figure or a hold the
+      // site has never computed — 65 of the 136 rows live today — and the
+      // /poopoo router separates them precisely because collapsing the two
+      // produces a wall of red every owner correctly learns to ignore.
+      // The counting and the categories are the job's; nothing is judged here.
+      jget(`/api/poopoo/summary?team=${encodeURIComponent(team)}`).then(sum => {
+        const entry = ((sum && sum.teams) || []).find(t => t.team === team);
+        const open = CapHealth.sortDiffs((entry && entry.diffs || [])
+          .filter(d => d.group === 'open'));
+        if (!open.length) return;
+        // Named by the worst diff's `field` — a player's name, or "Guaranteed
+        // Salary" for a team-level one. Not its category: sorted worst-first
+        // the category is right, but the labels ("Aggregate") only read next
+        // to the descriptions /poopoo prints beside them, and alone on a chip
+        // they say nothing. The field is specific and no longer. Every diff's
+        // category and field are in the tooltip.
+        const worst = open[0].field || CapHealth.diffMeta(open[0].category).label;
+        add('caution',
+          open.length === 1 ? `Sheet: ${worst}` : `Sheet: ${worst} +${open.length - 1}`,
+          `/teams/${abbr}/`,
+          open.map(d => `${CapHealth.diffMeta(d.category).label}: ${d.field}`).join('\n'));
       }).catch(() => {}).then(done);
 
       // § 5.1 waiver wire. `my_claims` is scoped to the caller's own teams, so
@@ -1433,17 +1455,20 @@
         if (!open.length) return;
         const hrs = Math.max(0, Math.round((Date.parse(open[0].deadline) - Date.now()) / 3.6e6));
         add(hrs <= 24 ? 'caution' : 'note',
-          `${plural(open.length, 'player')} on waivers · next closes in ${plural(hrs, 'hour')}`,
-          '/transactions');
+          `${open.length} on waivers · ${hrs}h left`, '/transactions',
+          `${plural(open.length, 'player')} you have not claimed; the next window closes in ${plural(hrs, 'hour')}`);
       }).catch(() => {}).then(done);
 
       // Free-agent offers. `draft` is yours to submit and `returned` was sent
       // back to you; `submitted` is with the committee and needs nothing.
       jget(`/api/fa/offers?team=${encodeURIComponent(team)}`, { headers: auth }).then(offers => {
         const n = s => (offers || []).filter(o => o.status === s).length;
-        if (n('returned')) add('violation', `${plural(n('returned'), 'FA offer')} sent back to you`, '/free-agency/');
-        if (n('draft')) add('caution', `${plural(n('draft'), 'unsubmitted FA offer')}`, '/free-agency/');
-        if (n('submitted')) add('note', `${plural(n('submitted'), 'offer')} with the committee`, '/free-agency/');
+        if (n('returned')) add('violation', `${n('returned')} FA offer${n('returned') === 1 ? '' : 's'} returned`,
+                                '/free-agency/', 'Remanded to you by the committee — needs another look');
+        if (n('draft')) add('caution', `${n('draft')} FA offer${n('draft') === 1 ? '' : 's'} unsubmitted`,
+                            '/free-agency/', 'Drafted but never submitted');
+        if (n('submitted')) add('note', `${n('submitted')} offer${n('submitted') === 1 ? '' : 's'} pending`,
+                                '/free-agency/', 'Submitted and with the committee — nothing needed from you');
       }).catch(() => {}).then(done);
 
       // Open FFA windows the league is bidding into. Public — § 9.2 already
@@ -1455,15 +1480,16 @@
         if (!open.length) return;
         const hrs = Math.max(0, Math.round((Date.parse(open[0][1].ffa_deadline) - Date.now()) / 3.6e6));
         add(hrs <= 24 ? 'caution' : 'note',
-          `${plural(open.length, 'FFA window')} open · next closes in ${plural(hrs, 'hour')}`,
-          '/free-agency/');
+          `${open.length} FFA open · ${hrs}h left`, '/free-agency/',
+          `${plural(open.length, 'free agent')} accepting offers; the next window closes in ${plural(hrs, 'hour')}`);
       }).catch(() => {}).then(done);
 
       // § 6.2 extension eligibility, computed by the API with its own reason
       // string — nothing about the rule is re-derived here.
       jget('/api/poext/eligible').then(list => {
         const n = (list || []).filter(p => p.team === team && p.eligible).length;
-        if (n) add('note', `${plural(n, 'player')} extension-eligible`, '/extensions/');
+        if (n) add('note', `${n} extension-eligible`, '/extensions/',
+                   `${plural(n, 'player')} on this roster meets § 6.2's eligibility rules`);
       }).catch(() => {}).then(done);
 
       // Guarantee/vesting dates inside 30 days. Reads `guarantee_schedule`,
@@ -1492,9 +1518,10 @@
           if (!steps.length) return;
           const d = daysUntil(today, steps[0].date);
           if (d > 30) return;
-          const amt = steps[0].amount ? ` (${fmtM(steps[0].amount)})` : '';
+          const amt = steps[0].amount ? ` · ${fmtM(steps[0].amount)}` : '';
           add(d <= 7 ? 'caution' : 'note',
-            `Guarantee date in ${plural(d, 'day')}${amt}`, '/calendar');
+            `Guarantee in ${d}d${amt}`, '/calendar',
+            `${steps[0].slug} — ${steps[0].date}`);
         })).catch(() => {}).then(done);
       if (window.requestIdleCallback) requestIdleCallback(soon, { timeout: 3000 });
       else setTimeout(soon, 800);

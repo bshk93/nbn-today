@@ -146,6 +146,39 @@ group('§ 2.2 — three two-way slots');
       .warnings.some(w => w.code === 'roster_below_min'));
 }
 
+group('every warning states itself twice — full, and at a glance');
+{
+  // The homepage renders these as chips, where the full § citation is a
+  // paragraph in a pill. Both registers live in this module so the short one
+  // cannot become a second, drifting phrasing of the same rule.
+  const cases = [
+    { opts: { standardCount: 16 }, code: 'roster_trim_owed',  short: '16 players (reg. season max 15)' },
+    { opts: { standardCount: 13 }, code: 'roster_below_min',  short: '13 players (min 14)' },
+    { opts: { standardCount: 21 }, code: 'roster_over_offseason_max', short: '21 players (offseason max 20)' },
+    { opts: { standardCount: 14, twoWayCount: 4 }, code: 'two_way_over_max', short: '4 two-way (max 3)' },
+  ];
+  cases.forEach(c => {
+    const out = CH.standing({ ...base, teamSalaryFull: 150e6, teamSalaryExHolds: 150e6, ...c.opts });
+    const w = out.warnings.find(x => x.code === c.code);
+    check(`${c.code} has a short form`, !!(w && w.short));
+    check(`${c.code} reads "${c.short}"`, w.short === c.short);
+    check(`${c.code}'s short form is shorter than its text`, w.short.length < w.text.length);
+  });
+
+  const salary = CH.standing({ ...base, teamSalaryFull: 210e6, teamSalaryExHolds: 210e6 });
+  check('salary warnings carry one too', salary.warnings.every(w => !!w.short));
+  check('and the short form uses the caller\'s formatter',
+    /«/.test(CH.standing({ ...base, teamSalaryFull: 210e6, teamSalaryExHolds: 210e6,
+                           fmt: v => `«${v}»` }).warnings[0].short));
+
+  const erc = CH.standing({
+    ...base, standardCount: 11, teamSalaryFull: 150e6, teamSalaryExHolds: 150e6,
+    erc: { deficiency: 1, charge: 1157153 },
+  });
+  check('the empty-roster charge keeps its dollar figure when shortened',
+    erc.warnings.find(w => w.code === 'empty_roster_charge').short === '1 empty slot · $1,157,153 charge');
+}
+
 group('the caller supplies the formatter');
 {
   const out = CH.standing({ ...base, teamSalaryFull: 210e6, teamSalaryExHolds: 210e6, fmt: v => `«${v}»` });

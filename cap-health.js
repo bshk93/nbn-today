@@ -69,6 +69,17 @@
   // since "over the Salary Cap" is the normal condition for most of the league
   // and the standing table already says it in dollars. What-If Mode shows all
   // of them, because there the whole point is what a hypothetical move crosses.
+  //
+  // Every warning carries **two registers of the same statement**:
+  //
+  //   text   the full rule, citing its §. What a team page has room to say.
+  //   short  the same fact at a glance — "16 players (reg. season max 15)".
+  //
+  // `short` exists because the homepage dashboard shows these as chips, where
+  // the full sentence is a paragraph in a pill. It lives here rather than as a
+  // lookup on that page for the usual reason: a second phrasing of a rule is a
+  // second place for it to be wrong. A caller picks a register; neither is
+  // derived from the other at the call site.
   function standing(opts) {
     const fmt = opts.fmt || _fmt;
     const cl = (opts.capLevels || {})[opts.season] || {};
@@ -139,16 +150,20 @@
     const apronName = hardCapKey === 'apron2' ? 'Second' : 'First';
     if (hardCapLevel !== null && exHolds > hardCapLevel) {
       warnings.push({ code: 'hard_cap_exceeded', severity: 'violation',
-        text: `Violates this team's Hard Cap (${apronName} Apron) by ${fmt(exHolds - hardCapLevel)}` });
+        text: `Violates this team's Hard Cap (${apronName} Apron) by ${fmt(exHolds - hardCapLevel)}`,
+        short: `Over hard cap by ${fmt(exHolds - hardCapLevel)}` });
     } else if (apron2 !== null && exHolds > apron2) {
       warnings.push({ code: 'over_apron2', severity: 'note',
-        text: `Over the Second Apron by ${fmt(exHolds - apron2)}` });
+        text: `Over the Second Apron by ${fmt(exHolds - apron2)}`,
+        short: `Over 2nd apron by ${fmt(exHolds - apron2)}` });
     } else if (apron1 !== null && exHolds > apron1) {
       warnings.push({ code: 'over_apron1', severity: 'note',
-        text: `Over the First Apron by ${fmt(exHolds - apron1)}` });
+        text: `Over the First Apron by ${fmt(exHolds - apron1)}`,
+        short: `Over 1st apron by ${fmt(exHolds - apron1)}` });
     } else if (cap !== null && full > cap) {
       warnings.push({ code: 'over_cap', severity: 'note',
-        text: `Over the Salary Cap by ${fmt(full - cap)}` });
+        text: `Over the Salary Cap by ${fmt(full - cap)}`,
+        short: `Over cap by ${fmt(full - cap)}` });
     }
 
     const standard = opts.standardCount || 0;
@@ -172,31 +187,44 @@
     let tone = 'ok';
     let note;
 
+    // Below § 2.1's floor is the same warning whether or not § 2.1a's charge
+    // also applies, and it was written out in both branches — which is how one
+    // of the two came to be missing `short` the day that field was added.
+    // Built once, pushed from either.
+    const belowMin = () => ({
+      code: 'roster_below_min', severity: 'violation',
+      text: `${standard} standard players — below § 2.1's ${ROSTER_MIN}-player minimum, which applies year-round`,
+      short: `${standard} players (min ${ROSTER_MIN})`,
+    });
+
     if (standard < ROSTER_CHARGE_MIN) {
       tone = 'violation';
       note = `below the ${ROSTER_MIN}-player minimum (§ 2.1)`;
-      warnings.push({ code: 'roster_below_min', severity: 'violation',
-        text: `${standard} standard players — below § 2.1's ${ROSTER_MIN}-player minimum, which applies year-round` });
+      warnings.push(belowMin());
       const charge = erc?.charge;
       warnings.push({ code: 'empty_roster_charge', severity: 'violation',
         text: charge
           ? `${erc.deficiency} empty slot${erc.deficiency === 1 ? '' : 's'} below § 2.1a's ${ROSTER_CHARGE_MIN}-player floor, charged ${fmt(charge)} against Team Salary`
-          : `Below § 2.1a's ${ROSTER_CHARGE_MIN}-player floor — an Empty Roster Charge applies` });
+          : `Below § 2.1a's ${ROSTER_CHARGE_MIN}-player floor — an Empty Roster Charge applies`,
+        short: charge
+          ? `${erc.deficiency} empty slot${erc.deficiency === 1 ? '' : 's'} · ${fmt(charge)} charge`
+          : `Below the ${ROSTER_CHARGE_MIN}-player floor · charge applies` });
     } else if (standard < ROSTER_MIN) {
       tone = 'violation';
       note = `below the ${ROSTER_MIN}-player minimum (§ 2.1)`;
-      warnings.push({ code: 'roster_below_min', severity: 'violation',
-        text: `${standard} standard players — below § 2.1's ${ROSTER_MIN}-player minimum, which applies year-round` });
+      warnings.push(belowMin());
     } else if (standard > ROSTER_MAX_OFFSEASON) {
       tone = 'violation';
       note = `over the ${ROSTER_MAX_OFFSEASON}-player offseason ceiling (§ 2.1)`;
       warnings.push({ code: 'roster_over_offseason_max', severity: 'violation',
-        text: `${standard} standard players — over § 2.1's ${ROSTER_MAX_OFFSEASON}-player offseason ceiling` });
+        text: `${standard} standard players — over § 2.1's ${ROSTER_MAX_OFFSEASON}-player offseason ceiling`,
+        short: `${standard} players (offseason max ${ROSTER_MAX_OFFSEASON})` });
     } else if (standard > ROSTER_MAX_IN_SEASON) {
       tone = 'caution';
       note = `${standard - ROSTER_MAX_IN_SEASON} over the in-season limit of ${ROSTER_MAX_IN_SEASON}`;
       warnings.push({ code: 'roster_trim_owed', severity: 'caution',
-        text: `${standard} standard players — § 2.1 allows ${ROSTER_MAX_OFFSEASON} in the offseason, so this is legal now, but ${standard - ROSTER_MAX_IN_SEASON} must go before opening night` });
+        text: `${standard} standard players — § 2.1 allows ${ROSTER_MAX_OFFSEASON} in the offseason, so this is legal now, but ${standard - ROSTER_MAX_IN_SEASON} must go before opening night`,
+        short: `${standard} players (reg. season max ${ROSTER_MAX_IN_SEASON})` });
     } else if (standard === ROSTER_MIN) {
       note = `at the § 2.1 floor of ${ROSTER_MIN}`;
     } else {
@@ -205,7 +233,8 @@
 
     if (twoWay > TWO_WAY_MAX) {
       warnings.push({ code: 'two_way_over_max', severity: 'violation',
-        text: `${twoWay} two-way players — § 2.2 allows ${TWO_WAY_MAX}` });
+        text: `${twoWay} two-way players — § 2.2 allows ${TWO_WAY_MAX}`,
+        short: `${twoWay} two-way (max ${TWO_WAY_MAX})` });
       if (tone === 'ok') tone = 'violation';
     }
 
