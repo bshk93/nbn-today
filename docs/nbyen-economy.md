@@ -106,28 +106,69 @@ price — so they are here rather than in the table above.
 
 ### Betting — `/bet`
 
-A `bookie` opens a bet, members wager, the bookie closes it against an outcome.
-Two bet types exist today and they behave completely differently:
+**Decided 2026-09-06: one bet type — fixed odds, with a mandatory 105% book,
+backed by a House Bank. Pool bets are removed.**
 
-- **Pool bets are exactly zero-sum.** `close_bet` splits the whole pool among
-  whoever backed the winning option. Nothing is created. This is the correct
-  shape and it should be the only shape.
-- **Fixed-odds bets are house-funded.** Each winner is paid their
-  `potential_payout` out of nothing, and the gap is merely *recorded* as
-  `net_shortfall`. There is no vig and no cap on exposure, so **whoever writes the
-  odds decides how much money to print.** In the old economy this was +18,198 in
-  payouts against −15,115 wagered.
+Two types exist today and behave completely differently. Pool bets are exactly
+zero-sum: `close_bet` splits the pool among whoever backed the winner and creates
+nothing. Fixed-odds bets pay each winner their `potential_payout` out of nothing
+and merely *record* the gap as `net_shortfall` — no vig, no cap on exposure, so
+**whoever writes the odds decides how much money to print.** That was +18,198 in
+payouts against −15,115 wagered.
 
-Proposed:
+Pool bets go because **the league already voted with its feet: 2 of 24 bets were
+pool, the other 22 fixed-odds.** Two mental models for one small feature is one
+too many, and the type nobody uses is the one to cut. The safety pool betting
+provided — being structurally unable to mint — is provided instead by the bank.
 
-**Decided 2026-09-06: fixed odds stay, with a mandatory 105% book.**
+#### The House Bank
+
+The house gets a wallet with a real balance, and it works like any member's:
+
+- A **losing wager goes into** the bank.
+- A **winning payout comes out of** the bank.
+- **A bet can never be larger than the bank can cover.** Before accepting a
+  wager, the site checks the worst case — the largest payout the bank would owe
+  if any single option won, net of stakes already taken — and caps the wager at
+  what the balance actually covers.
+
+That third rule is the whole mechanism. The house cannot pay out money it does
+not have, for the same reason a member cannot.
+
+**Two guarantees follow:**
+
+1. **Fixed-odds betting can never be a net money printer.** The bank pays out
+   only what was previously paid in. Over its lifetime the worst it can do is
+   return what it already absorbed; it cannot go into the red, because it is not
+   allowed to take a bet that would put it there.
+2. **No single bet can blow it up**, automatically, without anyone remembering to
+   set a limit.
+
+**Seeding it.** With pool bets gone, the rake that was going to fund the bank
+goes with them — and a bank at zero can accept no bets at all, which is a
+chicken-and-egg problem. **Seed it once with a declared 10,000 NB¥ mint.** Under
+the peg that is $10, it happens exactly once, and it lands in the ledger as its
+own line rather than hiding inside `Admin adjustment`. After that the bank is
+self-funding: the 105% overround gives it positive drift, so across a season it
+should grow rather than drain.
+
+**The bank is also a sink.** NB¥ sitting in it is out of every member's balance,
+so the overround quietly drains roughly 4.76% of everything wagered out of
+circulation — which replaces the pool rake at about the same size. It is a sink
+on average rather than a guaranteed one; a bad season for the house releases some
+of it back.
+
+**It should be visible.** `🏦 The House — NB¥ 12,400` at the top of `/bet`, moving
+as bets settle, is a scoreboard people will enjoy rooting against.
+
+#### The rest
 
 | | |
 |---|---|
-| **Fixed-odds bets** | **Kept.** The book must sum to **≥105% implied probability**, enforced at creation — a bet whose options sum below that is rejected, and the implied overround is shown to the bookie as they price it. Left to arithmetic it will not happen reliably. |
-| **Pool rake** | **5% of the pool, burned** before distribution — winners split 95%. This is what turns pool betting from neutral into a drain, which is the right shape for gambling inside a currency you are trying to keep scarce. |
-| **Voided bets** | **No rake.** When no one backs the winning option the bet voids and everyone is refunded in full; taking 5% of a bet that never resolved is a fee for nothing. |
-| **Max wager** | **1,000**, up from `NBY_MAX_WAGER = 300`. 300 was set against an economy whose median balance was 2,250; against a 10,000 stream game and a 17,000/month Tier 3 sub it is loose change. Still per member per bet, so one large balance cannot swallow a pool. |
+| **The book** | Must sum to **≥105% implied probability**, enforced at creation — a bet pricing below that is rejected, and the implied overround is shown to the bookie as they price it. Left to arithmetic it will not happen reliably. |
+| **Voided bets** | Everyone refunded in full, bank take nothing. A bet that never resolved should not cost anyone a fee. |
+| **Max wager** | **1,000**, up from `NBY_MAX_WAGER = 300`. 300 was set against an economy whose median balance was 2,250; against a 10,000 stream game and a 17,000/month Tier 3 sub it is loose change. This is the per-member ceiling; the bank's coverage check can lower it further on any given bet. |
+| **Tip burn** | Stays a plain burn (§ 2), **not** bank funding. With the bank self-funding off the overround there is no reason to route an unrelated feature's drain through it. |
 
 #### The 105% book fixes the sign, not the variance
 
@@ -147,24 +188,18 @@ side, so it profits either way. That needs volume and dynamic pricing. At three
 wagers a bet the book never balances, and fixed odds stay a coin flip with a
 4.76% tilt.
 
-So the 105% floor is necessary and not sufficient. **Something still has to bound
-the single catastrophic bet.** Two candidates, undecided:
+**So the 105% floor is necessary and not sufficient, and that is exactly the gap
+the bank fills.** The overround is the house's income; the bank is what keeps a
+bad run from mattering while that income accumulates. Neither works alone: a bank
+with no overround slowly bleeds to empty, and an overround with no bank is a coin
+flip that can go badly wrong on any single bet.
 
-- **A house bank** — a visible bankroll on `/bet`, funded by the pool rake and the
-  tip burn. Fixed-odds pays out of it, losing wagers pay into it, and when it is
-  empty no new fixed-odds bets open until it refills. This is the stronger
-  option, because it makes the subsystem **structurally incapable of being
-  net-positive to the money supply over its lifetime** — it can only ever pay out
-  what was previously burned. The 105% gives it upward drift across a season, and
-  "The House: NB¥ 12,400" is a good thing to have on the page.
-- **A per-bet liability ceiling** — the bookie declares maximum exposure at
-  creation and wagers on an option are refused once potential payout would breach
-  it. Simpler, no new concept, but a popular side can close early, which is
-  confusing to a bettor mid-wager.
-
-They compose: the bank bounds the system, the ceiling bounds one bet. **Pending a
-decision, this document assumes at least one of them ships alongside the 105%
-floor** — the floor on its own leaves the old failure mode intact.
+One consequence of pricing by hand at this volume: **the long-shot options are
+where a bank gets hurt.** The history includes bets with 6, 7 and 8 options
+(player props, exact finals outcomes), and pricing a 40-to-1 outcome accurately is
+much harder than pricing a two-way game. The bank's coverage check handles this
+without the bookie needing to be right — a mispriced long shot simply cannot
+attract more money than the bank can pay on it.
 
 ### The stock market — `/invest`
 
@@ -448,7 +483,7 @@ leaderboards, Discord results, all unchanged. They just stop minting.
   social feature first, and taxing a 50 NB¥ thank-you would just stop people
   sending them — while discouraging the consolidation of balances into one
   account.
-- The betting rake and the invest fee follow the same logic and are argued
+- The invest fee and the betting bank follow the same logic and are argued
   where they belong, in § 3.
 
 ---
@@ -471,11 +506,11 @@ direct donations:
 **Money is 61% of all minting** — A1 satisfied, and satisfied structurally rather
 than by hope.
 
-Betting is deliberately absent from the mint side: pool bets are zero-sum and the
-rake is a burn, and fixed odds are assumed to ship with a bank or a liability
-ceiling (§ 3) that keeps them from minting on net. **If neither ships, fixed odds
-belong on this table as an unbounded line** — which is the argument for shipping
-one of them.
+Betting appears on the mint side only as its **one-time 10,000 NB¥ bank seed**
+(§ 3), not as an annual line: the bank cannot pay out more than it has taken in,
+so fixed-odds betting has no recurring mint to account for. **Without the bank it
+would belong here as an unbounded line** — which is the argument for shipping it
+with the 105% floor rather than after.
 
 The 549,000 against $537 is the tier premium showing up in the aggregate: about
 12,000 NB¥/year, 1.4% of the mint, is the cost of the Tier 2 and Tier 3 rates.
@@ -488,7 +523,7 @@ Sink capacity on the other side:
 |---|---|---|
 | Stream games | **480,000** | at four a month |
 | Existing cosmetics (themes, avatars, name colours) | ~30,000 | mostly one-time per member; runs dry |
-| Rakes, fees and the tip burn | ~30,000 | scales with betting and trading volume |
+| Bank drift, invest fees, tip burn | ~30,000 | the overround absorbing ~4.76% of wagers, plus fees |
 | **Total capacity** | **~540,000** | |
 
 That is capacity, not a forecast, and it leaves **a gap of roughly 360,000
@@ -577,7 +612,7 @@ here only so the count of what went wrong is complete.
 
 | | Verdict |
 |---|---|
-| **Fixed-odds bets** | **Kept, with a mandatory 105% book** — § 3. Still needs a bank or a liability ceiling behind it; the overround alone does not bound a single bet. |
+| **Fixed-odds bets** | **Kept, with a mandatory 105% book and a House Bank** — § 3. The bank must ship with the floor, not after it; the overround alone does not bound a single bet. |
 | **Invest** | **Reframed as a bounded league subsidy** — § 3. Sentiment deleted, position caps, settlement delay. Reopens at the reset rather than staying shut. |
 | **Trivia streak endpoint** | **Fix before it ever pays again.** Suspending the reward (§ 1c) closes the hole for now, but the fix is the precondition for reintroducing the game, not part of the work of reintroducing it. The server has to own the session. |
 | **Tenure achievement payouts** | **Remove the NB¥**, keep the badge (§ 1d). |
