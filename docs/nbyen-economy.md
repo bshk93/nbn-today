@@ -120,57 +120,131 @@ Two bet types exist today and they behave completely differently:
 
 Proposed:
 
+**Decided 2026-09-06: fixed odds stay, with a mandatory 105% book.**
+
 | | |
 |---|---|
-| **Fixed-odds bets** | **Removed.** If they are kept for flavour instead, the book must sum to ≥105% implied probability so the house has a vig, and each bet needs a hard exposure ceiling set at creation. |
-| **Pool rake** | **5% of the pool, burned** before distribution — winners split 95%. This is what turns betting from neutral into a drain, which is the right shape for gambling inside a currency you are trying to keep scarce. |
+| **Fixed-odds bets** | **Kept.** The book must sum to **≥105% implied probability**, enforced at creation — a bet whose options sum below that is rejected, and the implied overround is shown to the bookie as they price it. Left to arithmetic it will not happen reliably. |
+| **Pool rake** | **5% of the pool, burned** before distribution — winners split 95%. This is what turns pool betting from neutral into a drain, which is the right shape for gambling inside a currency you are trying to keep scarce. |
 | **Voided bets** | **No rake.** When no one backs the winning option the bet voids and everyone is refunded in full; taking 5% of a bet that never resolved is a fee for nothing. |
-| **Max wager** | **1,000**, up from `NBY_MAX_WAGER = 300`. 300 was set against an economy where the median balance was 2,250; against a 10,000 stream game and a 17,000/month Tier 3 sub it is loose change. Still a per-member-per-bet cap, so one large balance cannot swallow a pool. |
+| **Max wager** | **1,000**, up from `NBY_MAX_WAGER = 300`. 300 was set against an economy whose median balance was 2,250; against a 10,000 stream game and a 17,000/month Tier 3 sub it is loose change. Still per member per bet, so one large balance cannot swallow a pool. |
+
+#### The 105% book fixes the sign, not the variance
+
+Worth being precise about what the overround does and does not buy, because at
+this league's volume the difference is the whole story.
+
+Two options priced at 52.5% each pay 1.905×. On a 1,000 NB¥ bet where all the
+money lands on one side, the house either **keeps 1,000** or **pays 1,905 and
+loses 905**. The overround earns 4.76% *in expectation* — but that expectation
+only materialises over hundreds of bets.
+
+**There have been 24 bets, 21 of them fixed-odds, with a median of 3 wagers
+each.** Across all of them the theoretical edge is roughly 700 NB¥, against a
+realised swing that ran to thousands. A real sportsbook makes an overround work
+by *balancing the book* — moving the line until near-equal money sits on each
+side, so it profits either way. That needs volume and dynamic pricing. At three
+wagers a bet the book never balances, and fixed odds stay a coin flip with a
+4.76% tilt.
+
+So the 105% floor is necessary and not sufficient. **Something still has to bound
+the single catastrophic bet.** Two candidates, undecided:
+
+- **A house bank** — a visible bankroll on `/bet`, funded by the pool rake and the
+  tip burn. Fixed-odds pays out of it, losing wagers pay into it, and when it is
+  empty no new fixed-odds bets open until it refills. This is the stronger
+  option, because it makes the subsystem **structurally incapable of being
+  net-positive to the money supply over its lifetime** — it can only ever pay out
+  what was previously burned. The 105% gives it upward drift across a season, and
+  "The House: NB¥ 12,400" is a good thing to have on the page.
+- **A per-bet liability ceiling** — the bookie declares maximum exposure at
+  creation and wagers on an option are refused once potential payout would breach
+  it. Simpler, no new concept, but a popular side can close early, which is
+  confusing to a bettor mid-wager.
+
+They compose: the bank bounds the system, the ceiling bounds one bet. **Pending a
+decision, this document assumes at least one of them ships alongside the 105%
+floor** — the floor on its own leaves the old failure mode intact.
 
 ### The stock market — `/invest`
 
+**Decided 2026-09-06: `/invest` is a league-subsidised game tied to real game
+results, not a market.** It keeps the results-driven price and stops pretending
+to be an exchange. Everything below follows from that one choice.
+
 Thirty team tickers plus eight index tickers (conferences and divisions). Every
-price starts at 100 and moves with real game results. On top of the results-driven
-price sits a **sentiment** overlay driven by member trades:
+price starts at 100 and moves with real game results. On top of that sits a
+**sentiment** overlay driven by member trades:
 `market_price = algo_price × (1 + sentiment)`, where sentiment is
 `±nbyen / SENTIMENT_DIVISOR` per trade, `SENTIMENT_DIVISOR = 50_000`, capped at
 `SENTIMENT_CAP = 0.50` and decaying to zero over 82 games.
 
-**This is not a transfer system.** Unlike a pool bet, there is no counterparty —
-every NB¥ of profit is minted by the league and every loss is burned. That makes
-it a faucet or a drain depending entirely on how members trade, which is why it
-needs the most work of anything in this document.
+**There is no counterparty.** Unlike a pool bet, every NB¥ of profit is minted by
+the league and every loss is burned. That is what makes it a subsidy, and the
+whole design problem is bounding the size of that subsidy.
 
-Four holes, in order of severity:
+#### What "a subsidy, not a market" means
 
-1. **A member's own buy moves the price they are about to sell into.** Buy 25,000
-   NB¥ of one team, sentiment goes to +50%, sell into the price you just made.
-   The old ledger's ORL line — 18,533 in, 1,521 out — is someone standing at that
-   door. **Fix: sentiment must be computed from everyone else's trades, never the
-   trader's own.** This is the one that matters; the rest are hygiene.
-2. **No transaction fee.** Fix: 1% on buy and on sell, burned. Note this does not
-   close hole 1 on its own — a 50% pump clears a 1% fee without noticing it.
-3. **No position cap.** One member can put their entire balance into one ticker,
-   which is both the pump vector and a way to turn the market into a coin flip.
-   Fix: cap exposure to a single ticker as a share of the member's balance.
-4. **No settlement delay.** Buy and sell can happen in the same minute, against
-   the same unchanged game data. Fix: no selling a position until some number of
-   further games have been played.
+- **Sentiment is deleted.** `market_price = algo_price`, full stop. Price moves
+  with games and nothing else, so **no member can move the price they trade
+  against.** This is the whole exploit and it goes away by removing a feature
+  rather than by patching one. The old ledger's ORL line — 18,533 in, 1,521 out —
+  was someone standing at exactly that door.
+- **Success means predicting basketball, not timing other members.** With price
+  set by results alone, the only way to profit is to be right about which teams
+  are good. That is the version of this feature worth having, and it is the
+  reason the results-driven price was kept when the alternatives were considered
+  (below).
+- **The subsidy is bounded by capping the input, not the output.** Capping how
+  much a member can *win* creates a race for the budget and rewards timing your
+  sales around a reset date. Capping how much they can *deploy* bounds the
+  outcome just as effectively, with no mechanics to game.
 
-Two smaller things worth knowing, both of which tilt the system toward the
-member:
+#### The rules
 
-- **Shorts have capped losses.** `_short_equity` is
-  `max(0, shares × (2 × avg_open − current))`, so a short can go to zero but never
-  negative, while the upside is uncapped. That is a positive-EV instrument, which
-  is fine as a design choice but should be a deliberate one.
-- **Betting and investing achievements pay no NB¥** (§ 1d, already the case).
-  Paying for gambling volume pays people to churn.
+| | |
+|---|---|
+| **Price** | `algo_price` only. Sentiment removed entirely. |
+| **Position cap** | **2,500 NB¥ per ticker, 10,000 NB¥ deployed in total.** Shorts count against the same caps. |
+| **Settlement delay** | No selling a position until **5 further games** have been played by that team — roughly two weeks. It makes the feature a call on a stretch of basketball rather than a scalp against stale data. |
+| **Fee** | 1% on buy and on sell, burned. A drag on churn, not a defence — a 50% move clears it without noticing. |
+| **Shorts** | Kept, and the capped loss (`max(0, …)`) is kept with them. Going negative in a play-money economy is worse than the asymmetry. The asymmetry is real and is priced into the budget below. |
+| **Achievements** | Investing achievements pay no NB¥ (§ 1d, already true). Paying for trading volume pays people to churn. |
 
-**Recommendation: leave `/invest` closed at the reset and reopen it once holes
-1–4 are fixed.** It is the only system here that can mint without bound, the fix
-list is short and well understood, and there is no reason to race it into a
-brand-new economy on day one.
+#### Sizing the subsidy
+
+The position caps are the lever; the budget is what they are tuned against.
+
+At 20 traders fully deployed that is 200,000 NB¥ of capital at risk. Team prices
+run roughly 60 to 150 over a season off a base of 100, so if members pick
+reasonably well the aggregate return might be **+20%, or about 40,000 NB¥/year**.
+That is 4.6% of the total mint (§ 5) — a proportionate price for a fun feature,
+and small enough that being wrong about it by half does not matter.
+
+The caps are also a sanity check against history: the ORL position that was being
+used to pump the price was 18,533 NB¥ in one ticker. **A 2,500 per-ticker cap
+makes that position impossible to build in the first place**, independent of the
+sentiment fix.
+
+Review the realised subsidy at the end of the first season and move the caps, not
+the payouts.
+
+#### What was considered and rejected
+
+- **A real order book** (member bids and asks, no house) is the only perfectly
+  zero-sum design, and it is **dead on arrival at this volume.** The whole history
+  of the feature is 76 trades by 13 members across 18 tickers, and one member
+  placed 31 of those 76. Most tickers would have no resting order at all; you
+  would click sell and find no bid.
+- **A bonding curve / AMM** solves that — always liquid, zero-sum, and it inverts
+  the exploit (buying walks the price up, selling walks it back down, so a
+  self-pump round trip loses money). It was rejected because **the price would no
+  longer have anything to do with basketball.** It becomes a popularity contest
+  where you profit by being early rather than right, and at 13 traders it is hot
+  potato with a known bag-holder.
+- **Closing `/invest` at the reset** was the earlier recommendation here and is
+  superseded: with sentiment gone and the caps in place, there is nothing left
+  that mints without bound, so there is no reason to keep it shut.
 
 ---
 
@@ -388,13 +462,20 @@ direct donations:
 |---|---|---|
 | Subs + donations | **549,000** | against $537 actually received |
 | Salaries | 260,000 | |
+| `/invest` subsidy | 40,000 | § 3 — bounded by the position caps |
 | Contributions (bio, cleanup, box scores) | 36,000 | |
 | Achievement drip | 18,000 | |
 | Minigames | 0 | suspended |
-| **Total mint** | **863,000** | |
+| **Total mint** | **903,000** | |
 
-**Money is 64% of all minting** — A1 satisfied, and satisfied structurally rather
+**Money is 61% of all minting** — A1 satisfied, and satisfied structurally rather
 than by hope.
+
+Betting is deliberately absent from the mint side: pool bets are zero-sum and the
+rake is a burn, and fixed odds are assumed to ship with a bank or a liability
+ceiling (§ 3) that keeps them from minting on net. **If neither ships, fixed odds
+belong on this table as an unbounded line** — which is the argument for shipping
+one of them.
 
 The 549,000 against $537 is the tier premium showing up in the aggregate: about
 12,000 NB¥/year, 1.4% of the mint, is the cost of the Tier 2 and Tier 3 rates.
@@ -407,11 +488,11 @@ Sink capacity on the other side:
 |---|---|---|
 | Stream games | **480,000** | at four a month |
 | Existing cosmetics (themes, avatars, name colours) | ~30,000 | mostly one-time per member; runs dry |
-| Rakes and the tip burn | ~30,000 | scales with betting volume |
+| Rakes, fees and the tip burn | ~30,000 | scales with betting and trading volume |
 | **Total capacity** | **~540,000** | |
 
-That is capacity, not a forecast, and it leaves **a gap of roughly 320,000
-NB¥/year — 37% of the mint.**
+That is capacity, not a forecast, and it leaves **a gap of roughly 360,000
+NB¥/year — 40% of the mint.**
 
 ### The economy has one real sink
 
@@ -421,7 +502,7 @@ run dry — a member buys one avatar and one theme and is done — and the rakes
 scale with gambling volume the design is otherwise trying to shrink.
 
 That makes the whole economy's balance a function of one number: **how many
-broadcasts get sold.** At four a month there is a 320,000/year gap. At eight a
+broadcasts get sold.** At four a month there is a 360,000/year gap. At seven a
 month it closes entirely. Nothing else on the list can move enough to matter.
 
 Three things follow:
@@ -496,8 +577,8 @@ here only so the count of what went wrong is complete.
 
 | | Verdict |
 |---|---|
-| **Fixed-odds bets** | **Remove** — § 3. |
-| **Invest** | **Fix all four holes or leave it closed** — § 3. Recommended: closed at reset, reopened once fixed. |
+| **Fixed-odds bets** | **Kept, with a mandatory 105% book** — § 3. Still needs a bank or a liability ceiling behind it; the overround alone does not bound a single bet. |
+| **Invest** | **Reframed as a bounded league subsidy** — § 3. Sentiment deleted, position caps, settlement delay. Reopens at the reset rather than staying shut. |
 | **Trivia streak endpoint** | **Fix before it ever pays again.** Suspending the reward (§ 1c) closes the hole for now, but the fix is the precondition for reintroducing the game, not part of the work of reintroducing it. The server has to own the session. |
 | **Tenure achievement payouts** | **Remove the NB¥**, keep the badge (§ 1d). |
 | **`POST /api/bets/admin/adjust`** | **Keep** — it is the achievement job's only channel — but require a structured reason category rather than free text. Every achievement mint currently lands in the ledger as `Admin adjustment: …`, indistinguishable from a manual grant, which is why § 6's numbers took a parser to recover. |
