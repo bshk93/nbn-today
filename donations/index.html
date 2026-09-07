@@ -123,8 +123,14 @@ function fmtUsd(n) {
   return '$' + n.toLocaleString('en-US');
 }
 
+const sortedDonations = [...DONATIONS].sort((a, b) =>
+  b.date.localeCompare(a.date) ||
+  a.team.localeCompare(b.team) ||
+  b.amount - a.amount
+);
+
 const body = document.getElementById('donations-body');
-DONATIONS.forEach(d => {
+sortedDonations.forEach(d => {
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td class="team-cell"><a href="/teams/${d.team.toLowerCase()}/">${TEAMS[d.team]}</a></td>
