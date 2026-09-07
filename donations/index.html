@@ -26,6 +26,24 @@
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .controls label { font-size: 0.85rem; color: var(--text-muted); }
+    .controls select {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .controls select:focus { outline: none; border-color: var(--link); }
+
     .total-card {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1rem 1.25rem; display: flex; align-items: baseline; justify-content: space-between;
@@ -61,6 +79,11 @@
   <header>
     <h1>Donations</h1>
   </header>
+
+  <div class="controls">
+    <label for="season-select">Season</label>
+    <select id="season-select"></select>
+  </div>
 
   <div class="total-card">
     <span class="label">Total raised</span>
@@ -123,25 +146,52 @@ function fmtUsd(n) {
   return '$' + n.toLocaleString('en-US');
 }
 
-const sortedDonations = [...DONATIONS].sort((a, b) =>
-  b.date.localeCompare(a.date) ||
-  a.team.localeCompare(b.team) ||
-  b.amount - a.amount
-);
+// League year rolls over July 1 (see season_clock.py) — a date in Jan-Jun
+// belongs to the season that started the previous July.
+function seasonForDate(s) {
+  const [y, m] = s.split('-').map(Number);
+  const startYear = m >= 7 ? y : y - 1;
+  return `${String(startYear).slice(-2)}-${String(startYear + 1).slice(-2)}`;
+}
 
-const body = document.getElementById('donations-body');
-sortedDonations.forEach(d => {
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td class="team-cell"><a href="/teams/${d.team.toLowerCase()}/">${TEAMS[d.team]}</a></td>
-    <td class="donor"><a href="/members/${encodeURIComponent(d.member)}/">${d.member}</a></td>
-    <td class="amount-cell">${fmtUsd(d.amount)}</td>
-    <td class="date-cell">${fmtDate(d.date)}</td>`;
-  body.appendChild(tr);
+DONATIONS.forEach(d => { d.season = seasonForDate(d.date); });
+
+const seasons = [...new Set(DONATIONS.map(d => d.season))].sort().reverse();
+const seasonSelect = document.getElementById('season-select');
+seasons.forEach(s => {
+  const opt = document.createElement('option');
+  opt.value = s; opt.textContent = s;
+  seasonSelect.appendChild(opt);
 });
 
-document.getElementById('donations-total').textContent =
-  fmtUsd(DONATIONS.reduce((sum, d) => sum + d.amount, 0));
+function render(season) {
+  const rows = DONATIONS
+    .filter(d => d.season === season)
+    .sort((a, b) =>
+      b.date.localeCompare(a.date) ||
+      a.team.localeCompare(b.team) ||
+      b.amount - a.amount
+    );
+
+  const body = document.getElementById('donations-body');
+  body.innerHTML = '';
+  rows.forEach(d => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="team-cell"><a href="/teams/${d.team.toLowerCase()}/">${TEAMS[d.team]}</a></td>
+      <td class="donor"><a href="/members/${encodeURIComponent(d.member)}/">${d.member}</a></td>
+      <td class="amount-cell">${fmtUsd(d.amount)}</td>
+      <td class="date-cell">${fmtDate(d.date)}</td>`;
+    body.appendChild(tr);
+  });
+
+  document.getElementById('donations-total').textContent =
+    fmtUsd(rows.reduce((sum, d) => sum + d.amount, 0));
+}
+
+seasonSelect.value = seasons[0];
+render(seasons[0]);
+seasonSelect.addEventListener('change', () => render(seasonSelect.value));
 </script>
 <script src="/token-badge.js"></script>
 </body>
