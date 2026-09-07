@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Donations — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="League funding tracker — who's donated, how much, and to what.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Donations — NBN">
+  <meta property="og:description" content="League funding tracker — who's donated, how much, and to what.">
+  <meta property="og:url" content="https://nbn.today/donations/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#111827">
+  <!-- /NBN:og -->
+  <style>
+    .page { max-width: 760px; margin: 0 auto; }
+    header { margin-bottom: 1.5rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .total-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem 1.25rem; display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .total-card .label { font-size: 0.85rem; color: var(--text-muted); }
+    .total-card .amount { font-size: 1.5rem; font-weight: 700; color: var(--success-light, #4ade80); }
+
+    table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    thead th {
+      text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--text-dim); padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border);
+    }
+    tbody td { padding: 0.6rem 0.9rem; font-size: 0.85rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    .team-cell a { color: inherit; font-weight: 700; }
+    .donor { color: var(--text-secondary); }
+    .amount-cell { font-weight: 700; text-align: right; white-space: nowrap; }
+    .date-cell { color: var(--text-dim); font-size: 0.78rem; white-space: nowrap; }
+    .note { color: var(--text-dim); font-size: 0.75rem; }
+
+    .footnote { margin-top: 1.25rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+
+    @media (max-width: 560px) {
+      thead th:nth-child(4), tbody td:nth-child(4) { display: none; }
+    }
+  </style>
+</head>
+<body>
+<script src="/nav.js"></script>
+
+<div class="page">
+  <nav class="nav"></nav>
+
+  <header>
+    <h1>Donations</h1>
+    <p>League funding tracker — contributions from owners toward league costs.</p>
+  </header>
+
+  <div class="total-card">
+    <span class="label">Total raised</span>
+    <span class="amount" id="donations-total"></span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Team</th>
+        <th>Donor</th>
+        <th class="amount-cell">Amount</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="donations-body"></tbody>
+  </table>
+
+  <p class="footnote">Recorded manually from the funding tracker. Doesn't yet reflect in the NB¥ economy — how these contributions should factor into it is still to be worked out.</p>
+</div>
+
+<script>
+const TEAMS = {
+  LAL: 'Los Angeles Lakers',
+  ATL: 'Atlanta Hawks',
+  UTA: 'Utah Jazz',
+  DAL: 'Dallas Mavericks',
+  NOP: 'New Orleans Pelicans',
+  CHA: 'Charlotte Hornets',
+  WAS: 'Washington Wizards',
+  LAC: 'LA Clippers',
+  SAS: 'San Antonio Spurs',
+  CLE: 'Cleveland Cavaliers',
+  NYK: 'New York Knicks',
+  SAC: 'Sacramento Kings',
+};
+
+const DONATIONS = [
+  { team: 'LAL', donor: 'RJ', amount: 100, date: '2026-09-07' },
+  { team: 'ATL', donor: 'KVL', amount: 100, date: '2026-09-07' },
+  { team: 'UTA', donor: 'Nate & AK', amount: 70, date: '2026-09-07', note: '$35 each' },
+  { team: 'DAL', donor: 'Guy', amount: 50, date: '2026-09-07' },
+  { team: 'NOP', donor: 'JD', amount: 43, date: '2026-09-07' },
+  { team: 'CHA', donor: 'Allen', amount: 42, date: '2026-09-07' },
+  { team: 'WAS', donor: 'Nelson', amount: 41, date: '2026-09-07' },
+  { team: 'LAC', donor: 'Mega', amount: 35, date: '2026-09-07' },
+  { team: 'SAS', donor: 'Bryn', amount: 35, date: '2026-09-07' },
+  { team: 'CLE', donor: 'Killer', amount: 35, date: '2026-09-07' },
+  { team: 'NYK', donor: 'spondedphex', amount: 35, date: '2026-09-07' },
+  { team: 'SAC', donor: 'Tiggy', amount: 20, date: '2026-09-07' },
+];
+
+function fmtDate(s) {
+  const [y, m, d] = s.split('-');
+  return `${parseInt(m)}/${parseInt(d)}/${y}`;
+}
+function fmtUsd(n) {
+  return '$' + n.toLocaleString('en-US');
+}
+
+const body = document.getElementById('donations-body');
+DONATIONS.forEach(d => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="team-cell"><a href="/teams/${d.team.toLowerCase()}/">${TEAMS[d.team]}</a></td>
+    <td class="donor">${d.donor}${d.note ? `<div class="note">${d.note}</div>` : ''}</td>
+    <td class="amount-cell">${fmtUsd(d.amount)}</td>
+    <td class="date-cell">${fmtDate(d.date)}</td>`;
+  body.appendChild(tr);
+});
+
+document.getElementById('donations-total').textContent =
+  fmtUsd(DONATIONS.reduce((sum, d) => sum + d.amount, 0));
+</script>
+<script src="/token-badge.js"></script>
+</body>
+</html>
