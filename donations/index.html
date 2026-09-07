@@ -46,8 +46,7 @@
     .amount-cell { font-weight: 700; text-align: right; white-space: nowrap; }
     .date-cell { color: var(--text-dim); font-size: 0.78rem; white-space: nowrap; }
     .note { color: var(--text-dim); font-size: 0.75rem; }
-
-    .footnote { margin-top: 1.25rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+    .donor a { color: inherit; }
 
     @media (max-width: 560px) {
       thead th:nth-child(4), tbody td:nth-child(4) { display: none; }
@@ -62,7 +61,6 @@
 
   <header>
     <h1>Donations</h1>
-    <p>League funding tracker — contributions from owners toward league costs.</p>
   </header>
 
   <div class="total-card">
@@ -81,8 +79,6 @@
     </thead>
     <tbody id="donations-body"></tbody>
   </table>
-
-  <p class="footnote">Recorded manually from the funding tracker. Doesn't yet reflect in the NB¥ economy — how these contributions should factor into it is still to be worked out.</p>
 </div>
 
 <script>
@@ -101,19 +97,21 @@ const TEAMS = {
   SAC: 'Sacramento Kings',
 };
 
+// `member` is the exact key in members.json for that donor, used to link to
+// their /members/ profile. null means no confident match was found there.
 const DONATIONS = [
-  { team: 'LAL', donor: 'RJ', amount: 100, date: '2026-09-07' },
-  { team: 'ATL', donor: 'KVL', amount: 100, date: '2026-09-07' },
-  { team: 'UTA', donor: 'Nate & AK', amount: 70, date: '2026-09-07', note: '$35 each' },
-  { team: 'DAL', donor: 'Guy', amount: 50, date: '2026-09-07' },
-  { team: 'NOP', donor: 'JD', amount: 43, date: '2026-09-07' },
-  { team: 'CHA', donor: 'Allen', amount: 42, date: '2026-09-07' },
-  { team: 'WAS', donor: 'Nelson', amount: 41, date: '2026-09-07' },
-  { team: 'LAC', donor: 'Mega', amount: 35, date: '2026-09-07' },
-  { team: 'SAS', donor: 'Bryn', amount: 35, date: '2026-09-07' },
-  { team: 'CLE', donor: 'Killer', amount: 35, date: '2026-09-07' },
-  { team: 'NYK', donor: 'spondedphex', amount: 35, date: '2026-09-07' },
-  { team: 'SAC', donor: 'Tiggy', amount: 20, date: '2026-09-07' },
+  { team: 'LAL', donors: [{ label: 'RJ', member: 'RJ' }], amount: 100, date: '2026-09-07' },
+  { team: 'ATL', donors: [{ label: 'KVL', member: 'KVL' }], amount: 100, date: '2026-09-07' },
+  { team: 'UTA', donors: [{ label: 'Nate', member: 'Nate' }, { label: 'AK', member: 'AK41' }], amount: 70, date: '2026-09-07', note: '$35 each' },
+  { team: 'DAL', donors: [{ label: 'Guy', member: 'Guy Fawkes' }], amount: 50, date: '2026-09-07' },
+  { team: 'NOP', donors: [{ label: 'JD', member: 'JDDN' }], amount: 43, date: '2026-09-07' },
+  { team: 'CHA', donors: [{ label: 'Allen', member: 'AllenOJ' }], amount: 42, date: '2026-09-07' },
+  { team: 'WAS', donors: [{ label: 'Nelson', member: 'nelson' }], amount: 41, date: '2026-09-07' },
+  { team: 'LAC', donors: [{ label: 'Mega', member: 'Mega' }], amount: 35, date: '2026-09-07' },
+  { team: 'SAS', donors: [{ label: 'Bryn', member: 'bryn' }], amount: 35, date: '2026-09-07' },
+  { team: 'CLE', donors: [{ label: 'Killer', member: 'killerdawg7' }], amount: 35, date: '2026-09-07' },
+  { team: 'NYK', donors: [{ label: 'spondedphex', member: 'spondedphex' }], amount: 35, date: '2026-09-07' },
+  { team: 'SAC', donors: [{ label: 'Tiggy', member: 'That1gal' }], amount: 20, date: '2026-09-07' },
 ];
 
 function fmtDate(s) {
@@ -124,12 +122,18 @@ function fmtUsd(n) {
   return '$' + n.toLocaleString('en-US');
 }
 
+function donorHtml(donor) {
+  return donor.member
+    ? `<a href="/members/${encodeURIComponent(donor.member)}/">${donor.label}</a>`
+    : donor.label;
+}
+
 const body = document.getElementById('donations-body');
 DONATIONS.forEach(d => {
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td class="team-cell"><a href="/teams/${d.team.toLowerCase()}/">${TEAMS[d.team]}</a></td>
-    <td class="donor">${d.donor}${d.note ? `<div class="note">${d.note}</div>` : ''}</td>
+    <td class="donor">${d.donors.map(donorHtml).join(' &amp; ')}${d.note ? `<div class="note">${d.note}</div>` : ''}</td>
     <td class="amount-cell">${fmtUsd(d.amount)}</td>
     <td class="date-cell">${fmtDate(d.date)}</td>`;
   body.appendChild(tr);
