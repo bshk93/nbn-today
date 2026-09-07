@@ -45,7 +45,6 @@
     .donor { color: var(--text-secondary); }
     .amount-cell { font-weight: 700; text-align: right; white-space: nowrap; }
     .date-cell { color: var(--text-dim); font-size: 0.78rem; white-space: nowrap; }
-    .note { color: var(--text-dim); font-size: 0.75rem; }
     .donor a { color: inherit; }
 
     @media (max-width: 560px) {
@@ -98,20 +97,22 @@ const TEAMS = {
 };
 
 // `member` is the exact key in members.json for that donor, used to link to
-// their /members/ profile. null means no confident match was found there.
+// their /members/ profile. One row per donation — a joint donation (e.g. the
+// Jazz's two donors) is two rows, not one combined line.
 const DONATIONS = [
-  { team: 'LAL', donors: [{ label: 'RJ', member: 'RJ' }], amount: 100, date: '2026-09-07' },
-  { team: 'ATL', donors: [{ label: 'KVL', member: 'KVL' }], amount: 100, date: '2026-09-07' },
-  { team: 'UTA', donors: [{ label: 'Nate', member: 'Nate' }, { label: 'AK', member: 'AK41' }], amount: 70, date: '2026-09-07', note: '$35 each' },
-  { team: 'DAL', donors: [{ label: 'Guy', member: 'Guy Fawkes' }], amount: 50, date: '2026-09-07' },
-  { team: 'NOP', donors: [{ label: 'JD', member: 'JDDN' }], amount: 43, date: '2026-09-07' },
-  { team: 'CHA', donors: [{ label: 'Allen', member: 'AllenOJ' }], amount: 42, date: '2026-09-07' },
-  { team: 'WAS', donors: [{ label: 'Nelson', member: 'nelson' }], amount: 41, date: '2026-09-07' },
-  { team: 'LAC', donors: [{ label: 'Mega', member: 'Mega' }], amount: 35, date: '2026-09-07' },
-  { team: 'SAS', donors: [{ label: 'Bryn', member: 'bryn' }], amount: 35, date: '2026-09-07' },
-  { team: 'CLE', donors: [{ label: 'Killer', member: 'killerdawg7' }], amount: 35, date: '2026-09-07' },
-  { team: 'NYK', donors: [{ label: 'spondedphex', member: 'spondedphex' }], amount: 35, date: '2026-09-07' },
-  { team: 'SAC', donors: [{ label: 'Tiggy', member: 'That1gal' }], amount: 20, date: '2026-09-07' },
+  { team: 'LAL', member: 'RJ', amount: 100, date: '2026-09-07' },
+  { team: 'ATL', member: 'KVL', amount: 100, date: '2026-09-07' },
+  { team: 'UTA', member: 'Nate', amount: 35, date: '2026-09-07' },
+  { team: 'UTA', member: 'AK41', amount: 35, date: '2026-09-07' },
+  { team: 'DAL', member: 'Guy Fawkes', amount: 50, date: '2026-09-07' },
+  { team: 'NOP', member: 'JDDN', amount: 43, date: '2026-09-07' },
+  { team: 'CHA', member: 'AllenOJ', amount: 42, date: '2026-09-07' },
+  { team: 'WAS', member: 'nelson', amount: 41, date: '2026-09-07' },
+  { team: 'LAC', member: 'Mega', amount: 35, date: '2026-09-07' },
+  { team: 'SAS', member: 'bryn', amount: 35, date: '2026-09-07' },
+  { team: 'CLE', member: 'killerdawg7', amount: 35, date: '2026-09-07' },
+  { team: 'NYK', member: 'spondedphex', amount: 35, date: '2026-09-07' },
+  { team: 'SAC', member: 'That1gal', amount: 20, date: '2026-09-07' },
 ];
 
 function fmtDate(s) {
@@ -122,18 +123,12 @@ function fmtUsd(n) {
   return '$' + n.toLocaleString('en-US');
 }
 
-function donorHtml(donor) {
-  return donor.member
-    ? `<a href="/members/${encodeURIComponent(donor.member)}/">${donor.label}</a>`
-    : donor.label;
-}
-
 const body = document.getElementById('donations-body');
 DONATIONS.forEach(d => {
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td class="team-cell"><a href="/teams/${d.team.toLowerCase()}/">${TEAMS[d.team]}</a></td>
-    <td class="donor">${d.donors.map(donorHtml).join(' &amp; ')}${d.note ? `<div class="note">${d.note}</div>` : ''}</td>
+    <td class="donor"><a href="/members/${encodeURIComponent(d.member)}/">${d.member}</a></td>
     <td class="amount-cell">${fmtUsd(d.amount)}</td>
     <td class="date-cell">${fmtDate(d.date)}</td>`;
   body.appendChild(tr);
