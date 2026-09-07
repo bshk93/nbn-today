@@ -100,6 +100,10 @@
       text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
       color: var(--text-dim); padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border);
     }
+    thead th.sortable { cursor: pointer; user-select: none; }
+    thead th.sortable:hover { color: var(--text-secondary); }
+    thead th .sort-arrow { margin-left: 4px; opacity: 0; font-size: 0.65rem; }
+    thead th[data-active="true"] .sort-arrow { opacity: 1; }
     tbody td { padding: 0.6rem 0.9rem; font-size: 0.85rem; border-bottom: 1px solid var(--border); vertical-align: top; }
     tbody tr:last-child td { border-bottom: none; }
     .team-cell a { color: inherit; font-weight: 700; }
@@ -142,10 +146,10 @@
   <table>
     <thead>
       <tr>
-        <th>Team</th>
-        <th>Donor</th>
-        <th class="amount-cell">Amount</th>
-        <th>Date</th>
+        <th class="sortable" data-sort="team">Team<span class="sort-arrow"></span></th>
+        <th class="sortable" data-sort="donor">Donor<span class="sort-arrow"></span></th>
+        <th class="sortable amount-cell" data-sort="amount">Amount<span class="sort-arrow"></span></th>
+        <th class="sortable" data-sort="date">Date<span class="sort-arrow"></span></th>
         <th id="actions-head" style="display:none"></th>
       </tr>
     </thead>
@@ -312,18 +316,57 @@ async function loadMemberList() {
   } catch {}
 }
 
+// ── Sorting ───────────────────────────────────────────────────────────────────
+
+let sortField = 'date';
+let sortDir = -1; // -1 = desc, 1 = asc
+
+function sortVal(d, field) {
+  switch (field) {
+    case 'team':   return TEAMS[d.team] || d.team;
+    case 'donor':  return d.member.toLowerCase();
+    case 'amount': return d.amount;
+    case 'date':   return d.date;
+  }
+}
+
+function sortRows(rows) {
+  return [...rows].sort((a, b) => {
+    const va = sortVal(a, sortField), vb = sortVal(b, sortField);
+    if (va < vb) return -sortDir;
+    if (va > vb) return sortDir;
+    // Tie-break: newest first, then team, then largest amount first.
+    return b.date.localeCompare(a.date) || a.team.localeCompare(b.team) || b.amount - a.amount;
+  });
+}
+
+function updateSortHeaders() {
+  document.querySelectorAll('thead th.sortable').forEach(th => {
+    const active = th.dataset.sort === sortField;
+    th.dataset.active = active;
+    th.querySelector('.sort-arrow').textContent = active ? (sortDir === -1 ? '↓' : '↑') : '';
+  });
+}
+
+document.querySelectorAll('thead th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    if (sortField === th.dataset.sort) {
+      sortDir *= -1;
+    } else {
+      sortField = th.dataset.sort;
+      sortDir = sortField === 'amount' || sortField === 'date' ? -1 : 1;
+    }
+    render(currentSeason);
+  });
+});
+
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
 function render(season) {
   currentSeason = season;
-  const rows = DONATIONS
-    .filter(d => d.season === season)
-    .sort((a, b) =>
-      b.date.localeCompare(a.date) ||
-      a.team.localeCompare(b.team) ||
-      b.amount - a.amount
-    );
+  const rows = sortRows(DONATIONS.filter(d => d.season === season));
 
+  updateSortHeaders();
   const body = document.getElementById('donations-body');
   body.innerHTML = '';
   rows.forEach(d => body.appendChild(buildRow(d)));
