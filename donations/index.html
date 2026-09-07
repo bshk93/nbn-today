@@ -26,6 +26,17 @@
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
     header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
 
+    .auth-bar {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--text-muted);
+    }
+    .auth-bar button {
+      background: var(--border); border: 1px solid var(--text-dim); color: var(--text-primary);
+      border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer;
+      font-size: 0.8rem; font-family: inherit;
+    }
+    .auth-bar button:hover { background: var(--text-dim); }
+
     .controls {
       display: flex;
       align-items: center;
@@ -43,6 +54,38 @@
       cursor: pointer;
     }
     .controls select:focus { outline: none; border-color: var(--link); }
+    .add-donation-btn {
+      margin-left: auto;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: 6px; padding: 0.35rem 0.75rem;
+      font-size: 0.8rem; cursor: pointer; font-family: inherit;
+    }
+    .add-donation-btn:hover { border-color: var(--link); color: var(--link); }
+
+    .row-form input, .row-form select {
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
+      border-radius: 5px; padding: 0.3rem 0.5rem; font-size: 0.8rem;
+      font-family: inherit; width: 100%; box-sizing: border-box;
+    }
+    .row-form input:focus, .row-form select:focus { outline: none; border-color: var(--link); }
+    .row-actions { display: flex; gap: 0.4rem; white-space: nowrap; }
+    .btn-row-save {
+      background: var(--accent-dark, #1d4ed8); border: 1px solid var(--accent, #3b82f6);
+      color: var(--text-on-accent, #fff); border-radius: 5px; padding: 0.25rem 0.6rem;
+      font-size: 0.75rem; cursor: pointer; font-family: inherit;
+    }
+    .btn-row-cancel {
+      background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+      border-radius: 5px; padding: 0.25rem 0.6rem; font-size: 0.75rem;
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-row-edit {
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
+      font-size: 0.85rem; padding: 0 0.2rem;
+    }
+    .btn-row-edit:hover { color: var(--link); }
+    .row-error { font-size: 0.72rem; color: var(--danger-light); margin-top: 0.3rem; }
+    .actions-cell { text-align: right; white-space: nowrap; }
 
     .total-card {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
@@ -80,9 +123,15 @@
     <h1>Donations</h1>
   </header>
 
+  <div class="auth-bar" id="auth-bar">
+    <span id="auth-status">Sign in to add or edit donations.</span>
+    <button id="auth-btn">Sign in</button>
+  </div>
+
   <div class="controls">
     <label for="season-select">Season</label>
     <select id="season-select"></select>
+    <button class="add-donation-btn" id="add-donation-btn" style="display:none">+ Add Donation</button>
   </div>
 
   <div class="total-card">
@@ -97,46 +146,52 @@
         <th>Donor</th>
         <th class="amount-cell">Amount</th>
         <th>Date</th>
+        <th id="actions-head" style="display:none"></th>
       </tr>
     </thead>
     <tbody id="donations-body"></tbody>
   </table>
 </div>
 
+<!-- Sign-in modal -->
+<div class="modal-backdrop" id="signin-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding-top:5vh">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem">
+    <h3 style="font-size:1rem;font-weight:600">Sign In</h3>
+    <input type="password" id="signin-input" placeholder="Paste your token…"
+      style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.875rem;font-family:inherit;width:100%;box-sizing:border-box">
+    <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+      <button id="signin-cancel" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Cancel</button>
+      <button id="signin-save" style="background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<datalist id="member-list"></datalist>
+
+<script src="/league-time.js"></script>
 <script>
 const TEAMS = {
-  LAL: 'Los Angeles Lakers',
-  ATL: 'Atlanta Hawks',
-  UTA: 'Utah Jazz',
-  DAL: 'Dallas Mavericks',
-  NOP: 'New Orleans Pelicans',
-  CHA: 'Charlotte Hornets',
-  WAS: 'Washington Wizards',
-  LAC: 'LA Clippers',
-  SAS: 'San Antonio Spurs',
-  CLE: 'Cleveland Cavaliers',
-  NYK: 'New York Knicks',
-  SAC: 'Sacramento Kings',
+  ATL: 'Atlanta Hawks', BKN: 'Brooklyn Nets', BOS: 'Boston Celtics',
+  CHA: 'Charlotte Hornets', CHI: 'Chicago Bulls', CLE: 'Cleveland Cavaliers',
+  DAL: 'Dallas Mavericks', DEN: 'Denver Nuggets', DET: 'Detroit Pistons',
+  GSW: 'Golden State Warriors', HOU: 'Houston Rockets', IND: 'Indiana Pacers',
+  LAC: 'LA Clippers', LAL: 'Los Angeles Lakers', MEM: 'Memphis Grizzlies',
+  MIA: 'Miami Heat', MIL: 'Milwaukee Bucks', MIN: 'Minnesota Timberwolves',
+  NOP: 'New Orleans Pelicans', NYK: 'New York Knicks', OKC: 'Oklahoma City Thunder',
+  ORL: 'Orlando Magic', PHI: 'Philadelphia 76ers', PHX: 'Phoenix Suns',
+  POR: 'Portland Trail Blazers', SAC: 'Sacramento Kings', SAS: 'San Antonio Spurs',
+  TOR: 'Toronto Raptors', UTA: 'Utah Jazz', WAS: 'Washington Wizards',
 };
 
 // `member` is the exact key in members.json for that donor, used to link to
 // their /members/ profile. One row per donation — a joint donation (e.g. the
 // Jazz's two donors) is two rows, not one combined line.
-const DONATIONS = [
-  { team: 'LAL', member: 'RJ', amount: 100, date: '2026-09-07' },
-  { team: 'ATL', member: 'KVL', amount: 100, date: '2026-09-07' },
-  { team: 'UTA', member: 'Nate', amount: 35, date: '2026-09-07' },
-  { team: 'UTA', member: 'AK41', amount: 35, date: '2026-09-07' },
-  { team: 'DAL', member: 'Guy Fawkes', amount: 50, date: '2026-09-07' },
-  { team: 'NOP', member: 'JDDN', amount: 43, date: '2026-09-07' },
-  { team: 'CHA', member: 'AllenOJ', amount: 42, date: '2026-09-07' },
-  { team: 'WAS', member: 'nelson', amount: 41, date: '2026-09-07' },
-  { team: 'LAC', member: 'Mega', amount: 35, date: '2026-09-07' },
-  { team: 'SAS', member: 'bryn', amount: 35, date: '2026-09-07' },
-  { team: 'CLE', member: 'killerdawg7', amount: 35, date: '2026-09-07' },
-  { team: 'NYK', member: 'spondedphex', amount: 35, date: '2026-09-07' },
-  { team: 'SAC', member: 'That1gal', amount: 20, date: '2026-09-07' },
-];
+let DONATIONS = [];
+let currentSeason = null;
+
+const TOKEN_KEY = 'nbn_token';
+let currentToken = localStorage.getItem(TOKEN_KEY) || '';
+let myName = '', isBod = false;
 
 function fmtDate(s) {
   const [y, m, d] = s.split('-');
@@ -154,17 +209,113 @@ function seasonForDate(s) {
   return `${String(startYear).slice(-2)}-${String(startYear + 1).slice(-2)}`;
 }
 
-DONATIONS.forEach(d => { d.season = seasonForDate(d.date); });
+// ── Auth ──────────────────────────────────────────────────────────────────────
 
-const seasons = [...new Set(DONATIONS.map(d => d.season))].sort().reverse();
-const seasonSelect = document.getElementById('season-select');
-seasons.forEach(s => {
-  const opt = document.createElement('option');
-  opt.value = s; opt.textContent = s;
-  seasonSelect.appendChild(opt);
+function updateAuthBar() {
+  const status = document.getElementById('auth-status');
+  const btn    = document.getElementById('auth-btn');
+  if (currentToken && myName) {
+    status.textContent = isBod ? `Signed in as ${myName}` : `Signed in as ${myName} (read-only — bod role required to edit)`;
+    btn.textContent = 'Sign out';
+  } else if (currentToken) {
+    status.textContent = 'Signed in';
+    btn.textContent = 'Sign out';
+  } else {
+    status.textContent = 'Sign in to add or edit donations.';
+    btn.textContent = 'Sign in';
+  }
+  document.getElementById('add-donation-btn').style.display = isBod ? '' : 'none';
+  document.getElementById('actions-head').style.display = isBod ? '' : 'none';
+}
+
+async function initAuth() {
+  try {
+    const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${currentToken}` } });
+    if (!res.ok) { signOut(); return; }
+    const me = await res.json();
+    myName = me.name;
+    const roles = me.roles || [];
+    isBod = roles.includes('bod') || roles.includes('admin');
+  } catch { signOut(); return; }
+  updateAuthBar();
+  if (currentSeason) render(currentSeason);
+}
+
+function signOut() {
+  currentToken = ''; myName = ''; isBod = false;
+  localStorage.removeItem(TOKEN_KEY);
+  updateAuthBar();
+  if (currentSeason) render(currentSeason);
+}
+
+document.getElementById('auth-btn').addEventListener('click', () => {
+  if (currentToken) { signOut(); }
+  else {
+    const bd = document.getElementById('signin-backdrop');
+    bd.style.display = 'flex';
+    document.getElementById('signin-input').value = '';
+    setTimeout(() => document.getElementById('signin-input').focus(), 50);
+  }
 });
 
+document.getElementById('signin-cancel').addEventListener('click', () =>
+  document.getElementById('signin-backdrop').style.display = 'none');
+document.getElementById('signin-backdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('signin-backdrop'))
+    document.getElementById('signin-backdrop').style.display = 'none';
+});
+
+async function doSignIn() {
+  const t = document.getElementById('signin-input').value.trim();
+  if (!t) return;
+  currentToken = t; localStorage.setItem(TOKEN_KEY, t);
+  document.getElementById('signin-backdrop').style.display = 'none';
+  await initAuth();
+}
+document.getElementById('signin-save').addEventListener('click', doSignIn);
+document.getElementById('signin-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+
+async function loadDonations() {
+  const res = await fetch('/api/donations');
+  if (!res.ok) { toast('Failed to load donations.', true); return; }
+  DONATIONS = await res.json();
+  DONATIONS.forEach(d => { d.season = seasonForDate(d.date); });
+
+  const seasons = [...new Set(DONATIONS.map(d => d.season))].sort().reverse();
+  const seasonSelect = document.getElementById('season-select');
+  const keep = seasonSelect.value;
+  seasonSelect.innerHTML = '';
+  seasons.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    seasonSelect.appendChild(opt);
+  });
+  currentSeason = seasons.includes(keep) ? keep : seasons[0];
+  seasonSelect.value = currentSeason;
+  render(currentSeason);
+}
+
+async function loadMemberList() {
+  try {
+    const res = await fetch('/api/members/public');
+    if (!res.ok) return;
+    const members = await res.json();
+    const list = document.getElementById('member-list');
+    list.innerHTML = '';
+    members.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      list.appendChild(opt);
+    });
+  } catch {}
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+
 function render(season) {
+  currentSeason = season;
   const rows = DONATIONS
     .filter(d => d.season === season)
     .sort((a, b) =>
@@ -175,23 +326,155 @@ function render(season) {
 
   const body = document.getElementById('donations-body');
   body.innerHTML = '';
-  rows.forEach(d => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="team-cell"><a href="/teams/${d.team.toLowerCase()}/">${TEAMS[d.team]}</a></td>
-      <td class="donor"><a href="/members/${encodeURIComponent(d.member)}/">${d.member}</a></td>
-      <td class="amount-cell">${fmtUsd(d.amount)}</td>
-      <td class="date-cell">${fmtDate(d.date)}</td>`;
-    body.appendChild(tr);
-  });
+  rows.forEach(d => body.appendChild(buildRow(d)));
 
   document.getElementById('donations-total').textContent =
     fmtUsd(rows.reduce((sum, d) => sum + d.amount, 0));
 }
 
-seasonSelect.value = seasons[0];
-render(seasons[0]);
-seasonSelect.addEventListener('change', () => render(seasonSelect.value));
+function buildRow(d) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = d.id;
+  tr.innerHTML = `
+    <td class="team-cell"><a href="/teams/${d.team.toLowerCase()}/">${TEAMS[d.team]}</a></td>
+    <td class="donor"><a href="/members/${encodeURIComponent(d.member)}/">${d.member}</a></td>
+    <td class="amount-cell">${fmtUsd(d.amount)}</td>
+    <td class="date-cell">${fmtDate(d.date)}</td>
+    ${isBod ? `<td class="actions-cell"><button class="btn-row-edit" title="Edit">✎</button></td>` : ''}`;
+  if (isBod) {
+    tr.querySelector('.btn-row-edit').addEventListener('click', () => {
+      tr.replaceWith(buildEditRow(d));
+    });
+  }
+  return tr;
+}
+
+function teamOptions(selected) {
+  return Object.keys(TEAMS).map(abbr =>
+    `<option value="${abbr}"${abbr === selected ? ' selected' : ''}>${TEAMS[abbr]}</option>`
+  ).join('');
+}
+
+function buildEditRow(d) {
+  const tr = document.createElement('tr');
+  tr.className = 'row-form';
+  tr.innerHTML = `
+    <td><select class="ef-team">${teamOptions(d.team)}</select></td>
+    <td><input class="ef-member" list="member-list" value="${d.member.replace(/"/g, '&quot;')}"></td>
+    <td><input class="ef-amount" type="number" min="1" value="${d.amount}"></td>
+    <td><input class="ef-date" type="date" value="${d.date}"></td>
+    <td class="actions-cell">
+      <div class="row-actions">
+        <button class="btn-row-save">Save</button>
+        <button class="btn-row-cancel">Cancel</button>
+      </div>
+      <div class="row-error" style="display:none"></div>
+    </td>`;
+  tr.querySelector('.btn-row-cancel').addEventListener('click', () => tr.replaceWith(buildRow(d)));
+  tr.querySelector('.btn-row-save').addEventListener('click', () => doEditDonation(d, tr));
+  return tr;
+}
+
+function buildAddRow() {
+  const today = nbnToday();
+  const tr = document.createElement('tr');
+  tr.className = 'row-form';
+  tr.innerHTML = `
+    <td><select class="ef-team">${teamOptions()}</select></td>
+    <td><input class="ef-member" list="member-list" placeholder="Member name"></td>
+    <td><input class="ef-amount" type="number" min="1" placeholder="Amount"></td>
+    <td><input class="ef-date" type="date" value="${today}"></td>
+    <td class="actions-cell">
+      <div class="row-actions">
+        <button class="btn-row-save">Save</button>
+        <button class="btn-row-cancel">Cancel</button>
+      </div>
+      <div class="row-error" style="display:none"></div>
+    </td>`;
+  tr.querySelector('.btn-row-cancel').addEventListener('click', () => {
+    tr.remove();
+    document.getElementById('add-donation-btn').style.display = '';
+  });
+  tr.querySelector('.btn-row-save').addEventListener('click', () => doAddDonation(tr));
+  return tr;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+
+function readRowForm(tr) {
+  return {
+    team: tr.querySelector('.ef-team').value,
+    member: tr.querySelector('.ef-member').value.trim(),
+    amount: parseInt(tr.querySelector('.ef-amount').value, 10),
+    date: tr.querySelector('.ef-date').value,
+  };
+}
+
+function rowFormError(tr, msg) {
+  const err = tr.querySelector('.row-error');
+  err.textContent = msg;
+  err.style.display = '';
+}
+
+async function doAddDonation(tr) {
+  const body = readRowForm(tr);
+  if (!body.member) return rowFormError(tr, 'Member is required.');
+  if (!body.amount || body.amount <= 0) return rowFormError(tr, 'Amount must be positive.');
+  if (!body.date) return rowFormError(tr, 'Date is required.');
+
+  try {
+    const res = await fetch('/api/donations', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    tr.remove();
+    document.getElementById('add-donation-btn').style.display = '';
+    await loadDonations();
+    toast('Donation added.');
+  } catch (err) {
+    rowFormError(tr, 'Error: ' + err.message);
+  }
+}
+
+async function doEditDonation(d, tr) {
+  const body = readRowForm(tr);
+  if (!body.member) return rowFormError(tr, 'Member is required.');
+  if (!body.amount || body.amount <= 0) return rowFormError(tr, 'Amount must be positive.');
+  if (!body.date) return rowFormError(tr, 'Date is required.');
+
+  try {
+    const res = await fetch(`/api/donations/${d.id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    await loadDonations();
+    toast('Donation updated.');
+  } catch (err) {
+    rowFormError(tr, 'Error: ' + err.message);
+  }
+}
+
+document.getElementById('add-donation-btn').addEventListener('click', () => {
+  const btn = document.getElementById('add-donation-btn');
+  btn.style.display = 'none';
+  const body = document.getElementById('donations-body');
+  const row = buildAddRow();
+  body.prepend(row);
+  row.querySelector('.ef-member').focus();
+});
+
+document.getElementById('season-select').addEventListener('change', e => render(e.target.value));
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+updateAuthBar();
+loadMemberList();
+loadDonations();
+if (currentToken) initAuth();
 </script>
 <script src="/token-badge.js"></script>
 </body>
