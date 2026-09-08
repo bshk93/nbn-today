@@ -351,6 +351,18 @@ changes the rate.
   gifter paid; paying both makes alt-gifting a laundry), chargebacks claw back,
   only the league's own channel counts, and Twitch identity has to link to the
   member record the way Discord already does via `/link`.
+- **The Twitch API cannot tell Prime and Tier 1 apart — confirmed by testing,
+  not assumed.** `Get Broadcaster Subscriptions` returns a Prime sub as
+  `tier: "1000"` with no distinguishing field, identical in every way to a paid
+  Tier 1 sub (verified 2026-09-08: subscribed to the league channel with Prime,
+  pulled the live API response, got back the same shape as every paid sub —
+  `is_gift: false`, `plan_name: "Channel Subscription (nothingbutnet)"`, no
+  Prime marker anywhere). The two-rate design above (2,250 vs 3,000 NB¥) is
+  therefore **not automatable from the API alone as written.** Options: collapse
+  Prime and Tier 1 to one rate until a distinguishing source exists, reconcile
+  by hand against the broadcaster's own dashboard (which does show Prime status,
+  just not through any API), or have members self-report. Whichever is picked,
+  it needs deciding before this section is implemented, not after.
 
 ### Why the salary bands are what they are
 
