@@ -21,15 +21,18 @@ Sections § 1 and § 2 are the two complete lists — every way in, every way ou
 
 | Path | Member pays | League nets | Rate | NB¥ | NB¥ per member-$ |
 |---|---|---|---|---|---|
-| Prime sub | $0 | $2.25 | ×1.00 | **2,250**/mo | — (free to give) |
+| Prime sub | $0 | $2.25 | ×1.33 | **3,000**/mo | — (free to give) |
 | Tier 1 sub | $5.99 | $3.00 | ×1.00 | **3,000**/mo | 501 |
 | Tier 2 sub | $11.99 | $6.00 | ×1.17 | **7,000**/mo | 584 |
 | Tier 3 sub | $24.99 | $12.59 | ×1.35 | **17,000**/mo | 680 |
 | **Direct donation** | $X | ~$X | ×1.00 | **1,000 × X** | **1,000** |
 
-"Rate" is the premium on the base peg. Tier 1, Prime and direct donations convert
-at exactly 1,000 NB¥ per league-dollar; Tier 2 and Tier 3 earn a stated premium
-on top. Nothing is retroactive and nothing depends on how long you have subbed.
+"Rate" is the premium on the base peg. Tier 1 and direct donations convert at
+exactly 1,000 NB¥ per league-dollar; Tier 2, Tier 3 and Prime earn a stated
+premium on top. Prime's premium exists for a different reason than Tier 2/3's —
+it isn't an incentive, it's a floor forced by the API (§ 4) — but it is still a
+stated, bounded deviation rather than a silent one. Nothing is retroactive and
+nothing depends on how long you have subbed.
 
 ### 1b. Salary (annual, role-based)
 
@@ -345,24 +348,27 @@ changes the rate.
   the badge, channel standing — which does not need to be bought with currency.
 - **Prime is free money and the site should say so permanently.** It costs the
   member nothing beyond what they already pay Amazon and hands the league $2.25 a
-  month. Any member with Prime who isn't subbed is the cheapest available win —
-  that belongs as a standing line on `/members`, not a one-off Discord post.
+  month — and now mints the same 3,000 NB¥ Tier 1 does (see below), which makes
+  it strictly the best-value path in the whole table: full Tier 1 payout for $0
+  member cost. Any member with Prime who isn't subbed is the cheapest available
+  win — that belongs as a standing line on `/members`, not a one-off Discord post.
 - Anti-abuse: **gifted subs pay the gifter in full and the recipient zero** (the
   gifter paid; paying both makes alt-gifting a laundry), chargebacks claw back,
   only the league's own channel counts, and Twitch identity has to link to the
   member record the way Discord already does via `/link`.
-- **The Twitch API cannot tell Prime and Tier 1 apart — confirmed by testing,
-  not assumed.** `Get Broadcaster Subscriptions` returns a Prime sub as
-  `tier: "1000"` with no distinguishing field, identical in every way to a paid
-  Tier 1 sub (verified 2026-09-08: subscribed to the league channel with Prime,
-  pulled the live API response, got back the same shape as every paid sub —
-  `is_gift: false`, `plan_name: "Channel Subscription (nothingbutnet)"`, no
-  Prime marker anywhere). The two-rate design above (2,250 vs 3,000 NB¥) is
-  therefore **not automatable from the API alone as written.** Options: collapse
-  Prime and Tier 1 to one rate until a distinguishing source exists, reconcile
-  by hand against the broadcaster's own dashboard (which does show Prime status,
-  just not through any API), or have members self-report. Whichever is picked,
-  it needs deciding before this section is implemented, not after.
+- **Prime and Tier 1 mint at the same rate — decided 2026-09-08 — because the
+  Twitch API cannot tell them apart, confirmed by testing, not assumed.**
+  `Get Broadcaster Subscriptions` returns a Prime sub as `tier: "1000"` with no
+  distinguishing field, identical in every way to a paid Tier 1 sub (verified
+  2026-09-08: subscribed to the league channel with Prime, pulled the live API
+  response, got back the same shape as every paid sub — `is_gift: false`,
+  `plan_name: "Channel Subscription (nothingbutnet)"`, no Prime marker anywhere).
+  A distinct 2,250 rate for Prime was not automatable off the API alone, so
+  rather than build a hand-reconciliation or self-report process just to shave
+  750 NB¥/mo off a handful of members, both mint the flat 3,000 Tier 1 rate.
+  This is a deliberate overpay relative to the strict peg (§ "The peg," above) —
+  small, bounded, and the price of not building infrastructure around a
+  distinction the API won't give us for free.
 
 ### Why the salary bands are what they are
 
@@ -410,11 +416,14 @@ changes the rate.
   trivia hole in § 6 becomes a 2,500/month bug instead of an unbounded one, and
   every future minigame is safe on the day it ships rather than after someone
   audits its reward curve.
-- **2,500 is set just above a Prime sub (2,250).** The target steady state, once
-  the minigames return: a maximally engaged member who pays nothing earns roughly
-  what a *free* Prime sub would have given the league. Participation stays real,
-  paying stays better, and **the free side structurally cannot out-earn the paid
-  side — which is A1, enforced rather than hoped for.**
+- **2,500 sits below the cheapest paid sub — Prime or Tier 1, both 3,000/mo now
+  that they mint at the same rate (§ 4).** The target steady state, once the
+  minigames return: a maximally engaged member who pays nothing earns close to,
+  but still under, what a *free* Prime sub gives the league. Participation stays
+  real, paying stays better, and **the free side structurally cannot out-earn the
+  paid side — which is A1, enforced rather than hoped for.** (This margin was
+  tighter — 250 rather than 500 — before Prime and Tier 1 were collapsed to one
+  rate; it still holds, just with more room than originally sized for.)
 - **It stays even though nothing currently comes close to it.** With the games
   suspended it is not binding for anyone. It is stated now anyway because a cap
   introduced *after* members are used to uncapped earning reads as a takeaway,
@@ -507,15 +516,15 @@ direct donations:
 
 | Source | NB¥/year | |
 |---|---|---|
-| Subs + donations | **549,000** | against $537 actually received |
+| Subs + donations | **576,000** | against $537 actually received |
 | Salaries | 260,000 | |
 | `/invest` subsidy | 40,000 | § 3 — bounded by the position caps |
 | Contributions (bio, cleanup, box scores) | 36,000 | |
 | Achievement drip | 18,000 | |
 | Minigames | 0 | suspended |
-| **Total mint** | **903,000** | |
+| **Total mint** | **930,000** | |
 
-**Money is 61% of all minting** — A1 satisfied, and satisfied structurally rather
+**Money is 62% of all minting** — A1 satisfied, and satisfied structurally rather
 than by hope.
 
 Betting appears on the mint side only as its **one-time 10,000 NB¥ bank seed**
@@ -524,10 +533,13 @@ so fixed-odds betting has no recurring mint to account for. **Without the bank i
 would belong here as an unbounded line** — which is the argument for shipping it
 with the 105% floor rather than after.
 
-The 549,000 against $537 is the tier premium showing up in the aggregate: about
-12,000 NB¥/year, 1.4% of the mint, is the cost of the Tier 2 and Tier 3 rates.
-Small enough not to matter, and it scales with exactly the behaviour it is meant
-to encourage.
+The 576,000 against $537 is the stated deviations from par (§ 4) showing up in
+the aggregate: about 12,000 NB¥/year is the Tier 2 premium (no Tier 3 subscriber
+in this scenario), and about 27,000 NB¥/year is the Prime-at-Tier-1-rate overpay
+(3 subscribers × 750 NB¥/mo above what $2.25 net would strictly peg to) — 39,000
+combined, 4.2% of the mint. Still small enough not to matter: the tier premium
+scales with the behaviour it's meant to encourage, and the Prime overpay scales
+with how many members actually have Prime, which nothing here is trying to grow.
 
 Sink capacity on the other side:
 
@@ -538,8 +550,8 @@ Sink capacity on the other side:
 | Bank drift, invest fees, tip burn | ~30,000 | the overround absorbing ~4.76% of wagers, plus fees |
 | **Total capacity** | **~540,000** | |
 
-That is capacity, not a forecast, and it leaves **a gap of roughly 360,000
-NB¥/year — 40% of the mint.**
+That is capacity, not a forecast, and it leaves **a gap of roughly 390,000
+NB¥/year — 42% of the mint.**
 
 ### The economy has one real sink
 
@@ -549,8 +561,9 @@ run dry — a member buys one avatar and one theme and is done — and the rakes
 scale with gambling volume the design is otherwise trying to shrink.
 
 That makes the whole economy's balance a function of one number: **how many
-broadcasts get sold.** At four a month there is a 360,000/year gap. At seven a
-month it closes entirely. Nothing else on the list can move enough to matter.
+broadcasts get sold.** At four a month there is a 390,000/year gap. At just over
+seven a month (7.25) it closes entirely. Nothing else on the list can move
+enough to matter.
 
 Three things follow:
 
@@ -558,9 +571,10 @@ Three things follow:
   raises the stakes on the § 4 note about revisiting the price after real demand
   data. Getting it wrong is no longer a minor mispricing.
 - **Salaries are the largest thing that could be cut** if the gap needs closing
-  from the faucet side — 260,000/year, almost exactly the size of the gap. That
-  is a real trade: the salary is what gives non-paying members any path at all,
-  so closing the gap that way reopens the problem it was added to solve.
+  from the faucet side — 260,000/year, about two-thirds of the gap (it covered
+  nearly all of it before the Prime-rate change above added its own 27,000/year).
+  That is a real trade: the salary is what gives non-paying members any path at
+  all, so closing the gap that way reopens the problem it was added to solve.
 - **The gap may simply be acceptable.** A pegged mint does not inflate, and
   members accumulating savings is not a crisis — it only becomes one if balances
   grow so large that the sinks stop feeling meaningful. That is a thing to watch
