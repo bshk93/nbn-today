@@ -5552,17 +5552,19 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
 // renderExceptionsSection). Nothing here ever calls the API; exiting just
 // discards the local state, so the real roster/cap sections are untouched.
 
-// Dead-cap remainder on a hypothetical release (rulebook § 5.1-5.2). Walks
-// every salary-bearing season from `season` onward and applies the guarantee
-// rule for that year's cap-hold type: TEAM_OPT/UFA/RFA years owe nothing
-// (they're not real salary), PLAYER_OPT years owe the guaranteed amount (or
-// full salary if no partial guarantee is set — a player option fully
-// guarantees once the team can no longer decline it), NON_GTD years owe only
-// what's vested as of today (a step schedule, or a single guarantee-date
-// cutoff), and a plain guaranteed year owes the guaranteed amount or full
-// salary.
-function simulateRelease(row, season, today = new Date()) {
-  let total = 0;
+// Dead-cap obligation on a hypothetical release (rulebook § 5.1-5.2), broken
+// out per season. Walks every salary-bearing season from `season` onward and
+// applies the guarantee rule for that year's cap-hold type: TEAM_OPT/UFA/RFA
+// years owe nothing (they're not real salary), PLAYER_OPT years owe the
+// guaranteed amount (or full salary if no partial guarantee is set — a
+// player option fully guarantees once the team can no longer decline it),
+// NON_GTD years owe only what's vested as of today (a step schedule, or a
+// single guarantee-date cutoff), and a plain guaranteed year owes the
+// guaranteed amount or full salary. Shared by simulateRelease (method 1: pay
+// the original schedule) and simulateStretch (method 2: spread the same
+// total over a longer one) — one obligation calculation, two payout shapes.
+function releaseObligationByYear(row, season, today = new Date()) {
+  const owed = {};
   Object.keys(row._salaries || {}).filter(y => y >= season).forEach(y => {
     const capType = (row._cap_holds || {})[y];
     const salary = parseSalaryNum(row._salaries[y]);
@@ -5570,26 +5572,58 @@ function simulateRelease(row, season, today = new Date()) {
     if (capType === 'TEAM_OPT' || capType === 'UFA' || capType === 'RFA') return;
     if (capType === 'PLAYER_OPT') {
       const gtd = (row._guaranteed || {})[y];
-      total += (gtd != null && gtd !== '') ? parseSalaryNum(gtd) : salary;
+      owed[y] = (gtd != null && gtd !== '') ? parseSalaryNum(gtd) : salary;
       return;
     }
     if (capType === 'NON_GTD') {
       const sched = (row._guarantee_schedule || {})[y];
       if (sched && sched.length) {
-        total += sched.filter(s => !s.date || new Date(s.date) <= today)
-                       .reduce((sum, s) => sum + parseSalaryNum(s.amount), 0);
+        const amt = sched.filter(s => !s.date || new Date(s.date) <= today)
+                          .reduce((sum, s) => sum + parseSalaryNum(s.amount), 0);
+        if (amt) owed[y] = amt;
         return;
       }
       const gtdDate = (row._guarantee_dates || {})[y];
       const gtdAmt  = (row._guaranteed || {})[y];
-      if (gtdDate && today < new Date(gtdDate + 'T00:00:00')) { total += parseSalaryNum(gtdAmt); return; }
-      total += salary;
+      if (gtdDate && today < new Date(gtdDate + 'T00:00:00')) {
+        const amt = parseSalaryNum(gtdAmt);
+        if (amt) owed[y] = amt;
+        return;
+      }
+      owed[y] = salary;
       return;
     }
     const gtdAmt = (row._guaranteed || {})[y];
-    total += (gtdAmt != null && gtdAmt !== '') ? parseSalaryNum(gtdAmt) : salary;
+    owed[y] = (gtdAmt != null && gtdAmt !== '') ? parseSalaryNum(gtdAmt) : salary;
   });
-  return total;
+  return owed;
+}
+
+function simulateRelease(row, season, today = new Date()) {
+  return Object.values(releaseObligationByYear(row, season, today)).reduce((a, b) => a + b, 0);
+}
+
+// Stretch provision (rulebook § 5.1, method 2): double the number of
+// remaining obligated years, add one, and spread the same total obligation
+// evenly across that many seasons starting now. Example from the rulebook:
+// 3 years remaining → 7-year stretch. Any rounding remainder from the
+// even split is absorbed into the final season so the schedule still sums
+// to exactly the original total.
+function simulateStretch(row, season, today = new Date()) {
+  const owed = releaseObligationByYear(row, season, today);
+  const years = Object.keys(owed).length;
+  const total = Object.values(owed).reduce((a, b) => a + b, 0);
+  if (!years || !total) return { schedule: {}, total: 0 };
+  const stretchYears = years * 2 + 1;
+  const perYear = Math.floor(total / stretchYears);
+  const schedule = {};
+  let yr = season;
+  for (let i = 0; i < stretchYears; i++) {
+    schedule[yr] = perYear;
+    yr = nextSalaryYear(yr);
+  }
+  schedule[Object.keys(schedule).pop()] += total - perYear * stretchYears; // rounding remainder → last year
+  return { schedule, total };
 }
 
 // Slug prefix for fictional (not-a-real-player) What-If additions — lets the
@@ -6054,6 +6088,44 @@ function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDe
         rerender();
       });
       td.appendChild(releaseBtn);
+
+      const stretchBtn = document.createElement('button');
+      stretchBtn.type = 'button'; stretchBtn.className = 'whatif-row-action danger';
+      stretchBtn.textContent = 'Stretch';
+      stretchBtn.title = 'Waives the player using the stretch provision — same total dead cap as Release, spread over 2x remaining years + 1 (rulebook § 5.1)';
+      stretchBtn.addEventListener('click', () => {
+        const raw = state.rows.find(r => r.SLUG === row.SLUG);
+        const { schedule } = simulateStretch(row, season);
+        state.rows = state.rows.filter(r => r.SLUG !== row.SLUG);
+        const scheduleYears = Object.keys(schedule);
+        const existingDeadRow = state.deadCapRows.find(r => r.SLUG === row.SLUG);
+        const isNewDeadRow = scheduleYears.length > 0 && !existingDeadRow;
+        const prevDeadVals = {};
+        scheduleYears.forEach(y => { prevDeadVals[y] = existingDeadRow ? existingDeadRow[y] : undefined; });
+        if (scheduleYears.length) {
+          const target = existingDeadRow || { SLUG: row.SLUG };
+          scheduleYears.forEach(y => { target[y] = String(schedule[y]); });
+          if (!existingDeadRow) state.deadCapRows.push(target);
+        }
+        logAction(`Stretched ${row._name}`, () => {
+          state.rows.push({ SLUG: row.SLUG, TYPE: raw?.TYPE || '' });
+          if (scheduleYears.length) {
+            if (isNewDeadRow) {
+              state.deadCapRows = state.deadCapRows.filter(r => r.SLUG !== row.SLUG);
+            } else {
+              const dr = state.deadCapRows.find(r => r.SLUG === row.SLUG);
+              if (dr) {
+                scheduleYears.forEach(y => {
+                  if (prevDeadVals[y] === undefined) delete dr[y];
+                  else dr[y] = prevDeadVals[y];
+                });
+              }
+            }
+          }
+        });
+        rerender();
+      });
+      td.appendChild(stretchBtn);
     }
   }
 
