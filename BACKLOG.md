@@ -242,36 +242,6 @@ cap verdict on a live proposal.
 `/cap-settings`. Pairs with the minimum-scale entry directly below — same file,
 same form, same committee, and worth doing in one sitting.
 
-### [P1] 27-28/28-29/29-30 minimum salary scales are row-shifted — multi-year minimums fail
-Entered 2026-08-10 via `/cap-settings`. Each season's column is the 26-27 scale
-shifted **up one experience row** per year out, then escalated:
-`season_n[r] == 26-27[r+n] × (1 + 0.05n)` — verified 11/11 rows on 27-28, and
-all three seasons match within $4.
-
-That pre-bakes the experience diagonal into the table. The validator already
-walks it (`_contract_years_exp` steps the row one per contract year and reads
-that season's column), so it **double-steps**: Year 2 of a 3-year minimum reads
-$2,571,895 instead of $2,294,372. hkd's own worked example fails validation
-today and passes against unshifted tables. Confirmed both ways.
-
-Fix is data, not code — store the **true per-season scale** (same rows as
-26-27, escalated, no shift). Corrected tables computed and verified 2026-08-10;
-**not written, awaiting a go-ahead** since this is committee-entered data.
-Two independent reasons unshifting is the right direction rather than changing
-the code:
-
-- A deal signed *in* 27-28 reads that column directly and would be one tier too
-  high across the board. The shifted table is only valid for 26-27 signings.
-- § 2.1a's Empty Roster Charge takes `scale["0"]` for the current season. Once
-  27-28 is the live league year that returns $2,294,370 against a true rookie
-  minimum of $1,425,651 — a 61% overcharge per empty slot, counted as real
-  guaranteed salary against Hard Cap and both aprons.
-
-Also: all three seasons were saved with `cap`, aprons and EAPS at **0**. Harmless
-today (§ 3.11's max-salary check reads a 0 cap as "can't check" and skips rather
-than miscalculating) but it is a silent skip, and those fields are needed before
-27-28 goes live.
-
 ### [P1] 2024 rookie scale has the § 3.10 hold multiplier inverted — not loaded
 Found 2026-08-11 while populating `rookie-scale.json` (which had never held
 anything; 2025 and 2026 are now loaded and verified to the dollar against every
@@ -458,46 +428,48 @@ the basis (days? games?), and a season-start date the validator can key off —
 at which point the warning can become a real computed check. Grant Williams'
 2026-04-11 signing ($39,820) is the live example.
 
-### [P2] § 3.12 minimum contracts track the scale, but nothing re-prices them
-Settled as league policy 2026-08-10 and written into § 3.12: a minimum
-contract's salary in any season is **the applicable minimum for that season**,
-not the dollar figure recorded when it was signed. The Minimum Salary Scale is
-re-set every league year (hkd: "something that will have to be modified on a
-yearly basis"), so each revision is worth real money to every minimum deal
-running through that season. This is the NBA model and was chosen deliberately
-over the alternative (figures fixed at signing).
+### [P2] One minimum-contract mis-tiering needs manual pricing, plus a hold-placeholder bug in the Aug 2026 FA wave
+The re-pricing job this item used to be about now exists:
+`nbn-api-dev/reprice_minimum_salaries.py` (2026-09-14, dry-run by default,
+`--apply` to write, reuses the same `_min_salary_for`/`_one_year_min_cap_hit`
+helpers the signing validator itself checks against, so it can't disagree
+with what a fresh signing would be checked against). Population was never
+really 1 — that snapshot was taken the day before a 45-contract offseason FA
+wave (2026-08-09–08-26). `years_experience` is now persisted onto the
+contract record at signing too (`_apply_sign`/`_apply_convert_twoway`,
+2026-09-14), so future minimum deals won't need the `draft_year` fallback the
+job still falls back to for all 45 of today's, which predate the fix.
 
-Nothing implements it. The recorded amounts are refreshed by hand, so a deal
-running past a revised season reads at its old figures — **and that season's
-Team Salary with it** — until someone updates it. § 3.12's "still manual
-review" paragraph says so rather than hiding it.
+First run (2026-09-14) applied 3 corrections: `post-quinten`/`hukporti-ariel`
+(trivial $1 rounding drift, 27-28) and `smith-dru` (27-28, $3,450,720 →
+$3,219,450) — the last one confirmed to the dollar as fallout of the
+now-resolved row-shift bug (the deleted `27-28/28-29/29-30 minimum salary
+scales are row-shifted` item, above the § 3.12 entries in this file's history):
+his recorded figure matched his correct tier-6 read against the *old, shifted*
+table exactly, so he was priced correctly at signing and simply never got the
+scale's later fix. Two things still need a human, not the job:
 
-Deliberately not built on 2026-08-10 because the population was **1**: only two
-`sign` transactions in the entire ledger set `signing_method: "minimum"`, and
-one of those is single-year. An engine that mutates roster state whenever a
-config value is edited is a bad trade for one contract — a typo in
-`/cap-settings` would silently re-price the league.
+- **One real mis-tiering, unexplained by the shift bug**: `bagley-marvin`
+  (drafted 2018 → 8 years' NBA experience, but priced at the tier-2 rate for
+  26-27 — a >$1M/season gap). 26-27 is the base table, not a shifted season,
+  so this isn't the same mechanical explanation as `smith-dru` — needs someone
+  to confirm it's actually wrong before `--apply`.
+- **A data bug in the Aug 2026 wave**: `bagley-marvin` 27-28, `battle-jamison`
+  28-29, and `cooper-sharife`/`pedulla-sean` 28-29 all carry a stray
+  `$0`/`$1` salary entry on the *same* season their own contract also tags as
+  a trailing UFA/RFA hold. `_autofill_fa_hold_amounts` skips auto-pricing a
+  hold whenever `salaries` already has an entry for that season, so these
+  four almost certainly never got a real trailing-hold figure computed at
+  all. The re-pricing job now detects this shape and skips it (it can't tell
+  a real year from a stub), but doesn't fix it — that's a different bug,
+  upstream in whatever produced the stray entry, not a re-pricing question.
 
-Two things already established, worth not rediscovering:
+Revisit before any 27-28 cap planning.
 
-- **A minimum contract is a pure function of (first season, years of
-  experience, scale)** now that `contract.years_experience` exists (§ 3.12,
-  added 2026-08-10). The refresh is a job to run, not a deal to reconstruct, so
-  building it later costs the same as building it now.
-- **Identify them by the ledger's `signing_method`, never by salary level.** 58
-  rostered players carry a 27-28+ salary at or below the veteran minimum, but
-  they are overwhelmingly second-rounders on **rookie-scale** deals
-  (`barnhizer-brooks`, `brea-koby`, `brown-kobe`, …). Rookie scale is a
-  different table entirely and must never be re-priced by § 3.12.
-
-Revisit when minimum signings become common, or before any 27-28 cap planning —
-whichever comes first. Wants a preview-then-apply shape (show the diff, apply on
-confirmation), not an automatic hook on `PUT /api/cap-levels/{season}`.
-
-Related open question for the committee: the 27-28+ scales are projections
-using a **simple** 5%-of-base escalator (×1.05, ×1.10, ×1.15), not compounding.
-Immaterial at three years out, real by year five. Replace with published NBA
-figures when they exist.
+Related open question for the committee, unchanged: the 27-28+ scales are
+projections using a **simple** 5%-of-base escalator (×1.05, ×1.10, ×1.15),
+not compounding. Immaterial at three years out, real by year five. Replace
+with published NBA figures when they exist.
 
 ### [P2] An RFA match doesn't link back to the holds that funded the offer
 `rescind_renounce` shipped 2026-08-08 alongside owner self-serve renounce, and
