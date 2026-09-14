@@ -130,3 +130,41 @@ administrative action — so gating the UI on "is head" would offer a vote the
 server refuses. A head who isn't on a player's sub-committee sees the totals and
 the finalize button and no inputs. Finalize, unlock and assignment are the
 head's real powers and are separate endpoints.
+
+## History — reading a player after he's left the pool
+
+`GET /api/fa/players/{slug}/review` is scoped to the *current* pool (`_fa_pool`
+off the player's live bio) — once a free agent resigns, his cap hold clears, he
+drops out of the pool, and `review` 404s. Before 2026-09-14 that made a past FA
+period's offers and outcome unreadable from the dashboard at all — the offers
+and locked ballots were still on disk, just behind a route nobody could reach,
+and the only way back to "what did team X offer, and what did the committee
+decide" was scrolling Discord.
+
+`GET /api/fa/history/{slug}` is the read-only route into the same data that
+skips the pool gate. Gated on `fac`/`fac_head`/`agent` (any of the three,
+**not** per-round assignment — a closed round has nothing left to protect by
+staying opaque the way a live one does). It groups every offer the player has
+drawn by `round_id` and attaches that round's locked ballot (`final`) where one
+exists. Two things it deliberately excludes even though nothing downstream
+would technically choke on them:
+
+- **Drafts** — a draft never left the team's own scratch pad while live, and
+  going stale doesn't make it committee business.
+- **Anything not yet `archived_at`** — archiving only happens at that round's
+  `finalize`, so requiring it keeps a round that's still genuinely open just as
+  opaque here as `_require_reviewer` keeps it on `review`. In practice this
+  bites nothing: a slug can't leave the pool until the cap hold that put him in
+  free agency resolves, and that only happens after the round that resolved it
+  is finalized (finalize records the outcome; the real signing happens after,
+  by hand, on `/transactions`) — but it's a real bound, not a decorative one,
+  since a player could in principle sign through some other path while an
+  unrelated round on him was still mid-flight.
+
+On `pdc/index.html`, a player who 404s from `review` falls through to a
+dedicated read-only history panel instead of the live review UI — no ballot
+inputs, no agent/head controls, just what was offered and what was decided.
+Since a resigned player has no row on the board or queue (both are built off
+the pool), the only way to *reach* one is the small name search above the
+player list, which searches every slug in `BIOS` (loaded once, independent of
+the pool) rather than the current pool.

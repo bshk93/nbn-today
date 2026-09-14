@@ -106,6 +106,13 @@
     .tabs-mini { display: flex; gap: 0.15rem; }
     .tabs-mini button { background: none; border: none; color: var(--text-muted); padding: 0.2rem 0.45rem; font-size: 0.72rem; border-radius: 5px; }
     .tabs-mini button.on { background: var(--bg-hover); color: var(--text-primary); }
+    .history-search { position: relative; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border-subtle); }
+    .history-search input { font-size: 0.78rem; padding: 0.35rem 0.5rem; }
+    .history-search-results { position: absolute; left: 0.8rem; right: 0.8rem; top: 100%; z-index: 5;
+      background: var(--bg-page); border: 1px solid var(--border); border-top: none; border-radius: 0 0 6px 6px;
+      max-height: 14rem; overflow-y: auto; }
+    .history-search-results div { padding: 0.3rem 0.55rem; font-size: 0.78rem; cursor: pointer; }
+    .history-search-results div:hover { background: var(--bg-hover); }
 
     .plist { max-height: 70vh; overflow-y: auto; }
     .prow { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border-subtle); cursor: pointer; display: flex; gap: 0.5rem; align-items: flex-start; }
@@ -243,6 +250,10 @@
       <div class="head-zone" id="head-zone" hidden></div>
       <div class="panes">
         <aside class="pane">
+          <div class="history-search" id="history-search">
+            <input type="text" id="history-search-input" placeholder="Find a player’s FA history…" autocomplete="off">
+            <div class="history-search-results" id="history-search-results" hidden></div>
+          </div>
           <div class="pane-head">
             <div class="tabs-mini" id="list-tabs"></div>
           </div>
@@ -438,6 +449,7 @@
 
       document.getElementById('app').hidden = false;
       document.getElementById('detail').appendChild(el('div', 'empty', 'Pick a player to review.'));
+      setupHistorySearch();
 
       const [state, pool] = await Promise.all([api('/fa/state'), api('/fa/pool')]);
       STATE = state; POOL = pool;
@@ -1346,6 +1358,16 @@
     try {
       review = await api('/fa/players/' + encodeURIComponent(slug) + '/review');
     } catch (e) { err = e; }
+
+    // 404 = not a free agent *right now* — most often someone who has since
+    // resigned and left the pool `review` reads off. That isn't "no record",
+    // it's "no live round to review" — the history endpoint answers the same
+    // question `review` would have, from data that outlives the pool entry.
+    if (err && err.status === 404) {
+      box.innerHTML = '';
+      return renderHistoryPanel(slug, box);
+    }
+
     if (review) {
       try {
         ballots = await api('/fa/players/' + encodeURIComponent(slug) + '/ballots');
@@ -1388,6 +1410,139 @@
     // An agent who isn't also on the FAC sees no ballot section at all, rather
     // than one explaining a 403 they will never resolve (§ 4.5).
     if (IS_FAC) box.appendChild(ballotsSection(review, ballots));
+  }
+
+  // ── FA history (a player no longer in the pool) ────────────────────────────
+  //
+  // `review` only ever answers for a *current* free agent — this is the read
+  // path for everyone else: someone who resigned and dropped off the board,
+  // reachable only by slug (search or a direct #/p/ link), never from the
+  // player list. No live controls, because there's nothing left to act on.
+
+  async function renderHistoryPanel(slug, box) {
+    const bio = BIOS[slug] || {};
+    const head = el('div', 'detail-head');
+    head.appendChild(el('h2', null, nameOf(slug)));
+    const sub = el('div', 'detail-sub');
+    const bits = [(bio.pos || []).join('/'), age(bio.dob) ? age(bio.dob) + ' yrs' : ''];
+    sub.appendChild(el('span', null, bits.filter(Boolean).join(' · ')));
+    sub.appendChild(el('span', 'chip', 'not a current free agent'));
+    head.appendChild(sub);
+    box.appendChild(head);
+
+    const s = el('div', 'section');
+    s.appendChild(el('h3', null, 'Free agency history'));
+    let hist;
+    try {
+      hist = await api('/fa/history/' + encodeURIComponent(slug));
+    } catch (e) {
+      s.appendChild(el('div', 'banner bad', e.message));
+      box.appendChild(s);
+      return;
+    }
+    if (!hist.rounds.length) {
+      s.appendChild(el('div', 'empty', 'No offers on record for this player.'));
+      box.appendChild(s);
+      return;
+    }
+    hist.rounds.forEach(r => s.appendChild(historyRoundBlock(r)));
+    box.appendChild(s);
+  }
+
+  function historyRoundBlock(r) {
+    const wrap = el('div', 'section');
+    wrap.style.marginTop = '0.8rem';
+    wrap.appendChild(el('div', 'mini-head', r.round_name));
+
+    const labels = { NO_SIGNING: 'No signing', QO: 'Qualifying offer' };
+    r.offers.forEach(o => {
+      labels[o.id] = o.team + ' #' + o.number + (o.status === 'voided' ? ' (voided)' : '');
+    });
+
+    if (!r.offers.length) {
+      wrap.appendChild(el('div', 'empty', 'No offers submitted.'));
+    } else {
+      const list = el('div', 'offers');
+      r.offers.forEach(o => list.appendChild(historyOfferCard(o)));
+      wrap.appendChild(list);
+    }
+
+    if (r.final) {
+      const f = r.final;
+      const fin = el('div', 'bb-block');
+      fin.style.marginTop = '0.6rem';
+      fin.appendChild(el('span', 'bb-label', 'Finalized'));
+      fin.appendChild(el('span', 'bb-val', when(f.locked_at) + ' by ' + f.locked_by
+        + (f.path === 'agent' ? ' · uncontested (agent path)' : ' · sub-committee ballot')));
+      wrap.appendChild(fin);
+      const totals = Object.entries(f.totals || {}).sort((a, b) => b[1] - a[1]);
+      if (totals.length) {
+        const dl = el('dl', 'kv');
+        totals.forEach(([k, n]) => {
+          dl.appendChild(el('dt', null, labels[k] || k));
+          dl.appendChild(el('dd', null, n + ' balls'));
+        });
+        wrap.appendChild(dl);
+      }
+    } else {
+      wrap.appendChild(el('span', 'chip chip-warn', 'not finalized'));
+    }
+    return wrap;
+  }
+
+  function historyOfferCard(o) {
+    const card = el('div', 'offer');
+    const head = el('div', 'offer-head');
+    head.appendChild(el('span', 'offer-team', o.team));
+    head.appendChild(el('span', 'offer-num', '#' + o.number));
+    head.appendChild(el('span', o.status === 'voided' ? 'chip chip-bad'
+      : o.status === 'returned' ? 'chip chip-warn' : 'chip', o.status));
+    if (o.version > 1) head.appendChild(el('span', 'chip', 'v' + o.version));
+    card.appendChild(head);
+    // No season passed: this is the contract as signed (or as offered), not a
+    // roster reading from some later point — the only sense "history" means here.
+    card.appendChild(el('div', 'shorthand', shorthand(o.offer.contract)));
+    card.appendChild(el('div', 'meta', 'Submitted ' + when(o.submitted_at) + ' · ' + (o.submitted_by || '—')));
+    if (o.status === 'voided' && o.void) {
+      card.appendChild(el('div', 'meta', 'Voided ' + when(o.void.at) + ' by ' + o.void.by
+        + ' — “' + (o.void.reason || '—') + '”'));
+    }
+    return card;
+  }
+
+  // ── history search ──────────────────────────────────────────────────────────
+  //
+  // The player list only ever shows current free agents (it's built off the
+  // pool). Someone who resigned and left the pool is still fully addressable —
+  // `renderHistoryPanel` above handles that — but has no row to click, so this
+  // is the only way to *reach* one without already knowing their slug.
+
+  function setupHistorySearch() {
+    const input = document.getElementById('history-search-input');
+    const results = document.getElementById('history-search-results');
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      results.innerHTML = '';
+      if (q.length < 2) { results.hidden = true; return; }
+      const matches = Object.keys(BIOS)
+        .filter(slug => nameOf(slug).toLowerCase().includes(q))
+        .slice(0, 8);
+      if (!matches.length) { results.hidden = true; return; }
+      matches.forEach(slug => {
+        const row = el('div', null, nameOf(slug));
+        row.addEventListener('click', () => {
+          input.value = '';
+          results.hidden = true;
+          location.hash = '#/p/' + slug;
+          openPlayer(slug);
+        });
+        results.appendChild(row);
+      });
+      results.hidden = false;
+    });
+    document.addEventListener('click', e => {
+      if (!document.getElementById('history-search').contains(e.target)) results.hidden = true;
+    });
   }
 
   function detailHead(slug, entry, review) {
