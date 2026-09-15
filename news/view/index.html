@@ -248,6 +248,38 @@
 
     .section-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 1rem; }
 
+    /* Tips */
+    .tips-summary { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.85rem; }
+    .tips-summary strong { color: var(--text-secondary); }
+    .tip-form { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.25rem; margin-bottom: 1.1rem; }
+    .tip-form-title { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.75rem; }
+    .tip-presets { display: flex; gap: 0.5rem; margin-bottom: 0.65rem; flex-wrap: wrap; }
+    .tip-preset-btn { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 6px; padding: 0.35rem 0.75rem; font-size: 0.8rem; font-family: inherit; cursor: pointer; }
+    .tip-preset-btn:hover { border-color: var(--text-dim); }
+    .tip-preset-btn.selected { border-color: var(--accent); color: var(--text-primary); background: var(--accent-panel-bg); }
+    .tip-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .tip-input-wrap { display: flex; align-items: stretch; }
+    .tip-prefix { background: var(--border); border: 1px solid var(--text-dim); border-right: none; color: var(--text-muted); font-size: 0.875rem; padding: 0.45rem 0.65rem; border-radius: 6px 0 0 6px; }
+    .tip-amount { background: var(--bg-page); border: 1px solid var(--text-dim); color: var(--text-primary); border-radius: 0 6px 6px 0; padding: 0.45rem 0.6rem; font-size: 0.875rem; width: 110px; font-family: inherit; }
+    .tip-amount:focus { outline: none; border-color: var(--link); }
+    .tip-msg-wrap { margin-top: 0.7rem; }
+    .tip-msg { background: var(--bg-page); border: 1px solid var(--text-dim); color: var(--text-primary); border-radius: 6px; padding: 0.5rem 0.65rem; font-size: 0.875rem; width: 100%; font-family: inherit; resize: vertical; min-height: 64px; }
+    .tip-msg:focus { outline: none; border-color: var(--link); }
+    .tip-msg-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.3rem; }
+    .btn-tip { background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text-on-accent); border-radius: 6px; padding: 0.45rem 1rem; cursor: pointer; font-size: 0.875rem; font-family: inherit; white-space: nowrap; }
+    .btn-tip:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tip-error { font-size: 0.8rem; color: var(--danger-light); background: var(--danger-bg); border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.6rem; }
+    .tip-success { font-size: 0.8rem; color: var(--success-light); background: var(--success-dark-bg); border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.6rem; }
+    .signin-prompt { font-size: 0.85rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.1rem; }
+    .tips-list { display: flex; flex-direction: column; }
+    .tip-item { padding: 0.75rem 0; border-bottom: 1px solid var(--bg-card); }
+    .tip-item:last-child { border-bottom: none; }
+    .tip-item-header { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+    .tip-from { font-weight: 600; font-size: 0.875rem; }
+    .tip-amt { font-size: 0.85rem; color: #fde68a; font-weight: 600; }
+    .tip-time { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; }
+    .tip-message { font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.4rem; font-style: italic; padding-left: 0.65rem; border-left: 2px solid var(--border); }
+
     /* Comments */
     .comment { border-top: 1px solid var(--bg-card); padding: 1rem 0; }
     .comment:first-child { border-top: none; }
@@ -294,6 +326,7 @@
     <hr class="divider">
     <div class="md-body" id="article-body"></div>
     <div id="rankings-block"></div>
+    <div id="tip-section" style="display:none;"></div>
     <hr class="divider">
 
     <div>
@@ -1181,6 +1214,7 @@ async function openTokenPrompt() {
   if (!info) { toast('That token was not accepted.', true); return; }
   me = info;
   render(article);
+  renderTipSection();
 }
 
 async function reload() {
@@ -1188,6 +1222,112 @@ async function reload() {
   const res = await fetch(`${API}/news/${ARTICLE_ID}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
   if (!res.ok) return;
   render(await res.json());
+  renderTipSection();
+}
+
+function tipContextKey(a) { return `article:${a.id}`; }
+
+async function loadTips() {
+  try {
+    const res = await fetch(`${API}/tips/context/${encodeURIComponent(tipContextKey(article))}`);
+    return res.ok ? await res.json() : { total: 0, tips: [] };
+  } catch { return { total: 0, tips: [] }; }
+}
+
+async function renderTipSection() {
+  const el = document.getElementById('tip-section');
+  if (!article || !article.author || article.status !== 'published') { el.style.display = 'none'; return; }
+
+  const data = await loadTips();
+  const token = getToken();
+  const canTip = me && me.name !== article.author;
+
+  let html = '<div class="section-title">Tips</div>';
+
+  if (data.total > 0) {
+    html += `<div class="tips-summary">💸 NB¥${data.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} tipped to <strong>${escHtml(article.author)}</strong> for this piece · ${data.tips.length} tip${data.tips.length === 1 ? '' : 's'}</div>`;
+  }
+
+  if (!token) {
+    html += `<div class="signin-prompt"><a class="signin-link" onclick="openTokenPrompt()">Sign in</a> to tip ${escHtml(article.author)} for this piece.</div>`;
+  } else if (canTip) {
+    html += `<div class="tip-form" id="tip-form">
+      <div class="tip-form-title">Tip ${escHtml(article.author)}</div>
+      <div class="tip-presets">
+        <button type="button" class="tip-preset-btn" data-amt="100">NB¥100</button>
+        <button type="button" class="tip-preset-btn" data-amt="500">NB¥500</button>
+        <button type="button" class="tip-preset-btn" data-amt="1000">NB¥1,000</button>
+      </div>
+      <div class="tip-row">
+        <div class="tip-input-wrap">
+          <span class="tip-prefix">NB¥</span>
+          <input type="number" class="tip-amount" id="tip-amount" min="1" step="1" placeholder="Custom">
+        </div>
+        <button class="btn-tip" id="tip-btn">Send Tip</button>
+      </div>
+      <div id="tip-msg-wrap" style="display:none" class="tip-msg-wrap">
+        <textarea class="tip-msg" id="tip-msg" placeholder="Add a message…" maxlength="280"></textarea>
+        <p class="tip-msg-hint">Publicly visible on this article.</p>
+      </div>
+      <div id="tip-feedback"></div>
+    </div>`;
+  }
+
+  if (data.tips.length) {
+    html += `<div class="tips-list">` + data.tips.map(t => `
+      <div class="tip-item">
+        <div class="tip-item-header">
+          <span class="tip-from">${escHtml(t.from)}</span>
+          <span class="tip-amt">NB¥${(+t.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+          <span class="tip-time">${relTime(t.ts)}</span>
+        </div>
+        ${t.message ? `<div class="tip-message">${escHtml(t.message)}</div>` : ''}
+      </div>`).join('') + `</div>`;
+  }
+
+  el.innerHTML = html;
+  el.style.display = '';
+  if (canTip && token) wireTipForm();
+}
+
+function wireTipForm() {
+  const amtEl = document.getElementById('tip-amount');
+  const msgWrap = document.getElementById('tip-msg-wrap');
+  const btn = document.getElementById('tip-btn');
+  const fb = document.getElementById('tip-feedback');
+
+  const syncMsgVisibility = () => { msgWrap.style.display = parseFloat(amtEl.value) >= 25 ? '' : 'none'; };
+  const syncPresetHighlight = () => {
+    document.querySelectorAll('.tip-preset-btn').forEach(b => b.classList.toggle('selected', b.dataset.amt === amtEl.value));
+  };
+
+  document.querySelectorAll('.tip-preset-btn').forEach(b => {
+    b.addEventListener('click', () => { amtEl.value = b.dataset.amt; syncMsgVisibility(); syncPresetHighlight(); });
+  });
+  amtEl.addEventListener('input', () => { syncMsgVisibility(); syncPresetHighlight(); });
+
+  btn.addEventListener('click', async () => {
+    const amount = parseFloat(amtEl.value);
+    if (!amount || amount <= 0) { fb.innerHTML = '<div class="tip-error">Enter a valid amount.</div>'; return; }
+    const message = document.getElementById('tip-msg')?.value?.trim() || '';
+    const token = getToken();
+    btn.disabled = true; btn.textContent = 'Sending…'; fb.innerHTML = '';
+    try {
+      const res = await fetch(`${API}/tips`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: article.author, amount, message, context: tipContextKey(article) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      fb.innerHTML = `<div class="tip-success">Sent NB¥${amount.toLocaleString('en-US')} to ${escHtml(article.author)}!</div>`;
+      setTimeout(renderTipSection, 1200);
+    } catch (err) {
+      fb.innerHTML = `<div class="tip-error">${escHtml(err.message)}</div>`;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Send Tip';
+    }
+  });
 }
 
 async function init() {
@@ -1216,6 +1356,7 @@ async function init() {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('content').style.display = 'block';
     render(await res.json());
+    renderTipSection();
   } catch {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('error-msg').style.display = 'block';
