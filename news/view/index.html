@@ -279,6 +279,14 @@
     .tip-amt { font-size: 0.85rem; color: #fde68a; font-weight: 600; }
     .tip-time { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; }
     .tip-message { font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.4rem; font-style: italic; padding-left: 0.65rem; border-left: 2px solid var(--border); }
+    .tip-to { font-size: 0.78rem; color: var(--text-dim); }
+    .tip-recipients { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .tip-recipient-chip { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 999px; padding: 0.3rem 0.8rem; font-size: 0.8rem; font-family: inherit; cursor: pointer; }
+    .tip-recipient-chip:hover { border-color: var(--text-dim); }
+    .tip-recipient-chip.selected { border-color: var(--accent); color: var(--text-primary); background: var(--accent-panel-bg); }
+    .tip-select-all { display: inline-block; font-size: 0.75rem; color: var(--link); cursor: pointer; margin-bottom: 0.85rem; text-decoration: none; }
+    .tip-select-all:hover { text-decoration: underline; }
+    .tip-total { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem; }
 
     /* Comments */
     .comment { border-top: 1px solid var(--bg-card); padding: 1rem 0; }
@@ -1234,25 +1242,53 @@ async function loadTips() {
   } catch { return { total: 0, tips: [] }; }
 }
 
+// A plain article has one byline; a power-rankings edition credits its
+// author plus every voter and blurb writer (server-gated to published pieces
+// only — see _article_detail in routers/news.py). Either way this is "who a
+// reader could tip," minus the reader themselves.
+function tipRecipients() {
+  const credited = (article.credited && article.credited.length) ? article.credited
+                  : (article.author ? [article.author] : []);
+  return credited.filter(n => !me || n !== me.name);
+}
+
+const tipSelected = new Set();
+
 async function renderTipSection() {
   const el = document.getElementById('tip-section');
-  if (!article || !article.author || article.status !== 'published') { el.style.display = 'none'; return; }
+  if (!article || article.status !== 'published') { el.style.display = 'none'; return; }
 
   const data = await loadTips();
   const token = getToken();
-  const canTip = me && me.name !== article.author;
+  const recipients = tipRecipients();
+  const multi = recipients.length > 1;
+  const canTip = token && recipients.length > 0;
+  // Whether the *piece* has several authors — independent of `multi` above,
+  // which is scoped to what the current viewer is offered (a viewer who is
+  // one of two credited authors sees only one recipient, but the tip history
+  // below still spans both and should still say who each tip went to).
+  const piecesManyAuthors = article.credited && article.credited.length > 1;
 
   let html = '<div class="section-title">Tips</div>';
 
   if (data.total > 0) {
-    html += `<div class="tips-summary">💸 NB¥${data.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} tipped to <strong>${escHtml(article.author)}</strong> for this piece · ${data.tips.length} tip${data.tips.length === 1 ? '' : 's'}</div>`;
+    const byWhom = piecesManyAuthors ? 'the authors' : `<strong>${escHtml(article.author)}</strong>`;
+    html += `<div class="tips-summary">💸 NB¥${data.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} tipped to ${byWhom} for this piece · ${data.tips.length} tip${data.tips.length === 1 ? '' : 's'}</div>`;
   }
 
   if (!token) {
-    html += `<div class="signin-prompt"><a class="signin-link" onclick="openTokenPrompt()">Sign in</a> to tip ${escHtml(article.author)} for this piece.</div>`;
+    html += `<div class="signin-prompt"><a class="signin-link" onclick="openTokenPrompt()">Sign in</a> to tip ${multi ? 'the people behind' : escHtml(article.author || '')} this piece.</div>`;
   } else if (canTip) {
+    tipSelected.clear();
+    if (!multi) tipSelected.add(recipients[0]);
     html += `<div class="tip-form" id="tip-form">
-      <div class="tip-form-title">Tip ${escHtml(article.author)}</div>
+      <div class="tip-form-title">${multi ? 'Tip any or all of the authors' : `Tip ${escHtml(recipients[0])}`}</div>`;
+    if (multi) {
+      html += `<div class="tip-recipients" id="tip-recipients">` +
+        recipients.map(n => `<button type="button" class="tip-recipient-chip" data-name="${escHtml(n)}">${escHtml(n)}</button>`).join('') +
+        `</div><a class="tip-select-all" id="tip-select-all">Select all</a>`;
+    }
+    html += `
       <div class="tip-presets">
         <button type="button" class="tip-preset-btn" data-amt="100">NB¥100</button>
         <button type="button" class="tip-preset-btn" data-amt="500">NB¥500</button>
@@ -1261,10 +1297,11 @@ async function renderTipSection() {
       <div class="tip-row">
         <div class="tip-input-wrap">
           <span class="tip-prefix">NB¥</span>
-          <input type="number" class="tip-amount" id="tip-amount" min="1" step="1" placeholder="Custom">
+          <input type="number" class="tip-amount" id="tip-amount" min="1" step="1" placeholder="${multi ? 'Each' : 'Custom'}">
         </div>
         <button class="btn-tip" id="tip-btn">Send Tip</button>
       </div>
+      ${multi ? '<div class="tip-total" id="tip-total"></div>' : ''}
       <div id="tip-msg-wrap" style="display:none" class="tip-msg-wrap">
         <textarea class="tip-msg" id="tip-msg" placeholder="Add a message…" maxlength="280"></textarea>
         <p class="tip-msg-hint">Publicly visible on this article.</p>
@@ -1277,6 +1314,7 @@ async function renderTipSection() {
     html += `<div class="tips-list">` + data.tips.map(t => `
       <div class="tip-item">
         <div class="tip-item-header">
+          ${piecesManyAuthors ? `<span class="tip-to">to ${escHtml(t.to)}</span>` : ''}
           <span class="tip-from">${escHtml(t.from)}</span>
           <span class="tip-amt">NB¥${(+t.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
           <span class="tip-time">${relTime(t.ts)}</span>
@@ -1287,40 +1325,73 @@ async function renderTipSection() {
 
   el.innerHTML = html;
   el.style.display = '';
-  if (canTip && token) wireTipForm();
+  if (canTip) wireTipForm(recipients, multi);
 }
 
-function wireTipForm() {
+function wireTipForm(recipients, multi) {
   const amtEl = document.getElementById('tip-amount');
   const msgWrap = document.getElementById('tip-msg-wrap');
   const btn = document.getElementById('tip-btn');
   const fb = document.getElementById('tip-feedback');
+  const totalEl = document.getElementById('tip-total');
 
   const syncMsgVisibility = () => { msgWrap.style.display = parseFloat(amtEl.value) >= 25 ? '' : 'none'; };
   const syncPresetHighlight = () => {
     document.querySelectorAll('.tip-preset-btn').forEach(b => b.classList.toggle('selected', b.dataset.amt === amtEl.value));
   };
+  const syncTotal = () => {
+    if (!totalEl) return;
+    const amount = parseFloat(amtEl.value) || 0;
+    totalEl.textContent = tipSelected.size
+      ? `NB¥${amount.toLocaleString('en-US')} × ${tipSelected.size} = NB¥${(amount * tipSelected.size).toLocaleString('en-US')}`
+      : 'Pick at least one recipient.';
+  };
+
+  if (multi) {
+    document.querySelectorAll('.tip-recipient-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const name = chip.dataset.name;
+        if (tipSelected.has(name)) tipSelected.delete(name); else tipSelected.add(name);
+        chip.classList.toggle('selected', tipSelected.has(name));
+        syncTotal();
+      });
+    });
+    document.getElementById('tip-select-all').addEventListener('click', e => {
+      e.preventDefault();
+      const allSelected = tipSelected.size === recipients.length;
+      document.querySelectorAll('.tip-recipient-chip').forEach(chip => {
+        if (allSelected) tipSelected.delete(chip.dataset.name); else tipSelected.add(chip.dataset.name);
+        chip.classList.toggle('selected', !allSelected);
+      });
+      syncTotal();
+    });
+    syncTotal();
+  }
 
   document.querySelectorAll('.tip-preset-btn').forEach(b => {
-    b.addEventListener('click', () => { amtEl.value = b.dataset.amt; syncMsgVisibility(); syncPresetHighlight(); });
+    b.addEventListener('click', () => { amtEl.value = b.dataset.amt; syncMsgVisibility(); syncPresetHighlight(); syncTotal(); });
   });
-  amtEl.addEventListener('input', () => { syncMsgVisibility(); syncPresetHighlight(); });
+  amtEl.addEventListener('input', () => { syncMsgVisibility(); syncPresetHighlight(); syncTotal(); });
 
   btn.addEventListener('click', async () => {
     const amount = parseFloat(amtEl.value);
     if (!amount || amount <= 0) { fb.innerHTML = '<div class="tip-error">Enter a valid amount.</div>'; return; }
+    if (tipSelected.size === 0) { fb.innerHTML = '<div class="tip-error">Pick at least one recipient.</div>'; return; }
     const message = document.getElementById('tip-msg')?.value?.trim() || '';
     const token = getToken();
+    const to = [...tipSelected];
     btn.disabled = true; btn.textContent = 'Sending…'; fb.innerHTML = '';
     try {
-      const res = await fetch(`${API}/tips`, {
+      const single = to.length === 1;
+      const res = await fetch(`${API}/tips${single ? '' : '/multi'}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: article.author, amount, message, context: tipContextKey(article) }),
+        body: JSON.stringify({ to: single ? to[0] : to, amount, message, context: tipContextKey(article) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || res.statusText);
-      fb.innerHTML = `<div class="tip-success">Sent NB¥${amount.toLocaleString('en-US')} to ${escHtml(article.author)}!</div>`;
+      const label = single ? escHtml(to[0]) : `${to.length} authors`;
+      fb.innerHTML = `<div class="tip-success">Sent NB¥${amount.toLocaleString('en-US')}${single ? '' : ' each'} to ${label}!</div>`;
       setTimeout(renderTipSection, 1200);
     } catch (err) {
       fb.innerHTML = `<div class="tip-error">${escHtml(err.message)}</div>`;
