@@ -115,13 +115,43 @@ game was retired on 2026-09-19 along with its page, its router and this tier, so
 there is no longer a per-member input to build. If a future achievement needs
 one, `perMember` is still the argument for it.
 
+### Where it reads from, and the six weeks it didn't
+
+Every path the job reads is declared in one place — `INPUTS` at the top of
+`build/achievement-notify.js`. Five are derived CSVs read through
+`$NBS_DATA_DIR/public`, the symlink view nginx serves; three are JSON at the
+data-dir root. The public view rather than `derived/` is deliberate: this job
+runs the same engine the site runs, so it should score off the same bytes the
+site displays (same reasoning as `build/smoke_test.py`).
+
+**It was broken from 2026-08-18 to 2026-09-19 and nothing caught it.** The
+derived CSVs used to be in the repo as tracked symlinks; when the data moved out
+to NBS_DATA_DIR the job kept reading them from the checkout and died with ENOENT
+on every 10-minute run for six weeks. It awarded nothing the whole time.
+
+The reason it stayed invisible is worth keeping: this job has *no output that
+anyone looks at*. No Discord post, no page that goes blank, no failing request —
+just an exception in its own journal. And its success state and its failure
+state look identical from outside, because "no achievements were awarded" is
+also what a quiet week looks like.
+
+`build/test_achievement_inputs.js` is the guard, and it runs from the pre-commit
+hook. It asserts every `INPUTS` path resolves to a non-empty file, that each CSV
+still carries the one column the engine joins it on, and that `buildShared()` +
+`scoreAll()` actually produce tiers end to end. The join-column check exists
+because the looser end-to-end floor does not catch a single renamed input — the
+other four carry it over the line on their own.
+
 Run by a systemd timer every 10 min. `DRY_RUN=1` previews without granting,
-`NBN_ACH_STATE` overrides the snapshot path, `NBN_API_BASE` the API URL.
+`NBN_ACH_STATE` overrides the snapshot path, `NBN_API_BASE` the API URL, and
+`NBS_DATA_DIR` the data directory (which is what makes the test above able to
+point at a scratch copy).
 
 ```bash
 systemctl list-timers nbn-achievements.timer   # next run
 journalctl -u nbn-achievements.service -n 20    # recent runs / awards
 DRY_RUN=1 node build/achievement-notify.js       # preview pending awards
+node build/test_achievement_inputs.js             # can it still read its inputs?
 ```
 
 To re-baseline (e.g. after editing the achievement list), delete the snapshot

@@ -28,6 +28,11 @@ any other hook has to live here too rather than in `.git/hooks`.
   no browser and no network — unlike tests/frontend/run.js, which stays out of
   the hook for exactly those reasons. Skipped where node isn't installed rather
   than making node a requirement for committing.
+- Run build/test_achievement_inputs.js; abort if the NB¥ achievement awarder can
+  no longer read the data it scores from. That job runs on a 10-minute timer with
+  no output but its own journal, so when its inputs moved out of the repo it
+  failed silently for six weeks and awarded nothing. Needs the data directory,
+  like smoke_test.py; skipped where node isn't installed.
 - Run build/og_tags.py --check; abort if any page has missing or stale link-preview
   tags. New pages are the case this catches: without it they ship with no Discord
   unfurl and nothing says so.
@@ -80,6 +85,15 @@ if cap_health_test.exists() and shutil.which('node'):
         print(result.stdout)
         print('\nCommit aborted: the cap-health rules no longer hold (see FAIL lines above).')
         print('Fix cap-health.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+ach_inputs = Path('build/test_achievement_inputs.js')
+if ach_inputs.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(ach_inputs)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: the achievement awarder can no longer read its inputs.')
+        print('Fix INPUTS in build/achievement-notify.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 og_tags = Path('build/og_tags.py')

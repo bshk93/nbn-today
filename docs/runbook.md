@@ -56,7 +56,7 @@ Three lifecycles, distinguished by gitignore rather than by folder:
 | `nbn-api` | always | the API on :8001 | site loses every dynamic page; `journalctl -u nbn-api -n 50` |
 | `nbs-snapshot` | every 10 min | commits the data dir, pushes to `bshk93/nbn-data` | backup stops leaving the box — it exits non-zero so `systemctl status` shows it |
 | `poopoo` | every 10 min | regenerates the cap-sheet diff behind `/committees/rosters` | those tabs go stale; nothing else |
-| `nbn-achievements` | every 10 min | awards NB¥ for newly unlocked achievements | awards pause; the snapshot is monotonic so nothing double-fires |
+| `nbn-achievements` | every 10 min | awards NB¥ for newly unlocked achievements | awards pause; the snapshot is monotonic so nothing double-fires. **Fails silently** — no Discord, no page, and "awarded nothing" reads the same as a quiet week; it was dead for six weeks in 2026. `build/test_achievement_inputs.js` (in the pre-commit hook) is the guard |
 | `nbs-drive-backup` | Sundays 04:00 | tarball of the tracked set to Google Drive | third backup tier stops; the other two continue |
 | `nbs-integrity` | Mondays 09:00 | box score row counts + closed-season hashes | **investigate immediately** — see below |
 

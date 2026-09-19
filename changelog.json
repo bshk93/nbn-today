@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.3.1",
+    "date": "2026-09-19",
+    "changes": [
+      "Fixed the achievement NB\u00a5 awarder, which had been failing on every run since 2026-08-18 \u2014 it was still reading the derived stats CSVs from the repo after they moved out to the data directory, so no achievement has paid out in six weeks",
+      "Added a pre-commit check that the awarder can still read its inputs, since the job has no visible output and a silent failure looks exactly like a quiet week"
+    ]
+  },
+  {
     "version": "0.3.0",
     "date": "2026-09-19",
     "changes": [

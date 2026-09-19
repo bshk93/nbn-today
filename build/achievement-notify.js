@@ -28,10 +28,38 @@
 // Run on a timer (see nbn-achievements.timer). Cheap: ~1s, all from disk.
 
 const fs = require('fs');
-const NBNAch = require('/home/skim/projects/nbn-today/members/achievements.js');
+const path = require('path');
 
-const DATA = '/var/lib/nothing-but-stats';
-const REPO = '/home/skim/projects/nbn-today';
+// Resolved from this script, not hardcoded to the live checkout: the dev copy
+// has to score with the dev engine, or testing a change to achievements.js here
+// silently exercises the deployed one.
+const NBNAch = require(path.join(__dirname, '..', 'members', 'achievements.js'));
+
+const DATA = process.env.NBS_DATA_DIR || '/var/lib/nothing-but-stats';
+
+// **Derived CSVs are not in the repo.** They were, as 149 tracked symlinks,
+// until the data moved out to NBS_DATA_DIR; this job kept reading them from the
+// checkout and so died with ENOENT on every single run from that day, awarding
+// nothing and saying so only in its own journal. INPUTS exists so that can be
+// asserted against instead of discovered — see build/test_achievement_inputs.js.
+//
+// Read through `public/`, the symlink view nginx serves, rather than `derived/`
+// where the build writes: this job runs the same engine the site runs, so it
+// should score off the same bytes the site displays. Same reasoning as
+// build/smoke_test.py.
+const SERVED = `${DATA}/public`;
+
+const INPUTS = {
+  ownerStatsCsv:    `${SERVED}/data/owner_stats.csv`,
+  standingsCsv:     `${SERVED}/standings/standings-history.csv`,
+  awardsCsv:        `${SERVED}/players/player_awards.csv`,
+  playerSeasonsCsv: `${SERVED}/players/player_seasons.csv`,
+  h2hOwnersCsv:     `${SERVED}/data/h2h-owners.csv`,
+  bios:             `${DATA}/player-bios.json`,
+  allTxns:          `${DATA}/transactions.json`,
+  members:          `${DATA}/members.json`,
+};
+
 const STATE_FILE = process.env.NBN_ACH_STATE || `${DATA}/achievement-state.json`;
 const API_BASE = process.env.NBN_API_BASE || 'http://127.0.0.1:8001';
 const EXCLUDE_CATS = new Set(['betting', 'investing']);
@@ -51,15 +79,15 @@ const rj = p => JSON.parse(rd(p));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function buildShared() {
-  const txns = rj(`${DATA}/transactions.json`);
+  const txns = rj(INPUTS.allTxns);
   return NBNAch.prepare({
-    ownerStatsCsv: rd(`${REPO}/data/owner_stats.csv`),
-    standingsCsv: rd(`${REPO}/standings/standings-history.csv`),
-    bios: rj(`${DATA}/player-bios.json`),
-    awardsCsv: rd(`${REPO}/players/player_awards.csv`),
+    ownerStatsCsv: rd(INPUTS.ownerStatsCsv),
+    standingsCsv: rd(INPUTS.standingsCsv),
+    bios: rj(INPUTS.bios),
+    awardsCsv: rd(INPUTS.awardsCsv),
     allTxns: Array.isArray(txns) ? txns : (txns.transactions || []),
-    playerSeasonsCsv: rd(`${REPO}/players/player_seasons.csv`),
-    h2hOwnersCsv: rd(`${REPO}/data/h2h-owners.csv`),
+    playerSeasonsCsv: rd(INPUTS.playerSeasonsCsv),
+    h2hOwnersCsv: rd(INPUTS.h2hOwnersCsv),
   });
 }
 
@@ -104,8 +132,8 @@ function label(ev) {
   return `${ach.name}${tiered ? ` (${tier.label})` : ''}`;
 }
 
-(async () => {
-  const members = rj(`${DATA}/members.json`);
+async function main() {
+  const members = rj(INPUTS.members);
   const seedOnly = !fs.existsSync(STATE_FILE);
   const cur = scoreAll(buildShared(), members);
 
@@ -154,4 +182,12 @@ function label(ev) {
     await sleep(150);   // gentle pacing on the local API
   }
   console.log(`${DRY_RUN ? '[dry-run] ' : ''}Processed ${events.length} event(s), ${granted} awarded.`);
-})().catch(e => { console.error('achievement-award failed:', e); process.exit(1); });
+}
+
+// Required by build/test_achievement_inputs.js for INPUTS; guarded so that
+// requiring this file can't score every member or post an award.
+module.exports = { INPUTS, buildShared, scoreAll };
+
+if (require.main === module) {
+  main().catch(e => { console.error('achievement-award failed:', e); process.exit(1); });
+}
