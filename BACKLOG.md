@@ -620,32 +620,48 @@ calls it scoped to `key=<slug>` (`nbn-api/CLAUDE.md` § "The edit log").
   answer them** — those edits predate it. This is forensics going forward only.
   Don't re-open this expecting it to explain an old diff.
 
-### [P3] Frontend smoke covers 15 pages of 114, and only when run by hand
+### [P3] Nothing runs the frontend smoke suite, and authenticated pages are uncovered
 `tests/frontend/run.js` shipped 2026-08-25 — puppeteer against a real vhost,
 asking each page four things: 200, nothing thrown, every same-origin request
 succeeded, and the content the page exists to show actually appeared. It found a
 real defect on its first run — the nine `"NA"` `photo_url` bios, fixed
 2026-08-29 — which is the argument for the rest of it.
 
-**All 15 pages pass as of 2026-08-29**, the first clean run. The only thing it
-still reports is the imgur 429 on `/players/` and `/draft/`, a third-party
-warning it deliberately does not fail on (see the `photo_url` entry in §1). So
-a failure from here is a regression, which is what makes the two items below
-worth doing rather than academic.
+**Coverage went from 18 pages to 43 on 2026-09-19** (22 assertions to 47; a few
+pages carry more than one). All 47 pass. Every `min` was read off a real render
+and then set well below it, so the floors survive the league doing something
+ordinary. Two lessons are written into `tests/frontend/README.md` rather than
+here, because they are what the next person adding a row needs:
+
+- Where a count can legitimately *shrink*, the row says so — `/ratings-changes`
+  produces nothing from a scrape that changed nothing.
+- **Don't assert on a worklist.** `/suggestions` and `/poopoo` are public and
+  render fine, but their content is a list of things that are *supposed* to
+  reach zero. A `min` on either goes red the day the league clears it. A test
+  that fails on success is worse than no test, so both are deliberately
+  uncovered.
 
 What is left:
 
-- **99 pages uncovered.** The 15 are the heavy data-driven ones. Adding a page
-  is one row in `PAGES`; the cost is picking a selector that is content rather
-  than chrome.
-- **Nothing runs it.** Deliberately not in the pre-commit hook — it launches a
-  browser and needs the site up and `npm ci` done, none of which belongs between
-  a commit and its author. But that means it only runs when someone remembers.
-  A timer, or a post-deploy hook in `deploy.sh`, is the obvious next step.
-- **No authenticated pages.** `/pdc`, `/free-agency` and team edit mode need a
-  `.nbn.today` session cookie. Covering them means minting a real session
-  against the live API, and a write path exercised from a dev page is a real
-  write — so this needs a decision, not just effort.
+- **Nothing runs it.** This is now the whole of the item's value at risk:
+  43 pages of assertions that only fire when someone remembers. Deliberately not
+  in the pre-commit hook — it launches a browser, needs the site up and `npm ci`
+  done, and takes a couple of minutes, none of which belongs between a commit
+  and its author. The two candidates both have a cost worth weighing: a
+  `deploy.sh` hook runs in the **live** checkout, which has no `node_modules`,
+  and would add those minutes to every deploy; a nightly systemd timer runs
+  detached and needs somewhere to report a failure (Discord, like
+  `check_stats_integrity.py` already does). The timer is the better shape.
+- **No authenticated pages.** `/pdc`, `/free-agency`, `/extensions`, `/strikes`,
+  `/stream`, `/transactions`, `/inbox`, `/cleanup`, `/bet`, `/invest` and team
+  edit mode. Confirmed 2026-09-19 that signed out they each render a sign-in
+  prompt correctly, so the gap is real but not hiding a defect. Covering them
+  means minting a real session against the live API, and a write path exercised
+  from a dev page is a real write — so this needs a decision, not just effort.
+- **~70 pages still uncovered**, but they are now the thin ones: static prose
+  (`/constitution`, `/legal`, `/how-to-rosters`, `/join`), per-stat leaderboard
+  pages that share one `table.js`, and the 30 team shells that share one
+  `team.js`. The heavy data-driven pages are done.
 
 ### [P3] Client-side errors are invisible
 Entered 2026-08-16, split 2026-08-25 when the `/api/health` half was done.

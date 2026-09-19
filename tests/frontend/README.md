@@ -43,8 +43,8 @@ and nothing writes.
 `dev.nbn.today` works via `NBN_BASE` but is not the default, since it sits
 behind basic auth.
 
-**It is not in the pre-commit hook.** It launches a browser and loads ~15 pages
-over the network: tens of seconds, plus a hard dependency on the site being up
+**It is not in the pre-commit hook.** It launches a browser and loads 43 pages
+over the network: a couple of minutes, plus a hard dependency on the site being up
 and on `npm ci` having been run. None of that belongs between a commit and its
 author. The hook keeps `build/smoke_test.py`.
 
@@ -60,12 +60,28 @@ Pick a selector that is the page's *content*, not its chrome — every page
 carries a nav and a theme menu, so counting `div` proves nothing. `what` is
 printed in the failure message, so write it as the thing a reader would miss.
 
+Two things to get right about `min`, both learned by adding 24 rows at once on
+2026-09-19:
+
+- **Read it off a real render, then set it well below.** A floor pinned to
+  today's count fails the next time the league does something ordinary. Where a
+  count can legitimately *shrink* — `/ratings-changes` produces nothing from a
+  scrape that changed nothing — say so in a comment beside the row.
+- **Don't assert on a worklist.** `/suggestions` and `/poopoo` are public and
+  render fine, but their content is a list of things that are *supposed* to
+  reach zero. A `min` on either goes red the day the league clears it. A test
+  that fails on success is worse than no test, so both are deliberately
+  uncovered — see the note at the bottom of `PAGES`.
+
 ## Authenticated pages are not covered
 
-`/pdc`, `/free-agency` and team edit mode need a session cookie
-(`Domain=.nbn.today`), so they are out of scope here. Covering them means
-minting a real session against the live API, and a write path exercised from a
-dev page is a real write — see the root `CLAUDE.md`.
+`/pdc`, `/free-agency`, `/extensions`, `/strikes`, `/stream`, `/transactions`,
+`/inbox`, `/cleanup`, `/bet`, `/invest` and team edit mode need a session cookie
+(`Domain=.nbn.today`), so they are out of scope here. Signed out they correctly
+render a sign-in prompt, which is why a row on one would only ever assert the
+prompt. Covering them means minting a real session against the live API, and a
+write path exercised from a dev page is a real write — see the root
+`CLAUDE.md`.
 
 ## Chrome
 

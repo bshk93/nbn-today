@@ -104,7 +104,77 @@ const PAGES = [
   // series and then fetches it — two chained calls, so it fails in ways the
   // single-fetch cards cannot. Five, not 30: this is the top of the standing.
   { path: '/',                        selector: '.dash-rank-team', min: 5,  what: 'the power-rankings top five' },
+
+  // ── The rest of the public site ────────────────────────────────────────────
+  //
+  // Added 2026-09-19, taking the suite from 18 pages to 43 (22 rows to 47 —
+  // a few pages carry more than one assertion). Every `min` below
+  // was read off a real render and then set well under it, because a floor that
+  // sits at today's count is a test that fails the next time the league does
+  // something ordinary.
+  //
+  // `min` is chosen to survive the league *growing*, and where a count can
+  // legitimately shrink the row says so.
+  { path: '/teams/',                  selector: '.team-card',      min: 30, what: 'the 30 team cards' },
+  { path: '/champions/',              selector: 'table tbody tr',  min: 15, what: 'a row per title' },
+  { path: '/members/',                selector: '.member-name',    min: 40, what: 'the member directory' },
+  { path: '/roles/',                  selector: '.role-card',      min: 8,  what: 'a card per role' },
+  { path: '/rulebook/',               selector: '.doc-section',    min: 35, what: 'the numbered sections' },
+  // The 🔒 badges are generated from nbn-api's validators
+  // (build/check_rulebook_badges.py). smoke_test.py already fails when the HTML
+  // disagrees with the manifest; this catches the other half — the page
+  // rendering with no badges at all.
+  { path: '/rulebook/',               selector: '.badge-enforced', min: 25, what: 'the system-enforced badges' },
+  { path: '/changelog/',              selector: '.entry',          min: 100, what: 'release entries' },
+  { path: '/cap-settings/',           selector: '.season-card',    min: 3,  what: 'a card per season on file' },
+  { path: '/rookie-scale/',           selector: 'table tbody tr',  min: 30, what: 'the § 7.1 scale' },
+  { path: '/stats/seasons/',          selector: 'table tbody tr',  min: 100, what: 'per-season player lines' },
+  // The two leaderboard hubs. Six stat categories each, and the cards are what
+  // route to the per-stat pages — if they vanish, table.js is unreachable.
+  { path: '/stats/highs/',            selector: '.card-stat',      min: 6,  what: 'a card per stat category' },
+  { path: '/stats/totals/',           selector: '.card-stat',      min: 6,  what: 'a card per stat category' },
+  { path: '/nbyen-economy/',          selector: 'table tbody tr',  min: 30, what: 'the NB¥ ledger' },
+  { path: '/donations/',              selector: 'table tbody tr',  min: 10, what: 'the donations list' },
+  { path: '/draft/guide/',            selector: '.step',           min: 8,  what: 'the walkthrough steps' },
+  { path: '/frivolities/',            selector: '.team-card',      min: 30, what: 'the default tab\'s per-team charts' },
+  { path: '/clusters/players/',       selector: '.archetype-node', min: 12, what: 'the archetype tree' },
+  // An SVG scatter, not a table — 180 team-seasons plus legend dots. The floor
+  // is well under that because a re-clustering can change how many render.
+  { path: '/clusters/teams/',         selector: 'svg circle',      min: 100, what: 'the team-season scatter' },
+  { path: '/awards/',                 selector: '.season-card',    min: 2,  what: 'a card per season with awards' },
+  { path: '/awards/25-26/results/',   selector: 'table tbody tr',  min: 50, what: 'the full ballot' },
+  { path: '/tradevotes/',             selector: 'table tbody tr',  min: 30, what: 'the member × team vote matrix' },
+  { path: '/news/',                   selector: '.article-card',   min: 3,  what: 'published articles' },
+  { path: '/proposals/',              selector: '.proposal-card',  min: 3,  what: 'open proposals' },
+  // Diffs between consecutive 2K scrape snapshots. This one *can* legitimately
+  // fall — a scrape that changes nothing produces nothing — so the floor is far
+  // below the ~490 rows it carries today.
+  { path: '/ratings-changes/',        selector: '.player-name',    min: 20, what: 'per-player rating diffs' },
+  // Two players by slug, since the page renders nothing without both params.
+  // Retired players, deliberately: their career and attributes are frozen, so
+  // this row cannot start failing because someone got traded.
+  { path: '/compare/?a=curry-stephen&b=durant-kevin',
+                                      selector: '.attr-row',       min: 40, what: 'the two-player attribute comparison' },
 ];
+
+// ── What is deliberately not here ──────────────────────────────────────────
+//
+// **Authenticated pages** — /pdc, /free-agency, /extensions, /strikes, /stream,
+// /transactions, /inbox, /cleanup, /bet, /invest. Signed out they correctly
+// render a sign-in prompt, so a row asserting content would only ever assert
+// the prompt. Covering them for real needs a session cookie minted against the
+// live API, and a write path exercised from a page is a real write — that is a
+// decision, not just effort (see BACKLOG.md).
+//
+// **/suggestions/ and /poopoo/** — both public and both render fine, but
+// neither has a stable signed-out assertion. Their content is a *worklist*:
+// /suggestions shows 1 open item, /poopoo shows the open cap-sheet diffs. A
+// `min` on either fails the day the list is cleared, which is the day the
+// league did the right thing. A test that goes red on success is worse than no
+// test.
+//
+// **/trade-retros/ and /schedule/** — redirect stubs. /calendar and
+// /frivolities carry what they used to.
 
 function findChrome() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
