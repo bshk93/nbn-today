@@ -760,3 +760,38 @@ should price the residual real charge at that count, the way
 slots × the rookie minimum, so ~$1.4M-$4M — and it only bites a team that is
 both short-handed and within that of a line. Worth doing before a season where
 a team sits under 12 for any length of time.
+
+### [P2] Three second-round contracts are still priced off the retired minimum-salary scale
+On **2026-09-10** `cap-levels.json`'s `min_salary_scale` was corrected for
+**27-28 onward**: every tier from that season on was shifted one index. The old
+table carried no real 0-years row at all — its `"0"` was the 1-year figure
+(~$2.29M for 27-28, where the rookie minimum is ~$1.43M). 25-26 and 26-27 were
+always right, which is why nothing in the current season is affected.
+
+Three § 7.1 second-round scale contracts were entered *before* that correction
+and still carry the old figures. Every 26-27 year is correct; only 27-28 onward
+is wrong:
+
+| Player | 27-28 | 28-29 | 29-30 | Overstated by |
+|---|---|---|---|---|
+| Otega Oweh | +$277,523 | +$387,647 | — | $665,170 |
+| Joshua Jefferson | +$277,523 | +$387,647 | — | $665,170 |
+| Kobe Sanders | +$277,523 | +$387,647 | +$506,591 | $1,171,761 |
+
+Flat tier 1 under the corrected table is $2,294,372 / $2,403,628 / $2,512,883
+for 27-28 / 28-29 / 29-30. The trailing § 3.10 RFA hold on each deal is
+auto-priced off the cap and is a separate question.
+
+**No current-season figure is wrong**, so nothing is mis-enforced today — but
+future-year Team Salary, apron projections and any extension priced off these
+reads high, and `/api/validate/sign_pick` would now reject these exact
+contracts if they were resubmitted.
+
+Re-pricing an executed contract is the office's call, not a cleanup script's.
+The mechanical part is three `PUT /api/players/{slug}` edits, which land in
+`edits.jsonl` on their own; what needs deciding first is whether a deal signed
+in good faith against a bad table gets corrected or honoured.
+
+Found 2026-09-19 via `tests/test_second_round_scale.py`, which had been failing
+since the correction because it pinned the old figures as literals. The test
+now derives everything from `cap-levels.json`.

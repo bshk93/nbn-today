@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.3.3",
+    "date": "2026-09-19",
+    "changes": [
+      "Logged three second-round rookie contracts still priced off the minimum salary scale that was corrected on 2026-09-10 \u2014 Oweh, Jefferson and Sanders read high from 27-28 onward. No current-season figure is affected; whether an executed contract gets re-priced is the office's call",
+      "Fixed the second-round scale test, which had been failing since that correction because it pinned the old figures as literals rather than reading cap-levels.json"
+    ]
+  },
+  {
     "version": "0.3.2",
     "date": "2026-09-19",
     "changes": [
