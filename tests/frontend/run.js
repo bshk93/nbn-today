@@ -87,7 +87,8 @@ const PAGES = [
   // to. The whole season's schedule is on file, so this stays populated.
   { path: '/calendar/',               selector: '.sched-schd-game', min: 20, what: 'scheduled games' },
   { path: '/cap-summary/',            selector: 'table tbody tr',  min: 30, what: 'a row per team' },
-  { path: '/compliance/',             selector: '#body tr',        min: 30, what: 'a row per team' },
+  { path: '/committees/',             selector: '.cmte',           min: 4,  what: 'a card per committee' },
+  { path: '/committees/rosters/',      selector: '#comp-body tr',   min: 30, what: 'a row per team on the Compliance tab' },
   // A published power-rankings edition, by id — the only stable way to reach
   // one, since /news/ lists whatever is newest. Editions are never deleted.
   { path: '/news/view/?id=ee63b136-b6aa-4408-af8a-a5c3dbcbb93f',
@@ -159,22 +160,27 @@ const PAGES = [
 
 // ── What is deliberately not here ──────────────────────────────────────────
 //
-// **Authenticated pages** — /pdc, /free-agency, /extensions, /strikes, /stream,
-// /transactions, /inbox, /cleanup, /bet, /invest. Signed out they correctly
+// **Authenticated pages** — /committees/pdc, /free-agency, /extensions, /strikes,
+// /committees/stream, /transactions, /inbox, /bet, /invest. Signed out they correctly
 // render a sign-in prompt, so a row asserting content would only ever assert
 // the prompt. Covering them for real needs a session cookie minted against the
 // live API, and a write path exercised from a page is a real write — that is a
 // decision, not just effort (see BACKLOG.md).
 //
-// **/suggestions/ and /poopoo/** — both public and both render fine, but
-// neither has a stable signed-out assertion. Their content is a *worklist*:
-// /suggestions shows 1 open item, /poopoo shows the open cap-sheet diffs. A
-// `min` on either fails the day the list is cleared, which is the day the
-// league did the right thing. A test that goes red on success is worse than no
-// test.
+// **/suggestions/, and the rosters dashboard's three reconciliation tabs** —
+// all public and all render fine, but none has a stable signed-out assertion.
+// Their content is a *worklist*: /suggestions shows 1 open item, Cap & Salaries
+// shows the open cap-sheet diffs. A `min` on either fails the day the list is
+// cleared, which is the day the league did the right thing. A test that goes
+// red on success is worse than no test. The Compliance tab is different and is
+// covered above — it has a row per team whether or not anyone is in breach.
 //
-// **/trade-retros/ and /schedule/** — redirect stubs. /calendar and
-// /frivolities carry what they used to.
+// **/committees/stats/** — its one stable number is the missing-box-score list,
+// which is empty in the offseason and empty again whenever the committee is
+// caught up. Same "red on success" problem.
+//
+// **/trade-retros/, /schedule/, /pdc/ and /stream/** — redirect stubs.
+// /calendar, /frivolities and /committees carry what they used to.
 
 function findChrome() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;

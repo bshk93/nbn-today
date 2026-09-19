@@ -59,7 +59,7 @@ leaderboards keep running.
 |---|---|---|---|
 | Box score submission | 200 | **300** | ✅ |
 | Bio field fill | 10/field | 10 | ✅ |
-| Poo Poo cleanup | 25 / 50 / 100 | unchanged | ✅ |
+| Poo Poo cleanup | 25 / 50 / 100 | **0 — retired 2026-09-19** | n/a |
 | Poeltl daily solve | 50 | **0 — suspended** | ✅ when back |
 | Perry daily top 3 | 100 / 50 / 25 | **0 — suspended** | ✅ when back |
 | Trivia | `2^(n-1)` → 512, client-declared | **0 — suspended** | ✅ when back |
@@ -69,7 +69,7 @@ leaderboards keep running.
 | Class | Examples | NB¥ |
 |---|---|---|
 | Competitive | Championship, Finals Run, Conf Royalty, FOTY, COTY, Juggernaut, Cinderella, Dynasty, MVP Maker, Star Factory | 250 / 500 / 1000 |
-| Contribution | Archivist | 250 / 500 / 1000 |
+| Contribution | ~~Archivist~~ — retired 2026-09-19 with the cleanup game | — |
 | Tenure & volume | Wheeler Dealer, Polyamorous, Blank Check, Seasoned GM, Win Machine, Mr. Consistent | **0 — badge only** |
 | Betting & investing | High Roller, Floor Trader, Moonshot, … | **0** (already excluded) |
 
@@ -374,8 +374,8 @@ changes the rate.
 
 - **This is the answer to "what does a non-paying member get."** Without it, and
   with the minigames suspended, a member who neither pays nor does league admin
-  work has essentially no earning path at all — bio fills and Poo Poo cleanup are
-  the only doors and both run dry. A guaranteed annual floor fixes that without
+  work has essentially no earning path at all — bio fills were the only door
+  left once Poo Poo cleanup was retired (2026-09-19), and that one runs dry. A guaranteed annual floor fixes that without
   reopening a grind.
 - **Priced in stream games, because that is the only number with real-world
   evidence behind it (A3).** An active member earns a quarter of a broadcast a
@@ -519,7 +519,7 @@ direct donations:
 | Subs + donations | **576,000** | against $537 actually received |
 | Salaries | 260,000 | |
 | `/invest` subsidy | 40,000 | § 3 — bounded by the position caps |
-| Contributions (bio, cleanup, box scores) | 36,000 | |
+| Contributions (bio, box scores) | 36,000 | cleanup retired 2026-09-19 |
 | Achievement drip | 18,000 | |
 | Minigames | 0 | suspended |
 | **Total mint** | **930,000** | |
@@ -610,7 +610,7 @@ downstream of an economy with faucets and essentially no drains.
 | Trivia | 12,243 | 7% |
 | Bio fills | 5,710 | 3% |
 | Admin adjust | 5,000 | 3% |
-| Poeltl, Poo Poo cleanup, box scores, invest | ~10,400 | 6% |
+| Poeltl, Poo Poo cleanup, box scores, invest | ~10,400 | 6% |  <!-- historical; cleanup retired 2026-09-19 -->
 
 Four structural defects, which are why a reset alone would fix nothing — reset
 the balances without changing the mechanisms and the same distribution reappears

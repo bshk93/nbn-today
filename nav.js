@@ -537,7 +537,9 @@ const SITE_PAGES = [
   { title: 'Extensions', href: '/extensions/', icon: '📄' },
   { title: 'Transactions', href: '/transactions', icon: '📝' },
   { title: 'Cap Summary', href: '/cap-summary/', icon: '💰' },
-  { title: 'Compliance', href: '/compliance/', icon: '🩺' },
+  { title: 'Committees', href: '/committees/', icon: '🏛' },
+  { title: 'Rosters Committee — compliance & cap sheet diffs', href: '/committees/rosters/', icon: '🩺' },
+  { title: 'Stats Committee — build health & missing box scores', href: '/committees/stats/', icon: '🗂' },
   { title: 'Season Summary', href: '/season-summary', icon: '📜' },
   { title: 'Hall of Champions', href: '/champions/', icon: '🏆' },
   { title: 'Hall of Fame', href: '/hof', icon: '⭐' },
@@ -571,7 +573,6 @@ const SITE_PAGES = [
   { title: 'Changelog', href: '/changelog', icon: '🔖' },
   { title: 'Proposals', href: '/proposals/', icon: '🗳️' },
   { title: 'Suggestions', href: '/suggestions/', icon: '💡' },
-  { title: 'Clean Up the Poo Poo', href: '/cleanup/', icon: '🧹' },
   { title: 'Inbox', href: '/inbox/', icon: '📥' },
 ];
 
@@ -580,20 +581,18 @@ const SITE_PAGES = [
 // can't use has no business in their jump box. Resolved lazily — see
 // _loadCommitteePages — and merged into the page results only when the API says
 // this member holds the role. The gate is a courtesy either way; the security
-// boundary is the API, which is what /pdc's own shell relies on too.
+// boundary is the API, which is what the PDC dashboard's own shell relies on too.
 const ROLE_PAGES = [
-  { title: 'PDC Committee', href: '/pdc/', icon: '🗳️',
+  { title: 'PDC Committee', href: '/committees/pdc/', icon: '🗳️',
     roles: ['fac', 'fac_head', 'poext', 'poext_head', 'admin'] },
-  { title: 'Stream — claim games & coaching settings', href: '/stream/', icon: '📺',
+  { title: 'Stream Committee — claim games & coaching settings', href: '/committees/stream/', icon: '📺',
     roles: ['streamer', 'admin'] },
-  // These three are already role-gated cards on the homepage; they are here so
+  // These two are already role-gated cards on the homepage; they are here so
   // Ctrl+K agrees with it rather than being the one place they can't be found.
   { title: 'Cap Settings', href: '/cap-settings/', icon: '⚙️',
     roles: ['rosters', 'admin'] },
   { title: 'Strikes', href: '/strikes/', icon: '⚠️',
     roles: ['bod', 'admin'] },
-  { title: 'poopoo — cap sheet diffs', href: '/poopoo/', icon: '🧻',
-    roles: ['admin'] },
 ];
 
 const TEAM_LIST = {

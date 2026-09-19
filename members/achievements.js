@@ -10,7 +10,7 @@
 //   const shared = NBNAch.prepare({ ownerStatsCsv, standingsCsv, bios, awardsCsv,
 //                                   allTxns, playerSeasonsCsv, h2hOwnersCsv });
 //   const achData = NBNAch.computeAchData(member, shared,
-//                                   { betsStats, investStats, tipsReceived, cleanupStats });
+//                                   { betsStats, investStats, tipsReceived });
 //   NBNAch.countUnlocked(achData);   // -> number unlocked
 //   NBNAch.renderAchievements(achData); // -> HTML string (profile only)
 //
@@ -495,16 +495,6 @@
       ],
     },
 
-    // === Community ===
-    {
-      id: 'archivist', name: 'Archivist', icon: '🧹', cat: 'community',
-      desc: 'Approved "Clean Up the Poo Poo" submissions',
-      tiers: [
-        { label: 'Bronze', tierClass: 'tier-bronze', sub: '5 approved', unlock: d => (d.cleanup.approved_count || 0) >= 5 },
-        { label: 'Silver', tierClass: 'tier-silver', sub: '25 approved', unlock: d => (d.cleanup.approved_count || 0) >= 25 },
-        { label: 'Gold', tierClass: 'tier-gold', sub: '100 approved', unlock: d => (d.cleanup.approved_count || 0) >= 100 },
-      ],
-    },
   ];
 
   const CAT_LABELS = {
@@ -568,7 +558,7 @@
 
   // Compute the achievement data object for one member.
   //   shared    — result of prepare()
-  //   perMember — { betsStats, investStats, tipsReceived, cleanupStats }
+  //   perMember — { betsStats, investStats, tipsReceived }
   function computeAchData(member, shared, perMember) {
     perMember = perMember || {};
     const tenures = member.tenures || [];
@@ -714,7 +704,6 @@
       bets: perMember.betsStats || {},
       invest: perMember.investStats || {},
       tipsReceived: perMember.tipsReceived || 0,
-      cleanup: perMember.cleanupStats || {},
     };
   }
 

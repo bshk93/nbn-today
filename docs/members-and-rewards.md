@@ -106,16 +106,14 @@ failed award retries next run. The first run (no snapshot) seeds silently, so
 existing achievements are **not** awarded retroactively. No Discord/webhook
 output — the ledger entry (`Achievement: …`) is the record.
 
-Every included achievement except **Archivist** (the "Clean Up the Poo Poo"
-tier — § its own doc, `docs/clean-up-the-poopoo-spec.md`) is scored from
-`computeAchData`'s `shared` argument alone, so `scoreAll` can feed every
-member `{}` for `perMember` and still get a correct score. Archivist needs a
-real per-member `cleanupStats.approved_count`, so `scoreAll` reads
-`cleanup-submissions.json` directly (same file `nbn-api/routers/cleanup.py`
-writes) and builds it per member before scoring — the one category that
-isn't just `{}`. Client-side rendering (member profile, members index) gets
-the same numbers over `GET /api/cleanup/stats`, since the browser can't read
-NBS_DATA_DIR directly.
+Every included achievement is scored from `computeAchData`'s `shared` argument
+alone, so `scoreAll` feeds every member `{}` for `perMember` and still gets a
+correct score. **Archivist** was the one exception — it counted approved "Clean
+Up the Poo Poo" submissions and needed a real per-member
+`cleanupStats.approved_count` read straight off `cleanup-submissions.json`. That
+game was retired on 2026-09-19 along with its page, its router and this tier, so
+there is no longer a per-member input to build. If a future achievement needs
+one, `perMember` is still the argument for it.
 
 Run by a systemd timer every 10 min. `DRY_RUN=1` previews without granting,
 `NBN_ACH_STATE` overrides the snapshot path, `NBN_API_BASE` the API URL.

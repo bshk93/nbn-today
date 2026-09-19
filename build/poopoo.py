@@ -53,7 +53,7 @@ so they're reported under a separate "completeness" key rather than mixed
 into a team's sheet-diff list.
 
 Writes a single JSON snapshot to $NBS_DATA_DIR/poopoo.json for the
-/poopoo/ page to render (cap/roster diffs under "teams", the picks
+/committees/rosters page to render (cap/roster diffs under "teams", the picks
 reconciliation under "picks", the bio audit under "completeness"). Run on
 a timer (see poopoo.timer) aligned to the clock (:00/:10/:20/...) so
 refreshes are predictable.
@@ -1143,7 +1143,7 @@ def fill_magnitudes(diffs):
     Only player_future_years carried one before, because it is the one category
     whose value is a list and so cannot be parsed by looking for a single "$"
     (it has one per season, and reading only the first misreports the rest).
-    Every other category was left to the reader. That was fine while /poopoo
+    Every other category was left to the reader. That was fine while the report
     was the only reader; it stops being fine the moment a second surface wants
     to say "$19.2M apart" without re-implementing the parse.
 
@@ -1179,7 +1179,7 @@ def write_report(out):
     read to spot logical corruption, so filling it with churn defeats the
     backup's main purpose.
 
-    The mtime is bumped either way, so `Last-Modified` still tells /poopoo when
+    The mtime is bumped either way, so `Last-Modified` still tells the page when
     the job last *ran* while `generated_at` says when the answer last *changed*.
     """
     text = json.dumps(out, indent=2)

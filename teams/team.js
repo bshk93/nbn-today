@@ -179,7 +179,7 @@ const contractReady = new Promise(resolve => {
 
 // CapHealth — the standing rules (§ 1.3/1.4 cap and aprons, § 2.1/2.1a/2.2
 // roster limits) and the naming of build/poopoo.py's sheet-vs-site diff
-// categories. Shared with /poopoo so the same disagreement reads the same way
+// categories. Shared with /committees/rosters so the same disagreement reads the same way
 // to an owner and to the committee. Soft dependency: if it fails to load the
 // Cap Health card stays hidden and the rest of the page is unaffected, which is
 // why every call site checks window.CapHealth first.
@@ -1701,14 +1701,13 @@ function computeStepienLocked(teamPicks, allPicks, teamAbbr) {
 //   2. Reconciliation — every line where the site and the league's own cap
 //      sheet disagree about this team, from build/poopoo.py.
 //
-// The second half was only ever visible on /poopoo, which is league-wide and
-// nav-gated to admin, so the owner of a team whose Team Salary the sheet has
-// $19M lower than the site had no way to learn that. Both halves are read-only:
-// deciding which source is right when they disagree is a committee call, not a
-// page's (docs/clean-up-the-poopoo-spec.md § 1 rules cap-sheet diffs out of
-// member-fixable work for exactly that reason).
+// The second half was only ever visible on the old /poopoo page, which was
+// league-wide and nav-gated to admin, so the owner of a team whose Team Salary
+// the sheet has $19M lower than the site had no way to learn that. Both halves
+// are read-only: deciding which source is right when they disagree is a
+// committee call, not a page's — that work lives on /committees/rosters.
 //
-// The rules are in /cap-health.js, not here, so What-If Mode and a future
+// The rules are in /cap-health.js, not here, so What-If Mode and the
 // league-wide compliance board apply the same ones. This function only renders,
 // and it recomputes nothing: the salary figures are passed in from
 // computeCapSummary, the diff figures come from the job that produced them.

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Stats Committee — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="The stats committee dashboard — build health, season coverage, and which played games still have no box score.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Stats Committee — NBN">
+  <meta property="og:description" content="The stats committee dashboard — build health, season coverage, and which played games still have no box score.">
+  <meta property="og:url" content="https://nbn.today/committees/stats/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#111827">
+  <!-- /NBN:og -->
+  <style>
+    .page { max-width: 1000px; margin: 0 auto; }
+
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p {
+      color: var(--text-muted); margin-top: 0.4rem;
+      font-size: 0.9rem; line-height: 1.6; max-width: 70ch;
+    }
+    header .crumb { font-size: 0.78rem; margin-bottom: 0.5rem; }
+
+    .tiles {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.6rem;
+      margin: 1.4rem 0;
+    }
+    .tile {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 0.9rem;
+    }
+    .tile-count {
+      font-size: 1.5rem; font-weight: 700; line-height: 1.15;
+      color: var(--text-primary); font-variant-numeric: tabular-nums;
+    }
+    .tile-label { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.15rem; line-height: 1.35; }
+    .tile-sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.3rem; }
+    .tile.good .tile-count { color: var(--success); }
+    .tile.warn .tile-count { color: var(--gold); }
+    .tile.bad  .tile-count { color: var(--danger); }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 0.85rem;
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 0.75rem; flex-wrap: wrap;
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-head h2 { font-size: 0.95rem; font-weight: 700; color: var(--text-secondary); }
+    .card-head .note { font-size: 0.76rem; color: var(--text-dim); }
+    .card-body { padding: 0.9rem 1.1rem; }
+    .card-body p { font-size: 0.83rem; color: var(--text-muted); line-height: 1.6; }
+
+    .btn {
+      appearance: none; font: inherit; font-size: 0.8rem; font-weight: 600;
+      padding: 0.4rem 0.85rem; border-radius: 7px; cursor: pointer;
+      background: var(--accent-panel-bg); color: var(--accent-light);
+      border: 1px solid var(--accent-border, var(--border));
+    }
+    .btn:hover { filter: brightness(1.15); }
+    .btn:disabled { opacity: 0.5; cursor: default; filter: none; }
+
+    .missing-rows { display: flex; flex-direction: column; gap: 0.4rem; }
+    .missing-row {
+      display: grid;
+      grid-template-columns: 96px 1fr auto;
+      gap: 0.2rem 1rem;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--danger);
+      border-radius: 7px;
+      font-size: 0.83rem;
+    }
+    .missing-row .date { font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-muted); }
+    .missing-row .matchup { font-weight: 600; color: var(--text-secondary); }
+    .missing-row .age { font-size: 0.74rem; color: var(--text-dim); white-space: nowrap; }
+
+    .clean { color: var(--text-muted); font-size: 0.86rem; }
+
+    .links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
+    .link-chip {
+      font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 7px;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.03);
+      color: var(--text-secondary);
+    }
+    .link-chip:hover { border-color: var(--text-muted); text-decoration: none; }
+
+    .footnote {
+      font-size: 0.76rem; color: var(--text-dim); line-height: 1.65;
+      max-width: 82ch; margin-top: 1.2rem;
+    }
+    .footnote a { color: var(--link); }
+    .footnote code {
+      font-family: var(--font-mono); font-size: 0.95em;
+      background: rgba(255,255,255,0.06); padding: 0.05rem 0.3rem; border-radius: 4px;
+    }
+
+    @media (max-width: 560px) {
+      .missing-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"></nav>
+
+    <header>
+      <div class="crumb"><a href="/committees/">← Committees</a></div>
+      <h1>Stats Committee</h1>
+      <p>The state of the box-score corpus every number on this site is built from. Public and
+         read-only — submitting a box score and triggering a build both need the stats role, and
+         the controls for those appear only if you hold it.</p>
+    </header>
+
+    <div class="tiles" id="tiles"></div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Build</h2>
+        <span class="note" id="build-note"></span>
+      </div>
+      <div class="card-body">
+        <p id="build-text">Checking…</p>
+        <div class="links" id="build-actions"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Played but not entered</h2>
+        <span class="note">Scheduled on or before today with no box score on file</span>
+      </div>
+      <div class="card-body" id="missing">Loading…</div>
+    </div>
+
+    <div class="card" id="queue-card" hidden>
+      <div class="card-head">
+        <h2>Submission queue</h2>
+        <span class="note">Visible to the stats role</span>
+      </div>
+      <div class="card-body" id="queue"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Tools</h2></div>
+      <div class="card-body">
+        <div class="links">
+          <a class="link-chip" href="/boxscores/submit/">Submit a box score →</a>
+          <a class="link-chip" href="/boxscores/">Browse box scores →</a>
+          <a class="link-chip" href="/calendar/">Schedule &amp; calendar →</a>
+          <a class="link-chip" href="/stats/seasons">Season stats →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footnote">
+      The two raw files behind all of this — <code>allstats-{season}.csv</code> and
+      <code>allstats-playoffs-{YY}.csv</code> — are append-only by contract and are the only
+      data on the server that cannot be rebuilt. A row already on disk is corrected with
+      <code>edit_allstats.py</code>, never by hand. A weekly integrity job re-checks row counts,
+      hashes closed seasons, and runs the value-level checks; it reports to Discord rather than
+      here, so a silent week is the good case.
+    </div>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script>
+  // Everything on this page is derived from three public endpoints plus two
+  // role-gated ones. No stats are computed here — a box score is either on file
+  // or it isn't, and the build either finished or it didn't.
+  //
+  //   GET /api/build/status           public   — the aggregation's last run
+  //   GET /api/schedule               public   — this season's 1,200 fixtures
+  //   GET /api/boxscores/games        public   — one row per game already entered
+  //   GET /api/boxscore/pending       stats    — screenshots uploaded, not committed
+  //   GET /api/boxscore/queue         stats    — games flagged for manual entry
+
+  let me = { name: null, roles: [] };
+  const storedToken = () => localStorage.getItem('nbn_token');
+  // `admin` satisfies any role check server-side, so it has to see the controls
+  // the API would let it use.
+  const hasStatsRole = () => me.roles.includes('stats') || me.roles.includes('admin');
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const authHeaders = () => {
+    const t = storedToken();
+    return t ? { Authorization: `Bearer ${t}` } : {};
+  };
+
+  const jget = (url, opts) =>
+    fetch(url, opts).then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
+
+  // Today in the league's own terms — a date string, compared as a string, so
+  // no timezone can shift a game across midnight relative to the schedule file.
+  const today = new Date().toISOString().slice(0, 10);
+
+  const daysAgo = d => Math.floor((Date.parse(today) - Date.parse(d)) / 86400000);
+
+  // A game is identified by its date and its two teams, unordered — the
+  // schedule says home/away and the box-score index agrees, but a game entered
+  // with the sides swapped is still that game and should not read as missing.
+  const gameKey = (date, a, b) => `${date}|${[a, b].sort().join('~')}`;
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+
+  function renderBuild(st) {
+    const text = document.getElementById('build-text');
+    const note = document.getElementById('build-note');
+    if (!st || !st.status) { text.textContent = 'No build has been recorded yet.'; return; }
+
+    if (st.status === 'running') {
+      text.textContent = st.started_at
+        ? `A build is running — started ${fmtWhen(st.started_at)}.`
+        : 'A build is running.';
+      note.textContent = 'running';
+      return;
+    }
+    if (st.status === 'done') {
+      text.textContent = st.finished_at
+        ? `Last build finished ${fmtWhen(st.finished_at)}, and it succeeded.`
+        : 'The last build succeeded.';
+      note.textContent = 'healthy';
+    } else {
+      text.textContent = `The last build ended with status "${st.status}". `
+        + 'The 86 aggregated CSVs may be stale — check /var/log/nbn-build.log.';
+      note.textContent = st.status;
+    }
+  }
+
+  function fmtWhen(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    const mins = Math.floor((Date.now() - d) / 60000);
+    if (mins < 60) return `${mins} min ago`;
+    if (mins < 60 * 24) return `${Math.floor(mins / 60)}h ago`;
+    const days = Math.floor(mins / (60 * 24));
+    return days === 1 ? 'yesterday' : `${days} days ago`;
+  }
+
+  function renderBuildActions() {
+    const wrap = document.getElementById('build-actions');
+    wrap.textContent = '';
+    if (!hasStatsRole()) return;
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.textContent = 'Trigger a build';
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      btn.textContent = 'Triggering…';
+      try {
+        await fetch('/api/build/trigger', { method: 'POST', headers: authHeaders() })
+          .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
+        btn.textContent = 'Build started';
+        // Give the service a moment to move the status off whatever it was.
+        setTimeout(() => jget('/api/build/status').then(renderBuild).catch(() => {}), 2000);
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Trigger failed — retry';
+      }
+    });
+    wrap.appendChild(btn);
+  }
+
+  // ── Coverage and the missing list ─────────────────────────────────────────
+
+  function renderCoverage(schedule, games) {
+    const fixtures = (schedule && schedule.games) || [];
+    const entered = new Set(games.map(g => gameKey(g.date, g.home_team, g.away_team)));
+
+    const due = fixtures.filter(f => f.date <= today);
+    const missing = due
+      .filter(f => !entered.has(gameKey(f.date, f.home_team, f.away_team)))
+      .sort((a, b) => a.date.localeCompare(b.date) || a.home_team.localeCompare(b.home_team));
+
+    tiles([
+      { n: games.length, label: 'Box scores on file', sub: schedule.season ? `${schedule.season} season` : '' },
+      { n: due.length, label: 'Games played to date', sub: `of ${fixtures.length} scheduled` },
+      { n: missing.length, label: 'Awaiting entry',
+        tone: missing.length === 0 ? 'good' : missing.length > 5 ? 'bad' : 'warn',
+        sub: due.length ? `${Math.round(100 * (due.length - missing.length) / due.length)}% entered` : '' },
+    ]);
+
+    const box = document.getElementById('missing');
+    if (!due.length) {
+      box.innerHTML = '<p class="clean">No games have been played yet this season.</p>';
+      return;
+    }
+    if (!missing.length) {
+      box.innerHTML = '<p class="clean">Every game played so far has a box score. Nothing owed.</p>';
+      return;
+    }
+    box.innerHTML = '<div class="missing-rows">' + missing.map(f => {
+      const age = daysAgo(f.date);
+      return '<div class="missing-row">'
+        + `<span class="date">${esc(f.date)}</span>`
+        + `<span class="matchup">${esc(f.away_team)} @ ${esc(f.home_team)}</span>`
+        + `<span class="age">${age === 0 ? 'today' : age === 1 ? '1 day' : age + ' days'}</span>`
+        + '</div>';
+    }).join('') + '</div>';
+  }
+
+  function tiles(items) {
+    const wrap = document.getElementById('tiles');
+    wrap.textContent = '';
+    items.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'tile ' + (t.tone || '');
+      el.innerHTML = `<div class="tile-count">${esc(String(t.n))}</div>`
+        + `<div class="tile-label">${esc(t.label)}</div>`
+        + (t.sub ? `<div class="tile-sub">${esc(t.sub)}</div>` : '');
+      wrap.appendChild(el);
+    });
+  }
+
+  // ── Submission queue (role-gated) ─────────────────────────────────────────
+
+  async function renderQueue() {
+    if (!hasStatsRole()) return;
+    let pending = [], queue = [];
+    try {
+      [pending, queue] = await Promise.all([
+        jget('/api/boxscore/pending', { headers: authHeaders() }).catch(() => []),
+        jget('/api/boxscore/queue', { headers: authHeaders() }).catch(() => []),
+      ]);
+    } catch (e) { return; }
+
+    document.getElementById('queue-card').hidden = false;
+    const body = document.getElementById('queue');
+    if (!pending.length && !queue.length) {
+      body.innerHTML = '<p class="clean">Nothing uploaded and nothing flagged for manual entry.</p>';
+      return;
+    }
+    body.innerHTML =
+      `<p>${pending.length} screenshot${pending.length === 1 ? '' : 's'} uploaded and not yet `
+      + `committed · ${queue.length} game${queue.length === 1 ? '' : 's'} flagged for manual entry.</p>`
+      + '<div class="links"><a class="link-chip" href="/boxscores/submit/">Work the queue →</a></div>';
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  async function init() {
+    try {
+      me = await jget('/api/auth/me', { headers: authHeaders() });
+      me.roles = me.roles || [];
+    } catch (e) { me = { name: null, roles: [] }; }
+
+    renderBuildActions();
+    renderQueue();
+
+    jget('/api/build/status').then(renderBuild).catch(() => {
+      document.getElementById('build-text').textContent = 'Could not reach the build status endpoint.';
+    });
+
+    try {
+      const schedule = await jget('/api/schedule');
+      const games = await jget(`/api/boxscores/games?season=${encodeURIComponent(schedule.season)}`);
+      renderCoverage(schedule, games);
+    } catch (e) {
+      document.getElementById('missing').innerHTML =
+        '<p class="clean">Could not load the schedule or the box-score index.</p>';
+    }
+  }
+
+  init();
+  </script>
+</body>
+</html>

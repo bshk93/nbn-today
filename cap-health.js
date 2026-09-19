@@ -10,7 +10,8 @@
 //    § 2.1 floor all season and the only surface that would have said so was
 //    a hypothetical one you had to opt into.
 // 2. **The reconciliation vocabulary** — the category labels and colours for
-//    build/poopoo.py's sheet-vs-site diffs, which /poopoo owned privately.
+//    build/poopoo.py's sheet-vs-site diffs, which the committee's own page
+//    owned privately.
 //    A team page showing an owner their own diffs has to name them the same
 //    way the committee's page does, or the two surfaces describe the same row
 //    with different words.

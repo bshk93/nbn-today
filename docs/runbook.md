@@ -26,7 +26,7 @@ Four hosts, all on `162.243.70.105`:
 | Host | Docroot | Auth |
 |---|---|---|
 | `nbn.today` | `/var/www/nbn.today` → the live checkout | public; members sign in |
-| `pdc.nbn.today` | **same** docroot, `/` → `/pdc/index.html` | session cookie |
+| `pdc.nbn.today` | **same** docroot, `/` → `/committees/pdc/index.html` | session cookie |
 | `dev.nbn.today` | `/home/skim/projects/nbn-today-dev` | basic auth (`/etc/nginx/.htpasswd-dev`) **and** the normal session |
 | `news.nbn.today` | — | 301 to `nbn.today/news` |
 
@@ -55,7 +55,7 @@ Three lifecycles, distinguished by gitignore rather than by folder:
 |---|---|---|---|
 | `nbn-api` | always | the API on :8001 | site loses every dynamic page; `journalctl -u nbn-api -n 50` |
 | `nbs-snapshot` | every 10 min | commits the data dir, pushes to `bshk93/nbn-data` | backup stops leaving the box — it exits non-zero so `systemctl status` shows it |
-| `poopoo` | every 10 min | regenerates the cap-sheet diff at `/poopoo` | `/poopoo` goes stale; nothing else |
+| `poopoo` | every 10 min | regenerates the cap-sheet diff behind `/committees/rosters` | those tabs go stale; nothing else |
 | `nbn-achievements` | every 10 min | awards NB¥ for newly unlocked achievements | awards pause; the snapshot is monotonic so nothing double-fires |
 | `nbs-drive-backup` | Sundays 04:00 | tarball of the tracked set to Google Drive | third backup tier stops; the other two continue |
 | `nbs-integrity` | Mondays 09:00 | box score row counts + closed-season hashes | **investigate immediately** — see below |

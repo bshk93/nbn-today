@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Committees — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="The four NBN committees — who runs what, which roles sit on each, and the dashboard each one works from.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Committees — NBN">
+  <meta property="og:description" content="The four NBN committees — who runs what, which roles sit on each, and the dashboard each one works from.">
+  <meta property="og:url" content="https://nbn.today/committees/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#111827">
+  <!-- /NBN:og -->
+  <style>
+    .page { max-width: 1000px; margin: 0 auto; }
+
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p {
+      color: var(--text-muted); margin-top: 0.4rem;
+      font-size: 0.9rem; line-height: 1.6; max-width: 68ch;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 0.85rem;
+      margin: 1.6rem 0 1.4rem;
+    }
+
+    .cmte {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.05rem 1.15rem 0.9rem;
+    }
+
+    .cmte-head { display: flex; align-items: baseline; gap: 0.6rem; }
+    .cmte-icon { font-size: 1.15rem; line-height: 1; }
+    .cmte-head h2 {
+      font-size: 1.02rem; font-weight: 700;
+      color: var(--text-primary); letter-spacing: -0.01em;
+    }
+    .cmte-head .full {
+      font-size: 0.75rem; font-weight: 400; color: var(--text-dim);
+    }
+
+    .cmte-purpose {
+      color: var(--text-muted); font-size: 0.85rem;
+      line-height: 1.55; margin-top: 0.5rem;
+    }
+
+    /* What the committee actually does, in its own words — the list a member
+       reads to know whether a job is theirs. */
+    .cmte-does {
+      margin: 0.65rem 0 0 1.05rem;
+      color: var(--text-secondary); font-size: 0.82rem; line-height: 1.6;
+    }
+    .cmte-does li { margin-bottom: 0.1rem; }
+
+    .cmte-roles {
+      display: flex; flex-wrap: wrap; gap: 0.3rem;
+      margin-top: 0.8rem;
+    }
+    .role-chip {
+      font-family: var(--font-mono);
+      font-size: 0.68rem; letter-spacing: 0.02em;
+      padding: 0.15rem 0.45rem; border-radius: 5px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .role-chip:hover { color: var(--text-secondary); text-decoration: none; }
+
+    .cmte-foot {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 0.75rem; flex-wrap: wrap;
+      margin-top: auto; padding-top: 0.9rem;
+    }
+    .cmte-open { font-size: 0.85rem; font-weight: 600; }
+    /* One live number per card, where there is a cheap public endpoint for it.
+       Left empty until it resolves — never a placeholder digit. */
+    .cmte-signal { font-size: 0.76rem; color: var(--text-dim); }
+    .cmte-signal b { color: var(--text-secondary); font-weight: 600; }
+    .cmte-signal.alert b { color: var(--danger); }
+
+    .gated {
+      font-size: 0.72rem; color: var(--text-dim);
+      margin-top: 0.45rem;
+    }
+
+    .footnote {
+      font-size: 0.78rem; color: var(--text-dim);
+      line-height: 1.65; max-width: 80ch;
+      padding: 0.9rem 1.1rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .footnote a { color: var(--link); }
+
+    @media (max-width: 560px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"></nav>
+
+    <header>
+      <h1>Committees</h1>
+      <p>Four committees keep the league running. Each one works from a dashboard — the page
+         that shows what is waiting on it right now. Committee membership is a
+         <a href="/roles">role</a>, and most dashboards need one; the rosters board is public
+         because nothing on it is private.</p>
+    </header>
+
+    <div class="cards" id="cards"></div>
+
+    <div class="footnote">
+      Want on one? Committees are staffed by volunteers — say so in Discord, or leave it on the
+      <a href="/suggestions/">suggestions board</a>. Roles are granted by an admin and every one of
+      them is listed with its exact permissions on <a href="/roles">Roles &amp; Permissions</a>.
+      The <a href="/rulebook/">rulebook</a> is what all four committees enforce; where a committee
+      has discretion rather than a rule, the rulebook says so.
+    </div>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script src="/cap-health.js"></script>
+  <script>
+  // Static except for one live number per card. Everything structural about a
+  // committee — what it does, which roles sit on it, where its dashboard is —
+  // is declared here, because it is the kind of fact that changes once a year
+  // and should read the same as /roles rather than being fetched from anywhere.
+  const COMMITTEES = [
+    {
+      key: 'rosters',
+      icon: '📋',
+      name: 'Rosters',
+      purpose: 'Keeps the league’s books correct: contracts, cap figures, roster counts and '
+             + 'draft-pick ownership. The committee that answers “is this right?” when the '
+             + 'site and the league spreadsheet disagree.',
+      does: [
+        'Record transactions and fix the ones entered wrong',
+        'Reconcile the site against the league cap sheet',
+        'Chase down missing player and contract data',
+        'Flag teams standing outside § 2.1 / § 2.2 or their hard cap',
+      ],
+      roles: ['rosters', 'bod'],
+      href: '/committees/rosters/',
+      gated: null,
+    },
+    {
+      key: 'pdc',
+      icon: '⚖️',
+      name: 'PDC',
+      full: 'Player Decision Committee',
+      purpose: 'Reviews what teams offer players. Free-agent offers under Article III and '
+             + 'contract extensions under § 6.2 both pass through it, with an agent arguing the '
+             + 'player’s side and a sub-committee balloting the result.',
+      does: [
+        'Curate and negotiate offers as a player’s agent',
+        'Ballot on contested free-agent offers and extensions',
+        'Remand, void or finalize a case',
+        'Run the free-agency windows',
+      ],
+      roles: ['fac', 'fac_head', 'poext', 'poext_head', 'agent'],
+      href: '/committees/pdc/',
+      gated: 'Needs an FAC, POEXT or agent role',
+    },
+    {
+      key: 'stats',
+      icon: '🗂',
+      name: 'Stats',
+      purpose: 'Owns the box-score corpus every number on the site is built from. Games get '
+             + 'entered here, and the aggregation that turns them into 86 CSVs runs off that.',
+      does: [
+        'Parse and commit box scores from screenshots',
+        'Correct a stat line already on disk',
+        'Watch the nightly build and the weekly integrity check',
+        'Chase games that were played but never entered',
+      ],
+      roles: ['stats'],
+      href: '/committees/stats/',
+      gated: 'Needs the stats role to submit; the dashboard is public',
+    },
+    {
+      key: 'stream',
+      icon: '📺',
+      name: 'Stream',
+      purpose: 'Broadcasts league games. Claims a night’s games, collects the coaching '
+             + 'settings each team owes before tip-off, and posts the VOD afterwards.',
+      does: [
+        'Claim an upcoming game as its streamer',
+        'Flag a game as a stream',
+        'Collect and check coaching settings before tip-off',
+        'Mark a night done and attach its YouTube VOD',
+      ],
+      roles: ['streamer'],
+      href: '/committees/stream/',
+      gated: 'Needs the streamer role',
+    },
+  ];
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const cards = document.getElementById('cards');
+  COMMITTEES.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'cmte';
+    el.innerHTML =
+      `<div class="cmte-head">`
+        + `<span class="cmte-icon">${c.icon}</span>`
+        + `<h2>${esc(c.name)}</h2>`
+        + (c.full ? `<span class="full">${esc(c.full)}</span>` : '')
+      + `</div>`
+      + `<p class="cmte-purpose">${esc(c.purpose)}</p>`
+      + `<ul class="cmte-does">${c.does.map(d => `<li>${esc(d)}</li>`).join('')}</ul>`
+      + `<div class="cmte-roles">${c.roles.map(r =>
+          `<a class="role-chip" href="/roles">${esc(r)}</a>`).join('')}</div>`
+      + (c.gated ? `<div class="gated">${esc(c.gated)}</div>` : '')
+      + `<div class="cmte-foot">`
+        + `<a class="cmte-open" href="${esc(c.href)}">Open dashboard →</a>`
+        + `<span class="cmte-signal" id="signal-${esc(c.key)}"></span>`
+      + `</div>`;
+    cards.appendChild(el);
+  });
+
+  function signal(key, html, alert) {
+    const el = document.getElementById('signal-' + key);
+    if (!el) return;
+    el.innerHTML = html;
+    if (alert) el.classList.add('alert');
+  }
+
+  // Rosters: how many teams cap-health.js puts outside the rulebook right now.
+  // Same endpoint and same module the board itself uses, so the number on the
+  // card and the number on the page cannot disagree.
+  fetch('/api/cap-history/current')
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(d => {
+      const entries = (d && d.entries) || [];
+      if (!entries.length) return;
+      const flagged = entries.filter(e => CapHealth.standing({
+        season: e.season,
+        capLevels: { [e.season]: { cap: e.cap, apron1: e.apron1, apron2: e.apron2 } },
+        teamState: { hard_cap: e.hard_cap },
+        teamSalaryFull: e.salary,
+        teamSalaryExHolds: e.salary_ex_holds,
+        standardCount: e.roster,
+        twoWayCount: e.two_way,
+      }).warnings.some(w => w.severity !== 'note')).length;
+      signal('rosters', flagged
+        ? `<b>${flagged}</b> team${flagged === 1 ? '' : 's'} with open issues`
+        : `all <b>${entries.length}</b> teams clear`, flagged > 0);
+    })
+    .catch(() => {});
+
+  // Stats: whether the aggregation is healthy, and when it last finished.
+  fetch('/api/build/status')
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(d => {
+      if (!d || !d.status) return;
+      if (d.status === 'running') return signal('stats', 'build <b>running</b>');
+      if (d.status !== 'done') return signal('stats', `build <b>${esc(d.status)}</b>`, true);
+      if (!d.finished_at) return;
+      const days = Math.floor((Date.now() - new Date(d.finished_at)) / 86400000);
+      signal('stats', days < 1 ? 'built <b>today</b>'
+        : `built <b>${days}</b> day${days === 1 ? '' : 's'} ago`);
+    })
+    .catch(() => {});
+  </script>
+</body>
+</html>

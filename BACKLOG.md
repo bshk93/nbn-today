@@ -135,7 +135,7 @@ blanked and tenures kept.
 
 ### [P1] 73 open cap-sheet diffs across 25 teams, and 17 teams disagree on Team Salary
 **Recounted 2026-08-30**, and it has got much worse rather than better: this
-entry read *9 diffs across 6 teams* on 2026-08-09. `/poopoo` now reports **136
+entry read *9 diffs across 6 teams* on 2026-08-09. `/committees/rosters` now reports **136
 rows**, of which **73 are open** (this season, or about who is on the roster at
 all) and 63 are deferred (a future season's figure, or a hold the site has never
 computed — see the grouping in `nbn-api/routers/poopoo.py`).
@@ -207,9 +207,10 @@ blocker to trusting `/api/picks` end-to-end.
 ### [P2] Discord backfill not finished
 - Trades: 437 of 485 raw messages submitted; ~50 multi-team trades still
   flagged, needing a human from/to judgment call per trade. Not crowd-source-able
-  (see `docs/clean-up-the-poopoo-spec.md` § 7) — needs an admin/committee pass.
-- FA signings: 1498 of 2081 submitted; 162 flagged (**now member-facing** at
-  `/cleanup`, "Discord Backfill" — live 2026-08-16), 538 skipped.
+  — needs an admin/committee pass.
+- FA signings: 1498 of 2081 submitted; 162 flagged, 538 skipped. The 162 were
+  member-facing at `/cleanup` from 2026-08-16 until that game was retired
+  2026-09-19; they are back to being a committee job with no queue behind them.
 Spec in `nbn-api/docs/discord-transaction-backfill.md`. **The 538 skipped FA
 rows' open question is resolved**, checked against the real file 2026-08-16:
 496 of 538 have no sign/option language at all (renounce/waiver/retirement/
@@ -539,7 +540,7 @@ section, so nothing keys them to a §, and they stay hand-written.
 
 ### [P3] The compliance board covers roster and cap only — not Stepien, offer sheets or waivers
 Entered 2026-08-16 as "no league-wide compliance board"; **the board shipped
-2026-09-19** at `/compliance/`. It reads `GET /api/cap-history/current` for all
+2026-09-19** at `/committees/rosters/` (the Compliance tab). It reads `GET /api/cap-history/current` for all
 30 teams and runs each row through `cap-health.js` — the same module behind the
 team page's Cap Health card and the homepage's chips — so it states no rule of
 its own and does no cap math. Today it shows 6 teams below § 2.1's 14-player
@@ -635,7 +636,8 @@ here, because they are what the next person adding a row needs:
 
 - Where a count can legitimately *shrink*, the row says so — `/ratings-changes`
   produces nothing from a scrape that changed nothing.
-- **Don't assert on a worklist.** `/suggestions` and `/poopoo` are public and
+- **Don't assert on a worklist.** `/suggestions` and the rosters dashboard's
+  reconciliation tabs are public and
   render fine, but their content is a list of things that are *supposed* to
   reach zero. A `min` on either goes red the day the league clears it. A test
   that fails on success is worse than no test, so both are deliberately
@@ -652,8 +654,8 @@ What is left:
   and would add those minutes to every deploy; a nightly systemd timer runs
   detached and needs somewhere to report a failure (Discord, like
   `check_stats_integrity.py` already does). The timer is the better shape.
-- **No authenticated pages.** `/pdc`, `/free-agency`, `/extensions`, `/strikes`,
-  `/stream`, `/transactions`, `/inbox`, `/cleanup`, `/bet`, `/invest` and team
+- **No authenticated pages.** `/committees/pdc`, `/free-agency`, `/extensions`,
+  `/strikes`, `/committees/stream`, `/transactions`, `/inbox`, `/bet`, `/invest` and team
   edit mode. Confirmed 2026-09-19 that signed out they each render a sign-in
   prompt correctly, so the gap is real but not hiding a defect. Covering them
   means minting a real session against the live API, and a write path exercised
@@ -725,7 +727,7 @@ job.
 - **Cap history chart on the team page** — the rest of per-team cap health
   shipped 2026-08-30: the Cap Health card shows standing against the cap,
   aprons, a hard cap and § 2.1/2.1a/2.2's roster limits, plus this team's own
-  rows from `/poopoo` (`cap-health.js` + `renderCapHealth`, fed by
+  rows from the rosters dashboard (`cap-health.js` + `renderCapHealth`, fed by
   `GET /api/poopoo/summary`). What is left is the *history*, and it is data
   rather than work: `GET /api/cap-history?team=UTA` has served a per-day series
   since 2026-08-25, so "when did this team cross the first apron" is a chart

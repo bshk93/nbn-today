@@ -128,7 +128,8 @@ sign-in. Two more consequences of a separate origin:
 ### 3.2 Serving — same docroot under the subdomain
 
 A `pdc.nbn.today` server block whose `root` is the same `/var/www/nbn.today`
-docroot, with `location = /` mapping to `/pdc/index.html` and the identical
+docroot, with `location = /` mapping to `/committees/pdc/index.html` (it was
+`/pdc/index.html` until the committees move on 2026-09-19) and the identical
 `/api/` proxy block. Then `/api/...`, `/data/*.csv` and `/teams/*` all resolve
 under `pdc.nbn.today` itself — **no cross-origin request is ever made**, so
 neither the CORS allowlist nor the missing static CORS header is in play.
@@ -1628,7 +1629,7 @@ runner, not pytest — pytest isn't installed).
 | **3** ✅ | Extract `teams/lineup.js`; `team.js` consumes it | Nobody — identical render |
 | **4** ✅ | Session cookie: `sessions.json`, `POST /api/auth/session` + `/logout`, `_resolve_session` accepted on `/api/fa/*` + `/api/auth/me`, `token-badge.js` mints it on load | Nobody — no behaviour changes on any existing page |
 | **5** ✅ | Dashboard at **`nbn.today/pdc`**, unlinked from `nav.js`. Build and review the whole thing here | Anyone with the URL — and it shows only the forbidden screen without a role |
-| **5b** ✅ | nginx `pdc.nbn.today` block (same docroot, `/` → `/pdc/index.html`, `/api/` proxy) + certbot | Committee |
+| **5b** ✅ | nginx `pdc.nbn.today` block (same docroot, `/` → `/committees/pdc/index.html` since 2026-09-19, `/api/` proxy) + certbot | Committee |
 | **6** ✅ | `discord_transport` + `fa_notify`, wired into every FA write path, shipped with both channels **unset**. Rollout is then two env vars, in order: `DISCORD_PDC_CHANNEL`, verify in the private channel, then `DISCORD_FA_NEWS_CHANNEL` | Nobody until an env var is set — then committee, then league |
 | **7** ✅ | Team-facing ⋯ menu + offer form on `/free-agency`, gated on the team's role (draft and submit alike since 2026-08-10 — § 6.0), plus `GET /api/fa/commitment/{team}` and the board listing closed players (§ 6.3) | Team front offices |
 | **8** ✅ | Ball allocation + finalize/unlock UI; role-aware instructions (§ 8.5) | Committee |

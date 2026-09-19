@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.3.0",
+    "date": "2026-09-19",
+    "changes": [
+      "Committees are now a real section of the site at /committees \u2014 one dashboard each for Rosters, PDC, Stats and Stream, with an index page naming what each committee does and which roles sit on it",
+      "New Rosters Committee dashboard at /committees/rosters, which supersedes both /compliance and /poopoo \u2014 the league-wide compliance board is now its first tab, with the cap-sheet diffs, draft-pick reconciliation and data-quality gaps alongside it",
+      "The PDC dashboard moved to /committees/pdc and the streamer dashboard to /committees/stream; the old /pdc and /stream URLs redirect, so links already shared in Discord keep working",
+      "New Stats Committee dashboard at /committees/stats \u2014 build health, how much of the season is entered, and a list of games that have been played but have no box score yet",
+      "Retired the \"Clean Up the Poo Poo\" game and its Archivist achievement. The data gaps it paid members to fill are now the rosters committee's Data Quality tab"
+    ]
+  },
+  {
     "version": "0.2.51",
     "date": "2026-09-19",
     "changes": [

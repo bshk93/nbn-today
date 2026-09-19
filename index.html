@@ -81,6 +81,12 @@
 
     .section-label:first-child { margin-top: 0; }
 
+    /* Only the Committees label links anywhere. It inherits the label's muted
+       colour rather than taking the page link colour, so it doesn't read as the
+       one heading that is different in kind from the others. */
+    .section-label a { color: inherit; }
+    .section-label a:hover { color: var(--text-secondary); }
+
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -481,18 +487,22 @@
       <div class="card-header"><span class="card-icon">💰</span><span class="card-title">Cap Summary</span></div>
     </a>
 
-    <span class="section-label">Committees</span>
+    <span class="section-label"><a href="/committees/">Committees</a></span>
 
-    <a class="card" href="/stream/">
-      <div class="card-header"><span class="card-icon">📺</span><span class="card-title">Stream</span></div>
+    <a class="card" href="/committees/rosters/">
+      <div class="card-header"><span class="card-icon">📋</span><span class="card-title">Rosters</span></div>
     </a>
 
-    <a class="card" href="/boxscores/submit/">
+    <a class="card" href="/committees/pdc/">
+      <div class="card-header"><span class="card-icon">⚖️</span><span class="card-title">PDC</span></div>
+    </a>
+
+    <a class="card" href="/committees/stats/">
       <div class="card-header"><span class="card-icon">🗂</span><span class="card-title">Stats</span></div>
     </a>
 
-    <a class="card" href="/pdc/">
-      <div class="card-header"><span class="card-icon">⚖️</span><span class="card-title">PDC</span></div>
+    <a class="card" href="/committees/stream/">
+      <div class="card-header"><span class="card-icon">📺</span><span class="card-title">Stream</span></div>
     </a>
 
     <span class="section-label">History</span>
