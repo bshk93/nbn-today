@@ -720,6 +720,14 @@ job.
 
 ## 4. Nice to have
 
+- **NBNFL playoffs** — `/nbnfl/` (shipped 2026-09-19: `routers/nbnfl.py` in
+  nbn-api, regular-season games/standings/leaders, admin-entered) covers the
+  regular season only. Deliberately deferred rather than built alongside it —
+  a real bracket (wild-card seeding, byes, single-elim rendering) is enough of
+  its own shape that it should be a focused follow-up once a season is
+  actually close to the postseason, not carried as unused code for months.
+  Model it as its own endpoint/shape when the time comes; don't overload
+  `week` with a "week 19+" convention as a shortcut.
 - **Extension window UI** — the precondition is met: § 6.2 shipped as a real
   transaction type on 2026-08-21, so the § 6.3 submission windows can now have
   the calendar surface FA has. This is the only part of the extension work

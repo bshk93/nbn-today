@@ -564,6 +564,7 @@ const SITE_PAGES = [
   { title: 'Trivia', href: '/trivia', icon: '🧠' },
   { title: 'Wall Street', href: '/invest', icon: '📈' },
   { title: 'NBNTV Classics', href: '/nbntv-classics', icon: '📺' },
+  { title: 'NBNFL', href: '/nbnfl/', icon: '🏈' },
   { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: '▶️' },
   { title: 'News', href: '/news/', icon: '📰' },
   { title: 'Members', href: '/members/', icon: '👥' },

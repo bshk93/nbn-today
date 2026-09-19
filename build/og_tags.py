@@ -91,6 +91,7 @@ PAGES = {
  '/legal/nothing-but-net-sim-league-v-jdbeats/': (None, 'Disciplinary findings in NBN Sim League v. JDBeats.'),
  '/members/': (None, 'Everyone in NBN — tenures, teams, achievements and rings.'),
  '/members/profile/': (None, 'An NBN member’s tenures, achievements and league history.'),
+ '/nbnfl/': ('NBNFL', 'Scores, standings, and stat leaders for NBN’s sister American-football league.'),
  '/nbntv-classics/': (None, 'The greatest playoff performances in NBN history, ranked and annotated.'),
  '/nbyen-economy/': ('NB¥ Economy Proposal — NBN', 'A draft proposal for pegging NB¥ to real dollars, rebuilding the sinks, and restarting balances.'),
  '/news/': (None, 'League news, written by NBN members.'),
