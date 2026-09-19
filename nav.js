@@ -537,6 +537,7 @@ const SITE_PAGES = [
   { title: 'Extensions', href: '/extensions/', icon: '📄' },
   { title: 'Transactions', href: '/transactions', icon: '📝' },
   { title: 'Cap Summary', href: '/cap-summary/', icon: '💰' },
+  { title: 'Compliance', href: '/compliance/', icon: '🩺' },
   { title: 'Season Summary', href: '/season-summary', icon: '📜' },
   { title: 'Hall of Champions', href: '/champions/', icon: '🏆' },
   { title: 'Hall of Fame', href: '/hof', icon: '⭐' },

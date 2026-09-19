@@ -66,6 +66,7 @@ PAGES = {
  '/clusters/players/': (None, 'NBN players grouped into statistical archetypes by how they actually play.'),
  '/clusters/teams/': (None, 'NBN teams grouped into statistical archetypes by how they actually play.'),
  '/compare/': (None, 'Put any two NBN players side by side, career or season.'),
+ '/compliance/': (None, 'Which NBN teams are out of compliance with the rulebook right now — roster floor, two-way slots, hard caps and apron position.'),
  '/constitution/': (None, 'The founding document of the NBN sim league.'),
  '/context/': (None, 'Project context for the nbn.today codebase.'),
  '/draft/': (None, 'Every NBN draft, pick by pick, with who took whom and where they landed.'),

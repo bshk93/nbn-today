@@ -3,8 +3,10 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last reviewed: **2026-08-30** — **35 open items**: 8 P1, 9 P2, 13 P3, plus 5
-nice-to-haves. (No version pin here on purpose: it went stale within two
+Last full review: **2026-08-30**. **29 open items** as of **2026-09-19**:
+7 P1, 8 P2, 12 P3, plus 2 nice-to-haves. (Counted from the `###` headings and
+the § 4 bullets. The previous line claimed 35 across a split that matched
+neither — no version pin here for the same reason, it went stale within two
 commits of being written. The date is what matters.)
 
 Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** nice to have
@@ -535,53 +537,37 @@ bullet, the "Hard Cap Grace Period" sub-heading and § 3.1's "UFA / RFA
 Eligibility" sub-heading. Each is a claim about one clause rather than one
 section, so nothing keys them to a §, and they stay hand-written.
 
-### [P2] No league-wide compliance board — § 2.1 shortfalls are invisible today
-Entered 2026-08-16. `/poopoo` answers "does the site match the sheet". Nothing
-answers "does the league match the rulebook". Counting `type` off
-`player-bios.json` against all 30 `{abbr}-roster.csv`, **recounted 2026-08-30**:
+### [P3] The compliance board covers roster and cap only — not Stepien, offer sheets or waivers
+Entered 2026-08-16 as "no league-wide compliance board"; **the board shipped
+2026-09-19** at `/compliance/`. It reads `GET /api/cap-history/current` for all
+30 teams and runs each row through `cap-health.js` — the same module behind the
+team page's Cap Health card and the homepage's chips — so it states no rule of
+its own and does no cap math. Today it shows 6 teams below § 2.1's 14-player
+floor, 1 owing an Empty Roster Charge, 1 over § 2.2's two-way limit and 7 owing
+a trim before opening night, with clickable counters that filter the table.
 
-| Condition | Teams |
-|---|---|
-| Below § 2.1's **14-player minimum** (year-round; two-ways excluded per § 2.2) | **5** — DAL 10, NYK 12, UTA 12, CHI 13, HOU 13 |
-| Below § 2.1a's **12-player Empty Roster Charge floor** | **1** — DAL, at 10, so 2 charged slots |
-| Above 15, owing a trim before opening night (§ 2.1 offseason ceiling of 20) | **6** — ATL/CLE/LAC/LAL 16, MIL 17, POR 19 |
-| Over § 2.2's **3 two-way slots** | **1** — DET, at 4 |
+That closes the part the entry was really about: the counts in this file were
+hand-made with a throwaway script, twice, and were stale within a week both
+times. Nobody has to write that script again.
 
-The teams over 15 are fine for now — § 2.1's offseason ceiling is 20 — but owe a
-trim, and no deadline for it appears anywhere on the site. The ones under 14 are
-a different matter: **§ 2.1's minimum is year-round, so they are under the line
-today**, and only DAL is low enough to actually be charged for it (§ 2.1a's real
-floor is 12). DAL's charge presumably computes correctly on its own page.
+What the original entry listed and the board does **not** cover, because no
+shared helper produces it yet:
 
-**The eight-day drift is the argument for the board.** On 2026-08-16 this read
-6 teams under 14 and 4 over 15; today it is 3 and 13. Nobody moved a policy —
-free agency simply ran. A hand-counted table in a backlog file is out of date
-within a week, which is precisely why the count needs to live on a page.
-
-The point is that **the only place any of this is visible is one team page at a
-time** — nothing states how many teams are out of compliance, or with what.
-
-One board covering § 2.1 floor/ceiling, § 2.2 two-way slots, hard cap/apron
-position, Stepien exposure, open offer sheets and open waiver windows is mostly
-assembly of helpers that already exist. It is also the natural home for "who
-still has to cut" once a regular-season start date is set.
-
-**Most of it was built on 2026-08-30**, from the other end — the per-team Cap
-Health card (§ 4). What a board still needs is now assembly of two things that
-exist and are already the right shape for 30 teams at once:
-
-- `cap-health.js` — the § 1.3/1.4 cap/apron and § 2.1/2.1a/2.2 roster rules as
-  a pure function, deliberately taking salary figures and roster counts as
-  arguments rather than computing them, so it does not care whether they came
-  from one team page or from a 30-row fetch. Pinned by `tests/cap-health.test.js`.
-- `GET /api/cap-history/current` — public, live, and already returns exactly
-  those inputs for all 30 teams (salary on both bases, apron position, hard cap,
-  roster and two-way counts).
-
-The counts in the table above came out of a throwaway script; the point of the
-board is that nobody should have to write that script again. Don't re-derive the
-rules for it — a second copy is how the two surfaces start disagreeing about who
-is in violation.
+- **Stepien exposure**, open **offer sheets**, open **waiver windows**. Each is
+  computed today inside a validator on the submit path, not by anything a page
+  can call. Adding one means giving it the `cap-health.js` treatment first — a
+  pure function taking its inputs as arguments — not querying for it from the
+  page. A second copy is how two surfaces start disagreeing about who is in
+  violation.
+- **"Who still has to cut."** The 7 teams over 15 are legal until opening
+  night, and no regular-season start date exists on the site, so the board says
+  a trim is owed without being able to say by when. Whatever fixes § 3.12's
+  proration gap (§ 2 above) supplies the same date.
+- **The dollar figure of an Empty Roster Charge.** `computeEmptyRosterCharge`
+  lives in `teams/team.js`, which injects a whole page into `document.body` on
+  load and so cannot be imported; it is not in the cap-history row either. The
+  board counts the charge and the team's own page prices it. Extracting that
+  function the way `teams/lineup.js` was extracted would close it.
 
 ### [P3] Other standing manual-review items
 Roughly in order of how often they bite:

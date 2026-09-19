@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Compliance — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Which NBN teams are out of compliance with the rulebook right now — roster floor, two-way slots, hard caps and apron position.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Compliance — NBN">
+  <meta property="og:description" content="Which NBN teams are out of compliance with the rulebook right now — roster floor, two-way slots, hard caps and apron position.">
+  <meta property="og:url" content="https://nbn.today/compliance/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#111827">
+  <!-- /NBN:og -->
+  <style>
+    .page { max-width: 1250px; margin: 0 auto; }
+
+    header { margin-bottom: 1rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; max-width: 62ch; }
+    .asof { color: var(--text-dim); font-size: 0.75rem; margin-top: 0.35rem; }
+
+    /* Summary tiles — one per condition anyone is actually in, plus a clean
+       count. Clicking one filters the table to exactly those teams. */
+    .tiles {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 0.6rem;
+      margin: 1.25rem 0;
+    }
+    .tile {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.7rem 0.85rem;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+      color: var(--text-secondary);
+      transition: border-color 0.12s;
+    }
+    .tile:hover { border-color: var(--muted-border); }
+    .tile[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-panel-bg); }
+    .tile-count { font-size: 1.5rem; font-weight: 700; line-height: 1.1; color: var(--text-primary); }
+    .tile-label { font-size: 0.76rem; margin-top: 0.15rem; line-height: 1.3; }
+    .tile.violation .tile-count { color: var(--danger); }
+    .tile.caution .tile-count { color: var(--gold); }
+    .tile.ok .tile-count { color: var(--success); }
+
+    .table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    tbody td {
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    thead th { white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--bg-hover); }
+    td.right, th.right { text-align: right; }
+
+    .team-cell { display: flex; align-items: center; gap: 0.55rem; }
+    .team-cell img { width: 22px; height: 22px; object-fit: contain; flex: none; }
+    .team-cell a { font-weight: 600; color: var(--text-primary); }
+
+    .status-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--success); flex: none;
+    }
+    .status-dot.violation { background: var(--danger); }
+    .status-dot.caution { background: var(--gold); }
+
+    .muted { color: var(--text-muted); }
+    .tone-over { color: var(--danger-light); }
+    .tone-under { color: var(--text-secondary); }
+    .tone-unknown { color: var(--text-dim); }
+    .tone-violation { color: var(--danger); font-weight: 600; }
+
+    .count-ok { color: var(--text-secondary); }
+    .count-caution { color: var(--gold); }
+    .count-violation { color: var(--danger); font-weight: 600; }
+
+    /* Chips carry cap-health.js's own `short` register, with its full rule
+       statement as the tooltip. Nothing is rephrased here. */
+    .flags { white-space: normal; min-width: 22rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .chip {
+      display: inline-flex; align-items: center;
+      font-size: 0.74rem; padding: 0.2rem 0.55rem; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--bg-subtle);
+      color: var(--text-secondary); line-height: 1.35;
+    }
+    .chip.violation { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-light); }
+    .chip.caution   { border-color: var(--gold-border);   background: var(--gold-bg);   color: var(--gold); }
+    .chip.note      { color: var(--text-muted); }
+
+    .apron-tag { font-size: 0.78rem; }
+    .apron-tag.first_apron { color: var(--gold); }
+    .apron-tag.second_apron { color: var(--danger-alt); }
+
+    #status { padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
+    .footnote {
+      margin-top: 1rem; font-size: 0.75rem; color: var(--text-dim);
+      line-height: 1.6; max-width: 80ch;
+    }
+    .footnote a { color: var(--link); }
+
+    @media (max-width: 720px) {
+      .hide-sm { display: none; }
+      tbody td { padding: 0.55rem 0.6rem; }
+      .flags { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"></nav>
+
+    <header>
+      <h1>Compliance</h1>
+      <p>Where all 30 teams stand against the rulebook right now — § 2.1's roster floor and
+         ceiling, § 2.1a's Empty Roster Charge floor, § 2.2's two-way slots, and § 1.3/1.4's
+         cap, aprons and hard caps.</p>
+      <div class="asof" id="asof"></div>
+    </header>
+
+    <div class="tiles" id="tiles"></div>
+
+    <div class="table-wrap">
+      <div id="status">Loading…</div>
+      <table id="table" hidden>
+        <thead><tr id="head"></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+
+    <div class="footnote" id="footnote"></div>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script src="/cap-health.js"></script>
+  <script>
+  // The league-wide half of the Cap Health card. Two things make this page a
+  // page and not a script somebody re-writes every few weeks:
+  //
+  //   * the rules come from `cap-health.js`, the same module the team page's
+  //     Cap Health card and the homepage's chips use. A second copy of "who is
+  //     in violation" is how two surfaces start disagreeing about it.
+  //   * the figures come from `GET /api/cap-history/current`, which already
+  //     returns exactly cap-health.js's inputs for all 30 teams — Team Salary
+  //     on both bases, the season's thresholds, each team's hard cap, and the
+  //     standard/two-way roster counts.
+  //
+  // So this page does no cap math and states no rule of its own. It fetches,
+  // calls `CapHealth.standing()` once per team, and arranges the answers.
+  //
+  // One figure it deliberately cannot show: the dollar amount of a § 2.1a
+  // Empty Roster Charge. That is computed by `computeEmptyRosterCharge` in
+  // teams/team.js, which injects a whole page into document.body on load and
+  // so cannot be imported, and it is not in the cap-history row. Calling
+  // `standing()` without `erc` is a supported case — the warning then names the
+  // floor and says a charge applies, without a number. Recomputing the charge
+  // here to fill that gap would be exactly the second copy this page exists to
+  // avoid; the team's own page has the figure.
+
+  const TEAMS = {
+    ATL: "Atlanta Hawks",     BKN: "Brooklyn Nets",       BOS: "Boston Celtics",
+    CHA: "Charlotte Hornets", CHI: "Chicago Bulls",        CLE: "Cleveland Cavaliers",
+    DAL: "Dallas Mavericks",  DEN: "Denver Nuggets",       DET: "Detroit Pistons",
+    GSW: "Golden State Warriors", HOU: "Houston Rockets",  IND: "Indiana Pacers",
+    LAC: "LA Clippers",       LAL: "Los Angeles Lakers",   MEM: "Memphis Grizzlies",
+    MIA: "Miami Heat",        MIL: "Milwaukee Bucks",      MIN: "Minnesota Timberwolves",
+    NOP: "New Orleans Pelicans", NYK: "New York Knicks",   OKC: "Oklahoma City Thunder",
+    ORL: "Orlando Magic",     PHI: "Philadelphia 76ers",   PHX: "Phoenix Suns",
+    POR: "Portland Trail Blazers", SAC: "Sacramento Kings", SAS: "San Antonio Spurs",
+    TOR: "Toronto Raptors",   UTA: "Utah Jazz",            WAS: "Washington Wizards",
+  };
+
+  // Tile headings only. These are names for a condition, not statements of the
+  // rule behind it — every rule statement on this page is cap-health.js's own
+  // `text`/`short`. A warning code with no entry here still gets a tile,
+  // labelled from the first team's `short`, so a new check shows up on this
+  // page the day it is added rather than silently not counting.
+  const CONDITION_LABELS = {
+    hard_cap_exceeded:        'Over their hard cap',
+    roster_below_min:         'Below the roster floor',
+    empty_roster_charge:      'Owing an Empty Roster Charge',
+    roster_over_offseason_max:'Over the offseason ceiling',
+    roster_trim_owed:         'Owing a trim before opening night',
+    two_way_over_max:         'Over the two-way limit',
+  };
+
+  // Worst first, so the tiles read down in the order the table sorts.
+  const CONDITION_ORDER = [
+    'hard_cap_exceeded', 'roster_below_min', 'empty_roster_charge',
+    'roster_over_offseason_max', 'two_way_over_max', 'roster_trim_owed',
+  ];
+
+  const SEVERITY_RANK = { violation: 0, caution: 1, note: 2 };
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const fmtM = v => v == null ? '—'
+    : '$' + (Math.round(v / 100000) / 10).toFixed(1) + 'M';
+
+  let ROWS = [];
+  let filter = null;              // a warning code, 'clean', or null for all
+  let sortField = 'severity';
+  let sortDir = 1;
+
+  // ── Load ──────────────────────────────────────────────────────────────────
+
+  fetch('/api/cap-history/current')
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(data => {
+      const entries = (data && data.entries) || [];
+      if (!entries.length) throw new Error('no rows');
+      ROWS = entries.map(buildRow);
+      const e = entries[0];
+      document.getElementById('asof').textContent =
+        `${e.season} season · figures as of ${e.date}`;
+      document.getElementById('footnote').innerHTML =
+        'Read through <a href="/rulebook/#article-ii">Article II</a> (roster limits) and '
+        + '<a href="/rulebook/#article-i">Article I</a> (cap and aprons). '
+        + 'The § 2.1 floor of ' + CapHealth.ROSTER_MIN + ' applies year-round; the ceiling does not — '
+        + CapHealth.ROSTER_MAX_OFFSEASON + ' in the offseason, ' + CapHealth.ROSTER_MAX_IN_SEASON
+        + ' in season — so a team over 15 today owes a trim rather than being in breach. '
+        + 'An Empty Roster Charge is counted here but its dollar figure is shown on the '
+        + 'team’s own page, not this one.';
+      render();
+    })
+    .catch(err => {
+      document.getElementById('status').textContent =
+        'Could not load cap figures (' + err.message + ').';
+    });
+
+  // One team's row. Everything rule-shaped on it comes back from standing().
+  function buildRow(entry) {
+    const st = CapHealth.standing({
+      season: entry.season,
+      capLevels: { [entry.season]: { cap: entry.cap, apron1: entry.apron1, apron2: entry.apron2 } },
+      teamState: { hard_cap: entry.hard_cap },
+      teamSalaryFull: entry.salary,
+      teamSalaryExHolds: entry.salary_ex_holds,
+      standardCount: entry.roster,
+      twoWayCount: entry.two_way,
+      // erc omitted — see the note at the top of this script.
+      fmt: fmtM,
+    });
+    // Notes are dropped, not shown small: 'over_cap' / 'over_apron1' are where
+    // most of the league lives, and a compliance board that lists them has 25
+    // teams "flagged". The vs-Cap and Apron columns carry that standing
+    // instead, which is what those columns are for.
+    const warnings = st.warnings
+      .filter(w => w.severity !== 'note')
+      .sort((a, b) => (SEVERITY_RANK[a.severity] ?? 9) - (SEVERITY_RANK[b.severity] ?? 9));
+    const worst = warnings.length ? (SEVERITY_RANK[warnings[0].severity] ?? 9) : 9;
+    const capRow = st.rows.find(r => r.key === 'cap');
+    return {
+      team: entry.team,
+      teamName: TEAMS[entry.team] || entry.team,
+      entry,
+      warnings,
+      codes: warnings.map(w => w.code),
+      severity: worst,
+      status: worst === 0 ? 'violation' : worst === 1 ? 'caution' : 'ok',
+      // cap-health gives one tone for one combined Roster row ("14/15 + 4/3
+      // two-way"), and escalates it when *either* half is bad. This page puts
+      // the two counts in two columns, so that tone can't be reused as-is —
+      // DET at 14 standard and 4 two-way would paint the legal 14 red. Each
+      // column instead takes its colour from the warning codes that actually
+      // concern it. These are cap-health's own identifiers, not a second
+      // reading of the rule: if one is ever renamed the number loses its
+      // colour and the chip beside it still states the breach.
+      rosterTone: tone(warnings, ['roster_below_min', 'roster_over_offseason_max', 'roster_trim_owed']),
+      twoWayTone: tone(warnings, ['two_way_over_max']),
+      capNote: capRow ? capRow.note : '',
+      capTone: capRow ? capRow.tone : 'unknown',
+    };
+  }
+
+  // The worst severity among whichever of `codes` this team actually has.
+  function tone(warnings, codes) {
+    const hit = warnings.filter(w => codes.includes(w.code));
+    if (hit.some(w => w.severity === 'violation')) return 'violation';
+    if (hit.some(w => w.severity === 'caution')) return 'caution';
+    return 'ok';
+  }
+
+  // ── Table ─────────────────────────────────────────────────────────────────
+
+  const COLS = [
+    { key: 'team',     label: 'Team',        sortVal: r => r.teamName, defaultDir: 1 },
+    { key: 'roster',   label: 'Roster',      sortVal: r => r.entry.roster, defaultDir: 1 },
+    { key: 'twoway',   label: 'Two-Way',     cls: 'right hide-sm', sortVal: r => r.entry.two_way, defaultDir: -1 },
+    { key: 'salary',   label: 'Team Salary', cls: 'right', sortVal: r => r.entry.salary, defaultDir: -1 },
+    { key: 'vscap',    label: 'vs Cap',       cls: 'hide-sm', sortVal: r => r.entry.salary - (r.entry.cap || 0), defaultDir: -1 },
+    { key: 'apron',    label: 'Apron',       cls: 'hide-sm', sortVal: r => r.entry.apron_position === 'second_apron' ? 2 : r.entry.apron_position === 'first_apron' ? 1 : 0, defaultDir: -1 },
+    { key: 'hardcap',  label: 'Hard Cap',    cls: 'hide-sm', sortVal: r => r.entry.hard_cap === 'second_apron' ? 2 : r.entry.hard_cap === 'first_apron' ? 1 : 0, defaultDir: -1 },
+    { key: 'severity', label: 'Open Issues', cls: 'flags', sortVal: r => r.severity, defaultDir: 1 },
+  ];
+
+  function render() {
+    renderTiles();
+    renderHead();
+    renderBody();
+    document.getElementById('status').hidden = true;
+    document.getElementById('table').hidden = false;
+  }
+
+  function renderTiles() {
+    const counts = new Map();
+    const labels = new Map();
+    ROWS.forEach(r => r.warnings.forEach(w => {
+      if (w.severity === 'note') return;
+      counts.set(w.code, (counts.get(w.code) || 0) + 1);
+      if (!labels.has(w.code)) labels.set(w.code, CONDITION_LABELS[w.code] || w.short || w.code);
+    }));
+
+    const ordered = [...counts.keys()].sort((a, b) => {
+      const ia = CONDITION_ORDER.indexOf(a), ib = CONDITION_ORDER.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+
+    const clean = ROWS.filter(r => !r.codes.length).length;
+    const tiles = [
+      { code: 'clean', label: 'Fully compliant', count: clean, tone: 'ok' },
+      ...ordered.map(code => ({
+        code, label: labels.get(code), count: counts.get(code),
+        tone: ROWS.some(r => r.warnings.some(w => w.code === code && w.severity === 'violation'))
+          ? 'violation' : 'caution',
+      })),
+    ];
+
+    const wrap = document.getElementById('tiles');
+    wrap.textContent = '';
+    tiles.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'tile ' + t.tone;
+      b.setAttribute('aria-pressed', String(filter === t.code));
+      b.innerHTML = `<div class="tile-count">${t.count}</div>`
+        + `<div class="tile-label">${esc(t.label)}</div>`;
+      b.addEventListener('click', () => {
+        filter = filter === t.code ? null : t.code;
+        render();
+      });
+      wrap.appendChild(b);
+    });
+  }
+
+  function renderHead() {
+    const tr = document.getElementById('head');
+    tr.textContent = '';
+    COLS.forEach(col => {
+      const th = document.createElement('th');
+      th.className = col.cls || '';
+      th.textContent = col.label;
+      if (col.key === sortField) {
+        th.dataset.active = 'true';
+        const arrow = document.createElement('span');
+        arrow.className = 'sort-arrow';
+        arrow.textContent = sortDir === 1 ? '▲' : '▼';
+        th.appendChild(arrow);
+      }
+      th.addEventListener('click', () => {
+        if (sortField === col.key) sortDir = -sortDir;
+        else { sortField = col.key; sortDir = col.defaultDir; }
+        render();
+      });
+      tr.appendChild(th);
+    });
+  }
+
+  function visibleRows() {
+    if (!filter) return ROWS.slice();
+    if (filter === 'clean') return ROWS.filter(r => !r.codes.length);
+    return ROWS.filter(r => r.codes.includes(filter));
+  }
+
+  function renderBody() {
+    const col = COLS.find(c => c.key === sortField) || COLS[0];
+    const rows = visibleRows().sort((a, b) => {
+      const va = col.sortVal(a), vb = col.sortVal(b);
+      const cmp = typeof va === 'string' ? va.localeCompare(vb) : va - vb;
+      // Ties break on team name so the order is stable between renders, and so
+      // "sort by open issues" reads alphabetically inside each severity band.
+      return cmp * sortDir || a.teamName.localeCompare(b.teamName);
+    });
+
+    const body = document.getElementById('body');
+    body.textContent = '';
+    rows.forEach(r => body.appendChild(rowEl(r)));
+
+    if (!rows.length) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = COLS.length;
+      td.className = 'muted';
+      td.style.textAlign = 'center';
+      td.textContent = 'No teams in this condition.';
+      tr.appendChild(td);
+      body.appendChild(tr);
+    }
+  }
+
+  function rowEl(r) {
+    const tr = document.createElement('tr');
+    const e = r.entry;
+
+    const td = (html, cls) => {
+      const el = document.createElement('td');
+      if (cls) el.className = cls;
+      el.innerHTML = html;
+      return el;
+    };
+
+    tr.appendChild(td(
+      `<div class="team-cell"><span class="status-dot ${r.status}" title="${esc(r.status)}"></span>`
+      + `<img src="/logos/logo-${esc(r.team.toLowerCase())}.png" alt="" loading="lazy">`
+      + `<a href="/teams/${esc(r.team)}/">${esc(r.teamName)}</a></div>`));
+
+    const count = (n, max, t) => `<span class="count-${esc(t)}">${esc(String(n))}</span>`
+      + `<span class="muted">/${max}</span>`;
+
+    tr.appendChild(td(count(e.roster, CapHealth.ROSTER_MAX_IN_SEASON, r.rosterTone)));
+    tr.appendChild(td(count(e.two_way, CapHealth.TWO_WAY_MAX, r.twoWayTone), 'right hide-sm'));
+
+    // Holds round to the same tenth of a million the salary does, so a $1
+    // residual hold would print "+$0.0M holds". Shown only when it survives
+    // the rounding.
+    const holdsShown = Math.round((e.holds || 0) / 100000) > 0;
+    tr.appendChild(td(esc(fmtM(e.salary))
+      + (holdsShown ? ` <span class="muted">+${esc(fmtM(e.holds))} holds</span>` : ''), 'right'));
+
+    tr.appendChild(td(`<span class="tone-${esc(r.capTone)}">${esc(r.capNote)}</span>`, 'hide-sm'));
+
+    tr.appendChild(td(e.apron_position
+      ? `<span class="apron-tag ${esc(e.apron_position)}">${e.apron_position === 'second_apron' ? '2nd apron' : '1st apron'}</span>`
+      : '<span class="muted">—</span>', 'hide-sm'));
+
+    tr.appendChild(td(e.hard_cap
+      ? `<span class="apron-tag ${esc(e.hard_cap)}">${e.hard_cap === 'second_apron' ? '2nd apron' : '1st apron'}</span>`
+      : '<span class="muted">—</span>', 'hide-sm'));
+
+    const chips = r.warnings.map(w =>
+      `<span class="chip ${esc(w.severity)}" title="${esc(w.text)}">${esc(w.short || w.text)}</span>`).join('');
+    tr.appendChild(td(chips ? `<div class="chips">${chips}</div>`
+      : '<span class="muted">Clear</span>', 'flags'));
+
+    return tr;
+  }
+  </script>
+</body>
+</html>
