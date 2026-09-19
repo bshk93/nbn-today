@@ -1375,6 +1375,14 @@
           teamSalaryExHolds: entry.salary_ex_holds,
           standardCount: entry.roster,
           twoWayCount: entry.two_way,
+          // § 2.1a's charge, already folded into the two salary figures above
+          // by `cap_history.build_rows` and reported separately so this can
+          // name the amount. Undefined on a row predating the field, which
+          // standing() handles by naming the floor without a figure.
+          erc: entry.empty_roster_charge == null ? undefined : {
+            deficiency: entry.empty_roster_deficiency,
+            charge: entry.empty_roster_charge,
+          },
           // Homepage altitude for every figure it produces, so the notes read
           // in the same units as the Team Salary line beside them rather than
           // mixing "$135.0M" with "$29,915,676".

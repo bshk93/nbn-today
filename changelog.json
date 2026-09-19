@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.3.2",
+    "date": "2026-09-19",
+    "changes": [
+      "Put \u00a7 2.1a's Empty Roster Charge on the server's books: a team under 12 standard players now carries the charge in every cap figure the API reports, not just on its own team page. Until now the charge existed only in the team page's JavaScript, so the daily cap snapshot, the compliance board and free-agency room all read low for a short-handed team \u2014 Dallas, at 11 players, by $1,357,763",
+      "The compliance board and the homepage team card now name the dollar amount of an Empty Roster Charge instead of just saying one applies",
+      "The free-agency offer form now says when a team's room is net of an Empty Roster Charge, so the figure reconciles with the contracts on the roster page"
+    ]
+  },
+  {
     "version": "0.3.1",
     "date": "2026-09-19",
     "changes": [

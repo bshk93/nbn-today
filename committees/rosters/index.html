@@ -1214,14 +1214,20 @@
   // So this page does no cap math and states no rule of its own. It fetches,
   // calls `CapHealth.standing()` once per team, and arranges the answers.
   //
-  // One figure it deliberately cannot show: the dollar amount of a § 2.1a
-  // Empty Roster Charge. That is computed by `computeEmptyRosterCharge` in
-  // teams/team.js, which injects a whole page into document.body on load and
-  // so cannot be imported, and it is not in the cap-history row. Calling
-  // `standing()` without `erc` is a supported case — the warning then names the
-  // floor and says a charge applies, without a number. Recomputing the charge
-  // here to fill that gap would be exactly the second copy this page exists to
-  // avoid; the team's own page has the figure.
+  // That includes the dollar amount of a § 2.1a Empty Roster Charge, which this
+  // page could not show until 2026-09-19: the only implementation was
+  // `computeEmptyRosterCharge` in teams/team.js, which injects a whole page
+  // into document.body on load and so cannot be imported. The fix was to put
+  // the charge where the rest of the figures already come from rather than to
+  // recompute it here — `cap_history.build_rows` now folds it into `salary` /
+  // `salary_ex_holds` (§ 2.1a: it counts toward real guaranteed salary,
+  // hard-cap and apron comparisons included) and reports it separately as
+  // `empty_roster_charge`, so this page just passes it through. Recomputing it
+  // here would be exactly the second copy this page exists to avoid.
+  //
+  // `standing()` without `erc` stays a supported case, and a row from before
+  // that date has no charge field — the warning then names the floor and says a
+  // charge applies, without a number.
 
 
   // Tile headings only. These are names for a condition, not statements of the
@@ -1293,7 +1299,13 @@
       teamSalaryExHolds: entry.salary_ex_holds,
       standardCount: entry.roster,
       twoWayCount: entry.two_way,
-      // erc omitted — see the note at the top of this script.
+      // Straight off the cap-history row — see the note at the top of this
+      // script. Left undefined on an older row that predates the field, which
+      // standing() handles by naming the floor without a figure.
+      erc: entry.empty_roster_charge == null ? undefined : {
+        deficiency: entry.empty_roster_deficiency,
+        charge: entry.empty_roster_charge,
+      },
       fmt: fmtM,
     });
     // Notes are dropped, not shown small: 'over_cap' / 'over_apron1' are where

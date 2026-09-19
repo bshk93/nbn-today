@@ -28,7 +28,13 @@ Three rules this page holds and must keep holding:
 - **No cap math in the page.** Every dollar comes off the fact sheet
   `POST /api/validate/sign` returns, or off `GET /api/fa/commitment/{team}` —
   the same `_team_commitment` the committee's review page renders. A team can
-  never be shown room the validator didn't credit it with.
+  never be shown room the validator didn't credit it with. `room` there is net
+  of § 2.1a's real Empty Roster Charge as of 2026-09-19 (it wasn't before), and
+  the charge comes back beside it as `empty_roster_charge` so the panel can
+  name it — a room figure that doesn't reconcile with the roster's contracts
+  reads as a bug otherwise. It is knowingly conservative: each live offer, if
+  it lands, fills a slot and abates a slot of the charge, and netting that out
+  would mean guessing which offers land.
 - **No reason string is composed client-side.** The disabled ⋯-menu copy is
   `reason` from `GET /api/fa/board`, i.e. the server's `_accepts_offers`. That
   is why the board lists closed players too (§ 6.3).

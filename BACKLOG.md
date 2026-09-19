@@ -732,3 +732,31 @@ job.
   rather than work: `GET /api/cap-history?team=UTA` has served a per-day series
   since 2026-08-25, so "when did this team cross the first apron" is a chart
   over an existing endpoint, not a collection problem.
+
+### [P2] The signing and waiver validators still judge off books without the § 2.1a charge
+Fixed 2026-09-19 for the surfaces that report a team's *current* books —
+`cap_history.build_rows` (so the daily snapshot, `/committees/rosters` and the
+homepage card) and `_team_commitment` (so free-agency room) all add
+`_real_empty_roster_charge` now. The team page had always charged it, so a
+short-handed team read two different Team Salaries depending on the page; DAL,
+at 11 standard players, was $1,357,763 apart.
+
+What is left is the *projection* side. `_compute_team_salary` and
+`_compute_team_salary_ex_holds` are deliberately still raw, because ~40 callers
+use them as a baseline and then apply their own charge for the roster count the
+transaction leaves behind — the trade path most visibly
+(`current - out + in + charge(after)`). Folding a charge into the helpers would
+have every one of those double-count it against a stale pre-transaction count.
+
+So for a team already below 12, `_validate_sign`, `_validate_extension` and the
+waiver paths understate projected salary by the charge on the slots *still*
+empty after the move. The trade path is unaffected: its 14-player mock is
+always at least the real 12-player charge, and it is already computed off the
+post-trade count.
+
+The fix is per-validator, not one line: each one that projects a roster count
+should price the residual real charge at that count, the way
+`_trade_fact_sheet` already prices its mock. Small in dollars — at most 2-3
+slots × the rookie minimum, so ~$1.4M-$4M — and it only bites a team that is
+both short-handed and within that of a line. Worth doing before a season where
+a team sits under 12 for any length of time.

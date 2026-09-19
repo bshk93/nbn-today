@@ -2488,8 +2488,9 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
 
   // Empty Roster Charge rows (§ 2.1a) — virtual, never persisted to the roster
   // CSV. Recomputed live from the real roster count every render, so they
-  // appear/disappear on their own as the team crosses the 14-player line;
-  // no explicit transaction ever creates or removes one.
+  // appear/disappear on their own as the team crosses the 12-player line
+  // (§ 2.1a's charge floor, not § 2.1's 14-player roster minimum); no
+  // explicit transaction ever creates or removes one.
   const erc = computeEmptyRosterCharge(rows, biosData, capLevels, curYr);
   for (let i = 0; i < erc.deficiency && erc.rookieMin; i++) {
     augmented.push({

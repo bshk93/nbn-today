@@ -1561,6 +1561,14 @@
         panel.textContent = `${team} has ${c.live_offers} live offer${c.live_offers === 1 ? '' : 's'} out, `
           + `${compactMoney(c.committed_year1)} of ${c.season} salary committed against `
           + `${c.room == null ? 'unknown' : compactMoney(c.room)} of room`
+          // Named when it applies, because otherwise the room figure doesn't
+          // reconcile with the contracts on the roster page and reads as a bug.
+          // Each of these offers would abate a slot of it if it lands, so the
+          // figure is conservative by design (§ 2.1a).
+          + (c.empty_roster_charge
+            ? ` (after ${compactMoney(c.empty_roster_charge)} of Empty Roster Charge on `
+              + `${c.empty_roster_deficiency} open slot${c.empty_roster_deficiency === 1 ? '' : 's'}, § 2.1a)`
+            : '')
           + (c.overcommitted
             ? ' — more than this team can fund. A pending offer holds no cap room, so this is allowed; '
               + 'the committee is told, not blocked (§ 5.3).'
