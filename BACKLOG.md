@@ -401,6 +401,13 @@ Order of operations: get BOD to ratify or amend the § 3.9 formula first, then
 add the transaction type and the derived amount. Doing it the other way round
 bakes an unratified number into the ledger.
 
+This has since bitten a real build: `POST /api/fa/players/{slug}/declare-winner`
+(`nbn-api/routers/free_agency.py`, added 2026-09-20 alongside the ballot's
+"sign the actual winner" bridge) deliberately leaves its "QO" branch
+unexecuted for exactly this reason — it 422s to manual `/transactions` entry
+rather than writing a `qo_amount`-priced sign. Don't wire that branch up
+without doing the ratification step above first.
+
 ### [P2] Extend-and-trade is referenced but never defined
 § 3.9's raise table has an "Extend-and-trade" row (5% of Year 1, vs 8% for a
 normal extension), and § 6.2 repeats the 5% figure — but no section anywhere

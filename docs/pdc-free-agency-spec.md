@@ -1678,16 +1678,33 @@ channel to announce into, and tooling to review and vote with — now exists.
 
 ---
 
-## 11. Deliberate non-goals
+## 11. Deliberate non-goals (and what's since shipped)
 
-1. **No bridge from allocations to a real signing.** The FAC decides from the
-   totals and enters the signing on `/transactions` by hand, as today.
-2. **Roadmap (designed for, not built):** a "Sign this offer" button on a
-   finalized player that POSTs `offer` verbatim to `/api/transactions`. The
-   § 4.2 invariant is what makes this ~30 lines later. Do not add fields to
-   `offer` that `SignDetails` doesn't accept.
+1. **The allocations-to-signing bridge is now built.** `POST
+   /api/fa/players/{slug}/declare-winner` (`routers/free_agency.py`,
+   `fac_head`-only) replaces the roadmap item below: given finalize's totals,
+   the head names which ballot option actually happened, and where that's a
+   real offer it executes `apply_sign` (or `apply_offer_sheet` when the
+   player is RFA and the winner isn't the incumbent — § 3.15, the incumbent
+   still gets a separate later match decision) directly, using `offer["offer"]`
+   verbatim per the § 4.2 invariant below. `force_warnings_only` clears
+   advisory warnings automatically (no submit screen for a committee action
+   to tick force on) but never a real error.
+
+   **Exception: the `"QO"` ballot option is deliberately NOT bridged.**
+   `BACKLOG.md`'s [P1] ("Qualifying Offers don't exist in the system at all")
+   says explicitly to ratify the § 3.9 formula and add a real transaction
+   type before any dollar figure derived from it reaches the ledger.
+   Declaring "QO" through this endpoint always 422s pointing at manual
+   `/transactions` entry — see § 13 item 2 below, unchanged.
+2. ~~**Roadmap (designed for, not built):** a "Sign this offer" button on a
+   finalized player that POSTs `offer` verbatim to `/api/transactions`.~~
+   Built as `declare-winner` above. The § 4.2 invariant (`offer` is a verbatim
+   `SignDetails`) is exactly what made this a small addition rather than a
+   rewrite, as predicted.
 3. **Sign-and-trade** — needs the trade pipeline first (§ 5.4).
-4. **PO-EXT** — dashboard shell and roles only.
+4. ~~**PO-EXT** — dashboard shell and roles only.~~ Built in `routers/poext.py`
+   — see `nbn-api/docs/extensions.md`.
 5. **No auto-resolution on any timer**, ever.
 
 ---
@@ -1730,6 +1747,13 @@ Settled 2026-08-12, adding the agent stage (§ 4.7).
 | D25 | Undoing an advance | Head-only `return-to-agent`, reason required. Ballots kept and flagged `returned_since`, extending D17's rule a third time |
 | D26 | Agents and ballots | Agents see no ballots on any player, ever, and `fac`/`agent` are held by disjoint people **by convention, not by check** (§ 2) |
 | D27 | Negotiation | Happens in Discord. The site models what it *changes* — remand, revision, versions, diff — and adds no message thread and no counter-offer object (§ 4.7) |
+
+Settled 2026-09-20, closing the § 11 roadmap item.
+
+| # | Question | Decision |
+|---|---|---|
+| D28 | How the head actually executes a finalized round | `declare-winner`, a new endpoint, not folding execution into `finalize` itself — `finalize` only locks votes and can have several live options (competing offers, QO, NO_SIGNING); a separate step is where the head names which one actually happened |
+| D29 | QO at declare-winner | Not bridged. `BACKLOG.md` [P1] already decided the § 3.9 formula needs BOD ratification before any figure derived from it reaches the ledger — declaring "QO" 422s to manual `/transactions` entry rather than closing this out to match the other two branches |
 
 ## 13. Open items
 

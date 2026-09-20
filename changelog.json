@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.4.5",
+    "date": "2026-09-20",
+    "changes": [
+      "Trade requests: submitting an illegal trade to the TRC now warns and asks for confirmation instead of submitting silently",
+      "Trade requests: the TRC head can now finalize a trade that's gone stale/illegal with a required override reason, instead of being hard-blocked with no way through"
+    ]
+  },
+  {
     "version": "0.4.4",
     "date": "2026-09-20",
     "changes": [

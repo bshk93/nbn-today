@@ -288,7 +288,8 @@
       }
 
       const actions = [];
-      if (canFinalize) actions.push(`<button type="button" class="primary" data-act="finalize" data-id="${item.id}">Finalize${stale ? ' (blocked — not currently legal)' : ''}</button>`);
+      const hasOwnershipProblems = (item.validation.ownership_problems || []).length > 0;
+      if (canFinalize) actions.push(`<button type="button" class="primary" data-act="finalize" data-id="${item.id}" data-stale="${stale}" data-has-ownership-problems="${hasOwnershipProblems}">Finalize${stale ? ' (illegal — override required)' : ''}</button>`);
       if (canReject) actions.push(`<button type="button" class="danger" data-act="reject" data-id="${item.id}">Reject</button>`);
       if (canWithdraw) actions.push(`<button type="button" data-act="withdraw" data-id="${item.id}">Withdraw</button>`);
       if (item.status === 'awaiting_consent' && myParty) {
@@ -379,8 +380,23 @@
               });
               toast('Request rejected.');
             } else if (act === 'finalize') {
-              if (!confirm('Finalizing executes this trade for real — rosters, picks and the transaction ledger update immediately, and it posts to #transactions. Continue?')) return;
-              await authedFetch(`/api/trade-requests/${id}/finalize`, { method: 'POST' });
+              const stale = btn.dataset.stale === 'true';
+              const hasOwnershipProblems = btn.dataset.hasOwnershipProblems === 'true';
+              let body = {};
+              if (hasOwnershipProblems) {
+                alert('This trade involves an asset that is no longer where it expects it to be (see Legality & ownership above) — that can\'t be overridden, since finalizing would corrupt real roster/pick data. The trade needs to be re-proposed instead.');
+                return;
+              }
+              if (stale) {
+                const reason = prompt('This trade currently fails one or more legality checks (see above). Finalizing anyway requires a reason for the record:');
+                if (!reason || !reason.trim()) return;
+                body = { force: true, override_reason: reason.trim() };
+              } else {
+                if (!confirm('Finalizing executes this trade for real — rosters, picks and the transaction ledger update immediately, and it posts to #transactions. Continue?')) return;
+              }
+              await authedFetch(`/api/trade-requests/${id}/finalize`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+              });
               toast('Trade finalized.');
             }
             await loadItems();

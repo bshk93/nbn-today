@@ -117,6 +117,22 @@ count, not a share of the committee.
     the dashboard itself; only the two "something now needs *your* action"
     moments got a push.
 
+11. **Illegal-trade override, added 2026-09-20.** Two gaps closed together:
+    `transaction-sim`'s "Submit to TRC" used to POST with no client-side
+    legality gate at all — it now shows a confirm dialog naming the failed
+    checks before submitting an illegal trade (submission itself was never
+    blocked; `create_trade_request` only ever checked shape). And
+    `finalize_trade_request` used to hard-422 on any stale/illegal trade with
+    no way through — `trc_head` can now finalize anyway by passing
+    `force: true` + a required `override_reason`, recorded in the request's
+    `history` and stamped as `_forced_checks` on the ledger entry via
+    `apply_trade`'s own `force` param (unchanged signature — only the caller
+    changed). **Ownership problems are never forceable, regardless of
+    `force`** — `apply_trade` has no ownership check of its own (decision 6),
+    so forcing past one would execute a trade against an asset it no longer
+    actually controls, corrupting the picks conveyance tree rather than just
+    waiving a league rule. That gate stays an unconditional 422.
+
 ## Roles
 
 Added to `VALID_ROLES` / `ROLE_IMPLIES` (`nbn-api/routers/constants.py`):
@@ -172,7 +188,7 @@ Endpoints — all under `/api/trade-requests`:
 | `POST /{id}/withdraw` | `is_team_owner` of a party, or `trc_head` | `status: withdrawn` |
 | `PUT /{id}/ballot` | `has_role("trc")` — **not** `require_role`, no admin bypass | `{decision, note}`; flips to `ready_to_finalize` at 3 approvals |
 | `POST /{id}/reject` | `require_role("trc_head")` | `status: rejected` |
-| `POST /{id}/finalize` | `require_role("trc_head")` | re-checks live legality/ownership, then `apply_trade` |
+| `POST /{id}/finalize` | `require_role("trc_head")` | re-checks live legality/ownership; ownership problems always 422, illegal-but-not-stale can be pushed through with `{force: true, override_reason}` (decision 11), then `apply_trade` |
 
 ## Site
 

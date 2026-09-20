@@ -1943,7 +1943,15 @@ function renderResults(abbrs, data, tradeBody) {
   document.getElementById('export-btn').addEventListener('click', downloadTradeSheet);
   document.getElementById('sheet-btn').addEventListener('click', publishTradeSheet);
   if (myParties.length) {
-    document.getElementById('trc-btn').addEventListener('click', () => submitToTRC(tradeBody));
+    document.getElementById('trc-btn').addEventListener('click', () => {
+      if (!legal) {
+        const failedMsgs = checks.filter(c => !c.passed && c.level !== 'warning').map(c => `• ${c.message}`).join('\n')
+          || '(no specific check message — see the results above)';
+        const ok = confirm(`This trade fails legality checks and could not be applied as-is:\n\n${failedMsgs}\n\nSubmit to TRC anyway? The committee can still review and decide whether to finalize it.`);
+        if (!ok) return;
+      }
+      submitToTRC(tradeBody);
+    });
   }
 }
 
@@ -2481,8 +2489,8 @@ async function publishTradeSheet() {
 
 // Submits exactly the tradeBody /api/validate/trade was just called with — no
 // second construction of the payload — to the Trade Request Committee's own
-// endpoint. Unlike the Sheet export, nothing here is irreversible: a request
-// can be withdrawn, so there's no confirm step before sending it.
+// endpoint. A request can be withdrawn, so this itself has no confirm step;
+// the illegal-trade confirm (if any) happens in the caller, before this runs.
 async function submitToTRC(tradeBody) {
   let token = localStorage.getItem('nbn_token');
   if (!token) {
