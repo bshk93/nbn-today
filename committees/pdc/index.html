@@ -872,13 +872,13 @@
       if (IS_POEXT_HEAD && !review.final) {
         const fin = el('button', 'btn-primary', 'Finalize');
         fin.style.marginTop = '0.5rem';
-        fin.addEventListener('click', () => poextAct(() => api('/poext/players/' + slug + '/finalize', { method: 'POST' })));
+        fin.addEventListener('click', () => poextFinalize(slug));
         csec.appendChild(fin);
       }
       if (review.final) {
         csec.appendChild(el('div', 'banner ' + (review.final.outcome === 'agreed' ? 'info' : 'bad'),
           `Finalized: ${review.final.outcome} (${review.final.accept}–${review.final.reject}) by ${review.final.locked_by}` +
-          (review.final.outcome === 'agreed' ? ' — enter the extension on /transactions by hand, checked against the same validator.' : '')));
+          (review.final.outcome === 'agreed' ? ' — the extension was written to the ledger directly.' : '')));
         if (IS_POEXT_HEAD) {
           const unlock = el('button', 'btn-ghost', 'Unlock');
           unlock.addEventListener('click', () => poextAct(() => api('/poext/players/' + slug + '/unlock', { method: 'POST' })));
@@ -897,6 +897,38 @@
     } catch (e) {
       toast(e.message, true);
     }
+  }
+
+  // Finalize is not a plain poextAct: an "agreed" vote now writes the
+  // extension for real (apply_with_warning_confirm, transactions.py), and a
+  // warning-only failure comes back asking to confirm rather than a flat
+  // error. A real error (can_confirm absent) still just toasts, same as
+  // every other action here.
+  async function poextFinalize(slug, confirmWarnings) {
+    try {
+      await api('/poext/players/' + slug + '/finalize',
+        { method: 'POST', body: { confirm_warnings: !!confirmWarnings } });
+      toast('Done.');
+      await poextReload();
+    } catch (e) {
+      const detail = e.data && e.data.detail;
+      if (!confirmWarnings && detail && detail.can_confirm) {
+        poextFinalizeConfirmModal(slug, detail.checks || []);
+        return;
+      }
+      toast((detail && detail.message) || e.message, true);
+    }
+  }
+
+  function poextFinalizeConfirmModal(slug, checks) {
+    const body = el('div');
+    body.appendChild(el('div', 'note',
+      'This extension has warning-level checks — nothing blocking, but worth a look before finalizing:'));
+    checks.filter(c => !c.passed).forEach(c => body.appendChild(el('div', 'note', '⚠ ' + c.message)));
+    modal('Finalize with warnings?', body, [{
+      label: 'Finalize anyway', cls: 'btn-primary',
+      run: () => poextFinalize(slug, true),
+    }]);
   }
 
   function poextRemandModal(p) {

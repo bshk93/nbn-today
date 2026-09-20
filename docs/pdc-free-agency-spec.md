@@ -1687,9 +1687,12 @@ channel to announce into, and tooling to review and vote with — now exists.
    real offer it executes `apply_sign` (or `apply_offer_sheet` when the
    player is RFA and the winner isn't the incumbent — § 3.15, the incumbent
    still gets a separate later match decision) directly, using `offer["offer"]`
-   verbatim per the § 4.2 invariant below. `force_warnings_only` clears
-   advisory warnings automatically (no submit screen for a committee action
-   to tick force on) but never a real error.
+   verbatim per the § 4.2 invariant below. Advisory warnings are never
+   cleared silently: `apply_with_warning_confirm` (`routers/transactions.py`)
+   makes a first call with `confirm_warnings: false` that fails on warnings
+   alone come back asking to confirm instead of writing — the head has to
+   see them and call again with `confirm_warnings: true` — while a real
+   error hard-blocks regardless of that flag.
 
    **Exception: the `"QO"` ballot option is deliberately NOT bridged.**
    `BACKLOG.md`'s [P1] ("Qualifying Offers don't exist in the system at all")
