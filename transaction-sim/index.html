@@ -533,6 +533,22 @@ let LEAGUE_YEAR = null;
 // writes exactly the figures currently on screen rather than recomputing them.
 let lastResult = null;
 
+// Who is looking — used only to decide whether "Submit to TRC" shows on a
+// trade result (a party team's role, not just anyone). Same shape/endpoint as
+// committees/stream/index.html's loadMe(), always 200 and empty when signed out.
+let me = { name: null, roles: [] };
+async function loadMe() {
+  const token = localStorage.getItem('nbn_token');
+  try {
+    me = await fetch('/api/auth/me', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }).then(r => r.json());
+    me.roles = me.roles || [];
+  } catch (e) {
+    me = { name: null, roles: [] };
+  }
+}
+
 function parseSalaryNum(v) {
   if (!v) return 0;
   const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
@@ -1268,6 +1284,7 @@ async function init() {
     fetch('/api/team-map').then(r => r.ok ? r.json() : {}).catch(() => ({})),
   ]);
   if (leagueYearJson?.current_season) LEAGUE_YEAR = leagueYearJson.current_season;
+  loadMe();   // fire-and-forget — only gates the Submit-to-TRC button, nothing blocks on it
 
   document.getElementById('add-team-btn').addEventListener('click', () => { addTeamSlot(null); rebuildTeamSelectOptions(); });
   setupSignForm();
@@ -1845,14 +1862,19 @@ async function runCheck() {
   const seq = ++validateSeq;
   setStatus('Evaluating…', 'evaluating');
 
+  // Kept as one object (not just inlined into the fetch body below) since
+  // "Submit to TRC" POSTs this exact same shape to /api/trade-requests —
+  // built once, never reconstructed a second way for the two call sites.
+  const tradeBody = {
+    transfers, exceptions, tpe_usage,
+    is_sign_and_trade, sign_and_trade_players, sign_and_trade_signings,
+  };
+
   try {
     const res = await fetch('/api/validate/trade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transfers, exceptions, tpe_usage,
-        is_sign_and_trade, sign_and_trade_players, sign_and_trade_signings,
-      }),
+      body: JSON.stringify(tradeBody),
     });
     if (seq !== validateSeq) return;   // a newer change superseded this one
     if (!res.ok) {
@@ -1862,7 +1884,7 @@ async function runCheck() {
       return;
     }
     setStatus('');
-    renderResults(abbrs, await res.json());
+    renderResults(abbrs, await res.json(), tradeBody);
   } catch (e) {
     if (seq !== validateSeq) return;
     el.style.display = 'none';
@@ -1870,7 +1892,7 @@ async function runCheck() {
   }
 }
 
-function renderResults(abbrs, data) {
+function renderResults(abbrs, data, tradeBody) {
   const el = document.getElementById('results');
   el.style.display = '';
 
@@ -1879,6 +1901,16 @@ function renderResults(abbrs, data) {
   const ICON = { error: '✗', warning: '⚠', pass: '✓' };
 
   const cols = abbrs.map(ab => factCol(ab, fact_sheet, cl)).join('');
+
+  // Shown only for a signed-in party to this exact trade — a stranger to the
+  // deal has no action to take here, so the button is omitted entirely
+  // rather than shown disabled. This is the one write path off an otherwise
+  // read-only page (nbn-today-dev/CLAUDE.md's Validation-endpoints section) —
+  // it POSTs to /api/trade-requests, never to /api/validate/trade.
+  const myParties = abbrs.filter(ab => (me.roles || []).includes(ab.toLowerCase()));
+  const trcBtn = myParties.length
+    ? `<button type="button" class="export-btn" id="trc-btn" title="Send this trade to the Trade Request Committee for review">🤝 Submit to TRC</button>`
+    : '';
 
   // A "warning"-level check is flagged for attention regardless of pass/fail —
   // e.g. an informational note that's merely explaining an assumption still
@@ -1894,6 +1926,7 @@ function renderResults(abbrs, data) {
       <span class="rh-title">Trade Analysis · season ${fact_sheet.season || curYr()} · ${abbrs.length} teams</span>
       <button type="button" class="export-btn primary" id="sheet-btn" title="Create a public Google Sheet of this trade">▤ Create Google Sheet</button>
       <button type="button" class="export-btn" id="export-btn" title="Download the same trade sheet as an .xlsx file">↓ .xlsx</button>
+      ${trcBtn}
     </div>
     <div class="export-status" id="export-status"></div>
     <div class="results-grid">${cols}</div>
@@ -1909,6 +1942,9 @@ function renderResults(abbrs, data) {
   lastResult = { abbrs, data };
   document.getElementById('export-btn').addEventListener('click', downloadTradeSheet);
   document.getElementById('sheet-btn').addEventListener('click', publishTradeSheet);
+  if (myParties.length) {
+    document.getElementById('trc-btn').addEventListener('click', () => submitToTRC(tradeBody));
+  }
 }
 
 function factCol(abbr, fs, cl) {
@@ -2440,6 +2476,50 @@ async function publishTradeSheet() {
     setExportStatus('Network error creating the Sheet. Use the .xlsx download instead.', true);
   } finally {
     btn.disabled = false;
+  }
+}
+
+// Submits exactly the tradeBody /api/validate/trade was just called with — no
+// second construction of the payload — to the Trade Request Committee's own
+// endpoint. Unlike the Sheet export, nothing here is irreversible: a request
+// can be withdrawn, so there's no confirm step before sending it.
+async function submitToTRC(tradeBody) {
+  let token = localStorage.getItem('nbn_token');
+  if (!token) {
+    token = await promptForToken();
+    if (!token) return;
+  }
+
+  const btn = document.getElementById('trc-btn');
+  btn.disabled = true;
+  setExportStatus('Submitting to TRC…');
+  let submitted = false;
+
+  try {
+    const res = await fetch('/api/trade-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(tradeBody),
+    });
+    if (res.status === 403 || res.status === 401) {
+      localStorage.removeItem('nbn_token');
+      setExportStatus('That token was rejected — click again to re-enter it.', true);
+      return;
+    }
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      const detail = typeof d.detail === 'string' ? d.detail : (d.detail?.message || `HTTP ${res.status}`);
+      setExportStatus(`Could not submit to TRC — ${detail}`, true);
+      return;
+    }
+    const req = await res.json();
+    setExportStatus(`Submitted to TRC as request #${req.number} — <a href="/committees/trc/" target="_blank" rel="noopener">track it</a>`);
+    btn.textContent = '✓ Submitted';
+    submitted = true;
+  } catch (e) {
+    setExportStatus('Network error submitting to TRC.', true);
+  } finally {
+    if (!submitted) btn.disabled = false;
   }
 }
 

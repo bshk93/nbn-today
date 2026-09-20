@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>TRC — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="The Trade Request Committee dashboard — proposed trades, team consent, ballots and finalized deals.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="TRC — NBN">
+  <meta property="og:description" content="The Trade Request Committee dashboard — proposed trades, team consent, ballots and finalized deals.">
+  <meta property="og:url" content="https://nbn.today/committees/trc/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#111827">
+  <!-- /NBN:og -->
+  <style>
+    .page { max-width: 900px; margin: 0 auto; }
+    header { margin-bottom: 1.25rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+    .sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+
+    .gate { max-width: 480px; margin: 3rem auto; text-align: center; }
+    .gate h2 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+    .gate p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1rem; }
+    .gate a { color: var(--link); font-size: 0.85rem; }
+
+    section.trc-section { margin-bottom: 2rem; }
+    section.trc-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.7rem; }
+    .empty { color: var(--text-muted); font-size: 0.85rem; padding: 0.8rem 0; }
+
+    details.req {
+      border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.7rem;
+      background: var(--bg-card); overflow: hidden;
+    }
+    details.req > summary {
+      list-style: none; cursor: pointer; padding: 0.7rem 0.9rem;
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+    }
+    details.req > summary::-webkit-details-marker { display: none; }
+    .req-num { font-weight: 700; color: var(--text-primary); }
+    .req-parties { color: var(--text-secondary); font-size: 0.85rem; }
+    .req-summary { color: var(--text-muted); font-size: 0.8rem; flex: 1; }
+
+    .badge {
+      display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .badge.awaiting_consent { background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge.balloting { background: rgba(201,162,39,0.15); color: var(--gold,#c9a227); }
+    .badge.ready_to_finalize { background: rgba(34,197,94,0.15); color: var(--success,#22c55e); }
+    .badge.finalized { background: rgba(34,197,94,0.15); color: var(--success,#22c55e); }
+    .badge.rejected, .badge.withdrawn { background: rgba(239,68,68,0.12); color: var(--danger,#ef4444); }
+    .badge.stale { background: rgba(239,68,68,0.12); color: var(--danger,#ef4444); }
+
+    .req-body { padding: 0 0.9rem 1rem; border-top: 1px solid var(--border-subtle); }
+    .req-body h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin: 0.9rem 0 0.4rem; }
+    .transfer-row { font-size: 0.85rem; color: var(--text-secondary); padding: 0.15rem 0; }
+    .transfer-row b { color: var(--text-primary); }
+
+    .vc-row { display: flex; gap: 0.5rem; font-size: 0.82rem; padding: 0.15rem 0; }
+    .vc-row.error { color: var(--danger,#ef4444); }
+    .vc-row.warning { color: var(--gold,#c9a227); }
+    .vc-row.pass { color: var(--text-muted); }
+
+    .consent-row, .ballot-row { display: flex; gap: 0.5rem; align-items: baseline; font-size: 0.85rem; padding: 0.15rem 0; }
+    .consent-row .yes { color: var(--success,#22c55e); }
+    .consent-row .no { color: var(--text-dim); }
+    .ballot-row .note { color: var(--text-muted); font-size: 0.8rem; }
+
+    .req-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+    .req-actions button {
+      padding: 0.4rem 0.9rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-subtle); color: var(--text-primary); font-family: inherit;
+      font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    }
+    .req-actions button.primary { background: var(--accent-dark); color: var(--text-on-accent); border-color: transparent; }
+    .req-actions button.danger { color: var(--danger,#ef4444); }
+    .req-actions button:disabled { opacity: 0.5; cursor: default; }
+
+    .ballot-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.7rem; }
+    .ballot-form select, .ballot-form textarea {
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text-primary); font-family: inherit; font-size: 0.82rem; padding: 0.4rem 0.6rem;
+    }
+    .ballot-form textarea { flex: 1; min-width: 200px; resize: vertical; min-height: 2.2rem; }
+
+    .toast {
+      position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.6rem 1rem; font-size: 0.85rem; color: var(--text-primary); z-index: 9999;
+    }
+    .toast.bad { border-color: var(--danger,#ef4444); color: var(--danger,#ef4444); }
+
+    details.help { margin-bottom: 1.5rem; font-size: 0.82rem; color: var(--text-muted); }
+    details.help summary { cursor: pointer; color: var(--text-secondary); }
+    details.help p { margin-top: 0.5rem; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav"></nav>
+
+    <header>
+      <h1>Trade Request Committee</h1>
+      <p class="sub">Team-proposed trades — consent, ballots, and the final call.</p>
+    </header>
+
+    <div id="gate"></div>
+
+    <div id="app" hidden>
+      <details class="help">
+        <summary>How this works</summary>
+        <p>
+          A team proposes a trade from <a href="/transaction-sim/">the transaction simulator</a>'s
+          trade mode, using its "Submit to TRC" button. Every team named in the trade must consent
+          — from the sim, or from the ⋯ menu on their team page — before it opens for ballots. Three
+          <b>trc</b> members must approve before it's ready; a ballot needs a note because it's
+          judging fairness, not legality (legality is checked live, automatically, the whole time a
+          request is open). Only <b>trc_head</b> can reject or finalize a request. Finalizing
+          executes the trade for real — rosters, picks and the transaction ledger update
+          immediately, and it posts to #transactions — so there's no undo once you click it.
+        </p>
+      </details>
+
+      <section class="trc-section">
+        <h2>Queue</h2>
+        <div id="queue"></div>
+      </section>
+
+      <section class="trc-section">
+        <h2>History</h2>
+        <div id="history"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const TEAMS = {
+      ATL: "Atlanta Hawks", BKN: "Brooklyn Nets", BOS: "Boston Celtics",
+      CHA: "Charlotte Hornets", CHI: "Chicago Bulls", CLE: "Cleveland Cavaliers",
+      DAL: "Dallas Mavericks", DEN: "Denver Nuggets", DET: "Detroit Pistons",
+      GSW: "Golden State Warriors", HOU: "Houston Rockets", IND: "Indiana Pacers",
+      LAC: "LA Clippers", LAL: "Los Angeles Lakers", MEM: "Memphis Grizzlies",
+      MIA: "Miami Heat", MIL: "Milwaukee Bucks", MIN: "Minnesota Timberwolves",
+      NOP: "New Orleans Pelicans", NYK: "New York Knicks", OKC: "Oklahoma City Thunder",
+      ORL: "Orlando Magic", PHI: "Philadelphia 76ers", PHX: "Phoenix Suns",
+      POR: "Portland Trail Blazers", SAC: "Sacramento Kings", SAS: "San Antonio Spurs",
+      TOR: "Toronto Raptors", UTA: "Utah Jazz", WAS: "Washington Wizards",
+    };
+    let me = { name: null, roles: [] };
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function teamName(ab) { return TEAMS[ab] || ab; }
+
+    function hasRole(r) { return (me.roles || []).includes(r) || (me.roles || []).includes('admin'); }
+    function isTrcHead() { return hasRole('trc_head'); }
+    // Deliberately no admin bypass — a ballot is a judgment call, and neither
+    // is holding a team's role treated as "you're a party" via admin (an
+    // admin isn't magically on every team).
+    function isTrc() { return (me.roles || []).includes('trc') || (me.roles || []).includes('trc_head'); }
+    function hasTeamRole(t) { return (me.roles || []).includes(t); }
+
+    let toastTimer = null;
+    function toast(msg, bad) {
+      document.querySelectorAll('.toast').forEach(t => t.remove());
+      const el = document.createElement('div');
+      el.className = 'toast' + (bad ? ' bad' : '');
+      el.textContent = msg;
+      document.body.appendChild(el);
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.remove(), 4500);
+    }
+
+    function storedToken() { return localStorage.getItem('nbn_token'); }
+
+    async function authedFetch(url, opts = {}) {
+      const token = storedToken();
+      const headers = Object.assign({}, opts.headers || {}, token ? { Authorization: `Bearer ${token}` } : {});
+      const res = await fetch(url, Object.assign({}, opts, { headers }));
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(typeof d.detail === 'string' ? d.detail : (d.detail?.message || `HTTP ${res.status}`));
+      }
+      return res.json();
+    }
+
+    async function loadMe() {
+      const token = storedToken();
+      try {
+        me = await fetch('/api/auth/me', { headers: token ? { Authorization: `Bearer ${token}` } : {} }).then(r => r.json());
+        me.roles = me.roles || [];
+      } catch (e) {
+        me = { name: null, roles: [] };
+      }
+    }
+
+    function renderGate() {
+      const g = document.getElementById('gate');
+      g.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.className = 'gate';
+      wrap.innerHTML = `
+        <h2>This page is for the Trade Request Committee</h2>
+        <p>${me.name
+          ? "Your member account doesn't hold the trc or trc_head role, so there's nothing to do here."
+          : "Sign in on nbn.today in this browser and you're signed in here automatically, or paste your member token via the profile menu."}</p>
+        <a href="/committees/">← Back to committees</a>`;
+      g.appendChild(wrap);
+    }
+
+    function assetLabel(a) {
+      if (a.type === 'player') return a.slug;
+      return `${a.year} R${a.round} ${a.orig}${a.protection ? ' (protected)' : ''}${a.swap_with ? ' (swap)' : ''}`;
+    }
+
+    function renderTransfers(trade) {
+      return (trade.transfers || []).map(tr =>
+        `<div class="transfer-row"><b>${esc(tr.from_team)}</b> → <b>${esc(tr.to_team)}</b>: ${
+          tr.assets.map(a => esc(assetLabel(a))).join(', ')}</div>`).join('');
+    }
+
+    function renderChecks(validation) {
+      const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+      const rows = (validation.checks || []).map(c => {
+        const kind = c.level === 'warning' ? 'warning' : (c.passed ? 'pass' : (c.level || 'error'));
+        return `<div class="vc-row ${kind}"><span>${ICON[kind] || '?'}</span><span>${esc(c.message)}</span></div>`;
+      }).join('');
+      const ownership = (validation.ownership_problems || []).map(p =>
+        `<div class="vc-row error"><span>✗</span><span>${esc(p)}</span></div>`).join('');
+      return rows + ownership || '<div class="vc-row pass"><span>✓</span><span>No constraints triggered.</span></div>';
+    }
+
+    function renderConsents(item) {
+      return Object.entries(item.consents).map(([team, c]) =>
+        `<div class="consent-row"><span>${esc(teamName(team))}</span><span class="${c.consented ? 'yes' : 'no'}">${
+          c.consented ? `✓ consented (${esc(c.by)})` : '⏳ pending'}</span></div>`).join('');
+    }
+
+    function renderBallots(item) {
+      const entries = Object.entries(item.ballots || {});
+      if (!entries.length) return '<p class="empty">No ballots cast yet.</p>';
+      return entries.map(([member, b]) =>
+        `<div class="ballot-row"><span>${b.decision === 'approve' ? '✓' : '✗'} ${esc(member)}</span><span class="note">${esc(b.note)}</span></div>`).join('');
+    }
+
+    function statusBadge(item) {
+      return `<span class="badge ${item.status}">${item.status.replace(/_/g, ' ')}</span>`;
+    }
+
+    function renderRequest(item, terminal) {
+      const parties = item.parties.map(teamName).join(' ⇄ ');
+      const stale = !item.validation.legal;
+      const canBallot = isTrc() && ['balloting', 'ready_to_finalize'].includes(item.status);
+      const canFinalize = isTrcHead() && item.status === 'ready_to_finalize';
+      const canReject = isTrcHead() && !terminal;
+      const myParty = item.parties.some(p => hasTeamRole(p.toLowerCase()));
+      const canWithdraw = !terminal && (myParty || isTrcHead());
+
+      const approveCount = Object.values(item.ballots || {}).filter(b => b.decision === 'approve').length;
+
+      let body = `
+        <h3>Trade</h3>
+        ${renderTransfers(item.trade)}
+        <h3>Legality &amp; ownership (live)</h3>
+        ${renderChecks(item.validation)}
+        <h3>Consent</h3>
+        ${renderConsents(item)}
+        <h3>Ballots (${approveCount}/3 approvals)</h3>
+        ${renderBallots(item)}`;
+
+      if (canBallot) {
+        body += `
+        <div class="ballot-form" data-ballot-form="${item.id}">
+          <select class="ballot-decision"><option value="approve">Approve</option><option value="reject">Reject</option></select>
+          <textarea class="ballot-note" placeholder="Why? (required — fairness, not legality)"></textarea>
+          <button type="button" class="ballot-submit primary" data-id="${item.id}">Cast ballot</button>
+        </div>`;
+      }
+
+      const actions = [];
+      if (canFinalize) actions.push(`<button type="button" class="primary" data-act="finalize" data-id="${item.id}">Finalize${stale ? ' (blocked — not currently legal)' : ''}</button>`);
+      if (canReject) actions.push(`<button type="button" class="danger" data-act="reject" data-id="${item.id}">Reject</button>`);
+      if (canWithdraw) actions.push(`<button type="button" data-act="withdraw" data-id="${item.id}">Withdraw</button>`);
+      if (item.status === 'awaiting_consent' && myParty) {
+        const alreadyConsented = item.parties.every(p => !hasTeamRole(p.toLowerCase()) || (item.consents[p] || {}).consented);
+        if (!alreadyConsented) actions.push(`<button type="button" class="primary" data-act="consent" data-id="${item.id}">Consent on behalf of my team</button>`);
+      }
+      if (actions.length) body += `<div class="req-actions">${actions.join('')}</div>`;
+
+      if (item.finalized) body += `<p class="sub">Finalized by ${esc(item.finalized.by)} — <a href="/transactions#${esc(item.finalized.txn_id)}">view transaction</a></p>`;
+      if (item.rejected) body += `<p class="sub">Rejected by ${esc(item.rejected.by)}: ${esc(item.rejected.reason)}</p>`;
+      if (item.withdrawn) body += `<p class="sub">Withdrawn by ${esc(item.withdrawn.by)}${item.withdrawn.reason ? ': ' + esc(item.withdrawn.reason) : ''}</p>`;
+
+      return `
+        <details class="req">
+          <summary>
+            <span class="req-num">#${item.number}</span>
+            <span class="req-parties">${esc(parties)}</span>
+            ${statusBadge(item)}
+            ${stale && !terminal ? '<span class="badge stale">stale / illegal now</span>' : ''}
+            <span class="req-summary"></span>
+          </summary>
+          <div class="req-body">${body}</div>
+        </details>`;
+    }
+
+    let ITEMS = [];
+
+    async function loadItems() {
+      ITEMS = await fetch('/api/trade-requests').then(r => r.ok ? r.json() : []).catch(() => []);
+      render();
+    }
+
+    function render() {
+      const terminal = new Set(['finalized', 'rejected', 'withdrawn']);
+      const order = { ready_to_finalize: 0, balloting: 1, awaiting_consent: 2 };
+      const queue = ITEMS.filter(i => !terminal.has(i.status)).sort((a, b) => (order[a.status] - order[b.status]) || (b.created_at < a.created_at ? -1 : 1));
+      const history = ITEMS.filter(i => terminal.has(i.status)).sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
+
+      document.getElementById('queue').innerHTML = queue.length
+        ? queue.map(i => renderRequest(i, false)).join('')
+        : '<p class="empty">Nothing open right now.</p>';
+      document.getElementById('history').innerHTML = history.length
+        ? history.map(i => renderRequest(i, true)).join('')
+        : '<p class="empty">No decided requests yet.</p>';
+
+      wireActions();
+    }
+
+    function wireActions() {
+      document.querySelectorAll('.ballot-submit').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const form = btn.closest('[data-ballot-form]');
+          const decision = form.querySelector('.ballot-decision').value;
+          const note = form.querySelector('.ballot-note').value.trim();
+          if (!note) { toast('A note is required.', true); return; }
+          try {
+            await authedFetch(`/api/trade-requests/${btn.dataset.id}/ballot`, {
+              method: 'PUT', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ decision, note }),
+            });
+            toast('Ballot cast.');
+            await loadItems();
+          } catch (e) { toast(e.message, true); }
+        });
+      });
+
+      document.querySelectorAll('[data-act]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          const act = btn.dataset.act;
+          try {
+            if (act === 'consent') {
+              await authedFetch(`/api/trade-requests/${id}/consent`, { method: 'POST' });
+              toast('Consent recorded.');
+            } else if (act === 'withdraw') {
+              const reason = prompt('Reason for withdrawing (optional):') || '';
+              await authedFetch(`/api/trade-requests/${id}/withdraw`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason }),
+              });
+              toast('Request withdrawn.');
+            } else if (act === 'reject') {
+              const reason = prompt('Reason for rejecting (required):');
+              if (!reason) return;
+              await authedFetch(`/api/trade-requests/${id}/reject`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason }),
+              });
+              toast('Request rejected.');
+            } else if (act === 'finalize') {
+              if (!confirm('Finalizing executes this trade for real — rosters, picks and the transaction ledger update immediately, and it posts to #transactions. Continue?')) return;
+              await authedFetch(`/api/trade-requests/${id}/finalize`, { method: 'POST' });
+              toast('Trade finalized.');
+            }
+            await loadItems();
+          } catch (e) { toast(e.message, true); }
+        });
+      });
+    }
+
+    async function init() {
+      await loadMe();
+      if (!isTrc() && !isTrcHead()) { renderGate(); return; }
+      document.getElementById('app').hidden = false;
+      await loadItems();
+    }
+
+    init();
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

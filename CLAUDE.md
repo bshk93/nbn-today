@@ -461,7 +461,8 @@ precise.
 | Add a retired jersey | `RETIRED_JERSEYS` — `teams/team.js` |
 | Change the Franchise Records cards | `records-wrap` block in `teams/team.js`; data comes from `franchise_records` in `nbn-api/stats_build/pipeline.py` |
 | Change the transaction simulator's spreadsheet export | `buildTradeWorkbook` — `transaction-sim/index.html`; the .xlsx writer is `transaction-sim/xlsx.js`, and publishing to Google Sheets is `POST /api/trade-sheet` (`nbn-api/routers/google_sheets.py`). Export is trade-mode only |
-| Add a transaction type to the simulator | `setMode` / `runSignCheck` — `transaction-sim/index.html`, plus a `POST /api/validate/{type}` endpoint in `nbn-api/routers/transactions.py` (see "Transaction simulator" below) |
+| Add a transaction type to the simulator | `setMode` / `runSignCheck` — `transaction-sim/index.html`, plus a `POST /api/validate/{type}` endpoint in `nbn-api/routers/transactions.py` (see "Transaction simulator" below). Trade mode alone also has a real submission path via TRC's "Submit to TRC" button — see the row below and the Validation-endpoints section — the other modes stay preview-only |
+| Change the TRC committee dashboard (trade review, consent tracking, ballots, reject/finalize) | `committees/trc/index.html`; data from `/api/trade-requests` in `nbn-api/routers/trade_requests.py`. One committee role (`trc`, ballots), one head role (`trc_head`, rejects/finalizes — the only path that actually applies the trade, via `apply_trade` in `nbn-api/routers/transactions.py`). Design record in `docs/trc-trade-pipeline.md` |
 | Change the contract shorthand (`2+1 PO, $150M`) or the cap-hold vocabulary | **`contract.js`** at the repo root — one grammar, loaded by team pages (via `contractReady` in `team.js`), `/committees/pdc` and `/transactions`. `_contract_str` in `nbn-api/routers/discord_notify.py` is a deliberate Python mirror (it can't import JS) and is pinned to the same cases by `nbn-api/tests/test_contract_shorthand.py`. Don't add a fourth copy |
 | Change the office's contract entry form (salary rows, EAPS, live signing rubric) | `addSalaryRow` / `collectSalaries` / `collectSignValidationBody` — `transactions/index.html`. The signing rubric calls `POST /api/validate/sign` (or `/offer_sheet`, `/sign_pick`) on a 300ms debounce, the same validator the submit path runs. The **EAPS field is not always shown** — `syncEapsVisibility` reveals it off the fact sheet's `trailing_hold` only when it actually prices something (Full Bird hold, season with no real EAPS), and keeps it up once answered so the control that produced the figure doesn't vanish |
 | Change the rookie scale table, or how a pick signing is prefilled | `build/load_rookie_scale.py` (loader) · `rookie-scale/index.html` (page) · `_rookie_scale_contract` + `GET /api/rookie-scale/contract/{slug}` (nbn-api) · `prefillRookieScale` — `transactions/index.html`. See `docs/api-validation-notes.md` |
@@ -578,7 +579,10 @@ are in: roles, endpoint tables, the data contract, the data model.
 | `bod` | Everything `rosters` can do + early award access + edit member tenures |
 | `admin` | Everything + member management (`GET/POST/PATCH/DELETE /api/members`) |
 | `streamer` | `POST`/`DELETE /api/schedule/{game_id}/streamer` — claim a game on `/committees/stream` as one they will stream. **One streamer per game**, so the field is a single name and not a list (a list capped at one is the shape that drifts); a second claimant gets a 409 naming who holds it. Neither endpoint takes a member argument — the claim identifies its own holder — so the role can only ever write its holder's own name, which is why it needs no board standing. Dropping someone else's is `bod`. Also `POST`/`DELETE /api/schedule/{game_id}/stream` — mark or clear the separate `stream` flag (whether the game itself is a stream). That flag has no holder: any `streamer` can set or clear it on any game, whether or not that game has a claimed streamer |
-| `atl`, `bkn`, `bos`, `cha`, `chi`, `cle`, `dal`, `den`, `det`, `gsw`, `hou`, `ind`, `lac`, `lal`, `mem`, `mia`, `mil`, `min`, `nop`, `nyk`, `okc`, `orl`, `phi`, `phx`, `por`, `sac`, `sas`, `tor`, `uta`, `was` | `PUT /api/trading-block/{team}` for their own team only |
+| `fac`, `fac_head`, `agent`, `poext`, `poext_head` | The Player Decision Committee's roles — see `docs/pdc-free-agency-spec.md` and the PDC row in the common-task table above |
+| `trc` | `PUT /api/trade-requests/{id}/ballot` — cast an approve/reject ballot (with a required note) on a trade a request's parties have all consented to. Not waved through by `admin` — a ballot is a judgment call, not an administrative one, unlike every other permission in this table |
+| `trc_head` | Everything `trc` can do + `POST /api/trade-requests/{id}/reject` and `POST /api/trade-requests/{id}/finalize` — the latter is the one action that actually executes the trade (`PUT /api/roster/*`, `PUT`/`DELETE /api/picks/*`, and a real `POST /api/transactions`-shaped ledger entry, via `apply_trade`). `docs/trc-trade-pipeline.md` |
+| `atl`, `bkn`, `bos`, `cha`, `chi`, `cle`, `dal`, `den`, `det`, `gsw`, `hou`, `ind`, `lac`, `lal`, `mem`, `mia`, `mil`, `min`, `nop`, `nyk`, `okc`, `orl`, `phi`, `phx`, `por`, `sac`, `sas`, `tor`, `uta`, `was` | `PUT /api/trading-block/{team}` for their own team only. Also implicitly required (one of, not held on the member) to propose a `POST /api/trade-requests` trade naming that team, and (via `is_team_owner`, a stricter check than the role alone) to consent to or withdraw one |
 
 `admin` implicitly satisfies any role check.
 
@@ -606,8 +610,14 @@ The whole-block `PUT` also takes an unpersisted `notify_discord` flag — see `d
 ### Validation endpoints (Transaction Simulator)
 
 `/transaction-sim/` models a transaction and reports the legal checks against
-it. It is **read-only by design** — there is deliberately no path from the
-simulator to an actual submission.
+it. Every `/api/validate/*` endpoint below stays read-only and unauthenticated,
+exactly as documented here. The one exception is trade mode's **Submit to
+TRC** button (added 2026-09-20, `docs/trc-trade-pipeline.md`): it POSTs the
+same built `transfers`/`exceptions`/`tpe_usage`/S&T object to
+`POST /api/trade-requests` — a real, authenticated write, gated to a role for
+one of the trade's own party teams — rather than to `/api/validate/trade`.
+That's a second endpoint with its own gate, not a hole in this one; nothing
+below changed.
 
 | Endpoint | Validator | Fact sheet |
 |---|---|---|

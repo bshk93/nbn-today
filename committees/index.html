@@ -7,11 +7,11 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>Committees — NBN</title>
   <!-- NBN:og -->
-  <meta name="description" content="The four NBN committees — who runs what, which roles sit on each, and the dashboard each one works from.">
+  <meta name="description" content="The five NBN committees — who runs what, which roles sit on each, and the dashboard each one works from.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
   <meta property="og:title" content="Committees — NBN">
-  <meta property="og:description" content="The four NBN committees — who runs what, which roles sit on each, and the dashboard each one works from.">
+  <meta property="og:description" content="The five NBN committees — who runs what, which roles sit on each, and the dashboard each one works from.">
   <meta property="og:url" content="https://nbn.today/committees/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -131,7 +131,7 @@
       Want on one? Committees are staffed by volunteers — say so in Discord, or leave it on the
       <a href="/suggestions/">suggestions board</a>. Roles are granted by an admin and every one of
       them is listed with its exact permissions on <a href="/roles">Roles &amp; Permissions</a>.
-      The <a href="/rulebook/">rulebook</a> is what all four committees enforce; where a committee
+      The <a href="/rulebook/">rulebook</a> is what all five committees enforce; where a committee
       has discretion rather than a rule, the rulebook says so.
     </div>
   </div>
@@ -210,6 +210,22 @@
       roles: ['streamer'],
       href: '/committees/stream/',
       gated: 'Needs the streamer role',
+    },
+    {
+      key: 'trc',
+      icon: '🤝',
+      name: 'TRC',
+      full: 'Trade Request Committee',
+      purpose: 'Reviews trades teams propose themselves. Every party has to consent before it '
+             + 'opens for a ballot, and a head has to sign off before it actually executes.',
+      does: [
+        'Ballot on a proposed trade’s fairness (legality is checked automatically)',
+        'Reject a trade, or send it back for the teams to rework',
+        'Finalize an approved trade — the one step that actually executes it',
+      ],
+      roles: ['trc', 'trc_head'],
+      href: '/committees/trc/',
+      gated: 'Needs a TRC or TRC head role',
     },
   ];
 

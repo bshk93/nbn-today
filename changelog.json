@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.4.1",
+    "date": "2026-09-20",
+    "changes": [
+      "Added the Trade Request Committee (TRC): teams can now propose a trade themselves from the transaction simulator's trade mode, every named team must consent, three trc members ballot on fairness, and a trc_head finalizes it for real",
+      "New dashboard at /committees/trc \u2014 queue, consent tracking, ballots, reject/finalize",
+      "Fixed a validation gap: /api/validate/trade never checked whether a team still actually holds an asset it's proposing to trade \u2014 that check now runs there too, not just at the moment of submission"
+    ]
+  },
+  {
     "version": "0.4.0",
     "date": "2026-09-19",
     "changes": [
