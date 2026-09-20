@@ -3718,6 +3718,20 @@ function renounceEligibility(bio) {
   return { ok: true, why: '', holdType: type, holdSeason: earliest };
 }
 
+// § 6.1: only a TEAM_OPT is the team's own call. A PLAYER_OPT decision
+// belongs to PDC — the team never even initiates it (docs/pdc-free-agency-spec.md)
+// — so it's never offered here at all, not just disabled.
+function optionEligibility(bio) {
+  const holds = (bio && bio.cap_holds) || {};
+  const teamOptYears = Object.keys(holds).filter(y => holds[y] === 'TEAM_OPT').sort();
+  if (teamOptYears.length) return { ok: true, why: '', year: teamOptYears[0] };
+  const hasPlayerOpt = Object.values(holds).includes('PLAYER_OPT');
+  if (hasPlayerOpt) {
+    return { ok: false, why: 'This is a player option — that decision belongs to PDC, not the team (§ 6.1).' };
+  }
+  return { ok: false, why: 'No team option on file (§ 6.1).' };
+}
+
 async function apiFetch(url, opts, token) {
   const res = await fetch(url, {
     ...opts,
@@ -3835,6 +3849,88 @@ function openRenounceDialog(slug, bio, abbr) {
   });
 }
 
+// § 6.1 — TEAM_OPT only; the ⋯ menu never offers this for a PLAYER_OPT at
+// all (optionEligibility), so `decision`/`year` here are always a real team
+// option. Unlike renounce, exercising or declining moves no cap dollars
+// (§ 1.3 already counts the option year's salary before it's exercised) —
+// so there's no cap-room fact sheet to show, just the eligibility/roster
+// checks the validator actually reports.
+function openOptionDialog(slug, bio, abbr, decision, year) {
+  const name = displayNameFromBio(bio.name || slug);
+  const verb = decision === 'accept' ? 'Exercise' : 'Decline';
+  let capHoldSelect;
+  openConfirmModal({
+    title: `${verb} ${name}’s ${year} team option?`,
+    sub: decision === 'accept'
+      ? `${abbr} keeps ${name} at the ${year} option salary. Checking against the rulebook…`
+      : `${name} enters free agency for ${year} (§ 6.1). Checking against the rulebook…`,
+    confirmLabel: verb,
+    danger: decision === 'decline',
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 6.1 checks…';
+      body.appendChild(loading);
+
+      if (decision === 'decline') {
+        const label = document.createElement('label');
+        label.textContent = 'Resulting free-agent status';
+        capHoldSelect = document.createElement('select');
+        ['UFA', 'RFA'].forEach(v => {
+          const opt = document.createElement('option'); opt.value = v; opt.textContent = v;
+          capHoldSelect.appendChild(opt);
+        });
+        body.append(label, capHoldSelect);
+        const note = document.createElement('div');
+        note.className = 'confirm-check warn';
+        note.textContent = 'The § 3.1 UFA/RFA eligibility test isn’t automated yet (it’s still pending BOD ' +
+          'confirmation in the rulebook) — pick the right one yourself.';
+        body.appendChild(note);
+      }
+
+      let data;
+      try {
+        data = await apiFetchPublic('/api/validate/option', {
+          player: slug, decision, option_type: 'TEAM_OPT', year, cap_hold_type: 'UFA',
+        });
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = `This ${decision} is not legal, so it cannot be submitted.`;
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+      ctl.setEnabled(true);
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/option', {
+            method: 'POST',
+            body: JSON.stringify({
+              player: slug, decision,
+              cap_hold_type: (capHoldSelect && capHoldSelect.value) || 'UFA',
+              description: `${abbr} ${decision}s ${name}’s ${year} team option`,
+            }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
 async function apiFetchPublic(url, body) {
   const res = await fetch(url, {
     method: 'POST',
@@ -3931,6 +4027,22 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
     danger: true,
     why: !owner ? 'Only the team owner can renounce.' : elig.why,
     onClick: () => openRenounceDialog(slug, bio, abbr),
+  });
+
+  // § 6.1 — TEAM_OPT is the team's own unilateral call, same owner gate as
+  // renounce. A PLAYER_OPT is never offered here at all (optionEligibility) —
+  // that decision is PDC's, and the team never initiates it.
+  const optElig = optionEligibility(bio);
+  addItem('Exercise team option…', {
+    enabled: optElig.ok && owner,
+    why: !owner ? 'Only the team owner can act on a team option.' : optElig.why,
+    onClick: () => openOptionDialog(slug, bio, abbr, 'accept', optElig.year),
+  });
+  addItem('Decline team option…', {
+    enabled: optElig.ok && owner,
+    danger: true,
+    why: !owner ? 'Only the team owner can act on a team option.' : optElig.why,
+    onClick: () => openOptionDialog(slug, bio, abbr, 'decline', optElig.year),
   });
 
   // § 6.2 — same "team role, not owner-tenure" gate as the trade block, since
