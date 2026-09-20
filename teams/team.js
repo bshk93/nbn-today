@@ -3732,6 +3732,21 @@ function optionEligibility(bio) {
   return { ok: false, why: 'No team option on file (§ 6.1).' };
 }
 
+// § 5.1: mirrors _validate_release's own eligibility test — a player with
+// only a UFA/RFA/TEAM_OPT hold and no real salary left has nothing to
+// release, and is renounced instead (§ 3.10).
+function releaseEligibility(bio) {
+  const salaries = (bio && bio.salaries) || {};
+  const holds = (bio && bio.cap_holds) || {};
+  const cur = currentSeasonYr();
+  const hasRealYear = Object.keys(salaries).some(season =>
+    season >= cur && !['UFA', 'RFA', 'TEAM_OPT'].includes(holds[season]) && parseSalaryNum(salaries[season]) > 0);
+  if (!hasRealYear) {
+    return { ok: false, why: 'Nothing real left to release — renounce instead (§ 3.10).' };
+  }
+  return { ok: true, why: '' };
+}
+
 async function apiFetch(url, opts, token) {
   const res = await fetch(url, {
     ...opts,
@@ -3931,6 +3946,90 @@ function openOptionDialog(slug, bio, abbr, decision, year) {
   });
 }
 
+// § 5.1 — only the two payment methods _apply_release actually implements
+// are reachable here: the original schedule (default, no input) and the
+// stretch provision (an explicit year count, since the rulebook's own
+// formula is ambiguous across NON_GTD/option contracts and the office form
+// doesn't auto-derive it either). Buying out with cap space has no
+// implementation anywhere in the API — there's nothing to wire up.
+function openReleaseDialog(slug, bio, abbr) {
+  const name = displayNameFromBio(bio.name || slug);
+  const surname = String(bio.name || '').split(',')[0].trim() || name;
+  let stretchInput;
+  openConfirmModal({
+    title: `Release ${name}?`,
+    sub: `${abbr} releases ${name} under § 5.1. Checking against the rulebook…`,
+    confirmLabel: 'Release',
+    danger: true,
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 5.1 checks…';
+      body.appendChild(loading);
+
+      const label = document.createElement('label');
+      label.textContent = 'Stretch provision — years to spread the obligation over (optional)';
+      stretchInput = document.createElement('input');
+      stretchInput.type = 'number'; stretchInput.min = '1'; stretchInput.step = '1';
+      stretchInput.placeholder = 'Leave blank for the original payment schedule';
+      body.append(label, stretchInput);
+      const note = document.createElement('div');
+      note.className = 'confirm-check warn';
+      note.textContent = 'Buying out with cap space isn’t available — it has no implementation yet, ' +
+        'here or on the office form.';
+      body.appendChild(note);
+
+      let data;
+      try {
+        data = await apiFetchPublic('/api/validate/release', { player: slug });
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = 'This release is not legal, so it cannot be submitted.';
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+
+      const confirmLabel = document.createElement('label');
+      confirmLabel.textContent = `Type ${surname} to confirm`;
+      const confirmInput = document.createElement('input');
+      confirmInput.type = 'text'; confirmInput.autocomplete = 'off';
+      body.append(confirmLabel, confirmInput);
+      confirmInput.addEventListener('input', () => {
+        ctl.setEnabled(confirmInput.value.trim().toLowerCase() === surname.toLowerCase());
+      });
+      confirmInput.focus();
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          const stretchYears = stretchInput && stretchInput.value ? parseInt(stretchInput.value, 10) : null;
+          await apiFetch('/api/self/release', {
+            method: 'POST',
+            body: JSON.stringify({
+              player: slug,
+              stretch_years: stretchYears,
+              description: `${abbr} release ${name}`,
+            }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
 async function apiFetchPublic(url, body) {
   const res = await fetch(url, {
     method: 'POST',
@@ -4043,6 +4142,16 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
     danger: true,
     why: !owner ? 'Only the team owner can act on a team option.' : optElig.why,
     onClick: () => openOptionDialog(slug, bio, abbr, 'decline', optElig.year),
+  });
+
+  // § 5.1 — same owner gate; a player with nothing real left to release
+  // (only a UFA/RFA/TEAM_OPT hold) is renounced instead (releaseEligibility).
+  const relElig = releaseEligibility(bio);
+  addItem('Release…', {
+    enabled: relElig.ok && owner,
+    danger: true,
+    why: !owner ? 'Only the team owner can release.' : relElig.why,
+    onClick: () => openReleaseDialog(slug, bio, abbr),
   });
 
   // § 6.2 — same "team role, not owner-tenure" gate as the trade block, since
