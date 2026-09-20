@@ -101,7 +101,21 @@ count, not a share of the committee.
 9. **Discord reuses `#transactions`** — `apply_trade` calls the existing
    `notify_transaction()` (`nbn-api/routers/discord_notify.py`) unconditionally,
    so a TRC-finalized trade posts the same embed a `rosters`-entered one
-   would, no new channel, no notification on intake/consent/balloting.
+   would, no new channel.
+
+10. **Inbox notifications, added 2026-09-21** (the initial build shipped with
+    none; this closed that gap): `POST /api/trade-requests` notifies every
+    party team *except* the one(s) the proposer already represents —
+    `inbox.notify_team`, matching the `offer_sheet` precedent of notifying
+    the other side, not the actor. The consent endpoint notifies both `trc`
+    and `trc_head` (`inbox.notify_role`, called for both roles separately —
+    `notify_role` checks a member's literal roles list, not `ROLE_IMPLIES`,
+    so a `trc_head`-only member would otherwise never hear about it) the
+    moment every party has consented and the request is ready for ballots.
+    Nothing fires on ballot cast, reject, withdraw, or finalize — a
+    finalized/rejected trade is already visible via Discord (finalize) or
+    the dashboard itself; only the two "something now needs *your* action"
+    moments got a push.
 
 ## Roles
 
