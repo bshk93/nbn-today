@@ -531,7 +531,6 @@ const SITE_PAGES = [
   { title: 'Calendar', href: '/calendar', icon: '📅' },
   { title: 'Standings & Playoffs', href: '/standings', icon: '🏅' },
   { title: 'Tradeblock', href: '/tradeblock/', icon: '🤝' },
-  { title: 'Transaction Simulator', href: '/transaction-sim/', icon: '⚖️' },
   { title: 'Compare Players', href: '/compare/', icon: '⇆' },
   { title: 'Free Agency', href: '/free-agency/', icon: '✍️' },
   { title: 'Extensions', href: '/extensions/', icon: '📄' },
