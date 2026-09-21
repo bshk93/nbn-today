@@ -333,12 +333,13 @@
 
     /* A table, not a row of pills. As chips these wrapped to one or two per
        line on a phone, which is the least scannable possible shape for an
-       ordered list — the ranks ended up in a zigzag. Five equal columns on a
-       wide screen, one column of full-width rows on a narrow one; either way
-       every rank sits at the same x as the one above it. */
+       ordered list — the ranks ended up in a zigzag. Four equal columns on a
+       wide screen (two even rows of the top 8), one column of full-width rows
+       on a narrow one; either way every rank sits at the same x as the one
+       above it. */
     .dash-ranks-row {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 0.25rem;
     }
     .dash-rank-team {
@@ -1236,10 +1237,10 @@
       if (!editions.length) return;
       const latest = editions[editions.length - 1];
       return jget(`/api/news/${encodeURIComponent(latest.id)}`).then(article => {
-        // Rank <= 5 rather than the first five rows: teams level on the average
-        // share a rank (T-4, T-4, 6), so a tie at the cut legitimately returns
-        // six teams and truncating would drop one of two equals.
-        const top = (article.final || []).filter(r => r.rank <= 5)
+        // Rank <= 8 rather than the first eight rows: teams level on the average
+        // share a rank (T-7, T-7, 9), so a tie at the cut legitimately returns
+        // nine teams and truncating would drop one of two equals.
+        const top = (article.final || []).filter(r => r.rank <= 8)
           .sort((a, b) => a.rank - b.rank);
         if (!top.length) return;
 
