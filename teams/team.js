@@ -3747,6 +3747,18 @@ function releaseEligibility(bio) {
   return { ok: true, why: '' };
 }
 
+// § 2.2: only a currently two-way player is eligible at all. Whether a
+// like-for-like minimum conversion is actually possible right now (real
+// contract history on file, a resolvable experience tier) is server-side
+// only — GET /api/self/convert_twoway/preview/{slug} is the source of
+// truth, not a client-side guess.
+function twoWayEligibility(bio) {
+  if ((bio && bio.type) !== 'two-way') {
+    return { ok: false, why: 'Not on a two-way contract (§ 2.2).' };
+  }
+  return { ok: true, why: '' };
+}
+
 async function apiFetch(url, opts, token) {
   const res = await fetch(url, {
     ...opts,
@@ -4030,6 +4042,72 @@ function openReleaseDialog(slug, bio, abbr) {
   });
 }
 
+// § 2.2 — the only case this needs no PDC involvement: a minimum contract
+// matching the length of the existing two-way deal. Nothing is submitted;
+// the preview endpoint shows exactly what the server would build (same
+// figures, same helper POST /api/self/convert_twoway itself uses), so
+// there's no client-side re-derivation of the minimum scale to get wrong.
+function openConvertTwoWayDialog(slug, bio, abbr) {
+  const name = displayNameFromBio(bio.name || slug);
+  openConfirmModal({
+    title: `Convert ${name} to a standard contract?`,
+    sub: `${abbr} signs ${name} to a minimum contract matching their two-way deal's own length (§ 2.2). Checking against the rulebook…`,
+    confirmLabel: 'Convert',
+    danger: false,
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 2.2 checks…';
+      body.appendChild(loading);
+
+      let data;
+      try {
+        const res = await fetch(`/api/self/convert_twoway/preview/${encodeURIComponent(slug)}`);
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(typeof j.detail === 'string' ? j.detail : `Request failed (${res.status})`);
+        }
+        data = await res.json();
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      const facts = document.createElement('div'); facts.className = 'confirm-facts';
+      Object.entries(data.salaries || {}).forEach(([season, amount]) => {
+        facts.appendChild(factRow(season, formatSalary(parseSalaryNum(amount))));
+      });
+      body.appendChild(facts);
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = 'This conversion is not legal, so it cannot be submitted.';
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+      ctl.setEnabled(true);
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/convert_twoway', {
+            method: 'POST',
+            body: JSON.stringify({ player: slug, description: `${abbr} converts ${name} to a standard contract` }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
 async function apiFetchPublic(url, body) {
   const res = await fetch(url, {
     method: 'POST',
@@ -4152,6 +4230,16 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
     danger: true,
     why: !owner ? 'Only the team owner can release.' : relElig.why,
     onClick: () => openReleaseDialog(slug, bio, abbr),
+  });
+
+  // § 2.2 — same owner gate. Only the like-for-like minimum case is offered
+  // here at all; anything else needs the PDC pitch-and-bid process, same
+  // split as options/releases route their non-self-serve case elsewhere.
+  const twElig = twoWayEligibility(bio);
+  addItem('Convert to standard contract…', {
+    enabled: twElig.ok && owner,
+    why: !owner ? 'Only the team owner can act on a two-way contract.' : twElig.why,
+    onClick: () => openConvertTwoWayDialog(slug, bio, abbr),
   });
 
   // § 6.2 — same "team role, not owner-tenure" gate as the trade block, since
