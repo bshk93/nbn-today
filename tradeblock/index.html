@@ -446,14 +446,47 @@
       font-size: 0.8rem; font-weight: 600; cursor: pointer;
       background: transparent; color: var(--link); font-family: inherit;
     }
+
+    .header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .propose-trade-btn {
+      flex-shrink: 0; padding: 0.5rem 1rem; border: 1px solid var(--accent); border-radius: 8px;
+      font-size: 0.85rem; font-weight: 700; cursor: pointer;
+      background: transparent; color: var(--link); font-family: inherit; white-space: nowrap;
+    }
+    .propose-trade-btn:hover { background: var(--accent-panel-bg); }
+
+    #trade-builder-overlay {
+      position: fixed; inset: 0; background: var(--overlay-scrim); z-index: 900;
+      display: flex; align-items: flex-start; justify-content: center;
+      overflow-y: auto; padding: 2.5rem 1rem;
+    }
+    #trade-builder-modal {
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: 14px;
+      width: 100%; max-width: 1200px; padding: 1.5rem;
+    }
+    .trade-builder-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .trade-builder-modal-header h2 { font-size: 1.25rem; font-weight: 700; }
+    .trade-builder-close-btn {
+      background: none; border: none; color: var(--text-muted); font-size: 1.3rem;
+      line-height: 1; cursor: pointer; padding: 0.2rem 0.5rem; border-radius: 6px;
+    }
+    .trade-builder-close-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
   </style>
 </head>
 <body>
   <div class="page">
     <nav class="nav"></nav>
     <header>
-      <h1>Tradeblock</h1>
-      <p>Players available for trade. Click any column header to sort.</p>
+      <div class="header-row">
+        <div>
+          <h1>Tradeblock</h1>
+          <p>Players available for trade. Click any column header to sort.</p>
+        </div>
+        <button type="button" class="propose-trade-btn" id="propose-trade-btn">⇄ Propose a Trade</button>
+      </div>
     </header>
 
     <div id="edit-panel" style="display:none"></div>
@@ -505,6 +538,19 @@
     </div>
   </div>
 
+  <div id="trade-builder-overlay" style="display:none">
+    <div id="trade-builder-modal">
+      <div class="trade-builder-modal-header">
+        <h2>Propose a Trade</h2>
+        <button type="button" class="trade-builder-close-btn" id="trade-builder-close-btn" title="Close">✕</button>
+      </div>
+      <div id="trade-builder-container"></div>
+    </div>
+  </div>
+
+  <script src="/league-time.js"></script>
+  <script src="/transaction-sim/xlsx.js"></script>
+  <script src="/trade-builder.js"></script>
   <script src="/ratings-popup.js"></script>
   <script>
     const VALID_TEAMS_LC = new Set([
@@ -1626,6 +1672,33 @@
       } catch {
         statusEl.textContent = 'Failed to load tradeblock.';
       }
+    })();
+
+    // ── Propose Trade modal ──────────────────────────────────────────────────
+    // Mounted lazily on first open (not at page load) since TradeBuilder does
+    // its own /api/players + /api/ovr/current + /api/league-year fetch and
+    // there's no reason to pay that cost for a visitor who never opens it.
+    (() => {
+      const overlay = document.getElementById('trade-builder-overlay');
+      const container = document.getElementById('trade-builder-container');
+      const openBtn = document.getElementById('propose-trade-btn');
+      const closeBtn = document.getElementById('trade-builder-close-btn');
+      let mounted = false;
+
+      openBtn.addEventListener('click', async () => {
+        overlay.style.display = 'flex';
+        if (!mounted) {
+          mounted = true;
+          openBtn.disabled = true;
+          await window.TradeBuilder.mount(container, {
+            presetTeams: myTeam ? [myTeam] : undefined,
+            onSubmitted: () => { overlay.style.display = 'none'; },
+          });
+          openBtn.disabled = false;
+        }
+      });
+      closeBtn.addEventListener('click', () => { overlay.style.display = 'none'; });
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.style.display = 'none'; });
     })();
   </script>
   <script src="/nav.js"></script>

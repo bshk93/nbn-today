@@ -192,9 +192,15 @@ Endpoints — all under `/api/trade-requests`:
 
 ## Site
 
-- `transaction-sim/index.html` — `loadMe()` on init; `renderResults()` shows
-  "Submit to TRC" only for a party-team role holder; `submitToTRC(tradeBody)`
-  reuses the token-prompt pattern already there for `publishTradeSheet`.
+- **The builder itself now lives in `trade-builder.js`** (repo root), extracted
+  2026-09-21 so it isn't duplicated: `transaction-sim/index.html` (trade mode)
+  and `tradeblock/index.html` (a "Propose a Trade" button opening it in a
+  modal, pre-seeded with the signed-in member's own team) both mount the same
+  module. `loadMe()`, `renderResults()`'s party-gated "Submit to TRC" button,
+  and `submitToTRC(tradeBody)`'s token-prompt/POST are unchanged — just moved
+  out of the page-inline script into the shared file. This is the first real
+  step toward decision 1's stated "one place to mock and submit any
+  transaction type" direction: trade now has two, not one.
 - `committees/trc/index.html` — new dashboard, gated to `trc`/`trc_head`/
   `admin`, structural template `committees/stream/index.html`. Queue (open
   requests, sorted `ready_to_finalize` first) and History (terminal). Row

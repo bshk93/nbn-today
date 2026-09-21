@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.4.11",
+    "date": "2026-09-21",
+    "changes": [
+      "Tradeblock: added a full \"Propose a Trade\" builder (team/asset selection, exceptions/TPE, sign-and-trade, live legality checks, .xlsx export, Google Sheets publish, Submit to TRC) \u2014 the same builder that lives in the transaction simulator, extracted into a shared module (trade-builder.js) so it isn't duplicated"
+    ]
+  },
+  {
     "version": "0.4.10",
     "date": "2026-09-21",
     "changes": [
