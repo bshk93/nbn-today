@@ -37,26 +37,32 @@
     }
 
     header {
-      text-align: center;
-      margin-bottom: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
     }
 
     header img {
-      height: 120px;
+      height: 64px;
       width: auto;
-      margin-bottom: 0.75rem;
+    }
+
+    header .header-text {
+      text-align: left;
     }
 
     header h1 {
-      font-size: 2.5rem;
+      font-size: 1.75rem;
       font-weight: 700;
       letter-spacing: -0.02em;
     }
 
     header p {
       color: var(--text-muted);
-      margin-top: 0.5rem;
-      font-size: 1rem;
+      margin-top: 0.15rem;
+      font-size: 0.9rem;
     }
 
     .grid {
@@ -150,8 +156,8 @@
 
     @media (max-width: 560px) {
       .grid { grid-template-columns: repeat(2, 1fr); }
-      header h1 { font-size: 2rem; }
-      header img { height: 90px; }
+      header h1 { font-size: 1.4rem; }
+      header img { height: 48px; }
     }
 
     .home-search-btn {
@@ -417,8 +423,10 @@
   <div class="nav" data-no-home data-no-search></div>
   <header>
     <img src="/logo.png" alt="NBN logo">
-    <h1>Nothing But Net</h1>
-    <p>Basketball Simulation GM League</p>
+    <div class="header-text">
+      <h1>Nothing But Net</h1>
+      <p>Basketball Simulation GM League</p>
+    </div>
   </header>
 
   <button class="home-search-btn" id="home-search-btn" aria-label="Search pages, teams, and players (Ctrl+K)">
