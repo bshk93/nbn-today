@@ -3759,6 +3759,19 @@ function twoWayEligibility(bio) {
   return { ok: true, why: '' };
 }
 
+// § 7.1: only unsigned draft rights are eligible, and only a 1st-round pick
+// self-serve — a 2nd-rounder has no contract generator anywhere in the API
+// (see _self_sign_pick_contract), so it's never offered here at all.
+function signPickEligibility(bio) {
+  if ((bio && bio.type) !== 'draft-rights') {
+    return { ok: false, why: 'Not unsigned draft rights (§ 7.1).' };
+  }
+  if (bio.draft_round !== 1) {
+    return { ok: false, why: 'Only a 1st-round pick can be signed here — a 2nd-rounder still needs the office form.' };
+  }
+  return { ok: true, why: '' };
+}
+
 async function apiFetch(url, opts, token) {
   const res = await fetch(url, {
     ...opts,
@@ -4108,6 +4121,72 @@ function openConvertTwoWayDialog(slug, bio, abbr) {
   });
 }
 
+// § 7.1 — 1st-round only, same "server builds it, nothing submitted" shape
+// as two-way conversion: the rookie scale is deterministic (120% of the NBA
+// scale for the slot, 4 years, Years 3-4 as team options), so there's
+// nothing for the owner to choose.
+function openSignPickDialog(slug, bio, abbr) {
+  const name = displayNameFromBio(bio.name || slug);
+  openConfirmModal({
+    title: `Sign ${name} to the rookie scale?`,
+    sub: `${abbr} signs ${name} to their § 7.1 rookie-scale contract. Checking against the rulebook…`,
+    confirmLabel: 'Sign',
+    danger: false,
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 7.1 checks…';
+      body.appendChild(loading);
+
+      let data;
+      try {
+        const res = await fetch(`/api/self/sign_pick/preview/${encodeURIComponent(slug)}`);
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(typeof j.detail === 'string' ? j.detail : `Request failed (${res.status})`);
+        }
+        data = await res.json();
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      const facts = document.createElement('div'); facts.className = 'confirm-facts';
+      Object.entries(data.salaries || {}).forEach(([season, amount]) => {
+        const tag = data.cap_holds && data.cap_holds[season];
+        facts.appendChild(factRow(season, formatSalary(parseSalaryNum(amount)) + (tag ? ` (${tag})` : '')));
+      });
+      body.appendChild(facts);
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = 'This signing is not legal, so it cannot be submitted.';
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+      ctl.setEnabled(true);
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/sign_pick', {
+            method: 'POST',
+            body: JSON.stringify({ player: slug, description: `${abbr} signs ${name} to the rookie scale` }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
 async function apiFetchPublic(url, body) {
   const res = await fetch(url, {
     method: 'POST',
@@ -4240,6 +4319,15 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
     enabled: twElig.ok && owner,
     why: !owner ? 'Only the team owner can act on a two-way contract.' : twElig.why,
     onClick: () => openConvertTwoWayDialog(slug, bio, abbr),
+  });
+
+  // § 7.1 — same owner gate. Only a 1st-round pick is offered here; a
+  // 2nd-rounder still needs the office form (signPickEligibility).
+  const spElig = signPickEligibility(bio);
+  addItem('Sign to rookie scale…', {
+    enabled: spElig.ok && owner,
+    why: !owner ? 'Only the team owner can sign a draft pick.' : spElig.why,
+    onClick: () => openSignPickDialog(slug, bio, abbr),
   });
 
   // § 6.2 — same "team role, not owner-tenure" gate as the trade block, since
