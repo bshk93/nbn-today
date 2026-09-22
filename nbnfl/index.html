@@ -164,13 +164,18 @@
 
   <script>
     const CATEGORY_FIELDS = {
-      passing:   ['comp', 'att', 'yds', 'td', 'int'],
-      rushing:   ['att', 'yds', 'td', 'fums', 'btk', 'yac', '20+', 'long'],
-      receiving: ['rec', 'yds', 'td'],
-      defense:   ['tackles', 'sacks', 'int', 'ff'],
-      kicking:   ['fgm', 'fga', 'xpm', 'xpa'],
+      passing:      ['comp', 'att', 'yds', 'td', 'int', 'long'],
+      rushing:      ['att', 'yds', 'td', 'fums', 'btk', 'yac', '20+', 'long'],
+      receiving:    ['rec', 'yds', 'td', 'rac', 'drops', 'long'],
+      defense:      ['solo', 'assist', 'sack', 'int', 'pdef', 'ff'],
+      kicking:      ['fgm', 'fga', 'long', 'xpm', 'xpa'],
+      kick_returns: ['kr', 'yds', 'long', 'td'],
+      punt_returns: ['pr', 'yds', 'long', 'td'],
     };
-    const CATEGORY_LABELS = { passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', defense: 'Defense', kicking: 'Kicking' };
+    const CATEGORY_LABELS = {
+      passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', defense: 'Defense', kicking: 'Kicking',
+      kick_returns: 'Kick Returns', punt_returns: 'Punt Returns',
+    };
 
     let teams = [];
     let teamsByAbbr = {};
@@ -268,7 +273,10 @@
     }
 
     // ── leaders ────────────────────────────────────────────────────
-    const PRIMARY_LABEL = { passing: 'pass yds', rushing: 'rush yds', receiving: 'rec yds', defense: 'sacks', kicking: 'FG made' };
+    const PRIMARY_LABEL = {
+      passing: 'pass yds', rushing: 'rush yds', receiving: 'rec yds', defense: 'sacks', kicking: 'FG made',
+      kick_returns: 'return yds', punt_returns: 'return yds',
+    };
     function renderLeaders(data) {
       const root = document.getElementById('leaders');
       root.innerHTML = '';

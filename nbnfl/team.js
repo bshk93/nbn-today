@@ -106,10 +106,19 @@ _badgeScript.src = '/token-badge.js';
 _badgeScript.onload = function () { window.__nbnBadge && window.__nbnBadge(); };
 document.head.appendChild(_badgeScript);
 
-const CATEGORY_FIELDS = ['passing', 'rushing', 'receiving', 'defense', 'kicking'];
-const CATEGORY_LABELS = { passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', defense: 'Defense', kicking: 'Kicking' };
-const PRIMARY_STAT = { passing: 'yds', rushing: 'yds', receiving: 'yds', defense: 'sacks', kicking: 'fgm' };
-const PRIMARY_LABEL = { passing: 'pass yds', rushing: 'rush yds', receiving: 'rec yds', defense: 'sacks', kicking: 'FG made' };
+const CATEGORY_FIELDS = ['passing', 'rushing', 'receiving', 'defense', 'kicking', 'kick_returns', 'punt_returns'];
+const CATEGORY_LABELS = {
+  passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', defense: 'Defense', kicking: 'Kicking',
+  kick_returns: 'Kick Returns', punt_returns: 'Punt Returns',
+};
+const PRIMARY_STAT = {
+  passing: 'yds', rushing: 'yds', receiving: 'yds', defense: 'sack', kicking: 'fgm',
+  kick_returns: 'yds', punt_returns: 'yds',
+};
+const PRIMARY_LABEL = {
+  passing: 'pass yds', rushing: 'rush yds', receiving: 'rec yds', defense: 'sacks', kicking: 'FG made',
+  kick_returns: 'return yds', punt_returns: 'return yds',
+};
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
