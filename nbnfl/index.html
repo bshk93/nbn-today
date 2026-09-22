@@ -195,6 +195,10 @@
     }
 
     // ── standings ──────────────────────────────────────────────────
+    // Teams with a real page under /nbnfl/{ABBR}/ — add an abbr here as more
+    // team pages get built (nbnfl/team.js itself needs no change per team).
+    const TEAM_PAGES = new Set(['CIN']);
+
     function renderStandings(data) {
       const root = document.getElementById('standings');
       root.innerHTML = '';
@@ -217,7 +221,10 @@
           for (const r of rows) {
             const tr = document.createElement('tr');
             const diff = r.diff > 0 ? `+${r.diff}` : r.diff;
-            tr.innerHTML = `<td class="team">${r.abbr} ${r.name}</td><td>${r.wins}</td><td>${r.losses}</td>` +
+            const teamCell = TEAM_PAGES.has(r.abbr)
+              ? `<a href="/nbnfl/${r.abbr}/">${r.abbr} ${r.name}</a>`
+              : `${r.abbr} ${r.name}`;
+            tr.innerHTML = `<td class="team">${teamCell}</td><td>${r.wins}</td><td>${r.losses}</td>` +
               `<td>${r.ties}</td><td>${r.pf}</td><td>${r.pa}</td><td>${diff}</td>`;
             tbody.appendChild(tr);
           }
