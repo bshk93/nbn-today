@@ -163,17 +163,19 @@
   </div>
 
   <script>
+    // No "defense" category — dropped 2026-09-22, we don't consistently have
+    // that data at entry time. Re-add it (and its PRIMARY_STAT/PRIMARY_LABEL
+    // entries, plus the backend's routers/nbnfl.py PRIMARY_STAT) if that changes.
     const CATEGORY_FIELDS = {
       passing:      ['comp', 'att', 'yds', 'td', 'int', 'long'],
       rushing:      ['att', 'yds', 'td', 'fums', 'btk', 'yac', '20+', 'long'],
       receiving:    ['rec', 'yds', 'td', 'rac', 'drops', 'long'],
-      defense:      ['solo', 'assist', 'sack', 'int', 'pdef', 'ff'],
       kicking:      ['fgm', 'fga', 'long', 'xpm', 'xpa'],
       kick_returns: ['kr', 'yds', 'long', 'td'],
       punt_returns: ['pr', 'yds', 'long', 'td'],
     };
     const CATEGORY_LABELS = {
-      passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', defense: 'Defense', kicking: 'Kicking',
+      passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', kicking: 'Kicking',
       kick_returns: 'Kick Returns', punt_returns: 'Punt Returns',
     };
 
@@ -274,7 +276,7 @@
 
     // ── leaders ────────────────────────────────────────────────────
     const PRIMARY_LABEL = {
-      passing: 'pass yds', rushing: 'rush yds', receiving: 'rec yds', defense: 'sacks', kicking: 'FG made',
+      passing: 'pass yds', rushing: 'rush yds', receiving: 'rec yds', kicking: 'FG made',
       kick_returns: 'return yds', punt_returns: 'return yds',
     };
     function renderLeaders(data) {

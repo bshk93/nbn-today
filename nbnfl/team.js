@@ -106,17 +106,20 @@ _badgeScript.src = '/token-badge.js';
 _badgeScript.onload = function () { window.__nbnBadge && window.__nbnBadge(); };
 document.head.appendChild(_badgeScript);
 
-const CATEGORY_FIELDS = ['passing', 'rushing', 'receiving', 'defense', 'kicking', 'kick_returns', 'punt_returns'];
+// No "defense" category — dropped 2026-09-22, we don't consistently have
+// that data at entry time. Re-add it (and its PRIMARY_STAT/PRIMARY_LABEL
+// entries, plus the backend's routers/nbnfl.py PRIMARY_STAT) if that changes.
+const CATEGORY_FIELDS = ['passing', 'rushing', 'receiving', 'kicking', 'kick_returns', 'punt_returns'];
 const CATEGORY_LABELS = {
-  passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', defense: 'Defense', kicking: 'Kicking',
+  passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', kicking: 'Kicking',
   kick_returns: 'Kick Returns', punt_returns: 'Punt Returns',
 };
 const PRIMARY_STAT = {
-  passing: 'yds', rushing: 'yds', receiving: 'yds', defense: 'sack', kicking: 'fgm',
+  passing: 'yds', rushing: 'yds', receiving: 'yds', kicking: 'fgm',
   kick_returns: 'yds', punt_returns: 'yds',
 };
 const PRIMARY_LABEL = {
-  passing: 'pass yds', rushing: 'rush yds', receiving: 'rec yds', defense: 'sacks', kicking: 'FG made',
+  passing: 'pass yds', rushing: 'rush yds', receiving: 'rec yds', kicking: 'FG made',
   kick_returns: 'return yds', punt_returns: 'return yds',
 };
 
