@@ -31,7 +31,7 @@
 
     #editor-form { display: none; }
     .field { margin-bottom: 1.25rem; }
-    .field label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .field label { display: block; font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); margin-bottom: 0.4rem; }
     /* Article-type picker. Only shown while creating — an article's type is
        fixed once it exists, since a power-rankings article carries ballots a
        plain one has nowhere to put. */
@@ -64,15 +64,7 @@
     .action-left { display: flex; gap: 0.5rem; }
     .action-right { display: flex; gap: 0.5rem; align-items: center; }
     button, a.btn-secondary { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.85rem; font-weight: 500; padding: 0.45rem 1rem; border: 1px solid transparent; display: inline-block; text-decoration: none; }
-    .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
-    .btn-primary:hover { background: var(--accent-dark); }
-    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-secondary { background: var(--bg-card); border-color: var(--border); color: var(--text-secondary); }
-    .btn-secondary:hover { background: var(--bg-hover); border-color: var(--text-dim); }
-    .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-danger { background: transparent; border-color: var(--border); color: var(--danger); }
-    .btn-danger:hover { background: #3b1f1f; border-color: var(--danger); }
-    .status-msg { font-size: 0.8rem; color: var(--text-muted); }
+                                    .status-msg { font-size: 0.8rem; color: var(--text-muted); }
     .status-msg.ok { color: var(--success); }
     .status-msg.err { color: var(--danger); }
 

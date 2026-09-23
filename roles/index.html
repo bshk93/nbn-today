@@ -251,11 +251,9 @@
 
     /* ── Token mgmt modal extras ── */
     .modal-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--text-secondary);
       margin-bottom: 0.4rem;
     }
     .roles-check-group {
@@ -346,16 +344,7 @@
     }
     .modal input:focus { outline: none; border-color: var(--link); }
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
-    .btn-cancel {
-      background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
-      border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer; font-size: 0.8rem; font-family: inherit;
-    }
-    .btn-save {
-      background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text-on-accent);
-      border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer; font-size: 0.8rem; font-family: inherit;
-    }
-    .btn-save:hover { background: var(--accent-dark); }
-  </style>
+              </style>
 </head>
 <body>
 <script src="/nav.js"></script>

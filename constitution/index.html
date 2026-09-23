@@ -59,8 +59,8 @@
       max-height: calc(100vh - 3rem); overflow-y: auto;
     }
     .toc-heading {
-      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--text-muted); padding: 0 1rem 0.5rem; border-bottom: 1px solid var(--border); margin-bottom: 0.4rem;
+      font-size: var(--text-md); font-weight: 600;
+      color: var(--text-primary); padding: 0 1rem 0.5rem; border-bottom: 1px solid var(--border); margin-bottom: 0.4rem;
     }
     .toc a { display: block; color: var(--text-muted); padding: 0.22rem 1rem; border-left: 2px solid transparent; line-height: 1.4; }
     .toc a:hover { color: var(--text-primary); text-decoration: none; background: rgba(255,255,255,0.03); }
@@ -188,12 +188,7 @@
     .summary-field input:focus { outline: none; border-color: var(--accent); }
 
     .edit-actions { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; }
-    .btn-primary { background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text-on-accent); border-radius: 6px; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: inherit; }
-    .btn-primary:hover { background: var(--accent-dark); }
-    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-secondary { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 6px; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: inherit; }
-    .btn-secondary:hover { background: var(--bg-hover); }
-    .save-status { font-size: 0.8rem; color: var(--text-muted); }
+                        .save-status { font-size: 0.8rem; color: var(--text-muted); }
     .save-status.ok { color: var(--success); }
     .save-status.err { color: var(--danger); }
 

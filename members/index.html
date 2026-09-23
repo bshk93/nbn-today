@@ -85,13 +85,7 @@
     .rb-team    { background: var(--success-bg); color: var(--success-light); }
 
     .action-cell { display: flex; gap: 0.35rem; align-items: center; white-space: nowrap; }
-    .btn-sm {
-      background: transparent; border: 1px solid var(--border); color: var(--text-muted);
-      border-radius: 5px; padding: 0.15rem 0.5rem; font-size: 0.72rem;
-      cursor: pointer; font-family: inherit; white-space: nowrap;
-    }
-    .btn-sm:hover { border-color: var(--link); color: var(--link); }
-    .btn-sm.danger:hover { border-color: var(--danger); color: var(--danger); }
+            .btn-sm.danger:hover { border-color: var(--danger); color: var(--danger); }
     .btn-sm.rotate:hover { border-color: var(--warning); color: var(--warning); }
 
     .empty-state { text-align: center; color: var(--text-muted); padding: 2rem; }
@@ -147,22 +141,9 @@
     .modal select option { background: var(--bg-card); }
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
     .modal-label {
-      font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem;
+      font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); margin-bottom: 0.4rem;
     }
-    .btn-cancel {
-      background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
-      border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer;
-      font-size: 0.8rem; font-family: inherit;
-    }
-    .btn-cancel:hover { border-color: var(--text-muted); }
-    .btn-save {
-      background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text-on-accent);
-      border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer;
-      font-size: 0.8rem; font-family: inherit;
-    }
-    .btn-save:hover { background: var(--accent-dark); }
-
+                
     .roles-check-group { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
     .roles-check-group.teams-group { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.3rem 0.5rem; }
     .role-check-label {

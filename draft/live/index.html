@@ -67,16 +67,7 @@
     .admin-field input[type="text"] { width: 320px; }
     .admin-toggle { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.1rem; }
     .admin-toggle label { font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; }
-    .btn { padding: 0.35rem 0.9rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: inherit; border: none; }
-    .btn-primary { background: var(--accent-dark); color: var(--text-on-accent); }
-    .btn-primary:hover { background: var(--accent); }
-    .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: default; }
-    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
-    .btn-ghost:hover { border-color: var(--text-muted); color: var(--text-secondary); }
-    .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
-    .btn-danger:hover { background: #ef444420; }
-    .btn-sm { padding: 0.2rem 0.55rem; font-size: 0.75rem; }
-    #admin-status { font-size: 0.75rem; color: var(--text-muted); align-self: center; }
+                                        #admin-status { font-size: 0.75rem; color: var(--text-muted); align-self: center; }
 
 
     /* ── Status bar ───────────────────────────────────── */
@@ -135,11 +126,9 @@
     .pool-drag-over { background: var(--accent-panel-bg) !important; outline: 1px solid var(--accent); }
     body.pool-view #pool-section thead th { position: sticky; top: 0; background: var(--bg-card); z-index: 1; }
     .section-title {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
+      font-size: var(--text-md);
+      font-weight: 600;
+      color: var(--text-primary);
       margin-bottom: 0.6rem;
     }
     .table-wrap {

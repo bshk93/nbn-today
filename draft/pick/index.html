@@ -78,11 +78,9 @@
       padding: 0.9rem 1rem;
     }
     .panel-title {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-dim);
+      font-size: var(--text-md);
+      font-weight: 600;
+      color: var(--text-primary);
       margin-bottom: 0.65rem;
     }
 
@@ -188,16 +186,7 @@
     .btn-add-queue:hover { border-color: var(--text-muted); color: var(--text-primary); }
 
     /* ── Shared buttons ──────────────────────────────────── */
-    .btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 0.82rem; font-weight: 600; cursor: pointer; border: none; padding: 0.35rem 0.75rem; }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary { background: var(--accent-dark); color: var(--text-on-accent); }
-    .btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
-    .btn-ghost   { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
-    .btn-ghost:hover:not(:disabled)  { border-color: var(--text-muted); color: var(--text-primary); }
-    .btn-danger  { background: transparent; border: 1px solid var(--danger-border); color: var(--danger); }
-    .btn-danger:hover:not(:disabled) { background: #7f1d1d33; }
-    .btn-sm { font-size: 0.72rem; padding: 0.2rem 0.45rem; }
-
+                                    
     .player-select {
       background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
       border-radius: 5px; padding: 0.3rem 0.5rem; font-size: 0.8rem; width: 100%;

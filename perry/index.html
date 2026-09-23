@@ -56,22 +56,7 @@
     .token-err { color: var(--danger); font-size: 0.8rem; margin-top: 0.5rem; text-align: center; }
 
     /* Buttons */
-    .btn {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      padding: 0.55rem 1.1rem;
-      border-radius: 8px;
-      border: none;
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary { background: var(--accent-dark); color: var(--text-on-accent); }
-    .btn-primary:hover:not(:disabled) { background: var(--accent); }
-    .btn-secondary { background: var(--border); color: var(--text-secondary); }
-    .btn-secondary:hover:not(:disabled) { background: var(--text-dim); }
-
+                        
     /* Progress bar */
     .progress-wrap { margin-bottom: 1.5rem; }
     .progress-label {
@@ -252,8 +237,7 @@
     .empty-lb { color: var(--text-muted); text-align: center; padding: 1rem; font-size: 0.85rem; }
 
     .section-title {
-      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 0.75rem;
+      font-size: var(--text-md); font-weight: 600; color: var(--text-primary); margin-bottom: 0.75rem;
     }
 
     .date-chip {

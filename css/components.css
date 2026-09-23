@@ -194,7 +194,10 @@
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 /*   .ui-btn (secondary), .ui-btn--primary, .ui-btn--danger, .ui-btn--ghost,
      .ui-btn--sm. Pages had ~40 hand-made button styles. */
-.ui-btn {
+/* The older names pages already use (.btn, .btn-primary, .btn-ghost, …) are
+   styled here as the same buttons, so markup didn't need rewriting; the ~70
+   local copies of them were deleted. */
+.ui-btn, .btn, .btn-primary, .btn-secondary, .btn-ghost, .btn-danger, .btn-success, .btn-cancel, .btn-save, .btn-sm {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
   height: 2.25rem; padding: 0 var(--space-4);
   font: inherit; font-size: var(--text-sm); font-weight: 600; line-height: 1;
@@ -205,15 +208,17 @@
   cursor: pointer; white-space: nowrap; text-decoration: none;
   transition: background-color 0.12s, border-color 0.12s, color 0.12s;
 }
-.ui-btn:hover { background: var(--bg-hover); border-color: var(--text-dim); text-decoration: none; }
-.ui-btn:disabled, .ui-btn[aria-disabled="true"] { opacity: 0.5; cursor: default; }
-.ui-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
-.ui-btn--primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
-.ui-btn--danger { color: var(--danger); border-color: var(--danger-border); background: none; }
-.ui-btn--danger:hover { background: var(--danger-bg); border-color: var(--danger-border-strong); }
-.ui-btn--ghost { background: none; border-color: transparent; color: var(--text-secondary); }
-.ui-btn--ghost:hover { background: var(--bg-hover); border-color: transparent; color: var(--text-primary); }
-.ui-btn--sm { height: 1.9rem; padding: 0 var(--space-3); font-size: var(--text-xs); }
+.ui-btn:hover, .btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-ghost:hover, .btn-danger:hover, .btn-success:hover, .btn-cancel:hover, .btn-save:hover, .btn-sm:hover { background: var(--bg-hover); border-color: var(--text-dim); text-decoration: none; }
+:is(.ui-btn, .btn, .btn-primary, .btn-secondary, .btn-ghost, .btn-danger, .btn-success, .btn-cancel, .btn-save, .btn-sm):is(:disabled, [aria-disabled="true"]) { opacity: 0.5; cursor: default; }
+.ui-btn--primary, .btn-primary, .btn-save { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+.ui-btn--primary:hover, .btn-primary:hover, .btn-save:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: var(--text-on-accent); }
+.ui-btn--danger, .btn-danger { color: var(--danger); border-color: var(--danger-border); background: none; }
+.ui-btn--danger:hover, .btn-danger:hover { background: var(--danger-bg); border-color: var(--danger-border-strong); color: var(--danger); }
+.btn-success { color: var(--success); border-color: color-mix(in srgb, var(--success) 40%, transparent); background: none; }
+.btn-success:hover { background: var(--success-bg); color: var(--success); }
+.ui-btn--ghost, .btn-ghost { background: none; border-color: transparent; color: var(--text-secondary); }
+.ui-btn--ghost:hover, .btn-ghost:hover { background: var(--bg-hover); border-color: transparent; color: var(--text-primary); }
+.ui-btn--sm, .btn-sm { height: 1.9rem; padding: 0 var(--space-3); font-size: var(--text-xs); }
 
 /* ── Form fields ────────────────────────────────────────────────────────── */
 .ui-input, .ui-select, .ui-textarea {
@@ -226,6 +231,24 @@
 .ui-textarea { height: auto; padding: var(--space-2) var(--space-3); line-height: 1.5; }
 .ui-select { padding-right: var(--space-6); cursor: pointer; }
 .ui-input:focus, .ui-select:focus, .ui-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+/* Every other form control on the site. :where() gives these zero
+   specificity, so any page's own rule still wins; what they set is the
+   common ground pages disagreed on: font, colours, border, corners, and one
+   focus ring. No padding or size, so inline editors keep their density. */
+:where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="submit"], [type="button"], [type="hidden"]), select, textarea) {
+  font-family: inherit;
+  color: var(--text-primary);
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+:where(input, select, textarea):focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+:where(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: var(--accent); }
+
 .ui-label { display: block; margin-bottom: var(--space-1); font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
 
 /* ── Badge ──────────────────────────────────────────────────────────────── */

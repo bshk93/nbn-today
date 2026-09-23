@@ -101,36 +101,9 @@
     .reward-table .cap-row td { color: var(--text-muted); }
     .reward-table .cap-row td:last-child { color: var(--gold); }
 
-    .btn-primary {
-      background: var(--accent-dark);
-      border: none;
-      border-radius: 8px;
-      color: var(--text-on-accent);
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.95rem;
-      font-weight: 600;
-      padding: 0.6rem 1.5rem;
-      transition: background 0.15s;
-    }
-    .btn-primary:hover:not(:disabled) { background: var(--accent); }
-    .btn-primary:disabled { opacity: 0.55; cursor: default; }
-    .btn-primary.btn-correct { background: #059669; }
+                .btn-primary.btn-correct { background: #059669; }
 
-    .btn-secondary {
-      background: var(--border);
-      border: none;
-      border-radius: 8px;
-      color: var(--text-primary);
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.95rem;
-      font-weight: 600;
-      padding: 0.6rem 1.5rem;
-      transition: background 0.15s;
-    }
-    .btn-secondary:hover { background: var(--text-dim); }
-
+        
     /* Top stats bar: Streak | NB¥ | Timer */
     .stats-bars { margin-bottom: 1.25rem; }
 
@@ -161,11 +134,9 @@
       gap: 0.5rem;
     }
     .timer-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--text-secondary);
     }
     .timer-num {
       font-size: 1.875rem;

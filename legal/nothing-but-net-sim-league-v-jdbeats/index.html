@@ -82,6 +82,8 @@
     li { margin: 0.25rem 0; }
     .exhibit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--warning); margin-top: 1.2rem; }
     footer.sig { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.2rem; font-size: 0.82rem; color: var(--text-muted); }
+      /* Tables scroll inside their own box on a phone instead of widening the page. */
+    .page table { display: block; max-width: 100%; overflow-x: auto; }
   </style>
 </head>
 <body>

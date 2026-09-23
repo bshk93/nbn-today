@@ -53,8 +53,7 @@
     .form-field { display: flex; flex-direction: column; gap: 0.35rem; }
     .form-field.full { grid-column: 1 / -1; }
     .form-field label {
-      font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.05em; color: var(--text-muted);
+      font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary);
     }
     .form-field input, .form-field select {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
@@ -91,7 +90,7 @@
     .upload-zone input[type=file] {
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
-    .upload-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .upload-label { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem; }
     .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
     .upload-hint { font-size: 0.78rem; color: var(--text-muted); }
     .upload-filename { font-size: 0.82rem; color: var(--market-positive); margin-top: 0.35rem; font-weight: 500; }
@@ -101,21 +100,7 @@
 
     /* Actions */
     .form-actions { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
-    .btn-primary {
-      background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: 8px;
-      padding: 0.55rem 1.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
-      font-family: inherit;
-    }
-    .btn-primary:hover { background: var(--accent-dark); }
-    .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
-    .btn-success {
-      background: var(--market-positive-border); border: 1px solid #059669; color: var(--market-positive-light); border-radius: 8px;
-      padding: 0.55rem 1.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
-      font-family: inherit;
-    }
-    .btn-success:hover { background: #047857; }
-    .btn-success:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; border-color: var(--border); }
-    .form-status { font-size: 0.85rem; }
+                            .form-status { font-size: 0.85rem; }
     .form-status.ok { color: var(--market-positive); }
     .form-status.err { color: var(--danger); }
 

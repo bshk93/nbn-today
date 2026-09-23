@@ -28,14 +28,7 @@
       display: flex; align-items: center; justify-content: space-between; gap: 1rem;
     }
     .auth-banner p { font-size: 0.875rem; color: var(--text-muted); }
-    .btn {
-      font-size: 0.8rem; font-weight: 600; font-family: inherit; cursor: pointer;
-      padding: 0.35rem 0.75rem; border-radius: 6px; border: none;
-    }
-    .btn-primary { background: var(--accent-dark); color: var(--text-on-accent); }
-    .btn-primary:hover { background: var(--accent); }
-    .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: default; }
-
+                
     .seasons { display: flex; flex-direction: column; gap: 1.25rem; }
 
     .season-card {
@@ -52,8 +45,7 @@
     }
     .field { display: flex; flex-direction: column; gap: 0.3rem; }
     .field label {
-      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.06em; color: var(--text-muted);
+      font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary);
     }
     .field input {
       background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
@@ -98,9 +90,7 @@
       padding: 0.3rem 0.45rem; outline: none;
     }
     .ly-row input[type="date"]:focus { border-color: var(--accent); }
-    .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
-    .btn-ghost:hover { color: var(--text-primary); border-color: var(--text-dim); }
-
+        
     @media (max-width: 540px) {
       .fields { grid-template-columns: repeat(2, 1fr); }
     }

@@ -195,11 +195,9 @@
     }
 
     .missing-bar-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--text-dim);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--text-secondary);
       margin-right: 0.1rem;
     }
 
@@ -308,8 +306,7 @@
     @media (max-width: 700px) { .attr-categories-grid { grid-template-columns: 1fr; } }
     .bio-edit-form label {
       display: flex; flex-direction: column; gap: 0.2rem;
-      font-size: 0.7rem; color: var(--text-muted); font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.05em;
+      font-size: var(--text-sm); color: var(--text-secondary); font-weight: 500;
     }
     .bio-edit-form input {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;

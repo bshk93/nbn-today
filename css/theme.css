@@ -196,6 +196,33 @@ html[data-design="clean"][data-theme="nbn-today"] {
   --muted-border: #3d5578;
 }
 
+/* The same preview over the default light theme ("NBN Today Light", and
+   "Match System" on a light-mode device). Neutral greys, and the navy accent
+   darkened until it reads on white (#1f5fae is about 6:1 on #ffffff). */
+html[data-design="clean"][data-theme="nbn-today-light"] {
+  --bg-page: #f6f7f8;
+  --bg-card: #ffffff;
+  --bg-subtle: #f0f1f3;
+  --bg-hover: #eceef1;
+  --bg-deep: #eef0f2;
+  --border: #dfe1e5;
+  --border-subtle: #eceef1;
+  --border-dark: #dfe1e5;
+  --text-primary: #111317;
+  --text-bright: #0b0d10;
+  --text-secondary: #3e434b;
+  --text-muted: #666c76;
+  --text-muted-rgb: 102, 108, 118;
+  --text-dim: #8a9099;
+  --accent: #1f5fae;
+  --accent-dark: #174a88;
+  --accent-light: #1f5fae;
+  --link: #1f5fae;
+  --text-on-accent: #ffffff;
+  --accent-panel-bg: #e7eef8;
+  --muted-border: #b9c6da;
+}
+
 :root[data-theme="nbn-today-light"] {
   --heat-text-l: 32%;
   /* These seven used to be absent, so they silently took the dark block's

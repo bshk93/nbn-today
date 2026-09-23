@@ -115,8 +115,8 @@
     .rank-panel { padding: 0 0 1.4rem; }
     .panel-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
                   padding: 0.9rem 1rem 1rem; }
-    .panel-title { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
-                   color: var(--text-dim); margin: 1rem 0 0.5rem; }
+    .panel-title { font-size: var(--text-md); font-weight: 600;
+                   color: var(--text-primary); margin: 1rem 0 0.5rem; }
     .panel-title:first-child { margin-top: 0; }
 
     /* A KPI row, not a chart: six headline numbers about one team. The 1px grid
@@ -211,17 +211,7 @@
 
     .header-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
     button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.85rem; border: 1px solid transparent; }
-    .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
-    .btn-primary:hover { background: var(--accent-dark); }
-    .btn-success { background: var(--success-dark-bg); border-color: #16a34a; color: var(--success); }
-    .btn-success:hover { background: #166534; }
-    .btn-secondary { background: var(--bg-card); border-color: var(--border); color: var(--text-secondary); }
-    .btn-secondary:hover { background: var(--bg-hover); border-color: var(--text-dim); }
-    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); text-decoration: none; display: inline-block; padding: 0.35rem 0.85rem; border-radius: 6px; }
-    .btn-ghost:hover { background: var(--bg-card); color: var(--text-primary); }
-    .btn-danger { background: transparent; border-color: var(--border); color: var(--danger); }
-    .btn-danger:hover { background: #3b1f1f; border-color: var(--danger); }
-
+                                        
     .divider { border: none; border-top: 1px solid var(--border); margin: 1.75rem 0; }
 
     /* Editor panel */
@@ -248,7 +238,7 @@
     .md-body th, .md-body td { border: 1px solid var(--border); padding: 0.4rem 0.7rem; }
     .md-body th { background: var(--bg-card); font-weight: 600; }
 
-    .section-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 1rem; }
+    .section-title { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; }
 
     /* Tips */
     .tips-summary { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.85rem; }

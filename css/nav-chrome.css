@@ -13,7 +13,10 @@
 @import url("/css/components.css");
 
 /* Nav */
-.nav { margin-bottom: 1.75rem; font-size: .875rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; }
+.nav { margin-bottom: 1.75rem; font-size: .875rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+/* flex-wrap: a long breadcrumb plus the action buttons (search, inbox, theme,
+   Sign in) don't fit one phone-width row; the buttons drop to their own line
+   and stay right-aligned rather than widening the page. */
 .nav a { color: var(--text-muted); text-decoration: none; }
 .nav a:hover { color: var(--text-primary); }
 .nav-crumb-sep { color: var(--text-dim); }
