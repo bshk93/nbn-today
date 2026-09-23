@@ -212,7 +212,9 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="/vendor/marked-12.0.2.min.js"></script>
+<script src="/vendor/purify-3.2.6.min.js"></script>
+<script src="/markdown.js"></script>
 <script>
 const API = '/api';
 const params = new URLSearchParams(location.search);
@@ -266,7 +268,7 @@ function getToken() { return localStorage.getItem('nbn_token'); }
 // ── Editor helpers ──
 function getEditorValue() { return document.getElementById('body-write').value; }
 function setEditorValue(t) { document.getElementById('body-write').value = t || ''; }
-function renderPreview() { document.getElementById('body-preview').innerHTML = marked.parse(getEditorValue() || ''); }
+function renderPreview() { document.getElementById('body-preview').innerHTML = renderMarkdown(getEditorValue() || ''); }
 function setMode(mode) {
   const write = document.getElementById('body-write'), preview = document.getElementById('body-preview');
   document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));

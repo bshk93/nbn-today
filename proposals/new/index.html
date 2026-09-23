@@ -250,7 +250,9 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="/vendor/marked-12.0.2.min.js"></script>
+<script src="/vendor/purify-3.2.6.min.js"></script>
+<script src="/markdown.js"></script>
 <script>
 const API = '/api';
 let proposalId = null;
@@ -266,7 +268,7 @@ function setEditorValue(text) {
 }
 function renderPreview() {
   const md = getEditorValue();
-  document.getElementById('body-preview').innerHTML = marked.parse(md || '');
+  document.getElementById('body-preview').innerHTML = renderMarkdown(md || '');
 }
 function setMode(mode) {
   const write = document.getElementById('body-write');

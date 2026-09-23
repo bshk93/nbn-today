@@ -20,7 +20,9 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/vendor/marked-12.0.2.min.js"></script>
+  <script src="/vendor/purify-3.2.6.min.js"></script>
+  <script src="/markdown.js"></script>
   <style>
     .page { max-width: 900px; margin: 0 auto; }
 
@@ -320,7 +322,7 @@
   fetch('/docs/nbyen-economy.md')
     .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
     .then(md => {
-      contentEl.innerHTML = marked.parse(md);
+      contentEl.innerHTML = renderMarkdown(md);
       buildToc();
       // ids are assigned by buildToc, so snapshot *after* it — search resets
       // #content to rawHTML and the anchors have to survive that.

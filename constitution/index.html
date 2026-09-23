@@ -270,7 +270,9 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="/vendor/marked-12.0.2.min.js"></script>
+<script src="/vendor/purify-3.2.6.min.js"></script>
+<script src="/markdown.js"></script>
 <script>
 const API = '/api';
 let constitutionData = null;
@@ -278,7 +280,7 @@ let isBod = false;
 
 // ── Render & TOC ─────────────────────────────────────────────────────────
 function renderContent(content) {
-  const html = marked.parse(content || '');
+  const html = renderMarkdown(content || '');
   const el = document.getElementById('doc-content');
   el.innerHTML = html + buildHistoryHTML();
 
@@ -414,7 +416,7 @@ function setPreviewMode(mode) {
   const preview = document.getElementById('body-preview');
   document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
   if (mode === 'preview') {
-    preview.innerHTML = marked.parse(write.value || '');
+    preview.innerHTML = renderMarkdown(write.value || '');
     write.style.display = 'none'; preview.style.display = 'block';
   } else {
     write.style.display = 'block'; preview.style.display = 'none'; write.focus();

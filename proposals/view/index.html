@@ -20,7 +20,9 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
-  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+  <script src="/vendor/marked-12.0.2.min.js"></script>
+  <script src="/vendor/purify-3.2.6.min.js"></script>
+  <script src="/markdown.js"></script>
   <style>
     .page { max-width: 820px; margin: 0 auto; }
 
@@ -348,7 +350,7 @@ function render(p) {
   }
 
   // Body
-  document.getElementById('proposal-body').innerHTML = marked.parse(p.body || '');
+  document.getElementById('proposal-body').innerHTML = renderMarkdown(p.body || '');
   document.title = `${p.title} — NBN`;
 
   // BOD panel
@@ -669,7 +671,7 @@ function renderComments(p) {
           </div>
           ${canDelete ? `<button class="comment-delete" onclick="deleteComment('${c.id}')">Delete</button>` : ''}
         </div>
-        <div class="comment-body md-body" style="font-size:0.875rem;">${marked.parse(c.body || '')}</div>`;
+        <div class="comment-body md-body" style="font-size:0.875rem;">${renderMarkdown(c.body || '')}</div>`;
       list.appendChild(div);
     });
   }

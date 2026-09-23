@@ -20,7 +20,9 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/vendor/marked-12.0.2.min.js"></script>
+  <script src="/vendor/purify-3.2.6.min.js"></script>
+  <script src="/markdown.js"></script>
   <style>
     .page { max-width: 820px; margin: 0 auto; }
 
@@ -232,7 +234,7 @@
           <span class="skill-name">/${s.slug}</span>
           <span class="skill-desc">${s.desc.replace(/</g, '&lt;')}</span>
         </summary>
-        <div class="skill-body">${marked.parse(s.text)}</div>
+        <div class="skill-body">${renderMarkdown(s.text)}</div>
       </details>
     `).join('');
 

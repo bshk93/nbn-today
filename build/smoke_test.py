@@ -282,6 +282,31 @@ def check_rulebook_badges(report):
                      "--fix\n      " + out.replace("\n", "\n      "))
 
 
+def check_markdown_sanitized(report):
+    """No page may put marked.parse output into the DOM directly.
+
+    marked passes raw HTML through, so a member's comment could carry a script
+    that reads another reader's nbn_token. markdown.js's renderMarkdown()
+    sanitizes with DOMPurify; it is the only place marked.parse may appear."""
+    skip = {".git", ".claude", "venv", "__pycache__", "node_modules", "vendor"}
+    report.checked += 1
+    bad = []
+    for path in REPO.rglob("*"):
+        if path.suffix not in (".html", ".js") or not path.is_file():
+            continue
+        rel = path.relative_to(REPO)
+        if skip & set(rel.parts) or str(rel) == "markdown.js":
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if "marked.parse(" in text or "cdn.jsdelivr.net/npm/marked" in text:
+            bad.append(str(rel))
+    if bad:
+        report.error(", ".join(sorted(bad)), "calls marked.parse or loads marked "
+                     "from a CDN; use renderMarkdown() from /markdown.js")
+    else:
+        report.ok("all markdown goes through renderMarkdown()")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -303,6 +328,10 @@ def main():
     if not args.quiet:
         print("\nChecking rulebook enforcement badges…")
     check_rulebook_badges(report)
+
+    if not args.quiet:
+        print("\nChecking markdown is sanitized…")
+    check_markdown_sanitized(report)
 
     print()
     for path, msg in report.warnings:

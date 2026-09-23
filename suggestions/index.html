@@ -301,7 +301,9 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="/vendor/marked-12.0.2.min.js"></script>
+<script src="/vendor/purify-3.2.6.min.js"></script>
+<script src="/markdown.js"></script>
 <script>
 const API = '/api';
 let allSuggestions = [];
@@ -385,7 +387,7 @@ function mdSetMode(id, mode) {
   const preview = document.getElementById(id + '-preview');
   ta.closest('.md-editor-wrap').querySelectorAll('.md-mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
   if (mode === 'preview') {
-    preview.innerHTML = marked.parse(ta.value || '');
+    preview.innerHTML = renderMarkdown(ta.value || '');
     ta.style.display = 'none';
     preview.style.display = 'block';
   } else {
@@ -542,7 +544,7 @@ function renderCard(s) {
       <span class="card-arrow">›</span>
     </div>
     <div class="card-details">
-      <div class="card-description md-content">${s.description ? marked.parse(s.description) : ''}</div>
+      <div class="card-description md-content">${s.description ? renderMarkdown(s.description) : ''}</div>
       <div class="card-actions"></div>
     </div>`;
 

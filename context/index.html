@@ -20,7 +20,9 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/vendor/marked-12.0.2.min.js"></script>
+  <script src="/vendor/purify-3.2.6.min.js"></script>
+  <script src="/markdown.js"></script>
   <style>
 
     .page {
@@ -248,7 +250,7 @@
     fetch('/CLAUDE.md')
       .then(r => r.text())
       .then(md => {
-        rawHTML = marked.parse(md);
+        rawHTML = renderMarkdown(md);
         contentEl.innerHTML = rawHTML;
         loadingEl.style.display = 'none';
         contentEl.style.display = '';
