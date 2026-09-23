@@ -724,8 +724,7 @@
   <h1 class="ui-title">Transactions</h1>
 
   <div class="auth-bar" id="auth-bar">
-    <span id="auth-status">Not signed in</span>
-    <button id="auth-btn">Sign in</button>
+    <span id="auth-status">Sign in to record transactions.</span>
   </div>
 
   <!-- Open offer sheets (§ 3.15). Public, and deliberately above everything else:
@@ -1403,15 +1402,15 @@ function setupFormCardToggle() {
 function renderAuthBar() {
   const bar = document.getElementById('auth-bar');
   const status = document.getElementById('auth-status');
-  const btn = document.getElementById('auth-btn');
+  const btn = document.getElementById('auth-btn') || {};  // bar button removed; see css/components.css .auth-bar
   const formCard = document.getElementById('form-card');
 
   if (currentToken) {
-    status.textContent = 'Signed in';
+    status.textContent = '';
     btn.textContent = 'Sign out';
     formCard.style.display = '';
   } else {
-    status.textContent = 'Not signed in';
+    status.textContent = 'Sign in to record transactions.';
     btn.textContent = 'Sign in';
     formCard.style.display = 'none';
     isAdmin = false;
@@ -1424,7 +1423,7 @@ function setupModal() {
   const backdrop = document.getElementById('modal-backdrop');
   const input = document.getElementById('modal-token-input');
 
-  document.getElementById('auth-btn').addEventListener('click', () => {
+  document.getElementById('auth-btn')?.addEventListener('click', () => {
     if (currentToken) {
       currentToken = '';
       localStorage.removeItem(TOKEN_KEY);

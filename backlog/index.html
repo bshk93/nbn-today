@@ -201,7 +201,6 @@
 
   <div class="auth-bar" id="auth-bar">
     <span id="auth-status">Sign in to view the backlog.</span>
-    <button id="auth-btn">Sign in</button>
   </div>
 
   <div id="gate" class="gate" style="display:none">
@@ -264,12 +263,12 @@
 
   function updateAuthBar() {
     const status = document.getElementById('auth-status');
-    const btn    = document.getElementById('auth-btn');
+    const btn    = document.getElementById('auth-btn') || {};  // bar button removed; see css/components.css .auth-bar
     if (currentToken && myName) {
-      status.textContent = `Signed in as ${myName}`;
+      status.textContent = '';
       btn.textContent = 'Sign out';
     } else if (currentToken) {
-      status.textContent = 'Signed in';
+      status.textContent = '';
       btn.textContent = 'Sign out';
     } else {
       status.textContent = 'Sign in to view the backlog.';
@@ -304,7 +303,7 @@
     document.getElementById('doc').style.display = 'none';
   }
 
-  document.getElementById('auth-btn').addEventListener('click', () => {
+  document.getElementById('auth-btn')?.addEventListener('click', () => {
     if (currentToken) { signOut(); }
     else {
       const bd = document.getElementById('signin-backdrop');

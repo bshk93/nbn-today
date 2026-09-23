@@ -150,3 +150,8 @@
   padding-top: 0.5rem; border-top: 1px solid var(--border);
 }
 .profile-menu .member-banner-profile-link:hover { text-decoration: underline; }
+.profile-menu .member-banner-signout {
+  align-self: flex-start; padding: 0; background: none; border: none;
+  font: inherit; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;
+}
+.profile-menu .member-banner-signout:hover { color: var(--danger); }

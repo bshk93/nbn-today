@@ -364,6 +364,19 @@ function _buildInboxButton() {
 // current team badge, NB¥ balance, and a link to the member's profile page.
 // Ported from the homepage's old standalone "profile menu" (which only ever
 // existed on index.html) so every page gets it, not just the homepage.
+// Sign out everywhere: this browser's token, and the shared .nbn.today session
+// cookie (so pdc.nbn.today and dev.nbn.today are signed out too). The one
+// sign-out on the site — four pages used to carry their own sign-in/out bar,
+// which is how this ended up living nowhere shared.
+function nbnSignOut() {
+  const done = () => {
+    try { localStorage.removeItem('nbn_token'); localStorage.removeItem('nbn_token_name'); } catch { /* private browsing */ }
+    location.reload();
+  };
+  fetch('/api/auth/session/logout', { method: 'POST', credentials: 'same-origin' })
+    .catch(() => {}).then(done);
+}
+
 function _buildProfilePicker() {
   const wrap = document.createElement('div');
   wrap.className = 'profile-picker';
@@ -388,12 +401,14 @@ function _buildProfilePicker() {
     </div>
     <span class="member-banner-balance"></span>
     <a class="member-banner-profile-link" href="/members/">My Profile →</a>
+    <button type="button" class="member-banner-signout">Sign out</button>
   `;
   const greetEl = menu.querySelector('.member-banner-greeting');
   const teamEl = menu.querySelector('.member-banner-team');
   const teamLogoEl = teamEl.querySelector('img');
   const balanceEl = menu.querySelector('.member-banner-balance');
   const profileLinkEl = menu.querySelector('.member-banner-profile-link');
+  menu.querySelector('.member-banner-signout').addEventListener('click', nbnSignOut);
 
   btn.addEventListener('click', e => {
     e.stopPropagation();

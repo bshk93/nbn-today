@@ -280,3 +280,11 @@
 .ui-prose blockquote { border-left: 3px solid var(--border); padding-left: var(--space-4); color: var(--text-muted); }
 .ui-prose hr { border: none; border-top: 1px solid var(--border); margin: var(--space-6) 0; }
 .ui-prose img { max-width: 100%; height: auto; border-radius: var(--radius-sm); }
+
+/* ── Page auth notices ──────────────────────────────────────────────────── */
+/* Several pages had their own sign-in bar with a button, duplicating the
+   header's Sign in and profile menu. The button is gone; the line stays only
+   to say why a page is limited ("Sign in to view the backlog", "Read-only…").
+   Empty means there is nothing to say, so the bar disappears. */
+.auth-bar:has(> #auth-status:empty),
+.auth-bar:has(> #auth-name:empty) { display: none; }

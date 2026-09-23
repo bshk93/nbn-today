@@ -122,7 +122,6 @@
 
   <div class="auth-bar" id="auth-bar">
     <span id="auth-status">Sign in to add or edit donations.</span>
-    <button id="auth-btn">Sign in</button>
   </div>
 
   <div class="controls">
@@ -210,12 +209,12 @@ function seasonForDate(s) {
 
 function updateAuthBar() {
   const status = document.getElementById('auth-status');
-  const btn    = document.getElementById('auth-btn');
+  const btn    = document.getElementById('auth-btn') || {};  // bar button removed; see css/components.css .auth-bar
   if (currentToken && myName) {
-    status.textContent = isBod ? `Signed in as ${myName}` : `Signed in as ${myName} (read-only — bod role required to edit)`;
+    status.textContent = isBod ? '' : 'Read-only: the bod role is needed to add or edit donations.';
     btn.textContent = 'Sign out';
   } else if (currentToken) {
-    status.textContent = 'Signed in';
+    status.textContent = '';
     btn.textContent = 'Sign out';
   } else {
     status.textContent = 'Sign in to add or edit donations.';
@@ -245,7 +244,7 @@ function signOut() {
   if (currentSeason) render(currentSeason);
 }
 
-document.getElementById('auth-btn').addEventListener('click', () => {
+document.getElementById('auth-btn')?.addEventListener('click', () => {
   if (currentToken) { signOut(); }
   else {
     const bd = document.getElementById('signin-backdrop');

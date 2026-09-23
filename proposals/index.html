@@ -23,9 +23,7 @@
   <style>
     
             
-        .auth-label { font-size: 0.8rem; color: var(--text-muted); }
-    .auth-name { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
-
+            
     button {
       font-family: inherit; cursor: pointer; border-radius: 6px;
       font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.8rem;
@@ -125,9 +123,6 @@
       <p class="ui-subtitle">League proposals, discussion, and voting</p>
     </div>
     <div class="right-bar ui-header-actions">
-      <span class="auth-label" id="auth-label">Not signed in</span>
-      <span class="auth-name" id="auth-name"></span>
-      <button class="btn-ghost" id="btn-auth" onclick="openAuthModal()">Sign in</button>
       <a href="/proposals/new/" class="btn-primary" id="btn-new" style="display:none;padding:0.35rem 0.8rem;border-radius:6px;font-size:0.8rem;font-weight:500;background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);">+ New Proposal</a>
     </div>
   </header>
@@ -324,9 +319,12 @@ async function initAuth() {
 }
 
 function updateAuthUI(info) {
-  const label = document.getElementById('auth-label');
-  const name = document.getElementById('auth-name');
-  const btn = document.getElementById('btn-auth');
+  // The page's own sign-in bar was removed in favour of the header's Sign in
+  // button and profile menu (nav.js), so these may not exist; {} absorbs the
+  // writes below without touching the rest of this function.
+  const label = document.getElementById('auth-label') || {};
+  const name = document.getElementById('auth-name') || {};
+  const btn = document.getElementById('btn-auth') || {};
   const btnNew = document.getElementById('btn-new');
   if (info) {
     label.textContent = 'Signed in as';

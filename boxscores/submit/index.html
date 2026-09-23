@@ -296,8 +296,7 @@
     <p class="subtitle">Import a game result via manual stat entry.</p>
 
     <div class="auth-bar">
-      <span id="auth-name">Not authenticated</span>
-      <button id="auth-btn">Set Token</button>
+      <span id="auth-name">Sign in to import box scores.</span>
     </div>
 
     <!-- Shared game details -->
@@ -507,11 +506,11 @@
     function updateAuthBar() {
       const name = localStorage.getItem("nbn_token_name") || "";
       document.getElementById("auth-name").textContent = token
-        ? (name ? `Signed in as ${name}` : "Token set")
-        : "Not authenticated";
+        ? ""
+        : "Sign in to import box scores.";
     }
     updateAuthBar();
-    document.getElementById("auth-btn").onclick = () => {
+    (document.getElementById("auth-btn") || {}).onclick = () => {
       document.getElementById("token-input").value = token;
       document.getElementById("token-modal").classList.add("open");
     };

@@ -797,12 +797,6 @@ const coachingConfigReady = new Promise(resolve => {
   /* Only rendered when no token is stored. Without it a team owner who isn't on
      the committee has no way into their own tools: every other affordance that
      prompts for a token is itself gated on roles that require a token. */
-  .team-signin-btn {
-    background: transparent; border: 1px solid var(--border); border-radius: 6px;
-    color: var(--text-muted); cursor: pointer; font-family: inherit;
-    font-size: 0.72rem; padding: 0.25rem 0.6rem;
-  }
-  .team-signin-btn:hover { color: var(--text-primary); border-color: var(--text-dim); }
   .player-note {
     display: inline-flex; align-items: center;
     margin-left: 0.35rem; color: var(--gold-dim);
@@ -979,7 +973,6 @@ document.body.innerHTML = `
             <button class="mode-tab" data-mode="ratings" type="button">Ratings</button>
           </div>
           <button id="whatif-enter-btn" class="whatif-enter-btn" type="button">What If Mode</button>
-          <button id="team-signin-btn" class="team-signin-btn" type="button" style="display:none">Sign in</button>
         </div>
         <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
         <div id="cap-edit-wrap"></div>
@@ -6815,11 +6808,6 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  // Snapshot this before the fetches: a stale token gets cleared by the first
-  // request that 403s, so reading it afterwards can't tell "never signed in"
-  // from "signed in with a token that has since been revoked".
-  const hadStoredToken = !!getToken();
-
   const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -6859,20 +6847,9 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   AUTH_ROLES = (authr.status === 'fulfilled' && Array.isArray(authr.value?.roles)) ? authr.value.roles : [];
   AUTH_OWNER_OF = (authr.status === 'fulfilled' && Array.isArray(authr.value?.owner_of)) ? authr.value.owner_of : [];
 
-  // Every role-gated affordance on this page needs a token to already be stored,
-  // and the only ways to store one were themselves role-gated — so a team owner
-  // without committee roles could never reach their own tools here. Offer the
-  // prompt whenever we have no identity at all, then reload so the gated UI
-  // renders. A stale/invalid token also lands here, since it resolves to no roles.
-  const signInBtn = document.getElementById('team-signin-btn');
-  if (signInBtn && !AUTH_ROLES.length) {
-    signInBtn.style.display = '';
-    signInBtn.textContent = hadStoredToken ? 'Sign in again' : 'Sign in';
-    signInBtn.title = hadStoredToken
-      ? 'Your saved token isn’t valid — enter it again to manage your team.'
-      : 'Enter your member token to manage your team.';
-    signInBtn.addEventListener('click', () => promptToken(() => location.reload()));
-  }
+  // Signing in is the header's job (token-badge.js's Sign in button). This
+  // page had its own, which also showed for a signed-in member with no roles
+  // and told them to "sign in again".
 
   const biosData    = biosr.status === 'fulfilled' ? biosr.value : {};
   const capLevels   = capr.status === 'fulfilled'  ? capr.value  : {};

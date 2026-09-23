@@ -289,7 +289,6 @@
 
   <div class="auth-bar" id="auth-bar">
     <span id="auth-status">Sign in to manage members.</span>
-    <button id="auth-btn">Sign in</button>
   </div>
 
   <div id="my-profile-bar" style="display:none;margin-bottom:1.25rem">
@@ -841,12 +840,12 @@ function renderTable() {
 
 function updateAuthBar() {
   const status = document.getElementById('auth-status');
-  const btn    = document.getElementById('auth-btn');
+  const btn    = document.getElementById('auth-btn') || {};  // bar button removed; see css/components.css .auth-bar
   if (currentToken && myName) {
-    status.textContent = `Signed in as ${myName}`;
+    status.textContent = '';
     btn.textContent = 'Sign out';
   } else if (currentToken) {
-    status.textContent = 'Signed in';
+    status.textContent = '';
     btn.textContent = 'Sign out';
   } else {
     status.textContent = 'Sign in to manage members.';
@@ -898,7 +897,7 @@ function signOut() {
   renderTable();
 }
 
-document.getElementById('auth-btn').addEventListener('click', () => {
+document.getElementById('auth-btn')?.addEventListener('click', () => {
   if (currentToken) { signOut(); }
   else {
     document.getElementById('signin-backdrop').classList.add('open');

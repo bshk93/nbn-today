@@ -23,9 +23,7 @@
   <style>
     
             
-        .auth-label { font-size: 0.8rem; color: var(--text-muted); }
-    .auth-name { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
-
+            
     button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.8rem; border: 1px solid transparent; transition: background 0.1s; }
     .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
     .btn-primary:hover { background: var(--accent-dark); }
@@ -108,9 +106,6 @@
       <p class="ui-subtitle">League dispatches, recaps, and opinion — written by the members.</p>
     </div>
     <div class="right-bar ui-header-actions">
-      <span class="auth-label" id="auth-label">Not signed in</span>
-      <span class="auth-name" id="auth-name"></span>
-      <button class="btn-ghost" id="btn-auth" onclick="openAuthModal()">Sign in</button>
       <a href="/news/new/" class="btn-primary" id="btn-new">+ Write</a>
     </div>
   </header>
@@ -338,9 +333,12 @@ async function loadNews() {
 }
 
 function updateAuthUI(info) {
-  const label = document.getElementById('auth-label');
-  const name = document.getElementById('auth-name');
-  const btn = document.getElementById('btn-auth');
+  // The page's own sign-in bar was removed in favour of the header's Sign in
+  // button and profile menu (nav.js), so these may not exist; {} absorbs the
+  // writes below without touching the rest of this function.
+  const label = document.getElementById('auth-label') || {};
+  const name = document.getElementById('auth-name') || {};
+  const btn = document.getElementById('btn-auth') || {};
   const btnNew = document.getElementById('btn-new');
   if (info) {
     label.textContent = 'Signed in as';
