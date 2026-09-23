@@ -88,8 +88,11 @@
     <div id="content"><span class="loading">Loading…</span></div>
   </div>
 
+  <script src="/league-time.js"></script>
   <script>
-    const SEASON = "25-26";
+    // Which season's dates are loaded. Set from the ?date link (calendar and
+    // /committees/stream deep-link old games), else the current league year.
+    let SEASON = "";
     let allDates = [], cur = "";
 
     const contentEl = document.getElementById("content");
@@ -99,12 +102,25 @@
 
     if (localStorage.getItem("nbn_token")) document.getElementById("submit-link").style.display = "inline";
 
+    async function loadSeason(season) {
+      const r = await fetch(`/api/boxscores/dates?season=${season}`);
+      SEASON = season;
+      const d = r.ok ? await r.json() : [];
+      allDates = Array.isArray(d) ? d : [];
+    }
+
     async function init() {
       try {
-        const r = await fetch(`/api/boxscores/dates?season=${SEASON}`);
-        allDates = await r.json();
-        if (!allDates.length) { setContent('<span class="loading">No games available.</span>'); return; }
         const param = new URLSearchParams(location.search).get("date");
+        if (param && /^\d{4}-\d\d-\d\d$/.test(param)) {
+          await loadSeason(nbnSeasonForDate(param));
+        } else {
+          await loadSeason(await nbnCurrentSeason());
+          // Between the July 1 rollover and opening night the new season has no
+          // games yet; show the one that just ended rather than an empty page.
+          if (!allDates.length) await loadSeason(nbnSeasonShift(SEASON, -1));
+        }
+        if (!allDates.length) { setContent('<span class="loading">No games available.</span>'); return; }
         cur = (param && allDates.includes(param)) ? param : allDates[0];
         dateInput.value = cur;
         updateNav();
@@ -118,7 +134,14 @@
       btnNext.disabled = i <= 0;
       btnPrev.disabled = i >= allDates.length - 1;
     }
-    function go(d) { cur = d; dateInput.value = cur; updateNav(); load(cur); }
+    async function go(d) {
+      // A date picked from another season needs that season's date list, or
+      // the prev/next buttons walk the wrong one.
+      if (d && nbnSeasonForDate(d) !== SEASON) {
+        try { await loadSeason(nbnSeasonForDate(d)); } catch (e) {}
+      }
+      cur = d; dateInput.value = cur; updateNav(); load(cur);
+    }
 
     btnPrev.onclick = () => { const i = allDates.indexOf(cur); if (i < allDates.length - 1) go(allDates[i + 1]); };
     btnNext.onclick = () => { const i = allDates.indexOf(cur); if (i > 0) go(allDates[i - 1]); };

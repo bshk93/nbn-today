@@ -47,3 +47,38 @@ const _nbnDateTimeFmt = new Intl.DateTimeFormat('en-US', {
 function nbnFormatDateTime(d) {
   return _nbnDateTimeFmt.format(d);
 }
+
+// ── Seasons ───────────────────────────────────────────────────────────────
+// A season is 'YY-YY' ('26-27'). The league year rolls over on July 1
+// (nbn-api/season_clock.py), and a season can be overridden per year in
+// league-state.json — which is why the real answer comes from the API, and the
+// date rule is only the fallback when the API can't be reached.
+//
+// Pages used to hardcode the current season and quietly went stale every July.
+// Ask here instead.
+
+/** '25-26' shifted by n seasons: nbnSeasonShift('25-26', 1) === '26-27'. */
+function nbnSeasonShift(season, n) {
+  const y = parseInt(season.slice(0, 2), 10) + n;
+  const yy = v => String(((v % 100) + 100) % 100).padStart(2, '0');
+  return `${yy(y)}-${yy(y + 1)}`;
+}
+
+/** The season a league-time civil date falls in, by the July 1 rule. */
+function nbnSeasonForDate(date) {
+  const [y, m] = date.split('-').map(Number);
+  const start = m >= 7 ? y : y - 1;
+  return nbnSeasonShift(`${String(start % 100).padStart(2, '0')}-00`, 0);
+}
+
+let _nbnCurrentSeason = null;
+/** The current league year, from GET /api/league-year. Cached per page load. */
+function nbnCurrentSeason() {
+  if (!_nbnCurrentSeason) {
+    _nbnCurrentSeason = fetch('/api/league-year')
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(d => d.current_season || nbnSeasonForDate(nbnToday()))
+      .catch(() => nbnSeasonForDate(nbnToday()));
+  }
+  return _nbnCurrentSeason;
+}
