@@ -60,6 +60,12 @@
   --radius-sm: 6px;
   --radius: 10px;
 
+  /* Heat-map cells (OVR, ratings, head-to-head): a translucent tint of the
+     cell's hue over whatever the background is, with text in the same hue at
+     this lightness. Light themes set it darker so the text stays readable;
+     fixed dark cell backgrounds used to look muddy, and wrong on light themes. */
+  --heat-text-l: 70%;
+
   /* Backgrounds */
   --bg-page: #111827;
   --bg-card: #1f2937;
@@ -191,6 +197,7 @@ html[data-design="clean"][data-theme="nbn-today"] {
 }
 
 :root[data-theme="nbn-today-light"] {
+  --heat-text-l: 32%;
   /* These seven used to be absent, so they silently took the dark block's
      value — which this file's own header says never happens. Four of them
      happened to work on a light page anyway; --text-muted did not (4.47:1,
@@ -298,6 +305,7 @@ html[data-design="clean"][data-theme="nbn-today"] {
    and "positive" at a glance; the purple family is pushed toward violet so
    it stays distinguishable from the rose accent. */
 :root[data-theme="lavender-rose"] {
+  --heat-text-l: 32%;
   /* Backgrounds */
   --bg-page: #f6f1f5;
   --bg-card: #ffffff;

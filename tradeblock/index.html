@@ -1107,8 +1107,8 @@
               const n = parseFloat(row.ovr);
               if (!isNaN(n)) {
                 const t = Math.min(1, Math.max(0, (n - 60) / (99 - 60)));
-                td.style.background = `hsl(${Math.round(t * 120)}, 55%, 18%)`;
-                td.style.color     = `hsl(${Math.round(t * 120)}, 80%, 72%)`;
+                td.style.background = `hsl(${Math.round(t * 120)} 70% 50% / 0.16)`;
+                td.style.color     = `hsl(${Math.round(t * 120)} 70% var(--heat-text-l))`;
               }
               if (row.slug && window.RatingsPopup) {
                 RatingsPopup.attach(td, row.slug, { name: row.player });

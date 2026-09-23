@@ -323,8 +323,8 @@
               const { min, max } = colRanges[col.key];
               const t = max === min ? 0.5 : (n - min) / (max - min);
               const hue = Math.round(t * 120);
-              td.style.background = `hsl(${hue}, 55%, 18%)`;
-              td.style.color = `hsl(${hue}, 80%, 72%)`;
+              td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
+              td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
             }
           }
         });

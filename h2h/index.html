@@ -203,8 +203,8 @@
 
           const pct = w / (w + l);
           const hue = Math.round(pct * 120);
-          td.style.background = `hsl(${hue}, 55%, 18%)`;
-          td.style.color = `hsl(${hue}, 80%, 72%)`;
+          td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
+          td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
 
           const recDiv = document.createElement('div');
           recDiv.className = 'cell-record';
@@ -268,8 +268,8 @@
 
           const pct = w / (w + l);
           const hue = Math.round(pct * 120);
-          td.style.background = `hsl(${hue}, 55%, 18%)`;
-          td.style.color = `hsl(${hue}, 80%, 72%)`;
+          td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
+          td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
 
           const recDiv = document.createElement('div');
           recDiv.className = 'cell-record';

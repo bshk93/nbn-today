@@ -5,8 +5,7 @@
 //   TEAMS                        76   abbr → full team name
 //   RETIRED_JERSEYS             109   per-team retired number records
 //   ratingsPopupReady           135   resolves once /ratings-popup.js has loaded
-//   namesReady                  159   resolves once /names.js has loaded
-//   lineupReady                 172   resolves once /teams/lineup.js has loaded
+//   lineupReady                 148   resolves once /teams/lineup.js has loaded
 //   contractReady               161   resolves once /contract.js has loaded
 //   capHealthReady              182   resolves once /cap-health.js has loaded
 //   coachingConfigReady         194   resolves once /coaching-config.js has loaded
@@ -152,16 +151,6 @@ const ratingsPopupReady = new Promise(resolve => {
   _rp.onload = resolve;
   _rp.onerror = resolve;
   document.head.appendChild(_rp);
-});
-
-// nbnPlayerName — "MCCOLLUM, CJ" → "CJ McCollum", the same everywhere on the
-// site. displayNameFromBio falls back to plain title case until it arrives.
-const namesReady = new Promise(resolve => {
-  const _nm = document.createElement('script');
-  _nm.src = '/names.js';
-  _nm.onload = resolve;
-  _nm.onerror = resolve;
-  document.head.appendChild(_nm);
 });
 
 // DEPTH_SLOTS / computeStartingFive — the Rosters mode's starting five. Unlike
@@ -1193,7 +1182,6 @@ function buildNonGtdTip(year, guaranteed, guarantee_dates, guarantee_schedule) {
 
 function displayNameFromBio(canonical) {
   if (!canonical) return '';
-  if (typeof nbnPlayerName === 'function') return nbnPlayerName(canonical);
   const toTitle = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   if (canonical.includes(',')) {
     const [last, first] = canonical.split(',', 2);
@@ -4837,7 +4825,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
     ...Object.entries(bios)
       .map(([slug, bio]) => {
         const parts = bio.name.split(',');
-        const label = parts.length === 2 ? displayNameFromBio(bio.name) : bio.name;
+        const label = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
         return { slug, label };
       })
       .sort((a, b) => a.label.localeCompare(b.label))
@@ -6858,7 +6846,6 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/coaching-settings').then(r => r.ok ? r.json() : {}),
   ]);
 
-  await namesReady;
   await ratingsPopupReady;
   await lineupReady;
   await contractReady;
