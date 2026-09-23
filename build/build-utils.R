@@ -37,6 +37,11 @@ clean_allstats <- function(dfs) {
       PLAYER == "HIGHSMITH, HAYDEN"    ~ "HIGHSMITH, HAYWOOD",
       PLAYER == "THOMAS, CAMERON"      ~ "THOMAS, CAM",
       PLAYER == "REDDISH, CAMERON"     ~ "REDDISH, CAM",
+      # Mirrors PLAYER_FIXES in nbn-api/stats_build/pipeline.py, which added
+      # these two without this copy — so the R rollback still published them
+      # as phantom players.
+      PLAYER == "RILEY, WENDELL"       ~ "RILEY, WILL",
+      PLAYER == "DIATKE, MAMADI"       ~ "DIAKITE, MAMADI",
       TRUE ~ PLAYER
     )) %>%
     mutate(GMSC = round(GMSC, 2)) %>%
@@ -51,23 +56,31 @@ clean_allstats <- function(dfs) {
 }
 
 load_allstats <- function(playoffs = FALSE, data_dir = Sys.getenv("NBS_DATA_DIR", "/var/lib/nothing-but-stats")) {
-  ptrn <- "allstats-\\d"
+  # Anchored: the data dir also holds allstats-playoffs-26.csv.bak-round-fix
+  # (kept on purpose), which an unanchored pattern loaded as a second copy of
+  # the 25-26 playoffs once the season rolled past 25-26.
+  ptrn <- "^allstats-\\d{2}-\\d{2}\\.csv$"
   pstr <- ""
   if (playoffs) {
-    ptrn <- "allstats-playoffs"
+    ptrn <- "^allstats-playoffs-\\d{2}\\.csv$"
     pstr <- " Playoffs"
   }
 
   list.files(data_dir, ptrn) %>%
     map(function(fp) {
       tmp_season <- as.numeric(str_extract(fp, "\\d{2}\\."))
-      data.table::fread(file.path(data_dir, fp)) %>%
+      data.table::fread(file.path(data_dir, fp), header = TRUE) %>%
         tibble() %>%
         mutate_if(is.numeric, as.numeric) %>%
         mutate(DATE = as.Date(DATE)) %>%
         mutate(SEASON = str_c(tmp_season - 1, "-", tmp_season, pstr)) %>%
         filter(!is.na(SEASON))
-    })
+    }) %>%
+    # A season's file is created header-only at the July 1 rollover
+    # (nbn-api/allstats_files.py). Its columns read as logical, which bind_rows
+    # refuses to combine with the real ones, so every R build failed from the
+    # rollover until the first box score.
+    keep(~ nrow(.x) > 0)
 }
 
 # ── Conference / division helpers ─────────────────────────────────────────────
