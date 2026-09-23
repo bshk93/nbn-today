@@ -570,12 +570,87 @@
     .directory .card > span:not(.card-header) { display: none; }  /* tile subtitles */
     .directory-forms { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--space-3); }
     .directory-forms:empty { display: none; }
+
+    /* ── Preview palette ──────────────────────────────────────────────────
+       Only replaces the default dark theme; a theme a member picked is left
+       alone. Neutral charcoal instead of the stock blue-grey, and one accent:
+       basketball orange, used sparingly. */
+    html[data-design="clean"]:not([data-theme]),
+    html[data-design="clean"][data-theme="nbn-today"] {
+      --bg-page: #0d0e11;
+      --bg-card: #16181c;
+      --bg-subtle: #121317;
+      --bg-hover: #1c1f24;
+      --border: #272a31;
+      --border-subtle: #1d2026;
+      --text-primary: #eef0f3;
+      --text-secondary: #b9bdc6;
+      --text-muted: #80858f;
+      --text-dim: #5b6069;
+      --accent: #ff7a1f;
+      --accent-light: #ff9a52;
+      --link: #ffa566;
+    }
+
+    /* Preview bar */
+    .design-bar { display: none; }
+    html[data-design="clean"] .design-bar {
+      display: flex; gap: 0.5rem; flex-wrap: wrap;
+      font-size: var(--text-xs); color: var(--text-muted);
+      margin: calc(-1 * var(--space-4)) 0 var(--space-5);
+    }
+    .design-bar a { color: var(--link); }
+
+    /* Headline: the state of the league, in words, at the top. */
+    .hero { display: none; }
+    html[data-design="clean"] .hero:not(:empty) {
+      display: block;
+      margin-bottom: var(--space-6);
+    }
+    .hero-line {
+      font-size: clamp(1.75rem, 4.5vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: var(--text-primary);
+    }
+    .hero-line em { font-style: normal; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .hero-sub { margin-top: var(--space-2); font-size: var(--text-base); color: var(--text-muted); }
+
+    html[data-design="clean"] .dash-feed-tag { letter-spacing: 0.03em; }
+
+    /* Phones */
+    @media (max-width: 600px) {
+      html[data-design="clean"] .page-wrap { padding: 1.25rem 1rem 3rem; }
+      html[data-design="clean"] header { margin-bottom: var(--space-5); }
+      html[data-design="clean"] header img { height: 36px; }
+      html[data-design="clean"] header h1 { font-size: var(--text-md); }
+      html[data-design="clean"] header p { display: none; }
+      html[data-design="clean"] .design-bar { margin-top: -0.5rem; }
+      /* Label on its own line above the headline, so the headline gets the
+         full width instead of a narrow strip beside the label. */
+      html[data-design="clean"] .dash-feed-row { grid-template-columns: minmax(0, 1fr); gap: 0.15rem; }
+      html[data-design="clean"] .dash-feed-when { grid-column: 1; }
+      html[data-design="clean"] .directory { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5) var(--space-4); }
+      html[data-design="clean"] .dash-card { padding-bottom: var(--space-5); }
+    }
   </style>
   <script>
-    // Clean design preview: ?design=clean. See the note in the <style> above.
-    if (new URLSearchParams(location.search).get('design') === 'clean') {
-      document.documentElement.dataset.design = 'clean';
-    }
+    // Clean design preview. ?design=clean turns it on and ?design=current off;
+    // the choice is remembered in this browser so it survives navigating back
+    // to the homepage. See the note in the <style> above.
+    (function () {
+      const q = new URLSearchParams(location.search).get('design');
+      try {
+        if (q === 'clean') localStorage.setItem('nbn_design_preview', 'clean');
+        if (q === 'current') localStorage.removeItem('nbn_design_preview');
+        if (localStorage.getItem('nbn_design_preview') === 'clean') {
+          document.documentElement.dataset.design = 'clean';
+        }
+      } catch (_) {
+        if (q === 'clean') document.documentElement.dataset.design = 'clean';
+      }
+    })();
   </script>
 </head>
 <body>
@@ -588,6 +663,9 @@
       <p>Basketball Simulation GM League</p>
     </div>
   </header>
+
+  <div class="design-bar">Previewing the new homepage design <a href="/?design=current">Switch back to the current one</a></div>
+  <div class="hero" id="dash-hero"></div>
 
   <section class="dash" id="dash">
     <!-- Band 1 — your team. Signed-in members with an active tenure only;
@@ -1298,6 +1376,32 @@
             + `${esc(shortDate(nextDate))} · ${plural(upcoming.filter(g => g.date === nextDate).length, 'game')}</div>`;
           list = upcoming.filter(g => g.date === nextDate).slice(0, 4);
         }
+      }
+
+      // Clean preview: the state of the league becomes the page's headline,
+      // and the sidebar card keeps just the games.
+      if (document.documentElement.dataset.design === 'clean') {
+        const yrs = /^\d\d-\d\d$/.test(sched.season || '')
+          ? `20${sched.season.slice(0, 2)}–${sched.season.slice(3)}` : (sched.season || '');
+        let line = '', sub = '';
+        if (ph.phase === 'preseason') {
+          const n = daysUntil(today, ph.first);
+          line = n === 0 ? `The ${esc(yrs)} season <em>opens tonight</em>`
+            : `The ${esc(yrs)} season opens in <em>${plural(n, 'day')}</em>`;
+          sub = `Opening night ${esc(shortDate(ph.first))} · ${sched.games.length.toLocaleString()} games on the schedule`;
+        } else if (ph.phase === 'offseason') {
+          line = 'The offseason';
+          sub = 'Free agency, extensions and the draft run until next season\'s schedule lands.';
+        } else if (list.length) {
+          const n = upcoming.filter(g => g.date === list[0].date).length;
+          line = list[0].date === today ? `<em>${plural(n, 'game')}</em> tonight`
+            : `Next up: <em>${esc(shortDate(list[0].date))}</em>`;
+          sub = `${esc(yrs)} season`;
+        }
+        $('dash-hero').innerHTML = line
+          ? `<div class="hero-line">${line}</div><div class="hero-sub">${sub}</div>` : '';
+        head = '';
+        if (ph.phase === 'preseason') title = 'Opening week';
       }
 
       card.innerHTML = `<div class="dash-card-title">${esc(title)}</div>${head}`
