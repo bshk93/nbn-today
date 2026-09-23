@@ -21,13 +21,9 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 1100px; margin: 0 auto; }
-
+    
     /* Picker state */
-    .pick-header { margin-bottom: 2rem; }
-    .pick-header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
-    .pick-header p { color: var(--text-muted); font-size: 0.9rem; }
-    .pick-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
+                .pick-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
     .pick-vs { font-size: 1.25rem; font-weight: 800; color: var(--text-dim); text-align: center; }
     .pick-slot { position: relative; }
     .pick-input { width: 100%; padding: 0.75rem 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem; font-family: inherit; outline: none; }
@@ -98,13 +94,15 @@
   <script src="/names.js"></script>
 </head>
 <body>
-<div class="page">
+<div class="page ui-page ui-page--wide">
   <nav class="nav"></nav>
   <div id="picker" style="display:none">
-    <div class="pick-header">
-      <h1>Compare Players</h1>
-      <p>Select two players to compare stats, contracts, and accolades.</p>
-    </div>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Compare Players</h1>
+        <p class="ui-subtitle">Select two players to compare stats, contracts, and accolades.</p>
+      </div>
+    </header>
     <div class="pick-grid">
       <div class="pick-slot" id="slot-a">
         <input class="pick-input" type="text" placeholder="Player A…" autocomplete="off" spellcheck="false">

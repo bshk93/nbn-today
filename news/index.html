@@ -21,14 +21,9 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 960px; margin: 0 auto; }
-
-    .top-bar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
-    .top-bar h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    .top-bar p { color: var(--text-muted); margin-top: 0.35rem; font-size: 0.9rem; }
-
-    .right-bar { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
-    .auth-label { font-size: 0.8rem; color: var(--text-muted); }
+    
+            
+        .auth-label { font-size: 0.8rem; color: var(--text-muted); }
     .auth-name { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
 
     button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.8rem; border: 1px solid transparent; transition: background 0.1s; }
@@ -104,21 +99,21 @@
   </style>
 </head>
 <body>
-<div class="page">
+<div class="page ui-page">
   <nav class="nav"></nav>
 
-  <div class="top-bar">
+  <header class="ui-header">
     <div>
-      <h1>NBN News</h1>
-      <p>League dispatches, recaps, and opinion — written by the members.</p>
+      <h1 class="ui-title">NBN News</h1>
+      <p class="ui-subtitle">League dispatches, recaps, and opinion — written by the members.</p>
     </div>
-    <div class="right-bar">
+    <div class="right-bar ui-header-actions">
       <span class="auth-label" id="auth-label">Not signed in</span>
       <span class="auth-name" id="auth-name"></span>
       <button class="btn-ghost" id="btn-auth" onclick="openAuthModal()">Sign in</button>
       <a href="/news/new/" class="btn-primary" id="btn-new">+ Write</a>
     </div>
-  </div>
+  </header>
 
   <!-- Submission queue (editors only) -->
   <div class="section" id="queue-section" style="display:none;">

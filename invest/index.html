@@ -23,12 +23,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2/dist/chartjs-plugin-zoom.min.js"></script>
   <style>
-    .page { max-width: 900px; margin: 0 auto; }
-
-    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; gap: 1rem; flex-wrap: wrap; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    .header-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-
+    
+            
     .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
     .market-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 20px; padding: 0.2rem 0.65rem; white-space: nowrap; }
     .market-badge.open   { background: var(--market-positive-bg); color: var(--market-positive); border: 1px solid var(--market-positive-border); }
@@ -159,12 +155,12 @@
   </style>
 </head>
 <body>
-<div class="page">
+<div class="page ui-page">
   <nav class="nav"><a href="/">← Home</a></nav>
 
-  <header>
-    <h1>📈 NBN Wall Street</h1>
-    <div class="header-right">
+  <header class="ui-header">
+    <h1 class="ui-title">Wall Street</h1>
+    <div class="header-right ui-header-actions">
       <span class="balance-chip" id="balance-chip" style="display:none"></span>
       <span class="market-badge" id="market-badge">…</span>
     </div>
@@ -293,7 +289,7 @@
 
 <script src="/nav.js"></script>
 <script>
-const API = 'https://nbn.today/api';
+const API = '/api';
 const TOKEN_KEY = 'nbn_token';
 
 let me = null;           // current user name (null if not logged in)

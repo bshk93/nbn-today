@@ -22,11 +22,8 @@
   <!-- /NBN:og -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
-    .page { max-width: 960px; margin: 0 auto; }
-
-    header { margin-bottom: 1.5rem; }
-    header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
-    .subtitle { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem; }
+    
+            .subtitle { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem; }
 
     .algo-box { background: var(--bg-subtle); border: 1px solid #2d2d54; border-radius: 8px;
                 padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.82rem; color: #a5b4fc; }
@@ -76,12 +73,14 @@
   </style>
 </head>
 <body>
-<div class="page">
+<div class="page ui-page">
   <nav class="nav"><a href="/invest">← Wall Street</a></nav>
 
-  <header>
-    <h1>Algorithm Preview</h1>
-    <div class="subtitle">Comparing current vs. proposed price formula across all 30 teams</div>
+  <header class="ui-header">
+    <div>
+      <h1 class="ui-title">Algorithm Preview</h1>
+      <p class="ui-subtitle">Comparing current vs. proposed price formula across all 30 teams</p>
+    </div>
   </header>
 
   <div class="algo-box">
@@ -107,7 +106,7 @@
 </div>
 
 <script>
-const API = 'https://nbn.today/api';
+const API = '/api';
 const charts = {};
 
 async function init() {

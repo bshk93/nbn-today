@@ -39,9 +39,7 @@
     .page { max-width: 1500px; margin: 0 auto; }
 
     /* ── chrome ───────────────────────────────────────────────────────────── */
-    .top-bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
-    .top-bar h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
-    .right-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+            .right-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
     #poext { margin-top: 1.75rem; }
     .poext-h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
     .who { font-size: 0.8rem; color: var(--text-muted); }
@@ -232,11 +230,11 @@
   <nav class="nav"><a href="/" id="home-link">← nbn.today</a></nav>
 
   <div class="page">
-    <header class="top-bar">
+    <header class="top-bar ui-header">
       <div>
-        <h1>Player Decision Committee Dashboard</h1>
+        <h1 class="ui-title">Player Decision Committee</h1>
       </div>
-      <div class="right-bar" id="whoami"></div>
+      <div class="right-bar ui-header-actions" id="whoami"></div>
     </header>
 
     <div id="gate"></div>

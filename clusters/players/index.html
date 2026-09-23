@@ -24,9 +24,7 @@
   @import url("/css/nav-chrome.css");
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg-deep); color: var(--text-secondary); font-family: var(--font-sans); min-height: 100vh; }
-  .page { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
-  h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); margin-bottom: 0.25rem; }
-  .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+      .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
   .subtitle b { color: var(--text-muted); }
 
   /* Tabs */
@@ -454,10 +452,14 @@
   <script src="/names.js"></script>
 </head>
 <body>
-<div class="page">
+<div class="page ui-page ui-page--wide">
   <div class="nav"></div>
-  <h1>Player Archetypes</h1>
-  <p class="subtitle">Two-stage hierarchical clustering across <b id="n-seasons">—</b> player-seasons (≥20G). Stage 1 groups by shot diet (3pt rate, FT rate, volume) → top-level number. Stage 2 refines by efficiency, playmaking &amp; defense → letter suffix.</p>
+  <header class="ui-header">
+    <div>
+      <h1 class="ui-title">Player Archetypes</h1>
+      <p class="ui-subtitle">Two-stage hierarchical clustering across <b id="n-seasons">—</b> player-seasons (≥20G). Stage 1 groups by shot diet (3pt rate, FT rate, volume) → top-level number. Stage 2 refines by efficiency, playmaking &amp; defense → letter suffix.</p>
+    </div>
+  </header>
 
   <div class="page-nav">
     <a href="/clusters/players/" class="page-nav-link active">Players</a>

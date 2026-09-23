@@ -24,8 +24,6 @@
 @import url("/css/nav-chrome.css");
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--bg-deep); color: var(--text-secondary); font-family: var(--font-sans); min-height: 100vh; }
-.page { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
-h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); margin-bottom: 0.25rem; }
 .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem; }
 .subtitle b { color: var(--text-muted); }
 
@@ -266,10 +264,14 @@ h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); margin-bott
 </style>
 </head>
 <body>
-<div class="page">
+<div class="page ui-page ui-page--wide">
   <div class="nav"></div>
-  <h1>Team Archetypes</h1>
-  <p class="subtitle">Two-stage clustering of <b id="n-seasons">—</b> team-seasons by shot diet, pace, ball movement, and roster structure. Scatter position shows offensive vs. defensive rating — upper-right is best.</p>
+  <header class="ui-header">
+    <div>
+      <h1 class="ui-title">Team Archetypes</h1>
+      <p class="ui-subtitle">Two-stage clustering of <b id="n-seasons">—</b> team-seasons by shot diet, pace, ball movement, and roster structure. Scatter position shows offensive vs. defensive rating — upper-right is best.</p>
+    </div>
+  </header>
 
   <div class="page-nav">
     <a href="/clusters/players/" class="page-nav-link">Players</a>

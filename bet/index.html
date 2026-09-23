@@ -21,12 +21,8 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 700px; margin: 0 auto; }
-
-    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; gap: 1rem; flex-wrap: wrap; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    .header-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-
+    
+            
     .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
 
     .new-bet-btn { background: none; border: 1px solid var(--text-dim); color: var(--market-positive); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
@@ -219,11 +215,11 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"></nav>
-    <header>
-      <h1>🎲 NBN Bets</h1>
-      <div class="header-right">
+    <header class="ui-header">
+      <h1 class="ui-title">Bets</h1>
+      <div class="header-right ui-header-actions">
         <span class="balance-chip" id="balance-chip" style="display:none"></span>
         <button class="new-canned-btn" id="new-canned-btn" style="display:none">+ New Bet</button>
         <button class="new-bet-btn" id="new-bet-btn" style="display:none">+ New Custom Bet</button>

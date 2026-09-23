@@ -21,14 +21,9 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 760px; margin: 0 auto; }
-
-    .top-bar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
-    .top-bar h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    .top-bar p { color: var(--text-muted); margin-top: 0.35rem; font-size: 0.9rem; }
-
-    .right-bar { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
-    .auth-label { font-size: 0.8rem; color: var(--text-muted); }
+    
+            
+        .auth-label { font-size: 0.8rem; color: var(--text-muted); }
     .auth-name { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
 
     button {
@@ -88,21 +83,21 @@
   </style>
 </head>
 <body>
-<div class="page">
+<div class="page ui-page">
   <nav class="nav"></nav>
 
-  <div class="top-bar">
+  <header class="ui-header">
     <div>
-      <h1>Inbox</h1>
-      <p>Notifications addressed to you — offer remands, voids, and the like.</p>
+      <h1 class="ui-title">Inbox</h1>
+      <p class="ui-subtitle">Notifications addressed to you — offer remands, voids, and the like.</p>
     </div>
-    <div class="right-bar">
+    <div class="right-bar ui-header-actions">
       <span class="auth-label" id="auth-label">Not signed in</span>
       <span class="auth-name" id="auth-name"></span>
       <button class="btn-ghost" id="btn-auth" onclick="openAuthModal()">Sign in</button>
       <button class="btn-ghost" id="btn-mark-all" style="display:none;" onclick="markAllRead()">Mark all read</button>
     </div>
-  </div>
+  </header>
 
   <div id="content">
     <div class="empty">Loading…</div>

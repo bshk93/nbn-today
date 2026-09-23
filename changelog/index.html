@@ -21,10 +21,6 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 680px; margin: 0 auto; }
-    header { margin-bottom: 2.5rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
     .entries { display: flex; flex-direction: column; gap: 1.5rem; }
     .entry {
       background: var(--bg-card);
@@ -59,6 +55,7 @@
       color: var(--text-secondary);
       padding-left: 1rem;
       position: relative;
+      overflow-wrap: anywhere;   /* file paths in entries would otherwise widen the page on a phone */
     }
     .changes li::before {
       content: '–';
@@ -69,11 +66,13 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"></nav>
-    <header>
-      <h1>Changelog</h1>
-      <p id="current-version">Site version history.</p>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Changelog</h1>
+        <p class="ui-subtitle" id="current-version">Site version history.</p>
+      </div>
     </header>
     <div class="entries" id="entries">
       <p style="color:var(--text-muted);font-size:0.875rem;">Loading…</p>

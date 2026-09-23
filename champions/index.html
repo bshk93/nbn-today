@@ -21,16 +21,8 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 1000px; margin: 0 auto; }
-
-    .hoc-head { text-align: center; margin-bottom: 1.5rem; }
-    .hoc-head h1 {
-      font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;
-      background: linear-gradient(180deg,#fde68a 0%,var(--warning) 60%,var(--gold-dim) 100%);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .hoc-head p { color: var(--text-muted); margin-top: 0.35rem; font-size: 0.9rem; }
-
+    
+            
     /* Year timeline */
     .timeline {
       display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center;
@@ -180,12 +172,12 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page ui-page--wide">
     <nav class="nav"></nav>
 
-    <div class="hoc-head">
-      <h1>🏆 Hall of Champions</h1>
-    </div>
+    <header class="ui-header">
+      <h1 class="ui-title">Hall of Champions</h1>
+    </header>
 
     <div class="timeline" id="timeline"></div>
 

@@ -21,14 +21,12 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 2.75rem; }
-
+    
     .mono { font-family: var(--font-mono); }
 
     /* header */
     .eyebrow { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-alt); font-weight: 700; }
-    header h1 { font-size: clamp(1.5rem, 3.6vw, 2.1rem); margin: 0.5rem 0 0.75rem; font-weight: 700; letter-spacing: -0.01em; }
-    header .subtitle { color: var(--text-secondary); max-width: 68ch; font-size: 1rem; line-height: 1.6; }
+        header .subtitle { color: var(--text-secondary); max-width: 68ch; font-size: 1rem; line-height: 1.6; }
     header .subtitle b { color: var(--text-primary); }
     .status-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
     .status-chip { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; padding: 0.3rem 0.65rem; border-radius: 5px; font-weight: 600; }
@@ -98,12 +96,12 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav" data-no-search></nav>
 
-    <header>
+    <header class="ui-header" style="display:block">
       <div class="eyebrow">Pick Provenance &middot; Working Reconstruction</div>
-      <h1>The 2028 First-Round Pick Chain</h1>
+      <h1 class="ui-title">The 2028 First-Round Pick Chain</h1>
       <p class="subtitle">
         Eight transactions, spanning 2024&ndash;2026, all feed into one trade: <b>MIA and SAC's June 2026
         swap-rights deal</b>, in which MIA takes &ldquo;the best of SAC, DAL, and PHX&rsquo;s 2028 1sts.&rdquo;

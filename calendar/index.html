@@ -21,12 +21,9 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 700px; margin: 0 auto; }
-
+    
     /* ── Header ────────────────────────────────────────────────── */
-    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; gap: 1rem; flex-wrap: wrap; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    .controls { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+            .controls { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 
     .add-event-btn { background: none; border: 1px solid var(--text-dim); color: var(--purple); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
     .add-event-btn:hover { border-color: var(--purple); background: #1e1b2e; }
@@ -34,11 +31,7 @@
     .add-game-btn:hover { border-color: var(--link); background: var(--bg-page); }
 
     /* View toggle */
-    .view-toggle { display: flex; background: var(--bg-card); border-radius: 6px; padding: 2px; gap: 2px; }
-    .view-btn { background: none; border: none; color: var(--text-muted); padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
-    .view-btn.active { background: var(--border); color: var(--text-primary); }
-    .view-btn:hover:not(.active) { color: var(--text-secondary); }
-
+                
     /* Month nav (shown only in month view) */
     .month-nav { display: flex; align-items: center; gap: 0.5rem; }
     .month-btn { background: var(--border); border: 1px solid var(--text-dim); color: var(--text-secondary); border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; font-size: 0.85rem; line-height: 1.4; }
@@ -178,17 +171,17 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"></nav>
-    <header>
-      <h1>Calendar</h1>
-      <div class="controls">
+    <header class="ui-header">
+      <h1 class="ui-title">Calendar</h1>
+      <div class="controls ui-header-actions">
         <button class="add-event-btn" id="add-event-btn" style="display:none">+ Add event</button>
         <button class="add-game-btn"  id="add-game-btn"  style="display:none">+ Add game(s)</button>
         <select class="team-filter" id="team-filter" title="Show only one team's games">
           <option value="">All teams</option>
         </select>
-        <div class="view-toggle">
+        <div class="view-toggle ui-segmented" role="group" aria-label="View">
           <button class="view-btn active" id="btn-sched">Schedule</button>
           <button class="view-btn"        id="btn-month">Month</button>
         </div>
