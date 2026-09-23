@@ -21,11 +21,7 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 660px; margin: 0 auto; }
-    header { margin-bottom: 2rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+                    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
     .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-decoration: none; color: inherit; transition: background 0.15s, border-color 0.15s, transform 0.15s; display: flex; flex-direction: column; gap: 0.4rem; }
     .card:hover { background: var(--bg-hover); border-color: var(--muted-border); transform: translateY(-2px); }
     .card-stat { font-size: 1.5rem; font-weight: 700; color: var(--accent-light); }
@@ -34,11 +30,13 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"></nav>
-    <header>
-      <h1>Totals Leaderboards</h1>
-      <p>All-time career totals, ranked across all NBN seasons.</p>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Totals Leaderboards</h1>
+        <p class="ui-subtitle">All-time career totals, ranked across all NBN seasons.</p>
+      </div>
     </header>
     <div class="grid">
       <a class="card" href="/stats/totals/p">
