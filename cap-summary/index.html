@@ -22,27 +22,10 @@
   <!-- /NBN:og -->
   <style>
 
-    .page {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    header {
-      margin-bottom: 1rem;
-    }
-
-    header h1 {
-      font-size: 1.875rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    header p {
-      color: var(--text-muted);
-      margin-top: 0.4rem;
-      font-size: 0.9rem;
-    }
-
+    
+    
+    
+    
     .thresholds {
       display: flex;
       flex-wrap: wrap;
@@ -125,34 +108,9 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
 
-    .table-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-      white-space: nowrap;
-    }
-
-    thead th {
-      padding: 0.7rem 0.85rem;
-      text-align: right;
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      user-select: none;
-    }
-
+    
+    
+    
     thead th.left { text-align: left; }
 
     thead th .sort-arrow {
@@ -165,25 +123,13 @@
 
     thead th[data-active="true"] .sort-arrow { opacity: 1; }
 
-    tbody tr {
-      border-bottom: 1px solid var(--border-subtle);
-      transition: background 0.1s;
-    }
-
-    tbody tr:last-child { border-bottom: none; }
-
-    tbody tr:hover { background: var(--bg-hover); }
-
+    
+    
+    
     tbody tr.row-expanded,
     tbody tr.row-expanded:hover { background: var(--bg-card); }
 
-    td {
-      padding: 0.55rem 0.85rem;
-      color: var(--text-secondary);
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
+    
     td.left {
       text-align: left;
     }
@@ -505,13 +451,15 @@
   <script src="/names.js"></script>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page ui-page--wide">
     <div id="cap-tooltip"></div>
     <nav class="nav"></nav>
 
-    <header>
-      <h1>Cap Summary</h1>
-      <p>Every team's cap sheet by category. Sort a column, tap a cell for detail, tap the arrow to test exclusions.</p>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Cap Summary</h1>
+        <p class="ui-subtitle">Every team's cap sheet by category. Sort a column, tap a cell for detail, tap the arrow to test exclusions.</p>
+      </div>
     </header>
 
     <div class="tabs">
@@ -522,7 +470,7 @@
     <div id="tab-table" class="tab-panel active">
       <div class="thresholds" id="thresholds"></div>
 
-      <div class="table-wrap" id="table-wrap">
+      <div class="ui-table-wrap" id="table-wrap">
         <div id="status">Loading…</div>
       </div>
     </div>
@@ -977,7 +925,7 @@
     }
 
     function buildTable(rows) {
-      const table = document.createElement('table');
+      const table = document.createElement('table'); table.className = 'ui-table';
       const thead = table.createTHead();
       const hr = thead.insertRow();
 

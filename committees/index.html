@@ -21,14 +21,8 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 1000px; margin: 0 auto; }
-
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p {
-      color: var(--text-muted); margin-top: 0.4rem;
-      font-size: 0.9rem; line-height: 1.6; max-width: 68ch;
-    }
-
+    
+        
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
@@ -114,15 +108,17 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"></nav>
 
-    <header>
-      <h1>Committees</h1>
-      <p>Four committees keep the league running. Each one works from a dashboard — the page
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Committees</h1>
+        <p class="ui-subtitle">Four committees keep the league running. Each one works from a dashboard — the page
          that shows what is waiting on it right now. Committee membership is a
          <a href="/roles">role</a>, and most dashboards need one; the rosters board is public
          because nothing on it is private.</p>
+      </div>
     </header>
 
     <div class="cards" id="cards"></div>

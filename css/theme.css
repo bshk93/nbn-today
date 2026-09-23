@@ -157,6 +157,39 @@
    looser than text. Tokens not listed here are intentionally identical to
    "NBN Today" (grays that already read fine on either background, plus the
    modal scrim). */
+/* ── Unified design preview (default dark theme) ─────────────────────────
+   Applies when <html data-design="clean">, which nav.js sets from
+   ?design=clean (remembered in this browser; ?design=current clears it).
+   Only the default theme is replaced; a theme a member picked keeps its own
+   colours, including its accent. Neutral charcoal instead of the stock
+   blue-grey, and an accent taken from the logo's navy (#003060), lifted
+   until it reads on a dark page. When the unified design becomes the
+   default, these values move into the bare :root block above. */
+html[data-design="clean"]:not([data-theme]),
+html[data-design="clean"][data-theme="nbn-today"] {
+  --bg-page: #0d0e11;
+  --bg-card: #16181c;
+  --bg-subtle: #121317;
+  --bg-hover: #1c1f24;
+  --bg-deep: #0a0b0d;
+  --border: #272a31;
+  --border-subtle: #1d2026;
+  --border-dark: #272a31;
+  --text-primary: #eef0f3;
+  --text-bright: #f6f7f9;
+  --text-secondary: #b9bdc6;
+  --text-muted: #80858f;
+  --text-muted-rgb: 128, 133, 143;
+  --text-dim: #5b6069;
+  --accent: #4a86cf;
+  --accent-dark: #2c63a6;
+  --accent-light: #8db6e6;
+  --link: #8db6e6;
+  --text-on-accent: #ffffff;
+  --accent-panel-bg: #13233a;
+  --muted-border: #3d5578;
+}
+
 :root[data-theme="nbn-today-light"] {
   /* These seven used to be absent, so they silently took the dark block's
      value — which this file's own header says never happens. Four of them

@@ -21,11 +21,7 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 760px; margin: 0 auto; }
-    header { margin-bottom: 2rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
-
+                
     .auth-banner {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
@@ -51,15 +47,8 @@
       color: var(--link); font-family: var(--font-mono);
     }
 
-    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    thead th {
-      text-align: right; padding: 0.3rem 0.5rem; font-size: 0.68rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
-      border-bottom: 1px solid var(--border);
-    }
-    thead th:first-child { text-align: center; width: 2.5rem; }
-    tbody tr:hover { background: var(--bg-subtle); }
-    tbody td {
+            thead th:first-child { text-align: center; width: 2.5rem; }
+        tbody td {
       padding: 0.25rem 0.5rem; text-align: right;
       border-bottom: 1px solid var(--border-subtle);
       font-variant-numeric: tabular-nums;
@@ -93,14 +82,16 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"></nav>
-    <header>
-      <h1>Rookie Scale</h1>
-      <p>First-round rookie contract amounts by pick (§ 7.1) — four years, with Years 3 and 4
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Rookie Scale</h1>
+        <p class="ui-subtitle">First-round rookie contract amounts by pick (§ 7.1) — four years, with Years 3 and 4
          as team options, plus the § 3.10 RFA cap hold the deal rolls into. The scale indexes
          annually with the salary cap. Second-round picks are not on the scale; they sign off
          the minimum scale (§ 3.12) via the Second Round Exception.</p>
+      </div>
     </header>
 
     <div class="auth-banner" id="auth-banner" style="display:none">
@@ -161,7 +152,7 @@
       h2.textContent = year + ' Draft';
       card.appendChild(h2);
 
-      const table = document.createElement('table');
+      const table = document.createElement('table'); table.className = 'ui-table';
 
       const thead = document.createElement('thead');
       const headerRow = document.createElement('tr');

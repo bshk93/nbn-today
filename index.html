@@ -543,27 +543,6 @@
     .directory-forms { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--space-3); }
     .directory-forms:empty { display: none; }
 
-    /* ── Preview palette ──────────────────────────────────────────────────
-       Only replaces the default dark theme; a theme a member picked is left
-       alone. Neutral charcoal instead of the stock blue-grey, and one accent:
-       basketball orange, used sparingly. */
-    html[data-design="clean"]:not([data-theme]),
-    html[data-design="clean"][data-theme="nbn-today"] {
-      --bg-page: #0d0e11;
-      --bg-card: #16181c;
-      --bg-subtle: #121317;
-      --bg-hover: #1c1f24;
-      --border: #272a31;
-      --border-subtle: #1d2026;
-      --text-primary: #eef0f3;
-      --text-secondary: #b9bdc6;
-      --text-muted: #80858f;
-      --text-dim: #5b6069;
-      --accent: #ff7a1f;
-      --accent-light: #ff9a52;
-      --link: #ffa566;
-    }
-
     /* Preview bar */
     .design-bar { display: none; }
     html[data-design="clean"] .design-bar {
@@ -618,23 +597,7 @@
     .visitor-intro a { color: var(--link); white-space: nowrap; }
     html[data-design="clean"] .visitor-intro { text-align: left; max-width: none; margin-top: calc(-1 * var(--space-4)); }
   </style>
-  <script>
-    // Clean design preview. ?design=clean turns it on and ?design=current off;
-    // the choice is remembered in this browser so it survives navigating back
-    // to the homepage. See the note in the <style> above.
-    (function () {
-      const q = new URLSearchParams(location.search).get('design');
-      try {
-        if (q === 'clean') localStorage.setItem('nbn_design_preview', 'clean');
-        if (q === 'current') localStorage.removeItem('nbn_design_preview');
-        if (localStorage.getItem('nbn_design_preview') === 'clean') {
-          document.documentElement.dataset.design = 'clean';
-        }
-      } catch (_) {
-        if (q === 'clean') document.documentElement.dataset.design = 'clean';
-      }
-    })();
-  </script>
+  <script src="/design.js"></script>
 </head>
 <body>
   <div class="page-wrap">

@@ -22,39 +22,12 @@
   <!-- /NBN:og -->
   <style>
 
-    .page {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    header { margin-bottom: 1.75rem; }
-
-    header h1 {
-      font-size: 1.875rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    header p {
-      color: var(--text-muted);
-      margin-top: 0.4rem;
-      font-size: 0.9rem;
-    }
-
-    .table-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-      white-space: nowrap;
-    }
-
+    
+    
+    
+    
+    
+    
     /* Superheader row */
     thead tr:first-child th {
       padding: 0.6rem 1rem 0.45rem;
@@ -91,24 +64,12 @@
     .div-left  { border-left:  1px solid var(--border); }
     .div-right { border-right: 1px solid var(--border); }
 
-    tbody tr {
-      border-bottom: 1px solid var(--border-subtle);
-      transition: background 0.1s;
-    }
-
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--bg-hover); }
-
-    td {
-      padding: 0.6rem 1rem;
-      color: var(--text-secondary);
-      vertical-align: middle;
-    }
-
+    
+        
+    
     td.season   { font-weight: 700; color: var(--text-primary); }
     td.champion { font-weight: 600; color: var(--gold); }
-    td.muted    { color: var(--text-muted); }
-
+    
     .status {
       text-align: center;
       padding: 3rem;
@@ -118,15 +79,17 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page ui-page--wide">
     <nav class="nav"></nav>
 
-    <header>
-      <h1>Season Summary</h1>
-      <p>Season-by-season champions, award winners, statistical leaders, and top-rated teams.</p>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Season Summary</h1>
+        <p class="ui-subtitle">Season-by-season champions, award winners, statistical leaders, and top-rated teams.</p>
+      </div>
     </header>
 
-    <div class="table-wrap" id="table-wrap">
+    <div class="ui-table-wrap" id="table-wrap">
       <div class="status">Loading…</div>
     </div>
   </div>
@@ -157,7 +120,7 @@
     }
 
     function buildTable(rows) {
-      const table = document.createElement('table');
+      const table = document.createElement('table'); table.className = 'ui-table';
       const thead = table.createTHead();
 
       // ── Superheader row ──────────────────────────────────────────────

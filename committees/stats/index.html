@@ -21,14 +21,8 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 1000px; margin: 0 auto; }
-
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p {
-      color: var(--text-muted); margin-top: 0.4rem;
-      font-size: 0.9rem; line-height: 1.6; max-width: 70ch;
-    }
-    header .crumb { font-size: 0.78rem; margin-bottom: 0.5rem; }
+    
+            header .crumb { font-size: 0.78rem; margin-bottom: 0.5rem; }
 
     .tiles {
       display: grid;
@@ -131,12 +125,14 @@
   <script src="/league-time.js"></script>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"></nav>
 
-    <header>
-      <div class="crumb"><a href="/committees/">← Committees</a></div>
-      <h1>Stats Committee</h1>
+    <header class="ui-header">
+      <div>
+        <div class="crumb"><a href="/committees/">← Committees</a></div>
+        <h1 class="ui-title">Stats Committee</h1>
+      </div>
     </header>
 
     <div class="tiles" id="tiles"></div>

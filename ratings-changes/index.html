@@ -22,19 +22,9 @@
   <!-- /NBN:og -->
   <style>
 
-    .page {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    header { margin-bottom: 1.25rem; }
-
-    header h1 {
-      font-size: 1.875rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
+    
+    
+    
     .controls {
       display: flex;
       align-items: center;
@@ -71,52 +61,17 @@
       font-size: 0.8rem;
     }
 
-    .table-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-    }
-
-    thead th {
-      padding: 0.5rem 0.75rem;
-      text-align: left;
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
-    }
-
+    
+    
+    
     thead th .sort-arrow {
       margin-left: 4px;
       font-size: 0.65rem;
     }
 
-    tbody tr {
-      border-bottom: 1px solid var(--border-subtle);
-      transition: background 0.1s;
-    }
-
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--bg-hover); }
-
-    td {
-      padding: 0.6rem 0.75rem;
-      color: var(--text-secondary);
-      vertical-align: top;
-    }
-
+    
+        
+    
     td.player-name {
       font-weight: 600;
       color: var(--text-primary);
@@ -212,11 +167,13 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page ui-page--wide">
     <nav class="nav"></nav>
 
-    <header>
-      <h1>Ratings Changes</h1>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Ratings Changes</h1>
+      </div>
     </header>
 
     <div class="controls">
@@ -226,14 +183,14 @@
       <span class="result-count" id="result-count"></span>
     </div>
 
-    <div class="table-wrap" id="table-wrap">
+    <div class="ui-table-wrap" id="table-wrap">
       <div id="status">Loading…</div>
     </div>
 
     <section class="stub-section" id="stub-section" hidden>
       <h2>Not yet rated <span class="stub-count" id="stub-count"></span></h2>
       <p class="stub-note">2K hasn't assigned these players a real rating yet — the value shown is a placeholder tied to their real-world team status, not a skill change, so it was kept out of the live OVR badge and roster tables. Recorded here for the log; it'll move into the table above once 2K rates them for real.</p>
-      <div class="table-wrap" id="stub-table-wrap"></div>
+      <div class="ui-table-wrap" id="stub-table-wrap"></div>
     </section>
   </div>
 
@@ -459,7 +416,7 @@
 
       function build() {
         const wrap = document.getElementById(wrapId);
-        const table = document.createElement('table');
+        const table = document.createElement('table'); table.className = 'ui-table';
         const thead = table.createTHead();
         const hr = thead.insertRow();
         COLS.forEach(col => {
