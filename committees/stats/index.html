@@ -90,10 +90,19 @@
       border-left: 3px solid var(--danger);
       border-radius: 7px;
       font-size: 0.83rem;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.1s, background 0.1s;
     }
+    .missing-row:hover { border-color: var(--text-muted); background: rgba(255,255,255,0.03); text-decoration: none; }
     .missing-row .date { font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-muted); }
     .missing-row .matchup { font-weight: 600; color: var(--text-secondary); }
     .missing-row .age { font-size: 0.74rem; color: var(--text-dim); white-space: nowrap; }
+    /* Games waiting 3+ days get heavier weight; 7+ days is the tier worth acting on first. */
+    .missing-row.stale { border-left-width: 3px; }
+    .missing-row.stale .age { color: var(--gold); font-weight: 600; }
+    .missing-row.very-stale { border-left-width: 5px; background: rgba(239, 68, 68, 0.06); }
+    .missing-row.very-stale .age { color: var(--danger); font-weight: 700; }
 
     .clean { color: var(--text-muted); font-size: 0.86rem; }
 
@@ -139,6 +148,10 @@
       <div class="card-body">
         <p id="build-text">Checking…</p>
         <div class="links" id="build-actions"></div>
+        <p class="footnote" id="build-auto-note" style="margin-top:0.6rem;" hidden>
+          A build also runs automatically after every box score commit — this button is
+          for re-running it without submitting a new game (e.g. after a manual data fix).
+        </p>
       </div>
     </div>
 
@@ -222,6 +235,8 @@
 
   // ── Build ─────────────────────────────────────────────────────────────────
 
+  let buildPollTimer = null;
+
   function renderBuild(st) {
     const text = document.getElementById('build-text');
     const note = document.getElementById('build-note');
@@ -232,18 +247,36 @@
         ? `A build is running — started ${fmtWhen(st.started_at)}.`
         : 'A build is running.';
       note.textContent = 'running';
+      pollBuildStatus();
       return;
     }
+    stopPollingBuildStatus();
     if (st.status === 'done') {
       text.textContent = st.finished_at
         ? `Last build finished ${fmtWhen(st.finished_at)}, and it succeeded.`
         : 'The last build succeeded.';
       note.textContent = 'healthy';
     } else {
-      text.textContent = `The last build ended with status "${st.status}". `
-        + 'The 86 aggregated CSVs may be stale — check /var/log/nbn-build.log.';
+      text.innerHTML = esc(`The last build ended with status "${st.status}". `
+        + 'The 86 aggregated CSVs may be stale.')
+        + (st.error ? `<br><code>${esc(st.error)}</code>` : '');
       note.textContent = st.status;
     }
+    renderBuildActions();
+  }
+
+  // Keeps checking every few seconds while a build is in flight — a build
+  // takes longer than the one-shot delay after clicking Trigger, so without
+  // this the page would sit on "running" until a manual reload.
+  function pollBuildStatus() {
+    if (buildPollTimer) return;
+    buildPollTimer = setInterval(() => {
+      jget('/api/build/status').then(renderBuild).catch(() => {});
+    }, 4000);
+  }
+
+  function stopPollingBuildStatus() {
+    if (buildPollTimer) { clearInterval(buildPollTimer); buildPollTimer = null; }
   }
 
   function fmtWhen(iso) {
@@ -259,6 +292,7 @@
   function renderBuildActions() {
     const wrap = document.getElementById('build-actions');
     wrap.textContent = '';
+    document.getElementById('build-auto-note').hidden = !hasStatsRole();
     if (!hasStatsRole()) return;
     const btn = document.createElement('button');
     btn.className = 'btn';
@@ -310,11 +344,14 @@
     }
     box.innerHTML = '<div class="missing-rows">' + missing.map(f => {
       const age = daysAgo(f.date);
-      return '<div class="missing-row">'
+      const tier = age >= 7 ? 'very-stale' : age >= 3 ? 'stale' : '';
+      const href = `/boxscores/submit/?date=${encodeURIComponent(f.date)}`
+        + `&home=${encodeURIComponent(f.home_team)}&away=${encodeURIComponent(f.away_team)}`;
+      return `<a class="missing-row ${tier}" href="${esc(href)}">`
         + `<span class="date">${esc(f.date)}</span>`
         + `<span class="matchup">${esc(f.away_team)} @ ${esc(f.home_team)}</span>`
         + `<span class="age">${age === 0 ? 'today' : age === 1 ? '1 day' : age + ' days'}</span>`
-        + '</div>';
+        + '</a>';
     }).join('') + '</div>';
   }
 

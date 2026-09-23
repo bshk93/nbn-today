@@ -503,6 +503,18 @@
       awaySelect.insertAdjacentHTML("beforeend", `<option value="${t}">${t}</option>`);
     });
 
+    // ── Prefill from query string (deep-linked from the stats committee "played
+    // but not entered" list) ───────────────────────────────────────────────
+    (function prefillFromQuery() {
+      const params = new URLSearchParams(location.search);
+      const date = params.get("date");
+      const home = (params.get("home") || "").toUpperCase();
+      const away = (params.get("away") || "").toUpperCase();
+      if (date) document.getElementById("date").value = date;
+      if (TEAMS.includes(home)) homeSelect.value = home;
+      if (TEAMS.includes(away)) awaySelect.value = away;
+    })();
+
     // ── Auth ─────────────────────────────────────────────────────
     let token = localStorage.getItem("nbn_token") || "";
     function updateAuthBar() {
