@@ -379,7 +379,28 @@
         card.className = 'season-card';
 
         const h2 = document.createElement('h2');
-        h2.textContent = season;
+        h2.style.cssText = 'display:flex;align-items:center;gap:0.6rem;';
+        const h2Text = document.createElement('span');
+        h2Text.textContent = season;
+        h2.appendChild(h2Text);
+
+        // Future seasons' real cap isn't announced until that season — see
+        // BACKLOG.md's "27-28/28-29/29-30 have no cap" entry. A checked box
+        // means the numbers above are a projection, not the announced figure;
+        // extension checks still run against them but flag every result as
+        // provisional. Uncheck it (and re-save with the real figures) once
+        // the league announces them — that flips the extension checks over to
+        // treating this season as final and flags any extension that was
+        // priced against the estimate for review.
+        const estLabel = document.createElement('label');
+        estLabel.style.cssText = 'font-size:0.75rem;font-weight:normal;color:var(--text-muted);display:flex;align-items:center;gap:0.3rem;';
+        const estCheckbox = document.createElement('input');
+        estCheckbox.type = 'checkbox';
+        estCheckbox.checked = !!data.is_estimate;
+        estCheckbox.disabled = !canEdit;
+        estLabel.appendChild(estCheckbox);
+        estLabel.appendChild(document.createTextNode('Estimated — not yet finalized'));
+        h2.appendChild(estLabel);
         card.appendChild(h2);
 
         const fieldsDiv = document.createElement('div');
@@ -502,6 +523,7 @@
               const v = Number(scaleInputs[key].value) || 0;
               if (v) body.min_salary_scale[key] = v;
             });
+            body.is_estimate = estCheckbox.checked;
             try {
               const r = await fetch(`/api/cap-levels/${season}`, {
                 method: 'PUT',
@@ -515,9 +537,17 @@
               } else if (!r.ok) {
                 throw new Error('Save failed');
               } else {
-                status.textContent = 'Saved.';
-                status.className = 'status ok';
-                setTimeout(() => { status.textContent = ''; }, 3000);
+                const saved = await r.json().catch(() => null);
+                const flagged = saved && saved.flagged_extensions;
+                if (flagged && flagged.length) {
+                  status.textContent = `Saved. ${flagged.length} extension(s) were priced against the old estimate — review: `
+                    + flagged.map(f => `${f.player || '?'} (${f.team || '?'})`).join(', ');
+                  status.className = 'status ok';
+                } else {
+                  status.textContent = 'Saved.';
+                  status.className = 'status ok';
+                  setTimeout(() => { status.textContent = ''; }, 3000);
+                }
               }
             } catch {
               status.textContent = 'Error saving.';

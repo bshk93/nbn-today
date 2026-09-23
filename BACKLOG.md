@@ -217,14 +217,22 @@ rows' open question is resolved**, checked against the real file 2026-08-16:
 trade-block chatter) — the parser correctly excluded them, this is not a
 hidden gap pool. Not worth a full re-audit for v1.
 
-### [P1] 27-28/28-29/29-30 have no cap, apron1 or apron2 — all three read $0
-Split out 2026-08-24 from the now-closed extension entry, which carried it as a
-footnote; retiring that entry would have lost the one thing still blocking a
-real extension from being scored.
+### [P1] 27-28/28-29/29-30 still need a committee-entered cap estimate
+Split out 2026-08-24 from the now-closed extension entry. Originally filed as
+"fix is data, not code, get the committee to enter real 27-28+ figures" — that
+premise was wrong: the league doesn't announce a season's real cap until that
+season, so there was never a real number to enter, and the item would have sat
+here permanently.
 
-Checked against live `cap-levels.json` on 2026-08-24 — the three future seasons
-have a **full 11-row `min_salary_scale` but `cap`, `apron1` and `apron2` all
-zero**:
+2026-09-23: `CapLevel.is_estimate` now exists (`nbn-api` `routers/misc.py`),
+and `extension_cap_position` / `extension_max_year1` score against an
+estimated cap instead of refusing outright — see the `/cap-settings` checkbox.
+**What's actually left is committee action, not code**: go into `/cap-settings`
+for 27-28/28-29/29-30, enter a projected cap/apron1/apron2/hard_cap (grown off
+26-27's real numbers is a reasonable starting point), and check the box. When
+the real 27-28 number is announced next season, re-save with the box
+unchecked — that flags every extension priced against the estimate for review
+via the `flagged_extensions` field the PUT now returns.
 
 | Season | cap | apron1 | apron2 | min scale |
 |---|---|---|---|---|
@@ -233,17 +241,6 @@ zero**:
 | 27-28 | **$0** | **$0** | **$0** | 11 rows |
 | 28-29 | **$0** | **$0** | **$0** | 11 rows |
 | 29-30 | **$0** | **$0** | **$0** | 11 rows |
-
-An extension by definition prices seasons beyond the current one, so
-`extension_cap_position` reports "cannot evaluate" for every extension anyone
-submits. That is the validator behaving correctly — it refuses to score against
-a threshold of zero rather than reporting a team comfortably under a $0 cap —
-but it means the § 6.2 pipeline that shipped 2026-08-21 cannot actually reach a
-cap verdict on a live proposal.
-
-**Fix is data, not code**, and it is committee-entered: real 27-28+ figures via
-`/cap-settings`. Pairs with the minimum-scale entry directly below — same file,
-same form, same committee, and worth doing in one sitting.
 
 ### [P1] 2024 rookie scale has the § 3.10 hold multiplier inverted — not loaded
 Found 2026-08-11 while populating `rookie-scale.json` (which had never held

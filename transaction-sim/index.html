@@ -1259,6 +1259,9 @@ function renderExtensionResults(data) {
         ? row('Team salary', f.team_salary_first_extended_season != null ? fmtM(f.team_salary_first_extended_season) : '—')
           + row('Cap', f.cap_first_extended_season ? fmtM(f.cap_first_extended_season) : '—')
           + row('Hard cap', f.hard_cap_first_extended_season ? fmtM(f.hard_cap_first_extended_season) : '—')
+          + (f.cap_position_evaluable === 'estimated'
+              ? row('Status', 'ESTIMATED — not yet finalized, may change', 'var(--gold)')
+              : '')
         : row('Status', 'Cannot evaluate — thresholds unset for this season', 'var(--gold)')}
     </div>`;
 
