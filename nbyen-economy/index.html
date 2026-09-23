@@ -144,103 +144,7 @@
 
     /* markdown prose */
     #content h1 { display: none; } /* page already has a title */
-    #content h2 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--text-bright);
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0.4rem;
-      margin: 2.25rem 0 1rem;
-    }
-    #content h2:first-child { margin-top: 0; }
-    #content h2, #content h3 { scroll-margin-top: 1rem; }
-    #content h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin: 1.5rem 0 0.6rem;
-    }
-    #content h4 {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin: 1.25rem 0 0.5rem;
-    }
-    #content p {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      line-height: 1.7;
-      margin-bottom: 0.75rem;
-    }
-    #content ul, #content ol {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      line-height: 1.7;
-      margin: 0.5rem 0 0.75rem 1.5rem;
-    }
-    #content li { margin-bottom: 0.25rem; }
-    #content code {
-      background: var(--bg-page);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-family: var(--font-mono);
-      font-size: 0.8em;
-      padding: 0.1em 0.35em;
-    }
-    #content pre {
-      background: var(--bg-page);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow-x: auto;
-      padding: 1rem 1.25rem;
-      margin: 0.75rem 0 1rem;
-    }
-    #content pre code {
-      background: none;
-      border: none;
-      font-size: 0.82rem;
-      padding: 0;
-    }
-    #content table {
-      border-collapse: collapse;
-      font-size: 0.85rem;
-      margin: 0.75rem 0 1rem;
-      width: 100%;
-      display: block;
-      overflow-x: auto;
-    }
-    #content th {
-      background: var(--bg-page);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      padding: 0.45rem 0.75rem;
-      text-align: left;
-      text-transform: uppercase;
-    }
-    #content td {
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      padding: 0.4rem 0.75rem;
-      vertical-align: top;
-    }
-    #content tr:hover td { background: var(--bg-hover); }
-    #content strong { color: var(--text-bright); font-weight: 600; }
-    #content hr {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 1.5rem 0;
-    }
-    #content blockquote {
-      border-left: 3px solid var(--border);
-      color: var(--text-muted);
-      font-style: italic;
-      margin: 0.75rem 0;
-      padding-left: 1rem;
-    }
-
+                                                                        
     /* search highlights */
     mark {
       background: var(--gold-border);
@@ -296,7 +200,7 @@
 
   <div class="card">
     <div id="loading">Loading…</div>
-    <div id="content" style="display:none"></div>
+    <div id="content" class="ui-prose" style="display:none"></div>
   </div>
 </div>
 

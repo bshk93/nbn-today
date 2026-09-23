@@ -166,29 +166,9 @@
     }
 
     /* Tabs */
-    .tab-row {
-      display: flex;
-      gap: 0.25rem;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 1.5rem;
-    }
-
-    .tab-btn {
-      padding: 0.5rem 1.1rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--text-muted);
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
-      cursor: pointer;
-      transition: color 0.1s;
-    }
-
-    .tab-btn:hover { color: var(--text-secondary); }
-    .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--link); }
-
+    
+    
+        
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
@@ -232,9 +212,9 @@
         <p class="ui-subtitle">The greatest moments in NBN playoff history.</p>
       </div>
     </header>
-  <div class="tab-row">
-    <button class="tab-btn active" data-tab="performances">Performances</button>
-    <button class="tab-btn" data-tab="series">Series</button>
+  <div class="tab-row ui-tabs" role="tablist">
+    <button class="tab-btn ui-tab active" data-tab="performances">Performances</button>
+    <button class="tab-btn ui-tab" data-tab="series">Series</button>
   </div>
   <div class="tab-panel active" id="tab-performances"><div id="status">Loading…</div></div>
   <div class="tab-panel" id="tab-series"></div>

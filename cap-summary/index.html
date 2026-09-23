@@ -37,28 +37,7 @@
 
     .thresholds b { color: var(--text-secondary); }
 
-    .tabs {
-      display: flex;
-      gap: 0;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 1.25rem;
-    }
-    .tab-btn {
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.875rem;
-      font-weight: 500;
-      margin-bottom: -1px;
-      padding: 0.6rem 1.1rem;
-      transition: color 0.15s, border-color 0.15s;
-    }
-    .tab-btn:hover { color: var(--text-secondary); }
-    .tab-btn.active { border-bottom-color: var(--link); color: var(--text-primary); }
-
+                
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
@@ -462,9 +441,9 @@
       </div>
     </header>
 
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="table">Table</button>
-      <button class="tab-btn" data-tab="chart">Salaries</button>
+    <div class="tabs ui-tabs" role="tablist">
+      <button class="tab-btn ui-tab active" data-tab="table">Table</button>
+      <button class="tab-btn ui-tab" data-tab="chart">Salaries</button>
     </div>
 
     <div id="tab-table" class="tab-panel active">

@@ -30,29 +30,7 @@
   .subtitle b { color: var(--text-muted); }
 
   /* Tabs */
-  .tabs {
-    display: flex;
-    gap: 0.25rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid var(--bg-card);
-    padding-bottom: 0;
-  }
-  .tab-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    font-weight: 600;
-    font-family: inherit;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    transition: color 0.15s;
-  }
-  .tab-btn:hover { color: var(--text-secondary); }
-  .tab-btn.active { color: var(--text-bright); border-bottom-color: var(--accent); }
-
+        
   /* Archetypes tab — node grid */
   .archetype-node-grid {
     display: grid;
@@ -486,9 +464,9 @@
     <a href="/clusters/teams/" class="page-nav-link">Teams</a>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="archetypes">Archetypes</button>
-    <button class="tab-btn" data-tab="journey">Player Journey</button>
+  <div class="tabs ui-tabs" role="tablist">
+    <button class="tab-btn ui-tab active" data-tab="archetypes">Archetypes</button>
+    <button class="tab-btn ui-tab" data-tab="journey">Player Journey</button>
   </div>
 
   <div id="tab-archetypes" class="tab-content">

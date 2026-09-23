@@ -62,8 +62,9 @@
 
     code {
       font-family: var(--font-mono);
-      font-size: 0.82em; background: var(--bg-page); color: #a5b4fc;
+      font-size: 0.82em; background: var(--bg-page); color: var(--accent-light);
       padding: 0.1em 0.4em; border-radius: 4px; border: 1px solid var(--border);
+      overflow-wrap: anywhere;   /* long API paths wrap instead of widening the page */
     }
 
     .tag {
@@ -183,13 +184,13 @@
 
     <h3>Team state</h3>
     <p>Click <strong>Edit Team State</strong> to set per-team flags that affect cap display:</p>
-    <table class="ui-table">
+    <div class="ui-table-wrap"><table class="ui-table">
       <tr><th>Field</th><th>What it does</th></tr>
       <tr><td><strong>Hard Cap</strong></td><td>Sets whether the team is hard-capped at the First or Second Apron. A red banner appears on the team page when set.</td></tr>
       <tr><td><strong>Hard Cap Reason</strong></td><td>Short description shown in the banner (e.g. "NTMLE signing: Player Name").</td></tr>
       <tr><td><strong>MLE Used ($)</strong></td><td>Cumulative salary committed via MLE signings this season. Used to calculate remaining MLE space in the exceptions panel.</td></tr>
       <tr><td><strong>BAE Used</strong></td><td>Check if the team has used their Bi-Annual Exception this season. Prevents BAE from appearing as available.</td></tr>
-    </table>
+    </table></div>
     <div class="callout"><strong>Hard cap and BAE flags are set automatically</strong> when you record a signing via NTMLE, TMLE, or BAE on the transactions page. You only need to set them manually if correcting an error.</div>
 
     <h3>Jersey numbers</h3>
@@ -222,13 +223,13 @@
   <div class="section" id="cap-settings">
     <h2>5. Cap &amp; league settings</h2>
     <p>Global salary cap thresholds and exception amounts live in <a href="/cap-settings/">League Office → Cap Settings</a>. These apply league-wide across all team pages.</p>
-    <table class="ui-table">
+    <div class="ui-table-wrap"><table class="ui-table">
       <tr><th>Setting</th><th>What it affects</th></tr>
       <tr><td><strong>Salary Cap</strong></td><td>The soft cap threshold. Teams below this can use cap space to sign players.</td></tr>
       <tr><td><strong>1st Apron</strong></td><td>Hard cap level for NTMLE signings and certain trade restrictions.</td></tr>
       <tr><td><strong>2nd Apron</strong></td><td>Hard cap level for TMLE signings. Most restrictive tier.</td></tr>
       <tr><td><strong>NTMLE / TMLE / BAE amounts</strong></td><td>Dollar values shown in each team's cap exceptions panel.</td></tr>
-    </table>
+    </table></div>
     <p>Cap levels are set once per season. The <a href="/rookie-scale/">Rookie Scale</a> page (also under League Office) shows first-round contract amounts by pick number and draft year.</p>
   </div>
 

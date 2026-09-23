@@ -38,20 +38,6 @@ h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); margin-bott
 .page-nav-link:hover { color: var(--text-secondary); background: var(--bg-card); }
 .page-nav-link.active { color: var(--text-bright); background: var(--bg-card); border-color: var(--border); }
 
-.tabs {
-  display: flex; gap: 0.25rem; margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--bg-card);
-}
-.tab-btn {
-  background: none; border: none; color: var(--text-muted);
-  font-size: 0.85rem; font-weight: 600; font-family: inherit;
-  padding: 0.5rem 1rem; cursor: pointer;
-  border-bottom: 2px solid transparent; margin-bottom: -1px;
-  transition: color 0.15s;
-}
-.tab-btn:hover { color: var(--text-secondary); }
-.tab-btn.active { color: var(--text-bright); border-bottom-color: var(--accent); }
-
 /* ── Two-column layout ── */
 .main-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
 .chart-col { flex: 0 0 56%; }
@@ -290,9 +276,9 @@ h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-bright); margin-bott
     <a href="/clusters/teams/" class="page-nav-link active">Teams</a>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="archetypes">Archetypes</button>
-    <button class="tab-btn" data-tab="history">Team History</button>
+  <div class="tabs ui-tabs" role="tablist">
+    <button class="tab-btn ui-tab active" data-tab="archetypes">Archetypes</button>
+    <button class="tab-btn ui-tab" data-tab="history">Team History</button>
   </div>
 
   <div id="tab-archetypes" class="tab-content">

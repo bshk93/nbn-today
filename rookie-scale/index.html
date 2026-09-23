@@ -212,7 +212,11 @@
       });
 
       table.appendChild(tbody);
-      card.appendChild(table);
+      // Scrolls inside its own box on a phone rather than widening the page.
+      const tableWrap = document.createElement('div');
+      tableWrap.className = 'ui-table-wrap';
+      tableWrap.appendChild(table);
+      card.appendChild(tableWrap);
 
       if (canEdit) {
         const footer = document.createElement('div');

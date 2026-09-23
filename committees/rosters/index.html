@@ -290,34 +290,10 @@
 
     /* ── Tabs ─────────────────────────────────────────────────────── */
 
-    .tabs {
-      display: flex;
-      gap: 0.4rem;
-      margin-bottom: 1.1rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .tab-btn {
-      appearance: none;
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font: inherit;
-      font-weight: 600;
-      font-size: 0.9rem;
-      padding: 0.6rem 0.9rem 0.7rem;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
-    }
-
-    .tab-btn:hover { color: var(--text-secondary); }
-
-    .tab-btn.active {
-      color: var(--text-secondary);
-      border-bottom-color: var(--purple);
-    }
-
+    
+    
+    
+    
     /* ── Draft Picks tab ──────────────────────────────────────────── */
 
     .picks-intro {
@@ -645,11 +621,11 @@
 
     <div class="freshness" id="freshness"></div>
 
-    <div class="tabs" id="tabs">
-      <button type="button" class="tab-btn active" data-tab="compliance">Compliance</button>
-      <button type="button" class="tab-btn" data-tab="cap">Cap &amp; Salaries</button>
-      <button type="button" class="tab-btn" data-tab="picks">Draft Picks</button>
-      <button type="button" class="tab-btn" data-tab="completeness">Data Quality</button>
+    <div class="tabs ui-tabs" role="tablist" id="tabs">
+      <button type="button" class="tab-btn ui-tab active" data-tab="compliance">Compliance</button>
+      <button type="button" class="tab-btn ui-tab" data-tab="cap">Cap &amp; Salaries</button>
+      <button type="button" class="tab-btn ui-tab" data-tab="picks">Draft Picks</button>
+      <button type="button" class="tab-btn ui-tab" data-tab="completeness">Data Quality</button>
     </div>
 
     <div class="tab-panel" id="panel-compliance">

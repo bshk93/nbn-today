@@ -30,10 +30,12 @@
       align-items: center;
       gap: 0.75rem;
       margin-bottom: 1rem;
+      flex-wrap: wrap;   /* two selects and a search box don't fit one phone-width row */
     }
 
     .search-box {
-      flex: 1;
+      flex: 1 1 12rem;
+      min-width: 0;
       max-width: 320px;
       padding: 0.45rem 0.7rem;
       background: var(--bg-card);

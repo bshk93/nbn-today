@@ -92,89 +92,7 @@
     }
 
     /* markdown prose */
-    .skill-body h1, .skill-body h2 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--text-bright);
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0.35rem;
-      margin: 1.5rem 0 0.75rem;
-    }
-    .skill-body h1:first-child, .skill-body h2:first-child { margin-top: 0; }
-    .skill-body h3 {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin: 1.1rem 0 0.5rem;
-    }
-    .skill-body p {
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-      line-height: 1.65;
-      margin-bottom: 0.7rem;
-    }
-    .skill-body ul, .skill-body ol {
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-      line-height: 1.65;
-      margin: 0.4rem 0 0.7rem 1.4rem;
-    }
-    .skill-body li { margin-bottom: 0.25rem; }
-    .skill-body code {
-      background: var(--bg-page);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-family: var(--font-mono);
-      font-size: 0.8em;
-      padding: 0.1em 0.35em;
-    }
-    .skill-body pre {
-      background: var(--bg-page);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow-x: auto;
-      padding: 0.9rem 1.1rem;
-      margin: 0.6rem 0 0.9rem;
-    }
-    .skill-body pre code {
-      background: none;
-      border: none;
-      font-size: 0.8rem;
-      padding: 0;
-    }
-    .skill-body table {
-      border-collapse: collapse;
-      font-size: 0.82rem;
-      margin: 0.6rem 0 0.9rem;
-      width: 100%;
-      display: block;
-      overflow-x: auto;
-    }
-    .skill-body th {
-      background: var(--bg-page);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 0.4rem 0.65rem;
-      text-align: left;
-      text-transform: uppercase;
-    }
-    .skill-body td {
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      padding: 0.35rem 0.65rem;
-      vertical-align: top;
-    }
-    .skill-body strong { color: var(--text-bright); font-weight: 600; }
-    .skill-body blockquote {
-      border-left: 3px solid var(--border);
-      color: var(--text-muted);
-      font-style: italic;
-      margin: 0.6rem 0;
-      padding-left: 1rem;
-    }
-  </style>
+                                                          </style>
 </head>
 <body>
 <script src="/nav.js"></script>
@@ -232,7 +150,7 @@
           <span class="skill-name">/${s.slug}</span>
           <span class="skill-desc">${s.desc.replace(/</g, '&lt;')}</span>
         </summary>
-        <div class="skill-body">${renderMarkdown(s.text)}</div>
+        <div class="skill-body ui-prose">${renderMarkdown(s.text)}</div>
       </details>
     `).join('');
 
