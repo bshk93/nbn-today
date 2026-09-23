@@ -249,7 +249,7 @@
               },
               body: JSON.stringify(body),
             });
-            if (r.status === 403) {
+            if (r.status === 401) {
               localStorage.removeItem('nbn_token');
               status.textContent = 'Token rejected — refresh and re-enter.';
               status.className = 'status err';

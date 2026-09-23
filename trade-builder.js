@@ -1191,7 +1191,7 @@
           headers: { Authorization: `Bearer ${token}` },
           body: form,
         });
-        if (res.status === 403 || res.status === 401) {
+        if (res.status === 401) {
           localStorage.removeItem('nbn_token');
           setExportStatus('That token was rejected — click again to re-enter it.', true);
           return;
@@ -1234,7 +1234,7 @@
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify(tradeBody),
         });
-        if (res.status === 403 || res.status === 401) {
+        if (res.status === 401) {
           localStorage.removeItem('nbn_token');
           setExportStatus('That token was rejected — click again to re-enter it.', true);
           return;

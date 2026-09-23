@@ -471,7 +471,7 @@
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ year: +year, slug, grade }),
           });
-          if (res.status === 401 || res.status === 403) {
+          if (res.status === 401) {
             localStorage.removeItem(TOKEN_KEY);
             toast('Your access token is missing or invalid. Try grading again to re-enter it.', true);
             return;
@@ -706,7 +706,7 @@
             if (!r.ok) { failed = r; break; }
           }
           if (failed) {
-            if (failed.status === 403) { localStorage.removeItem(TOKEN_KEY); statusEl.textContent = 'Invalid token — cleared.'; }
+            if (failed.status === 401) { localStorage.removeItem(TOKEN_KEY); statusEl.textContent = 'Invalid token — cleared.'; }
             else statusEl.textContent = `Error ${failed.status}`;
             saveBtn.disabled = false; cancelBtn.disabled = false;
             return;

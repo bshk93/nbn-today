@@ -1412,7 +1412,7 @@ async function init() {
   if (token) {
     try {
       const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) me = await res.json(); else localStorage.removeItem('nbn_token');
+      if (res.ok) me = await res.json(); else if (res.status === 401) localStorage.removeItem('nbn_token');
     } catch {}
   }
   try {

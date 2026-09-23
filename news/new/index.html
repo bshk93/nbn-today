@@ -535,7 +535,7 @@ async function init() {
   if (!token) { document.getElementById('auth-gate').style.display = 'block'; document.getElementById('editor-form').style.display = 'none'; return; }
   try {
     const res = await fetch(`${API}/members/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { localStorage.removeItem('nbn_token'); document.getElementById('auth-gate').style.display = 'block'; return; }
+    if (!res.ok) { if (res.status === 401) localStorage.removeItem('nbn_token'); document.getElementById('auth-gate').style.display = 'block'; return; }
   } catch { document.getElementById('auth-gate').style.display = 'block'; return; }
   showEditor();
   const id = params.get('id');

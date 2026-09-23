@@ -1333,16 +1333,19 @@
             headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ players: pendingEntries, picks: pendingPicks, notify_discord: notifyCheckbox.checked }),
           });
-          if (res.status === 403) {
+          if (res.status === 401) {
             localStorage.removeItem(TOKEN_KEY);
             saveStatus.textContent = 'Token invalid — please refresh and re-enter.';
             return;
           }
-          if (!res.ok) throw new Error(res.statusText);
+          if (!res.ok) {
+            const d = await res.json().catch(() => ({}));
+            throw new Error(d.detail || 'Save failed.');
+          }
           saveStatus.textContent = 'Saved!';
           setTimeout(() => location.reload(), 600);
-        } catch {
-          saveStatus.textContent = 'Save failed.';
+        } catch (e) {
+          saveStatus.textContent = e.message || 'Save failed.';
           saveBtn.disabled = false;
         }
       });

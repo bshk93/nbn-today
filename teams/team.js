@@ -3777,9 +3777,9 @@ async function apiFetch(url, opts, token) {
     ...opts,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
   });
-  if (res.status === 403) {
+  if (res.status === 401) {
     localStorage.removeItem(TOKEN_KEY);
-    throw new Error('Not authorized — token cleared, reload and try again.');
+    throw new Error('Token rejected — cleared, reload and try again.');
   }
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
@@ -4798,7 +4798,7 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        if (res.status === 403) {
+        if (res.status === 401) {
           localStorage.removeItem(TOKEN_KEY);
           statusEl.textContent = 'Invalid token — cleared. Try again.';
         } else {
@@ -5009,7 +5009,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
           if (!r.ok) { failed = r; break; }
         }
         if (failed) {
-          if (failed.status === 403) { localStorage.removeItem(TOKEN_KEY); statusEl.textContent = 'Invalid token — cleared.'; }
+          if (failed.status === 401) { localStorage.removeItem(TOKEN_KEY); statusEl.textContent = 'Invalid token — cleared.'; }
           else statusEl.textContent = `Error ${failed.status}`;
           saveBtn.disabled = false; cancelBtn.disabled = false;
           return;
@@ -5508,7 +5508,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 
         const failed = results.find(r => !r.ok);
         if (failed) {
-          if (failed.status === 403) {
+          if (failed.status === 401) {
             localStorage.removeItem(TOKEN_KEY);
             statusEl.textContent = 'Invalid token — cleared. Try again.';
           } else {
@@ -5732,7 +5732,7 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
           body: JSON.stringify({ values, minutes }),
         });
         if (!resp.ok) {
-          if (resp.status === 403) {
+          if (resp.status === 401) {
             localStorage.removeItem(TOKEN_KEY);
             statusEl.textContent = 'Invalid token — cleared. Try again.';
           } else {
@@ -5919,7 +5919,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
             onSave(payload);
           })
           .catch(r => {
-            if (r.status === 403) localStorage.removeItem('nbn_token');
+            if (r.status === 401) localStorage.removeItem('nbn_token');
             saveBtn.textContent = 'Error — retry';
             setTimeout(() => { saveBtn.textContent = 'Save'; }, 2000);
           });

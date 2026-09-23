@@ -378,11 +378,12 @@
       stopTimer();
       try {
         if (token && !currentMember) {
-          const me = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null);
+          let meStatus = 0;
+          const me = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => { meStatus = r.status; return r.ok ? r.json() : null; });
           if (me) {
             currentMember = me.name || me.username || null;
           } else {
-            token = ''; localStorage.removeItem(TOKEN_KEY); state = 'auth'; render(); return;
+            if (meStatus === 401) { token = ''; localStorage.removeItem(TOKEN_KEY); } state = 'auth'; render(); return;
           }
         }
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
