@@ -318,7 +318,7 @@ async function initAuth() {
       me = await res.json();
       updateAuthUI(me);
     } else {
-      localStorage.removeItem('nbn_token');
+      if (res.status === 401) localStorage.removeItem('nbn_token');
       updateAuthUI(null);
     }
   } catch {

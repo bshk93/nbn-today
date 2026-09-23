@@ -1457,7 +1457,7 @@
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...payload, slug: sl }),
         });
-        if (resp.status === 403) { clearToken(); throw new Error('Token rejected.'); }
+        if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
         if (resp.status === 409) throw new Error('A player with this slug already exists.');
         if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
         location.reload();
@@ -2466,7 +2466,7 @@
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(updated),
                   });
-                  if (resp.status === 403) { clearToken(); throw new Error('Token rejected.'); }
+                  if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
                   if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
                   allOvrHistory[playerSlug] = updated.slice().sort((a, b) => a.date < b.date ? -1 : 1);
                   currentOvr[playerSlug] = allOvrHistory[playerSlug].at(-1).ovr;
@@ -2520,7 +2520,7 @@
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ date: dateVal, ovr: ovrVal }),
           });
-          if (resp.status === 403) { clearToken(); throw new Error('Token rejected.'); }
+          if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
           if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
           if (!allOvrHistory[playerSlug]) allOvrHistory[playerSlug] = [];
           allOvrHistory[playerSlug].push({ date: dateVal, ovr: ovrVal });
@@ -3623,7 +3623,7 @@
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          if (resp.status === 403) { clearToken(); throw new Error('Token rejected.'); }
+          if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
           if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
           location.reload();
         },
@@ -4168,7 +4168,7 @@
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          if (resp.status === 403) { clearToken(); throw new Error('Token rejected.'); }
+          if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
           if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
           location.reload();
         },

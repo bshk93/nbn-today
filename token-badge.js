@@ -114,7 +114,12 @@
 
   function tryToken(el, token, fresh) {
     fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } })
-      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (r) {
+        // Only a 401 means the token itself is bad. A 5xx or 502 during an API
+        // restart used to land here too and sign everyone out of every page.
+        if (r.status === 401) localStorage.removeItem('nbn_token');
+        return r.ok ? r.json() : null;
+      })
       .then(function (d) {
         if (d && d.name) {
           el.style.pointerEvents = 'none';
@@ -129,7 +134,6 @@
           sendSignal(token);
           ensureSession(token, fresh);
         } else {
-          localStorage.removeItem('nbn_token');
           setNoToken(el);
         }
       })

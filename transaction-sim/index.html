@@ -2468,7 +2468,7 @@ async function publishTradeSheet() {
       headers: { Authorization: `Bearer ${token}` },
       body: form,
     });
-    if (res.status === 403 || res.status === 401) {
+    if (res.status === 401) {
       // Same convention as team-page edit mode: a rejected token is cleared so
       // the next attempt re-prompts instead of silently failing again.
       localStorage.removeItem('nbn_token');
@@ -2512,7 +2512,7 @@ async function submitToTRC(tradeBody) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(tradeBody),
     });
-    if (res.status === 403 || res.status === 401) {
+    if (res.status === 401) {
       localStorage.removeItem('nbn_token');
       setExportStatus('That token was rejected — click again to re-enter it.', true);
       return;

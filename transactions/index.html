@@ -3543,7 +3543,7 @@ async function submitTransaction() {
       body: JSON.stringify(body),
     });
 
-    if (res.status === 401 || res.status === 403) {
+    if (res.status === 401) {
       currentToken = '';
       localStorage.removeItem(TOKEN_KEY);
       renderAuthBar();
