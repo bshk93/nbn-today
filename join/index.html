@@ -207,12 +207,55 @@ input[type="text"],
     .back a:hover { color: var(--text-muted); }
 
     .hp { position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; overflow: hidden; }
+
+    .about {
+      width: 100%;
+      max-width: 560px;
+      text-align: left;
+      margin-bottom: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .about h2 {
+      font-size: var(--text-md);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.4rem;
+    }
+    .about p {
+      font-size: var(--text-base);
+      line-height: 1.65;
+      color: var(--text-secondary);
+    }
   </style>
 </head>
 <body>
   <div class="nav"></div>
   <h1>Join Nothing But Net</h1>
-  <p class="subtitle">Interested in becoming part of the NBN? Fill out the form below and we'll be in touch.</p>
+  <p class="subtitle">Interested in becoming part of the NBN? Read a little about the league, then fill out the form below and we'll be in touch.</p>
+
+  <!-- Moved here from the bottom of the homepage (2026-09-23): these answer
+       the questions of someone deciding whether to apply, so they belong next
+       to the application rather than under every member's dashboard. -->
+  <section class="about" aria-label="About the league">
+    <div class="about-item">
+      <h2>What is the Nothing But Net fantasy GM league?</h2>
+      <p>We are a close group of basketball enthusiasts who together run a fantasy NBA league. Each member of NBN assumes a position within a team among the 30 teams in the league: typically either the Owner, the GM, or the Coach. We all hang out in a Discord server, chat about basketball and the league, and watch simulations of games between our teams through the video game NBA 2K. As a member of a team's front office, you would be working with other FO members to control everything about the team and its future, including setting rotations, gameplanning, scouting and making draft picks, trades, free agency, and much more.</p>
+    </div>
+    <div class="about-item">
+      <h2>What is the pace of the league?</h2>
+      <p>The NBN runs at the same pace as the NBA. This means that if the NBA Spurs have a regular season game today, so will the NBN Spurs. This is not one of those leagues that simulate hundreds of seasons.</p>
+    </div>
+    <div class="about-item">
+      <h2>What kind of interests would make me a good fit for the NBN?</h2>
+      <p>The common denominator is, of course, a love for basketball. But the NBN has things that appeal to all sorts of basketball fans. Some people are big 2K fans and like the idea of basically playing a MyLeague mode that's more realistic and with a vibrant community. Others are drawn in by the GMing and team-building aspect, and the idea of taking over the future of their favorite team. We have stats heads who like analyzing performances of players in our league, NBA draft enthusiasts who help their team scout and build youth, and people who just like to chat about basketball stuff.</p>
+    </div>
+    <div class="about-item">
+      <h2>What kind of time commitment can I expect?</h2>
+      <p>The NBN is 100% what you make of it. There's no minimum contribution level, but a lot of us do get really into this league and contribute to it via being members of various committees that help the league run. We ask Owners to be somewhat active, but that's it.</p>
+    </div>
+  </section>
 
   <div class="form-card" id="form-card">
     <div class="hp" aria-hidden="true"><input type="text" id="_honeypot" tabindex="-1" autocomplete="off"></div>

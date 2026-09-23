@@ -125,34 +125,6 @@
       font-weight: 600;
     }
 
-    footer {
-      margin-top: 3rem;
-      max-width: 820px;
-      width: 100%;
-    }
-
-    .faq {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .faq-item {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-
-    .faq-q {
-      font-weight: 600;
-      color: var(--text-secondary);
-    }
-
-    .faq-item p:not(.faq-q) {
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      line-height: 1.7;
-    }
 
     @media (max-width: 560px) {
       .grid { grid-template-columns: repeat(2, 1fr); }
@@ -634,6 +606,17 @@
       html[data-design="clean"] .directory { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5) var(--space-4); }
       html[data-design="clean"] .dash-card { padding-bottom: var(--space-5); }
     }
+
+    /* Signed-out visitors only: what this site is, one line, linking to the
+       FAQ and application on /join. Replaces the four-question FAQ that used
+       to sit at the bottom of the homepage, below every member's content. */
+    .visitor-intro {
+      max-width: 820px; width: 100%;
+      margin: -1.25rem 0 var(--space-5);
+      font-size: var(--text-sm); color: var(--text-muted); text-align: center;
+    }
+    .visitor-intro a { color: var(--link); white-space: nowrap; }
+    html[data-design="clean"] .visitor-intro { text-align: left; max-width: none; margin-top: calc(-1 * var(--space-4)); }
   </style>
   <script>
     // Clean design preview. ?design=clean turns it on and ?design=current off;
@@ -663,6 +646,11 @@
       <p>Basketball Simulation GM League</p>
     </div>
   </header>
+
+  <p class="visitor-intro" id="visitor-intro" hidden>
+    A fantasy NBA GM league, played out in NBA 2K since 2020.
+    <a href="/join/">What it is and how to join →</a>
+  </p>
 
   <div class="design-bar">Previewing the new homepage design <a href="/?design=current">Switch back to the current one</a></div>
   <div class="hero" id="dash-hero"></div>
@@ -952,31 +940,10 @@
     })();
   </script>
 
-  <footer>
-    <div class="faq">
-      <div class="faq-item">
-        <p class="faq-q">What is the Nothing But Net fantasy GM league?</p>
-        <p>We are a close group of basketball enthusiasts who together run a fantasy NBA league. Each member of NBN assumes a position within a team among the 30 teams in the league: typically either the Owner, the GM, or the Coach. We all hang out in a Discord server, chat about basketball and the league, and watch simulations of games between our teams through the video game NBA 2K. As a member of a team's front office, you would be working with other FO members to control everything about the team and its future, including setting rotations, gameplanning, scouting and making draft picks, trades, free agency, and much more. If you'd like to join, visit <a href="/join" style="color:var(--link);">nbn.today/join</a>.</p>
-      </div>
-
-      <div class="faq-item">
-        <p class="faq-q">What is the pace of the league?</p>
-        <p>The NBN runs at the same pace as the NBA. This means that if the NBA Spurs have a regular season game today, so will the NBN Spurs. This is not one of those leagues that simulate hundreds of seasons.</p>
-      </div>
-
-      <div class="faq-item">
-        <p class="faq-q">What kind of interests would make me a good fit for the NBN?</p>
-        <p>The common denominator is, of course, a love for basketball. But the NBN has things that appeal to all sorts of basketball fans. Some people are big 2K fans and like the idea of basically playing a MyLeague mode that's more realistic and with a vibrant community. Others are drawn in by the GMing and team-building aspect, and the idea of taking over the future of their favorite team. We have stats heads who like analyzing performances of players in our league, NBA draft enthusiasts who help their team scout and build youth, and people who just like to chat about basketball stuff.</p>
-      </div>
-
-      <div class="faq-item">
-        <p class="faq-q">What kind of time commitment can I expect?</p>
-        <p>The NBN is 100% what you make of it. There's no minimum contribution level, but a lot of us do get really into this league and contribute to it via being members of various committees that help the league run. We ask Owners to be somewhat active, but that's it.</p>
-      </div>
-    </div>
-  </footer>
   </div>
   <script>
+    if (!localStorage.getItem('nbn_token')) document.getElementById('visitor-intro').hidden = false;
+
     fetch('/version.json').then(r => r.json()).then(d => {
       const el = document.getElementById('site-version');
       if (el) el.textContent = 'v' + d.version;
