@@ -397,7 +397,186 @@
       .dash-row-league { grid-template-columns: 1fr; }
     }
 
+
+    /* ══ Clean design preview (?design=clean) ═══════════════════════════════
+       Everything below applies only when <html data-design="clean">, set by
+       the one-line script in <head>. The current design is untouched without
+       it. If the clean one is adopted, these rules become the page's rules
+       and the old ones above are deleted.
+
+       The idea: sections instead of boxes. Every part of the page used to be
+       its own bordered card with a tiny capitalised label, so nothing was more
+       important than anything else. Here the feed is the main column, the
+       schedule and rankings are a sidebar, sections are separated by space and
+       a single rule, and the 45 emoji tiles become a plain site directory. */
+
+    html[data-design="clean"] .page-wrap {
+      align-items: stretch;
+      max-width: var(--page-width-wide);
+      margin: 0 auto;
+      padding-top: 2rem;
+    }
+
+    /* Masthead: left-aligned and quieter. It identifies the site; it isn't
+       the content. */
+    html[data-design="clean"] header {
+      justify-content: flex-start;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+    html[data-design="clean"] header img { height: 44px; }
+    html[data-design="clean"] header h1 { font-size: var(--text-lg); letter-spacing: -0.01em; }
+    html[data-design="clean"] header p { font-size: var(--text-sm); margin-top: 0; }
+
+    /* Two columns: the feed, and a sidebar of schedule + rankings. The
+       wrapper around slate and feed steps aside (display: contents) so both
+       can be placed on the page grid directly. */
+    html[data-design="clean"] .dash {
+      max-width: none;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 20rem;
+      grid-template-areas:
+        "team  team"
+        "feed  slate"
+        "feed  ranks"
+        "feed  .";
+      gap: 0 var(--space-7);
+      align-items: start;
+      margin-bottom: var(--space-7);
+    }
+    html[data-design="clean"] .dash-row-league { display: contents; }
+    html[data-design="clean"] #dash-team  { grid-area: team; }
+    html[data-design="clean"] #dash-feed  { grid-area: feed; }
+    html[data-design="clean"] #dash-slate { grid-area: slate; }
+    html[data-design="clean"] #dash-ranks { grid-area: ranks; }
+
+    @media (max-width: 900px) {
+      html[data-design="clean"] .dash {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "team" "slate" "feed" "ranks";
+      }
+    }
+
+    /* Sections, not boxes. */
+    html[data-design="clean"] .dash-card {
+      background: none;
+      border: none;
+      border-top: 1px solid var(--border);
+      border-radius: 0;
+      padding: var(--space-4) 0 var(--space-6);
+    }
+    html[data-design="clean"] .dash-card-title {
+      font-size: var(--text-md);
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--text-primary);
+      margin-bottom: var(--space-4);
+    }
+
+    /* Your team: the one band that is about you, so it keeps a surface. */
+    html[data-design="clean"] #dash-team {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-5);
+      margin-bottom: var(--space-6);
+    }
+    html[data-design="clean"] .dash-team-name { font-size: var(--text-lg); }
+
+    /* Feed: the label becomes coloured text with a dot rather than a filled
+       pill, and the headline gets a readable size. The pill colours from
+       feed-types.js are kept as the dot and text colour. */
+    html[data-design="clean"] .dash-feed { gap: 0; }
+    html[data-design="clean"] .dash-feed-row {
+      grid-template-columns: 7.5rem minmax(0, 1fr);
+      gap: 0.2rem var(--space-4);
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    html[data-design="clean"] .dash-feed-row:last-child { border-bottom: none; }
+    html[data-design="clean"] .dash-feed-tag {
+      background: none !important;
+      padding: 0;
+      text-align: left;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      display: flex; align-items: baseline; gap: 0.4rem;
+    }
+    html[data-design="clean"] .dash-feed-tag::before {
+      content: ''; flex: none;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor;
+      transform: translateY(-1px);
+    }
+    html[data-design="clean"] .dash-feed-text { font-size: var(--text-base); color: var(--text-primary); line-height: 1.4; }
+    html[data-design="clean"] a.dash-feed-row:hover .dash-feed-text { color: var(--link); }
+    html[data-design="clean"] .dash-feed-when { font-size: var(--text-xs); }
+
+    /* Schedule */
+    html[data-design="clean"] .dash-team-phase { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
+    html[data-design="clean"] .dash-team-phase-sub { font-size: var(--text-sm); margin-bottom: var(--space-4); }
+    html[data-design="clean"] .dash-games { gap: 0.45rem; }
+    html[data-design="clean"] .dash-game-day { margin-top: var(--space-3); }
+
+    /* Rankings: a vertical list in the sidebar. */
+    html[data-design="clean"] .dash-ranks-head { flex-direction: column; gap: 0.1rem; margin-bottom: var(--space-3); }
+    html[data-design="clean"] .dash-ranks-head .dash-card-title { margin: 0 !important; }
+    html[data-design="clean"] .dash-ranks-edition { margin-left: 0; }
+    html[data-design="clean"] .dash-ranks-row { grid-template-columns: 1fr; gap: 0; }
+    html[data-design="clean"] .dash-rank-team { border-radius: 0; padding: 0.45rem 0; }
+    html[data-design="clean"] .dash-rank-team + .dash-rank-team { border-top: 1px solid var(--border-subtle); }
+    html[data-design="clean"] .dash-rank-team:hover { background: none; }
+    html[data-design="clean"] .dash-rank-team:hover .dash-rank-abbr { color: var(--link); }
+    html[data-design="clean"] .dash-rank-pos { width: 1.5rem; }
+    html[data-design="clean"] .dash-rank-abbr { font-size: var(--text-sm); }
+    html[data-design="clean"] .dash-rank-team .rank-move { margin-left: auto; }
+
+    /* Directory: the tile grid, regrouped by script into columns of links. */
+    html[data-design="clean"] main.grid { display: none; }
+    .directory { display: none; }
+    html[data-design="clean"] .directory {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+      gap: var(--space-6) var(--space-5);
+      border-top: 1px solid var(--border);
+      padding-top: var(--space-5);
+    }
+    .directory h2 {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+    .directory h2 a { color: inherit; }
+    .directory .section-label {
+      all: unset;
+    }
+    .directory ul { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; }
+    .directory .card {
+      /* The moved tiles, reset to plain links. */
+      display: block; padding: 0; background: none; border: none; border-radius: 0;
+      font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer;
+    }
+    .directory .card:hover { color: var(--link); background: none; transform: none; box-shadow: none; }
+    .directory .card-header { display: inline; }
+    .directory .card-icon { display: none; }
+    /* Admin-only links start hidden with an inline display:none; hide their
+       list item too, or each leaves a gap in the column. */
+    .directory li:has(> .card[style*="display:none"]),
+    .directory li:has(> .card[style*="display: none"]) { display: none; }
+    .directory .card-title { font-size: inherit; font-weight: 400; color: inherit; }
+    .directory .card > span:not(.card-header) { display: none; }  /* tile subtitles */
+    .directory-forms { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--space-3); }
+    .directory-forms:empty { display: none; }
   </style>
+  <script>
+    // Clean design preview: ?design=clean. See the note in the <style> above.
+    if (new URLSearchParams(location.search).get('design') === 'clean') {
+      document.documentElement.dataset.design = 'clean';
+    }
+  </script>
 </head>
 <body>
   <div class="page-wrap">
@@ -580,7 +759,7 @@
       <div class="card-header"><span class="card-icon">▶️</span><span class="card-title">YouTube</span></div>
     </a>
 
-    <a class="card" href="https://news.nbn.today">
+    <a class="card" href="/news/">
       <div class="card-header"><span class="card-icon">📰</span><span class="card-title">News</span></div>
     </a>
 
@@ -658,6 +837,42 @@
     </div>
     <div id="lo-nby-adjust-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
   </main>
+
+  <script>
+    // Clean design preview only: regroup the tile grid into a site directory,
+    // one column of plain links per section. The tiles are *moved*, not
+    // copied, so the League Office script below still finds them by id and
+    // shows the admin-only ones exactly as before. Inline admin forms go to a
+    // full-width row after the columns, since a column is too narrow for them.
+    (function () {
+      if (document.documentElement.dataset.design !== 'clean') return;
+      const grid = document.querySelector('main.grid');
+      const dir = document.createElement('nav');
+      dir.className = 'directory';
+      dir.setAttribute('aria-label', 'Site directory');
+      const forms = document.createElement('div');
+      forms.className = 'directory-forms';
+      let list = null;
+      [...grid.children].forEach(el => {
+        if (el.classList.contains('section-label')) {
+          const group = document.createElement('div');
+          const h = document.createElement('h2');
+          h.appendChild(el);            // keeps #lo-label and the Committees link
+          list = document.createElement('ul');
+          group.append(h, list);
+          dir.appendChild(group);
+        } else if (/-form$/.test(el.id)) {
+          forms.appendChild(el);
+        } else if (list) {
+          const li = document.createElement('li');
+          li.appendChild(el);
+          list.appendChild(li);
+        }
+      });
+      dir.appendChild(forms);
+      grid.after(dir);
+    })();
+  </script>
 
   <footer>
     <div class="faq">
@@ -1119,7 +1334,8 @@
     //   type  a key in feed-types.js — a ledger type, or `news` / `score`.
     //   text  already-escaped-at-render HTML-free string, or `html` for a row
     //         that needs markup (a score bolds the winner).
-    const FEED_LIMIT = 9;
+    // The clean preview gives the feed the main column, so it can hold more.
+    const FEED_LIMIT = document.documentElement.dataset.design === 'clean' ? 12 : 9;
 
     const feedFromTransactions = () =>
       // The ledger endpoint already withholds sealed types (§ 5.1 waiver
