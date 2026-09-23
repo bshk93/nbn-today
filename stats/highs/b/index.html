@@ -21,10 +21,6 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 960px; margin: 0 auto; }
-    header { margin-bottom: 1.75rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
     .table-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
     thead th.center { text-align: center; }
@@ -44,17 +40,20 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"></nav>
-    <header>
-      <h1>Single-Game Blocks Highs</h1>
-      <p>Top 50 single-game shot-blocking performances in NBN history. Click any column to sort.</p>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Single-Game Blocks Highs</h1>
+        <p class="ui-subtitle">Top 50 single-game shot-blocking performances in NBN history. Click any column to sort.</p>
+      </div>
     </header>
     <div class="table-wrap" id="table-wrap">
       <div id="status">Loading…</div>
     </div>
   </div>
   <script>window.PAGE_CONFIG = { statKey: 'B', statLabel: 'BLK', csvPath: '/data/game-highs-b.csv' };</script>
+  <script src="/names.js"></script>
   <script src="/stats/highs/table.js"></script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>

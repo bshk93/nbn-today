@@ -164,6 +164,7 @@
     .checks-doc .doc-note { font-size: 0.75rem; color: var(--text-muted); line-height: 1.55; margin: 0.2rem 0 0.5rem; }
     .checks-doc code { background: var(--bg-page); padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.72rem; color: var(--text-muted); }
   </style>
+  <script src="/names.js"></script>
 </head>
 <body>
 <div class="page">
@@ -561,6 +562,7 @@ function fmtM(n) {
 }
 
 function displayName(raw) {
+  if (typeof nbnPlayerName === 'function') return nbnPlayerName(raw);  // /names.js
   if (!raw) return '';
   const [last, first] = raw.split(', ');
   // Bios store names uppercase, so every word has to be re-cased — including

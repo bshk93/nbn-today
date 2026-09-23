@@ -1,0 +1,135 @@
+/* Shared page building blocks: container widths, the page header, tabs, the
+   segmented view switch, and section titles.
+
+   Imported by css/nav-chrome.css, which every surface loads (including the
+   ones that inject their own stylesheet, like teams/team.js), so these are
+   available everywhere without touching page <head>s.
+
+   Every page used to define its own version of each of these, which is why the
+   site read as modules dropped onto a page: three header layouts, four tab
+   styles, ten page widths. A page's own <style> still loads after this file and
+   wins. Every class here is prefixed ui- because .tabs, .tab, .page-header and
+   .section-title were already in use on 20 pages with their own meanings, so
+   an unprefixed rule would have leaked into them. Moving a page over means
+   switching it to these classes and deleting its local copy.
+
+   Two kinds of tabs, and the rule for choosing:
+     .ui-tabs      — switches between sections of a page (Standings / Playoffs).
+     .ui-segmented — switches between views of the same data (Rosters / Contracts).
+   Nothing else. */
+
+/* ── Containers ─────────────────────────────────────────────────────────── */
+/* Separate from the older .page class, which 85 pages define their own way. */
+.ui-page  { max-width: var(--page-width); margin-inline: auto; }
+.ui-page--wide { max-width: var(--page-width-wide); margin-inline: auto; }
+
+/* ── Page header ────────────────────────────────────────────────────────── */
+/*   <header class="ui-header">
+       <div>
+         <h1 class="ui-title">Standings</h1>
+         <p class="ui-subtitle">Every season since 2020-21.</p>
+       </div>
+       <div class="ui-header-actions">…controls…</div>
+     </header>                                                              */
+.ui-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  margin-bottom: var(--space-5);
+}
+.ui-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.ui-subtitle {
+  margin-top: var(--space-2);
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  max-width: 60ch;
+}
+.ui-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ── Tabs (page sections) ───────────────────────────────────────────────── */
+/*   <div class="ui-tabs" role="tablist">
+       <button class="ui-tab active" role="tab" aria-selected="true">…</button>
+     </div>                                                                 */
+.ui-tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-5);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ui-tabs::-webkit-scrollbar { display: none; }
+.ui-tab {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-4);
+  margin-bottom: -1px;
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.12s, border-color 0.12s;
+}
+.ui-tab:hover { color: var(--text-secondary); text-decoration: none; }
+.ui-tab.active,
+.ui-tab[aria-selected="true"] { color: var(--text-primary); border-bottom-color: var(--accent); }
+
+/* ── Segmented control (views of the same data) ─────────────────────────── */
+/*   <div class="ui-segmented" role="group">
+       <button class="active" aria-pressed="true">Rosters</button>
+       <button aria-pressed="false">Contracts</button>
+     </div>                                                                 */
+.ui-segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.ui-segmented > button,
+.ui-segmented > a {
+  padding: var(--space-1) var(--space-3);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.12s, background-color 0.12s;
+}
+.ui-segmented > :hover { color: var(--text-secondary); text-decoration: none; }
+.ui-segmented > .active,
+.ui-segmented > [aria-pressed="true"] { color: var(--text-primary); background: var(--bg-card); box-shadow: 0 1px 2px var(--shadow-color); }
+
+/* ── Section title ──────────────────────────────────────────────────────── */
+/* Sentence case at a real size. Replaces the tiny spaced-out capitals
+   ("EASTERN CONFERENCE") that every card had, which made every section look
+   equally unimportant. */
+.ui-section-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}

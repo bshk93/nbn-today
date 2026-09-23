@@ -473,6 +473,7 @@
   .jd-bar-fill  { height: 5px; border-radius: 2px; }
   .jd-bar-val   { color: var(--text-muted); width: 2.2rem; text-align: right; flex-shrink: 0; }
 </style>
+  <script src="/names.js"></script>
 </head>
 <body>
 <div class="page">
@@ -561,6 +562,7 @@ function clusterColor(hierName) {
 }
 
 function fmtName(raw) {
+  if (typeof nbnPlayerName === 'function') return nbnPlayerName(raw);  // /names.js
   const p = raw.split(', ');
   return p.length === 2 ? `${p[1]} ${p[0]}` : raw;
 }

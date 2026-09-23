@@ -196,6 +196,7 @@
     .grade-tick.mine .grade-tick-label { color: var(--gc); }
     .grade-count { font-size: 0.7rem; color: var(--text-muted); line-height: 1.9; }
   </style>
+  <script src="/names.js"></script>
 </head>
 <body>
   <div class="page">
@@ -725,6 +726,7 @@
       if (!slug) return null;
       const bio = bios[slug];
       if (!bio) return slug;
+      if (typeof nbnPlayerName === 'function') return nbnPlayerName(bio.name);  // /names.js
       const parts = bio.name.split(',');
       return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
     }

@@ -243,6 +243,7 @@
     .waiver-card button:hover { border-color: var(--accent); }
     .waiver-card button.danger:hover { border-color: var(--danger); color: var(--danger); }
   </style>
+  <script src="/names.js"></script>
 </head>
 <body>
   <div class="page">
@@ -284,6 +285,7 @@
     };
 
     function displayName(canonical) {
+      if (typeof nbnPlayerName === 'function') return nbnPlayerName(canonical);  // /names.js
       if (!canonical) return '';
       const toTitle = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
       if (canonical.includes(',')) {

@@ -168,6 +168,7 @@
     }
 
     function displayName(raw) {
+      if (typeof nbnPlayerName === 'function') return nbnPlayerName(raw);  // /names.js
       if (!raw) return '';
       const [last, first] = raw.split(', ');
       const tc = s => s.toLowerCase().replace(/(^|[\s\-'’])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());

@@ -639,6 +639,7 @@
 <script src="/country-iso.js"></script>
 <script src="/ratings-popup.js"></script>
 <script src="/league-time.js"></script>
+<script src="/names.js"></script>
 <script>
 (function () {
   const slug = new URLSearchParams(location.search).get('p');
@@ -721,9 +722,29 @@
 
   // ── Bio name helpers ─────────────────────────────────────────────────────────
 
+  // "CURRY, STEPHEN" → "Stephen Curry". Shared with every page via /names.js.
   function displayName(canonical) {
-    const i = canonical.indexOf(', ');
-    return i > 0 ? canonical.slice(i + 2) + ' ' + canonical.slice(0, i) : canonical;
+    return nbnPlayerName(canonical);
+  }
+
+  // Home / Players / <name>. Built as elements: .nav is a flex row with a gap,
+  // so bare " / " text between links got the gap on one side only, and the
+  // name went in as raw HTML.
+  function setCrumbs(name) {
+    const nav = document.getElementById('nav');
+    nav.textContent = '';
+    const add = (tag, text, href, cls) => {
+      const el = document.createElement(tag);
+      el.textContent = text;
+      if (href) el.href = href;
+      if (cls) el.className = cls;
+      nav.appendChild(el);
+    };
+    add('a', 'Home', '/');
+    add('span', '/', null, 'nav-crumb-sep');
+    add('a', 'Players', '/players/');
+    add('span', '/', null, 'nav-crumb-sep');
+    add('span', name, null, 'nav-crumb-current');
   }
 
   // Canonical slug is LAST-FIRST ("CURRY, STEPHEN" → "curry-stephen"), i.e. the
@@ -3550,8 +3571,7 @@
   function renderBioOnlyPlayer(bioSlug, bio) {
     const name = bio.name ? displayName(bio.name) : bioSlug;
     document.title = `${name} — NBN`;
-    document.getElementById('nav').innerHTML =
-      '<a href="/">Home</a> / <a href="/players/">Players</a> / ' + name;
+    setCrumbs(name);
     // Rewriting .nav's innerHTML above wipes out the search/inbox/theme/profile
     // icons nav.js already built into it — rebuild them (see the comment on
     // _initNav in nav.js).
@@ -4091,8 +4111,7 @@
     });
 
     document.title = `${playerName} — NBN`;
-    document.getElementById('nav').innerHTML =
-      '<a href="/">Home</a> / <a href="/players/">Players</a> / ' + playerName;
+    setCrumbs(playerName);
     if (typeof _initNav === 'function') _initNav();
     document.getElementById('page-title').textContent = playerName;
     const seasonCount = new Set(rows.map(r => r.SEASON)).size;

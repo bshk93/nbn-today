@@ -21,9 +21,6 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 860px; margin: 0 auto; }
-    header { margin-bottom: 1.75rem; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
 
     .date-nav { display: flex; align-items: center; gap: 0.5rem; }
     .date-btn { background: var(--border); border: 1px solid var(--text-dim); color: var(--text-secondary); border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; font-size: 0.85rem; line-height: 1.4; }
@@ -72,14 +69,14 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"></nav>
-    <header>
+    <header class="ui-header">
       <div style="display:flex;align-items:baseline;gap:1rem;">
-        <h1>Box Scores</h1>
+        <h1 class="ui-title">Box Scores</h1>
         <a class="submit-link" id="submit-link" href="/boxscores/submit/">Submit →</a>
       </div>
-      <div class="date-nav">
+      <div class="date-nav ui-header-actions">
         <button class="date-btn" id="btn-prev">&#8592;</button>
         <input type="date" class="date-input" id="date-input">
         <button class="date-btn" id="btn-next">&#8594;</button>
@@ -157,6 +154,9 @@
         const wrap = document.createElement("div");
         wrap.className = "games";
         games.forEach(g => wrap.appendChild(buildGame(g)));
+        // On a light night, open the box scores rather than leaving one or two
+        // collapsed rows at the top of an empty page.
+        if (games.length <= 2) wrap.querySelectorAll('.game').forEach(el => el.classList.add('open'));
         contentEl.appendChild(wrap);
       } catch(e) { setContent(`<span class="loading" style="color:var(--danger)">${e.message}</span>`); }
     }

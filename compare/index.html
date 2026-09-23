@@ -95,6 +95,7 @@
     .attr-badge-dot { width: 0.45rem; height: 0.45rem; border-radius: 50%; flex-shrink: 0; }
     .attr-source { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.6rem; }
   </style>
+  <script src="/names.js"></script>
 </head>
 <body>
 <div class="page">
@@ -145,6 +146,7 @@
   }
 
   function displayName(raw) {
+    if (typeof nbnPlayerName === 'function') return nbnPlayerName(raw);  // /names.js
     if (!raw) return '';
     const [last, first] = raw.split(', ');
     const tc = s => s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');

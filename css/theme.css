@@ -32,6 +32,34 @@
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
+  /* Type scale. Pages had 67 different font sizes, most between 0.65 and
+     0.9rem, so nothing read as more important than anything else. Use these
+     six; a size that isn't one of them should have a reason. */
+  --text-xs: 0.75rem;     /* 12px — table headers, badges, fine print */
+  --text-sm: 0.8125rem;   /* 13px — secondary text, dense tables */
+  --text-base: 0.9375rem; /* 15px — body text and default table cells */
+  --text-md: 1.0625rem;   /* 17px — section titles, card headings */
+  --text-lg: 1.375rem;    /* 22px — sub-page titles, big numbers in cards */
+  --text-xl: 2rem;        /* 32px — the page title */
+
+  /* Spacing, on a 4px grid. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* Page widths. Pages used at least ten, so content jumped sideways moving
+     between them. Standard for reading and single tables, wide for pages
+     that set tables side by side. */
+  --page-width: 960px;
+  --page-width-wide: 1240px;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+
   /* Backgrounds */
   --bg-page: #111827;
   --bg-card: #1f2937;

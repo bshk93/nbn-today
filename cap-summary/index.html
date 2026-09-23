@@ -502,6 +502,7 @@
     }
   </style>
   <script src="/league-time.js"></script>
+  <script src="/names.js"></script>
 </head>
 <body>
   <div class="page">
@@ -571,6 +572,7 @@
     ];
 
     function formatName(raw) {
+      if (typeof nbnPlayerName === 'function') return nbnPlayerName(raw);  // /names.js
       if (!raw) return raw;
       const [last, first] = raw.split(', ');
       if (!first) return raw;

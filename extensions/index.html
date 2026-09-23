@@ -89,6 +89,7 @@
 
     .actions-row { display: flex; gap: 0.5rem; flex-wrap: wrap; padding: 0.7rem 0.9rem; }
   </style>
+  <script src="/names.js"></script>
 </head>
 <body>
 <div class="page">
@@ -140,6 +141,7 @@ async function api(path, opts) {
   return data;
 }
 function displayName(raw) {
+  if (typeof nbnPlayerName === 'function') return nbnPlayerName(raw);  // /names.js
   if (!raw) return '';
   const [last, first] = raw.split(', ');
   const tc = s => s.toLowerCase().replace(/(^|[\s\-'’])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());

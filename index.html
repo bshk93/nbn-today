@@ -239,13 +239,18 @@
 
     .dash-games { display: flex; flex-direction: column; gap: 0.3rem; }
     .dash-game {
-      display: flex; align-items: baseline; gap: 0.6rem;
-      font-size: 0.82rem; color: var(--text-secondary);
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: var(--text-sm); color: var(--text-secondary);
     }
-    .dash-game-date { color: var(--text-muted); width: 4.2rem; flex: none; }
-    .dash-game-opp  { font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; }
+    .dash-game-day {
+      font-size: var(--text-xs); font-weight: 600; color: var(--text-muted);
+      margin-top: var(--space-2);
+    }
+    .dash-game-day:first-child { margin-top: 0; }
+    .dash-game-date { color: var(--text-muted); width: 3.6rem; flex: none; }
+    .dash-game-opp  { font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; min-width: 0; }
     .dash-game-logo { height: 18px; width: 18px; object-fit: contain; flex: none; }
-    .dash-game-time { color: var(--text-muted); font-size: 0.75rem; margin-left: auto; }
+    .dash-game-time { color: var(--text-muted); font-size: var(--text-xs); margin-left: auto; flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
     /* Action chips — the obligations band. Tone matches cap-health.js's
        severities so a violation reads the same here as on the team page. */
@@ -272,7 +277,7 @@
       display: grid;
       /* The slate is a fixed short list; the feed is the long one and gets the
          room, so a trade description does not wrap every three words. */
-      grid-template-columns: 1fr 2fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
       gap: 0.75rem;
       /* Each card sizes to its own content. Stretched to a common height the
          short ones (a three-game slate next to four wrapped trade
@@ -1081,9 +1086,13 @@
       }
 
       card.innerHTML = `<div class="dash-card-title">${esc(title)}</div>${head}`
-        + (list.length ? '<div class="dash-games">' + list.map(g =>
-            `<div class="dash-game">`
-            + (showDates ? `<span class="dash-game-date">${esc(shortDate(g.date))}</span>` : '')
+        // Grouped under a date heading rather than a date column: the card is
+        // too narrow for date + two team chips + time on one line, and the
+        // times were spilling out past its edge.
+        + (list.length ? '<div class="dash-games">' + list.map((g, i) =>
+            (showDates && (i === 0 || list[i - 1].date !== g.date)
+              ? `<div class="dash-game-day">${esc(shortDate(g.date))}</div>` : '')
+            + `<div class="dash-game">`
             + `<span class="dash-game-opp">${teamChip(g.away_team)}<span>@</span>${teamChip(g.home_team)}</span>`
             + (g.stream ? '<span title="Marked as a stream">📺</span>' : '')
             + `<span class="dash-game-time">${esc(g.time_et || '')}</span>`

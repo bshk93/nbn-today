@@ -30,8 +30,8 @@
     var overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000';
     overlay.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;width:360px;max-width:90vw">'
-      + '<h3 style="font-size:1rem;font-weight:700;margin-bottom:0.4rem;color:var(--text-primary);font-family:var(--font-sans)">Enter your token</h3>'
-      + '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;font-family:var(--font-sans)">Paste the token you received. It will be saved in this browser.</p>'
+      + '<h3 style="font-size:1rem;font-weight:700;margin-bottom:0.4rem;color:var(--text-primary);font-family:var(--font-sans)">Sign in</h3>'
+      + '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;font-family:var(--font-sans)">Paste your member token. This browser will remember it.</p>'
       + '<input type="password" placeholder="Paste token…" autocomplete="off" style="width:100%;background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.875rem;font-family:var(--font-mono);padding:0.5rem 0.75rem;margin-bottom:1rem;box-sizing:border-box;outline:none" />'
       + '<div style="display:flex;gap:0.5rem;justify-content:flex-end">'
       + '<button id="tok-cancel" style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit">Cancel</button>'
@@ -141,18 +141,60 @@
   }
 
   function setNoToken(el) {
-    el.innerHTML = '';
-    el.style.color = 'var(--accent)';
-    el.style.pointerEvents = 'auto';
-    el.style.cursor = 'pointer';
-    el.textContent = 'enter token';
-    el.onclick = function () {
-      showModal(function (token) { tryToken(el, token, true); });
+    el.remove();
+    mountSignIn();
+  }
+
+  // Signed out: a "Sign in" button in the header's action row, next to search
+  // and inbox. It used to be a tiny monospace "enter token" link pinned to the
+  // bottom-right corner, where it sat on top of whatever the page had there.
+  // Falls back to that corner only on a page with no nav.
+  function mountSignIn(attempt) {
+    var actions = document.querySelector('.nav .nav-actions');
+    if (!actions && (attempt || 0) < 20) {
+      setTimeout(function () { mountSignIn((attempt || 0) + 1); }, 50);
+      return;
+    }
+    var btn = document.createElement('button');
+    btn.id = 'nbn-token-badge';
+    btn.type = 'button';
+    btn.className = 'nav-signin-btn';
+    btn.textContent = 'Sign in';
+    btn.onclick = function () {
+      showModal(function (token) {
+        btn.disabled = true;
+        fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } })
+          .then(function (r) {
+            if (!r.ok) throw r;
+            // Wait for the session cookie, then reload so every part of the
+            // page (nav profile, edit buttons) sees the member.
+            return fetch('/api/auth/session', {
+              method: 'POST',
+              headers: { Authorization: 'Bearer ' + token },
+              credentials: 'same-origin',
+            }).catch(function () {}).then(function () { location.reload(); });
+          })
+          .catch(function (r) {
+            if (r && r.status === 401) localStorage.removeItem('nbn_token');
+            btn.disabled = false;
+            btn.textContent = r && r.status === 401 ? 'Token not recognised' : 'Couldn’t sign in';
+            setTimeout(function () { btn.textContent = 'Sign in'; }, 3000);
+          });
+      });
     };
+    if (actions) {
+      actions.appendChild(btn);
+    } else {
+      btn.style.cssText = 'position:fixed;bottom:0.6rem;right:0.8rem;z-index:9999';
+      document.body.appendChild(btn);
+    }
   }
 
   function init() {
     if (document.getElementById('nbn-token-badge')) return;
+    var token = localStorage.getItem('nbn_token');
+    if (!token) { mountSignIn(); return; }
+
     var el = document.createElement('div');
     el.id = 'nbn-token-badge';
     el.style.cssText = [
@@ -161,9 +203,6 @@
       'font-family:var(--font-mono)', 'letter-spacing:0.02em',
     ].join(';');
     document.body.appendChild(el);
-
-    var token = localStorage.getItem('nbn_token');
-    if (!token) { setNoToken(el); return; }
     tryToken(el, token);
   }
 

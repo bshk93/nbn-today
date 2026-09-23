@@ -114,7 +114,7 @@
         if (col.key === 'PLAYER') {
           const a = document.createElement('a');
           a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
-          a.textContent = row.PLAYER;
+          a.textContent = nbnPlayerName(row.PLAYER);
           td.appendChild(a);
         } else if (col.key === 'ROUND_GAME') {
           td.textContent = roundGameLabel(row);

@@ -10,11 +10,14 @@
    guaranteed to be present wherever nav.js is, and nav.js is what defines
    toast() and confirmDialog(). */
 @import url("/css/dialogs.css");
+@import url("/css/components.css");
 
 /* Nav */
 .nav { margin-bottom: 1.75rem; font-size: .875rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; }
 .nav a { color: var(--text-muted); text-decoration: none; }
 .nav a:hover { color: var(--text-primary); }
+.nav-crumb-sep { color: var(--text-dim); }
+.nav-crumb-current { color: var(--text-secondary); }
 
 /* Wraps search-btn + inbox/theme/profile so the group gets pushed to the
    right edge of .nav regardless of which pieces are actually present
@@ -35,6 +38,16 @@
   color: var(--text-muted); cursor: pointer; padding: 0; overflow: hidden;
   transition: border-color 0.15s, color 0.15s, background-color 0.15s;
 }
+/* Signed-out "Sign in" button (token-badge.js), sized to sit with the icons. */
+.nav-signin-btn {
+  height: 2.1rem; padding: 0 0.9rem; flex-shrink: 0;
+  border-radius: 999px; border: 1px solid var(--border); background: none;
+  color: var(--text-secondary); font: inherit; font-size: var(--text-sm); font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+.nav-signin-btn:hover { border-color: var(--text-muted); color: var(--text-primary); background: var(--bg-hover); }
+.nav-signin-btn:disabled { opacity: 0.6; cursor: default; }
 .nav-icon-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); background: var(--bg-hover); }
 .nav-icon-btn svg { width: 1.05rem; height: 1.05rem; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
