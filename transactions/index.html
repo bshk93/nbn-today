@@ -3738,7 +3738,7 @@ document.getElementById('txn-tbody').addEventListener('click', async function(e)
       headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'rescind_renounce',
-        date: new Date().toISOString().slice(0, 10),
+        date: nbnToday(),
         description: `Rescind renounce of ${who}`,
         details: { txn_id: id },
       }),
@@ -3765,7 +3765,7 @@ document.getElementById('txn-tbody').addEventListener('click', async function(e)
           headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'rescind_renounce', force: true,
-            date: new Date().toISOString().slice(0, 10),
+            date: nbnToday(),
             description: `Rescind renounce of ${who}`,
             details: { txn_id: id },
           }),
@@ -3864,7 +3864,7 @@ async function resolveOffer(btn) {
       headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'offer_sheet_decision',
-        date: new Date().toISOString().slice(0, 10),
+        date: nbnToday(),
         description: `${dest} signs ${who} (offer sheet ${outcome === 'matched' ? 'matched' : 'not matched'})`,
         details: { offer_id: id, outcome },
       }),
@@ -3888,7 +3888,7 @@ async function resolveOffer(btn) {
           headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'offer_sheet_decision', force: true,
-            date: new Date().toISOString().slice(0, 10),
+            date: nbnToday(),
             description: `${dest} signs ${who} (offer sheet ${outcome === 'matched' ? 'matched' : 'not matched'})`,
             details: { offer_id: id, outcome },
           }),

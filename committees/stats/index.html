@@ -128,6 +128,7 @@
       .missing-row { grid-template-columns: 1fr; }
     }
   </style>
+  <script src="/league-time.js"></script>
 </head>
 <body>
   <div class="page">
@@ -222,9 +223,9 @@
   const jget = (url, opts) =>
     fetch(url, opts).then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
 
-  // Today in the league's own terms — a date string, compared as a string, so
-  // no timezone can shift a game across midnight relative to the schedule file.
-  const today = new Date().toISOString().slice(0, 10);
+  // Today in league time (Eastern), as a date string compared as a string. Not
+  // toISOString(): that is UTC, which is already tomorrow after 8pm ET.
+  const today = nbnToday();
 
   const daysAgo = d => Math.floor((Date.parse(today) - Date.parse(d)) / 86400000);
 

@@ -1683,7 +1683,7 @@
         const guaranteed = bio.guaranteed && typeof bio.guaranteed === 'object' ? bio.guaranteed : {};
         const guarantee_dates = bio.guarantee_dates && typeof bio.guarantee_dates === 'object' ? bio.guarantee_dates : {};
         const guarantee_schedule = bio.guarantee_schedule && typeof bio.guarantee_schedule === 'object' ? bio.guarantee_schedule : {};
-        const today = new Date().toISOString().slice(0, 10);
+        const today = nbnToday();
 
         // Mirrors deadCapFromSchedule (transactions/index.html): walk the
         // vesting steps in order; a step with no amount means "everything
