@@ -27,23 +27,9 @@
       margin: 0 auto;
     }
 
-    header {
-      margin-bottom: 1.25rem;
-    }
-
-    header h1 {
-      font-size: 1.875rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    header p {
-      color: var(--text-muted);
-      margin-top: 0.4rem;
-      font-size: 0.9rem;
-      max-width: 68ch;
-    }
-
+    
+    
+    
     .controls {
       display: flex;
       align-items: center;
@@ -79,29 +65,8 @@
       max-height: 76vh;
     }
 
-    table {
-      border-collapse: collapse;
-      white-space: nowrap;
-    }
-
-    thead th {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: var(--bg-card);
-      padding: 0.45rem 0.35rem;
-      font-size: 0.65rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border);
-      text-align: center;
-      min-width: 58px;
-      cursor: pointer;
-      user-select: none;
-    }
-
+    
+    
     thead th:hover {
       color: var(--text-secondary);
     }
@@ -131,25 +96,14 @@
     thead th:nth-child(2) { left: 150px; min-width: 54px; }
     thead th:nth-child(3) { left: 204px; min-width: 64px; border-right: 1px solid var(--border); }
 
-    tbody tr {
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    tbody tr:last-child { border-bottom: none; }
-
+    
+    
     tbody tr:hover td { background: var(--bg-hover); }
     tbody tr:hover td:nth-child(1),
     tbody tr:hover td:nth-child(2),
     tbody tr:hover td:nth-child(3) { background: var(--bg-hover); }
 
-    td {
-      padding: 0.28rem 0.35rem;
-      text-align: center;
-      min-width: 58px;
-      vertical-align: middle;
-      font-variant-numeric: tabular-nums;
-    }
-
+    
     td:nth-child(1),
     td:nth-child(2),
     td:nth-child(3) {
@@ -222,9 +176,11 @@
   <div class="page">
     <nav class="nav"></nav>
 
-    <header>
-      <h1>Trade Votes</h1>
-      <p>For every trade message a member reacted to, they're scored FOR each team in that trade whose logo emoji they also reacted with, and AGAINST every other team named in the same trade. Click a column header to sort.</p>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Trade Votes</h1>
+        <p class="ui-subtitle">For every trade message a member reacted to, they're scored FOR each team in that trade whose logo emoji they also reacted with, and AGAINST every other team named in the same trade. Click a column header to sort.</p>
+      </div>
     </header>
 
     <div class="controls">
@@ -316,7 +272,7 @@
     }
 
     function buildTable() {
-      const table = document.createElement('table');
+      const table = document.createElement('table'); table.className = 'ui-table ui-table--dense ui-table--sticky-first';
       const thead = table.createTHead();
       const hr = thead.insertRow();
 

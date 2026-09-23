@@ -21,11 +21,7 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 1280px; margin: 0 auto; }
-    header { margin-bottom: 1.75rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: var(--text-muted); margin-top: 0.3rem; font-size: 0.9rem; }
-
+                
     /* Team cards */
     .teams-container { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start; }
     .team-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; flex: 1 1 280px; min-width: 260px; max-width: 360px; }
@@ -167,12 +163,14 @@
   <script src="/names.js"></script>
 </head>
 <body>
-<div class="page">
+<div class="page ui-page ui-page--wide">
   <nav class="nav"></nav>
-  <header>
-    <h1>Transaction Simulator</h1>
-    <p>Model a transaction — a trade, a free-agent signing, or an RFA offer sheet — and run it through the league's real validation rules.</p>
-  </header>
+  <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Transaction Simulator</h1>
+        <p class="ui-subtitle">Model a transaction — a trade, a free-agent signing, or an RFA offer sheet — and run it through the league's real validation rules.</p>
+      </div>
+    </header>
 
   <div class="mode-tabs" id="mode-tabs">
     <button type="button" class="mode-tab active" data-mode="trade">Trade</button>

@@ -24,12 +24,8 @@
   <script src="/vendor/purify-3.2.6.min.js"></script>
   <script src="/markdown.js"></script>
   <style>
-    .page { max-width: 900px; margin: 0 auto; }
-
-    header { margin-bottom: 1.25rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
-
+    
+            
     .draft-banner {
       background: var(--gold-bg, rgba(234,179,8,0.08));
       border: 1px solid var(--gold-border);
@@ -268,13 +264,15 @@
 <body>
 <script src="/nav.js"></script>
 
-<div class="page">
+<div class="page ui-page">
   <nav class="nav"></nav>
 
-  <header>
-    <h1>The NB¥ Economy</h1>
-    <p>A proposal for pegging NB¥ to real dollars, rebuilding the sinks, and restarting balances from zero.</p>
-  </header>
+  <header class="ui-header">
+      <div>
+        <h1 class="ui-title">The NB¥ Economy</h1>
+        <p class="ui-subtitle">A proposal for pegging NB¥ to real dollars, rebuilding the sinks, and restarting balances from zero.</p>
+      </div>
+    </header>
 
   <div class="draft-banner">
     <strong>Draft — nothing here is implemented.</strong> This is a working proposal under

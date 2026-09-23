@@ -21,11 +21,7 @@
   <meta name="theme-color" content="#111827">
   <!-- /NBN:og -->
   <style>
-    .page { max-width: 1400px; margin: 0 auto; }
-    header { margin-bottom: 2rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
-
+                
     .tabs {
       display: flex;
       gap: 0;
@@ -347,7 +343,6 @@
        generic names (.tile, .side, .count) that must not reach the others. */
     #tab-retros .retro-intro { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem; }
 
-
     /* Methodology disclosure */
     #tab-retros details.method {
       margin-top: 1rem; background: var(--bg-card); border: 1px solid var(--border);
@@ -477,12 +472,14 @@
   <script src="/names.js"></script>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page ui-page--wide">
     <div id="tooltip"></div>
     <nav class="nav"></nav>
-    <header>
-      <h1>Frivolities &amp; Viz</h1>
-      <p>Team and player visualizations.</p>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Frivolities &amp; Viz</h1>
+        <p class="ui-subtitle">Team and player visualizations.</p>
+      </div>
     </header>
 
     <div class="tabs">

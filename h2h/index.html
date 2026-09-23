@@ -27,22 +27,9 @@
       margin: 0 auto;
     }
 
-    header {
-      margin-bottom: 2rem;
-    }
-
-    header h1 {
-      font-size: 1.875rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    header p {
-      color: var(--text-muted);
-      margin-top: 0.4rem;
-      font-size: 0.9rem;
-    }
-
+    
+    
+    
     .section {
       margin-bottom: 2.5rem;
     }
@@ -63,27 +50,8 @@
       max-height: 72vh;
     }
 
-    table {
-      border-collapse: collapse;
-      white-space: nowrap;
-    }
-
-    thead th {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: var(--bg-card);
-      padding: 0.45rem 0.3rem;
-      font-size: 0.65rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border);
-      text-align: center;
-      min-width: 54px;
-    }
-
+    
+    
     thead th:first-child {
       position: sticky;
       left: 0;
@@ -94,22 +62,12 @@
       padding-left: 0.6rem;
     }
 
-    tbody tr {
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    tbody tr:last-child { border-bottom: none; }
-
+    
+    
     tbody tr:hover td { background: var(--bg-hover); }
     tbody tr:hover td:first-child { background: var(--bg-hover); }
 
-    td {
-      padding: 0.28rem 0.3rem;
-      text-align: center;
-      min-width: 54px;
-      vertical-align: middle;
-    }
-
+    
     td:first-child {
       position: sticky;
       left: 0;
@@ -164,9 +122,11 @@
   <div class="page">
     <nav class="nav"></nav>
 
-    <header>
-      <h1>Head to Head</h1>
-      <p>Row team's record against column team. Scroll to explore all 30 teams.</p>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Head to Head</h1>
+        <p class="ui-subtitle">Row team's record against column team. Scroll to explore all 30 teams.</p>
+      </div>
     </header>
 
     <div class="section">
@@ -196,7 +156,7 @@
       if (!rows.length) return null;
       const teams = Object.keys(rows[0]).filter(k => k !== 'TEAM').sort();
 
-      const table = document.createElement('table');
+      const table = document.createElement('table'); table.className = 'ui-table ui-table--dense ui-table--sticky-first';
 
       // Header row
       const thead = table.createTHead();
@@ -266,7 +226,7 @@
       if (!rows.length) return null;
       const teams = Object.keys(rows[0]).filter(k => k !== 'OWNER').sort();
 
-      const table = document.createElement('table');
+      const table = document.createElement('table'); table.className = 'ui-table ui-table--dense ui-table--sticky-first';
       table.classList.add('owner-table');
 
       const thead = table.createTHead();

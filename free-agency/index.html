@@ -22,12 +22,8 @@
   <!-- /NBN:og -->
   <style>
 
-    .page { max-width: 1100px; margin: 0 auto; }
-
-    header { margin-bottom: 1.5rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
-
+    
+            
     .filter-row {
       display: flex;
       flex-wrap: wrap;
@@ -51,15 +47,8 @@
     .chip.active { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
     .chip.year-chip.active { background: var(--market-positive-border); border-color: #10b981; color: #d1fae5; }
 
-    .table-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow-x: auto;
-    }
-
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
-
+    
+    
     thead th[data-active="true"] { color: var(--text-primary); }
 
     .sort-arrow { margin-left: 4px; opacity: 0.4; font-size: 0.65rem; }
@@ -67,19 +56,14 @@
 
     tbody tr:nth-child(odd)  { background: var(--bg-page); }
     tbody tr:nth-child(even) { background: var(--bg-card); }
-    tbody tr:hover { background: var(--bg-hover); }
-
+    
     /* Window for offers is shut (GET /api/fa/board: accepting === false) —
        greyed and italicized rather than hidden, same convention as the
        disabled ⋯-menu entry it shares a reason string with. */
     tbody tr.window-closed { opacity: 0.5; font-style: italic; }
     tbody tr.window-closed:hover { opacity: 0.75; }
 
-    td { padding: 0.55rem 1rem; color: var(--text-secondary); border-top: 1px solid var(--bg-card); }
-    td.right  { text-align: right; }
-    td.center { text-align: center; }
-    td.muted  { color: var(--text-muted); }
-    td.bold   { font-weight: 600; color: var(--text-primary); }
+                    td.bold   { font-weight: 600; color: var(--text-primary); }
     td.ovr-cell { font-weight: 700; text-align: right; }
     td.salary-cell { text-align: right; }
 
@@ -221,7 +205,6 @@
     .modal-actions button.danger:hover { border-color: var(--danger); color: var(--danger); }
     .modal-actions button:disabled { opacity: 0.45; cursor: default; }
 
-
     /* § 5.1 waiver wire */
     .waivers-section { margin: 0 0 1.1rem; }
     .waivers-section h2 { font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);
@@ -246,11 +229,13 @@
   <script src="/names.js"></script>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page ui-page--wide">
     <nav class="nav"></nav>
-    <header>
-      <h1>Free Agency</h1>
-      <p>Players with non-guaranteed salary, plus renounced and never-signed free agents with no cap hold. Click any column to sort.</p>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Free Agency</h1>
+        <p class="ui-subtitle">Players with non-guaranteed salary, plus renounced and never-signed free agents with no cap hold. Click any column to sort.</p>
+      </div>
     </header>
 
     <div id="waivers-wrap"></div>
@@ -258,7 +243,7 @@
     <div class="filter-row" id="year-filter"></div>
     <div class="filter-row" id="pos-filter"></div>
 
-    <div class="table-wrap" id="table-wrap">
+    <div class="ui-table-wrap" id="table-wrap">
       <div id="status">Loading…</div>
     </div>
   </div>
@@ -438,7 +423,7 @@
       const wrap = document.getElementById('table-wrap');
       wrap.innerHTML = '';
 
-      const table = document.createElement('table');
+      const table = document.createElement('table'); table.className = 'ui-table';
       const thead = table.createTHead();
       const hr = thead.insertRow();
 

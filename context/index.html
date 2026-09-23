@@ -25,23 +25,8 @@
   <script src="/markdown.js"></script>
   <style>
 
-    .page {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    header { margin-bottom: 1.5rem; }
-    header h1 {
-      font-size: 1.875rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-    header p {
-      color: var(--text-muted);
-      margin-top: 0.4rem;
-      font-size: 0.9rem;
-    }
-
+    
+            
     .search-row {
       display: flex;
       align-items: center;
@@ -212,12 +197,14 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"><a href="/">← NBN Home</a></nav>
 
-    <header>
-      <h1>Claude Context</h1>
-      <p>Project documentation, architecture notes, and data model reference for this codebase.</p>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Claude Context</h1>
+        <p class="ui-subtitle">Project documentation, architecture notes, and data model reference for this codebase.</p>
+      </div>
     </header>
 
     <div class="search-row">
