@@ -1743,6 +1743,8 @@
       const slugIdx = headers.indexOf('SLUG');
       const ovrIdx = headers.indexOf('OVR');
       if (slugIdx === -1) return [];
+      const dy = ((draftState && draftState.year) || 2026) % 100;
+      const holdSeason = `${String(dy).padStart(2, '0')}-${String((dy + 1) % 100).padStart(2, '0')}`;
       const result = [];
       for (let i = 1; i < lines.length; i++) {
         const cols = lines[i].split(',').map(c => c.trim());
@@ -1754,7 +1756,9 @@
         const name = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
         const csvOvr = ovrIdx !== -1 ? parseInt(cols[ovrIdx]) : NaN;
         const ovr = isNaN(csvOvr) ? (ovrCurrent[slug] || 0) : csvOvr;
-        const capHold = (bio.cap_holds && bio.cap_holds['26-27']) || null;
+        // The hold that matters at the draft is the one for the season the
+        // draft opens: the 2026 draft → '26-27'.
+        const capHold = (bio.cap_holds && bio.cap_holds[holdSeason]) || null;
         result.push({
           slug, name,
           pos: Array.isArray(bio.pos) ? bio.pos : [bio.pos || '?'],

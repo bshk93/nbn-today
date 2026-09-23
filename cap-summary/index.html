@@ -501,6 +501,7 @@
       }
     }
   </style>
+  <script src="/league-time.js"></script>
 </head>
 <body>
   <div class="page">
@@ -684,7 +685,7 @@
       const tradeExceptions = tpeRes.status === 'fulfilled' ? tpeRes.value : {};
       const season = leagueYearRes.status === 'fulfilled' && leagueYearRes.value.current_season
         ? leagueYearRes.value.current_season
-        : '25-26';
+        : nbnSeasonForDate(nbnToday());
       const levels = capLevels[season] || {};
       const rosterData = {}, deadCapData = {};
 

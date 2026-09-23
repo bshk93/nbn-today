@@ -473,6 +473,7 @@
       #tab-retros .controls input, #tab-retros .controls select { flex: 1 1 100%; }
     }
   </style>
+  <script src="/league-time.js"></script>
 </head>
 <body>
   <div class="page">
@@ -634,7 +635,7 @@
       const playersData = playersRes.status === 'fulfilled' ? playersRes.value : {};
       const currentSeason = leagueYearRes.status === 'fulfilled' && leagueYearRes.value.current_season
         ? leagueYearRes.value.current_season
-        : '25-26';
+        : nbnSeasonForDate(nbnToday());
 
       const nameMap = {};
       for (const [slug, bio] of Object.entries(playersData)) {
