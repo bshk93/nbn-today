@@ -282,6 +282,31 @@ def check_rulebook_badges(report):
                      "--fix\n      " + out.replace("\n", "\n      "))
 
 
+UTC_TODAY_RE = re.compile(r"new Date\(\)\.toISOString\(\)\.(?:slice|substring|split)")
+
+
+def check_league_today(report):
+    """"Today" must come from league-time.js's nbnToday(), never
+    new Date().toISOString(): that is the UTC date, which is already tomorrow
+    after 8pm ET, so evening transactions were stamped with the next day."""
+    skip = {".git", ".claude", "venv", "__pycache__", "node_modules", "vendor"}
+    report.checked += 1
+    bad = []
+    for path in REPO.rglob("*"):
+        if path.suffix not in (".html", ".js") or not path.is_file():
+            continue
+        rel = path.relative_to(REPO)
+        if skip & set(rel.parts) or str(rel) == "league-time.js":
+            continue
+        if UTC_TODAY_RE.search(path.read_text(encoding="utf-8", errors="ignore")):
+            bad.append(str(rel))
+    if bad:
+        report.error(", ".join(sorted(bad)), "takes today's date from "
+                     "toISOString() (UTC); use nbnToday() from /league-time.js")
+    else:
+        report.ok("every 'today' is league time")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -303,6 +328,10 @@ def main():
     if not args.quiet:
         print("\nChecking rulebook enforcement badges…")
     check_rulebook_badges(report)
+
+    if not args.quiet:
+        print("\nChecking today's date is league time…")
+    check_league_today(report)
 
     print()
     for path, msg in report.warnings:

@@ -109,6 +109,7 @@
       .fields { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
+  <script src="/league-time.js"></script>
 </head>
 <body>
   <div class="page">
@@ -256,7 +257,7 @@
           reset.className = 'btn btn-ghost';
           reset.textContent = 'Reset to Jul 1';
           reset.addEventListener('click', async () => {
-            const today = new Date().toISOString().slice(0, 10);
+            const today = nbnToday();
             const defaultDate = defaultStart(season);
             if (defaultDate <= today) {
               if (!await confirmDialog({
@@ -289,7 +290,7 @@
         row.appendChild(status);
 
         save.addEventListener('click', async () => {
-          const today = new Date().toISOString().slice(0, 10);
+          const today = nbnToday();
           const immediate = input.value <= today;
           // The immediate branch is three separate permanent consequences, so
           // they get one row each rather than being run together in prose.
