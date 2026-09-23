@@ -48,14 +48,14 @@ if (!file.exists(reg_csv)) {
   abort(glue("Regular season CSV not found: {reg_csv}. Submit box scores via /boxscores/submit first."))
 }
 inform(glue("Loading current season from {reg_csv}"))
-current_reg_raw <- data.table::fread(reg_csv) %>%
+current_reg_raw <- data.table::fread(reg_csv, header = TRUE) %>%
   tibble() %>%
   mutate(DATE = as.Date(DATE))
 
 playoff_csv <- file.path(DATA_DIR, glue("allstats-playoffs-{season_suffix}.csv"))
 current_playoff_raw <- if (file.exists(playoff_csv)) {
   inform(glue("Loading playoff data from {playoff_csv}"))
-  data.table::fread(playoff_csv) %>% tibble() %>% mutate(DATE = as.Date(DATE))
+  data.table::fread(playoff_csv, header = TRUE) %>% tibble() %>% mutate(DATE = as.Date(DATE))
 } else {
   NULL
 }
@@ -76,7 +76,9 @@ fix_player_names <- function(df) {
 
 dfs <- c(
   hist_reg,
-  list(current_reg_raw %>% mutate(SEASON = season))
+  # Header-only between the July 1 rollover and opening night; skipped for the
+  # same reason as an empty file in load_allstats(), and as the playoffs below.
+  if (nrow(current_reg_raw) > 0) list(current_reg_raw %>% mutate(SEASON = season)) else list()
 ) %>%
   clean_allstats() %>%
   fix_player_names() %>%
