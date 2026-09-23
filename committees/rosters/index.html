@@ -1242,12 +1242,18 @@
     roster_over_offseason_max:'Over the offseason ceiling',
     roster_trim_owed:         'Owing a trim before opening night',
     two_way_over_max:         'Over the two-way limit',
+    open_offer_sheet:         'Open offer sheet (§ 3.15)',
+    on_waivers:               'Player on waivers (§ 5.1)',
   };
 
-  // Worst first, so the tiles read down in the order the table sorts.
+  // Worst first, so the tiles read down in the order the table sorts. The
+  // process-state pair at the end isn't a cap/roster violation — it's "has
+  // something in flight that needs a decision" — so it sorts after every real
+  // breach.
   const CONDITION_ORDER = [
     'hard_cap_exceeded', 'roster_below_min', 'empty_roster_charge',
     'roster_over_offseason_max', 'two_way_over_max', 'roster_trim_owed',
+    'open_offer_sheet', 'on_waivers',
   ];
 
   const SEVERITY_RANK = { violation: 0, caution: 1, note: 2 };
@@ -1265,12 +1271,24 @@
 
   // ── Load ──────────────────────────────────────────────────────────────────
 
-  fetch('/api/cap-history/current')
-    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(data => {
+  Promise.all([
+    fetch('/api/cap-history/current')
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }),
+    // Open offer sheets (§ 3.15) and open waiver windows (§ 5.1) are process
+    // state, not cap math — neither goes through cap-health.js. Both
+    // endpoints are already public and already the single source of truth
+    // (`/free-agency` reads the same two), so this is display only: no new
+    // rule, just folding what they already say into this page's existing
+    // warning/chip/tile shape. A failure on either degrades to "none found"
+    // rather than taking down the cap table, which is the real content here.
+    fetch('/api/offer-sheets/open').then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch('/api/waivers').then(r => r.ok ? r.json() : []).catch(() => []),
+  ])
+    .then(([data, offers, waivers]) => {
       const entries = (data && data.entries) || [];
       if (!entries.length) throw new Error('no rows');
       ROWS = entries.map(buildRow);
+      applyProcessWarnings(ROWS, offerSheetIssues(offers).concat(waiverIssues(waivers)));
       const e = entries[0];
       document.getElementById('comp-asof').textContent =
         `${e.season} season · figures as of ${e.date}`;
@@ -1281,13 +1299,81 @@
         + CapHealth.ROSTER_MAX_OFFSEASON + ' in the offseason, ' + CapHealth.ROSTER_MAX_IN_SEASON
         + ' in season — so a team over 15 today owes a trim rather than being in breach. '
         + 'An Empty Roster Charge is counted here but its dollar figure is shown on the '
-        + 'team’s own page, not this one.';
+        + 'team’s own page, not this one. Open offer sheets and waiver windows are also '
+        + 'flagged here, straight off the same live lists <a href="/free-agency">/free-agency</a> reads.';
       render();
     })
     .catch(err => {
       document.getElementById('comp-status').textContent =
         'Could not load cap figures (' + err.message + ').';
     });
+
+  // ── Process-state warnings (offer sheets, waivers) ──────────────────────────
+  // Same {code, severity, text, short} shape cap-health.js's own warnings use,
+  // so they drop straight into the existing chip/tile/severity machinery below
+  // without a special case. Not overdue and not tied-claim → caution ("has
+  // something in flight"); overdue, or tied and bounced to PDC, is a real
+  // stuck state → violation, same tier a cap/roster breach gets.
+
+  function offerSheetIssues(offers) {
+    const out = [];
+    (offers || []).forEach(o => {
+      const dl = o.deadline ? new Date(o.deadline).toLocaleDateString() : 'no deadline on file';
+      const sev = o.overdue ? 'violation' : 'caution';
+      const offeringName = TEAMS[o.offering_team] || o.offering_team;
+      const retainingName = TEAMS[o.retaining_team] || o.retaining_team;
+      out.push({
+        team: o.retaining_team, code: 'open_offer_sheet', severity: sev,
+        short: o.overdue ? 'Offer sheet overdue' : 'Offer sheet pending',
+        text: `${o.player_name}: offer sheet from ${offeringName}, `
+            + `${o.overdue ? 'past its' : 'decide by'} ${dl} (§ 3.15).`,
+      });
+      out.push({
+        team: o.offering_team, code: 'open_offer_sheet', severity: sev,
+        short: o.overdue ? 'Offer sheet overdue' : 'Offer sheet pending',
+        text: `${o.player_name}: offer extended to ${retainingName}’s RFA, `
+            + `awaiting their decision by ${dl} (§ 3.15).`,
+      });
+    });
+    return out;
+  }
+
+  function waiverIssues(waivers) {
+    return (waivers || []).map(w => {
+      const dl = w.deadline
+        ? new Date(w.deadline).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+        : 'unknown deadline';
+      return {
+        team: w.released_by, code: 'on_waivers',
+        severity: w.awaiting_pdc ? 'violation' : 'caution',
+        short: w.awaiting_pdc ? 'Waivers — tied, needs PDC' : 'Player on waivers',
+        text: `${w.player}: on waivers until ${dl}`
+            + (w.awaiting_pdc ? '; tied claims sent to PDC for a manual call' : '') + ' (§ 5.1).',
+      };
+    });
+  }
+
+  function statusFromWarnings(warnings) {
+    const worst = warnings.length ? (SEVERITY_RANK[warnings[0].severity] ?? 9) : 9;
+    return { severity: worst, status: worst === 0 ? 'violation' : worst === 1 ? 'caution' : 'ok' };
+  }
+
+  function applyProcessWarnings(rows, extra) {
+    const byTeam = new Map();
+    extra.forEach(w => {
+      if (!w.team) return;
+      if (!byTeam.has(w.team)) byTeam.set(w.team, []);
+      byTeam.get(w.team).push(w);
+    });
+    rows.forEach(r => {
+      const add = byTeam.get(r.team);
+      if (!add || !add.length) return;
+      r.warnings = r.warnings.concat(add).sort((a, b) =>
+        (SEVERITY_RANK[a.severity] ?? 9) - (SEVERITY_RANK[b.severity] ?? 9));
+      r.codes = r.warnings.map(w => w.code);
+      Object.assign(r, statusFromWarnings(r.warnings));
+    });
+  }
 
   // One team's row. Everything rule-shaped on it comes back from standing().
   function buildRow(entry) {
