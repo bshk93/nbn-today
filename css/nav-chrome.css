@@ -39,7 +39,11 @@
 .nav-icon-btn svg { width: 1.05rem; height: 1.05rem; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Inbox */
-.inbox-btn { position: relative; }
+/* overflow: visible overrides .nav-icon-btn's overflow: hidden (there to
+   clip the profile avatar into a circle) — without it, the badge below,
+   deliberately positioned outside the button's own box, gets clipped by
+   its own parent and reads as barely visible. */
+.inbox-btn { position: relative; overflow: visible; }
 .inbox-badge {
   display: none; position: absolute; top: -0.4rem; right: -0.4rem;
   background: var(--gold-chip-border); color: var(--bg-page);
