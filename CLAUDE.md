@@ -242,7 +242,9 @@ Updated whenever a team owner saves changes in the team page edit mode (`PUT /ap
 | File | Used by | What it contains |
 |---|---|---|
 | `data/{abbr}-roster.csv` | `teams/{ABB}/index.html` | Current roster: `SLUG` per player (name/OVR/salary etc. joined from player-bios.json and ovr-history.json at render time) |
-| `data/{abbr}-picks.csv` | `teams/{ABB}/index.html` | Draft pick inventory: `YEAR, ROUND, TEAM, TYPE` |
+| `data/{abbr}-deadcap.csv` | `GET /api/deadcap/{team}` | Dead cap: one row per released player, `SLUG` plus one column per season. Written by release/waive transactions and `PUT /api/deadcap/{team}` |
+
+Picks are **not** in a per-team file. `PUT /api/picks/...` writes the league-wide `draft-picks.csv`, and team pages read `GET /api/picks/{team}` (see "Draft pick" below). The old `data/{abbr}-picks.csv` files are stale: nothing has written them since 2026-05-17 and no page reads them, though `link-public.sh` still publishes them and `smoke_test.py` still checks their schema.
 
 ---
 
@@ -292,7 +294,7 @@ These are fetched from nbn-api at runtime, not from flat files in the repo.
 | `GET /api/players` | player profiles, roster pages | `player-bios.json` in NBS_DATA_DIR |
 | `GET /api/boxscores` | `boxscores/index.html` | `allstats-{YY-YY}.csv` in NBS_DATA_DIR |
 | `GET /api/players/{slug}/gamelog` | player profiles | `allstats-{YY-YY}.csv` in NBS_DATA_DIR |
-| `GET /api/deadcap/{team}` | `teams/{ABB}/index.html` | `team-state.json` in NBS_DATA_DIR |
+| `GET /api/deadcap/{team}` | `teams/{ABB}/index.html` | `{abbr}-deadcap.csv` in NBS_DATA_DIR (`team-state.json` holds hard cap and MLE use, not dead cap) |
 | `GET /api/members/public` | `members/index.html` | `members.json` in NBS_DATA_DIR |
 | `GET /api/trade-exceptions` / `GET /api/trade-exceptions/{team}` | `teams/{ABB}/index.html` | `trade-exceptions.json` in NBS_DATA_DIR |
 | `GET /api/cap-history` / `GET /api/cap-history/current` | (no page yet) | `cap-history.jsonl` in NBS_DATA_DIR — a daily row per team: salary on both bases (§ 2.1a's real Empty Roster Charge included in both, and named separately as `empty_roster_charge`), apron position, hard cap, roster counts |
@@ -693,9 +695,10 @@ Canonical player data lives in `/var/lib/nothing-but-stats/player-bios.json`, se
 | `draft_year`, `draft_round`, `draft_pick` | Integers or null |
 | `draft_team` | Abbr of drafting team (`"ATL"`) or null — canonical "who drafted this player" |
 | `photo_url` | String |
-| `type` | `"player"`, `"two-way"`, `"dead"`, or `""` |
+| `type` | `"player"`, `"two-way"`, `"draft-rights"`, `"dead"` (legacy), or `""` — see "Player types" below |
 | `cap_holds` | Object keyed by season string: `{"27-28": "PLAYER_OPT", "28-29": "UFA"}` |
-| `salaries` | Dict keyed by season string: `{"25-26": "$37,000,000"}` |
+| `salaries` | Dict keyed by season string: `{"25-26": "$37,000,000"}`. Also carries cap-hold amounts and, on a released player, dead money — see "Cap holds" below |
+| `contracts`, `guarantee_schedule`, `bird_tiers`, `cap_hold_notes`, `retired`, `notes` | See "Fields: change with contract/roster activity" below |
 
 Endpoints: `GET /api/players` (public), `POST /api/players` (admin, creates), `PUT /api/players/{slug}` (rosters role, upserts).
 
@@ -756,9 +759,15 @@ These reflect the current contract state and are updated whenever a transaction 
 
 | Field | Type | When it changes |
 |---|---|---|
-| `type` | enum | Changes on transactions: `""` → `"player"` on signing, `"player"` ↔ `"two-way"` on conversion, `"dead"` when a player is cut and only a cap hit remains |
-| `salaries` | `{"YY-YY": "$amount"}` | Accumulates across contracts — past seasons are preserved; current-season-onwards entries are replaced by each new contract. The player page displays all entries as career earnings history; roster/tradeblock display code filters to `>= current season`. |
-| `cap_holds` | string | Updated alongside `salaries` to reflect the status after each contract year |
+| `type` | enum | Changes on transactions: `""` → `"player"` on signing, `"player"` ↔ `"two-way"` on conversion. A release sets it back to `""` and writes the dead money to the team's `{abbr}-deadcap.csv` — it does **not** set `"dead"` |
+| `salaries` | `{"YY-YY": "$amount"}` | Accumulates across contracts — past seasons are preserved; current-season-onwards entries are replaced by each new contract. The player page displays all entries as career earnings history; roster/tradeblock display code filters to `>= current season`. **Not every entry is salary**: a season with a `UFA`/`RFA` hold carries the hold's amount here (that's how it counts against the cap), and a released player keeps the remaining dead money here as well as in the deadcap CSV. Values are strings in mixed formats (`"$2,048,494"`, `"2296274"`); always go through `_parse_dollar` |
+| `cap_holds` | object | Updated alongside `salaries`; see "Cap holds" below |
+| `contracts` | array | One entry per signing since the write path started recording them (`team`, `date`, `signing_method`, `bird_rights_type`, `salaries`, `guaranteed`, `guarantee_dates`, `guarantee_schedule`, `cap_holds`, `txn_id`). Only on ~170 of ~720 contracted players, so it is history, not the source of truth. The top-level fields are what every validator reads, and the two can disagree |
+| `guarantee_schedule` | `{"YY-YY": [{amount, date?}]}` | Guarantee tranches within a season: an amount with no date is guaranteed now, one with a date becomes guaranteed on it |
+| `bird_tiers` | `{"YY-YY": "QVFA" \| "EQVFA" \| "Non-QVFA"}` | The Bird tier a player carries into that offseason (§ 3.8) |
+| `cap_hold_notes` | `{"YY-YY": string}` | Free text explaining a placeholder hold amount, e.g. one priced before that season's EAPS was set |
+| `retired` | bool | Retired players are skipped by free agency and POEXT |
+| `notes` | string | Free text from the league sheet (`"Extended 11/6/25"`) |
 | `guaranteed` | `{"YY-YY": "$amount"}` | Guaranteed portion of each year; set when partial guarantees exist |
 | `guarantee_dates` | `{"YY-YY": "YYYY-MM-DD"}` | The date after which that season's salary becomes fully guaranteed; cleared once the date passes |
 
@@ -766,7 +775,7 @@ These reflect the current contract state and are updated whenever a transaction 
 
 OVR is **not** stored on the player bio. It lives in a separate append-only log at `ovr-history.json` (served via `GET /api/ovr`), keyed by slug, as an array of `{date, ovr}` entries. The current rating is always the last entry. Updated via `PUT /api/ovr/{slug}` whenever ratings are refreshed (valid range 50–99).
 
-The roster CSV (`{abbr}-roster.csv`) stores the most recent OVR as a convenience column, but `ovr-history.json` is the source of truth for history.
+The roster CSV does **not** carry OVR (see "Roster CSV columns" above).
 
 #### Player types
 
@@ -774,12 +783,13 @@ The roster CSV (`{abbr}-roster.csv`) stores the most recent OVR as a convenience
 |---|---|
 | `"player"` | Standard roster player |
 | `"two-way"` | Two-way contract; salary/cap rules differ |
-| `"dead"` | Dead cap entry — no active player, just the cap hit on the books |
+| `"draft-rights"` | Unsigned draft rights held on a roster — a cap hold, not a player. Exempt from the roster count |
+| `"dead"` | **Legacy.** Nothing writes it any more (27 bios still have it); dead cap lives in `{abbr}-deadcap.csv`, since a player can carry dead money on one team while active on another. Still read as roster-exempt |
 | `""` | Unset / not yet classified |
 
 #### Cap holds
 
-`cap_holds` is a JSON object keyed by season string, e.g. `{"27-28": "PLAYER_OPT", "28-29": "UFA"}`. It describes what happens **after** the last contract year — i.e., the player's free-agent or option status in each subsequent offseason.
+`cap_holds` is a JSON object keyed by season string, e.g. `{"27-28": "PLAYER_OPT", "28-29": "UFA"}`. It tags a season in `salaries`; it is not a separate list of seasons. An option or `NON_GTD` tag marks a real contract year as conditional. A `UFA`/`RFA` tag marks the season **after** the deal ends, and that season's `salaries` entry is the hold amount, not a salary. So `{"28-29": "UFA"}` with `"28-29": "$13,193,576"` is a deal that ends in 27-28 plus a $13.2M hold. `contract.js` reads it that way (a trailing UFA/RFA line ends the deal), and `_compute_team_salary_ex_holds` drops those seasons for apron and hard-cap math.
 
 | Type | Meaning |
 |---|---|
@@ -814,7 +824,7 @@ Real ownership is a resolvable tree, not one mutable field (this replaced a flat
 
 **Concrete worked example, verified against real production data (2026-07-23):** HOU's and DET's 2027 1st both show `group_id` set, `owner: "DET|HOU"`. Reading `leaves` on either row gives the complete, correct picture in one step: `{"team": "DET", "description": "swap priority (better pick)"}` and `{"team": "HOU", "description": "swap priority (worse pick)"}`. That's the whole story — two teams, DET guaranteed the better of the two physical picks, HOU guaranteed the worse, no third party, no ambiguity, no need to trace transaction history. (The pick numerically labeled `orig: "LAL"` is not LAL's concern at all — LAL traded it away in 2020; DET already owns it outright and is only deciding whether to keep it or swap into HOU's own pick instead.)
 
-The flat, legacy `{abbr}-picks.csv` (`YEAR, ROUND, TEAM, TYPE`, `TEAM` values like `Own`, `from NYK`, a trailing `*` for "has conditions") is a coarse write-side/display artifact, not the model — used by `PUT /api/picks/{year}/{rnd}/{orig}` and older code paths. Anything reasoning about *why* a pick is owned by whom goes through `/api/picks` and reads `leaves`, never this file.
+The flat, legacy `{abbr}-picks.csv` (`YEAR, ROUND, TEAM, TYPE`, `TEAM` values like `Own`, `from NYK`, a trailing `*` for "has conditions") is stale and unread (see "Written by the nbn-api" above). The live flat ledger is `draft-picks.csv` (one row per pick, `OWNER` column), which `PUT /api/picks/{year}/{rnd}/{orig}` writes and the conveyance store is regenerated from. It is lossy and not what the site serves; the weekly integrity check flags any owner it names who holds no claim on what `/api/picks` returns (`picks_conveyance/parity.py`). Anything reasoning about *why* a pick is owned by whom goes through `/api/picks` and reads `leaves`, never this file.
 
 ### Player season
 
