@@ -22,6 +22,13 @@ which made the same list read as both done and open; it is not coming back.
 
 ## 1. Data integrity / open reconciliation
 
+### [P1] Nobody holds `trc` or `trc_head` — a trade sent to TRC can't be finalized
+Found 2026-09-24. Finalizing needs 3 `trc` approval ballots
+(`APPROVALS_NEEDED`), and `admin` deliberately can't cast one, so the first
+trade anyone submits through "Submit to TRC" will sit in balloting for good.
+None has been submitted yet. Assigning the committee is a league decision, then
+`/members` role edits — no code change.
+
 ### [P1] The leaked GitHub PAT still needs rotating — it is off disk, not revoked
 `/srv/shiny/nothing-but-stats/.git/config` had `origin` set to
 `https://ghp_…@github.com/bshk93/nothing-but-stats` — a personal access token
@@ -435,43 +442,23 @@ the basis (days? games?), and a season-start date the validator can key off —
 at which point the warning can become a real computed check. Grant Williams'
 2026-04-11 signing ($39,820) is the live example.
 
-### [P2] One minimum-contract mis-tiering needs manual pricing, plus a hold-placeholder bug in the Aug 2026 FA wave
-The re-pricing job this item used to be about now exists:
-`nbn-api-dev/reprice_minimum_salaries.py` (2026-09-14, dry-run by default,
-`--apply` to write, reuses the same `_min_salary_for`/`_one_year_min_cap_hit`
-helpers the signing validator itself checks against, so it can't disagree
-with what a fresh signing would be checked against). Population was never
-really 1 — that snapshot was taken the day before a 45-contract offseason FA
-wave (2026-08-09–08-26). `years_experience` is now persisted onto the
-contract record at signing too (`_apply_sign`/`_apply_convert_twoway`,
-2026-09-14), so future minimum deals won't need the `draft_year` fallback the
-job still falls back to for all 45 of today's, which predate the fix.
+### [P2] § 3.10's rookie-scale hold row isn't built — Prosper's 28-29 hold is still $1
+The 250%/300% hold for a player off the final year of a rookie-scale deal has
+no implementation, so `_autofill_fa_hold_amounts` would price it as a Bird
+percentage. `repair_fa_holds.py` (nbn-api, 2026-09-24) lists the one known case
+for a human rather than guessing: `prosper-omax` (DAL), whose 28-29 hold is the
+sheet's `$1` stand-in, tagged UFA where a rookie-scale end is usually RFA.
 
-First run (2026-09-14) applied 3 corrections: `post-quinten`/`hukporti-ariel`
-(trivial $1 rounding drift, 27-28) and `smith-dru` (27-28, $3,450,720 →
-$3,219,450) — the last one confirmed to the dollar as fallout of the
-now-resolved row-shift bug (the deleted `27-28/28-29/29-30 minimum salary
-scales are row-shifted` item, above the § 3.12 entries in this file's history):
-his recorded figure matched his correct tier-6 read against the *old, shifted*
-table exactly, so he was priced correctly at signing and simply never got the
-scale's later fix. One thing still needs a human, not the job:
+The minimum-contract row of the same table *is* built as of 2026-09-24
+(`_minimum_contract_hold`). Before that every minimum deal's hold went through
+the Bird percentage; that run repriced 52 of them and added 24 trailing holds
+the 2026 FA wave had gone in without. `_check_trailing_hold` now warns on a
+sign, offer sheet or extension with no hold after its last year.
 
-- **A data bug in the Aug 2026 wave**: `bagley-marvin` 27-28, `battle-jamison`
-  28-29, and `cooper-sharife`/`pedulla-sean` 28-29 all carry a stray
-  `$0`/`$1` salary entry on the *same* season their own contract also tags as
-  a trailing UFA/RFA hold. `_autofill_fa_hold_amounts` skips auto-pricing a
-  hold whenever `salaries` already has an entry for that season, so these
-  four almost certainly never got a real trailing-hold figure computed at
-  all. The re-pricing job now detects this shape and skips it (it can't tell
-  a real year from a stub), but doesn't fix it — that's a different bug,
-  upstream in whatever produced the stray entry, not a re-pricing question.
-
-Revisit before any 27-28 cap planning.
-
-Related open question for the committee, unchanged: the 27-28+ scales are
-projections using a **simple** 5%-of-base escalator (×1.05, ×1.10, ×1.15),
-not compounding. Immaterial at three years out, real by year five. Replace
-with published NBA figures when they exist.
+Still open with the committee: the 27-28+ minimum scales are projections on a
+**simple** 5%-of-base escalator (×1.05, ×1.10, ×1.15), not compounding.
+Immaterial at three years out, real by year five. Replace with published NBA
+figures when they exist.
 
 ### [P2] An RFA match doesn't link back to the holds that funded the offer
 `rescind_renounce` shipped 2026-08-08 alongside owner self-serve renounce, and
