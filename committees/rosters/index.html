@@ -450,6 +450,28 @@
 
     .pick-footer.investigate { color: var(--danger-light); }
 
+    .pick-task {
+      grid-column: 1 / -1;
+      margin-bottom: 0.4rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      white-space: pre-line;
+    }
+    .pick-task .task-head {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+      white-space: normal;
+    }
+    .pick-task .task-title { font-weight: 700; margin-bottom: 0.2rem; white-space: normal; }
+
     .pick-timeline { display: flex; flex-direction: column; gap: 0.15rem; font-family: var(--font-mono); font-size: 0.7rem; }
     .pick-timeline b { color: var(--text-secondary); }
 
@@ -904,6 +926,13 @@
         desc: "Owner matches on both sides, but the sheet's swap/protection mechanics aren't in the site's structured fields yet. Backlog, not a dispute.",
       },
     };
+    // Not a category the job assigns: every row carrying a hand-written
+    // `committee_note` (build/poopoo.py, pick-committee-notes.json) is pulled
+    // out of its own category and listed here first, whatever it reads as.
+    const PICK_TASK_META = {
+      label: "Committee tasks", color: "var(--purple)",
+      desc: "Picks someone has triaged and handed to the committee, with what's known so far. Each stays here until its note is removed.",
+    };
     const PICK_CATEGORY_ORDER = ["needs_investigation", "committee_lag", "same_owner_diff_representation", "richness_gap"];
 
     let picksFilter = 'all';
@@ -913,8 +942,19 @@
       return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
+    function pickTaskBlock(n) {
+      const byline = [n.added && `added ${escapeHtml(n.added)}`, n.by && `by ${escapeHtml(n.by)}`].filter(Boolean).join(' · ');
+      return `
+        <div class="pick-task">
+          <div class="task-head">Committee task${byline ? ' · ' + byline : ''}</div>
+          ${n.title ? `<div class="task-title">${escapeHtml(n.title)}</div>` : ''}
+          ${escapeHtml(n.text || '')}
+        </div>`;
+    }
+
     function pickRowCard(r) {
-      const meta = PICK_CATEGORY_META[r.category];
+      // A noted row can read clean against the sheet, and clean has no meta.
+      const meta = PICK_CATEGORY_META[r.category] || PICK_TASK_META;
       const sheetOwnerNorm = (r.sheet_owner || r.team).replace(/\*/g, '');
       const diverge = sheetOwnerNorm.toUpperCase() !== (r.site_owner || r.team).toUpperCase();
 
@@ -960,10 +1000,21 @@
         </div>`;
     }
 
+    function pickRowCardWithTask(r) {
+      return pickRowCard(r).replace('<div class="pick-id">', pickTaskBlock(r.committee_note) + '<div class="pick-id">');
+    }
+
     function renderPicksChips(counts, cleanTotal) {
+      const tasks = picksRowsGlobal.filter(r => r.committee_note).length;
       const items = [
-        { key: 'all', label: 'All flagged', n: picksRowsGlobal.length, color: 'var(--purple)' },
-        ...PICK_CATEGORY_ORDER.filter(k => counts[k]).map(k => ({ key: k, label: PICK_CATEGORY_META[k].label, n: counts[k], color: PICK_CATEGORY_META[k].color })),
+        { key: 'all', label: 'All flagged', n: picksRowsGlobal.length, color: 'var(--text-secondary)' },
+        ...(tasks ? [{ key: 'tasks', label: PICK_TASK_META.label, n: tasks, color: PICK_TASK_META.color }] : []),
+        // Counted off the rows, not `counts`: a noted row is listed under
+        // Committee tasks instead of its category, so the chip must agree.
+        ...PICK_CATEGORY_ORDER
+          .map(k => ({ k, n: picksRowsGlobal.filter(r => !r.committee_note && r.category === k).length }))
+          .filter(({ n }) => n)
+          .map(({ k, n }) => ({ key: k, label: PICK_CATEGORY_META[k].label, n, color: PICK_CATEGORY_META[k].color })),
         { key: 'clean', label: 'Clean matches', n: cleanTotal, color: 'var(--text-muted)', disabled: true },
       ];
       document.getElementById('picks-chips').innerHTML = items.map(it => `
@@ -983,10 +1034,28 @@
 
     function renderPicksGroups() {
       const byCat = {};
-      picksRowsGlobal.forEach(r => { (byCat[r.category] = byCat[r.category] || []).push(r); });
+      const tasks = [];
+      picksRowsGlobal.forEach(r => {
+        if (r.committee_note) { tasks.push(r); return; }
+        (byCat[r.category] = byCat[r.category] || []).push(r);
+      });
+
+      let taskHtml = '';
+      if (tasks.length && (picksFilter === 'all' || picksFilter === 'tasks')) {
+        taskHtml = `
+          <div class="pick-group">
+            <div class="pick-group-head">
+              <span class="dot" style="background:${PICK_TASK_META.color}"></span>
+              <h3>${PICK_TASK_META.label}</h3>
+              <span class="count">${tasks.length}</span>
+            </div>
+            <p class="pick-group-desc">${PICK_TASK_META.desc}</p>
+            <div class="pick-rows">${tasks.map(pickRowCardWithTask).join('')}</div>
+          </div>`;
+      }
 
       const keys = PICK_CATEGORY_ORDER.filter(k => picksFilter === 'all' || picksFilter === k);
-      const html = keys.map(key => {
+      const html = taskHtml + keys.map(key => {
         const meta = PICK_CATEGORY_META[key];
         const list = byCat[key] || [];
         if (!list.length) return '';
