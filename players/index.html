@@ -174,6 +174,17 @@
     .ct-top50 .ct-rank { color: var(--accent-light); }
     .ct-note { font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-2); }
     .career-row td { font-weight: 600; color: var(--text-primary); }
+    /* Playoff rows sit in the same tables as the regular season, so they
+       carry a gold tint and edge to stand apart. */
+    .po-row td { background: color-mix(in srgb, var(--gold) 7%, transparent); }
+    .po-row td:first-child { box-shadow: inset 3px 0 0 var(--gold-dim); color: var(--gold); }
+    .career-row + .career-row { border-top: none !important; }
+
+    .hof-line { margin: var(--space-3) 0; font-size: 0.85rem; color: var(--text-muted); }
+    .hof-line a { color: inherit; text-decoration: none; }
+    .hof-line a:hover .hof-pts { text-decoration: underline; }
+    .hof-line .hof-pts { font-weight: 700; color: var(--text-primary); }
+    .hof-line.hof-top10 .hof-pts, .hof-line.hof-top10 .hof-rank { color: var(--gold); }
 
     .page-tabs {
       display: flex;
@@ -633,6 +644,7 @@
 
   let biosData = {};
   let teamMap = {};
+  const slugByName = new Map();  // UPPERCASE player name → slug, for hof.csv
   let currentOvr = {};
   let allOvrHistory = {};
   let allAttributes = {};
@@ -1004,6 +1016,40 @@
 
   // ── Table builder ────────────────────────────────────────────────────────────
 
+  const isPlayoffRow = row => !!row.SEASON && row.SEASON.includes('Playoffs');
+
+  // One line under the accolades: HOF points and where they rank. hof.csv only
+  // lists the top 250, so a player outside it shows nothing.
+  function renderHofLine(container, playerName, hofRows) {
+    const key = (playerName || '').toUpperCase();
+    const idx = hofRows.findIndex(r => (r.PLAYER || '').toUpperCase() === key);
+    if (idx < 0) return;
+    const pts = +hofRows[idx].HOF_POINTS;
+    const rankOf = pool => {
+      let ahead = 0, level = 0;
+      hofRows.forEach((r, i) => {
+        if (i === idx || !pool(r)) return;
+        const p = +r.HOF_POINTS;
+        if (p > pts) ahead++; else if (p === pts) level++;
+      });
+      return { label: (level ? 'T-' : '#') + (ahead + 1), rank: ahead + 1 };
+    };
+    const all = rankOf(() => true);
+    const line = document.createElement('div');
+    line.className = 'hof-line';
+    if (all.rank <= 10) line.classList.add('hof-top10');
+    const a = document.createElement('a');
+    a.href = '/hof/';
+    a.innerHTML = `Hall of Fame <span class="hof-pts">${pts.toFixed(1)} pts</span> · <span class="hof-rank">${all.label} all-time</span>`;
+    // "Active" means on a roster today, as in Career Totals.
+    if (teamMap[slug]) {
+      const act = rankOf(r => !!teamMap[slugByName.get((r.PLAYER || '').toUpperCase())]);
+      a.innerHTML += ` · ${act.label} among active`;
+    }
+    line.appendChild(a);
+    container.appendChild(line);
+  }
+
   function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow, leaderCheck, iconFn) {
     const h2 = document.createElement('h2');
     h2.className = 'section-heading';
@@ -1089,13 +1135,17 @@
       });
 
       tbody.innerHTML = '';
-      sorted.forEach(row => renderRow(tbody.insertRow(), row, false));
-
-      if (careerRow) {
+      sorted.forEach(row => {
         const tr = tbody.insertRow();
-        tr.className = 'career-row';
-        renderRow(tr, careerRow, true);
-      }
+        if (isPlayoffRow(row)) tr.className = 'po-row';
+        renderRow(tr, row, false);
+      });
+
+      [].concat(careerRow || []).forEach(cr => {
+        const tr = tbody.insertRow();
+        tr.className = isPlayoffRow(cr) ? 'career-row po-row' : 'career-row';
+        renderRow(tr, cr, true);
+      });
     }
 
     updateHeaders();
@@ -4172,7 +4222,7 @@
 
   // ── Render: player profile ────────────────────────────────────────────────────
 
-  function renderPlayer(playerName, rows, playerAwards, seasonLeaders) {
+  function renderPlayer(playerName, rows, playerAwards, seasonLeaders, allPoRows, hofRows) {
     rows = [...rows].sort((a, b) => {
       const sa = parseFloat(a.SEASON) || 0;
       const sb = parseFloat(b.SEASON) || 0;
@@ -4271,6 +4321,7 @@
 
     // accolades
     renderAccolades(content, slug, rows[0].RINGS, playerAwards, seasonLeaders);
+    renderHofLine(content, rows[0].PLAYER, hofRows);
 
     // player type radar
     const radarEl = buildPlayerRadarChart(rows, allPlayerSeasons, bio.pos || []);
@@ -4282,19 +4333,15 @@
     toggleBar.setAttribute('role', 'group');
     const btnTeam     = document.createElement('button');
     const btnSeason   = document.createElement('button');
-    const btnPlayoffs = document.createElement('button');
     const btnGameLog  = document.createElement('button');
     btnTeam.className     = 'toggle-btn active';
     btnSeason.className   = 'toggle-btn';
-    btnPlayoffs.className = 'toggle-btn';
     btnGameLog.className  = 'toggle-btn';
     btnTeam.textContent     = 'By Team';
     btnSeason.textContent   = 'By Season';
-    btnPlayoffs.textContent = 'Playoffs';
     btnGameLog.textContent  = 'Game Log';
     toggleBar.appendChild(btnTeam);
     toggleBar.appendChild(btnSeason);
-    toggleBar.appendChild(btnPlayoffs);
     toggleBar.appendChild(btnGameLog);
     content.appendChild(toggleBar);
 
@@ -4303,10 +4350,7 @@
     content.appendChild(sections);
     const careerTotalsEl = document.createElement('div');
     content.appendChild(careerTotalsEl);
-    fetch('/players/player_seasons_playoffs.csv')
-      .then(r => r.ok ? r.text() : '')
-      .catch(() => '')
-      .then(text => renderCareerTotals(careerTotalsEl, slug, allPlayerSeasons, text ? parseCSV(text) : null));
+    renderCareerTotals(careerTotalsEl, slug, allPlayerSeasons, allPoRows.length ? allPoRows : null);
     renderContractTimeline(content, bio, slug);
     renderSalaryTable(content, bio);
     renderHistorySection(content, slug);
@@ -4314,9 +4358,8 @@
     renderTransactionHistory(content, slug, playerAwards[slug] || [], seasonLeaders, rows, bio);
 
     let bySeasonMode = false;
-    let showPlayoffs = false;
     let showGameLog  = false;
-    let poRows = null;
+    const poRows = allPoRows.filter(r => r.SLUG === slug && +r.G > 0);
     let gameLogRows = null;
     let gameLogPage = 0;
     const GL_PAGE_SIZE = 10;
@@ -4439,11 +4482,9 @@
 
     function getDisplayRows() {
       const reg = bySeasonMode ? aggregateBySeasonRows(rows) : rows;
-      const all = (!showPlayoffs || !poRows || !poRows.length)
-        ? reg
-        : [...reg, ...(bySeasonMode ? aggregateBySeasonRows(poRows) : poRows)];
+      const po = bySeasonMode ? aggregateBySeasonRows(poRows) : poRows;
       const dob = rows[0].DOB;
-      return all.map(r => ({ ...r, AGE: ageAtSeason(dob, r.SEASON) }));
+      return [...reg, ...po].map(r => ({ ...r, AGE: ageAtSeason(dob, r.SEASON) }));
     }
 
     function makeLeaderCheck() {
@@ -4461,8 +4502,14 @@
       const displayRows = getDisplayRows();
       sections.innerHTML = '';
       const iconFn = makeIconFn(rows, poRows, playerAwards, slug, bySeasonMode);
-      buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerStatsRow(displayRows), makeLeaderCheck(), iconFn);
-      buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerHighsRow(displayRows), null, iconFn);
+      // Regular season and playoffs each get their own career line.
+      const reg = displayRows.filter(r => !isPlayoffRow(r));
+      const po  = displayRows.filter(isPlayoffRow);
+      const careerLines = build => po.length
+        ? [build(reg), { ...build(po), SEASON: 'Career Playoffs' }]
+        : build(reg);
+      buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), makeLeaderCheck(), iconFn);
+      buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerLines(careerHighsRow), null, iconFn);
     }
 
     function setStatsMode() {
@@ -4470,50 +4517,17 @@
       btnGameLog.classList.remove('active');
     }
 
-    btnTeam.addEventListener('click', () => {
+    // Always rebuild: coming back from the game log must leave it even when
+    // the mode clicked is the one that was already selected.
+    function setMode(bySeason) {
       setStatsMode();
-      if (bySeasonMode) {
-        bySeasonMode = false;
-        btnTeam.classList.add('active');
-        btnSeason.classList.remove('active');
-        rebuildSections();
-      }
-    });
-
-    btnSeason.addEventListener('click', () => {
-      setStatsMode();
-      if (!bySeasonMode) {
-        bySeasonMode = true;
-        btnSeason.classList.add('active');
-        btnTeam.classList.remove('active');
-        rebuildSections();
-      }
-    });
-
-    btnPlayoffs.addEventListener('click', () => {
-      setStatsMode();
-      if (showPlayoffs) {
-        showPlayoffs = false;
-        btnPlayoffs.classList.remove('active');
-        rebuildSections();
-      } else if (poRows !== null) {
-        showPlayoffs = true;
-        btnPlayoffs.classList.add('active');
-        rebuildSections();
-      } else {
-        fetch('/players/player_seasons_playoffs.csv')
-          .then(r => { if (!r.ok) throw new Error(); return r.text(); })
-          .then(text => {
-            poRows = parseCSV(text).filter(r => r.SLUG === slug);
-            showPlayoffs = true;
-            btnPlayoffs.classList.add('active');
-            rebuildSections();
-          })
-          .catch(() => {
-            poRows = [];
-          });
-      }
-    });
+      bySeasonMode = bySeason;
+      btnTeam.classList.toggle('active', !bySeason);
+      btnSeason.classList.toggle('active', bySeason);
+      rebuildSections();
+    }
+    btnTeam.addEventListener('click', () => setMode(false));
+    btnSeason.addEventListener('click', () => setMode(true));
 
     btnGameLog.addEventListener('click', () => {
       if (showGameLog) return;
@@ -4521,7 +4535,6 @@
       btnGameLog.classList.add('active');
       btnTeam.classList.remove('active');
       btnSeason.classList.remove('active');
-      btnPlayoffs.classList.remove('active');
       gameLogPage = 0;
       renderGameLogSection();
       if (gameLogRows === null) {
@@ -4553,8 +4566,10 @@
     fetch('/api/attributes').then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('/api/auth/me', { headers: localStorage.getItem('nbn_token') ? { Authorization: `Bearer ${localStorage.getItem('nbn_token')}` } : {} }).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
+    slug ? fetch('/players/player_seasons_playoffs.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
+    slug ? fetch('/data/hof.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
   ])
-    .then(([seasonsText, awardsText, biosJson, teamMapJson, ovrJson, ovrHistoryJson, attributesJson, authJson, leagueYearJson]) => {
+    .then(([seasonsText, awardsText, biosJson, teamMapJson, ovrJson, ovrHistoryJson, attributesJson, authJson, leagueYearJson, poText, hofText]) => {
       biosData = biosJson;
       teamMap = teamMapJson;
       currentOvr = ovrJson;
@@ -4601,7 +4616,9 @@
 
       const bio = biosData[slug] || {};
       const playerName = bio.name ? displayName(bio.name) : playerRows[0].PLAYER;
-      renderPlayer(playerName, playerRows, playerAwards, seasonLeaders);
+      rows.forEach(r => { if (r.PLAYER && r.SLUG) slugByName.set(r.PLAYER.toUpperCase(), r.SLUG); });
+      renderPlayer(playerName, playerRows, playerAwards, seasonLeaders,
+                   poText ? parseCSV(poText) : [], hofText ? parseCSV(hofText) : []);
     })
     .catch(() => showError('Failed to load data.'));
 })();
