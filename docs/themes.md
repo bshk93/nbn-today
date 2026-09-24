@@ -32,8 +32,10 @@ through the catalog, because `GET /api/themes` is public and cached per browser
 the only thing that decides who paid for what, storing it in
 `members[name]["cosmetics"]["themes"]` beside the name colour, and returning it
 on the `/api/members/me` the nav already fetches. Which theme a browser is
-*showing* stays in `localStorage`, because `nav.js` applies the theme at the top
-of the file, before any fetch — waiting on the network to paint would put a
+*showing* stays in `localStorage`, because the theme is applied before any
+fetch — by `theme-boot.js`, a blocking script in every page's `<head>` (nav.js
+itself loads too late to beat the first paint, so it only re-applies the same
+answer) — waiting on the network to paint would put a
 flash of the wrong colours on every page load for every visitor, in exchange for
 guarding a palette whose CSS is public either way. So the page is trusted to
 render honestly and only the charge is guarded. `_canUseTheme` falls back to the

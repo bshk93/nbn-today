@@ -12,9 +12,12 @@ const _ICON_PERSON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12
 //
 // Named themes, chosen from the picker nav.js injects into every page's .nav.
 // Every id must have a matching :root[data-theme="..."] block in css/theme.css
-// (the bare :root there is "nbn-today", the default/fallback). The theme is
-// applied as early as possible — top-level, not waiting for DOMContentLoaded —
-// to minimize a flash of the wrong theme on load.
+// (the bare :root there is "nbn-today", the default/fallback). The first paint
+// is theme-boot.js's job, not this file's: nav.js loads at the end of <body>
+// (or is injected by team.js), too late to beat it, so every page's <head>
+// loads theme-boot.js to set data-theme before anything renders. _activeTheme()
+// below must agree with it, or this file re-applies a different theme and the
+// flash comes back.
 //
 // Two themes are free and are hardcoded here on purpose: nav.js is on every
 // page including the signed-out ones, and a picker that can't render without a
