@@ -459,8 +459,25 @@ def load_sheet():
 
 # ── Site-side extraction ────────────────────────────────────────────────
 
+# Each season's 2-year veteran minimum, keyed by season. The sheet writes a
+# hold for a player coming off a minimum deal as "$1"; the site prices it
+# (§ 3.10: the minimum, capped at the 2-year vet minimum, since 2026-09-24).
+# Both mean the same hold, so a site figure at or under this cap against a
+# sheet "$1" is not a disagreement. Filled by load_site.
+MIN_HOLD_CAP = {}
+
+
+def is_min_hold_shorthand(sheet_sal, site_sal, season):
+    cap = MIN_HOLD_CAP.get(season)
+    return bool(cap) and sheet_sal <= 1 and 1 < site_sal <= cap
+
+
 def load_site(season, players, season_keys):
     cap_levels = http_json("/api/cap-levels")
+    for skey, lv in cap_levels.items():
+        two_yr = ((lv or {}).get("min_salary_scale") or {}).get("2")
+        if two_yr:
+            MIN_HOLD_CAP[skey] = two_yr
     team_state = http_json("/api/team-state")
     all_picks = http_json("/api/picks")
     trade_exceptions = http_json("/api/trade-exceptions")
@@ -608,7 +625,7 @@ def describe_player(p):
     return f"signed {fmt_money(p['salary'])}"
 
 
-def compare_season_cell(sp_year, wp_year):
+def compare_season_cell(sp_year, wp_year, season=None):
     """One out-year's {salary, hold[, cat]} cell, sheet vs site. Returns
     None if they agree (or neither side has anything on file for that
     season -- most out-years past a contract's real length are just blank,
@@ -650,6 +667,8 @@ def compare_season_cell(sp_year, wp_year):
         if s_sal <= 1:
             return None  # neither side has a real figure -- nothing to flag either way
         return {"kind": "uncalculated", "sheet": sheet_label()}
+    if s_hold and s_hold == w_hold and is_min_hold_shorthand(s_sal, w_sal, season):
+        return None  # the sheet's "$1" for a minimum hold, priced on the site
 
     if not s_has or not w_has:
         return {"kind": "mismatch", "sheet": sheet_label(), "site": site_label(), "mag": None}
@@ -745,6 +764,8 @@ def diff_players(team, sheet_players_list, site_players_list, site_name_index, s
             elif sheet_is_hold and site_is_hold:
                 if wp["salary"] <= 1 and sp["salary"] <= 1:
                     pass  # neither side has a real figure -- nothing to flag either way
+                elif sp["hold"] == wp["hold"] and is_min_hold_shorthand(sp["salary"], wp["salary"], current_season):
+                    pass  # the sheet's "$1" for a minimum hold, priced on the site
                 elif wp["salary"] <= 1:
                     # Site has never computed a real hold value for this player at
                     # all (a literal "$1" placeholder, not a competing formula) --
@@ -777,7 +798,7 @@ def diff_players(team, sheet_players_list, site_players_list, site_name_index, s
             for skey in season_keys:
                 if skey == current_season:
                     continue
-                cmp = compare_season_cell(sp.get("years", {}).get(skey, {}), wp.get("years", {}).get(skey, {}))
+                cmp = compare_season_cell(sp.get("years", {}).get(skey, {}), wp.get("years", {}).get(skey, {}), skey)
                 if not cmp:
                     continue
                 if cmp["kind"] == "uncalculated":
