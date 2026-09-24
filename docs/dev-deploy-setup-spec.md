@@ -313,6 +313,14 @@ box with 19GB free. It would become the largest thing on the disk within
 two seasons and the largest thing in every backup immediately. The
 existing `rmtree` is the right call and stays.
 
+> **Amended 2026-09-24: kept 14 days, then deleted.** A committed game's
+> screenshots now move to `boxscore-screenshots/` as WebP instead of being
+> deleted at once, and are removed 14 days later (`routers/boxscore_shots.py`
+> in nbn-api). That is about a fortnight of games, under 100MB, and it is
+> outside the backup repo. The argument below still holds for keeping them
+> *forever*; two weeks is for settling a question about a recent game against
+> the screen it came from.
+
 The trade being made, stated plainly: images would only protect against a
 **mis-parse**, which is caught at parse time by the box-score sanity
 checks, caught later by the integrity check below, and repaired by

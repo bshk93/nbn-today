@@ -7,11 +7,11 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>Stats Committee — NBN</title>
   <!-- NBN:og -->
-  <meta name="description" content="The stats committee dashboard — build health, season coverage, and which played games still have no box score.">
+  <meta name="description" content="The stats committee dashboard — each day's games, their box score screenshots, and which still need entering.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
   <meta property="og:title" content="Stats Committee — NBN">
-  <meta property="og:description" content="The stats committee dashboard — build health, season coverage, and which played games still have no box score.">
+  <meta property="og:description" content="The stats committee dashboard — each day's games, their box score screenshots, and which still need entering.">
   <meta property="og:url" content="https://nbn.today/committees/stats/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -65,30 +65,86 @@
     .card-body p { font-size: 0.83rem; color: var(--text-muted); line-height: 1.6; }
 
             
-    .missing-rows { display: flex; flex-direction: column; gap: 0.4rem; }
-    .missing-row {
-      display: grid;
-      grid-template-columns: 96px 1fr auto;
-      gap: 0.2rem 1rem;
-      align-items: center;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--danger);
-      border-radius: 7px;
-      font-size: 0.83rem;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color 0.1s, background 0.1s;
+    /* ── Box scores by day ─────────────────────────────────────────────── */
+    .wl-controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .wl-controls .note { font-size: 0.76rem; color: var(--text-dim); }
+    .day { border-top: 1px solid var(--border); }
+    .day:first-child { border-top: none; }
+    .day-head {
+      display: flex; align-items: center; gap: 0.5rem 0.9rem; flex-wrap: wrap;
+      padding: 0.7rem 1.1rem; background: var(--bg-subtle);
     }
-    .missing-row:hover { border-color: var(--text-muted); background: rgba(255,255,255,0.03); text-decoration: none; }
-    .missing-row .date { font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-muted); }
-    .missing-row .matchup { font-weight: 600; color: var(--text-secondary); }
-    .missing-row .age { font-size: 0.74rem; color: var(--text-dim); white-space: nowrap; }
-    /* Games waiting 3+ days get heavier weight; 7+ days is the tier worth acting on first. */
-    .missing-row.stale { border-left-width: 3px; }
-    .missing-row.stale .age { color: var(--gold); font-weight: 600; }
-    .missing-row.very-stale { border-left-width: 5px; background: rgba(239, 68, 68, 0.06); }
-    .missing-row.very-stale .age { color: var(--danger); font-weight: 700; }
+    .day-label { font-weight: 700; font-size: 0.88rem; color: var(--text-secondary); }
+    .day-count { font-size: 0.76rem; color: var(--text-muted); }
+    .day-vod { margin-left: auto; display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; }
+    .day-vod a { color: var(--link); }
+    .day-vod input { width: 16rem; max-width: 55vw; font-size: 0.78rem; padding: 0.2rem 0.45rem; }
+    .day-vod .dim { color: var(--text-dim); }
+
+    .game {
+      display: grid;
+      grid-template-columns: 7.5rem 1fr 1fr 9rem;
+      grid-template-areas: "m a h s";
+      gap: 0.6rem; align-items: start;
+      padding: 0.65rem 1.1rem;
+      border-top: 1px solid var(--border);
+    }
+    .game > .game-matchup { grid-area: m; }
+    .game > .slot-away { grid-area: a; }
+    .game > .slot-home { grid-area: h; }
+    .game > .game-status { grid-area: s; }
+    .game-matchup { font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); padding-top: 0.3rem; }
+    .game-matchup .time { display: block; font-weight: 400; font-size: 0.72rem; color: var(--text-dim); }
+    .game-status { text-align: right; padding-top: 0.25rem; font-size: 0.78rem; }
+    .game-status .score { display: block; margin-top: 0.3rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .game-status .score a { color: inherit; }
+
+    /* One team's side of a game: its screenshots, and (for the role) the drop target. */
+    .slot {
+      min-height: 3.2rem;
+      border: 1px dashed var(--border); border-radius: 8px;
+      padding: 0.35rem 0.45rem;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+      font-size: 0.74rem; color: var(--text-dim);
+      outline: none; transition: border-color 0.1s, background 0.1s;
+    }
+    .slot .team { font-weight: 700; color: var(--text-muted); font-size: 0.72rem; width: 100%; }
+    .slot.filled { border-style: solid; }
+    .slot.can-upload { cursor: pointer; }
+    .slot.can-upload:hover { border-color: var(--text-muted); }
+    .slot.can-upload:focus, .slot.dragover {
+      border-color: var(--accent); border-style: solid;
+      background: color-mix(in srgb, var(--accent) 7%, transparent);
+    }
+    .slot .hint-armed { display: none; color: var(--accent); font-weight: 600; }
+    .slot.can-upload:focus .hint-armed { display: inline; }
+    .slot.can-upload:focus .hint-idle { display: none; }
+    .slot.busy { opacity: 0.6; pointer-events: none; }
+    .slot .choose { color: var(--link); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
+    .thumb { position: relative; display: inline-block; }
+    .thumb img {
+      display: block; height: 3.4rem; width: auto; max-width: 7rem; object-fit: cover;
+      border-radius: 5px; border: 1px solid var(--border);
+    }
+    .thumb .rm {
+      position: absolute; top: -0.4rem; right: -0.4rem;
+      width: 1.15rem; height: 1.15rem; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--bg-card); color: var(--text-muted);
+      font-size: 0.7rem; line-height: 1; cursor: pointer; padding: 0;
+    }
+    .thumb .rm:hover { color: var(--danger); border-color: var(--danger); }
+    .shot-link { color: var(--link); font-size: 0.74rem; }
+    .kept-note { font-size: 0.7rem; color: var(--text-dim); width: 100%; }
+
+    .more-wrap { display: flex; justify-content: center; padding: 0.8rem; border-top: 1px solid var(--border); }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.6rem 1rem; font-size: 0.8rem; color: var(--text-primary);
+      box-shadow: 0 4px 16px var(--shadow-color); z-index: 50; max-width: 90vw;
+    }
+    .toast.bad { border-color: var(--danger); color: var(--danger); }
 
     .clean { color: var(--text-muted); font-size: 0.86rem; }
 
@@ -110,8 +166,9 @@
       background: rgba(255,255,255,0.06); padding: 0.05rem 0.3rem; border-radius: 4px;
     }
 
-    @media (max-width: 560px) {
-      .missing-row { grid-template-columns: 1fr; }
+    @media (max-width: 640px) {
+      .game { grid-template-columns: 1fr 1fr; grid-template-areas: "m s" "a h"; }
+      .day-vod { margin-left: 0; width: 100%; }
     }
   </style>
   <script src="/league-time.js"></script>
@@ -131,6 +188,25 @@
 
     <div class="card">
       <div class="card-head">
+        <h2>Box scores by day</h2>
+        <div class="wl-controls">
+          <div class="ui-segmented" role="group" id="wl-scope">
+            <button data-scope="open" class="active" aria-pressed="true">Needs work</button>
+            <button data-scope="all" aria-pressed="false">All days</button>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" id="wl-help" hidden>
+        <p>Click a team's box, then paste a screenshot (Ctrl+V / ⌘V). You can also drop a file
+          on it or choose one. Add a second image to a side if the bench didn't fit. A game is
+          ready to parse once both sides are in. Screenshots stay here for 14 days after the
+          game is entered.</p>
+      </div>
+      <div id="worklist"><div class="card-body">Loading…</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
         <h2>Build</h2>
         <span class="note" id="build-note"></span>
       </div>
@@ -144,17 +220,9 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-head">
-        <h2>Played but not entered</h2>
-        <span class="note">Scheduled on or before today with no box score on file</span>
-      </div>
-      <div class="card-body" id="missing">Loading…</div>
-    </div>
-
     <div class="card" id="queue-card" hidden>
       <div class="card-head">
-        <h2>Submission queue</h2>
+        <h2>Manual entry queue</h2>
         <span class="note">Visible to the stats role</span>
       </div>
       <div class="card-body" id="queue"></div>
@@ -164,7 +232,7 @@
       <div class="card-head"><h2>Tools</h2></div>
       <div class="card-body">
         <div class="links">
-          <a class="link-chip" href="/boxscores/submit/">Submit a box score →</a>
+          <a class="link-chip" href="/boxscores/submit/">Type in a box score by hand →</a>
           <a class="link-chip" href="/boxscores/">Browse box scores →</a>
           <a class="link-chip" href="/calendar/">Schedule &amp; calendar →</a>
           <a class="link-chip" href="/stats/seasons">Season stats →</a>
@@ -184,21 +252,28 @@
 
   <script src="/nav.js"></script>
   <script>
-  // Everything on this page is derived from three public endpoints plus two
-  // role-gated ones. No stats are computed here — a box score is either on file
-  // or it isn't, and the build either finished or it didn't.
+  // Everything on this page is derived from these endpoints. No stats are
+  // computed here — a box score is either on file or it isn't, and the build
+  // either finished or it didn't.
   //
   //   GET /api/build/status           public   — the aggregation's last run
   //   GET /api/schedule               public   — this season's 1,200 fixtures
   //   GET /api/boxscores/games        public   — one row per game already entered
-  //   GET /api/boxscore/pending       stats    — screenshots uploaded, not committed
+  //   GET /api/boxscore/screenshots   public   — screenshots per game: pending, or kept 14 days after entry
+  //   GET /api/streaming-days         public   — per-date "streamed" mark and VOD link
   //   GET /api/boxscore/queue         stats    — games flagged for manual entry
+  //
+  // Writes, for the stats role: POST /api/boxscore/upload/side (one image for
+  // one team), DELETE /api/boxscore/pending/{id}/images/{file}, and
+  // PUT /api/streaming-days/{date}/youtube.
 
   let me = { name: null, roles: [] };
   const storedToken = () => localStorage.getItem('nbn_token');
   // `admin` satisfies any role check server-side, so it has to see the controls
   // the API would let it use.
   const hasStatsRole = () => me.roles.includes('stats') || me.roles.includes('admin');
+  // The VOD link is also a streamer's to set (the API takes either role).
+  const canSetVod = () => hasStatsRole() || me.roles.includes('streamer');
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -303,45 +378,367 @@
     wrap.appendChild(btn);
   }
 
-  // ── Coverage and the missing list ─────────────────────────────────────────
+  // ── Box scores by day ─────────────────────────────────────────────────────
 
-  function renderCoverage(schedule, games) {
-    const fixtures = (schedule && schedule.games) || [];
-    const entered = new Set(games.map(g => gameKey(g.date, g.home_team, g.away_team)));
+  const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtDay = d => { const dt = new Date(d + 'T00:00:00');
+    return `${DAYS_SHORT[dt.getDay()]}, ${MONTHS_SHORT[dt.getMonth()]} ${dt.getDate()}`; };
+  const DAY_PAGE = 10;
 
-    const due = fixtures.filter(f => f.date <= today);
-    const missing = due
-      .filter(f => !entered.has(gameKey(f.date, f.home_team, f.away_team)))
-      .sort((a, b) => a.date.localeCompare(b.date) || a.home_team.localeCompare(b.home_team));
+  const W = {
+    season: null,
+    fixtures: [],          // schedule rows
+    entered: new Map(),    // gameKey -> box score index row
+    shots: new Map(),      // gameKey -> screenshot item (pending or kept)
+    days: {},              // date -> {done, youtube_url, ...}
+    scope: 'open',
+    shown: DAY_PAGE,
+  };
 
+  // One row per game on a date: the schedule's fixtures, plus any game that
+  // has screenshots or a box score but no fixture (a playoff game the
+  // schedule doesn't carry), so nothing uploaded is ever invisible here.
+  function gamesOn(date) {
+    const out = new Map();
+    W.fixtures.filter(f => f.date === date).forEach(f => out.set(gameKey(f.date, f.home_team, f.away_team),
+      { date, home_team: f.home_team, away_team: f.away_team, time_et: f.time_et, game_type: 'REG' }));
+    const extra = (d, g) => {
+      const k = gameKey(d, g.home_team, g.away_team);
+      if (!out.has(k)) out.set(k, { date: d, home_team: g.home_team, away_team: g.away_team,
+        game_type: (g.game_type || g.gametype || 'REG') });
+    };
+    W.shots.forEach(it => { if (it.date === date) extra(date, it); });
+    W.entered.forEach(g => { if (g.date === date) extra(date, g); });
+    return [...out.values()];
+  }
+
+  function allDates() {
+    const set = new Set(W.fixtures.filter(f => f.date <= today).map(f => f.date));
+    W.shots.forEach(it => set.add(it.date));
+    W.entered.forEach(g => set.add(g.date));
+    return [...set].sort().reverse();
+  }
+
+  // The screenshots on file for one team in a game. An item's sides are its
+  // own home/away, which need not match the schedule's, so this goes by team.
+  function teamShots(item, team) {
+    if (!item) return [];
+    return item.home_team === team ? item.images.home : item.images.away;
+  }
+
+  function gameState(g) {
+    const k = gameKey(g.date, g.home_team, g.away_team);
+    if (W.entered.has(k)) return { key: 'entered', label: 'Entered', tone: 'success' };
+    const item = W.shots.get(k);
+    const hasA = teamShots(item, g.away_team).length > 0;
+    const hasH = teamShots(item, g.home_team).length > 0;
+    if (hasA && hasH) return { key: 'ready', label: 'Ready to parse', tone: 'accent' };
+    if (hasA || hasH) return { key: 'partial', label: `Needs ${hasA ? g.home_team : g.away_team}`, tone: 'warning' };
+    if (g.date === today) return { key: 'none', label: 'No screenshots yet', tone: '' };
+    return { key: 'none', label: 'Needs screenshots', tone: 'danger' };
+  }
+
+  function renderTiles() {
+    const due = W.fixtures.filter(f => f.date <= today);
+    const missing = due.filter(f => !W.entered.has(gameKey(f.date, f.home_team, f.away_team)));
+    const ready = [...W.shots.values()].filter(it => it.status === 'pending' && it.ready).length;
     tiles([
-      { n: games.length, label: 'Box scores on file', sub: schedule.season ? `${schedule.season} season` : '' },
-      { n: due.length, label: 'Games played to date', sub: `of ${fixtures.length} scheduled` },
+      { n: W.entered.size, label: 'Box scores on file', sub: W.season ? `${W.season} season` : '' },
+      { n: due.length, label: 'Games played to date', sub: `of ${W.fixtures.length} scheduled` },
       { n: missing.length, label: 'Awaiting entry',
         tone: missing.length === 0 ? 'good' : missing.length > 5 ? 'bad' : 'warn',
         sub: due.length ? `${Math.round(100 * (due.length - missing.length) / due.length)}% entered` : '' },
+      { n: ready, label: 'Ready to parse', tone: ready ? 'warn' : '',
+        sub: 'both sides uploaded' },
     ]);
+  }
 
-    const box = document.getElementById('missing');
-    if (!due.length) {
-      box.innerHTML = '<p class="clean">No games have been played yet this season.</p>';
+  function renderWorklist() {
+    renderTiles();
+    const box = document.getElementById('worklist');
+    document.getElementById('wl-help').hidden = !hasStatsRole();
+    let dates = allDates();
+    if (W.scope === 'open') {
+      dates = dates.filter(d => gamesOn(d).some(g => gameState(g).key !== 'entered'));
+    }
+    if (!dates.length) {
+      box.innerHTML = `<div class="card-body"><p class="clean">${W.scope === 'open'
+        ? (W.fixtures.some(f => f.date <= today) ? 'Every game played so far has a box score. Nothing owed.'
+                                                  : 'No games have been played yet this season.')
+        : 'No games have been played yet this season.'}</p></div>`;
       return;
     }
-    if (!missing.length) {
-      box.innerHTML = '<p class="clean">Every game played so far has a box score. Nothing owed.</p>';
-      return;
+    box.textContent = '';
+    dates.slice(0, W.shown).forEach(d => box.appendChild(dayEl(d)));
+    if (dates.length > W.shown) {
+      const wrap = document.createElement('div');
+      wrap.className = 'more-wrap';
+      const btn = document.createElement('button');
+      btn.className = 'ui-btn ui-btn--ghost ui-btn--sm';
+      btn.textContent = `Show more (${dates.length - W.shown} more day${dates.length - W.shown === 1 ? '' : 's'})`;
+      btn.onclick = () => { W.shown += DAY_PAGE; renderWorklist(); };
+      wrap.appendChild(btn);
+      box.appendChild(wrap);
     }
-    box.innerHTML = '<div class="missing-rows">' + missing.map(f => {
-      const age = daysAgo(f.date);
-      const tier = age >= 7 ? 'very-stale' : age >= 3 ? 'stale' : '';
-      const href = `/boxscores/submit/?date=${encodeURIComponent(f.date)}`
-        + `&home=${encodeURIComponent(f.home_team)}&away=${encodeURIComponent(f.away_team)}`;
-      return `<a class="missing-row ${tier}" href="${esc(href)}">`
-        + `<span class="date">${esc(f.date)}</span>`
-        + `<span class="matchup">${esc(f.away_team)} @ ${esc(f.home_team)}</span>`
-        + `<span class="age">${age === 0 ? 'today' : age === 1 ? '1 day' : age + ' days'}</span>`
-        + '</a>';
-    }).join('') + '</div>';
+  }
+
+  function dayEl(date) {
+    const el = document.createElement('div');
+    el.className = 'day';
+    el.dataset.date = date;
+    const games = gamesOn(date);
+    const nEntered = games.filter(g => gameState(g).key === 'entered').length;
+    const rec = W.days[date] || {};
+
+    const head = document.createElement('div');
+    head.className = 'day-head';
+    head.innerHTML = `<span class="day-label">${esc(fmtDay(date))}</span>`
+      + `<span class="day-count">${nEntered} of ${games.length} entered</span>`
+      + (rec.done ? `<span class="ui-badge ui-badge--success" title="Marked done by ${esc(rec.done_by || '')}">Streamed</span>` : '');
+    head.appendChild(vodEl(date, rec));
+    el.appendChild(head);
+
+    games.sort((a, b) => (a.time_et || '').localeCompare(b.time_et || '') || a.home_team.localeCompare(b.home_team))
+      .forEach(g => el.appendChild(gameEl(g)));
+    return el;
+  }
+
+  function vodEl(date, rec) {
+    const wrap = document.createElement('span');
+    wrap.className = 'day-vod';
+    const show = () => {
+      wrap.innerHTML = rec.youtube_url
+        ? `VOD: <a href="${esc(rec.youtube_url)}" target="_blank" rel="noopener">watch ↗</a>`
+        : '<span class="dim">No VOD linked</span>';
+      if (canSetVod()) {
+        const b = document.createElement('button');
+        b.className = 'ui-btn ui-btn--ghost ui-btn--sm';
+        b.textContent = rec.youtube_url ? 'Edit' : 'Add VOD';
+        b.onclick = edit;
+        wrap.appendChild(b);
+      }
+    };
+    const edit = () => {
+      wrap.textContent = '';
+      const input = document.createElement('input');
+      input.className = 'ui-input';
+      input.type = 'url';
+      input.placeholder = 'https://youtube.com/…';
+      input.value = rec.youtube_url || '';
+      const save = document.createElement('button');
+      save.className = 'ui-btn ui-btn--primary ui-btn--sm';
+      save.textContent = 'Save';
+      const cancel = document.createElement('button');
+      cancel.className = 'ui-btn ui-btn--ghost ui-btn--sm';
+      cancel.textContent = 'Cancel';
+      cancel.onclick = show;
+      const doSave = async () => {
+        save.disabled = true;
+        try {
+          const r = await fetch(`/api/streaming-days/${date}/youtube`, {
+            method: 'PUT', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: input.value.trim() }),
+          });
+          if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'HTTP ' + r.status);
+          rec = W.days[date] = await r.json();
+          show();
+        } catch (e) { toast(e.message, true); save.disabled = false; }
+      };
+      save.onclick = doSave;
+      input.onkeydown = e => { if (e.key === 'Enter') doSave(); if (e.key === 'Escape') show(); };
+      wrap.append(input, save, cancel);
+      input.focus();
+    };
+    show();
+    return wrap;
+  }
+
+  function gameEl(g) {
+    const row = document.createElement('div');
+    row.className = 'game';
+    const k = gameKey(g.date, g.home_team, g.away_team);
+    const st = gameState(g);
+    const item = W.shots.get(k);
+
+    const m = document.createElement('div');
+    m.className = 'game-matchup';
+    m.innerHTML = `${esc(g.away_team)} @ ${esc(g.home_team)}`
+      + (g.time_et ? `<span class="time">${esc(g.time_et)}m ET</span>` : '');
+    row.appendChild(m);
+
+    row.appendChild(slotEl(g, g.away_team, item, st)).classList.add('slot-away');
+    row.appendChild(slotEl(g, g.home_team, item, st)).classList.add('slot-home');
+
+    const s = document.createElement('div');
+    s.className = 'game-status';
+    s.innerHTML = `<span class="ui-badge${st.tone ? ' ui-badge--' + st.tone : ''}">${esc(st.label)}</span>`;
+    const box = W.entered.get(k);
+    if (box) {
+      const aw = box.away_team === g.away_team ? box.away_score : box.home_score;
+      const hm = box.away_team === g.away_team ? box.home_score : box.away_score;
+      s.innerHTML += `<span class="score"><a href="/boxscores/?date=${encodeURIComponent(g.date)}">`
+        + `${esc(g.away_team)} ${esc(aw)} – ${esc(hm)} ${esc(g.home_team)}</a></span>`;
+    }
+    row.appendChild(s);
+    return row;
+  }
+
+  function slotEl(g, team, item, st) {
+    const el = document.createElement('div');
+    el.className = 'slot';
+    const shots = teamShots(item, team);
+    const committed = item && item.status === 'committed';
+    const canUpload = hasStatsRole() && st.key !== 'entered';
+    if (shots.length) el.classList.add('filled');
+    el.innerHTML = `<span class="team">${esc(team)}</span>`;
+
+    if (committed) {
+      // Kept, compressed copies: links rather than thumbnails, so a page of
+      // finished days doesn't pull down a hundred images.
+      shots.forEach((sh, i) => {
+        const a = document.createElement('a');
+        a.className = 'shot-link';
+        a.href = sh.url; a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = shots.length > 1 ? `Screenshot ${i + 1} ↗` : 'Screenshot ↗';
+        el.appendChild(a);
+      });
+      if (shots.length && item.expires_at) {
+        const n = document.createElement('span');
+        n.className = 'kept-note';
+        n.textContent = `Kept until ${fmtDay(item.expires_at.slice(0, 10))}`;
+        el.appendChild(n);
+      }
+      if (!shots.length) el.insertAdjacentHTML('beforeend', '<span>—</span>');
+      return el;
+    }
+
+    shots.forEach(sh => {
+      const t = document.createElement('span');
+      t.className = 'thumb';
+      t.innerHTML = `<a href="${esc(sh.url)}" target="_blank" rel="noopener" title="Uploaded by ${esc(sh.by || '?')}">`
+        + `<img src="${esc(sh.url)}" alt="${esc(team)} box score" loading="lazy"></a>`;
+      if (canUpload) {
+        const rm = document.createElement('button');
+        rm.className = 'rm';
+        rm.title = 'Remove this screenshot';
+        rm.textContent = '×';
+        rm.onclick = e => { e.stopPropagation(); removeShot(g, item, sh.file); };
+        t.appendChild(rm);
+      }
+      el.appendChild(t);
+    });
+
+    if (!canUpload) {
+      if (!shots.length) el.insertAdjacentHTML('beforeend', `<span>${st.key === 'entered' ? '—' : 'No screenshot yet'}</span>`);
+      return el;
+    }
+
+    el.classList.add('can-upload');
+    el.tabIndex = 0;
+    el.title = `${team} box score`;
+    const hint = document.createElement('span');
+    hint.innerHTML = `<span class="hint-idle">${shots.length ? 'Add another' : 'Click, then paste'}</span>`
+      + '<span class="hint-armed">Paste now (Ctrl+V / ⌘V)</span> · ';
+    const choose = document.createElement('button');
+    choose.className = 'choose';
+    choose.type = 'button';
+    choose.textContent = 'choose file';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+    input.multiple = true;
+    input.hidden = true;
+    choose.onclick = e => { e.stopPropagation(); input.click(); };
+    input.onchange = () => { uploadFiles(g, team, [...input.files], el); input.value = ''; };
+    hint.appendChild(choose);
+    el.append(hint, input);
+
+    el.addEventListener('click', () => el.focus());
+    el.addEventListener('paste', e => {
+      const files = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+      if (!files.length) { toast('Nothing to paste — copy a screenshot first.', true); return; }
+      e.preventDefault();
+      uploadFiles(g, team, files, el);
+    });
+    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
+    el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      el.classList.remove('dragover');
+      const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith('image/'));
+      if (files.length) uploadFiles(g, team, files, el);
+    });
+    return el;
+  }
+
+  // Re-renders one day in place, so an upload halfway down the page doesn't
+  // move it, and puts focus back on the box that was being worked.
+  function rerenderDay(date, focusTeam, focusKey) {
+    const old = document.querySelector(`.day[data-date="${date}"]`);
+    if (!old) { renderWorklist(); return; }
+    const fresh = dayEl(date);
+    old.replaceWith(fresh);
+    renderTiles();
+    if (focusTeam) {
+      const games = [...fresh.querySelectorAll('.game')];
+      const list = gamesOn(date).sort((a, b) => (a.time_et || '').localeCompare(b.time_et || '') || a.home_team.localeCompare(b.home_team));
+      const idx = list.findIndex(g => gameKey(g.date, g.home_team, g.away_team) === focusKey);
+      const slot = idx >= 0 && [...games[idx].querySelectorAll('.slot')]
+        .find(s => s.querySelector('.team')?.textContent === focusTeam);
+      if (slot && slot.classList.contains('can-upload')) slot.focus();
+    }
+  }
+
+  async function uploadFiles(g, team, files, slotEl) {
+    const k = gameKey(g.date, g.home_team, g.away_team);
+    slotEl.classList.add('busy');
+    let reward = 0;
+    for (const f of files) {
+      const fd = new FormData();
+      fd.append('image', f, f.name || 'screenshot.png');
+      fd.append('team', team);
+      fd.append('date', g.date);
+      fd.append('home_team', g.home_team);
+      fd.append('away_team', g.away_team);
+      fd.append('season', W.season);
+      fd.append('game_type', g.game_type || 'REG');
+      try {
+        const r = await fetch('/api/boxscore/upload/side', { method: 'POST', headers: authHeaders(), body: fd });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
+        W.shots.set(k, data.item);
+        reward += data.nbyen_reward || 0;
+      } catch (e) {
+        toast(`${team}: ${e.message}`, true);
+        break;
+      }
+    }
+    rerenderDay(g.date, team, k);
+    if (reward) toast(`Uploaded · +NB¥${reward} earned`);
+  }
+
+  async function removeShot(g, item, file) {
+    const k = gameKey(g.date, g.home_team, g.away_team);
+    try {
+      const r = await fetch(`/api/boxscore/pending/${item.id}/images/${encodeURIComponent(file)}`,
+        { method: 'DELETE', headers: authHeaders() });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
+      if (data.item) W.shots.set(k, data.item); else W.shots.delete(k);
+      rerenderDay(g.date);
+    } catch (e) { toast(e.message, true); }
+  }
+
+  let toastTimer = null;
+  function toast(msg, bad) {
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    const el = document.createElement('div');
+    el.className = 'toast' + (bad ? ' bad' : '');
+    el.textContent = msg;
+    document.body.appendChild(el);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.remove(), 4000);
   }
 
   function tiles(items) {
@@ -357,27 +754,28 @@
     });
   }
 
-  // ── Submission queue (role-gated) ─────────────────────────────────────────
+  document.querySelectorAll('#wl-scope button').forEach(b => b.addEventListener('click', () => {
+    W.scope = b.dataset.scope;
+    W.shown = DAY_PAGE;
+    document.querySelectorAll('#wl-scope button').forEach(x => {
+      x.classList.toggle('active', x === b);
+      x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+    });
+    renderWorklist();
+  }));
+
+  // ── Manual entry queue (role-gated) ───────────────────────────────────────
 
   async function renderQueue() {
     if (!hasStatsRole()) return;
-    let pending = [], queue = [];
+    let queue = [];
     try {
-      [pending, queue] = await Promise.all([
-        jget('/api/boxscore/pending', { headers: authHeaders() }).catch(() => []),
-        jget('/api/boxscore/queue', { headers: authHeaders() }).catch(() => []),
-      ]);
+      queue = await jget('/api/boxscore/queue', { headers: authHeaders() });
     } catch (e) { return; }
-
+    if (!queue.length) return;
     document.getElementById('queue-card').hidden = false;
-    const body = document.getElementById('queue');
-    if (!pending.length && !queue.length) {
-      body.innerHTML = '<p class="clean">Nothing uploaded and nothing flagged for manual entry.</p>';
-      return;
-    }
-    body.innerHTML =
-      `<p>${pending.length} screenshot${pending.length === 1 ? '' : 's'} uploaded and not yet `
-      + `committed · ${queue.length} game${queue.length === 1 ? '' : 's'} flagged for manual entry.</p>`
+    document.getElementById('queue').innerHTML =
+      `<p>${queue.length} game${queue.length === 1 ? '' : 's'} flagged to be typed in by hand.</p>`
       + '<div class="links"><a class="link-chip" href="/boxscores/submit/">Work the queue →</a></div>';
   }
 
@@ -398,11 +796,21 @@
 
     try {
       const schedule = await jget('/api/schedule');
-      const games = await jget(`/api/boxscores/games?season=${encodeURIComponent(schedule.season)}`);
-      renderCoverage(schedule, games);
+      W.season = schedule.season;
+      W.fixtures = schedule.games || [];
+      const season = encodeURIComponent(schedule.season);
+      const [games, shots, days] = await Promise.all([
+        jget(`/api/boxscores/games?season=${season}`),
+        jget(`/api/boxscore/screenshots?season=${season}`).catch(() => []),
+        jget('/api/streaming-days').catch(() => ({})),
+      ]);
+      games.forEach(g => W.entered.set(gameKey(g.date, g.home_team, g.away_team), g));
+      shots.forEach(it => W.shots.set(gameKey(it.date, it.home_team, it.away_team), it));
+      W.days = days || {};
+      renderWorklist();
     } catch (e) {
-      document.getElementById('missing').innerHTML =
-        '<p class="clean">Could not load the schedule or the box-score index.</p>';
+      document.getElementById('worklist').innerHTML =
+        '<div class="card-body"><p class="clean">Could not load the schedule or the box-score index.</p></div>';
     }
   }
 

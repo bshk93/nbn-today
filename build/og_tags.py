@@ -69,7 +69,7 @@ PAGES = {
  '/committees/pdc/': (None, 'The Player Decision Committee dashboard — free-agency review, ballots and rulings.'),
  '/committees/rosters/': (None, 'The rosters committee dashboard — who is out of compliance with the rulebook, and where the site and the league cap sheet disagree.'),
  '/committees/rosters/2028-pick-chain/': (None, 'Untangling the 2028 first-round pick chain.'),
- '/committees/stats/': (None, 'The stats committee dashboard — build health, season coverage, and which played games still have no box score.'),
+ '/committees/stats/': (None, 'The stats committee dashboard — each day\'s games, their box score screenshots, and which still need entering.'),
  '/committees/stream/': (None, 'The streamer dashboard — claim games to broadcast and enter team coaching settings into the game.'),
  '/committees/trc/': (None, 'The Trade Request Committee dashboard — proposed trades, team consent, ballots and finalized deals.'),
  '/constitution/': (None, 'The founding document of the NBN sim league.'),

@@ -46,24 +46,35 @@ curl -s http://localhost:8001/api/boxscore/pending \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-If the result is an empty array, report "No pending games" and stop.
+Screenshots are uploaded one team-side at a time, so a game can be pending
+with only one side in. Each item carries `ready` — true once both sides have at
+least one image. **Parse only `ready` games.** List the others separately as
+"waiting on a side" (name the missing team) and leave them alone.
 
-Print a numbered list: `id · date · HOME vs AWAY · season game_type`
+If there are no ready games, report that (and any waiting ones) and stop.
+
+Print a numbered list: `id · date · AWAY @ HOME · season game_type · images per side`
 
 ### 3. For each pending game
 
 Process one game at a time in the order returned.
 
-#### 3a. Read meta + both images in parallel
+#### 3a. Read meta + every image in parallel
 
-In a single batch of tool calls, read all three:
-- `/var/lib/nothing-but-stats/pending-boxscores/<id>/meta.json`
-- `/var/lib/nothing-but-stats/pending-boxscores/<id>/<home_image>`
-- `/var/lib/nothing-but-stats/pending-boxscores/<id>/<away_image>`
+`images.home` and `images.away` in the pending list are arrays of
+`{file, by, at}` — usually one per side, sometimes two when a long bench
+needed a second screenshot. In a single batch of tool calls, read
+`/var/lib/nothing-but-stats/pending-boxscores/<id>/meta.json` and every
+`/var/lib/nothing-but-stats/pending-boxscores/<id>/<file>` on both sides.
+
+When a side has more than one image, they are the same box score split across
+screens: take each player once, and the totals row from whichever image shows
+it. If two images overlap on a player, the rows must agree — if they don't,
+ask.
 
 #### 3b. Transcribe both teams straight to a JSON file — nothing else
 
-With both images in view, extract every player who played (skip DNP rows) for
+With all the images in view, extract every player who played (skip DNP rows) for
 **both** teams. Write the result **directly to `<scratchpad>/nbn-boxscore-<id>.json`**
 with the Write tool (use this session's scratchpad directory — not `/tmp`, which
 has a tmpfs quota that makes every Bash call fail silently once it fills), in
@@ -194,8 +205,8 @@ The first game of a season creates that season's raw file (the log will say
 `Created allstats-YY-YY.csv for the first game of YY-YY`) — that is normal, not
 a warning. Two responses do need handling:
 
-- **`409 … is already committed`** — the game is in the file. Skip to step 5 and
-  delete the pending item; do not force it.
+- **`409 … is already committed`** — the game is in the file. Delete the
+  pending item (step 5's `DELETE`) so it leaves the queue; do not force it.
 - **`404 Allstats file not found … Only the current season's file is created on
   demand`** — the game's season is not the current league year. Usually the date
   or the season on the upload is wrong; check `meta.json` against the game before
@@ -203,10 +214,20 @@ a warning. Two responses do need handling:
 
 ### 5. Clean up
 
+A successful commit moves the screenshots out of the queue by itself — they
+are kept 14 days for reference, then deleted (`routers/boxscore_shots.py` in
+nbn-api). Do **not** `DELETE` the pending item after a commit; there is
+nothing left to delete. Just remove the scratch files:
+
+```bash
+rm -f <scratchpad>/nbn-boxscore-<id>.json <scratchpad>/nbn-boxscore-<id>.checked.json
+```
+
+The `DELETE` is only for a game that was already committed (the 409 above):
+
 ```bash
 curl -s -X DELETE http://localhost:8001/api/boxscore/pending/<id> \
   -H "Authorization: Bearer <TOKEN>"
-rm -f <scratchpad>/nbn-boxscore-<id>.json <scratchpad>/nbn-boxscore-<id>.checked.json
 ```
 
 ### 6. Continue or stop
