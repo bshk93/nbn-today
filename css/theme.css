@@ -69,28 +69,28 @@
   --heat-text-l: 70%;
 
   /* Backgrounds */
-  --bg-page: #111827;
-  --bg-card: #1f2937;
-  --bg-subtle: #161f2e;
-  --bg-hover: #263244;
+  --bg-page: #0d0e11;
+  --bg-card: #16181c;
+  --bg-subtle: #121317;
+  --bg-hover: #1c1f24;
 
   /* Borders */
-  --border: #374151;
-  --border-subtle: #283141;
+  --border: #272a31;
+  --border-subtle: #1d2026;
 
   /* Text */
-  --text-primary: #f3f4f6;
-  --text-secondary: #d1d5db;
-  --text-muted: #6b7280;
-  --text-muted-rgb: 107, 114, 128;
-  --text-dim: #4b5563;
+  --text-primary: #eef0f3;
+  --text-secondary: #b9bdc6;
+  --text-muted: #80858f;
+  --text-muted-rgb: 128, 133, 143;
+  --text-dim: #5b6069;
 
   /* Accent (blue) */
-  --accent: #3b82f6;
-  --accent-dark: #1d4ed8;
-  --link: #60a5fa;
-  --accent-light: #93c5fd;
-  --text-on-accent: #fff;
+  --accent: #4a86cf;
+  --accent-dark: #2c63a6;
+  --link: #8db6e6;
+  --accent-light: #8db6e6;
+  --text-on-accent: #ffffff;
 
   /* Danger (red) */
   --danger: #f87171;
@@ -130,14 +130,14 @@
   --shadow-color-strong: rgba(0, 0, 0, 0.6);
 
   /* Secondary accent tones (site-wide, lower frequency than the core set above) */
-  --accent-panel-bg: #1e3a5f;   /* selected/info panel bg-tint, paired with --accent border */
-  --muted-border: #4b6a9b;      /* secondary hover border/accent, less saturated than --accent */
-  --border-dark: #2d3748;       /* chart gridlines, card borders on dark feature pages (bet/invest) */
-  --bg-deep: #0f1117;           /* alternate near-black page bg used by a few standalone pages */
+  --accent-panel-bg: #13233a;   /* selected/info panel bg-tint, paired with --accent border */
+  --muted-border: #3d5578;      /* secondary hover border/accent, less saturated than --accent */
+  --border-dark: #272a31;       /* chart gridlines, card borders on dark feature pages (bet/invest) */
+  --bg-deep: #0a0b0d;           /* alternate near-black page bg used by a few standalone pages */
   --gold-alt: #facc15;          /* bright highlight yellow (countdowns, emphasis) distinct from --gold */
   --success-alt: #22c55e;       /* bright "status ok" / leader green, distinct from --success */
   --success-dark-bg: #14532d;   /* darker success bg, hover/copied states */
-  --text-bright: #f9fafb;       /* near-white text on long-form content pages */
+  --text-bright: #f6f7f9;       /* near-white text on long-form content pages */
 
   /* Market/financial palette (bet, invest) */
   --market-positive: #34d399;
@@ -165,92 +165,32 @@
    looser than text. Tokens not listed here are intentionally identical to
    "NBN Today" (grays that already read fine on either background, plus the
    modal scrim). */
-/* ── Unified design preview (default dark theme) ─────────────────────────
-   Applies when <html data-design="clean">, which nav.js sets from
-   ?design=clean (remembered in this browser; ?design=current clears it).
-   Only the default theme is replaced; a theme a member picked keeps its own
-   colours, including its accent. Neutral charcoal instead of the stock
-   blue-grey, and an accent taken from the logo's navy (#003060), lifted
-   until it reads on a dark page. When the unified design becomes the
-   default, these values move into the bare :root block above. */
-html[data-design="clean"]:not([data-theme]),
-html[data-design="clean"][data-theme="nbn-today"] {
-  --bg-page: #0d0e11;
-  --bg-card: #16181c;
-  --bg-subtle: #121317;
-  --bg-hover: #1c1f24;
-  --bg-deep: #0a0b0d;
-  --border: #272a31;
-  --border-subtle: #1d2026;
-  --border-dark: #272a31;
-  --text-primary: #eef0f3;
-  --text-bright: #f6f7f9;
-  --text-secondary: #b9bdc6;
-  --text-muted: #80858f;
-  --text-muted-rgb: 128, 133, 143;
-  --text-dim: #5b6069;
-  --accent: #4a86cf;
-  --accent-dark: #2c63a6;
-  --accent-light: #8db6e6;
-  --link: #8db6e6;
-  --text-on-accent: #ffffff;
-  --accent-panel-bg: #13233a;
-  --muted-border: #3d5578;
-}
-
-/* The same preview over the default light theme ("NBN Today Light", and
-   "Match System" on a light-mode device). Neutral greys, and the navy accent
-   darkened until it reads on white (#1f5fae is about 6:1 on #ffffff). */
-html[data-design="clean"][data-theme="nbn-today-light"] {
-  --bg-page: #f6f7f8;
-  --bg-card: #ffffff;
-  --bg-subtle: #f0f1f3;
-  --bg-hover: #eceef1;
-  --bg-deep: #eef0f2;
-  --border: #dfe1e5;
-  --border-subtle: #eceef1;
-  --border-dark: #dfe1e5;
-  --text-primary: #111317;
-  --text-bright: #0b0d10;
-  --text-secondary: #3e434b;
-  --text-muted: #666c76;
-  --text-muted-rgb: 102, 108, 118;
-  --text-dim: #8a9099;
-  --accent: #1f5fae;
-  --accent-dark: #174a88;
-  --accent-light: #1f5fae;
-  --link: #1f5fae;
-  --text-on-accent: #ffffff;
-  --accent-panel-bg: #e7eef8;
-  --muted-border: #b9c6da;
-}
-
 :root[data-theme="nbn-today-light"] {
   --heat-text-l: 32%;
   /* These seven used to be absent, so they silently took the dark block's
      value — which this file's own header says never happens. Four of them
      happened to work on a light page anyway; --text-muted did not (4.47:1,
      just under AA). Stated explicitly now so the choice is a choice. */
-  --accent: #2563eb;
-  --accent-dark: #1d4ed8;
+  --accent: #1f5fae;
+  --accent-dark: #174a88;
   --text-on-accent: #ffffff;
-  --muted-border: #c9cfd8;
+  --muted-border: #b9c6da;
   --overlay-scrim: rgba(15, 23, 42, 0.45);
-  --text-muted: #5c6470;
-  --text-muted-rgb: 92, 100, 112;
+  --text-muted: #666c76;
+  --text-muted-rgb: 102, 108, 118;
   /* Backgrounds */
-  --bg-page: #f5f6f8;
+  --bg-page: #f6f7f8;
   --bg-card: #ffffff;
-  --bg-subtle: #eef1f5;
-  --bg-hover: #eef2f7;
+  --bg-subtle: #f0f1f3;
+  --bg-hover: #eceef1;
 
   /* Borders */
-  --border: #dde1e7;
-  --border-subtle: #e8ebf0;
+  --border: #dfe1e5;
+  --border-subtle: #eceef1;
 
   /* Text */
-  --text-primary: #10151f;
-  --text-secondary: #3a4250;
+  --text-primary: #111317;
+  --text-secondary: #3e434b;
   /* 2.41:1 before this, on 15 pages, carrying real copy and not just the "—"
      placeholders it was meant for. #767e89 is 3.80 on the page background and
      4.10 on a card: clears AA-Large but not the 4.5 AA wants for body text.
@@ -258,11 +198,11 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
      lighter than --text-muted (5.53) or the two tiers collapse into one. The
      real fix for the handful of places using it for actual messages is to
      move those to --text-muted, which is page work, not a token value. */
-  --text-dim: #767e89; /* lighter than --text-muted here — "recedes toward the page" flips direction on a light bg */
+  --text-dim: #8a9099; /* lighter than --text-muted here — "recedes toward the page" flips direction on a light bg */
 
   /* Accent (blue) */
-  --link: #2563eb;
-  --accent-light: #1d4ed8; /* was the brightest/most-emphasized blue on dark; becomes the darkest/strongest on light */
+  --link: #1f5fae;
+  --accent-light: #1f5fae; /* was the brightest/most-emphasized blue on dark; becomes the darkest/strongest on light */
 
   /* Danger (red) */
   --danger: #dc2626;
@@ -300,13 +240,13 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --shadow-color-strong: rgba(15, 23, 42, 0.16);
 
   /* Secondary accent tones */
-  --accent-panel-bg: #eff6ff;
-  --border-dark: #cbd5e1;
-  --bg-deep: #ffffff;
+  --accent-panel-bg: #e7eef8;
+  --border-dark: #dfe1e5;
+  --bg-deep: #eef0f2;
   --gold-alt: #8f5f00;
   --success-alt: #047857;
   --success-dark-bg: #bbf7d0;
-  --text-bright: #0b1220;
+  --text-bright: #0b0d10;
 
   /* Market/financial palette */
   --market-positive: #059669;
@@ -424,23 +364,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Phoenix Suns ──────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #1D1160 / #E56020.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.1:1, muted 3.1:1, link 5.5:1. */
+   Contrast against --bg-card: primary text 15.7:1, secondary 9.5:1, muted 4.8:1, link 8.1:1. */
 :root[data-theme="team-phx"] {
-  --bg-page: #131139;
-  --bg-card: #22234c;
-  --bg-subtle: #191841;
-  --bg-hover: #2a2c56;
-  --border: #393b67;
-  --border-subtle: #2a2b56;
-  --text-primary: #f2f3fc;
-  --text-secondary: #d3d4dd;
-  --text-muted: #707179;
-  --text-muted-rgb: 112, 113, 121;
-  --text-dim: #53545b;
-  --accent: #df5400;
-  --accent-dark: #a03a00;
-  --link: #fc753a;
-  --accent-light: #ffa885;
+  --bg-page: #0a062d;
+  --bg-card: #131139;
+  --bg-subtle: #0e0c33;
+  --bg-hover: #191941;
+  --border: #23244e;
+  --border-subtle: #1a1a42;
+  --text-primary: #eeeff8;
+  --text-secondary: #bbbcc5;
+  --text-muted: #83848c;
+  --text-muted-rgb: 131, 132, 140;
+  --text-dim: #5e5f67;
+  --accent: #d8540b;
+  --accent-dark: #a43c00;
+  --link: #ff9063;
+  --accent-light: #ff9063;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -467,14 +407,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(10, 0, 54, 0.65);
   --shadow-color: rgba(10, 0, 54, 0.45);
   --shadow-color-strong: rgba(10, 0, 54, 0.6);
-  --accent-panel-bg: #601f00;
-  --muted-border: #935841;
-  --border-dark: #2f315c;
-  --bg-deep: #0d0931;
+  --accent-panel-bg: #401200;
+  --muted-border: #734837;
+  --border-dark: #23244e;
+  --bg-deep: #080329;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f9faff;
+  --text-bright: #f5f6ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -490,23 +430,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Atlanta Hawks ─────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #C8102E / #FDB927.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.6:1, secondary 10.2:1, muted 3.1:1, link 5.8:1. */
+   Contrast against --bg-card: primary text 15.8:1, secondary 9.6:1, muted 4.8:1, link 8.4:1. */
 :root[data-theme="team-atl"] {
-  --bg-page: #330407;
-  --bg-card: #471617;
-  --bg-subtle: #3b0b0d;
-  --bg-hover: #511f1f;
-  --border: #622f2e;
-  --border-subtle: #501f1f;
-  --text-primary: #fcf1f0;
-  --text-secondary: #ddd2d1;
-  --text-muted: #796f6f;
-  --text-muted-rgb: 121, 111, 111;
-  --text-dim: #5b5251;
-  --accent: #af7d00;
-  --accent-dark: #7d5800;
-  --link: #d29600;
-  --accent-light: #f7b31a;
+  --bg-page: #240002;
+  --bg-card: #330407;
+  --bg-subtle: #2d0004;
+  --bg-hover: #3b0b0d;
+  --border: #481818;
+  --border-subtle: #3c0c0e;
+  --text-primary: #f8edec;
+  --text-secondary: #c5bab9;
+  --text-muted: #8c8282;
+  --text-muted-rgb: 140, 130, 130;
+  --text-dim: #675d5d;
+  --accent: #ab7a00;
+  --accent-dark: #815b00;
+  --link: #e6a500;
+  --accent-light: #e6a500;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -533,14 +473,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(35, 0, 2, 0.65);
   --shadow-color: rgba(35, 0, 2, 0.45);
   --shadow-color-strong: rgba(35, 0, 2, 0.6);
-  --accent-panel-bg: #4a3300;
-  --muted-border: #836429;
-  --border-dark: #572524;
-  --bg-deep: #2a0003;
+  --accent-panel-bg: #301f00;
+  --muted-border: #675027;
+  --border-dark: #481818;
+  --bg-deep: #1f0002;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fff8f7;
+  --text-bright: #fff4f3;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -556,40 +496,40 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Brooklyn Nets ─────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #1A1A1A / #C4CED4.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.0:1, muted 3.1:1, link 5.8:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.4:1, muted 4.8:1, link 8.4:1. */
 :root[data-theme="team-bkn"] {
-  --bg-page: #191815;
-  --bg-card: #292825;
-  --bg-subtle: #201f1c;
-  --bg-hover: #33312e;
-  --border: #42403d;
-  --border-subtle: #32312d;
-  --text-primary: #f6f4f0;
-  --text-secondary: #d6d5d0;
-  --text-muted: #73726e;
-  --text-muted-rgb: 115, 114, 110;
-  --text-dim: #555450;
-  --accent: #80888d;
-  --accent-dark: #5a6166;
-  --link: #9ca4a9;
-  --accent-light: #b9c2c7;
+  --bg-page: #0f0e0b;
+  --bg-card: #191815;
+  --bg-subtle: #141310;
+  --bg-hover: #201f1c;
+  --border: #2b2a27;
+  --border-subtle: #21201d;
+  --text-primary: #f1f0eb;
+  --text-secondary: #bebdb9;
+  --text-muted: #868581;
+  --text-muted-rgb: 134, 133, 129;
+  --text-dim: #61605c;
+  --accent: #7d858a;
+  --accent-dark: #5c6468;
+  --link: #abb4b9;
+  --accent-light: #abb4b9;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
   --danger-bg: #450a0a;
-  --danger-border: #7f1d1d;
-  --danger-border-strong: #991b1b;
+  --danger-border: #822020;
+  --danger-border-strong: #9c1f1e;
   --danger-alt: #fb923c;
   --danger-alt-bg: #431407;
-  --danger-alt-border: #7c2d12;
+  --danger-alt-border: #7f3015;
   --success: #4ade80;
   --success-light: #86efac;
   --success-bg: #0e1f14;
   --success-bg-hover: #132a1b;
   --gold: #fbbf24;
   --gold-bg: #422006;
-  --gold-border: #854d0e;
-  --gold-dim: #b45309;
+  --gold-border: #885013;
+  --gold-dim: #b75610;
   --warning: #f59e0b;
   --champion-border: #d97706;
   --champion-bg: #1a1305;
@@ -599,46 +539,46 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(19, 12, 0, 0.65);
   --shadow-color: rgba(19, 12, 0, 0.45);
   --shadow-color-strong: rgba(19, 12, 0, 0.6);
-  --accent-panel-bg: #343b3f;
-  --muted-border: #636b6f;
-  --border-dark: #383733;
-  --bg-deep: #12110e;
+  --accent-panel-bg: #1d2428;
+  --muted-border: #4e555a;
+  --border-dark: #2b2a27;
+  --bg-deep: #0c0b08;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fbfaf5;
+  --text-bright: #f9f7f3;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
-  --market-positive-border: #065f46;
+  --market-positive-border: #0c6249;
   --market-positive-light: #6ee7b7;
   --purple: #a78bfa;
   --purple-bg: #1e1b4b;
-  --purple-border: #4c1d95;
+  --purple-border: #4f2198;
   --purple-light: #c4b5fd;
   --purple-light-bg: #2e1065;
-  --gold-chip-border: #78350f;
+  --gold-chip-border: #7b3813;
 }
 
 /* ── Boston Celtics ────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #00471B / #BA9653.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.0:1, secondary 9.8:1, muted 3.1:1, link 5.6:1. */
+   Contrast against --bg-card: primary text 15.4:1, secondary 9.3:1, muted 4.8:1, link 8.2:1. */
 :root[data-theme="team-bos"] {
-  --bg-page: #001f08;
-  --bg-card: #023212;
-  --bg-subtle: #00270b;
-  --bg-hover: #0e3c1b;
-  --border: #1f4b2a;
-  --border-subtle: #0d3b1a;
-  --text-primary: #eff6f0;
-  --text-secondary: #d0d7d1;
-  --text-muted: #707771;
-  --text-muted-rgb: 112, 119, 113;
-  --text-dim: #505651;
-  --accent: #ae7e00;
-  --accent-dark: #7c5900;
-  --link: #cf9813;
-  --accent-light: #e0bb77;
+  --bg-page: #001303;
+  --bg-card: #001f07;
+  --bg-subtle: #001905;
+  --bg-hover: #00270b;
+  --border: #043414;
+  --border-subtle: #00280c;
+  --text-primary: #ebf2ec;
+  --text-secondary: #b8bfb9;
+  --text-muted: #808781;
+  --text-muted-rgb: 128, 135, 129;
+  --text-dim: #5b625c;
+  --accent: #aa7b00;
+  --accent-dark: #805b00;
+  --link: #d1ac69;
+  --accent-light: #d1ac69;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -665,14 +605,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 18, 3, 0.65);
   --shadow-color: rgba(0, 18, 3, 0.45);
   --shadow-color-strong: rgba(0, 18, 3, 0.6);
-  --accent-panel-bg: #493300;
-  --muted-border: #826428;
-  --border-dark: #144120;
-  --bg-deep: #001705;
+  --accent-panel-bg: #302000;
+  --muted-border: #665027;
+  --border-dark: #043414;
+  --bg-deep: #001003;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f5fcf6;
+  --text-bright: #f2f9f3;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #0c6249;
@@ -688,23 +628,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Charlotte Hornets ─────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #1D1160 / #00788C.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.1:1, muted 3.1:1, link 6.1:1. */
+   Contrast against --bg-card: primary text 15.7:1, secondary 9.5:1, muted 4.8:1, link 8.8:1. */
 :root[data-theme="team-cha"] {
-  --bg-page: #131139;
-  --bg-card: #22234c;
-  --bg-subtle: #191841;
-  --bg-hover: #2a2c56;
-  --border: #393b67;
-  --border-subtle: #2a2b56;
-  --text-primary: #f2f3fc;
-  --text-secondary: #d3d4dd;
-  --text-muted: #707179;
-  --text-muted-rgb: 112, 113, 121;
-  --text-dim: #53545b;
-  --accent: #0097b0;
-  --accent-dark: #006c7e;
-  --link: #00b6d3;
-  --accent-light: #71d1e7;
+  --bg-page: #0a062d;
+  --bg-card: #131139;
+  --bg-subtle: #0e0c33;
+  --bg-hover: #191941;
+  --border: #23244e;
+  --border-subtle: #1a1a42;
+  --text-primary: #eeeff8;
+  --text-secondary: #bbbcc5;
+  --text-muted: #83848c;
+  --text-muted-rgb: 131, 132, 140;
+  --text-dim: #5e5f67;
+  --accent: #0094ac;
+  --accent-dark: #006f81;
+  --link: #65c2d7;
+  --accent-light: #65c2d7;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -731,14 +671,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(10, 0, 54, 0.65);
   --shadow-color: rgba(10, 0, 54, 0.45);
   --shadow-color-strong: rgba(10, 0, 54, 0.6);
-  --accent-panel-bg: #00414d;
-  --muted-border: #177688;
-  --border-dark: #2f315c;
-  --bg-deep: #0d0931;
+  --accent-panel-bg: #002830;
+  --muted-border: #205d6a;
+  --border-dark: #23244e;
+  --bg-deep: #080329;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f9faff;
+  --text-bright: #f5f6ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -754,23 +694,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Chicago Bulls ─────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #CE1141 / #CE1141.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.7:1, secondary 10.3:1, muted 3.1:1, link 5.5:1. */
+   Contrast against --bg-card: primary text 15.8:1, secondary 9.6:1, muted 4.9:1, link 8.0:1. */
 :root[data-theme="team-chi"] {
-  --bg-page: #33040b;
-  --bg-card: #46151b;
-  --bg-subtle: #3b0b12;
-  --bg-hover: #511f23;
-  --border: #622e32;
-  --border-subtle: #501e23;
-  --text-primary: #fcf1f1;
-  --text-secondary: #ddd2d2;
-  --text-muted: #796f6f;
-  --text-muted-rgb: 121, 111, 111;
-  --text-dim: #5b5252;
-  --accent: #e6415a;
-  --accent-dark: #b40035;
-  --link: #ff6a79;
-  --accent-light: #ffa3a7;
+  --bg-page: #240004;
+  --bg-card: #33030b;
+  --bg-subtle: #2d0007;
+  --bg-hover: #3b0b12;
+  --border: #48171c;
+  --border-subtle: #3c0c13;
+  --text-primary: #f8eded;
+  --text-secondary: #c5baba;
+  --text-muted: #8c8282;
+  --text-muted-rgb: 140, 130, 130;
+  --text-dim: #665d5d;
+  --accent: #e23e57;
+  --accent-dark: #b80037;
+  --link: #ff8a92;
+  --accent-light: #ff8a92;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -797,14 +737,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(35, 0, 4, 0.65);
   --shadow-color: rgba(35, 0, 4, 0.45);
   --shadow-color-strong: rgba(35, 0, 4, 0.6);
-  --accent-panel-bg: #6c001c;
-  --muted-border: #955458;
-  --border-dark: #572428;
-  --bg-deep: #290006;
+  --accent-panel-bg: #480010;
+  --muted-border: #744547;
+  --border-dark: #48171c;
+  --bg-deep: #1f0003;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fff8f8;
+  --text-bright: #fff4f4;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -820,23 +760,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Cleveland Cavaliers ───────────────────────────────────────────────
    Generated by build/make_team_theme.py from #5C0A2E / #FDBB30.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.8:1, secondary 10.3:1, muted 3.1:1, link 5.9:1. */
+   Contrast against --bg-card: primary text 15.8:1, secondary 9.6:1, muted 4.9:1, link 8.4:1. */
 :root[data-theme="team-cle"] {
-  --bg-page: #310416;
-  --bg-card: #441526;
-  --bg-subtle: #390b1d;
-  --bg-hover: #4f1f2f;
-  --border: #602e3e;
-  --border-subtle: #4e1e2e;
-  --text-primary: #fcf1f3;
-  --text-secondary: #dcd2d4;
-  --text-muted: #786f71;
-  --text-muted-rgb: 120, 111, 113;
-  --text-dim: #5a5254;
-  --accent: #af7d00;
-  --accent-dark: #7d5800;
-  --link: #d29700;
-  --accent-light: #f5b423;
+  --bg-page: #23000c;
+  --bg-card: #310416;
+  --bg-subtle: #2b0011;
+  --bg-hover: #390b1d;
+  --border: #461728;
+  --border-subtle: #3a0c1e;
+  --text-primary: #f7edef;
+  --text-secondary: #c4babc;
+  --text-muted: #8c8284;
+  --text-muted-rgb: 140, 130, 132;
+  --text-dim: #665d5f;
+  --accent: #ab7a00;
+  --accent-dark: #805b00;
+  --link: #e6a500;
+  --accent-light: #e6a500;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -863,14 +803,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(33, 0, 12, 0.65);
   --shadow-color: rgba(33, 0, 12, 0.45);
   --shadow-color-strong: rgba(33, 0, 12, 0.6);
-  --accent-panel-bg: #4a3300;
-  --muted-border: #836429;
-  --border-dark: #552434;
-  --bg-deep: #28000f;
+  --accent-panel-bg: #301f00;
+  --muted-border: #675027;
+  --border-dark: #461728;
+  --bg-deep: #1e0009;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fff8f9;
+  --text-bright: #fff4f6;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -886,23 +826,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Dallas Mavericks ──────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #00538C / #2E7BC4.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.3:1, secondary 10.0:1, muted 3.1:1, link 5.8:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.5:1, muted 4.8:1, link 8.5:1. */
 :root[data-theme="team-dal"] {
-  --bg-page: #001931;
-  --bg-card: #002a4b;
-  --bg-subtle: #00203c;
-  --bg-hover: #0a3355;
-  --border: #1b4366;
-  --border-subtle: #093355;
-  --text-primary: #eef5fc;
-  --text-secondary: #cfd6dc;
-  --text-muted: #6d7379;
-  --text-muted-rgb: 109, 115, 121;
-  --text-dim: #4f555b;
-  --accent: #0089ed;
-  --accent-dark: #0062ab;
-  --link: #56a7f8;
-  --accent-light: #8fc6ff;
+  --bg-page: #000f21;
+  --bg-card: #001931;
+  --bg-subtle: #001429;
+  --bg-hover: #00203c;
+  --border: #012c4d;
+  --border-subtle: #00213d;
+  --text-primary: #eaf1f8;
+  --text-secondary: #b7bec5;
+  --text-muted: #7f868c;
+  --text-muted-rgb: 127, 134, 140;
+  --text-dim: #5b6166;
+  --accent: #3c88d2;
+  --accent-dark: #1064ac;
+  --link: #72b8ff;
+  --accent-light: #72b8ff;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -929,14 +869,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 14, 31, 0.65);
   --shadow-color: rgba(0, 14, 31, 0.45);
   --shadow-color-strong: rgba(0, 14, 31, 0.6);
-  --accent-panel-bg: #003b6b;
-  --muted-border: #416d99;
-  --border-dark: #10395b;
-  --bg-deep: #001226;
+  --accent-panel-bg: #002345;
+  --muted-border: #385777;
+  --border-dark: #012c4d;
+  --bg-deep: #000c1c;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f6fbff;
+  --text-bright: #f1f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #0c6249;
@@ -952,40 +892,40 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Denver Nuggets ────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #0E2240 / #FEC524.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.0:1, muted 3.0:1, link 5.7:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.5:1, muted 4.8:1, link 8.4:1. */
 :root[data-theme="team-den"] {
-  --bg-page: #01163a;
-  --bg-card: #0f284d;
-  --bg-subtle: #051d41;
-  --bg-hover: #183157;
-  --border: #274168;
-  --border-subtle: #173056;
-  --text-primary: #eff5fc;
-  --text-secondary: #d0d5dd;
-  --text-muted: #6e7279;
-  --text-muted-rgb: 110, 114, 121;
-  --text-dim: #50545b;
-  --accent: #a98000;
-  --accent-dark: #795b00;
-  --link: #cb9b00;
-  --accent-light: #efb700;
+  --bg-page: #000c29;
+  --bg-card: #011639;
+  --bg-subtle: #001133;
+  --bg-hover: #051d41;
+  --border: #10294e;
+  --border-subtle: #061f43;
+  --text-primary: #ebf0f8;
+  --text-secondary: #b8bdc5;
+  --text-muted: #81858c;
+  --text-muted-rgb: 129, 133, 140;
+  --text-dim: #5c6067;
+  --accent: #a57e00;
+  --accent-dark: #7c5d00;
+  --link: #deaa00;
+  --accent-light: #deaa00;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
   --danger-bg: #450a0a;
-  --danger-border: #822020;
-  --danger-border-strong: #9c1f1e;
+  --danger-border: #7f1d1d;
+  --danger-border-strong: #991b1b;
   --danger-alt: #fb923c;
   --danger-alt-bg: #431407;
-  --danger-alt-border: #7f3015;
+  --danger-alt-border: #7c2d12;
   --success: #4ade80;
   --success-light: #86efac;
   --success-bg: #0e1f14;
   --success-bg-hover: #132a1b;
   --gold: #fbbf24;
   --gold-bg: #422006;
-  --gold-border: #885013;
-  --gold-dim: #b75610;
+  --gold-border: #854d0e;
+  --gold-dim: #b45309;
   --warning: #f59e0b;
   --champion-border: #d97706;
   --champion-bg: #1a1305;
@@ -995,46 +935,46 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 11, 40, 0.65);
   --shadow-color: rgba(0, 11, 40, 0.45);
   --shadow-color-strong: rgba(0, 11, 40, 0.6);
-  --accent-panel-bg: #4a3600;
-  --muted-border: #7f6628;
-  --border-dark: #1d365d;
-  --bg-deep: #000f2f;
+  --accent-panel-bg: #2e2000;
+  --muted-border: #645227;
+  --border-dark: #10294e;
+  --bg-deep: #000924;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f7faff;
+  --text-bright: #f2f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
-  --market-positive-border: #0c6249;
+  --market-positive-border: #065f46;
   --market-positive-light: #6ee7b7;
   --purple: #a78bfa;
   --purple-bg: #1e1b4b;
-  --purple-border: #4f2198;
+  --purple-border: #4c1d95;
   --purple-light: #c4b5fd;
   --purple-light-bg: #2e1065;
-  --gold-chip-border: #7b3813;
+  --gold-chip-border: #78350f;
 }
 
 /* ── Detroit Pistons ───────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #1D42BA / #C8102E.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.1:1, muted 3.1:1, link 5.4:1. */
+   Contrast against --bg-card: primary text 15.7:1, secondary 9.5:1, muted 4.8:1, link 8.0:1. */
 :root[data-theme="team-det"] {
-  --bg-page: #07153a;
-  --bg-card: #16264d;
-  --bg-subtle: #0d1c42;
-  --bg-hover: #1f2f57;
-  --border: #2d3f68;
-  --border-subtle: #1e2f57;
-  --text-primary: #f0f4fd;
-  --text-secondary: #d1d5dd;
-  --text-muted: #6e7279;
-  --text-muted-rgb: 110, 114, 121;
-  --text-dim: #51545b;
-  --accent: #e7434c;
-  --accent-dark: #b50026;
-  --link: #ff6c6d;
-  --accent-light: #ffa4a0;
+  --bg-page: #02092e;
+  --bg-card: #07143a;
+  --bg-subtle: #040f34;
+  --bg-hover: #0d1c42;
+  --border: #18284f;
+  --border-subtle: #0e1d43;
+  --text-primary: #ecf0f8;
+  --text-secondary: #b9bdc5;
+  --text-muted: #81858c;
+  --text-muted-rgb: 129, 133, 140;
+  --text-dim: #5c6067;
+  --accent: #e33f49;
+  --accent-dark: #b90127;
+  --link: #ff8c89;
+  --accent-light: #ff8c89;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1061,14 +1001,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(1, 0, 60, 0.65);
   --shadow-color: rgba(1, 0, 60, 0.45);
   --shadow-color-strong: rgba(1, 0, 60, 0.6);
-  --accent-panel-bg: #6d0013;
-  --muted-border: #955553;
-  --border-dark: #24355d;
-  --bg-deep: #030d31;
+  --accent-panel-bg: #490009;
+  --muted-border: #744543;
+  --border-dark: #18284f;
+  --bg-deep: #01062a;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f7faff;
+  --text-bright: #f3f7ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1084,23 +1024,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Golden State Warriors ─────────────────────────────────────────────
    Generated by build/make_team_theme.py from #1D428A / #FFC72C.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.0:1, muted 3.0:1, link 5.8:1. */
+   Contrast against --bg-card: primary text 15.7:1, secondary 9.5:1, muted 4.8:1, link 8.4:1. */
 :root[data-theme="team-gsw"] {
-  --bg-page: #04153a;
-  --bg-card: #13274d;
-  --bg-subtle: #091d42;
-  --bg-hover: #1b3057;
-  --border: #2a4068;
-  --border-subtle: #1b2f56;
-  --text-primary: #f0f4fc;
-  --text-secondary: #d0d5dd;
-  --text-muted: #6e7279;
-  --text-muted-rgb: 110, 114, 121;
-  --text-dim: #51545b;
-  --accent: #a98000;
-  --accent-dark: #795b00;
-  --link: #ca9b00;
-  --accent-light: #efb700;
+  --bg-page: #000a2e;
+  --bg-card: #04153a;
+  --bg-subtle: #021034;
+  --bg-hover: #091d42;
+  --border: #14284f;
+  --border-subtle: #0a1e43;
+  --text-primary: #ecf0f8;
+  --text-secondary: #b9bdc5;
+  --text-muted: #81858c;
+  --text-muted-rgb: 129, 133, 140;
+  --text-dim: #5c6067;
+  --accent: #a57e00;
+  --accent-dark: #7c5d00;
+  --link: #deaa00;
+  --accent-light: #deaa00;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1127,14 +1067,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 8, 46, 0.65);
   --shadow-color: rgba(0, 8, 46, 0.45);
   --shadow-color-strong: rgba(0, 8, 46, 0.6);
-  --accent-panel-bg: #4a3600;
-  --muted-border: #7f6628;
-  --border-dark: #21365d;
-  --bg-deep: #010d31;
+  --accent-panel-bg: #2e2100;
+  --muted-border: #645227;
+  --border-dark: #14284f;
+  --bg-deep: #00062a;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f7faff;
+  --text-bright: #f3f7ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1150,23 +1090,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Houston Rockets ───────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #CE1141 / #E03A3E.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.7:1, secondary 10.3:1, muted 3.1:1, link 5.5:1. */
+   Contrast against --bg-card: primary text 15.8:1, secondary 9.6:1, muted 4.9:1, link 8.1:1. */
 :root[data-theme="team-hou"] {
-  --bg-page: #33040b;
-  --bg-card: #46151b;
-  --bg-subtle: #3b0b12;
-  --bg-hover: #511f23;
-  --border: #622e32;
-  --border-subtle: #501e23;
-  --text-primary: #fcf1f1;
-  --text-secondary: #ddd2d2;
-  --text-muted: #796f6f;
-  --text-muted-rgb: 121, 111, 111;
-  --text-dim: #5b5252;
-  --accent: #e74445;
-  --accent-dark: #b6001d;
-  --link: #ff6d68;
-  --accent-light: #ffa59d;
+  --bg-page: #240004;
+  --bg-card: #33030b;
+  --bg-subtle: #2d0007;
+  --bg-hover: #3b0b12;
+  --border: #48171c;
+  --border-subtle: #3c0c13;
+  --text-primary: #f8eded;
+  --text-secondary: #c5baba;
+  --text-muted: #8c8282;
+  --text-muted-rgb: 140, 130, 130;
+  --text-dim: #665d5d;
+  --accent: #e34042;
+  --accent-dark: #ba031f;
+  --link: #ff8c85;
+  --accent-light: #ff8c85;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1193,14 +1133,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(35, 0, 4, 0.65);
   --shadow-color: rgba(35, 0, 4, 0.45);
   --shadow-color-strong: rgba(35, 0, 4, 0.6);
-  --accent-panel-bg: #6d000d;
-  --muted-border: #955550;
-  --border-dark: #572428;
-  --bg-deep: #290006;
+  --accent-panel-bg: #490006;
+  --muted-border: #744542;
+  --border-dark: #48171c;
+  --bg-deep: #1f0003;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fff8f8;
+  --text-bright: #fff4f4;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1216,23 +1156,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Indiana Pacers ────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #002D62 / #FDBB30.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.0:1, muted 3.0:1, link 5.7:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.5:1, muted 4.8:1, link 8.3:1. */
 :root[data-theme="team-ind"] {
-  --bg-page: #001739;
-  --bg-card: #0c284c;
-  --bg-subtle: #031e41;
-  --bg-hover: #153257;
-  --border: #244168;
-  --border-subtle: #153156;
-  --text-primary: #eff5fc;
-  --text-secondary: #d0d5dd;
-  --text-muted: #6d7279;
-  --text-muted-rgb: 109, 114, 121;
-  --text-dim: #50555b;
-  --accent: #af7d00;
-  --accent-dark: #7d5800;
-  --link: #d29700;
-  --accent-light: #f5b423;
+  --bg-page: #000d27;
+  --bg-card: #001738;
+  --bg-subtle: #001230;
+  --bg-hover: #031e41;
+  --border: #0e2a4e;
+  --border-subtle: #041f43;
+  --text-primary: #ebf0f8;
+  --text-secondary: #b8bec5;
+  --text-muted: #80858c;
+  --text-muted-rgb: 128, 133, 140;
+  --text-dim: #5b6067;
+  --accent: #ab7a00;
+  --accent-dark: #805b00;
+  --link: #e6a500;
+  --accent-light: #e6a500;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1259,14 +1199,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 12, 37, 0.65);
   --shadow-color: rgba(0, 12, 37, 0.45);
   --shadow-color-strong: rgba(0, 12, 37, 0.6);
-  --accent-panel-bg: #4a3300;
-  --muted-border: #836429;
-  --border-dark: #1b375d;
-  --bg-deep: #00102c;
+  --accent-panel-bg: #301f00;
+  --muted-border: #675027;
+  --border-dark: #0e2a4e;
+  --bg-deep: #000a21;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f7faff;
+  --text-bright: #f2f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1282,23 +1222,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── LA Clippers ───────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #1D428A / #C8102E.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.0:1, muted 3.0:1, link 5.3:1. */
+   Contrast against --bg-card: primary text 15.7:1, secondary 9.5:1, muted 4.8:1, link 8.0:1. */
 :root[data-theme="team-lac"] {
-  --bg-page: #04153a;
-  --bg-card: #13274d;
-  --bg-subtle: #091d42;
-  --bg-hover: #1b3057;
-  --border: #2a4068;
-  --border-subtle: #1b2f56;
-  --text-primary: #f0f4fc;
-  --text-secondary: #d0d5dd;
-  --text-muted: #6e7279;
-  --text-muted-rgb: 110, 114, 121;
-  --text-dim: #51545b;
-  --accent: #e7434c;
-  --accent-dark: #b50026;
-  --link: #ff6c6d;
-  --accent-light: #ffa4a0;
+  --bg-page: #000a2e;
+  --bg-card: #04153a;
+  --bg-subtle: #021034;
+  --bg-hover: #091d42;
+  --border: #14284f;
+  --border-subtle: #0a1e43;
+  --text-primary: #ecf0f8;
+  --text-secondary: #b9bdc5;
+  --text-muted: #81858c;
+  --text-muted-rgb: 129, 133, 140;
+  --text-dim: #5c6067;
+  --accent: #e33f49;
+  --accent-dark: #b90127;
+  --link: #ff8c89;
+  --accent-light: #ff8c89;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1325,14 +1265,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 8, 46, 0.65);
   --shadow-color: rgba(0, 8, 46, 0.45);
   --shadow-color-strong: rgba(0, 8, 46, 0.6);
-  --accent-panel-bg: #6d0013;
-  --muted-border: #955553;
-  --border-dark: #21365d;
-  --bg-deep: #010d31;
+  --accent-panel-bg: #490009;
+  --muted-border: #744543;
+  --border-dark: #14284f;
+  --bg-deep: #00062a;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f7faff;
+  --text-bright: #f3f7ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1348,23 +1288,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Los Angeles Lakers ────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #552583 / #FDB927.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.7:1, secondary 10.2:1, muted 3.1:1, link 5.8:1. */
+   Contrast against --bg-card: primary text 15.8:1, secondary 9.6:1, muted 4.9:1, link 8.4:1. */
 :root[data-theme="team-lal"] {
-  --bg-page: #200c34;
-  --bg-card: #301d46;
-  --bg-subtle: #26133b;
-  --bg-hover: #392750;
-  --border: #493661;
-  --border-subtle: #392650;
-  --text-primary: #f6f2fb;
-  --text-secondary: #d6d3db;
-  --text-muted: #737078;
-  --text-muted-rgb: 115, 112, 120;
-  --text-dim: #55535a;
-  --accent: #af7d00;
-  --accent-dark: #7d5800;
-  --link: #d29600;
-  --accent-light: #f7b31a;
+  --bg-page: #150328;
+  --bg-card: #1f0c33;
+  --bg-subtle: #1b072e;
+  --bg-hover: #27133b;
+  --border: #321f48;
+  --border-subtle: #28143d;
+  --text-primary: #f1eef7;
+  --text-secondary: #bebbc4;
+  --text-muted: #86838b;
+  --text-muted-rgb: 134, 131, 139;
+  --text-dim: #615e66;
+  --accent: #ab7a00;
+  --accent-dark: #815b00;
+  --link: #e6a500;
+  --accent-light: #e6a500;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1391,14 +1331,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(22, 0, 42, 0.65);
   --shadow-color: rgba(22, 0, 42, 0.45);
   --shadow-color-strong: rgba(22, 0, 42, 0.6);
-  --accent-panel-bg: #4a3300;
-  --muted-border: #836429;
-  --border-dark: #3f2c56;
-  --bg-deep: #19052b;
+  --accent-panel-bg: #301f00;
+  --muted-border: #675027;
+  --border-dark: #321f48;
+  --bg-deep: #120124;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fbf8ff;
+  --text-bright: #f9f5fe;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1414,23 +1354,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Memphis Grizzlies ─────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #12173F / #5D76A9.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.5:1, secondary 10.1:1, muted 3.1:1, link 5.8:1. */
+   Contrast against --bg-card: primary text 15.8:1, secondary 9.6:1, muted 4.9:1, link 8.5:1. */
 :root[data-theme="team-mem"] {
-  --bg-page: #0f133a;
-  --bg-card: #1d244d;
-  --bg-subtle: #141a42;
-  --bg-hover: #262d57;
-  --border: #343d68;
-  --border-subtle: #252d56;
-  --text-primary: #f1f4fc;
-  --text-secondary: #d2d4dd;
-  --text-muted: #6f7179;
-  --text-muted-rgb: 111, 113, 121;
-  --text-dim: #52545b;
-  --accent: #4a7ff7;
-  --accent-dark: #1a4ed8;
-  --link: #74a0fc;
-  --accent-light: #a1c0ff;
+  --bg-page: #06072d;
+  --bg-card: #0e1239;
+  --bg-subtle: #0a0d34;
+  --bg-hover: #141a42;
+  --border: #1f264f;
+  --border-subtle: #151b43;
+  --text-primary: #edf0f8;
+  --text-secondary: #babdc5;
+  --text-muted: #82858c;
+  --text-muted-rgb: 130, 133, 140;
+  --text-dim: #5d5f67;
+  --accent: #5c81d1;
+  --accent-dark: #3e5fa7;
+  --link: #97b2e9;
+  --accent-light: #97b2e9;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1457,14 +1397,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(6, 0, 56, 0.65);
   --shadow-color: rgba(6, 0, 56, 0.45);
   --shadow-color-strong: rgba(6, 0, 56, 0.6);
-  --accent-panel-bg: #082c8d;
-  --muted-border: #50699b;
-  --border-dark: #2b335d;
-  --bg-deep: #090b31;
+  --accent-panel-bg: #001069;
+  --muted-border: #425478;
+  --border-dark: #1f264f;
+  --bg-deep: #05042a;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f8faff;
+  --text-bright: #f4f7ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1480,23 +1420,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Miami Heat ────────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #5E1030 / #F9A01B.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.7:1, secondary 10.2:1, muted 3.1:1, link 5.7:1. */
+   Contrast against --bg-card: primary text 15.8:1, secondary 9.6:1, muted 4.9:1, link 8.3:1. */
 :root[data-theme="team-mia"] {
-  --bg-page: #310416;
-  --bg-card: #451526;
-  --bg-subtle: #390b1c;
-  --bg-hover: #4f1f2f;
-  --border: #602e3e;
-  --border-subtle: #4e1e2e;
-  --text-primary: #fcf1f3;
-  --text-secondary: #dcd2d4;
-  --text-muted: #786f71;
-  --text-muted-rgb: 120, 111, 113;
-  --text-dim: #5a5254;
-  --accent: #bb7500;
-  --accent-dark: #865300;
-  --link: #e08d00;
-  --accent-light: #ffac42;
+  --bg-page: #23000c;
+  --bg-card: #310416;
+  --bg-subtle: #2b0011;
+  --bg-hover: #390b1c;
+  --border: #461728;
+  --border-subtle: #3b0c1e;
+  --text-primary: #f7edef;
+  --text-secondary: #c4babc;
+  --text-muted: #8c8284;
+  --text-muted-rgb: 140, 130, 132;
+  --text-dim: #665d5f;
+  --accent: #b77300;
+  --accent-dark: #8a5500;
+  --link: #f59c10;
+  --accent-light: #f59c10;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1523,14 +1463,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(33, 0, 11, 0.65);
   --shadow-color: rgba(33, 0, 11, 0.45);
   --shadow-color-strong: rgba(33, 0, 11, 0.6);
-  --accent-panel-bg: #502f00;
-  --muted-border: #8a602d;
-  --border-dark: #552434;
-  --bg-deep: #28000f;
+  --accent-panel-bg: #341d00;
+  --muted-border: #6c4d2a;
+  --border-dark: #461728;
+  --bg-deep: #1e0009;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fff8f9;
+  --text-bright: #fff4f6;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1546,23 +1486,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Milwaukee Bucks ───────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #00471B / #EEE1C6.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.0:1, secondary 9.8:1, muted 3.1:1, link 5.6:1. */
+   Contrast against --bg-card: primary text 15.4:1, secondary 9.3:1, muted 4.8:1, link 8.3:1. */
 :root[data-theme="team-mil"] {
-  --bg-page: #001f08;
-  --bg-card: #023212;
-  --bg-subtle: #00270b;
-  --bg-hover: #0e3c1b;
-  --border: #1f4b2a;
-  --border-subtle: #0d3b1a;
-  --text-primary: #eff6f0;
-  --text-secondary: #d0d7d1;
-  --text-muted: #707771;
-  --text-muted-rgb: 112, 119, 113;
-  --text-dim: #505651;
-  --accent: #aa8000;
-  --accent-dark: #7a5a00;
-  --link: #cb9a10;
-  --accent-light: #ddbc77;
+  --bg-page: #001303;
+  --bg-card: #001f07;
+  --bg-subtle: #001905;
+  --bg-hover: #00270b;
+  --border: #043414;
+  --border-subtle: #00280c;
+  --text-primary: #ebf2ec;
+  --text-secondary: #b8bfb9;
+  --text-muted: #808781;
+  --text-muted-rgb: 128, 135, 129;
+  --text-dim: #5b625c;
+  --accent: #a67d00;
+  --accent-dark: #7d5d00;
+  --link: #caaf75;
+  --accent-light: #caaf75;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1589,14 +1529,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 18, 3, 0.65);
   --shadow-color: rgba(0, 18, 3, 0.45);
   --shadow-color-strong: rgba(0, 18, 3, 0.6);
-  --accent-panel-bg: #473400;
-  --muted-border: #806528;
-  --border-dark: #144120;
-  --bg-deep: #001705;
+  --accent-panel-bg: #2e2000;
+  --muted-border: #645127;
+  --border-dark: #043414;
+  --bg-deep: #001003;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f5fcf6;
+  --text-bright: #f2f9f3;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #0c6249;
@@ -1612,23 +1552,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Minnesota Timberwolves ────────────────────────────────────────────
    Generated by build/make_team_theme.py from #0C2340 / #78BE20.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.5:1, secondary 10.0:1, muted 3.0:1, link 6.2:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.5:1, muted 4.8:1, link 8.9:1. */
 :root[data-theme="team-min"] {
-  --bg-page: #001738;
-  --bg-card: #0b284c;
-  --bg-subtle: #021e41;
-  --bg-hover: #153257;
-  --border: #244167;
-  --border-subtle: #143156;
-  --text-primary: #eff5fc;
-  --text-secondary: #d0d5dd;
-  --text-muted: #6d7279;
-  --text-muted-rgb: 109, 114, 121;
-  --text-dim: #50555b;
-  --accent: #5e9b00;
-  --accent-dark: #426f00;
-  --link: #74ba17;
-  --accent-light: #91d945;
+  --bg-page: #000d26;
+  --bg-card: #001738;
+  --bg-subtle: #00122f;
+  --bg-hover: #021e41;
+  --border: #0d2a4e;
+  --border-subtle: #031f42;
+  --text-primary: #ebf0f8;
+  --text-secondary: #b8bec5;
+  --text-muted: #80858c;
+  --text-muted-rgb: 128, 133, 140;
+  --text-dim: #5b6067;
+  --accent: #5c9800;
+  --accent-dark: #437100;
+  --link: #83ca32;
+  --accent-light: #83ca32;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1655,14 +1595,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 12, 37, 0.65);
   --shadow-color: rgba(0, 12, 37, 0.45);
   --shadow-color-strong: rgba(0, 12, 37, 0.6);
-  --accent-panel-bg: #264300;
-  --muted-border: #57743e;
-  --border-dark: #1a375c;
-  --bg-deep: #00102c;
+  --accent-panel-bg: #152900;
+  --muted-border: #475c35;
+  --border-dark: #0d2a4e;
+  --bg-deep: #000a21;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f6faff;
+  --text-bright: #f2f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1678,23 +1618,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── New Orleans Pelicans ──────────────────────────────────────────────
    Generated by build/make_team_theme.py from #0C2340 / #C8102E.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.5:1, secondary 10.0:1, muted 3.0:1, link 5.4:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.5:1, muted 4.8:1, link 7.9:1. */
 :root[data-theme="team-nop"] {
-  --bg-page: #001738;
-  --bg-card: #0b284c;
-  --bg-subtle: #021e41;
-  --bg-hover: #153257;
-  --border: #244167;
-  --border-subtle: #143156;
-  --text-primary: #eff5fc;
-  --text-secondary: #d0d5dd;
-  --text-muted: #6d7279;
-  --text-muted-rgb: 109, 114, 121;
-  --text-dim: #50555b;
-  --accent: #eb474f;
-  --accent-dark: #b50026;
-  --link: #ff6c6d;
-  --accent-light: #ffa4a0;
+  --bg-page: #000d26;
+  --bg-card: #001738;
+  --bg-subtle: #00122f;
+  --bg-hover: #021e41;
+  --border: #0d2a4e;
+  --border-subtle: #031f42;
+  --text-primary: #ebf0f8;
+  --text-secondary: #b8bec5;
+  --text-muted: #80858c;
+  --text-muted-rgb: 128, 133, 140;
+  --text-dim: #5b6067;
+  --accent: #e33f49;
+  --accent-dark: #b90127;
+  --link: #ff8c89;
+  --accent-light: #ff8c89;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1721,14 +1661,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 12, 37, 0.65);
   --shadow-color: rgba(0, 12, 37, 0.45);
   --shadow-color-strong: rgba(0, 12, 37, 0.6);
-  --accent-panel-bg: #6d0013;
-  --muted-border: #955553;
-  --border-dark: #1a375c;
-  --bg-deep: #00102c;
+  --accent-panel-bg: #490009;
+  --muted-border: #744543;
+  --border-dark: #0d2a4e;
+  --bg-deep: #000a21;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f6faff;
+  --text-bright: #f2f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1744,23 +1684,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── New York Knicks ───────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #00548C / #F58426.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.3:1, secondary 10.0:1, muted 3.0:1, link 5.5:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.5:1, muted 4.8:1, link 8.0:1. */
 :root[data-theme="team-nyk"] {
-  --bg-page: #001a31;
-  --bg-card: #002a4b;
-  --bg-subtle: #00203b;
-  --bg-hover: #083455;
-  --border: #1b4366;
-  --border-subtle: #083354;
-  --text-primary: #eef5fc;
-  --text-secondary: #cfd6dc;
-  --text-muted: #6c7379;
-  --text-muted-rgb: 108, 115, 121;
-  --text-dim: #4f555b;
-  --accent: #cd6700;
-  --accent-dark: #934900;
-  --link: #f18020;
-  --accent-light: #ffaa6f;
+  --bg-page: #000f20;
+  --bg-card: #001930;
+  --bg-subtle: #001428;
+  --bg-hover: #00203b;
+  --border: #002c4d;
+  --border-subtle: #00213d;
+  --text-primary: #eaf1f8;
+  --text-secondary: #b7bec5;
+  --text-muted: #7f868c;
+  --text-muted-rgb: 127, 134, 140;
+  --text-dim: #5b6166;
+  --accent: #c86500;
+  --accent-dark: #974b00;
+  --link: #ff9240;
+  --accent-light: #ff9240;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1787,14 +1727,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 14, 31, 0.65);
   --shadow-color: rgba(0, 14, 31, 0.45);
   --shadow-color-strong: rgba(0, 14, 31, 0.6);
-  --accent-panel-bg: #572800;
-  --muted-border: #905b37;
-  --border-dark: #0f395b;
-  --bg-deep: #001225;
+  --accent-panel-bg: #3a1800;
+  --muted-border: #704a30;
+  --border-dark: #002c4d;
+  --bg-deep: #000c1b;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f6fbff;
+  --text-bright: #f1f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #0c6249;
@@ -1810,23 +1750,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Oklahoma City Thunder ─────────────────────────────────────────────
    Generated by build/make_team_theme.py from #007AC1 / #EF3B24.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.2:1, secondary 9.9:1, muted 3.2:1, link 5.3:1. */
+   Contrast against --bg-card: primary text 15.5:1, secondary 9.4:1, muted 4.8:1, link 7.9:1. */
 :root[data-theme="team-okc"] {
-  --bg-page: #001a2f;
-  --bg-card: #002b49;
-  --bg-subtle: #002139;
-  --bg-hover: #053455;
-  --border: #184465;
-  --border-subtle: #043354;
-  --text-primary: #eef5fc;
-  --text-secondary: #cfd6dc;
-  --text-muted: #6f767c;
-  --text-muted-rgb: 111, 118, 124;
-  --text-dim: #4f555b;
-  --accent: #eb4b34;
-  --accent-dark: #b31400;
-  --link: #ff6e58;
-  --accent-light: #ffa695;
+  --bg-page: #000f1f;
+  --bg-card: #001a2f;
+  --bg-subtle: #001527;
+  --bg-hover: #002139;
+  --border: #002c4b;
+  --border-subtle: #00223b;
+  --text-primary: #eaf1f8;
+  --text-secondary: #b7bec4;
+  --text-muted: #7f868c;
+  --text-muted-rgb: 127, 134, 140;
+  --text-dim: #5a6166;
+  --accent: #e3432e;
+  --accent-dark: #b71500;
+  --link: #ff8e7a;
+  --accent-light: #ff8e7a;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1853,14 +1793,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 14, 30, 0.65);
   --shadow-color: rgba(0, 14, 30, 0.45);
   --shadow-color-strong: rgba(0, 14, 30, 0.6);
-  --accent-panel-bg: #6c0600;
-  --muted-border: #95564b;
-  --border-dark: #0c3a5a;
-  --bg-deep: #001224;
+  --accent-panel-bg: #480300;
+  --muted-border: #74463e;
+  --border-dark: #002c4b;
+  --bg-deep: #000c1a;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f5fbff;
+  --text-bright: #f1f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #0c6249;
@@ -1876,23 +1816,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Orlando Magic ─────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #0077C0 / #0B8FD6.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.0:1, muted 3.1:1, link 5.9:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.5:1, muted 4.8:1, link 8.5:1. */
 :root[data-theme="team-orl"] {
-  --bg-page: #001a30;
-  --bg-card: #002a4a;
-  --bg-subtle: #00203a;
-  --bg-hover: #073455;
-  --border: #1a4466;
-  --border-subtle: #063354;
-  --text-primary: #eef5fc;
-  --text-secondary: #cfd6dc;
-  --text-muted: #6c7379;
-  --text-muted-rgb: 108, 115, 121;
-  --text-dim: #4f555b;
-  --accent: #008fd7;
-  --accent-dark: #00669b;
-  --link: #3cacf5;
-  --accent-light: #80c9ff;
+  --bg-page: #000f20;
+  --bg-card: #00192f;
+  --bg-subtle: #001428;
+  --bg-hover: #00203a;
+  --border: #002c4c;
+  --border-subtle: #00223c;
+  --text-primary: #eaf1f8;
+  --text-secondary: #b7bec4;
+  --text-muted: #7f868c;
+  --text-muted-rgb: 127, 134, 140;
+  --text-dim: #5a6166;
+  --accent: #018cd3;
+  --accent-dark: #00699f;
+  --link: #5bbcff;
+  --accent-light: #5bbcff;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1919,14 +1859,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 14, 30, 0.65);
   --shadow-color: rgba(0, 14, 30, 0.45);
   --shadow-color-strong: rgba(0, 14, 30, 0.6);
-  --accent-panel-bg: #003d60;
-  --muted-border: #386f97;
-  --border-dark: #0e395b;
-  --bg-deep: #001225;
+  --accent-panel-bg: #00253d;
+  --muted-border: #315875;
+  --border-dark: #002c4c;
+  --bg-deep: #000c1b;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f6fbff;
+  --text-bright: #f1f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -1942,23 +1882,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Philadelphia 76ers ────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #006BB6 / #ED174C.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.3:1, secondary 10.0:1, muted 3.1:1, link 5.3:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.5:1, muted 4.8:1, link 7.9:1. */
 :root[data-theme="team-phi"] {
-  --bg-page: #001932;
-  --bg-card: #012a4b;
-  --bg-subtle: #00203d;
-  --bg-hover: #0c3355;
-  --border: #1d4366;
-  --border-subtle: #0b3355;
-  --text-primary: #eef5fc;
-  --text-secondary: #cfd6dc;
-  --text-muted: #6d7379;
-  --text-muted-rgb: 109, 115, 121;
-  --text-dim: #4f555b;
-  --accent: #ea455d;
-  --accent-dark: #b40035;
-  --link: #ff6a79;
-  --accent-light: #ffa3a7;
+  --bg-page: #000f21;
+  --bg-card: #001931;
+  --bg-subtle: #00142a;
+  --bg-hover: #00203d;
+  --border: #032b4d;
+  --border-subtle: #00213f;
+  --text-primary: #eaf1f8;
+  --text-secondary: #b7bec5;
+  --text-muted: #80868c;
+  --text-muted-rgb: 128, 134, 140;
+  --text-dim: #5b6066;
+  --accent: #e23e57;
+  --accent-dark: #b90037;
+  --link: #ff8a92;
+  --accent-light: #ff8a92;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -1985,14 +1925,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 14, 32, 0.65);
   --shadow-color: rgba(0, 14, 32, 0.45);
   --shadow-color-strong: rgba(0, 14, 32, 0.6);
-  --accent-panel-bg: #6c001c;
-  --muted-border: #955457;
-  --border-dark: #12395b;
-  --bg-deep: #001226;
+  --accent-panel-bg: #480010;
+  --muted-border: #744547;
+  --border-dark: #032b4d;
+  --bg-deep: #000b1c;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f6fbff;
+  --text-bright: #f1f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #0c6249;
@@ -2008,40 +1948,40 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Portland Trail Blazers ────────────────────────────────────────────
    Generated by build/make_team_theme.py from #1A1A1A / #E03A3E.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.0:1, muted 3.1:1, link 5.4:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.4:1, muted 4.8:1, link 7.9:1. */
 :root[data-theme="team-por"] {
-  --bg-page: #191815;
-  --bg-card: #292825;
-  --bg-subtle: #201f1c;
-  --bg-hover: #33312e;
-  --border: #42403d;
-  --border-subtle: #32312d;
-  --text-primary: #f6f4f0;
-  --text-secondary: #d6d5d0;
-  --text-muted: #73726e;
-  --text-muted-rgb: 115, 114, 110;
-  --text-dim: #555450;
-  --accent: #eb4848;
-  --accent-dark: #b6001d;
-  --link: #ff6d68;
-  --accent-light: #ffa59d;
+  --bg-page: #0f0e0b;
+  --bg-card: #191815;
+  --bg-subtle: #141310;
+  --bg-hover: #201f1c;
+  --border: #2b2a27;
+  --border-subtle: #21201d;
+  --text-primary: #f1f0eb;
+  --text-secondary: #bebdb9;
+  --text-muted: #868581;
+  --text-muted-rgb: 134, 133, 129;
+  --text-dim: #61605c;
+  --accent: #e34042;
+  --accent-dark: #ba031f;
+  --link: #ff8c85;
+  --accent-light: #ff8c85;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
   --danger-bg: #450a0a;
-  --danger-border: #7f1d1d;
-  --danger-border-strong: #991b1b;
+  --danger-border: #822020;
+  --danger-border-strong: #9c1f1e;
   --danger-alt: #fb923c;
   --danger-alt-bg: #431407;
-  --danger-alt-border: #7c2d12;
+  --danger-alt-border: #7f3015;
   --success: #4ade80;
   --success-light: #86efac;
   --success-bg: #0e1f14;
   --success-bg-hover: #132a1b;
   --gold: #fbbf24;
   --gold-bg: #422006;
-  --gold-border: #854d0e;
-  --gold-dim: #b45309;
+  --gold-border: #885013;
+  --gold-dim: #b75610;
   --warning: #f59e0b;
   --champion-border: #d97706;
   --champion-bg: #1a1305;
@@ -2051,46 +1991,46 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(19, 12, 0, 0.65);
   --shadow-color: rgba(19, 12, 0, 0.45);
   --shadow-color-strong: rgba(19, 12, 0, 0.6);
-  --accent-panel-bg: #6d000d;
-  --muted-border: #955550;
-  --border-dark: #383733;
-  --bg-deep: #12110e;
+  --accent-panel-bg: #490006;
+  --muted-border: #744542;
+  --border-dark: #2b2a27;
+  --bg-deep: #0c0b08;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fbfaf5;
+  --text-bright: #f9f7f3;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
-  --market-positive-border: #065f46;
+  --market-positive-border: #0c6249;
   --market-positive-light: #6ee7b7;
   --purple: #a78bfa;
   --purple-bg: #1e1b4b;
-  --purple-border: #4c1d95;
+  --purple-border: #4f2198;
   --purple-light: #c4b5fd;
   --purple-light-bg: #2e1065;
-  --gold-chip-border: #78350f;
+  --gold-chip-border: #7b3813;
 }
 
 /* ── Sacramento Kings ──────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #5A2D81 / #7B4FA8.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.7:1, secondary 10.2:1, muted 3.1:1, link 5.6:1. */
+   Contrast against --bg-card: primary text 15.8:1, secondary 9.6:1, muted 4.9:1, link 8.1:1. */
 :root[data-theme="team-sac"] {
-  --bg-page: #210c33;
-  --bg-card: #311d45;
-  --bg-subtle: #28133a;
-  --bg-hover: #3b264f;
-  --border: #4a3560;
-  --border-subtle: #3a254f;
-  --text-primary: #f6f2fb;
-  --text-secondary: #d6d3db;
-  --text-muted: #737078;
-  --text-muted-rgb: 115, 112, 120;
-  --text-dim: #56535a;
-  --accent: #a262e0;
-  --accent-dark: #7e29bf;
-  --link: #b78aea;
-  --accent-light: #d2adff;
+  --bg-page: #160227;
+  --bg-card: #210b33;
+  --bg-subtle: #1c062d;
+  --bg-hover: #28133a;
+  --border: #331f47;
+  --border-subtle: #29143c;
+  --text-primary: #f2eef7;
+  --text-secondary: #bfbbc3;
+  --text-muted: #86838b;
+  --text-muted-rgb: 134, 131, 139;
+  --text-dim: #615e65;
+  --accent: #986cc7;
+  --accent-dark: #7549a2;
+  --link: #c79afa;
+  --accent-light: #c79afa;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -2117,14 +2057,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(22, 0, 41, 0.65);
   --shadow-color: rgba(22, 0, 41, 0.45);
   --shadow-color-strong: rgba(22, 0, 41, 0.6);
-  --accent-panel-bg: #4e0f7c;
-  --muted-border: #755c91;
-  --border-dark: #402b55;
-  --bg-deep: #19052b;
+  --accent-panel-bg: #320054;
+  --muted-border: #5c4b71;
+  --border-dark: #331f47;
+  --bg-deep: #130023;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fbf8ff;
+  --text-bright: #f9f5fe;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -2140,40 +2080,40 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── San Antonio Spurs ─────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #1A1A1A / #C4CED4.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.4:1, secondary 10.0:1, muted 3.1:1, link 5.8:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.4:1, muted 4.8:1, link 8.4:1. */
 :root[data-theme="team-sas"] {
-  --bg-page: #191815;
-  --bg-card: #292825;
-  --bg-subtle: #201f1c;
-  --bg-hover: #33312e;
-  --border: #42403d;
-  --border-subtle: #32312d;
-  --text-primary: #f6f4f0;
-  --text-secondary: #d6d5d0;
-  --text-muted: #73726e;
-  --text-muted-rgb: 115, 114, 110;
-  --text-dim: #555450;
-  --accent: #80888d;
-  --accent-dark: #5a6166;
-  --link: #9ca4a9;
-  --accent-light: #b9c2c7;
+  --bg-page: #0f0e0b;
+  --bg-card: #191815;
+  --bg-subtle: #141310;
+  --bg-hover: #201f1c;
+  --border: #2b2a27;
+  --border-subtle: #21201d;
+  --text-primary: #f1f0eb;
+  --text-secondary: #bebdb9;
+  --text-muted: #868581;
+  --text-muted-rgb: 134, 133, 129;
+  --text-dim: #61605c;
+  --accent: #7d858a;
+  --accent-dark: #5c6468;
+  --link: #abb4b9;
+  --accent-light: #abb4b9;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
   --danger-bg: #450a0a;
-  --danger-border: #7f1d1d;
-  --danger-border-strong: #991b1b;
+  --danger-border: #822020;
+  --danger-border-strong: #9c1f1e;
   --danger-alt: #fb923c;
   --danger-alt-bg: #431407;
-  --danger-alt-border: #7c2d12;
+  --danger-alt-border: #7f3015;
   --success: #4ade80;
   --success-light: #86efac;
   --success-bg: #0e1f14;
   --success-bg-hover: #132a1b;
   --gold: #fbbf24;
   --gold-bg: #422006;
-  --gold-border: #854d0e;
-  --gold-dim: #b45309;
+  --gold-border: #885013;
+  --gold-dim: #b75610;
   --warning: #f59e0b;
   --champion-border: #d97706;
   --champion-bg: #1a1305;
@@ -2183,46 +2123,46 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(19, 12, 0, 0.65);
   --shadow-color: rgba(19, 12, 0, 0.45);
   --shadow-color-strong: rgba(19, 12, 0, 0.6);
-  --accent-panel-bg: #343b3f;
-  --muted-border: #636b6f;
-  --border-dark: #383733;
-  --bg-deep: #12110e;
+  --accent-panel-bg: #1d2428;
+  --muted-border: #4e555a;
+  --border-dark: #2b2a27;
+  --bg-deep: #0c0b08;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fbfaf5;
+  --text-bright: #f9f7f3;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
-  --market-positive-border: #065f46;
+  --market-positive-border: #0c6249;
   --market-positive-light: #6ee7b7;
   --purple: #a78bfa;
   --purple-bg: #1e1b4b;
-  --purple-border: #4c1d95;
+  --purple-border: #4f2198;
   --purple-light: #c4b5fd;
   --purple-light-bg: #2e1065;
-  --gold-chip-border: #78350f;
+  --gold-chip-border: #7b3813;
 }
 
 /* ── Toronto Raptors ───────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #CE1141 / #B4975A.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.7:1, secondary 10.3:1, muted 3.1:1, link 5.9:1. */
+   Contrast against --bg-card: primary text 15.8:1, secondary 9.6:1, muted 4.9:1, link 8.5:1. */
 :root[data-theme="team-tor"] {
-  --bg-page: #33040b;
-  --bg-card: #46151b;
-  --bg-subtle: #3b0b12;
-  --bg-hover: #511f23;
-  --border: #622e32;
-  --border-subtle: #501e23;
-  --text-primary: #fcf1f1;
-  --text-secondary: #ddd2d2;
-  --text-muted: #796f6f;
-  --text-muted-rgb: 121, 111, 111;
-  --text-dim: #5b5252;
-  --accent: #aa7f00;
-  --accent-dark: #7a5a00;
-  --link: #cc9a10;
-  --accent-light: #ddbc77;
+  --bg-page: #240004;
+  --bg-card: #33030b;
+  --bg-subtle: #2d0007;
+  --bg-hover: #3b0b12;
+  --border: #48171c;
+  --border-subtle: #3c0c13;
+  --text-primary: #f8eded;
+  --text-secondary: #c5baba;
+  --text-muted: #8c8282;
+  --text-muted-rgb: 140, 130, 130;
+  --text-dim: #665d5d;
+  --accent: #a77d00;
+  --accent-dark: #7d5d00;
+  --link: #ccae71;
+  --accent-light: #ccae71;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -2249,14 +2189,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(35, 0, 4, 0.65);
   --shadow-color: rgba(35, 0, 4, 0.45);
   --shadow-color-strong: rgba(35, 0, 4, 0.6);
-  --accent-panel-bg: #483400;
-  --muted-border: #806528;
-  --border-dark: #572428;
-  --bg-deep: #290006;
+  --accent-panel-bg: #2e2000;
+  --muted-border: #655127;
+  --border-dark: #48171c;
+  --bg-deep: #1f0003;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #fff8f8;
+  --text-bright: #fff4f4;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -2272,23 +2212,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Utah Jazz ─────────────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #002B5C / #F9A01B.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.5:1, secondary 10.0:1, muted 3.0:1, link 5.6:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.5:1, muted 4.8:1, link 8.2:1. */
 :root[data-theme="team-uta"] {
-  --bg-page: #001738;
-  --bg-card: #0b284c;
-  --bg-subtle: #021e41;
-  --bg-hover: #143257;
-  --border: #244167;
-  --border-subtle: #143156;
-  --text-primary: #eff5fc;
-  --text-secondary: #d0d5dd;
-  --text-muted: #6d7279;
-  --text-muted-rgb: 109, 114, 121;
-  --text-dim: #50555b;
-  --accent: #bb7500;
-  --accent-dark: #865300;
-  --link: #e08d00;
-  --accent-light: #ffac42;
+  --bg-page: #000d26;
+  --bg-card: #001738;
+  --bg-subtle: #00122f;
+  --bg-hover: #021e41;
+  --border: #0d2a4e;
+  --border-subtle: #031f42;
+  --text-primary: #ebf0f8;
+  --text-secondary: #b8bec5;
+  --text-muted: #80858c;
+  --text-muted-rgb: 128, 133, 140;
+  --text-dim: #5b6067;
+  --accent: #b77300;
+  --accent-dark: #8a5500;
+  --link: #f59c10;
+  --accent-light: #f59c10;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -2315,14 +2255,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 12, 37, 0.65);
   --shadow-color: rgba(0, 12, 37, 0.45);
   --shadow-color-strong: rgba(0, 12, 37, 0.6);
-  --accent-panel-bg: #502f00;
-  --muted-border: #8a602d;
-  --border-dark: #1a375c;
-  --bg-deep: #00102b;
+  --accent-panel-bg: #341d00;
+  --muted-border: #6c4d2a;
+  --border-dark: #0d2a4e;
+  --bg-deep: #000a21;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f6faff;
+  --text-bright: #f2f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;
@@ -2338,23 +2278,23 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
 /* ── Washington Wizards ────────────────────────────────────────────────
    Generated by build/make_team_theme.py from #002B5C / #E31837.
    Do not hand-edit: regenerate, or change the recipe in that script.
-   Contrast against --bg-card: primary text 13.5:1, secondary 10.0:1, muted 3.0:1, link 5.4:1. */
+   Contrast against --bg-card: primary text 15.6:1, secondary 9.5:1, muted 4.8:1, link 7.9:1. */
 :root[data-theme="team-was"] {
-  --bg-page: #001738;
-  --bg-card: #0b284c;
-  --bg-subtle: #021e41;
-  --bg-hover: #143257;
-  --border: #244167;
-  --border-subtle: #143156;
-  --text-primary: #eff5fc;
-  --text-secondary: #d0d5dd;
-  --text-muted: #6d7279;
-  --text-muted-rgb: 109, 114, 121;
-  --text-dim: #50555b;
-  --accent: #eb474f;
-  --accent-dark: #b50026;
-  --link: #ff6c6d;
-  --accent-light: #ffa4a0;
+  --bg-page: #000d26;
+  --bg-card: #001738;
+  --bg-subtle: #00122f;
+  --bg-hover: #021e41;
+  --border: #0d2a4e;
+  --border-subtle: #031f42;
+  --text-primary: #ebf0f8;
+  --text-secondary: #b8bec5;
+  --text-muted: #80858c;
+  --text-muted-rgb: 128, 133, 140;
+  --text-dim: #5b6067;
+  --accent: #e33f49;
+  --accent-dark: #b90127;
+  --link: #ff8c89;
+  --accent-light: #ff8c89;
   --text-on-accent: #fff;
   --danger: #f87171;
   --danger-light: #fca5a5;
@@ -2381,14 +2321,14 @@ html[data-design="clean"][data-theme="nbn-today-light"] {
   --overlay-scrim: rgba(0, 12, 37, 0.65);
   --shadow-color: rgba(0, 12, 37, 0.45);
   --shadow-color-strong: rgba(0, 12, 37, 0.6);
-  --accent-panel-bg: #6d0013;
-  --muted-border: #955553;
-  --border-dark: #1a375c;
-  --bg-deep: #00102b;
+  --accent-panel-bg: #490009;
+  --muted-border: #744544;
+  --border-dark: #0d2a4e;
+  --bg-deep: #000a21;
   --gold-alt: #facc15;
   --success-alt: #22c55e;
   --success-dark-bg: #14532d;
-  --text-bright: #f6faff;
+  --text-bright: #f2f8ff;
   --market-positive: #34d399;
   --market-positive-bg: #064e3b;
   --market-positive-border: #065f46;

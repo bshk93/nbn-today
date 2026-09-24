@@ -110,14 +110,6 @@ function _activeTheme() {
   return _canUseTheme(id) ? id : DEFAULT_THEME_PREF;
 }
 
-// Unified design preview (see /design.js). Loaded here so every page gets it;
-// the homepage also loads it in <head> and the script ignores a second run.
-if (!window.__nbnDesign) {
-  const _ds = document.createElement('script');
-  _ds.src = '/design.js';
-  document.head.appendChild(_ds);
-}
-
 function _applyTheme() {
   document.documentElement.setAttribute('data-theme', _activeTheme());
   _refreshThemeMenu();

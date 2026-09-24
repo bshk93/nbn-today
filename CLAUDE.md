@@ -433,6 +433,7 @@ precise.
 
 | Task | Where to edit |
 |---|---|
+| Change how pages look: widths, headers, tabs, tables, buttons, type, colours, team colours, player-name display | **`css/components.css`** (shared `ui-` components) and the tokens in **`css/theme.css`**; player names via **`names.js`**; team colours are generated into `css/team-colors.css` from `build/team-colors.json`. Use the shared pieces rather than restyling locally. Read **`docs/design-system.md`** first |
 | Add/change a roster table column | `buildRosterTable` — `teams/team.js` |
 | Add/change a draft picks column | `buildPicksTable` — `teams/team.js` |
 | Add/change a season history column | `makeSeasonRenderCell` — `teams/team.js` |
@@ -559,6 +560,7 @@ in.
 | A theme, what one costs, or `css/theme.css` | `docs/themes.md` |
 | Members, the suggestions board, or NB¥ achievement awards | `docs/members-and-rewards.md` |
 | The per-player ⋯ menu on team pages | `docs/roster-moves.md` |
+| How pages look: components, tokens, fonts, team colours | `docs/design-system.md` |
 | The daily cap/apron snapshot, or § 7.3's four-year lookback | `nbn-api/CLAUDE.md` § "Cap history" |
 | The audit log for writes that bypass the transaction ledger | `nbn-api/CLAUDE.md` § "The edit log" |
 

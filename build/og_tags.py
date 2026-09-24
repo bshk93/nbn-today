@@ -168,7 +168,7 @@ def block(title, desc, url, image, alt):
         f'  <meta property="og:image:height" content="630">',
         f'  <meta property="og:image:alt" content="{esc(alt)}">',
         f'  <meta name="twitter:card" content="summary_large_image">',
-        f'  <meta name="theme-color" content="#111827">',
+        f'  <meta name="theme-color" content="#0d0e11">',
         END,
     ])
 

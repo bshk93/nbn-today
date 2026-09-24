@@ -218,7 +218,17 @@ SEMANTIC_EDGE = {"--danger-border", "--danger-border-strong", "--danger-alt-bord
                  "--gold-border", "--gold-chip-border", "--champion-border",
                  "--runnerup-border", "--purple-border", "--market-positive-border"}
 
-SKIP = {"--font-sans", "--font-mono"}
+# Theme-independent tokens: type, scale, spacing, widths, radii. A theme
+# changes colour, so these stay in the bare :root and are never copied into a
+# team block. --heat-text-l is colour but tracks dark vs light, and every team
+# theme is dark, so the :root value is already right.
+SKIP = {"--font-sans", "--font-mono", "--font-display", "--heat-text-l",
+        "--page-width", "--page-width-wide", "--radius-sm", "--radius"}
+SKIP_PREFIXES = ("--text-xs", "--text-sm", "--text-base", "--text-md", "--text-lg", "--text-xl", "--space-")
+
+
+def _skipped(token):
+    return token in SKIP or token.startswith(SKIP_PREFIXES)
 
 
 def parse_root_block(css_text):
@@ -244,7 +254,7 @@ def build_theme(primary, accent, base):
     # Pass 1 — the hue-substituted families. Lightness is copied from the dark
     # theme token, which is what keeps the whole set coherent.
     for token, value in base:
-        if token in SKIP or token == "--text-muted-rgb":
+        if _skipped(token) or token == "--text-muted-rgb":
             continue
         if token in BG_TOKENS or token in BORDER_TOKENS or token in TEXT_TOKENS:
             L, _, _ = hex_to_lch(value) if value.startswith("#") else (0, 0, 0)
@@ -371,7 +381,7 @@ def render_block(abbr, primary, accent, values, base_order, page, card):
         f':root[data-theme="team-{abbr.lower()}"] {{',
     ]
     for token, _ in base_order:
-        if token in SKIP:
+        if _skipped(token):
             continue
         lines.append(f"  {token}: {values[token]};")
     lines.append("}")
@@ -457,7 +467,7 @@ def main():
             sys.exit(f"no colours on file for {abbr}")
         primary, accent = colors[abbr]["primary"], colors[abbr]["accent"]
         values, page, card = build_theme(primary, accent, base)
-        missing = [t for t, _ in base if t not in SKIP and t not in values]
+        missing = [t for t, _ in base if not _skipped(t) and t not in values]
         if missing:
             sys.exit(f"{abbr}: recipe produced no value for {missing}")
         complaints = check_theme(abbr, values, base)

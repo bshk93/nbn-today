@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#111827">
+  <meta name="theme-color" content="#0d0e11">
   <!-- /NBN:og -->
   <style>
 
@@ -65,69 +65,17 @@
       font-size: 0.9rem;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.75rem;
-      max-width: 820px;
-      width: 100%;
-    }
-
-    .section-label {
-      grid-column: 1 / -1;
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      padding-bottom: 0.35rem;
-      border-bottom: 1px solid var(--border);
-      margin-top: 0.75rem;
-    }
-
-    .section-label:first-child { margin-top: 0; }
-
-    /* Only the Committees label links anywhere. It inherits the label's muted
-       colour rather than taking the page link colour, so it doesn't read as the
-       one heading that is different in kind from the others. */
-    .section-label a { color: inherit; }
-    .section-label a:hover { color: var(--text-secondary); }
-
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.875rem 1rem;
-      text-decoration: none;
-      color: inherit;
-      transition: background 0.15s, border-color 0.15s, transform 0.15s;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-
-    .card:hover {
-      background: var(--bg-hover);
-      border-color: var(--muted-border);
-      transform: translateY(-2px);
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .card-icon { font-size: 1.25rem; }
-
-    .card-title {
-      font-size: 0.875rem;
-      font-weight: 600;
-    }
-
+    
+    
+    
+        
+    
+    
+    
+    
+    
 
     @media (max-width: 560px) {
-      .grid { grid-template-columns: repeat(2, 1fr); }
       header h1 { font-size: 1.4rem; }
       header img { height: 48px; }
     }
@@ -369,20 +317,19 @@
       .dash-row-league { grid-template-columns: 1fr; }
     }
 
+    /* ══ Layout ═════════════════════════════════════════════════════════════
+       Sections instead of boxes. Every part of the page used to be its own
+       bordered card with a tiny capitalised label, so nothing was more
+       important than anything else. The feed is the main column, the schedule
+       and rankings are a sidebar, sections are separated by space and a
+       single rule, and the site directory is plain links.
 
-    /* ══ Clean design preview (?design=clean) ═══════════════════════════════
-       Everything below applies only when <html data-design="clean">, set by
-       the one-line script in <head>. The current design is untouched without
-       it. If the clean one is adopted, these rules become the page's rules
-       and the old ones above are deleted.
+       These began as a preview behind ?design=clean and were adopted on
+       2026-09-24. The :root prefix is what lets them beat the older card-era
+       rules above that they override; folding the two together is cleanup
+       that hasn't been done yet. */
 
-       The idea: sections instead of boxes. Every part of the page used to be
-       its own bordered card with a tiny capitalised label, so nothing was more
-       important than anything else. Here the feed is the main column, the
-       schedule and rankings are a sidebar, sections are separated by space and
-       a single rule, and the 45 emoji tiles become a plain site directory. */
-
-    html[data-design="clean"] .page-wrap {
+    :root .page-wrap {
       align-items: stretch;
       max-width: var(--page-width-wide);
       margin: 0 auto;
@@ -391,19 +338,19 @@
 
     /* Masthead: left-aligned and quieter. It identifies the site; it isn't
        the content. */
-    html[data-design="clean"] header {
+    :root header {
       justify-content: flex-start;
       gap: var(--space-3);
       margin-bottom: var(--space-6);
     }
-    html[data-design="clean"] header img { height: 44px; }
-    html[data-design="clean"] header h1 { font-family: var(--font-display); font-size: 1.75rem; letter-spacing: 0; }
-    html[data-design="clean"] header p { font-size: var(--text-sm); margin-top: 0; }
+    :root header img { height: 44px; }
+    :root header h1 { font-family: var(--font-display); font-size: 1.75rem; letter-spacing: 0; }
+    :root header p { font-size: var(--text-sm); margin-top: 0; }
 
     /* Two columns: the feed, and a sidebar of schedule + rankings. The
        wrapper around slate and feed steps aside (display: contents) so both
        can be placed on the page grid directly. */
-    html[data-design="clean"] .dash {
+    :root .dash {
       max-width: none;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 20rem;
@@ -416,28 +363,28 @@
       align-items: start;
       margin-bottom: var(--space-7);
     }
-    html[data-design="clean"] .dash-row-league { display: contents; }
-    html[data-design="clean"] #dash-team  { grid-area: team; }
-    html[data-design="clean"] #dash-feed  { grid-area: feed; }
-    html[data-design="clean"] #dash-slate { grid-area: slate; }
-    html[data-design="clean"] #dash-ranks { grid-area: ranks; }
+    :root .dash-row-league { display: contents; }
+    :root #dash-team  { grid-area: team; }
+    :root #dash-feed  { grid-area: feed; }
+    :root #dash-slate { grid-area: slate; }
+    :root #dash-ranks { grid-area: ranks; }
 
     @media (max-width: 900px) {
-      html[data-design="clean"] .dash {
+      :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-areas: "team" "slate" "feed" "ranks";
       }
     }
 
     /* Sections, not boxes. */
-    html[data-design="clean"] .dash-card {
+    :root .dash-card {
       background: none;
       border: none;
       border-top: 1px solid var(--border);
       border-radius: 0;
       padding: var(--space-4) 0 var(--space-6);
     }
-    html[data-design="clean"] .dash-card-title {
+    :root .dash-card-title {
       font-size: var(--text-md);
       font-weight: 600;
       letter-spacing: 0;
@@ -447,27 +394,27 @@
     }
 
     /* Your team: the one band that is about you, so it keeps a surface. */
-    html[data-design="clean"] #dash-team {
+    :root #dash-team {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: var(--space-5);
       margin-bottom: var(--space-6);
     }
-    html[data-design="clean"] .dash-team-name { font-size: var(--text-lg); }
+    :root .dash-team-name { font-size: var(--text-lg); }
 
     /* Feed: the label becomes coloured text with a dot rather than a filled
        pill, and the headline gets a readable size. The pill colours from
        feed-types.js are kept as the dot and text colour. */
-    html[data-design="clean"] .dash-feed { gap: 0; }
-    html[data-design="clean"] .dash-feed-row {
+    :root .dash-feed { gap: 0; }
+    :root .dash-feed-row {
       grid-template-columns: 7.5rem minmax(0, 1fr);
       gap: 0.2rem var(--space-4);
       padding: var(--space-3) 0;
       border-bottom: 1px solid var(--border-subtle);
     }
-    html[data-design="clean"] .dash-feed-row:last-child { border-bottom: none; }
-    html[data-design="clean"] .dash-feed-tag {
+    :root .dash-feed-row:last-child { border-bottom: none; }
+    :root .dash-feed-tag {
       background: none !important;
       padding: 0;
       text-align: left;
@@ -476,39 +423,37 @@
       letter-spacing: 0.02em;
       display: flex; align-items: baseline; gap: 0.4rem;
     }
-    html[data-design="clean"] .dash-feed-tag::before {
+    :root .dash-feed-tag::before {
       content: ''; flex: none;
       width: 6px; height: 6px; border-radius: 50%;
       background: currentColor;
       transform: translateY(-1px);
     }
-    html[data-design="clean"] .dash-feed-text { font-size: var(--text-base); color: var(--text-primary); line-height: 1.4; }
-    html[data-design="clean"] a.dash-feed-row:hover .dash-feed-text { color: var(--link); }
-    html[data-design="clean"] .dash-feed-when { font-size: var(--text-xs); }
+    :root .dash-feed-text { font-size: var(--text-base); color: var(--text-primary); line-height: 1.4; }
+    :root a.dash-feed-row:hover .dash-feed-text { color: var(--link); }
+    :root .dash-feed-when { font-size: var(--text-xs); }
 
     /* Schedule */
-    html[data-design="clean"] .dash-team-phase { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
-    html[data-design="clean"] .dash-team-phase-sub { font-size: var(--text-sm); margin-bottom: var(--space-4); }
-    html[data-design="clean"] .dash-games { gap: 0.45rem; }
-    html[data-design="clean"] .dash-game-day { margin-top: var(--space-3); }
+    :root .dash-team-phase { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
+    :root .dash-team-phase-sub { font-size: var(--text-sm); margin-bottom: var(--space-4); }
+    :root .dash-games { gap: 0.45rem; }
+    :root .dash-game-day { margin-top: var(--space-3); }
 
     /* Rankings: a vertical list in the sidebar. */
-    html[data-design="clean"] .dash-ranks-head { flex-direction: column; gap: 0.1rem; margin-bottom: var(--space-3); }
-    html[data-design="clean"] .dash-ranks-head .dash-card-title { margin: 0 !important; }
-    html[data-design="clean"] .dash-ranks-edition { margin-left: 0; }
-    html[data-design="clean"] .dash-ranks-row { grid-template-columns: 1fr; gap: 0; }
-    html[data-design="clean"] .dash-rank-team { border-radius: 0; padding: 0.45rem 0; }
-    html[data-design="clean"] .dash-rank-team + .dash-rank-team { border-top: 1px solid var(--border-subtle); }
-    html[data-design="clean"] .dash-rank-team:hover { background: none; }
-    html[data-design="clean"] .dash-rank-team:hover .dash-rank-abbr { color: var(--link); }
-    html[data-design="clean"] .dash-rank-pos { width: 1.5rem; }
-    html[data-design="clean"] .dash-rank-abbr { font-size: var(--text-sm); }
-    html[data-design="clean"] .dash-rank-team .rank-move { margin-left: auto; }
+    :root .dash-ranks-head { flex-direction: column; gap: 0.1rem; margin-bottom: var(--space-3); }
+    :root .dash-ranks-head .dash-card-title { margin: 0 !important; }
+    :root .dash-ranks-edition { margin-left: 0; }
+    :root .dash-ranks-row { grid-template-columns: 1fr; gap: 0; }
+    :root .dash-rank-team { border-radius: 0; padding: 0.45rem 0; }
+    :root .dash-rank-team + .dash-rank-team { border-top: 1px solid var(--border-subtle); }
+    :root .dash-rank-team:hover { background: none; }
+    :root .dash-rank-team:hover .dash-rank-abbr { color: var(--link); }
+    :root .dash-rank-pos { width: 1.5rem; }
+    :root .dash-rank-abbr { font-size: var(--text-sm); }
+    :root .dash-rank-team .rank-move { margin-left: auto; }
 
     /* Directory: the tile grid, regrouped by script into columns of links. */
-    html[data-design="clean"] main.grid { display: none; }
-    .directory { display: none; }
-    html[data-design="clean"] .directory {
+            :root .directory {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
       gap: var(--space-6) var(--space-5);
@@ -544,17 +489,10 @@
     .directory-forms:empty { display: none; }
 
     /* Preview bar */
-    .design-bar { display: none; }
-    html[data-design="clean"] .design-bar {
-      display: flex; gap: 0.5rem; flex-wrap: wrap;
-      font-size: var(--text-xs); color: var(--text-muted);
-      margin: calc(-1 * var(--space-4)) 0 var(--space-5);
-    }
-    .design-bar a { color: var(--link); }
-
+            
     /* Headline: the state of the league, in words, at the top. */
     .hero { display: none; }
-    html[data-design="clean"] .hero:not(:empty) {
+    :root .hero:not(:empty) {
       display: block;
       margin-bottom: var(--space-6);
     }
@@ -568,22 +506,21 @@
     .hero-line em { font-style: normal; color: var(--accent); font-variant-numeric: tabular-nums; }
     .hero-sub { margin-top: var(--space-2); font-size: var(--text-base); color: var(--text-muted); }
 
-    html[data-design="clean"] .dash-feed-tag { letter-spacing: 0.03em; }
+    :root .dash-feed-tag { letter-spacing: 0.03em; }
 
     /* Phones */
     @media (max-width: 600px) {
-      html[data-design="clean"] .page-wrap { padding: 1.25rem 1rem 3rem; }
-      html[data-design="clean"] header { margin-bottom: var(--space-5); }
-      html[data-design="clean"] header img { height: 36px; }
-      html[data-design="clean"] header h1 { font-size: var(--text-md); }
-      html[data-design="clean"] header p { display: none; }
-      html[data-design="clean"] .design-bar { margin-top: -0.5rem; }
+      :root .page-wrap { padding: 1.25rem 1rem 3rem; }
+      :root header { margin-bottom: var(--space-5); }
+      :root header img { height: 36px; }
+      :root header h1 { font-size: var(--text-md); }
+      :root header p { display: none; }
       /* Label on its own line above the headline, so the headline gets the
          full width instead of a narrow strip beside the label. */
-      html[data-design="clean"] .dash-feed-row { grid-template-columns: minmax(0, 1fr); gap: 0.15rem; }
-      html[data-design="clean"] .dash-feed-when { grid-column: 1; }
-      html[data-design="clean"] .directory { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5) var(--space-4); }
-      html[data-design="clean"] .dash-card { padding-bottom: var(--space-5); }
+      :root .dash-feed-row { grid-template-columns: minmax(0, 1fr); gap: 0.15rem; }
+      :root .dash-feed-when { grid-column: 1; }
+      :root .directory { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5) var(--space-4); }
+      :root .dash-card { padding-bottom: var(--space-5); }
     }
 
     /* Signed-out visitors only: what this site is, one line, linking to the
@@ -595,9 +532,8 @@
       font-size: var(--text-sm); color: var(--text-muted); text-align: center;
     }
     .visitor-intro a { color: var(--link); white-space: nowrap; }
-    html[data-design="clean"] .visitor-intro { text-align: left; max-width: none; margin-top: calc(-1 * var(--space-4)); }
+    :root .visitor-intro { text-align: left; max-width: none; margin-top: calc(-1 * var(--space-4)); }
   </style>
-  <script src="/design.js"></script>
 </head>
 <body>
   <div class="page-wrap">
@@ -615,7 +551,6 @@
     <a href="/join/">What it is and how to join →</a>
   </p>
 
-  <div class="design-bar">Previewing the new homepage design <a href="/?design=current">Switch back to the current one</a></div>
   <div class="hero" id="dash-hero"></div>
 
   <section class="dash" id="dash">
@@ -643,265 +578,207 @@
 
   </section>
 
-  <main class="grid">
-    <span class="section-label">League</span>
-
-    <a class="card" href="/calendar">
-      <div class="card-header"><span class="card-icon">📅</span><span class="card-title">Calendar</span></div>
-    </a>
-
-    <a class="card" href="/standings">
-      <div class="card-header"><span class="card-icon">🏅</span><span class="card-title">Standings &amp; Playoffs</span></div>
-    </a>
-
-    <a class="card" href="/tradeblock/">
-      <div class="card-header"><span class="card-icon">🤝</span><span class="card-title">Tradeblock</span></div>
-    </a>
-
-    <a class="card" href="/compare/">
-      <div class="card-header"><span class="card-icon">⇆</span><span class="card-title">Compare Players</span></div>
-    </a>
-
-    <a class="card" href="/free-agency/">
-      <div class="card-header"><span class="card-icon">✍️</span><span class="card-title">Free Agency</span></div>
-    </a>
-
-    <a class="card" href="/transactions">
-      <div class="card-header"><span class="card-icon">📝</span><span class="card-title">Transactions</span></div>
-    </a>
-
-    <a class="card" href="/cap-summary/">
-      <div class="card-header"><span class="card-icon">💰</span><span class="card-title">Cap Summary</span></div>
-    </a>
-
-    <span class="section-label"><a href="/committees/">Committees</a></span>
-
-    <a class="card" href="/committees/rosters/">
-      <div class="card-header"><span class="card-icon">📋</span><span class="card-title">Rosters</span></div>
-    </a>
-
-    <a class="card" href="/committees/pdc/">
-      <div class="card-header"><span class="card-icon">⚖️</span><span class="card-title">PDC</span></div>
-    </a>
-
-    <a class="card" href="/committees/stats/">
-      <div class="card-header"><span class="card-icon">🗂</span><span class="card-title">Stats</span></div>
-    </a>
-
-    <a class="card" href="/committees/stream/">
-      <div class="card-header"><span class="card-icon">📺</span><span class="card-title">Stream</span></div>
-    </a>
-
-    <a class="card" href="/committees/trc/">
-      <div class="card-header"><span class="card-icon">🤝</span><span class="card-title">TRC</span></div>
-    </a>
-
-    <span class="section-label">History</span>
-
-    <a class="card" href="/season-summary">
-      <div class="card-header"><span class="card-icon">📜</span><span class="card-title">Season Summary</span></div>
-    </a>
-
-    <a class="card" href="/champions/">
-      <div class="card-header"><span class="card-icon">🏆</span><span class="card-title">Hall of Champions</span></div>
-    </a>
-
-    <a class="card" href="/hof">
-      <div class="card-header"><span class="card-icon">⭐</span><span class="card-title">Hall of Fame</span></div>
-    </a>
-
-    <a class="card" href="/awards/">
-      <div class="card-header"><span class="card-icon">🎖️</span><span class="card-title">Awards</span></div>
-    </a>
-
-    <a class="card" href="/draft">
-      <div class="card-header"><span class="card-icon">📋</span><span class="card-title">Draft</span></div>
-    </a>
-
-    <span class="section-label">Stats</span>
-
-    <a class="card" href="/teams">
-      <div class="card-header"><span class="card-icon">🏀</span><span class="card-title">Teams</span></div>
-    </a>
-
-    <a class="card" href="/players">
-      <div class="card-header"><span class="card-icon">⛹️</span><span class="card-title">Players</span></div>
-    </a>
-
-    <a class="card" href="/owners">
-      <div class="card-header"><span class="card-icon">🏛️</span><span class="card-title">Owners</span></div>
-    </a>
-
-    <a class="card" href="/stats/seasons">
-      <div class="card-header"><span class="card-icon">📅</span><span class="card-title">Season Stats</span></div>
-    </a>
-
-    <a class="card" href="/boxscores/">
-      <div class="card-header"><span class="card-icon">🗂</span><span class="card-title">Box Scores</span></div>
-    </a>
-
-    <a class="card" href="/stats/totals">
-      <div class="card-header"><span class="card-icon">🏅</span><span class="card-title">Totals Leaderboards</span></div>
-    </a>
-
-    <a class="card" href="/stats/highs">
-      <div class="card-header"><span class="card-icon">🔝</span><span class="card-title">Single-Game Highs</span></div>
-    </a>
-
-    <a class="card" href="/h2h">
-      <div class="card-header"><span class="card-icon">⚔️</span><span class="card-title">Head to Head</span></div>
-    </a>
-
-    <a class="card" href="/frivolities">
-      <div class="card-header"><span class="card-icon">📈</span><span class="card-title">Frivolities &amp; Viz</span></div>
-    </a>
-
-    <span class="section-label">NBYen Corner</span>
-
-    <a class="card" href="/bet/">
-      <div class="card-header"><span class="card-icon">🎲</span><span class="card-title">Bets</span></div>
-    </a>
-
-    <a class="card" href="/perry/">
-      <div class="card-header"><span class="card-icon">🏀</span><span class="card-title">Daily Perry Game</span></div>
-    </a>
-
-    <a class="card" href="/poeltl/">
-      <div class="card-header"><span class="card-icon">🕵️</span><span class="card-title">Daily Poeltl</span></div>
-    </a>
-
-    <a class="card" href="/trivia">
-      <div class="card-header"><span class="card-icon">🧠</span><span class="card-title">Trivia</span></div>
-    </a>
-
-    <a class="card" href="/invest">
-      <div class="card-header"><span class="card-icon">📈</span><span class="card-title">Wall Street</span></div>
-    </a>
-
-    <span class="section-label">Miscellaneous</span>
-
-    <a class="card" href="/nbntv-classics">
-      <div class="card-header"><span class="card-icon">📺</span><span class="card-title">NBNTV Classics</span></div>
-    </a>
-
-    <a class="card" href="https://youtube.com/@nothingbutnetNBN/streams" target="_blank" rel="noopener">
-      <div class="card-header"><span class="card-icon">▶️</span><span class="card-title">YouTube</span></div>
-    </a>
-
-    <a class="card" href="/news/">
-      <div class="card-header"><span class="card-icon">📰</span><span class="card-title">News</span></div>
-    </a>
-
-    <span class="section-label">About</span>
-
-    <a class="card" href="/members/">
-      <div class="card-header"><span class="card-icon">👥</span><span class="card-title">Members</span></div>
-    </a>
-
-    <a class="card" href="/roles">
-      <div class="card-header"><span class="card-icon">🔑</span><span class="card-title">Roles &amp; Permissions</span></div>
-    </a>
-
-    <a class="card" href="/constitution/">
-      <div class="card-header"><span class="card-icon">📄</span><span class="card-title">Constitution</span></div>
-    </a>
-
-    <a class="card" href="/rulebook/">
-      <div class="card-header"><span class="card-icon">📖</span><span class="card-title">Rulebook</span></div>
-    </a>
-
-    <a class="card" href="/changelog">
-      <div class="card-header"><span class="card-icon">🔖</span><span class="card-title">Changelog</span></div>
-      <span id="site-version" style="font-size:0.75rem;color:var(--text-muted);"></span>
-    </a>
-
-    <span class="section-label" id="lo-label">League Office</span>
-
-    <a class="card" href="/proposals/">
-      <div class="card-header"><span class="card-icon">🗳️</span><span class="card-title">Proposals</span></div>
-    </a>
-
-    <a class="card" href="/suggestions/">
-      <div class="card-header"><span class="card-icon">💡</span><span class="card-title">Suggestions</span></div>
-    </a>
-
-    <a class="card" href="/donations/">
-      <div class="card-header"><span class="card-icon">💵</span><span class="card-title">Donations</span></div>
-    </a>
-
-    <a class="card" id="lo-backlog" href="/backlog/" style="display:none">
-      <div class="card-header"><span class="card-icon">🗒️</span><span class="card-title">Backlog</span></div>
-    </a>
-
-    <a class="card" id="lo-strikes" href="/strikes/" style="display:none">
-      <div class="card-header"><span class="card-icon">⚠️</span><span class="card-title">Strikes</span></div>
-    </a>
-
-    <a class="card" id="lo-league-settings" href="/cap-settings/" style="display:none">
-      <div class="card-header"><span class="card-icon">⚙️</span><span class="card-title">Cap Settings</span></div>
-    </a>
-
-    <a class="card" id="lo-rookie-scale" href="/rookie-scale/" style="display:none">
-      <div class="card-header"><span class="card-icon">📋</span><span class="card-title">Rookie Scale</span></div>
-    </a>
-
-    <a class="card" id="lo-how-to-rosters" href="/how-to-rosters/" style="display:none">
-      <div class="card-header"><span class="card-icon">📖</span><span class="card-title">How to Rosters</span></div>
-    </a>
-
-    <div class="card" id="lo-reveal-awards" style="display:none;cursor:pointer">
-      <div class="card-header"><span class="card-icon">🏆</span><span class="card-title">Reveal Season Awards</span></div>
+  <nav class="directory" aria-label="Site directory">
+    <div>
+      <h2><span class="section-label">League</span></h2>
+      <ul>
+        <li><a class="card" href="/calendar">
+              <div class="card-header"><span class="card-title">Calendar</span></div>
+            </a></li>
+        <li><a class="card" href="/standings">
+              <div class="card-header"><span class="card-title">Standings &amp; Playoffs</span></div>
+            </a></li>
+        <li><a class="card" href="/tradeblock/">
+              <div class="card-header"><span class="card-title">Tradeblock</span></div>
+            </a></li>
+        <li><a class="card" href="/compare/">
+              <div class="card-header"><span class="card-title">Compare Players</span></div>
+            </a></li>
+        <li><a class="card" href="/free-agency/">
+              <div class="card-header"><span class="card-title">Free Agency</span></div>
+            </a></li>
+        <li><a class="card" href="/transactions">
+              <div class="card-header"><span class="card-title">Transactions</span></div>
+            </a></li>
+        <li><a class="card" href="/cap-summary/">
+              <div class="card-header"><span class="card-title">Cap Summary</span></div>
+            </a></li>
+      </ul>
     </div>
-    <div id="lo-reveal-awards-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
-
-    <div class="card" id="lo-discord-standings" style="display:none;cursor:pointer">
-      <div class="card-header"><span class="card-icon">📡</span><span class="card-title">Post Standings to Discord</span></div>
-      <span style="font-size:0.72rem;color:var(--text-muted)">Announces to #stats-and-standings</span>
+    <div>
+      <h2><span class="section-label"><a href="/committees/">Committees</a></span></h2>
+      <ul>
+        <li><a class="card" href="/committees/rosters/">
+              <div class="card-header"><span class="card-title">Rosters</span></div>
+            </a></li>
+        <li><a class="card" href="/committees/pdc/">
+              <div class="card-header"><span class="card-title">PDC</span></div>
+            </a></li>
+        <li><a class="card" href="/committees/stats/">
+              <div class="card-header"><span class="card-title">Stats</span></div>
+            </a></li>
+        <li><a class="card" href="/committees/stream/">
+              <div class="card-header"><span class="card-title">Stream</span></div>
+            </a></li>
+        <li><a class="card" href="/committees/trc/">
+              <div class="card-header"><span class="card-title">TRC</span></div>
+            </a></li>
+      </ul>
     </div>
-    <div id="lo-discord-standings-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
-
-    <div class="card" id="lo-nby-adjust" style="display:none;cursor:pointer">
-      <div class="card-header"><span class="card-icon">🪙</span><span class="card-title">Adjust NB¥</span></div>
-      <span style="font-size:0.72rem;color:var(--text-muted)">Give or take NBYen from a member</span>
+    <div>
+      <h2><span class="section-label">History</span></h2>
+      <ul>
+        <li><a class="card" href="/season-summary">
+              <div class="card-header"><span class="card-title">Season Summary</span></div>
+            </a></li>
+        <li><a class="card" href="/champions/">
+              <div class="card-header"><span class="card-title">Hall of Champions</span></div>
+            </a></li>
+        <li><a class="card" href="/hof">
+              <div class="card-header"><span class="card-title">Hall of Fame</span></div>
+            </a></li>
+        <li><a class="card" href="/awards/">
+              <div class="card-header"><span class="card-title">Awards</span></div>
+            </a></li>
+        <li><a class="card" href="/draft">
+              <div class="card-header"><span class="card-title">Draft</span></div>
+            </a></li>
+      </ul>
     </div>
-    <div id="lo-nby-adjust-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
-  </main>
+    <div>
+      <h2><span class="section-label">Stats</span></h2>
+      <ul>
+        <li><a class="card" href="/teams">
+              <div class="card-header"><span class="card-title">Teams</span></div>
+            </a></li>
+        <li><a class="card" href="/players">
+              <div class="card-header"><span class="card-title">Players</span></div>
+            </a></li>
+        <li><a class="card" href="/owners">
+              <div class="card-header"><span class="card-title">Owners</span></div>
+            </a></li>
+        <li><a class="card" href="/stats/seasons">
+              <div class="card-header"><span class="card-title">Season Stats</span></div>
+            </a></li>
+        <li><a class="card" href="/boxscores/">
+              <div class="card-header"><span class="card-title">Box Scores</span></div>
+            </a></li>
+        <li><a class="card" href="/stats/totals">
+              <div class="card-header"><span class="card-title">Totals Leaderboards</span></div>
+            </a></li>
+        <li><a class="card" href="/stats/highs">
+              <div class="card-header"><span class="card-title">Single-Game Highs</span></div>
+            </a></li>
+        <li><a class="card" href="/h2h">
+              <div class="card-header"><span class="card-title">Head to Head</span></div>
+            </a></li>
+        <li><a class="card" href="/frivolities">
+              <div class="card-header"><span class="card-title">Frivolities &amp; Viz</span></div>
+            </a></li>
+      </ul>
+    </div>
+    <div>
+      <h2><span class="section-label">NBYen Corner</span></h2>
+      <ul>
+        <li><a class="card" href="/bet/">
+              <div class="card-header"><span class="card-title">Bets</span></div>
+            </a></li>
+        <li><a class="card" href="/perry/">
+              <div class="card-header"><span class="card-title">Daily Perry Game</span></div>
+            </a></li>
+        <li><a class="card" href="/poeltl/">
+              <div class="card-header"><span class="card-title">Daily Poeltl</span></div>
+            </a></li>
+        <li><a class="card" href="/trivia">
+              <div class="card-header"><span class="card-title">Trivia</span></div>
+            </a></li>
+        <li><a class="card" href="/invest">
+              <div class="card-header"><span class="card-title">Wall Street</span></div>
+            </a></li>
+      </ul>
+    </div>
+    <div>
+      <h2><span class="section-label">Miscellaneous</span></h2>
+      <ul>
+        <li><a class="card" href="/nbntv-classics">
+              <div class="card-header"><span class="card-title">NBNTV Classics</span></div>
+            </a></li>
+        <li><a class="card" href="https://youtube.com/@nothingbutnetNBN/streams" target="_blank" rel="noopener">
+              <div class="card-header"><span class="card-title">YouTube</span></div>
+            </a></li>
+        <li><a class="card" href="/news/">
+              <div class="card-header"><span class="card-title">News</span></div>
+            </a></li>
+      </ul>
+    </div>
+    <div>
+      <h2><span class="section-label">About</span></h2>
+      <ul>
+        <li><a class="card" href="/members/">
+              <div class="card-header"><span class="card-title">Members</span></div>
+            </a></li>
+        <li><a class="card" href="/roles">
+              <div class="card-header"><span class="card-title">Roles &amp; Permissions</span></div>
+            </a></li>
+        <li><a class="card" href="/constitution/">
+              <div class="card-header"><span class="card-title">Constitution</span></div>
+            </a></li>
+        <li><a class="card" href="/rulebook/">
+              <div class="card-header"><span class="card-title">Rulebook</span></div>
+            </a></li>
+        <li><a class="card" href="/changelog">
+              <div class="card-header"><span class="card-title">Changelog</span></div>
+              <span id="site-version" style="font-size:0.75rem;color:var(--text-muted);"></span>
+            </a></li>
+      </ul>
+    </div>
+    <div>
+      <h2><span class="section-label" id="lo-label">League Office</span></h2>
+      <ul>
+        <li><a class="card" href="/proposals/">
+              <div class="card-header"><span class="card-title">Proposals</span></div>
+            </a></li>
+        <li><a class="card" href="/suggestions/">
+              <div class="card-header"><span class="card-title">Suggestions</span></div>
+            </a></li>
+        <li><a class="card" href="/donations/">
+              <div class="card-header"><span class="card-title">Donations</span></div>
+            </a></li>
+        <li><a class="card" id="lo-backlog" href="/backlog/" style="display:none">
+              <div class="card-header"><span class="card-title">Backlog</span></div>
+            </a></li>
+        <li><a class="card" id="lo-strikes" href="/strikes/" style="display:none">
+              <div class="card-header"><span class="card-title">Strikes</span></div>
+            </a></li>
+        <li><a class="card" id="lo-league-settings" href="/cap-settings/" style="display:none">
+              <div class="card-header"><span class="card-title">Cap Settings</span></div>
+            </a></li>
+        <li><a class="card" id="lo-rookie-scale" href="/rookie-scale/" style="display:none">
+              <div class="card-header"><span class="card-title">Rookie Scale</span></div>
+            </a></li>
+        <li><a class="card" id="lo-how-to-rosters" href="/how-to-rosters/" style="display:none">
+              <div class="card-header"><span class="card-title">How to Rosters</span></div>
+            </a></li>
+        <li><div class="card" id="lo-reveal-awards" style="display:none;cursor:pointer">
+              <div class="card-header"><span class="card-title">Reveal Season Awards</span></div>
+            </div></li>
+        <li><div class="card" id="lo-discord-standings" style="display:none;cursor:pointer">
+              <div class="card-header"><span class="card-title">Post Standings to Discord</span></div>
+              <span style="font-size:0.72rem;color:var(--text-muted)">Announces to #stats-and-standings</span>
+            </div></li>
+        <li><div class="card" id="lo-nby-adjust" style="display:none;cursor:pointer">
+              <div class="card-header"><span class="card-title">Adjust NB¥</span></div>
+              <span style="font-size:0.72rem;color:var(--text-muted)">Give or take NBYen from a member</span>
+            </div></li>
+      </ul>
+    </div>
+    <div class="directory-forms">
+      <div id="lo-reveal-awards-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
+      <div id="lo-discord-standings-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
+      <div id="lo-nby-adjust-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
+    </div>
+  </nav>
 
-  <script>
-    // Clean design preview only: regroup the tile grid into a site directory,
-    // one column of plain links per section. The tiles are *moved*, not
-    // copied, so the League Office script below still finds them by id and
-    // shows the admin-only ones exactly as before. Inline admin forms go to a
-    // full-width row after the columns, since a column is too narrow for them.
-    (function () {
-      if (document.documentElement.dataset.design !== 'clean') return;
-      const grid = document.querySelector('main.grid');
-      const dir = document.createElement('nav');
-      dir.className = 'directory';
-      dir.setAttribute('aria-label', 'Site directory');
-      const forms = document.createElement('div');
-      forms.className = 'directory-forms';
-      let list = null;
-      [...grid.children].forEach(el => {
-        if (el.classList.contains('section-label')) {
-          const group = document.createElement('div');
-          const h = document.createElement('h2');
-          h.appendChild(el);            // keeps #lo-label and the Committees link
-          list = document.createElement('ul');
-          group.append(h, list);
-          dir.appendChild(group);
-        } else if (/-form$/.test(el.id)) {
-          forms.appendChild(el);
-        } else if (list) {
-          const li = document.createElement('li');
-          li.appendChild(el);
-          list.appendChild(li);
-        }
-      });
-      dir.appendChild(forms);
-      grid.after(dir);
-    })();
-  </script>
 
   </div>
   <script>
@@ -1308,9 +1185,9 @@
         }
       }
 
-      // Clean preview: the state of the league becomes the page's headline,
-      // and the sidebar card keeps just the games.
-      if (document.documentElement.dataset.design === 'clean') {
+      // The state of the league is the page's headline; the sidebar card
+      // keeps just the games.
+      {
         const yrs = /^\d\d-\d\d$/.test(sched.season || '')
           ? `20${sched.season.slice(0, 2)}–${sched.season.slice(3)}` : (sched.season || '');
         let line = '', sub = '';
@@ -1368,8 +1245,8 @@
     //   type  a key in feed-types.js — a ledger type, or `news` / `score`.
     //   text  already-escaped-at-render HTML-free string, or `html` for a row
     //         that needs markup (a score bolds the winner).
-    // The clean preview gives the feed the main column, so it can hold more.
-    const FEED_LIMIT = document.documentElement.dataset.design === 'clean' ? 12 : 9;
+    // The feed is the main column, so it has room for a dozen.
+    const FEED_LIMIT = 12;
 
     const feedFromTransactions = () =>
       // The ledger endpoint already withholds sealed types (§ 5.1 waiver
