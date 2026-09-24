@@ -216,9 +216,10 @@ const coachingConfigReady = new Promise(resolve => {
   document.head.appendChild(_cs);
 });
 
+// theme.css and nav-chrome.css are <link>ed from each team shell's <head>, not
+// @imported here: a stylesheet a script inserts doesn't hold up the first
+// paint, so the page drew once without components.css (bare tab buttons).
 { const _s = document.createElement('style'); _s.textContent = `
-  @import url("/css/theme.css");
-  @import url("/css/nav-chrome.css");
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: var(--font-sans);
