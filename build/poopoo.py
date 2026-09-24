@@ -110,6 +110,7 @@ NAME_ALIASES = {
     "OLIVIER-MAXENCE PROSPER": "PROSPER OMAX",
     "YANIC KONAN NIEDERHAUSER": "KONAN NIEDERHAUSER YANIC",
     "MO GUEYE": "GUEYE MOUHAMED",
+    "CAM BOOZER": "BOOZER CAMERON",
 }
 
 # Lowercase name particles that stay glued to the following word as part of a
@@ -553,7 +554,10 @@ def load_site(season, players, season_keys):
                 "used": ts_cur.get("mle_used", 0),
             },
             "bae_available": (team_state.get(team) or {}).get("bae_available"),
-            "tpe_remaining": sum(e.get("remaining", 0) for e in trade_exceptions.get(team, [])),
+            # An expired TPE is still listed (flagged `expired`) but can't be
+            # spent -- the trade validator refuses it -- so it isn't room.
+            "tpe_remaining": sum(e.get("remaining", 0) for e in trade_exceptions.get(team, [])
+                                 if not e.get("expired")),
             "players": team_players,
         }
 
@@ -972,10 +976,31 @@ def classify_pick(team, row, site_pick, events):
             out["category"] = "richness_gap"
         return out
 
+    # The sheet carries a protection or split and the site models none of it,
+    # not even in notes. A logged trade can explain who owns the pick now and
+    # still say nothing about the band someone else kept, so this can't be
+    # filed as the sheet lagging: five picks sat under "Sheet is behind" with
+    # a party missing from the site until 2026-09-24.
+    lost_terms = (
+        bool(row["details"] or row["note"])
+        and (row["details"] or "").upper() != "FROZEN"
+        and not site_has_structure
+        and not (site_pick.get("notes") or "").strip()
+    )
+    lost_terms_note = (
+        "The sheet records protection or split terms on this pick and the site "
+        "models none of them. A logged trade may explain the owner, but not a "
+        "band another team kept."
+    )
+
     hist = events.get((row["year"], row["round"], team))
     if hist and hist[-1]["to"] == site_owner:
-        out["category"] = "committee_lag"
         out["evidence"] = hist
+        if lost_terms:
+            out["category"] = "needs_investigation"
+            out["investigation_note"] = lost_terms_note
+        else:
+            out["category"] = "committee_lag"
         return out
     # A pick inside a swap, chain or ladder is served with a pipe-joined owner
     # (`BOS|NOP|HOU`), so the exact match above can never hold for one. If the
@@ -986,6 +1011,10 @@ def classify_pick(team, row, site_pick, events):
     if hist and hist[-1]["to"] in site_parties:
         if sheet_parts & site_parties:
             out["category"] = "same_owner_diff_representation"
+        elif lost_terms:
+            out["category"] = "needs_investigation"
+            out["investigation_note"] = lost_terms_note
+            out["evidence"] = hist
         else:
             out["category"] = "committee_lag"
             out["evidence"] = hist
