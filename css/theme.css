@@ -31,6 +31,8 @@
      across the site have one place to change. */
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  /* Display: titles and big numbers only (css/fonts.css). */
+  --font-display: 'Barlow Condensed', 'Inter', system-ui, sans-serif;
 
   /* Type scale. Pages had 67 different font sizes, most between 0.65 and
      0.9rem, so nothing read as more important than anything else. Use these

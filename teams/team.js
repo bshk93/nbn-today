@@ -135,6 +135,8 @@ const prevAbbr = _teamIdx >= 0 ? TEAM_ABBRS[(_teamIdx - 1 + TEAM_ABBRS.length) %
 const nextAbbr = _teamIdx >= 0 ? TEAM_ABBRS[(_teamIdx + 1) % TEAM_ABBRS.length] : null;
 const name = TEAMS[abbr] || "Unknown Team";
 const slug = abbr.toLowerCase();
+// Team colours for the page (css/team-colors.css): --team-primary / --team-accent.
+document.documentElement.dataset.team = abbr;
 
 // The shell already ships this as a static <title> (and matching OG tags) so
 // crawlers see it; keep the two in step rather than downgrading to the abbr.

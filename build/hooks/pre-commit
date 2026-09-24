@@ -104,6 +104,14 @@ if og_tags.exists():
         print('Add the page to PAGES in build/og_tags.py, then run: python3 build/og_tags.py')
         sys.exit(1)
 
+team_colors = Path('build/make_team_colors_css.py')
+if team_colors.exists():
+    result = subprocess.run(['python3', str(team_colors), '--check'])
+    if result.returncode != 0:
+        print('\nCommit aborted: css/team-colors.css no longer matches build/team-colors.json.')
+        print('Run: python3 build/make_team_colors_css.py')
+        sys.exit(1)
+
 skills_manifest = Path('build/gen_skills_manifest.py')
 if skills_manifest.exists():
     subprocess.run(['python3', str(skills_manifest)])

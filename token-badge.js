@@ -149,7 +149,15 @@
   // and inbox. It used to be a tiny monospace "enter token" link pinned to the
   // bottom-right corner, where it sat on top of whatever the page had there.
   // Falls back to that corner only on a page with no nav.
+  var signInPending = false;
   function mountSignIn(attempt) {
+    // init() can run twice (the script's own load, and team.js calling
+    // __nbnBadge after injecting it); while one call is still waiting for the
+    // nav, a second must not start its own and add a second button.
+    if (!attempt) {
+      if (signInPending || document.getElementById('nbn-token-badge')) return;
+      signInPending = true;
+    }
     var actions = document.querySelector('.nav .nav-actions');
     if (!actions && (attempt || 0) < 20) {
       setTimeout(function () { mountSignIn((attempt || 0) + 1); }, 50);
@@ -182,6 +190,7 @@
           });
       });
     };
+    signInPending = false;
     if (actions) {
       actions.appendChild(btn);
     } else {
