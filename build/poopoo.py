@@ -80,6 +80,9 @@ import requests
 DATA_DIR = Path(os.environ.get("NBS_DATA_DIR", "/var/lib/nothing-but-stats"))
 API_BASE = os.environ.get("NBN_API_BASE", "http://127.0.0.1:8001")
 OUT_FILE = DATA_DIR / "poopoo.json"
+# Hand-written notes from whoever triaged a pick, pinned to its card on the
+# Picks tab until the committee resolves it. Keyed "YEAR|ROUND|ORIG".
+PICK_NOTES_FILE = DATA_DIR / "pick-committee-notes.json"
 SHEET_URL = os.environ.get(
     "POOPOO_SHEET_URL",
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqyqqC0O1U9O-2uwmMk6UIhSO58ukTa5HpXaU_IOQa3SEW8bLK5Wpjh_KA4YWePDgT2BIdhPO6Mieu/pub?output=xlsx",
@@ -974,6 +977,19 @@ def classify_pick(team, row, site_pick, events):
         out["category"] = "committee_lag"
         out["evidence"] = hist
         return out
+    # A pick inside a swap, chain or ladder is served with a pipe-joined owner
+    # (`BOS|NOP|HOU`), so the exact match above can never hold for one. If the
+    # log's last recipient is one of the served parties, the site agrees with
+    # its own log and the gap is only with the sheet. Until 2026-09-24 every
+    # such pick fell through to "needs a decision", which was most of that list.
+    site_parties = site_parts | {leaf["team"] for leaf in site_pick.get("leaves") or [] if leaf.get("team")}
+    if hist and hist[-1]["to"] in site_parties:
+        if sheet_parts & site_parties:
+            out["category"] = "same_owner_diff_representation"
+        else:
+            out["category"] = "committee_lag"
+            out["evidence"] = hist
+        return out
     if hist:
         # A real trade moved this pick, but /api/picks's current owner
         # doesn't match where that trade left it -- the site disagrees with
@@ -986,11 +1002,26 @@ def classify_pick(team, row, site_pick, events):
             "reflected in the trade log."
         )
         return out
-    if sheet_parts & site_parts and (site_pick.get("notes") or "").strip():
+    # Overlapping owners, and the site describes the split somewhere: in its
+    # notes, or (since most structure written after the conveyance model
+    # shipped carries no notes at all) in the structure itself.
+    if sheet_parts & site_parties and ((site_pick.get("notes") or "").strip() or site_has_structure):
         out["category"] = "same_owner_diff_representation"
         return out
     out["category"] = "needs_investigation"
     return out
+
+
+def load_pick_notes():
+    """`pick-committee-notes.json`, or {} when absent or unreadable. A bad
+    notes file must never take down the whole report."""
+    try:
+        return json.loads(PICK_NOTES_FILE.read_text())
+    except FileNotFoundError:
+        return {}
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"poopoo: ignoring {PICK_NOTES_FILE}: {exc}")
+        return {}
 
 
 def build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current_draft_year):
@@ -1008,11 +1039,20 @@ def build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current
             site_pick = site_by_key.get((row["year"], row["round"], team))
             rows.append(classify_pick(team, row, site_pick, events))
 
+    notes = load_pick_notes()
+    for r in rows:
+        note = notes.get(f"{r['year']}|{r['round']}|{r['team']}")
+        if note:
+            r["committee_note"] = note
+
     counts = {}
     for r in rows:
         counts[r["category"]] = counts.get(r["category"], 0) + 1
 
-    itemized = [r for r in rows if r["category"] not in ("clean_match", "clean_match_frozen")]
+    # A noted pick stays listed even once it reads clean: the note is a task
+    # someone has to close by deleting it, not something that should vanish.
+    itemized = [r for r in rows
+                if r["category"] not in ("clean_match", "clean_match_frozen") or r.get("committee_note")]
     itemized.sort(key=lambda r: (r["category"], r["year"], r["round"], r["team"]))
     return {"counts": counts, "rows": itemized}
 
