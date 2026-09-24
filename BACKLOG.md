@@ -454,13 +454,8 @@ now-resolved row-shift bug (the deleted `27-28/28-29/29-30 minimum salary
 scales are row-shifted` item, above the § 3.12 entries in this file's history):
 his recorded figure matched his correct tier-6 read against the *old, shifted*
 table exactly, so he was priced correctly at signing and simply never got the
-scale's later fix. Two things still need a human, not the job:
+scale's later fix. One thing still needs a human, not the job:
 
-- **One real mis-tiering, unexplained by the shift bug**: `bagley-marvin`
-  (drafted 2018 → 8 years' NBA experience, but priced at the tier-2 rate for
-  26-27 — a >$1M/season gap). 26-27 is the base table, not a shifted season,
-  so this isn't the same mechanical explanation as `smith-dru` — needs someone
-  to confirm it's actually wrong before `--apply`.
 - **A data bug in the Aug 2026 wave**: `bagley-marvin` 27-28, `battle-jamison`
   28-29, and `cooper-sharife`/`pedulla-sean` 28-29 all carry a stray
   `$0`/`$1` salary entry on the *same* season their own contract also tags as
