@@ -238,6 +238,45 @@
     .cd-dot.entered { background: var(--success-light, #4caf50); border-color: var(--success-light, #4caf50); }
     .cd-incomplete-flag { font-size: 0.8rem; line-height: 1; cursor: default; }
 
+    .cd-trow.later { opacity: 0.55; }
+
+    /* ── My games tab ──────────────────────────────────────────────────── */
+    .mine-warn {
+      border: 1px solid var(--border); border-left: 3px solid var(--gold, #c9a227);
+      border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    .mine-warn b { color: var(--text-primary); }
+    .mine-warn ul { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+    .mine-warn li { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .mine-day {
+      border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.8rem; overflow: hidden;
+      background: var(--bg-card);
+    }
+    .mine-day-head {
+      display: flex; align-items: center; gap: 0.5rem 0.8rem; flex-wrap: wrap;
+      padding: 0.6rem 0.9rem; background: var(--bg-subtle); font-size: 0.8rem;
+    }
+    .mine-day-head .label { font-weight: 700; color: var(--text-primary); font-size: 0.88rem; }
+    .mine-day-head .meta { color: var(--text-muted); }
+    .mine-day-head .right { margin-left: auto; display: flex; gap: 0.4rem; align-items: center; }
+    .mine-game { padding: 0.6rem 0.9rem; border-top: 1px solid var(--border); }
+    .mine-game-top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.85rem; }
+    .mine-game-top .when { color: var(--text-muted); font-size: 0.75rem; }
+    .mine-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
+    .mine-team {
+      display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;
+      font-size: 0.78rem; padding: 0.4rem 0.55rem; border: 1px solid var(--border); border-radius: 7px;
+    }
+    .mine-team .t { font-weight: 700; color: var(--text-secondary); }
+    .mine-team .st { color: var(--text-muted); }
+    .mine-team.pending { border-color: var(--gold, #c9a227); }
+    .mine-team.pending .st { color: var(--gold, #c9a227); font-weight: 600; }
+    .mine-team .acts { margin-left: auto; display: flex; gap: 0.3rem; }
+    .mine-detail { grid-column: 1 / -1; padding: 0.4rem 0; }
+    @media (max-width: 560px) { .mine-teams { grid-template-columns: 1fr; } }
+
+    .tab-badge[hidden] { display: none; }
     .tab-badge {
       display: inline-block; min-width: 1.1rem; margin-left: 0.35rem; padding: 0 0.35rem;
       border-radius: 999px; background: var(--gold, #c9a227); color: #1a1400;
@@ -259,11 +298,17 @@
 
     <div id="app" hidden>
       <div class="tabs">
-        <button class="tab active" data-tab="claim">Claim Games</button>
+        <button class="tab active" data-tab="mine">My games<span class="tab-badge" id="mine-tab-badge" hidden></span></button>
+        <button class="tab" data-tab="claim">Claim Games</button>
         <button class="tab" data-tab="coaching">Coaching Settings<span class="tab-badge" id="coaching-tab-badge" hidden></span></button>
       </div>
 
-      <div class="tab-panel" id="tab-claim">
+      <div class="tab-panel" id="tab-mine">
+        <div id="mine-warn"></div>
+        <div id="mine-list"><div class="empty">Loading…</div></div>
+      </div>
+
+      <div class="tab-panel hidden" id="tab-claim">
         <p class="sub" id="sub">Loading…</p>
         <div class="controls">
           <select id="season-sel" aria-label="Season"></select>
@@ -321,6 +366,7 @@
        renderer — shared with teams/team.js's Coaching tab so a team's
        settings read the same way in both places. -->
   <script src="/coaching-config.js"></script>
+  <script src="/league-time.js"></script>
 
   <script>
     const TEAMS = {
@@ -356,6 +402,8 @@
     let nextId     = null;  // first unplayed game in the current view, set by render()
     let coachingSettings = {};  // team abbr -> record, from GET /api/coaching-settings
     let streamingDays = {};  // "YYYY-MM-DD" -> {done, done_at, done_by, youtube_url, ...}, from GET /api/streaming-days
+    // League "today" (Eastern), from /league-time.js.
+    const today = nbnToday();
 
     const storedToken = () => localStorage.getItem('nbn_token');
     // `admin` implicitly satisfies any role check server-side, so the button
@@ -374,6 +422,7 @@
         coachingSettings = {};
       }
       renderCoachingDashboard();
+      renderMine();
     }
 
     function coachingRowMeta(team) {
@@ -438,6 +487,8 @@
       const meta = coachingRowMeta(team);
       const rowEl = document.createElement('tr');
       rowEl.className = 'cd-trow';
+      const ng = nextGameFor(team);
+      if (!ng || ng.date > addDays(today, 3)) rowEl.classList.add('later');
 
       const tdTeam = document.createElement('td');
       tdTeam.className = 'cd-team-cell';
@@ -542,6 +593,7 @@
           // actually be entering.
           alert('These settings changed since the dashboard loaded. Refreshing the list.');
           await loadCoachingDashboard();
+          renderMine();
           return;
         }
         if (!r.ok) {
@@ -553,10 +605,146 @@
         const updated = await r.json();
         coachingSettings[team] = updated;
         renderCoachingDashboard();
+        renderMine();
       } catch (e) {
         alert('Network error');
         btn.disabled = false;
       }
+    }
+
+    // ── My games tab ────────────────────────────────────────────────
+    //
+    // The streamer's game day on one screen: the days they've claimed, each
+    // game's two teams with their coaching status and the View / Mark entered
+    // buttons inline, and the day's Mark done. Everything here is the same
+    // state the other two tabs render (`games`, `coachingSettings`,
+    // `streamingDays`), so an action in any tab re-renders this one.
+
+    function addDays(d, n) {
+      const dt = new Date(d + 'T12:00:00Z');
+      dt.setUTCDate(dt.getUTCDate() + n);
+      return dt.toISOString().slice(0, 10);
+    }
+
+    function renderMine() {
+      const list = document.getElementById('mine-list');
+      const warn = document.getElementById('mine-warn');
+      if (!list || !season) return;
+      if (!games.length) {
+        warn.innerHTML = '';
+        list.innerHTML = '<div class="empty">No schedule loaded.</div>';
+        return;
+      }
+
+      // Upcoming dates in the next week with games nobody has claimed.
+      const horizon = addDays(today, 7);
+      const gaps = new Map();
+      games.filter(g => g.date >= today && g.date <= horizon && !g.streamer && !resultFor(g))
+        .forEach(g => gaps.set(g.date, (gaps.get(g.date) || 0) + 1));
+      warn.innerHTML = '';
+      if (gaps.size) {
+        const box = div('mine-warn');
+        box.innerHTML = '<b>Games with no streamer in the next 7 days</b>';
+        const ul = document.createElement('ul');
+        [...gaps.entries()].sort().forEach(([d, n]) => {
+          const li = document.createElement('li');
+          const total = games.filter(g => g.date === d).length;
+          li.appendChild(span('', `${fmtDayHdr(d)} — ${n === total ? `all ${n}` : `${n} of ${total}`} unclaimed`));
+          const b = document.createElement('button');
+          b.className = 'cd-btn';
+          b.textContent = n === total ? 'Claim day' : `Claim the ${n}`;
+          b.onclick = () => claimDay(d, b);
+          li.appendChild(b);
+          ul.appendChild(li);
+        });
+        box.appendChild(ul);
+        warn.appendChild(box);
+      }
+
+      // My days: anything claimed from today on, plus the last week's claimed
+      // days not yet marked done — so a night doesn't get forgotten.
+      const since = addDays(today, -7);
+      const mine = games.filter(g => g.streamer === me.name
+        && (g.date >= today || (g.date >= since && !(streamingDays[g.date] || {}).done)));
+      const dates = [...new Set(mine.map(g => g.date))].sort();
+
+      let pendingCount = 0;
+      list.innerHTML = '';
+      if (!dates.length) {
+        list.innerHTML = '<div class="empty">You have no games claimed. Claim a day above or in Claim Games.</div>';
+      }
+      dates.forEach(d => {
+        const card = div('mine-day');
+        const head = div('mine-day-head');
+        head.appendChild(span('label', d === today ? `Today · ${fmtDayHdr(d)}` : fmtDayHdr(d)));
+        const dayGames = mine.filter(g => g.date === d);
+        const others = games.filter(g => g.date === d && g.streamer && g.streamer !== me.name).length;
+        head.appendChild(span('meta', `${dayGames.length} game${dayGames.length === 1 ? '' : 's'}`
+          + (others ? ` · ${others} more by others` : '')));
+        const right = div('right');
+        right.appendChild(daySlateControls(d));
+        head.appendChild(right);
+        card.appendChild(head);
+
+        dayGames.sort((a, b) => tipKey(a.time_et) - tipKey(b.time_et)).forEach(g => {
+          const row = div('mine-game');
+          const top = div('mine-game-top');
+          top.appendChild(logo(g.away_team));
+          top.appendChild(teamLink(g.away_team));
+          top.appendChild(span('g-at', '@'));
+          top.appendChild(logo(g.home_team));
+          top.appendChild(teamLink(g.home_team));
+          top.appendChild(span('when', fmtTime(g.time_et)));
+          if (g.stream) top.appendChild(span('ui-badge ui-badge--danger', 'Stream'));
+          const res = resultFor(g);
+          if (res) top.appendChild(span('when', `Final ${res.away_score}–${res.home_score}`));
+          row.appendChild(top);
+
+          const teams = div('mine-teams');
+          [g.away_team, g.home_team].forEach(team => {
+            const rec = coachingSettings[team] || null;
+            const meta = coachingRowMeta(team);
+            if (meta.status === 'pending' && !res) pendingCount++;
+            const box = div('mine-team ' + meta.status);
+            box.appendChild(span('t', team));
+            box.appendChild(span('st', meta.status === 'pending' ? 'Coaching changes to enter'
+              : meta.status === 'entered' ? 'Coaching up to date' : 'No coaching settings'));
+            const acts = div('acts');
+            const detail = div('mine-detail');
+            detail.hidden = true;
+            if (rec) {
+              const view = document.createElement('button');
+              view.className = 'cd-btn';
+              view.textContent = 'View';
+              view.onclick = () => {
+                if (!detail.hidden) { detail.hidden = true; view.textContent = 'View'; return; }
+                if (window.CoachingSettings) window.CoachingSettings.renderReadOnly(detail, rec, {});
+                else detail.textContent = 'Coaching settings vocabulary unavailable.';
+                detail.hidden = false;
+                view.textContent = 'Hide';
+              };
+              acts.appendChild(view);
+            }
+            if (rec && rec.pending) {
+              const enter = document.createElement('button');
+              enter.className = 'cd-btn';
+              enter.textContent = 'Mark entered';
+              enter.onclick = () => markEntered(team, rec, enter);
+              acts.appendChild(enter);
+            }
+            box.appendChild(acts);
+            teams.appendChild(box);
+            teams.appendChild(detail);
+          });
+          row.appendChild(teams);
+          card.appendChild(row);
+        });
+        list.appendChild(card);
+      });
+
+      const badge = document.getElementById('mine-tab-badge');
+      badge.textContent = pendingCount;
+      badge.hidden = pendingCount === 0;
     }
 
     // ── Day slate controls ──────────────────────────────────────────────
@@ -576,6 +764,7 @@
         streamingDays = {};
       }
       render();
+      renderMine();
     }
 
     function daySlateControls(date) {
@@ -583,28 +772,29 @@
       const done = !!(rec && rec.done);
       const wrap = div('day-slate');
 
-      const toggleBtn = document.createElement('button');
-      toggleBtn.className = 'cd-btn';
-      toggleBtn.textContent = done ? 'Undo' : 'Mark day done';
-      toggleBtn.onclick = () => (done ? unmarkDayDone(date, toggleBtn) : markDayDone(date, toggleBtn));
-      wrap.appendChild(toggleBtn);
-      if (done) wrap.appendChild(span('day-meta', `done by ${rec.done_by}`));
+      // A night can only be done once it has happened.
+      if (date <= today) {
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'cd-btn';
+        toggleBtn.textContent = done ? 'Undo' : 'Mark day done';
+        toggleBtn.onclick = () => (done ? unmarkDayDone(date, toggleBtn) : markDayDone(date, toggleBtn));
+        wrap.appendChild(toggleBtn);
+        if (done) wrap.appendChild(span('day-meta', `done by ${rec.done_by}`));
+      }
 
-      // YouTube link — independent of done, so it's editable whether or not
-      // the day is marked.
-      const ytInput = document.createElement('input');
-      ytInput.type = 'text';
-      ytInput.className = 'day-yt-input';
-      ytInput.placeholder = 'YouTube VOD link';
-      ytInput.value = (rec && rec.youtube_url) || '';
-      const ytBtn = document.createElement('button');
-      ytBtn.className = 'cd-btn';
-      ytBtn.textContent = 'Save';
-      const ytStatus = span('day-meta');
-      ytBtn.onclick = () => saveYoutubeUrl(date, ytInput, ytBtn, ytStatus);
-      wrap.appendChild(ytInput);
-      wrap.appendChild(ytBtn);
-      wrap.appendChild(ytStatus);
+      // Claim every unclaimed game that night in one go — a streamer usually
+      // takes the whole day.
+      const open = games.filter(g => g.date === date && !g.streamer && !resultFor(g));
+      if (open.length && date >= today) {
+        const claimBtn = document.createElement('button');
+        claimBtn.className = 'cd-btn';
+        claimBtn.textContent = open.length === games.filter(g => g.date === date).length
+          ? 'Claim day' : `Claim the other ${open.length}`;
+        claimBtn.onclick = () => claimDay(date, claimBtn);
+        wrap.appendChild(claimBtn);
+      }
+
+      // The VOD link is Stats' to set, on /committees/stats — shown here only.
       if (rec && rec.youtube_url) {
         const openLink = document.createElement('a');
         openLink.href = rec.youtube_url;
@@ -616,6 +806,25 @@
       }
 
       return wrap;
+    }
+
+    async function claimDay(date, btn) {
+      btn.disabled = true;
+      const token = storedToken();
+      const open = games.filter(g => g.date === date && !g.streamer && !resultFor(g));
+      let failed = 0;
+      for (const g of open) {
+        try {
+          const r = await fetch(`/api/schedule/${g.id}/streamer?season=${encodeURIComponent(season)}`, {
+            method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          if (!r.ok) throw new Error();
+          g.streamer = (await r.json()).streamer || null;
+        } catch (e) { failed++; }
+      }
+      if (failed) toast(`${failed} game${failed === 1 ? ' was' : 's were'} claimed by someone else first.`, true);
+      render();
+      renderMine();
     }
 
     async function markDayDone(date, btn) {
@@ -634,6 +843,7 @@
         }
         streamingDays[date] = await r.json();
         render();
+        renderMine();
       } catch (e) {
         alert('Network error');
         btn.disabled = false;
@@ -656,32 +866,9 @@
         }
         streamingDays[date] = await r.json();
         render();
+        renderMine();
       } catch (e) {
         alert('Network error');
-        btn.disabled = false;
-      }
-    }
-
-    async function saveYoutubeUrl(date, input, btn, statusEl) {
-      btn.disabled = true;
-      statusEl.textContent = 'Saving…';
-      const token = storedToken();
-      try {
-        const r = await fetch(`/api/streaming-days/${date}/youtube`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify({ url: input.value.trim() || null }),
-        });
-        if (!r.ok) {
-          const err = await r.json().catch(() => ({}));
-          statusEl.textContent = `Error: ${err.detail || r.status}`;
-          btn.disabled = false;
-          return;
-        }
-        streamingDays[date] = await r.json();
-        render();
-      } catch (e) {
-        statusEl.textContent = 'Network error';
         btn.disabled = false;
       }
     }
@@ -807,6 +994,7 @@
         const updated = await r.json();
         g.streamer = updated.streamer || null;
         replaceRow(g, num, rowEl);
+        renderMine();
       } catch (e) {
         rowEl.querySelectorAll('button, select').forEach(b => { b.disabled = false; });
         toast(claiming ? `Could not claim that game: ${e.message}`
@@ -1004,6 +1192,9 @@
     }
 
     function render() {
+      // The streaming-days fetch can land before the season does; the season
+      // load renders once it arrives.
+      if (!season) return;
       const list = document.getElementById('list');
       const more = document.getElementById('more');
       const tableWrap = document.getElementById('games-table-wrap');
@@ -1176,6 +1367,7 @@
       // fetch that resolved before this season loaded rendered against an
       // empty list, so re-render now that there's something to sort by.
       renderCoachingDashboard();
+      renderMine();
     }
 
     // Who is looking. Always 200, empty when signed out, and it accepts the
