@@ -180,11 +180,28 @@
     .po-row td:first-child { box-shadow: inset 3px 0 0 var(--gold-dim); color: var(--gold); }
     .career-row + .career-row { border-top: none !important; }
 
-    .hof-line { margin: var(--space-3) 0; font-size: 0.85rem; color: var(--text-muted); }
-    .hof-line a { color: inherit; text-decoration: none; }
-    .hof-line a:hover .hof-pts { text-decoration: underline; }
-    .hof-line .hof-pts { font-weight: 700; color: var(--text-primary); }
-    .hof-line.hof-top10 .hof-pts, .hof-line.hof-top10 .hof-rank { color: var(--gold); }
+    /* Hall of Fame card: score, its two ranks, and a bar against the #1 score. */
+    .hof-card {
+      display: inline-grid; grid-template-columns: auto auto; column-gap: var(--space-6); row-gap: var(--space-2);
+      align-items: end; margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      color: inherit; text-decoration: none; transition: border-color 0.15s;
+    }
+    .hof-card:hover { border-color: var(--text-muted); text-decoration: none; }
+    .hof-card.hof-top10 { border-color: var(--gold-border); }
+    .hof-card.hof-top10:hover { border-color: var(--gold); }
+    .hof-label { grid-column: 1 / -1; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .hof-card.hof-top10 .hof-label { color: var(--gold); }
+    .hof-score { font-size: 1.6rem; font-weight: 800; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .hof-score small { margin-left: 0.25rem; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
+    .hof-ranks { display: flex; gap: var(--space-4); }
+    .hof-rank { display: flex; flex-direction: column; align-items: flex-end; }
+    .hof-rank b { font-size: 1.05rem; font-weight: 700; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .hof-card.hof-top10 .hof-rank:first-child b { color: var(--gold); }
+    .hof-rank span { margin-top: 0.2rem; font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+    .hof-bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    .hof-bar i { display: block; height: 100%; background: var(--text-muted); }
+    .hof-card.hof-top10 .hof-bar i { background: var(--gold); }
 
     .page-tabs {
       display: flex;
@@ -1018,13 +1035,15 @@
 
   const isPlayoffRow = row => !!row.SEASON && row.SEASON.includes('Playoffs');
 
-  // One line under the accolades: HOF points and where they rank. hof.csv only
-  // lists the top 250, so a player outside it shows nothing.
+  // A small card under the accolades: HOF points, the all-time and active
+  // ranks, and a bar against the league's top score. hof.csv only lists the
+  // top 250, so a player outside it shows nothing.
   function renderHofLine(container, playerName, hofRows) {
     const key = (playerName || '').toUpperCase();
     const idx = hofRows.findIndex(r => (r.PLAYER || '').toUpperCase() === key);
     if (idx < 0) return;
     const pts = +hofRows[idx].HOF_POINTS;
+    const top = Math.max(...hofRows.map(r => +r.HOF_POINTS || 0));
     const rankOf = pool => {
       let ahead = 0, level = 0;
       hofRows.forEach((r, i) => {
@@ -1034,20 +1053,47 @@
       });
       return { label: (level ? 'T-' : '#') + (ahead + 1), rank: ahead + 1 };
     };
+    const el = (tag, cls, text) => {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+      return e;
+    };
+
     const all = rankOf(() => true);
-    const line = document.createElement('div');
-    line.className = 'hof-line';
-    if (all.rank <= 10) line.classList.add('hof-top10');
-    const a = document.createElement('a');
-    a.href = '/hof/';
-    a.innerHTML = `Hall of Fame <span class="hof-pts">${pts.toFixed(1)} pts</span> · <span class="hof-rank">${all.label} all-time</span>`;
+    const card = el('a', 'hof-card');
+    card.href = '/hof/';
+    card.title = 'Hall of Fame standings';
+    if (all.rank <= 10) card.classList.add('hof-top10');
+
+    card.appendChild(el('div', 'hof-label', 'Hall of Fame'));
+    const score = el('div', 'hof-score', pts.toFixed(1));
+    score.appendChild(el('small', null, 'pts'));
+    card.appendChild(score);
+
+    const ranks = el('div', 'hof-ranks');
+    const addRank = (r, label) => {
+      const d = el('div', 'hof-rank');
+      d.appendChild(el('b', null, r.label));
+      d.appendChild(el('span', null, label));
+      ranks.appendChild(d);
+    };
+    addRank(all, 'All-time');
     // "Active" means on a roster today, as in Career Totals.
-    if (teamMap[slug]) {
-      const act = rankOf(r => !!teamMap[slugByName.get((r.PLAYER || '').toUpperCase())]);
-      a.innerHTML += ` · ${act.label} among active`;
-    }
-    line.appendChild(a);
-    container.appendChild(line);
+    if (teamMap[slug]) addRank(rankOf(r => !!teamMap[slugByName.get((r.PLAYER || '').toUpperCase())]), 'Active');
+    card.appendChild(ranks);
+
+    const bar = el('div', 'hof-bar');
+    const fill = el('i');
+    fill.style.width = `${top > 0 ? Math.max(2, (pts / top) * 100) : 0}%`;
+    bar.appendChild(fill);
+    bar.title = `${Math.round((pts / top) * 100)}% of the top score (${top.toFixed(1)})`;
+    card.appendChild(bar);
+
+    // Its own row, so the inline card doesn't sit beside whatever follows.
+    const row = el('div');
+    row.appendChild(card);
+    container.appendChild(row);
   }
 
   function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow, leaderCheck, iconFn) {
