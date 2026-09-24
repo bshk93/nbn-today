@@ -54,6 +54,7 @@
 
     .game-body { display: none; border-top: 1px solid var(--border); }
     .game.open .game-body { display: block; }
+    .team-label .shot-link { margin-left: 0.75rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--link); }
     .team-section { padding: 0 0 0.75rem; }
     .team-section + .team-section { border-top: 1px solid var(--border); padding-top: 0; }
     .team-label { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); padding: 0.75rem 1.25rem 0.35rem; }
@@ -147,8 +148,14 @@
     async function load(date) {
       setContent('<span class="loading">Loading…</span>');
       try {
-        const r = await fetch(`/api/boxscores?date=${date}&season=${SEASON}`);
+        const [r, shotList] = await Promise.all([
+          fetch(`/api/boxscores?date=${date}&season=${SEASON}`),
+          // The source screenshots, kept 14 days after a game is entered.
+          // Optional: an older date simply has none.
+          fetch(`/api/boxscore/screenshots?date=${date}`).then(x => x.ok ? x.json() : []).catch(() => []),
+        ]);
         const games = await r.json();
+        shots = new Map(shotList.map(it => [[it.home_team, it.away_team].sort().join('~'), it]));
         if (!games.length) { setContent('<span class="loading">No games on this date.</span>'); return; }
         contentEl.innerHTML = "";
         const wrap = document.createElement("div");
@@ -180,6 +187,15 @@
       { h: "FT%", k: p => p.ftpct != null ? (p.ftpct * 100).toFixed(0) + "%" : "—", dim: true },
     ];
 
+    let shots = new Map();  // "TEAM~TEAM" -> screenshot item for the loaded date
+
+    // A team's screenshots in a game, matched by team rather than home/away.
+    function shotsFor(g, team) {
+      const it = shots.get([g.home_team, g.away_team].sort().join('~'));
+      if (!it) return [];
+      return it.home_team === team ? it.images.home : it.images.away;
+    }
+
     function buildGame(g) {
       const homeWin = g.home_score > g.away_score;
       const div = document.createElement("div");
@@ -207,21 +223,31 @@
 
       const body = document.createElement("div");
       body.className = "game-body";
-      buildTeamSection(body, g.home_players, `${g.home_team} — Home`);
-      buildTeamSection(body, g.away_players, `${g.away_team} — Away`);
+      buildTeamSection(body, g.home_players, `${g.home_team} — Home`, shotsFor(g, g.home_team));
+      buildTeamSection(body, g.away_players, `${g.away_team} — Away`, shotsFor(g, g.away_team));
 
       div.appendChild(hdr);
       div.appendChild(body);
       return div;
     }
 
-    function buildTeamSection(parent, players, label) {
+    function buildTeamSection(parent, players, label, teamShots = []) {
       const section = document.createElement("div");
       section.className = "team-section";
 
       const lbl = document.createElement("div");
       lbl.className = "team-label";
       lbl.textContent = label;
+      teamShots.forEach((sh, i) => {
+        const a = document.createElement("a");
+        a.className = "shot-link";
+        a.href = sh.url;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.textContent = teamShots.length > 1 ? `Screenshot ${i + 1} ↗` : "Screenshot ↗";
+        a.title = "The box score screenshot this was entered from (kept 14 days)";
+        lbl.appendChild(a);
+      });
       section.appendChild(lbl);
 
       const wrap = document.createElement("div");
