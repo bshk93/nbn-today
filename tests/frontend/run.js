@@ -98,9 +98,9 @@ const PAGES = [
   // the transaction feed and the newsstand all render from `.dash-feed-item`,
   // and a band that silently stopped fetching would come up at zero.
   { path: '/',                        selector: '.dash-feed-row',  min: 5,  what: 'the merged league feed' },
-  // The card grid still lives below the dashboard. Asserted separately so
-  // "the dashboard took over the homepage" fails loudly rather than quietly.
-  { path: '/',                        selector: 'main.grid .card', min: 30, what: 'the page directory grid' },
+  // The page directory still lives below the dashboard. Asserted separately
+  // so "the dashboard took over the homepage" fails loudly rather than quietly.
+  { path: '/',                        selector: '.directory .card', min: 30, what: 'the page directory' },
   // The rankings strip resolves the newest published edition across every
   // series and then fetches it — two chained calls, so it fails in ways the
   // single-fetch cards cannot. Five, not 30: this is the top of the standing.
@@ -116,7 +116,7 @@ const PAGES = [
   //
   // `min` is chosen to survive the league *growing*, and where a count can
   // legitimately shrink the row says so.
-  { path: '/teams/',                  selector: '.team-card',      min: 30, what: 'the 30 team cards' },
+  { path: '/teams/',                  selector: '.team-link',      min: 30, what: 'the 30 team links' },
   { path: '/champions/',              selector: 'table tbody tr',  min: 15, what: 'a row per title' },
   { path: '/members/',                selector: '.member-name',    min: 40, what: 'the member directory' },
   { path: '/roles/',                  selector: '.role-card',      min: 8,  what: 'a card per role' },
