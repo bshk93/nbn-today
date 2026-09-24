@@ -5,7 +5,8 @@
 //   TEAMS                        76   abbr → full team name
 //   RETIRED_JERSEYS             109   per-team retired number records
 //   ratingsPopupReady           135   resolves once /ratings-popup.js has loaded
-//   lineupReady                 148   resolves once /teams/lineup.js has loaded
+//   namesReady                  159   resolves once /names.js has loaded
+//   lineupReady                 172   resolves once /teams/lineup.js has loaded
 //   contractReady               161   resolves once /contract.js has loaded
 //   capHealthReady              182   resolves once /cap-health.js has loaded
 //   coachingConfigReady         194   resolves once /coaching-config.js has loaded
@@ -153,6 +154,16 @@ const ratingsPopupReady = new Promise(resolve => {
   document.head.appendChild(_rp);
 });
 
+// nbnPlayerName — "MCCOLLUM, CJ" → "CJ McCollum", the same everywhere on the
+// site. displayNameFromBio falls back to plain title case until it arrives.
+const namesReady = new Promise(resolve => {
+  const _nm = document.createElement('script');
+  _nm.src = '/names.js';
+  _nm.onload = resolve;
+  _nm.onerror = resolve;
+  document.head.appendChild(_nm);
+});
+
 // DEPTH_SLOTS / computeStartingFive — the Rosters mode's starting five. Unlike
 // the popup above this is a hard dependency, not a nicety: the 'depth' branch of
 // buildRosterTable calls it directly, so the render awaits this and a failure is
@@ -218,7 +229,7 @@ const coachingConfigReady = new Promise(resolve => {
      stays at 1024px on laptop-class screens (anything ≤ ~1365px wide),
      then grows proportionally (75% of viewport) up to a 1600px ceiling
      for wide/ultrawide monitors. */
-  .page { max-width: clamp(1024px, 75vw, 1600px); margin: 0 auto; }
+  .page { max-width: var(--page-width-wide); margin: 0 auto; }
   .nav { margin-bottom: 2rem; font-size: 0.875rem; }
   .nav a { color: var(--text-muted); text-decoration: none; }
   .nav a:hover { color: var(--text-primary); }
@@ -244,10 +255,10 @@ const coachingConfigReady = new Promise(resolve => {
     gap: 1rem;
   }
   .team-header img { width: 140px; height: 140px; object-fit: contain; }
-  .team-header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; text-align: center; }
+  .team-header h1 { font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; text-align: center; }
   section { margin-bottom: 3rem; }
-  .section-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.25rem; }
-  .section-sub { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+  .section-title { font-size: var(--text-md); font-weight: 600; margin-bottom: 0.25rem; }
+  .section-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.75rem; }
 
   /* One integrated card for Team Settings + Coaching Profile, rather than two
      independent sections (which carry their own 3rem gap and full-weight h2
@@ -846,31 +857,7 @@ const coachingConfigReady = new Promise(resolve => {
     pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
   }
 
-  /* Tabs */
-  .tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 2rem;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab {
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    padding: 0.6rem 1.25rem;
-    font-family: inherit;
-    transition: color 0.12s;
-    margin-bottom: -1px;
-    white-space: nowrap;
-  }
-  .tab:hover { color: var(--text-secondary); }
-  .tab.active { color: var(--text-primary); border-bottom-color: var(--accent); font-weight: 600; }
+  /* Tabs: the shared .ui-tabs (css/components.css). */
   .tab-panel.hidden { display: none; }
 
   /* Roster table mode switch (Contracts / Stats / Ratings) */
@@ -879,15 +866,8 @@ const coachingConfigReady = new Promise(resolve => {
     flex-wrap: wrap; gap: 0.5rem;
   }
   .roster-header-row .section-title { margin-bottom: 0; }
-  .mode-tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; flex: none; }
-  .mode-tab {
-    background: none; border: none; color: var(--text-muted); cursor: pointer;
-    font-size: 0.72rem; font-weight: 600; padding: 0.3rem 0.65rem;
-    font-family: inherit; transition: color 0.12s, background 0.12s;
-  }
-  .mode-tab + .mode-tab { border-left: 1px solid var(--border); }
-  .mode-tab:hover { color: var(--text-secondary); }
-  .mode-tab.active { color: var(--text-primary); background: var(--bg-card); }
+  /* The mode switch is the shared .ui-segmented. */
+  .mode-tabs { flex: none; }
   .hist-controls { margin-bottom: 1.5rem; }
   .hist-controls select {
     background: var(--bg-card);
@@ -951,13 +931,13 @@ document.body.innerHTML = `
       </div>
       ${nextAbbr ? `<a class="team-nav-btn" href="/teams/${nextAbbr}/" title="${TEAMS[nextAbbr]}" aria-label="Next team">›</a>` : ''}
     </div>
-    <div class="tabs">
-      <button class="tab active" data-tab="overview">Roster</button>
-      <button class="tab" data-tab="coaching">Coaching</button>
-      <button class="tab" data-tab="franchise">Franchise</button>
-      <button class="tab" data-tab="draft">Draft History</button>
-      <button class="tab" data-tab="alltime">All-Time Players</button>
-      <button class="tab" data-tab="history">Historical Rosters</button>
+    <div class="tabs ui-tabs" role="tablist">
+      <button class="tab ui-tab active" data-tab="overview">Roster</button>
+      <button class="tab ui-tab" data-tab="coaching">Coaching</button>
+      <button class="tab ui-tab" data-tab="franchise">Franchise</button>
+      <button class="tab ui-tab" data-tab="draft">Draft History</button>
+      <button class="tab ui-tab" data-tab="alltime">All-Time Players</button>
+      <button class="tab ui-tab" data-tab="history">Historical Rosters</button>
     </div>
     <div class="tab-panel" id="tab-overview">
       <div id="offer-sheet-banner" style="display:none"></div>
@@ -966,7 +946,7 @@ document.body.innerHTML = `
       <section>
         <div class="roster-header-row">
           <h2 class="section-title" id="roster-title">Roster</h2>
-          <div class="mode-tabs" id="roster-mode-tabs">
+          <div class="mode-tabs ui-segmented" role="group" id="roster-mode-tabs">
             <button class="mode-tab active" data-mode="depth" type="button">Rosters</button>
             <button class="mode-tab" data-mode="contracts" type="button">Contracts</button>
             <button class="mode-tab" data-mode="stats" type="button">Stats</button>
@@ -1175,6 +1155,7 @@ function buildNonGtdTip(year, guaranteed, guarantee_dates, guarantee_schedule) {
 
 function displayNameFromBio(canonical) {
   if (!canonical) return '';
+  if (typeof nbnPlayerName === 'function') return nbnPlayerName(canonical);
   const toTitle = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   if (canonical.includes(',')) {
     const [last, first] = canonical.split(',', 2);
@@ -2379,8 +2360,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           if (!isNaN(n)) {
             const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
             const hue = Math.round(t * 120);
-            td.style.background = `hsl(${hue}, 55%, 18%)`;
-            td.style.color = `hsl(${hue}, 80%, 72%)`;
+            td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
+            td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
             const ovrSlug = playerSlug(row.PLAYER);
             if (ovrSlug && window.RatingsPopup) {
               RatingsPopup.attach(td, ovrSlug, { name: row.PLAYER });
@@ -2690,8 +2671,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         if (!isNaN(n)) {
           const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
           const hue = Math.round(t * 120);
-          td.style.background = `hsl(${hue}, 55%, 18%)`;
-          td.style.color = `hsl(${hue}, 80%, 72%)`;
+          td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
+          td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
           if (row.SLUG && window.RatingsPopup) {
             RatingsPopup.attach(td, row.SLUG, { name: row._name });
           }
@@ -2704,8 +2685,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           td.textContent = String(v);
           const t = Math.min(1, Math.max(0, (v - RATING_HEAT_MIN) / (RATING_HEAT_MAX - RATING_HEAT_MIN)));
           const hue = Math.round(t * 120);
-          td.style.background = `hsl(${hue}, 55%, 18%)`;
-          td.style.color = `hsl(${hue}, 80%, 72%)`;
+          td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
+          td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
         }
       } else if (col.key.startsWith('_s_')) {
         const k = col.key.slice(3);
@@ -3330,8 +3311,8 @@ function makeSeasonRenderCell(rows) {
         const { absMax } = ranges[col.key];
         const t = absMax === 0 ? 0.5 : Math.min(1, Math.max(0, n / absMax * 0.5 + 0.5));
         const hue = Math.round(t * 120);
-        td.style.background = `hsl(${hue}, 55%, 18%)`;
-        td.style.color = `hsl(${hue}, 80%, 72%)`;
+        td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
+        td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
       }
     }
   };
@@ -4818,7 +4799,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
     ...Object.entries(bios)
       .map(([slug, bio]) => {
         const parts = bio.name.split(',');
-        const label = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+        const label = parts.length === 2 ? displayNameFromBio(bio.name) : bio.name;
         return { slug, label };
       })
       .sort((a, b) => a.label.localeCompare(b.label))
@@ -6834,6 +6815,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/coaching-settings').then(r => r.ok ? r.json() : {}),
   ]);
 
+  await namesReady;
   await ratingsPopupReady;
   await lineupReady;
   await contractReady;
