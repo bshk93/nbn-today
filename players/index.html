@@ -163,6 +163,16 @@
     .row-icon { font-size: 0.78em; margin-left: 4px; vertical-align: middle; }
 
     .career-row { border-top: 2px solid var(--border) !important; }
+
+    /* Career Totals: each total carries its all-time rank underneath. */
+    .ct-cell { white-space: nowrap; }
+    .ct-rank { display: block; font-size: 0.7rem; font-weight: 400; color: var(--text-muted); }
+    .ct-rank a { color: inherit; text-decoration: none; }
+    .ct-rank a:hover { text-decoration: underline; }
+    .ct-rank .ct-active { opacity: 0.8; }
+    .ct-top10 .ct-rank { color: var(--gold); font-weight: 700; }
+    .ct-top50 .ct-rank { color: var(--accent-light); }
+    .ct-note { font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-2); }
     .career-row td { font-weight: 600; color: var(--text-primary); }
 
     .page-tabs {
@@ -789,6 +799,128 @@
     const r = { SEASON: 'Career', TEAM: '—', LAST_DATE: '', G: String(rows.reduce((a, row) => a + +row.G, 0)) };
     HIGH_FIELDS.forEach(f => { r[f] = String(rows.reduce((a, row) => Math.max(a, +row[f]), 0)); });
     return r;
+  }
+
+  // ── Career totals with all-time ranks ────────────────────────────────────────
+
+  // `link` is the /stats/totals page for stats that have one.
+  const CAREER_TOTAL_STATS = [
+    { key: 'G',    label: 'G' },
+    { key: 'MIN',  label: 'MIN' },
+    { key: 'PTS',  label: 'PTS',  link: 'p' },
+    { key: 'REB',  label: 'REB',  link: 'r' },
+    { key: 'AST',  label: 'AST',  link: 'a' },
+    { key: 'STL',  label: 'STL',  link: 's' },
+    { key: 'BLK',  label: 'BLK',  link: 'b' },
+    { key: '3PM',  label: '3PM',  link: '3pm' },
+    { key: 'FGM',  label: 'FGM' },
+    { key: 'FTM',  label: 'FTM' },
+    { key: 'TOV',  label: 'TOV' },
+    { key: 'PF',   label: 'PF' },
+    { key: 'GMSC', label: 'GMSC' },
+  ];
+
+  // Sums every season row into one career line per slug. Rows for seasons not
+  // played (G blank/NA, the build's bio-snapshot rows) are skipped.
+  function careerTotalsBySlug(seasonRows) {
+    const out = new Map();
+    seasonRows.forEach(r => {
+      if (!(+r.G > 0)) return;
+      let t = out.get(r.SLUG);
+      if (!t) { t = {}; CAREER_TOTAL_STATS.forEach(s => { t[s.key] = 0; }); out.set(r.SLUG, t); }
+      CAREER_TOTAL_STATS.forEach(s => { t[s.key] += +r[s.key] || 0; });
+    });
+    return out;
+  }
+
+  // Competition ranking: rank = 1 + number of players strictly ahead, so level
+  // totals share a rank. `pool` limits who is counted (null = everyone).
+  function careerRank(totals, slug, key, pool) {
+    const mine = totals.get(slug)?.[key];
+    if (mine == null) return null;
+    let ahead = 0, level = 0;
+    totals.forEach((t, s) => {
+      if (pool && !pool(s)) return;
+      if (t[key] > mine) ahead++;
+      else if (t[key] === mine && s !== slug) level++;
+    });
+    return { rank: ahead + 1, tied: level > 0 };
+  }
+
+  function renderCareerTotals(container, slug, regRows, poRows) {
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = 'Career Totals';
+    container.appendChild(h2);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ui-table-wrap';
+    container.appendChild(wrap);
+    const table = document.createElement('table');
+    table.className = 'ui-table';
+    wrap.appendChild(table);
+
+    const hr = table.createTHead().insertRow();
+    ['', ...CAREER_TOTAL_STATS.map(s => s.label)].forEach((label, i) => {
+      const th = document.createElement('th');
+      th.textContent = label;
+      if (i) th.classList.add('right');
+      hr.appendChild(th);
+    });
+    const tbody = table.createTBody();
+
+    // "Active" means on a roster today.
+    const isActive = s => !!teamMap[s];
+    const fmtRank = r => (r.tied ? 'T-' : '#') + r.rank;
+
+    function addRow(label, seasonRows) {
+      const totals = careerTotalsBySlug(seasonRows);
+      const mine = totals.get(slug);
+      if (!mine) return;
+      const tr = tbody.insertRow();
+      const th = tr.insertCell();
+      th.textContent = label;
+      th.className = 'muted';
+      CAREER_TOTAL_STATS.forEach(s => {
+        const td = tr.insertCell();
+        td.className = 'right ct-cell';
+        td.appendChild(document.createTextNode(Math.round(mine[s.key]).toLocaleString()));
+        if (!(mine[s.key] > 0)) return;
+        const all = careerRank(totals, slug, s.key, null);
+        if (all.rank <= 10) td.classList.add('ct-top10');
+        else if (all.rank <= 50) td.classList.add('ct-top50');
+        const rk = document.createElement('span');
+        rk.className = 'ct-rank';
+        let rankEl = rk;
+        // The totals pages list the regular season only.
+        if (s.link && label === 'Regular Season') {
+          rankEl = document.createElement('a');
+          rankEl.href = `/stats/totals/${s.link}/`;
+          rk.appendChild(rankEl);
+        }
+        rankEl.textContent = fmtRank(all);
+        rankEl.title = `${fmtRank(all)} all-time`;
+        if (isActive(slug)) {
+          const act = careerRank(totals, slug, s.key, isActive);
+          const a = document.createElement('span');
+          a.className = 'ct-active';
+          a.textContent = ` · ${fmtRank(act)} act`;
+          a.title = `${fmtRank(act)} among active players`;
+          rk.appendChild(a);
+        }
+        td.appendChild(rk);
+      });
+    }
+
+    addRow('Regular Season', regRows);
+    if (poRows) addRow('Playoffs', poRows);
+
+    const note = document.createElement('div');
+    note.className = 'ct-note';
+    note.textContent = isActive(slug)
+      ? 'Rank among every NBN player, then among players on a roster today.'
+      : 'Rank among every NBN player.';
+    container.appendChild(note);
   }
 
   // ── Season leaders ───────────────────────────────────────────────────────────
@@ -4169,6 +4301,12 @@
     // sections container
     const sections = document.createElement('div');
     content.appendChild(sections);
+    const careerTotalsEl = document.createElement('div');
+    content.appendChild(careerTotalsEl);
+    fetch('/players/player_seasons_playoffs.csv')
+      .then(r => r.ok ? r.text() : '')
+      .catch(() => '')
+      .then(text => renderCareerTotals(careerTotalsEl, slug, allPlayerSeasons, text ? parseCSV(text) : null));
     renderContractTimeline(content, bio, slug);
     renderSalaryTable(content, bio);
     renderHistorySection(content, slug);
