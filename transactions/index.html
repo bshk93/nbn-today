@@ -1074,7 +1074,7 @@
               </label>
             </div>
             <button type="button" class="ch-generate-btn" id="mch-generate-btn">Generate rows from scale</button>
-            <div class="ch-hint">Each year's salary comes straight off that season's § 3.12 Minimum Salary Scale at the "NBA experience" tier above, applied flat across every contract year (no tier climbing). A 1-year deal is further capped at the 2-year veteran minimum, per § 3.12's hardship exception. Not a placeholder — it's the same figures <code>_check_minimum_salary</code>/<code>_check_minimum_contract_cap_hit</code> check against. Replaces the rows below; the trailing hold row is left unpriced for the § 3.10 auto-fill, same as the regular contract helper.</div>
+            <div class="ch-hint">Each year's salary comes straight off that season's § 3.12 Minimum Salary Scale starting at the "NBA experience" tier above and climbing one tier per contract year. A 1-year deal is further capped at the 2-year veteran minimum, per § 3.12's hardship exception. Not a placeholder — it's the same figures <code>_check_minimum_salary</code>/<code>_check_minimum_contract_cap_hit</code> check against. Replaces the rows below; the trailing hold row is left unpriced for the § 3.10 auto-fill, same as the regular contract helper.</div>
           </div>
         </div>
 
@@ -2485,11 +2485,10 @@ function minScaleForSeason(season) {
 // § 3.12: a minimum contract is a pure function of (start season, years of
 // NBA experience, that season's scale) — no dollar figure to type in. Reads
 // years of experience off f-years-exp (prefilled from draft_year elsewhere)
-// and applies it FLAT to every year of the deal — matching _contract_years_exp
-// server-side, which stopped escalating one tier per contract year 2026-08-13
-// (reversed against Jamison Battle's live contract; see BACKLOG). The raise
-// from one contract year to the next comes only from that season's own scale
-// moving, never from climbing a tier.
+// as the player's experience in the first season, then climbs one tier per
+// contract year on each season's own scale — § 3.12, and the league office's
+// own table. Matches _contract_years_exp server-side (flat from 2026-08-13 to
+// 2026-09-24, on a misreading of a mis-indexed 27-28 table).
 //
 // A genuine 1-year deal (no option) gets one more adjustment: § 3.12's
 // veteran-minimum hardship exception caps a 1-yr minimum's cap hit at that
@@ -2523,7 +2522,7 @@ async function generateMinimumContractRows() {
   for (let i = 0; i < totalYears; i++) {
     const scale = minScaleForSeason(season);
     if (!scale) { setStatus('err', `Minimum contract: no § 3.12 scale configured for ${season} or earlier.`); return; }
-    const tier = minSalaryScaleTier(baseExp);
+    const tier = minSalaryScaleTier(baseExp + i);
     let amount = scale[tier];
     if (!amount) { setStatus('err', `Minimum contract: ${season}'s scale has no "${tier}" tier.`); return; }
     if (isOneYearDeal && scale['2'] && tier !== '0' && tier !== '1') {
