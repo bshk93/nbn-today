@@ -2028,10 +2028,44 @@ async function prefillRookieScale(slug) {
   if (document.getElementById('f-player-slug').value !== slug) return;
   if (document.getElementById('f-type').value !== 'sign_pick') return;
 
+  // A second-rounder has two § 7.1 deals to choose between, so offer both
+  // rather than guessing; the figures come off the same endpoint, priced by the
+  // validator's own `_second_round_scale_contract`.
+  if (!data.scale && data.second_round) {
+    note.className = 'scale-note';
+    note.innerHTML = `<strong>Second-round pick (${data.draft_year} #${data.draft_pick || '?'}).</strong> `
+      + 'Load a § 7.1 second-round scale deal, or choose Two-Way above: ';
+    Object.entries(data.second_round).forEach(([label, deal]) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-secondary';
+      btn.style.marginLeft = '.4rem';
+      btn.textContent = `Load ${label}`;
+      btn.addEventListener('click', async () => {
+        const typed = [...document.querySelectorAll('.salary-row')].filter(r =>
+          r.querySelector('.amount-input').value.trim() || r.querySelector('.hold-select').value).length;
+        if (typed && !await confirmDialog({
+          title: 'Replace the terms you have entered?',
+          body: `This overwrites the ${typed} salary row(s) you've entered with the § 7.1 ${label} second-round scale.`,
+          confirmLabel: `Use the ${label}`,
+        })) return;
+        document.getElementById('salary-rows').innerHTML = '';
+        const holds = deal.cap_holds || {};
+        // The trailing season is the free-agent hold: tagged, no amount, so
+        // the API prices it (§ 3.10) rather than the page guessing a figure.
+        deal.seasons.forEach(season => addSalaryRow(season, deal.salaries[season] || '', holds[season] || ''));
+        scheduleSignRubric();
+      });
+      note.appendChild(btn);
+    });
+    note.style.display = '';
+    return;
+  }
+
   if (!data.scale) {
     note.className = 'scale-note manual';
     note.textContent = data.draft_round === 2
-      ? `Second-round pick (${data.draft_year} #${data.draft_pick || '?'}) — not on the rookie scale. `
+      ? `Second-round pick (${data.draft_year} #${data.draft_pick || '?'}) — no minimum scale on file that far out. `
         + 'Enter the § 7.1 three- or four-year minimum structure, or a two-way.'
       : `No rookie scale loaded for the ${data.draft_year || '—'} draft — enter the terms by hand.`;
     note.style.display = '';
