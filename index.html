@@ -170,6 +170,8 @@
     .dash-game-day:first-child { margin-top: 0; }
     .dash-game-date { color: var(--text-muted); width: 3.6rem; flex: none; }
     .dash-game-opp  { font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; min-width: 0; }
+    .dash-game-team { display: inline-flex; align-items: center; gap: 0.35rem; color: inherit; text-decoration: none; }
+    .dash-game-team:hover span { text-decoration: underline; }
     .dash-game-logo { height: 18px; width: 18px; object-fit: contain; flex: none; }
     .dash-game-time { color: var(--text-muted); font-size: var(--text-xs); margin-left: auto; flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
@@ -1123,9 +1125,11 @@
     const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
     // Logo + abbreviation, for a game row that needs to read at a glance
     // rather than by parsing three-letter codes.
+    // A link to that team's page.
     const teamChip = abbr =>
-      `<img class="dash-game-logo" src="/logos/logo-${esc(String(abbr).toLowerCase())}.png" alt="">`
-      + `<span>${esc(abbr)}</span>`;
+      `<a class="dash-game-team" href="/teams/${esc(String(abbr).toUpperCase())}/">`
+      + `<img class="dash-game-logo" src="/logos/logo-${esc(String(abbr).toLowerCase())}.png" alt="">`
+      + `<span>${esc(abbr)}</span></a>`;
 
     const today = nbnToday();
 
