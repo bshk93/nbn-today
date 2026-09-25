@@ -171,7 +171,7 @@
     .dash-game-date { color: var(--text-muted); width: 3.6rem; flex: none; }
     .dash-game-opp  { font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; min-width: 0; }
     .dash-game-team { display: inline-flex; align-items: center; gap: 0.35rem; color: inherit; text-decoration: none; }
-    .dash-game-team:hover span { text-decoration: underline; }
+    .dash-game-team:hover span:not(.dash-game-rec) { text-decoration: underline; }
     .dash-game-logo { height: 18px; width: 18px; object-fit: contain; flex: none; }
     .dash-game-time { color: var(--text-muted); font-size: var(--text-xs); margin-left: auto; flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
@@ -196,18 +196,6 @@
     .dash-chip.ok        { color: var(--text-muted); }
 
     /* Band 2 — around the league */
-    .dash-row-league {
-      display: grid;
-      /* The slate is a fixed short list; the feed is the long one and gets the
-         room, so a trade description does not wrap every three words. */
-      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-      gap: 0.75rem;
-      /* Each card sizes to its own content. Stretched to a common height the
-         short ones (a three-game slate next to four wrapped trade
-         descriptions) are mostly dead space. */
-      align-items: start;
-    }
-
     .dash-feed { display: flex; flex-direction: column; gap: 0.5rem; }
     .dash-feed-item { font-size: 0.78rem; line-height: 1.4; color: var(--text-secondary); }
     .dash-feed-item .meta { color: var(--text-muted); font-size: 0.7rem; display: block; }
@@ -316,10 +304,6 @@
     }
     @keyframes dash-pulse { 0%,100% { opacity: 0.28; } 50% { opacity: 0.6; } }
 
-    @media (max-width: 720px) {
-      .dash-row-league { grid-template-columns: 1fr; }
-    }
-
     /* ══ Layout ═════════════════════════════════════════════════════════════
        Sections instead of boxes. Every part of the page used to be its own
        bordered card with a tiny capitalised label, so nothing was more
@@ -359,25 +343,90 @@
       grid-template-columns: minmax(0, 1fr) 20rem;
       grid-template-areas:
         "team  team"
-        "feed  slate"
-        "feed  ranks"
-        "feed  .";
+        "main  side";
       gap: 0 var(--space-7);
       align-items: start;
       margin-bottom: var(--space-7);
     }
-    :root .dash-row-league { display: contents; }
     :root #dash-team  { grid-area: team; }
-    :root #dash-feed  { grid-area: feed; }
-    :root #dash-slate { grid-area: slate; }
-    :root #dash-ranks { grid-area: ranks; }
+    :root .dash-main  { grid-area: main; min-width: 0; }
+    :root .dash-side  { grid-area: side; min-width: 0; }
 
+    /* One column: the two wrappers step aside so the cards can be ordered
+       one by one — the schedule belongs above the feed on a phone. */
     @media (max-width: 900px) {
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-areas: "team" "slate" "feed" "ranks";
+        grid-template-areas: "team" "slate" "best" "feed" "standings" "ranks";
       }
+      :root .dash-main, :root .dash-side { display: contents; }
+      :root #dash-best      { grid-area: best; }
+      :root #dash-feed      { grid-area: feed; }
+      :root #dash-slate     { grid-area: slate; }
+      :root #dash-standings { grid-area: standings; }
+      :root #dash-ranks     { grid-area: ranks; }
     }
+
+    /* Team links in game rows: logo, abbreviation, and this season's record
+       once there is one. */
+    .dash-game-rec { color: var(--text-muted); font-weight: 400; font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+
+    /* Last night's best: three performances side by side. */
+    .dash-best-title-date { color: var(--text-muted); font-weight: 400; font-size: var(--text-sm); margin-left: 0.4rem; }
+    .dash-best-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .dash-best-item {
+      display: flex; flex-direction: column; gap: 0.35rem;
+      padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-card); color: inherit; text-decoration: none; min-width: 0;
+      position: relative; overflow: hidden;
+    }
+    .dash-best-item:hover { border-color: var(--accent); }
+    .dash-best-item:hover .dash-best-name { color: var(--link); }
+    .dash-best-top { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+    .dash-best-photo {
+      width: 52px; height: 52px; border-radius: 50%; flex: none;
+      object-fit: cover; object-position: top; background: var(--bg-hover);
+    }
+    .dash-best-name { font-weight: 700; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; }
+    .dash-best-game { display: flex; align-items: center; gap: 0.3rem; font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.15rem; }
+    .dash-best-game img { width: 16px; height: 16px; object-fit: contain; }
+    .dash-best-line { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; line-height: 1.1; color: var(--text-primary); }
+    .dash-best-line span { font-size: var(--text-xs); font-family: inherit; color: var(--text-muted); font-weight: 600; margin: 0 0.5rem 0 0.1rem; }
+    .dash-best-gmsc { font-size: var(--text-xs); color: var(--text-muted); }
+    .dash-best-rank {
+      position: absolute; top: 0.4rem; right: 0.6rem;
+      font-family: var(--font-display); font-size: 1.6rem; font-weight: 800;
+      color: var(--text-dim); opacity: 0.35;
+    }
+    @media (max-width: 600px) {
+      .dash-best-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+    }
+
+    /* Standings: East and West side by side in the sidebar. */
+    .dash-standings-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-3); }
+    :root .dash-standings-head .dash-card-title { margin: 0; }
+    .dash-standings-more { font-size: var(--text-xs); color: var(--link); }
+    .dash-standings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    .dash-conf-name { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .dash-stand-row {
+      display: flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0;
+      font-size: var(--text-sm); color: var(--text-secondary); text-decoration: none;
+    }
+    .dash-stand-row + .dash-stand-row { border-top: 1px solid var(--border-subtle); }
+    .dash-stand-row:hover .dash-stand-abbr { color: var(--link); }
+    .dash-stand-seed { width: 1rem; color: var(--text-muted); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+    .dash-stand-row img { width: 18px; height: 18px; object-fit: contain; }
+    .dash-stand-abbr { font-weight: 600; color: var(--text-primary); }
+    .dash-stand-rec { margin-left: auto; font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-muted); }
+
+    /* Site footer: the version, linking to what changed in it. */
+    .site-footer {
+      margin-top: var(--space-7); padding-top: var(--space-4);
+      border-top: 1px solid var(--border-subtle);
+      font-size: var(--text-xs); color: var(--text-muted);
+    }
+    .site-footer a { color: inherit; }
+    .site-footer a:hover { color: var(--link); }
 
     /* Sections, not boxes. */
     :root .dash-card {
@@ -509,6 +558,26 @@
     .hero-line em { font-style: normal; color: var(--accent); font-variant-numeric: tabular-nums; }
     .hero-sub { margin-top: var(--space-2); font-size: var(--text-base); color: var(--text-muted); }
 
+    /* Preseason: the countdown as one big number. */
+    .hero-count { display: flex; align-items: center; gap: var(--space-4); }
+    .hero-num {
+      font-family: var(--font-display); font-weight: 800; line-height: 0.85;
+      font-size: clamp(4.5rem, 14vw, 7.5rem); color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .hero-unit { font-size: clamp(1.4rem, 3.5vw, 2.1rem); font-weight: 700; line-height: 1.1; color: var(--text-primary); }
+    .hero-count .hero-sub { margin-top: var(--space-1); }
+    /* Opening night's games, by logo. */
+    .hero-matchups { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); }
+    .hero-matchup {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.55rem 0.9rem; border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-card); font-weight: 600; font-size: var(--text-base);
+    }
+    .hero-matchup .dash-game-logo { width: 32px; height: 32px; }
+    .hero-matchup-at { color: var(--text-muted); font-weight: 400; }
+    .hero-matchup-time { color: var(--text-muted); font-size: var(--text-xs); font-weight: 500; margin-left: 0.2rem; }
+
     :root .dash-feed-tag { letter-spacing: 0.03em; }
 
     /* Phones */
@@ -561,13 +630,11 @@
          stays hidden for everyone else rather than rendering an empty shell. -->
     <div class="dash-card" id="dash-team" hidden></div>
 
-    <!-- Band 2 — around the league. Public, so it renders for visitors too. -->
-    <div class="dash-row-league" id="dash-league">
-      <div class="dash-card" id="dash-slate">
-        <div class="dash-card-title" id="dash-slate-title">Next Up</div>
-        <div class="dash-skel" style="width:80%"></div>
-        <div class="dash-skel" style="width:65%"></div>
-      </div>
+    <!-- Band 2 — around the league. Public, so it renders for visitors too.
+         Main column: the night's best performances, then the feed. -->
+    <div class="dash-main">
+      <!-- Hidden until a night of box scores exists this season. -->
+      <div class="dash-card" id="dash-best" hidden></div>
       <div class="dash-card" id="dash-feed">
         <div class="dash-card-title">Around the League</div>
         <div class="dash-skel" style="width:90%"></div>
@@ -576,8 +643,18 @@
       </div>
     </div>
 
-    <!-- The current power-rankings standing. Hidden until it has one. -->
-    <div class="dash-card" id="dash-ranks" hidden></div>
+    <!-- Sidebar: schedule, standings, power rankings. -->
+    <div class="dash-side">
+      <div class="dash-card" id="dash-slate">
+        <div class="dash-card-title" id="dash-slate-title">Next Up</div>
+        <div class="dash-skel" style="width:80%"></div>
+        <div class="dash-skel" style="width:65%"></div>
+      </div>
+      <!-- In-season only. -->
+      <div class="dash-card" id="dash-standings" hidden></div>
+      <!-- The current power-rankings standing. Hidden until it has one. -->
+      <div class="dash-card" id="dash-ranks" hidden></div>
+    </div>
 
   </section>
 
@@ -594,11 +671,11 @@
         <li><a class="card" href="/tradeblock/">
               <div class="card-header"><span class="card-title">Tradeblock</span></div>
             </a></li>
-        <li><a class="card" href="/compare/">
-              <div class="card-header"><span class="card-title">Compare Players</span></div>
-            </a></li>
         <li><a class="card" href="/free-agency/">
               <div class="card-header"><span class="card-title">Free Agency</span></div>
+            </a></li>
+        <li><a class="card" href="/extensions/">
+              <div class="card-header"><span class="card-title">Extensions</span></div>
             </a></li>
         <li><a class="card" href="/transactions">
               <div class="card-header"><span class="card-title">Transactions</span></div>
@@ -620,10 +697,10 @@
         <li><a class="card" href="/committees/stats/">
               <div class="card-header"><span class="card-title">Stats</span></div>
             </a></li>
-        <li><a class="card" href="/committees/stream/">
+        <li><a class="card" id="lo-stream" href="/committees/stream/" style="display:none">
               <div class="card-header"><span class="card-title">Stream</span></div>
             </a></li>
-        <li><a class="card" href="/committees/trc/">
+        <li><a class="card" id="lo-trc" href="/committees/trc/" style="display:none">
               <div class="card-header"><span class="card-title">TRC</span></div>
             </a></li>
       </ul>
@@ -659,6 +736,12 @@
             </a></li>
         <li><a class="card" href="/owners">
               <div class="card-header"><span class="card-title">Owners</span></div>
+            </a></li>
+        <li><a class="card" href="/compare/">
+              <div class="card-header"><span class="card-title">Compare Players</span></div>
+            </a></li>
+        <li><a class="card" href="/ratings-changes/">
+              <div class="card-header"><span class="card-title">Ratings Changes</span></div>
             </a></li>
         <li><a class="card" href="/stats/seasons">
               <div class="card-header"><span class="card-title">Season Stats</span></div>
@@ -701,16 +784,16 @@
       </ul>
     </div>
     <div>
-      <h2><span class="section-label">Miscellaneous</span></h2>
+      <h2><span class="section-label">Media</span></h2>
       <ul>
+        <li><a class="card" href="/news/">
+              <div class="card-header"><span class="card-title">News</span></div>
+            </a></li>
         <li><a class="card" href="/nbntv-classics">
               <div class="card-header"><span class="card-title">NBNTV Classics</span></div>
             </a></li>
         <li><a class="card" href="https://youtube.com/@nothingbutnetNBN/streams" target="_blank" rel="noopener">
               <div class="card-header"><span class="card-title">YouTube</span></div>
-            </a></li>
-        <li><a class="card" href="/news/">
-              <div class="card-header"><span class="card-title">News</span></div>
             </a></li>
       </ul>
     </div>
@@ -731,12 +814,11 @@
             </a></li>
         <li><a class="card" href="/changelog">
               <div class="card-header"><span class="card-title">Changelog</span></div>
-              <span id="site-version" style="font-size:0.75rem;color:var(--text-muted);"></span>
             </a></li>
       </ul>
     </div>
     <div>
-      <h2><span class="section-label" id="lo-label">League Office</span></h2>
+      <h2><span class="section-label">League Office</span></h2>
       <ul>
         <li><a class="card" href="/proposals/">
               <div class="card-header"><span class="card-title">Proposals</span></div>
@@ -782,6 +864,9 @@
     </div>
   </nav>
 
+  <footer class="site-footer">
+    Nothing But Net · <a href="/changelog" id="site-version">Changelog</a>
+  </footer>
 
   </div>
   <script>
@@ -789,7 +874,7 @@
 
     fetch('/version.json').then(r => r.json()).then(d => {
       const el = document.getElementById('site-version');
-      if (el) el.textContent = 'v' + d.version;
+      if (el) el.textContent = 'v' + d.version;  // links to the changelog
     });
 
     // Typing anywhere on the homepage (outside a form field) jumps straight
@@ -820,22 +905,19 @@
           const isRosters = data.roles?.some(r => r === 'rosters' || r === 'admin');
           const isAdmin   = data.roles?.includes('admin');
           const isBod     = data.roles?.some(r => r === 'bod' || r === 'admin');
-          const isStats = data.roles?.some(r => r === 'stats' || r === 'admin');
+          // Committee dashboards only their own members can use.
+          const hasRole = (...rs) => data.roles?.some(r => r === 'admin' || rs.includes(r));
+          if (hasRole('streamer')) document.getElementById('lo-stream').style.display = '';
+          if (hasRole('trc', 'trc_head')) document.getElementById('lo-trc').style.display = '';
           if (isBod) {
-            document.getElementById('lo-label').style.display = '';
             document.getElementById('lo-strikes').style.display = '';
           }
           if (isRosters) {
-            document.getElementById('lo-label').style.display = '';
             document.getElementById('lo-league-settings').style.display = '';
             document.getElementById('lo-rookie-scale').style.display = '';
             document.getElementById('lo-how-to-rosters').style.display = '';
           }
-          if (isStats) {
-            document.getElementById('lo-label').style.display = '';
-          }
           if (isAdmin) {
-            document.getElementById('lo-label').style.display = '';
             document.getElementById('lo-backlog').style.display = '';
 
             // ── Reveal Season Awards ──────────────────────────────────────
@@ -1065,6 +1147,7 @@
   <script src="/league-time.js"></script>
   <script src="/cap-health.js"></script>
   <script src="/feed-types.js"></script>
+  <script src="/names.js"></script>
   <script>
   // ── Homepage dashboard ──────────────────────────────────────────────────
   //
@@ -1125,13 +1208,38 @@
     const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
     // Logo + abbreviation, for a game row that needs to read at a glance
     // rather than by parsing three-letter codes.
-    // A link to that team's page.
-    const teamChip = abbr =>
+    // A link to that team's page. `recs` (TEAM → "12–4") adds the record
+    // when a season is being played.
+    const teamChip = (abbr, recs) =>
       `<a class="dash-game-team" href="/teams/${esc(String(abbr).toUpperCase())}/">`
       + `<img class="dash-game-logo" src="/logos/logo-${esc(String(abbr).toLowerCase())}.png" alt="">`
-      + `<span>${esc(abbr)}</span></a>`;
+      + `<span>${esc(abbr)}</span>`
+      + (recs && recs[abbr] ? `<span class="dash-game-rec">${esc(recs[abbr])}</span>` : '')
+      + `</a>`;
 
     const today = nbnToday();
+    const dayBefore = (d, n = 1) => new Date(at(d) - n * 86400000).toISOString().slice(0, 10);
+
+    // ?asof=YYYY-MM-DD shows the in-season cards (last night's best,
+    // standings, records) as they were on that date. It changes nothing else
+    // and writes nothing. It exists because those cards are empty for the
+    // whole offseason, which is when most work on this page happens.
+    const asof = (q => (/^\d{4}-\d\d-\d\d$/.test(q) ? q : null))(
+      new URLSearchParams(location.search).get('asof') || '');
+
+    // standings-history.csv, fetched once for the whole page. No field in it
+    // is quoted, so splitting on commas is a full parse.
+    const standingsPromise = fetch('/standings/standings-history.csv')
+      .then(r => (r.ok ? r.text() : '')).catch(() => '')
+      .then(text => {
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return [];
+        const hdr = lines[0].split(',');
+        return lines.slice(1).map(l => {
+          const c = l.split(',');
+          return Object.fromEntries(hdr.map((h, i) => [h, c[i]]));
+        });
+      });
 
     // ── Band 2: around the league ─────────────────────────────────────────
     //
@@ -1153,7 +1261,52 @@
       return { phase: 'in-season', first, last };
     }
 
-    schedulePromise.then(sched => {
+    // The season whose standings belong on the page: the one being played,
+    // or none. Out of season, last year's final table lives on /standings.
+    const liveSeasonPromise = schedulePromise.then(sched =>
+      asof ? nbnSeasonForDate(asof)
+        : sched && phaseOf(sched.games).phase === 'in-season' ? sched.season : null);
+
+    const liveStandingsPromise = Promise.all([liveSeasonPromise, standingsPromise])
+      .then(([season, rows]) => (season ? rows.filter(r => r.SEASON === season) : []));
+
+    // TEAM → "12–4" for the season being played, or null.
+    const recordsPromise = liveStandingsPromise.then(rows => (rows.length
+      ? Object.fromEntries(rows.map(r => [r.TEAM, `${r.W}–${r.L}`])) : null));
+
+    // The most recent night with box scores entered: { date, games }, or null.
+    // Shared by "Last night's best" and the feed's final scores.
+    //
+    // /api/boxscores answers for one exact date, so the schedule is used to
+    // find which dates could have results, newest first, and those are asked
+    // for in turn. It walks back up to three dates rather than asking only
+    // for the newest: a night's games are entered when someone gets to them,
+    // so the most recent scheduled date is routinely still empty while the
+    // one before it has a full slate. Stopping at the first date that answers
+    // with games keeps that to one request on a normal day.
+    //
+    // In the offseason every scheduled date is in the future, so this makes
+    // no requests at all — which is the correct empty.
+    const latestNight = schedulePromise.then(async sched => {
+      let season, dates;
+      if (asof) {
+        season = nbnSeasonForDate(asof);
+        dates = [0, 1, 2].map(n => dayBefore(asof, n));
+      } else {
+        if (!sched || !sched.games) return null;
+        season = sched.season || '';
+        dates = [...new Set(sched.games.filter(g => g.date < today).map(g => g.date))]
+          .sort().reverse().slice(0, 3);
+      }
+      for (const date of dates) {
+        const games = await jget(`/api/boxscores?date=${encodeURIComponent(date)}`
+          + `&season=${encodeURIComponent(season)}`).catch(() => []);
+        if (games && games.length) return { date, games };
+      }
+      return null;
+    }).catch(() => null);
+
+    Promise.all([schedulePromise, recordsPromise]).then(([sched, recs]) => {
       const card = $('dash-slate');
       if (!sched || !sched.games || !sched.games.length) {
         card.innerHTML = '<div class="dash-card-title">Next Up</div>'
@@ -1195,12 +1348,23 @@
       {
         const yrs = /^\d\d-\d\d$/.test(sched.season || '')
           ? `20${sched.season.slice(0, 2)}–${sched.season.slice(3)}` : (sched.season || '');
-        let line = '', sub = '';
+        let line = '', sub = '', heroHtml = '';
         if (ph.phase === 'preseason') {
           const n = daysUntil(today, ph.first);
-          line = n === 0 ? `The ${esc(yrs)} season <em>opens tonight</em>`
-            : `The ${esc(yrs)} season opens in <em>${plural(n, 'day')}</em>`;
-          sub = `Opening night ${esc(shortDate(ph.first))} · ${sched.games.length.toLocaleString()} games on the schedule`;
+          const facts = `${esc(shortDate(ph.first))} · ${esc(yrs)} season · `
+            + `${sched.games.length.toLocaleString()} games on the schedule`;
+          // Opening night's games, by logo, under the countdown.
+          const opener = '<div class="hero-matchups">' + sched.games
+            .filter(g => g.date === ph.first).map(g => '<div class="hero-matchup">'
+              + `${teamChip(g.away_team)}<span class="hero-matchup-at">@</span>${teamChip(g.home_team)}`
+              + `<span class="hero-matchup-time">${esc(g.time_et || '')}</span></div>`).join('')
+            + '</div>';
+          heroHtml = (n === 0
+            ? `<div class="hero-line">Opening night is <em>tonight</em></div><div class="hero-sub">${facts}</div>`
+            : `<div class="hero-count"><span class="hero-num">${n}</span><div>`
+              + `<div class="hero-unit">${n === 1 ? 'day' : 'days'} until opening night</div>`
+              + `<div class="hero-sub">${facts}</div></div></div>`)
+            + opener;
         } else if (ph.phase === 'offseason') {
           line = 'The offseason';
           sub = 'Free agency, extensions and the draft run until next season\'s schedule lands.';
@@ -1210,8 +1374,8 @@
             : `Next up: <em>${esc(shortDate(list[0].date))}</em>`;
           sub = `${esc(yrs)} season`;
         }
-        $('dash-hero').innerHTML = line
-          ? `<div class="hero-line">${line}</div><div class="hero-sub">${sub}</div>` : '';
+        $('dash-hero').innerHTML = heroHtml || (line
+          ? `<div class="hero-line">${line}</div><div class="hero-sub">${sub}</div>` : '');
         head = '';
         if (ph.phase === 'preseason') title = 'Opening week';
       }
@@ -1224,7 +1388,7 @@
             (showDates && (i === 0 || list[i - 1].date !== g.date)
               ? `<div class="dash-game-day">${esc(shortDate(g.date))}</div>` : '')
             + `<div class="dash-game">`
-            + `<span class="dash-game-opp">${teamChip(g.away_team)}<span>@</span>${teamChip(g.home_team)}</span>`
+            + `<span class="dash-game-opp">${teamChip(g.away_team, recs)}<span>@</span>${teamChip(g.home_team, recs)}</span>`
             + (g.stream ? '<span title="Marked as a stream">📺</span>' : '')
             + `<span class="dash-game-time">${esc(g.time_et || '')}</span>`
             + `</div>`).join('') + '</div>' : '');
@@ -1279,45 +1443,21 @@
           href: `/news/view/?id=${encodeURIComponent(a.id)}`,
         })));
 
-    // Final scores. There is no "recent results" endpoint — /api/boxscores
-    // answers for one exact date — so the schedule is used to find which dates
-    // could have results, newest first, and those are asked for in turn.
-    //
-    // Walking back up to three dates rather than asking only for the newest:
-    // a night's games are entered when someone gets to them, so the most
-    // recent scheduled date is routinely still empty while the one before it
-    // has a full slate. Stopping at the first date that answers with games
-    // keeps that to one request on a normal day.
-    //
-    // In the offseason every scheduled date is in the future, so this makes no
-    // requests at all and contributes nothing — which is the correct empty.
-    const feedFromScores = () => schedulePromise.then(async sched => {
-      if (!sched || !sched.games) return [];
-      const past = [...new Set(sched.games.filter(g => g.date < today).map(g => g.date))]
-        .sort().reverse().slice(0, 3);
-      for (const date of past) {
-        const games = await jget(
-          `/api/boxscores?date=${encodeURIComponent(date)}`
-          + `&season=${encodeURIComponent(sched.season || '')}`).catch(() => []);
-        if (games && games.length) {
-          return games.map(g => {
-            const awayWon = g.away_score > g.home_score;
-            const side = (team, score, won) =>
-              `<span class="${won ? 'win' : ''}">${esc(team)} ${esc(String(score))}</span>`;
-            return {
-              ts: date + 'T23:59:59Z',   // after that day's transactions
-              date,
-              type: 'score',
-              html: '<span class="dash-feed-score">'
-                + side(g.away_team, g.away_score, awayWon) + ' · '
-                + side(g.home_team, g.home_score, !awayWon) + '</span>',
-              href: '/boxscores/',
-            };
-          });
-        }
-      }
-      return [];
-    });
+    // Final scores, from the latest night with any entered (`latestNight`).
+    const feedFromScores = () => latestNight.then(night => (night ? night.games.map(g => {
+      const awayWon = g.away_score > g.home_score;
+      const side = (team, score, won) =>
+        `<span class="${won ? 'win' : ''}">${esc(team)} ${esc(String(score))}</span>`;
+      return {
+        ts: night.date + 'T23:59:59Z',   // after that day's transactions
+        date: night.date,
+        type: 'score',
+        html: '<span class="dash-feed-score">'
+          + side(g.away_team, g.away_score, awayWon) + ' · '
+          + side(g.home_team, g.home_score, !awayWon) + '</span>',
+        href: '/boxscores/',
+      };
+    }) : []));
 
     // A full slate is 10-15 games. Left uncapped, one busy night fills every
     // row and the feed becomes a scoreboard — the trade that happened that
@@ -1412,6 +1552,87 @@
       });
     }).catch(() => {});
 
+    // ── Last night's best ─────────────────────────────────────────────────
+    //
+    // The three best lines of the latest night with box scores, by Game Score
+    // — the same formula the build ranks single-game highs by (`game_score`
+    // in nbn-api/stats_build/pipeline.py), so a line that tops this card is
+    // ranked the same way on /stats/highs.
+    const gameScore = p => p.pts + 0.4 * p.fgm - 0.7 * p.fga - 0.4 * (p.fta - p.ftm)
+      + 0.7 * p.oreb + 0.3 * p.dreb + p.stl + 0.7 * p.ast + 0.7 * p.blk - 0.4 * p.pf - p.tov;
+
+    latestNight.then(night => {
+      if (!night) return;
+      const lines = night.games.flatMap(g => {
+        const side = (players, team, opp, home, us, them) => players.map(p => ({
+          p, team, opp, home, won: us > them, score: `${us}–${them}`,
+        }));
+        return [
+          ...side(g.away_players || [], g.away_team, g.home_team, false, g.away_score, g.home_score),
+          ...side(g.home_players || [], g.home_team, g.away_team, true, g.home_score, g.away_score),
+        ];
+      }).map(x => ({ ...x, gmsc: gameScore(x.p) }))
+        .sort((a, b) => b.gmsc - a.gmsc).slice(0, 3);
+      if (!lines.length) return;
+
+      const logo = t => `/logos/logo-${esc(String(t).toLowerCase())}.png`;
+      // Points, rebounds and assists always; steals and blocks when they
+      // are part of why the line is here.
+      const statLine = p => [['pts', 'PTS'], ['reb', 'REB'], ['ast', 'AST'], ['stl', 'STL'], ['blk', 'BLK']]
+        .filter(([k], i) => i < 3 || p[k] >= 3)
+        .map(([k, label]) => `${p[k]}<span>${label}</span>`).join('');
+
+      const title = night.date === dayBefore(today) ? 'Last night\'s best' : 'Best performances';
+      $('dash-best').innerHTML =
+        `<div class="dash-card-title">${title}`
+        + `<span class="dash-best-title-date">${esc(shortDate(night.date))}</span></div>`
+        + '<div class="dash-best-row">' + lines.map((x, i) => {
+          const tag = x.p.slug ? 'a' : 'div';
+          const href = x.p.slug ? ` href="/players/?p=${encodeURIComponent(x.p.slug)}"` : '';
+          // No photo on file: the team logo stands in, rather than a blank circle.
+          const photo = x.p.photo_url
+            ? `<img class="dash-best-photo" src="${esc(x.p.photo_url)}" alt="" `
+              + `onerror="this.onerror=null;this.src='${logo(x.team)}';this.style.objectFit='contain'">`
+            : `<img class="dash-best-photo" src="${logo(x.team)}" alt="" style="object-fit:contain">`;
+          return `<${tag} class="dash-best-item"${href}>`
+            + `<span class="dash-best-rank">${i + 1}</span>`
+            + `<div class="dash-best-top">${photo}<div style="min-width:0">`
+            + `<div class="dash-best-name">${esc(nbnPlayerName(x.p.player))}</div>`
+            + `<div class="dash-best-game"><img src="${logo(x.team)}" alt="">${esc(x.team)} `
+            + `${x.home ? 'vs' : '@'} ${esc(x.opp)} · ${x.won ? 'W' : 'L'} ${esc(x.score)}</div>`
+            + `</div></div>`
+            + `<div class="dash-best-line">${statLine(x.p)}</div>`
+            + `<div class="dash-best-gmsc">Game Score ${x.gmsc.toFixed(1)} · ${x.p.min} min</div>`
+            + `</${tag}>`;
+        }).join('') + '</div>';
+      $('dash-best').hidden = false;
+    }).catch(() => {});
+
+    // ── Standings ─────────────────────────────────────────────────────────
+    //
+    // The top six in each conference, while a season is being played. The
+    // seeds are the build's own (tiebreaks included), so this agrees with
+    // /standings by construction.
+    liveStandingsPromise.then(rows => {
+      const seeded = rows.filter(r => /^(East|West)-/.test(r.SEED || ''));
+      if (!seeded.length) return;
+      const conf = (c, label) => {
+        const top = seeded.filter(r => r.SEED.startsWith(c))
+          .sort((a, b) => +a.SEED_NUM - +b.SEED_NUM).slice(0, 6);
+        return `<div><div class="dash-conf-name">${label}</div>` + top.map(r =>
+          `<a class="dash-stand-row" href="/teams/${esc(r.TEAM)}/">`
+          + `<span class="dash-stand-seed">${esc(r.SEED_NUM)}</span>`
+          + `<img src="/logos/logo-${esc(r.TEAM.toLowerCase())}.png" alt="">`
+          + `<span class="dash-stand-abbr">${esc(r.TEAM)}</span>`
+          + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span></a>`).join('') + '</div>';
+      };
+      $('dash-standings').innerHTML =
+        '<div class="dash-standings-head"><div class="dash-card-title">Standings</div>'
+        + '<a class="dash-standings-more" href="/standings">Full standings →</a></div>'
+        + `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`;
+      $('dash-standings').hidden = false;
+    }).catch(() => {});
+
     // ── Band 1: signed-in only ────────────────────────────────────────────
     if (!token) return;
 
@@ -1436,10 +1657,11 @@
       const abbr = team.toLowerCase();
       const card = $('dash-team');
 
-      const [sched, capRows, standings] = await Promise.all([
+      const [sched, capRows, standings, recs] = await Promise.all([
         schedulePromise,
         jget('/api/cap-history/current').catch(() => null),
-        fetch('/standings/standings-history.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+        standingsPromise,
+        recordsPromise,
       ]);
 
       const ph = phaseOf(sched && sched.games);
@@ -1453,21 +1675,14 @@
       // otherwise. In the offseason standings-history has no row for the season
       // about to start, which is exactly when the countdown is the useful thing.
       let recordLine = '';
-      if (standings) {
-        const lines = standings.trim().split('\n');
-        const hdr = lines[0].split(',');
-        const iS = hdr.indexOf('SEASON'), iW = hdr.indexOf('W'), iL = hdr.indexOf('L');
-        const iT = hdr.indexOf('TEAM'), iR = hdr.indexOf('PLAYOFF_RESULT');
-        const rows = lines.slice(1).map(l => l.split(','))
-          .filter(c => c[iT] === team);
-        const cur = rows.find(c => c[iS] === season);
-        const prev = rows.sort((a, b) => b[iS].localeCompare(a[iS]))[0];
-        const use = cur || prev;
-        if (use) {
-          recordLine = `${use[iW]}–${use[iL]}`
-            + (use[iR] && use[iR] !== 'Missed' ? ` · ${use[iR]}` : '')
-            + (cur ? '' : ` (${use[iS]})`);
-        }
+      const rows = standings.filter(r => r.TEAM === team);
+      const cur = rows.find(r => r.SEASON === season);
+      const prev = rows.sort((a, b) => b.SEASON.localeCompare(a.SEASON))[0];
+      const use = cur || prev;
+      if (use) {
+        recordLine = `${use.W}–${use.L}`
+          + (use.PLAYOFF_RESULT && use.PLAYOFF_RESULT !== 'Missed' ? ` · ${use.PLAYOFF_RESULT}` : '')
+          + (cur ? '' : ` (${use.SEASON})`);
       }
 
       // Your team's own next games, also used for the header countdown below.
@@ -1570,7 +1785,7 @@
             const opp = home ? g.away_team : g.home_team;
             return `<div class="dash-game">`
               + `<span class="dash-game-date">${esc(shortDate(g.date))}</span>`
-              + `<span class="dash-game-opp"><span>${home ? 'vs' : '@'}</span>${teamChip(opp)}</span>`
+              + `<span class="dash-game-opp"><span>${home ? 'vs' : '@'}</span>${teamChip(opp, recs)}</span>`
               + (g.streamer ? `<span title="Claimed by ${esc(g.streamer)}">📺</span>` : '')
               + `<span class="dash-game-time">${esc(g.time_et || '')}</span></div>`;
           }).join('') + '</div>';
