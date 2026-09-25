@@ -209,3 +209,13 @@ curl -s http://localhost:8001/api/players    # re-check the touched slugs' bio f
 - For a `trade`, confirm the traded player(s) now appear on the receiving team's roster and no longer on the sending team's, and any traded picks now resolve to the new owner via `GET /api/picks/{team}` for the receiving team specifically (not just absence from the old owner's list — a pick can vanish from view for either team if its `OWNER` ends up in an unexpected compound state).
 - For a `sign`/`convert_twoway`/`sign_pick`, confirm `player-bios.json`'s `type` field changed as expected — **that field, not the roster CSV's second column, is the authoritative source for two-way/standard/dead status** (the roster CSV's `OVR` column is the only thing reliably persisted there).
 - Report back a short diff: what changed, per team/player, and flag anything that doesn't match what was intended so it can be corrected (remember `DELETE /api/transactions/{id}` only removes the log entry — it does **not** reverse the underlying roster/bio/pick mutation, so a bad transaction needs a corrective follow-up transaction, not a delete, unless you're only cleaning up a duplicate log record after manually undoing the real change).
+
+### 11. Check the site form could have done this
+
+The owner wants every transaction enterable from `/transactions` (`transactions/index.html`) without help. This skill is a convenience on top of that form, not a replacement for it. So after every submit, check that the form could have produced the **same `details` payload** you sent, and that it would have **shown the same checks before submit**:
+
+- **Reachable:** the type is in `#f-type`, and every field you set (contract shape, `signing_method`, `bird_rights_type`, `eaps_assumption`, trailing hold, pick `leaf_id`, trade `exceptions`, etc.) has a form control that writes it. Find the builder for the type in the submit handler (e.g. `buildTwowayContract` for two-ways, `collectSalaries` for salary rows) and compare its output to your payload. Differences that don't matter, like an extra `guaranteed: {"$0"}` map, are fine. Say why.
+- **Previewed:** `collectSignValidationBody` (the live rubric) returns a request for this type and contract shape, not `null`. A form that submits without showing the checks is a gap even when the submit itself works.
+- **Report it:** end your summary with one line, either "Form: could have entered this as-is" or the specific gap. Fix the gap on a branch in `nbn-today-dev` if it's small. Otherwise add it to `BACKLOG.md`.
+
+Known and settled: the form clears `signing_method` on a two-way (two-ways need no funding method under § 2.2). This skill has sent `"minimum"`. Both are accepted, so that isn't a gap.

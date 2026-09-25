@@ -982,7 +982,7 @@
       <!-- two-way shorthand fields (shown instead of salary rows) -->
       <div class="form-field" id="f-twoway-years-field" style="display:none">
         <label>Years</label>
-        <input type="number" id="f-twoway-years" value="2" min="1" max="10" style="width:5rem">
+        <input type="number" id="f-twoway-years" value="2" min="1" max="2" style="width:5rem">
       </div>
       <div class="form-field" id="f-twoway-start-field" style="display:none">
         <label>Starting Season</label>
@@ -2645,8 +2645,21 @@ function collectSignValidationBody() {
   const player = document.getElementById('f-player-slug').value;
   if (!player) return null;
 
+  // Two-way terms are generated from Years + Starting Season, so validate the
+  // exact contract buildTwowayContract will submit. Until 2026-09-25 this
+  // returned null, and a two-way reached submit with no § 2.2 check shown.
   const isTwoWay = document.querySelector('input[name="contract-type"]:checked')?.value === 'two-way';
-  if (isTwoWay) return null;   // two-way terms are generated, not typed here
+  if (isTwoWay) {
+    if (type !== 'sign' && type !== 'sign_pick') return null;
+    const years = parseInt(document.getElementById('f-twoway-years').value) || 0;
+    const start = document.getElementById('f-twoway-start').value.trim();
+    if (years < 1 || !/^\d{2}-\d{2}$/.test(start)) return null;
+    const contract = buildTwowayContract(years, start);
+    if (type === 'sign_pick') return { url: '/api/validate/sign_pick', body: { player, contract } };
+    const team = document.getElementById('f-team').value;
+    if (!team) return null;
+    return { url: '/api/validate/sign', body: { player, team, contract } };
+  }
 
   // Only the incumbent may extend (§ 6.2 — no rival bid), so the team is
   // derived from the roster, same reasoning as sign_pick/convert_twoway below.
