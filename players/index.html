@@ -3509,7 +3509,13 @@
   }
 
   function buildPlayerRadarChart(playerRows, allRows, pos) {
-    function rowPG(r, f) { return +r[f] / Math.max(1, +r.G); }
+    // Per 36 minutes, so the shape shows how a player plays rather than how
+    // much. Per game, a bench player read as small everywhere and landed on
+    // "Role Player" no matter what they did with their minutes.
+    function rowP36(r, f) { return +r[f] * 36 / Math.max(1, +r.MIN); }
+    // Per-36 blows up tiny samples, so both the player and the peers they are
+    // ranked against need 20 games at 10+ minutes a game.
+    function qualifies(r) { return +r.G >= 20 && +r.MIN / Math.max(1, +r.G) >= 10; }
     function rowTS(r) {
       const denom = 2 * (+r.FGA + 0.44 * +r.FTA);
       return denom > 0 ? +r.PTS / denom : 0;
@@ -3525,14 +3531,14 @@
     }
 
     const DIM_DEFS = [
-      { label: 'PPG', angle: 90,  get: (r,g) => rowPG(r,'PTS'), fmt: v => `${v.toFixed(1)} PPG` },
-      { label: 'APG', angle: 45,  get: (r,g) => rowPG(r,'AST'), fmt: v => `${v.toFixed(1)} APG` },
-      { label: 'TS%', angle: 0,   get: (r,g) => rowTS(r),       fmt: v => `${(v*100).toFixed(1)}% TS` },
-      { label: '3PT', angle: 315, get: (r,g) => rowPG(r,'3PM'), fmt: v => `${v.toFixed(1)} 3P/G` },
-      { label: 'FTA', angle: 270, get: (r,g) => rowPG(r,'FTA'), fmt: v => `${v.toFixed(1)} FTA/G` },
-      { label: 'STL', angle: 225, get: (r,g) => rowPG(r,'STL'), fmt: v => `${v.toFixed(2)} SPG` },
-      { label: 'BLK', angle: 180, get: (r,g) => rowPG(r,'BLK'), fmt: v => `${v.toFixed(2)} BPG` },
-      { label: 'RPG', angle: 135, get: (r,g) => rowPG(r,'REB'), fmt: v => `${v.toFixed(1)} RPG` },
+      { label: 'PTS', angle: 90,  get: r => rowP36(r,'PTS'), fmt: v => `${v.toFixed(1)} PTS/36` },
+      { label: 'AST', angle: 45,  get: r => rowP36(r,'AST'), fmt: v => `${v.toFixed(1)} AST/36` },
+      { label: 'TS%', angle: 0,   get: r => rowTS(r),        fmt: v => `${(v*100).toFixed(1)}% TS` },
+      { label: '3PM', angle: 315, get: r => rowP36(r,'3PM'), fmt: v => `${v.toFixed(1)} 3PM/36` },
+      { label: 'FTA', angle: 270, get: r => rowP36(r,'FTA'), fmt: v => `${v.toFixed(1)} FTA/36` },
+      { label: 'STL', angle: 225, get: r => rowP36(r,'STL'), fmt: v => `${v.toFixed(2)} STL/36` },
+      { label: 'BLK', angle: 180, get: r => rowP36(r,'BLK'), fmt: v => `${v.toFixed(2)} BLK/36` },
+      { label: 'REB', angle: 135, get: r => rowP36(r,'REB'), fmt: v => `${v.toFixed(1)} REB/36` },
     ];
 
     function detectArchetype(dims, pos) {
@@ -3541,24 +3547,24 @@
       const elite = k => p[k] >= 0.80;
       const high  = k => p[k] >= 0.75;
       const good  = k => p[k] >= 0.65;
-      const offAvg = (p.PPG + p['3PT'] + p['TS%'] + p.APG + p.FTA) / 5;
+      const offAvg = (p.PTS + p['3PM'] + p['TS%'] + p.AST + p.FTA) / 5;
       const defAvg = (p.BLK + p.STL) / 2;
       const isBig = pos && (pos.includes('PF') || pos.includes('C'));
 
       if (dims.filter(d => d.pct >= 0.75).length >= 6 && defAvg >= 0.50) return 'All-Around';
       if (offAvg >= 0.72 && defAvg >= 0.72) return 'Two-Way Star';
-      if (elite('PPG') && high('FTA')) return 'Elite Scorer';
-      if (elite('APG') && elite('STL')) return 'Defensive Playmaker';
-      if (elite('APG') && p.APG > p.PPG + 0.10) return 'Playmaker';
-      if (elite('3PT') && (elite('STL') || elite('BLK'))) return '3-and-D';
-      if (isBig && elite('RPG') && elite('BLK') && p['3PT'] < 0.35) return 'Paint Beast';
-      if (isBig && good('RPG') && good('BLK') && good('3PT')) return 'Stretch Big';
+      if (elite('PTS') && high('FTA')) return 'Elite Scorer';
+      if (elite('AST') && elite('STL')) return 'Defensive Playmaker';
+      if (elite('AST') && p.AST > p.PTS + 0.10) return 'Playmaker';
+      if (elite('3PM') && (elite('STL') || elite('BLK'))) return '3-and-D';
+      if (isBig && elite('REB') && elite('BLK') && p['3PM'] < 0.35) return 'Paint Beast';
+      if (isBig && good('REB') && good('BLK') && good('3PM')) return 'Stretch Big';
       if (elite('BLK') && elite('STL')) return 'Defensive Anchor';
-      if (elite('3PT') && high('TS%')) return 'Floor Spacer';
+      if (elite('3PM') && high('TS%')) return 'Floor Spacer';
       if (elite('BLK') && good('TS%')) return 'Rim Protector';
 
-      const specialistMap = { PPG: 'Scoring Specialist', '3PT': 'Shooter', APG: 'Facilitator',
-        RPG: 'Rebounding Specialist', BLK: 'Rim Protector', STL: 'Perimeter Defender', 'TS%': 'Efficient Scorer' };
+      const specialistMap = { PTS: 'Scoring Specialist', '3PM': 'Shooter', AST: 'Facilitator',
+        REB: 'Rebounding Specialist', BLK: 'Rim Protector', STL: 'Perimeter Defender', 'TS%': 'Efficient Scorer' };
       const top = [...dims].sort((a, b) => b.pct - a.pct)[0];
       if (top.pct >= 0.75 && specialistMap[top.label]) return specialistMap[top.label];
 
@@ -3568,14 +3574,14 @@
     function buildSvg(season) {
       const seasonRows = playerRows.filter(r => r.SEASON === season);
       const [agg] = aggregateBySeasonRows(seasonRows);
-      if (!agg || +agg.G < 20) return null;
+      if (!agg || !qualifies(agg)) return null;
 
       const seasonMap = new Map();
       allRows.filter(r => r.SEASON === season).forEach(r => {
         if (!seasonMap.has(r.SLUG)) seasonMap.set(r.SLUG, { ...r });
         else { const s = seasonMap.get(r.SLUG); SUM_FIELDS.forEach(f => { s[f] = String(+s[f] + +r[f]); }); }
       });
-      const peers = [...seasonMap.values()].filter(r => +r.G >= 20);
+      const peers = [...seasonMap.values()].filter(qualifies);
 
       const dims = DIM_DEFS.map(d => {
         const playerVal = d.get(agg);
@@ -3667,18 +3673,18 @@
       seasonLbl.setAttribute('text-anchor', 'middle');
       seasonLbl.setAttribute('fill', 'var(--text-muted)');
       seasonLbl.setAttribute('font-size', '9');
-      seasonLbl.textContent = `${season} season`;
+      seasonLbl.textContent = `${season} season · per 36 min`;
       svg.appendChild(seasonLbl);
 
       return svg;
     }
 
-    // Only include seasons with ≥10 games, newest first
+    // Only include qualifying seasons, newest first
     const eligibleSeasons = [...new Set(playerRows.map(r => r.SEASON))]
       .sort().reverse()
       .filter(s => {
         const [a] = aggregateBySeasonRows(playerRows.filter(r => r.SEASON === s));
-        return a && +a.G >= 20;
+        return a && qualifies(a);
       });
     if (!eligibleSeasons.length) return null;
 
