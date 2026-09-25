@@ -705,7 +705,7 @@ Note the constraint in CLAUDE.md: the 30 team shells load only `team.js`, so it
 has to be pulled in the same injected-script + awaited-promise way
 `lineupReady` / `contractReady` are, not by touching the shells.
 
-### [P3] Futures markets: no roster model for opening odds, no insider rule, `/invest` overlaps
+### [P3] Futures markets: no roster model for opening odds, insider trading open, `/invest` overlaps
 Futures markets shipped 2026-09-25 (`docs/nbyen-economy.md` § 4a). Left:
 
 - **Opening odds come from the bookie or the latest power rankings** (by
@@ -715,10 +715,11 @@ Futures markets shipped 2026-09-25 (`docs/nbyen-economy.md` § 4a). Left:
   simulate the season, and seed from that. Also show it beside the market
   price and recompute it on every roster write. It should inform the price,
   not set it.
-- **GMs know about their own trades before anyone else.** Today only
-  `max_stake` limits this. Options: pause a team's outcome while it has an open
-  TRC request (but the pause itself leaks that a trade is coming), or per-team
-  limits for a team's own GM. Decide once there's real trading to look at.
+- **GMs know about their own trades before anyone else.** Betting against
+  your own team is refused, but trading on the news isn't (decided 2026-09-25,
+  `docs/nbyen-economy.md` § 4a). If it becomes a problem: pause a team's
+  outcome while it has an open TRC request (but the pause itself leaks that a
+  trade is coming). Decide once there's real trading to look at.
 - **No price chart.** `GET /api/markets/{id}/history` already has the price
   after every trade.
 - **`/invest`'s team stocks overlap**: a second team price that doesn't pay

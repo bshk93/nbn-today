@@ -38,7 +38,6 @@
     .fut-trades summary { cursor: pointer; color: var(--text-muted); }
     .fut-form { display: flex; flex-direction: column; gap: 0.55rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .fut-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.55rem; }
-    @media (max-width: 600px) { .fut-table .hide-sm { display: none; } }
     .fut-form .hint { font-size: 0.72rem; color: var(--text-muted); }
   `;
   let cssDone = false;
@@ -48,6 +47,7 @@
   let showForm = false;
   const selected = {};        // market id → outcome id
   const side = {};            // market id → 'buy' | 'sell'
+  const contract = {};        // market id → 'yes' | 'no'
 
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const nby = (n, d = 0) => 'NB¥' + Math.abs(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -127,17 +127,19 @@
         <span class="ui-badge ${badge[1]}">${badge[0]}</span></div>
       <div class="fut-meta">${meta.join(' · ')}</div>
       ${m.description ? `<div class="fut-desc">${esc(m.description)}</div>` : ''}
-      ${done ? '' : `<div class="fut-explain">A share pays <strong>${nby(m.payout)}</strong> if its outcome happens and nothing if not, so the price is the market's odds.
-        Buying pushes a price up; selling pushes it down. Sell any time before the market closes.
-        ${Math.round(m.fee * 100)}% fee on each trade. Up to ${nby(m.max_stake)} in per member, net of sales.</div>`}`;
+      ${done ? '' : `<div class="fut-explain">A <strong>Yes</strong> share pays <strong>${nby(m.payout)}</strong> if its outcome happens, and a <strong>No</strong> share pays ${nby(m.payout)} if it doesn't.
+        The price is the market's odds: buying Yes pushes it up, buying No pushes it down. Sell any time before the market closes.
+        You can't bet against a team you work for. ${Math.round(m.fee * 100)}% fee on each trade.${m.max_stake != null ? ` Up to ${nby(m.max_stake)} in per member, net of sales.` : ''}</div>`}`;
 
     const pos = (me && m.positions[me]) || {};
     const acct = (me && m.accounts[me]) || null;
     if (acct) {
       const priceOf = Object.fromEntries(m.outcomes.map(o => [o.id, o.price]));
-      const value = done ? 0 : Object.entries(pos).reduce((s, [oid, sh]) => s + sh * priceOf[oid], 0);
+      const value = done ? 0 : Object.entries(pos).reduce((s, [oid, h]) =>
+        s + (h.yes || 0) * priceOf[oid] + (h.no || 0) * (m.payout - priceOf[oid]), 0);
       const net = acct.spent - acct.received;
-      const paid = (m.status === 'settled' && m.winner && pos[m.winner]) ? pos[m.winner] * m.payout : 0;
+      const paid = m.status !== 'settled' ? 0 : Object.entries(pos).reduce((s, [oid, h]) =>
+        s + (oid === m.winner ? (h.yes || 0) : (h.no || 0)) * m.payout, 0);
       const line = document.createElement('div');
       line.className = 'fut-mine';
       line.innerHTML = done
@@ -165,20 +167,20 @@
     const t = document.createElement('table');
     t.className = 'ui-table ui-table--dense fut-table';
     t.innerHTML = `<thead><tr><th>Outcome</th><th class="num">Price</th><th class="num">Since open</th>
-      <th class="num hide-sm">Shares out</th><th class="num">You hold</th></tr></thead>`;
+      <th class="num">You hold</th></tr></thead>`;
     const tb = t.createTBody();
     rows.forEach(r => {
       const tr = tb.insertRow();
       if (selected[m.id] === r.id) tr.className = 'sel';
       if (m.status === 'settled' && m.winner === r.id) tr.className = 'win';
       const chg = r.price - r.open;
-      const held = pos[r.id] || 0;
+      const h = pos[r.id] || {};
+      const held = [h.yes ? `${h.yes.toFixed(2)} Yes` : '', h.no ? `${h.no.toFixed(2)} No` : ''].filter(Boolean).join(', ');
       tr.innerHTML = `
         <td>${m.status === 'settled' && m.winner === r.id ? '🏆 ' : ''}${esc(r.label)}</td>
         <td class="num price">${pct(r.price)}<span class="fut-bar" style="width:${Math.max(2, r.price / maxP * 48)}px"></span></td>
         <td class="num ${Math.abs(chg) < 0.05 ? '' : chg > 0 ? 'up' : 'down'}">${Math.abs(chg) < 0.05 ? '—' : (chg > 0 ? '▲ ' : '▼ ') + Math.abs(chg).toFixed(1)}</td>
-        <td class="num hide-sm">${r.shares_out ? r.shares_out.toFixed(1) : '—'}</td>
-        <td class="num">${held ? held.toFixed(2) : ''}</td>`;
+        <td class="num">${held}</td>`;
       if (!done) tr.onclick = () => { selected[m.id] = r.id; draw(); };
     });
     wrap.appendChild(t);
@@ -192,8 +194,9 @@
     box.className = 'fut-trade';
     if (!selected[m.id]) selected[m.id] = [...m.outcomes].sort((a, b) => b.price - a.price)[0].id;
     const s = side[m.id] || 'buy';
+    const ct = contract[m.id] || 'yes';
     const oid = selected[m.id];
-    const held = pos[oid] || 0;
+    const held = (pos[oid] || {})[ct] || 0;
 
     const opts = [...m.outcomes].sort((a, b) => a.label.localeCompare(b.label))
       .map(o => `<option value="${o.id}" ${o.id === oid ? 'selected' : ''}>${esc(o.label)} — ${pct(o.price)}</option>`).join('');
@@ -202,6 +205,10 @@
         <div class="ui-segmented">
           <button class="${s === 'buy' ? 'active' : ''}" data-side="buy">Buy</button>
           <button class="${s === 'sell' ? 'active' : ''}" data-side="sell">Sell</button>
+        </div>
+        <div class="ui-segmented">
+          <button class="${ct === 'yes' ? 'active' : ''}" data-ct="yes">Yes</button>
+          <button class="${ct === 'no' ? 'active' : ''}" data-ct="no">No</button>
         </div>
         <select class="ui-select fut-oid">${opts}</select>
       </div>
@@ -222,6 +229,7 @@
     let timer = null;
 
     box.querySelectorAll('[data-side]').forEach(b => b.onclick = () => { side[m.id] = b.dataset.side; draw(); });
+    box.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => { contract[m.id] = b.dataset.ct; draw(); });
     box.querySelector('.fut-oid').onchange = e => { selected[m.id] = e.target.value; draw(); };
     const allBtn = box.querySelector('.fut-all');
     if (allBtn) allBtn.onclick = () => { amt.value = held.toFixed(4); requote(); };
@@ -232,17 +240,17 @@
       err.textContent = '';
       const v = parseFloat(amt.value);
       if (!(v > 0)) { qEl.textContent = ''; return; }
-      if (s === 'sell' && v > held + 1e-6) { qEl.textContent = ''; err.textContent = `You hold ${held.toFixed(2)} shares.`; return; }
+      if (s === 'sell' && v > held + 1e-6) { qEl.textContent = ''; err.textContent = `You hold ${held.toFixed(2)} ${ct === 'yes' ? 'Yes' : 'No'} shares.`; return; }
       try {
         const q = await api(`/api/markets/${m.id}/quote`, {
           method: 'POST',
-          body: JSON.stringify({ outcome_id: oid, side: s, [s === 'buy' ? 'spend' : 'shares']: v }),
+          body: JSON.stringify({ outcome_id: oid, side: s, contract: ct, [s === 'buy' ? 'spend' : 'shares']: v }),
         });
         if (parseFloat(amt.value) !== v) return;   // typed on since
         quote = q;
         qEl.innerHTML = s === 'buy'
-          ? `<strong>${q.shares.toFixed(2)} shares</strong> at ${q.avg_price.toFixed(2)} each · price ${pct(q.price_before)} → ${pct(q.price_after)}
-             · ${nby(q.cost, 2)} + ${nby(q.fee, 2)} fee = <strong>${nby(q.total, 2)}</strong> · pays <strong>${nby(q.pays_if_wins, 2)}</strong> if it wins`
+          ? `<strong>${q.shares.toFixed(2)} ${ct === 'yes' ? 'Yes' : 'No'} shares</strong> at ${q.avg_price.toFixed(2)} each · price ${pct(q.price_before)} → ${pct(q.price_after)}
+             · ${nby(q.cost, 2)} + ${nby(q.fee, 2)} fee = <strong>${nby(q.total, 2)}</strong> · pays <strong>${nby(q.pays_if_right, 2)}</strong> if it ${ct === 'yes' ? 'happens' : "doesn't happen"}`
           : `Get <strong>${nby(q.total, 2)}</strong> (${nby(q.proceeds, 2)} − ${nby(q.fee, 2)} fee) · ${q.avg_price.toFixed(2)} a share
              · price ${pct(q.price_before)} → ${pct(q.price_after)}`;
         go.disabled = false;
@@ -256,15 +264,17 @@
       err.textContent = '';
       try {
         const body = s === 'buy'
-          ? { outcome_id: oid, spend: quote.cost, min_shares: quote.shares - 1e-4 }
-          : { outcome_id: oid, shares: parseFloat(amt.value), min_proceeds: quote.total - 0.01 };
+          ? { outcome_id: oid, contract: ct, spend: quote.cost, min_shares: quote.shares - 1e-4 }
+          : { outcome_id: oid, contract: ct, shares: parseFloat(amt.value), min_proceeds: quote.total - 0.01 };
         const r = await api(`/api/markets/${m.id}/${s}`, { method: 'POST', body: JSON.stringify(body) });
         replace(r.market);
         await ctx.refreshBalance();
         draw();
       } catch (e) {
+        // Requote first (the price may have moved), then show why it failed —
+        // requote clears the error line.
+        await requote();
         err.textContent = e.message;
-        requote();
       }
     };
     return box;
@@ -305,7 +315,7 @@
         body.innerHTML = rows.length ? `<table class="ui-table ui-table--dense"><thead><tr><th>When</th><th>Member</th><th></th>
           <th>Outcome</th><th class="num">Shares</th><th class="num">NB¥</th></tr></thead><tbody>${rows.map(t => `<tr>
           <td>${when(t.ts)}</td><td>${esc(t.member)}</td><td>${t.side === 'buy' ? 'Bought' : 'Sold'}</td>
-          <td>${esc(label[t.outcome_id] || '?')}</td><td class="num">${t.shares.toFixed(2)}</td><td class="num">${t.cash.toFixed(2)}</td>
+          <td>${t.contract === 'no' ? 'No on ' : ''}${esc(label[t.outcome_id] || '?')}</td><td class="num">${t.shares.toFixed(2)}</td><td class="num">${t.cash.toFixed(2)}</td>
           </tr>`).join('')}</tbody></table>` : '<div class="fut-meta">No trades yet.</div>';
       } catch (e) { body.textContent = e.message; }
     });
@@ -366,7 +376,7 @@
       <div class="fut-form-grid">
         <label class="ui-label">Liquidity (b) <input class="ui-input" id="fm-b" type="number" value="1500" min="100" max="20000" step="100"></label>
         <label class="ui-label">Fee % <input class="ui-input" id="fm-fee" type="number" value="2" min="0" max="10" step="0.5"></label>
-        <label class="ui-label">Max in per member <input class="ui-input" id="fm-stake" type="number" value="500" min="1" step="50"></label>
+        <label class="ui-label">Max in per member <input class="ui-input" id="fm-stake" type="number" min="1" step="50" placeholder="No cap"></label>
         <label class="ui-label">Closes (optional) <input class="ui-input" id="fm-close" type="datetime-local"></label>
       </div>
       <div class="hint" id="fm-hint"></div>
@@ -449,7 +459,7 @@
             title: $('fm-title').value, description: $('fm-desc').value,
             outcomes: rows().map(r => ({ label: r.label, team: r.team, open_price: r.w === '' ? null : parseFloat(r.w) })),
             b: parseFloat($('fm-b').value), fee: parseFloat($('fm-fee').value) / 100,
-            max_stake: parseFloat($('fm-stake').value),
+            max_stake: $('fm-stake').value ? parseFloat($('fm-stake').value) : null,
             closes_at: close ? new Date(close).toISOString() : null,
           }),
         });

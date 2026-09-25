@@ -42,7 +42,7 @@ was cut by ten at launch, so every price in it divides by ten.
 |---|---|
 | Buy a stream | 1,000 |
 | A bet | up to 100 per bet |
-| Futures shares | at the market price, up to each market's `max_stake` (default 500) net of sales, plus a 2% fee |
+| Futures shares | at the market price, plus a 2% fee. No cap unless a bookie sets one on that market |
 
 Themes, avatars and name colours people already own stay theirs. Buying new
 ones is paused (§ 6).
@@ -68,15 +68,35 @@ ones is paused (§ 6).
 Added 2026-09-25. The Futures tab on `/bet`; code in
 `nbn-api/routers/markets.py` and `bet/futures.js`.
 
-- **A share pays 100 NB¥ if its outcome happens and 0 if not.** Its price is
-  the market's odds: 23 NB¥ a share is 23%.
+- **A Yes share pays 100 NB¥ if its outcome happens; a No share pays 100 if it
+  doesn't.** The price is the market's odds: a Yes at 23 NB¥ is 23%, and the
+  matching No costs 77.
 - **Nobody sets prices.** An automated market maker (LMSR) quotes every
   outcome. Buying pushes a price up and the rest down; prices always sum to 100.
   A bookie opens a market, can seed its opening odds, and names the winner.
   That's all. The point is that a league trade moves the price as soon as a
   member acts on it, with no committee keeping lines current.
-- **Members can sell any time before close.** No shorting: you can only sell
-  shares you hold.
+- **Members can sell any time before close.** You sell shares you hold; to bet
+  against an outcome, you buy its No. To the market maker a No on Boston is one
+  share of every other outcome, so it needs no math of its own.
+- **There's no per-member cap by default.** It was there to stop one member
+  pushing a price where nobody could push it back. With No shares anyone can,
+  and a price pushed too far is money for whoever corrects it. Big bets also
+  can't raise what the house can lose, which is fixed by `b`. A bookie can
+  still set `max_stake` on a market.
+- **Nobody bets against a team they work for** (a team role, or a current
+  tenure as owner, GM or coach). A position like that pays more the worse the
+  team does, and its holder can make that happen. The rule is on the whole
+  position, not the No button: after any trade, what you'd be paid if your team
+  wins must be at least what you'd be paid if the worst other outcome wins. That
+  also refuses the disguised version, Yes on every other team. It's
+  deliberately not stricter: backing one rival is allowed, though it leaves a
+  small reason to see your own team lose to that rival.
+- **Knowing about your own trade early is not blocked.** A GM who's about to
+  land a star can buy Yes on their team, or on the team getting their star.
+  The house can't lose more because of it, the edge lasts only until the trade
+  is announced, and it makes the price right sooner. If it becomes a problem,
+  the option is pausing a team while it has an open TRC request.
 - **What a market does to the money supply is a formula.** Round trips cost
   nothing but the fee, so only the final state matters. At settlement:
 
