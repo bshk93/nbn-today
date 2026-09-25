@@ -631,11 +631,19 @@
       tr.querySelector('.fm-del').onclick = () => { tr.remove(); preview(); };
     }
 
+    // A typed outcome that names a team ("Boston Celtics", "BOS") is linked
+    // to it, so the own-team rule applies whether or not "Fill" was used.
+    function teamFor(label) {
+      const L = label.toLowerCase();
+      const list = typeof TEAM_LIST !== 'undefined' ? TEAM_LIST : {};
+      return Object.keys(list).find(k => k.toLowerCase() === L || list[k].toLowerCase() === L) || null;
+    }
+
     function rows() {
       return [...tbody.rows].map(tr => ({
         tr,
         label: tr.querySelector('.fm-label').value.trim(),
-        team: tr.dataset.team || null,
+        team: tr.dataset.team || teamFor(tr.querySelector('.fm-label').value.trim()),
         w: tr.querySelector('.fm-w').value.trim(),
       })).filter(r => r.label);
     }
