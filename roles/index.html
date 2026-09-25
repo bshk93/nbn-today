@@ -176,6 +176,8 @@
     .trb-agent      { background: #431407; color: #fdba74; }
     .trb-poext      { background: #1e1b4b; color: #a5b4fc; }
     .trb-poext-head { background: #1e1b4b; color: #a5b4fc; border: 1px solid #818cf8; }
+    .trb-trc        { background: #082f49; color: #7dd3fc; }
+    .trb-trc-head   { background: #082f49; color: #7dd3fc; border: 1px solid #0ea5e9; }
     .trb-team    { background: var(--success-bg); color: var(--success-light); }
 
     .empty-state { text-align: center; color: var(--text-muted); padding: 2rem; }
@@ -553,6 +555,8 @@ function roleBadgeClass(role) {
   if (role === 'agent')      return 'trb-agent';
   if (role === 'poext_head') return 'trb-poext-head';
   if (role === 'poext')      return 'trb-poext';
+  if (role === 'trc_head')   return 'trb-trc-head';
+  if (role === 'trc')        return 'trb-trc';
   return 'trb-team';
 }
 

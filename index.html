@@ -1798,7 +1798,10 @@
 
       const chipBox = $('dash-chips');
       let settled = 0;
-      const EXPECTED = 7;   // the async chip sources below
+      const EXPECTED = 6;   // the async chip sources below
+      // Differences from the league sheet are not a chip: they are bookkeeping
+      // for the rosters committee, not something the owner acts on. They stay
+      // on the team page's Cap Health card and /committees/rosters.
       function paintChips() {
         if (!chips.length) {
           chipBox.innerHTML = settled >= EXPECTED
@@ -1830,30 +1833,6 @@
                       'This team has never submitted a coaching-settings blob');
         else if (rec.pending) add('note', 'Coaching settings queued', `/teams/${abbr}/`,
                       'Saved, waiting for a streamer to enter them into 2K');
-      }).catch(() => {}).then(done);
-
-      // Where this team's roster disagrees with the league sheet. Only the
-      // `open` group: `deferred` is a future season's figure or a hold the
-      // site has never computed — 65 of the 136 rows live today — and the
-      // /poopoo router separates them precisely because collapsing the two
-      // produces a wall of red every owner correctly learns to ignore.
-      // The counting and the categories are the job's; nothing is judged here.
-      jget(`/api/poopoo/summary?team=${encodeURIComponent(team)}`).then(sum => {
-        const entry = ((sum && sum.teams) || []).find(t => t.team === team);
-        const open = CapHealth.sortDiffs((entry && entry.diffs || [])
-          .filter(d => d.group === 'open'));
-        if (!open.length) return;
-        // Named by the worst diff's `field` — a player's name, or "Guaranteed
-        // Salary" for a team-level one. Not its category: sorted worst-first
-        // the category is right, but the labels ("Aggregate") only read next
-        // to the descriptions /poopoo prints beside them, and alone on a chip
-        // they say nothing. The field is specific and no longer. Every diff's
-        // category and field are in the tooltip.
-        const worst = open[0].field || CapHealth.diffMeta(open[0].category).label;
-        add('caution',
-          open.length === 1 ? `Sheet: ${worst}` : `Sheet: ${worst} +${open.length - 1}`,
-          `/teams/${abbr}/`,
-          open.map(d => `${CapHealth.diffMeta(d.category).label}: ${d.field}`).join('\n'));
       }).catch(() => {}).then(done);
 
       // § 5.1 waiver wire. `my_claims` is scoped to the caller's own teams, so

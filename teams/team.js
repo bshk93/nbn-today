@@ -301,11 +301,65 @@ const coachingConfigReady = new Promise(resolve => {
     }
     .cs-cards-grid { column-width: 260px; column-gap: 1rem; }
   }
-  .roster-num {
-    display: inline-block; min-width: 1.5rem; margin-right: 0.5rem;
-    color: var(--text-dim); font-weight: 400; font-variant-numeric: tabular-nums;
+  .settings-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 1.9rem; margin-bottom: 0.5rem; }
+  .settings-head .settings-subtitle { margin-bottom: 0; }
+  .settings-actions { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+  .ts-status { font-size: 0.75rem; color: var(--text-muted); }
+
+  /* Rotation table (setupTeamSettingsTab). */
+  .ts-meter { margin-bottom: 0.75rem; }
+  .ts-meter-label { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+  .ts-meter-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold); }
+  .ts-meter.ok .ts-meter-val { color: var(--success-light); }
+  .ts-meter.over .ts-meter-val { color: var(--danger-light); }
+  .ts-meter-track { height: 6px; border-radius: 3px; background: var(--bg-subtle); overflow: hidden; }
+  .ts-meter-fill { height: 100%; background: var(--gold); transition: width 0.15s; }
+  .ts-meter.ok .ts-meter-fill { background: var(--success-light); }
+  .ts-meter.over .ts-meter-fill { background: var(--danger-light); }
+  .ts-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .ts-table th { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+  .ts-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+  .ts-table tbody tr:last-child td { border-bottom: none; }
+  /* Starters and bench, told apart by position alone — a divider row would
+     break "row index is the slot", which the drag code relies on. */
+  .ts-table tbody tr:nth-child(5) td { border-bottom: 2px solid var(--border); }
+  .ts-table tbody tr:nth-child(-n+5) .ts-slot { color: var(--accent-light); font-weight: 700; }
+  .ts-table tbody tr:nth-child(n+16) { opacity: 0.55; }
+  .ts-slot { width: 2.6rem; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ts-num { width: 2.4rem; text-align: center !important; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .ts-name { font-weight: 600; }
+  .ts-name a { color: var(--text-primary); text-decoration: none; }
+  .ts-name a:hover { color: var(--accent-light); }
+  .ts-ovr { width: 2.6rem; text-align: right !important; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+  .ts-pos { width: 6.5rem; white-space: nowrap; }
+  .ts-pos2 { color: var(--text-muted); }
+  .ts-min { width: 9rem; text-align: right !important; white-space: nowrap; }
+  .ts-minbar { display: inline-block; vertical-align: middle; width: 4rem; height: 4px; border-radius: 2px; background: var(--bg-subtle); overflow: hidden; margin-right: 0.5rem; }
+  .ts-minbar > span { display: block; height: 100%; background: var(--accent); }
+  .ts-minval { display: inline-block; min-width: 1.4rem; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .ts-minval.dim { color: var(--text-dim); font-weight: 400; }
+  .ts-res-tag { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); border: 1px solid var(--border); border-radius: 4px; padding: 0.05rem 0.35rem; }
+  .ts-input { height: 1.75rem; padding: 0 0.35rem; font-size: 0.78rem; border-radius: 5px; }
+  .ts-num-input { width: 2.2rem; text-align: center; }
+  .ts-pos-edit { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .ts-sec-select { width: auto; color: var(--text-secondary); }
+  .ts-min-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .ts-stepper { display: inline-flex; align-items: stretch; height: 1.75rem; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+  .ts-stepper button { width: 1.5rem; border: none; background: var(--bg-subtle); color: var(--text-secondary); font: inherit; font-size: 0.85rem; cursor: pointer; padding: 0; }
+  .ts-stepper button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+  .ts-stepper input { width: 2.2rem; border: none; border-inline: 1px solid var(--border); border-radius: 0; text-align: center; font-size: 0.78rem; padding: 0; -moz-appearance: textfield; }
+  .ts-stepper input::-webkit-outer-spin-button, .ts-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .ts-min-edit:has(.ts-res input:checked) .ts-stepper { opacity: 0.35; }
+  .ts-res { display: inline-flex; align-items: center; height: 1.75rem; padding: 0 0.45rem; border: 1px solid var(--border); border-radius: 5px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); cursor: pointer; user-select: none; }
+  .ts-res input { position: absolute; opacity: 0; pointer-events: none; }
+  .ts-res:has(input:checked) { color: var(--gold); border-color: var(--gold-border); background: var(--gold-bg); }
+  .ts-res:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .ts-res:has(input:disabled) { opacity: 0.4; cursor: default; }
+  @media (max-width: 640px) {
+    .ts-ovr, .ts-minbar { display: none; }
+    .ts-table td, .ts-table th { padding-inline: 0.3rem; }
   }
-  .drag-handle-cell { width: 1.8rem; padding: 0.3rem 0.2rem !important; }
+  .ts-handle { width: 1.8rem; padding: 0.3rem 0.2rem !important; }
   .drag-handle {
     display: inline-flex; align-items: center; justify-content: center;
     width: 1.6rem; height: 1.6rem; cursor: grab; color: var(--text-dim);
@@ -313,7 +367,6 @@ const coachingConfigReady = new Promise(resolve => {
   }
   .drag-handle:active { cursor: grabbing; }
   #team-settings-wrap tr.dragging { opacity: 0.4; }
-  .roster-slot { color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .table-wrap {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -741,6 +794,18 @@ const coachingConfigReady = new Promise(resolve => {
     color: var(--text-dim); cursor: pointer; font-family: inherit; font-size: 0.8rem;
     line-height: 1; padding: 0.2rem 0.4rem;
   }
+  .identity-season { display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+  .identity-players-col { min-width: 15rem; }
+  .identity-players-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .identity-players { list-style: none; margin: 0; padding: 0; counter-reset: ip; }
+  .identity-players li { counter-increment: ip; display: grid; grid-template-columns: 1.2rem 1fr auto; column-gap: 0.4rem; padding: 0.35rem 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+  .identity-players li:last-child { border-bottom: none; }
+  .identity-players li::before { content: counter(ip); grid-row: 1 / span 2; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .identity-players .ip-name { font-weight: 600; }
+  .identity-players .ip-name a { color: var(--text-primary); text-decoration: none; }
+  .identity-players .ip-name a:hover { color: var(--accent-light); }
+  .identity-players .ip-line { grid-column: 2; font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .identity-players .ip-g { grid-column: 3; grid-row: 1; font-size: 0.7rem; color: var(--text-dim); }
   .move-btn:hover { color: var(--text-primary); border-color: var(--text-dim); }
   .move-menu {
     position: fixed; z-index: 1001; min-width: 220px;
@@ -811,7 +876,6 @@ const coachingConfigReady = new Promise(resolve => {
   .btn-go     { border: 1px solid var(--accent); color: var(--link); }
   .btn-danger { border: 1px solid var(--danger); color: var(--danger); }
   .btn-danger:disabled, .btn-go:disabled { opacity: 0.4; cursor: not-allowed; }
-  .block-flag { color: var(--gold); font-size: 0.7rem; margin-left: 0.3rem; }
   .row-draft-rights .stash-tag { font-style: normal; margin-left: 0.4rem; }
   /* Open offer sheet (§ 3.15). Sits above the hard-cap banner because a pending
      offer changes what the team can spend and is waiting on somebody. */
@@ -1019,15 +1083,21 @@ document.body.innerHTML = `
     <div class="tab-panel hidden" id="tab-coaching">
       <section>
         <h2 class="section-title">Settings</h2>
-        <p class="section-sub">Jersey numbers, secondary positions, and this team's 2K coach profile — entered into the game by whoever streams your games.</p>
+        <p class="section-sub">Your depth chart, jersey numbers and 2K coach profile. Whoever streams your games enters them into 2K.</p>
         <div class="settings-card">
           <div class="settings-subsection">
-            <h3 class="settings-subtitle" id="team-settings-title">Roster Settings</h3>
-            <p class="settings-subsub">Jersey numbers, secondary positions, and player minutes. Primary position is scraped from 2K and can't be edited here.</p>
-            <div class="table-wrap" id="team-settings-wrap"><div class="status">Loading…</div></div>
+            <div class="settings-head">
+              <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
+              <div class="settings-actions" id="team-settings-actions"></div>
+            </div>
+            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Primary position comes from 2K.</p>
+            <div id="team-settings-wrap"><div class="status">Loading…</div></div>
           </div>
           <div class="settings-subsection">
-            <h3 class="settings-subtitle" id="coaching-settings-title">Coaching Profile</h3>
+            <div class="settings-head">
+              <h3 class="settings-subtitle" id="coaching-settings-title">Coaching Profile</h3>
+              <div class="settings-actions" id="coaching-settings-actions"></div>
+            </div>
             <div id="coaching-settings-wrap"><div class="status">Loading…</div></div>
           </div>
         </div>
@@ -4522,18 +4592,13 @@ function makeRosterMoveActions(abbr, biosData, blockEntries, poextEligible) {
     btn.setAttribute('aria-label', `Roster moves for ${displayNameFromBio(bio.name || row.SLUG)}`);
     const st = stateFor(row.SLUG);
 
-    const flag = document.createElement('span');
-    flag.className = 'block-flag';
-    const syncFlag = () => { flag.textContent = st.on ? 'on block' : ''; };
-    syncFlag();
-
     btn.addEventListener('click', e => {
       e.stopPropagation();
       openMovesMenu(btn, row.SLUG, bio, abbr, st,
-        (nowOn, notes) => { st.on = nowOn; st.notes = notes; syncFlag(); },
+        (nowOn, notes) => { st.on = nowOn; st.notes = notes; },
         (poextEligible || {})[row.SLUG]);
     });
-    td.append(btn, flag);
+    td.append(btn);
   };
 }
 
@@ -5157,11 +5222,13 @@ function primaryPosFromAttrs(attrSnap) {
 // about them" tables; merging them means a player's name/position context is
 // established once instead of twice. Minutes are stored slot-indexed (one of
 // the 15 CS.MINUTES_SLOTS holds a slug), not player-indexed, so this table
-// flips that lookup direction — each row picks its own slot rather than each
-// slot picking a player — while leaving the stored shape untouched, since
+// flips that lookup direction — a row's position is its slot — while
+// leaving the stored shape untouched, since
 // that shape is also what the streamer dashboard on /stream reads.
 function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coachingRecord, currentOvr) {
   const wrapEl = document.getElementById(wrapId);
+  const actionsEl = document.getElementById('team-settings-actions');
+  const hintEl = document.getElementById('team-settings-hint');
   const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
   const activeRows = hasSlug ? rosterRows.filter(r => r.SLUG) : [];
 
@@ -5173,8 +5240,10 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   const canEdit = canEditTeamSettings(abbr);
   // Minutes columns only appear if the shared vocabulary loaded — same
   // graceful-degradation the Coaching Profile section uses, but here it's a
-  // narrower miss (two columns absent) rather than the whole section.
+  // narrower miss (the minutes column and meter absent) rather than the whole
+  // section.
   const CS = window.CoachingSettings || null;
+  const STARTERS = 5;
 
   // A slot is which row a player is in, not a field they pick — table order
   // *is* the depth chart: row 0 is always PG, row 1 SG, ... row 4 C, row 5
@@ -5199,130 +5268,181 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     return ordered;
   }
 
-  function minutesTotalLine(minutes) {
+  // "PG" for a starter, "6th" for the bench. The stored key stays the bare
+  // CS.MINUTES_SLOTS value; this is display only.
+  function slotLabel(i) {
+    const slot = CS ? CS.MINUTES_SLOTS[i] : null;
+    if (!slot) return '—';
+    if (i < STARTERS) return slot;
+    const n = +slot;
+    const sfx = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' })[n % 10] || 'th';
+    return `${n}${sfx}`;
+  }
+
+  // The 240-minute budget as a bar above the table, rather than a line of
+  // text under it, so an unbalanced depth chart is the first thing seen.
+  function minutesMeter() {
     const el = document.createElement('div');
-    const total = CS.minutesTotal(minutes);
-    const ok = total === CS.MINUTES_BUDGET;
-    el.style.cssText = `font-size:0.75rem;font-weight:700;margin-top:0.5rem;color:${ok ? 'var(--success-light,#4caf50)' : 'var(--gold,#c9a227)'}`;
-    el.textContent = ok
-      ? `${total} of ${CS.MINUTES_BUDGET} minutes allocated`
-      : `${total} of ${CS.MINUTES_BUDGET} minutes allocated · ${CS.MINUTES_BUDGET - total > 0 ? (CS.MINUTES_BUDGET - total) + ' left to place' : (total - CS.MINUTES_BUDGET) + ' over'}`;
+    el.className = 'ts-meter';
+    el.innerHTML = '<div class="ts-meter-label"><span>Minutes</span><span class="ts-meter-val"></span></div>'
+      + '<div class="ts-meter-track"><div class="ts-meter-fill"></div></div>';
+    el.update = minutes => {
+      const total = CS.minutesTotal(minutes);
+      const budget = CS.MINUTES_BUDGET;
+      const diff = budget - total;
+      el.classList.toggle('ok', diff === 0);
+      el.classList.toggle('over', diff < 0);
+      el.querySelector('.ts-meter-val').textContent = diff === 0
+        ? `${total} / ${budget}`
+        : `${total} / ${budget} · ${diff > 0 ? `${diff} left` : `${-diff} over`}`;
+      el.querySelector('.ts-meter-fill').style.width = `${Math.min(100, total / budget * 100)}%`;
+    };
     return el;
   }
 
-  // Slot leads (before Player) since it's the fixed anchor of the row — the
-  // player is what moves, dragged into or out of that slot, not the other
-  // way around. Jersey # folds into the Player cell (as a small prefix
-  // rather than its own column), primary/secondary position share one Pos
-  // cell ("PG / SG"), and Minutes/RES share one Min cell — a reserve player
-  // has no minutes figure to show alongside, so the two were never really
-  // independent. `forEdit` adds a leading drag-handle column, edit mode only.
+  // Slot, #, Player, OVR, Pos, Min. The jersey number is its own narrow
+  // column, not a prefix inside the Player cell: as a prefix, a player with
+  // no number started his name a column's width left of everyone else's.
+  // `forEdit` adds a leading drag-handle column.
   function buildHead(table, forEdit) {
     const hr = table.createTHead().insertRow();
-    if (forEdit && CS) hr.appendChild(document.createElement('th'));
-    (CS ? ['Slot'] : []).concat(['Player', 'Pos'], CS ? ['Min'] : []).forEach(label => {
+    const cols = [];
+    if (forEdit && CS) cols.push(['', 'ts-handle']);
+    if (CS) cols.push(['Slot', 'ts-slot']);
+    cols.push(['#', 'ts-num'], ['Player', 'ts-name'], ['OVR', 'ts-ovr'], ['Pos', 'ts-pos']);
+    if (CS) cols.push(['Min', 'ts-min']);
+    cols.forEach(([label, cls]) => {
       const th = document.createElement('th');
       th.textContent = label;
-      if (label === 'Min') th.classList.add('right');
+      th.className = cls;
       hr.appendChild(th);
     });
   }
 
+  function nameCell(tr, row, bio) {
+    const td = tr.insertCell();
+    td.className = 'ts-name';
+    const a = document.createElement('a');
+    a.href = `/players/?p=${encodeURIComponent(row.SLUG)}`;
+    a.textContent = displayNameFromBio(bio.name || '') || row.SLUG || '—';
+    td.appendChild(a);
+    const ovrTd = tr.insertCell();
+    ovrTd.className = 'ts-ovr';
+    ovrTd.textContent = (currentOvr && currentOvr[row.SLUG]) || '—';
+  }
+
+  function setActions(...btns) {
+    if (!actionsEl) return;
+    actionsEl.innerHTML = '';
+    btns.forEach(b => actionsEl.appendChild(b));
+  }
+
+  function button(label, variant) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `ui-btn ui-btn--sm${variant ? ` ui-btn--${variant}` : ''}`;
+    b.textContent = label;
+    return b;
+  }
+
+  function mountTable(table, meter) {
+    const gridWrap = document.createElement('div');
+    gridWrap.className = 'table-wrap';
+    gridWrap.appendChild(table);
+    wrapEl.innerHTML = '';
+    if (meter) wrapEl.appendChild(meter);
+    wrapEl.appendChild(gridWrap);
+  }
+
   function renderReadView() {
     const minutes = (coachingRecord && coachingRecord.minutes) || {};
+    if (hintEl) hintEl.hidden = true;
     const table = document.createElement('table');
+    table.className = 'ts-table';
     buildHead(table, false);
 
     const tbody = table.createTBody();
     orderedRows(minutes).forEach((row, i) => {
       const bio = biosData[row.SLUG] || {};
-      const name = displayNameFromBio(bio.name || '') || row.SLUG || '—';
       const tr = tbody.insertRow();
 
       const slot = CS ? (CS.MINUTES_SLOTS[i] || '') : '';
       if (CS) {
         const slotTd = tr.insertCell();
-        slotTd.className = 'roster-slot';
-        slotTd.textContent = slot || '—';
+        slotTd.className = 'ts-slot';
+        slotTd.textContent = slotLabel(i);
       }
 
-      const nameTd = tr.insertCell();
-      nameTd.className = 'bold';
-      if (bio.jersey_number != null && bio.jersey_number !== '') {
-        const numSpan = document.createElement('span');
-        numSpan.className = 'roster-num';
-        numSpan.textContent = bio.jersey_number;
-        nameTd.appendChild(numSpan);
-      }
-      nameTd.appendChild(document.createTextNode(name));
+      const numTd = tr.insertCell();
+      numTd.className = 'ts-num';
+      numTd.textContent = bio.jersey_number != null && bio.jersey_number !== '' ? bio.jersey_number : '';
+
+      nameCell(tr, row, bio);
 
       const primary = primaryPosFromAttrs(attributesData[row.SLUG]);
-      tr.insertCell().textContent = bio.secondary_pos ? `${primary} / ${bio.secondary_pos}` : primary;
+      const posTd = tr.insertCell();
+      posTd.className = 'ts-pos';
+      posTd.textContent = primary;
+      if (bio.secondary_pos) {
+        const sec = document.createElement('span');
+        sec.className = 'ts-pos2';
+        sec.textContent = ` / ${bio.secondary_pos}`;
+        posTd.appendChild(sec);
+      }
 
       if (CS) {
         const m = slot ? minutes[slot] : null;
         const minTd = tr.insertCell();
-        minTd.className = 'right';
-        minTd.textContent = m ? (m.res ? 'RES' : String(m.minutes || 0)) : '—';
+        minTd.className = 'ts-min';
+        if (m && m.res) {
+          minTd.innerHTML = '<span class="ts-res-tag">RES</span>';
+        } else if (m && +m.minutes) {
+          const mins = +m.minutes;
+          minTd.innerHTML = `<span class="ts-minbar"><span style="width:${Math.min(100, mins / 48 * 100)}%"></span></span>`
+            + `<span class="ts-minval">${mins}</span>`;
+        } else {
+          minTd.innerHTML = '<span class="ts-minval dim">—</span>';
+        }
       }
     });
 
-    const gridWrap = document.createElement('div');
-    gridWrap.className = 'table-wrap';
-    gridWrap.style.overflowX = 'auto';
-    gridWrap.appendChild(table);
-
-    wrapEl.innerHTML = '';
-    wrapEl.appendChild(gridWrap);
-    if (CS) wrapEl.appendChild(minutesTotalLine(minutes));
+    let meter = null;
+    if (CS) { meter = minutesMeter(); meter.update(minutes); }
+    mountTable(table, meter);
 
     if (canEdit) {
-      const btn = document.createElement('button');
-      btn.className = 'edit-toggle-btn';
-      btn.style.cssText = 'margin-top:0.5rem;font-size:0.72rem;padding:0.15rem 0.45rem';
-      btn.textContent = 'Edit';
+      const btn = button('Edit');
       btn.addEventListener('click', () => withToken(() => renderEditView()));
-      wrapEl.appendChild(btn);
+      setActions(btn);
     }
   }
 
   function renderEditView() {
     const startMinutes = (coachingRecord && coachingRecord.minutes) || {};
     let minutesDirty = false;
+    if (hintEl) hintEl.hidden = false;
 
-    const toolbar = document.createElement('div');
-    toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem';
-
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = 'Save';
-    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
-
-    const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
-
+    const saveBtn = button('Save', 'primary');
+    const cancelBtn = button('Cancel', 'ghost');
     const statusEl = document.createElement('span');
-    statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
-
-    toolbar.appendChild(saveBtn);
-    toolbar.appendChild(cancelBtn);
+    statusEl.className = 'ts-status';
+    const actions = [statusEl];
     if (CS) {
-      const autoSortBtn = document.createElement('button');
-      autoSortBtn.type = 'button';
-      autoSortBtn.textContent = 'Auto-sort by OVR';
+      const autoSortBtn = button('Auto-sort');
       autoSortBtn.title = 'Fill PG/SG/SF/PF/C with the best eligible player at each position, then rank the bench by OVR — a starting point to drag from, not a save';
-      autoSortBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
       autoSortBtn.addEventListener('click', () => autoSort());
-      toolbar.appendChild(autoSortBtn);
+      actions.push(autoSortBtn);
     }
-    toolbar.appendChild(statusEl);
+    actions.push(cancelBtn, saveBtn);
+    setActions(...actions);
 
     const table = document.createElement('table');
+    table.className = 'ts-table editing';
     buildHead(table, true);
 
     const tbody = table.createTBody();
     const fields = [];
-    let totalLineEl = null;
+    const meter = CS ? minutesMeter() : null;
 
     // Rebuilds a slot-indexed minutes object from the table's live DOM
     // order — row index *is* slot assignment, so there's nothing to keep in
@@ -5340,10 +5460,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     }
 
     function refreshMinutesTotal() {
-      if (!CS) return;
-      const fresh = minutesTotalLine(minutesFromDom());
-      totalLineEl.replaceWith(fresh);
-      totalLineEl = fresh;
+      if (meter) meter.update(minutesFromDom());
     }
 
     // Relabels every row's Slot cell and enables/disables its Min controls
@@ -5357,7 +5474,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         const ctl = tr._rosterCtl;
         if (!ctl) return;
         const slot = CS.MINUTES_SLOTS[i] || '';
-        ctl.slotTd.textContent = slot || '—';
+        ctl.slotTd.textContent = slotLabel(i);
         ctl.minInput.disabled = !slot;
         ctl.minusBtn.disabled = !slot;
         ctl.plusBtn.disabled = !slot;
@@ -5460,7 +5577,6 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 
     orderedRows(startMinutes).forEach((row, i) => {
       const bio = biosData[row.SLUG] || {};
-      const name = displayNameFromBio(bio.name || '') || row.SLUG || '—';
       const jersey = bio.jersey_number ?? '';
       const secondaryPos = bio.secondary_pos || '';
 
@@ -5468,7 +5584,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 
       if (CS) {
         const handleTd = tr.insertCell();
-        handleTd.className = 'drag-handle-cell';
+        handleTd.className = 'ts-handle';
         const handle = document.createElement('span');
         handle.className = 'drag-handle';
         handle.textContent = '⠿';
@@ -5477,51 +5593,62 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         attachDrag(tr, handle);
       }
 
-      // Slot leads (before Player) since it's the fixed anchor of the row —
-      // the player is what gets dragged into or out of it.
       let slotTd = null;
       if (CS) {
         slotTd = tr.insertCell();
-        slotTd.className = 'roster-slot';
+        slotTd.className = 'ts-slot';
       }
 
-      const nameTd = tr.insertCell();
-      nameTd.className = 'bold';
+      const numTd = tr.insertCell();
+      numTd.className = 'ts-num';
       const jerseyInput = document.createElement('input');
       jerseyInput.type = 'text';
+      jerseyInput.inputMode = 'numeric';
       jerseyInput.maxLength = 2;
       jerseyInput.pattern = '\\d{1,2}';
       jerseyInput.value = jersey;
       jerseyInput.placeholder = '#';
-      jerseyInput.style.cssText = 'width:2.1rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:center;outline:none;margin-right:0.5rem';
-      jerseyInput.addEventListener('focus', () => { jerseyInput.style.borderColor = 'var(--accent)'; });
-      jerseyInput.addEventListener('blur',  () => { jerseyInput.style.borderColor = 'var(--border)'; });
-      nameTd.appendChild(jerseyInput);
-      nameTd.appendChild(document.createTextNode(name));
+      jerseyInput.className = 'ts-input ts-num-input';
+      jerseyInput.setAttribute('aria-label', 'Jersey number');
+      numTd.appendChild(jerseyInput);
+
+      nameCell(tr, row, bio);
 
       const posTd = tr.insertCell();
-      posTd.appendChild(document.createTextNode(primaryPosFromAttrs(attributesData[row.SLUG]) + ' / '));
+      posTd.className = 'ts-pos';
+      const posWrap = document.createElement('span');
+      posWrap.className = 'ts-pos-edit';
+      posWrap.appendChild(document.createTextNode(primaryPosFromAttrs(attributesData[row.SLUG])));
       // Secondary position is restricted to positions this player is eligible at,
       // i.e. their bio's `pos` array — not the full PG/SG/SF/PF/C set.
       const eligiblePos = Array.isArray(bio.pos) ? bio.pos : [];
-      const secSel = makeSelect([{ value: '', label: '—' }, ...eligiblePos], secondaryPos);
-      secSel.style.width = 'auto';
-      posTd.appendChild(secSel);
+      const secSel = document.createElement('select');
+      secSel.className = 'ts-input ts-sec-select';
+      secSel.setAttribute('aria-label', 'Secondary position');
+      [{ value: '', label: '+ 2nd' }, ...eligiblePos.map(p => ({ value: p, label: `/ ${p}` }))].forEach(o => {
+        secSel.appendChild(new Option(o.label, o.value, false, o.value === secondaryPos));
+      });
+      posWrap.appendChild(secSel);
+      posTd.appendChild(posWrap);
 
       if (CS) {
         const slot = CS.MINUTES_SLOTS[i] || '';
         const existing = slot ? startMinutes[slot] : null;
-        slotTd.textContent = slot || '—';
+        slotTd.textContent = slotLabel(i);
 
         // Minutes and RES share one cell — a reserve player has no minutes
         // figure to show alongside, so they were never independent columns.
+        // The stepper dims while RES is on (CSS, off the checkbox).
         const minWrap = document.createElement('div');
-        minWrap.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:0.3rem';
+        minWrap.className = 'ts-min-edit';
+        const stepper = document.createElement('div');
+        stepper.className = 'ts-stepper';
         const minInput = document.createElement('input');
         minInput.type = 'number'; minInput.min = '0'; minInput.max = '48';
+        minInput.inputMode = 'numeric';
         minInput.value = String(existing ? (existing.minutes || 0) : 0);
         minInput.disabled = !slot;
-        minInput.style.cssText = 'width:2.6rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+        minInput.setAttribute('aria-label', 'Minutes');
         minInput.addEventListener('input', () => { minutesDirty = true; refreshMinutesTotal(); });
         // Plus/minus steppers so a coach can nudge a player's minutes by one
         // without having to type over the field each time.
@@ -5537,30 +5664,28 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         minusBtn.textContent = '−';
         minusBtn.setAttribute('aria-label', 'Decrease minutes');
         minusBtn.disabled = !slot;
-        minusBtn.style.cssText = 'width:1.1rem;height:1.1rem;line-height:1;padding:0;border:1px solid var(--border);border-radius:3px;background:transparent;color:var(--text-secondary);font-size:0.75rem;cursor:pointer;font-family:inherit';
         minusBtn.addEventListener('click', () => stepMinutes(-1));
         const plusBtn = document.createElement('button');
         plusBtn.type = 'button';
         plusBtn.textContent = '+';
         plusBtn.setAttribute('aria-label', 'Increase minutes');
         plusBtn.disabled = !slot;
-        plusBtn.style.cssText = minusBtn.style.cssText;
         plusBtn.addEventListener('click', () => stepMinutes(1));
+        stepper.append(minusBtn, minInput, plusBtn);
+
         const resLabel = document.createElement('label');
-        resLabel.style.cssText = 'display:flex;align-items:center;gap:0.15rem;font-size:0.65rem;color:var(--text-muted)';
+        resLabel.className = 'ts-res';
+        resLabel.title = 'Reserve — dressed, but gets no minutes';
         const resCheck = document.createElement('input');
         resCheck.type = 'checkbox';
         resCheck.checked = !!(existing && existing.res);
         resCheck.disabled = !slot;
         resCheck.addEventListener('change', () => { minutesDirty = true; refreshMinutesTotal(); });
-        resLabel.appendChild(resCheck);
-        resLabel.appendChild(document.createTextNode('RES'));
-        minWrap.appendChild(minusBtn);
-        minWrap.appendChild(minInput);
-        minWrap.appendChild(plusBtn);
-        minWrap.appendChild(resLabel);
+        resLabel.append(resCheck, document.createTextNode('RES'));
+
+        minWrap.append(stepper, resLabel);
         const minTd = tr.insertCell();
-        minTd.className = 'right';
+        minTd.className = 'ts-min';
         minTd.appendChild(minWrap);
 
         tr._rosterCtl = { slug: row.SLUG, slotTd, minInput, minusBtn, plusBtn, resCheck };
@@ -5572,17 +5697,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       });
     });
 
-    if (CS) totalLineEl = minutesTotalLine(minutesFromDom());
-
-    const gridWrap = document.createElement('div');
-    gridWrap.className = 'table-wrap';
-    gridWrap.style.overflowX = 'auto';
-    gridWrap.appendChild(table);
-
-    wrapEl.innerHTML = '';
-    wrapEl.appendChild(toolbar);
-    wrapEl.appendChild(gridWrap);
-    if (totalLineEl) wrapEl.appendChild(totalLineEl);
+    refreshMinutesTotal();
+    mountTable(table, meter);
 
     cancelBtn.addEventListener('click', () => renderReadView());
 
@@ -5610,7 +5726,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         });
         // Minutes live on the coaching-settings record alongside `values`
         // (points of emphasis, sliders, pools — edited in the Coaching
-        // Profile section below, untouched here). PUT replaces both fields
+        // Profile section, untouched here). PUT replaces both fields
         // together, so this always resends the team's current `values` as
         // loaded — saving a jersey number alone must not wipe them.
         if (minutesDirty && CS) {
@@ -5664,6 +5780,7 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     return;
   }
   const canEdit = canEditCoachingSettings(abbr);
+  const actionsEl = document.getElementById('coaching-settings-actions');
   const resolveName = slug => displayNameFromBio((biosData[slug] || {}).name || '') || slug;
 
   function renderReadView() {
@@ -5671,13 +5788,14 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     // section above (setupTeamSettingsTab) — skip the standalone card here
     // so a player's minutes aren't shown twice on the same team page.
     CS.renderReadOnly(wrapEl, record, { resolveName, skipMinutesCard: true });
-    if (canEdit) {
+    if (actionsEl) actionsEl.innerHTML = '';
+    if (canEdit && actionsEl) {
       const btn = document.createElement('button');
-      btn.className = 'edit-toggle-btn';
-      btn.style.cssText = 'margin-top:0.5rem;font-size:0.72rem;padding:0.15rem 0.45rem';
-      btn.textContent = record ? 'Edit' : 'Enter coaching settings';
-      btn.addEventListener('click', () => withToken(() => renderEditView()));
-      wrapEl.appendChild(btn);
+      btn.type = 'button';
+      btn.className = 'ui-btn ui-btn--sm';
+      btn.textContent = record ? 'Edit' : 'Enter settings';
+      btn.addEventListener('click', () => withToken(() => { actionsEl.innerHTML = ''; renderEditView(); }));
+      actionsEl.appendChild(btn);
     }
   }
 
@@ -5712,22 +5830,24 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     CS.FIELD_GROUPS.forEach(g => g.fields.forEach(f => { if (!(f.key in values)) values[f.key] = f.type === 'slider' ? (f.min || 0) : ''; }));
 
     const toolbar = document.createElement('div');
-    toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem;position:sticky;top:0;background:var(--bg-page);padding:0.5rem 0;z-index:1';
+    toolbar.style.cssText = 'display:flex;gap:0.4rem;align-items:center;justify-content:flex-end;margin-bottom:0.75rem;position:sticky;top:0;background:var(--bg-card);padding:0.5rem 0;z-index:1';
 
     const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'ui-btn ui-btn--sm ui-btn--primary';
     saveBtn.textContent = 'Save';
-    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
 
     const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'ui-btn ui-btn--sm ui-btn--ghost';
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
 
     const statusEl = document.createElement('span');
-    statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto;text-align:right';
+    statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-right:auto';
 
-    toolbar.appendChild(saveBtn);
-    toolbar.appendChild(cancelBtn);
     toolbar.appendChild(statusEl);
+    toolbar.appendChild(cancelBtn);
+    toolbar.appendChild(saveBtn);
 
     const body = document.createElement('div');
     body.className = 'cs-cards-grid';
@@ -6935,7 +7055,45 @@ function buildTeamRadar(abbr, allSeasons, standingsRows) {
     });
     const { name, runnerUp } = Radar.nearest(dims.map(d => d.pct), ARCHETYPES);
     const tier = tierFor(diffRank[season]?.[abbr]);
-    return Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season` });
+    const svg = Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season` });
+
+    // The players who made that season's shape, beside it. Ranked by total
+    // Game Score, not per game, so a ten-game cameo doesn't top the list.
+    const box = document.createElement('div');
+    box.className = 'identity-season';
+    box.appendChild(svg);
+    const top = allSeasons
+      .filter(r => r.SEASON === season && r.TEAM === abbr)
+      .sort((a, b) => (+b.GMSC || 0) - (+a.GMSC || 0))
+      .slice(0, 6);
+    if (top.length) {
+      const list = document.createElement('ol');
+      list.className = 'identity-players';
+      top.forEach(r => {
+        const g = Math.max(1, +r.G || 1);
+        const pg = k => ((+r[k] || 0) / g).toFixed(1);
+        const li = document.createElement('li');
+        const nameEl = document.createElement('span');
+        nameEl.className = 'ip-name';
+        const label = r.SLUG ? document.createElement('a') : nameEl;
+        label.textContent = displayNameFromBio(r.PLAYER);
+        if (r.SLUG) { label.href = `/players/?p=${encodeURIComponent(r.SLUG)}`; nameEl.appendChild(label); }
+        const gEl = document.createElement('span');
+        gEl.className = 'ip-g';
+        gEl.textContent = `${r.G} G`;
+        const lineEl = document.createElement('span');
+        lineEl.className = 'ip-line';
+        lineEl.textContent = `${pg('PTS')} pts · ${pg('REB')} reb · ${pg('AST')} ast`;
+        li.append(nameEl, gEl, lineEl);
+        list.appendChild(li);
+      });
+      const col = document.createElement('div');
+      col.className = 'identity-players-col';
+      col.innerHTML = '<div class="identity-players-title">Top players</div>';
+      col.appendChild(list);
+      box.appendChild(col);
+    }
+    return box;
   }
 
   const seasons = Object.keys(teams).filter(s => teams[s][abbr] && qualifies(teams[s][abbr])).sort().reverse();

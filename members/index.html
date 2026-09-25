@@ -83,6 +83,9 @@
     .rb-agent      { background: #431407; color: #fdba74; }
     .rb-poext      { background: #1e1b4b; color: #a5b4fc; }
     .rb-poext-head { background: #1e1b4b; color: #a5b4fc; border: 1px solid #818cf8; }
+    .rb-trc        { background: #082f49; color: #7dd3fc; }
+    .rb-trc-head   { background: #082f49; color: #7dd3fc; border: 1px solid #0ea5e9; }
+    .rb-streamer   { background: var(--purple-light-bg); color: var(--purple-light); }
     .rb-team    { background: var(--success-bg); color: var(--success-light); }
 
     .action-cell { display: flex; gap: 0.35rem; align-items: center; white-space: nowrap; }
@@ -602,6 +605,9 @@ function roleClass(r) {
   if (r === 'agent')      return 'rb-agent';
   if (r === 'poext_head') return 'rb-poext-head';
   if (r === 'poext')      return 'rb-poext';
+  if (r === 'trc_head')   return 'rb-trc-head';
+  if (r === 'trc')        return 'rb-trc';
+  if (r === 'streamer')   return 'rb-streamer';
   return 'rb-team';
 }
 
