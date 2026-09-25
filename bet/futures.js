@@ -129,7 +129,7 @@
       ${m.description ? `<div class="fut-desc">${esc(m.description)}</div>` : ''}
       ${done ? '' : `<div class="fut-explain">A <strong>Yes</strong> share pays <strong>${nby(m.payout)}</strong> if its outcome happens, and a <strong>No</strong> share pays ${nby(m.payout)} if it doesn't.
         The price is the market's odds: buying Yes pushes it up, buying No pushes it down. Sell any time before the market closes.
-        You can't bet against a team you work for, or stack bets on its rivals if it's a contender. ${Math.round(m.fee * 100)}% fee on each trade.${m.max_stake != null ? ` Up to ${nby(m.max_stake)} in per member, net of sales.` : ''}</div>`}`;
+        You can't bet No on a team you work for. ${Math.round(m.fee * 100)}% fee on each trade.${m.max_stake != null ? ` Up to ${nby(m.max_stake)} in per member, net of sales.` : ''}</div>`}`;
 
     const pos = (me && m.positions[me]) || {};
     const acct = (me && m.accounts[me]) || null;

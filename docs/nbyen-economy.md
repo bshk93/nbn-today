@@ -84,29 +84,17 @@ Added 2026-09-25. The Futures tab on `/bet`; code in
   and a price pushed too far is money for whoever corrects it. Big bets also
   can't raise what the house can lose, which is fixed by `b`. A bookie can
   still set `max_stake` on a market.
-- **Nobody bets against a team they work for** (a team role, or a current
-  tenure as owner, GM or coach). A position like that pays more the worse the
-  team does, and its holder can make that happen. Two parts:
-  - A direct No on your own team is always refused.
-  - After any trade, what your whole position would gain if your team threw
-    its season must be at most NB¥100 (`OWN_TEAM_ALLOWANCE`). That's your
-    team's price times how much more your bets pay if it loses than if it
-    wins, at the market's odds. It's what stops the disguised No, Yes on 28 of
-    the other 29.
-  Weighting by your team's own chance is deliberate: a long shot has almost
-  nothing to throw away, so its GM can trade other teams freely, while a
-  contender's GM can't stack much on rivals. Roughly, a GM can put about
-  `100 × (1 − p) ÷ p` NB¥ on other teams before needing a stake in their own,
-  where `p` is their team's price: ~NB¥380 for a 21% favourite, ~NB¥1,900 at
-  5%, ~NB¥9,900 at 1%. Backing your own team makes room. A trade that doesn't
-  raise the figure is always allowed, so someone who joins a team holding a
-  bet against it can still sell out of it.
-- **Every market has a close time**, and the API refuses one without. A market
-  still trading once its result is known sells the winner below 100 to
-  whoever notices first. The house can't lose more than its bound, but that
-  bound goes to the fastest member instead of to whoever called it. Set it
-  before the deciding game.
-- **Shares round down** to 4 decimals, so rounding never pays the buyer.
+- **Nobody buys No on a team they work for** (a team role, or a current
+  tenure as owner, GM or coach). That bet pays more the worse the team does,
+  and its holder can make that happen. Selling one you already hold is always
+  allowed, so someone who joins a team holding a bet against it can get out.
+- **Bets on any other team are unlimited, on purpose.** With one winner, a Yes
+  on another team is partly a bet against your own, and Yes on all 29 others
+  is the whole of one. A limit on that was built and dropped the same day
+  (2026-09-25): it stopped a contender's GM from backing the team they think
+  will win, and the incentive is weak, since tanking means throwing away a real
+  title chance. The trade log is public, so the disguised version is visible.
+  Like betting through an alt account, it's a conduct question for the league.
 - **Knowing about your own trade early is not blocked.** A GM who's about to
   land a star can buy Yes on their team, or on the team getting their star.
   The house can't lose more because of it, the edge lasts only until the trade
