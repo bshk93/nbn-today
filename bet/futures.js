@@ -38,6 +38,26 @@
     .fut-trades summary { cursor: pointer; color: var(--text-muted); }
     .fut-form { display: flex; flex-direction: column; gap: 0.55rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .fut-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.55rem; }
+    /* Price chart. Three highlighted series in the dataviz reference palette's
+       first three slots — the only ones that stay distinct as every pair
+       (lines cross), validated against the default dark surface, the tinted
+       team surfaces and white. Dark steps by default; light steps on the two
+       light themes. Everything else is a grey context line. */
+    .fut-chart { --s1: #3987e5; --s2: #d95926; --s3: #199e70; position: relative; margin: 0.2rem 0 0.8rem; }
+    :root[data-theme="nbn-today-light"] .fut-chart, :root[data-theme="lavender-rose"] .fut-chart { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; }
+    .fut-chart svg { display: block; width: 100%; overflow: visible; touch-action: pan-y; }
+    .fut-chart svg:focus { outline: none; }
+    .fut-chart svg:focus-visible { outline: 1px solid var(--border); outline-offset: 2px; }
+    .fut-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem; align-items: center; }
+    .fut-legend .key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; vertical-align: middle; margin-right: 0.35rem; }
+    .fut-legend .note { color: var(--text-muted); }
+    .fut-legend strong { color: var(--text-primary); font-weight: 600; }
+    .fut-tip { position: absolute; top: 0; pointer-events: none; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.4rem 0.55rem; font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; box-shadow: 0 2px 8px var(--shadow-color, rgba(0,0,0,.3)); display: none; z-index: 2; }
+    .fut-tip .when { color: var(--text-muted); margin-bottom: 0.2rem; }
+    .fut-tip .row { display: flex; align-items: center; gap: 0.4rem; }
+    .fut-tip .row b { color: var(--text-primary); font-weight: 600; margin-left: auto; padding-left: 0.8rem; font-variant-numeric: tabular-nums; }
+    .fut-tip .trade { color: var(--text-muted); margin-top: 0.25rem; border-top: 1px solid var(--border); padding-top: 0.25rem; }
     .fut-form .hint { font-size: 0.72rem; color: var(--text-muted); }
   `;
   let cssDone = false;
@@ -45,6 +65,13 @@
   let root = null;
   let markets = [];
   let showForm = false;
+  const histCache = {};       // market id → { count, h } — refetched when trade_count moves
+  const slotOf = {};          // market id → { outcome id → 0|1|2 }, so a colour follows its outcome
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (root && root.isConnected && markets.length) draw(); }, 200);
+  });
   const selected = {};        // market id → outcome id
   const side = {};            // market id → 'buy' | 'sell'
   const contract = {};        // market id → 'yes' | 'no'
@@ -148,6 +175,7 @@
       el.appendChild(line);
     }
 
+    el.appendChild(priceChart(m));
     el.appendChild(table(m, pos, done));
     if (m.trading && ctx.user()) el.appendChild(tradePanel(m, pos));
     else if (m.trading) el.insertAdjacentHTML('beforeend', '<div class="fut-meta" style="margin-top:0.6rem">Sign in to trade.</div>');
@@ -185,6 +213,209 @@
     });
     wrap.appendChild(t);
     return wrap;
+  }
+
+  // ── Price chart ────────────────────────────────────────────────────────────
+  // Each outcome's price after every trade (GET /api/markets/{id}/history),
+  // drawn as steps since a price holds until the next trade. Three outcomes
+  // are highlighted — the winner once settled, else the one selected in the
+  // table or trade panel, then the current favourites — and the rest are grey
+  // context you can click. The table below is the full, exact view.
+
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const svgEl = (tag, attrs) => {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+    return e;
+  };
+
+  function priceChart(m) {
+    const wrap = document.createElement('div');
+    wrap.className = 'fut-chart';
+    const cached = histCache[m.id];
+    if (cached && cached.count === m.trade_count) {
+      requestAnimationFrame(() => renderChart(wrap, m, cached.h));
+    } else {
+      wrap.innerHTML = '<div class="fut-meta">Loading price history…</div>';
+      api(`/api/markets/${m.id}/history`).then(h => {
+        histCache[m.id] = { count: m.trade_count, h };
+        renderChart(wrap, m, h);
+      }).catch(() => { wrap.innerHTML = ''; });
+    }
+    return wrap;
+  }
+
+  function highlights(m) {
+    const byPrice = [...m.outcomes].sort((a, b) => b.price - a.price).map(o => o.id);
+    const lead = m.status === 'settled' ? m.winner : selected[m.id];
+    const ids = [...new Set([lead, ...byPrice].filter(Boolean))].slice(0, 3);
+    // Keep each survivor's colour; newcomers take the free slots.
+    const prev = slotOf[m.id] || {};
+    const next = {};
+    ids.filter(id => id in prev).forEach(id => { next[id] = prev[id]; });
+    const free = [0, 1, 2].filter(sl => !Object.values(next).includes(sl));
+    ids.filter(id => !(id in next)).forEach(id => { next[id] = free.shift(); });
+    slotOf[m.id] = next;
+    return ids;
+  }
+
+  function renderChart(wrap, m, h) {
+    const W = wrap.clientWidth;
+    if (!W) return;
+    wrap.innerHTML = '';
+    const pts = h.prices;
+    if (!pts.length) return;
+    const idx = Object.fromEntries(m.outcomes.map((o, i) => [o.id, i]));
+    const byId = Object.fromEntries(m.outcomes.map(o => [o.id, o]));
+    const hi = highlights(m);
+    const colour = id => `var(--s${slotOf[m.id][id] + 1})`;
+    const short = o => o.team || (o.label.length > 12 ? o.label.slice(0, 11) + '…' : o.label);
+
+    // Legend: always present, since identity can't rest on colour.
+    const others = m.outcomes.length - hi.length;
+    const legend = document.createElement('div');
+    legend.className = 'fut-legend';
+    legend.innerHTML = hi.map(id => `<span><span class="key" style="background:${colour(id)}"></span>${esc(byId[id].label)} <strong>${pct(byId[id].price)}</strong></span>`).join('')
+      + (others ? `<span class="note">Grey: the other ${others}. Click a line or a row to highlight it.</span>` : '');
+    wrap.appendChild(legend);
+
+    // Right margin fits the longest end label (11px text, ~6.5px a character).
+    const lastP = pts[pts.length - 1].p;
+    const endText = id => `${short(byId[id])} ${pct(lastP[idx[id]])}`;
+    const H = 200, mt = 8, mb = 22, ml = 34;
+    const mr = 16 + Math.ceil(Math.max(...hi.map(id => endText(id).length)) * 6.5);
+    const pw = Math.max(40, W - ml - mr), ph = H - mt - mb;
+    const t0 = Date.parse(m.created_at);
+    const end = m.settled_at || (m.closes_at && m.closes_at < new Date().toISOString() ? m.closes_at : null);
+    const t1 = Math.max(end ? Date.parse(end) : Date.now(), Date.parse(pts[pts.length - 1].ts), t0 + 60000);
+    const X = t => ml + (Date.parse(t) - t0) / (t1 - t0) * pw;
+    const top = Math.max(...pts.flatMap(r => r.p));
+    const step = [5, 10, 20, 25, 50].find(s => top * 1.08 <= s * 4) || 25;
+    const yMax = Math.min(100, Math.ceil(top * 1.08 / step) * step);
+    const Y = v => mt + ph - v / yMax * ph;
+
+    const svg = svgEl('svg', { height: H, viewBox: `0 0 ${W} ${H}`, tabindex: 0, role: 'img',
+      'aria-label': `Price history of ${m.title}. ${hi.map(id => `${byId[id].label} ${pct(byId[id].price)}`).join(', ')}. Use the arrow keys to step through trades.` });
+
+    // Gridlines and axes: hairline, recessive.
+    for (let v = 0; v <= yMax + 1e-9; v += step) {
+      svg.appendChild(svgEl('line', { x1: ml, x2: ml + pw, y1: Y(v), y2: Y(v), stroke: 'var(--border)', 'stroke-width': 1 }));
+      const t = svgEl('text', { x: ml - 6, y: Y(v) + 3.5, 'text-anchor': 'end', 'font-size': 10, fill: 'var(--text-muted)' });
+      t.textContent = v + '%';
+      svg.appendChild(t);
+    }
+    const spanDays = (t1 - t0) / 86400000;
+    const fmtT = ms => spanDays < 2
+      ? new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      : new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const nTicks = pw < 260 ? 2 : 4;
+    for (let k = 0; k <= nTicks; k++) {
+      const ms = t0 + (t1 - t0) * k / nTicks;
+      const t = svgEl('text', { x: ml + pw * k / nTicks, y: H - 6, 'font-size': 10, fill: 'var(--text-muted)',
+        'text-anchor': k === 0 ? 'start' : k === nTicks ? 'end' : 'middle' });
+      t.textContent = fmtT(ms);
+      svg.appendChild(t);
+    }
+
+    // A step path for one outcome, held flat to the end of the window.
+    const path = i => {
+      let d = `M${X(pts[0].ts).toFixed(1)},${Y(pts[0].p[i]).toFixed(1)}`;
+      for (let k = 1; k < pts.length; k++) d += `H${X(pts[k].ts).toFixed(1)}V${Y(pts[k].p[i]).toFixed(1)}`;
+      return d + `H${(ml + pw).toFixed(1)}`;
+    };
+
+    const done = m.status === 'settled' || m.status === 'voided';
+    m.outcomes.forEach((o, i) => {
+      if (hi.includes(o.id)) return;
+      const d = path(i);
+      svg.appendChild(svgEl('path', { d, fill: 'none', stroke: 'var(--text-dim)', 'stroke-width': 1, opacity: 0.45 }));
+      if (!done) {
+        const hit = svgEl('path', { d, fill: 'none', stroke: 'transparent', 'stroke-width': 10, style: 'cursor:pointer' });
+        const tl = svgEl('title'); tl.textContent = `${o.label} — ${pct(o.price)}`; hit.appendChild(tl);
+        hit.addEventListener('click', () => { selected[m.id] = o.id; draw(); });
+        svg.appendChild(hit);
+      }
+    });
+    // Highlighted lines on top, 2px, with a ringed end-dot.
+    hi.forEach(id => {
+      svg.appendChild(svgEl('path', { d: path(idx[id]), fill: 'none', stroke: colour(id), 'stroke-width': 2,
+        'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    });
+    hi.forEach(id => {
+      svg.appendChild(svgEl('circle', { cx: ml + pw, cy: Y(lastP[idx[id]]), r: 4, fill: colour(id),
+        stroke: 'var(--bg-card)', 'stroke-width': 2 }));
+    });
+    // End labels in text ink, nudged apart so they never stack.
+    const labels = hi.map(id => ({ id, y: Y(lastP[idx[id]]) })).sort((a, b) => a.y - b.y);
+    for (let k = 1; k < labels.length; k++) labels[k].y = Math.max(labels[k].y, labels[k - 1].y + 13);
+    const over = labels.length ? labels[labels.length - 1].y - (mt + ph) : 0;
+    if (over > 0) labels.forEach(l => { l.y -= over; });
+    labels.forEach(l => {
+      const t = svgEl('text', { x: ml + pw + 9, y: l.y + 3.5, 'font-size': 11, fill: 'var(--text-secondary)' });
+      t.textContent = endText(l.id);
+      svg.appendChild(t);
+    });
+
+    // Crosshair: snaps to the nearest trade; one readout lists every highlighted line.
+    const cross = svgEl('line', { y1: mt, y2: mt + ph, stroke: 'var(--text-muted)', 'stroke-width': 1, visibility: 'hidden' });
+    svg.appendChild(cross);
+    const dots = hi.map(id => {
+      const c = svgEl('circle', { r: 4, fill: colour(id), stroke: 'var(--bg-card)', 'stroke-width': 2, visibility: 'hidden' });
+      svg.appendChild(c);
+      return c;
+    });
+    const tip = document.createElement('div');
+    tip.className = 'fut-tip';
+    const label = Object.fromEntries(m.outcomes.map(o => [o.id, o.label]));
+    let at = -1;
+    function show(k) {
+      at = Math.max(0, Math.min(pts.length - 1, k));
+      const x = X(pts[at].ts);
+      cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.setAttribute('visibility', 'visible');
+      hi.forEach((id, j) => { dots[j].setAttribute('cx', x); dots[j].setAttribute('cy', Y(pts[at].p[idx[id]])); dots[j].setAttribute('visibility', 'visible'); });
+      const tr = at > 0 ? h.trades[at - 1] : null;
+      const when = new Date(pts[at].ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      tip.innerHTML = `<div class="when">${at === 0 ? 'Opened' : when}</div>`
+        + hi.map(id => ({ id, v: pts[at].p[idx[id]] })).sort((a, b) => b.v - a.v)
+          .map(r => `<div class="row"><span class="key" style="display:inline-block;width:10px;height:2px;background:${colour(r.id)}"></span>${esc(byId[r.id].label)}<b>${pct(r.v)}</b></div>`).join('')
+        + (tr ? `<div class="trade">${esc(tr.member)} ${tr.side === 'buy' ? 'bought' : 'sold'} ${tr.shares.toFixed(1)} ${tr.contract === 'no' ? 'No on ' : ''}${esc(label[tr.outcome_id] || '?')}</div>` : '');
+      tip.style.display = 'block';
+      const tw = tip.offsetWidth;
+      tip.style.left = Math.max(0, Math.min(W - tw, x + 12 + tw > W ? x - tw - 12 : x + 12)) + 'px';
+      tip.style.top = (legend.offsetHeight + 4) + 'px';
+    }
+    function hide() {
+      at = -1;
+      cross.setAttribute('visibility', 'hidden');
+      dots.forEach(d => d.setAttribute('visibility', 'hidden'));
+      tip.style.display = 'none';
+    }
+    const nearest = clientX => {
+      const r = svg.getBoundingClientRect();
+      const x = (clientX - r.left) * (W / r.width);
+      let best = 0;
+      pts.forEach((p, k) => { if (Math.abs(X(p.ts) - x) < Math.abs(X(pts[best].ts) - x)) best = k; });
+      return best;
+    };
+    const zone = svgEl('rect', { x: ml, y: mt, width: pw, height: ph, fill: 'transparent', 'pointer-events': 'none' });
+    svg.insertBefore(zone, svg.firstChild);
+    svg.addEventListener('pointermove', e => {
+      const r = svg.getBoundingClientRect();
+      const x = (e.clientX - r.left) * (W / r.width);
+      if (x < ml - 4 || x > ml + pw + 4) return hide();
+      show(nearest(e.clientX));
+    });
+    svg.addEventListener('pointerleave', hide);
+    svg.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        show(at < 0 ? pts.length - 1 : at + (e.key === 'ArrowRight' ? 1 : -1));
+      } else if (e.key === 'Escape') hide();
+    });
+    svg.addEventListener('blur', hide);
+
+    wrap.appendChild(svg);
+    wrap.appendChild(tip);
   }
 
   // ── Buying and selling ─────────────────────────────────────────────────────
@@ -310,13 +541,15 @@
       try {
         const h = await api(`/api/markets/${m.id}/history`);
         const label = Object.fromEntries(m.outcomes.map(o => [o.id, o.label]));
-        const rows = h.trades.slice().reverse().slice(0, 100);
+        const idx = Object.fromEntries(m.outcomes.map((o, i) => [o.id, i]));
+        // h.prices[0] is the opening; the price after trade k is h.prices[k + 1].
+        const rows = h.trades.map((t, k) => ({ ...t, after: h.prices[k + 1]?.p[idx[t.outcome_id]] })).reverse().slice(0, 100);
         body.className = 'ui-table-wrap';
         body.innerHTML = rows.length ? `<table class="ui-table ui-table--dense"><thead><tr><th>When</th><th>Member</th><th></th>
-          <th>Outcome</th><th class="num">Shares</th><th class="num">NB¥</th></tr></thead><tbody>${rows.map(t => `<tr>
+          <th>Outcome</th><th class="num">Shares</th><th class="num">NB¥</th><th class="num">Price after</th></tr></thead><tbody>${rows.map(t => `<tr>
           <td>${when(t.ts)}</td><td>${esc(t.member)}</td><td>${t.side === 'buy' ? 'Bought' : 'Sold'}</td>
           <td>${t.contract === 'no' ? 'No on ' : ''}${esc(label[t.outcome_id] || '?')}</td><td class="num">${t.shares.toFixed(2)}</td><td class="num">${t.cash.toFixed(2)}</td>
-          </tr>`).join('')}</tbody></table>` : '<div class="fut-meta">No trades yet.</div>';
+          <td class="num">${t.after != null ? pct(t.after) : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="fut-meta">No trades yet.</div>';
       } catch (e) { body.textContent = e.message; }
     });
     return d;

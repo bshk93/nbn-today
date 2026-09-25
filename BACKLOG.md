@@ -720,8 +720,6 @@ Futures markets shipped 2026-09-25 (`docs/nbyen-economy.md` § 4a). Left:
   `docs/nbyen-economy.md` § 4a). If it becomes a problem: pause a team's
   outcome while it has an open TRC request (but the pause itself leaks that a
   trade is coming). Decide once there's real trading to look at.
-- **No price chart.** `GET /api/markets/{id}/history` already has the price
-  after every trade.
 - **`/invest`'s team stocks overlap**: a second team price that doesn't pay
   out on anything. Its money is paused (`invest` in `wallet.KINDS`). Decide
   whether futures replace it.
