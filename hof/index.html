@@ -85,39 +85,50 @@
       flex-shrink: 0;
     }
 
-    .formula-note {
-      margin-bottom: 1.75rem;
+    td.teams a.ring-team {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    td.col-best {
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    td.score.col-best { color: var(--gold); }
+
+    .info-icon {
+      display: inline-block;
+      margin-left: 4px;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      cursor: help;
+    }
+
+    .info-icon:hover, .info-icon:focus { color: var(--text-secondary); outline: none; }
+
+    .formula-pop {
+      position: fixed;
+      z-index: 50;
+      width: min(34rem, calc(100vw - 1.5rem));
       border: 1px solid var(--border);
       border-radius: 8px;
       background: var(--bg-card);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
       padding: 0.75rem 1rem;
-      font-size: 0.825rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 400;
     }
 
-    .formula-note summary {
-      cursor: pointer;
+    .formula-title {
       font-weight: 600;
-      color: var(--text-muted);
-      letter-spacing: 0.03em;
-      list-style: none;
-      user-select: none;
+      color: var(--text-secondary);
     }
-
-    .formula-note summary::-webkit-details-marker { display: none; }
-
-    .formula-note summary::before {
-      content: '▶ ';
-      font-size: 0.6rem;
-      vertical-align: middle;
-    }
-
-    .formula-note[open] summary::before { content: '▼ '; }
-
-    .formula-note summary:hover { color: var(--text-secondary); }
 
     .formula-body {
-      margin-top: 0.75rem;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
@@ -142,7 +153,7 @@
       padding: 0.4rem 0.65rem;
       color: #a5b4fc;
       overflow-x: auto;
-      white-space: nowrap;
+      white-space: normal;
     }
 
     .border-left { border-left: 1px solid var(--border-subtle); }
@@ -162,13 +173,12 @@
     <header class="ui-header">
       <div>
         <h1 class="ui-title">Hall of Fame</h1>
-        <p class="ui-subtitle">Career scores, accolades, and statistics for every player in NBN history. Click any column to sort.</p>
       </div>
     </header>
 
-    <details class="formula-note">
-      <summary>How Score is calculated</summary>
+    <div class="formula-pop" id="formula-pop" role="tooltip" hidden>
       <div class="formula-body">
+        <p class="formula-title">How Score is calculated</p>
         <p>Score sums every career game's <strong>Game Score (GMSC)</strong>, applies per-game weights, divides by 100, then adds accolade bonuses.</p>
         <p class="formula-mono">GMSC = PTS + 0.4·FGM − 0.7·FGA − 0.4·(FTA−FTM) + 0.7·ORB + 0.3·DRB + STL + 0.7·AST + 0.7·BLK − 0.4·PF − TO</p>
         <p><strong>Per-game multipliers</strong> (applied together):</p>
@@ -185,7 +195,7 @@
         </ul>
         <p class="formula-mono">Score = Σ (GMSC × W/L × round × normalizer) ÷ 100  +  Σ (accolade × bonus)</p>
       </div>
-    </details>
+    </div>
 
     <div class="ui-table-wrap" id="table-wrap">
       <div id="status">Loading…</div>
@@ -268,6 +278,8 @@
     }
 
     let allRows = [];
+    let colMax = {};                // sortField -> the column's top value
+    let ringTeams = new Map();      // PLAYER (upper case) -> Set of teams they won a ring with
     let tbody;
     let thEls = [];
 
@@ -288,6 +300,10 @@
         COLS.forEach(col => {
           const td = tr.insertCell();
           td.className = col.cls;
+          if (col.numeric && colMax[col.sortField] > 0
+              && parseFloat(row[col.sortField]) === colMax[col.sortField]) {
+            td.classList.add('col-best');
+          }
 
           if (col.key === 'PLAYER') {
             const a = document.createElement('a');
@@ -306,6 +322,10 @@
               const a = document.createElement('a');
               a.href = `/teams/${t.trim().toLowerCase()}/`;
               a.textContent = t.trim();
+              if (ringTeams.get(row.PLAYER.toUpperCase())?.has(t.trim())) {
+                a.className = 'ring-team';
+                a.title = 'Won a ring here';
+              }
               td.appendChild(a);
             });
           } else {
@@ -317,6 +337,9 @@
 
     function buildTable(rows) {
       allRows = rows;
+      COLS.filter(c => c.numeric).forEach(c => {
+        colMax[c.sortField] = Math.max(0, ...rows.map(r => parseFloat(r[c.sortField])).filter(n => !isNaN(n)));
+      });
       const wrap = document.getElementById('table-wrap');
       const table = document.createElement('table'); table.className = 'ui-table';
 
@@ -346,6 +369,7 @@
         const arrow = document.createElement('span');
         arrow.className = 'sort-arrow';
         th.appendChild(document.createTextNode(col.label));
+        if (col.key === 'HOF_POINTS') th.appendChild(formulaIcon());
         th.appendChild(arrow);
         th.dataset.active = col.sortField === sortField;
         th.addEventListener('click', () => {
@@ -369,9 +393,64 @@
       rebuildBody();
     }
 
-    fetch('/data/hof.csv')
-      .then(r => { if (!r.ok) throw new Error(); return r.text(); })
-      .then(text => buildTable(parseCSV(text)))
+    // The ⓘ on the Score header. The popover lives outside the table and is
+    // positioned fixed, since the table wrapper scrolls and would clip it.
+    function formulaIcon() {
+      const pop = document.getElementById('formula-pop');
+      const icon = document.createElement('span');
+      icon.className = 'info-icon';
+      icon.textContent = 'ⓘ';
+      icon.tabIndex = 0;
+      icon.setAttribute('aria-label', 'How Score is calculated');
+      const show = () => {
+        pop.hidden = false;
+        const r = icon.getBoundingClientRect();
+        const w = pop.offsetWidth;
+        pop.style.left = Math.max(12, Math.min(r.left - w / 2, innerWidth - w - 12)) + 'px';
+        pop.style.top = (r.bottom + 8) + 'px';
+      };
+      const hide = () => { pop.hidden = true; };
+      icon.addEventListener('mouseenter', show);
+      icon.addEventListener('mouseleave', hide);
+      icon.addEventListener('focus', show);
+      icon.addEventListener('blur', hide);
+      // A tap shows it on touch screens; don't let it also re-sort the column.
+      icon.addEventListener('click', e => { e.stopPropagation(); icon.focus(); show(); });
+      addEventListener('scroll', hide, { passive: true });
+      return icon;
+    }
+
+    // Which teams each player won a ring with: the finals winner each season,
+    // crossed with who played in the playoffs for that team. Same rule the
+    // build uses for RINGS. Optional — the table renders without it.
+    function loadRingTeams() {
+      const csv = url => fetch(url).then(r => { if (!r.ok) throw new Error(); return r.text(); })
+        .then(text => domReady.then(() => parseCSV(text)));
+      return Promise.all([csv('/standings/playoff-brackets.csv'), csv('/players/player_seasons_playoffs.csv')])
+        .then(([brackets, seasons]) => {
+          const champ = {};
+          brackets.filter(b => b.ROUND === '4' && b.WINNER).forEach(b => { champ[b.SEASON] = b.WINNER; });
+          seasons.forEach(r => {
+            const season = (r.SEASON || '').replace(/ Playoffs$/, '');
+            if (!r.PLAYER || champ[season] !== r.TEAM) return;
+            const key = r.PLAYER.toUpperCase();
+            if (!ringTeams.has(key)) ringTeams.set(key, new Set());
+            ringTeams.get(key).add(r.TEAM);
+          });
+        })
+        .catch(() => {});
+    }
+
+    // parseCSV comes from nav.js, which loads after this script. A fetch can
+    // resolve before it does, so nothing parses until the DOM is ready.
+    const domReady = new Promise(res => document.addEventListener('DOMContentLoaded', res));
+
+    Promise.all([
+      fetch('/data/hof.csv').then(r => { if (!r.ok) throw new Error(); return r.text(); }),
+      loadRingTeams(),
+      domReady,
+    ])
+      .then(([text]) => buildTable(parseCSV(text)))
       .catch(() => {
         document.getElementById('table-wrap').innerHTML = '<div id="status">Failed to load data.</div>';
       });
