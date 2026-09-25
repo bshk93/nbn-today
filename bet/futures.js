@@ -159,9 +159,7 @@
         <span class="ui-badge ${badge[1]}">${badge[0]}</span></div>
       <div class="fut-meta">${meta.join(' · ')}</div>
       ${m.description ? `<div class="fut-desc">${esc(m.description)}</div>` : ''}
-      ${done ? '' : `<div class="fut-explain">A <strong>Yes</strong> share pays <strong>${nby(m.payout)}</strong> if its outcome happens, and a <strong>No</strong> share pays ${nby(m.payout)} if it doesn't.
-        A Yes price is also the market's odds: NB¥23 means 23%. Buying Yes pushes it up, buying No pushes it down. Sell any time before the market closes.
-        You can't bet No on a team you work for. ${Math.round(m.fee * 100)}% fee on each trade.${m.max_stake != null ? ` Up to ${nby(m.max_stake)} in per member, net of sales.` : ''}</div>`}`;
+      ${done ? '' : `<div class="fut-explain">Each share pays <strong>${nby(m.payout)}</strong> if you're right. Sell any time before it closes.${m.max_stake != null ? ` Max ${nby(m.max_stake)} per person.` : ''}</div>`}`;
 
     const pos = (me && m.positions[me]) || {};
     const acct = (me && m.accounts[me]) || null;
@@ -439,8 +437,8 @@
           <button class="${s === 'sell' ? 'active' : ''}" data-side="sell">Sell</button>
         </div>
         <div class="ui-segmented">
-          <button class="${ct === 'yes' ? 'active' : ''}" data-ct="yes">Yes</button>
-          <button class="${ct === 'no' ? 'active' : ''}" data-ct="no">No</button>
+          <button class="${ct === 'yes' ? 'active' : ''}" data-ct="yes" title="Pays NB¥100 if this one happens">Yes</button>
+          <button class="${ct === 'no' ? 'active' : ''}" data-ct="no" title="Pays NB¥100 if this one doesn't happen">No</button>
         </div>
         <select class="ui-select fut-oid">${opts}</select>
       </div>
