@@ -70,10 +70,19 @@
   let showForm = false;
   const histCache = {};       // market id → { count, h } — refetched when trade_count moves
   const slotOf = {};          // market id → { outcome id → 0|1|2 }, so a colour follows its outcome
+  // Charts are drawn to their container's width, so a width change redraws
+  // them — only them, in place. Never the whole tab: a phone's keyboard
+  // opening fires `resize` (the viewport gets shorter), and rebuilding the
+  // tab then destroyed the amount box being typed into.
   let resizeTimer = null;
+  let lastWidth = window.innerWidth;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { if (root && root.isConnected && markets.length) draw(); }, 200);
+    resizeTimer = setTimeout(() => {
+      if (window.innerWidth === lastWidth) return;
+      lastWidth = window.innerWidth;
+      document.querySelectorAll('.fut-chart').forEach(w => { if (w._redraw) w._redraw(); });
+    }, 200);
   });
   const selected = {};        // market id → outcome id
   const side = {};            // market id → 'buy' | 'sell'
@@ -231,12 +240,14 @@
     wrap.className = 'fut-chart';
     const cached = histCache[m.id];
     if (cached && cached.count === m.trade_count) {
-      requestAnimationFrame(() => renderChart(wrap, m, cached.h));
+      wrap._redraw = () => renderChart(wrap, m, cached.h);
+      requestAnimationFrame(wrap._redraw);
     } else {
       wrap.innerHTML = '<div class="fut-meta">Loading price history…</div>';
       api(`/api/markets/${m.id}/history`).then(h => {
         histCache[m.id] = { count: m.trade_count, h };
-        renderChart(wrap, m, h);
+        wrap._redraw = () => renderChart(wrap, m, h);
+        wrap._redraw();
       }).catch(() => { wrap.innerHTML = ''; });
     }
     return wrap;
