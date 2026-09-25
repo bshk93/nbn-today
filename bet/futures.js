@@ -82,7 +82,8 @@
 
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const nby = (n, d = 0) => 'NB¥' + Math.abs(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
-  const pct = p => (Math.round(p * 10) / 10).toFixed(1) + '%';
+  // A share pays NB¥100, so its price in NB¥ is also its odds in percent.
+  const px = p => 'NB¥' + (Math.round(p * 100) / 100).toFixed(2);
   const when = iso => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const teamName = abbr => (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[abbr]) || abbr;
 
@@ -159,7 +160,7 @@
       <div class="fut-meta">${meta.join(' · ')}</div>
       ${m.description ? `<div class="fut-desc">${esc(m.description)}</div>` : ''}
       ${done ? '' : `<div class="fut-explain">A <strong>Yes</strong> share pays <strong>${nby(m.payout)}</strong> if its outcome happens, and a <strong>No</strong> share pays ${nby(m.payout)} if it doesn't.
-        The price is the market's odds: buying Yes pushes it up, buying No pushes it down. Sell any time before the market closes.
+        A Yes price is also the market's odds: NB¥23 means 23%. Buying Yes pushes it up, buying No pushes it down. Sell any time before the market closes.
         You can't bet No on a team you work for. ${Math.round(m.fee * 100)}% fee on each trade.${m.max_stake != null ? ` Up to ${nby(m.max_stake)} in per member, net of sales.` : ''}</div>`}`;
 
     const pos = (me && m.positions[me]) || {};
@@ -206,8 +207,8 @@
       const held = [h.yes ? `${h.yes.toFixed(2)} Yes` : '', h.no ? `${h.no.toFixed(2)} No` : ''].filter(Boolean).join(', ');
       tr.innerHTML = `
         <td>${m.status === 'settled' && m.winner === r.id ? '🏆 ' : ''}${esc(r.label)}</td>
-        <td class="num price">${pct(r.price)}<span class="fut-bar" style="width:${Math.max(2, r.price / maxP * 48)}px"></span></td>
-        <td class="num ${Math.abs(chg) < 0.05 ? '' : chg > 0 ? 'up' : 'down'}">${Math.abs(chg) < 0.05 ? '—' : (chg > 0 ? '▲ ' : '▼ ') + Math.abs(chg).toFixed(1)}</td>
+        <td class="num price">${px(r.price)}<span class="fut-bar" style="width:${Math.max(2, r.price / maxP * 48)}px"></span></td>
+        <td class="num ${Math.abs(chg) < 0.05 ? '' : chg > 0 ? 'up' : 'down'}">${Math.abs(chg) < 0.05 ? '—' : (chg > 0 ? '▲ ' : '▼ ') + Math.abs(chg).toFixed(2)}</td>
         <td class="num">${held}</td>`;
       if (!done) tr.onclick = () => { selected[m.id] = r.id; draw(); };
     });
@@ -275,14 +276,14 @@
     const others = m.outcomes.length - hi.length;
     const legend = document.createElement('div');
     legend.className = 'fut-legend';
-    legend.innerHTML = hi.map(id => `<span><span class="key" style="background:${colour(id)}"></span>${esc(byId[id].label)} <strong>${pct(byId[id].price)}</strong></span>`).join('')
+    legend.innerHTML = hi.map(id => `<span><span class="key" style="background:${colour(id)}"></span>${esc(byId[id].label)} <strong>${px(byId[id].price)}</strong></span>`).join('')
       + (others ? `<span class="note">Grey: the other ${others}. Click a line or a row to highlight it.</span>` : '');
     wrap.appendChild(legend);
 
     // Right margin fits the longest end label (11px text, ~6.5px a character).
     const lastP = pts[pts.length - 1].p;
-    const endText = id => `${short(byId[id])} ${pct(lastP[idx[id]])}`;
-    const H = 200, mt = 8, mb = 22, ml = 34;
+    const endText = id => `${short(byId[id])} ${px(lastP[idx[id]])}`;
+    const H = 200, mt = 8, mb = 22, ml = 42;
     const mr = 16 + Math.ceil(Math.max(...hi.map(id => endText(id).length)) * 6.5);
     const pw = Math.max(40, W - ml - mr), ph = H - mt - mb;
     const t0 = Date.parse(m.created_at);
@@ -295,13 +296,13 @@
     const Y = v => mt + ph - v / yMax * ph;
 
     const svg = svgEl('svg', { height: H, viewBox: `0 0 ${W} ${H}`, tabindex: 0, role: 'img',
-      'aria-label': `Price history of ${m.title}. ${hi.map(id => `${byId[id].label} ${pct(byId[id].price)}`).join(', ')}. Use the arrow keys to step through trades.` });
+      'aria-label': `Price history of ${m.title}. ${hi.map(id => `${byId[id].label} ${px(byId[id].price)}`).join(', ')}. Use the arrow keys to step through trades.` });
 
     // Gridlines and axes: hairline, recessive.
     for (let v = 0; v <= yMax + 1e-9; v += step) {
       svg.appendChild(svgEl('line', { x1: ml, x2: ml + pw, y1: Y(v), y2: Y(v), stroke: 'var(--border)', 'stroke-width': 1 }));
       const t = svgEl('text', { x: ml - 6, y: Y(v) + 3.5, 'text-anchor': 'end', 'font-size': 10, fill: 'var(--text-muted)' });
-      t.textContent = v + '%';
+      t.textContent = 'NB¥' + v;
       svg.appendChild(t);
     }
     const spanDays = (t1 - t0) / 86400000;
@@ -331,7 +332,7 @@
       svg.appendChild(svgEl('path', { d, fill: 'none', stroke: 'var(--text-dim)', 'stroke-width': 1, opacity: 0.45 }));
       if (!done) {
         const hit = svgEl('path', { d, fill: 'none', stroke: 'transparent', 'stroke-width': 10, style: 'cursor:pointer' });
-        const tl = svgEl('title'); tl.textContent = `${o.label} — ${pct(o.price)}`; hit.appendChild(tl);
+        const tl = svgEl('title'); tl.textContent = `${o.label} — ${px(o.price)}`; hit.appendChild(tl);
         hit.addEventListener('click', () => { selected[m.id] = o.id; draw(); });
         svg.appendChild(hit);
       }
@@ -377,7 +378,7 @@
       const when = new Date(pts[at].ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
       tip.innerHTML = `<div class="when">${at === 0 ? 'Opened' : when}</div>`
         + hi.map(id => ({ id, v: pts[at].p[idx[id]] })).sort((a, b) => b.v - a.v)
-          .map(r => `<div class="row"><span class="key" style="display:inline-block;width:10px;height:2px;background:${colour(r.id)}"></span>${esc(byId[r.id].label)}<b>${pct(r.v)}</b></div>`).join('')
+          .map(r => `<div class="row"><span class="key" style="display:inline-block;width:10px;height:2px;background:${colour(r.id)}"></span>${esc(byId[r.id].label)}<b>${px(r.v)}</b></div>`).join('')
         + (tr ? `<div class="trade">${esc(tr.member)} ${tr.side === 'buy' ? 'bought' : 'sold'} ${tr.shares.toFixed(1)} ${tr.contract === 'no' ? 'No on ' : ''}${esc(label[tr.outcome_id] || '?')}</div>` : '');
       tip.style.display = 'block';
       const tw = tip.offsetWidth;
@@ -430,7 +431,7 @@
     const held = (pos[oid] || {})[ct] || 0;
 
     const opts = [...m.outcomes].sort((a, b) => a.label.localeCompare(b.label))
-      .map(o => `<option value="${o.id}" ${o.id === oid ? 'selected' : ''}>${esc(o.label)} — ${pct(o.price)}</option>`).join('');
+      .map(o => `<option value="${o.id}" ${o.id === oid ? 'selected' : ''}>${esc(o.label)} — ${px(o.price)}</option>`).join('');
     box.innerHTML = `
       <div class="fut-trade-row">
         <div class="ui-segmented">
@@ -480,10 +481,10 @@
         if (parseFloat(amt.value) !== v) return;   // typed on since
         quote = q;
         qEl.innerHTML = s === 'buy'
-          ? `<strong>${q.shares.toFixed(2)} ${ct === 'yes' ? 'Yes' : 'No'} shares</strong> at ${q.avg_price.toFixed(2)} each · price ${pct(q.price_before)} → ${pct(q.price_after)}
+          ? `<strong>${q.shares.toFixed(2)} ${ct === 'yes' ? 'Yes' : 'No'} shares</strong> at ${px(q.avg_price)} each · price ${px(q.price_before)} → ${px(q.price_after)}
              · ${nby(q.cost, 2)} + ${nby(q.fee, 2)} fee = <strong>${nby(q.total, 2)}</strong> · pays <strong>${nby(q.pays_if_right, 2)}</strong> if it ${ct === 'yes' ? 'happens' : "doesn't happen"}`
-          : `Get <strong>${nby(q.total, 2)}</strong> (${nby(q.proceeds, 2)} − ${nby(q.fee, 2)} fee) · ${q.avg_price.toFixed(2)} a share
-             · price ${pct(q.price_before)} → ${pct(q.price_after)}`;
+          : `Get <strong>${nby(q.total, 2)}</strong> (${nby(q.proceeds, 2)} − ${nby(q.fee, 2)} fee) · ${px(q.avg_price)} a share
+             · price ${px(q.price_before)} → ${px(q.price_after)}`;
         go.disabled = false;
       } catch (e) { qEl.textContent = ''; err.textContent = e.message; }
     }
@@ -598,7 +599,7 @@
           <th>Outcome</th><th class="num">Shares</th><th class="num">NB¥</th><th class="num">Price after</th></tr></thead><tbody>${rows.map(t => `<tr>
           <td>${when(t.ts)}</td><td>${esc(t.member)}</td><td>${t.side === 'buy' ? 'Bought' : 'Sold'}</td>
           <td>${t.contract === 'no' ? 'No on ' : ''}${esc(label[t.outcome_id] || '?')}</td><td class="num">${t.shares.toFixed(2)}</td><td class="num">${t.cash.toFixed(2)}</td>
-          <td class="num">${t.after != null ? pct(t.after) : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="fut-meta">No trades yet.</div>';
+          <td class="num">${t.after != null ? px(t.after) : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="fut-meta">No trades yet.</div>';
       } catch (e) { body.textContent = e.message; }
     });
     return d;
@@ -644,9 +645,9 @@
       <div>
         <div class="ui-label">Outcomes and opening odds</div>
         <div class="hint">Weights can be any numbers: percentages, or just "this team is twice as likely as that one".
-          Leave every weight blank to open all outcomes level. Nothing opens under 1%.</div>
+          Leave every weight blank to open all outcomes level. Nothing opens under NB¥1.</div>
         <div class="ui-table-wrap"><table class="ui-table ui-table--dense fm-outs">
-          <thead><tr><th>Outcome</th><th class="num">Weight</th><th class="num">Opens at</th><th></th></tr></thead>
+          <thead><tr><th>Outcome</th><th class="num">Weight</th><th class="num">Opening price</th><th></th></tr></thead>
           <tbody></tbody></table></div>
         <div class="fut-trade-row" style="margin-top:0.4rem">
           <button class="ui-btn ui-btn--sm ui-btn--ghost" id="fm-add" type="button">+ Add outcome</button>
@@ -712,9 +713,9 @@
           const pv = await api('/api/markets/preview', {
             method: 'POST', body: JSON.stringify({ open_prices: ws, b: parseFloat($('fm-b').value) || 1500 }),
           });
-          rs.forEach((r, i) => { r.tr.querySelector('.fm-pct').textContent = pct(pv.prices[i]); });
+          rs.forEach((r, i) => { r.tr.querySelector('.fm-pct').textContent = px(pv.prices[i]); });
           $('fm-hint').textContent = `${rs.length} outcomes. The most this market can create is about ${nby(pv.max_mint)}. `
-            + `Moving an outcome from 10% to 20% costs about ${nby(pv.move_10_to_20)}.`;
+            + `Moving an outcome from NB¥10 to NB¥20 costs about ${nby(pv.move_10_to_20)}.`;
         } catch (e) { $('fm-hint').textContent = e.message; }
       }, 250);
     }
