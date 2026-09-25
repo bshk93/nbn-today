@@ -36,8 +36,8 @@
     .player-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
         
     .profile-photo {
-      width: 72px;
-      height: 72px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
       object-fit: cover;
       object-position: top center;
@@ -119,14 +119,16 @@
       white-space: nowrap;
       cursor: default;
     }
-
-    .ovr-badge {
-      padding: 0.35rem 1rem;
-      font-size: 1.35rem;
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      border-radius: 10px;
+    /* Accolades read as one set: one neutral chip, the count in bold, and
+       gold kept for the two that are the point of a career (rings, MVP). */
+    .accolades .badge {
+      font-weight: 500; color: var(--text-secondary);
+      background: var(--bg-subtle); border: 1px solid var(--border);
     }
+    .accolades .badge b { font-weight: 700; color: var(--text-primary); margin-right: 0.2em; }
+    .accolades .badge.badge-gold { color: var(--gold); border-color: var(--gold-border); background: color-mix(in srgb, var(--gold) 8%, transparent); }
+    .accolades .badge.badge-gold b { color: var(--gold); }
+
 
     /* toggle */
     
@@ -180,28 +182,53 @@
     .po-row td:first-child { box-shadow: inset 3px 0 0 var(--gold-dim); color: var(--gold); }
     .career-row + .career-row { border-top: none !important; }
 
-    /* Hall of Fame card: score, its two ranks, and a bar against the #1 score. */
-    .hof-card {
-      display: inline-grid; grid-template-columns: auto auto; column-gap: var(--space-6); row-gap: var(--space-2);
-      align-items: end; margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4);
+    /* Headline tiles (OVR, Hall of Fame): the same card, label, figure and
+       one line of context, so the two read as a pair rather than two
+       unrelated widgets. */
+    .hero-tiles { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-4); }
+    .hero-tile {
+      display: flex; flex-direction: column; gap: 0.3rem; min-width: 10.5rem;
+      padding: var(--space-3) var(--space-4);
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       color: inherit; text-decoration: none; transition: border-color 0.15s;
     }
-    .hof-card:hover { border-color: var(--text-muted); text-decoration: none; }
-    .hof-card.hof-top10 { border-color: var(--gold-border); }
-    .hof-card.hof-top10:hover { border-color: var(--gold); }
-    .hof-label { grid-column: 1 / -1; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
-    .hof-card.hof-top10 .hof-label { color: var(--gold); }
-    .hof-score { font-size: 1.6rem; font-weight: 800; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-    .hof-score small { margin-left: 0.25rem; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
-    .hof-ranks { display: flex; gap: var(--space-4); }
-    .hof-rank { display: flex; flex-direction: column; align-items: flex-end; }
-    .hof-rank b { font-size: 1.05rem; font-weight: 700; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-    .hof-card.hof-top10 .hof-rank:first-child b { color: var(--gold); }
-    .hof-rank span { margin-top: 0.2rem; font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-    .hof-bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    a.hero-tile:hover { border-color: var(--text-muted); text-decoration: none; }
+    .tile-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .tile-main { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+    .tile-value { font-size: 1.9rem; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .tile-value small { margin-left: 0.25rem; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
+    .tile-sub { font-size: 0.75rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .tile-sub b { color: var(--text-secondary); font-weight: 600; }
+    .tile-up { color: var(--success); }
+    .tile-down { color: var(--danger); }
+    .tile-spark { display: block; }
+    .hof-bar { height: 3px; border-radius: 2px; background: var(--border); overflow: hidden; margin-top: 0.15rem; }
     .hof-bar i { display: block; height: 100%; background: var(--text-muted); }
-    .hof-card.hof-top10 .hof-bar i { background: var(--gold); }
+    .hof-top10 .tile-label, .hof-top10 .tile-sub b:first-child { color: var(--gold); }
+    .hof-top10 .hof-bar i { background: var(--gold); }
+
+    /* Compare / Edit Bio, quiet, top right of the header. */
+    .player-actions { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
+    .player-actions a, .player-actions button {
+      padding: 0.25rem 0.6rem; border-radius: 6px; background: transparent;
+      border: 1px solid var(--border); color: var(--text-muted);
+      font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; text-decoration: none;
+    }
+    .player-actions a:hover, .player-actions button:hover { color: var(--text-secondary); border-color: var(--text-muted); text-decoration: none; }
+    @media (max-width: 600px) {
+      .header-main { flex-wrap: wrap; gap: 0.75rem 1rem; }
+      .header-main .profile-photo { width: 56px; height: 56px; }
+      .header-text { flex: 1; min-width: 0; }
+      .player-actions { order: 3; margin-left: 0; flex-basis: 100%; }
+    }
+
+    /* Subtitle: positions · team · seasons */
+    .identity { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; }
+    .identity .pos { font-weight: 700; color: var(--text-secondary); letter-spacing: 0.02em; }
+    .identity a.team { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-secondary); font-weight: 600; text-decoration: none; }
+    .identity a.team:hover { color: var(--text-primary); }
+    .identity a.team img { width: 18px; height: 18px; object-fit: contain; }
+    .identity .retired { font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.06em; }
 
     .page-tabs {
       display: flex;
@@ -401,12 +428,6 @@
     .edit-btn-secondary { background: transparent; border-color: var(--border); color: var(--text-muted); }
     .edit-btn-secondary:hover { color: var(--text-secondary); border-color: var(--text-muted); }
     .edit-status { font-size: 0.75rem; color: var(--danger); }
-    .btn-edit-bio {
-      display: block; padding: 0.15rem 0.45rem; border-radius: 4px; background: transparent;
-      border: 1px solid var(--border); color: var(--text-muted); font-size: 0.7rem; font-weight: 600;
-      cursor: pointer; font-family: inherit; margin: 0.5rem 0 0.75rem;
-    }
-    .btn-edit-bio:hover { color: var(--text-secondary); border-color: var(--text-muted); }
     .salary-table { width: 100%; border-collapse: collapse; margin: 1rem 0 0.5rem; font-size: 0.85rem; }
     .salary-table th { text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.7rem;
       text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.6rem; border-bottom: 1px solid var(--border); }
@@ -463,28 +484,6 @@
     }
     .pos-pill.selected { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
     .pos-pill:hover:not(.selected) { border-color: var(--text-muted); color: var(--text-muted); }
-    .pos-display { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.5rem; align-items: center; }
-    .retired-tag {
-      padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
-      border: 1px solid var(--text-dim); background: var(--bg-card); color: var(--text-muted); letter-spacing: 0.04em;
-    }
-    .pos-tag {
-      padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
-      border: 1px solid var(--accent); background: var(--accent-panel-bg); color: var(--accent-light);
-    }
-    .pos-tag-dim {
-      padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;
-      border: 1px solid var(--border-dark); background: transparent; color: var(--border);
-    }
-    .current-team {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      padding: 0.22rem 0.65rem 0.22rem 0.45rem;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px;
-      color: var(--text-muted); font-size: 0.8rem; font-weight: 600;
-      text-decoration: none; margin: 0.5rem 0 0.6rem; width: fit-content;
-    }
-    .current-team:hover { border-color: var(--text-muted); color: var(--text-secondary); text-decoration: none; }
-    .current-team img { width: 18px; height: 18px; object-fit: contain; }
 
     /* The top of a player page: bio details on the left, the archetype radar
        on the right, so the stat tables start above the fold. */
@@ -497,13 +496,8 @@
     @media (max-width: 760px) {
       .player-hero { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-4); }
     }
-    .hero-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin-bottom: 0.75rem; }
-    .hero-row .pos-display, .hero-row .current-team,
-    .hero-row .ovr-wrap, .hero-row .btn-edit-bio { margin: 0; }
     .player-hero .accolades { margin-bottom: 0.75rem; }
-    .player-hero .hof-card { margin-bottom: 0; }
 
-    .ovr-wrap { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0.75rem; flex-wrap: wrap; }
     .ovr-chart { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem 0.25rem; margin-bottom: 0.75rem; }
 
     /* Contract timeline */
@@ -1074,27 +1068,26 @@
     };
 
     const all = rankOf(() => true);
-    const card = el('a', 'hof-card');
+    const card = el('a', 'hero-tile');
     card.href = '/hof/';
     card.title = 'Hall of Fame standings';
     if (all.rank <= 10) card.classList.add('hof-top10');
 
-    card.appendChild(el('div', 'hof-label', 'Hall of Fame'));
-    const score = el('div', 'hof-score', pts.toFixed(1));
+    card.appendChild(el('div', 'tile-label', 'Hall of Fame'));
+    const score = el('div', 'tile-value', pts.toFixed(1));
     score.appendChild(el('small', null, 'pts'));
     card.appendChild(score);
 
-    const ranks = el('div', 'hof-ranks');
-    const addRank = (r, label) => {
-      const d = el('div', 'hof-rank');
-      d.appendChild(el('b', null, r.label));
-      d.appendChild(el('span', null, label));
-      ranks.appendChild(d);
-    };
-    addRank(all, 'All-time');
     // "Active" means on a roster today, as in Career Totals.
-    if (teamMap[slug]) addRank(rankOf(r => !!teamMap[slugByName.get((r.PLAYER || '').toUpperCase())]), 'Active');
-    card.appendChild(ranks);
+    const sub = el('div', 'tile-sub');
+    sub.appendChild(el('b', null, all.label));
+    sub.appendChild(document.createTextNode(' all-time'));
+    if (teamMap[slug]) {
+      sub.appendChild(document.createTextNode(' · '));
+      sub.appendChild(el('b', null, rankOf(r => !!teamMap[slugByName.get((r.PLAYER || '').toUpperCase())]).label));
+      sub.appendChild(document.createTextNode(' active'));
+    }
+    card.appendChild(sub);
 
     const bar = el('div', 'hof-bar');
     const fill = el('i');
@@ -1103,10 +1096,7 @@
     bar.title = `${Math.round((pts / top) * 100)}% of the top score (${top.toFixed(1)})`;
     card.appendChild(bar);
 
-    // Its own row, so the inline card doesn't sit beside whatever follows.
-    const row = el('div');
-    row.appendChild(card);
-    container.appendChild(row);
+    container.appendChild(card);
   }
 
   function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow, leaderCheck, iconFn) {
@@ -3304,7 +3294,7 @@
       }
       if (count > 0) {
         const plural = def.rings && count > 1 ? 'Rings' : def.label;
-        badges.push({ label: count === 1 ? plural : `${count}× ${plural}`, color: def.color });
+        badges.push({ count, label: plural, gold: def.rings || def.label === 'MVP' });
       }
     });
 
@@ -3315,7 +3305,7 @@
         if (statMap[def.stat] && statMap[def.stat].slug === playerSlug) count++;
       });
       if (count > 0) {
-        badges.push({ label: count === 1 ? def.label : `${count}× ${def.label}`, color: def.color });
+        badges.push({ count, label: def.label });
       }
     });
 
@@ -3325,11 +3315,13 @@
     div.className = 'accolades';
     badges.forEach(b => {
       const span = document.createElement('span');
-      span.className = 'badge';
-      span.textContent = b.label;
-      span.style.background = b.color + '22';
-      span.style.color = b.color;
-      span.style.border = `1px solid ${b.color}55`;
+      span.className = 'badge' + (b.gold ? ' badge-gold' : '');
+      if (b.count > 1) {
+        const n = document.createElement('b');
+        n.textContent = `${b.count}×`;
+        span.appendChild(n);
+      }
+      span.appendChild(document.createTextNode(b.label));
       div.appendChild(span);
     });
     container.appendChild(div);
@@ -3408,24 +3400,7 @@
     }
   }
 
-  // ── Current team chip ────────────────────────────────────────────────────────
-
-  function renderCurrentTeam(container, playerSlug) {
-    const team = teamMap[playerSlug];
-    if (!team) return;
-    const a = document.createElement('a');
-    a.className = 'current-team';
-    a.href = `/teams/${team}/`;
-    const img = document.createElement('img');
-    img.src = `/logos/logo-${team.toLowerCase()}.png`;
-    img.alt = team;
-    img.onerror = function() { this.remove(); };
-    a.appendChild(img);
-    a.appendChild(document.createTextNode(TEAM_NAMES[team] || team));
-    container.appendChild(a);
-  }
-
-  // ── OVR badge + inline editor ────────────────────────────────────────────────
+  // ── OVR tile ────────────────────────────────────────────────
 
   function ovrHeatStyle(n) {
     const t = Math.min(1, Math.max(0, (n - 60) / 40));
@@ -3604,28 +3579,122 @@
         const [a] = aggregateBySeasonRows(playerRows.filter(r => r.SEASON === s));
         return a && qualifies(a);
       });
-    return Radar.withSeasons(eligibleSeasons, buildSvg);
+    return Radar.withSeasons(eligibleSeasons, buildSvg, { card: true, label: 'Archetype' });
   }
 
-  function renderOvrBadge(container, playerSlug) {
+  // OVR as a headline tile: the rating, its change since the last update, and
+  // a sparkline of the whole history. Colour goes on the figure only.
+  function renderOvrTile(container, playerSlug) {
     const ovr = currentOvr[playerSlug];
     if (ovr == null) return;
-    const wrap = document.createElement('div');
-    wrap.className = 'ovr-wrap';
-    const badge = document.createElement('span');
-    badge.className = 'badge ovr-badge';
-    badge.textContent = ovr;
-    Object.assign(badge.style, ovrHeatStyle(ovr));
-    wrap.appendChild(badge);
-    const cmpLink = document.createElement('a');
-    cmpLink.href = `/compare/?a=${playerSlug}`;
-    cmpLink.style.cssText = 'font-size:0.75rem;color:var(--text-muted);text-decoration:none;border:1px solid var(--border);border-radius:5px;padding:0.15rem 0.5rem;margin-left:0.25rem;';
-    cmpLink.textContent = '⇆ Compare';
-    cmpLink.title = 'Compare with another player';
-    cmpLink.addEventListener('mouseover', () => { cmpLink.style.borderColor = 'var(--text-muted)'; cmpLink.style.color = 'var(--text-secondary)'; });
-    cmpLink.addEventListener('mouseout', () => { cmpLink.style.borderColor = 'var(--border)'; cmpLink.style.color = 'var(--text-muted)'; });
-    wrap.appendChild(cmpLink);
-    container.appendChild(wrap);
+    const hist = (allOvrHistory[playerSlug] || []).filter(e => e && e.ovr != null);
+    const tile = document.createElement('div');
+    tile.className = 'hero-tile';
+    tile.innerHTML = '<div class="tile-label">Overall</div><div class="tile-main"><div class="tile-value"></div></div><div class="tile-sub"></div>';
+    const val = tile.querySelector('.tile-value');
+    val.textContent = ovr;
+    val.style.color = ovrHeatStyle(ovr).color;
+
+    const sub = tile.querySelector('.tile-sub');
+    if (hist.length >= 2) {
+      const d = hist.at(-1).ovr - hist.at(-2).ovr;
+      const since = hist.at(-2).date ? new Date(hist.at(-2).date + 'T00:00:00').toLocaleString('en-US', { month: 'short', year: 'numeric' }) : '';
+      const delta = document.createElement('b');
+      delta.className = d > 0 ? 'tile-up' : d < 0 ? 'tile-down' : '';
+      delta.textContent = d > 0 ? `▲ ${d}` : d < 0 ? `▼ ${-d}` : 'No change';
+      sub.appendChild(delta);
+      if (since) sub.appendChild(document.createTextNode(` since ${since}`));
+      tile.querySelector('.tile-main').appendChild(ovrSparkline(hist));
+    } else {
+      sub.textContent = hist.length ? `As of ${hist[0].date.slice(0, 7)}` : '';
+    }
+    container.appendChild(tile);
+  }
+
+  function ovrSparkline(entries) {
+    const W = 72, H = 26, P = 3;
+    const vals = entries.map(e => e.ovr);
+    const lo = Math.min(...vals), hi = Math.max(...vals), span = Math.max(1, hi - lo);
+    const pts = vals.map((v, i) => [P + i * (W - 2 * P) / (vals.length - 1), P + (1 - (v - lo) / span) * (H - 2 * P)]);
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('width', W); svg.setAttribute('height', H);
+    svg.classList.add('tile-spark');
+    const line = document.createElementNS(ns, 'polyline');
+    line.setAttribute('points', pts.map(p => p.join(',')).join(' '));
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', 'var(--text-muted)');
+    line.setAttribute('stroke-width', '1.5');
+    line.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(line);
+    const [lx, ly] = pts.at(-1);
+    const dot = document.createElementNS(ns, 'circle');
+    dot.setAttribute('cx', lx); dot.setAttribute('cy', ly); dot.setAttribute('r', '2.5');
+    dot.setAttribute('fill', ovrHeatStyle(vals.at(-1)).color);
+    svg.appendChild(dot);
+    const t = document.createElementNS(ns, 'title');
+    t.textContent = `OVR ${vals[0]} → ${vals.at(-1)} over ${entries.length} updates`;
+    svg.appendChild(t);
+    return svg;
+  }
+
+  // The subtitle under the name: eligible positions · current team · a count.
+  function renderIdentity(bio, playerSlug, tail) {
+    const sub = document.getElementById('page-sub');
+    sub.textContent = '';
+    sub.classList.add('identity');
+    const parts = [];
+    const pos = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => (bio.pos || []).includes(p));
+    if (pos.length) {
+      const e = document.createElement('span'); e.className = 'pos'; e.textContent = pos.join(' / ');
+      parts.push(e);
+    }
+    const team = teamMap[playerSlug];
+    if (team) {
+      const a = document.createElement('a');
+      a.className = 'team';
+      a.href = `/teams/${team}/`;
+      const img = document.createElement('img');
+      img.src = `/logos/logo-${team.toLowerCase()}.png`;
+      img.alt = '';
+      img.onerror = function() { this.remove(); };
+      a.appendChild(img);
+      a.appendChild(document.createTextNode(TEAM_NAMES[team] || team));
+      parts.push(a);
+    }
+    if (bio.retired) {
+      const e = document.createElement('span'); e.className = 'retired'; e.textContent = 'Retired';
+      parts.push(e);
+    }
+    if (tail) parts.push(document.createTextNode(tail));
+    parts.forEach((p, i) => {
+      if (i) { const d = document.createElement('span'); d.className = 'bio-sep'; d.textContent = '·'; sub.appendChild(d); }
+      sub.appendChild(p);
+    });
+  }
+
+  // Photo to the left of the name; Compare / Edit Bio at the right of the header.
+  function renderHeaderChrome(photoUrl, playerSlug, editBioBtn) {
+    const headerMain = document.querySelector('.header-main');
+    headerMain.querySelectorAll('.profile-photo, .player-actions').forEach(el => el.remove());
+    if (photoUrl) {
+      const img = document.createElement('img');
+      img.className = 'profile-photo';
+      img.src = photoUrl;
+      img.alt = '';
+      img.onerror = function() { this.remove(); };
+      headerMain.insertBefore(img, headerMain.firstChild);
+    }
+    const actions = document.createElement('div');
+    actions.className = 'player-actions';
+    const cmp = document.createElement('a');
+    cmp.href = `/compare/?a=${playerSlug}`;
+    cmp.textContent = '⇆ Compare';
+    cmp.title = 'Compare with another player';
+    actions.appendChild(cmp);
+    if (editBioBtn && canEditBios()) actions.appendChild(editBioBtn);
+    headerMain.appendChild(actions);
   }
 
   // ── Render: bio-only player (no stats yet) ───────────────────────────────────
@@ -3639,16 +3708,10 @@
     // _initNav in nav.js).
     if (typeof _initNav === 'function') _initNav();
     document.getElementById('page-title').textContent = name;
-    document.getElementById('page-sub').textContent = 'No NBN stats yet.';
-
-    if (bio.photo_url) {
-      const img = document.createElement('img');
-      img.className = 'profile-photo';
-      img.src = bio.photo_url;
-      img.alt = '';
-      img.onerror = function() { this.remove(); };
-      document.querySelector('.header-main').appendChild(img);
-    }
+    renderIdentity(bio, bioSlug, 'No NBN stats yet');
+    const editBioBtn = document.createElement('button');
+    editBioBtn.textContent = 'Edit Bio';
+    renderHeaderChrome(bio.photo_url, bioSlug, editBioBtn);
     renderPlayerNav(bioSlug);
 
     const content = document.getElementById('content');
@@ -3665,37 +3728,16 @@
       WINGSPAN:   bio.wingspan  || '',
     });
 
-    const bioOnlyPosDiv = document.createElement('div');
-    bioOnlyPosDiv.className = 'pos-display';
-    const eligibleBioPos = new Set(Array.isArray(bio.pos) ? bio.pos : []);
-    ['PG', 'SG', 'SF', 'PF', 'C'].forEach(p => {
-      const tag = document.createElement('span');
-      tag.className = eligibleBioPos.has(p) ? 'pos-tag' : 'pos-tag-dim';
-      tag.textContent = p;
-      bioOnlyPosDiv.appendChild(tag);
-    });
-    if (bio.retired) {
-      const rt = document.createElement('span');
-      rt.className = 'retired-tag';
-      rt.textContent = 'Retired';
-      bioOnlyPosDiv.appendChild(rt);
-    }
-    const heroRow = document.createElement('div');
-    heroRow.className = 'hero-row';
-    content.appendChild(heroRow);
-    heroRow.appendChild(bioOnlyPosDiv);
-    renderCurrentTeam(heroRow, bioSlug);
-    renderOvrBadge(heroRow, bioSlug);
+    const tiles = document.createElement('div');
+    tiles.className = 'hero-tiles';
+    renderOvrTile(tiles, bioSlug);
+    if (tiles.childNodes.length) content.appendChild(tiles);
     renderContractTimeline(content, bio, bioSlug);
     renderSalaryTable(content, bio);
     renderHistorySection(content, bioSlug);
     renderAttributes(content, bioSlug);
     renderTransactionHistory(content, bioSlug, [], {}, [], bio);
 
-    const editBioBtn = document.createElement('button');
-    editBioBtn.className = 'btn-edit-bio';
-    editBioBtn.textContent = 'Edit Bio';
-    if (canEditBios()) content.appendChild(editBioBtn);
     let bioFormEl = null;
     editBioBtn.addEventListener('click', async () => {
       if (bioFormEl) { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; return; }
@@ -3714,7 +3756,7 @@
         },
         () => { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; }
       );
-      content.insertBefore(bioFormEl, editBioBtn.nextSibling);
+      content.insertBefore(bioFormEl, content.firstChild);
       editBioBtn.textContent = 'Close';
     });
   }
@@ -4180,10 +4222,8 @@
     if (typeof _initNav === 'function') _initNav();
     document.getElementById('page-title').textContent = playerName;
     const seasonCount = new Set(rows.map(r => r.SEASON)).size;
-    document.getElementById('page-sub').textContent =
-      `${seasonCount} season${seasonCount !== 1 ? 's' : ''} in NBN`;
-
     const bio = biosData[slug] || {};
+    renderIdentity(bio, slug, `${seasonCount} season${seasonCount !== 1 ? 's' : ''} in NBN`);
     const mergedRow = {
       DOB:        bio.dob        || rows[0].DOB,
       COLLEGE:    bio.college    || rows[0].COLLEGE,
@@ -4195,17 +4235,9 @@
       WEIGHT:     bio.weight   != null ? String(bio.weight) : '',
       WINGSPAN:   bio.wingspan || '',
     };
-    const photoUrl = bio.photo_url || rows[0].PHOTO_URL;
-    const headerMain = document.querySelector('.header-main');
-    headerMain.querySelectorAll('.profile-photo').forEach(el => el.remove());
-    if (photoUrl) {
-      const img = document.createElement('img');
-      img.className = 'profile-photo';
-      img.src = photoUrl;
-      img.alt = '';
-      img.onerror = function() { this.remove(); };
-      headerMain.appendChild(img);
-    }
+    const editBioBtn = document.createElement('button');
+    editBioBtn.textContent = 'Edit Bio';
+    renderHeaderChrome(bio.photo_url || rows[0].PHOTO_URL, slug, editBioBtn);
     renderPlayerNav(slug);
 
     const content = document.getElementById('content');
@@ -4219,36 +4251,14 @@
 
     // bio line
     renderBioLine(info, mergedRow);
-    // positions, team, OVR and Edit Bio share one row
-    const heroRow = document.createElement('div');
-    heroRow.className = 'hero-row';
-    info.appendChild(heroRow);
+    // OVR and Hall of Fame as a pair of tiles, then the accolades
+    const tiles = document.createElement('div');
+    tiles.className = 'hero-tiles';
+    info.appendChild(tiles);
+    renderOvrTile(tiles, slug);
+    renderHofLine(tiles, rows[0].PLAYER, hofRows);
+    if (!tiles.childNodes.length) tiles.remove();
 
-    // position tags
-    const posDiv = document.createElement('div');
-    posDiv.className = 'pos-display';
-    const eligiblePos = new Set(Array.isArray(bio.pos) ? bio.pos : []);
-    ['PG', 'SG', 'SF', 'PF', 'C'].forEach(p => {
-      const tag = document.createElement('span');
-      tag.className = eligiblePos.has(p) ? 'pos-tag' : 'pos-tag-dim';
-      tag.textContent = p;
-      posDiv.appendChild(tag);
-    });
-    if (bio.retired) {
-      const rt = document.createElement('span');
-      rt.className = 'retired-tag';
-      rt.textContent = 'Retired';
-      posDiv.appendChild(rt);
-    }
-    heroRow.appendChild(posDiv);
-    renderCurrentTeam(heroRow, slug);
-    renderOvrBadge(heroRow, slug);
-
-    // edit bio button
-    const editBioBtn = document.createElement('button');
-    editBioBtn.className = 'btn-edit-bio';
-    editBioBtn.textContent = 'Edit Bio';
-    if (canEditBios()) heroRow.appendChild(editBioBtn);
     let bioFormEl = null;
     editBioBtn.addEventListener('click', async () => {
       if (bioFormEl) { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; return; }
@@ -4274,7 +4284,6 @@
 
     // accolades
     renderAccolades(info, slug, rows[0].RINGS, playerAwards, seasonLeaders);
-    renderHofLine(info, rows[0].PLAYER, hofRows);
 
     // player type radar
     const radarEl = buildPlayerRadarChart(rows, allPlayerSeasons);

@@ -150,6 +150,15 @@
    wrap here: a long career has more seasons than a phone is wide. */
 .ui-radar { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin: var(--space-3) 0 var(--space-1); }
 .ui-radar > .ui-segmented { flex-wrap: wrap; justify-content: center; }
+/* Card form (opts.card): a label and a small season dropdown on one line. */
+.ui-radar--card {
+  margin: 0; gap: 0; padding: var(--space-3) var(--space-3) var(--space-2);
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.ui-radar-head { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ui-radar-head > span:first-child { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.ui-radar-head .ui-select { height: 1.75rem; padding: 0 var(--space-5) 0 var(--space-2); font-size: var(--text-xs); }
+.ui-radar-season { font-size: var(--text-xs); color: var(--text-muted); }
 
 /* ── Section title ──────────────────────────────────────────────────────── */
 /* Sentence case at a real size. Replaces the tiny spaced-out capitals
@@ -353,13 +362,12 @@
   line-height: 1.05;
   letter-spacing: 0;
 }
-:root :is(.ovr-badge, .team-score, .hero-line, .dash-team-phase) {
+:root :is(.tile-value, .team-score, .hero-line, .dash-team-phase) {
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
-:root .ovr-badge { font-size: 1.75rem; }
 :root .team-score { font-size: 1.6rem; }
 @media (max-width: 600px) {
   :root :is(.ui-title, .team-header h1, .profile-name) { font-size: 2rem; }

@@ -7,7 +7,9 @@
 //   Radar.percentile(val, arr)          share of arr strictly below val (0–1)
 //   Radar.nearest(pcts, archetypes)     { name, runnerUp } — see below
 //   Radar.draw({ dims, title, tier, runnerUp, footer })  → <svg>
-//   Radar.withSeasons(seasons, build)   season switcher around build(season)
+//   Radar.withSeasons(seasons, build, opts)  season switcher around build(season);
+//       opts.card puts it in a card headed by opts.label, with a dropdown for
+//       the season instead of a row of buttons
 (function () {
   const NS = 'http://www.w3.org/2000/svg';
 
@@ -108,14 +110,35 @@
   }
 
   // seasons newest first; build(season) returns an <svg> or null.
-  function withSeasons(seasons, build) {
+  function withSeasons(seasons, build, opts = {}) {
     if (!seasons.length) return null;
     const wrap = document.createElement('div');
     wrap.className = 'ui-radar';
     const slot = document.createElement('div');
     const show = s => { slot.innerHTML = ''; const svg = build(s); if (svg) slot.appendChild(svg); };
 
-    if (seasons.length > 1) {
+    if (opts.card) {
+      wrap.classList.add('ui-radar--card');
+      const head = document.createElement('div');
+      head.className = 'ui-radar-head';
+      const label = document.createElement('span');
+      label.textContent = opts.label || 'Archetype';
+      head.appendChild(label);
+      if (seasons.length > 1) {
+        const sel = document.createElement('select');
+        sel.className = 'ui-select';
+        sel.setAttribute('aria-label', 'Season');
+        seasons.forEach(s => sel.appendChild(new Option(s, s)));
+        sel.addEventListener('change', () => show(sel.value));
+        head.appendChild(sel);
+      } else {
+        const one = document.createElement('span');
+        one.className = 'ui-radar-season';
+        one.textContent = seasons[0];
+        head.appendChild(one);
+      }
+      wrap.appendChild(head);
+    } else if (seasons.length > 1) {
       const bar = document.createElement('div');
       bar.className = 'ui-segmented';
       bar.setAttribute('role', 'group');
