@@ -33,8 +33,7 @@
     .fut-quote strong { color: var(--text-primary); }
     .fut-err { font-size: 0.75rem; color: var(--danger); }
     .fut-admin { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid var(--border); }
-    .fut-house { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
-    .fut-trades { margin-top: 0.6rem; font-size: 0.78rem; }
+        .fut-trades { margin-top: 0.6rem; font-size: 0.78rem; }
     .fut-trades summary { cursor: pointer; color: var(--text-muted); }
     .fut-trades td.up { color: var(--market-positive); }
     .fut-trades td.holds { white-space: normal; min-width: 9rem; color: var(--text-muted); }
@@ -178,7 +177,6 @@
     if (m.trading && ctx.user()) el.appendChild(tradePanel(m, pos));
     else if (m.trading) el.insertAdjacentHTML('beforeend', '<div class="fut-meta" style="margin-top:0.6rem">Sign in to trade.</div>');
 
-    el.appendChild(houseLine(m));
     el.appendChild(leaderboard(m));
     el.appendChild(tradesLog(m));
     if (ctx.isBookie() && !done) el.appendChild(adminBar(m));
@@ -510,25 +508,6 @@
     return box;
   }
 
-  // ── What it did to the money supply ────────────────────────────────────────
-
-  function houseLine(m) {
-    const el = document.createElement('div');
-    el.className = 'fut-house';
-    const h = m.house;
-    if (m.status === 'settled') {
-      el.textContent = h.net <= 0
-        ? `This market created ${nby(-h.net)} (paid out ${nby(h.paid_out)}, ${nby(h.fees_burned)} in fees burned).`
-        : `This market took ${nby(h.net)} out of circulation (paid out ${nby(h.paid_out)}, ${nby(h.fees_burned)} in fees burned).`;
-    } else if (m.status === 'voided') {
-      el.textContent = `Voided. ${nby(h.refunded, 2)} refunded.`;
-    } else {
-      el.textContent = `The most this market can create is ${nby(m.max_mint)}, if the longest shot at opening wins and the market saw it coming. `
-        + `${nby(h.fees_burned, 2)} in fees burned so far.`;
-    }
-    return el;
-  }
-
   // One member's standing in a market. Open: shares valued at current prices
   // (what they'd be worth if the market ended at today's odds, not what
   // selling them all at once would fetch, since a big sale moves the price).
@@ -572,8 +551,7 @@
       <th class="num">Profit</th></tr></thead><tbody>${rows.map((r, i) => `<tr${r.n === me ? ' style="font-weight:600"' : ''}>
       <td class="num">${i + 1}</td><td>${esc(r.n)}</td>${open ? `<td class="holds narrow-hide">${holds(r.pos)}</td>` : ''}
       <td class="num narrow-hide">${r.net < -0.005 ? '−' : ''}${nby(r.net, 2)}</td><td class="num">${nby(open ? r.value : m.status === 'settled' ? r.paid : r.net, 2)}</td>
-      <td class="num ${r.pl > 0.005 ? 'up' : r.pl < -0.005 ? 'down' : ''}">${signed(r.pl)}</td></tr>`).join('')}</tbody></table>
-      ${open ? '<div class="fut-meta" style="margin-top:0.3rem">"Worth now" values shares at current odds. Selling a big position would move the price, so it would fetch a little less.</div>' : ''}`;
+      <td class="num ${r.pl > 0.005 ? 'up' : r.pl < -0.005 ? 'down' : ''}">${signed(r.pl)}</td></tr>`).join('')}</tbody></table>`;
     d.appendChild(wrap);
     return d;
   }
