@@ -10,6 +10,7 @@
 //   contractReady               161   resolves once /contract.js has loaded
 //   capHealthReady              182   resolves once /cap-health.js has loaded
 //   coachingConfigReady         194   resolves once /coaching-config.js has loaded
+//   radarReady                        resolves once /radar.js has loaded
 //   CAP_HOLD_CSS                730   cap-hold type → td class
 //   CAP_HOLD_LABELS             738   cap-hold type → legend label
 //   SWATCH_COLORS               746   cap-hold type → legend swatch color
@@ -202,6 +203,16 @@ const capHealthReady = new Promise(resolve => {
   _ch.onload = resolve;
   _ch.onerror = () => { console.error('/cap-health.js failed to load — cap health card unavailable'); resolve(); };
   document.head.appendChild(_ch);
+});
+
+// Radar — the archetype radar, shared with player pages. Soft dependency: the
+// Team Identity section stays hidden if it fails to load.
+const radarReady = new Promise(resolve => {
+  const _rd = document.createElement('script');
+  _rd.src = '/radar.js';
+  _rd.onload = resolve;
+  _rd.onerror = () => { console.error('/radar.js failed to load — team identity radar unavailable'); resolve(); };
+  document.head.appendChild(_rd);
 });
 
 // CoachingSettings — the 2K coach-profile field/option schema, shared with the
@@ -1015,6 +1026,10 @@ document.body.innerHTML = `
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-franchise">
+      <section id="identity-section" style="display:none">
+        <h2 class="section-title">Team Identity</h2>
+        <div id="identity-wrap"></div>
+      </section>
       <section>
         <h2 class="section-title">Season History</h2>
         <div class="timeline" id="timeline-wrap"></div>
@@ -6718,6 +6733,90 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
   attachEditBtn(rows);
 }
 
+// Team Identity — the team counterpart of the player archetype radar. How a
+// team plays, from its players' season totals in player_seasons.csv; each axis
+// is a percentile against the other 29 teams that season. Drawing and
+// nearest-match are /radar.js, shared with player pages.
+function buildTeamRadar(abbr, allSeasons, standingsRows) {
+  if (!window.Radar) return null;
+
+  // season -> team -> summed totals, plus who used the most plays.
+  const teams = {};
+  allSeasons.forEach(r => {
+    if (!r.SEASON || r.SEASON === 'NA' || !r.TEAM) return;
+    const t = ((teams[r.SEASON] ||= {})[r.TEAM] ||= { MIN: 0, FGA: 0, FGM: 0, FTA: 0, TOV: 0, AST: 0, STL: 0, BLK: 0, '3PA': 0, mins: [], top: null });
+    ['MIN', 'FGA', 'FGM', 'FTA', 'TOV', 'AST', 'STL', 'BLK', '3PA'].forEach(f => { t[f] += +r[f] || 0; });
+    t.mins.push(+r.MIN || 0);
+    const used = (+r.FGA || 0) + 0.44 * (+r.FTA || 0) + (+r.TOV || 0);
+    if (!t.top || used > t.top.used) t.top = { used, player: r.PLAYER };
+  });
+  // 240 player-minutes a game. Ten games before a season reads as a style.
+  const games = t => t.MIN / 240;
+  const plays = t => t.FGA + 0.44 * t.FTA + t.TOV;
+  const qualifies = t => games(t) >= 10;
+
+  const DIM_DEFS = [
+    { label: 'PACE',     angle: 90,  get: t => plays(t) / games(t),            fmt: v => `${v.toFixed(1)} plays a game` },
+    { label: '3P RATE',  angle: 45,  get: t => t['3PA'] / Math.max(1, t.FGA),  fmt: v => `${Math.round(v * 100)}% of shots from three` },
+    { label: 'FT RATE',  angle: 0,   get: t => t.FTA / Math.max(1, t.FGA),     fmt: v => `${Math.round(v * 100)} FTA per 100 shots` },
+    { label: 'AST RATE', angle: 315, get: t => t.AST / Math.max(1, t.FGM),     fmt: v => `${Math.round(v * 100)}% of baskets assisted` },
+    { label: 'BLK',      angle: 270, get: t => t.BLK / games(t),               fmt: v => `${v.toFixed(1)} blocks a game` },
+    { label: 'STL',      angle: 225, get: t => t.STL / games(t),               fmt: v => `${v.toFixed(1)} steals a game` },
+    // Minutes spread as evenly as an N-man rotation would (1 / Σ share²).
+    { label: 'DEPTH',    angle: 180, get: t => t.MIN ? 1 / t.mins.reduce((a, m) => a + (m / t.MIN) ** 2, 0) : 0,
+      fmt: v => `minutes spread like an even ${v.toFixed(1)}-man rotation` },
+    { label: 'STAR USG', angle: 135, get: t => t.top ? t.top.used / Math.max(1, plays(t)) : 0,
+      fmt: (v, t) => `${displayNameFromBio(t.top.player)} used ${Math.round(v * 100)}% of plays` },
+  ];
+
+  // Target percentile per axis, in DIM_DEFS order. Seeded from a clustering
+  // of every team-season 20-21 to 25-26.
+  const ARCHETYPES = {
+    //                        PACE 3PR FTR AST BLK STL DEP STAR
+    'Seven Seconds or Less': [ 79, 60, 71, 32, 70, 62, 43, 69],
+    'Showtime':              [ 70, 26, 73, 77, 30, 61, 30, 69],
+    'Heliocentric':          [ 13, 42, 63, 54, 33, 35, 27, 81],
+    'Old School':            [ 37, 15, 62, 72, 52, 63, 60, 30],
+    'Beautiful Game':        [ 55, 45, 31, 75, 74, 53, 16, 58],
+    'Bombs Away':            [ 27, 82, 21, 28, 24, 20, 48, 36],
+    'Hockey Subs':           [ 56, 58, 52, 30, 25, 20, 76, 34],
+    'Grit and Grind':        [ 43, 55, 26, 29, 64, 59, 74, 25],
+  };
+
+  // How good, by point differential rank that season: better than record
+  // at saying who was really good.
+  const diffRank = {};
+  const bySeason = {};
+  standingsRows.forEach(r => { (bySeason[r.SEASON] ||= []).push(r); });
+  Object.entries(bySeason).forEach(([season, rows]) => {
+    rows.sort((a, b) => +b.DIFF - +a.DIFF).forEach((r, i) => { (diffRank[season] ||= {})[r.TEAM] = i + 1; });
+  });
+  function tierFor(rank) {
+    if (!rank) return null;
+    if (rank <= 2)  return 'Juggernaut';
+    if (rank <= 6)  return 'Contender';
+    if (rank <= 16) return 'Playoff Team';
+    if (rank <= 20) return 'Bubble';
+    return 'Lottery';
+  }
+
+  function buildSvg(season) {
+    const me = teams[season]?.[abbr];
+    if (!me || !qualifies(me)) return null;
+    const peers = Object.values(teams[season]).filter(qualifies);
+    const dims = DIM_DEFS.map(d => {
+      const v = d.get(me);
+      return { label: d.label, angle: d.angle, tip: d.fmt(v, me), pct: Radar.percentile(v, peers.map(d.get)) };
+    });
+    const { name, runnerUp } = Radar.nearest(dims.map(d => d.pct), ARCHETYPES);
+    const tier = tierFor(diffRank[season]?.[abbr]);
+    return Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season` });
+  }
+
+  const seasons = Object.keys(teams).filter(s => teams[s][abbr] && qualifies(teams[s][abbr])).sort().reverse();
+  return Radar.withSeasons(seasons, buildSvg);
+}
+
 // slug -> that player's most recent player_seasons.csv row (any team), used
 // by the roster table's Stats mode. Season strings ("24-25") sort correctly
 // with plain string comparison, same convention used for the Historical
@@ -6792,7 +6891,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -6816,6 +6915,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/data/franchise-records.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch('/api/poext/eligible').then(r => r.ok ? r.json() : []),
     fetch('/api/coaching-settings').then(r => r.ok ? r.json() : {}),
+    fetch('/standings/standings-history.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
   ]);
 
   await namesReady;
@@ -6824,6 +6924,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   await contractReady;
   await capHealthReady;
   await coachingConfigReady;
+  await radarReady;
 
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
   if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
@@ -6953,6 +7054,15 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
   const allSeasons = psr.status === 'fulfilled' ? parseCSV(psr.value) : [];
   const latestSeasonBySlug = computeLatestSeasonBySlug(allSeasons);
+
+  {
+    const standingsRows = stdr.status === 'fulfilled' ? parseCSV(stdr.value) : [];
+    const radarEl = buildTeamRadar(abbr, allSeasons, standingsRows);
+    if (radarEl) {
+      document.getElementById('identity-wrap').appendChild(radarEl);
+      document.getElementById('identity-section').style.display = '';
+    }
+  }
 
   // Season Records — the season-total analog of the single-game records above:
   // this franchise's best regular season, and the best single season by any
