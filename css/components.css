@@ -73,6 +73,26 @@
   scrollbar-width: none;
 }
 .ui-tabs::-webkit-scrollbar { display: none; }
+/* The scrollbar is hidden, so on a phone nothing said more tabs were off to
+   the side (a team page shows 3 of 7). Fade whichever edge has tabs past it.
+   The fade follows the strip's own scroll position, and a strip that fits
+   has no scroll timeline, so it gets no fade. Browsers without scroll-driven
+   animations get no fade either. */
+@property --ui-tabs-fade-l { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ui-tabs-fade-r { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@supports (animation-timeline: scroll()) {
+  .ui-tabs {
+    mask-image: linear-gradient(to right, transparent, #000 var(--ui-tabs-fade-l), #000 calc(100% - var(--ui-tabs-fade-r)), transparent);
+    animation: ui-tabs-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+  @keyframes ui-tabs-fade {
+    0%   { --ui-tabs-fade-l: 0px;    --ui-tabs-fade-r: 2.5rem; }
+    8%   { --ui-tabs-fade-l: 2.5rem; }
+    92%  { --ui-tabs-fade-r: 2.5rem; }
+    100% { --ui-tabs-fade-l: 2.5rem; --ui-tabs-fade-r: 0px; }
+  }
+}
 .ui-tab {
   flex-shrink: 0;
   padding: var(--space-2) var(--space-4);

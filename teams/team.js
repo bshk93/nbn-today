@@ -611,6 +611,13 @@ const coachingConfigReady = new Promise(resolve => {
   .ch-tone-unknown .ch-row-amount, .ch-tone-unknown .ch-row-note { color: var(--text-dim); font-style: italic; }
   .ch-tone-violation .ch-row-note, .ch-tone-violation .ch-row-amount { color: var(--danger); font-weight: 600; }
   .ch-tone-caution .ch-row-note { color: var(--gold-alt); }
+  /* Three columns don't fit a phone: label and amount share a line, the note
+     goes under them at full width. */
+  @media (max-width: 600px) {
+    .ch-row { grid-template-columns: minmax(0, 1fr) auto; gap: 0.15rem 1rem; }
+    .ch-row-note { grid-column: 1 / -1; }
+    .ch-row-note:empty { display: none; }
+  }
   .ch-warning { font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0; color: var(--danger); }
   .ch-warning.caution { color: var(--gold-alt); }
   .ch-diff { display: grid; grid-template-columns: 9rem 1fr; gap: 0.35rem 1rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border-subtle); }
