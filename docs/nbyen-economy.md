@@ -102,7 +102,14 @@ Added 2026-09-25. The Futures tab on `/bet`; code in
 - **Each market shows its own result**, and `GET /api/markets/house` sums them.
   `/nbyen` has a "Futures traders, net" tile. Ledger kinds are `market_buy`,
   `market_sell`, `market_payout` and `market_refund`.
-- **Still open:** an automated model for opening prices, and rules for GMs
+- **Opening odds can come from power rankings.** "Fill with all 30 teams" on
+  the new-market form weights each team from the latest published edition, by
+  average ballot rank: a team's weight falls by a factor of e every 3 places
+  (`SEED_SPREAD`, served by `GET /api/markets/seeds/power-rankings`). On the
+  2026 preseason edition that opens the top team near 21%, the top five near
+  70%, and everyone below about 12th at the 1% floor. The bookie can edit any
+  weight before opening.
+- **Still open:** a roster-based model for opening odds, and rules for GMs
   trading on their own pending trades. See `BACKLOG.md`.
 
 ## 5. Buying a stream

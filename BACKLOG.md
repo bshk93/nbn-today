@@ -705,10 +705,12 @@ Note the constraint in CLAUDE.md: the 30 team shells load only `team.js`, so it
 has to be pulled in the same injected-script + awaited-promise way
 `lineupReady` / `contractReady` are, not by touching the shells.
 
-### [P3] Futures markets: no model for opening odds, no insider rule, `/invest` overlaps
+### [P3] Futures markets: no roster model for opening odds, no insider rule, `/invest` overlaps
 Futures markets shipped 2026-09-25 (`docs/nbyen-economy.md` § 4a). Left:
 
-- **Opening odds are typed by the bookie or level.** A model would do better:
+- **Opening odds come from the bookie or the latest power rankings** (by
+  average ballot rank, `docs/nbyen-economy.md` § 4a). Rankings go stale
+  between editions and ignore everything but opinion. A model would do better:
   rate each roster (`computeStartingFive`, OVR depth, record once games start),
   simulate the season, and seed from that. Also show it beside the market
   price and recompute it on every roster write. It should inform the price,

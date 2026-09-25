@@ -361,6 +361,7 @@
           <button class="ui-btn ui-btn--sm ui-btn--ghost" id="fm-teams" type="button">Fill with all 30 teams</button>
           <button class="ui-btn ui-btn--sm ui-btn--ghost" id="fm-level" type="button">Clear weights</button>
         </div>
+        <div class="hint" id="fm-source"></div>
       </div>
       <div class="fut-form-grid">
         <label class="ui-label">Liquidity (b) <input class="ui-input" id="fm-b" type="number" value="1500" min="100" max="20000" step="100"></label>
@@ -417,12 +418,23 @@
     }
 
     $('fm-add').onclick = () => { addRow(); tbody.lastElementChild.querySelector('.fm-label').focus(); };
-    $('fm-teams').onclick = () => {
+    // Teams come pre-weighted from the latest published power rankings
+    // (GET /api/markets/seeds/power-rankings — the weighting lives there).
+    // With no edition published, they fill in level.
+    $('fm-teams').onclick = async () => {
       tbody.innerHTML = '';
-      Object.keys(typeof TEAM_LIST !== 'undefined' ? TEAM_LIST : {}).forEach(k => addRow(teamName(k), k));
+      let seed = null;
+      try { seed = await api('/api/markets/seeds/power-rankings'); } catch {}
+      const abbrs = Object.keys(typeof TEAM_LIST !== 'undefined' ? TEAM_LIST : {});
+      if (seed) abbrs.sort((a, b) => (seed.teams[a]?.avg ?? 99) - (seed.teams[b]?.avg ?? 99));
+      abbrs.forEach(k => addRow(teamName(k), k, seed?.teams[k]?.weight ?? ''));
+      $('fm-source').innerHTML = seed
+        ? `Weights from <a href="/news/view/?id=${encodeURIComponent(seed.source.id)}" target="_blank">${esc(seed.source.title)}</a>`
+          + ` (${when(seed.source.published_at)}), by each team's average ballot rank. Edit any of them, or clear them for level odds.`
+        : 'No published power rankings yet, so every team opens level.';
       preview();
     };
-    $('fm-level').onclick = () => { tbody.querySelectorAll('.fm-w').forEach(i => { i.value = ''; }); preview(); };
+    $('fm-level').onclick = () => { tbody.querySelectorAll('.fm-w').forEach(i => { i.value = ''; }); $('fm-source').textContent = ''; preview(); };
     $('fm-b').addEventListener('input', preview);
     addRow(); addRow();
 
