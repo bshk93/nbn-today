@@ -68,7 +68,7 @@
     <header class="ui-header">
       <div>
         <h1 class="ui-title">Season Stats</h1>
-        <p class="ui-subtitle">Every player-season. Click any column to sort.</p>
+        <p class="ui-subtitle" id="subtitle">Every player-season. Click any column to sort.</p>
       </div>
     </header>
     <div class="filters" id="filters"></div>
@@ -99,10 +99,13 @@
     let activeTeamFilter = null;
     const rosterCache = {};
     let allRows = [];
-    let tbody, thEls = [];
+    let teamRows = [];
+    // 'players' or 'teams'. Kept in ?view= so a team table can be linked.
+    let view = new URLSearchParams(location.search).get('view') === 'teams' ? 'teams' : 'players';
+    let table, tbody, thEls = [];
 
     // group-start marks a visual left border to separate stat groups
-    const COLS = [
+    const PLAYER_COLS = [
       { key: 'PLAYER', label: 'Player', cls: 'player-name',        defaultDir:  1 },
       { key: 'SEASON', label: 'Season', cls: 'muted',               defaultDir:  1 },
       { key: 'TEAM',   label: 'Team',   cls: 'muted',               defaultDir:  1 },
@@ -131,6 +134,26 @@
       { key: '_TOV',   label: 'TOV',   cls: 'right',               defaultDir: -1 },
       { key: '_GMSC',  label: 'GMSC',  cls: 'right group-start',   defaultDir: -1 },
     ];
+
+    // Team view: the same stat groups, summed over a team's player lines. Those
+    // sums match the team's own box-score totals exactly (PTS/G equals the
+    // standings PPG), so nothing here is an estimate. G, W, L and OPPG come from
+    // standings-history.csv, since a team's games are not the sum of its players'.
+    // MPG and GMSC are left out: at team level they are constants or meaningless.
+    const TEAM_COLS = [
+      { key: 'TEAM',   label: 'Team',   cls: 'player-name',         defaultDir:  1 },
+      { key: 'SEASON', label: 'Season', cls: 'muted',               defaultDir:  1 },
+      { key: '_G',     label: 'G',      cls: 'right group-start',   defaultDir: -1 },
+      { key: '_W',     label: 'W',      cls: 'right',               defaultDir: -1 },
+      { key: '_L',     label: 'L',      cls: 'right',               defaultDir: -1 },
+      { key: '_WP',    label: 'W%',     cls: 'right pct',           defaultDir: -1 },
+      ...PLAYER_COLS.slice(5, 16),   // FGM … PTS
+      { key: '_OPPG',  label: 'OPPG',   cls: 'right group-start',   defaultDir:  1 },
+      { key: '_DIFF',  label: 'DIFF',   cls: 'right',               defaultDir: -1 },
+      ...PLAYER_COLS.slice(16, 26),  // RPG … TOV
+    ];
+
+    let COLS = view === 'teams' ? TEAM_COLS : PLAYER_COLS;
 
     function pct(made, att) {
       const m = +made, a = +att;
@@ -223,39 +246,78 @@
       });
     }
 
+    // One row per team-season, from the per-stint player lines (a traded player's
+    // stint counts toward the team he played it for).
+    function aggregateByTeamSeason(rows, standings) {
+      const record = new Map(standings.map(s => [s.TEAM + '|' + s.SEASON, s]));
+      const map = new Map();
+      rows.forEach(row => {
+        const key = row.TEAM + '|' + row.SEASON;
+        let agg = map.get(key);
+        if (!agg) {
+          agg = { TEAM: row.TEAM, SEASON: row.SEASON, _G: 0, _MIN: 0, _GMSC_TOT: 0,
+                  _FGM: 0, _FGA: 0, _3PM: 0, _3PA: 0, _FTM: 0, _FTA: 0,
+                  _PTS: 0, _REB: 0, _AST: 0, _STL: 0, _BLK: 0, _TOV: 0 };
+          map.set(key, agg);
+        }
+        agg._G = Math.max(agg._G, row._G);   // fallback when standings lack the season
+        ['_FGM','_FGA','_3PM','_3PA','_FTM','_FTA','_PTS','_REB','_AST','_STL','_BLK','_TOV']
+          .forEach(k => { agg[k] += row[k]; });
+      });
+      return Array.from(map.values()).map(agg => {
+        const st = record.get(agg.TEAM + '|' + agg.SEASON);
+        if (st) {
+          agg._W = +st.W; agg._L = +st.L;
+          agg._G = agg._W + agg._L;
+          agg._OPPG = +st.OPPG;
+        }
+        recomputeRates(agg);
+        agg._WP   = st && agg._G ? agg._W / agg._G : null;
+        agg._DIFF = st ? agg._PPG - agg._OPPG : null;
+        return agg;
+      });
+    }
+
     function playerSlug(name) {
       return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
     }
 
     function fmt1(n)  { return n.toFixed(1); }
+    function fmtInt(n) { return n.toLocaleString('en-US'); }
+    function fmtSigned(n) { return n === null ? '—' : (n > 0 ? '+' : '') + n.toFixed(1); }
     function fmtPct(n) { return n === null ? '—' : (n * 100).toFixed(1) + '%'; }
 
     function cellText(col, row) {
       switch (col.key) {
-        case '_G':   return row._G.toString();
+        case '_G':   return fmtInt(row._G);
         case '_MPG': return fmt1(row._MPG);
-        case '_FGM': return row._FGM.toString();
-        case '_FGA': return row._FGA.toString();
+        case '_FGM': return fmtInt(row._FGM);
+        case '_FGA': return fmtInt(row._FGA);
         case '_FGP': return fmtPct(row._FGP);
-        case '_3PM': return row._3PM.toString();
-        case '_3PA': return row._3PA.toString();
+        case '_3PM': return fmtInt(row._3PM);
+        case '_3PA': return fmtInt(row._3PA);
         case '_3PP': return fmtPct(row._3PP);
-        case '_FTM': return row._FTM.toString();
-        case '_FTA': return row._FTA.toString();
+        case '_FTM': return fmtInt(row._FTM);
+        case '_FTA': return fmtInt(row._FTA);
         case '_FTP': return fmtPct(row._FTP);
         case '_PPG': return fmt1(row._PPG);
-        case '_PTS': return row._PTS.toString();
+        case '_PTS': return fmtInt(row._PTS);
         case '_RPG': return fmt1(row._RPG);
-        case '_REB': return row._REB.toString();
+        case '_REB': return fmtInt(row._REB);
         case '_APG': return fmt1(row._APG);
-        case '_AST': return row._AST.toString();
+        case '_AST': return fmtInt(row._AST);
         case '_SPG': return fmt1(row._SPG);
-        case '_STL': return row._STL.toString();
+        case '_STL': return fmtInt(row._STL);
         case '_BPG': return fmt1(row._BPG);
-        case '_BLK': return row._BLK.toString();
+        case '_BLK': return fmtInt(row._BLK);
         case '_TPG': return fmt1(row._TPG);
-        case '_TOV': return row._TOV.toString();
+        case '_TOV': return fmtInt(row._TOV);
         case '_GMSC': return fmt1(row._GMSC);
+        case '_W':    return row._W ?? '—';
+        case '_L':    return row._L ?? '—';
+        case '_WP':   return row._WP === null ? '—' : row._WP.toFixed(3).replace(/^0/, '');
+        case '_OPPG': return row._OPPG === undefined ? '—' : fmt1(row._OPPG);
+        case '_DIFF': return fmtSigned(row._DIFF);
         default:     return row[col.key] ?? '';
       }
     }
@@ -295,6 +357,11 @@
     }
 
     function visibleRows() {
+      if (view === 'teams') {
+        let rows = activeSeason === 'all' ? teamRows : teamRows.filter(r => r.SEASON === activeSeason);
+        if (activeTeamFilter) rows = rows.filter(r => r.TEAM === activeTeamFilter);
+        return rows;
+      }
       let filtered = activeSeason === 'all' ? allRows : allRows.filter(r => r.SEASON === activeSeason);
       if (rookiesOnly) filtered = filtered.filter(r => r._rookie);
       if (activeTeamFilter) {
@@ -335,6 +402,11 @@
             a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
             a.textContent = row.PLAYER;
             td.appendChild(a);
+          } else if (view === 'teams' && col.key === 'TEAM') {
+            const a = document.createElement('a');
+            a.href = `/teams/${row.TEAM}/`;
+            a.textContent = row.TEAM;
+            td.appendChild(a);
           } else {
             td.textContent = cellText(col, row);
           }
@@ -344,16 +416,38 @@
 
     function buildFilters(seasons) {
       const wrap = document.getElementById('filters');
+      const playerOnly = [];
+
+      [['players', 'Players'], ['teams', 'Teams']].forEach(([value, label]) => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn view-btn' + (value === view ? ' active' : '');
+        btn.textContent = label;
+        btn.addEventListener('click', () => {
+          if (view === value) return;
+          view = value;
+          wrap.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b === btn));
+          playerOnly.forEach(el => { el.hidden = view === 'teams'; });
+          const url = new URL(location.href);
+          if (view === 'teams') url.searchParams.set('view', 'teams');
+          else url.searchParams.delete('view');
+          history.replaceState(null, '', url);
+          setView();
+        });
+        wrap.appendChild(btn);
+      });
+      const viewSep = document.createElement('span');
+      viewSep.style.cssText = 'width:0.75rem';
+      wrap.appendChild(viewSep);
       const all = [{ value: 'all', label: 'All Seasons' }].concat(
         seasons.map(s => ({ value: s, label: s }))
       );
       all.forEach(({ value, label }) => {
         const btn = document.createElement('button');
-        btn.className = 'filter-btn' + (value === activeSeason ? ' active' : '');
+        btn.className = 'filter-btn season-btn' + (value === activeSeason ? ' active' : '');
         btn.textContent = label;
         btn.addEventListener('click', () => {
           activeSeason = value;
-          wrap.querySelectorAll('.filter-btn:not(.toggle-btn)').forEach(b => b.classList.remove('active'));
+          wrap.querySelectorAll('.season-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           rebuildBody();
         });
@@ -380,7 +474,7 @@
         const abbr = teamSel.value;
         activeTeamFilter = abbr || null;
         teamSel.classList.toggle('active', !!abbr);
-        if (abbr && !rosterCache[abbr]) {
+        if (abbr && view === 'players' && !rosterCache[abbr]) {
           try {
             const res = await fetch(`/data/${abbr.toLowerCase()}-roster.csv`);
             if (res.ok) {
@@ -405,6 +499,7 @@
         rebuildBody();
       });
       wrap.appendChild(rookieBtn);
+      playerOnly.push(rookieBtn);
 
       const toggleBtn = document.createElement('button');
       toggleBtn.className = 'filter-btn toggle-btn';
@@ -415,22 +510,14 @@
         rebuildBody();
       });
       wrap.appendChild(toggleBtn);
+      playerOnly.push(toggleBtn);
+      playerOnly.forEach(el => { el.hidden = view === 'teams'; });
     }
 
-    function buildTable(rows) {
-      SEASONS_ORDER = [...new Set(rows.map(r => r.SEASON))]
-        .filter(s => /^\d\d-\d\d$/.test(s)).sort();
-      activeSeason = SEASONS_ORDER[SEASONS_ORDER.length - 1] || 'all';
-      allRows = rows.filter(r => SEASONS_ORDER.includes(r.SEASON)).map(processRow);
-      markRookieSeasons(allRows);
-
-      const seasons = SEASONS_ORDER.filter(s => allRows.some(r => r.SEASON === s));
-      buildFilters(seasons);
-
-      const wrap = document.getElementById('table-wrap');
-      const table = document.createElement('table'); table.className = 'ui-table';
-
+    function buildHeader() {
       const thead = table.createTHead();
+      thead.innerHTML = '';
+      thEls = [];
       const hr = thead.insertRow();
       COLS.forEach(col => {
         const th = document.createElement('th');
@@ -439,7 +526,6 @@
         arrow.className = 'sort-arrow';
         th.appendChild(document.createTextNode(col.label));
         th.appendChild(arrow);
-        th.dataset.active = col.key === sortField;
         th.addEventListener('click', () => {
           if (sortField === col.key) { sortDir *= -1; }
           else { sortField = col.key; sortDir = col.defaultDir; }
@@ -449,17 +535,49 @@
         thEls.push(th);
         hr.appendChild(th);
       });
-
-      tbody = table.createTBody();
-      wrap.innerHTML = '';
-      wrap.appendChild(table);
       updateHeaders();
+    }
+
+    function setView() {
+      COLS = view === 'teams' ? TEAM_COLS : PLAYER_COLS;
+      if (!COLS.some(c => c.key === sortField)) {
+        sortField = view === 'teams' ? '_WP' : '_GMSC';
+        sortDir = -1;
+      }
+      document.getElementById('subtitle').textContent = view === 'teams'
+        ? 'Every team-season, totalled from its box scores. Click any column to sort.'
+        : 'Every player-season. Click any column to sort.';
+      buildHeader();
       rebuildBody();
     }
 
-    fetch('/players/player_seasons.csv')
-      .then(r => { if (!r.ok) throw new Error(); return r.text(); })
-      .then(text => buildTable(parseCSV(text)))
+    function buildTable(rows, standings) {
+      SEASONS_ORDER = [...new Set(rows.map(r => r.SEASON))]
+        .filter(s => /^\d\d-\d\d$/.test(s)).sort();
+      activeSeason = SEASONS_ORDER[SEASONS_ORDER.length - 1] || 'all';
+      allRows = rows.filter(r => SEASONS_ORDER.includes(r.SEASON)).map(processRow);
+      markRookieSeasons(allRows);
+      teamRows = aggregateByTeamSeason(allRows, standings);
+
+      const seasons = SEASONS_ORDER.filter(s => allRows.some(r => r.SEASON === s));
+      buildFilters(seasons);
+
+      const wrap = document.getElementById('table-wrap');
+      table = document.createElement('table'); table.className = 'ui-table';
+      tbody = table.createTBody();
+      wrap.innerHTML = '';
+      wrap.appendChild(table);
+      setView();
+    }
+
+    const getCSV = url => fetch(url).then(r => { if (!r.ok) throw new Error(); return r.text(); }).then(t => parseCSV(t));   // parseCSV comes from nav.js, which loads after this script
+    Promise.all([
+      getCSV('/players/player_seasons.csv'),
+      // Only the team view needs this; without it that view falls back to its
+      // players' games for G and shows no record.
+      getCSV('/standings/standings-history.csv').catch(() => []),
+    ])
+      .then(([rows, standings]) => buildTable(rows, standings))
       .catch(() => {
         document.getElementById('table-wrap').innerHTML = '<div id="status">Failed to load data.</div>';
       });
