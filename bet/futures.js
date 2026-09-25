@@ -129,7 +129,7 @@
       ${m.description ? `<div class="fut-desc">${esc(m.description)}</div>` : ''}
       ${done ? '' : `<div class="fut-explain">A <strong>Yes</strong> share pays <strong>${nby(m.payout)}</strong> if its outcome happens, and a <strong>No</strong> share pays ${nby(m.payout)} if it doesn't.
         The price is the market's odds: buying Yes pushes it up, buying No pushes it down. Sell any time before the market closes.
-        You can't bet against a team you work for. ${Math.round(m.fee * 100)}% fee on each trade.${m.max_stake != null ? ` Up to ${nby(m.max_stake)} in per member, net of sales.` : ''}</div>`}`;
+        You can't bet against a team you work for, or stack bets on its rivals if it's a contender. ${Math.round(m.fee * 100)}% fee on each trade.${m.max_stake != null ? ` Up to ${nby(m.max_stake)} in per member, net of sales.` : ''}</div>`}`;
 
     const pos = (me && m.positions[me]) || {};
     const acct = (me && m.accounts[me]) || null;
@@ -377,8 +377,10 @@
         <label class="ui-label">Liquidity (b) <input class="ui-input" id="fm-b" type="number" value="1500" min="100" max="20000" step="100"></label>
         <label class="ui-label">Fee % <input class="ui-input" id="fm-fee" type="number" value="2" min="0" max="10" step="0.5"></label>
         <label class="ui-label">Max in per member <input class="ui-input" id="fm-stake" type="number" min="1" step="50" placeholder="No cap"></label>
-        <label class="ui-label">Closes (optional) <input class="ui-input" id="fm-close" type="datetime-local"></label>
+        <label class="ui-label">Closes <input class="ui-input" id="fm-close" type="datetime-local" required></label>
       </div>
+      <div class="hint">Set the close before the result could be known — for a title, before the deciding game.
+        Trading stops then on its own. A market still open once the answer is out sells the winner cheap to whoever notices first.</div>
       <div class="hint" id="fm-hint"></div>
       <div><button class="ui-btn ui-btn--primary ui-btn--sm" id="fm-go">Open market</button> <span class="fut-err" id="fm-err"></span></div>`;
     const $ = id => f.querySelector('#' + id);
@@ -454,13 +456,14 @@
       $('fm-err').textContent = '';
       try {
         const close = $('fm-close').value;
+        if (!close) throw new Error('Set a close time.');
         const m = await api('/api/markets', {
           method: 'POST', body: JSON.stringify({
             title: $('fm-title').value, description: $('fm-desc').value,
             outcomes: rows().map(r => ({ label: r.label, team: r.team, open_price: r.w === '' ? null : parseFloat(r.w) })),
             b: parseFloat($('fm-b').value), fee: parseFloat($('fm-fee').value) / 100,
             max_stake: $('fm-stake').value ? parseFloat($('fm-stake').value) : null,
-            closes_at: close ? new Date(close).toISOString() : null,
+            closes_at: new Date(close).toISOString(),
           }),
         });
         markets.unshift(m);

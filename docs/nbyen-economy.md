@@ -86,12 +86,27 @@ Added 2026-09-25. The Futures tab on `/bet`; code in
   still set `max_stake` on a market.
 - **Nobody bets against a team they work for** (a team role, or a current
   tenure as owner, GM or coach). A position like that pays more the worse the
-  team does, and its holder can make that happen. The rule is on the whole
-  position, not the No button: after any trade, what you'd be paid if your team
-  wins must be at least what you'd be paid if the worst other outcome wins. That
-  also refuses the disguised version, Yes on every other team. It's
-  deliberately not stricter: backing one rival is allowed, though it leaves a
-  small reason to see your own team lose to that rival.
+  team does, and its holder can make that happen. Two parts:
+  - A direct No on your own team is always refused.
+  - After any trade, what your whole position would gain if your team threw
+    its season must be at most NB¥100 (`OWN_TEAM_ALLOWANCE`). That's your
+    team's price times how much more your bets pay if it loses than if it
+    wins, at the market's odds. It's what stops the disguised No, Yes on 28 of
+    the other 29.
+  Weighting by your team's own chance is deliberate: a long shot has almost
+  nothing to throw away, so its GM can trade other teams freely, while a
+  contender's GM can't stack much on rivals. Roughly, a GM can put about
+  `100 × (1 − p) ÷ p` NB¥ on other teams before needing a stake in their own,
+  where `p` is their team's price: ~NB¥380 for a 21% favourite, ~NB¥1,900 at
+  5%, ~NB¥9,900 at 1%. Backing your own team makes room. A trade that doesn't
+  raise the figure is always allowed, so someone who joins a team holding a
+  bet against it can still sell out of it.
+- **Every market has a close time**, and the API refuses one without. A market
+  still trading once its result is known sells the winner below 100 to
+  whoever notices first. The house can't lose more than its bound, but that
+  bound goes to the fastest member instead of to whoever called it. Set it
+  before the deciding game.
+- **Shares round down** to 4 decimals, so rounding never pays the buyer.
 - **Knowing about your own trade early is not blocked.** A GM who's about to
   land a star can buy Yes on their team, or on the team getting their star.
   The house can't lose more because of it, the edge lasts only until the trade
