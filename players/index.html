@@ -3508,7 +3508,7 @@
     return wrap;
   }
 
-  function buildPlayerRadarChart(playerRows, allRows, pos) {
+  function buildPlayerRadarChart(playerRows, allRows) {
     // Per 36 minutes, so the shape shows how a player plays rather than how
     // much. Per game, a bench player read as small everywhere and landed on
     // "Role Player" no matter what they did with their minutes.
@@ -3530,45 +3530,58 @@
       return '#b87333';
     }
 
+    function ratio(r, num, den) { return +r[den] > 0 ? +r[num] / +r[den] : 0; }
+
+    // Style axes, not volume: usage says how much of the offense a player
+    // runs, 3P and FT rate say where their shots come from. Points, FTA and
+    // 3PM per 36 were one scoring signal counted three times (r = 0.78 and
+    // 0.59 against points).
     const DIM_DEFS = [
-      { label: 'PTS', angle: 90,  get: r => rowP36(r,'PTS'), fmt: v => `${v.toFixed(1)} PTS/36` },
-      { label: 'AST', angle: 45,  get: r => rowP36(r,'AST'), fmt: v => `${v.toFixed(1)} AST/36` },
-      { label: 'TS%', angle: 0,   get: r => rowTS(r),        fmt: v => `${(v*100).toFixed(1)}% TS` },
-      { label: '3PM', angle: 315, get: r => rowP36(r,'3PM'), fmt: v => `${v.toFixed(1)} 3PM/36` },
-      { label: 'FTA', angle: 270, get: r => rowP36(r,'FTA'), fmt: v => `${v.toFixed(1)} FTA/36` },
-      { label: 'STL', angle: 225, get: r => rowP36(r,'STL'), fmt: v => `${v.toFixed(2)} STL/36` },
-      { label: 'BLK', angle: 180, get: r => rowP36(r,'BLK'), fmt: v => `${v.toFixed(2)} BLK/36` },
-      { label: 'REB', angle: 135, get: r => rowP36(r,'REB'), fmt: v => `${v.toFixed(1)} REB/36` },
+      { label: 'USG',     angle: 90,  get: r => (+r.FGA + 0.44 * +r.FTA + +r.TOV) * 36 / Math.max(1, +r.MIN),
+        fmt: v => `${v.toFixed(1)} plays used/36` },
+      { label: '3P RATE', angle: 45,  get: r => ratio(r, '3PA', 'FGA'), fmt: v => `${Math.round(v*100)}% of shots from three` },
+      { label: 'TS%',     angle: 0,   get: r => rowTS(r),               fmt: v => `${(v*100).toFixed(1)}% TS` },
+      { label: 'FT RATE', angle: 315, get: r => ratio(r, 'FTA', 'FGA'), fmt: v => `${Math.round(v*100)} FTA per 100 shots` },
+      { label: 'BLK',     angle: 270, get: r => rowP36(r,'BLK'), fmt: v => `${v.toFixed(2)} BLK/36` },
+      { label: 'REB',     angle: 225, get: r => rowP36(r,'REB'), fmt: v => `${v.toFixed(1)} REB/36` },
+      { label: 'STL',     angle: 180, get: r => rowP36(r,'STL'), fmt: v => `${v.toFixed(2)} STL/36` },
+      { label: 'AST',     angle: 135, get: r => rowP36(r,'AST'), fmt: v => `${v.toFixed(1)} AST/36` },
     ];
 
-    function detectArchetype(dims, pos) {
-      const p = {};
-      dims.forEach(d => { p[d.label] = d.pct; });
-      const elite = k => p[k] >= 0.80;
-      const high  = k => p[k] >= 0.75;
-      const good  = k => p[k] >= 0.65;
-      const offAvg = (p.PTS + p['3PM'] + p['TS%'] + p.AST + p.FTA) / 5;
-      const defAvg = (p.BLK + p.STL) / 2;
-      const isBig = pos && (pos.includes('PF') || pos.includes('C'));
+    // Each archetype is a target shape: the percentile it sits at on each
+    // axis. A player gets the nearest one, so there is no fallback label.
+    // Seeded from a clustering of every qualifying season 20-21 to 25-26.
+    const ARCHETYPES = {
+      //                   USG 3PR  TS  FTR BLK REB STL AST
+      'Floor General':    [ 79, 59, 78, 43, 26, 28, 51, 75],
+      'Swiss Army Knife': [ 80, 30, 75, 59, 65, 71, 64, 75],
+      'Pickpocket':       [ 64, 54, 23, 35, 30, 24, 71, 78],
+      'Shooter':          [ 56, 74, 46, 28, 17, 24, 22, 43],
+      '3-and-D':          [ 29, 72, 36, 37, 56, 39, 79, 46],
+      'Glue Guy':         [ 28, 68, 57, 78, 34, 42, 37, 42],
+      'Lob Threat':       [ 24, 10, 66, 73, 84, 86, 32, 20],
+      'Stretch Big':      [ 49, 51, 37, 33, 71, 69, 27, 28],
+      'Enforcer':         [ 41, 31, 26, 59, 73, 74, 76, 38],
+    };
 
-      if (dims.filter(d => d.pct >= 0.75).length >= 6 && defAvg >= 0.50) return 'All-Around';
-      if (offAvg >= 0.72 && defAvg >= 0.72) return 'Two-Way Star';
-      if (elite('PTS') && high('FTA')) return 'Elite Scorer';
-      if (elite('AST') && elite('STL')) return 'Defensive Playmaker';
-      if (elite('AST') && p.AST > p.PTS + 0.10) return 'Playmaker';
-      if (elite('3PM') && (elite('STL') || elite('BLK'))) return '3-and-D';
-      if (isBig && elite('REB') && elite('BLK') && p['3PM'] < 0.35) return 'Paint Beast';
-      if (isBig && good('REB') && good('BLK') && good('3PM')) return 'Stretch Big';
-      if (elite('BLK') && elite('STL')) return 'Defensive Anchor';
-      if (elite('3PM') && high('TS%')) return 'Floor Spacer';
-      if (elite('BLK') && good('TS%')) return 'Rim Protector';
+    function detectArchetype(dims) {
+      const ranked = Object.entries(ARCHETYPES).map(([name, target]) => ({
+        name,
+        dist: Math.hypot(...dims.map((d, i) => d.pct - target[i] / 100)),
+      })).sort((a, b) => a.dist - b.dist);
+      const [first, second] = ranked;
+      // Name the runner-up only when it is nearly as close.
+      return { name: first.name, runnerUp: second.dist <= first.dist * 1.10 ? second.name : null };
+    }
 
-      const specialistMap = { PTS: 'Scoring Specialist', '3PM': 'Shooter', AST: 'Facilitator',
-        REB: 'Rebounding Specialist', BLK: 'Rim Protector', STL: 'Perimeter Defender', 'TS%': 'Efficient Scorer' };
-      const top = [...dims].sort((a, b) => b.pct - a.pct)[0];
-      if (top.pct >= 0.75 && specialistMap[top.label]) return specialistMap[top.label];
-
-      return 'Role Player';
+    // Tier is how good, archetype is how they play. Per game on purpose:
+    // earning minutes is part of being good.
+    function tierFor(p) {
+      if (p >= 0.97) return 'Superstar';
+      if (p >= 0.89) return 'Star';
+      if (p >= 0.58) return 'Starter';
+      if (p >= 0.30) return 'Rotation';
+      return 'Deep Bench';
     }
 
     function buildSvg(season) {
@@ -3589,9 +3602,11 @@
         return { ...d, playerVal, pct: pct(playerVal, peerVals) };
       });
 
-      const archetype = detectArchetype(dims, pos);
+      const archetype = detectArchetype(dims);
+      const gsPerGame = r => +r.GMSC / Math.max(1, +r.G);
+      const tier = tierFor(pct(gsPerGame(agg), peers.map(gsPerGame)));
 
-      const W = 260, H = 278, cx = 130, cy = 125, maxR = 80;
+      const W = 260, H = 292, cx = 130, cy = 125, maxR = 80;
       const ns = 'http://www.w3.org/2000/svg';
       const svg = document.createElementNS(ns, 'svg');
       svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -3637,7 +3652,9 @@
         dot.setAttribute('stroke', 'var(--bg-page)');
         dot.setAttribute('stroke-width', '1');
         const tip = document.createElementNS(ns, 'title');
-        tip.textContent = `${d.fmt(d.playerVal)} — ${Math.round(d.pct * 100)}th pct`;
+        const n = Math.round(d.pct * 100);
+        const sfx = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' })[n % 10] || 'th';
+        tip.textContent = `${d.fmt(d.playerVal)} — ${n}${sfx} percentile`;
         dot.appendChild(tip);
         svg.appendChild(dot);
       });
@@ -3659,13 +3676,30 @@
 
       const archetypeLbl = document.createElementNS(ns, 'text');
       archetypeLbl.setAttribute('x', cx);
-      archetypeLbl.setAttribute('y', H - 18);
+      archetypeLbl.setAttribute('y', H - 31);
       archetypeLbl.setAttribute('text-anchor', 'middle');
       archetypeLbl.setAttribute('fill', 'var(--text-secondary)');
       archetypeLbl.setAttribute('font-size', '10');
       archetypeLbl.setAttribute('font-weight', '600');
-      archetypeLbl.textContent = archetype;
+      archetypeLbl.textContent = archetype.name;
+      const tierSpan = document.createElementNS(ns, 'tspan');
+      tierSpan.setAttribute('fill', 'var(--text-muted)');
+      tierSpan.setAttribute('font-weight', '500');
+      tierSpan.textContent = ` · ${tier}`;
+      archetypeLbl.appendChild(tierSpan);
       svg.appendChild(archetypeLbl);
+
+      if (archetype.runnerUp) {
+        const runnerLbl = document.createElementNS(ns, 'text');
+        runnerLbl.setAttribute('x', cx);
+        runnerLbl.setAttribute('y', H - 18);
+        runnerLbl.setAttribute('text-anchor', 'middle');
+        runnerLbl.setAttribute('fill', 'var(--text-muted)');
+        runnerLbl.setAttribute('font-size', '8.5');
+        runnerLbl.setAttribute('font-style', 'italic');
+        runnerLbl.textContent = `close second: ${archetype.runnerUp}`;
+        svg.appendChild(runnerLbl);
+      }
 
       const seasonLbl = document.createElementNS(ns, 'text');
       seasonLbl.setAttribute('x', cx);
@@ -4376,7 +4410,7 @@
     renderHofLine(content, rows[0].PLAYER, hofRows);
 
     // player type radar
-    const radarEl = buildPlayerRadarChart(rows, allPlayerSeasons, bio.pos || []);
+    const radarEl = buildPlayerRadarChart(rows, allPlayerSeasons);
     if (radarEl) content.appendChild(radarEl);
 
     // toggle
