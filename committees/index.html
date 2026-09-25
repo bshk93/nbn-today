@@ -274,6 +274,7 @@
         teamSalaryExHolds: e.salary_ex_holds,
         standardCount: e.roster,
         twoWayCount: e.two_way,
+        draftRights: e.draft_rights,
       }).warnings.some(w => w.severity !== 'note')).length;
       signal('rosters', flagged
         ? `<b>${flagged}</b> team${flagged === 1 ? '' : 's'} with open issues`

@@ -39,6 +39,9 @@
   const ROSTER_CHARGE_MIN = 12;
   const TWO_WAY_MAX = 3;
 
+  // § 7.1 signing deadlines, as month-day in the pick's own draft year.
+  const SIGN_DEADLINE = { 1: '08-31', 2: '09-06' };
+
   function _fmt(v) {
     return '$' + Math.round(Math.abs(v || 0)).toLocaleString('en-US');
   }
@@ -62,6 +65,9 @@
   //   teamSalaryExHolds          — Team Salary excluding them (§ 1.3/1.4 basis)
   //   standardCount, twoWayCount — roster counts, standard slots and G-League slots
   //   erc                        — { deficiency, charge } from computeEmptyRosterCharge
+  //   draftRights                — optional [{ name, draft_year, draft_round, stash }],
+  //                                the team's unsigned picks (see draftRightsWarnings)
+  //   today                      — 'YYYY-MM-DD'; defaults to today (civilToday)
   //   fmt                        — dollar formatter, so a caller keeps one of them
   //
   // Returns { rows, warnings }. `rows` is the standing table, in reading order.
@@ -172,8 +178,48 @@
     const limits = rosterLimits(standard, twoWay, opts.erc, fmt);
     rows.push(limits.row);
     limits.warnings.forEach(w => warnings.push(w));
+    draftRightsWarnings(opts.draftRights, opts.season, opts.today)
+      .forEach(w => warnings.push(w));
 
     return { rows, warnings };
+  }
+
+  // Unsigned draft rights, § 7.1 / § 7.4. A pick has to be signed by its
+  // deadline (Aug 31 for a 1st, Sep 6 for a 2nd) unless the team stashes it —
+  // keeps the rights on § 7.1 grounds (not in 2K, sitting out) or § 7.4 grounds
+  // (overseas contract). Nothing forfeits a missed one automatically; this is
+  // where it gets noticed. A stash stands until the player signs, but § 7.1's
+  // grounds are about one season, so a § 7.1 stash from an earlier league year
+  // is raised for someone to confirm he's still sitting out. A § 7.4 stash
+  // lasts as long as he's overseas and is never raised here.
+  // League time when the page loaded /league-time.js, else the browser's own
+  // civil date. Only the day matters here, and a deadline a few hours early or
+  // late at midnight changes nothing anyone acts on.
+  function civilToday() {
+    if (typeof global.nbnToday === 'function') return global.nbnToday();
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function draftRightsWarnings(list, season, today) {
+    today = today || civilToday();
+    const out = [];
+    (list || []).forEach(p => {
+      const name = p.name || p.slug;
+      if (!p.stash) {
+        const md = SIGN_DEADLINE[p.draft_round] || SIGN_DEADLINE[1];
+        const deadline = p.draft_year ? `${p.draft_year}-${md}` : null;
+        if (deadline && today <= deadline) return;
+        out.push({ code: 'draft_rights_unsigned', severity: 'caution',
+          text: `${name} is unsigned past his § 7.1 signing deadline${deadline ? ` (${deadline})` : ''} — sign him, stash him (§ 7.1 / § 7.4) or renounce the rights`,
+          short: `${name}: unsigned pick, not stashed` });
+      } else if (p.stash.basis === '7.1' && season && p.stash.season && p.stash.season < season) {
+        out.push({ code: 'draft_rights_stash_review', severity: 'caution',
+          text: `${name} was stashed under § 7.1 in ${p.stash.season} — confirm he's still out of 2K and sitting out this season, or sign him`,
+          short: `${name}: confirm § 7.1 stash` });
+      }
+    });
+    return out;
   }
 
   // § 2.1's floor is year-round and its ceiling is not: 15 in season, 20 in the
@@ -296,7 +342,7 @@
 
   global.CapHealth = {
     ROSTER_MIN, ROSTER_MAX_IN_SEASON, ROSTER_MAX_OFFSEASON, ROSTER_CHARGE_MIN, TWO_WAY_MAX,
-    known, standing, rosterLimits,
+    known, standing, rosterLimits, draftRightsWarnings,
     DIFF_CATEGORIES, DIFF_ORDER, diffMeta, sortDiffs,
   };
 })(window);

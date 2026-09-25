@@ -460,6 +460,19 @@ Still open with the committee: the 27-28+ minimum scales are projections on a
 Immaterial at three years out, real by year five. Replace with published NBA
 figures when they exist.
 
+### [P2] § 7.1's 120% hold on an unsigned 1st-rounder isn't charged anywhere
+The rulebook puts a hold of 120% of the slot's rookie-scale amount on the books
+for an unsigned 1st-round pick until he's signed, stashed or forfeited. Nothing
+computes it. `draft-rights` bios carry no `salaries`, so
+`_compute_team_salary`, cap history, team pages and every validator count the
+pick at $0. Found 2026-09-25 building `stash`: Anderson (LAL, pick 21) is
+unsigned past Aug 31 with no hold anywhere.
+
+A stashed pick carries no hold (league decision, 2026-09-25), so the rule is:
+unsigned, 1st round, no `stash` → hold. `_rookie_scale_contract` already gives
+the Year 1 figure. It has to go in the one salary helper every reader shares,
+not per page, and it doesn't count as outgoing salary in trade matching.
+
 ### [P2] An RFA match doesn't link back to the holds that funded the offer
 `rescind_renounce` shipped 2026-08-08 alongside owner self-serve renounce, and
 that part is done: every `renounce` stores a `_snapshot` of the bio state it

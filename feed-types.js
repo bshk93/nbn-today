@@ -41,6 +41,7 @@
     extension:             { label: 'Extension',      bg: '#0c1f3d',                   fg: '#60a5fa' },
     convert_twoway:        { label: 'Two-Way Conversion', bg: '#1c1917',               fg: '#a8a29e' },
     void_player:           { label: 'Void Player',    bg: 'var(--bg-subtle)',          fg: 'var(--text-muted)' },
+    stash:                 { label: 'Stash',          bg: '#0c2340',                   fg: '#93c5fd' },
     set_hard_cap_level:    { label: 'Set Hard Cap',   bg: 'var(--gold-bg)',            fg: 'var(--gold)' },
     offer_sheet:           { label: 'Offer Sheet',    bg: '#1e1b4b',                   fg: '#a5b4fc' },
     offer_sheet_decision:  { label: 'Offer Sheet Decision', bg: '#1e1b4b',             fg: '#818cf8' },

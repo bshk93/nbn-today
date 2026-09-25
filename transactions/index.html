@@ -569,6 +569,7 @@
     .badge-convert_twoway { background: #1c1917; color: #a8a29e; }
     .badge-extension      { background: #0c1f3d; color: #60a5fa; }
     .badge-void_player    { background: var(--bg-subtle); color: var(--text-muted); }
+    .badge-stash          { background: #0c2340; color: #93c5fd; }
     .badge-set_hard_cap_level { background: var(--gold-bg); color: var(--gold); }
     .badge-offer_sheet    { background: #1e1b4b; color: #a5b4fc; }
     .badge-offer_sheet_decision { background: #1e1b4b; color: #818cf8; }
@@ -751,6 +752,7 @@
           <option value="convert_twoway">Convert Two-Way</option>
           <option value="extension">Extension</option>
           <option value="void_player">Void Player</option>
+          <option value="stash">Stash Draft Rights</option>
           <option value="set_hard_cap_level">Set Hard Cap Level</option>
         </select>
       </div>
@@ -826,6 +828,16 @@
         <p class="doc-note" style="margin:0">Extending an offer sheet no longer records the result. The offer goes on the books
         as pending — the offering team carries a cap hold equal to its Year&nbsp;1 salary (§&nbsp;3.15) until the incumbent
         answers. Resolve it from <strong>Open offer sheets</strong> at the top of this page.</p>
+      </div>
+
+      <!-- stash-only. The Description field is the stash's note: the grounds a
+           reviewer checks (the club and contract for § 7.4). -->
+      <div class="form-field" id="f-stash-basis-field" style="display:none">
+        <label>Grounds</label>
+        <select id="f-stash-basis">
+          <option value="7.4">§ 7.4 — under contract overseas</option>
+          <option value="7.1">§ 7.1 — not in 2K and sitting out</option>
+        </select>
       </div>
 
       <!-- set_hard_cap_level-only -->
@@ -1195,6 +1207,7 @@
     <span class="chip" data-filter="type" data-value="convert_twoway">Two-Way Conversions</span>
     <span class="chip" data-filter="type" data-value="extension">Extensions</span>
     <span class="chip" data-filter="type" data-value="void_player">Voids</span>
+    <span class="chip" data-filter="type" data-value="stash">Stashes</span>
     <span class="chip" data-filter="type" data-value="set_hard_cap_level">Hard Cap Sets</span>
 
     <span class="filter-label" style="margin-left:0.75rem">Team:</span>
@@ -1518,6 +1531,7 @@ function setupTypeSwitch() {
       document.getElementById('f-offer-team-field').style.display    = isOfferSheet ? '' : 'none';
       document.getElementById('f-offer-outcome-field').style.display = isOfferSheet ? '' : 'none';
       document.getElementById('f-hardcap-level-field').style.display = isSetHardCap ? '' : 'none';
+      document.getElementById('f-stash-basis-field').style.display = v === 'stash' ? '' : 'none';
       // f-signing-method-field's visibility is set by applyContractTypeVisibility
       // below, which also knows whether the contract type is two-way.
       // An option decline rolls straight into a § 3.10 hold and has no
@@ -1868,7 +1882,7 @@ function setupPlayerSearch() {
       pool = Object.entries(bios).filter(([slug, bio]) => teamMap[slug] && isRfaHold(bio));
     } else if (txnType === 'convert_twoway') {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'two-way');
-    } else if (txnType === 'sign_pick') {
+    } else if (txnType === 'sign_pick' || txnType === 'stash') {
       pool = Object.entries(bios).filter(([slug, bio]) => bio.type === 'draft-rights' && teamMap[slug]);
     } else if (txnType === 'sign') {
       pool = Object.entries(bios).filter(([slug, bio]) => !bio.retired && bio.type !== 'dead' && (!teamMap[slug] || isFreeAgentHold(bio)));
@@ -3493,6 +3507,11 @@ async function submitTransaction() {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     details = { player: playerSlug, reason: description };
+  } else if (type === 'stash') {
+    date = document.getElementById('f-date').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
+    if (!description) { setStatus('err', 'Say why he qualifies in the Description (e.g. club and contract).'); return; }
+    details = { player: playerSlug, basis: document.getElementById('f-stash-basis').value, note: description };
   } else if (type === 'set_hard_cap_level') {
     date = document.getElementById('f-date').value;
     const team = document.getElementById('f-team').value;
@@ -4182,6 +4201,10 @@ function renderDetailsCell(t) {
   }
   if (t.type === 'void_player') {
     return d.reason ? `Voided — ${escHtml(d.reason)}` : 'Voided — no cap hit';
+  }
+  if (t.type === 'stash') {
+    const why = d.basis === '7.4' ? 'overseas contract' : 'not in 2K, sitting out';
+    return `Rights kept unsigned — ${escHtml(why)} (§ ${escHtml(d.basis || '')})${d.note ? ` · ${escHtml(d.note)}` : ''}`;
   }
   if (t.type === 'set_hard_cap_level') {
     const LEVEL_LABELS = { first_apron: 'First Apron', second_apron: 'Second Apron', default: 'Default (cleared)' };

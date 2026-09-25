@@ -812,6 +812,7 @@ const coachingConfigReady = new Promise(resolve => {
   .btn-danger { border: 1px solid var(--danger); color: var(--danger); }
   .btn-danger:disabled, .btn-go:disabled { opacity: 0.4; cursor: not-allowed; }
   .block-flag { color: var(--gold); font-size: 0.7rem; margin-left: 0.3rem; }
+  .row-draft-rights .stash-tag { font-style: normal; margin-left: 0.4rem; }
   /* Open offer sheet (§ 3.15). Sits above the hard-cap banner because a pending
      offer changes what the team can spend and is waiting on somebody. */
   .offer-banner {
@@ -1728,6 +1729,17 @@ function countRosterSlots(rosterRows, biosData) {
   return { standard, twoWay };
 }
 
+// The team's unsigned picks, in the shape CapHealth.draftRightsWarnings reads
+// (the same fields `cap_history._draft_rights` sends the league-wide pages).
+function draftRightsFor(rosterRows, biosData) {
+  return (rosterRows || []).filter(row => (biosData[row.SLUG] || {}).type === 'draft-rights')
+    .map(row => {
+      const bio = biosData[row.SLUG];
+      return { slug: row.SLUG, name: displayNameFromBio(bio.name || row.SLUG),
+        draft_year: bio.draft_year, draft_round: bio.draft_round, stash: bio.stash || null };
+    });
+}
+
 const CH_HARD_CAP_LABELS = { first_apron: 'First Apron', second_apron: 'Second Apron' };
 
 function chDiffValue(field, v) {
@@ -1838,6 +1850,7 @@ function renderCapHealth(opts) {
     standardCount: counts.standard,
     twoWayCount: counts.twoWay,
     erc: opts.erc,
+    draftRights: draftRightsFor(opts.rosterRows, opts.biosData),
     fmt: fmtDollars,
   });
 
@@ -2457,6 +2470,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         _badges:             computeAttrBadges((attributesData || {})[row.SLUG], attrBadgeCutoffs),
         _photo:              bio.photo_url || '',
         _notes:              bio.notes || '',
+        _stash:              _type === 'draft-rights' ? (bio.stash || null) : null,
         ...computeStatFields(latestSeasonBySlug[row.SLUG]),
         ...computeRatingFields((attributesData || {})[row.SLUG]),
       };
@@ -2678,6 +2692,15 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
             badgeGroup.appendChild(badge);
           });
           topRow.appendChild(badgeGroup);
+        }
+
+        if (row._stash) {
+          const tag = document.createElement('span');
+          tag.className = 'ui-badge stash-tag';
+          tag.textContent = `Stashed · § ${row._stash.basis}`;
+          attachTooltip(tag, (row._stash.basis === '7.4' ? 'Overseas contract' : 'Not in 2K, sitting out')
+            + (row._stash.note ? ` — ${row._stash.note}` : '') + (row._stash.date ? ` (${row._stash.date})` : ''));
+          topRow.appendChild(tag);
         }
 
         cell.appendChild(topRow);
@@ -3771,6 +3794,15 @@ function signPickEligibility(bio) {
   return { ok: true, why: '' };
 }
 
+// § 7.1 / § 7.4: any unsigned draft rights can be stashed, 1st or 2nd round.
+// Whether the grounds hold is the server's call (/api/validate/stash).
+function stashEligibility(bio) {
+  if ((bio && bio.type) !== 'draft-rights') {
+    return { ok: false, why: 'Only unsigned draft rights can be stashed (§ 7.1).' };
+  }
+  return { ok: true, why: '' };
+}
+
 async function apiFetch(url, opts, token) {
   const res = await fetch(url, {
     ...opts,
@@ -4186,6 +4218,83 @@ function openSignPickDialog(slug, bio, abbr) {
   });
 }
 
+// § 7.1 / § 7.4 — keep an unsigned pick's rights past the signing deadline.
+// Nothing about the player changes (still draft rights, no hold, off the 15);
+// what's recorded is the grounds, which is what a reviewer checks. The checks
+// re-run as the owner picks a basis and types the reason, since both change
+// the verdict.
+function openStashDialog(slug, bio, abbr) {
+  const name = displayNameFromBio(bio.name || slug);
+  let basisSel, noteInput;
+  openConfirmModal({
+    title: `Stash ${name}?`,
+    sub: `${abbr} keeps ${name}'s draft rights without signing him. He stays off the roster count and carries no cap hold.`,
+    confirmLabel: 'Stash',
+    danger: false,
+    render: (body, ctl) => {
+      ctl.setEnabled(false);
+      if (bio.stash) {
+        body.appendChild(factRow('Current stash',
+          `§ ${bio.stash.basis} · ${bio.stash.date || bio.stash.season}`));
+      }
+      const l1 = document.createElement('label');
+      l1.textContent = 'Grounds';
+      basisSel = makeSelect([
+        { value: '7.4', label: '§ 7.4 — under contract overseas' },
+        { value: '7.1', label: '§ 7.1 — not in 2K and sitting out' },
+      ], (bio.stash && bio.stash.basis) || '7.4');
+      const l2 = document.createElement('label');
+      l2.textContent = 'Why he qualifies';
+      noteInput = document.createElement('input');
+      noteInput.type = 'text';
+      noteInput.placeholder = 'e.g. Real Madrid, contract through 2028';
+      const checksEl = document.createElement('div');
+      body.append(l1, basisSel, l2, noteInput, checksEl);
+
+      let seq = 0, timer = null;
+      const run = async () => {
+        const mine = ++seq;
+        ctl.setEnabled(false);
+        let data;
+        try {
+          data = await apiFetchPublic('/api/validate/stash',
+            { player: slug, basis: basisSel.value, note: noteInput.value });
+        } catch (e) {
+          if (mine !== seq) return;
+          checksEl.innerHTML = '';
+          const d = document.createElement('div');
+          d.className = 'confirm-check error';
+          d.textContent = `Could not validate: ${e.message}`;
+          checksEl.appendChild(d);
+          return;
+        }
+        if (mine !== seq) return;
+        checksEl.innerHTML = '';
+        (data.checks || []).forEach(c => checksEl.appendChild(checkRow(c)));
+        ctl.setEnabled(!!data.legal);
+      };
+      const later = () => { clearTimeout(timer); timer = setTimeout(run, 300); };
+      basisSel.addEventListener('change', run);
+      noteInput.addEventListener('input', later);
+      run();
+      noteInput.focus();
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/stash', {
+            method: 'POST',
+            body: JSON.stringify({ player: slug, basis: basisSel.value, note: noteInput.value.trim(),
+              description: `${abbr} stashes ${name}` }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
 async function apiFetchPublic(url, body) {
   const res = await fetch(url, {
     method: 'POST',
@@ -4327,6 +4436,15 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
     enabled: spElig.ok && owner,
     why: !owner ? 'Only the team owner can sign a draft pick.' : spElig.why,
     onClick: () => openSignPickDialog(slug, bio, abbr),
+  });
+
+  // § 7.1 / § 7.4 — same owner gate. Offered for any unsigned pick, either
+  // round; the grounds are checked in the dialog.
+  const stElig = stashEligibility(bio);
+  addItem(bio.stash ? 'Update stash…' : 'Stash draft rights…', {
+    enabled: stElig.ok && owner,
+    why: !owner ? 'Only the team owner can stash a draft pick.' : stElig.why,
+    onClick: () => openStashDialog(slug, bio, abbr),
   });
 
   // § 6.2 — same "team role, not owner-tenure" gate as the trade block, since

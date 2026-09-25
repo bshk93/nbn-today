@@ -1268,6 +1268,8 @@
     two_way_over_max:         'Over the two-way limit',
     open_offer_sheet:         'Open offer sheet (§ 3.15)',
     on_waivers:               'Player on waivers (§ 5.1)',
+    draft_rights_unsigned:    'Pick unsigned past the deadline (§ 7.1)',
+    draft_rights_stash_review:'§ 7.1 stash to reconfirm',
   };
 
   // Worst first, so the tiles read down in the order the table sorts. The
@@ -1277,6 +1279,7 @@
   const CONDITION_ORDER = [
     'hard_cap_exceeded', 'roster_below_min', 'empty_roster_charge',
     'roster_over_offseason_max', 'two_way_over_max', 'roster_trim_owed',
+    'draft_rights_unsigned', 'draft_rights_stash_review',
     'open_offer_sheet', 'on_waivers',
   ];
 
@@ -1416,6 +1419,7 @@
         deficiency: entry.empty_roster_deficiency,
         charge: entry.empty_roster_charge,
       },
+      draftRights: entry.draft_rights,
       fmt: fmtM,
     });
     // Notes are dropped, not shown small: 'over_cap' / 'over_apron1' are where

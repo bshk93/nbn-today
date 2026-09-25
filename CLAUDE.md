@@ -47,6 +47,7 @@ Read the relevant article before making or validating any transaction:
 | Two-way conversion | § 6.1 |
 | Draft pick signing | Article VII (§ 7.1 – § 7.3) |
 | Void player (no cap hit) | § 5.1 (contract voiding) |
+| Stash (keep unsigned draft rights) | § 7.1, § 7.4 |
 | Set hard cap level | Article I (§ 1.3 – § 1.4) |
 
 League-wide constants (cap thresholds, roster limits, apron triggers) are in Article I and Article II. `rules/` has been retired — `rulebook/index.html` is the single source of truth.
@@ -634,6 +635,7 @@ below changed.
 | `POST /api/validate/sign_pick` | `_validate_sign_pick` | `_signing_fact_sheet` + `rookie_scale` |
 | `POST /api/validate/convert_twoway` | `_validate_convert_twoway` | `_signing_fact_sheet` |
 | `POST /api/validate/extension` | `_validate_extension` | `_extension_fact_sheet` |
+| `POST /api/validate/stash` | `_validate_stash` | none |
 
 All of them are public (no auth), take the same body shape as the corresponding
 `details` in `POST /api/transactions`, and return
@@ -650,7 +652,7 @@ sheets are built from the same helpers the validators use
 it with. When adding a check, reuse the helper rather than recomputing.
 
 Coverage is uneven and the UI says so: `sign`/`offer_sheet`/`offer_sheet_decision`/
-`trade`/`renounce`/`sign_pick`/`extension` have real validators, while `release`, `option` and `pick` are stubs
+`trade`/`renounce`/`sign_pick`/`extension`/`stash` have real validators, while `release`, `option` and `pick` are stubs
 returning `[]` — those types are deliberately **not** offered in the simulator, since a
 verdict off zero checks is worse than no verdict. § 3.7 (DPE) remains unmodeled.
 (`renounce` is validated but still isn't wired into the simulator UI; its

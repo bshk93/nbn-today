@@ -186,6 +186,30 @@ group('the caller supplies the formatter');
   check('used for warning text', /«/.test(out.warnings[0].text));
 }
 
+group('draft rights — § 7.1 deadline and stashes');
+{
+  const W = (list, today, season = '26-27') => CH.draftRightsWarnings(list, season, today);
+  const second = { name: 'Pick, Two', draft_year: 2026, draft_round: 2, stash: null };
+  const first = { name: 'Pick, One', draft_year: 2026, draft_round: 1, stash: null };
+  check('a 2nd-rounder is not flagged on Sep 6', W([second], '2026-09-06').length === 0);
+  check('...and is flagged on Sep 7', W([second], '2026-09-07')[0]?.code === 'draft_rights_unsigned');
+  check('a 1st-rounder is flagged from Sep 1', W([first], '2026-09-01').length === 1);
+  check('...and the flag is a caution, not a violation',
+    W([first], '2026-09-01')[0].severity === 'caution');
+  check('rights with no draft year are flagged', W([{ name: 'Old', stash: null }], '2026-01-01').length === 1);
+  const s74 = { ...first, stash: { basis: '7.4', season: '24-25' } };
+  check('a § 7.4 stash is never flagged, however old', W([s74], '2026-09-25').length === 0);
+  const s71 = { ...first, stash: { basis: '7.1', season: '26-27' } };
+  check('a § 7.1 stash from this season is not flagged', W([s71], '2026-09-25').length === 0);
+  check('...but one from an earlier season asks for review',
+    W([s71], '2027-09-25', '27-28')[0]?.code === 'draft_rights_stash_review');
+  const out = CH.standing({ ...base, draftRights: [first], today: '2026-09-25' });
+  check('standing() carries the draft-rights warnings',
+    out.warnings.some(w => w.code === 'draft_rights_unsigned'));
+  check('...and every one has both registers', W([first, { ...s71 }], '2027-09-25', '27-28')
+    .every(w => w.text && w.short));
+}
+
 group('diff vocabulary');
 {
   check('every ordered category has metadata',
