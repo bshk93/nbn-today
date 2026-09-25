@@ -350,10 +350,17 @@
       <label class="ui-label">Title <input class="ui-input" id="fm-title" placeholder="Who wins the 2027 title?"></label>
       <label class="ui-label">Description <textarea class="ui-textarea" id="fm-desc" rows="2" placeholder="How it's decided."></textarea></label>
       <div>
-        <label class="ui-label">Outcomes, one per line. Optionally <code>label | opening %</code>.</label>
-        <textarea class="ui-textarea" id="fm-outs" rows="6"></textarea>
-        <button class="ui-btn ui-btn--sm ui-btn--ghost" id="fm-teams" type="button">Fill with all 30 teams</button>
-        <div class="hint">Leave the percentages off to open every outcome level. Any outcome under 1% opens at 1%.</div>
+        <div class="ui-label">Outcomes and opening odds</div>
+        <div class="hint">Weights can be any numbers: percentages, or just "this team is twice as likely as that one".
+          Leave every weight blank to open all outcomes level. Nothing opens under 1%.</div>
+        <div class="ui-table-wrap"><table class="ui-table ui-table--dense fm-outs">
+          <thead><tr><th>Outcome</th><th class="num">Weight</th><th class="num">Opens at</th><th></th></tr></thead>
+          <tbody></tbody></table></div>
+        <div class="fut-trade-row" style="margin-top:0.4rem">
+          <button class="ui-btn ui-btn--sm ui-btn--ghost" id="fm-add" type="button">+ Add outcome</button>
+          <button class="ui-btn ui-btn--sm ui-btn--ghost" id="fm-teams" type="button">Fill with all 30 teams</button>
+          <button class="ui-btn ui-btn--sm ui-btn--ghost" id="fm-level" type="button">Clear weights</button>
+        </div>
       </div>
       <div class="fut-form-grid">
         <label class="ui-label">Liquidity (b) <input class="ui-input" id="fm-b" type="number" value="1500" min="100" max="20000" step="100"></label>
@@ -364,36 +371,61 @@
       <div class="hint" id="fm-hint"></div>
       <div><button class="ui-btn ui-btn--primary ui-btn--sm" id="fm-go">Open market</button> <span class="fut-err" id="fm-err"></span></div>`;
     const $ = id => f.querySelector('#' + id);
+    const tbody = f.querySelector('.fm-outs tbody');
 
-    function parse() {
-      return $('fm-outs').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-        const [label, w] = l.split('|').map(s => s.trim());
-        const team = Object.keys(typeof TEAM_LIST !== 'undefined' ? TEAM_LIST : {}).find(k => teamName(k) === label || k === label);
-        return { label, team: team || null, open_price: w ? parseFloat(w) : null };
-      });
+    function addRow(label = '', team = null, weight = '') {
+      const tr = tbody.insertRow();
+      if (team) tr.dataset.team = team;
+      tr.innerHTML = `<td><input class="ui-input fm-label" value="${esc(label)}" placeholder="Outcome"></td>
+        <td class="num"><input class="ui-input fm-w" type="number" min="0" step="any" value="${esc(weight)}" style="width:6rem"></td>
+        <td class="num fm-pct"></td>
+        <td><button class="ui-btn ui-btn--sm ui-btn--ghost fm-del" type="button" title="Remove">×</button></td>`;
+      tr.querySelector('.fm-label').oninput = () => { delete tr.dataset.team; preview(); };
+      tr.querySelector('.fm-w').oninput = preview;
+      tr.querySelector('.fm-del').onclick = () => { tr.remove(); preview(); };
     }
-    // The bound is b × ln(1 ÷ lowest opening price) — shown here, computed by
-    // the API once the market exists. This preview ignores the 1% floor's
-    // rescaling, which only ever lowers it.
-    function hint() {
-      const outs = parse();
-      const b = parseFloat($('fm-b').value) || 0;
-      if (outs.length < 2 || !b) { $('fm-hint').textContent = ''; return; }
-      const ws = outs.map(o => o.open_price);
-      let low;
-      if (ws.every(w => w == null)) low = 1 / outs.length;
-      else if (ws.every(w => w > 0)) low = Math.max(0.01, Math.min(...ws) / ws.reduce((a, c) => a + c, 0));
-      else { $('fm-hint').textContent = 'Give an opening % for every outcome, or for none.'; return; }
-      const move = b * Math.log(0.9 / 0.8);
-      $('fm-hint').textContent = `${outs.length} outcomes. The most this market can create is about ${nby(b * Math.log(1 / low))}. `
-        + `Moving an outcome from 10% to 20% costs about ${nby(move)}.`;
+
+    function rows() {
+      return [...tbody.rows].map(tr => ({
+        tr,
+        label: tr.querySelector('.fm-label').value.trim(),
+        team: tr.dataset.team || null,
+        w: tr.querySelector('.fm-w').value.trim(),
+      })).filter(r => r.label);
     }
-    ['fm-outs', 'fm-b'].forEach(id => $(id).addEventListener('input', hint));
+
+    // The opening prices come from POST /api/markets/preview, the same
+    // normalizing and 1% floor create applies, so what's shown is what opens.
+    let timer = null;
+    function preview() {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const rs = rows();
+        tbody.querySelectorAll('.fm-pct').forEach(td => { td.textContent = ''; });
+        $('fm-hint').textContent = '';
+        if (rs.length < 2) return;
+        const ws = rs.map(r => r.w === '' ? null : parseFloat(r.w));
+        try {
+          const pv = await api('/api/markets/preview', {
+            method: 'POST', body: JSON.stringify({ open_prices: ws, b: parseFloat($('fm-b').value) || 1500 }),
+          });
+          rs.forEach((r, i) => { r.tr.querySelector('.fm-pct').textContent = pct(pv.prices[i]); });
+          $('fm-hint').textContent = `${rs.length} outcomes. The most this market can create is about ${nby(pv.max_mint)}. `
+            + `Moving an outcome from 10% to 20% costs about ${nby(pv.move_10_to_20)}.`;
+        } catch (e) { $('fm-hint').textContent = e.message; }
+      }, 250);
+    }
+
+    $('fm-add').onclick = () => { addRow(); tbody.lastElementChild.querySelector('.fm-label').focus(); };
     $('fm-teams').onclick = () => {
-      const abbrs = typeof TEAM_LIST !== 'undefined' ? Object.keys(TEAM_LIST) : [];
-      $('fm-outs').value = abbrs.map(teamName).join('\n');
-      hint();
+      tbody.innerHTML = '';
+      Object.keys(typeof TEAM_LIST !== 'undefined' ? TEAM_LIST : {}).forEach(k => addRow(teamName(k), k));
+      preview();
     };
+    $('fm-level').onclick = () => { tbody.querySelectorAll('.fm-w').forEach(i => { i.value = ''; }); preview(); };
+    $('fm-b').addEventListener('input', preview);
+    addRow(); addRow();
+
     $('fm-go').onclick = async () => {
       const btn = $('fm-go');
       btn.disabled = true;
@@ -402,7 +434,8 @@
         const close = $('fm-close').value;
         const m = await api('/api/markets', {
           method: 'POST', body: JSON.stringify({
-            title: $('fm-title').value, description: $('fm-desc').value, outcomes: parse(),
+            title: $('fm-title').value, description: $('fm-desc').value,
+            outcomes: rows().map(r => ({ label: r.label, team: r.team, open_price: r.w === '' ? null : parseFloat(r.w) })),
             b: parseFloat($('fm-b').value), fee: parseFloat($('fm-fee').value) / 100,
             max_stake: parseFloat($('fm-stake').value),
             closes_at: close ? new Date(close).toISOString() : null,
