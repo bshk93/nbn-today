@@ -158,6 +158,10 @@
     @media (max-width: 480px) { .earn-grid { grid-template-columns: 1fr; } }
     .earn-item { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
     .earn-item .earn-amt { color: var(--gold); font-weight: 600; }
+    .earn-note { font-size: 0.75rem; color: var(--text-muted); margin: 0.7rem 0 0; }
+    .house-line { font-size: 0.8rem; color: var(--text-secondary); margin: 0.2rem 0 0.8rem; }
+    .house-line strong { color: var(--gold); }
+    .house-line .house-sub { color: var(--text-muted); }
     .earn-item .earn-tag { font-size: 0.65rem; border-radius: 3px; padding: 0.05rem 0.3rem; margin-left: 0.25rem; vertical-align: middle; }
     .earn-tag-auto   { background: var(--market-positive-bg); color: var(--market-positive); }
     .earn-tag-manual { background: var(--bg-subtle); color: var(--text-muted); }
@@ -231,13 +235,20 @@
     <div class="earn-panel" id="earn-panel" style="display:none">
       <div class="earn-panel-title">Ways to earn NB¥</div>
       <div class="earn-grid">
+        <div class="earn-item"><span class="earn-amt">NB¥1,000</span> to start, once</div>
+        <div class="earn-item"><span class="earn-amt">NB¥100</span> per $1 donated to the league</div>
+        <div class="earn-item"><span class="earn-amt">NB¥300</span> a month for a Tier 1 or Prime sub on Twitch (Tier 2: 700, Tier 3: 1,700)</div>
         <div class="earn-item"><span class="earn-amt">Varies</span> per winning bet</div>
-        <div class="earn-item"><span class="earn-amt">Varies</span> per trivia question</div>
-        <div class="earn-item"><span class="earn-amt">NB¥10</span> per box score entered</div>
-        <div class="earn-item"><span class="earn-amt">NB¥10</span> per player bio field completed</div>
-        <div class="earn-item"><span class="earn-amt">NB¥100</span> per bug/issue reported</div>
       </div>
+      <div class="earn-panel-title" style="margin-top:0.8rem">Ways to spend it</div>
+      <div class="earn-grid">
+        <div class="earn-item"><span class="earn-amt">NB¥1,000</span> to have a game streamed — on <a href="/calendar/">the calendar</a></div>
+        <div class="earn-item"><span class="earn-amt">Up to NB¥100</span> per bet</div>
+      </div>
+      <p class="earn-note">NB¥ restarted in September 2026, with $10 = one stream = NB¥1,000. More ways to earn and spend come back one at a time.</p>
     </div>
+
+    <div class="house-line" id="house-line" style="display:none"></div>
 
     <div class="tabs ui-tabs" role="tablist">
       <button class="tab-btn ui-tab active" id="tab-open">Open</button>
@@ -301,12 +312,14 @@
     // ── Data ─────────────────────────────────────────────────────────────────
 
     async function loadData() {
-      const [betsRes, balsRes, membersRes, holdingsRes] = await Promise.allSettled([
+      const [betsRes, balsRes, membersRes, holdingsRes, houseRes] = await Promise.allSettled([
         fetch('/api/bets').then(r => r.json()),
         fetch('/api/bets/balances').then(r => r.json()),
         fetch('/api/members/public').then(r => r.json()),
         fetch('/api/invest/holdings/all').then(r => r.json()),
+        fetch('/api/bets/house').then(r => r.json()),
       ]);
+      if (houseRes.status === 'fulfilled') renderHouse(houseRes.value);
       if (betsRes.status === 'fulfilled')    allBets      = betsRes.value;
       if (balsRes.status === 'fulfilled')    balancesList = balsRes.value;
       if (membersRes.status === 'fulfilled') {
@@ -321,6 +334,17 @@
       }
     }
 
+    // There's no house wallet: bookies price by hand, and odds can pay out more
+    // than was staked. This keeps the running result in view instead.
+    function renderHouse(h) {
+      const el = document.getElementById('house-line');
+      if (!h || (!h.wagered && !h.paid_out)) { el.style.display = 'none'; return; }
+      const verb = h.net >= 0 ? 'up' : 'down';
+      el.innerHTML = `🏦 The house is <strong>${verb} ${nby(Math.abs(h.net))}</strong> since NB¥ restarted`
+        + ` <span class="house-sub">(${nby(h.wagered - h.refunded)} staked, ${nby(h.paid_out)} paid out)</span>`;
+      el.style.display = '';
+    }
+
     async function checkAuth() {
       if (!TOKEN) return;
       try {
@@ -333,7 +357,7 @@
     function myBalance() {
       if (!currentUser) return null;
       const row = balancesList.find(b => b.name === currentUser.name);
-      return row ? row.balance : 1000;
+      return row ? row.balance : 0;
     }
 
     function isBetsRole() {
@@ -433,7 +457,8 @@
       const form = document.createElement('div');
       form.className = 'new-bet-form';
 
-      let betType     = 'pool';
+      // Fixed odds only since the 2026-09 NB¥ reset; pool bets are retired.
+      const betType   = 'fixed_odds';
       const probInputs = [];  // parallel to optInputs
 
       const addField = (labelText, el) => {
@@ -451,33 +476,6 @@
       const descIn = document.createElement('textarea');
       descIn.placeholder = 'Description (optional)';
       addField('Description', descIn);
-
-      // ── Bet type toggle ──────────────────────────────────────────────────────
-      const typeLbl = document.createElement('label');
-      typeLbl.textContent = 'Bet Type *';
-      form.appendChild(typeLbl);
-
-      const typeWrap = document.createElement('div');
-      typeWrap.className = 'type-toggle-wrap';
-      const poolBtn = document.createElement('button');
-      poolBtn.type = 'button'; poolBtn.className = 'type-toggle-btn active'; poolBtn.textContent = '🪣 Pool';
-      const oddsBtn = document.createElement('button');
-      oddsBtn.type = 'button'; oddsBtn.className = 'type-toggle-btn'; oddsBtn.textContent = '🎯 Fixed Odds';
-
-      // defined after optsWrap is created; called via onclick
-      function setTypeToggle(type) {
-        betType = type;
-        poolBtn.classList.toggle('active', type === 'pool');
-        oddsBtn.classList.toggle('active', type === 'fixed_odds');
-        optsWrap.querySelectorAll('.prob-wrap').forEach(w => {
-          w.style.display = type === 'fixed_odds' ? 'flex' : 'none';
-        });
-        updateProbSum();
-      }
-      poolBtn.onclick = () => setTypeToggle('pool');
-      oddsBtn.onclick = () => setTypeToggle('fixed_odds');
-      typeWrap.append(poolBtn, oddsBtn);
-      form.appendChild(typeWrap);
 
       // ── Options ──────────────────────────────────────────────────────────────
       const optsLbl = document.createElement('label');
@@ -497,7 +495,11 @@
         if (betType !== 'fixed_odds') { probSumEl.style.display = 'none'; return; }
         const sum = probInputs.reduce((acc, inp) => acc + (parseFloat(inp.value) || 0), 0);
         const ok  = Math.abs(sum - 100) < 0.1;
-        probSumEl.textContent = ok ? `Sum: ${sum.toFixed(1)}% ✓` : `Sum: ${sum.toFixed(1)}% — house edge applies`;
+        // Over 100% the house keeps an edge; under it, the odds pay out more than
+        // is staked on average and create NB¥. Allowed, but say so.
+        probSumEl.textContent = ok ? `Sum: ${sum.toFixed(1)}% ✓`
+          : sum > 100 ? `Sum: ${sum.toFixed(1)}% — house edge applies`
+          : `Sum: ${sum.toFixed(1)}% — these odds pay out more than is staked`;
         probSumEl.style.color   = ok ? 'var(--market-positive)' : 'var(--warning)';
         probSumEl.style.display = '';
       }
@@ -675,8 +677,10 @@
         const inv = investHoldingsMap[row.name] || {};
         const equity    = inv.equity    ?? 0;
         const netWorth  = inv.net_worth ?? row.balance;
-        const overallPl = inv.pl        ?? (row.balance - 1000);
         const invPnl    = inv.realized_pnl ?? 0;
+        // Winnings, not balance growth: since the reset a balance also grows by
+        // donations and subs, which aren't profit.
+        const overallPl = (row.bet_pnl || 0) + invPnl;
         return { ...row, equity, net_worth: netWorth, overall_pl: overallPl, inv_pnl: invPnl };
       });
       merged.sort((a, b) => b.net_worth - a.net_worth || a.name.localeCompare(b.name));
@@ -1501,6 +1505,10 @@
       return btn;
     }
 
+    // Both sides of an over/under line at -110, the standard sportsbook price:
+    // each pays 1.91×, so on balanced action the house keeps a little.
+    const LINE_PROB = 0.524;
+
     async function _submitCannedBet(btn, errEl, payload) {
       const title = (payload.title || '').trim();
       if (!title) { errEl.textContent = 'Title is required.'; return; }
@@ -1514,7 +1522,7 @@
             title,
             description: (payload.description || '').trim(),
             options:     payload.options,
-            bet_type:    'pool',
+            bet_type:    'fixed_odds',
           }),
         });
         const body = await res.json().catch(() => ({}));
@@ -1712,8 +1720,8 @@
           title:       titleIn.value,
           description: descIn.value,
           options: [
-            { label: `Over ${line} (${favTeam} wins by >${line})` },
-            { label: `Under ${line} (${dogTeam} wins or ${favTeam} by <${line})` },
+            { label: `Over ${line} (${favTeam} wins by >${line})`, probability: LINE_PROB },
+            { label: `Under ${line} (${dogTeam} wins or ${favTeam} by <${line})`, probability: LINE_PROB },
           ],
         });
         actions.append(submitBtn, cancelBtn, errEl);
@@ -1893,8 +1901,8 @@
             title:       titleIn.value,
             description: descIn.value,
             options: [
-              { label: `Over ${line} ${activeStat.label}` },
-              { label: `Under ${line} ${activeStat.label}` },
+              { label: `Over ${line} ${activeStat.label}`, probability: LINE_PROB },
+              { label: `Under ${line} ${activeStat.label}`, probability: LINE_PROB },
             ],
           });
           actions.append(submitBtn, cancelBtn, errEl);

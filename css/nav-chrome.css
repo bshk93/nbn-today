@@ -147,7 +147,8 @@
 }
 .profile-menu .member-banner-team:hover { border-color: var(--text-muted); transform: scale(1.08); }
 .member-banner-team img { width: 100%; height: 100%; object-fit: contain; padding: 2px; box-sizing: border-box; display: block; }
-.member-banner-balance { color: var(--gold-chip-border); font-weight: 600; font-size: 0.85rem; }
+.member-banner-balance { color: var(--gold-chip-border); font-weight: 600; font-size: 0.85rem; text-decoration: none; }
+.member-banner-balance:hover { text-decoration: underline; }
 .profile-menu .member-banner-profile-link {
   color: var(--link); text-decoration: none; font-size: 0.85rem; font-weight: 600;
   padding-top: 0.5rem; border-top: 1px solid var(--border);

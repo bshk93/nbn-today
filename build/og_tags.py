@@ -54,6 +54,7 @@ PAGES = {
  '/awards/25-26/vote/': ('2025-26 Award Voting — NBN', 'Cast your ballot in the 2025-26 NBN awards.'),
  '/backlog/': (None, 'Internal working list of what needs doing on the NBN site.'),
  '/bet/': (None, 'Put NB¥ on NBN games and league outcomes.'),
+ '/nbyen/': ('NB¥ Balances — NBN', 'Every NB¥ balance, and every NB¥ that has moved since the restart.'),
  '/boxscores/': (None, 'Every NBN box score, searchable by game, team and player.'),
  '/boxscores/submit/': (None, 'Submit a box score to the NBN stats database.'),
  '/calendar/': (None, 'Key dates in the NBN league year — free agency, the draft, deadlines and windows.'),

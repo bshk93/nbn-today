@@ -394,7 +394,7 @@ function _buildProfilePicker() {
       <span class="member-banner-greeting"></span>
       <a class="member-banner-team" style="display:none" aria-label="Go to your roster"><img alt=""></a>
     </div>
-    <span class="member-banner-balance"></span>
+    <a class="member-banner-balance" href="/nbyen/" title="Your NB¥ history"></a>
     <a class="member-banner-profile-link" href="/members/">My Profile →</a>
     <button type="button" class="member-banner-signout">Sign out</button>
   `;
@@ -436,6 +436,7 @@ function _buildProfilePicker() {
           .then(b => {
             if (b && b.balance != null) {
               _myBalance = +b.balance;
+              balanceEl.href = `/nbyen/?m=${encodeURIComponent(data.name)}`;
               balanceEl.textContent = 'NB¥ ' + (+b.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
           })
@@ -575,6 +576,7 @@ const SITE_PAGES = [
   { title: 'Frivolities & Viz', href: '/frivolities', icon: '📈' },
   { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: '🔍' },
   { title: 'Bets', href: '/bet/', icon: '🎲' },
+  { title: 'NB¥ Balances', href: '/nbyen/', icon: '💴' },
   { title: 'Daily Perry Game', href: '/perry/', icon: '🏀' },
   { title: 'Daily Poeltl', href: '/poeltl/', icon: '🕵️' },
   { title: 'Trivia', href: '/trivia', icon: '🧠' },

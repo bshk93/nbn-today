@@ -87,6 +87,9 @@
     .sched-schd-teams { flex: 1; }
     .sched-schd-time { font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sched-schd-note { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; background: var(--bg-card); border-radius: 3px; padding: 0.1rem 0.35rem; }
+    .sched-schd-stream { font-size: 0.7rem; color: var(--gold); white-space: nowrap; }
+    .sched-schd-buy { background: none; border: 1px solid var(--border); color: var(--gold); border-radius: 4px; padding: 0.05rem 0.45rem; font-size: 0.7rem; cursor: pointer; white-space: nowrap; }
+    .sched-schd-buy:hover { border-color: var(--gold); }
     .sched-schd-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; padding: 0 0.2rem; line-height: 1; opacity: 0; transition: opacity 0.1s; }
     .sched-schd-game:hover .sched-schd-del { opacity: 1; }
     .sched-schd-del:hover { color: var(--danger); }
@@ -216,6 +219,7 @@
     let streamingDaysByDate  = {};   // "YYYY-MM-DD" → {done, done_at, done_by, youtube_url, ...}, from GET /api/streaming-days
     let leagueToday          = null; // "YYYY-MM-DD"
     let isBoD                = false;
+    let signedIn             = false;   // any member — enough to buy a stream
     let showAddForm          = false;
     let showAddGameForm      = false;
 
@@ -387,6 +391,7 @@
         const me = await fetch('/api/auth/me', {
           headers: { Authorization: `Bearer ${token}` }
         }).then(r => r.json());
+        signedIn = !!me.name;
         return me.roles.includes('bod') || me.roles.includes('admin');
       } catch { return false; }
     }
@@ -797,6 +802,56 @@
       content.appendChild(wrap);
     }
 
+    // ── Buying a stream ───────────────────────────────────────────
+    //
+    // Any member can spend NB¥1,000 to have an upcoming game streamed
+    // (POST /api/schedule/{id}/purchase). Once a day has a bought stream it has
+    // exactly one, so the button only shows on a day with no stream yet. The
+    // server re-checks all of it; this just avoids offering what it would refuse.
+    const STREAM_PRICE = 1000;
+
+    function makeStreamControl(g, dayGames) {
+      if (g.stream) {
+        const tag = document.createElement('span');
+        tag.className = 'sched-schd-stream';
+        tag.textContent = g.stream_buyer ? `📺 Stream · bought by ${g.stream_buyer}` : '📺 Stream';
+        return tag;
+      }
+      const dayHasStream = dayGames.some(o => o._src === 'schedule' && o.stream);
+      if (!signedIn || dayHasStream || g.date < nbnToday()) return null;
+      const btn = document.createElement('button');
+      btn.className = 'sched-schd-buy';
+      btn.textContent = 'Buy stream';
+      btn.title = `Have this game streamed for NB¥${STREAM_PRICE.toLocaleString()}`;
+      btn.onclick = e => { e.stopPropagation(); buyStream(g); };
+      return btn;
+    }
+
+    async function buyStream(g) {
+      const ok = await confirmDialog({
+        title: 'Buy this stream?',
+        body: `${g.away_team} @ ${g.home_team} on ${fmtDateHdr(g.date)} will be streamed. `
+            + `NB¥${STREAM_PRICE.toLocaleString()} comes out of your balance. `
+            + `It's the only stream that day. If it can't happen, a streamer refunds you in full.`,
+        confirmLabel: `Buy for NB¥${STREAM_PRICE.toLocaleString()}`,
+      });
+      if (!ok) return;
+      try {
+        const res = await fetch(`/api/schedule/${encodeURIComponent(g.id)}/purchase`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${storedToken()}` },
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+        g.stream = true;
+        g.stream_buyer = body.stream_buyer;
+        toast(`Stream bought. You have NB¥${Math.round(body.new_balance).toLocaleString()} left.`);
+        renderView();
+      } catch (e) {
+        toast(`Could not buy the stream: ${e.message}`, true);
+      }
+    }
+
     function makeMonthHdr(ym) {
       const hdr = document.createElement('div');
       hdr.className = 'sched-month-hdr';
@@ -863,6 +918,11 @@
             note.className = 'sched-schd-note';
             note.textContent = g.note;
             row.appendChild(note);
+          }
+
+          if (g._src === 'schedule') {
+            const buy = makeStreamControl(g, scheduled);
+            if (buy) row.appendChild(buy);
           }
 
           if (isBoD) {
@@ -1051,7 +1111,7 @@
           const titleParts = [`${g.away_team} @ ${g.home_team}`];
           if (g.note) titleParts.push(g.note);
           if (g.streamer) titleParts.push(`streamed by ${g.streamer}`);
-          if (g.stream) titleParts.push('flagged as a stream');
+          if (g.stream) titleParts.push(g.stream_buyer ? `stream bought by ${g.stream_buyer}` : 'flagged as a stream');
           pip.title = titleParts.join(' — ');
           cell.appendChild(pip);
         });

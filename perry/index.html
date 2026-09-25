@@ -363,7 +363,9 @@
     const SLOTS = ['PG', 'SG', 'SF', 'PF', 'C', '6MAN'];
     const SLOT_LABELS = { PG: 'PG', SG: 'SG', SF: 'SF', PF: 'PF', C: 'C', '6MAN': '6th Man' };
     const MEDALS = ['🥇', '🥈', '🥉'];
-    const PRIZES = [100, 50, 25];
+    // NB¥ prizes are paused since the 2026-09 reset (nbn-api routers/wallet.py);
+    // the daily top three is still ranked, just not paid.
+    const PRIZES = [];
 
     let token = localStorage.getItem(TOKEN_KEY) || '';
     let currentMember = null; // member name from /api/me
@@ -883,7 +885,7 @@
         const rankCls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
         const meCls = e.member === me ? ' lb-me' : '';
         const medal = i < 3 ? MEDALS[i] : '';
-        const prize = i < 3 ? `<span style="color:var(--text-muted);font-size:0.75rem"> +NB¥${PRIZES[i]}</span>` : '';
+        const prize = i < PRIZES.length ? `<span style="color:var(--text-muted);font-size:0.75rem"> +NB¥${PRIZES[i]}</span>` : '';
         html += `<tr class="${meCls}">
           <td class="lb-rank ${rankCls}">${medal || (i + 1)}</td>
           <td>${escHtml(e.member)}</td>
@@ -969,7 +971,7 @@
         lb.forEach((e, i) => {
           const rankCls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
           const medal = i < 3 ? MEDALS[i] : '';
-          const prize = i < 3 ? ` <span style="color:var(--text-muted);font-size:0.72rem">+NB¥${PRIZES[i]}</span>` : '';
+          const prize = i < PRIZES.length ? ` <span style="color:var(--text-muted);font-size:0.72rem">+NB¥${PRIZES[i]}</span>` : '';
           html += `<tr><td class="lb-rank ${rankCls}">${medal || (i+1)}</td>
             <td>${escHtml(e.member)}</td><td>${e.score.toFixed(1)}${prize}</td></tr>`;
         });

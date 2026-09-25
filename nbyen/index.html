@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>NB¥ Balances — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Every NB¥ balance, and every NB¥ that has moved since the restart.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NB¥ Balances — NBN">
+  <meta property="og:description" content="Every NB¥ balance, and every NB¥ that has moved since the restart.">
+  <meta property="og:url" content="https://nbn.today/nbyen/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <!-- /NBN:og -->
+  <style>
+    .totals { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-4); }
+    .total-tile { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: var(--space-3) var(--space-4); min-width: 9rem; }
+    .total-tile .lbl { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .total-tile .val { font-size: 1.25rem; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+    .total-tile .sub { font-size: var(--text-xs); color: var(--text-muted); }
+
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .pos { color: var(--success); }
+    .neg { color: var(--danger); }
+    .bal { color: var(--gold); font-weight: 600; }
+    .dim { color: var(--text-muted); }
+    .ts { color: var(--text-muted); font-size: var(--text-xs); white-space: nowrap; }
+    .kind { font-size: var(--text-xs); color: var(--text-secondary); white-space: nowrap; }
+    .reason { color: var(--text-secondary); }
+    .member-link { color: inherit; cursor: pointer; text-decoration: none; font-weight: 500; }
+    .member-link:hover { text-decoration: underline; }
+    tr.me td { background: color-mix(in srgb, var(--gold) 7%, transparent); }
+
+    .filters { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-3); }
+    .who { font-size: var(--text-md); font-weight: 600; margin: 0 0 var(--space-2); }
+    .who .bal { margin-left: var(--space-2); }
+    .note { font-size: var(--text-sm); color: var(--text-muted); margin: 0 0 var(--space-4); }
+    .note a { color: var(--link); }
+
+    @media (max-width: 560px) {
+      .hide-sm { display: none; }
+    }
+  </style>
+</head>
+<body>
+<script src="/nav.js"></script>
+
+<div class="page ui-page">
+  <nav class="nav"></nav>
+
+  <header class="ui-header">
+    <div>
+      <h1 class="ui-title">NB¥ Balances</h1>
+      <p class="ui-subtitle">Every balance, and every NB¥ that has moved since the September 2026 restart.</p>
+    </div>
+  </header>
+
+  <p class="note">$10 = one stream = NB¥1,000. How you earn and spend it is on
+    <a href="/nbyen-economy/">the NB¥ economy page</a>.</p>
+
+  <div class="totals" id="totals"></div>
+
+  <div class="ui-tabs" role="tablist">
+    <button class="ui-tab active" data-tab="balances">Balances</button>
+    <button class="ui-tab" data-tab="history">History</button>
+  </div>
+
+  <div id="content"><div class="ui-loading">Loading…</div></div>
+</div>
+
+<script>
+const KIND_LABEL = {
+  start: 'Starting grant', donation: 'Donation', twitch_sub: 'Twitch sub',
+  wager: 'Wager', payout: 'Bet payout', bet_refund: 'Bet refund',
+  stream_purchase: 'Stream bought', stream_refund: 'Stream refund',
+  admin: 'Adjustment', tip: 'Tip', achievement: 'Achievement', boxscore: 'Box score',
+  bio: 'Bio fill', poeltl: 'Poeltl', perry: 'Perry', trivia: 'Trivia', invest: 'Market',
+  theme: 'Theme', cosmetic: 'Cosmetics', avatar: 'Avatar',
+};
+
+let summary = null;
+let tab = 'balances';
+let member = new URLSearchParams(location.search).get('m') || '';
+let kind = '';
+let me = null;
+
+const fmt = n => 'NB¥' + Math.round(Math.abs(n)).toLocaleString('en-US');
+const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + fmt(n);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const when = ts => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+function syncUrl() {
+  const p = new URLSearchParams();
+  if (member) p.set('m', member);
+  history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : '') + (tab === 'history' ? '#history' : ''));
+}
+
+function setTab(t) {
+  tab = t;
+  document.querySelectorAll('.ui-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  syncUrl();
+  render();
+}
+
+function renderTotals() {
+  const k = summary.by_kind;
+  const tile = (lbl, val, sub) =>
+    `<div class="total-tile"><div class="lbl">${lbl}</div><div class="val">${val}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
+  const betNet = (k.wager || 0) + (k.payout || 0) + (k.bet_refund || 0);
+  const streams = -((k.stream_purchase || 0) + (k.stream_refund || 0));
+  document.getElementById('totals').innerHTML =
+    tile('In circulation', fmt(summary.total)) +
+    tile('From donations', fmt(k.donation || 0), 'NB¥100 per $1') +
+    tile('From Twitch subs', fmt(k.twitch_sub || 0)) +
+    tile('Spent on streams', fmt(streams), `${Math.round(streams / 1000)} bought`) +
+    tile('Bettors, net', signed(betNet), betNet < 0 ? 'the house is up' : betNet > 0 ? 'the odds paid out more than was staked' : '');
+}
+
+function render() {
+  if (tab === 'balances') renderBalances();
+  else renderHistory();
+}
+
+function renderBalances() {
+  const rows = summary.balances.filter(r => r.member);
+  const content = document.getElementById('content');
+  content.innerHTML = `<div class="ui-table-wrap"><table class="ui-table">
+    <thead><tr><th class="num">#</th><th>Member</th><th class="num">Balance</th></tr></thead>
+    <tbody>${rows.map((r, i) => `<tr class="${me && r.name === me ? 'me' : ''}">
+      <td class="num dim">${i + 1}</td>
+      <td><a class="member-link" data-m="${esc(r.name)}">${esc(r.name)}</a></td>
+      <td class="num bal">${fmt(r.balance)}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+  content.querySelectorAll('.member-link').forEach(a => a.onclick = () => {
+    member = a.dataset.m; setTab('history');
+  });
+}
+
+async function renderHistory() {
+  const content = document.getElementById('content');
+  const names = summary.balances.filter(r => r.member).map(r => r.name).sort((a, b) => a.localeCompare(b));
+  const kinds = Object.keys(KIND_LABEL);
+  content.innerHTML = `<div class="filters">
+      <select class="ui-select" id="f-member"><option value="">Everyone</option>
+        ${names.map(n => `<option ${n === member ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
+      <select class="ui-select" id="f-kind"><option value="">All kinds</option>
+        ${kinds.map(k => `<option value="${k}" ${k === kind ? 'selected' : ''}>${KIND_LABEL[k]}</option>`).join('')}</select>
+    </div><div id="hist"><div class="ui-loading">Loading…</div></div>`;
+  document.getElementById('f-member').onchange = e => { member = e.target.value; syncUrl(); renderHistory(); };
+  document.getElementById('f-kind').onchange = e => { kind = e.target.value; renderHistory(); };
+
+  const p = new URLSearchParams({ limit: 1000 });
+  if (member) p.set('member', member);
+  if (kind) p.set('kind', kind);
+  const hist = document.getElementById('hist');
+  try {
+    const res = await fetch('/api/nbyen/ledger?' + p);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const head = member
+      ? `<p class="who">${esc(member)}<span class="bal">${fmt((summary.balances.find(r => r.name === member) || {}).balance || 0)}</span></p>`
+      : '';
+    if (!data.entries.length) { hist.innerHTML = head + '<div class="ui-empty">Nothing yet.</div>'; return; }
+    const more = data.total > data.entries.length
+      ? `<p class="note">Showing the latest ${data.entries.length.toLocaleString()} of ${data.total.toLocaleString()}.</p>` : '';
+    hist.innerHTML = head + `<div class="ui-table-wrap"><table class="ui-table">
+      <thead><tr><th>Date</th>${member ? '' : '<th>Member</th>'}<th class="hide-sm">Kind</th><th>What</th>
+        <th class="num">Change</th>${member ? '<th class="num">Balance</th>' : ''}</tr></thead>
+      <tbody>${data.entries.map(e => `<tr>
+        <td class="ts">${when(e.ts)}</td>
+        ${member ? '' : `<td><a class="member-link" data-m="${esc(e.member)}">${esc(e.member)}</a></td>`}
+        <td class="kind hide-sm">${esc(KIND_LABEL[e.kind] || e.kind)}</td>
+        <td class="reason">${esc(e.reason)}</td>
+        <td class="num ${e.delta > 0 ? 'pos' : 'neg'}">${signed(e.delta)}</td>
+        ${member ? `<td class="num bal">${fmt(e.balance)}</td>` : ''}</tr>`).join('')}</tbody>
+    </table></div>` + more;
+    hist.querySelectorAll('.member-link').forEach(a => a.onclick = () => {
+      member = a.dataset.m; syncUrl(); renderHistory();
+    });
+  } catch (err) {
+    hist.innerHTML = `<div class="ui-empty">Could not load the history: ${esc(err.message)}</div>`;
+  }
+}
+
+async function init() {
+  document.querySelectorAll('.ui-tab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+  const token = localStorage.getItem('nbn_token');
+  if (token) {
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null).then(d => { if (d && d.name) { me = d.name; if (tab === 'balances') render(); } })
+      .catch(() => {});
+  }
+  try {
+    const res = await fetch('/api/nbyen/summary');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    summary = await res.json();
+  } catch (err) {
+    document.getElementById('content').innerHTML = `<div class="ui-empty">Could not load NB¥: ${esc(err.message)}</div>`;
+    return;
+  }
+  renderTotals();
+  setTab(member || location.hash === '#history' ? 'history' : 'balances');
+}
+init();
+</script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

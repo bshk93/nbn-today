@@ -19,6 +19,8 @@
 //     retries next run. Data corrections that drop a tier are absorbed silently
 //     (never re-awarded if the tier is later regained).
 //   • No Discord/webhook output — the ledger ("Achievement: …") is the record.
+//   • Paused since the 2026-09 NB¥ reset: the API answers 423, and the unlock
+//     is recorded without being paid, so nothing piles up for later.
 //
 // Env:
 //   DRY_RUN=1            print would-be awards instead of granting
@@ -119,8 +121,10 @@ async function award(token, member, delta, reason) {
   const res = await fetch(`${API_BASE}/api/bets/admin/adjust`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ member, delta, reason }),
+    body: JSON.stringify({ member, delta, reason, kind: 'achievement' }),
   });
+  // Achievement NB¥ is paused since the 2026-09 reset (routers/wallet.py).
+  if (res.status === 423) return { paused: true };
   if (!res.ok) throw new Error(`adjust ${res.status}: ${(await res.text()).slice(0, 200)}`);
   return res.json();   // { member, old_balance, new_balance, delta, reason }
 }
@@ -165,10 +169,11 @@ async function main() {
 
     if (DRY_RUN) { console.log(`[dry-run] +NB¥${amount} ${ev.name} — ${label(ev)}`); continue; }
 
-    let newBal;
+    let newBal, paused = false;
     try {
       const r = await award(token, ev.name, amount, reason);
       newBal = r.new_balance;
+      paused = !!r.paused;
     } catch (e) {
       console.error(`award failed for ${ev.name}/${ev.id}:`, e.message);
       continue;   // snapshot NOT advanced → retry next run
@@ -177,6 +182,10 @@ async function main() {
     state[ev.name] = state[ev.name] || {};
     state[ev.name][ev.id] = ev.tier;
     fs.writeFileSync(STATE_FILE, JSON.stringify(state));
+    // Paused: the unlock is recorded but not paid, and never will be. Holding
+    // the snapshot back instead would pile up every unlock since the reset and
+    // pay them all at once the day achievements are switched back on.
+    if (paused) { console.log(`Not paid (achievement NB¥ is paused): ${ev.name} — ${label(ev)}`); continue; }
     granted++;
     console.log(`Awarded NB¥${amount} to ${ev.name} — ${label(ev)} (balance NB¥${newBal})`);
     await sleep(150);   // gentle pacing on the local API

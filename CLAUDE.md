@@ -563,6 +563,7 @@ in.
 | The team-facing FA offer form, the § 4.7 agent stage, or § 4.3b voiding | `docs/fa-offers-pipeline.md` |
 | A theme, what one costs, or `css/theme.css` | `docs/themes.md` |
 | Members, the suggestions board, or NB¥ achievement awards | `docs/members-and-rewards.md` |
+| Anything that moves NB¥ — balances, bets, buying a stream, donations/Twitch credit, or switching a paused earner back on. Every balance change goes through `nbn-api/routers/wallet.py`; never write `member-balances.json` directly. The public view is `/nbyen` | `docs/nbyen-economy.md` |
 | The per-player ⋯ menu on team pages | `docs/roster-moves.md` |
 | How pages look: components, tokens, fonts, team colours | `docs/design-system.md` |
 | The daily cap/apron snapshot, or § 7.3's four-year lookback | `nbn-api/CLAUDE.md` § "Cap history" |

@@ -298,7 +298,7 @@
           <div class="cosm-swatches" id="cosm-swatches"></div>
           <input type="text" id="cosm-status" maxlength="40" placeholder="Short tagline…"
             style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit;width:12rem">
-          <button class="btn-sm" id="cosm-save">Save · 500 NB¥</button>
+          <button class="btn-sm" id="cosm-save">Save · 50 NB¥</button>
           <span id="cosm-msg" style="display:none;font-size:0.8rem"></span>
         </div>
         <hr class="cosm-divider">
@@ -309,7 +309,7 @@
           </div>
           <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <div style="font-size:0.78rem;color:var(--text-muted)">JPEG / PNG / WebP · max 512 KB</div>
-          <button class="btn-sm" id="avatar-save" style="display:none">Upload · 5,000 NB¥</button>
+          <button class="btn-sm" id="avatar-save" style="display:none">Upload · 500 NB¥</button>
           <span id="avatar-msg" style="display:none;font-size:0.8rem"></span>
         </div>
       </div>
@@ -567,7 +567,7 @@ document.getElementById('avatar-save').addEventListener('click', async () => {
     setTimeout(() => { msg.style.display = 'none'; }, 4000);
   } catch (err) {
     msg.textContent = 'Error: ' + err.message; msg.style.color = 'var(--danger)'; msg.style.display = '';
-  } finally { btn.disabled = false; btn.textContent = 'Upload · 5,000 NB¥'; }
+  } finally { btn.disabled = false; btn.textContent = 'Upload · 500 NB¥'; }
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1262,7 +1262,7 @@ document.getElementById('cosm-save').addEventListener('click', async () => {
     setTimeout(() => { msg.style.display = 'none'; }, 4000);
   } catch (err) {
     msg.textContent = 'Error: ' + err.message; msg.style.color = 'var(--danger)'; msg.style.display = '';
-  } finally { btn.disabled = false; btn.textContent = 'Save · 500 NB¥'; }
+  } finally { btn.disabled = false; btn.textContent = 'Save · 50 NB¥'; }
 });
 
 // ── Clipboard helper ──────────────────────────────────────────────────────────

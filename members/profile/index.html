@@ -519,7 +519,7 @@ async function init() {
           <span class="pe-group-label">Name color</span>
           <div class="cosm-swatches" id="cosm-swatches"></div>
           <input type="text" id="cosm-status" class="pe-input" style="width:12rem" maxlength="40" placeholder="Short tagline…" value="${esc(member.cosmetics?.status_text || '')}">
-          <button class="btn-sm" id="cosm-save">Save · 500 NB¥</button>
+          <button class="btn-sm" id="cosm-save">Save · 50 NB¥</button>
           <span id="cosm-msg" class="pe-msg"></span>
         </div>
         <hr class="cosm-divider">
@@ -530,7 +530,7 @@ async function init() {
           </div>
           <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none">
           <span class="pe-hint">JPEG / PNG / WebP · max 512 KB</span>
-          <button class="btn-sm" id="avatar-save" style="display:none">Upload · 5,000 NB¥</button>
+          <button class="btn-sm" id="avatar-save" style="display:none">Upload · 500 NB¥</button>
           <span id="avatar-msg" class="pe-msg"></span>
         </div>
       </div>
@@ -663,7 +663,7 @@ async function init() {
         setTimeout(() => location.reload(), 1200);
       } catch (err) {
         msg.textContent = 'Error: ' + err.message; msg.style.color = 'var(--danger)'; msg.style.display = '';
-      } finally { btn.disabled = false; btn.textContent = 'Save · 500 NB¥'; }
+      } finally { btn.disabled = false; btn.textContent = 'Save · 50 NB¥'; }
     });
 
     function setAvatarPreview(src) {
@@ -714,7 +714,7 @@ async function init() {
         setTimeout(() => location.reload(), 1200);
       } catch (err) {
         msg.textContent = 'Error: ' + err.message; msg.style.color = 'var(--danger)'; msg.style.display = '';
-      } finally { btn.disabled = false; btn.textContent = 'Upload · 5,000 NB¥'; }
+      } finally { btn.disabled = false; btn.textContent = 'Upload · 500 NB¥'; }
     });
   }
 }

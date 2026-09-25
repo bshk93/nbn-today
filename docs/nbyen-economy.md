@@ -1,13 +1,156 @@
-# The NB¥ economy — a proposal
+# The NB¥ economy
 
-**Status: draft, under discussion. Nothing here is implemented.** Written
-2026-09-05, restructured the same day. Balances are being wiped and the economy
-restarted, so everything here is a proposal for the *new* economy. The
-current-state figures in § 6 describe the old one and are evidence for why the
-reset is happening, not a description of what is being kept.
+**Status: built 2026-09-25, not yet switched on.** NB¥ restarts from zero with
+a deliberately small economy: money in only from a starting grant, real
+dollars and Twitch subs; money out only on bets and buying a stream. More ways
+to earn and spend come back one at a time, each with a price decided when it
+returns. Everything below the appendix line is the September proposal this
+came from. It's kept for its reasoning; its numbers are on the old scale.
 
-**The peg, which everything below is denominated in: 1,000 NB¥ = $1.00 net to
-the league.** Every mint traces back to a dollar the league actually received.
+## 1. The peg
+
+**$1 = 100 NB¥. One stream game = $10 = 1,000 NB¥.** That's the one number the
+rest is built from. The September proposal used 1,000 NB¥ per dollar; the scale
+was cut by ten at launch, so every price in it divides by ten.
+
+## 2. How you earn
+
+| Source | Amount | When |
+|---|---|---|
+| Starting grant | 1,000 | Once. Every member at the reset, and every member added after it (`POST /api/members`). |
+| Donations | 100 per $1 | When the board logs it on `/donations`. Editing a donation moves exactly the difference, to whoever it now names. |
+| Twitch subs | 300 a month for Tier 1 or Prime, 700 for Tier 2, 1,700 for Tier 3 | Once a month, by `nbn-twitch-subs.timer`. |
+| Winning bets | Set by the bookie's odds | When a bet closes. |
+
+- **Every source is a real ledger line.** There's no default balance any more.
+  A member nobody has paid has 0.
+- **Donations at the reset** were the $834 on record, from 18 members:
+  83,400 NB¥, from 2,000 (Drew) to 10,000 (RJ, KVL, cheppywire).
+- **Twitch only reports who is subbed right now**, so the job runs once a month
+  and a sub active that day counts for the month. It can safely run twice: each
+  payment carries `twitch:<month>:<subscriber id>`.
+- **A gifted sub pays the gifter**, not the recipient. The gifter paid, and
+  paying both would let someone mint by gifting to an alt.
+- **A subscriber needs a `twitch` login on their member record** to be paid.
+  The job lists anyone it couldn't match. Prime and Tier 1 pay the same because
+  the Twitch API can't tell them apart.
+
+## 3. How you spend
+
+| | Price |
+|---|---|
+| Buy a stream | 1,000 |
+| A bet | up to 100 per bet |
+
+Themes, avatars and name colours people already own stay theirs. Buying new
+ones is paused (§ 6).
+
+## 4. Betting
+
+- **Fixed odds only.** Pool bets are retired. Closed ones stay in `bets.json`
+  as history.
+- **There is no house wallet.** Bookies price by hand, and odds that add up to
+  less than 100% pay out more than was staked, which creates NB¥. That's
+  accepted, on two conditions:
+  - **It's visible.** `GET /api/bets/house` and the top of `/bet` show the
+    house's running result since the reset. Negative means the odds created
+    that much NB¥. The bet form also says so while the bookie types the odds.
+  - **The per-bet cap is 100.** One badly priced long shot can't pay thousands.
+- **The quick over/under templates price both sides at −110** (52.4% each, a
+  1.91× payout). On balanced action the house keeps a little.
+- If the house number drifts a long way negative, the fix is a tighter cap or
+  a required book above 100%. It's not a bank.
+
+## 5. Buying a stream
+
+- **Any member, any upcoming game, 1,000 NB¥**, from the list view on
+  `/calendar`. It sets the game's `stream` flag and records `stream_buyer`.
+- **Once a day has a bought stream, it has one stream.** No second purchase
+  that day, and a streamer can't flag another game that day either. Two free,
+  streamer-flagged games on one day are still fine; the rule only binds once
+  someone has paid.
+- **Only a streamer refunds it**, in full, from Claim Games on
+  `/committees/stream`. That clears the stream and frees the day. The buyer
+  can't cancel.
+- **A bought game can't be quietly undone.** Unflagging it or deleting it is
+  refused until it's refunded. Moving it onto a day that already has a stream
+  is refused too.
+
+## 6. Paused, and the order it comes back
+
+Everything here still runs. It just doesn't move NB¥. Each has a switch in
+`KINDS` in `nbn-api/routers/wallet.py`, and the price it comes back at is
+already in the code on the new scale.
+
+| # | Feature | Price when it returns | Before it can return |
+|---|---|---|---|
+| 1 | Tips | — (moves NB¥, creates none) | Nothing. Safe first. |
+| 2 | Box score submissions | 30 per game | Nothing. |
+| 3 | Competitive achievements | 25 / 50 / 100 | `REWARD` in `build/achievement-notify.js` still says 250/500/1000, and tenure achievements must stay badge-only. |
+| 4 | Committee salaries | 250 / 750 / 1,250 a year | Not built. See the appendix, § 1b. |
+| 5 | Poeltl | 5 per solve | Nothing. The server owns the answer. |
+| 6 | Bio fills, Perry | 1 per field; 10 / 5 / 2.5 | Nothing. |
+| 7 | Themes, avatar, name colour | 500, 500, 50 | Nothing. |
+| 8 | Trivia | — | **The server must track the streak.** Today the browser reports its own streak, so the endpoint pays whatever it's told. |
+| 9 | The market (`/invest`) | — | The appendix's § 3 rules, and `buy_shares` has to stop taking the money before it checks for an open short. |
+
+When the first of 2, 3, 5 or 6 comes back, add the shared monthly cap on free
+earning from the appendix (§ 1c) at the same time.
+
+While achievements are paused, the achievement job records each unlock without
+paying it. So switching them back on pays unlocks from then on, not a backlog.
+
+## 7. How it works
+
+- **`routers/wallet.py` is the only code that changes a balance.** Every
+  movement is `wallet.post()`, which applies several lines all-or-nothing and
+  refuses an overdraw (402) or a paused kind (423).
+- **`nbyen-ledger.jsonl` is the record.** It's append-only, one line per
+  movement, each with a `kind` and usually a `ref` (`bet:…`, `stream:…`,
+  `donation:…`, `twitch:…`). `member-balances.json` is a cache of it, and
+  `wallet.rebuild_balances()` regenerates it.
+- **The lock works across processes** (flock), because the Twitch job and the
+  reset script write from outside the API.
+- **`bets-ledger.json` is the old economy, frozen.** Nothing writes it. The
+  legal page cites it.
+- **`/nbyen` shows all of it, publicly:** every balance, totals by source,
+  and the ledger filtered by member or kind (`GET /api/nbyen/summary`,
+  `GET /api/nbyen/ledger`, in `routers/nbyen.py`). It's public because nearly
+  all of it already was — bets, donations and balances. What it adds is who
+  subs on Twitch and at what tier.
+- **Tests can't reach the live wallet.** `tests/__init__.py` points it at a temp
+  directory before any test runs. It exists because `test_donations` once wrote
+  a test donation into the live balances.
+
+## 8. Running the reset
+
+In order. API first, as always.
+
+1. Deploy nbn-api, then the site.
+2. `sudo systemctl stop nbn-api`, so nothing writes balances mid-reset.
+3. `venv/bin/python nbyen_reset.py` in `~/projects/nbn-api` to read the plan,
+   then again with `--apply`. It refuses to run twice, refuses with a bet
+   still open, and copies `member-balances.json` and `invest-holdings.json`
+   to `*-pre-reset.json` first.
+4. `sudo systemctl start nbn-api`.
+5. Add missing `twitch` logins to member records, then
+   `set -a && source .env && set +a && venv/bin/python credit_twitch_subs.py`
+   to check the list, and again with `--apply`.
+6. Install the timer: copy `nbn-twitch-subs.{service,timer}` to
+   `/etc/systemd/system/`, then `systemctl enable --now nbn-twitch-subs.timer`.
+
+---
+
+# Appendix — the September 2026 proposal
+
+**Numbers here are on the old 1,000-per-dollar scale. Divide by ten.** Where
+this disagrees with the sections above, the sections above are what was built.
+
+Written 2026-09-05. The figures in its § 6 describe the economy the reset
+replaced.
+
+**The peg this appendix is denominated in: 1,000 NB¥ = $1.00 net to the
+league** (100 NB¥ at launch). Every mint traces back to a dollar the league actually received.
 § 4 is why.
 
 Sections § 1 and § 2 are the two complete lists — every way in, every way out.
@@ -15,9 +158,9 @@ Sections § 1 and § 2 are the two complete lists — every way in, every way ou
 
 ---
 
-## 1. How you earn NB¥
+### 1. How you earn NB¥
 
-### 1a. Paying (pegged)
+#### 1a. Paying (pegged)
 
 | Path | Member pays | League nets | Rate | NB¥ | NB¥ per member-$ |
 |---|---|---|---|---|---|
@@ -34,7 +177,7 @@ it isn't an incentive, it's a floor forced by the API (§ 4) — but it is still
 stated, bounded deviation rather than a silent one. Nothing is retroactive and
 nothing depends on how long you have subbed.
 
-### 1b. Salary (annual, role-based)
+#### 1b. Salary (annual, role-based)
 
 Paid once a year at the July 1 league-year rollover. **Highest band only — these
 do not stack**, and a committee salary replaces the active-member base rather
@@ -49,7 +192,7 @@ than adding to it.
 Prorated by months held, from the tenure and role history already in
 `members.json`. **`admin` draws no salary** — see § 4.
 
-### 1c. Contributing (free, capped)
+#### 1c. Contributing (free, capped)
 
 Everything in this table draws on **one shared allowance of 2,500 NB¥ per member
 per calendar month**. When it is spent the faucets pay zero — streaks and
@@ -64,7 +207,7 @@ leaderboards keep running.
 | Perry daily top 3 | 100 / 50 / 25 | **0 — suspended** | ✅ when back |
 | Trivia | `2^(n-1)` → 512, client-declared | **0 — suspended** | ✅ when back |
 
-### 1d. Achievements (one-time, uncapped)
+#### 1d. Achievements (one-time, uncapped)
 
 | Class | Examples | NB¥ |
 |---|---|---|
@@ -73,7 +216,7 @@ leaderboards keep running.
 | Tenure & volume | Wheeler Dealer, Polyamorous, Blank Check, Seasoned GM, Win Machine, Mr. Consistent | **0 — badge only** |
 | Betting & investing | High Roller, Floor Trader, Moonshot, … | **0** (already excluded) |
 
-### 1e. One-time
+#### 1e. One-time
 
 | | NB¥ |
 |---|---|
@@ -81,7 +224,7 @@ leaderboards keep running.
 
 ---
 
-## 2. How you spend NB¥
+### 2. How you spend NB¥
 
 Every way NB¥ leaves a balance. Nothing on this list confers competitive
 advantage — see § 4.
@@ -101,13 +244,13 @@ market are the two systems large enough to need their own treatment — § 3.
 
 ---
 
-## 3. Betting and the stock market
+### 3. Betting and the stock market
 
 The two systems where NB¥ moves in volume. Both are currently **net-positive to
 the money supply** when they should be net-negative, and both need more than a
 price — so they are here rather than in the table above.
 
-### Betting — `/bet`
+#### Betting — `/bet`
 
 **Decided 2026-09-06: one bet type — fixed odds, with a mandatory 105% book,
 backed by a House Bank. Pool bets are removed.**
@@ -124,7 +267,7 @@ pool, the other 22 fixed-odds.** Two mental models for one small feature is one
 too many, and the type nobody uses is the one to cut. The safety pool betting
 provided — being structurally unable to mint — is provided instead by the bank.
 
-#### The House Bank
+##### The House Bank
 
 The house gets a wallet with a real balance, and it works like any member's:
 
@@ -164,7 +307,7 @@ of it back.
 **It should be visible.** `🏦 The House — NB¥ 12,400` at the top of `/bet`, moving
 as bets settle, is a scoreboard people will enjoy rooting against.
 
-#### The rest
+##### The rest
 
 | | |
 |---|---|
@@ -173,7 +316,7 @@ as bets settle, is a scoreboard people will enjoy rooting against.
 | **Max wager** | **1,000**, up from `NBY_MAX_WAGER = 300`. 300 was set against an economy whose median balance was 2,250; against a 10,000 stream game and a 17,000/month Tier 3 sub it is loose change. This is the per-member ceiling; the bank's coverage check can lower it further on any given bet. |
 | **Tip burn** | Stays a plain burn (§ 2), **not** bank funding. With the bank self-funding off the overround there is no reason to route an unrelated feature's drain through it. |
 
-#### The 105% book fixes the sign, not the variance
+##### The 105% book fixes the sign, not the variance
 
 Worth being precise about what the overround does and does not buy, because at
 this league's volume the difference is the whole story.
@@ -204,7 +347,7 @@ much harder than pricing a two-way game. The bank's coverage check handles this
 without the bookie needing to be right — a mispriced long shot simply cannot
 attract more money than the bank can pay on it.
 
-### The stock market — `/invest`
+#### The stock market — `/invest`
 
 **Decided 2026-09-06: `/invest` is a league-subsidised game tied to real game
 results, not a market.** It keeps the results-driven price and stops pretending
@@ -221,7 +364,7 @@ price starts at 100 and moves with real game results. On top of that sits a
 the league and every loss is burned. That is what makes it a subsidy, and the
 whole design problem is bounding the size of that subsidy.
 
-#### What "a subsidy, not a market" means
+##### What "a subsidy, not a market" means
 
 - **Sentiment is deleted.** `market_price = algo_price`, full stop. Price moves
   with games and nothing else, so **no member can move the price they trade
@@ -238,7 +381,7 @@ whole design problem is bounding the size of that subsidy.
   sales around a reset date. Capping how much they can *deploy* bounds the
   outcome just as effectively, with no mechanics to game.
 
-#### The rules
+##### The rules
 
 | | |
 |---|---|
@@ -249,7 +392,7 @@ whole design problem is bounding the size of that subsidy.
 | **Shorts** | Kept, and the capped loss (`max(0, …)`) is kept with them. Going negative in a play-money economy is worse than the asymmetry. The asymmetry is real and is priced into the budget below. |
 | **Achievements** | Investing achievements pay no NB¥ (§ 1d, already true). Paying for trading volume pays people to churn. |
 
-#### Sizing the subsidy
+##### Sizing the subsidy
 
 The position caps are the lever; the budget is what they are tuned against.
 
@@ -267,7 +410,7 @@ sentiment fix.
 Review the realised subsidy at the end of the first season and move the caps, not
 the payouts.
 
-#### What was considered and rejected
+##### What was considered and rejected
 
 - **A real order book** (member bids and asks, no house) is the only perfectly
   zero-sum design, and it is **dead on arrival at this volume.** The whole history
@@ -286,7 +429,7 @@ the payouts.
 
 ---
 
-## 4. Why these numbers
+### 4. Why these numbers
 
 The four axioms everything is derived from. The first three are the league's;
 the fourth is proposed here.
@@ -297,7 +440,7 @@ the fourth is proposed here.
 - **A3.** A stream game was priced at ~$10 and should convert to NB¥ at that rate.
 - **A4.** NB¥ must never buy competitive advantage.
 
-### The peg — 1,000 NB¥ = $1.00 net to the league
+#### The peg — 1,000 NB¥ = $1.00 net to the league
 
 - **Stated in dollars the league receives, not dollars the member spends.** This
   is the whole trick: Twitch keeps roughly half a subscription, so pricing off
@@ -321,7 +464,7 @@ the fourth is proposed here.
   and worse in practice: identical relative incentives, uglier numbers, and it
   reads as punishing the entry tier.
 
-### Why higher tiers convert better
+#### Why higher tiers convert better
 
 **Decided 2026-09-05.** Tier 2 earns a ×1.17 premium and Tier 3 a ×1.35 premium
 over the base rate. No loyalty or streak component — tier is the only thing that
@@ -370,7 +513,7 @@ changes the rate.
   small, bounded, and the price of not building infrastructure around a
   distinction the API won't give us for free.
 
-### Why the salary bands are what they are
+#### Why the salary bands are what they are
 
 - **This is the answer to "what does a non-paying member get."** Without it, and
   with the minigames suspended, a member who neither pays nor does league admin
@@ -409,7 +552,7 @@ changes the rate.
   calendar year — it is compensation for a season of work, so it should land on
   the season boundary.
 
-### Why the free cap is 2,500/month, and shared
+#### Why the free cap is 2,500/month, and shared
 
 - **One shared allowance across every faucet is worth more than tuning any
   individual faucet, because it bounds the ones nobody has found yet.** The
@@ -430,7 +573,7 @@ changes the rate.
   and because it is the precondition that lets a game be switched back on without
   redesigning anything around it.
 
-### Why the minigames pay nothing at launch
+#### Why the minigames pay nothing at launch
 
 **Decided 2026-09-05.** Poeltl, Perry and Trivia keep running — streaks,
 leaderboards, Discord results, all unchanged. They just stop minting.
@@ -450,7 +593,7 @@ leaderboards, Discord results, all unchanged. They just stop minting.
 - Poeltl is the obvious first candidate back — one puzzle a day, server-owned
   answer, nothing to fix.
 
-### Why achievements changed
+#### Why achievements changed
 
 - **The scale is fine; what qualified was not.** 250/500/1000 under the peg is
   $0.25/$0.50/$1.00 for a one-time, non-repeatable event. That is cheap.
@@ -465,7 +608,7 @@ leaderboards, Discord results, all unchanged. They just stop minting.
   seeds its snapshot silently on first run, so deleting
   `$NBS_DATA_DIR/achievement-state.json` at reset costs nothing and grants nothing.
 
-### Why the sinks are priced where they are
+#### Why the sinks are priced where they are
 
 - **The stream game is the only new sink, and it is the one price real members
   have actually paid (A3).** $10 → 10,000 NB¥. Everything else on the § 2 list
@@ -495,7 +638,7 @@ leaderboards, Discord results, all unchanged. They just stop minting.
   have. A league where donations buy wins is worse than one with no currency at
   all, and this line is far easier to hold from the start than to walk back later.
 
-### Why the tip burn exists
+#### Why the tip burn exists
 
 - Tipping moves NB¥ between members **without destroying any**. The burn is
   destroyed rather than paid to a house account, which is what makes it a drain
@@ -509,7 +652,7 @@ leaderboards, Discord results, all unchanged. They just stop minting.
 
 ---
 
-## 5. Does it balance?
+### 5. Does it balance?
 
 Annual, at eight subscribers (3 Prime, 4 Tier 1, 1 Tier 2) and ~$20/month in
 direct donations:
@@ -553,7 +696,7 @@ Sink capacity on the other side:
 That is capacity, not a forecast, and it leaves **a gap of roughly 390,000
 NB¥/year — 42% of the mint.**
 
-### The economy has one real sink
+#### The economy has one real sink
 
 This is the honest headline of § 5 and it is worth stating flatly: after cutting
 the proposed catalogue, **stream games are 89% of all sink capacity.** Cosmetics
@@ -588,7 +731,7 @@ of it.
 
 ---
 
-## 6. Where the old economy stands, and what broke
+### 6. Where the old economy stands, and what broke
 
 Measured 2026-09-05 from `bets-ledger.json` (1,536 entries) and
 `member-balances.json`. This is the economy being replaced.
@@ -634,7 +777,7 @@ Both are dissected in § 3, where the fixes live; between them they account for
 the 18,198 in bet payouts and the 3,047 in share sales above. They are listed
 here only so the count of what went wrong is complete.
 
-### Remove or fix before reopening
+#### Remove or fix before reopening
 
 | | Verdict |
 |---|---|
@@ -646,7 +789,7 @@ here only so the count of what went wrong is complete.
 
 ---
 
-## 7. Open questions
+### 7. Open questions
 
 - **Do past donors get credit at reset?** Members who already paid ~$10 for stream
   games have a real claim under the new peg. Recommendation: honour it. It is a

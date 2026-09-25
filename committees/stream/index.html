@@ -175,6 +175,7 @@
     }
     .games-table tbody tr.game-row:hover .g-claim, .g-claim:focus { opacity: 1; color: var(--accent-light); border-color: var(--accent); }
     .g-claim[disabled] { cursor: default; }
+    .bought-by { font-size: 0.72rem; color: var(--gold); margin-right: 0.4rem; white-space: nowrap; }
 
     /* Sim/Stream picker — "stream" pops with color so a flagged game reads
        at a glance, without needing a separate badge next to it. */
@@ -694,6 +695,7 @@
           top.appendChild(teamLink(g.home_team));
           top.appendChild(span('when', fmtTime(g.time_et)));
           if (g.stream) top.appendChild(span('ui-badge ui-badge--danger', 'Stream'));
+          if (g.stream_buyer) top.appendChild(span('when', `bought by ${g.stream_buyer}`));
           const res = resultFor(g);
           if (res) top.appendChild(span('when', `Final ${res.away_score}–${res.home_score}`));
           row.appendChild(top);
@@ -1023,6 +1025,39 @@
       }
     }
 
+    async function refundStream(g, num, rowEl) {
+      const ok = await confirmDialog({
+        title: 'Refund this stream?',
+        body: `${g.stream_buyer} gets their NB¥1,000 back, the game goes back to Sim, `
+            + `and the day is free for someone else to buy.`,
+        confirmLabel: 'Refund',
+        danger: true,
+      });
+      if (!ok) return;
+      const token = storedToken();
+      rowEl.querySelectorAll('button, select').forEach(b => { b.disabled = true; });
+      try {
+        const r = await fetch(`/api/schedule/${g.id}/purchase?season=${encodeURIComponent(season)}`, {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!r.ok) {
+          const detail = await r.json().then(j => j.detail).catch(() => null);
+          throw new Error(detail || `HTTP ${r.status}`);
+        }
+        const updated = await r.json();
+        const buyer = g.stream_buyer;
+        g.stream = !!updated.stream;
+        g.stream_buyer = updated.stream_buyer || null;
+        replaceRow(g, num, rowEl);
+        renderMine();
+        toast(`Refunded ${buyer}.`);
+      } catch (e) {
+        rowEl.querySelectorAll('button, select').forEach(b => { b.disabled = false; });
+        toast(`Could not refund that stream: ${e.message}`, true);
+      }
+    }
+
     // ── URL state ────────────────────────────────────────────────────
 
     function syncUrl() {
@@ -1128,7 +1163,19 @@
       } else {
         sel.onchange = () => setStreamFlag(g, num, row, sel.value === 'stream');
       }
-      tdStream.appendChild(sel);
+      if (g.stream_buyer) {
+        // A member paid NB¥ for this one. It can't just be flipped back to Sim —
+        // the way out is a refund, which clears it and pays them back.
+        tdStream.appendChild(span('bought-by', `Bought by ${g.stream_buyer}`));
+        const refund = document.createElement('button');
+        refund.className = 'g-claim';
+        refund.textContent = 'refund';
+        refund.title = `Refund ${g.stream_buyer}'s NB¥1,000 and clear this stream`;
+        refund.onclick = () => refundStream(g, num, row);
+        tdStream.appendChild(refund);
+      } else {
+        tdStream.appendChild(sel);
+      }
       row.appendChild(tdStream);
 
       const tdResult = document.createElement('td');

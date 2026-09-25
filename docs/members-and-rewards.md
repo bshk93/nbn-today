@@ -91,6 +91,12 @@ writing the key back. `tests/test_suggestions.py` pins all of the above.
 
 ## Achievement NB¥ awards (background job)
 
+> **Paused since the 2026-09 NB¥ restart** (`docs/nbyen-economy.md` § 6). The
+> API answers the job's award with a 423, and the job records the unlock
+> without paying it, so nothing piles up. The award now sends
+> `kind: "achievement"`. The scale below is the old one; it becomes 25 / 50 /
+> 100 when achievements pay again.
+
 `build/achievement-notify.js` (Node) awards NB¥ whenever a member unlocks or
 upgrades an achievement. Achievements are computed statelessly in the browser,
 so this job recomputes them server-side using the **same** engine the site uses

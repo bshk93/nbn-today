@@ -101,6 +101,7 @@
     .reward-table tbody tr:last-child td { border-bottom: none; }
     .reward-table .cap-row td { color: var(--text-muted); }
     .reward-table .cap-row td:last-child { color: var(--gold); }
+    .reward-paused { font-size: 0.8rem; color: var(--text-muted); }
 
                 .btn-primary.btn-correct { background: #059669; }
 
@@ -421,25 +422,7 @@
         <div class="idle-inner">
           <p>A random player from the league's history is shown — their full stats, season by season. Guess who it is. How long can you streak?</p>
 
-          <div class="reward-table-wrap">
-            <div class="reward-table-label">NB¥ Streak Rewards</div>
-            <table class="reward-table">
-              <thead><tr><th>Correct in a row</th><th>NB¥ earned</th></tr></thead>
-              <tbody>
-                <tr><td>1st</td><td>NB¥1</td></tr>
-                <tr><td>2nd</td><td>+NB¥2</td></tr>
-                <tr><td>3rd</td><td>+NB¥4</td></tr>
-                <tr><td>4th</td><td>+NB¥8</td></tr>
-                <tr><td>5th</td><td>+NB¥16</td></tr>
-                <tr><td>6th</td><td>+NB¥32</td></tr>
-                <tr><td>7th</td><td>+NB¥64</td></tr>
-                <tr><td>8th</td><td>+NB¥128</td></tr>
-                <tr><td>9th</td><td>+NB¥256</td></tr>
-                <tr><td>10th (cap)</td><td>+NB¥512</td></tr>
-                <tr class="cap-row"><td>11th+</td><td>leaderboard only — no NB¥</td></tr>
-              </tbody>
-            </table>
-          </div>
+          <p class="reward-paused">NB¥ streak rewards are paused while NB¥ restarts. The leaderboard still counts.</p>
 
           <button id="start-btn" class="btn-primary">Start Game</button>
         </div>
@@ -640,13 +623,6 @@
 
     // ── NB¥ helpers ───────────────────────────────────────────────────────────
 
-    /** Reward per correct answer at this streak position (1-based).
-     *  No NB¥ past the 10th in a row — the streak still counts for the leaderboard. */
-    function streakReward(s) {
-      if (s > 10) return 0;
-      return Math.min(Math.pow(2, s - 1), 512);
-    }
-
     /** Render the NB¥ bar for the play screen. */
     function renderNBYBar(flashText) {
       const token = localStorage.getItem('nbn_token');
@@ -663,25 +639,24 @@
         flashHtml;
     }
 
-    /** Fire-and-forget: send correct answer to API to award NB¥. */
+    /** Tell the API about a correct answer. The server decides what (if
+        anything) it pays — nothing while trivia NB¥ is paused — so the bar
+        only moves on what it actually credited. */
     async function awardNBY(streakNum) {
       const token = localStorage.getItem('nbn_token');
       if (!token) return;
-      const reward = streakReward(streakNum);
-      if (reward === 0) {
-        // Past the 10-streak cap: no more NB¥, but keep streaking for the leaderboard.
-        renderNBYBar('Max NB¥ — streak on for the leaderboard! 🏆');
-        return;
-      }
-      sessionNBY += reward;
-      renderNBYBar(`+${reward} NB¥ ✓`);
       try {
-        await fetch('/api/trivia/answer', {
+        const res = await fetch('/api/trivia/answer', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ streak: streakNum }),
         });
-      } catch { /* network error — balance still shown optimistically */ }
+        const data = await res.json().catch(() => ({}));
+        if (data.reward > 0) {
+          sessionNBY += data.reward;
+          renderNBYBar(`+${data.reward} NB¥ ✓`);
+        }
+      } catch { /* network error — nothing credited */ }
     }
 
     // ── Screen management ─────────────────────────────────────────────────────
