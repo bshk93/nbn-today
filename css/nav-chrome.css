@@ -1,8 +1,8 @@
 /* Nav bar chrome shared site-wide: the breadcrumb nav, the search button +
    overlay, and the theme picker. Imported (after css/theme.css) by every
    surface that injects its own stylesheet — css/shared.css for the ~68
-   pages that link it, plus teams/team.js, awards/results.js, awards/vote.js,
-   and the two clusters/ pages, which each maintain a separate stylesheet.
+   pages that link it, plus teams/team.js, awards/results.js and
+   awards/vote.js, which each maintain a separate stylesheet.
    Built by nav.js, which runs on every page (directly or injected by one
    of those scripts) — see nav.js for the markup these rules target. */
 

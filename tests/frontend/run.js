@@ -138,10 +138,6 @@ const PAGES = [
   { path: '/donations/',              selector: 'table tbody tr',  min: 10, what: 'the donations list' },
   { path: '/draft/guide/',            selector: '.step',           min: 8,  what: 'the walkthrough steps' },
   { path: '/frivolities/',            selector: '.team-card',      min: 30, what: 'the default tab\'s per-team charts' },
-  { path: '/clusters/players/',       selector: '.archetype-node', min: 12, what: 'the archetype tree' },
-  // An SVG scatter, not a table — 180 team-seasons plus legend dots. The floor
-  // is well under that because a re-clustering can change how many render.
-  { path: '/clusters/teams/',         selector: 'svg circle',      min: 100, what: 'the team-season scatter' },
   { path: '/awards/',                 selector: '.season-card',    min: 2,  what: 'a card per season with awards' },
   { path: '/awards/25-26/results/',   selector: 'table tbody tr',  min: 50, what: 'the full ballot' },
   { path: '/tradevotes/',             selector: 'table tbody tr',  min: 30, what: 'the member × team vote matrix' },
