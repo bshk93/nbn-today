@@ -21,6 +21,7 @@ was cut by ten at launch, so every price in it divides by ten.
 | Donations | 100 per $1 | When the board logs it on `/donations`. Editing a donation moves exactly the difference, to whoever it now names. |
 | Twitch subs | 300 a month for Tier 1 or Prime, 700 for Tier 2, 1,700 for Tier 3 | Once a month, by `nbn-twitch-subs.timer`. |
 | Winning bets | Set by the bookie's odds | When a bet closes. |
+| Futures | 100 per winning share, or a sale at the market price | When you sell, or when the market settles. |
 
 - **Every source is a real ledger line.** There's no default balance any more.
   A member nobody has paid has 0.
@@ -41,6 +42,7 @@ was cut by ten at launch, so every price in it divides by ten.
 |---|---|
 | Buy a stream | 1,000 |
 | A bet | up to 100 per bet |
+| Futures shares | at the market price, up to each market's `max_stake` (default 500) net of sales, plus a 2% fee |
 
 Themes, avatars and name colours people already own stay theirs. Buying new
 ones is paused (§ 6).
@@ -60,6 +62,48 @@ ones is paused (§ 6).
   1.91× payout). On balanced action the house keeps a little.
 - If the house number drifts a long way negative, the fix is a tighter cap or
   a required book above 100%. It's not a bank.
+
+## 4a. Futures markets
+
+Added 2026-09-25. The Futures tab on `/bet`; code in
+`nbn-api/routers/markets.py` and `bet/futures.js`.
+
+- **A share pays 100 NB¥ if its outcome happens and 0 if not.** Its price is
+  the market's odds: 23 NB¥ a share is 23%.
+- **Nobody sets prices.** An automated market maker (LMSR) quotes every
+  outcome. Buying pushes a price up and the rest down; prices always sum to 100.
+  A bookie opens a market, can seed its opening odds, and names the winner.
+  That's all. The point is that a league trade moves the price as soon as a
+  member acts on it, with no committee keeping lines current.
+- **Members can sell any time before close.** No shorting: you can only sell
+  shares you hold.
+- **What a market does to the money supply is a formula.** Round trips cost
+  nothing but the fee, so only the final state matters. At settlement:
+
+  > NB¥ created = b × ln(winner's closing price ÷ winner's opening price) − fees
+
+  It creates NB¥ when the crowd was right and destroys it when the crowd was
+  wrong. The most it can create is `b × ln(1 ÷ lowest opening price)`. With the
+  default `b` = 1,500 and 30 level teams that's about 5,100. A market that
+  stays open until the result is obvious will create close to that, so treat
+  it as the expected cost of the market, not a rare worst case.
+  `tests/test_markets.py` checks the formula against the wallet.
+- **The controls on that cost:**
+  - `b`: halving it halves the cost, but prices move twice as far per trade.
+    At 1,500, moving a team from 10% to 20% costs about 177 NB¥.
+  - Close earlier (`closes_at`, or lock by hand). Closing at the playoffs keeps
+    the winner's price well short of 100%.
+  - The fee (default 2%), burned on every buy and sell. It also makes flipping
+    stale news cost something.
+  - No outcome opens under 1%, so seeded odds can't raise the maximum without
+    limit (1% caps it at `b × 4.6`).
+- **Voiding a market** refunds each member what they put in, net of what they
+  took out by selling. Fees are refunded too.
+- **Each market shows its own result**, and `GET /api/markets/house` sums them.
+  `/nbyen` has a "Futures traders, net" tile. Ledger kinds are `market_buy`,
+  `market_sell`, `market_payout` and `market_refund`.
+- **Still open:** an automated model for opening prices, and rules for GMs
+  trading on their own pending trades. See `BACKLOG.md`.
 
 ## 5. Buying a stream
 

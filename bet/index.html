@@ -24,7 +24,7 @@
   <style>
     
             
-    .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
+    .balance-chip { text-decoration: none; font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
 
     .new-bet-btn { background: none; border: 1px solid var(--text-dim); color: var(--market-positive); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
     .new-bet-btn:hover { border-color: var(--market-positive); background: #0a1f15; }
@@ -128,24 +128,6 @@
     .payout-row .payout-profit { font-size: 0.72rem; color: var(--market-positive); }
     .voided-notice { color: var(--warning); font-size: 0.78rem; font-weight: 600; margin-top: 0.5rem; }
 
-    /* Balances leaderboard */
-    .balances-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .balances-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; white-space: nowrap; }
-    .balances-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); padding: 0 0.5rem 0.5rem; border-bottom: 1px solid var(--border); }
-    .balances-table th.num { text-align: right; }
-    .balances-table th.dim { color: var(--text-dim); }
-    .balances-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--bg-card); color: var(--text-secondary); }
-    .balances-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .balances-table td.dim { color: var(--text-muted); }
-    .balances-table tr:last-child td { border-bottom: none; }
-    .balances-table tr.me td { color: var(--text-primary); background: var(--bg-card); }
-    .rank-cell { color: var(--text-muted); font-size: 0.8rem; }
-    .name-cell { font-weight: 500; }
-    .bal-cell  { color: var(--gold); font-weight: 700; }
-    .pl-pos    { color: var(--market-positive); }
-    .pl-neg    { color: var(--danger); }
-    .pl-zero   { color: var(--text-muted); }
-
     .empty-state { color: var(--text-muted); font-size: 0.875rem; padding: 2rem 0; text-align: center; }
     .loading { color: var(--text-muted); font-size: 0.875rem; }
 
@@ -167,17 +149,6 @@
     .earn-tag-manual { background: var(--bg-subtle); color: var(--text-muted); }
     .earn-item .earn-note { font-size: 0.68rem; color: var(--text-dim); display: block; margin-top: 0.1rem; }
 
-    /* Ledger table */
-    .ledger-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    .ledger-table th { text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); padding: 0 0.5rem 0.5rem; border-bottom: 1px solid var(--border); }
-    .ledger-table th.num { text-align: right; }
-    .ledger-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--bg-card); color: var(--text-secondary); vertical-align: top; }
-    .ledger-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .ledger-table tr:last-child td { border-bottom: none; }
-    .ledger-ts   { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
-    .ledger-name { font-weight: 500; color: var(--text-primary); }
-    .ledger-reason { font-size: 0.75rem; color: var(--text-muted); }
-    .ledger-bal  { color: var(--gold); }
 
     /* Fixed-odds type badge */
     .bet-type-badge { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 3px; padding: 0.1rem 0.35rem; background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); margin-left: 0.4rem; vertical-align: middle; }
@@ -225,7 +196,7 @@
     <header class="ui-header">
       <h1 class="ui-title">Bets</h1>
       <div class="header-right ui-header-actions">
-        <span class="balance-chip" id="balance-chip" style="display:none"></span>
+        <a class="balance-chip" id="balance-chip" style="display:none" title="Your NB¥ history"></a>
         <button class="new-canned-btn" id="new-canned-btn" style="display:none">+ New Bet</button>
         <button class="new-bet-btn" id="new-bet-btn" style="display:none">+ New Custom Bet</button>
       </div>
@@ -239,11 +210,13 @@
         <div class="earn-item"><span class="earn-amt">NB¥100</span> per $1 donated to the league</div>
         <div class="earn-item"><span class="earn-amt">NB¥300</span> a month for a Tier 1 or Prime sub on Twitch (Tier 2: 700, Tier 3: 1,700)</div>
         <div class="earn-item"><span class="earn-amt">Varies</span> per winning bet</div>
+        <div class="earn-item"><span class="earn-amt">NB¥100</span> per share of a futures outcome that happens, or sell your shares at the market price</div>
       </div>
       <div class="earn-panel-title" style="margin-top:0.8rem">Ways to spend it</div>
       <div class="earn-grid">
         <div class="earn-item"><span class="earn-amt">NB¥1,000</span> to have a game streamed — on <a href="/calendar/">the calendar</a></div>
         <div class="earn-item"><span class="earn-amt">Up to NB¥100</span> per bet</div>
+        <div class="earn-item"><span class="earn-amt">Market price</span> for futures shares, plus a 2% fee</div>
       </div>
       <p class="earn-note">NB¥ restarted in September 2026, with $10 = one stream = NB¥1,000. More ways to earn and spend come back one at a time.</p>
     </div>
@@ -252,9 +225,8 @@
 
     <div class="tabs ui-tabs" role="tablist">
       <button class="tab-btn ui-tab active" id="tab-open">Open</button>
+      <button class="tab-btn ui-tab"        id="tab-futures">Futures</button>
       <button class="tab-btn ui-tab"        id="tab-closed">Closed</button>
-      <button class="tab-btn ui-tab"        id="tab-balances">Balances</button>
-      <button class="tab-btn ui-tab"        id="tab-history" style="display:none">History</button>
     </div>
 
     <div id="new-bet-form-wrap" style="display:none"></div>
@@ -262,18 +234,15 @@
   </div>
 
   <script src="/league-time.js"></script>
+  <script src="/bet/futures.js"></script>
   <script>
     const TOKEN = localStorage.getItem('nbn_token');
     let currentUser     = null;   // {name, roles}
     let allBets         = [];
     let balancesList    = [];
-    let investHoldingsMap = {};  // member → {equity, liquid, net_worth, pl, realized_pnl}
-    let formerMembers   = new Set();  // names with no active tenure
-    let ledgerEntries   = [];
     let currentTab      = 'open';
     let showNewForm     = false;
     let showCannedForm  = false;
-    let showFormerBals  = false;
 
     // Canned bet data caches
     let _futureGamesCache  = null;
@@ -312,26 +281,14 @@
     // ── Data ─────────────────────────────────────────────────────────────────
 
     async function loadData() {
-      const [betsRes, balsRes, membersRes, holdingsRes, houseRes] = await Promise.allSettled([
+      const [betsRes, balsRes, houseRes] = await Promise.allSettled([
         fetch('/api/bets').then(r => r.json()),
         fetch('/api/bets/balances').then(r => r.json()),
-        fetch('/api/members/public').then(r => r.json()),
-        fetch('/api/invest/holdings/all').then(r => r.json()),
         fetch('/api/bets/house').then(r => r.json()),
       ]);
       if (houseRes.status === 'fulfilled') renderHouse(houseRes.value);
       if (betsRes.status === 'fulfilled')    allBets      = betsRes.value;
       if (balsRes.status === 'fulfilled')    balancesList = balsRes.value;
-      if (membersRes.status === 'fulfilled') {
-        formerMembers = new Set(
-          membersRes.value
-            .filter(m => !m.tenures.some(t => !t.end))
-            .map(m => m.name)
-        );
-      }
-      if (holdingsRes.status === 'fulfilled') {
-        investHoldingsMap = Object.fromEntries(holdingsRes.value.map(r => [r.member, r]));
-      }
     }
 
     // There's no house wallet: bookies price by hand, and odds can pay out more
@@ -375,6 +332,7 @@
       if (currentUser) {
         const chip = document.getElementById('balance-chip');
         chip.textContent = nby(myBalance());
+        chip.href = '/nbyen/?m=' + encodeURIComponent(currentUser.name) + '#history';
         chip.style.display = '';
       }
 
@@ -396,10 +354,9 @@
         };
       }
 
-      document.getElementById('tab-open').onclick     = () => switchTab('open');
-      document.getElementById('tab-closed').onclick   = () => switchTab('closed');
-      document.getElementById('tab-balances').onclick = () => switchTab('balances');
-      document.getElementById('tab-history').onclick  = () => switchTab('history');
+      document.getElementById('tab-open').onclick    = () => switchTab('open');
+      document.getElementById('tab-futures').onclick = () => switchTab('futures');
+      document.getElementById('tab-closed').onclick  = () => switchTab('closed');
 
       document.getElementById('earn-toggle').onclick = () => {
         const panel = document.getElementById('earn-panel');
@@ -409,10 +366,8 @@
         btn.textContent = open ? 'ℹ How to earn NB¥ ▾' : 'ℹ How to earn NB¥ ▴';
       };
 
-      if (currentUser?.roles?.includes('admin')) {
-        document.getElementById('tab-history').style.display = '';
-      }
-
+      if (location.hash === '#futures') currentTab = 'futures';
+      syncTabButtons();
       renderView();
     }
 
@@ -432,20 +387,23 @@
       currentTab    = t;
       showNewForm   = false;
       showCannedForm = false;
-      if (t !== 'balances') showFormerBals = false;
       renderFormArea();
-      ['open','closed','balances','history'].forEach(id => {
-        const el = document.getElementById(`tab-${id}`);
-        if (el) el.classList.toggle('active', id === t);
-      });
+      history.replaceState(null, '', location.pathname + location.search + (t === 'futures' ? '#futures' : ''));
+      syncTabButtons();
       renderView();
     }
 
+    function syncTabButtons() {
+      ['open','futures','closed'].forEach(id => {
+        const el = document.getElementById(`tab-${id}`);
+        if (el) el.classList.toggle('active', id === currentTab);
+      });
+    }
+
     function renderView() {
-      if      (currentTab === 'open')     renderOpenBets();
-      else if (currentTab === 'closed')   renderClosedBets();
-      else if (currentTab === 'history')  renderHistory();
-      else                                renderBalances();
+      if      (currentTab === 'open')    renderOpenBets();
+      else if (currentTab === 'futures') renderFutures();
+      else                               renderClosedBets();
     }
 
     // ── New Bet Form ──────────────────────────────────────────────────────────
@@ -621,7 +579,7 @@
           showNewForm = false;
           renderFormArea();
           currentTab = 'open';
-          ['open','closed','balances','history'].forEach(id => { const el = document.getElementById(`tab-${id}`); if (el) el.classList.toggle('active', id === 'open'); });
+          syncTabButtons();
           renderView();
         } catch(e) {
           errEl.textContent = e.message;
@@ -663,233 +621,16 @@
       [...closed].reverse().forEach(bet => content.appendChild(makeBetCard(bet)));
     }
 
-    // ── Balances ─────────────────────────────────────────────────────────────
+    // ── Futures ──────────────────────────────────────────────────────────────
+    // Markets live in bet/futures.js; this only hands it the page's state.
 
-    function renderBalances() {
-      const content = document.getElementById('content');
-      if (!balancesList.length) {
-        content.innerHTML = '<div class="empty-state">No balance data yet.</div>';
-        return;
-      }
-
-      // Merge bets balances with invest holdings; sort by net worth descending
-      const merged = balancesList.map(row => {
-        const inv = investHoldingsMap[row.name] || {};
-        const equity    = inv.equity    ?? 0;
-        const netWorth  = inv.net_worth ?? row.balance;
-        const invPnl    = inv.realized_pnl ?? 0;
-        // Winnings, not balance growth: since the reset a balance also grows by
-        // donations and subs, which aren't profit.
-        const overallPl = (row.bet_pnl || 0) + invPnl;
-        return { ...row, equity, net_worth: netWorth, overall_pl: overallPl, inv_pnl: invPnl };
+    function renderFutures() {
+      window.Futures.render(document.getElementById('content'), {
+        token: TOKEN,
+        user: () => currentUser,
+        isBookie: isBetsRole,
+        refreshBalance,
       });
-      merged.sort((a, b) => b.net_worth - a.net_worth || a.name.localeCompare(b.name));
-
-      const formerCount = merged.filter(r => formerMembers.has(r.name)).length;
-      const visibleRows = showFormerBals
-        ? merged
-        : merged.filter(r => !formerMembers.has(r.name));
-
-      const wrap   = document.createElement('div');
-      const scroll = document.createElement('div');
-      scroll.className = 'balances-scroll';
-
-      const table = document.createElement('table');
-      table.className = 'balances-table';
-      const thead = table.createTHead();
-      const hrow  = thead.insertRow();
-      // [label, isNum, isDim]
-      const COLS = [
-        ['#',           false, false],
-        ['Member',      false, false],
-        ['Net Worth',   true,  false],
-        ['P/L',         true,  false],
-        ['Liquid',      true,  true ],
-        ['Equity',      true,  true ],
-        ['Bet P/L',     true,  true ],
-        ['Inv P/L',     true,  true ],
-        ['Earned',      true,  true ],
-        ['Outstanding', true,  true ],
-      ];
-      COLS.forEach(([label, isNum, isDim]) => {
-        const th = document.createElement('th');
-        th.textContent = label;
-        th.className   = [isNum ? 'num' : '', isDim ? 'dim' : ''].join(' ').trim();
-        hrow.appendChild(th);
-      });
-
-      const tbody = table.createTBody();
-      visibleRows.forEach((row, idx) => {
-        const tr       = tbody.insertRow();
-        const isMe     = currentUser && row.name === currentUser.name;
-        const isFormer = formerMembers.has(row.name);
-        if (isMe)     tr.className    = 'me';
-        if (isFormer) tr.style.opacity = '0.45';
-
-        const plSign  = v => v > 0 ? '+' : v < 0 ? '-' : '';
-        const plClass = v => v > 0 ? 'pl-pos' : v < 0 ? 'pl-neg' : 'pl-zero';
-        const signedNby = v => `${plSign(v)}${nby(Math.abs(v))}`;
-
-        const rankTd = tr.insertCell(); rankTd.className = 'rank-cell num'; rankTd.textContent = idx + 1;
-        const nameTd = tr.insertCell(); nameTd.className = 'name-cell';
-        const nameLink = document.createElement('a');
-        nameLink.href = `/members/${encodeURIComponent(row.name)}/`;
-        nameLink.textContent = row.name;
-        nameLink.style.cssText = 'color:inherit;text-decoration:none;';
-        nameLink.onmouseover = () => nameLink.style.textDecoration = 'underline';
-        nameLink.onmouseout  = () => nameLink.style.textDecoration = 'none';
-        nameTd.appendChild(nameLink);
-        if (isMe) {
-          const you = document.createElement('span');
-          you.style.cssText = 'font-size:0.68rem;color:var(--text-muted);margin-left:0.4rem';
-          you.textContent = '(you)';
-          nameTd.appendChild(you);
-        }
-        if (isFormer) {
-          const tag = document.createElement('span');
-          tag.style.cssText = 'font-size:0.65rem;color:var(--text-dim);margin-left:0.4rem;font-style:italic';
-          tag.textContent = 'former';
-          nameTd.appendChild(tag);
-        }
-
-        const nwTd = tr.insertCell(); nwTd.className = 'num'; nwTd.textContent = nby(row.net_worth);
-        const plTd = tr.insertCell(); plTd.className = `${plClass(row.overall_pl)} num`; plTd.textContent = signedNby(row.overall_pl);
-
-        const liquid      = row.balance          ?? 0;
-        const equity      = row.equity           ?? 0;
-        const betPnl      = row.bet_pnl          ?? 0;
-        const invPnl      = row.inv_pnl          ?? 0;
-        const earned      = (row.stats_earned ?? 0) + (row.trivia_earned ?? 0) + (row.bio_earned ?? 0);
-        const outstanding = row.bet_placed       ?? 0;
-
-        // liquid — neutral
-        const liqTd = tr.insertCell(); liqTd.className = 'num dim'; liqTd.textContent = nby(liquid);
-
-        // equity — neutral, dim if zero
-        const eqTd = tr.insertCell();
-        eqTd.className = equity === 0 ? 'num dim' : 'num';
-        eqTd.textContent = equity === 0 ? '—' : nby(equity);
-
-        // bet P/L — colored, dim if zero
-        const bpTd = tr.insertCell();
-        bpTd.className = betPnl === 0 ? 'num dim' : `${plClass(betPnl)} num`;
-        bpTd.textContent = betPnl === 0 ? '—' : signedNby(betPnl);
-
-        // invest P/L — colored, dim if zero
-        const ipTd = tr.insertCell();
-        ipTd.className = invPnl === 0 ? 'num dim' : `${plClass(invPnl)} num`;
-        ipTd.textContent = invPnl === 0 ? '—' : signedNby(invPnl);
-
-        // earned — positive or dim
-        const erTd = tr.insertCell();
-        erTd.className = earned === 0 ? 'num dim' : 'pl-pos num';
-        erTd.textContent = earned === 0 ? '—' : nby(earned);
-
-        // outstanding — neutral, dim if zero
-        const ouTd = tr.insertCell();
-        ouTd.className = outstanding === 0 ? 'num dim' : 'num';
-        ouTd.textContent = outstanding === 0 ? '—' : nby(outstanding);
-      });
-
-      scroll.appendChild(table);
-      wrap.appendChild(scroll);
-
-      // Former members toggle
-      if (formerCount > 0) {
-        const toggle = document.createElement('button');
-        toggle.style.cssText = 'margin-top:0.75rem;background:none;border:none;color:var(--text-dim);font-size:0.75rem;cursor:pointer;padding:0;font-family:inherit;';
-        toggle.textContent = showFormerBals
-          ? 'Hide former members'
-          : `Show ${formerCount} former member${formerCount !== 1 ? 's' : ''}`;
-        toggle.onclick = () => { showFormerBals = !showFormerBals; renderBalances(); };
-        wrap.appendChild(toggle);
-      }
-
-      content.innerHTML = '';
-      content.appendChild(wrap);
-    }
-
-    // ── History (ledger) ─────────────────────────────────────────────────────
-
-    async function renderHistory() {
-      const content = document.getElementById('content');
-      content.innerHTML = '<span class="loading">Loading…</span>';
-
-      try {
-        const res = await fetch('/api/bets/ledger', {
-          headers: { 'Authorization': `Bearer ${TOKEN}` }
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        ledgerEntries = await res.json();
-      } catch (e) {
-        content.innerHTML = `<div class="empty-state">Failed to load ledger: ${e.message}</div>`;
-        return;
-      }
-
-      if (!ledgerEntries.length) {
-        content.innerHTML = '<div class="empty-state">No balance history yet.</div>';
-        return;
-      }
-
-      const wrap = document.createElement('div');
-
-      // Summary line
-      const summary = document.createElement('div');
-      summary.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-bottom:0.75rem;';
-      summary.textContent = `${ledgerEntries.length.toLocaleString()} entries`;
-      wrap.appendChild(summary);
-
-      const table = document.createElement('table');
-      table.className = 'ledger-table';
-      const thead = table.createTHead();
-      const hrow  = thead.insertRow();
-      [['Time',''], ['Member',''], ['Δ NB¥','num'], ['Balance','num'], ['Reason','']].forEach(([text, cls]) => {
-        const th = document.createElement('th');
-        th.textContent = text;
-        if (cls) th.className = cls;
-        hrow.appendChild(th);
-      });
-
-      const tbody = table.createTBody();
-      ledgerEntries.forEach(entry => {
-        const tr = tbody.insertRow();
-
-        // Timestamp
-        const tsTd = tr.insertCell();
-        tsTd.className = 'ledger-ts';
-        const ts = new Date(entry.ts);
-        tsTd.textContent = ts.toLocaleString('en-US', {
-          month: 'short', day: 'numeric',
-          hour: 'numeric', minute: '2-digit', hour12: true
-        });
-
-        // Member name
-        const nameTd = tr.insertCell();
-        nameTd.className = 'ledger-name';
-        nameTd.textContent = entry.member;
-
-        // Delta
-        const deltaTd = tr.insertCell();
-        deltaTd.className = 'num';
-        const delta = Number(entry.delta);
-        const sign  = delta > 0 ? '+' : delta < 0 ? '-' : '';
-        deltaTd.textContent = `${sign}${nby(delta)}`;
-        deltaTd.style.color = delta > 0 ? 'var(--market-positive)' : delta < 0 ? 'var(--danger)' : 'var(--text-muted)';
-
-        // New balance
-        const balTd = tr.insertCell();
-        balTd.className = 'ledger-bal num';
-        balTd.textContent = nby(entry.balance);
-
-        // Reason
-        const reasonTd = tr.insertCell();
-        reasonTd.className = 'ledger-reason';
-        reasonTd.textContent = entry.reason || '';
-      });
-
-      wrap.appendChild(table);
-      content.innerHTML = '';
-      content.appendChild(wrap);
     }
 
     // ── Bet Card ──────────────────────────────────────────────────────────────
@@ -1531,8 +1272,7 @@
         showCannedForm = false;
         renderFormArea();
         currentTab = 'open';
-        ['open','closed','balances'].forEach(id =>
-          document.getElementById(`tab-${id}`).classList.toggle('active', id === 'open'));
+        syncTabButtons();
         renderView();
       } catch(e) {
         errEl.textContent = e.message;

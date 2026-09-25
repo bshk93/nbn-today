@@ -81,6 +81,7 @@
 const KIND_LABEL = {
   start: 'Starting grant', donation: 'Donation', twitch_sub: 'Twitch sub',
   wager: 'Wager', payout: 'Bet payout', bet_refund: 'Bet refund',
+  market_buy: 'Futures buy', market_sell: 'Futures sale', market_payout: 'Futures payout', market_refund: 'Futures refund',
   stream_purchase: 'Stream bought', stream_refund: 'Stream refund',
   admin: 'Adjustment', tip: 'Tip', achievement: 'Achievement', boxscore: 'Box score',
   bio: 'Bio fill', poeltl: 'Poeltl', perry: 'Perry', trivia: 'Trivia', invest: 'Market',
@@ -117,12 +118,14 @@ function renderTotals() {
     `<div class="total-tile"><div class="lbl">${lbl}</div><div class="val">${val}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
   const betNet = (k.wager || 0) + (k.payout || 0) + (k.bet_refund || 0);
   const streams = -((k.stream_purchase || 0) + (k.stream_refund || 0));
+  const futNet = (k.market_buy || 0) + (k.market_sell || 0) + (k.market_payout || 0) + (k.market_refund || 0);
   document.getElementById('totals').innerHTML =
     tile('In circulation', fmt(summary.total)) +
     tile('From donations', fmt(k.donation || 0), 'NB¥100 per $1') +
     tile('From Twitch subs', fmt(k.twitch_sub || 0)) +
     tile('Spent on streams', fmt(streams), `${Math.round(streams / 1000)} bought`) +
-    tile('Bettors, net', signed(betNet), betNet < 0 ? 'the house is up' : betNet > 0 ? 'the odds paid out more than was staked' : '');
+    tile('Bettors, net', signed(betNet), betNet < 0 ? 'the house is up' : betNet > 0 ? 'the odds paid out more than was staked' : '') +
+    tile('Futures traders, net', signed(futNet), futNet < 0 ? 'the market maker is up' : futNet > 0 ? 'the market maker paid out more than it took in' : '');
 }
 
 function render() {
