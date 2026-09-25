@@ -36,6 +36,10 @@
     .fut-house { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
     .fut-trades { margin-top: 0.6rem; font-size: 0.78rem; }
     .fut-trades summary { cursor: pointer; color: var(--text-muted); }
+    .fut-trades td.up { color: var(--market-positive); }
+    .fut-trades td.holds { white-space: normal; min-width: 9rem; color: var(--text-muted); }
+    @media (max-width: 520px) { .fut-trades .narrow-hide { display: none; } }
+    .fut-trades td.down { color: var(--danger); }
     .fut-form { display: flex; flex-direction: column; gap: 0.55rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .fut-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.55rem; }
     /* Price chart. Three highlighted series in the dataviz reference palette's
@@ -161,12 +165,7 @@
     const pos = (me && m.positions[me]) || {};
     const acct = (me && m.accounts[me]) || null;
     if (acct) {
-      const priceOf = Object.fromEntries(m.outcomes.map(o => [o.id, o.price]));
-      const value = done ? 0 : Object.entries(pos).reduce((s, [oid, h]) =>
-        s + (h.yes || 0) * priceOf[oid] + (h.no || 0) * (m.payout - priceOf[oid]), 0);
-      const net = acct.spent - acct.received;
-      const paid = m.status !== 'settled' ? 0 : Object.entries(pos).reduce((s, [oid, h]) =>
-        s + (oid === m.winner ? (h.yes || 0) : (h.no || 0)) * m.payout, 0);
+      const { value, net, paid } = standing(m, me);
       const line = document.createElement('div');
       line.className = 'fut-mine';
       line.innerHTML = done
@@ -181,6 +180,7 @@
     else if (m.trading) el.insertAdjacentHTML('beforeend', '<div class="fut-meta" style="margin-top:0.6rem">Sign in to trade.</div>');
 
     el.appendChild(houseLine(m));
+    el.appendChild(leaderboard(m));
     el.appendChild(tradesLog(m));
     if (ctx.isBookie() && !done) el.appendChild(adminBar(m));
     return el;
@@ -528,6 +528,55 @@
         + `${nby(h.fees_burned, 2)} in fees burned so far.`;
     }
     return el;
+  }
+
+  // One member's standing in a market. Open: shares valued at current prices
+  // (what they'd be worth if the market ended at today's odds, not what
+  // selling them all at once would fetch, since a big sale moves the price).
+  // Settled: what they were paid. Voided: refunded in full, so no profit.
+  function standing(m, member) {
+    const pos = m.positions[member] || {};
+    const acct = m.accounts[member] || { spent: 0, received: 0 };
+    const priceOf = Object.fromEntries(m.outcomes.map(o => [o.id, o.price]));
+    const net = acct.spent - acct.received;
+    const open = m.status === 'open' || m.status === 'locked';
+    const value = !open ? 0 : Object.entries(pos).reduce((s, [oid, h]) =>
+      s + (h.yes || 0) * priceOf[oid] + (h.no || 0) * (m.payout - priceOf[oid]), 0);
+    const paid = m.status !== 'settled' ? 0 : Object.entries(pos).reduce((s, [oid, h]) =>
+      s + (oid === m.winner ? (h.yes || 0) : (h.no || 0)) * m.payout, 0);
+    const pl = m.status === 'voided' ? 0 : value + paid - net;
+    return { pos, net, value, paid, pl };
+  }
+
+  function leaderboard(m) {
+    const names = Object.keys(m.accounts);
+    const d = document.createElement('details');
+    d.className = 'fut-trades';
+    d.innerHTML = `<summary>Leaderboard (${names.length} trader${names.length === 1 ? '' : 's'})</summary>`;
+    if (!names.length) {
+      d.insertAdjacentHTML('beforeend', '<div class="fut-meta">No trades yet.</div>');
+      return d;
+    }
+    const me = ctx.user()?.name;
+    const label = Object.fromEntries(m.outcomes.map(o => [o.id, o.team || o.label]));
+    const open = m.status === 'open' || m.status === 'locked';
+    const rows = names.map(n => ({ n, ...standing(m, n) })).sort((a, b) => b.pl - a.pl || a.n.localeCompare(b.n));
+    const holds = pos => Object.entries(pos).flatMap(([oid, h]) => [
+      h.yes ? `${h.yes.toFixed(1)} ${esc(label[oid])}` : '',
+      h.no ? `${h.no.toFixed(1)} No ${esc(label[oid])}` : '',
+    ]).filter(Boolean).join(', ') || '—';
+    const signed = v => (v > 0.005 ? '+' : v < -0.005 ? '−' : '') + nby(v, 2);
+    const wrap = document.createElement('div');
+    wrap.className = 'ui-table-wrap';
+    wrap.innerHTML = `<table class="ui-table ui-table--dense"><thead><tr><th class="num">#</th><th>Member</th>
+      ${open ? '<th class="narrow-hide">Holds</th>' : ''}<th class="num narrow-hide">Put in</th><th class="num">${open ? 'Worth now' : m.status === 'settled' ? 'Paid' : 'Refunded'}</th>
+      <th class="num">Profit</th></tr></thead><tbody>${rows.map((r, i) => `<tr${r.n === me ? ' style="font-weight:600"' : ''}>
+      <td class="num">${i + 1}</td><td>${esc(r.n)}</td>${open ? `<td class="holds narrow-hide">${holds(r.pos)}</td>` : ''}
+      <td class="num narrow-hide">${r.net < -0.005 ? '−' : ''}${nby(r.net, 2)}</td><td class="num">${nby(open ? r.value : m.status === 'settled' ? r.paid : r.net, 2)}</td>
+      <td class="num ${r.pl > 0.005 ? 'up' : r.pl < -0.005 ? 'down' : ''}">${signed(r.pl)}</td></tr>`).join('')}</tbody></table>
+      ${open ? '<div class="fut-meta" style="margin-top:0.3rem">"Worth now" values shares at current odds. Selling a big position would move the price, so it would fetch a little less.</div>' : ''}`;
+    d.appendChild(wrap);
+    return d;
   }
 
   function tradesLog(m) {
