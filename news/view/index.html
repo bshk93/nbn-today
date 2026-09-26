@@ -375,6 +375,14 @@ function computeFlags(a) {
   isEditor = me && (me.roles || []).some(r => r === 'curator' || r === 'bod' || r === 'admin');
 }
 
+// Everyone a published piece credits (a power ranking credits its voters and
+// blurb writers too): "A", "A and B" or "A, B and C", each name in bold.
+function bylineHtml(a) {
+  const n = (a.credited && a.credited.length) ? a.credited : [a.author];
+  const b = n.map(x => `<strong>${escHtml(x)}</strong>`);
+  return b.length > 1 ? b.slice(0, -1).join(', ') + ' and ' + b[b.length - 1] : b[0];
+}
+
 function render(a) {
   article = a;
   computeFlags(a);
@@ -394,7 +402,7 @@ function render(a) {
     : a.status === 'submitted' ? `Submitted ${fmtDate(a.submitted_at)}`
     : `Draft · edited ${fmtDate(a.updated_at || a.created_at)}`;
   document.getElementById('byline').innerHTML =
-    `<span>By <strong>${escHtml(a.author)}</strong></span><span class="sep">•</span><span>${dateLabel}</span>`;
+    `<span>By ${bylineHtml(a)}</span><span class="sep">•</span><span>${dateLabel}</span>`;
 
   // Author edit link
   const actions = document.getElementById('header-actions');

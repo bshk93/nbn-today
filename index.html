@@ -1439,7 +1439,7 @@
           date: String(a.published_at || a.created_at || '').slice(0, 10),
           type: 'news',
           text: a.title,
-          byline: a.author,
+          byline: (a.credited && a.credited.length > 1) ? a.credited.join(', ') : a.author,
           href: `/news/view/?id=${encodeURIComponent(a.id)}`,
         })));
 

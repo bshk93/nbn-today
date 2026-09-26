@@ -202,7 +202,7 @@ function renderArticleCard(a) {
       <div class="card-title">${escHtml(a.title)}</div>
       <div class="card-excerpt">${escHtml(cardExcerpt(a))}</div>
       <div class="card-meta">
-        <span>${escHtml(a.author)}</span>
+        <span>${escHtml(bylineNames(a))}</span>
         <span class="sep">•</span>
         <span>${fmtDate(a.published_at)}</span>
         ${commentPart}
@@ -217,6 +217,13 @@ const PHASE_META = {
   blurbs: 'Writing blurbs',
   final: 'Awaiting publication',
 };
+
+// Everyone a published piece credits (a power ranking credits its voters and
+// blurb writers too), as "A", "A and B" or "A, B and C".
+function bylineNames(a) {
+  const n = (a.credited && a.credited.length) ? a.credited : (a.author ? [a.author] : []);
+  return n.length > 1 ? n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1] : (n[0] || '');
+}
 
 function rowMeta(a, badgeKind) {
   if (badgeKind === 'ballot') {
