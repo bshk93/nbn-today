@@ -134,7 +134,6 @@ const PAGES = [
   // route to the per-stat pages — if they vanish, table.js is unreachable.
   { path: '/stats/highs/',            selector: '.card-stat',      min: 6,  what: 'a card per stat category' },
   { path: '/stats/totals/',           selector: '.card-stat',      min: 6,  what: 'a card per stat category' },
-  { path: '/nbyen-economy/',          selector: 'table tbody tr',  min: 30, what: 'the NB¥ ledger' },
   { path: '/donations/',              selector: 'table tbody tr',  min: 10, what: 'the donations list' },
   { path: '/draft/guide/',            selector: '.step',           min: 8,  what: 'the walkthrough steps' },
   { path: '/frivolities/',            selector: '.team-card',      min: 30, what: 'the default tab\'s per-team charts' },

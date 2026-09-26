@@ -93,7 +93,7 @@ PAGES = {
  '/nbnfl/': ('NBNFL', 'Scores, standings, and stat leaders for NBN’s sister American-football league.'),
  '/nbnfl/CIN/': ('Cincinnati Bengals — NBNFL', 'Cincinnati Bengals schedule, results, division standing and team stat leaders on NBNFL.'),
  '/nbntv-classics/': (None, 'The greatest playoff performances in NBN history, ranked and annotated.'),
- '/nbyen-economy/': ('NB¥ Economy Proposal — NBN', 'A draft proposal for pegging NB¥ to real dollars, rebuilding the sinks, and restarting balances.'),
+ '/nbyen-economy/': ('Moved — NB¥ Balances — NBN', 'Retired — the NB¥ economy proposal was superseded by the restart. Balances are at /nbyen.'),
  '/news/': (None, 'League news, written by NBN members.'),
  '/news/new/': (None, 'Write an article for NBN News.'),
  '/news/rankings/': ('Power Rankings Ballot — NBN', 'Rank all 30 teams and write the blurbs for an NBN power-rankings edition.'),
