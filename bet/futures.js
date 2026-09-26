@@ -452,8 +452,8 @@
         <select class="ui-select fut-oid">${opts}</select>
       </div>
       <div class="fut-trade-row">
-        <input class="ui-input fut-amt" type="number" min="0" step="${s === 'buy' ? '1' : '0.01'}"
-          placeholder="${s === 'buy' ? 'NB¥ to spend' : 'Shares to sell'}">
+        <input class="ui-input fut-amt" type="number" min="0" step="0.01"
+          placeholder="${s === 'buy' ? 'Shares to buy' : 'Shares to sell'}">
         ${s === 'sell' ? `<button class="ui-btn ui-btn--sm ui-btn--ghost fut-all" ${held ? '' : 'disabled'}>All (${held.toFixed(2)})</button>` : ''}
         <button class="ui-btn ui-btn--primary ui-btn--sm fut-go" disabled>${s === 'buy' ? 'Buy' : 'Sell'}</button>
       </div>
@@ -483,13 +483,13 @@
       try {
         const q = await api(`/api/markets/${m.id}/quote`, {
           method: 'POST',
-          body: JSON.stringify({ outcome_id: oid, side: s, contract: ct, [s === 'buy' ? 'spend' : 'shares']: v }),
+          body: JSON.stringify({ outcome_id: oid, side: s, contract: ct, shares: v }),
         });
         if (parseFloat(amt.value) !== v) return;   // typed on since
         quote = q;
         qEl.innerHTML = s === 'buy'
-          ? `<strong>${q.shares.toFixed(2)} ${ct === 'yes' ? 'Yes' : 'No'} shares</strong> at ${px(q.avg_price)} each · price ${px(q.price_before)} → ${px(q.price_after)}
-             · ${nby(q.cost, 2)} + ${nby(q.fee, 2)} fee = <strong>${nby(q.total, 2)}</strong> · pays <strong>${nby(q.pays_if_right, 2)}</strong> if it ${ct === 'yes' ? 'happens' : "doesn't happen"}`
+          ? `Costs <strong>${nby(q.total, 2)}</strong> (${nby(q.cost, 2)} + ${nby(q.fee, 2)} fee) · ${px(q.avg_price)} a share
+             · price ${px(q.price_before)} → ${px(q.price_after)} · pays <strong>${nby(q.pays_if_right, 2)}</strong> if it ${ct === 'yes' ? 'happens' : "doesn't happen"}`
           : `Get <strong>${nby(q.total, 2)}</strong> (${nby(q.proceeds, 2)} − ${nby(q.fee, 2)} fee) · ${px(q.avg_price)} a share
              · price ${px(q.price_before)} → ${px(q.price_after)}`;
         go.disabled = false;
@@ -503,7 +503,7 @@
       err.textContent = '';
       try {
         const body = s === 'buy'
-          ? { outcome_id: oid, contract: ct, spend: quote.cost, min_shares: quote.shares - 1e-4 }
+          ? { outcome_id: oid, contract: ct, shares: parseFloat(amt.value), max_total: quote.total }
           : { outcome_id: oid, contract: ct, shares: parseFloat(amt.value), min_proceeds: quote.total - 0.01 };
         const r = await api(`/api/markets/${m.id}/${s}`, { method: 'POST', body: JSON.stringify(body) });
         replace(r.market);
