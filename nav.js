@@ -554,6 +554,7 @@ const SITE_PAGES = [
   { title: 'Free Agency', href: '/free-agency/', icon: '✍️' },
   { title: 'Extensions', href: '/extensions/', icon: '📄' },
   { title: 'Transactions', href: '/transactions', icon: '📝' },
+  { title: 'Transaction Simulator', href: '/transaction-sim/', icon: '🧮' },
   { title: 'Cap Summary', href: '/cap-summary/', icon: '💰' },
   { title: 'Committees', href: '/committees/', icon: '🏛' },
   { title: 'Rosters Committee — compliance & cap sheet diffs', href: '/committees/rosters/', icon: '🩺' },
@@ -576,6 +577,7 @@ const SITE_PAGES = [
   { title: 'Frivolities & Viz', href: '/frivolities', icon: '📈' },
   { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: '🔍' },
   { title: 'Bets', href: '/bet/', icon: '🎲' },
+  { title: 'Futures', href: '/bet/#futures', icon: '📊' },
   { title: 'NB¥ Balances', href: '/nbyen/', icon: '💴' },
   { title: 'Daily Perry Game', href: '/perry/', icon: '🏀' },
   { title: 'Daily Poeltl', href: '/poeltl/', icon: '🕵️' },
@@ -592,6 +594,7 @@ const SITE_PAGES = [
   { title: 'Changelog', href: '/changelog', icon: '🔖' },
   { title: 'Proposals', href: '/proposals/', icon: '🗳️' },
   { title: 'Suggestions', href: '/suggestions/', icon: '💡' },
+  { title: 'Donations', href: '/donations/', icon: '💵' },
   { title: 'Inbox', href: '/inbox/', icon: '📥' },
 ];
 
