@@ -142,13 +142,14 @@
     // any game it isn't in, or any stat line that isn't its own.
     //
     // A new category also goes in the backend's routers/nbnfl.py CATEGORIES.
-    // Defense is deliberately just these four (re-added 2026-09-27; the fuller
-    // version dropped 2026-09-22 asked for data that isn't usually on hand).
+    // Defense is deliberately just tackles (solo/assisted/total), sacks, INTs
+    // and forced fumbles (re-added 2026-09-27; the fuller version dropped
+    // 2026-09-22 asked for data that isn't usually on hand).
     const CATEGORY_FIELDS = {
       passing:      ['comp', 'att', 'yds', 'td', 'int', 'long'],
       rushing:      ['att', 'yds', 'td', 'fums', 'btk', 'yac', '20+', 'long'],
       receiving:    ['rec', 'yds', 'td', 'rac', 'drops', 'long'],
-      defense:      ['tkl', 'sack', 'int', 'ff'],
+      defense:      ['solo', 'ast', 'tot', 'sack', 'int', 'ff'],
       kicking:      ['fgm', 'fga', 'long', 'xpm', 'xpa'],
       kick_returns: ['kr', 'yds', 'long', 'td'],
       punt_returns: ['pr', 'yds', 'long', 'td'],
@@ -160,7 +161,7 @@
     // Season totals: a player's best single play, not a sum.
     const MAX_FIELDS = new Set(['long']);
     // Season table order: whoever did the most of the category's main thing first.
-    const SORT_FIELD = { passing: 'yds', rushing: 'yds', receiving: 'yds', defense: 'tkl', kicking: 'fgm', kick_returns: 'yds', punt_returns: 'yds' };
+    const SORT_FIELD = { passing: 'yds', rushing: 'yds', receiving: 'yds', defense: 'tot', kicking: 'fgm', kick_returns: 'yds', punt_returns: 'yds' };
 
     let MY = null;              // tracked team abbr, from the API
     let teamsByAbbr = {};
