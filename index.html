@@ -357,7 +357,7 @@
     @media (max-width: 900px) {
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-areas: "team" "slate" "best" "feed" "standings" "ranks";
+        grid-template-areas: "team" "slate" "best" "feed" "standings" "ranks" "movers";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-best      { grid-area: best; }
@@ -365,6 +365,7 @@
       :root #dash-slate     { grid-area: slate; }
       :root #dash-standings { grid-area: standings; }
       :root #dash-ranks     { grid-area: ranks; }
+      :root #dash-movers    { grid-area: movers; }
     }
 
     /* Team links in game rows: logo, abbreviation, and this season's record
@@ -418,6 +419,13 @@
     .dash-stand-row img { width: 18px; height: 18px; object-fit: contain; }
     .dash-stand-abbr { font-weight: 600; color: var(--text-primary); }
     .dash-stand-rec { margin-left: auto; font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-muted); }
+
+    /* Ratings movers: risers, then fallers, in the standings' row style. */
+    .dash-movers-group + .dash-movers-group { margin-top: var(--space-3); }
+    .dash-mover-name { font-weight: 600; color: var(--text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dash-stand-row:hover .dash-mover-name { color: var(--link); }
+    .dash-mover-ovr { margin-left: auto; flex: none; font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-muted); }
+    .dash-mover-ovr .rank-move { margin-left: 0.3rem; }
 
     /* Site footer: the version, linking to what changed in it. */
     .site-footer {
@@ -654,6 +662,8 @@
       <div class="dash-card" id="dash-standings" hidden></div>
       <!-- The current power-rankings standing. Hidden until it has one. -->
       <div class="dash-card" id="dash-ranks" hidden></div>
+      <!-- Biggest OVR moves in the latest 2K scrape. Hidden until there is one. -->
+      <div class="dash-card" id="dash-movers" hidden></div>
     </div>
 
   </section>
@@ -1648,6 +1658,46 @@
         + '<a class="dash-standings-more" href="/standings">Full standings →</a></div>'
         + `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`;
       $('dash-standings').hidden = false;
+    }).catch(() => {});
+
+    // ── Ratings movers ────────────────────────────────────────────────────
+    //
+    // The three biggest OVR gains and drops in the latest 2K scrape, off the
+    // same diff /ratings-changes shows. Stub ratings are left out, as that page
+    // keeps them in their own table: they were never synced into the live OVR.
+    // So are players with no team at scrape time — this is a league card.
+    // `since` keeps the payload to recent scrapes as the history grows; a
+    // league that hasn't scraped in six months simply has no card.
+    jget(`/api/ratings-changes?since=${dayBefore(today, 183)}`).then(d => {
+      const entries = (d && d.entries) || [];
+      const date = entries.length ? entries[0].date : null;
+      const moves = entries.filter(e => e.date === date && e.ovr && e.team && !e.ovr_stub
+          && e.ovr.old != null && e.ovr.new != null && e.ovr.new !== e.ovr.old)
+        .map(e => ({ ...e, delta: e.ovr.new - e.ovr.old }));
+      // Bigger move first; level moves go to the better player.
+      const pick = sign => moves.filter(e => Math.sign(e.delta) === sign)
+        .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || b.ovr.new - a.ovr.new)
+        .slice(0, 3);
+      const up = pick(1), down = pick(-1);
+      if (!up.length && !down.length) return;
+
+      const row = e => `<a class="dash-stand-row" href="/players/?p=${encodeURIComponent(e.slug)}">`
+        + `<img src="/logos/logo-${esc(String(e.team).toLowerCase())}.png" alt="" title="${esc(e.team)}">`
+        + `<span class="dash-mover-name">${esc(nbnPlayerName(e.name))}</span>`
+        + `<span class="dash-mover-ovr">${e.ovr.old}→${e.ovr.new}`
+        + (e.delta > 0 ? `<span class="rank-move up">▲${e.delta}</span>`
+                       : `<span class="rank-move down">▼${-e.delta}</span>`)
+        + '</span></a>';
+      const group = (label, list) => list.length
+        ? `<div class="dash-movers-group"><div class="dash-conf-name">${label}</div>`
+          + list.map(row).join('') + '</div>' : '';
+
+      $('dash-movers').innerHTML =
+        '<div class="dash-standings-head"><div class="dash-card-title">Ratings Movers'
+        + `<span class="dash-best-title-date">${esc(shortDate(date))}</span></div>`
+        + '<a class="dash-standings-more" href="/ratings-changes/">All changes →</a></div>'
+        + group('Up', up) + group('Down', down);
+      $('dash-movers').hidden = false;
     }).catch(() => {});
 
     // ── Band 1: signed-in only ────────────────────────────────────────────
