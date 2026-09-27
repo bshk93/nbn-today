@@ -1125,7 +1125,6 @@ document.body.innerHTML = `
     <div class="tab-panel hidden" id="tab-draft">
       <section>
         <h2 class="section-title">Draft History</h2>
-        <p class="section-sub">Players drafted by this franchise</p>
         <div class="table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
@@ -1145,7 +1144,6 @@ document.body.innerHTML = `
     <div class="tab-panel hidden" id="tab-history">
       <section>
         <h2 class="section-title">Historical Rosters</h2>
-        <p class="section-sub">Per-season stats for this franchise</p>
         <div class="hist-controls" id="hist-controls"></div>
         <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
       </section>
