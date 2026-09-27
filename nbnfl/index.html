@@ -6,13 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>NBNFL</title>
+  <title>NBNFL — Bengals</title>
   <!-- NBN:og -->
-  <meta name="description" content="Scores, standings, and stat leaders for NBN’s sister American-football league.">
+  <meta name="description" content="Game log and player stats for the Bengals in NBN’s sister American-football league.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="NBNFL">
-  <meta property="og:description" content="Scores, standings, and stat leaders for NBN’s sister American-football league.">
+  <meta property="og:title" content="NBNFL — Bengals">
+  <meta property="og:description" content="Game log and player stats for the Bengals in NBN’s sister American-football league.">
   <meta property="og:url" content="https://nbn.today/nbnfl/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -22,65 +22,39 @@
   <meta name="theme-color" content="#0d0e11">
   <!-- /NBN:og -->
   <style>
-                
     section { margin-bottom: 2.5rem; }
-    section h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.9rem; }
-
     .empty { color: var(--text-muted); font-size: 0.85rem; padding: 1rem 0; }
 
-    /* ── standings ────────────────────────────────────────────────── */
-    .conferences { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    @media (max-width: 760px) { .conferences { grid-template-columns: 1fr; } }
-    .conference h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem; color: var(--text-secondary); }
-    .division { margin-bottom: 1rem; }
-    .division h4 {
-      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-      color: var(--text-muted); margin-bottom: 0.35rem;
-    }
-    table.standings { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    table.standings th, table.standings td { padding: 0.35rem 0.5rem; text-align: right; }
-    table.standings th:first-child, table.standings td:first-child { text-align: left; }
-    table.standings th { color: var(--text-muted); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; }
-    table.standings tbody tr { border-bottom: 1px solid var(--border); }
-    table.standings td.team { font-weight: 600; }
+    /* ── record strip ─────────────────────────────────────────────── */
+    .record-strip { display: flex; flex-wrap: wrap; gap: 1.5rem; padding: 1rem 1.25rem; }
+    .record-stat .label { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 0.2rem; }
+    .record-stat .value { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-    /* ── scores ───────────────────────────────────────────────────── */
-    .week-group { margin-bottom: 1.1rem; }
-    .week-group h4 {
-      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-      color: var(--text-muted); margin-bottom: 0.4rem;
-    }
-    .game-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.85rem;
-    }
-    .game-row .matchup { display: flex; align-items: center; gap: 0.5rem; }
-    .game-row .score { font-weight: 700; font-variant-numeric: tabular-nums; }
-    .game-row .win { color: var(--success); }
+    /* ── game log ─────────────────────────────────────────────────── */
+    .ui-table td, .ui-table th { font-variant-numeric: tabular-nums; }
+    tr.game { cursor: pointer; }
+    .result-W { color: var(--success); font-weight: 700; }
+    .result-L { color: var(--danger); font-weight: 700; }
+    .result-T { color: var(--text-muted); font-weight: 700; }
+    tr.box-row > td { background: var(--bg-subtle); padding: 0.75rem; }
+    tr.box-row:hover > td { background: var(--bg-subtle) !important; }
+    .box h5 { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text-muted); margin: 0.6rem 0 0.3rem; }
+    .box h5:first-child { margin-top: 0; }
+    .box-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+    .season-pick { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.9rem; }
 
-    /* ── leaders ──────────────────────────────────────────────────── */
-    .leader-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; }
-    .leader-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem;
-    }
-    .leader-card h4 {
-      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-      color: var(--text-muted); margin-bottom: 0.6rem;
-    }
-    .leader-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 0.2rem 0; }
-    .leader-row .name { color: var(--text-primary); }
-    .leader-row .team { color: var(--text-muted); font-size: 0.75rem; margin-left: 0.3rem; }
-    .leader-row .value { font-weight: 700; font-variant-numeric: tabular-nums; }
+    /* ── season stats ─────────────────────────────────────────────── */
+    .stat-block { margin-bottom: 1.25rem; }
+    .stat-block h3 { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 0.4rem; }
 
     /* ── entry form ───────────────────────────────────────────────── */
     #entry { border-top: 1px solid var(--border); padding-top: 1.5rem; }
     #entry-note { color: var(--text-muted); font-size: 0.85rem; }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.7rem; margin-bottom: 1rem; }
     .form-grid label { display: flex; flex-direction: column; font-size: 0.72rem; color: var(--text-muted); gap: 0.25rem; }
-    .form-grid input, .form-grid select {
-      background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 5px;
-      color: var(--text-primary); padding: 0.4rem 0.5rem; font-size: 0.85rem; font-family: inherit;
-    }
     .stat-row {
       display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end;
       background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 6px;
@@ -89,7 +63,7 @@
     .stat-row label { display: flex; flex-direction: column; font-size: 0.68rem; color: var(--text-muted); gap: 0.2rem; }
     .stat-row input, .stat-row select {
       background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px;
-      color: var(--text-primary); padding: 0.3rem 0.4rem; font-size: 0.8rem; font-family: inherit; width: 90px;
+      color: var(--text-primary); padding: 0.3rem 0.4rem; font-size: 0.8rem; font-family: inherit; width: 110px;
     }
     .stat-row .player-field input { width: 160px; }
     .stat-row .stat-fields { display: flex; gap: 0.4rem; flex-wrap: wrap; }
@@ -97,12 +71,6 @@
     .stat-row button.remove {
       background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; padding: 0 0.3rem;
     }
-    button.btn {
-      background: var(--accent); color: var(--text-on-accent); border: none; border-radius: 6px;
-      padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit;
-    }
-    button.btn:hover { background: var(--accent-dark); }
-    button.btn.secondary { background: var(--bg-subtle); color: var(--text-primary); border: 1px solid var(--border); }
     .form-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
 
     .toast {
@@ -117,54 +85,65 @@
   <div class="page ui-page">
     <header class="ui-header">
       <div>
-        <h1 class="ui-title">NBNFL</h1>
-        <p class="ui-subtitle">Scores, standings, and stat leaders for NBN's sister American-football league. Regular season only — playoffs aren't modeled yet.</p>
+        <h1 class="ui-title" id="page-title">NBNFL</h1>
       </div>
     </header>
 
-    <section id="standings-section">
-      <h2>Standings</h2>
-      <div id="standings" class="conferences"></div>
+    <div class="season-pick" id="season-pick" style="display:none">
+      <label class="ui-label" for="season-select" style="margin:0">Season</label>
+      <select class="ui-select" id="season-select"></select>
+    </div>
+
+    <section>
+      <div class="ui-card record-strip" id="record-strip"></div>
     </section>
 
-    <section id="scores-section">
-      <h2>Scores</h2>
-      <div id="scores"></div>
+    <section>
+      <h2 class="ui-section-title">Game log</h2>
+      <div id="gamelog"></div>
     </section>
 
-    <section id="leaders-section">
-      <h2>Leaders</h2>
-      <div id="leaders" class="leader-grid"></div>
+    <section>
+      <h2 class="ui-section-title">Season stats</h2>
+      <div id="season-stats"></div>
     </section>
 
     <section id="entry">
-      <h2>Enter a game</h2>
+      <h2 class="ui-section-title" id="entry-title">Enter a game</h2>
       <div id="entry-note"></div>
       <form id="game-form" style="display:none;">
         <div class="form-grid">
-          <label>Season <input type="number" id="f-season" required></label>
-          <label>Week <input type="number" id="f-week" min="1" required></label>
-          <label>Date <input type="date" id="f-date" required></label>
-          <label>Away team <select id="f-away" required></select></label>
-          <label>Home team <select id="f-home" required></select></label>
-          <label>Away score <input type="number" id="f-away-score" min="0" required></label>
-          <label>Home score <input type="number" id="f-home-score" min="0" required></label>
+          <label>Season <input class="ui-input" type="number" id="f-season" required></label>
+          <label>Week <input class="ui-input" type="number" id="f-week" min="1" required></label>
+          <label>Date <input class="ui-input" type="date" id="f-date" required></label>
+          <label>Opponent <select class="ui-select" id="f-opp" required></select></label>
+          <label>Where <select class="ui-select" id="f-where">
+            <option value="home">Home</option><option value="away">Away</option>
+          </select></label>
+          <label><span id="f-my-score-label">Our score</span> <input class="ui-input" type="number" id="f-my-score" min="0" required></label>
+          <label>Their score <input class="ui-input" type="number" id="f-opp-score" min="0" required></label>
         </div>
 
         <div id="stat-rows"></div>
-        <button type="button" class="btn secondary" id="add-stat-row">+ Add stat line</button>
+        <datalist id="player-names"></datalist>
+        <button type="button" class="ui-btn" id="add-stat-row">+ Add stat line</button>
 
         <div class="form-actions">
-          <button type="submit" class="btn" id="submit-game">Save game</button>
+          <button type="submit" class="ui-btn ui-btn--primary" id="submit-game">Save game</button>
+          <button type="button" class="ui-btn ui-btn--ghost" id="cancel-edit" style="display:none">Cancel edit</button>
         </div>
       </form>
     </section>
   </div>
 
   <script>
+    // One team's log (changed 2026-09-27 from a league-wide board with
+    // standings and leaders). The API names the team as `my_team` and refuses
+    // any game it isn't in, or any stat line that isn't its own.
+    //
     // No "defense" category — dropped 2026-09-22, we don't consistently have
-    // that data at entry time. Re-add it (and its PRIMARY_STAT/PRIMARY_LABEL
-    // entries, plus the backend's routers/nbnfl.py PRIMARY_STAT) if that changes.
+    // that data at entry time. Re-add it here and in the backend's
+    // routers/nbnfl.py CATEGORIES if that changes.
     const CATEGORY_FIELDS = {
       passing:      ['comp', 'att', 'yds', 'td', 'int', 'long'],
       rushing:      ['att', 'yds', 'td', 'fums', 'btk', 'yac', '20+', 'long'],
@@ -177,20 +156,29 @@
       passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', kicking: 'Kicking',
       kick_returns: 'Kick Returns', punt_returns: 'Punt Returns',
     };
+    // Season totals: a player's best single play, not a sum.
+    const MAX_FIELDS = new Set(['long']);
+    // Season table order: whoever did the most of the category's main thing first.
+    const SORT_FIELD = { passing: 'yds', rushing: 'yds', receiving: 'yds', kicking: 'fgm', kick_returns: 'yds', punt_returns: 'yds' };
 
-    let teams = [];
+    let MY = null;              // tracked team abbr, from the API
     let teamsByAbbr = {};
+    let allGames = [];
+    let isAdmin = false;
+    let editingId = null;
+    const openBoxes = new Set();
+
     const storedToken = () => { try { return localStorage.getItem('nbn_token'); } catch { return null; } };
 
     let toastTimer = null;
     function toast(msg, bad) {
       document.querySelectorAll('.toast').forEach(t => t.remove());
-      const el = document.createElement('div');
-      el.className = 'toast' + (bad ? ' bad' : '');
-      el.textContent = msg;
-      document.body.appendChild(el);
+      const e = document.createElement('div');
+      e.className = 'toast' + (bad ? ' bad' : '');
+      e.textContent = msg;
+      document.body.appendChild(e);
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => el.remove(), 4000);
+      toastTimer = setTimeout(() => e.remove(), 4000);
     }
 
     function el(tag, cls, text) {
@@ -200,157 +188,214 @@
       return e;
     }
 
-    // ── standings ──────────────────────────────────────────────────
-    // Teams with a real page under /nbnfl/{ABBR}/ — add an abbr here as more
-    // team pages get built (nbnfl/team.js itself needs no change per team).
-    const TEAM_PAGES = new Set(['CIN']);
+    // A game from our side: opponent, where, our score, theirs, result.
+    function view(g) {
+      const home = g.home === MY;
+      const us = home ? g.home_score : g.away_score;
+      const them = home ? g.away_score : g.home_score;
+      return {
+        opp: home ? g.away : g.home, home, us, them,
+        result: us > them ? 'W' : us < them ? 'L' : 'T',
+      };
+    }
 
-    function renderStandings(data) {
-      const root = document.getElementById('standings');
-      root.innerHTML = '';
-      const conferences = Object.keys(data).sort();
-      if (!conferences.length) { root.appendChild(el('div', 'empty', 'No games entered yet.')); return; }
-      for (const conf of conferences) {
-        const confEl = el('div', 'conference');
-        confEl.appendChild(el('h3', null, conf));
-        const divisions = Object.keys(data[conf]).sort();
-        for (const div of divisions) {
-          const rows = data[conf][div];
-          const divEl = el('div', 'division');
-          divEl.appendChild(el('h4', null, div));
-          const table = document.createElement('table'); table.className = 'ui-table';
-          table.className = 'standings';
-          const thead = document.createElement('thead');
-          thead.innerHTML = '<tr><th>Team</th><th>W</th><th>L</th><th>T</th><th>PF</th><th>PA</th><th>Diff</th></tr>';
-          table.appendChild(thead);
-          const tbody = document.createElement('tbody');
-          for (const r of rows) {
-            const tr = document.createElement('tr');
-            const diff = r.diff > 0 ? `+${r.diff}` : r.diff;
-            const teamCell = TEAM_PAGES.has(r.abbr)
-              ? `<a href="/nbnfl/${r.abbr}/">${r.abbr} ${r.name}</a>`
-              : `${r.abbr} ${r.name}`;
-            tr.innerHTML = `<td class="team">${teamCell}</td><td>${r.wins}</td><td>${r.losses}</td>` +
-              `<td>${r.ties}</td><td>${r.pf}</td><td>${r.pa}</td><td>${diff}</td>`;
-            tbody.appendChild(tr);
-          }
-          table.appendChild(tbody);
-          divEl.appendChild(table);
-          confEl.appendChild(divEl);
+    const fmt = v => Number.isInteger(v) ? String(v) : String(Math.round(v * 10) / 10);
+
+    function statTable(fields, rows) {
+      // rows: [{player, stats}] — one table, one row per player.
+      const wrap = el('div', 'ui-table-wrap');
+      const table = el('table', 'ui-table ui-table--dense ui-table--sticky-first');
+      const head = el('tr');
+      head.appendChild(el('th', null, 'Player'));
+      for (const f of fields) head.appendChild(el('th', 'num', f.toUpperCase()));
+      const thead = el('thead'); thead.appendChild(head); table.appendChild(thead);
+      const tbody = el('tbody');
+      for (const r of rows) {
+        const tr = el('tr');
+        tr.appendChild(el('td', 'strong', r.player));
+        for (const f of fields) {
+          const v = r.stats[f];
+          tr.appendChild(el('td', 'num', v === undefined ? '–' : fmt(v)));
         }
-        root.appendChild(confEl);
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      return wrap;
+    }
+
+    // ── record ─────────────────────────────────────────────────────
+    function renderRecord(games) {
+      const strip = document.getElementById('record-strip');
+      strip.innerHTML = '';
+      let w = 0, l = 0, t = 0, pf = 0, pa = 0;
+      for (const g of games) {
+        const v = view(g);
+        pf += v.us; pa += v.them;
+        if (v.result === 'W') w++; else if (v.result === 'L') l++; else t++;
+      }
+      const diff = pf - pa;
+      for (const [label, value] of [['W', w], ['L', l], ['T', t], ['PF', pf], ['PA', pa], ['Diff', diff > 0 ? `+${diff}` : diff]]) {
+        const stat = el('div', 'record-stat');
+        stat.appendChild(el('div', 'label', label));
+        stat.appendChild(el('div', 'value', String(value)));
+        strip.appendChild(stat);
       }
     }
 
-    // ── scores ─────────────────────────────────────────────────────
-    function renderScores(games) {
-      const root = document.getElementById('scores');
+    // ── game log ───────────────────────────────────────────────────
+    function boxScore(g) {
+      const box = el('div', 'box');
+      let any = false;
+      for (const cat of Object.keys(CATEGORY_FIELDS)) {
+        const lines = (g.stats || []).filter(s => s.category === cat);
+        if (!lines.length) continue;
+        any = true;
+        box.appendChild(el('h5', null, CATEGORY_LABELS[cat]));
+        box.appendChild(statTable(CATEGORY_FIELDS[cat], lines));
+      }
+      if (!any) box.appendChild(el('div', 'empty', 'No stat lines for this game.'));
+      if (isAdmin) {
+        const actions = el('div', 'box-actions');
+        const edit = el('button', 'ui-btn ui-btn--sm', 'Edit');
+        edit.type = 'button';
+        edit.onclick = ev => { ev.stopPropagation(); startEdit(g); };
+        const del = el('button', 'ui-btn ui-btn--sm ui-btn--danger', 'Delete');
+        del.type = 'button';
+        del.onclick = ev => { ev.stopPropagation(); deleteGame(g); };
+        actions.append(edit, del);
+        box.appendChild(actions);
+      }
+      return box;
+    }
+
+    function renderGamelog(games) {
+      const root = document.getElementById('gamelog');
       root.innerHTML = '';
       if (!games.length) { root.appendChild(el('div', 'empty', 'No games entered yet.')); return; }
-      const byWeek = new Map();
+      const wrap = el('div', 'ui-table-wrap');
+      const table = el('table', 'ui-table');
+      table.innerHTML = '<thead><tr><th class="num">Wk</th><th>Date</th><th>Opponent</th><th class="center">Result</th><th class="num">Score</th></tr></thead>';
+      const tbody = el('tbody');
       for (const g of games) {
-        const key = `${g.season} — Week ${g.week}`;
-        if (!byWeek.has(key)) byWeek.set(key, []);
-        byWeek.get(key).push(g);
+        const v = view(g);
+        const tr = el('tr', 'game');
+        tr.appendChild(el('td', 'num', String(g.week)));
+        tr.appendChild(el('td', 'muted', g.date));
+        const opp = teamsByAbbr[v.opp];
+        tr.appendChild(el('td', 'strong', `${v.home ? 'vs' : '@'} ${v.opp}${opp ? ' ' + opp.name : ''}`));
+        tr.appendChild(el('td', `center result-${v.result}`, v.result));
+        tr.appendChild(el('td', 'num', `${v.us}–${v.them}`));
+        tbody.appendChild(tr);
+
+        const boxTr = el('tr', 'box-row');
+        const boxTd = el('td');
+        boxTd.colSpan = 5;
+        boxTd.appendChild(boxScore(g));
+        boxTr.appendChild(boxTd);
+        boxTr.style.display = openBoxes.has(g.id) ? '' : 'none';
+        tbody.appendChild(boxTr);
+
+        tr.onclick = () => {
+          const open = boxTr.style.display === 'none';
+          boxTr.style.display = open ? '' : 'none';
+          if (open) openBoxes.add(g.id); else openBoxes.delete(g.id);
+        };
       }
-      // list() preserved insertion order, and list_games() already sorts by
-      // (season, week, date), so weeks arrive in order without a re-sort here.
-      for (const [label, weekGames] of byWeek) {
-        const group = el('div', 'week-group');
-        group.appendChild(el('h4', null, label));
-        for (const g of weekGames) {
-          const row = el('div', 'game-row');
-          const matchup = el('span', 'matchup');
-          const awayWin = g.away_score > g.home_score;
-          const homeWin = g.home_score > g.away_score;
-          matchup.innerHTML =
-            `<span class="${awayWin ? 'win' : ''}">${g.away}</span> @ <span class="${homeWin ? 'win' : ''}">${g.home}</span>`;
-          row.appendChild(matchup);
-          row.appendChild(el('span', 'score', `${g.away_score} – ${g.home_score}`));
-          group.appendChild(row);
-        }
-        root.appendChild(group);
-      }
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      root.appendChild(wrap);
     }
 
-    // ── leaders ────────────────────────────────────────────────────
-    const PRIMARY_LABEL = {
-      passing: 'pass yds', rushing: 'rush yds', receiving: 'rec yds', kicking: 'FG made',
-      kick_returns: 'return yds', punt_returns: 'return yds',
-    };
-    function renderLeaders(data) {
-      const root = document.getElementById('leaders');
+    // ── season stats ───────────────────────────────────────────────
+    function renderSeasonStats(games) {
+      const root = document.getElementById('season-stats');
       root.innerHTML = '';
-      for (const category of Object.keys(CATEGORY_FIELDS)) {
-        const rows = data[category] || [];
-        const card = el('div', 'leader-card');
-        card.appendChild(el('h4', null, `${CATEGORY_LABELS[category]} — ${PRIMARY_LABEL[category]}`));
-        if (!rows.length) {
-          card.appendChild(el('div', 'empty', 'No data yet.'));
-        } else {
-          for (const r of rows) {
-            const row = el('div', 'leader-row');
-            const name = el('span', null, r.player);
-            name.appendChild(el('span', 'team', r.team));
-            row.appendChild(name);
-            row.appendChild(el('span', 'value', r.value));
-            card.appendChild(row);
+      let any = false;
+      for (const [cat, fields] of Object.entries(CATEGORY_FIELDS)) {
+        const byPlayer = new Map();
+        for (const g of games) {
+          for (const line of (g.stats || [])) {
+            if (line.category !== cat) continue;
+            if (!byPlayer.has(line.player)) byPlayer.set(line.player, { player: line.player, stats: { g: 0 } });
+            const tot = byPlayer.get(line.player).stats;
+            tot.g += 1;
+            for (const [f, v] of Object.entries(line.stats || {})) {
+              if (typeof v !== 'number') continue;
+              tot[f] = tot[f] === undefined ? v : MAX_FIELDS.has(f) ? Math.max(tot[f], v) : tot[f] + v;
+            }
           }
         }
-        root.appendChild(card);
+        if (!byPlayer.size) continue;
+        any = true;
+        const key = SORT_FIELD[cat];
+        const rows = [...byPlayer.values()].sort((a, b) => (b.stats[key] || 0) - (a.stats[key] || 0));
+        const block = el('div', 'stat-block');
+        block.appendChild(el('h3', null, CATEGORY_LABELS[cat]));
+        block.appendChild(statTable(['g', ...fields], rows));
+        root.appendChild(block);
       }
+      if (!any) root.appendChild(el('div', 'empty', 'No stats entered yet.'));
+    }
+
+    // ── season picker ──────────────────────────────────────────────
+    function seasons() { return [...new Set(allGames.map(g => g.season))].sort((a, b) => b - a); }
+
+    // `want` picks a season (after a save); otherwise keep whatever is selected.
+    function render(want) {
+      const sel = document.getElementById('season-select');
+      const list = seasons();
+      const current = want ?? (sel.value ? parseInt(sel.value, 10) : list[0]);
+      sel.innerHTML = '';
+      for (const s of list) {
+        const opt = el('option', null, String(s));
+        opt.value = s;
+        sel.appendChild(opt);
+      }
+      sel.value = list.includes(current) ? current : list[0];
+      document.getElementById('season-pick').style.display = list.length > 1 ? '' : 'none';
+      const season = parseInt(sel.value, 10);
+      const games = allGames.filter(g => g.season === season);
+      renderRecord(games);
+      renderGamelog(games);
+      renderSeasonStats(games);
+      refreshPlayerNames();
+    }
+
+    function refreshPlayerNames() {
+      const dl = document.getElementById('player-names');
+      dl.innerHTML = '';
+      const names = new Set(allGames.flatMap(g => (g.stats || []).map(s => s.player)));
+      for (const n of [...names].sort()) { const o = el('option'); o.value = n; dl.appendChild(o); }
     }
 
     // ── entry form ─────────────────────────────────────────────────
-    function populateTeamSelect(sel) {
-      sel.innerHTML = '';
-      for (const t of teams) {
-        const opt = document.createElement('option');
-        opt.value = t.abbr;
-        opt.textContent = `${t.abbr} — ${t.name}`;
-        sel.appendChild(opt);
-      }
-    }
-
-    function addStatRow() {
+    function addStatRow(line) {
       const row = el('div', 'stat-row');
 
       const playerLabel = el('label', 'player-field', 'Player');
       const playerInput = document.createElement('input');
       playerInput.type = 'text';
-      playerInput.required = true;
+      playerInput.setAttribute('list', 'player-names');
+      playerInput.value = line?.player || '';
       playerLabel.appendChild(playerInput);
       row.appendChild(playerLabel);
-
-      const teamLabel = el('label', null, 'Team');
-      const teamSel = document.createElement('select');
-      const homeAbbr = document.getElementById('f-home').value;
-      const awayAbbr = document.getElementById('f-away').value;
-      for (const abbr of [awayAbbr, homeAbbr]) {
-        if (!abbr) continue;
-        const opt = document.createElement('option');
-        opt.value = abbr;
-        opt.textContent = abbr;
-        teamSel.appendChild(opt);
-      }
-      teamLabel.appendChild(teamSel);
-      row.appendChild(teamLabel);
 
       const catLabel = el('label', null, 'Category');
       const catSel = document.createElement('select');
       for (const cat of Object.keys(CATEGORY_FIELDS)) {
-        const opt = document.createElement('option');
+        const opt = el('option', null, CATEGORY_LABELS[cat]);
         opt.value = cat;
-        opt.textContent = CATEGORY_LABELS[cat];
         catSel.appendChild(opt);
       }
+      if (line?.category) catSel.value = line.category;
       catLabel.appendChild(catSel);
       row.appendChild(catLabel);
 
       const statFields = el('div', 'stat-fields');
       row.appendChild(statFields);
 
-      function rebuildStatFields() {
+      function rebuildStatFields(values) {
         statFields.innerHTML = '';
         for (const field of CATEGORY_FIELDS[catSel.value]) {
           const label = el('label', null, field);
@@ -358,23 +403,21 @@
           input.type = 'number';
           input.step = 'any';
           input.dataset.field = field;
+          if (values && values[field] !== undefined) input.value = values[field];
           label.appendChild(input);
           statFields.appendChild(label);
         }
       }
-      catSel.onchange = rebuildStatFields;
-      rebuildStatFields();
+      catSel.onchange = () => rebuildStatFields();
+      rebuildStatFields(line?.stats);
 
-      const removeBtn = document.createElement('button');
+      const removeBtn = el('button', 'remove', '×');
       removeBtn.type = 'button';
-      removeBtn.className = 'remove';
-      removeBtn.textContent = '×';
       removeBtn.title = 'Remove this stat line';
       removeBtn.onclick = () => row.remove();
       row.appendChild(removeBtn);
 
       row._playerInput = playerInput;
-      row._teamSel = teamSel;
       row._catSel = catSel;
       row._statFields = statFields;
       document.getElementById('stat-rows').appendChild(row);
@@ -390,39 +433,91 @@
           const v = parseFloat(input.value);
           if (!isNaN(v)) stats[input.dataset.field] = v;
         }
-        lines.push({ player, team: row._teamSel.value, category: row._catSel.value, stats });
+        lines.push({ player, team: MY, category: row._catSel.value, stats });
       }
       return lines;
+    }
+
+    function resetForm() {
+      editingId = null;
+      document.getElementById('game-form').reset();
+      document.getElementById('stat-rows').innerHTML = '';
+      document.getElementById('f-season').value = seasons()[0] || new Date().getFullYear();
+      document.getElementById('entry-title').textContent = 'Enter a game';
+      document.getElementById('submit-game').textContent = 'Save game';
+      document.getElementById('cancel-edit').style.display = 'none';
+    }
+
+    function startEdit(g) {
+      const v = view(g);
+      resetForm();
+      editingId = g.id;
+      document.getElementById('f-season').value = g.season;
+      document.getElementById('f-week').value = g.week;
+      document.getElementById('f-date').value = g.date;
+      document.getElementById('f-opp').value = v.opp;
+      document.getElementById('f-where').value = v.home ? 'home' : 'away';
+      document.getElementById('f-my-score').value = v.us;
+      document.getElementById('f-opp-score').value = v.them;
+      for (const line of (g.stats || [])) addStatRow(line);
+      document.getElementById('entry-title').textContent = `Edit week ${g.week} — ${v.home ? 'vs' : '@'} ${v.opp}`;
+      document.getElementById('submit-game').textContent = 'Save changes';
+      document.getElementById('cancel-edit').style.display = '';
+      document.getElementById('entry').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function api(method, path, body) {
+      const r = await fetch(path, {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${storedToken()}` },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!r.ok) {
+        const detail = await r.json().then(j => j.detail).catch(() => null);
+        throw new Error(typeof detail === 'string' ? detail : `HTTP ${r.status}`);
+      }
+      return r.json();
+    }
+
+    async function deleteGame(g) {
+      const v = view(g);
+      if (!confirm(`Delete week ${g.week} ${v.home ? 'vs' : '@'} ${v.opp} (${v.us}–${v.them})? This can't be undone.`)) return;
+      try {
+        await api('DELETE', `/api/nbnfl/games/${g.id}`);
+        if (editingId === g.id) resetForm();
+        toast('Game deleted');
+        await loadGames();
+      } catch (err) {
+        toast(`Could not delete that game: ${err.message}`, true);
+      }
     }
 
     async function submitGame(e) {
       e.preventDefault();
       const btn = document.getElementById('submit-game');
       btn.disabled = true;
+      const home = document.getElementById('f-where').value === 'home';
+      const opp = document.getElementById('f-opp').value;
+      const us = parseInt(document.getElementById('f-my-score').value, 10);
+      const them = parseInt(document.getElementById('f-opp-score').value, 10);
       const body = {
         season: parseInt(document.getElementById('f-season').value, 10),
         week: parseInt(document.getElementById('f-week').value, 10),
         date: document.getElementById('f-date').value,
-        home: document.getElementById('f-home').value,
-        away: document.getElementById('f-away').value,
-        home_score: parseInt(document.getElementById('f-home-score').value, 10),
-        away_score: parseInt(document.getElementById('f-away-score').value, 10),
+        home: home ? MY : opp,
+        away: home ? opp : MY,
+        home_score: home ? us : them,
+        away_score: home ? them : us,
         stats: collectStatLines(),
       };
       try {
-        const r = await fetch('/api/nbnfl/games', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${storedToken()}` },
-          body: JSON.stringify(body),
-        });
-        if (!r.ok) {
-          const detail = await r.json().then(j => j.detail).catch(() => null);
-          throw new Error(detail || `HTTP ${r.status}`);
-        }
-        toast(`Saved: ${body.away} ${body.away_score} – ${body.home_score} ${body.home}`);
-        document.getElementById('game-form').reset();
-        document.getElementById('stat-rows').innerHTML = '';
-        await loadDashboard();
+        const saved = editingId
+          ? await api('PUT', `/api/nbnfl/games/${editingId}`, body)
+          : await api('POST', '/api/nbnfl/games', body);
+        toast(`${editingId ? 'Updated' : 'Saved'}: week ${body.week} ${home ? 'vs' : '@'} ${opp}, ${us}–${them}`);
+        openBoxes.add(saved.id);
+        resetForm();
+        await loadGames(body.season);
       } catch (err) {
         toast(`Could not save that game: ${err.message}`, true);
       } finally {
@@ -433,44 +528,46 @@
     async function setupEntryForm() {
       const note = document.getElementById('entry-note');
       const token = storedToken();
-      if (!token) {
-        note.textContent = 'Sign in with an admin account to enter a game.';
-        return;
+      let me = null;
+      if (token) {
+        try {
+          me = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null);
+        } catch { me = null; }
       }
-      let me;
-      try {
-        me = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null);
-      } catch { me = null; }
       if (!me || !(me.roles || []).includes('admin')) {
-        note.textContent = 'Sign in with an admin account to enter a game.';
+        note.textContent = 'Sign in with an admin account to enter or edit a game.';
         return;
       }
+      isAdmin = true;
       note.textContent = '';
-      const form = document.getElementById('game-form');
-      form.style.display = '';
-      populateTeamSelect(document.getElementById('f-home'));
-      populateTeamSelect(document.getElementById('f-away'));
-      document.getElementById('f-season').value = new Date().getFullYear();
-      document.getElementById('add-stat-row').onclick = addStatRow;
-      form.onsubmit = submitGame;
+      document.getElementById('game-form').style.display = '';
+      const oppSel = document.getElementById('f-opp');
+      for (const t of Object.values(teamsByAbbr)) {
+        if (t.abbr === MY) continue;
+        const opt = el('option', null, `${t.abbr} — ${t.name}`);
+        opt.value = t.abbr;
+        oppSel.appendChild(opt);
+      }
+      document.getElementById('add-stat-row').onclick = () => addStatRow();
+      document.getElementById('cancel-edit').onclick = resetForm;
+      document.getElementById('game-form').onsubmit = submitGame;
+      resetForm();
+      render();  // re-render so the box scores pick up Edit/Delete
     }
 
-    async function loadDashboard() {
-      const [standingsData, gamesData, leadersData] = await Promise.all([
-        fetch('/api/nbnfl/standings').then(r => r.json()),
-        fetch('/api/nbnfl/games').then(r => r.json()),
-        fetch('/api/nbnfl/leaders').then(r => r.json()),
-      ]);
-      renderStandings(standingsData);
-      renderScores(gamesData);
-      renderLeaders(leadersData);
+    async function loadGames(season) {
+      allGames = await fetch('/api/nbnfl/games').then(r => r.json());
+      render(season);
     }
 
     (async function init() {
       const teamsData = await fetch('/api/nbnfl/teams').then(r => r.json());
-      teams = teamsData.teams;
-      teamsByAbbr = Object.fromEntries(teams.map(t => [t.abbr, t]));
-      await loadDashboard();
+      MY = teamsData.my_team;
+      teamsByAbbr = Object.fromEntries(teamsData.teams.map(t => [t.abbr, t]));
+      const mine = teamsByAbbr[MY];
+      document.getElementById('page-title').textContent = `NBNFL — ${mine ? mine.name : MY}`;
+      document.getElementById('season-select').onchange = () => render();
+      await loadGames();
       await setupEntryForm();
     })();
   </script>
