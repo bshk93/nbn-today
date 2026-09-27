@@ -226,6 +226,19 @@
       if (!d || (d.solo === undefined && d.ast === undefined)) return undefined;
       return (d.solo || 0) + (d.ast || 0);
     }
+    // NFL passer rating, from the totals (so a season rating is the rating of
+    // the season's totals, not an average of per-game ratings). Each of the
+    // four parts is clamped to 0–2.375, which is what caps it at 158.3.
+    function passerRating(r) {
+      const p = r.cats.passing;
+      if (!p || !p.att) return undefined;
+      const clamp = x => Math.max(0, Math.min(2.375, x));
+      const a = clamp(((p.comp || 0) / p.att - 0.3) * 5);
+      const b = clamp(((p.yds || 0) / p.att - 3) * 0.25);
+      const c = clamp((p.td || 0) / p.att * 20);
+      const d = clamp(2.375 - (p.int || 0) / p.att * 25);
+      return (a + b + c + d) / 6 * 100;
+    }
     const perGame = (r, v) => (v === undefined || !r.g) ? undefined : v / r.g;
 
     // One row per player: { player, g, cats: {category: totals} }. `g` counts
@@ -265,6 +278,7 @@
           }
           if (cat === 'defense' && f === 'ast') cols.push({ label: 'TOT', get: tackles });
         }
+        if (cat === 'passing') cols.push({ label: 'RTG', dec: 1, get: passerRating });
       }
       if (table.cats.includes('rushing') && table.cats.includes('receiving')) {
         cols.push({ group: 'Scrimmage', label: 'YDS', get: scrimmage });
