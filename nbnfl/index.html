@@ -47,6 +47,8 @@
 
     /* ── season stats ─────────────────────────────────────────────── */
     .stat-block { margin-bottom: 1.25rem; }
+    .ui-table th.grp { text-align: center; border-bottom: 1px solid var(--border-subtle); }
+    .ui-table .grp-start { border-left: 1px solid var(--border-subtle); }
     .stat-block h3 { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
       color: var(--text-muted); margin-bottom: 0.4rem; }
 
@@ -142,14 +144,15 @@
     // any game it isn't in, or any stat line that isn't its own.
     //
     // A new category also goes in the backend's routers/nbnfl.py CATEGORIES.
-    // Defense is deliberately just tackles (solo/assisted/total), sacks, INTs
-    // and forced fumbles (re-added 2026-09-27; the fuller version dropped
-    // 2026-09-22 asked for data that isn't usually on hand).
+    // Defense is deliberately just tackles (solo/assisted), sacks, INTs and
+    // forced fumbles (re-added 2026-09-27; the fuller version dropped
+    // 2026-09-22 asked for data that isn't usually on hand). Total tackles is
+    // shown, not entered — it is solo + assisted.
     const CATEGORY_FIELDS = {
       passing:      ['comp', 'att', 'yds', 'td', 'int', 'long'],
       rushing:      ['att', 'yds', 'td', 'fums', 'btk', 'yac', '20+', 'long'],
       receiving:    ['rec', 'yds', 'td', 'rac', 'drops', 'long'],
-      defense:      ['solo', 'ast', 'tot', 'sack', 'int', 'ff'],
+      defense:      ['solo', 'ast', 'sack', 'int', 'ff'],
       kicking:      ['fgm', 'fga', 'long', 'xpm', 'xpa'],
       kick_returns: ['kr', 'yds', 'long', 'td'],
       punt_returns: ['pr', 'yds', 'long', 'td'],
@@ -160,8 +163,21 @@
     };
     // Season totals: a player's best single play, not a sum.
     const MAX_FIELDS = new Set(['long']);
-    // Season table order: whoever did the most of the category's main thing first.
-    const SORT_FIELD = { passing: 'yds', rushing: 'yds', receiving: 'yds', defense: 'tot', kicking: 'fgm', kick_returns: 'yds', punt_returns: 'yds' };
+
+    // How stats are shown, as opposed to how they're entered (CATEGORY_FIELDS).
+    // A table can draw from more than one entry category: rushing and
+    // receiving are entered separately but shown as one row per player, with a
+    // scrimmage total. `sort` puts the biggest contributor first.
+    const DISPLAY_TABLES = [
+      { label: 'Passing', cats: ['passing'], sort: r => val(r, 'passing', 'yds') },
+      { label: 'Rushing & Receiving', cats: ['rushing', 'receiving'], sort: r => scrimmage(r) },
+      { label: 'Defense', cats: ['defense'], sort: r => tackles(r) ?? 0 },
+      { label: 'Kicking', cats: ['kicking'], sort: r => val(r, 'kicking', 'fgm') },
+      { label: 'Kick Returns', cats: ['kick_returns'], sort: r => val(r, 'kick_returns', 'yds') },
+      { label: 'Punt Returns', cats: ['punt_returns'], sort: r => val(r, 'punt_returns', 'yds') },
+    ];
+    // Categories that get a yards-per-game column next to their yards.
+    const YPG_CATS = new Set(['passing', 'rushing', 'receiving']);
 
     let MY = null;              // tracked team abbr, from the API
     let teamsByAbbr = {};
@@ -203,21 +219,103 @@
 
     const fmt = v => Number.isInteger(v) ? String(v) : String(Math.round(v * 10) / 10);
 
-    function statTable(fields, rows) {
-      // rows: [{player, stats}] — one table, one row per player.
+    const val = (r, cat, f) => r.cats[cat]?.[f] ?? 0;
+    const scrimmage = r => val(r, 'rushing', 'yds') + val(r, 'receiving', 'yds');
+    function tackles(r) {
+      const d = r.cats.defense;
+      if (!d || (d.solo === undefined && d.ast === undefined)) return undefined;
+      return (d.solo || 0) + (d.ast || 0);
+    }
+    const perGame = (r, v) => (v === undefined || !r.g) ? undefined : v / r.g;
+
+    // One row per player: { player, g, cats: {category: totals} }. `g` counts
+    // games with a line in any of `cats`, so a back with a rushing and a
+    // receiving line in the same game has played one game, not two.
+    function aggregate(games, cats) {
+      const rows = new Map();
+      for (const game of games) {
+        const seen = new Set();
+        for (const line of (game.stats || [])) {
+          if (!cats.includes(line.category)) continue;
+          if (!rows.has(line.player)) rows.set(line.player, { player: line.player, g: 0, cats: {} });
+          const row = rows.get(line.player);
+          if (!seen.has(line.player)) { seen.add(line.player); row.g += 1; }
+          const tot = row.cats[line.category] ??= {};
+          for (const [f, v] of Object.entries(line.stats || {})) {
+            if (typeof v !== 'number') continue;
+            tot[f] = tot[f] === undefined ? v : MAX_FIELDS.has(f) ? Math.max(tot[f], v) : tot[f] + v;
+          }
+        }
+      }
+      return [...rows.values()];
+    }
+
+    // Columns for a table. `season` adds games played and the per-game columns
+    // a single box score has no use for.
+    function columns(table, season) {
+      const cols = [];
+      if (season) cols.push({ label: 'G', get: r => r.g });
+      const grouped = table.cats.length > 1;
+      for (const cat of table.cats) {
+        const group = grouped ? CATEGORY_LABELS[cat] : null;
+        for (const f of CATEGORY_FIELDS[cat]) {
+          cols.push({ group, label: f.toUpperCase(), get: r => r.cats[cat]?.[f] });
+          if (f === 'yds' && season && YPG_CATS.has(cat)) {
+            cols.push({ group, label: 'Y/G', dec: 1, get: r => perGame(r, r.cats[cat]?.yds) });
+          }
+          if (cat === 'defense' && f === 'ast') cols.push({ label: 'TOT', get: tackles });
+        }
+      }
+      if (table.cats.includes('rushing') && table.cats.includes('receiving')) {
+        cols.push({ group: 'Scrimmage', label: 'YDS', get: scrimmage });
+        if (season) cols.push({ group: 'Scrimmage', label: 'Y/G', dec: 1, get: r => perGame(r, scrimmage(r)) });
+      }
+      return cols;
+    }
+
+    function statTable(cols, rows) {
       const wrap = el('div', 'ui-table-wrap');
       const table = el('table', 'ui-table ui-table--dense ui-table--sticky-first');
-      const head = el('tr');
-      head.appendChild(el('th', null, 'Player'));
-      for (const f of fields) head.appendChild(el('th', 'num', f.toUpperCase()));
-      const thead = el('thead'); thead.appendChild(head); table.appendChild(thead);
+      const thead = el('thead');
+      const grouped = cols.some(c => c.group);
+      // A column starting a new group gets a divider, on every row.
+      cols.forEach((c, i) => { c.start = !!c.group && (i === 0 || cols[i - 1].group !== c.group); });
+      const top = el('tr');
+      const player = el('th', null, 'Player');
+      top.appendChild(player);
+      if (grouped) {
+        player.rowSpan = 2;
+        const sub = el('tr');
+        for (let i = 0; i < cols.length; i++) {
+          const c = cols[i];
+          if (!c.group) {
+            const th = el('th', 'num', c.label);
+            th.rowSpan = 2;
+            top.appendChild(th);
+            continue;
+          }
+          let n = 1;
+          while (i + n < cols.length && cols[i + n].group === c.group) n++;
+          const th = el('th', 'grp grp-start', c.group);
+          th.colSpan = n;
+          top.appendChild(th);
+          for (let k = 0; k < n; k++) sub.appendChild(el('th', 'num' + (cols[i + k].start ? ' grp-start' : ''), cols[i + k].label));
+          i += n - 1;
+        }
+        thead.append(top, sub);
+      } else {
+        for (const c of cols) top.appendChild(el('th', 'num', c.label));
+        thead.appendChild(top);
+      }
+      table.appendChild(thead);
       const tbody = el('tbody');
       for (const r of rows) {
         const tr = el('tr');
         tr.appendChild(el('td', 'strong', r.player));
-        for (const f of fields) {
-          const v = r.stats[f];
-          tr.appendChild(el('td', 'num', v === undefined ? '–' : fmt(v)));
+        for (const c of cols) {
+          const v = c.get(r);
+          const text = v === undefined ? '–' : c.dec ? v.toFixed(c.dec) : fmt(v);
+          tr.appendChild(el('td', 'num' + (c.start ? ' grp-start' : ''), text));
         }
         tbody.appendChild(tr);
       }
@@ -249,12 +347,12 @@
     function boxScore(g) {
       const box = el('div', 'box');
       let any = false;
-      for (const cat of Object.keys(CATEGORY_FIELDS)) {
-        const lines = (g.stats || []).filter(s => s.category === cat);
-        if (!lines.length) continue;
+      for (const t of DISPLAY_TABLES) {
+        const rows = aggregate([g], t.cats).sort((a, b) => t.sort(b) - t.sort(a));
+        if (!rows.length) continue;
         any = true;
-        box.appendChild(el('h5', null, CATEGORY_LABELS[cat]));
-        box.appendChild(statTable(CATEGORY_FIELDS[cat], lines));
+        box.appendChild(el('h5', null, t.label));
+        box.appendChild(statTable(columns(t, false), rows));
       }
       if (!any) box.appendChild(el('div', 'empty', 'No stat lines for this game.'));
       if (isAdmin) {
@@ -314,27 +412,13 @@
       const root = document.getElementById('season-stats');
       root.innerHTML = '';
       let any = false;
-      for (const [cat, fields] of Object.entries(CATEGORY_FIELDS)) {
-        const byPlayer = new Map();
-        for (const g of games) {
-          for (const line of (g.stats || [])) {
-            if (line.category !== cat) continue;
-            if (!byPlayer.has(line.player)) byPlayer.set(line.player, { player: line.player, stats: { g: 0 } });
-            const tot = byPlayer.get(line.player).stats;
-            tot.g += 1;
-            for (const [f, v] of Object.entries(line.stats || {})) {
-              if (typeof v !== 'number') continue;
-              tot[f] = tot[f] === undefined ? v : MAX_FIELDS.has(f) ? Math.max(tot[f], v) : tot[f] + v;
-            }
-          }
-        }
-        if (!byPlayer.size) continue;
+      for (const t of DISPLAY_TABLES) {
+        const rows = aggregate(games, t.cats).sort((a, b) => t.sort(b) - t.sort(a));
+        if (!rows.length) continue;
         any = true;
-        const key = SORT_FIELD[cat];
-        const rows = [...byPlayer.values()].sort((a, b) => (b.stats[key] || 0) - (a.stats[key] || 0));
         const block = el('div', 'stat-block');
-        block.appendChild(el('h3', null, CATEGORY_LABELS[cat]));
-        block.appendChild(statTable(['g', ...fields], rows));
+        block.appendChild(el('h3', null, t.label));
+        block.appendChild(statTable(columns(t, true), rows));
         root.appendChild(block);
       }
       if (!any) root.appendChild(el('div', 'empty', 'No stats entered yet.'));
