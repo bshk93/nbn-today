@@ -82,3 +82,15 @@ function nbnCurrentSeason() {
   }
   return _nbnCurrentSeason;
 }
+
+/**
+ * A tip-off time as minutes past midnight, for sorting: '7:00p' -> 1140.
+ * Unparseable or missing sorts last (9999). Mirrors _time_key in
+ * nbn-api/routers/schedule.py; schedule times are always ET.
+ * Compare with this, never with the strings: '10:00p' sorts before '7:00p'.
+ */
+function nbnTipMinutes(t) {
+  const m = /^(\d{1,2}):(\d{2})([ap])$/.exec(t || '');
+  if (!m) return 9999;
+  return ((+m[1] % 12) + (m[3] === 'p' ? 12 : 0)) * 60 + (+m[2]);
+}

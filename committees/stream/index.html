@@ -438,7 +438,7 @@
     function nextGameFor(team) {
       const upcoming = games.filter(g => (g.home_team === team || g.away_team === team) && !resultFor(g));
       if (!upcoming.length) return null;
-      upcoming.sort((a, b) => a.date.localeCompare(b.date) || tipKey(a.time_et) - tipKey(b.time_et));
+      upcoming.sort((a, b) => a.date.localeCompare(b.date) || nbnTipMinutes(a.time_et) - nbnTipMinutes(b.time_et));
       return upcoming[0];
     }
 
@@ -453,7 +453,7 @@
       const teams = Object.keys(TEAMS).sort((a, b) => {
         const ga = nextGameFor(a), gb = nextGameFor(b);
         if (ga && gb) {
-          const cmp = ga.date.localeCompare(gb.date) || tipKey(ga.time_et) - tipKey(gb.time_et);
+          const cmp = ga.date.localeCompare(gb.date) || nbnTipMinutes(ga.time_et) - nbnTipMinutes(gb.time_et);
           if (cmp) return cmp;
         } else if (ga || gb) {
           return ga ? -1 : 1; // a team with a next game sorts before one with none
@@ -685,7 +685,7 @@
         head.appendChild(right);
         card.appendChild(head);
 
-        dayGames.sort((a, b) => tipKey(a.time_et) - tipKey(b.time_et)).forEach(g => {
+        dayGames.sort((a, b) => nbnTipMinutes(a.time_et) - nbnTipMinutes(b.time_et)).forEach(g => {
           const row = div('mine-game');
           const top = div('mine-game-top');
           top.appendChild(logo(g.away_team));
@@ -874,16 +874,6 @@
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
-
-    // "7:00p" → minutes past midnight. Mirrors _time_key in
-    // nbn-api/routers/schedule.py; times come from the NBA and are always ET.
-    function tipKey(t) {
-      const m = /^(\d{1,2}):(\d{2})([ap])$/.exec(t || '');
-      if (!m) return 9999;
-      let hh = +m[1] % 12;
-      if (m[3] === 'p') hh += 12;
-      return hh * 60 + (+m[2]);
-    }
 
     function fmtTime(t)      { return t ? `${t}m ET` : 'TBD'; }
     function monthKey(d)     { return d.slice(0, 7); }
@@ -1382,7 +1372,7 @@
       let source = '';
       if (schedRes.status === 'fulfilled') {
         games = (schedRes.value.games || []).slice()
-          .sort((a, b) => a.date.localeCompare(b.date) || tipKey(a.time_et) - tipKey(b.time_et)
+          .sort((a, b) => a.date.localeCompare(b.date) || nbnTipMinutes(a.time_et) - nbnTipMinutes(b.time_et)
                           || a.home_team.localeCompare(b.home_team));
         source = schedRes.value.source || '';
       } else {

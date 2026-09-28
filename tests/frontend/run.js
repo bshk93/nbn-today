@@ -86,6 +86,9 @@ const PAGES = [
   // and this should outlive a season the way the old scope=all row was meant
   // to. The whole season's schedule is on file, so this stays populated.
   { path: '/calendar/',               selector: '.sched-schd-game', min: 20, what: 'scheduled games' },
+  // A fixed, already-played game, so the row never depends on this season's
+  // schedule. Checks the head-to-head, the section every game has.
+  { path: '/preview/?away=ORL&home=PHX&date=2026-06-18', selector: '.pv-h2h dd', min: 3, what: 'the game preview head-to-head' },
   { path: '/cap-summary/',            selector: 'table tbody tr',  min: 30, what: 'a row per team' },
   { path: '/committees/',             selector: '.cmte',           min: 4,  what: 'a card per committee' },
   { path: '/committees/rosters/',      selector: '#comp-body tr',   min: 30, what: 'a row per team on the Compliance tab' },

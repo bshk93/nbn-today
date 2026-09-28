@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Game Preview — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="One NBN game ahead of tip-off: form, head-to-head, projected starters and career milestones in reach.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Game Preview — NBN">
+  <meta property="og:description" content="One NBN game ahead of tip-off: form, head-to-head, projected starters and career milestones in reach.">
+  <meta property="og:url" content="https://nbn.today/preview/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <!-- /NBN:og -->
+  <style>
+    .pv-teams { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .pv-teams img { width: 40px; height: 40px; object-fit: contain; }
+    .pv-at { color: var(--text-muted); font-weight: 400; }
+    .pv-final {
+      display: block; margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card);
+      color: var(--text-primary); font-weight: 600;
+    }
+    .pv-final:hover { border-color: var(--link); text-decoration: none; }
+
+    .pv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    .pv-full { grid-column: 1 / -1; }
+    @media (max-width: 640px) { .pv-grid { grid-template-columns: 1fr; } }
+
+    .pv-card-title { font-size: var(--text-sm); font-weight: 700; margin-bottom: var(--space-3); }
+    .pv-team-head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+    .pv-team-head img { width: 28px; height: 28px; object-fit: contain; }
+    .pv-team-head a { font-weight: 700; color: var(--text-primary); }
+    .pv-team-head .pv-rec { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-secondary); font-weight: 600; }
+    .pv-line { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-2); }
+    .pv-muted { color: var(--text-muted); }
+
+    .pv-form { display: flex; flex-direction: column; gap: 0.2rem; font-size: var(--text-sm); }
+    .pv-form a { display: flex; gap: var(--space-2); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .pv-form a:hover { color: var(--text-primary); text-decoration: none; }
+    .pv-wl { width: 1rem; font-weight: 700; }
+    .pv-wl.w { color: var(--success); }
+    .pv-wl.l { color: var(--danger); }
+    .pv-form .pv-date { margin-left: auto; color: var(--text-muted); font-size: var(--text-xs); }
+
+    .pv-h2h { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem var(--space-4); font-size: var(--text-sm); }
+    .pv-h2h dt { color: var(--text-muted); }
+    .pv-h2h dd { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+    .pv-five td:first-child { width: 2.5rem; color: var(--text-muted); }
+    .pv-five a { color: var(--text-primary); }
+
+    .pv-ms { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); }
+    .pv-ms-row { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+    .pv-ms-row img { width: 16px; height: 16px; object-fit: contain; align-self: center; }
+    .pv-ms-row a { font-weight: 600; color: var(--text-primary); }
+    .pv-ms-row .pv-eta { margin-left: auto; color: var(--text-muted); font-size: var(--text-xs); }
+  </style>
+</head>
+<body>
+  <div class="page ui-page">
+    <nav class="nav"></nav>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title" id="pv-title">Game Preview</h1>
+        <p class="ui-subtitle" id="pv-sub"></p>
+      </div>
+    </header>
+    <div id="pv-body"><div class="ui-loading">Loading…</div></div>
+  </div>
+
+  <script src="/league-time.js"></script>
+  <script src="/names.js"></script>
+  <script src="/teams/lineup.js"></script>
+  <script src="/milestones.js"></script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+  <script>
+  // ── Game preview ──────────────────────────────────────────────────────────
+  //
+  // One upcoming (or played) game: both teams' form, the head-to-head, the
+  // projected starting fives and the career milestones in reach. Linked from
+  // the homepage slate and /calendar.
+  //
+  // The game is named by ?away=&home=&date= rather than a schedule id, so a
+  // game from either calendar source works and a link never breaks when the
+  // schedule is re-imported. Everything shown is read from existing files and
+  // endpoints; this page computes nothing the site doesn't already publish,
+  // except a team's record entering the game, which is counted from the box
+  // score index.
+  (function () {
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const jget = url => fetch(url).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
+    const text = url => fetch(url).then(r => (r.ok ? r.text() : ''));
+    const logo = t => `/logos/logo-${esc(String(t).toLowerCase())}.png`;
+    const teamName = t => (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || t;
+    const longDate = d => {
+      const [y, m, day] = d.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString('en-US',
+        { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+    };
+    const shortDate = d => {
+      const [y, m, day] = d.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString('en-US',
+        { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    };
+
+    // Unquoted CSVs only (the h2h matrices and standings history).
+    const parseCSV = t => {
+      const lines = t.trim().split('\n');
+      if (lines.length < 2) return [];
+      const hdr = lines[0].split(',');
+      return lines.slice(1).map(l => {
+        const c = l.split(',');
+        return Object.fromEntries(hdr.map((h, i) => [h, (c[i] || '').trim()]));
+      });
+    };
+
+    const q = new URLSearchParams(location.search);
+    const AWAY = (q.get('away') || '').toUpperCase();
+    const HOME = (q.get('home') || '').toUpperCase();
+    const DATE = q.get('date') || '';
+    if (!/^[A-Z]{3}$/.test(AWAY) || !/^[A-Z]{3}$/.test(HOME) || !/^\d{4}-\d\d-\d\d$/.test(DATE)) {
+      $('pv-body').innerHTML = '<div class="ui-empty">No game named. Open a preview from the '
+        + '<a href="/calendar">calendar</a> or the homepage.</div>';
+      return;
+    }
+    const SEASON = nbnSeasonForDate(DATE);
+    const both = g => (g.home_team === HOME && g.away_team === AWAY)
+      || (g.home_team === AWAY && g.away_team === HOME);
+
+    $('pv-title').innerHTML = `<span class="pv-teams"><img src="${logo(AWAY)}" alt="">${esc(AWAY)}`
+      + ` <span class="pv-at">@</span> <img src="${logo(HOME)}" alt="">${esc(HOME)}</span>`;
+    document.title = `${AWAY} @ ${HOME}, ${shortDate(DATE)} — NBN`;
+
+    Promise.allSettled([
+      jget('/api/schedule'),                                    // 0
+      jget(`/api/boxscores/games?team=${AWAY}`),                // 1
+      jget(`/api/boxscores/games?team=${HOME}`),                // 2
+      text('/data/h2h-alltime.csv'),                            // 3
+      text('/data/h2h-playoffs.csv'),                           // 4
+      text('/standings/standings-history.csv'),                 // 5
+      jget('/api/players'),                                     // 6
+      jget('/api/ovr/current'),                                 // 7
+      Milestones.load(),                                        // 8
+    ]).then(res => {
+      const val = (i, dflt) => (res[i].status === 'fulfilled' && res[i].value) || dflt;
+      const sched = val(0, {});
+      const games = { [AWAY]: val(1, []), [HOME]: val(2, []) };
+      const bios = val(6, {}), ovr = val(7, {});
+      const ms = val(8, null);
+
+      // ── Subtitle: when, where, who's streaming ──
+      const slot = ((sched.games) || []).find(g => g.date === DATE && both(g));
+      $('pv-sub').textContent = [
+        longDate(DATE),
+        slot && slot.time_et ? `${slot.time_et} ET` : '',
+        slot && slot.arena,
+        slot && slot.streamer ? `📺 ${slot.streamer}` : '',
+      ].filter(Boolean).join(' · ');
+
+      // Their games this season before this one, newest first.
+      const before = t => games[t]
+        .filter(g => nbnSeasonForDate(g.date) === SEASON && g.date < DATE)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      const won = (g, t) => (g.home_team === t ? g.home_score > g.away_score : g.away_score > g.home_score);
+      const score = (g, t) => (g.home_team === t ? `${g.home_score}–${g.away_score}` : `${g.away_score}–${g.home_score}`);
+      const opp = (g, t) => (g.home_team === t ? `vs ${g.away_team}` : `@ ${g.home_team}`);
+      const boxHref = g => `/boxscores/?date=${encodeURIComponent(g.date)}`;
+
+      let html = '';
+
+      // ── Played already: lead with the result ──
+      const played = games[AWAY].find(g => g.date === DATE && both(g));
+      if (played) {
+        const w = won(played, AWAY) ? AWAY : HOME;
+        html += `<a class="pv-final" href="${boxHref(played)}">Final: ${esc(played.away_team)} ${played.away_score}`
+          + ` · ${esc(played.home_team)} ${played.home_score} — ${esc(w)} wins. Box score →</a>`;
+      }
+
+      html += '<div class="pv-grid">';
+
+      // ── Each team: record entering the game, last season, last five ──
+      const standings = parseCSV(val(5, ''));
+      const lastSeason = t => standings.filter(r => r.TEAM === t && r.SEASON < SEASON)
+        .sort((a, b) => b.SEASON.localeCompare(a.SEASON))[0];
+      for (const t of [AWAY, HOME]) {
+        const reg = before(t).filter(g => g.gametype === 'REG');
+        const w = reg.filter(g => won(g, t)).length;
+        const ls = lastSeason(t);
+        const form = before(t).slice(0, 5);
+        html += '<section class="ui-card">'
+          + `<div class="pv-team-head"><img src="${logo(t)}" alt="">`
+          + `<a href="/teams/${esc(t)}/">${esc(teamName(t))}</a>`
+          + (reg.length ? `<span class="pv-rec">${w}–${reg.length - w}</span>` : '') + '</div>'
+          + (ls ? `<div class="pv-line"><span class="pv-muted">${esc(ls.SEASON)}:</span> ${esc(ls.W)}–${esc(ls.L)}`
+              + (ls.SEED ? `, ${esc(ls.SEED.replace('-', ' '))} seed` : '')
+              + (ls.PLAYOFF_RESULT ? ` · ${esc(ls.PLAYOFF_RESULT)}` : '') + '</div>' : '')
+          + (form.length
+            ? '<div class="pv-form">' + form.map(g => `<a href="${boxHref(g)}">`
+                + `<span class="pv-wl ${won(g, t) ? 'w' : 'l'}">${won(g, t) ? 'W' : 'L'}</span>`
+                + `<span>${esc(score(g, t))} ${esc(opp(g, t))}</span>`
+                + `<span class="pv-date">${esc(shortDate(g.date))}</span></a>`).join('') + '</div>'
+            : `<div class="pv-line pv-muted">No games yet this season.</div>`)
+          + '</section>';
+      }
+
+      // ── Head to head ──
+      const h2hCell = (csv) => {
+        const row = parseCSV(csv).find(r => r.TEAM === AWAY);
+        const m = row && /^(\d+)-(\d+)$/.exec(row[HOME] || '');
+        return m ? [+m[1], +m[2]] : null;
+      };
+      const tally = rec => {
+        if (!rec || rec[0] + rec[1] === 0) return '<span class="pv-muted">No meetings</span>';
+        const [a, h] = rec;
+        const lead = a === h ? 'Level' : a > h ? `${AWAY} leads` : `${HOME} leads`;
+        return `${lead} ${Math.max(a, h)}–${Math.min(a, h)}`;
+      };
+      const meetings = games[AWAY].filter(both).filter(g => g.date < DATE)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      const series = meetings.filter(g => nbnSeasonForDate(g.date) === SEASON && g.gametype === 'REG');
+      const sw = series.filter(g => won(g, AWAY)).length;
+      const last = meetings[0];
+      html += '<section class="ui-card pv-full"><div class="pv-card-title">Head to head</div><dl class="pv-h2h">'
+        + `<dt>All-time</dt><dd>${tally(h2hCell(val(3, '')))}</dd>`
+        + `<dt>Playoffs</dt><dd>${tally(h2hCell(val(4, '')))}</dd>`
+        + `<dt>This season</dt><dd>${series.length ? tally([sw, series.length - sw]) : '<span class="pv-muted">First meeting</span>'}</dd>`
+        + (last ? `<dt>Last meeting</dt><dd><a href="${boxHref(last)}">${esc(shortDate(last.date))}`
+            + `${nbnSeasonForDate(last.date) !== SEASON ? ` ${esc(last.date.slice(0, 4))}` : ''}:`
+            + ` ${esc(last.away_team)} ${last.away_score} @ ${esc(last.home_team)} ${last.home_score}`
+            + `${last.gametype === 'PLAYOFF' ? ' (playoffs)' : ''}</a></dd>` : '')
+        + '</dl></section>';
+
+      // ── Projected starting fives ──
+      // The team page's depth-chart pick (teams/lineup.js), from today's
+      // rosters and ratings: standard contracts only, as the team page does.
+      // Today's rosters say nothing about a game already played, so this and
+      // the milestones are left off a past game's page.
+      const upcomingGame = !played && DATE >= nbnToday();
+      const roster = t => ms ? Object.keys(ms.rosterTeam).filter(s => ms.rosterTeam[s] === t) : [];
+      for (const t of upcomingGame ? [AWAY, HOME] : []) {
+        const pool = roster(t).filter(s => (bios[s] || {}).type === 'player')
+          .map(s => ({ slug: s, name: (bios[s] || {}).name || s, _posList: (bios[s] || {}).pos || [], OVR: ovr[s] || 0 }));
+        const five = pool.length ? computeStartingFive(pool) : [];
+        const rows = DEPTH_SLOTS.map((slotName, i) => {
+          const p = five[i];
+          return `<tr><td>${slotName}</td><td>${p ? `<a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(nbnPlayerName(p.name))}</a>` : '<span class="pv-muted">—</span>'}</td>`
+            + `<td class="num">${p && p.OVR ? esc(p.OVR) : ''}</td></tr>`;
+        }).join('');
+        html += '<section class="ui-card">'
+          + `<div class="pv-card-title">${esc(t)} projected starters</div>`
+          + (pool.length
+            ? `<div class="ui-table-wrap"><table class="ui-table pv-five"><tbody>${rows}</tbody></table></div>`
+            : '<div class="pv-line pv-muted">Roster unavailable.</div>')
+          + '</section>';
+      }
+
+      // ── Milestones in reach ──
+      // Within five games at their current rate, for either roster.
+      if (ms && upcomingGame) {
+        const list = Milestones.upcoming(ms, { slugs: [...roster(AWAY), ...roster(HOME)], maxGames: 5 }).slice(0, 8);
+        html += '<section class="ui-card pv-full"><div class="pv-card-title">Milestones in reach</div>'
+          + (list.length
+            ? '<div class="pv-ms">' + list.map(m => '<div class="pv-ms-row">'
+                + `<img src="${logo(m.team)}" alt="" title="${esc(m.team)}">`
+                + `<a href="/players/?p=${encodeURIComponent(m.slug)}">${esc(nbnPlayerName(m.name))}</a>`
+                + `<span>${esc(Milestones.describe(m, nbnPlayerName))}</span>`
+                + `<span class="pv-eta">${esc(Milestones.eta(m))}</span></div>`).join('') + '</div>'
+            : '<div class="pv-line pv-muted">Nobody on either roster is within five games of one.</div>')
+          + '</section>';
+      }
+
+      html += '</div>';
+      $('pv-body').innerHTML = html;
+    });
+  })();
+  </script>
+</body>
+</html>

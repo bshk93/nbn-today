@@ -84,7 +84,8 @@
     /* ── Scheduled (unplayed) games ─────────────────────────────── */
     .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
     .sched-schd-game:hover { background: var(--bg-card); }
-    .sched-schd-teams { flex: 1; }
+    .sched-schd-teams { flex: 1; color: inherit; text-decoration: none; }
+    .sched-schd-teams:hover { text-decoration: underline; }
     .sched-schd-time { font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sched-schd-note { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; background: var(--bg-card); border-radius: 3px; padding: 0.1rem 0.35rem; }
     .sched-schd-stream { font-size: 0.7rem; color: var(--gold); white-space: nowrap; }
@@ -93,6 +94,8 @@
     .sched-schd-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; padding: 0 0.2rem; line-height: 1; opacity: 0; transition: opacity 0.1s; }
     .sched-schd-game:hover .sched-schd-del { opacity: 1; }
     .sched-schd-del:hover { color: var(--danger); }
+    .schd-pip { display: block; text-decoration: none; }
+    .schd-pip:hover { text-decoration: underline; }
     .schd-pip { font-size: 0.68rem; color: var(--link); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 
     .cal td.has-scheduled:not(.has-games) .day-num { color: var(--text-secondary); }
@@ -210,6 +213,12 @@
     let gamesByDate          = {};   // "YYYY-MM-DD" → [{home_team, away_team, home_score, away_score, gametype}]
     let vestingByDate        = {};   // "YYYY-MM-DD" → [{slug, name, team, season, amount}]
     let customEventsByDate   = {};   // "YYYY-MM-DD" → [{id, date, label}]
+
+    // Every upcoming game links to /preview, which is named by teams and date so
+    // it works for both schedule sources.
+    const previewHref = g => `/preview/?away=${encodeURIComponent(g.away_team)}`
+      + `&home=${encodeURIComponent(g.home_team)}&date=${encodeURIComponent(g.date)}`;
+
     // Two sources land in here, tagged by `_src` so a delete goes back to the
     // endpoint the game actually came from: 'schedule' is the league's own
     // fixture list (/api/schedule, ~1,200 games a season, seeded from the NBA's
@@ -266,17 +275,6 @@
     function fmtDateHdr(dateStr) {
       const dt = new Date(dateStr + 'T00:00:00');
       return `${CAL_DAYS[dt.getDay()]}, ${MONTHS_SHORT[dt.getMonth()]} ${dt.getDate()}`;
-    }
-
-    // "7:00p" → minutes past midnight, for ordering a day's games. Mirrors
-    // _time_key in nbn-api/routers/schedule.py; times come from the NBA and are
-    // always Eastern.
-    function tipKey(t) {
-      const m = /^(\d{1,2}):(\d{2})([ap])$/.exec(t || '');
-      if (!m) return 9999;
-      let hh = +m[1] % 12;
-      if (m[3] === 'p') hh += 12;
-      return hh * 60 + (+m[2]);
     }
 
     function monthKey(dateStr)  { return dateStr.slice(0, 7); }
@@ -442,7 +440,7 @@
             scheduledGamesByDate[g.date].push({ ...g, _src: 'schedule' });
           });
           Object.values(scheduledGamesByDate).forEach(list =>
-            list.sort((a, b) => (a.time_et ? tipKey(a.time_et) : 9999) - (b.time_et ? tipKey(b.time_et) : 9999)));
+            list.sort((a, b) => (a.time_et ? nbnTipMinutes(a.time_et) : 9999) - (b.time_et ? nbnTipMinutes(b.time_et) : 9999)));
         }
         // Already date-keyed server-side — unlike the two sources above, no
         // per-item push/merge needed.
@@ -901,8 +899,12 @@
           const row = document.createElement('div');
           row.className = 'sched-schd-game';
 
-          const teams = document.createElement('span');
+          // The matchup links to its preview; the row itself stays unclickable
+          // because it also carries the stream and delete buttons.
+          const teams = document.createElement('a');
           teams.className = 'sched-schd-teams';
+          teams.href = previewHref(g);
+          teams.title = 'Game preview';
           teams.textContent = `🏀 ${g.away_team} @ ${g.home_team}`;
           row.appendChild(teams);
 
@@ -1099,8 +1101,9 @@
 
       if (scheduled) {
         scheduled.forEach(g => {
-          const pip = document.createElement('div');
+          const pip = document.createElement('a');
           pip.className = 'schd-pip';
+          pip.href = previewHref(g);
           // `streamer`/`stream` come straight through from /api/schedule (see
           // the merge into scheduledGamesByDate below) — public data, shown
           // here since /schedule was retired in favor of this page for that.

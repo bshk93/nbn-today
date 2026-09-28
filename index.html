@@ -428,6 +428,15 @@
     .dash-mover-ovr { margin-left: auto; flex: none; font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-muted); }
     .dash-mover-ovr .rank-move { margin-left: 0.3rem; }
 
+    /* Milestone watch: the standings' row style, with the milestone on a
+       second line — the sidebar is too narrow for both on one. */
+    .dash-ms-row { flex-wrap: wrap; row-gap: 0.1rem; }
+    .dash-ms-what { flex-basis: 100%; padding-left: calc(18px + 0.35rem); font-size: var(--text-xs); color: var(--text-muted); }
+
+    /* A slate row's time links to that game's preview. */
+    a.dash-game-time { color: var(--text-muted); text-decoration: none; }
+    a.dash-game-time:hover { color: var(--link); }
+
     /* Site footer: the version, linking to what changed in it. */
     .site-footer {
       margin-top: var(--space-7); padding-top: var(--space-4);
@@ -661,6 +670,8 @@
       </div>
       <!-- In-season only. -->
       <div class="dash-card" id="dash-standings" hidden></div>
+      <!-- Career milestones active players are closest to. Hidden until loaded. -->
+      <div class="dash-card" id="dash-milestones" hidden></div>
       <!-- The current power-rankings standing. Hidden until it has one. -->
       <div class="dash-card" id="dash-ranks" hidden></div>
       <!-- Biggest OVR moves in the latest 2K scrape. Hidden until there is one. -->
@@ -1181,6 +1192,7 @@
   <script src="/cap-health.js"></script>
   <script src="/feed-types.js"></script>
   <script src="/names.js"></script>
+  <script src="/milestones.js"></script>
   <script>
   // ── Homepage dashboard ──────────────────────────────────────────────────
   //
@@ -1251,6 +1263,8 @@
       + `</a>`;
 
     const today = nbnToday();
+    const previewHref = g => `/preview/?away=${encodeURIComponent(g.away_team)}`
+      + `&home=${encodeURIComponent(g.home_team)}&date=${encodeURIComponent(g.date)}`;
     const dayBefore = (d, n = 1) => new Date(at(d) - n * 86400000).toISOString().slice(0, 10);
 
     // ?asof=YYYY-MM-DD shows the in-season cards (last night's best,
@@ -1348,7 +1362,7 @@
       }
       const ph = phaseOf(sched.games);
       const upcoming = sched.games.filter(g => g.date >= today).sort((a, b) =>
-        a.date.localeCompare(b.date) || String(a.time_et).localeCompare(String(b.time_et)));
+        a.date.localeCompare(b.date) || nbnTipMinutes(a.time_et) - nbnTipMinutes(b.time_et));
 
       let title = 'Next Up', head = '', list = [], showDates = false;
 
@@ -1423,7 +1437,7 @@
             + `<div class="dash-game">`
             + `<span class="dash-game-opp">${teamChip(g.away_team, recs)}<span>@</span>${teamChip(g.home_team, recs)}</span>`
             + (g.stream ? '<span title="Marked as a stream">📺</span>' : '')
-            + `<span class="dash-game-time">${esc(g.time_et || '')}</span>`
+            + `<a class="dash-game-time" title="Game preview" href="${previewHref(g)}">${esc(g.time_et || 'Preview')} ›</a>`
             + `</div>`).join('') + '</div>' : '');
       card.insertAdjacentHTML('beforeend',
         '<a class="dash-feed-item" href="/calendar" style="display:block;margin-top:0.6rem">Full calendar →</a>');
@@ -1705,6 +1719,27 @@
         + '<a class="dash-standings-more" href="/ratings-changes/">All changes →</a></div>'
         + group('Up', up) + group('Down', down);
       $('dash-movers').hidden = false;
+    }).catch(() => {});
+
+    // ── Milestone watch ───────────────────────────────────────────────────
+    //
+    // The rostered players closest to a round-number career total or to the
+    // next spot in an all-time top 10 (milestones.js, shared with /preview).
+    // One line per player, their nearest, so a single player can't fill it.
+    Milestones.load().then(data => {
+      const seen = new Set();
+      const list = Milestones.upcoming(data)
+        .filter(m => !seen.has(m.slug) && seen.add(m.slug)).slice(0, 6);
+      if (!list.length) return;
+      $('dash-milestones').innerHTML =
+        '<div class="dash-standings-head"><div class="dash-card-title">Milestone Watch</div>'
+        + '<a class="dash-standings-more" href="/stats/totals">Career totals →</a></div>'
+        + list.map(m => `<a class="dash-stand-row dash-ms-row" href="/players/?p=${encodeURIComponent(m.slug)}">`
+          + `<img src="/logos/logo-${esc(m.team.toLowerCase())}.png" alt="" title="${esc(m.team)}">`
+          + `<span class="dash-mover-name">${esc(nbnPlayerName(m.name))}</span>`
+          + `<span class="dash-mover-ovr" title="At their per-game rate from ${esc(data.careers[m.slug].rateSeason || 'their career')}">${esc(Milestones.eta(m))}</span>`
+          + `<span class="dash-ms-what">${esc(Milestones.describe(m, nbnPlayerName))}</span></a>`).join('');
+      $('dash-milestones').hidden = false;
     }).catch(() => {});
 
     // ── Band 1: signed-in only ────────────────────────────────────────────

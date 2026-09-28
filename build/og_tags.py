@@ -100,6 +100,7 @@ PAGES = {
  '/proposals/': (None, 'Rule proposals up for a vote in NBN.'),
  '/proposals/new/': (None, 'Put a rule change to the NBN league.'),
  '/proposals/view/': (None, 'A rule proposal before the NBN league.'),
+ '/preview/': (None, 'One NBN game ahead of tip-off: form, head-to-head, projected starters and career milestones in reach.'),
  '/ratings-changes/': (None, 'Every OVR, position, attribute and badge change the 2K ratings scrape has picked up, player by player.'),
  '/roles/': (None, 'Who can do what in NBN — roles, committees and permissions.'),
  '/rookie-scale/': (None, 'The § 7.1 rookie scale — what every first-round pick is owed.'),
