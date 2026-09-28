@@ -1,93 +1,94 @@
 // =============================================================================
-// FUNCTION INDEX (teams/team.js)
+// FUNCTION INDEX (teams/team.js) — names only; grep for the symbol. Line numbers
+// were dropped because they had drifted by thousands of lines.
 // =============================================================================
 // Constants & boot
-//   TEAMS                        76   abbr → full team name
-//   RETIRED_JERSEYS             109   per-team retired number records
-//   ratingsPopupReady           135   resolves once /ratings-popup.js has loaded
-//   namesReady                  159   resolves once /names.js has loaded
-//   lineupReady                 172   resolves once /teams/lineup.js has loaded
-//   contractReady               161   resolves once /contract.js has loaded
-//   capHealthReady              182   resolves once /cap-health.js has loaded
-//   coachingConfigReady         194   resolves once /coaching-config.js has loaded
-//   radarReady                        resolves once /radar.js has loaded
-//   CAP_HOLD_CSS                730   cap-hold type → td class
-//   CAP_HOLD_LABELS             738   cap-hold type → legend label
-//   SWATCH_COLORS               746   cap-hold type → legend swatch color
-//   CAP_HOLD_COLORS            1705   cap-hold type → text color
-//   PO_CLASS                   1467   playoff result → css class
+//   TEAMS                        abbr → full team name
+//   RETIRED_JERSEYS              per-team retired number records
+//   ratingsPopupReady            resolves once /ratings-popup.js has loaded
+//   namesReady                   resolves once /names.js has loaded
+//   lineupReady                  resolves once /teams/lineup.js has loaded
+//   contractReady                resolves once /contract.js has loaded
+//   capHealthReady               resolves once /cap-health.js has loaded
+//   coachingConfigReady          resolves once /coaching-config.js has loaded
+//   radarReady                   resolves once /radar.js has loaded
+//   CAP_HOLD_CSS                 cap-hold type → td class
+//   CAP_HOLD_LABELS              cap-hold type → legend label
+//   SWATCH_COLORS                cap-hold type → legend swatch color
+//   CAP_HOLD_COLORS              cap-hold type → text color
+//   PO_CLASS                     playoff result → css class
 //
 // Parsing & formatting utilities
-//   parseCSV                    580   CSV text → array of row objects
-//   parseLine                   591   handles quoted fields
-//   fmtPct                      603   decimal → "56.1%"
-//   fmtSigned                   608   signed decimal with +/- prefix
-//   sv                          614   safe numeric value from row field
-//   formatSalary                621   "$37,000,000" display
-//   displayNameFromBio          658   "LAST, FIRST" → "First Last"
-//   calcAge                     668   ISO dob → age string
-//   fmtDate                     857   ISO date → short display date
-//   parseCapHolds               754   legacy CSV cap-holds string → object
-//   currentSeasonYr             771   infers current season year
-//   parseSalaryNum              781   "$37,000,000" → 37000000
-//   fmtDollars                  787   number → "$37.0M"
-//   fmtDollarsShort            1475   number → "$37.0M" / "$450K"
+//   parseCSV                     CSV text → array of row objects
+//   parseLine                    handles quoted fields
+//   fmtPct                       decimal → "56.1%"
+//   fmtSigned                    signed decimal with +/- prefix
+//   sv                           safe numeric value from row field
+//   formatSalary                 "$37,000,000" display
+//   displayNameFromBio           "LAST, FIRST" → "First Last"
+//   calcAge                      ISO dob → age string
+//   fmtDate                      ISO date → short display date
+//   parseCapHolds                legacy CSV cap-holds string → object
+//   currentSeasonYr              infers current season year
+//   parseSalaryNum               "$37,000,000" → 37000000
+//   fmtDollars                   number → "$37.0M"
+//   fmtDollarsShort              number → "$37.0M" / "$450K"
 //
 // Tooltips
-//   _ttShow                     455   shows the shared tooltip element
-//   _ttHide                     454   hides the shared tooltip element
-//   attachTooltip               473   attaches a hover/focus tooltip to an element
+//   _ttShow                      shows the shared tooltip element
+//   _ttHide                      hides the shared tooltip element
+//   attachTooltip                attaches a hover/focus tooltip to an element
 //
 // Cap & roster logic
-//   computeMleType              791   determines MLE type from team salary
-//   mleTypeLabel                802   MLE type → display label
-//   renderHardCapBanner         806   injects hard cap warning banner
-//   countRosterSlots           1653   roster rows → standard / two-way slot counts
-//   renderCapHealth            1757   injects the Cap Health card + summary strip
-//   renderExceptionsSection     816   renders MLE/BAE exceptions panel
-//   renderTradeExceptionsSection  866   renders the trade exceptions (TPE) panel
-//   buildNonGtdTip              631   builds the non-guaranteed salary tooltip text
+//   computeMleType               determines MLE type from team salary
+//   mleTypeLabel                 MLE type → display label
+//   renderHardCapBanner          injects hard cap warning banner
+//   countRosterSlots             roster rows → standard / two-way slot counts
+//   renderCapHealth              injects the Cap Health card + summary strip
+//   renderExceptionsSection      renders MLE/BAE exceptions panel
+//   renderTradeExceptionsSection renders the trade exceptions (TPE) panel
+//   buildNonGtdTip               builds the non-guaranteed salary tooltip text
 //
 // Table builders
-//   buildTable                  673   generic sortable table (used by owners page too)
-//   enableRangeSum              826   Sheets-style drag/shift/ctrl-click column sum + floating bar
-//   copyTableToClipboard              copies a table as TSV + HTML for pasting into Sheets
-//   attachCopyBtn                     adds the "Copy" button next to a section title
-//   computeStartingFive               best PG/SG/SF/PF/C lineup for the Rosters mode
+//   buildTable                   generic sortable table (owners/index.html has its own copy of the same shape)
+//   enableRangeSum               Sheets-style drag/shift/ctrl-click column sum + floating bar
+//   copyTableToClipboard         copies a table as TSV + HTML for pasting into Sheets
+//   attachCopyBtn                adds the "Copy" button next to a section title
+//   computeStartingFive          best PG/SG/SF/PF/C lineup for the Rosters mode
 //                                     — lives in teams/lineup.js, loaded above
-//   buildRosterTable            893   renders the Roster section with salary/cap data
-//   buildPicksTable            1365   renders the Draft Picks section (future picks only, no player yet)
-//   makeSeasonRenderCell       1478   season history cell renderer (badges, playoff coloring)
-//   buildTimeline              1631   season timeline component
-//   buildPersonnelSection      1526   franchise personnel history (tenures + records)
-//   buildHistoricalRoster      2706   renders an all-time roster table for a past season
+//   buildRosterTable             renders the Roster section with salary/cap data
+//   buildPicksTable              renders the Draft Picks section (future picks only, no player yet)
+//   makeSeasonRenderCell         season history cell renderer (badges, playoff coloring)
+//   buildTimeline                season timeline component
+//   buildPersonnelSection        franchise personnel history (tenures + records)
+//   buildHistoricalRoster        renders an all-time roster table for a past season
 //
 // Player cell rendering
-//   playerSlug                 1657   name → slug
-//   makePlayerRenderCell       1661   renders player name/photo/pos badge cell + on-roster dot
-//   applyCapHoldColor          1713   colors cap-hold cells by type
+//   playerSlug                   name → slug
+//   makePlayerRenderCell         renders player name/photo/pos badge cell + on-roster dot
+//   applyCapHoldColor            colors cap-hold cells by type
 //
 // Edit mode & auth
-//   getToken                   1675   reads the stored bearer token
-//   hasAuthRole                1683   true if the signed-in member holds a role
-//   canEditRosters             1690   true if the member may edit this team
-//   canEditTeamSettings                true only for the team's own role (jersey/secondary pos)
-//   canEditCoachingSettings    3492   true only for the team's own role (2K coach profile)
-//   promptToken                1720   modal to enter/store bearer token
-//   withToken                  1751   wraps fn with stored token
-//   makeSelect                 1757   <select> helper
-//   nextSalaryYear             1772   "25-26" → "26-27"
-//   prevSalaryYear             1777   "26-27" → "25-26"
-//   makeEditCell               1782   creates editable cell (text/select/salary/cap-hold)
-//   buildEditableGrid          1871   full in-place editable table grid
-//   rosterCellConfig           2017   cell config map for roster editing
-//   enterEditMode              2041   swaps read view for edit grid
-//   setupPicksEditable         2145   wires edit mode for picks table
-//   setupTeamSettingsTab       3458   wires the Team Settings section (jersey #, secondary pos)
-//   setupCoachingSettingsTab   4786   wires the Coaching Settings section (2K coach profile) — schema-driven off /coaching-config.js
+//   getToken                     reads the stored bearer token
+//   hasAuthRole                  true if the signed-in member holds a role
+//   canEditRosters               true if the member may edit this team
+//   canEditTeamSettings          true only for the team's own role (jersey/secondary pos)
+//   canEditCoachingSettings      true only for the team's own role (2K coach profile)
+//   promptToken                  modal to enter/store bearer token
+//   withToken                    wraps fn with stored token
+//   makeSelect                   <select> helper
+//   nextSalaryYear               "25-26" → "26-27"
+//   prevSalaryYear               "26-27" → "25-26"
+//   makeEditCell                 creates editable cell (text/select/salary/cap-hold)
+//   buildEditableGrid            full in-place editable table grid
+//   rosterCellConfig             cell config map for roster editing
+//   enterEditMode                swaps read view for edit grid
+//   setupPicksEditable           wires edit mode for picks table
+//   setupTeamSettingsTab         wires the Team Settings section (jersey #, secondary pos)
+//   setupCoachingSettingsTab     wires the Coaching Settings section (2K coach profile) — schema-driven off /coaching-config.js
 //                                     Both sections share the Coaching tab (#tab-coaching), folded together 2026-09-04.
-//   setupEditable              2674   wires edit mode for roster table
-//   setupDeadCapEditable       2490   wires edit mode for the dead cap table
+//   setupEditable                wires edit mode for roster table
+//   setupDeadCapEditable         wires edit mode for the dead cap table
 // =============================================================================
 
 const TEAMS = {

@@ -66,7 +66,7 @@ League-wide constants (cap thresholds, roster limits, apron triggers) are in Art
 > **The backlog is `BACKLOG.md`** (~44KB, 37 items) — read it before proposing new
 > work, and update it when work lands. It is far too big to read whole for one
 > question: `grep -n '^### ' BACKLOG.md` lists every item with its priority in a
-> few hundred tokens, then read only the item that matters. Finished items move
+> few hundred tokens, then read only the item that matters.
 > **Everything in it is open** — there are no strikethroughs and no done file
 > (`BACKLOG_DONE.md` was deleted 2026-08-25). A finished item is deleted; one
 > that leaves a real residual is retitled to name what is *left*, not the part
@@ -134,8 +134,9 @@ Two things about dev that bite if you forget them:
   NBS_DATA_DIR=~/nbs-scratch bash build/build.sh
   ```
 
-  `--exclude=.git` matters: the data directory is a git work tree, and copying
-  its `.git` would have the scratch copy committing to the backup repo.
+  The backup repo's git dir is `/var/lib/nbs-backup.git`, outside the data
+  directory, so there is no `.git` to copy today. `--exclude=.git` stays anyway,
+  so that a scratch copy can never end up committing to the backup repo.
 
 The pre-commit hook is tracked at `build/hooks/pre-commit` (`.git/hooks` is not
 cloned, so a fresh checkout would silently lose the smoke test and the version
@@ -320,7 +321,7 @@ Stats flow from game submission to the live site in one automated step:
 |---|---|
 | `build.sh` | Entry point. Syncs `owners.csv` from `members.json`, runs the engine, republishes `public/`, smoke-tests. Picks the engine off `NBN_STATS_ENGINE` (`python`, the default, or `r`). |
 | `test_build_sh.py` | Pins what build.sh must keep being true — defaults to Python, still reaches R, one season resolver. Runs from the pre-commit hook. |
-| `job.R` | **Dormant.** The retired R orchestrator, kept for one season as the rollback. Reached only by `NBN_STATS_ENGINE=r`. |
+| `job.R` | **Dormant.** The retired R orchestrator, kept permanently as the rollback (see above). Reached only by `NBN_STATS_ENGINE=r`. |
 | `build-utils.R` | **Dormant**, with `job.R`. |
 | `link-public.sh` | Regenerates `$NBS_DATA_DIR/public`, the symlink view nginx serves. Called at the end of `build.sh`. |
 | `sync_owners.py` | Regenerates `$NBS_DATA_DIR/owners.csv` from `members.json` tenure data. |
@@ -489,7 +490,7 @@ precise.
 
 ## Architecture
 
-No framework or build step. Every page is a self-contained HTML file with inline `<style>` and `<script>`. Two shared JS files break the pattern as described below.
+No framework or build step. Every page is a self-contained HTML file with inline `<style>` and `<script>`. Shared modules at the repo root (and `teams/team.js`, `teams/lineup.js`, the stats `table.js` files) break the pattern; the main ones are described below, and the common task lookup table names the rest.
 
 ### Shared scripts
 
@@ -546,9 +547,9 @@ RTG/DIFF columns get heat-map coloring via inline `td.style` (hue 0–120 mapped
 
 The "Edit" button on Roster and Draft Picks sections in team pages calls `setupEditable`, which uses `buildEditableGrid` for in-browser table editing. Saves go to the API backend (`PUT /api/roster/{ABB}`, and `PUT`/`DELETE /api/picks/{year}/{rnd}/{orig}` one pick at a time) with a `Bearer` token. Token is prompted via a modal and persisted in `localStorage`. A 403 response clears the stored token.
 
-## API backend (`/home/skim/projects/nbn-api/`)
+## API backend
 
-FastAPI app running as a systemd service on port 8001, proxied through nginx. Source: `/home/skim/projects/nbn-api/main.py`. Reads/writes CSVs in `/var/lib/nothing-but-stats/`.
+FastAPI app running as a systemd service on port 8001, proxied through nginx. The service runs the live checkout, `/home/skim/projects/nbn-api`; **edit in `/home/skim/projects/nbn-api-dev`** (see "Dev and live" above). Entry point: `main.py`. Reads/writes CSVs in `/var/lib/nothing-but-stats/`.
 
 ### Subsystem detail lives in `docs/` — read it before changing that subsystem
 
@@ -708,19 +709,6 @@ Canonical player data lives in `/var/lib/nothing-but-stats/player-bios.json`, se
 | `contracts`, `guarantee_schedule`, `bird_tiers`, `cap_hold_notes`, `retired`, `notes` | See "Fields: change with contract/roster activity" below |
 
 Endpoints: `GET /api/players` (public), `POST /api/players` (admin, creates), `PUT /api/players/{slug}` (rosters role, upserts).
-
-### Migration script
-
-`players/migrate_rosters.py` — one-time script to migrate 30 roster CSVs from legacy format to `SLUG,OVR`. Dry run by default; `--apply` writes changes. Run after all team/tradeblock/bio pages are updated to handle new format.
-
-### Picks CSV columns
-
-| Column | Description | Example |
-|---|---|---|
-| `YEAR` | Draft year | `2026` |
-| `ROUND` | Round | `1st` or `2nd` |
-| `TEAM` | Origin or destination | `Own`, `from NYK` |
-| `TYPE` | Direction | `own` or `acquired` |
 
 ## Data model
 

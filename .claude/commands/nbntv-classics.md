@@ -14,7 +14,7 @@ Write a blurb for the NBNTV Classics entry at rank $ARGUMENTS.
 
 6. Compute the stable key: `{DATE}_{player-slug}` where the slug is the PLAYER name lowercased with any run of non-alphanumeric characters replaced by a single hyphen (e.g. "Curry, Stephen" → "curry-stephen", so key = "2021-06-20_curry-stephen").
 
-7. Write a single proper paragraph blurb — roughly 80–120 words — and insert it into the BLURBS object in `/home/skim/projects/nbn-today/nbntv-classics/index.html` at the matching key.
+7. Write a single proper paragraph blurb — roughly 80–120 words — and insert it into the BLURBS object in `/home/skim/projects/nbn-today-dev/nbntv-classics/index.html` at the matching key. Edit the **dev** checkout, never `/home/skim/projects/nbn-today` — saving there deploys it instantly with no review. Ship it the normal way (branch, commit, merge to `main`, then `./deploy.sh` in the live checkout).
 
 ## Writing rules
 
