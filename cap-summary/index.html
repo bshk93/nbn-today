@@ -492,6 +492,7 @@
     const CATEGORIES = [
       { key: 'guaranteed', label: 'Guaranteed', short: 'Gtd' },
       { key: 'dead',       label: 'Dead Cap',   short: 'Dead' },
+      { key: 'erc',        label: 'Empty Roster Charge', short: 'ERC' },
       { key: 'nongtd',     label: 'Non-Gtd',    short: 'NonGtd' },
       { key: 'team_opt',   label: 'Team Opt',   short: 'TmOpt' },
       { key: 'player_opt', label: 'Player Opt', short: 'PlOpt' },
@@ -550,8 +551,14 @@
     // Shared by the table (current season only) and the Salaries chart tab
     // (any season in the dropdown) so a dollar always lands in the same
     // bucket regardless of which view is looking at it.
-    function computeCatsForTeam(rosterRows, dcRows, playersData, season) {
+    // `erc` is the § 2.1a Empty Roster Charge, in dollars. This page does not
+    // price it: loadData() takes it from GET /api/cap-history/current, the same
+    // figure /committees/rosters and the team page use, and only for the current
+    // season. Any other season gets 0, since no one knows those rosters yet.
+    function computeCatsForTeam(rosterRows, dcRows, playersData, season, erc = 0) {
       const cats = emptyCats();
+      if (erc > 0) cats.erc.players.push({ name: 'Empty roster slots (§ 2.1a)', amount: erc, slug: '' });
+      cats.erc.total = Math.max(0, erc);
 
       rosterRows.forEach(r => {
         const bio = playersData[r.SLUG];
@@ -596,12 +603,13 @@
 
     async function loadData() {
       const abbrs = Object.keys(TEAMS);
-      const [playersRes, capLevelsRes, leagueYearRes, teamStateRes, tpeRes, ...rest] = await Promise.allSettled([
+      const [playersRes, capLevelsRes, leagueYearRes, teamStateRes, tpeRes, capHistRes, ...rest] = await Promise.allSettled([
         fetch('/api/players').then(r => r.json()),
         fetch('/api/cap-levels').then(r => r.json()),
         fetch('/api/league-year').then(r => r.json()),
         fetch('/api/team-state').then(r => r.json()),
         fetch('/api/trade-exceptions').then(r => r.json()),
+        fetch('/api/cap-history/current').then(r => r.json()),
         ...abbrs.map(abbr => fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : '')),
         ...abbrs.map(abbr => fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : [])),
       ]);
@@ -618,6 +626,11 @@
         : nbnSeasonForDate(nbnToday());
       const levels = capLevels[season] || {};
       const rosterData = {}, deadCapData = {};
+      // § 2.1a charge per team, from the server. Ignored if the snapshot is for
+      // a different season than the one this page resolved.
+      const ercByTeam = {};
+      const capHist = capHistRes.status === 'fulfilled' ? (capHistRes.value.entries || []) : [];
+      capHist.forEach(e => { if (e.season === season) ercByTeam[e.team] = e.empty_roster_charge || 0; });
 
       const rows = abbrs.map((abbr, i) => {
         const rosterRes = rosterResults[i];
@@ -628,7 +641,7 @@
         rosterData[abbr] = rosterRows;
         deadCapData[abbr] = dcRows;
 
-        const { cats, total } = computeCatsForTeam(rosterRows, dcRows, playersData, season);
+        const { cats, total } = computeCatsForTeam(rosterRows, dcRows, playersData, season, ercByTeam[abbr] || 0);
         const ts = teamState[abbr]?.current || {};
 
         // Trade Exceptions (§ 4.1a) — only non-expired ones count toward the
@@ -677,7 +690,7 @@
       }
       const seasonList = [...seasons].sort();
 
-      return { rows, levels, capLevels, season, playersData, rosterData, deadCapData, seasonList };
+      return { rows, levels, capLevels, season, playersData, rosterData, deadCapData, seasonList, ercByTeam };
     }
 
     // ── edit state (client-side only, "what if I exclude this contract" scratchpad) ─
@@ -876,9 +889,15 @@
 
     // ── table ────────────────────────────────────────────────────────────────
 
-    const COLS = [
+    // The table's category columns. The ERC column only appears when some team
+    // is actually charged, since most of the time it would be 30 zeros.
+    let TABLE_CATS = CATEGORIES;
+    let COLS = [];
+    function buildCols(rows) {
+      TABLE_CATS = CATEGORIES.filter(c => c.key !== 'erc' || rows.some(r => r.cats.erc.total > 0));
+      COLS = [
       { key: 'team',  label: 'Team',  cls: 'left', sortVal: r => r.teamName, defaultDir: 1 },
-      ...CATEGORIES.map(c => ({
+      ...TABLE_CATS.map(c => ({
         key: c.key, label: c.label, shortLabel: c.short, cls: '',
         sortVal: r => r.cats[c.key].total, defaultDir: -1,
       })),
@@ -889,7 +908,8 @@
       { key: 'hardCap',    label: 'Hard Cap',       shortLabel: 'HCap',   cls: '', sortVal: r => r.hardCap === 'second_apron' ? 2 : r.hardCap === 'first_apron' ? 1 : 0, defaultDir: -1 },
       { key: 'mle',        label: 'MLE Remaining',  shortLabel: 'MLE',    cls: '', sortVal: r => r.mleRemaining ?? -1, defaultDir: -1 },
       { key: 'tpe',        label: 'Trade Exceptions', shortLabel: 'TPE',  cls: '', sortVal: r => r.tpeTotal, defaultDir: -1 },
-    ];
+      ];
+    }
 
     let sortField = 'total';
     let sortDir = -1;
@@ -977,7 +997,7 @@
         tr.appendChild(teamTd);
 
         // Category cells
-        CATEGORIES.forEach(c => {
+        TABLE_CATS.forEach(c => {
           const td = tr.insertCell();
           const val = edited.catTotals[c.key];
           td.textContent = fmtMoney(val);
@@ -1064,13 +1084,14 @@
     };
     const SEG_COLORS = {
       dead:       'var(--text-dim)',
+      erc:        'var(--danger)',
       guaranteed: 'var(--accent)',
       ...CAP_HOLD_COLORS,
     };
 
     // Segment stacking order when "Order by type" is on: dead cap first, then
     // guaranteed money, then progressively less-certain money, cap holds last.
-    const STACK_ORDER = ['dead', 'guaranteed', 'nongtd', 'team_opt', 'player_opt', 'rfa', 'ufa'];
+    const STACK_ORDER = ['dead', 'erc', 'guaranteed', 'nongtd', 'team_opt', 'player_opt', 'rfa', 'ufa'];
 
     let salarySeason = null;
 
@@ -1126,7 +1147,8 @@
       // selected instead of being locked to the current one.
       const teamSal = {};
       for (const abbr of Object.keys(TEAMS)) {
-        const { cats } = computeCatsForTeam(data.rosterData[abbr] || [], data.deadCapData[abbr] || [], data.playersData, SEASON);
+        const erc = SEASON === data.season ? (data.ercByTeam[abbr] || 0) : 0;
+        const { cats } = computeCatsForTeam(data.rosterData[abbr] || [], data.deadCapData[abbr] || [], data.playersData, SEASON, erc);
         const segments = [];
         CATEGORIES.forEach(c => {
           cats[c.key].players.forEach(p => {
@@ -1202,8 +1224,11 @@
           <text x="${cx + 4}" y="${y + BAR_H / 2 + 4}" fill="var(--text-muted)" font-size="8.5">${totalLabel}</text>`;
       }).join('');
 
-      // Legend — same order as the table's category columns
-      const legendDefs = CATEGORIES.map(c => ({ label: c.label, color: SEG_COLORS[c.key] }));
+      // Legend — same order as the table's category columns. ERC only when a
+      // bar actually carries one, same as the table.
+      const hasErc = Object.values(teamSal).some(t => t.segments.some(s => s.cls === 'erc'));
+      const legendDefs = CATEGORIES.filter(c => c.key !== 'erc' || hasErc)
+        .map(c => ({ label: c.label, color: SEG_COLORS[c.key] }));
       const LEG_COL_W = 100;
       const legItems = legendDefs.map((d, i) =>
         `<g transform="translate(${i * LEG_COL_W},0)">
@@ -1250,6 +1275,7 @@
         levels = cachedData.levels;
         renderThresholds(levels, cachedData.season);
         status?.remove();
+        buildCols(cachedData.rows);
         document.getElementById('table-wrap').appendChild(buildTable(cachedData.rows));
       } else if (name === 'chart') {
         renderChartTab(cachedData);
