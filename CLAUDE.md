@@ -6,11 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The site uses semantic versioning (`MAJOR.MINOR.PATCH`) stored in `version.json` at the repo root.
 
-**On every commit:**
+**On every commit that changes something a user can see:**
 1. Add a new entry to the **top** of `changelog.json` with `"version": "pending"`, today's date (`YYYY-MM-DD`), and a `changes` array of human-readable bullet strings.
-2. Commit normally. The pre-commit hook (`.git/hooks/pre-commit`) will auto-bump the patch digit in `version.json` and replace `"pending"` in the new changelog entry with the real version number, then stage both files automatically.
+2. Commit normally. The pre-commit hook (`build/hooks/pre-commit`) will auto-bump the patch digit in `version.json` and replace `"pending"` in the new changelog entry with the real version number, then stage both files automatically.
 
-**For minor or major bumps** (new feature area, significant overhaul): manually edit `version.json` to the desired version before committing. The hook detects that `version.json` is already staged and skips the auto-bump.
+A commit with no pending entry (docs, comments, tooling) gets no bump, by design — don't add an entry just to have one.
+
+**For minor or major bumps** (new feature area, significant overhaul): manually edit `version.json` to the desired version and stage it. The hook skips the auto-bump when the staged `version.json` differs from HEAD.
 
 `changelog.json` format — newest entry first:
 ```json
@@ -149,16 +151,13 @@ bump). A new clone needs one command: `git config core.hooksPath build/hooks`.
 
 ## Running locally
 
-No build step. Serve with any static file server from the project root:
+No build step — but **a local static server is only good for pages with no
+data** (the rulebook, say). The CSVs aren't in the docroot (nginx serves them
+from `$NBS_DATA_DIR/public`) and `http.server` doesn't proxy `/api`, so every
+data fetch 404s and the page renders empty.
 
-```
-python3 -m http.server 8080
-```
-
-All pages fetch CSVs at runtime relative to the site root, so the server must always be rooted at the project root.
-
-For anything authenticated, this is not enough and `dev.nbn.today` is the answer:
-`http.server` does not proxy `/api` (so relative fetches 404), and the session
+**Use `dev.nbn.today`**, which serves this checkout's working tree with the
+real data and API behind it. It also covers anything authenticated: the session
 cookie is `Domain=.nbn.today; Secure`, so a `localhost` origin can never carry
 it — `/committees/pdc`, `/free-agency` and team edit mode are untestable from it. On
 `dev.nbn.today` they work: a session minted on `nbn.today` is sent there
@@ -451,9 +450,9 @@ No framework or build step. Every page is a self-contained HTML file with inline
 - Defines `TEAMS` (abbr → full name) and `RETIRED_JERSEYS` (per-team retired number data)
 - Infers the team abbreviation from `location.pathname`
 - Injects all CSS and HTML into `document.body`
-- Fetches the four per-team CSVs in parallel (`Promise.allSettled`)
+- Fetches everything the page needs in one `Promise.allSettled` (~24 sources, mostly `/api/*`; the roster CSV is the only per-team file)
 - Exports reusable helpers: `buildTable(cols, rows, sortField, sortDir, renderCell)`, `buildRosterTable`, `buildPicksTable`, `buildEditableGrid`, `setupEditable`
-- Handles **edit mode**: committee members can click an "Edit" button on roster/picks sections, enter a bearer token (stored in `localStorage` as `nbn_token`), and save changes via `PUT /api/roster/{ABB}`, or `PUT`/`DELETE /api/picks/{year}/{rnd}/{orig}` per pick, against a backend API running at port 8001.
+- Handles **edit mode** for the roster and picks sections (see `docs/pages.md` § Team page edit mode)
 
 > **Never edit `teams/{ABB}/index.html` directly.** All 30 files are identical 11-line shells (`<script src="../team.js"></script>`). All team page logic lives in `team.js`.
 
@@ -612,33 +611,13 @@ All other player data (name, pos, age, type, cap holds, salaries) lives in `play
 
 **Legacy format:** `PLAYER, POS, AGE, OVR, TYPE, CAP_HOLDS, 25-26, …`. No roster file uses it any more (all 30 are `SLUG`-only), but `team.js` and `tradeblock` still carry a fallback path for it.
 
-### Player bios (player-bios.json)
-
-Canonical player data lives in `/var/lib/nothing-but-stats/player-bios.json`, served by `GET /api/players`. Fields:
-
-| Field | Description |
-|---|---|
-| `name` | `"LAST, FIRST"` uppercase |
-| `pos` | Array: subset of `["PG","SG","SF","PF","C"]` |
-| `dob` | ISO date `"YYYY-MM-DD"` |
-| `college`, `country` | Strings |
-| `draft_year`, `draft_round`, `draft_pick` | Integers or null |
-| `draft_team` | Abbr of drafting team (`"ATL"`) or null — canonical "who drafted this player" |
-| `photo_url` | String |
-| `type` | `"player"`, `"two-way"`, `"draft-rights"`, `"dead"` (legacy), or `""` — see "Player types" below |
-| `cap_holds` | Object keyed by season string: `{"27-28": "PLAYER_OPT", "28-29": "UFA"}` |
-| `salaries` | Dict keyed by season string: `{"25-26": "$37,000,000"}`. Also carries cap-hold amounts and, on a released player, dead money — see "Cap holds" below |
-| `contracts`, `guarantee_schedule`, `bird_tiers`, `cap_hold_notes`, `retired`, `notes` | See "Fields: change with contract/roster activity" below |
-
-Endpoints: `GET /api/players` (public), `POST /api/players` (admin, creates), `PUT /api/players/{slug}` (rosters role, upserts).
-
 ## Data model
 
 The core entities and how they relate.
 
 ### Player
 
-A player is the stable identity unit across the whole site. The canonical store is `player-bios.json` (served via `GET /api/players`), keyed by **slug** (`"curry-stephen"`).
+A player is the stable identity unit across the whole site. The canonical store is `player-bios.json`, keyed by **slug** (`"curry-stephen"`). Endpoints: `GET /api/players` (public), `POST /api/players` (admin, creates), `PUT /api/players/{slug}` (rosters role, upserts).
 
 #### Slug
 
@@ -716,16 +695,6 @@ The roster CSV does **not** carry OVR (see "Roster CSV columns" above).
 | `TEAM_OPT` | Team holds option to extend |
 | `NON_GTD` | Non-guaranteed salary year (team can waive without full cap hit) |
 
-### Roster entry
-
-One row in `{abbr}-roster.csv`. Links a player to a team for the current season.
-
-| Column | Notes |
-|---|---|
-| `SLUG` | Foreign key into `player-bios.json` |
-
-All other display data (name, position, age, salary, cap holds) is joined from `player-bios.json` at render time. OVR is joined from `ovr-history.json` (via `GET /api/ovr/current`) — it is not a roster CSV column (see "OVR" under Player fields above).
-
 ### Draft pick — how to read one (know this, don't look it up)
 
 A pick is identified by `(year, round, orig)` — **`orig` is immutable identity only, "whose draft slot this numerically is," never a current party.** A pick with `orig: "LAL"` does not mean LAL has any live stake in it — they may have fully traded it away years ago; only the numeric-slot label persists. This is the single most common misread: seeing a team name in `orig` and treating it as an active participant. It isn't. Whether it's still theirs is a completely separate question, answered by `owner`/`leaves` below.
@@ -774,7 +743,7 @@ Key columns: `SEASON`, `W`, `L`, `PCT`, `PPG`, `OPPG`, `DIFF`, `SEED` (e.g. `"Ea
 
 One row in `data/owner_stats.csv`. Career-aggregate stats for a GM across all seasons they managed a team.
 
-Key columns: `owner`, `teams` (comma-separated abbrs), `seasons`, `reg_w/l/pct`, `playoff_w/l/pct`, `playoff_appearances`, `po_r2`, `po_conf_finals`, `po_finals`, `championships`, `off_rtg`, `def_rtg`.
+Full header list under "Generated by `build/build.sh`" above; `teams` is comma-separated abbrs.
 
 ### HOF entry
 
