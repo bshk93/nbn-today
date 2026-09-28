@@ -408,3 +408,44 @@ reason a from-scratch rewrite is the wrong idea.
 - poopoo's Google Sheet read (`build/poopoo.py`), which is a deliberate
   read-only diff against the league's published sheet and stays.
 - The box score ingestion path — already Python, already in the API.
+
+## Raw corpus checks and the two R bugs the cutover fixed
+
+Moved from `CLAUDE.md` on 2026-09-28.
+
+The **raw** corpus those files are built from is checked separately, by
+`nbn-api/stats_build/checks.py` — the Sheets-era `check_allstats()` restored
+on 2026-08-26 and run weekly from `check_stats_integrity.py` (alerts to
+Discord, non-zero exit; `--skip-values` turns it off). Points identity,
+made-vs-attempted bounds, OR+DR=R, PF≤6, per-team minutes, blank fields,
+team score vs its players, W/L, valid team codes, plus two the R build never
+had: **no player twice in one team-game**, and **every PLAYER name resolves
+to a real bio once `PLAYER_FIXES` is applied**. Those last two exist because
+they immediately found four errors nothing else could see.
+
+Two R bugs the cutover fixed, so these files read differently than they did
+before it: `league-history.csv` listed every playoff team as a champion (R
+counted playoff wins over *player* rows, not games), and three players named
+Will were written `Barton, will`.
+
+## Season rollover — why the raw file is created on demand
+
+Moved from `CLAUDE.md` on 2026-09-28.
+
+A new season's raw file is created on demand, by the build or the first box
+score commit (`nbn-api/allstats_files.py`). That matters because the
+alternative bit once and would again. The rollover is the **July 1 league year**
+(`nbn-api/season_clock.py`, overridable per season in `league-state.json`) — not
+the September date the sim season starts on. So from July 1 the build resolves a
+season whose file cannot exist yet; before 2026-08-26 it exited 2 there, and
+`build.sh` runs under `set -e`, so **every build failed** from the rollover
+onward. Nothing triggers a build in the offseason, so it stayed invisible for
+five days and would have surfaced as the season's first box score never
+appearing on the site.
+
+What creation does *not* do is paper over a missing data directory. It requires
+the previous season's file to be present; two missing in a row still exits 2,
+which is the case the original refusal was really guarding (see
+`allstats_files.py`). A file that goes missing mid-season reads the same as a
+rollover here and is deliberately left to `check_stats_integrity.py`, which runs
+weekly and reports it precisely (`GONE — was N rows, no file on disk now`).
