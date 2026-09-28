@@ -952,25 +952,30 @@
             const card = document.getElementById('lo-reveal-awards');
             const form = document.getElementById('lo-reveal-awards-form');
             card.style.display = '';
-            const SEASONS = ['25-26', '24-25'];
-            const LABELS  = { '25-26': '2025–26', '24-25': '2024–25' };
             let cfg = {};
             fetch('/api/awards-config').then(r => r.json()).then(c => { cfg = c; }).catch(() => {});
-            card.addEventListener('click', () => {
+            // Every season in awards-config, plus the current league year. A
+            // season with no config entry isn't listed on /awards yet; the
+            // first click here creates the entry (hidden), which opens voting.
+            // Its /awards/YY-YY/ pages must exist too: copy the last season's
+            // folder (build/og_tags.py picks it up).
+            card.addEventListener('click', async () => {
               if (form.style.display !== 'none') { form.style.display = 'none'; return; }
+              const seasons = [...new Set([...Object.keys(cfg), await nbnCurrentSeason()])].sort().reverse();
               form.innerHTML = '<div style="color:var(--text-muted);margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Reveal Season Awards</div>';
-              SEASONS.forEach(s => {
+              seasons.forEach(s => {
                 const row = document.createElement('div');
                 row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border)';
                 const label = document.createElement('span');
-                label.textContent = LABELS[s] || s;
+                label.textContent = `20${s.slice(0, 2)}–${s.slice(3)}`;
                 label.style.color = 'var(--text-secondary)';
                 const revealed = !!(cfg[s]?.revealed);
                 const toggle = document.createElement('button');
-                toggle.textContent = revealed ? 'Revealed ✓' : 'Hidden';
+                toggle.textContent = !cfg[s] ? 'Open voting' : revealed ? 'Revealed ✓' : 'Hidden';
                 toggle.style.cssText = `background:${revealed ? 'var(--market-positive-bg)' : 'var(--border)'};color:${revealed ? 'var(--market-positive)' : 'var(--text-muted)'};border:none;border-radius:5px;padding:0.2rem 0.65rem;font-size:0.78rem;cursor:pointer;font-family:inherit`;
                 toggle.addEventListener('click', async () => {
-                  const next = !cfg[s]?.revealed;
+                  // A season not yet opened opens hidden; after that, it toggles.
+                  const next = cfg[s] ? !cfg[s].revealed : false;
                   const res = await fetch(`/api/awards-config/${s}`, {
                     method: 'PUT',
                     headers: { 'Authorization': `Bearer ${_loToken}`, 'Content-Type': 'application/json' },

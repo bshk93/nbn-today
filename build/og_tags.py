@@ -46,12 +46,6 @@ TAGLINE = 'Nothing But Net — fantasy basketball GM simulation league'
 PAGES = {
  '/': (None, 'Owner history, team pages, standings, player profiles, draft history and stats leaderboards for the NBN fantasy basketball GM simulation league.'),
  '/awards/': (None, 'NBN award winners by season — MVP, DPOY, All-NBN teams and the rest of the ballot.'),
- '/awards/24-25/': ('2024-25 Awards — NBN', 'The 2024-25 NBN awards ballot and results.'),
- '/awards/24-25/results/': ('2024-25 Award Results — NBN', 'Full voting results for the 2024-25 NBN awards.'),
- '/awards/24-25/vote/': ('2024-25 Award Voting — NBN', 'Cast your ballot in the 2024-25 NBN awards.'),
- '/awards/25-26/': ('2025-26 Awards — NBN', 'The 2025-26 NBN awards ballot and results.'),
- '/awards/25-26/results/': ('2025-26 Award Results — NBN', 'Full voting results for the 2025-26 NBN awards.'),
- '/awards/25-26/vote/': ('2025-26 Award Voting — NBN', 'Cast your ballot in the 2025-26 NBN awards.'),
  '/backlog/': (None, 'Internal working list of what needs doing on the NBN site.'),
  '/bet/': (None, 'Put NB¥ on NBN games and league outcomes.'),
  '/nbyen/': ('NB¥ Balances — NBN', 'Every NB¥ balance, and every NB¥ that has moved since the restart.'),
@@ -143,6 +137,15 @@ PAGES = {
  '/transactions/': (None, 'Every trade, signing, extension and release in NBN, with the cap rules each one cleared.'),
  '/trivia/': (None, 'NBN trivia. How well do you actually know this league?'),
 }
+
+# One set of award pages per season folder on disk, so a new season is a
+# copied folder and no edit here.
+for _d in sorted((ROOT / 'awards').glob('[0-9][0-9]-[0-9][0-9]')):
+    _s = _d.name
+    _y = f'20{_s[:2]}-{_s[3:]}'
+    PAGES[f'/awards/{_s}/'] = (f'{_y} Awards — NBN', f'The {_y} NBN awards ballot and results.')
+    PAGES[f'/awards/{_s}/results/'] = (f'{_y} Award Results — NBN', f'Full voting results for the {_y} NBN awards.')
+    PAGES[f'/awards/{_s}/vote/'] = (f'{_y} Award Voting — NBN', f'Cast your ballot in the {_y} NBN awards.')
 
 
 def url_for(p: pathlib.Path) -> str:

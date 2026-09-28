@@ -151,9 +151,6 @@ for _t in TEAMS:
         1, f"teams/{_t.upper()}/",
     )
     SCHEMA[f"data/{_t}-roster.csv"] = (["SLUG"], 0, f"teams/{_t.upper()}/")
-    SCHEMA[f"data/{_t}-picks.csv"] = (
-        ["YEAR", "ROUND", "TEAM", "TYPE"], 0, f"teams/{_t.upper()}/",
-    )
 
 
 class Report:

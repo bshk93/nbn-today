@@ -6096,7 +6096,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
       nameInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-size:0.75rem;width:160px;margin-right:6px';
 
       const seasonInp = document.createElement('input');
-      seasonInp.type = 'text'; seasonInp.placeholder = '25-26';
+      seasonInp.type = 'text'; seasonInp.placeholder = currentSeasonYr();
       seasonInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-size:0.75rem;width:70px;margin-right:6px';
 
       const amtInp = document.createElement('input');

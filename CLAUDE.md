@@ -245,7 +245,7 @@ Updated whenever a team owner saves changes in the team page edit mode (`PUT /ap
 | `data/{abbr}-roster.csv` | `teams/{ABB}/index.html` | Current roster: `SLUG` per player (name/OVR/salary etc. joined from player-bios.json and ovr-history.json at render time) |
 | `data/{abbr}-deadcap.csv` | `GET /api/deadcap/{team}` | Dead cap: one row per released player, `SLUG` plus one column per season. Written by release/waive transactions and `PUT /api/deadcap/{team}` |
 
-Picks are **not** in a per-team file. `PUT /api/picks/...` writes the league-wide `draft-picks.csv`, and team pages read `GET /api/picks/{team}` (see "Draft pick" below). The old `data/{abbr}-picks.csv` files are stale: nothing has written them since 2026-05-17 and no page reads them, though `link-public.sh` still publishes them and `smoke_test.py` still checks their schema.
+Picks are **not** in a per-team file. `PUT /api/picks/...` writes the league-wide `draft-picks.csv`, and team pages read `GET /api/picks/{team}` (see "Draft pick" below). The old `data/{abbr}-picks.csv` files are stale: nothing has written them since 2026-05-17 and no page reads them. They still sit in the data dir but are no longer published (`link-public.sh`, 2026-09-28) or schema-checked.
 
 ---
 

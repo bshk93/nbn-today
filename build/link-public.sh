@@ -32,7 +32,9 @@ fi
 
 # 2. League state that pages fetch directly, all served under /data/.
 mkdir -p "$PUBLIC/data"
-for f in "$DATA_DIR"/*-roster.csv "$DATA_DIR"/*-picks.csv "$DATA_DIR"/*-deadcap.csv \
+# Not *-picks.csv: no page reads the per-team picks files (stale since
+# 2026-05-17), and draft-picks.csv is the lossy ledger, not what /api/picks serves.
+for f in "$DATA_DIR"/*-roster.csv "$DATA_DIR"/*-deadcap.csv \
          "$DATA_DIR/poopoo.json" "$DATA_DIR/trade-votes.json"; do
     [ -e "$f" ] || continue
     ln -sfn "../../$(basename "$f")" "$PUBLIC/data/$(basename "$f")"

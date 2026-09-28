@@ -1329,7 +1329,7 @@
     twStartWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:var(--text-muted)';
     twStartWrap.appendChild(Object.assign(document.createElement('span'), { textContent: 'Starting Season' }));
     const twStart = document.createElement('input');
-    twStart.type = 'text'; twStart.maxLength = 5; twStart.placeholder = '25-26';
+    twStart.type = 'text'; twStart.maxLength = 5; twStart.placeholder = currentSeasonStr();
     twStart.value = currentSeasonStr();
     twStart.style.cssText = 'width:5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);padding:0.3rem 0.4rem;font-size:0.85rem;font-family:inherit;outline:none';
     twStartWrap.appendChild(twStart);
@@ -1363,7 +1363,7 @@
       main.className = 'salary-row-main';
 
       const seasonIn = document.createElement('input');
-      seasonIn.type = 'text'; seasonIn.className = 'season-input'; seasonIn.placeholder = '25-26'; seasonIn.value = season || '';
+      seasonIn.type = 'text'; seasonIn.className = 'season-input'; seasonIn.placeholder = currentSeasonStr(); seasonIn.value = season || '';
       const amountIn = document.createElement('input');
       amountIn.type = 'text'; amountIn.className = 'amount-input'; amountIn.placeholder = 'full salary (cap hit)'; amountIn.value = amount || '';
       const holdSel = document.createElement('select');

@@ -108,6 +108,7 @@
 </div>
 
 <script src="/contract.js"></script>
+<script src="/league-time.js"></script>
 <script>
 const API = '/api';
 
@@ -152,6 +153,11 @@ let MY_TEAMS = [];
 let BIOS = {};
 let ELIGIBLE = [];
 let PROPOSALS = [];
+// Where a contract starts until the fact sheet says otherwise: the current
+// league year. The date rule answers at once; the API refines it.
+let CURRENT_SEASON = nbnSeasonForDate(nbnToday());
+nbnCurrentSeason().then(x => { CURRENT_SEASON = x; });
+
 let FORM = null;   // { player, team, editingId, firstSeason, years, salaries[], options[], kind, bird, eaps, attest }
 let validateSeq = 0;
 
@@ -314,7 +320,7 @@ function renderForm() {
   if (FORM.existingNote) box.appendChild(el('div', 'banner info', FORM.existingNote));
 
   const salWrap = el('div', 'salary-years');
-  let season = FORM.firstSeason || '26-27';
+  let season = FORM.firstSeason || CURRENT_SEASON;
   for (let i = 0; i < FORM.years; i++) {
     const cell = el('div', 'salary-year');
     cell.appendChild(el('label', null, season));
@@ -380,9 +386,9 @@ function renderForm() {
 }
 
 function buildContract() {
-  const salaries = {}; let season = FORM.firstSeason || '26-27';
+  const salaries = {}; let season = FORM.firstSeason || CURRENT_SEASON;
   for (let i = 0; i < FORM.years; i++) { salaries[season] = `$${FORM.salaries[i] || 0}`; season = seasonAfter(season); }
-  const cap_holds = {}; let os = FORM.firstSeason || '26-27';
+  const cap_holds = {}; let os = FORM.firstSeason || CURRENT_SEASON;
   for (let i = 0; i < FORM.years; i++) { if (FORM.options[i]) cap_holds[os] = FORM.options[i]; os = seasonAfter(os); }
   if (FORM.hold) cap_holds[os] = FORM.hold;
   return { salaries, cap_holds };
