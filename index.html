@@ -431,6 +431,11 @@
     /* Milestone watch: the standings' row style, with the milestone on a
        second line — the sidebar is too narrow for both on one. */
     .dash-ms-row { flex-wrap: wrap; row-gap: 0.1rem; }
+    .dash-ms-row[hidden] { display: none; }
+    .dash-ms-more {
+      margin-top: 0.4rem; padding: 0; background: none; border: none;
+      font: inherit; font-size: var(--text-xs); color: var(--link); cursor: pointer;
+    }
     .dash-ms-what { flex-basis: 100%; padding-left: calc(18px + 0.35rem); font-size: var(--text-xs); color: var(--text-muted); }
 
     /* A slate row's time links to that game's preview. */
@@ -1723,22 +1728,33 @@
 
     // ── Milestone watch ───────────────────────────────────────────────────
     //
-    // The rostered players closest to a round-number career total or to the
-    // next spot in an all-time top 10 (milestones.js, shared with /preview).
-    // One line per player, their nearest, so a single player can't fill it.
+    // Every rostered player within five games of a round-number career total
+    // or the next spot in an all-time top 10 (milestones.js, shared with
+    // /preview). One line per player, their nearest. The first few show; the
+    // rest sit behind a toggle that says how many there are.
+    const MS_GAMES = 5, MS_SHOWN = 6;
     Milestones.load().then(data => {
       const seen = new Set();
-      const list = Milestones.upcoming(data)
-        .filter(m => !seen.has(m.slug) && seen.add(m.slug)).slice(0, 6);
+      const list = Milestones.upcoming(data, { maxGames: MS_GAMES })
+        .filter(m => !seen.has(m.slug) && seen.add(m.slug));
       if (!list.length) return;
+      const extra = list.length - MS_SHOWN;
       $('dash-milestones').innerHTML =
         '<div class="dash-standings-head"><div class="dash-card-title">Milestone Watch</div>'
         + '<a class="dash-standings-more" href="/stats/totals">Career totals →</a></div>'
-        + list.map(m => `<a class="dash-stand-row dash-ms-row" href="/players/?p=${encodeURIComponent(m.slug)}">`
+        + list.map((m, i) => `<a class="dash-stand-row dash-ms-row"${i >= MS_SHOWN ? ' hidden' : ''} href="/players/?p=${encodeURIComponent(m.slug)}">`
           + `<img src="/logos/logo-${esc(m.team.toLowerCase())}.png" alt="" title="${esc(m.team)}">`
           + `<span class="dash-mover-name">${esc(nbnPlayerName(m.name))}</span>`
           + `<span class="dash-mover-ovr" title="At their per-game rate from ${esc(data.careers[m.slug].rateSeason || 'their career')}">${esc(Milestones.eta(m))}</span>`
-          + `<span class="dash-ms-what">${esc(Milestones.describe(m, nbnPlayerName))}</span></a>`).join('');
+          + `<span class="dash-ms-what">${esc(Milestones.describe(m, nbnPlayerName))}</span></a>`).join('')
+        + (extra > 0 ? `<button type="button" class="dash-ms-more">Show ${extra} more</button>` : '');
+      const more = $('dash-milestones').querySelector('.dash-ms-more');
+      let open = false;
+      if (more) more.addEventListener('click', () => {
+        open = !open;
+        $('dash-milestones').querySelectorAll('.dash-ms-row').forEach((r, i) => { if (i >= MS_SHOWN) r.hidden = !open; });
+        more.textContent = open ? 'Show fewer' : `Show ${extra} more`;
+      });
       $('dash-milestones').hidden = false;
     }).catch(() => {});
 

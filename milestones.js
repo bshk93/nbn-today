@@ -12,7 +12,7 @@
 // only knows who played last season, and the offseason moves players around.
 //
 // Two kinds of milestone:
-//   round    a round number at or above that stat's floor (10,000 points)
+//   round    a round number at or above that stat's floor (7,500 points)
 //   rank     passing the next player up, inside the all-time top 10
 //
 // "Games away" is the gap divided by the player's per-game rate in their latest
@@ -23,12 +23,12 @@
 const Milestones = (() => {
   // step: round numbers come every `step`; min: the first one worth a mention.
   const STATS = [
-    { key: 'PTS', label: 'points',   step: 1000, min: 5000 },
-    { key: 'REB', label: 'rebounds', step: 500,  min: 2500 },
-    { key: 'AST', label: 'assists',  step: 500,  min: 2500 },
-    { key: 'STL', label: 'steals',   step: 100,  min: 500 },
-    { key: 'BLK', label: 'blocks',   step: 100,  min: 500 },
-    { key: '3PM', label: 'threes',   step: 250,  min: 1000 },
+    { key: 'PTS', label: 'points',   step: 2500, min: 5000 },
+    { key: 'REB', label: 'rebounds', step: 1000, min: 3000 },
+    { key: 'AST', label: 'assists',  step: 1000, min: 3000 },
+    { key: 'STL', label: 'steals',   step: 250,  min: 500 },
+    { key: 'BLK', label: 'blocks',   step: 250,  min: 500 },
+    { key: '3PM', label: 'threes',   step: 500,  min: 1000 },
   ];
   const TOP_N = 10;
   const MIN_GAMES_FOR_RATE = 10;
