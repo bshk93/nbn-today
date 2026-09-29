@@ -149,7 +149,13 @@ Trade 52:
 LAL receives: ATL 2027 2nd
 
 UTA receives: Jaxson Hayes, Walter Clayton
+
+UTA releases: Jaxson Hayes
 ```
+
+The "releases" line appears only when the trade carries a release
+(`docs/trc-trade-pipeline.md` decision 12). Each release also opens the waiver
+wire like any other, so #waivers gets its usual post.
 
 The number is counted per league year and assigned when the trade is
 finalized, not when it was proposed (`trade_numbers` in `trade-requests.json`,

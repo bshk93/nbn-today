@@ -22,13 +22,6 @@ which made the same list read as both done and open; it is not coming back.
 
 ## 1. Data integrity / open reconciliation
 
-### [P1] Nobody holds `trc` or `trc_head` — a trade sent to TRC can't be finalized
-Found 2026-09-24. Finalizing needs 3 `trc` approval ballots
-(`APPROVALS_NEEDED`), and `admin` deliberately can't cast one, so the first
-trade anyone submits through "Submit to TRC" will sit in balloting for good.
-None has been submitted yet. Assigning the committee is a league decision, then
-`/members` role edits — no code change.
-
 ### [P1] The leaked GitHub PAT still needs rotating — it is off disk, not revoked
 `/srv/shiny/nothing-but-stats/.git/config` had `origin` set to
 `https://ghp_…@github.com/bshk93/nothing-but-stats` — a personal access token

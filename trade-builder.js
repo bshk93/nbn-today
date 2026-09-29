@@ -41,6 +41,12 @@
       .tb-trade-row-meta { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
       .tb-trade-row.checked .tb-trade-row-name { color: var(--text-primary); font-weight: 600; }
       .tb-trade-row.checked .tb-trade-row-meta { color: var(--market-positive); }
+      .tb-release { border-top: 1px solid var(--border); }
+      .tb-release:empty { display: none; }
+      .tb-release > summary { cursor: pointer; font-size: 0.75rem; color: var(--text-muted); padding: 0.5rem 1rem; }
+      .tb-release[open] > summary { color: var(--text-secondary); }
+      .tb-release .tb-trade-row input[type=checkbox] { accent-color: var(--danger); }
+      .tb-release .tb-trade-row.checked .tb-trade-row-meta { color: var(--danger); }
       .tb-panel-empty, .tb-panel-loading { padding: 1.25rem 1rem; font-size: 0.82rem; color: var(--text-muted); text-align: center; }
       .tb-dest-sel { width: 100%; margin-top: 0.15rem; background: var(--bg-page); border: 1px solid #f59e0b55; border-radius: 5px; color: var(--gold); font-size: 0.74rem; padding: 0.2rem 0.35rem; font-family: inherit; cursor: pointer; }
       .tb-dest-sel.unset { border-color: #f8717199; color: var(--danger-light); }
@@ -127,7 +133,8 @@
     let teamSlots = [];      // ordered array of slot ids, e.g. ['t1', 't2', 't3']
     let slotTeam = {};       // slotId -> abbr ('' if unset)
     let nextSlotId = 1;
-    let selections = {};     // slotId -> { players: Map<slug, destAbbr|null>, picks: Map<pickKey, destAbbr|null> }
+    let selections = {};     // slotId -> { players: Map<slug, destAbbr|null>, picks: Map<pickKey, destAbbr|null>, releases: Set<slug> }
+    let releaseOpen = {};    // slotId -> whether its "Release after the trade" list is expanded
     let signTerms = {};      // slug -> { years, salaries: [y1,y2,...], birdType, method }
     let LEAGUE_YEAR = null;
     let lastResult = null;
@@ -251,7 +258,7 @@
       const slotId = `t${nextSlotId++}`;
       teamSlots.push(slotId);
       slotTeam[slotId] = '';
-      selections[slotId] = { players: new Map(), picks: new Map() };
+      selections[slotId] = { players: new Map(), picks: new Map(), releases: new Set() };
 
       const card = document.createElement('div');
       card.className = 'tb-team-panel';
@@ -270,6 +277,7 @@
           <option value="bae">Bi-Annual Exception</option>
         </select>
         <div class="tb-panel-body" id="tb-body-${slotId}"><div class="tb-panel-empty">Select a team to see their roster.</div></div>
+        <details class="tb-release" id="tb-rel-${slotId}"></details>
       `;
       document.getElementById('tb-teams-container').appendChild(card);
 
@@ -311,7 +319,7 @@
       const exc = document.getElementById(`tb-exc-${slotId}`);
       exc.value = '';
       slotTeam[slotId] = abbr || '';
-      selections[slotId] = { players: new Map(), picks: new Map() };
+      selections[slotId] = { players: new Map(), picks: new Map(), releases: new Set() };
 
       if (!abbr) {
         body.innerHTML = '<div class="tb-panel-empty">Select a team to see their roster.</div>';
@@ -587,8 +595,78 @@
     // ── Live trade check ─────────────────────────────────────────────────────
 
     function updateCheckBtn() {
+      renderReleaseSections();
       clearTimeout(validateTimer);
       validateTimer = setTimeout(runCheck, 250);
+    }
+
+    // ── Releases after the trade (§ 5.1) ─────────────────────────────────────
+    // A team can release anyone it will have once the trade is done: a player
+    // it keeps, or one it receives here. Applied right after the trade, each as
+    // an ordinary release (normal payment schedule).
+
+    function rosterAfterTrade(slotId) {
+      const abbr = slotTeam[slotId];
+      const sel = selections[slotId];
+      // Only players under contract: draft rights and cap holds have nothing to release.
+      const releasable = p => !p.capHold && p.type !== 'draft-rights';
+      const kept = (rosterData[abbr] || []).filter(p => !sel.players.has(p.slug) && releasable(p))
+        .map(p => ({ slug: p.slug, name: p.name, salary: p.salary, from: null }));
+      const incoming = [];
+      teamSlots.forEach(other => {
+        const from = slotTeam[other];
+        if (other === slotId || !from) return;
+        selections[other].players.forEach((dest, slug) => {
+          if (dest !== abbr) return;
+          const p = (rosterData[from] || []).find(x => x.slug === slug);
+          if (!p || !releasable(p)) return;
+          incoming.push({ slug, name: p.name, salary: p.salary, from });
+        });
+      });
+      return incoming.concat(kept);
+    }
+
+    function renderReleaseSections() {
+      teamSlots.forEach(slotId => {
+        const el = document.getElementById(`tb-rel-${slotId}`);
+        if (!el) return;
+        if (!slotTeam[slotId]) { el.innerHTML = ''; return; }
+        const players = rosterAfterTrade(slotId);
+        const rel = selections[slotId].releases;
+        rel.forEach(slug => { if (!players.some(p => p.slug === slug)) rel.delete(slug); });
+
+        el.innerHTML = '';
+        el.open = !!releaseOpen[slotId] || rel.size > 0;
+        const sum = document.createElement('summary');
+        sum.textContent = rel.size ? `Release after the trade (${rel.size})` : 'Release after the trade';
+        el.appendChild(sum);
+        el.ontoggle = () => { releaseOpen[slotId] = el.open; };
+        players.forEach(p => {
+          const row = document.createElement('label');
+          row.className = 'tb-trade-row' + (rel.has(p.slug) ? ' checked' : '');
+          const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = rel.has(p.slug);
+          cb.addEventListener('change', () => {
+            if (cb.checked) rel.add(p.slug); else rel.delete(p.slug);
+            releaseOpen[slotId] = true;
+            updateCheckBtn();
+          });
+          const nameSpan = document.createElement('span'); nameSpan.className = 'tb-trade-row-name'; nameSpan.textContent = displayName(p.name);
+          const meta = document.createElement('span'); meta.className = 'tb-trade-row-meta';
+          meta.textContent = `${p.from ? 'from ' + p.from + ' · ' : ''}${p.salary ? fmtM(p.salary) : 'no sal'}`;
+          row.appendChild(cb); row.appendChild(nameSpan); row.appendChild(meta);
+          el.appendChild(row);
+        });
+      });
+    }
+
+    function buildReleases() {
+      const out = {};
+      teamSlots.forEach(slotId => {
+        const abbr = slotTeam[slotId];
+        const rel = selections[slotId] && selections[slotId].releases;
+        if (abbr && rel && rel.size) out[abbr] = Array.from(rel);
+      });
+      return out;
     }
 
     function setStatus(msg, cls) {
@@ -701,6 +779,7 @@
       const tradeBody = {
         transfers, exceptions, tpe_usage,
         is_sign_and_trade, sign_and_trade_players, sign_and_trade_signings,
+        releases: buildReleases(),
       };
 
       try {
@@ -766,6 +845,11 @@
       document.getElementById('tb-sheet-btn').addEventListener('click', publishTradeSheet);
       if (myParties.length) {
         document.getElementById('tb-trc-btn').addEventListener('click', () => {
+          const badReleases = checks.filter(c => !c.passed && (c.check || '').startsWith('trade_release_'));
+          if (badReleases.length) {
+            alert(`A release in this trade can't happen, so it could never be finalized:\n\n${badReleases.map(c => `• ${c.message}`).join('\n')}\n\nFix or remove the release first.`);
+            return;
+          }
           if (!legal) {
             const failedMsgs = checks.filter(c => !c.passed && c.level !== 'warning').map(c => `• ${c.message}`).join('\n')
               || '(no specific check message — see the results above)';

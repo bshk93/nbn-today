@@ -140,6 +140,27 @@ count, not a share of the committee.
     actually controls, corrupting the picks conveyance tree rather than just
     waiving a league rule. That gate stays an unconditional 422.
 
+12. **Releases after the trade, added 2026-09-29.** A trade can carry
+    `releases: {team: [slug]}` — players a team releases right after the
+    trade, one it keeps or one it receives (the first ask: UTA taking Jaxson
+    Hayes and cutting him). It lives on `TradeIn` itself, not on the request,
+    so every trade path gets it: `_trade_release_checks` judges each release
+    against the post-trade rosters inside `_validate_trade`, and `apply_trade`
+    applies each one after the trade as its own ordinary release
+    (`apply_release`, which the office's release now goes through too: own
+    ledger entry, dead cap on the normal payment schedule, the waiver wire).
+    The trade's roster-size and Empty Roster Charge checks count the releases
+    (`_valid_trade_releases`), so a trade that takes a team to 16 and cuts
+    back to 15 reads as 15. The cap figures don't move: a release on the
+    original payment schedule leaves the same money on the books as dead cap.
+    A release that can't happen is **not forceable** — `apply_trade` refuses
+    it with `can_force: False`, `_live_check` reports it as `release_problems`,
+    and the builder won't submit it — because there is nothing to apply for a
+    player who won't be there or has no contract. Stretch is deliberately not
+    offered. The releasing team's owner already consents to the whole trade,
+    so there is no separate consent. The #transactions post adds a
+    "UTA releases: …" line.
+
 ## Roles
 
 Added to `VALID_ROLES` / `ROLE_IMPLIES` (`nbn-api/routers/constants.py`):

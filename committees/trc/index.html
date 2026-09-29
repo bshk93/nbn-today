@@ -233,9 +233,13 @@
     }
 
     function renderTransfers(trade) {
-      return (trade.transfers || []).map(tr =>
+      const legs = (trade.transfers || []).map(tr =>
         `<div class="transfer-row"><b>${esc(tr.from_team)}</b> → <b>${esc(tr.to_team)}</b>: ${
           tr.assets.map(a => esc(assetLabel(a))).join(', ')}</div>`).join('');
+      // Players a team releases right after the trade (§ 5.1).
+      const releases = Object.entries(trade.releases || {}).filter(([, slugs]) => slugs.length).map(([team, slugs]) =>
+        `<div class="transfer-row"><b>${esc(team)}</b> releases: ${slugs.map(esc).join(', ')}</div>`).join('');
+      return legs + releases;
     }
 
     function renderChecks(validation) {
@@ -300,7 +304,8 @@
 
       const actions = [];
       const hasOwnershipProblems = (item.validation.ownership_problems || []).length > 0;
-      if (canFinalize) actions.push(`<button type="button" class="primary" data-act="finalize" data-id="${item.id}" data-stale="${stale}" data-has-ownership-problems="${hasOwnershipProblems}">Finalize${stale ? ' (illegal — override required)' : ''}</button>`);
+      const hasReleaseProblems = (item.validation.release_problems || []).length > 0;
+      if (canFinalize) actions.push(`<button type="button" class="primary" data-act="finalize" data-id="${item.id}" data-stale="${stale}" data-has-ownership-problems="${hasOwnershipProblems}" data-has-release-problems="${hasReleaseProblems}">Finalize${stale ? ' (illegal — override required)' : ''}</button>`);
       if (canReject) actions.push(`<button type="button" class="danger" data-act="reject" data-id="${item.id}">Reject</button>`);
       if (canWithdraw) actions.push(`<button type="button" data-act="withdraw" data-id="${item.id}">Withdraw</button>`);
       const pendingMine = ownedParties.filter(p => !(item.consents[p] || {}).consented);
@@ -398,7 +403,12 @@
             } else if (act === 'finalize') {
               const stale = btn.dataset.stale === 'true';
               const hasOwnershipProblems = btn.dataset.hasOwnershipProblems === 'true';
+              const hasReleaseProblems = btn.dataset.hasReleaseProblems === 'true';
               let body = {};
+              if (hasReleaseProblems) {
+                alert('One of this trade\'s releases can\'t happen (see Legality & ownership above), and that can\'t be overridden. The trade needs to be re-proposed without it.');
+                return;
+              }
               if (hasOwnershipProblems) {
                 alert('This trade involves an asset that is no longer where it expects it to be (see Legality & ownership above) — that can\'t be overridden, since finalizing would corrupt real roster/pick data. The trade needs to be re-proposed instead.');
                 return;
