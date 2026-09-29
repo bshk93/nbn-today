@@ -108,7 +108,6 @@
     <header class="ui-header">
       <div>
         <h1 class="ui-title">Trade Request Committee</h1>
-        <p class="ui-subtitle">Team-proposed trades — consent, ballots, and the final call.</p>
       </div>
     </header>
 
@@ -120,8 +119,9 @@
         <p>
           A team proposes a trade from <a href="/tradeblock/">the tradeblock</a>'s "Propose a Trade"
           builder (or, for reference, the transaction simulator's trade mode), using the "Submit to
-          TRC" button. Every team named in the trade must consent
-          — from the sim, or from the ⋯ menu on their team page — before it opens for ballots. Three
+          TRC" button. Every team named in the trade, the proposer's included, must consent here
+          before it opens for ballots. Only a team's owner can consent, and each owner gets an inbox
+          notice when a trade naming their team is submitted. Team members see only their own trades. Three
           <b>trc</b> members must approve before it's ready; a ballot needs a note because it's
           judging fairness, not legality (legality is checked live, automatically, the whole time a
           request is open). Only <b>trc_head</b> can reject or finalize a request. Finalizing
@@ -155,7 +155,7 @@
       POR: "Portland Trail Blazers", SAC: "Sacramento Kings", SAS: "San Antonio Spurs",
       TOR: "Toronto Raptors", UTA: "Utah Jazz", WAS: "Washington Wizards",
     };
-    let me = { name: null, roles: [] };
+    let me = { name: null, roles: [], owner_of: [] };
 
     function esc(s) {
       return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -169,7 +169,14 @@
     // is holding a team's role treated as "you're a party" via admin (an
     // admin isn't magically on every team).
     function isTrc() { return (me.roles || []).includes('trc') || (me.roles || []).includes('trc_head'); }
-    function hasTeamRole(t) { return (me.roles || []).includes(t); }
+    // Consent and withdraw are owner-only on the server (is_team_owner), so the
+    // buttons key off owner_of — a GM holds the team role but would get a 403.
+    function ownsTeam(ab) { return (me.owner_of || []).includes(ab); }
+    // Teams whose requests this member sees without a trc role: every team they
+    // hold a role for, so a GM can follow a trade their owner has to consent to.
+    function myTeams() {
+      return Object.keys(TEAMS).filter(ab => ownsTeam(ab) || (me.roles || []).includes(ab.toLowerCase()));
+    }
 
     let toastTimer = null;
     function toast(msg, bad) {
@@ -200,8 +207,9 @@
       try {
         me = await fetch('/api/auth/me', { headers: token ? { Authorization: `Bearer ${token}` } : {} }).then(r => r.json());
         me.roles = me.roles || [];
+        me.owner_of = me.owner_of || [];
       } catch (e) {
-        me = { name: null, roles: [] };
+        me = { name: null, roles: [], owner_of: [] };
       }
     }
 
@@ -213,7 +221,7 @@
       wrap.innerHTML = `
         <h2>This page is for the Trade Request Committee</h2>
         <p>${me.name
-          ? "Your member account doesn't hold the trc or trc_head role, so there's nothing to do here."
+          ? "Your member account doesn't hold a committee role or a team role, so there's nothing to do here."
           : "Sign in on nbn.today in this browser and you're signed in here automatically, or paste your member token via the profile menu."}</p>
         <a href="/committees/">← Back to committees</a>`;
       g.appendChild(wrap);
@@ -264,8 +272,8 @@
       const canBallot = isTrc() && ['balloting', 'ready_to_finalize'].includes(item.status);
       const canFinalize = isTrcHead() && item.status === 'ready_to_finalize';
       const canReject = isTrcHead() && !terminal;
-      const myParty = item.parties.some(p => hasTeamRole(p.toLowerCase()));
-      const canWithdraw = !terminal && (myParty || isTrcHead());
+      const ownedParties = item.parties.filter(ownsTeam);
+      const canWithdraw = !terminal && (ownedParties.length > 0 || isTrcHead());
 
       const approveCount = Object.values(item.ballots || {}).filter(b => b.decision === 'approve').length;
 
@@ -293,9 +301,9 @@
       if (canFinalize) actions.push(`<button type="button" class="primary" data-act="finalize" data-id="${item.id}" data-stale="${stale}" data-has-ownership-problems="${hasOwnershipProblems}">Finalize${stale ? ' (illegal — override required)' : ''}</button>`);
       if (canReject) actions.push(`<button type="button" class="danger" data-act="reject" data-id="${item.id}">Reject</button>`);
       if (canWithdraw) actions.push(`<button type="button" data-act="withdraw" data-id="${item.id}">Withdraw</button>`);
-      if (item.status === 'awaiting_consent' && myParty) {
-        const alreadyConsented = item.parties.every(p => !hasTeamRole(p.toLowerCase()) || (item.consents[p] || {}).consented);
-        if (!alreadyConsented) actions.push(`<button type="button" class="primary" data-act="consent" data-id="${item.id}">Consent on behalf of my team</button>`);
+      const pendingMine = ownedParties.filter(p => !(item.consents[p] || {}).consented);
+      if (item.status === 'awaiting_consent' && pendingMine.length) {
+        actions.push(`<button type="button" class="primary" data-act="consent" data-id="${item.id}">Consent for ${esc(pendingMine.map(teamName).join(', '))}</button>`);
       }
       if (actions.length) body += `<div class="req-actions">${actions.join('')}</div>`;
 
@@ -320,6 +328,11 @@
 
     async function loadItems() {
       ITEMS = await fetch('/api/trade-requests').then(r => r.ok ? r.json() : []).catch(() => []);
+      // Committee members see everything; a team member sees only their own trades.
+      if (!isTrc()) {
+        const mine = new Set(myTeams());
+        ITEMS = ITEMS.filter(i => i.parties.some(p => mine.has(p)));
+      }
       render();
     }
 
@@ -408,7 +421,7 @@
 
     async function init() {
       await loadMe();
-      if (!isTrc() && !isTrcHead()) { renderGate(); return; }
+      if (!isTrc() && !isTrcHead() && !myTeams().length) { renderGate(); return; }
       document.getElementById('app').hidden = false;
       await loadItems();
     }

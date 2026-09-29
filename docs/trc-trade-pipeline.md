@@ -105,9 +105,12 @@ count, not a share of the committee.
 
 10. **Inbox notifications, added 2026-09-21** (the initial build shipped with
     none; this closed that gap): `POST /api/trade-requests` notifies every
-    party team *except* the one(s) the proposer already represents —
-    `inbox.notify_team`, matching the `offer_sheet` precedent of notifying
-    the other side, not the actor. The consent endpoint notifies both `trc`
+    party team via `inbox.notify_team`, **the proposer's own included**.
+    (Until 2026-09-29 it skipped the proposer's side, on the `offer_sheet`
+    precedent of notifying the other side, not the actor. That was wrong
+    here: decision 7 needs the proposer's owner to consent too, and request
+    #1 sat with nobody on the proposing side told.) The proposer's team gets
+    a different text saying its own consent is still needed. The consent endpoint notifies both `trc`
     and `trc_head` (`inbox.notify_role`, called for both roles separately —
     `notify_role` checks a member's literal roles list, not `ROLE_IMPLIES`,
     so a `trc_head`-only member would otherwise never hear about it) the
@@ -207,5 +210,11 @@ Endpoints — all under `/api/trade-requests`:
   detail: trade legs, live legality/ownership panel, consent chips, ballots,
   and role-gated actions (ballot form for `trc`; reject/finalize for
   `trc_head`; withdraw for a party or `trc_head`).
+  **Since 2026-09-29 the page also admits team members**, because it is the
+  only place consent can be given and the inbox notice links here. Before
+  that, a party owner with no `trc` role hit the gate and could not consent
+  anywhere. A member with no committee role sees only requests naming a team
+  they hold a role for. Consent and Withdraw key off `owner_of` from
+  `/api/auth/me`, since the server gates both on `is_team_owner`.
 - `nav.js` `ROLE_PAGES`, `committees/index.html`'s `COMMITTEES` array, and
   `build/og_tags.py`'s `PAGES` all got a TRC entry.
