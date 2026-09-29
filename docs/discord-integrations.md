@@ -141,6 +141,16 @@ to do: **ready for a vote** (every team has agreed; with the legs and live
 legality) and **ready to finalize** (third approval in). Nothing on proposal,
 on individual votes, or on reject / withdraw / finalize — decided 2026-09-29.
 
+**Voting from the post.** The ready-for-a-vote post carries two emoji-only
+buttons, 👍 and 👎 (`trc_notify.vote_buttons`). A click reaches
+`/api/discord/interactions` as a component interaction and is handled by
+`routers/trc_discord.py`: the clicker is matched by their linked Discord id
+(`/link`) and must hold `trc`; the click opens a one-field form for the note,
+since every vote needs one; submitting casts the vote through
+`ballot_trade_request`, so it is the same record as a site vote. Every reply is
+ephemeral. Changing a vote is clicking the other button. Pinned by
+`tests/test_trc_discord.py`.
+
 **The finalized trade goes to #transactions** (`DISCORD_TRADES_CHANNEL`), the
 league's public record of trades, as plain text in the league's own format:
 

@@ -161,6 +161,14 @@ count, not a share of the committee.
     so there is no separate consent. The #transactions post adds a
     "UTA releases: …" line.
 
+13. **Voting from Discord, added 2026-09-29.** The trc-alerts ready-for-a-vote
+    post has 👍 / 👎 buttons. Buttons, not reactions: a click reaches the API
+    at once and names the clicker, where reactions would need polling, can't
+    carry a note, and a casual 👍 would count. The note is still required —
+    the click opens a one-field form. The role check is the site's (`trc`,
+    no admin bypass), re-run when the form is submitted. Details in
+    `docs/discord-integrations.md` § TRC alerts.
+
 ## Roles
 
 Added to `VALID_ROLES` / `ROLE_IMPLIES` (`nbn-api/routers/constants.py`):
