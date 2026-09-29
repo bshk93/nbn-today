@@ -164,9 +164,9 @@ count, not a share of the committee.
 13. **Voting from Discord, added 2026-09-29.** The trc-alerts ready-for-a-vote
     post has 👍 / 👎 buttons. Buttons, not reactions: a click reaches the API
     at once and names the clicker, where reactions would need polling, can't
-    carry a note, and a casual 👍 would count. The note is still required —
-    the click opens a one-field form. The role check is the site's (`trc`,
-    no admin bypass), re-run when the form is submitted. Details in
+    carry a note, and a casual 👍 would count. One click is the whole vote;
+    the site still requires a note, so a Discord vote carries "Voted from
+    Discord". The role check is the site's (`trc`, no admin bypass). Details in
     `docs/discord-integrations.md` § TRC alerts.
 
 ## Roles

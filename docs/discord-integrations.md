@@ -145,9 +145,9 @@ on individual votes, or on reject / withdraw / finalize — decided 2026-09-29.
 buttons, 👍 and 👎 (`trc_notify.vote_buttons`). A click reaches
 `/api/discord/interactions` as a component interaction and is handled by
 `routers/trc_discord.py`: the clicker is matched by their linked Discord id
-(`/link`) and must hold `trc`; the click opens a one-field form for the note,
-since every vote needs one; submitting casts the vote through
-`ballot_trade_request`, so it is the same record as a site vote. Every reply is
+(`/link`) and must hold `trc`. The click is the whole vote (decided
+2026-09-29): it goes through `ballot_trade_request` with the fixed note "Voted
+from Discord", so it is the same record as a site vote. Every reply is
 ephemeral. Changing a vote is clicking the other button. Pinned by
 `tests/test_trc_discord.py`.
 
