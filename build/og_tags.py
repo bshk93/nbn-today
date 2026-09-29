@@ -133,7 +133,6 @@ PAGES = {
  '/trade-retros/': (None, 'Moved — trade retrospectives are now a tab on /frivolities.'),
  '/trade-sim/': (None, 'Moved — the trade simulator now lives at /transaction-sim.'),
  '/tradeblock/': (None, 'Who’s available around NBN — every team’s listed players and picks.'),
- '/tradevotes/': (None, 'How every NBN member has voted on every trade.'),
  '/transaction-sim/': (None, 'Model a trade, signing or extension and see every cap rule it passes or fails — before you submit it.'),
  '/transactions/': (None, 'Every trade, signing, extension and release in NBN, with the cap rules each one cleared.'),
  '/trivia/': (None, 'NBN trivia. How well do you actually know this league?'),

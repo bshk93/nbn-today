@@ -17,7 +17,7 @@ page: ten page widths, three header layouts, four tab styles, 67 font sizes,
 
 ## Components (`css/components.css`)
 
-- **Container:** `ui-page` (960px) or `ui-page ui-page--wide` (1240px). A few pages keep their own width on purpose: the 30×30 grids (h2h, tradevotes), the games, the article views, the live draft show.
+- **Container:** `ui-page` (960px) or `ui-page ui-page--wide` (1240px). A few pages keep their own width on purpose: the 30×30 grid (h2h), the games, the article views, the live draft show.
 - **Header:** `ui-header` > `ui-title` + `ui-subtitle`, with `ui-header-actions` on the right.
 - **Tabs:** `ui-tabs` / `ui-tab` switch between *sections of a page*. `ui-segmented` switches between *views of the same data*. Nothing else.
 - **Section title:** `ui-section-title`. Sentence case at a real size, not tiny spaced capitals.

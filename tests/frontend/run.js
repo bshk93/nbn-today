@@ -142,7 +142,6 @@ const PAGES = [
   { path: '/frivolities/',            selector: '.team-card',      min: 30, what: 'the default tab\'s per-team charts' },
   { path: '/awards/',                 selector: '.season-card',    min: 2,  what: 'a card per season with awards' },
   { path: '/awards/25-26/results/',   selector: 'table tbody tr',  min: 50, what: 'the full ballot' },
-  { path: '/tradevotes/',             selector: 'table tbody tr',  min: 30, what: 'the member × team vote matrix' },
   { path: '/news/',                   selector: '.article-card',   min: 3,  what: 'published articles' },
   { path: '/proposals/',              selector: '.proposal-card',  min: 3,  what: 'open proposals' },
   // Diffs between consecutive 2K scrape snapshots. This one *can* legitimately

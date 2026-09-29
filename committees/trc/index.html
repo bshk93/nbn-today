@@ -309,7 +309,7 @@
       }
       if (actions.length) body += `<div class="req-actions">${actions.join('')}</div>`;
 
-      if (item.finalized) body += `<p class="sub">Finalized by ${esc(item.finalized.by)} — <a href="/transactions#${esc(item.finalized.txn_id)}">view transaction</a></p>`;
+      if (item.finalized) body += `<p class="sub">Finalized by ${esc(item.finalized.by)}${item.finalized.trade_number ? ` as Trade ${item.finalized.trade_number}` : ''} — <a href="/transactions#${esc(item.finalized.txn_id)}">view transaction</a></p>`;
       if (item.rejected) body += `<p class="sub">Rejected by ${esc(item.rejected.by)}: ${esc(item.rejected.reason)}</p>`;
       if (item.withdrawn) body += `<p class="sub">Withdrawn by ${esc(item.withdrawn.by)}${item.withdrawn.reason ? ': ' + esc(item.withdrawn.reason) : ''}</p>`;
 

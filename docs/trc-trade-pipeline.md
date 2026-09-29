@@ -101,9 +101,9 @@ count, not a share of the committee.
 9. **Discord reuses `#transactions`** — `apply_trade` calls the existing
    `notify_transaction()` (`nbn-api/routers/discord_notify.py`) unconditionally,
    so a TRC-finalized trade posts the same embed a `rosters`-entered one
-   would, no new channel. Unlike an office-entered trade it is relayed into
-   #roster-log (`relay_to_roster_log=True`, 2026-09-29), since nobody enters
-   it there by hand.
+   would. Since 2026-09-29 it is also posted, numbered, to the public
+   #transactions channel, which the #roster-log relay copies
+   (`docs/discord-integrations.md` § TRC alerts).
 
 10. **Inbox notifications, added 2026-09-21** (the initial build shipped with
     none; this closed that gap): `POST /api/trade-requests` notifies every
