@@ -136,9 +136,11 @@ never announced.
 
 `routers/trc_notify.py` posts to the private `trc-alerts` channel
 (`DISCORD_TRC_CHANNEL`, added 2026-09-29). It is the TRC analogue of
-`pdc-alerts`, and it gets every step of a trade request: proposed (with the
-legs and live legality), ready for ballots, each ballot with its note and the
+`pdc-alerts`. A trade reaches it only once every team has agreed, never when
+it is proposed (decided 2026-09-29). From then on it gets every step: ready for
+ballots (with the legs and live legality), each ballot with its note and the
 approval count, ready to finalize, and rejected / withdrawn / finalized. A
+request that ends before every team agreed posts nothing at all. A
 finalized trade still posts to #transactions through `apply_trade`; the
 trc-alerts post only closes the thread for the committee.
 
