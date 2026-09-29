@@ -8,11 +8,11 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>TRC — NBN</title>
   <!-- NBN:og -->
-  <meta name="description" content="The Trade Request Committee dashboard — proposed trades, team consent, ballots and finalized deals.">
+  <meta name="description" content="The Trade Request Committee dashboard — proposed trades, team consent, votes and finalized deals.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
   <meta property="og:title" content="TRC — NBN">
-  <meta property="og:description" content="The Trade Request Committee dashboard — proposed trades, team consent, ballots and finalized deals.">
+  <meta property="og:description" content="The Trade Request Committee dashboard — proposed trades, team consent, votes and finalized deals.">
   <meta property="og:url" content="https://nbn.today/committees/trc/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -120,9 +120,9 @@
           A team proposes a trade from <a href="/tradeblock/">the tradeblock</a>'s "Propose a Trade"
           builder (or, for reference, the transaction simulator's trade mode), using the "Submit to
           TRC" button. Every team named in the trade, the proposer's included, must consent here
-          before it opens for ballots. Only a team's owner can consent, and each owner gets an inbox
+          before it opens for a vote. Only a team's owner can consent, and each owner gets an inbox
           notice when a trade naming their team is submitted. Team members see only their own trades. Three
-          <b>trc</b> members must approve before it's ready; a ballot needs a note because it's
+          <b>trc</b> members must approve before it's ready; a vote needs a note because it's
           judging fairness, not legality (legality is checked live, automatically, the whole time a
           request is open). Only <b>trc_head</b> can reject or finalize a request. Finalizing
           executes the trade for real — rosters, picks and the transaction ledger update
@@ -257,13 +257,15 @@
 
     function renderBallots(item) {
       const entries = Object.entries(item.ballots || {});
-      if (!entries.length) return '<p class="empty">No ballots cast yet.</p>';
+      if (!entries.length) return '<p class="empty">No votes yet.</p>';
       return entries.map(([member, b]) =>
         `<div class="ballot-row"><span>${b.decision === 'approve' ? '✓' : '✗'} ${esc(member)}</span><span class="note">${esc(b.note)}</span></div>`).join('');
     }
 
+    // `balloting` is the stored status; the page calls it voting.
+    const STATUS_LABELS = { balloting: 'voting' };
     function statusBadge(item) {
-      return `<span class="badge ${item.status}">${item.status.replace(/_/g, ' ')}</span>`;
+      return `<span class="badge ${item.status}">${STATUS_LABELS[item.status] || item.status.replace(/_/g, ' ')}</span>`;
     }
 
     function renderRequest(item, terminal) {
@@ -284,7 +286,7 @@
         ${renderChecks(item.validation)}
         <h3>Consent</h3>
         ${renderConsents(item)}
-        <h3>Ballots (${approveCount}/3 approvals)</h3>
+        <h3>Votes (${approveCount}/3 approvals)</h3>
         ${renderBallots(item)}`;
 
       if (canBallot) {
@@ -292,7 +294,7 @@
         <div class="ballot-form" data-ballot-form="${item.id}">
           <select class="ballot-decision"><option value="approve">Approve</option><option value="reject">Reject</option></select>
           <textarea class="ballot-note" placeholder="Why? (required — fairness, not legality)"></textarea>
-          <button type="button" class="ballot-submit primary" data-id="${item.id}">Cast ballot</button>
+          <button type="button" class="ballot-submit primary" data-id="${item.id}">Vote</button>
         </div>`;
       }
 
@@ -364,7 +366,7 @@
               method: 'PUT', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ decision, note }),
             });
-            toast('Ballot cast.');
+            toast('Vote recorded.');
             await loadItems();
           } catch (e) { toast(e.message, true); }
         });

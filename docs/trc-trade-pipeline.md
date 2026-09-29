@@ -115,9 +115,8 @@ count, not a share of the committee.
     `notify_role` checks a member's literal roles list, not `ROLE_IMPLIES`,
     so a `trc_head`-only member would otherwise never hear about it) the
     moment every party has consented and the request is ready for a vote.
-    Discord is separate: since 2026-09-29 every step from the moment every
-    team has agreed (never the proposal itself), ballots and endings
-    included, also posts to the private `trc-alerts` channel
+    Discord is separate: since 2026-09-29 the same two moments, ready for a
+    vote and ready to finalize, also post to the private `trc-alerts` channel
     (`docs/discord-integrations.md` § TRC alerts). In the inbox, nothing fires on ballot cast, reject, withdraw, or finalize — a
     finalized/rejected trade is already visible via Discord (finalize) or
     the dashboard itself; only the two "something now needs *your* action"
