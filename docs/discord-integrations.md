@@ -1,4 +1,4 @@
-# Discord integrations — the four feeds and the anti-dump gates
+# Discord integrations — the feeds and the anti-dump gates
 
 Detail split out of `CLAUDE.md` on 2026-08-24. Every path between the API and
 Discord lives here. The load-bearing requirement across all of them is
@@ -131,6 +131,21 @@ whichever read request first observes a deadline has passed, stamping
 produce one post. Nothing consults that stamp for offerability, so it can't
 reopen a player; and a window that expired more than a day ago is stamped but
 never announced.
+
+## TRC alerts
+
+`routers/trc_notify.py` posts to the private `trc-alerts` channel
+(`DISCORD_TRC_CHANNEL`, added 2026-09-29). It is the TRC analogue of
+`pdc-alerts`, and it gets every step of a trade request: proposed (with the
+legs and live legality), ready for ballots, each ballot with its note and the
+approval count, ready to finalize, and rejected / withdrawn / finalized. A
+finalized trade still posts to #transactions through `apply_trade`; the
+trc-alerts post only closes the thread for the committee.
+
+Same gates as the PDC feeds: a no-op while the env var is unset, the shared
+paced queue with its own burst cap (60 per 15 minutes), and it never raises.
+The calls are in `routers/trade_requests.py`, after the write. Pinned by the
+trc-alerts block of `tests/test_trade_requests.py`.
 
 ## The #roster-log mirror
 
