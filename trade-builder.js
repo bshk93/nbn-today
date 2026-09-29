@@ -1331,7 +1331,7 @@
           return;
         }
         const req = await res.json();
-        setExportStatus(`Submitted to TRC as request #${req.number} — <a href="/committees/trc/" target="_blank" rel="noopener">track it</a>`);
+        setExportStatus(`Submitted to TRC — <a href="/committees/trc/" target="_blank" rel="noopener">track it</a>`);
         btn.textContent = '✓ Submitted';
         submitted = true;
         if (typeof opts.onSubmitted === 'function') opts.onSubmitted(req);

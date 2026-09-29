@@ -171,6 +171,14 @@ The number is counted per league year and assigned when the trade is
 finalized, not when it was proposed (`trade_numbers` in `trade-requests.json`,
 stamped on the request as `finalized.trade_number`). 26-27 continues from the
 51 trades numbered by hand before 2026-09-29; every later year starts at 1. The
+ledger entry's description is the same "Trade 52".
+
+**This is the only number members see** (decided 2026-09-29). Until a trade is
+finalized it is named by its teams — "LAL ⇄ UTA trade — ready for a vote" in
+trc-alerts, the inbox, and the Discord vote replies (`trc_notify.trade_name`).
+A request also has its own `number`, the order it was submitted in, but it is
+internal: showing it made the first request read as "Trade #1" next to a
+#transactions count at 51. Don't put it back in anything a member reads. The
 #roster-log relay copies this post, so the `apply_trade` embed in
 #roster-log-nbn-today (`DISCORD_TXN_CHANNEL`, the record of everything done on
 the site) keeps its do-not-relay marker, or #roster-log would get it twice.

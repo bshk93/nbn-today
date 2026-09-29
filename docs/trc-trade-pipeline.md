@@ -110,8 +110,8 @@ count, not a share of the committee.
     party team via `inbox.notify_team`, **the proposer's own included**.
     (Until 2026-09-29 it skipped the proposer's side, on the `offer_sheet`
     precedent of notifying the other side, not the actor. That was wrong
-    here: decision 7 needs the proposer's owner to consent too, and request
-    #1 sat with nobody on the proposing side told.) The proposer's team gets
+    here: decision 7 needs the proposer's owner to consent too, and the
+    first request sat with nobody on the proposing side told.) The proposer's team gets
     a different text saying its own consent is still needed. The consent endpoint notifies both `trc`
     and `trc_head` (`inbox.notify_role`, called for both roles separately —
     `notify_role` checks a member's literal roles list, not `ROLE_IMPLIES`,
@@ -199,6 +199,9 @@ as `suggestions.py`). One item per request:
 ```jsonc
 {
   "id": "…", "number": 7, "status": "awaiting_consent",
+  // `number` is internal submission order and is never shown; members only
+  // see the league's trade number, `finalized.trade_number`
+  // (docs/discord-integrations.md § TRC alerts).
   // -> balloting -> ready_to_finalize -> finalized | rejected | withdrawn
   "created_by": "...", "created_at": "...", "updated_at": "...",
   "trade": { /* exactly transaction-sim's tradeBody / TradeValidateInput shape */ },

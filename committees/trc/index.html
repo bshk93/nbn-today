@@ -321,7 +321,7 @@
       return `
         <details class="req">
           <summary>
-            <span class="req-num">#${item.number}</span>
+            ${item.finalized?.trade_number ? `<span class="req-num">Trade ${item.finalized.trade_number}</span>` : ''}
             <span class="req-parties">${esc(parties)}</span>
             ${statusBadge(item)}
             ${stale && !terminal ? '<span class="badge stale">stale / illegal now</span>' : ''}
