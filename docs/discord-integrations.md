@@ -175,6 +175,10 @@ transaction's embed footer rather than storing it anywhere the relay would have
 to look up separately, and the relay's `_opted_out` reads it back off the same
 message it's already relaying.
 
+A trade finalized by the TRC always relays (`relay_to_roster_log=True` in
+`finalize_trade_request`, since 2026-09-29). Nobody types those into #roster-log
+by hand, so the default would have kept them out of it entirely.
+
 ## Tradeblock Discord notifications
 
 `/tradeblock`'s edit panel has an "Also post to Discord" checkbox, **off by
