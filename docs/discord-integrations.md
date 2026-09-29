@@ -138,7 +138,7 @@ never announced.
 (`DISCORD_TRC_CHANNEL`, added 2026-09-29). It is the TRC analogue of
 `pdc-alerts`. A trade reaches it only once every team has agreed, never when
 it is proposed (decided 2026-09-29). From then on it gets every step: ready for
-ballots (with the legs and live legality), each ballot with its note and the
+a vote (with the legs and live legality), each vote with its note and the
 approval count, ready to finalize, and rejected / withdrawn / finalized. A
 request that ends before every team agreed posts nothing at all. A
 finalized trade still posts to #transactions through `apply_trade`; the

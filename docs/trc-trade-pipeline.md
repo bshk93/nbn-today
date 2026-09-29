@@ -114,7 +114,7 @@ count, not a share of the committee.
     and `trc_head` (`inbox.notify_role`, called for both roles separately —
     `notify_role` checks a member's literal roles list, not `ROLE_IMPLIES`,
     so a `trc_head`-only member would otherwise never hear about it) the
-    moment every party has consented and the request is ready for ballots.
+    moment every party has consented and the request is ready for a vote.
     Discord is separate: since 2026-09-29 every step from the moment every
     team has agreed (never the proposal itself), ballots and endings
     included, also posts to the private `trc-alerts` channel
