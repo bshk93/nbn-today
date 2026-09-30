@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/memos/memo.css">
+  <title>League Office Memos — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Memos from the NBN league office to the league.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="League Office Memos — NBN">
+  <meta property="og:description" content="Memos from the NBN league office to the league.">
+  <meta property="og:url" content="https://nbn.today/memos/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <!-- /NBN:og -->
+</head>
+<body>
+<script src="/nav.js"></script>
+
+<div class="page ui-page">
+  <nav class="nav"></nav>
+
+  <header class="ui-header">
+    <div>
+      <h1 class="ui-title">League Office Memos</h1>
+      <p class="ui-subtitle">Notes from the league office to the league. Newest first.</p>
+    </div>
+  </header>
+
+  <div class="memo-list" id="memo-list"></div>
+</div>
+
+<script src="/memos/memos.js"></script>
+<script>
+  (function () {
+    const esc = s => String(s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US',
+      { year: 'numeric', month: 'long', day: 'numeric' });
+    const list = document.getElementById('memo-list');
+    if (!window.MEMOS.length) {
+      list.innerHTML = '<div class="ui-empty">No memos yet.</div>';
+      return;
+    }
+    list.innerHTML = window.MEMOS.map(m => `
+      <a class="ui-card memo-item" href="/memos/${esc(m.slug)}/">
+        <div class="memo-item-meta">Memo ${esc(m.number)} · ${fmt(m.date)}</div>
+        <div class="memo-item-title">${esc(m.title)}</div>
+        <div class="memo-item-summary">${esc(m.summary)}</div>
+      </a>`).join('');
+  })();
+</script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

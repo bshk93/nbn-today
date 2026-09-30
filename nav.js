@@ -589,6 +589,7 @@ const SITE_PAGES = [
   { title: 'News', href: '/news/', icon: '📰' },
   { title: 'Members', href: '/members/', icon: '👥' },
   { title: 'Roles & Permissions', href: '/roles', icon: '🔑' },
+  { title: 'League Office Memos', href: '/memos/', icon: '📝' },
   { title: 'Constitution', href: '/constitution/', icon: '📄' },
   { title: 'Rulebook', href: '/rulebook/', icon: '📖' },
   { title: 'Changelog', href: '/changelog', icon: '🔖' },

@@ -1,0 +1,20 @@
+/* League office memos — the little that isn't already a ui- component. */
+.memo-meta {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.memo-meta-row { display: flex; gap: var(--space-3); padding: 2px 0; }
+.memo-meta-key { flex: 0 0 3.5rem; color: var(--text-muted); }
+.memo-back { display: inline-block; margin-bottom: var(--space-4); font-size: var(--text-sm); color: var(--link); text-decoration: none; }
+.memo-back:hover { text-decoration: underline; }
+.memo-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.memo-item { display: block; text-decoration: none; color: inherit; }
+.memo-item:hover { border-color: var(--link); }
+.memo-item-meta { font-size: var(--text-sm); color: var(--text-muted); }
+.memo-item-title { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); margin: 2px 0 var(--space-1); }
+.memo-item-summary { font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.5; }

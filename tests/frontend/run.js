@@ -123,6 +123,7 @@ const PAGES = [
   { path: '/champions/',              selector: 'table tbody tr',  min: 15, what: 'a row per title' },
   { path: '/members/',                selector: '.member-name',    min: 40, what: 'the member directory' },
   { path: '/roles/',                  selector: '.role-card',      min: 8,  what: 'a card per role' },
+  { path: '/memos/',                  selector: '.memo-item',      min: 1,  what: 'a card per memo' },
   { path: '/rulebook/',               selector: '.doc-section',    min: 35, what: 'the numbered sections' },
   // The 🔒 badges are generated from nbn-api's validators
   // (build/check_rulebook_badges.py). smoke_test.py already fails when the HTML
