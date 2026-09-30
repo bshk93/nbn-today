@@ -227,6 +227,10 @@ from:
   `PUT /api/league-year/{season}/dates` (bod). A draft day is filed under the
   league year it falls in, so the June 2027 draft is in 26-27. The endpoint
   refuses a date outside its season's league year.
+  The league follows the NBA's deadline, so a known one is also checked in as
+  a default (`DEFAULT_TRADE_DEADLINES` in `season_calendar.py`, 26-27 is
+  2027-02-11). A date set through the endpoint wins over it. Next season's
+  goes in the same dict once the NBA announces it.
 - **"In season"** means opening night through the last regular-season game.
   Playoffs and the draft are not in season, so a June draft trade can still
   land a team at 16 for the summer.
@@ -249,6 +253,9 @@ How the trade limit counts (settled 2026-09-30):
   `Trade N` number in the same league year count once. An entry with no number
   counts on its own. That is why a correction should always carry its trade's
   number.
+  One old entry that lacks its number is tied to it by transaction id
+  (`_TRADE_NUMBER_BY_TXN` in `transactions.py`); for a new case, edit the
+  entry's description so it starts "Trade N".
 - **Draft-day trades** don't count. **On deadline day**, each team's first
   trade is exempt. With no dates set, every trade counts.
 
