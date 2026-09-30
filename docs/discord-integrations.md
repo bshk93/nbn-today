@@ -219,6 +219,39 @@ message it's already relaying.
 A trade finalized by the TRC keeps the marker too. It reaches #roster-log
 through its #transactions post instead (§ TRC alerts).
 
+## Owner moves on the site
+
+An owner used to make a move and then post it in Discord by hand, and that post
+was the league's news. When the owner makes the move from the team page's ⋯
+menu instead, nobody posts it, so the site does. `routers/roster_move_notify.py`
+posts one plain line in the league's own wording ("The Milwaukee Bucks stash
+the draft rights to Vsevolod Ishchenko."), no dollars, to the channel the
+humans used for that move:
+
+| Move | Channel |
+|---|---|
+| Renounce, team option (exercise or decline), two-way conversion, rookie-scale signing, stash | #fa-news |
+| Release | #waivers, via `waiver_notify.notify_waived` — it opens the claim window and says so |
+| Void | #waivers (decided 2026-09-30) |
+
+The difference between the two channels: a **waived** player is still under
+contract and can be claimed (§ 5.1), and a void is a release with nothing owed,
+so it sits with them. A **renounced** player had only a cap hold, so he is a
+free agent (§ 3.10), which is free-agency news.
+
+Each move reaches #roster-log **once**, by whichever route is relayed:
+
+- **#fa-news moves:** the relay skips bot posts in #fa-news, so the self-serve
+  routes send their transaction embed with `relay_to_roster_log=True`
+  (`_notify_self_serve` in `transactions.py`). #roster-log gets the embed's
+  text, which carries the contract year by year.
+- **Release and void:** #waivers is relayed, so the line there is what
+  #roster-log gets, and the embed keeps its do-not-relay marker.
+
+The office form announces only voids (like releases, which it always has).
+An office-entered renounce or option is usually recording something a human
+already posted, so it stays quiet. Pinned by `tests/test_roster_move_notify.py`.
+
 ## Tradeblock Discord notifications
 
 `/tradeblock`'s edit panel has an "Also post to Discord" checkbox, **off by
