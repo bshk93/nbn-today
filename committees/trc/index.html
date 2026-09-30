@@ -6,6 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/team-colors.css">
+  <script src="/names.js"></script>
+  <script src="/contract.js"></script>
+  <script src="/cap-health.js"></script>
   <title>TRC — NBN</title>
   <!-- NBN:og -->
   <meta name="description" content="The Trade Request Committee dashboard — proposed trades, team consent, votes and finalized deals.">
@@ -37,14 +41,13 @@
       border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.7rem;
       background: var(--bg-card); overflow: hidden;
     }
-    details.req > summary {
-      list-style: none; cursor: pointer; padding: 0.7rem 0.9rem;
-      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
-    }
+    details.req > summary { list-style: none; cursor: pointer; padding: 0.75rem 0.9rem; }
     details.req > summary::-webkit-details-marker { display: none; }
+    .req-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .req-num { font-weight: 700; color: var(--text-primary); }
-    .req-parties { color: var(--text-secondary); font-size: 0.85rem; }
-    .req-summary { color: var(--text-muted); font-size: 0.8rem; flex: 1; }
+    .req-parties { color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; }
+    .req-gist { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem; line-height: 1.5; }
+    .req-gist b { color: var(--text-secondary); font-weight: 600; }
 
     .badge {
       display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px;
@@ -57,20 +60,70 @@
     .badge.rejected, .badge.withdrawn { background: rgba(239,68,68,0.12); color: var(--danger,#ef4444); }
     .badge.stale { background: rgba(239,68,68,0.12); color: var(--danger,#ef4444); }
 
-    .req-body { padding: 0 0.9rem 1rem; border-top: 1px solid var(--border-subtle); }
-    .req-body h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin: 0.9rem 0 0.4rem; }
-    .transfer-row { font-size: 0.85rem; color: var(--text-secondary); padding: 0.15rem 0; }
-    .transfer-row b { color: var(--text-primary); }
+    .req-body { padding: 0.2rem 0.9rem 1rem; border-top: 1px solid var(--border-subtle); }
+    .req-body h3 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 1.1rem 0 0.45rem; }
 
-    .vc-row { display: flex; gap: 0.5rem; font-size: 0.82rem; padding: 0.15rem 0; }
-    .vc-row.error { color: var(--danger,#ef4444); }
-    .vc-row.warning { color: var(--gold,#c9a227); }
-    .vc-row.pass { color: var(--text-muted); }
+    /* Where the request is: consent → votes → finalize. */
+    .steps { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; font-size: 0.75rem; }
+    .step { padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); }
+    .step.done { color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, transparent); }
+    .step.now { color: var(--text-primary); border-color: var(--accent); }
 
-    .consent-row, .ballot-row { display: flex; gap: 0.5rem; align-items: baseline; font-size: 0.85rem; padding: 0.15rem 0; }
-    .consent-row .yes { color: var(--success,#22c55e); }
-    .consent-row .no { color: var(--text-dim); }
-    .ballot-row .note { color: var(--text-muted); font-size: 0.8rem; }
+    /* The one-line legality verdict, above the detail it summarizes. */
+    .verdict { margin-top: 0.7rem; padding: 0.55rem 0.75rem; border-radius: 8px; font-size: 0.83rem; line-height: 1.5; border: 1px solid; }
+    .verdict.ok   { color: var(--success); border-color: color-mix(in srgb, var(--success) 30%, transparent); background: color-mix(in srgb, var(--success) 7%, transparent); }
+    .verdict.warn { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 30%, transparent); background: color-mix(in srgb, var(--gold) 7%, transparent); }
+    .verdict.bad  { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); background: color-mix(in srgb, var(--danger) 8%, transparent); }
+    .verdict ul { margin: 0.3rem 0 0 1.1rem; }
+
+    /* One panel per team. Side by side when there's room, stacked on a phone;
+       a five-team trade is five panels, wrapping. */
+    .teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0.7rem; margin-top: 0.8rem; }
+    .tp { border: 1px solid var(--border); border-left: 4px solid var(--team-primary, var(--border)); border-radius: 8px; background: var(--bg-subtle); padding: 0.7rem 0.8rem; min-width: 0; }
+    .tp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+    .tp-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+    .tp-consent { font-size: 0.75rem; }
+    .tp-consent.yes { color: var(--success); }
+    .tp-consent.no { color: var(--text-dim); }
+    .tp-sec { display: flex; justify-content: space-between; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 0.7rem 0 0.2rem; }
+    .tp-sec .amt { font-variant-numeric: tabular-nums; letter-spacing: 0; text-transform: none; font-size: 0.78rem; color: var(--text-muted); }
+    .tp-none { font-size: 0.8rem; color: var(--text-dim); padding: 0.15rem 0; }
+
+    .asset { padding: 0.35rem 0; border-top: 1px solid var(--border-subtle); }
+    .tp-sec + .asset { border-top: none; }
+    .asset-top { display: flex; justify-content: space-between; gap: 0.6rem; font-size: 0.88rem; }
+    .asset-top a { color: var(--text-primary); text-decoration: none; font-weight: 600; }
+    .asset-top a:hover { text-decoration: underline; }
+    .asset-top .pick { color: var(--text-primary); font-weight: 600; }
+    .asset-top .sal { font-variant-numeric: tabular-nums; color: var(--text-secondary); white-space: nowrap; }
+    .asset-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .asset-meta .route { color: var(--text-secondary); }
+    .asset .issue { margin-top: 0.25rem; }
+
+    .money { margin-top: 0.7rem; padding-top: 0.55rem; border-top: 1px dashed var(--border); display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.7rem; font-size: 0.8rem; }
+    .money .lbl { color: var(--text-dim); }
+    .money .val { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .money .up { color: var(--gold); }
+    .money .down { color: var(--success); }
+    .money .sub { grid-column: 2; margin-top: 0; font-size: 0.72rem; }
+
+    .issue { display: flex; gap: 0.45rem; font-size: 0.8rem; line-height: 1.45; padding: 0.15rem 0; }
+    .issue.error { color: var(--danger); }
+    .issue.warning { color: var(--gold); }
+    .issue.pass { color: var(--text-muted); }
+    .tp .issues { margin-top: 0.55rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+    .chip { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; border: 1px solid var(--border); color: var(--text-muted); }
+
+    details.all-checks { margin-top: 0.8rem; font-size: 0.8rem; }
+    details.all-checks summary { cursor: pointer; color: var(--text-muted); }
+    details.all-checks .issue { padding-left: 0.2rem; }
+
+    .ballot-row { font-size: 0.84rem; padding: 0.3rem 0; border-top: 1px solid var(--border-subtle); }
+    .ballot-row:first-of-type { border-top: none; }
+    .ballot-row .yes { color: var(--success); font-weight: 600; }
+    .ballot-row .no { color: var(--danger); font-weight: 600; }
+    .ballot-row .note { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.1rem; }
 
     .req-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
     .req-actions button {
@@ -83,11 +136,17 @@
     .req-actions button:disabled { opacity: 0.5; cursor: default; }
 
     .ballot-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.7rem; }
-    .ballot-form select, .ballot-form textarea {
+    .ballot-form textarea {
       background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
       color: var(--text-primary); font-family: inherit; font-size: 0.82rem; padding: 0.4rem 0.6rem;
+      flex: 1 1 100%; resize: vertical; min-height: 2.6rem;
     }
-    .ballot-form textarea { flex: 1; min-width: 200px; resize: vertical; min-height: 2.2rem; }
+    .ballot-form button {
+      padding: 0.4rem 0.9rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-subtle); font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    }
+    .ballot-form button[data-decision="approve"] { color: var(--success); }
+    .ballot-form button[data-decision="reject"] { color: var(--danger); }
 
     .toast {
       position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
@@ -227,43 +286,268 @@
       g.appendChild(wrap);
     }
 
-    function assetLabel(a) {
-      if (a.type === 'player') return a.slug;
-      return `${a.year} R${a.round} ${a.orig}${a.protection ? ' (protected)' : ''}${a.swap_with ? ' (swap)' : ''}`;
+    // Player bios and current OVRs, for naming and pricing the players in a
+    // trade. Loaded once; a request only ever shows a handful of players.
+    let BIOS = {};
+    let OVRS = {};
+
+    const ROUND_NAMES = { 1: '1st', 2: '2nd' };
+    function pickLabel(a) {
+      return `${a.year} ${ROUND_NAMES[a.round] || 'R' + a.round} (${a.orig})`;
     }
 
-    function renderTransfers(trade) {
-      const legs = (trade.transfers || []).map(tr =>
-        `<div class="transfer-row"><b>${esc(tr.from_team)}</b> → <b>${esc(tr.to_team)}</b>: ${
-          tr.assets.map(a => esc(assetLabel(a))).join(', ')}</div>`).join('');
-      // Players a team releases right after the trade (§ 5.1).
-      const releases = Object.entries(trade.releases || {}).filter(([, slugs]) => slugs.length).map(([team, slugs]) =>
-        `<div class="transfer-row"><b>${esc(team)}</b> releases: ${slugs.map(esc).join(', ')}</div>`).join('');
-      return legs + releases;
+    function playerName(slug) {
+      const b = BIOS[slug];
+      return b && b.name ? nbnPlayerName(b.name) : slug;
     }
 
-    function renderChecks(validation) {
-      const ICON = { error: '✗', warning: '⚠', pass: '✓' };
-      const rows = (validation.checks || []).map(c => {
-        const kind = c.level === 'warning' ? 'warning' : (c.passed ? 'pass' : (c.level || 'error'));
-        return `<div class="vc-row ${kind}"><span>${ICON[kind] || '?'}</span><span>${esc(c.message)}</span></div>`;
-      }).join('');
-      const ownership = (validation.ownership_problems || []).map(p =>
-        `<div class="vc-row error"><span>✗</span><span>${esc(p)}</span></div>`).join('');
-      return rows + ownership || '<div class="vc-row pass"><span>✓</span><span>No constraints triggered.</span></div>';
+    function lastName(slug) {
+      const b = BIOS[slug];
+      if (!b || !b.name) return slug;
+      const i = b.name.indexOf(',');
+      return nbnPlayerName(i === -1 ? b.name : b.name.slice(0, i));
     }
 
-    function renderConsents(item) {
-      return Object.entries(item.consents).map(([team, c]) =>
-        `<div class="consent-row"><span>${esc(teamName(team))}</span><span class="${c.consented ? 'yes' : 'no'}">${
-          c.consented ? `✓ consented (${esc(c.by)})` : '⏳ pending'}</span></div>`).join('');
+    function ageOf(dob) {
+      if (!dob) return null;
+      const d = new Date(dob + 'T00:00:00'), now = new Date();
+      let age = now.getFullYear() - d.getFullYear();
+      if (now < new Date(now.getFullYear(), d.getMonth(), d.getDate())) age--;
+      return age;
+    }
+
+    const money = compactContractMoney;
+    function fullMoney(n) { return '$' + Math.round(n || 0).toLocaleString('en-US'); }
+
+    // A check's kind. A warning-level check is shown whether or not it
+    // "passed": the passing ones are notices (an Empty Roster Charge), not
+    // clearances.
+    function checkKind(c) {
+      if (c.level === 'warning') return 'warning';
+      return c.passed ? 'pass' : 'error';
+    }
+    const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+    function issueRow(kind, text) {
+      return `<div class="issue ${kind}"><span>${ICON[kind]}</span><span>${esc(text)}</span></div>`;
+    }
+
+    // Every check names its subject at the end of its id — `_hayes-jaxson`,
+    // `_2027_atl`, `_uta` — so each one can sit next to the player, pick or
+    // team it is about. Players and picks are tried first, since a pick's id
+    // also ends in a team abbreviation. Anything left is about the whole trade.
+    function routeChecks(item) {
+      const out = { trade: [], team: {}, asset: {} };
+      const slugs = [], picks = [];
+      (item.trade.transfers || []).forEach(tr => tr.assets.forEach(a => {
+        if (a.type === 'player') slugs.push(a.slug);
+        else picks.push(`${a.year}_${String(a.orig).toLowerCase()}`);
+      }));
+      Object.values(item.trade.releases || {}).forEach(list => list.forEach(s => slugs.push(s)));
+      (item.validation.checks || []).forEach(c => {
+        const id = c.check || '';
+        const slug = slugs.find(s => id.endsWith('_' + s));
+        if (slug) { (out.asset[slug] = out.asset[slug] || []).push(c); return; }
+        const pk = picks.find(k => id.endsWith('_' + k));
+        if (pk) { (out.asset['pick:' + pk] = out.asset['pick:' + pk] || []).push(c); return; }
+        const team = item.parties.find(p => id.endsWith('_' + p.toLowerCase()));
+        if (team) { (out.team[team] = out.team[team] || []).push(c); return; }
+        out.trade.push(c);
+      });
+      return out;
+    }
+
+    // Short names for a passing check, shown as a chip. The full sentence is
+    // one tap away in "All checks".
+    const CHECK_CHIPS = [
+      ['hard_cap_league_', 'League hard cap'], ['hard_cap_', 'Hard cap'],
+      ['salary_matching_', 'Salary match'], ['roster_size_', 'Roster size'],
+      ['trade_limit_', 'Trade count'], ['stepien_rule_', 'Stepien'],
+      ['sat_receiving_apron_', 'S&T apron'], ['signing_method_declared_', 'Exception'],
+      ['buyout_signing_', 'Buyout'], ['empty_roster_charge_', 'Roster charge'],
+    ];
+    function chipLabel(id) {
+      const hit = CHECK_CHIPS.find(([p]) => id.startsWith(p));
+      if (hit) return hit[1];
+      const s = id.replace(/_[a-z]{3}$/, '').replace(/_/g, ' ');
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    // Where a salary sits against the cap and aprons, in one phrase. The
+    // comparing is CapHealth's; the figures are the fact sheet's, which are the
+    // ones the checks judged.
+    const TIER = { over_cap: 'Over cap', over_apron1: 'Over 1st apron', over_apron2: 'Over 2nd apron', hard_cap_exceeded: 'Over hard cap' };
+    function tier(fs, t, full, exHolds) {
+      const { warnings } = CapHealth.standing({
+        season: fs.season, capLevels: { [fs.season]: fs.cap_levels },
+        teamState: { hard_cap: t.hard_cap_level },
+        teamSalaryFull: full, teamSalaryExHolds: exHolds,
+      });
+      const w = warnings.find(x => TIER[x.code]);
+      return w ? TIER[w.code] : 'Under cap';
+    }
+
+    function assetRow(a, route, checks, showRoute, season) {
+      const issues = (checks || []).filter(c => checkKind(c) !== 'pass')
+        .map(c => issueRow(checkKind(c), c.message)).join('');
+      const routeTag = showRoute ? `<span class="route">${esc(route)}</span>` : '';
+      if (a.type === 'player') {
+        const b = BIOS[a.slug] || {};
+        const sal = season ? parseContractMoney((b.salaries || {})[season]) : 0;
+        const meta = [
+          (b.pos || []).join('/'),
+          OVRS[a.slug] ? `${OVRS[a.slug]} OVR` : '',
+          ageOf(b.dob) != null ? `age ${ageOf(b.dob)}` : '',
+          season ? summarizeContract(b, season) : '',
+          b.type === 'two-way' ? 'two-way' : '',
+          routeTag,
+        ].filter(Boolean);
+        return `
+          <div class="asset">
+            <div class="asset-top">
+              <a href="/players/?p=${encodeURIComponent(a.slug)}">${esc(playerName(a.slug))}</a>
+              ${sal ? `<span class="sal" title="${fullMoney(sal)} in ${esc(season)}">${money(sal)}</span>` : ''}
+            </div>
+            <div class="asset-meta">${meta.join(' · ')}</div>
+            ${issues}
+          </div>`;
+      }
+      const terms = [];
+      if (a.protection) terms.push(`top-${a.protection} protected`);
+      if (a.swap_with) terms.push(`swap with ${esc(a.swap_with)}`);
+      if (a.ladder_protect_top) terms.push(`top-${a.ladder_protect_top} protected, else ${
+        (a.ladder_fallback || []).map(f => esc(pickLabel(f))).join(' + ') || 'fallback'}`);
+      const meta = [...terms, routeTag].filter(Boolean);
+      return `
+        <div class="asset">
+          <div class="asset-top"><span class="pick">${esc(pickLabel(a))} pick</span></div>
+          ${meta.length ? `<div class="asset-meta">${meta.join(' · ')}</div>` : ''}
+          ${issues}
+        </div>`;
+    }
+
+    function teamPanel(item, team, routed, live) {
+      const many = item.parties.length > 2;
+      const fs = live ? item.validation.fact_sheet : null;
+      const t = fs && fs.teams ? fs.teams[team] : null;
+      const season = fs ? fs.season : null;
+      const gets = [], sends = [];
+      (item.trade.transfers || []).forEach(tr => tr.assets.forEach(a => {
+        const key = a.type === 'player' ? a.slug : `pick:${a.year}_${String(a.orig).toLowerCase()}`;
+        if (tr.to_team === team) gets.push(assetRow(a, `from ${tr.from_team}`, routed.asset[key], many, season));
+        if (tr.from_team === team) sends.push(assetRow(a, `to ${tr.to_team}`, routed.asset[key], many, season));
+      }));
+      const released = (item.trade.releases || {})[team] || [];
+
+      const c = item.consents[team] || {};
+      const consent = c.consented
+        ? `<span class="tp-consent yes">✓ consented · ${esc(c.by)}</span>`
+        : `<span class="tp-consent no">awaiting consent</span>`;
+
+      let html = `
+        <div class="tp" data-team="${esc(team)}">
+          <div class="tp-head"><span class="tp-name">${esc(teamName(team))}</span>${consent}</div>
+          <div class="tp-sec"><span>Receives</span>${t ? `<span class="amt">${money(t.incoming_salary)} in</span>` : ''}</div>
+          ${gets.join('') || '<div class="tp-none">Nothing</div>'}
+          <div class="tp-sec"><span>Sends</span>${t ? `<span class="amt">${money(t.outgoing_salary)} out</span>` : ''}</div>
+          ${sends.join('') || '<div class="tp-none">Nothing</div>'}`;
+
+      if (released.length) {
+        html += `<div class="tp-sec"><span>Releases after the trade</span></div>` +
+          released.map(s => assetRow({ type: 'player', slug: s }, '', routed.asset[s], false, season)).join('');
+      }
+
+      // How this team pays for what it takes in, when it isn't plain matching.
+      const exc = (item.trade.exceptions || {})[team];
+      const tpe = (item.trade.tpe_usage || {})[team];
+      const excPlayers = (item.trade.exception_players || {})[team] || [];
+      const sat = (item.trade.sign_and_trade_players || []).filter(s => item.trade.transfers.some(tr => tr.to_team === team && tr.assets.some(a => a.slug === s)));
+
+      if (t) {
+        const delta = t.projected_salary - t.current_salary;
+        const before = tier(fs, t, t.current_salary, t.current_salary_ex_holds);
+        const after = tier(fs, t, t.projected_salary, t.projected_salary_ex_holds);
+        const hardCap = t.hard_cap_level === 'first_apron' ? '1st apron' : t.hard_cap_level === 'second_apron' ? '2nd apron' : null;
+        html += `
+          <div class="money">
+            <span class="lbl">Salary</span>
+            <span class="val" title="${fullMoney(t.current_salary)} → ${fullMoney(t.projected_salary)}">${money(t.current_salary)} → <b>${money(t.projected_salary)}</b>
+              ${delta ? `<span class="${delta > 0 ? 'up' : 'down'}">(${delta > 0 ? '+' : ''}${money(delta)})</span>` : ''}</span>
+            <span class="lbl">Cap</span>
+            <span class="val">${before === after ? esc(after) : `${esc(before)} → <b>${esc(after)}</b>`}</span>
+            ${hardCap ? `<span class="sub">Hard-capped at the ${hardCap} (${money(t.hard_cap_limit)})</span>` : ''}
+            <span class="lbl">Roster</span>
+            <span class="val">${t.standard_count_before} → <b>${t.standard_count_after}</b> players</span>
+            ${exc ? `<span class="lbl">Absorbs</span><span class="val">${esc(exc.toUpperCase().replace('ROOM_EXCEPTION', 'Room exception'))}${excPlayers.length ? ` (${excPlayers.map(lastName).map(esc).join(', ')})` : ''}</span>` : ''}
+            ${tpe ? `<span class="lbl">Absorbs</span><span class="val">Trade exception</span>` : ''}
+            ${sat.length ? `<span class="lbl">S&amp;T</span><span class="val">${sat.map(lastName).map(esc).join(', ')}</span>` : ''}
+          </div>`;
+      }
+
+      if (live) {
+        const checks = routed.team[team] || [];
+        const problems = checks.filter(x => checkKind(x) !== 'pass');
+        const passes = checks.filter(x => checkKind(x) === 'pass');
+        if (problems.length) html += `<div class="issues">${problems.map(x => issueRow(checkKind(x), x.message)).join('')}</div>`;
+        if (passes.length) html += `<div class="chips">${passes.map(x => `<span class="chip" title="${esc(x.message)}">✓ ${esc(chipLabel(x.check))}</span>`).join('')}</div>`;
+      }
+      return html + '</div>';
+    }
+
+    // The collapsed card's one line: who ends up with what.
+    function gist(item) {
+      return item.parties.map(team => {
+        const got = [];
+        (item.trade.transfers || []).forEach(tr => {
+          if (tr.to_team !== team) return;
+          tr.assets.forEach(a => got.push(a.type === 'player' ? lastName(a.slug) : pickLabel(a)));
+        });
+        const shown = got.length > 3 ? got.slice(0, 3).join(', ') + ` +${got.length - 3}` : (got.join(', ') || 'nothing');
+        return `<b>${esc(team)}</b> gets ${esc(shown)}`;
+      }).join(' · ');
+    }
+
+    function steps(item, approveCount) {
+      const consented = Object.values(item.consents).filter(c => c.consented).length;
+      const total = Object.keys(item.consents).length;
+      const s = item.status;
+      const consentState = s === 'awaiting_consent' ? 'now' : 'done';
+      const voteState = s === 'awaiting_consent' ? '' : (s === 'balloting' ? 'now' : 'done');
+      const finState = s === 'finalized' ? 'done' : (s === 'ready_to_finalize' ? 'now' : '');
+      return `<div class="steps">
+        <span class="step ${consentState}">Consent ${consented}/${total}</span>
+        <span class="step ${voteState}">Votes ${approveCount}/3</span>
+        <span class="step ${finState}">Finalize</span>
+      </div>`;
+    }
+
+    function verdict(item) {
+      const v = item.validation;
+      const all = v.checks || [];
+      const errors = all.filter(c => checkKind(c) === 'error');
+      const warnings = all.filter(c => checkKind(c) === 'warning');
+      const blockers = [...(v.ownership_problems || [])];
+      if (blockers.length) {
+        return `<div class="verdict bad"><b>Can't be finalized.</b> An asset is no longer where this trade expects it:<ul>${
+          blockers.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>`;
+      }
+      if (errors.length) {
+        return `<div class="verdict bad"><b>Illegal right now</b> — ${errors.length} failed check${errors.length === 1 ? '' : 's'}, shown in red below.</div>`;
+      }
+      if (warnings.length) {
+        return `<div class="verdict warn"><b>Legal</b>, with ${warnings.length} warning${warnings.length === 1 ? '' : 's'} below.</div>`;
+      }
+      return `<div class="verdict ok"><b>Legal.</b> Every check passes.</div>`;
     }
 
     function renderBallots(item) {
       const entries = Object.entries(item.ballots || {});
       if (!entries.length) return '<p class="empty">No votes yet.</p>';
-      return entries.map(([member, b]) =>
-        `<div class="ballot-row"><span>${b.decision === 'approve' ? '✓' : '✗'} ${esc(member)}</span><span class="note">${esc(b.note)}</span></div>`).join('');
+      return entries.map(([member, b]) => `
+        <div class="ballot-row">
+          <span class="${b.decision === 'approve' ? 'yes' : 'no'}">${b.decision === 'approve' ? '✓ Approve' : '✗ Reject'}</span>
+          · ${esc(member)}
+          <div class="note">${esc(b.note)}</div>
+        </div>`).join('');
     }
 
     // `balloting` is the stored status; the page calls it voting.
@@ -273,59 +557,78 @@
     }
 
     function renderRequest(item, terminal) {
-      const parties = item.parties.map(teamName).join(' ⇄ ');
+      const parties = item.parties.join(item.parties.length === 2 ? ' ⇄ ' : ' · ');
       const stale = !item.validation.legal;
       const canBallot = isTrc() && ['balloting', 'ready_to_finalize'].includes(item.status);
       const canFinalize = isTrcHead() && item.status === 'ready_to_finalize';
       const canReject = isTrcHead() && !terminal;
       const ownedParties = item.parties.filter(ownsTeam);
       const canWithdraw = !terminal && (ownedParties.length > 0 || isTrcHead());
+      const pendingMine = ownedParties.filter(p => !(item.consents[p] || {}).consented);
+      const canConsent = item.status === 'awaiting_consent' && pendingMine.length > 0;
 
       const approveCount = Object.values(item.ballots || {}).filter(b => b.decision === 'approve').length;
+      // Legality is checked against today's rosters, so it only means
+      // something while the request is open. A finished trade shows the deal.
+      const live = !terminal;
+      const routed = routeChecks(item);
+      const issueCount = live ? (item.validation.checks || []).filter(c => checkKind(c) !== 'pass').length
+        + (item.validation.ownership_problems || []).length : 0;
 
-      let body = `
-        <h3>Trade</h3>
-        ${renderTransfers(item.trade)}
-        <h3>Legality &amp; ownership (live)</h3>
-        ${renderChecks(item.validation)}
-        <h3>Consent</h3>
-        ${renderConsents(item)}
-        <h3>Votes (${approveCount}/3 approvals)</h3>
-        ${renderBallots(item)}`;
+      let body = '';
+      if (live) body += steps(item, approveCount) + verdict(item);
+      body += `<div class="teams">${item.parties.map(t => teamPanel(item, t, routed, live)).join('')}</div>`;
+
+      if (live) {
+        const tradeIssues = routed.trade.filter(c => checkKind(c) !== 'pass');
+        if (tradeIssues.length) body += `<h3>Whole trade</h3>${tradeIssues.map(c => issueRow(checkKind(c), c.message)).join('')}`;
+        const all = item.validation.checks || [];
+        body += `
+          <details class="all-checks">
+            <summary>All ${all.length} checks, in full</summary>
+            ${all.map(c => issueRow(checkKind(c), c.message)).join('')}
+          </details>`;
+      }
+
+      body += `<h3>Votes · ${approveCount} of 3 approvals</h3>${renderBallots(item)}`;
 
       if (canBallot) {
         body += `
         <div class="ballot-form" data-ballot-form="${item.id}">
-          <select class="ballot-decision"><option value="approve">Approve</option><option value="reject">Reject</option></select>
-          <textarea class="ballot-note" placeholder="Why? (required — fairness, not legality)"></textarea>
-          <button type="button" class="ballot-submit primary" data-id="${item.id}">Vote</button>
+          <textarea class="ballot-note" placeholder="Your reasoning (required). Judge fairness; legality is checked above."></textarea>
+          <button type="button" class="ballot-submit" data-decision="approve" data-id="${item.id}">✓ Approve</button>
+          <button type="button" class="ballot-submit" data-decision="reject" data-id="${item.id}">✗ Reject</button>
         </div>`;
       }
 
       const actions = [];
       const hasOwnershipProblems = (item.validation.ownership_problems || []).length > 0;
       const hasReleaseProblems = (item.validation.release_problems || []).length > 0;
+      if (canConsent) actions.push(`<button type="button" class="primary" data-act="consent" data-id="${item.id}">Consent for ${esc(pendingMine.map(teamName).join(', '))}</button>`);
       if (canFinalize) actions.push(`<button type="button" class="primary" data-act="finalize" data-id="${item.id}" data-stale="${stale}" data-has-ownership-problems="${hasOwnershipProblems}" data-has-release-problems="${hasReleaseProblems}">Finalize${stale ? ' (illegal — override required)' : ''}</button>`);
       if (canReject) actions.push(`<button type="button" class="danger" data-act="reject" data-id="${item.id}">Reject</button>`);
       if (canWithdraw) actions.push(`<button type="button" data-act="withdraw" data-id="${item.id}">Withdraw</button>`);
-      const pendingMine = ownedParties.filter(p => !(item.consents[p] || {}).consented);
-      if (item.status === 'awaiting_consent' && pendingMine.length) {
-        actions.push(`<button type="button" class="primary" data-act="consent" data-id="${item.id}">Consent for ${esc(pendingMine.map(teamName).join(', '))}</button>`);
-      }
       if (actions.length) body += `<div class="req-actions">${actions.join('')}</div>`;
 
       if (item.finalized) body += `<p class="sub">Finalized by ${esc(item.finalized.by)}${item.finalized.trade_number ? ` as Trade ${item.finalized.trade_number}` : ''} — <a href="/transactions#${esc(item.finalized.txn_id)}">view transaction</a></p>`;
       if (item.rejected) body += `<p class="sub">Rejected by ${esc(item.rejected.by)}: ${esc(item.rejected.reason)}</p>`;
       if (item.withdrawn) body += `<p class="sub">Withdrawn by ${esc(item.withdrawn.by)}${item.withdrawn.reason ? ': ' + esc(item.withdrawn.reason) : ''}</p>`;
+      body += `<p class="sub">Proposed by ${esc(item.created_by)} on ${esc((item.created_at || '').slice(0, 10))}</p>`;
 
+      // An open request starts expanded when this member has something to do on it.
+      const mine = canConsent || canFinalize || (canBallot && !(item.ballots || {})[me.name]);
+      const title = item.finalized?.trade_number ? `Trade ${item.finalized.trade_number}` : `Request #${item.number}`;
       return `
-        <details class="req">
+        <details class="req"${live && mine ? ' open' : ''}>
           <summary>
-            ${item.finalized?.trade_number ? `<span class="req-num">Trade ${item.finalized.trade_number}</span>` : ''}
-            <span class="req-parties">${esc(parties)}</span>
-            ${statusBadge(item)}
-            ${stale && !terminal ? '<span class="badge stale">stale / illegal now</span>' : ''}
-            <span class="req-summary"></span>
+            <div class="req-head">
+              <span class="req-num">${esc(title)}</span>
+              <span class="req-parties">${esc(parties)}</span>
+              ${statusBadge(item)}
+              ${live && item.status !== 'awaiting_consent' ? `<span class="badge awaiting_consent">${approveCount}/3 votes</span>` : ''}
+              ${live && stale ? '<span class="badge stale">illegal now</span>' : (issueCount ? `<span class="badge balloting">⚠ ${issueCount}</span>` : '')}
+            </div>
+            <div class="req-gist">${gist(item)}</div>
           </summary>
           <div class="req-body">${body}</div>
         </details>`;
@@ -363,7 +666,7 @@
       document.querySelectorAll('.ballot-submit').forEach(btn => {
         btn.addEventListener('click', async () => {
           const form = btn.closest('[data-ballot-form]');
-          const decision = form.querySelector('.ballot-decision').value;
+          const decision = btn.dataset.decision;
           const note = form.querySelector('.ballot-note').value.trim();
           if (!note) { toast('A note is required.', true); return; }
           try {
@@ -406,11 +709,11 @@
               const hasReleaseProblems = btn.dataset.hasReleaseProblems === 'true';
               let body = {};
               if (hasReleaseProblems) {
-                alert('One of this trade\'s releases can\'t happen (see Legality & ownership above), and that can\'t be overridden. The trade needs to be re-proposed without it.');
+                alert('One of this trade\'s releases can\'t happen (see the red box on the card), and that can\'t be overridden. The trade needs to be re-proposed without it.');
                 return;
               }
               if (hasOwnershipProblems) {
-                alert('This trade involves an asset that is no longer where it expects it to be (see Legality & ownership above) — that can\'t be overridden, since finalizing would corrupt real roster/pick data. The trade needs to be re-proposed instead.');
+                alert('This trade involves an asset that is no longer where it expects it to be (see the red box on the card) — that can\'t be overridden, since finalizing would corrupt real roster/pick data. The trade needs to be re-proposed instead.');
                 return;
               }
               if (stale) {
@@ -435,6 +738,10 @@
       await loadMe();
       if (!isTrc() && !isTrcHead() && !myTeams().length) { renderGate(); return; }
       document.getElementById('app').hidden = false;
+      [BIOS, OVRS] = await Promise.all([
+        fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+        fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      ]);
       await loadItems();
     }
 

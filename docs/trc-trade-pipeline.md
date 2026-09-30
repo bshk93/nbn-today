@@ -252,5 +252,17 @@ Endpoints — all under `/api/trade-requests`:
   anywhere. A member with no committee role sees only requests naming a team
   they hold a role for. Consent and Withdraw key off `owner_of` from
   `/api/auth/me`, since the server gates both on `is_team_owner`.
+  **Rebuilt 2026-09-30 as one panel per team**, so a trade with more teams is
+  more panels rather than a longer list. Each panel shows what the team
+  receives and sends (name, OVR, age, this season's salary, contract
+  shorthand), its salary, cap tier and roster count before and after, and its
+  own checks. A check sits by what its id names at the end: a player slug, a
+  pick's `{year}_{orig}`, or a team. Anything left over goes under "Whole
+  trade". The money comes from `validation.fact_sheet`, which
+  `_live_check` now returns: `_trade_fact_sheet`, the same one the simulator
+  shows. The page does no cap math; the cap tier label is
+  `CapHealth.standing()` reading those figures. A terminal request shows the
+  deal only, since live checks against today's rosters say nothing about a
+  finished trade.
 - `nav.js` `ROLE_PAGES`, `committees/index.html`'s `COMMITTEES` array, and
   `build/og_tags.py`'s `PAGES` all got a TRC entry.
