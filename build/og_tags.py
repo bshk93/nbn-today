@@ -93,7 +93,7 @@ PAGES = {
  '/news/rankings/': ('Power Rankings Ballot — NBN', 'Rank all 30 teams and write the blurbs for an NBN power-rankings edition.'),
  '/news/view/': (None, 'An article from NBN News.'),
  '/memos/': (None, 'Memos from the NBN league office to the league.'),
- '/memos/2026-01-sac-2028-first/': (None, "League office memo: five 2028 firsts tied together by swap rights, the trade history behind them, and the three questions that need a ruling."),
+ '/memos/2026-01-sac-2028-first/': (None, "League office ruling: how six 2028 firsts tied together by swap rights resolve. Trades execute in the order they were made."),
  '/owners/': (None, 'Career records, ratings and playoff résumés for every NBN general manager.'),
  '/pdc/': (None, 'Moved — the PDC dashboard is now at /committees/pdc.'),
  '/perry/': (None, 'The daily NBN Perry game. One guess a day.'),

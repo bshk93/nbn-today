@@ -12,9 +12,9 @@ window.MEMOS = [
     slug: '2026-01-sac-2028-first',
     number: '2026-01',
     date: '2026-09-30',
-    title: "SAC's 2028 1st-round pick: what the trade record shows",
+    title: "Ruling: SAC's 2028 1st and the five picks tied to it",
     to: 'All teams — SAC, MIA, MEM, MIL, DAL and CHA in particular',
-    summary: 'Five 2028 firsts are tied together by swap rights, and one draft-day deal was recorded in a single ambiguous line. Three questions need a ruling.',
+    summary: 'Six 2028 firsts are tied together by swap rights across eleven trades. Ruling: trades execute in the order they were made, and the draft-day SAC–MIA deal created a pool. How every pick resolves, with worked examples.',
   },
 ];
 
