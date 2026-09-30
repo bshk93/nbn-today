@@ -68,6 +68,8 @@
   //   draftRights                — optional [{ name, draft_year, draft_round, stash }],
   //                                the team's unsigned picks (see draftRightsWarnings)
   //   today                      — 'YYYY-MM-DD'; defaults to today (civilToday)
+  //   inSeason                   — true during the regular season (§ 2.1's 15-man ceiling),
+  //                                false outside it; leave undefined when unknown
   //   fmt                        — dollar formatter, so a caller keeps one of them
   //
   // Returns { rows, warnings }. `rows` is the standing table, in reading order.
@@ -175,7 +177,7 @@
 
     const standard = opts.standardCount || 0;
     const twoWay = opts.twoWayCount || 0;
-    const limits = rosterLimits(standard, twoWay, opts.erc, fmt);
+    const limits = rosterLimits(standard, twoWay, opts.erc, fmt, opts.inSeason);
     rows.push(limits.row);
     limits.warnings.forEach(w => warnings.push(w));
     draftRightsWarnings(opts.draftRights, opts.season, opts.today)
@@ -222,13 +224,14 @@
     return out;
   }
 
-  // § 2.1's floor is year-round and its ceiling is not: 15 in season, 20 in the
-  // offseason. Nothing on the site records when the regular season starts, so
-  // this deliberately does not guess which ceiling binds — being over 15 in
-  // August is a trim owed, not a breach, and calling it a violation would cry
-  // wolf on the 13 teams that are legitimately over it right now. Over 20 is
-  // unambiguous in either phase.
-  function rosterLimits(standard, twoWay, erc, fmt) {
+  // § 2.1's floor is year-round and its ceiling is not: 15 in the regular
+  // season, 20 outside it. `inSeason` says which, and comes from the API
+  // (`in_season` on a cap-history row, or on `GET /api/league-year`), which
+  // reads opening night and the last regular-season game off the schedule.
+  // When it's not passed this doesn't guess: over 15 is a trim owed, not a
+  // breach, since calling it a violation in August would cry wolf on every
+  // team legitimately carrying 16–20. Over 20 is unambiguous either way.
+  function rosterLimits(standard, twoWay, erc, fmt, inSeason) {
     fmt = fmt || _fmt;
     const warnings = [];
     let tone = 'ok';
@@ -260,6 +263,12 @@
       tone = 'violation';
       note = `below the ${ROSTER_MIN}-player minimum (§ 2.1)`;
       warnings.push(belowMin());
+    } else if (inSeason === true && standard > ROSTER_MAX_IN_SEASON) {
+      tone = 'violation';
+      note = `over the ${ROSTER_MAX_IN_SEASON}-player regular-season limit (§ 2.1)`;
+      warnings.push({ code: 'roster_over_max', severity: 'violation',
+        text: `${standard} standard players — over § 2.1's ${ROSTER_MAX_IN_SEASON}-player regular-season limit; ${standard - ROSTER_MAX_IN_SEASON} must go`,
+        short: `${standard} players (max ${ROSTER_MAX_IN_SEASON})` });
     } else if (standard > ROSTER_MAX_OFFSEASON) {
       tone = 'violation';
       note = `over the ${ROSTER_MAX_OFFSEASON}-player offseason ceiling (§ 2.1)`;

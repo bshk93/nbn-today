@@ -270,6 +270,7 @@
         teamSalaryExHolds: e.salary_ex_holds,
         standardCount: e.roster,
         twoWayCount: e.two_way,
+        inSeason: e.in_season,
         draftRights: e.draft_rights,
       }).warnings.some(w => w.severity !== 'note')).length;
       signal('rosters', flagged

@@ -201,3 +201,62 @@ Nothing checked that before the split.
 
 Three legacy combined entries carry their own `outcome` and were applied on
 submission. They read as already-resolved everywhere and are not migrated.
+
+## Rules that turn on at opening night (the season calendar)
+
+Until 2026-09-30 nothing in the system knew when the regular season started,
+though the schedule file already held it. So three rules the rulebook marks 🔒
+never switched on:
+
+- **§ 2.1's 15-man ceiling.** Trades and signings that took a team to 16–20
+  players warned all year and never blocked.
+- **§ 6.3's rookie-scale and non-expiring veteran windows** ("up to the day
+  before the regular season starts"). The check was a permanent "not verified"
+  warning.
+- **§ 4.5's trade limit** (15 per team per league year, effective 2026-27). It
+  was not counted at all.
+
+`nbn-api/routers/season_calendar.py` is now the one place these dates come
+from:
+
+- **Opening night and the last regular-season game** are the first and last
+  dates in `schedule-{season}.json`. They are not stored a second time, so
+  editing the schedule moves them.
+- **The trade deadline and the draft days** aren't on the schedule. They live
+  in `league-state.json` under `season_dates` and are set with
+  `PUT /api/league-year/{season}/dates` (bod). A draft day is filed under the
+  league year it falls in, so the June 2027 draft is in 26-27. The endpoint
+  refuses a date outside its season's league year.
+- **"In season"** means opening night through the last regular-season game.
+  Playoffs and the draft are not in season, so a June draft trade can still
+  land a team at 16 for the summer.
+
+What reads it:
+
+| Rule | Where |
+|---|---|
+| § 2.1: over 15 in-season is an error | `_roster_size_check` (signings, offer sheets, conversions, pick signings, waiver claims) and `_validate_trade`'s roster block, which counts the trade's own `releases` |
+| § 6.3 windows | `_validate_extension`'s `extension_window` |
+| § 4.5 trade limit | `_check_trade_limit` / `_trade_limit_counts` |
+| Cap Health, compliance board | `in_season` on each `cap-history` row and on `GET /api/league-year`, passed to `CapHealth.standing({ inSeason })` |
+
+How the trade limit counts (settled 2026-09-30):
+
+- The year is **July 1 – June 30**, the same boundary as everything else. It is
+  not the draft-to-draft run of the league's trade numbers.
+- A trade is **one league trade, not one ledger entry**. The office enters a
+  correction as a second entry ("Trade 42 revision"), so entries sharing a
+  `Trade N` number in the same league year count once. An entry with no number
+  counts on its own. That is why a correction should always carry its trade's
+  number.
+- **Draft-day trades** don't count. **On deadline day**, each team's first
+  trade is exempt. With no dates set, every trade counts.
+
+§ 4.5's **newly-signed restriction** is enforced alongside it
+(`_check_fa_signing_trade_restriction`). A player signed as a free agent can't
+be traded until the later of 90 days after signing and December 15 of that
+season, and the window opens on that day. Every free-agent signing starts the
+clock, including re-signing a team's own free agent and either outcome of an
+offer sheet (settled 2026-09-30). A sign-and-trade does not start it, and
+neither does a draft-pick signing or a waiver claim. A player with no signing
+on the ledger isn't checked.

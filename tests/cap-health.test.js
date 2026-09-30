@@ -146,6 +146,20 @@ group('§ 2.2 — three two-way slots');
       .warnings.some(w => w.code === 'roster_below_min'));
 }
 
+group('§ 2.1: over 15 is a trim owed out of season and a breach in it');
+{
+  const at = (n, inSeason) => CH.standing({ ...base, standardCount: n, teamSalaryFull: 150e6,
+                                            teamSalaryExHolds: 150e6, inSeason });
+  check('16 in the offseason is a caution', codes(at(16, false)).join() === 'roster_trim_owed'
+        && at(16, false).warnings[0].severity === 'caution');
+  check('16 in the regular season is a violation', codes(at(16, true)).join() === 'roster_over_max'
+        && at(16, true).warnings[0].severity === 'violation');
+  check('...and the roster row turns red', row(at(16, true), 'roster').tone === 'violation');
+  check('not knowing the phase does not guess', codes(at(16, undefined)).join() === 'roster_trim_owed');
+  check('15 in the regular season is fine', at(15, true).warnings.length === 0);
+  check('21 in the regular season is still one warning, not two', codes(at(21, true)).length === 1);
+}
+
 group('every warning states itself twice — full, and at a glance');
 {
   // The homepage renders these as chips, where the full § citation is a
@@ -153,6 +167,7 @@ group('every warning states itself twice — full, and at a glance');
   // cannot become a second, drifting phrasing of the same rule.
   const cases = [
     { opts: { standardCount: 16 }, code: 'roster_trim_owed',  short: '16 players (reg. season max 15)' },
+    { opts: { standardCount: 16, inSeason: true }, code: 'roster_over_max', short: '16 players (max 15)' },
     { opts: { standardCount: 13 }, code: 'roster_below_min',  short: '13 players (min 14)' },
     { opts: { standardCount: 21 }, code: 'roster_over_offseason_max', short: '21 players (offseason max 20)' },
     { opts: { standardCount: 14, twoWayCount: 4 }, code: 'two_way_over_max', short: '4 two-way (max 3)' },

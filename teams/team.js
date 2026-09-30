@@ -1588,6 +1588,10 @@ function parseCapHolds(val) {
 // it from Cap Settings; once set it drives every "current season" use on this page
 // (roster first column, total salary, hard-cap banner, exceptions, trades).
 let LEAGUE_YEAR = null;
+// True during the regular season, when § 2.1's roster ceiling is 15 rather than
+// 20 — from GET /api/league-year, which reads it off the schedule. Undefined
+// until that answers, which cap-health.js reads as "don't guess".
+let IN_SEASON;
 
 function currentSeasonYr() {
   if (LEAGUE_YEAR) return LEAGUE_YEAR;
@@ -1918,6 +1922,7 @@ function renderCapHealth(opts) {
     teamSalaryExHolds: opts.teamSalaryExHolds,
     standardCount: counts.standard,
     twoWayCount: counts.twoWay,
+    inSeason: IN_SEASON,
     erc: opts.erc,
     draftRights: draftRightsFor(opts.rosterRows, opts.biosData),
     fmt: fmtDollars,
@@ -6814,7 +6819,7 @@ function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDe
     const counts = countRosterSlots(rows, mergedBios);
     const { warnings } = CapHealth.standing({
       season, capLevels, teamState, teamSalaryFull, teamSalaryExHolds,
-      standardCount: counts.standard, twoWayCount: counts.twoWay,
+      standardCount: counts.standard, twoWayCount: counts.twoWay, inSeason: IN_SEASON,
       erc: computeEmptyRosterCharge(rows, mergedBios, capLevels, season),
       fmt: fmtDollars,
     });
@@ -7210,6 +7215,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
   if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
+  if (lyr.status === 'fulfilled' && typeof lyr.value?.in_season === 'boolean') IN_SEASON = lyr.value.in_season;
 
   // Roles drive which edit buttons render below; default to none if the call failed.
   AUTH_ROLES = (authr.status === 'fulfilled' && Array.isArray(authr.value?.roles)) ? authr.value.roles : [];

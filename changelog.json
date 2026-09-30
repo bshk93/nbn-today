@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.7.34",
+    "date": "2026-09-30",
+    "changes": [
+      "From opening night (Oct 20), a trade or signing that leaves a team over 15 players is blocked, and Cap Health shows a team over 15 as a violation instead of \"trim before opening night\"",
+      "The 15-trades-per-season limit is now counted and enforced. Draft-day trades and one trade on deadline day (Feb 11, 2027) don't count",
+      "A newly signed free agent can't be traded until 90 days after signing and December 15, whichever is later",
+      "Rookie-scale and non-expiring veteran extensions are checked against their deadline, the day before opening night"
+    ]
+  },
+  {
     "version": "0.7.33",
     "date": "2026-09-29",
     "changes": [
