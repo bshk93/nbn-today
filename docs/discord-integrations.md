@@ -134,8 +134,13 @@ never announced.
 
 ## TRC alerts
 
-`routers/trc_notify.py` posts to the private `trc-alerts` channel
-(`DISCORD_TRC_CHANNEL`, added 2026-09-29), the TRC analogue of `pdc-alerts`.
+`routers/trc_notify.py` posts to the private `#trade-vote` channel
+(`DISCORD_TRC_CHANNEL`; it was `trc-alerts` from 2026-09-29 until 2026-10-01,
+when the committee asked for the move), the TRC analogue of `pdc-alerts`. The bot
+sees `#trade-vote` through the TRC Discord role. `DISCORD_TRC_MIRROR_CHANNEL`,
+if set, gets a copy of every alert; it points at `trc-alerts` so the
+commissioner, who isn't in `#trade-vote`, still sees them. Unset it to stop the
+copies.
 It posts twice per trade, at the two points where the committee has something
 to do: **ready for a vote** (every team has agreed; with the legs and live
 legality) and **ready to finalize** (third approval in). Nothing on proposal,
