@@ -878,7 +878,7 @@
       } else {
         // Year 1 seeded from what the player is already on the books for, so
         // the common case (re-signing a hold) starts from a real figure.
-        F.salaries[0] = (POOL[row.slug] || {}).prior_salary || 0;
+        F.salaries[0] = (POOL[row.slug] || {}).hold_amount || 0;
         F.hold = 'UFA';
       }
       while (F.salaries.length < F.years) F.salaries.push(0);
@@ -1954,7 +1954,7 @@
         loadWaivers();
         setInterval(loadWaivers, 30000);
 
-        // The pool (class_year, hold_type, prior_salary per player) is derived
+        // The pool (class_year, hold_type, hold_amount per player) is derived
         // server-side by GET /api/fa/pool — see nbn-api routers/free_agency.py.
         // This just joins it against bio/OVR/team data for display.
         Object.entries(pool).forEach(([slug, entry]) => {
@@ -1968,8 +1968,8 @@
             pos: (bio.pos || []).join('/') || '—',
             ovr: String(ovrJson[slug] || ''),
             age: calcAge(bio.dob),
-            salary: noCapHold ? 0 : entry.prior_salary,
-            salaryFmt: noCapHold ? CAP_HOLD_LABELS[entry.hold_type] : formatSalary(entry.prior_salary),
+            salary: noCapHold ? 0 : entry.hold_amount,
+            salaryFmt: noCapHold ? CAP_HOLD_LABELS[entry.hold_type] : formatSalary(entry.hold_amount),
             capType: entry.hold_type,
           };
 
