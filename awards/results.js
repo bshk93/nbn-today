@@ -3,6 +3,7 @@
   const SEASON = location.pathname.split('/').filter(Boolean)[1];
 
   document.title = SEASON + ' Awards — NBN';
+  const fullSeason = `20${SEASON.replace('-', '–')}`;   // '25-26' → '2025–26'
   { const _f = document.createElement('link'); _f.rel = 'icon'; _f.href = '/logo.png'; document.head.appendChild(_f); }
 
   // theme.css and nav-chrome.css are <link>ed from the page's <head>: a
@@ -21,19 +22,11 @@
     a { color: var(--link); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    .page { max-width: 1060px; margin: 0 auto; }
-
-    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: var(--text-muted); }
-    .nav a { color: var(--text-muted); }
-    .nav a:hover { color: var(--text-primary); }
-
-    header { margin-bottom: 1.75rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
-
     .awards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      /* min(): a phone narrower than 420px gets one full-width column
+         instead of a column wider than the screen. */
+      grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
       gap: 1.5rem;
       margin-bottom: 1.5rem;
     }
@@ -158,11 +151,11 @@
   `; document.head.appendChild(_s); }
 
   document.body.innerHTML = `
-    <div class="page">
-      <nav class="nav" id="page-nav"><a href="/awards/">← Awards</a></nav>
-      <header>
-        <h1>${SEASON} Season Awards</h1>
-        <p id="page-sub">Loading…</p>
+    <div class="page ui-page ui-page--wide">
+      <nav class="nav"><a href="/awards/">← Awards</a></nav>
+      <header class="ui-header">
+        <h1 class="ui-title">${fullSeason} Season Awards</h1>
+        <div class="ui-header-actions" id="header-actions"></div>
       </header>
       <div id="awards-container">
         <div id="status">Loading…</div>
@@ -205,10 +198,7 @@
   function displayNameFromBio(bios, slug) {
     const bio = bios[slug];
     if (!bio) return slug;
-    const name = bio.name || slug;
-    if (!name.includes(',')) return name;
-    const [last, first] = name.split(',').map(s => s.trim());
-    return `${first} ${last}`;
+    return nbnPlayerName(bio.name || slug);   // /names.js, loaded by the page shell
   }
 
   function aggregateAward(ballots, bios, award) {
@@ -510,7 +500,6 @@
       if (!ballotsRes.ok) throw new Error(ballotsRes.statusText);
       const [ballots, bios] = await Promise.all([ballotsRes.json(), biosRes.ok ? biosRes.json() : {}]);
       render(ballots, bios, isBod);
-      document.getElementById('page-sub').textContent = 'Live voting results — updates automatically.';
     } catch {
       const c = document.getElementById('awards-container');
       if (c) c.innerHTML = '<div id="status">Failed to load voting data.</div>';
@@ -533,8 +522,8 @@
           const me = await r.json();
           const roles = me.roles || [];
           if (roles.some(role => TEAM_ROLES.has(role))) {
-            document.getElementById('page-nav').innerHTML =
-              '<a href="/awards/">← Awards</a> · <a href="/awards/' + SEASON + '/vote/">My Ballot →</a>';
+            document.getElementById('header-actions').innerHTML =
+              '<a class="ui-btn ui-btn--sm" href="/awards/' + SEASON + '/vote/">My ballot</a>';
           }
           const isBod = roles.some(role => role === 'bod' || role === 'admin');
           if (isBod) return { allowed: true, token, isBod: true };

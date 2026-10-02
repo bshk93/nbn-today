@@ -324,7 +324,9 @@
         : Object.keys(vestingByDate).filter(d => d >= leagueToday);
       const customDates = teamFilter ? [] : Object.keys(customEventsByDate).filter(d => d >= leagueToday);
       const schedDates  = Object.keys(scheduledGamesByDate).filter(d => d >= leagueToday && schedFor(d));
-      return [...new Set([...vestDates, ...customDates, ...schedDates])].sort();
+      // A game already played today is still today's.
+      const gameDates   = Object.keys(gamesByDate).filter(d => d >= leagueToday && gamesFor(d));
+      return [...new Set([...vestDates, ...customDates, ...schedDates, ...gameDates])].sort();
     }
 
     // ── Data loading ──────────────────────────────────────────────
@@ -413,17 +415,6 @@
             if (!gamesByDate[g.date]) gamesByDate[g.date] = [];
             gamesByDate[g.date].push(g);
           });
-          const dates = Object.keys(gamesByDate).sort();
-          if (dates.length) {
-            // Pure date arithmetic (day after the last game), so do it entirely
-            // in UTC: parsing 'YYYY-MM-DD' without a Z yields *local* midnight,
-            // which toISOString() then shifted back a day for anyone east of UTC.
-            const lastDt = new Date(dates[dates.length - 1] + 'T00:00:00Z');
-            lastDt.setUTCDate(lastDt.getUTCDate() + 1);
-            leagueToday = lastDt.toISOString().slice(0, 10);
-            viewYear    = lastDt.getUTCFullYear();
-            viewMonth   = lastDt.getUTCMonth();
-          }
         }
         if (vestResult.status === 'fulfilled')   vestingByDate      = vestResult.value;
         if (customResult.status === 'fulfilled') customEventsByDate = customResult.value;
@@ -446,14 +437,13 @@
         // per-item push/merge needed.
         if (streamingDaysResult.status === 'fulfilled') streamingDaysByDate = streamingDaysResult.value;
 
-        if (!leagueToday) {
-          // Derive the view month from the league date itself, so the calendar
-          // can never open on a different month than the day it calls "today".
-          leagueToday = nbnToday();
-          const [y, m] = leagueToday.split('-').map(Number);
-          viewYear    = y;
-          viewMonth   = m - 1;
-        }
+        // Today is the real date (league time), not the day after the last box
+        // score: that froze "today" at the Finals all offseason, and listed
+        // the draft and July vesting dates as still to come in October.
+        leagueToday = nbnToday();
+        const [y, m] = leagueToday.split('-').map(Number);
+        viewYear    = y;
+        viewMonth   = m - 1;
 
         shownPastIdx = getPastEventDates().length; // default: no past shown
 

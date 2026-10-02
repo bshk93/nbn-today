@@ -220,6 +220,7 @@
   <div class="tab-panel" id="tab-series"></div>
 </div>
 
+<script src="/names.js"></script>
 <script>
 (function () {
 
@@ -314,7 +315,7 @@
 
       const playerLine = document.createElement('div');
       playerLine.className = 'classic-player';
-      playerLine.textContent = row.PLAYER;
+      playerLine.textContent = nbnPlayerName(row.PLAYER);
       const teamSpan = document.createElement('span');
       teamSpan.className = 'classic-team';
       teamSpan.textContent = '· ' + row.TEAM;

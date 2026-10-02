@@ -38,12 +38,6 @@
     /* Auth */
     .auth-gate { text-align: center; padding: 2.5rem 1rem; }
     .auth-gate p { color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.9rem; }
-    .token-row { display: flex; gap: 0.5rem; max-width: 380px; margin: 0 auto; }
-    .token-row input {
-      flex: 1; background: var(--bg-page); border: 1px solid var(--border); border-radius: 8px;
-      color: var(--text-primary); padding: 0.55rem 0.75rem; font-size: 0.875rem; font-family: var(--font-mono);
-    }
-    .token-row input:focus { outline: none; border-color: var(--accent); }
     .token-err { color: var(--danger); font-size: 0.8rem; margin-top: 0.5rem; text-align: center; }
 
     /* Buttons */
@@ -277,7 +271,6 @@
     <header class="ui-header">
       <div>
         <h1 class="ui-title">Daily NBN Poeltl</h1>
-        <p class="ui-subtitle">Guess the mystery player in 7 tries.</p>
       </div>
     </header>
 
@@ -323,32 +316,26 @@
 
     // ── Auth ─────────────────────────────────────────────────────────────────
 
+    // Signing in is the header's job; the button opens the same dialog.
     function renderAuth() {
       root.innerHTML = `
         <div class="card">
           <div class="auth-gate">
-            <p>Enter your league token to play the Daily NBN Poeltl.</p>
-            <div class="token-row">
-              <input id="token-input" type="password" placeholder="Your league token" autocomplete="off">
-              <button class="btn btn-primary" onclick="submitToken()">Play</button>
-            </div>
+            <p>Sign in to play the Daily NBN Poeltl.</p>
+            <button class="btn btn-primary" onclick="signInToPlay()">Sign in</button>
             <div id="token-err" class="token-err"></div>
           </div>
         </div>`;
-      const inp = document.getElementById('token-input');
-      inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitToken(); });
-      inp.focus();
     }
 
-    async function submitToken() {
-      const input = document.getElementById('token-input');
+    async function signInToPlay() {
       const err = document.getElementById('token-err');
-      const val = input.value.trim();
+      const val = await promptForToken();
       if (!val) return;
       err.textContent = 'Checking…';
       try {
         const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${val}` } });
-        if (!res.ok) { err.textContent = 'Invalid token.'; return; }
+        if (!res.ok) { localStorage.removeItem(TOKEN_KEY); err.textContent = 'That token was not recognised.'; return; }
         const me = await res.json();
         token = val;
         currentMember = me.name || me.username || null;

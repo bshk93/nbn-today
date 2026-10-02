@@ -54,6 +54,7 @@
   color: var(--text-secondary);
   max-width: 60ch;
 }
+.ui-subtitle:empty { display: none; }
 .ui-header-actions {
   display: flex;
   align-items: center;

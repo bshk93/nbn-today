@@ -22,77 +22,100 @@
   <meta name="theme-color" content="#0d0e11">
   <!-- /NBN:og -->
   <style>
+    .date-nav { display: flex; align-items: center; gap: var(--space-2); }
+    .date-nav .ui-input { height: 1.9rem; font-size: var(--text-sm); }
+    .bx-day { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+    .bx-day-label { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); }
+    .bx-day-count { font-size: var(--text-xs); color: var(--text-muted); }
+    .submit-link { display: none; font-size: var(--text-sm); white-space: nowrap; }
 
-    .date-nav { display: flex; align-items: center; gap: 0.5rem; }
-    .date-btn { background: var(--border); border: 1px solid var(--text-dim); color: var(--text-secondary); border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; font-size: 0.85rem; line-height: 1.4; }
-    .date-btn:hover:not(:disabled) { background: var(--text-dim); }
-    .date-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .date-input { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.875rem; font-family: inherit; cursor: pointer; }
-    .date-input:focus { outline: none; border-color: var(--accent); }
+    .games { display: flex; flex-direction: column; gap: var(--space-3); }
+    .game { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 
-    .submit-link { display: none; font-size: 0.8rem; color: var(--link); text-decoration: none; white-space: nowrap; }
-    .submit-link:hover { color: var(--accent-light); }
-
-    .loading { color: var(--text-muted); font-size: 0.875rem; }
-
-    .games { display: flex; flex-direction: column; gap: 1rem; }
-    .game { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-    .game-header { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.25rem; cursor: pointer; user-select: none; gap: 0.75rem; }
+    /* Collapsed: a two-line scoreboard, the night's best line from each side,
+       and a chevron. */
+    .game-header { display: grid; grid-template-columns: minmax(15rem, 20rem) 1fr auto; align-items: center; gap: var(--space-5); padding: var(--space-3) var(--space-5); cursor: pointer; user-select: none; }
     .game-header:hover { background: var(--bg-hover); }
-    .matchup { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
-    .team-block { display: flex; align-items: center; gap: 0.5rem; }
-    .team-block-logo { width: 32px; height: 32px; object-fit: contain; }
-    .team-abbr { font-size: 1rem; font-weight: 700; color: inherit; text-decoration: none; }
-    .team-abbr:hover { text-decoration: underline; }
-    .team-score { font-size: 1.25rem; font-weight: 700; }
-    .team-score.win { color: var(--market-positive); }
-    .team-score.loss { color: var(--text-muted); }
-    .at { color: var(--text-dim); font-size: 0.85rem; }
-    .badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--border); color: var(--text-muted); border-radius: 3px; padding: 0.15rem 0.4rem; white-space: nowrap; }
-    .badge.playoff { background: var(--danger-alt-bg); color: var(--danger-alt); }
-    .chevron { color: var(--text-dim); font-size: 0.7rem; flex-shrink: 0; transition: transform 0.15s; }
+    .sb { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; column-gap: var(--space-3); row-gap: var(--space-1); }
+    .sb img { width: 28px; height: 28px; object-fit: contain; }
+    .sb-team { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; color: var(--text-muted); }
+    .sb-team a { font-weight: 700; color: inherit; text-decoration: none; }
+    .sb-team a:hover { text-decoration: underline; }
+    .sb-name { font-size: var(--text-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sb-score { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-muted); }
+    .sb .win, .sb .win a { color: var(--text-primary); }
+    .sb-score.win { position: relative; }
+    .sb-score.win::after { content: ''; position: absolute; right: -0.8rem; top: 50%; border: 5px solid transparent; border-right-color: var(--text-primary); transform: translateY(-50%); }
+    .gm-meta { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+    .gm-status { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+    .gm-lead { display: grid; grid-template-columns: 2.5rem 1fr; column-gap: var(--space-2); font-size: var(--text-sm); color: var(--text-secondary); min-width: 0; }
+    .gm-lead span:first-child { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); align-self: center; }
+    .gm-lead span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gm-lead b { color: var(--text-primary); font-weight: 600; }
+    .chevron { color: var(--text-dim); font-size: 0.7rem; transition: transform 0.15s; }
     .game.open .chevron { transform: rotate(180deg); }
 
-    .game-body { display: none; border-top: 1px solid var(--border); }
+    .game-body { display: none; border-top: 1px solid var(--border); padding: var(--space-4) var(--space-5) var(--space-5); }
     .game.open .game-body { display: block; }
-    .team-label .shot-link { margin-left: 0.75rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--link); }
-    .team-section { padding: 0 0 0.75rem; }
-    .team-section + .team-section { border-top: 1px solid var(--border); padding-top: 0; }
-    .team-label { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); padding: 0.75rem 1.25rem 0.35rem; }
-    .table-wrap { overflow-x: auto; padding: 0 0.5rem; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-    th { text-align: center; padding: 0.3rem 0.3rem; font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
-    th.pname { text-align: left; min-width: 140px; }
-    td { padding: 0.28rem 0.3rem; border-bottom: 1px solid #1a2332; text-align: center; color: var(--text-secondary); }
-    td.pname { text-align: left; color: var(--text-primary); }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(255,255,255,0.02); }
-    .dim { color: var(--text-dim); }
+    .team-section + .team-section { margin-top: var(--space-5); }
+    .team-label { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+    .team-label img { width: 20px; height: 20px; object-fit: contain; }
+    .team-label .ha { font-weight: 400; color: var(--text-muted); }
+    .team-label .shot-link { margin-left: auto; font-size: var(--text-xs); font-weight: 500; }
+    .game-body .ui-table-wrap { background: none; }
+    .bx-table th:not(:first-child), .bx-table td:not(:first-child) { text-align: right; }
+    .bx-table td.pname { min-width: 11rem; }
+    .bx-table td.pname a { color: var(--text-primary); font-weight: 500; }
+    .bx-table td.pts { color: var(--text-primary); font-weight: 600; }
+    .bx-table .dim { color: var(--text-muted); }
+    .bx-table th.grp, .bx-table td.grp { border-left: 1px solid var(--border-subtle); }
+    .bx-table tfoot td { border-top: 1px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .bx-table tfoot tr.pct td { border-top: none; padding-top: 0; font-size: var(--text-xs); font-weight: 400; color: var(--text-muted); }
+    .dnp { margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+    .dnp b { font-weight: 600; color: var(--text-secondary); }
+
+    @media (max-width: 720px) {
+      .game-header { grid-template-columns: 1fr auto; padding: var(--space-3) var(--space-4); }
+      .gm-meta { grid-column: 1 / -1; grid-row: 2; }
+      .chevron { grid-column: 2; grid-row: 1; }
+      .game-body { padding: var(--space-3) var(--space-3) var(--space-4); }
+      .sb-name { display: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="page ui-page">
+  <div class="page ui-page ui-page--wide">
     <nav class="nav"></nav>
     <header class="ui-header">
-      <div style="display:flex;align-items:baseline;gap:1rem;">
-        <h1 class="ui-title">Box Scores</h1>
-        <a class="submit-link" id="submit-link" href="/boxscores/submit/">Submit →</a>
-      </div>
+      <h1 class="ui-title">Box Scores</h1>
       <div class="date-nav ui-header-actions">
-        <button class="date-btn" id="btn-prev">&#8592;</button>
-        <input type="date" class="date-input" id="date-input">
-        <button class="date-btn" id="btn-next">&#8594;</button>
+        <a class="submit-link" id="submit-link" href="/boxscores/submit/">Submit →</a>
+        <button class="ui-btn ui-btn--sm" id="btn-prev" aria-label="Previous game day">&#8592;</button>
+        <input type="date" class="ui-input" id="date-input" aria-label="Date">
+        <button class="ui-btn ui-btn--sm" id="btn-next" aria-label="Next game day">&#8594;</button>
       </div>
     </header>
-    <div id="content"><span class="loading">Loading…</span></div>
+    <div id="content"><div class="ui-loading">Loading…</div></div>
   </div>
 
   <script src="/league-time.js"></script>
+  <script src="/names.js"></script>
   <script>
     // Which season's dates are loaded. Set from the ?date link (calendar and
     // /committees/stream deep-link old games), else the current league year.
     let SEASON = "";
     let allDates = [], cur = "";
+
+    const TEAM_NAMES = {
+      ATL: 'Atlanta Hawks', BKN: 'Brooklyn Nets', BOS: 'Boston Celtics', CHA: 'Charlotte Hornets',
+      CHI: 'Chicago Bulls', CLE: 'Cleveland Cavaliers', DAL: 'Dallas Mavericks', DEN: 'Denver Nuggets',
+      DET: 'Detroit Pistons', GSW: 'Golden State Warriors', HOU: 'Houston Rockets', IND: 'Indiana Pacers',
+      LAC: 'LA Clippers', LAL: 'Los Angeles Lakers', MEM: 'Memphis Grizzlies', MIA: 'Miami Heat',
+      MIL: 'Milwaukee Bucks', MIN: 'Minnesota Timberwolves', NOP: 'New Orleans Pelicans', NYK: 'New York Knicks',
+      OKC: 'Oklahoma City Thunder', ORL: 'Orlando Magic', PHI: 'Philadelphia 76ers', PHX: 'Phoenix Suns',
+      POR: 'Portland Trail Blazers', SAC: 'Sacramento Kings', SAS: 'San Antonio Spurs', TOR: 'Toronto Raptors',
+      UTA: 'Utah Jazz', WAS: 'Washington Wizards',
+    };
 
     const contentEl = document.getElementById("content");
     const dateInput = document.getElementById("date-input");
@@ -100,6 +123,8 @@
     const btnNext   = document.getElementById("btn-next");
 
     if (localStorage.getItem("nbn_token")) document.getElementById("submit-link").style.display = "inline";
+
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     async function loadSeason(season) {
       const r = await fetch(`/api/boxscores/dates?season=${season}`);
@@ -119,15 +144,17 @@
           // games yet; show the one that just ended rather than an empty page.
           if (!allDates.length) await loadSeason(nbnSeasonShift(SEASON, -1));
         }
-        if (!allDates.length) { setContent('<span class="loading">No games available.</span>'); return; }
+        if (!allDates.length) { setMessage('No games available.'); return; }
         cur = (param && allDates.includes(param)) ? param : allDates[0];
         dateInput.value = cur;
         updateNav();
         load(cur);
-      } catch(e) { setContent(`<span class="loading" style="color:var(--danger)">${e.message}</span>`); }
+      } catch(e) { setMessage(e.message, true); }
     }
 
-    function setContent(html) { contentEl.innerHTML = html; }
+    function setMessage(text, isError) {
+      contentEl.innerHTML = `<div class="ui-empty"${isError ? ' style="color:var(--danger)"' : ''}>${esc(text)}</div>`;
+    }
     function updateNav() {
       const i = allDates.indexOf(cur);
       btnNext.disabled = i <= 0;
@@ -140,14 +167,21 @@
         try { await loadSeason(nbnSeasonForDate(d)); } catch (e) {}
       }
       cur = d; dateInput.value = cur; updateNav(); load(cur);
+      history.replaceState(null, '', `?date=${d}`);
     }
 
     btnPrev.onclick = () => { const i = allDates.indexOf(cur); if (i < allDates.length - 1) go(allDates[i + 1]); };
     btnNext.onclick = () => { const i = allDates.indexOf(cur); if (i > 0) go(allDates[i - 1]); };
     dateInput.onchange = e => go(e.target.value);
 
+    function dayLabel(date) {
+      const [y, m, d] = date.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US',
+        { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+    }
+
     async function load(date) {
-      setContent('<span class="loading">Loading…</span>');
+      contentEl.innerHTML = '<div class="ui-loading">Loading…</div>';
       try {
         const [r, shotList] = await Promise.all([
           fetch(`/api/boxscores?date=${date}&season=${SEASON}`),
@@ -157,8 +191,11 @@
         ]);
         const games = await r.json();
         shots = new Map(shotList.map(it => [[it.home_team, it.away_team].sort().join('~'), it]));
-        if (!games.length) { setContent('<span class="loading">No games on this date.</span>'); return; }
-        contentEl.innerHTML = "";
+        if (!games.length) { setMessage('No games on this date.'); return; }
+        contentEl.innerHTML = `<div class="bx-day">
+          <span class="bx-day-label">${dayLabel(date)}</span>
+          <span class="bx-day-count">${games.length} game${games.length === 1 ? '' : 's'}</span>
+        </div>`;
         const wrap = document.createElement("div");
         wrap.className = "games";
         games.forEach(g => wrap.appendChild(buildGame(g)));
@@ -166,26 +203,27 @@
         // collapsed rows at the top of an empty page.
         if (games.length <= 2) wrap.querySelectorAll('.game').forEach(el => el.classList.add('open'));
         contentEl.appendChild(wrap);
-      } catch(e) { setContent(`<span class="loading" style="color:var(--danger)">${e.message}</span>`); }
+      } catch(e) { setMessage(e.message, true); }
     }
 
+    const pct = (m, a) => a ? (m / a * 100).toFixed(1) : '—';
+
+    // Columns after the player name. `grp` starts a visual group; `sum` is
+    // added up for the team totals row.
     const COLS = [
-      { h: "MIN", k: "min" },
-      { h: "PTS", k: "pts" },
-      { h: "REB", k: "reb" },
-      { h: "OR",  k: "oreb", dim: true },
-      { h: "DR",  k: "dreb", dim: true },
-      { h: "AST", k: "ast" },
-      { h: "STL", k: "stl" },
-      { h: "BLK", k: "blk" },
-      { h: "TO",  k: "tov" },
-      { h: "PF",  k: "pf" },
-      { h: "FG",  k: p => `${p.fgm}/${p.fga}` },
-      { h: "FG%", k: p => p.fgpct != null ? (p.fgpct * 100).toFixed(0) + "%" : "—", dim: true },
-      { h: "3P",  k: p => `${p.tpm}/${p.tpa}` },
-      { h: "3P%", k: p => p.tppct != null ? (p.tppct * 100).toFixed(0) + "%" : "—", dim: true },
-      { h: "FT",  k: p => `${p.ftm}/${p.fta}` },
-      { h: "FT%", k: p => p.ftpct != null ? (p.ftpct * 100).toFixed(0) + "%" : "—", dim: true },
+      { h: "MIN", k: "min", sum: true },
+      { h: "PTS", k: "pts", sum: true, cls: "pts" },
+      { h: "REB", k: "reb", sum: true },
+      { h: "AST", k: "ast", sum: true },
+      { h: "STL", k: "stl", sum: true },
+      { h: "BLK", k: "blk", sum: true },
+      { h: "TO",  k: "tov", sum: true },
+      { h: "PF",  k: "pf",  sum: true },
+      { h: "FG",  k: p => `${p.fgm}-${p.fga}`, grp: true, pct: ['fgm', 'fga'] },
+      { h: "3P",  k: p => `${p.tpm}-${p.tpa}`, pct: ['tpm', 'tpa'] },
+      { h: "FT",  k: p => `${p.ftm}-${p.fta}`, pct: ['ftm', 'fta'] },
+      { h: "OR",  k: "oreb", sum: true, grp: true, dim: true },
+      { h: "DR",  k: "dreb", sum: true, dim: true },
     ];
 
     let shots = new Map();  // "TEAM~TEAM" -> screenshot item for the loaded date
@@ -197,99 +235,83 @@
       return it.home_team === team ? it.images.home : it.images.away;
     }
 
+    const played = players => (players || []).filter(p => (p.min || 0) > 0);
+    const surname = p => nbnPlayerName(p.player).split(' ').slice(1).join(' ') || nbnPlayerName(p.player);
+
+    // "Durant 70 pts, 7 reb, 2 ast" — the side's top scorer.
+    function bestLine(players) {
+      const top = played(players).slice().sort((a, b) => (b.pts - a.pts) || (b.reb + b.ast - a.reb - a.ast))[0];
+      if (!top) return '—';
+      return `<b>${esc(surname(top))}</b> ${top.pts} pts, ${top.reb} reb, ${top.ast} ast`;
+    }
+
     function buildGame(g) {
       const homeWin = g.home_score > g.away_score;
       const div = document.createElement("div");
       div.className = "game";
 
+      const sbRow = (team, score, win) => `
+        <img src="/logos/logo-${team.toLowerCase()}.png" alt="" onerror="this.style.visibility='hidden'">
+        <span class="sb-team ${win ? 'win' : ''}"><a href="/teams/${team}/" onclick="event.stopPropagation()">${team}</a><span class="sb-name">${esc(TEAM_NAMES[team] || '')}</span></span>
+        <span class="sb-score ${win ? 'win' : ''}">${score ?? '—'}</span>`;
+
       const hdr = document.createElement("div");
       hdr.className = "game-header";
       hdr.innerHTML = `
-        <div class="matchup">
-          <div class="team-block">
-            <img class="team-block-logo" src="/logos/logo-${g.away_team.toLowerCase()}.png" alt="" onerror="this.style.display='none'">
-            <a class="team-abbr" href="/teams/${g.away_team.toLowerCase()}/">${g.away_team}</a>
-            <span class="team-score ${homeWin ? "loss" : "win"}">${g.away_score ?? "—"}</span>
-          </div>
-          <span class="at">@</span>
-          <div class="team-block">
-            <img class="team-block-logo" src="/logos/logo-${g.home_team.toLowerCase()}.png" alt="" onerror="this.style.display='none'">
-            <a class="team-abbr" href="/teams/${g.home_team.toLowerCase()}/">${g.home_team}</a>
-            <span class="team-score ${homeWin ? "win" : "loss"}">${g.home_score ?? "—"}</span>
-          </div>
-          <span class="badge ${g.gametype === "PLAYOFF" ? "playoff" : ""}">${g.gametype === "PLAYOFF" ? "Playoffs" : "Regular Season"}</span>
+        <div class="sb">${sbRow(g.away_team, g.away_score, !homeWin)}${sbRow(g.home_team, g.home_score, homeWin)}</div>
+        <div class="gm-meta">
+          <div class="gm-status">Final${g.gametype === "PLAYOFF" ? ' <span class="ui-badge ui-badge--danger">Playoffs</span>' : ''}</div>
+          <div class="gm-lead"><span>${g.away_team}</span><span>${bestLine(g.away_players)}</span></div>
+          <div class="gm-lead"><span>${g.home_team}</span><span>${bestLine(g.home_players)}</span></div>
         </div>
         <span class="chevron">▼</span>`;
       hdr.onclick = () => div.classList.toggle("open");
 
       const body = document.createElement("div");
       body.className = "game-body";
-      buildTeamSection(body, g.home_players, `${g.home_team} — Home`, shotsFor(g, g.home_team));
-      buildTeamSection(body, g.away_players, `${g.away_team} — Away`, shotsFor(g, g.away_team));
+      buildTeamSection(body, g.away_team, 'Away', g.away_players, shotsFor(g, g.away_team));
+      buildTeamSection(body, g.home_team, 'Home', g.home_players, shotsFor(g, g.home_team));
 
       div.appendChild(hdr);
       div.appendChild(body);
       return div;
     }
 
-    function buildTeamSection(parent, players, label, teamShots = []) {
+    function buildTeamSection(parent, team, side, players, teamShots = []) {
       const section = document.createElement("div");
       section.className = "team-section";
 
-      const lbl = document.createElement("div");
-      lbl.className = "team-label";
-      lbl.textContent = label;
-      teamShots.forEach((sh, i) => {
-        const a = document.createElement("a");
-        a.className = "shot-link";
-        a.href = sh.url;
-        a.target = "_blank";
-        a.rel = "noopener";
-        a.textContent = teamShots.length > 1 ? `Screenshot ${i + 1} ↗` : "Screenshot ↗";
-        a.title = "The box score screenshot this was entered from (kept 14 days)";
-        lbl.appendChild(a);
-      });
-      section.appendChild(lbl);
+      const shotLinks = teamShots.map((sh, i) =>
+        `<a class="shot-link" href="${esc(sh.url)}" target="_blank" rel="noopener" title="The box score screenshot this was entered from (kept 14 days)">${teamShots.length > 1 ? `Screenshot ${i + 1}` : 'Screenshot'} ↗</a>`).join('');
+      section.innerHTML = `<div class="team-label">
+        <img src="/logos/logo-${team.toLowerCase()}.png" alt="" onerror="this.style.display='none'">
+        ${esc(TEAM_NAMES[team] || team)} <span class="ha">${side}</span>${shotLinks}
+      </div>`;
 
-      const wrap = document.createElement("div");
-      wrap.className = "table-wrap";
-      const tbl = document.createElement("table");
+      const on = played(players).sort((a, b) => (b.min - a.min) || (b.pts - a.pts));
+      const dnp = (players || []).filter(p => !((p.min || 0) > 0));
 
-      const hrow = tbl.createTHead().insertRow();
-      const thp = document.createElement("th");
-      thp.className = "pname";
-      thp.textContent = "Player";
-      hrow.appendChild(thp);
-      COLS.forEach(c => {
-        const th = document.createElement("th");
-        th.textContent = c.h;
-        hrow.appendChild(th);
-      });
+      const cell = (c, v) => `<td class="${[c.cls, c.grp ? 'grp' : '', c.dim ? 'dim' : ''].filter(Boolean).join(' ')}">${v}</td>`;
+      const name = p => p.slug
+        ? `<a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(nbnPlayerName(p.player))}</a>`
+        : esc(nbnPlayerName(p.player));
 
-      const tbody = tbl.createTBody();
-      (players || []).slice().sort((a, b) => (b.pts ?? 0) - (a.pts ?? 0)).forEach(p => {
-        const tr = tbody.insertRow();
-        const tdp = tr.insertCell();
-        tdp.className = "pname";
-        const parts = p.player.split(", ");
-        const displayName = parts.length === 2 ? `${parts[1]} ${parts[0]}` : p.player;
-        if (p.slug) {
-          const pa = document.createElement('a');
-          pa.href = `/players/?p=${p.slug}`;
-          pa.textContent = displayName;
-          tdp.appendChild(pa);
-        } else {
-          tdp.textContent = displayName;
-        }
-        COLS.forEach(c => {
-          const td = tr.insertCell();
-          td.textContent = typeof c.k === "function" ? c.k(p) : (p[c.k] ?? "—");
-          if (c.dim) td.className = "dim";
-        });
-      });
+      const rows = on.map(p => `<tr><td class="pname">${name(p)}</td>${
+        COLS.map(c => cell(c, typeof c.k === 'function' ? c.k(p) : (p[c.k] ?? '—'))).join('')}</tr>`).join('');
 
-      wrap.appendChild(tbl);
-      section.appendChild(wrap);
+      const tot = {};
+      ['min','pts','reb','ast','stl','blk','tov','pf','oreb','dreb','fgm','fga','tpm','tpa','ftm','fta']
+        .forEach(k => { tot[k] = on.reduce((s, p) => s + (p[k] || 0), 0); });
+      const totRow = `<tr><td>Team</td>${COLS.map(c => cell(c, typeof c.k === 'function' ? c.k(tot) : tot[c.k])).join('')}</tr>`;
+      const pctRow = `<tr class="pct"><td></td>${COLS.map(c => cell(c, c.pct ? `${pct(tot[c.pct[0]], tot[c.pct[1]])}%` : '')).join('')}</tr>`;
+
+      section.insertAdjacentHTML('beforeend', `<div class="ui-table-wrap">
+        <table class="ui-table ui-table--dense ui-table--sticky-first bx-table">
+          <thead><tr><th>Player</th>${COLS.map(c => `<th class="${c.grp ? 'grp' : ''}">${c.h}</th>`).join('')}</tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot>${on.length ? totRow + pctRow : ''}</tfoot>
+        </table>
+      </div>${dnp.length ? `<div class="dnp"><b>Did not play:</b> ${dnp.map(p => esc(nbnPlayerName(p.player))).join(', ')}</div>` : ''}`);
       parent.appendChild(section);
     }
 

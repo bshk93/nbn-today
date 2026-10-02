@@ -59,6 +59,7 @@
     .cl-player img { width: 16px; height: 16px; vertical-align: -3px; margin-left: 6px; }
     .cl-sub { display: block; max-width: 22rem; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-xs); color: var(--text-muted); font-weight: 400; }
     .cl-more { display: block; margin: var(--space-3) auto 0; }
+    .cl-more[hidden] { display: none; }
     #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
 
     @media (max-width: 480px) {
@@ -76,7 +77,6 @@
     <header class="ui-header">
       <div>
         <h1 class="ui-title">Career Leaders</h1>
-        <p class="ui-subtitle">Every player's NBN career, in every category. Pick a card to see the full board.</p>
       </div>
     </header>
     <div class="cl-filters" id="filters">

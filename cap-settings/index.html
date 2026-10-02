@@ -23,13 +23,6 @@
   <!-- /NBN:og -->
   <style>
                 
-    .auth-banner {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
-      padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    }
-    .auth-banner p { font-size: 0.875rem; color: var(--text-muted); }
-                
     .seasons { display: flex; flex-direction: column; gap: 1.25rem; }
 
     .season-card {
@@ -107,11 +100,6 @@
       </div>
     </header>
 
-    <div class="auth-banner" id="auth-banner" style="display:none">
-      <p id="auth-msg">A committee token is required to edit these values.</p>
-      <button class="btn btn-primary" id="auth-btn">Enter Token</button>
-    </div>
-
     <div id="league-year"></div>
 
     <div class="seasons" id="seasons">
@@ -172,11 +160,6 @@
     }
 
     function getToken() { return localStorage.getItem('nbn_token'); }
-
-    async function promptToken(cb) {
-      const t = await promptForToken({ label: 'Committee token' });
-      if (t) cb(t);
-    }
 
     function renderLeagueYear(leagueData, canAdvance) {
       const cur = leagueData.current_season;
@@ -552,36 +535,20 @@
 
     async function init() {
       const token = getToken();
-      const authBanner = document.getElementById('auth-banner');
-      const authMsg    = document.getElementById('auth-msg');
-      const authBtn    = document.getElementById('auth-btn');
 
       let canEdit = false;     // rosters/admin — edit cap numbers
       let canAdvance = false;  // bod/admin — change the league-year rollover
 
-      if (!token) {
-        authMsg.textContent = 'A committee token is required to edit these values.';
-        authBanner.style.display = '';
-        authBtn.addEventListener('click', () => promptToken(() => location.reload()));
-      } else {
+      // Signing in is the header's job. Members with the role get the
+      // editable cards; everyone else gets the read-only ones.
+      if (token) {
         const meResp = await fetch('/api/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         }).catch(() => null);
-
-        if (!meResp || !meResp.ok) {
-          authMsg.textContent = 'Token invalid or expired.';
-          authBanner.style.display = '';
-          authBtn.textContent = 'Re-enter Token';
-          authBtn.addEventListener('click', () => promptToken(() => location.reload()));
-        } else {
+        if (meResp && meResp.ok) {
           const me = await meResp.json();
           canEdit = me.roles.some(r => r === 'rosters' || r === 'admin');
           canAdvance = me.roles.some(r => r === 'bod' || r === 'admin');
-          if (!canEdit && !canAdvance) {
-            authMsg.textContent = `Signed in as ${me.name}, but this role cannot edit league settings.`;
-            authBanner.style.display = '';
-            authBtn.style.display = 'none';
-          }
         }
       }
 

@@ -158,6 +158,19 @@ let me = null;
 
 function getToken() { return localStorage.getItem('nbn_token'); }
 
+// Tags are typed by hand, so "Draft" and "draft" are one tag, and a
+// power-rankings article's "power rankings" tag only repeats its type.
+const tagKey = t => t.trim().toLowerCase();
+function articleTags(a) {
+  const seen = new Set(a.type === 'power_rankings' ? ['power rankings'] : []);
+  return (a.tags || []).filter(t => {
+    const k = tagKey(t);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
 function fmtDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -192,7 +205,7 @@ function renderArticleCard(a) {
     : `<div class="card-cover placeholder">NBN</div>`;
   const tags = ((a.type === 'power_rankings'
       ? [`<span class="tag-pill pr-pill">${a.edition ? `Power Rankings #${a.edition}` : 'Power Rankings'}</span>`]
-      : []).concat((a.tags || []).map(t => `<span class="tag-pill">${escHtml(t)}</span>`))).join('');
+      : []).concat(articleTags(a).map(t => `<span class="tag-pill">${escHtml(t)}</span>`))).join('');
   const commentPart = a.comment_count > 0 ? `<span class="sep">•</span> 💬 ${a.comment_count}` : '';
   el.innerHTML = `
     ${cover}
@@ -254,10 +267,17 @@ function renderRow(a, hrefBase, badgeKind) {
 }
 
 function renderTagFilter() {
-  const counts = {};
-  articles.forEach(a => (a.tags || []).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+  // One chip per tag, case-insensitively, labelled the way it was first typed.
+  // A "power rankings" tag on any article folds into the Power Rankings chip.
+  const counts = {}, label = {};
+  articles.forEach(a => articleTags(a).forEach(t => {
+    const k = tagKey(t);
+    if (k === 'power rankings') return;
+    counts[k] = (counts[k] || 0) + 1;
+    if (!label[k]) label[k] = t;
+  }));
   const tags = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-  const hasRankings = articles.some(a => a.type === 'power_rankings');
+  const hasRankings = articles.some(a => a.type === 'power_rankings' || articleTags(a).some(t => tagKey(t) === 'power rankings'));
   const wrap = document.getElementById('tag-filter');
   wrap.innerHTML = '';
   if (!tags.length && !hasRankings) return;
@@ -273,14 +293,14 @@ function renderTagFilter() {
   // Power Rankings leads the row, ahead of the tags — it is a section of the
   // paper, not one more label someone typed on a column.
   if (hasRankings) addChip('Power Rankings', PR_FILTER, 'pr-chip');
-  tags.forEach(t => addChip(t, t));
+  tags.forEach(k => addChip(label[k], k));
 }
 
 function renderFeed() {
   const feed = document.getElementById('feed');
   let list = articles;
-  if (activeTag === PR_FILTER) list = articles.filter(a => a.type === 'power_rankings');
-  else if (activeTag) list = articles.filter(a => (a.tags || []).includes(activeTag));
+  if (activeTag === PR_FILTER) list = articles.filter(a => a.type === 'power_rankings' || articleTags(a).some(t => tagKey(t) === 'power rankings'));
+  else if (activeTag) list = articles.filter(a => articleTags(a).some(t => tagKey(t) === activeTag));
   feed.innerHTML = '';
   if (!list.length) {
     feed.innerHTML = `<div class="empty">${activeTag ? 'Nothing here yet.' : 'No articles published yet.'}</div>`;

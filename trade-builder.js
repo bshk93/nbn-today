@@ -1222,36 +1222,7 @@
       if (wb) await window.XLSXMini.download(wb.filename, wb.sheets);
     }
 
-    function promptForToken() {
-      return new Promise(resolve => {
-        const overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000';
-        overlay.innerHTML = `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;width:360px;max-width:90vw">
-          <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.4rem;color:var(--text-primary)">Enter your token</h3>
-          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">This action needs a league member token. It will be saved in this browser.</p>
-          <input type="password" placeholder="Paste token…" autocomplete="off" style="width:100%;background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.875rem;font-family:var(--font-mono);padding:0.5rem 0.75rem;margin-bottom:1rem;box-sizing:border-box;outline:none">
-          <div style="display:flex;gap:0.5rem;justify-content:flex-end">
-            <button data-act="cancel" style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit">Cancel</button>
-            <button data-act="ok" style="padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit">Continue</button>
-          </div></div>`;
-        document.body.appendChild(overlay);
-        const input = overlay.querySelector('input');
-        input.focus();
-        const done = val => { overlay.remove(); resolve(val || null); };
-        overlay.querySelector('[data-act=cancel]').addEventListener('click', () => done(null));
-        overlay.querySelector('[data-act=ok]').addEventListener('click', () => {
-          const v = input.value.trim();
-          if (!v) return;
-          localStorage.setItem('nbn_token', v);
-          done(v);
-        });
-        input.addEventListener('keydown', e => {
-          if (e.key === 'Enter') overlay.querySelector('[data-act=ok]').click();
-          if (e.key === 'Escape') done(null);
-        });
-      });
-    }
-
+    // promptForToken() is nav.js's — the header's own Sign in dialog.
     async function publishTradeSheet() {
       const wb = buildTradeWorkbook();
       if (!wb) return;

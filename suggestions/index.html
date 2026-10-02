@@ -876,6 +876,12 @@ document.getElementById('token-input').addEventListener('keydown', e => {
 (async () => {
   await initAuth();
   await loadSuggestions();
+  // Open first, unless there are none: then the page opens on something
+  // rather than an empty tab.
+  if (!allSuggestions.some(s => matchesTab(s, 'open'))) {
+    const tab = ['in_progress', 'all'].find(t => allSuggestions.some(s => matchesTab(s, t)));
+    if (tab) setTab(tab);
+  }
 })();
 </script>
   <script src="/nav.js"></script>

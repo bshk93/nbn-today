@@ -22,48 +22,50 @@
   <meta name="theme-color" content="#0d0e11">
   <!-- /NBN:og -->
   <style>
-                    .season-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem; }
-    .season-card {
-      display: flex; align-items: center; justify-content: space-between;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
-      padding: 1rem 1.25rem; text-decoration: none; color: inherit;
-      transition: border-color 0.15s;
-    }
-    .season-card:hover { border-color: var(--text-muted); text-decoration: none; }
-    .season-label { font-size: 1.05rem; font-weight: 600; }
-    .season-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem; }
-    .season-arrow { color: var(--text-dim); font-size: 1.1rem; }
-    .pending-card {
-      background: var(--bg-page); border: 1px dashed var(--border); border-radius: 10px;
-      padding: 1rem 1.25rem; color: var(--text-dim);
-    }
-    .pending-label { font-size: 1.05rem; font-weight: 600; }
-    .pending-sub { font-size: 0.78rem; margin-top: 0.2rem; }
+    .season-list { display: flex; flex-direction: column; gap: var(--space-3); }
+    .season-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4) var(--space-5); }
+    .aw-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
+    .aw-season { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; line-height: 1; color: var(--text-primary); }
+    .aw-actions { margin-left: auto; display: flex; gap: var(--space-2); }
+    .aw-winners { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--space-3) var(--space-4); margin-top: var(--space-4); }
+    .aw-item { min-width: 0; }
+    .aw-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 2px; }
+    .aw-value { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .aw-value a { color: inherit; overflow: hidden; text-overflow: ellipsis; }
+    .aw-value img { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
+    .aw-note { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-muted); }
+    .season-card.pending { background: none; border-style: dashed; }
   </style>
 </head>
 <body>
   <div class="page ui-page">
     <nav class="nav"></nav>
     <header class="ui-header">
-      <div>
-        <h1 class="ui-title">Season Awards</h1>
-      </div>
+      <h1 class="ui-title">Season Awards</h1>
     </header>
     <div class="season-list" id="season-list">
-      <div style="color:var(--text-muted);font-size:0.9rem">Loading…</div>
+      <div class="ui-loading">Loading…</div>
     </div>
   </div>
 
+  <script src="/names.js"></script>
   <script>
     // A season is listed once it has an entry in awards-config. The admin
-    // opens one from the homepage's Reveal Season Awards card.
-    const seasonLabel = s => `20${s.slice(0, 2)}–${s.slice(3)} Season`;
+    // opens one from the homepage's Reveal Season Awards card. Seasons from
+    // before the ballot existed come from the build's league-history.csv and
+    // show their winners with no results page behind them.
+    const seasonLabel = s => `20${s.slice(0, 2)}–${s.slice(3)}`;
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     const TEAM_ROLES = new Set([
       'atl','bkn','bos','cha','chi','cle','dal','den','det','gsw',
       'hou','ind','lac','lal','mem','mia','mil','min','nop','nyk',
       'okc','orl','phi','phx','por','sac','sas','tor','uta','was',
     ]);
+
+    // The single-winner awards, in the order the results page lists them.
+    const AWARDS = ['MVP', 'DPOY', 'ROTY', '6MOY', 'MIP', 'FOTY', 'COTY'];
+    const TEAM_AWARDS = new Set(['FOTY', 'COTY']);
 
     async function getMe() {
       const token = localStorage.getItem('nbn_token');
@@ -74,60 +76,105 @@
       } catch { return { roles: [] }; }
     }
 
-    Promise.all([
-      fetch('/api/awards-config').then(r => r.ok ? r.json() : {}).catch(() => ({})),
-      getMe(),
-    ]).then(([config, me]) => {
+    // The winner of one award: 5/3/1 points for a 1st/2nd/3rd-place vote, ties
+    // broken on first-place votes — the same count the results page makes.
+    function winner(ballots, key) {
+      const pts = {}, firsts = {};
+      Object.values(ballots).forEach(b => (b[key] || []).forEach((c, i) => {
+        if (!c || i > 2) return;
+        pts[c] = (pts[c] || 0) + [5, 3, 1][i];
+        if (i === 0) firsts[c] = (firsts[c] || 0) + 1;
+      }));
+      const best = Object.keys(pts).sort((a, b) => (pts[b] - pts[a]) || ((firsts[b] || 0) - (firsts[a] || 0)))[0];
+      return best || null;
+    }
+
+    const logo = t => `<img src="/logos/logo-${t.toLowerCase()}.png" alt="" onerror="this.style.display='none'">`;
+
+    // A winner cell. `who` is a player slug, a team, or (from the build's
+    // file) a "LAST, FIRST" name or "Owner (TEAM)".
+    function winnerHtml(key, who, bios, slugByName) {
+      if (!who || who === 'NA') return '<span style="color:var(--text-dim)">—</span>';
+      if (/^[A-Z]{3}$/.test(who)) return `${logo(who)}<a href="/teams/${who}/">${who}</a>`;
+      const owner = who.match(/^(.+) \(([A-Z]{3})\)$/);
+      if (owner) return `${logo(owner[2])}<span>${esc(owner[1])}</span>`;
+      const slug = bios[who] ? who : slugByName[who.toUpperCase()];
+      const name = bios[slug] ? bios[slug].name : who;
+      return slug
+        ? `<a href="/players/?p=${encodeURIComponent(slug)}">${esc(nbnPlayerName(name))}</a>`
+        : esc(nbnPlayerName(name));
+    }
+
+    function winnersGrid(winners, bios, slugByName) {
+      return '<div class="aw-winners">' + AWARDS.filter(k => k in winners).map(k =>
+        `<div class="aw-item"><div class="aw-label">${k}</div>`
+        + `<div class="aw-value">${winnerHtml(k, winners[k], bios, slugByName)}</div></div>`).join('') + '</div>';
+    }
+
+    (async () => {
+      const token = localStorage.getItem('nbn_token');
+      const [config, me, bios, historyText] = await Promise.all([
+        fetch('/api/awards-config').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+        getMe(),
+        fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+        fetch('/data/league-history.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+      ]);
+      const slugByName = {};
+      Object.entries(bios).forEach(([slug, b]) => { if (b && b.name) slugByName[b.name.toUpperCase()] = slug; });
+
       const roles = me.roles || [];
       const isBod = roles.some(r => r === 'bod' || r === 'admin');
       const hasTeam = roles.some(r => TEAM_ROLES.has(r));
-      const list = document.getElementById('season-list');
-      list.innerHTML = Object.keys(config).length ? ''
-        : '<div style="color:var(--text-muted);font-size:0.9rem">No award seasons yet.</div>';
 
-      Object.keys(config).sort().reverse().forEach(s => {
+      // Ballot seasons we may see the result of, fetched together.
+      const visible = Object.keys(config).filter(s => (config[s] || {}).revealed || isBod);
+      const ballots = {};
+      await Promise.all(visible.map(s =>
+        fetch(`/api/awards-ballots/${s}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+          .then(r => r.ok ? r.json() : null).catch(() => null)
+          .then(b => { ballots[s] = b; })));
+
+      const cards = [];
+      Object.keys(config).forEach(s => {
         const cfg = config[s] || {};
-        const canSeeResults = cfg.revealed || isBod;
-
-        if (canSeeResults) {
-          const a = document.createElement('a');
-          a.className = 'season-card';
-          a.href = `/awards/${s}/results/`;
-          const ballotLink = hasTeam ? ` · <a href="/awards/${s}/vote/" style="color:var(--link)">My Ballot →</a>` : '';
-          const sub = cfg.revealed
-            ? `View results →${ballotLink}`
-            : `Preview (BOD only)${ballotLink}`;
-          a.innerHTML = `
-            <div>
-              <div class="season-label">${seasonLabel(s)}</div>
-              <div class="season-sub">${sub}</div>
+        const ballotBtn = hasTeam ? `<a class="ui-btn ui-btn--sm" href="/awards/${s}/vote/">My ballot</a>` : '';
+        if (cfg.revealed || isBod) {
+          const winners = {};
+          if (ballots[s]) AWARDS.forEach(k => { winners[k] = winner(ballots[s], k); });
+          cards.push({ s, html: `<div class="season-card">
+            <div class="aw-head">
+              <span class="aw-season">${seasonLabel(s)}</span>
+              ${cfg.revealed ? '' : '<span class="ui-badge ui-badge--warning">Preview · BOD only</span>'}
+              <span class="aw-actions">${ballotBtn}<a class="ui-btn ui-btn--sm" href="/awards/${s}/results/">Full results</a></span>
             </div>
-            <span class="season-arrow">›</span>
-          `;
-          list.appendChild(a);
-        } else if (hasTeam) {
-          const a = document.createElement('a');
-          a.className = 'season-card';
-          a.href = `/awards/${s}/vote/`;
-          a.innerHTML = `
-            <div>
-              <div class="season-label">${seasonLabel(s)}</div>
-              <div class="season-sub">Submit your ballot →</div>
-            </div>
-            <span class="season-arrow">›</span>
-          `;
-          list.appendChild(a);
+            ${ballots[s] ? winnersGrid(winners, bios, slugByName) : ''}
+          </div>` });
         } else {
-          const div = document.createElement('div');
-          div.className = 'pending-card';
-          div.innerHTML = `
-            <div class="pending-label">${seasonLabel(s)}</div>
-            <div class="pending-sub">Ballots pending — results will be revealed when all votes are in.</div>
-          `;
-          list.appendChild(div);
+          cards.push({ s, html: `<div class="season-card pending">
+            <div class="aw-head"><span class="aw-season">${seasonLabel(s)}</span>
+              ${hasTeam ? `<span class="aw-actions"><a class="ui-btn ui-btn--sm ui-btn--primary" href="/awards/${s}/vote/">Submit your ballot</a></span>` : ''}
+            </div>
+            <div class="aw-note">Ballots are in progress. Results are revealed when every vote is in.</div>
+          </div>` });
         }
       });
-    });
+
+      // Earlier seasons, from before the ballot: winners only.
+      const rows = historyText ? parseCSV(historyText) : [];
+      rows.filter(r => /^\d\d-\d\d$/.test(r.SEASON) && !(r.SEASON in config) && r.MVP && r.MVP !== 'NA')
+        .forEach(r => {
+          const winners = { MVP: r.MVP, DPOY: r.DPOY, ROTY: r.ROTY, MIP: r.MIP, FOTY: r.FOTY, COTY: r.COTY };
+          cards.push({ s: r.SEASON, html: `<div class="season-card">
+            <div class="aw-head"><span class="aw-season">${seasonLabel(r.SEASON)}</span></div>
+            ${winnersGrid(winners, bios, slugByName)}
+          </div>` });
+        });
+
+      const list = document.getElementById('season-list');
+      list.innerHTML = cards.length
+        ? cards.sort((a, b) => b.s.localeCompare(a.s)).map(c => c.html).join('')
+        : '<div class="ui-empty">No award seasons yet.</div>';
+    })();
   </script>
   <script src="/nav.js"></script>
 </body>

@@ -248,7 +248,7 @@
         }
         const nameSpan = document.createElement('span');
         nameSpan.className = 'player-name';
-        nameSpan.textContent = player.PLAYER;
+        nameSpan.textContent = nbnPlayerName(player.PLAYER);
         cell.appendChild(nameSpan);
 
         // Country flag
@@ -537,9 +537,7 @@
         const playerOpts = [{ slug: '', label: '—' },
           ...Object.entries(bios)
             .map(([slug, bio]) => {
-              const parts = bio.name.split(',');
-              const label = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
-              return { slug, label };
+              return { slug, label: nbnPlayerName(bio.name) };
             })
             .sort((a, b) => a.label.localeCompare(b.label))
         ];
@@ -696,9 +694,7 @@
       if (!slug) return null;
       const bio = bios[slug];
       if (!bio) return slug;
-      if (typeof nbnPlayerName === 'function') return nbnPlayerName(bio.name);  // /names.js
-      const parts = bio.name.split(',');
-      return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+      return nbnPlayerName(bio.name);
     }
 
     function calcAge(dob) {
@@ -746,8 +742,7 @@
         tdName.className = 'player-cell';
         const a = document.createElement('a');
         a.href = `/players/?p=${slug}`;
-        const parts = (bio.name || slug).split(', ');
-        a.textContent = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : (bio.name || slug);
+        a.textContent = bio.name ? nbnPlayerName(bio.name) : slug;
         tdName.appendChild(a);
         tr.appendChild(tdName);
 

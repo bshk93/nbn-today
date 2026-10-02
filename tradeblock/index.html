@@ -390,61 +390,7 @@
     .btn-action:disabled { opacity: 0.5; cursor: default; }
     .save-status { font-size: 0.78rem; color: var(--text-muted); }
 
-    /* Sign-in prompt */
-    .signin-prompt { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem; }
-    .signin-prompt button {
-      background: transparent;
-      border: none;
-      color: var(--link);
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-family: inherit;
-      padding: 0;
-      text-decoration: underline;
-    }
 
-    /* Token modal */
-    .token-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 1000;
-    }
-    .token-modal {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      width: 360px;
-      max-width: 90vw;
-    }
-    .token-modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
-    .token-modal p  { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; }
-    .token-modal input {
-      width: 100%;
-      background: var(--bg-page);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text-primary);
-      font-size: 0.875rem;
-      font-family: var(--font-mono);
-      padding: 0.5rem 0.75rem;
-      margin-bottom: 1rem;
-    }
-    .token-modal input:focus { outline: none; border-color: var(--accent); }
-    .token-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
-    .btn-tok-cancel {
-      padding: 0.35rem 0.8rem; border: 1px solid var(--border); border-radius: 6px;
-      font-size: 0.8rem; font-weight: 600; cursor: pointer;
-      background: transparent; color: var(--text-secondary); font-family: inherit;
-    }
-    .btn-tok-submit {
-      padding: 0.35rem 0.8rem; border: 1px solid var(--accent); border-radius: 6px;
-      font-size: 0.8rem; font-weight: 600; cursor: pointer;
-      background: transparent; color: var(--link); font-family: inherit;
-    }
-
-            
     #trade-builder-overlay {
       position: fixed; inset: 0; background: var(--overlay-scrim); z-index: 900;
       display: flex; align-items: flex-start; justify-content: center;
@@ -480,9 +426,6 @@
     </header>
 
     <div id="edit-panel" style="display:none"></div>
-    <div id="signin-prompt" class="signin-prompt" style="display:none">
-      Team member? <button id="signin-btn">Enter your token</button> to manage your tradeblock.
-    </div>
 
     <div id="controls-row" class="controls-row" style="display:none">
       <div class="controls-left">
@@ -564,7 +507,6 @@
     let CUR_YR = dateBasedSeasonYr();
 
     const getToken = () => localStorage.getItem(TOKEN_KEY);
-    const setToken = t => localStorage.setItem(TOKEN_KEY, t);
 
     // ── Salary formatting ─────────────────────────────────────────────────────
 
@@ -1345,39 +1287,6 @@
       panel.appendChild(body);
     }
 
-    // ── Token modal ───────────────────────────────────────────────────────────
-
-    function promptToken(onSuccess) {
-      const overlay = document.createElement('div');
-      overlay.className = 'token-overlay';
-      overlay.innerHTML = `
-        <div class="token-modal">
-          <h3>Team token required</h3>
-          <p>Enter your team token to manage your tradeblock. It will be saved in this browser.</p>
-          <input type="password" placeholder="Paste token…" autocomplete="off" />
-          <div class="token-modal-actions">
-            <button class="btn-tok-cancel">Cancel</button>
-            <button class="btn-tok-submit">Continue</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-      const input = overlay.querySelector('input');
-      input.focus();
-      overlay.querySelector('.btn-tok-cancel').addEventListener('click', () => overlay.remove());
-      overlay.querySelector('.btn-tok-submit').addEventListener('click', () => {
-        const val = input.value.trim();
-        if (!val) return;
-        setToken(val);
-        overlay.remove();
-        onSuccess(val);
-      });
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') overlay.querySelector('.btn-tok-submit').click();
-        if (e.key === 'Escape') overlay.remove();
-      });
-    }
-
     // ── Auth ──────────────────────────────────────────────────────────────────
 
     async function checkAuth() {
@@ -1559,7 +1468,6 @@
     (async () => {
       const statusEl = document.getElementById('status');
       const wrap = document.getElementById('table-wrap');
-      const signinPrompt = document.getElementById('signin-prompt');
 
       try {
         const [tb, userInfo, biosJson, playerSeasonsTxt, ovrJson, lyr, attrsJson] = await Promise.all([
@@ -1625,26 +1533,11 @@
         setupSalaryFilter();
         setupAttrFilter();
 
-        // Set up edit panel or sign-in prompt
+        // Set up the edit panel. Signing in is the header's job: a member
+        // with a team role gets their panel, everyone else just the board.
         if (myTeam) {
           myRoster = rosterData[myTeam] || [];
           await activateEditPanel();
-        } else if (!userInfo) {
-          signinPrompt.style.display = '';
-          document.getElementById('signin-btn').addEventListener('click', () => {
-            promptToken(async () => {
-              const info = await checkAuth();
-              const role = info && info.roles.find(r => VALID_TEAMS_LC.has(r));
-              if (role) {
-                signinPrompt.style.display = 'none';
-                myTeam = role.toUpperCase();
-                myRoster = rosterData[myTeam] || [];
-                await activateEditPanel();
-              } else {
-                signinPrompt.innerHTML = 'No team role found for this token.';
-              }
-            });
-          });
         }
 
         // "Show all rostered players" toggle — lazily fetches every roster.

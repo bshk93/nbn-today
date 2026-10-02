@@ -202,6 +202,7 @@
     </div>
   </div>
 
+  <script src="/names.js"></script>
   <script>
     const COLS = [
       { key: 'PLAYER',       label: 'Player',    cls: 'player-name',          sortField: 'PLAYER',       numeric: false, defaultDir:  1 },
@@ -308,7 +309,7 @@
           if (col.key === 'PLAYER') {
             const a = document.createElement('a');
             a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
-            a.textContent = row.PLAYER;
+            a.textContent = nbnPlayerName(row.PLAYER);
             td.appendChild(a);
             if (row.ACTIVE === '1') {
               const dot = document.createElement('span');

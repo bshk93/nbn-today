@@ -73,7 +73,7 @@ const PAGES = [
   { path: '/stats/highs/?stat=TD&type=po&team=DEN', selector: 'table tbody tr', min: 1, what: 'a filtered feat board' },
   { path: '/stats/totals/',           selector: 'table tbody tr',  min: 50, what: 'career points leaders' },
   { path: '/stats/totals/?stat=AST&type=po&per=pg', selector: 'table tbody tr', min: 20, what: 'a filtered career board' },
-  { path: '/season-summary/',         selector: 'table tbody tr',  min: 5,  what: 'a row per season' },
+  { path: '/season-summary/',         selector: '.ss-season',      min: 5,  what: 'a card per season' },
   { path: '/nbntv-classics/',         selector: '.classic-entry',  min: 10, what: 'the classics list' },
   { path: '/tradeblock/',             selector: 'table tbody tr',  min: 5,  what: 'blocked players' },
   { path: '/draft/',                  selector: 'table tbody tr',  min: 30, what: 'draft history' },

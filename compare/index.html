@@ -24,19 +24,37 @@
   <style>
     
     /* Picker state */
-                .pick-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
-    .pick-vs { font-size: 1.25rem; font-weight: 800; color: var(--text-dim); text-align: center; }
+    .pick-wrap { max-width: 760px; margin-bottom: var(--space-7); }
+    .pick-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-3); align-items: center; margin-bottom: var(--space-3); }
+    .pick-vs { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; color: var(--text-dim); text-align: center; }
     .pick-slot { position: relative; }
-    .pick-input { width: 100%; padding: 0.75rem 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem; font-family: inherit; outline: none; }
-    .pick-input:focus { border-color: var(--accent); }
-    .pick-input.selected { border-color: var(--market-positive); color: var(--market-positive); }
-    .pick-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; max-height: 240px; overflow-y: auto; z-index: 100; display: none; }
-    .pick-option { padding: 0.55rem 1rem; cursor: pointer; font-size: 0.875rem; display: flex; justify-content: space-between; align-items: center; color: var(--text-secondary); }
-    .pick-option:hover, .pick-option.active { background: var(--border); }
-    .pick-option-meta { font-size: 0.75rem; color: var(--text-muted); }
-    .pick-btn { display: block; width: 100%; padding: 0.65rem; background: #059669; border: none; border-radius: 8px; color: var(--text-on-accent); font-size: 0.95rem; font-weight: 600; cursor: pointer; }
-    .pick-btn:hover { background: #047857; }
-    .pick-btn:disabled { background: var(--border); color: var(--text-muted); cursor: default; }
+    .pick-slot img { position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: var(--bg-subtle); display: none; }
+    .pick-slot.has-photo img { display: block; }
+    .pick-input.ui-input { width: 100%; height: 2.6rem; }
+    .pick-slot.has-photo .pick-input { padding-left: 2.6rem; }
+    .pick-input.selected { border-color: var(--accent); font-weight: 600; }
+    .pick-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 260px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 6px 18px var(--shadow-color); }
+    .pick-option { padding: 0.5rem 0.75rem; cursor: pointer; font-size: var(--text-sm); display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); color: var(--text-secondary); }
+    .pick-option:hover, .pick-option.active { background: var(--bg-hover); color: var(--text-primary); }
+    .pick-option-meta { font-size: var(--text-xs); color: var(--text-muted); }
+    .pick-btn { width: 100%; }
+
+    /* Suggested matchups */
+    .sugg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-3); }
+    .sugg { display: block; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4); color: inherit; text-decoration: none; transition: border-color 0.12s; }
+    .sugg:hover { border-color: var(--text-dim); text-decoration: none; }
+    .sugg-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); margin-bottom: var(--space-2); }
+    .sugg-pair { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--space-2); }
+    .sugg-p { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+    .sugg-p:last-child { flex-direction: row-reverse; text-align: right; }
+    .sugg-p img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg-subtle); flex-shrink: 0; }
+    .sugg-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sugg-val { font-size: var(--text-xs); color: var(--text-muted); }
+    .sugg-vs { font-size: var(--text-xs); font-weight: 600; color: var(--text-dim); }
+    @media (max-width: 560px) {
+      .pick-grid { grid-template-columns: 1fr; }
+      .pick-vs { display: none; }
+    }
 
     /* Compare state */
     .cmp-header { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center; margin-bottom: 2rem; }
@@ -99,22 +117,26 @@
   <nav class="nav"></nav>
   <div id="picker" style="display:none">
     <header class="ui-header">
-      <div>
-        <h1 class="ui-title">Compare Players</h1>
-      </div>
+      <h1 class="ui-title">Compare Players</h1>
     </header>
-    <div class="pick-grid">
-      <div class="pick-slot" id="slot-a">
-        <input class="pick-input" type="text" placeholder="Player A…" autocomplete="off" spellcheck="false">
-        <div class="pick-dropdown"></div>
+    <div class="pick-wrap">
+      <div class="pick-grid">
+        <div class="pick-slot" id="slot-a">
+          <img alt="">
+          <input class="pick-input ui-input" type="text" placeholder="First player" aria-label="First player" autocomplete="off" spellcheck="false">
+          <div class="pick-dropdown"></div>
+        </div>
+        <div class="pick-vs">vs</div>
+        <div class="pick-slot" id="slot-b">
+          <img alt="">
+          <input class="pick-input ui-input" type="text" placeholder="Second player" aria-label="Second player" autocomplete="off" spellcheck="false">
+          <div class="pick-dropdown"></div>
+        </div>
       </div>
-      <div class="pick-vs">VS</div>
-      <div class="pick-slot" id="slot-b">
-        <input class="pick-input" type="text" placeholder="Player B…" autocomplete="off" spellcheck="false">
-        <div class="pick-dropdown"></div>
-      </div>
+      <button class="ui-btn ui-btn--primary pick-btn" id="compare-btn" disabled>Compare</button>
     </div>
-    <button class="pick-btn" id="compare-btn" disabled>Compare →</button>
+    <h2 class="ui-section-title">Matchups</h2>
+    <div class="sugg-grid" id="suggestions"></div>
   </div>
   <div id="compare" style="display:none"></div>
   <div id="status">Loading…</div>
@@ -169,62 +191,148 @@
     const picker = document.getElementById('picker');
     picker.style.display = '';
     const picks = { a: null, b: null };
+    const setters = {};
 
     ['a', 'b'].forEach(side => {
       const slot = document.getElementById(`slot-${side}`);
       const input = slot.querySelector('.pick-input');
       const drop = slot.querySelector('.pick-dropdown');
+      const photo = slot.querySelector('img');
       let activeIdx = -1;
+      let shown = [];   // the [slug, bio] pairs in the dropdown, in order
 
       function filter() {
         const q = input.value.trim().toLowerCase();
         const entries = Object.entries(allPlayers);
-        const matches = q
+        // Nothing typed: the highest-rated players on a roster.
+        shown = q
           ? entries.filter(([, p]) => displayName(p.name).toLowerCase().includes(q) || p.name.toLowerCase().includes(q))
-          : entries.filter(([, p]) => p.type === 'player').slice(0, 20);
-        matches.sort(([, a], [, b]) => a.name.localeCompare(b.name));
+              .sort(([, a], [, b]) => a.name.localeCompare(b.name))
+          : entries.filter(([slug, p]) => p.type === 'player' && currentOvrs[slug])
+              .sort(([sa], [sb]) => currentOvrs[sb] - currentOvrs[sa]);
+        shown = shown.slice(0, 15);
 
         drop.innerHTML = '';
         activeIdx = -1;
-        matches.slice(0, 15).forEach(([slug, p]) => {
+        shown.forEach(([slug, p]) => {
           const div = document.createElement('div');
           div.className = 'pick-option';
           const pos = Array.isArray(p.pos) ? p.pos.join('/') : (p.pos || '');
           const ovr = currentOvrs[slug];
-          div.innerHTML = `<span>${displayName(p.name)}</span><span class="pick-option-meta">${pos}${ovr ? ' · ' + ovr : ''}</span>`;
+          div.innerHTML = `<span></span><span class="pick-option-meta">${pos}${ovr ? ' · ' + ovr : ''}</span>`;
+          div.firstChild.textContent = displayName(p.name);
           div.addEventListener('mousedown', e => { e.preventDefault(); selectPlayer(slug, p); });
           drop.appendChild(div);
         });
-        drop.style.display = matches.length ? 'block' : 'none';
+        drop.style.display = shown.length ? 'block' : 'none';
       }
 
       function selectPlayer(slug, p) {
         picks[side] = slug;
         input.value = displayName(p.name);
         input.classList.add('selected');
+        if (p.photo_url) { photo.src = p.photo_url; slot.classList.add('has-photo'); }
         drop.style.display = 'none';
         document.getElementById('compare-btn').disabled = !(picks.a && picks.b);
+        // Picking the first player moves straight on to the second.
+        if (side === 'a' && !picks.b) document.querySelector('#slot-b .pick-input').focus();
       }
+      setters[side] = selectPlayer;
 
-      input.addEventListener('input', () => { picks[side] = null; input.classList.remove('selected'); filter(); });
+      input.addEventListener('input', () => {
+        picks[side] = null;
+        input.classList.remove('selected');
+        slot.classList.remove('has-photo');
+        document.getElementById('compare-btn').disabled = true;
+        filter();
+      });
       input.addEventListener('focus', filter);
       input.addEventListener('blur', () => { setTimeout(() => { drop.style.display = 'none'; }, 150); });
       input.addEventListener('keydown', e => {
         const opts = drop.querySelectorAll('.pick-option');
         if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, opts.length - 1); opts.forEach((o, i) => o.classList.toggle('active', i === activeIdx)); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); opts.forEach((o, i) => o.classList.toggle('active', i === activeIdx)); }
-        else if (e.key === 'Enter' && activeIdx >= 0) {
-          const slug = Object.entries(allPlayers)
-            .filter(([, p]) => displayName(p.name).toLowerCase().includes(input.value.trim().toLowerCase()))
-            .sort(([, a], [, b]) => a.name.localeCompare(b.name))[activeIdx];
-          if (slug) selectPlayer(slug[0], slug[1]);
+        else if (e.key === 'Enter') {
+          const hit = shown[activeIdx >= 0 ? activeIdx : 0];
+          if (hit && drop.style.display !== 'none') selectPlayer(hit[0], hit[1]);
+          else if (picks.a && picks.b) document.getElementById('compare-btn').click();
         }
       });
     });
 
-    document.getElementById('compare-btn').addEventListener('click', () => {
-      if (picks.a && picks.b) window.location.href = `/compare/?a=${picks.a}&b=${picks.b}`;
+    // "Compare with another" links here with one side already chosen.
+    [['a', slugA], ['b', slugB]].forEach(([side, slug]) => {
+      if (slug && allPlayers[slug]) setters[side](slug, allPlayers[slug]);
     });
+
+    document.getElementById('compare-btn').addEventListener('click', () => {
+      if (picks.a && picks.b) window.location.href = `/compare/?a=${encodeURIComponent(picks.a)}&b=${encodeURIComponent(picks.b)}`;
+    });
+
+    renderSuggestions();
+  }
+
+  // A few ready-made matchups, all read off the same data the comparison
+  // uses: today's ratings, this season's leaders, careers, awards.
+  function renderSuggestions() {
+    const out = [];
+    const add = (label, pair, fmt) => {
+      if (pair.length < 2 || !allPlayers[pair[0][0]] || !allPlayers[pair[1][0]]) return;
+      out.push({ label, a: pair[0], b: pair[1], fmt });
+    };
+    const top2 = (map, filter = () => true) => Object.entries(map)
+      .filter(([slug, v]) => allPlayers[slug] && filter(slug, v))
+      .sort((x, y) => y[1] - x[1]).slice(0, 2);
+
+    add('Highest rated today', top2(currentOvrs, slug => allPlayers[slug].type === 'player'), v => `${v} OVR`);
+
+    const latest = allSeasons.reduce((m, r) => (/^\d\d-\d\d$/.test(r.SEASON) && r.SEASON > m ? r.SEASON : m), '');
+    const perGame = (stat, minG) => {
+      const tot = {}, g = {};
+      allSeasons.filter(r => r.SEASON === latest && r.SLUG).forEach(r => {
+        tot[r.SLUG] = (tot[r.SLUG] || 0) + (+r[stat] || 0);
+        g[r.SLUG] = (g[r.SLUG] || 0) + (+r.G || 0);
+      });
+      const pg = {};
+      Object.keys(tot).forEach(sl => { if (g[sl] >= minG) pg[sl] = tot[sl] / g[sl]; });
+      return pg;
+    };
+    if (latest) {
+      add(`${latest} scoring race`, top2(perGame('PTS', 20)), v => `${v.toFixed(1)} PPG`);
+      add(`${latest} on the glass`, top2(perGame('REB', 20)), v => `${v.toFixed(1)} RPG`);
+    }
+
+    const career = {};
+    allSeasons.forEach(r => { if (r.SLUG && /^\d\d-\d\d$/.test(r.SEASON)) career[r.SLUG] = (career[r.SLUG] || 0) + (+r.PTS || 0); });
+    add('All-time scoring', top2(career), v => `${Math.round(v).toLocaleString()} pts`);
+
+    const count = award => {
+      const c = {};
+      allAwards.filter(r => r.AWARD === award && r.SLUG).forEach(r => { c[r.SLUG] = (c[r.SLUG] || 0) + 1; });
+      return c;
+    };
+    add('Most All-Star selections', top2(count('All-Star')), v => `${v}× All-Star`);
+    const mvps = allAwards.filter(r => r.AWARD === 'Most Valuable Player' && r.SLUG).sort((x, y) => y.SEASON.localeCompare(x.SEASON));
+    const lastMvps = [...new Map(mvps.map(r => [r.SLUG, r])).values()].slice(0, 2);
+    add('The last two MVPs', lastMvps.map(r => [r.SLUG, r.SEASON]), v => `${v} MVP`);
+
+    const grid = document.getElementById('suggestions');
+    grid.innerHTML = '';
+    const side = ([slug, v], fmt) => {
+      const p = allPlayers[slug];
+      return `<span class="sugg-p"><img src="${p.photo_url || ''}" alt="" onerror="this.style.visibility='hidden'">`
+        + `<span style="min-width:0"><span class="sugg-name" data-name="${slug}"></span><span class="sugg-val">${fmt(v)}</span></span></span>`;
+    };
+    out.forEach(m => {
+      const a = document.createElement('a');
+      a.className = 'sugg';
+      a.href = `/compare/?a=${encodeURIComponent(m.a[0])}&b=${encodeURIComponent(m.b[0])}`;
+      a.innerHTML = `<div class="sugg-label"></div><div class="sugg-pair">${side(m.a, m.fmt)}<span class="sugg-vs">vs</span>${side(m.b, m.fmt)}</div>`;
+      a.querySelector('.sugg-label').textContent = m.label;
+      a.querySelectorAll('.sugg-name').forEach(n => { n.textContent = displayName(allPlayers[n.dataset.name].name); n.style.display = 'block'; });
+      grid.appendChild(a);
+    });
+    grid.previousElementSibling.hidden = !out.length;
   }
 
   // ── Comparison render ────────────────────────────────────────────────────────
@@ -365,7 +473,7 @@
       Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)).forEach(([award, n]) => {
         const chip = document.createElement('span');
         chip.className = 'award-chip' +
-          (award === 'All-Star' ? ' allstar' : award === 'MVP' ? ' mvp' : award === 'DPOY' ? ' dpoy' : award.startsWith('All-NBN') ? ' allnbn' : '');
+          (award === 'All-Star' ? ' allstar' : award === 'Most Valuable Player' ? ' mvp' : award === 'Defensive Player of the Year' ? ' dpoy' : award.startsWith('All-NBN') ? ' allnbn' : '');
         chip.textContent = n > 1 ? `${n}× ${award}` : award;
         list.appendChild(chip);
       });

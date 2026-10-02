@@ -83,6 +83,9 @@
 
     td.player-name a { color: inherit; }
 
+    /* Badges wrap inside their cell instead of running off the table. */
+    td.badges-cell { white-space: normal; min-width: 18rem; }
+
     .delta {
       white-space: nowrap;
       font-variant-numeric: tabular-nums;
@@ -197,6 +200,7 @@
     </section>
   </div>
 
+  <script src="/names.js"></script>
   <script>
     const ATTR_ACRONYMS = { iq: 'IQ' };
     function attrLabel(key) {
@@ -371,7 +375,7 @@
           return false;
         }
         if (!filterText) return true;
-        return entry.name.toLowerCase().includes(filterText);
+        return entry.name.toLowerCase().includes(filterText) || nbnPlayerName(entry.name).toLowerCase().includes(filterText);
       }
 
       function updateHeaders() {
@@ -406,13 +410,15 @@
           nameTd.className = 'player-name';
           const a = document.createElement('a');
           a.href = playerSlugHref(entry.slug);
-          a.textContent = entry.name;
+          a.textContent = nbnPlayerName(entry.name);
           nameTd.appendChild(a);
 
           tr.insertCell().appendChild(ovrCell(entry));
           tr.insertCell().appendChild(teamCell(entry));
           tr.insertCell().appendChild(positionCell(entry));
-          tr.insertCell().appendChild(badgesCell(entry));
+          const badgesTd = tr.insertCell();
+          badgesTd.className = 'badges-cell';
+          badgesTd.appendChild(badgesCell(entry));
           tr.insertCell().appendChild(attributesCell(entry));
         });
       }

@@ -104,6 +104,28 @@
 
     .achievement:hover::after { opacity: 1; }
 
+    /* Leader cards over the table: the same shape as the stats pages'. */
+    .ow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
+    .ow-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4) var(--space-2); cursor: pointer; text-align: left; font: inherit; color: inherit; transition: border-color 0.12s; }
+    .ow-card:hover { border-color: var(--text-dim); }
+    .ow-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .ow-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+    .ow-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+    .ow-card-note { font-size: var(--text-xs); color: var(--text-muted); }
+    .ow-row { display: grid; grid-template-columns: 1.4rem 1fr auto; align-items: center; column-gap: var(--space-2); padding: 3px 0; font-size: var(--text-sm); }
+    .ow-row-rank { color: var(--text-muted); font-size: var(--text-xs); text-align: right; font-variant-numeric: tabular-nums; }
+    .ow-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
+    .ow-card-head + .ow-row .ow-row-name { color: var(--text-primary); font-weight: 600; }
+    .ow-row-val { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+    .ow-row-bar { grid-column: 2 / 4; height: 3px; border-radius: 2px; background: var(--border-subtle); overflow: hidden; margin-top: 2px; }
+    .ow-row-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+    .ow-card-empty { font-size: var(--text-xs); color: var(--text-muted); padding: var(--space-2) 0; }
+    @media (max-width: 480px) {
+      .ow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+      .ow-card { padding: var(--space-2) var(--space-3) var(--space-1); }
+      .ow-row { grid-template-columns: 1rem 1fr auto; column-gap: var(--space-1); font-size: var(--text-xs); }
+    }
+
     #status {
       text-align: center;
       padding: 3rem;
@@ -122,6 +144,7 @@
       </div>
     </header>
 
+    <div class="ow-grid" id="grid"></div>
     <div class="ui-table-wrap" id="table-wrap">
       <div id="status">Loading…</div>
     </div>
@@ -266,6 +289,7 @@
             sortDir = col.defaultDir;
           }
           rebuildBody(rows, tbody);
+          renderCards(rows);
           thead.querySelectorAll('th').forEach(t => {
             t.dataset.active = false;
             t.querySelector('.sort-arrow').textContent = '↓';
@@ -331,6 +355,65 @@
       });
     }
 
+    // Leader cards. Each sorts the table by its own column when picked. The
+    // percentage cards need a floor, or a two-season owner tops them.
+    const CARDS = [
+      { name: 'Titles',          field: 'championships' },
+      { name: 'Finals trips',    field: 'po_finals' },
+      { name: 'Conference finals', field: 'po_conf_finals' },
+      { name: 'Playoff trips',   field: 'playoff_appearances' },
+      { name: 'Playoff wins',    field: 'playoff_w' },
+      { name: 'Total wins',      field: 'total_w' },
+      { name: 'Win %',           field: 'total_pct',   note: '3+ seasons', fmt: v => fmtPct(v),
+        ok: r => parseInt(r.seasons) >= 3 },
+      { name: 'Playoff win %',   field: 'playoff_pct', note: '20+ games', fmt: v => fmtPct(v),
+        ok: r => parseInt(r.playoff_w) + parseInt(r.playoff_l) >= 20 },
+      { name: 'Best season',     field: 'best_reg_pct', show: r => r.best_reg_season },
+      { name: 'Seasons',         field: 'seasons' },
+    ];
+
+    function renderCards(rows) {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      CARDS.forEach(card => {
+        const list = rows
+          .filter(r => parseFloat(r[card.field]) > 0 && (!card.ok || card.ok(r)))
+          .sort((a, b) => parseFloat(b[card.field]) - parseFloat(a[card.field]))
+          .slice(0, 5);
+        const top = list.length ? parseFloat(list[0][card.field]) : 0;
+        const el = document.createElement('button');
+        el.className = 'ow-card';
+        el.setAttribute('aria-pressed', card.field === sortField);
+        el.innerHTML = `<div class="ow-card-head"><span class="ow-card-name">${card.name}</span>`
+          + `<span class="ow-card-note">${card.note || ''}</span></div>`
+          + (list.length ? list.map((r, i) => {
+              const v = parseFloat(r[card.field]);
+              const shown = card.show ? card.show(r) : card.fmt ? card.fmt(r[card.field]) : r[card.field];
+              // Ties share a rank.
+              const rank = list.findIndex(o => parseFloat(o[card.field]) === v) + 1;
+              return `<div class="ow-row"><span class="ow-row-rank">${rank}</span>`
+                + `<span class="ow-row-name"></span>`
+                + `<span class="ow-row-val">${shown}</span>`
+                + `<span></span><span class="ow-row-bar"><span style="width:${top > 0 ? (v / top * 100).toFixed(1) : 0}%"></span></span></div>`;
+            }).join('')
+            : '<div class="ow-card-empty">Nobody yet.</div>');
+        // Owner names are member-chosen text: set them as text, not markup.
+        el.querySelectorAll('.ow-row-name').forEach((n, i) => { n.textContent = list[i].owner; });
+        el.addEventListener('click', () => {
+          sortField = card.field;
+          sortDir = -1;
+          renderAll(rows);
+        });
+        grid.appendChild(el);
+      });
+    }
+
+    function renderAll(rows) {
+      renderCards(rows);
+      const wrap = document.getElementById('table-wrap');
+      wrap.replaceChildren(buildTable(rows));
+    }
+
     (async () => {
       const status = document.getElementById('status');
       const wrap = document.getElementById('table-wrap');
@@ -345,7 +428,7 @@
           if (vals.length) colRanges[key] = { min: Math.min(...vals), max: Math.max(...vals) };
         });
         status.remove();
-        wrap.appendChild(buildTable(rows));
+        renderAll(rows);
       } catch (e) {
         status.textContent = 'Failed to load owner stats.';
       }
