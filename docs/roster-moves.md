@@ -31,6 +31,7 @@ Two permission tiers, and they are genuinely different:
 | Add/remove from trade block | team's own role **or** admin (`canEditTradeBlock`) | `PUT`/`DELETE /api/trading-block/{team}/player/{slug}` |
 | Renounce (§ 3.10) | **owner tenure** (`canRenounce`, server: `auth.is_team_owner`) | `POST /api/self/renounce` |
 | Stash draft rights (§ 7.1 / § 7.4) | **owner tenure**, same as renounce | `POST /api/self/stash` |
+| Extend / withdraw a qualifying offer (§ 3.1) | **owner tenure**, same as renounce. Shown only for an RFA-tagged player or one with a QO out (`qoEligibility`) | `POST /api/self/qualifying-offer` |
 
 **Ownership is a tenure position, not a role.** Every front-office member of a
 team carries the team role (`phx`, `bkn`, …) — it gates cosmetic/soft writes like

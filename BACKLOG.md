@@ -369,41 +369,25 @@ would have written 23 contracts that do not exist. What is actually true:
   at UTA having been drafted by DAL with no trade on record, so a DAL signing
   would put the ledger at odds with the roster.
 
-### [P1] Qualifying Offers don't exist in the system at all
-§ 3.9 defines the QO — it's what makes a sub-4-year free agent an **RFA** rather
-than a UFA — but nothing in the API represents one. Three separate consequences,
-and the third is already live:
+### [P2] § 3.9's Bird-tier signing ceilings aren't enforced, so the QO ceiling isn't either
+Qualifying offers landed 2026-10-02 (`docs/qualifying-offers.md`), but one
+piece of § 3.9 still has nothing to plug into. The Non-QVFA ceiling is "the
+greatest of 120% of the final-year salary, 120% of the applicable minimum, or
+(for RFAs) the qualifying offer amount", and no Bird-tier first-year ceiling is
+checked at all — `_check_bird_rights_tenure` checks the *tier*, not the
+amount. The QO amount now exists (`bio["qualifying_offers"][season]["amount"]`),
+so the RFA branch is a lookup once the ceiling check itself is built.
 
-1. **No `qualifying_offer` transaction type.** There is no record that a team
-   extended (or declined to extend) a QO. RFA status is asserted by hand, by
-   setting `cap_holds[season] = "RFA"` on the bio. `_rfa_eligibility`
-   (`transactions.py:2035`) reads exactly that field and nothing else — so the
-   RFA/UFA split § 3.9 defines is a manual annotation, not a derivation.
-2. **No QO amount anywhere.** § 3.9's Non-QVFA ceiling is "the greatest of 120%
-   of the final-year salary, 120% of the applicable minimum, **or (for RFAs) the
-   qualifying offer amount**" — and that third branch has no data source, so it
-   can't be evaluated. `_BIRD_HOLD_PCT` covers the § 3.10 *hold* (1.3 EQVFA /
-   1.2 Non-QVFA); it is not the QO.
-3. **The amount formula itself is unratified.** § 3.9 flags it in the rulebook
-   as *"a new synthesis modeled on the real NBA CBA, not a rule this league had
-   already agreed on"* — pending BOD confirmation.
+Two smaller residuals from the same work:
 
-**This blocks two things.** § 3.15 **offer sheets** are the live one: the whole
-matching right flows from RFA status, which flows from a QO the system has no
-record of. And the PDC free-agency ballot (`docs/pdc-free-agency-spec.md` § 7.2)
-needs a QO line for every RFA — it will ship labelling the figure *estimated*
-until this is settled.
-
-Order of operations: get BOD to ratify or amend the § 3.9 formula first, then
-add the transaction type and the derived amount. Doing it the other way round
-bakes an unratified number into the ledger.
-
-This has since bitten a real build: `POST /api/fa/players/{slug}/declare-winner`
-(`nbn-api/routers/free_agency.py`, added 2026-09-20 alongside the ballot's
-"sign the actual winner" bridge) deliberately leaves its "QO" branch
-unexecuted for exactly this reason — it 422s to manual `/transactions` entry
-rather than writing a `qo_amount`-priced sign. Don't wire that branch up
-without doing the ratification step above first.
+- **Starter criteria aren't modeled.** The NBA moves a rookie-scale QO up or
+  down by whether the player met the starter criteria (games started / minutes
+  in the prior seasons). The league adopted the slot table without them; the
+  box scores could supply games started if that's ever wanted.
+- **An `RFA` tag isn't checked at signing.** A contract can still be entered
+  rolling into an `RFA` hold for a player who will have 4+ years by then. The QO
+  validator catches it when the team tries to extend (`qo_rfa_eligible`), so it
+  can't make a wrong RFA, but the tag itself is misleading until then.
 
 ### [P2] Extend-and-trade is referenced but never defined
 § 3.9's raise table has an "Extend-and-trade" row (5% of Year 1, vs 8% for a

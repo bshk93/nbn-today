@@ -343,6 +343,13 @@
     return isNaN(n) ? 0 : n;
   }
   function money(n) { return (n == null) ? '—' : '$' + Math.round(n).toLocaleString('en-US'); }
+  // A two-way QO is a one-year two-way deal with no cap figure (amount 0).
+  function qoAmountLabel(amount, estimated) {
+    if (amount == null) return 'amount set by the office';
+    if (amount === 0) return 'one-year two-way contract';
+    return (estimated ? '≈ ' : '') + compactMoney(amount) + (estimated ? ' (not yet extended)' : ', 1 year');
+  }
+
   function compactMoney(n) {
     if (!n) return '$0';
     const s = n < 0 ? '-' : '';
@@ -1586,12 +1593,9 @@
         pool.hold_type + ' ' + (pool.class_year || '')));
     }
     if (pool.rfa) {
-      // The § 3.9 QO formula is flagged "proposed, pending BOD confirmation" in
-      // the rulebook itself, so the figure is labelled rather than asserted. The
-      // line shows either way — an incumbent keeping an RFA on the QO is a real
-      // outcome whether or not we can price it.
-      const qo = pool.qo_amount == null ? 'QO amount unknown' : 'QO ≈ ' + compactMoney(pool.qo_amount) + ' (estimated)';
-      sub.appendChild(el('span', 'chip chip-warn', qo));
+      // § 3.1: an extended QO's amount is on record; an undecided one is the
+      // formula's figure for an offer not yet made.
+      sub.appendChild(el('span', 'chip chip-warn', 'QO ' + qoAmountLabel(pool.qo_amount, pool.qo_status !== 'extended')));
     }
     const st = (review && review.state) || entry;
     if (st.status) sub.appendChild(el('span', 'chip' + (st.status === 'open' ? ' chip-live' : ''), st.status));
@@ -2696,13 +2700,9 @@
       const lbl = el('div', 'alloc-lbl');
       lbl.appendChild(el('div', null, labels[o.key] || o.key));
       if (o.kind === 'qo') {
-        // § 7.2 / § 13.2 — the amount comes from a formula the rulebook itself
-        // marks "proposed, pending BOD confirmation", so it is labelled rather
-        // than asserted. The line shows either way: an incumbent keeping an RFA
-        // on the QO is a real outcome whether or not we can price it.
-        lbl.appendChild(el('div', 'bar-lbl', o.amount == null
-          ? 'amount unknown — the QO isn’t recorded anywhere in the API yet'
-          : '≈ ' + compactMoney(o.amount) + ' (estimated)'));
+        // § 3.1 — if this wins, declare-winner signs him to the QO: one year
+        // at this amount with his own team.
+        lbl.appendChild(el('div', 'bar-lbl', 'Stays on his qualifying offer: ' + qoAmountLabel(o.amount, o.estimated)));
       } else if (o.kind === 'no_signing') {
         lbl.appendChild(el('div', 'bar-lbl', 'Nobody signs him; he stays a free agent'));
       } else {

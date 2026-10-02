@@ -45,6 +45,8 @@
     set_hard_cap_level:    { label: 'Set Hard Cap',   bg: 'var(--gold-bg)',            fg: 'var(--gold)' },
     offer_sheet:           { label: 'Offer Sheet',    bg: '#1e1b4b',                   fg: '#a5b4fc' },
     offer_sheet_decision:  { label: 'Offer Sheet Decision', bg: '#1e1b4b',             fg: '#818cf8' },
+    qualifying_offer:      { label: 'Qualifying Offer', bg: '#1e1b4b',                 fg: '#a5b4fc' },
+    accept_qo:             { label: 'QO Accepted',    bg: 'var(--market-positive-bg)', fg: 'var(--market-positive)' },
     waiver_clear:          { label: 'Waivers',        bg: '#0c2a3d',                   fg: '#38bdf8' },
     waiver_flagged:        { label: 'Waiver Tie',     bg: 'var(--gold-bg)',            fg: 'var(--gold)' },
 

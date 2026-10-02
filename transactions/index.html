@@ -573,6 +573,8 @@
     .badge-set_hard_cap_level { background: var(--gold-bg); color: var(--gold); }
     .badge-offer_sheet    { background: #1e1b4b; color: #a5b4fc; }
     .badge-offer_sheet_decision { background: #1e1b4b; color: #818cf8; }
+    .badge-qualifying_offer { background: #1e1b4b; color: #a5b4fc; }
+    .badge-accept_qo      { background: var(--market-positive-bg); color: var(--market-positive); }
     .badge-callup  { background: var(--danger-alt-bg); color: var(--danger-alt); }
     .badge-calldown { background: var(--danger-alt-bg); color: var(--danger-alt); }
     .badge-trade   { background: var(--purple-light-bg); color: #c084fc; }
@@ -748,6 +750,8 @@
           <option value="guarantee">Guarantee Year</option>
           <option value="release">Release</option>
           <option value="renounce">Renounce</option>
+          <option value="qualifying_offer">Qualifying Offer</option>
+          <option value="accept_qo">Accept Qualifying Offer</option>
           <option value="trade">Trade</option>
           <option value="convert_twoway">Convert Two-Way</option>
           <option value="extension">Extension</option>
@@ -838,6 +842,20 @@
           <option value="7.4">§ 7.4 — under contract overseas</option>
           <option value="7.1">§ 7.1 — not in 2K and sitting out</option>
         </select>
+      </div>
+
+      <!-- qualifying_offer-only (§ 3.1). The amount is the formula's unless
+           the office overrides it for a player the formula can't price. -->
+      <div class="form-field" id="f-qo-action-field" style="display:none">
+        <label>Qualifying offer</label>
+        <select id="f-qo-action">
+          <option value="extend">Extend</option>
+          <option value="withdraw">Withdraw</option>
+        </select>
+      </div>
+      <div class="form-field" id="f-qo-amount-field" style="display:none">
+        <label>QO amount override <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(blank = § 3.1 formula)</span></label>
+        <input type="text" id="f-qo-amount" placeholder="e.g. 2,500,000" autocomplete="off">
       </div>
 
       <!-- set_hard_cap_level-only -->
@@ -1203,6 +1221,7 @@
     <span class="chip" data-filter="type" data-value="release">Releases</span>
     <span class="chip" data-filter="type" data-value="waiver_clear">Waivers</span>
     <span class="chip" data-filter="type" data-value="renounce">Renounces</span>
+    <span class="chip" data-filter="type" data-value="qualifying_offer">Qualifying Offers</span>
     <span class="chip" data-filter="type" data-value="trade">Trades</span>
     <span class="chip" data-filter="type" data-value="convert_twoway">Two-Way Conversions</span>
     <span class="chip" data-filter="type" data-value="extension">Extensions</span>
@@ -1532,6 +1551,8 @@ function setupTypeSwitch() {
       document.getElementById('f-offer-outcome-field').style.display = isOfferSheet ? '' : 'none';
       document.getElementById('f-hardcap-level-field').style.display = isSetHardCap ? '' : 'none';
       document.getElementById('f-stash-basis-field').style.display = v === 'stash' ? '' : 'none';
+      document.getElementById('f-qo-action-field').style.display = v === 'qualifying_offer' ? '' : 'none';
+      document.getElementById('f-qo-amount-field').style.display = v === 'qualifying_offer' ? '' : 'none';
       // f-signing-method-field's visibility is set by applyContractTypeVisibility
       // below, which also knows whether the contract type is two-way.
       // An option decline rolls straight into a § 3.10 hold and has no
@@ -1880,6 +1901,14 @@ function setupPlayerSearch() {
       pool = Object.entries(bios).filter(([slug, bio]) => teamMap[slug] && isFreeAgentHold(bio));
     } else if (txnType === 'offer_sheet') {
       pool = Object.entries(bios).filter(([slug, bio]) => teamMap[slug] && isRfaHold(bio));
+    } else if (txnType === 'qualifying_offer') {
+      // Anyone RFA-tagged or holding a live QO; the validator does the rest.
+      pool = Object.entries(bios).filter(([slug, bio]) => teamMap[slug] && (
+        Object.values(bio.cap_holds || {}).includes('RFA') ||
+        Object.values(bio.qualifying_offers || {}).some(q => q.status === 'extended')));
+    } else if (txnType === 'accept_qo') {
+      pool = Object.entries(bios).filter(([slug, bio]) => teamMap[slug] &&
+        Object.values(bio.qualifying_offers || {}).some(q => q.status === 'extended'));
     } else if (txnType === 'convert_twoway') {
       pool = Object.entries(bios).filter(([, bio]) => bio.type === 'two-way');
     } else if (txnType === 'sign_pick' || txnType === 'stash') {
@@ -3516,6 +3545,18 @@ async function submitTransaction() {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     details = { player: playerSlug };
+  } else if (type === 'qualifying_offer') {
+    date = document.getElementById('f-date').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
+    if (!playerSlug) { setStatus('err', 'Select a player.'); return; }
+    const action = document.getElementById('f-qo-action').value;
+    const raw = document.getElementById('f-qo-amount').value.replace(/[^0-9]/g, '');
+    details = { player: playerSlug, action, ...(action === 'extend' && raw ? { amount: parseInt(raw, 10) } : {}) };
+  } else if (type === 'accept_qo') {
+    date = document.getElementById('f-date').value;
+    if (!date) { setStatus('err', 'Date is required.'); return; }
+    if (!playerSlug) { setStatus('err', 'Select a player.'); return; }
+    details = { player: playerSlug };
   } else if (type === 'convert_twoway') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -4214,6 +4255,14 @@ function renderDetailsCell(t) {
   }
   if (t.type === 'renounce') {
     return 'Renounced — free agent, no dead cap';
+  }
+  if (t.type === 'qualifying_offer') {
+    if (d.action === 'withdraw') return `${escHtml(d.season || '')} QO withdrawn — UFA, hold and Bird Rights kept`;
+    return `${escHtml(d.season || '')} QO extended — RFA` + (d.amount ? ` · ${fmtDollarsShort(d.amount)}` : '');
+  }
+  if (t.type === 'accept_qo') {
+    return d.two_way ? 'Signed his qualifying offer — 1 year, two-way'
+      : 'Signed his qualifying offer — 1 year' + (d.amount ? `, ${fmtDollarsShort(d.amount)}` : '');
   }
   if (t.type === 'waiver_clear') {
     const manualNote = d.resolution === 'manual' ? ' (manual)' : '';

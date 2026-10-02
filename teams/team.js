@@ -3814,6 +3814,48 @@ function renounceEligibility(bio) {
   return { ok: true, why: '', holdType: type, holdSeason: earliest };
 }
 
+// § 3.1 qualifying offer: mirrors the API's _qo_target_season and the window
+// check in _validate_qualifying_offer, so the menu greys out what the server
+// would reject. `relevant` is false for a player with no RFA tag and no QO on
+// file, and the menu leaves the items off entirely — a QO means nothing there.
+function qoEligibility(bio) {
+  const holds = (bio && bio.cap_holds) || {};
+  const qos = (bio && bio.qualifying_offers) || {};
+  const extended = Object.keys(qos).filter(s => qos[s].status === 'extended').sort();
+  const fa = Object.keys(holds).filter(s => holds[s] === 'UFA' || holds[s] === 'RFA').sort();
+  const relevant = extended.length > 0 || Object.values(holds).includes('RFA');
+  const out = { relevant, extend: { ok: false, why: '' }, withdraw: { ok: false, why: '' } };
+  if (extended.length) {
+    out.season = extended[0];
+    out.amount = qos[extended[0]].amount;
+    out.extend.why = `A ${extended[0]} qualifying offer is already out (§ 3.1).`;
+    out.withdraw.ok = true;   // the round-opened cutoff is the server's call, shown in the dialog
+    return out;
+  }
+  out.withdraw.why = 'No qualifying offer is out to withdraw (§ 3.1).';
+  const season = fa[0];
+  if (!season || holds[season] !== 'RFA') {
+    out.extend.why = 'Not RFA-eligible — no qualifying offer applies (§ 3.1).';
+    return out;
+  }
+  out.season = season;
+  const rec = qos[season];
+  if (rec) { out.extend.why = `The ${season} qualifying offer was ${rec.status} (§ 3.1).`; return out; }
+  const finalYear = seasonShift(season, -1);
+  const cur = currentSeasonYr();
+  if (cur === finalYear) out.extend.ok = true;
+  else if (cur > finalYear) out.extend.why = `The deadline for a ${season} qualifying offer was July 1 — he is a UFA (§ 3.1).`;
+  else out.extend.why = `A ${season} qualifying offer can be made during ${finalYear}, the final year of his deal (§ 3.1).`;
+  return out;
+}
+
+function seasonShift(season, delta) {
+  const m = String(season).match(/^(\d{2})-(\d{2})$/);
+  if (!m) return season;
+  const f = n => String((parseInt(n, 10) + delta + 100) % 100).padStart(2, '0');
+  return `${f(m[1])}-${f(m[2])}`;
+}
+
 // § 6.1: only a TEAM_OPT is the team's own call. A PLAYER_OPT decision
 // belongs to PDC — the team never even initiates it (docs/pdc-free-agency-spec.md)
 // — so it's never offered here at all, not just disabled.
@@ -3994,6 +4036,75 @@ function openRenounceDialog(slug, bio, abbr) {
   });
 }
 
+// § 3.1 — extend or withdraw a qualifying offer. Neither is undoable from
+// here, but neither destroys anything either (a withdrawal keeps the hold and
+// Bird Rights), so a plain confirm rather than renounce's typed one.
+function openQualifyingOfferDialog(slug, bio, abbr, action) {
+  const name = displayNameFromBio(bio.name || slug);
+  const extend = action === 'extend';
+  openConfirmModal({
+    title: extend ? `Extend a qualifying offer to ${name}?` : `Withdraw ${name}’s qualifying offer?`,
+    sub: (extend
+      ? `${name} becomes a restricted free agent: ${abbr} can match any offer sheet, and the PDC can keep him on the QO.`
+      : `${name} becomes an unrestricted free agent. ${abbr} keeps his cap hold and Bird Rights until he signs elsewhere.`)
+      + ' Checking against the rulebook…',
+    confirmLabel: extend ? 'Extend' : 'Withdraw',
+    danger: !extend,
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 3.1 checks…';
+      body.appendChild(loading);
+
+      let data;
+      try {
+        data = await apiFetchPublic('/api/validate/qualifying_offer', { player: slug, action });
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      const f = data.fact_sheet || {};
+      const facts = document.createElement('div'); facts.className = 'confirm-facts';
+      facts.appendChild(factRow('Season', f.season || '—'));
+      facts.appendChild(factRow('Qualifying offer', f.two_way ? 'One-year two-way contract'
+        : (f.amount != null ? `${formatSalary(f.amount)} for one year` : 'set by the office')));
+      if (!f.two_way) {
+        facts.appendChild(factRow('Cap hold', f.hold_after !== f.hold_before
+          ? `${formatSalary(f.hold_before)} → ${formatSalary(f.hold_after)}` : formatSalary(f.hold_before)));
+      }
+      if (extend && f.deadline) facts.appendChild(factRow('Deadline', f.deadline));
+      body.appendChild(facts);
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = `This ${extend ? 'offer' : 'withdrawal'} is not legal, so it cannot be submitted.`;
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+      ctl.setEnabled(true);
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/qualifying-offer', {
+            method: 'POST',
+            body: JSON.stringify({ player: slug, action }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
 // § 6.1 — TEAM_OPT only; the ⋯ menu never offers this for a PLAYER_OPT at
 // all (optionEligibility), so `decision`/`year` here are always a real team
 // option. Unlike renounce, exercising or declining moves no cap dollars
@@ -4029,8 +4140,8 @@ function openOptionDialog(slug, bio, abbr, decision, year) {
         body.append(label, capHoldSelect);
         const note = document.createElement('div');
         note.className = 'confirm-check warn';
-        note.textContent = 'The § 3.1 UFA/RFA eligibility test isn’t automated yet (it’s still pending BOD ' +
-          'confirmation in the rulebook) — pick the right one yourself.';
+        note.textContent = 'RFA only makes him eligible for a qualifying offer (§ 3.1) — he becomes a ' +
+          'restricted free agent once you extend one, from this menu, before July 1.';
         body.appendChild(note);
       }
 
@@ -4466,6 +4577,23 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
     why: !owner ? 'Only the team owner can renounce.' : elig.why,
     onClick: () => openRenounceDialog(slug, bio, abbr),
   });
+
+  // § 3.1 — the qualifying offer, same owner gate. Withdrawing one is how a
+  // team lets an RFA go unrestricted without renouncing his Bird Rights.
+  const qo = qoEligibility(bio);
+  if (qo.relevant) {
+    addItem('Extend qualifying offer…', {
+      enabled: qo.extend.ok && owner,
+      why: !owner ? 'Only the team owner can make a qualifying offer.' : qo.extend.why,
+      onClick: () => openQualifyingOfferDialog(slug, bio, abbr, 'extend'),
+    });
+    addItem('Withdraw qualifying offer…', {
+      enabled: qo.withdraw.ok && owner,
+      danger: true,
+      why: !owner ? 'Only the team owner can withdraw a qualifying offer.' : qo.withdraw.why,
+      onClick: () => openQualifyingOfferDialog(slug, bio, abbr, 'withdraw'),
+    });
+  }
 
   // § 6.1 — TEAM_OPT is the team's own unilateral call, same owner gate as
   // renounce. A PLAYER_OPT is never offered here at all (optionEligibility) —

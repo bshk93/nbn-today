@@ -456,18 +456,36 @@
           <div class="doc-section" id="s3-1">
             <h3 class="sec-title"><span class="sec-num">§ 3.1</span> Signing Using Cap Space <span class="badge badge-enforced">🔒 system-enforced</span> <span class="badge badge-manual">👁 manual review</span></h3>
             <p>A team with salary below the cap may sign free agents using their available cap space. Available cap space = Salary Cap − current Team Salary. Signings may not exceed available cap space unless the team is also using an exception (exceptions and cap space may not be combined — see § 3.2).</p>
-            <h4 class="sub-title">UFA / RFA Eligibility <span class="badge badge-manual">👁 manual review</span></h4>
-            <p>A player's free agency status is determined by years of NBA experience and, for eligible players, whether the team extends a Qualifying Offer:</p>
+            <h4 class="sub-title">UFA / RFA Eligibility and Qualifying Offers</h4>
+            <p>A player's free agency status is decided by his years of NBA experience and, if he is eligible, by whether his team extends a <strong>Qualifying Offer (QO)</strong>:</p>
             <ul>
-              <li><strong>4 or more years of NBA experience:</strong> always an Unrestricted Free Agent (UFA), regardless of contract type or any Qualifying Offer.</li>
-              <li><strong>Fewer than 4 years of NBA experience:</strong> Restricted Free Agent (RFA) if the team extends a Qualifying Offer; UFA if the team lets the player go without one (including missing a signing deadline).</li>
-              <li>Years of NBA experience uses the same real-draft-year proxy already used for the Minimum Salary Scale (§ 3.12): <code>season_start_year − draft_year</code>. An undrafted player has no such proxy and is judged manually.</li>
-              <li><strong>Qualifying Offer amount:</strong> for a first-round pick finishing (or losing an option out of) their rookie-scale deal, the Year 4 team-option value they would otherwise have received (§ 7.1). For a second-round pick, UDFA, or any other player with fewer than 4 years of experience, the greater of the applicable Minimum Salary Scale figure (§ 3.12) or 125% of the player's prior salary.</li>
-              <li>Declining an option (§ 6.1) does not by itself decide RFA vs. UFA — the experience / Qualifying-Offer test above still applies afterward, exactly as it would for an ordinary contract expiration (see § 3.10, "Declined option").</li>
+              <li><strong>4 or more years of NBA experience:</strong> an Unrestricted Free Agent (UFA), regardless of contract type or any Qualifying Offer — with one exception, below.</li>
+              <li><strong>Rookie-scale exception:</strong> a first-round pick finishing his four-year rookie-scale contract (§ 7.1) is RFA-eligible even though he has four years of experience by then, as in the NBA.</li>
+              <li><strong>Fewer than 4 years of NBA experience:</strong> RFA-eligible.</li>
+              <li>An RFA-eligible player becomes a <strong>Restricted Free Agent (RFA)</strong> only if his team extends a Qualifying Offer. Without one he is a UFA.</li>
+              <li>Years of NBA experience is the experience stated on the player's contract, stepping up one a year (§ 3.12), or else the real-draft-year proxy: <code>season_start_year − draft_year</code>. An undrafted player with neither is judged manually.</li>
+            </ul>
+            <p><strong>Qualifying Offer amount.</strong> A QO is a one-year contract offer:</p>
+            <ul>
+              <li><strong>First-round pick finishing his rookie-scale deal:</strong> his fourth-year salary plus a raise set by his draft slot, mirroring the NBA scale — 30% for the 1st pick rising to 50% for the 29th and 30th. From the 2023 draft class on, each slot's raise is 10 points higher (40% to 60%), as in the 2023 NBA CBA. The NBA's starter-criteria adjustments are not used.</li>
+              <li><strong>Two-way player:</strong> a one-year two-way contract, with no cap figure.</li>
+              <li><strong>Everyone else</strong> (second-round pick, undrafted, or any other RFA-eligible player): the greater of his Minimum Salary Scale figure (§ 3.12) and 125% of his prior salary.</li>
+              <li>"Prior salary" and "fourth-year salary" both mean the salary of the last contract year actually played — never the cap hold.</li>
+            </ul>
+            <p><strong>Timing.</strong></p>
+            <ul>
+              <li><strong>Extending:</strong> a team may extend a QO during the final year of the player's contract. The deadline is the start of free agency, <strong>July 1</strong>. A QO not extended by then has lapsed, and the player is a UFA.</li>
+              <li><strong>Withdrawing ("pulling" a QO):</strong> a team may withdraw an extended QO until the player's free-agency round opens. The player becomes a UFA. The team <strong>keeps his cap hold and Bird Rights</strong> until he signs elsewhere — withdrawing is not a renounce (§ 3.10).</li>
+              <li><strong>Accepting:</strong> while the QO stands, the free-agency ballot includes keeping the player on it. If that wins, he signs a one-year contract at the QO amount with his own team, and becomes a UFA when it ends.</li>
+            </ul>
+            <p><strong>Cap hold.</strong> An RFA's cap hold is the greater of his § 3.10 hold and his QO amount. Withdrawing the QO returns it to the § 3.10 hold.</p>
+            <ul>
+              <li>Declining an option (§ 6.1) does not by itself decide RFA vs. UFA — the experience and Qualifying Offer rules above still apply afterward, exactly as for an ordinary contract expiration (see § 3.10, "Declined option").</li>
             </ul>
             <div class="callout callout-note">
-              <strong>Proposed rule — pending league confirmation.</strong> This fills a previously undocumented gap (the eligibility test itself was marked "pending documentation"). The Qualifying Offer amount formula specifically is a new synthesis modeled on the real NBA CBA, not a rule this league had already agreed on — treat it as the working rule until BOD confirms or amends it.
+              <strong>Adopted 2026-10-02.</strong> The QO rules above replace the earlier proposed rule. Players who were already RFAs for 2026-27 when they were adopted were treated as having had a QO extended, so their status did not change; their teams may withdraw it under the timing rules above.
             </div>
+            <p><strong>What's system-enforced:</strong> extending, withdrawing and accepting a QO are tracked transactions — from the ⋯ menu on the team's own roster page (extend and withdraw), from the Transactions page, or from the free-agency ballot (accept). Each checks eligibility, the deadline and the withdrawal cutoff, and prices the QO from the formula above. A QO not extended by July 1 lapses on its own.</p>
           </div>
 
           <div class="doc-section" id="s3-2">
@@ -601,8 +619,8 @@
               <tbody>
                 <tr>
                   <td><strong>Expiring veteran contract</strong> — contract runs out and the player is not re-signed</td>
-                  <td>UFA or RFA — see § 3.1 for the eligibility test</td>
-                  <td>Bird-tier multiple of previous salary (table above)</td>
+                  <td>UFA, or RFA if the team extends a Qualifying Offer — see § 3.1</td>
+                  <td>Bird-tier multiple of previous salary (table above). For an RFA, the greater of that and his Qualifying Offer (§ 3.1)</td>
                 </tr>
                 <tr>
                   <td><strong>Declined option</strong> — a player or team option (§ 6.1) is declined, sending the player to free agency</td>

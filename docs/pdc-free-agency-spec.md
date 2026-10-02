@@ -1202,14 +1202,13 @@ independently (Phase 1).
 
 ### 7.2 RFA and the QO
 
-The ballot needs a QO line for RFAs. § 3.15/§ 3.9 give the eligibility test
-(<4 years experience + QO extended) and § 3.9 gives an amount formula that the
-rulebook itself flags as *proposed, pending BOD confirmation*. So:
+The ballot needs a QO line for RFAs. Qualifying offers have been real since
+2026-10-02 (§ 3.1, `docs/qualifying-offers.md`):
 
-- `rfa` comes from the existing `_rfa_eligibility` helper.
-- `qo_amount` is computed where the inputs exist and is otherwise `null`;
-  the ballot shows the QO line either way, with the amount marked
-  **estimated** when derived from the proposed formula.
+- `rfa` comes from `_rfa_eligibility`, which now requires the QO to have been
+  extended (an RFA tag alone is only eligibility).
+- `qo_amount` is the recorded amount once the QO is extended, otherwise the
+  § 3.1 formula's figure, marked **estimated**. `qo_status` says which.
 
 ---
 
@@ -1694,12 +1693,10 @@ channel to announce into, and tooling to review and vote with — now exists.
    see them and call again with `confirm_warnings: true` — while a real
    error hard-blocks regardless of that flag.
 
-   **Exception: the `"QO"` ballot option is deliberately NOT bridged.**
-   `BACKLOG.md`'s [P1] ("Qualifying Offers don't exist in the system at all")
-   says explicitly to ratify the § 3.9 formula and add a real transaction
-   type before any dollar figure derived from it reaches the ledger.
-   Declaring "QO" through this endpoint always 422s pointing at manual
-   `/transactions` entry — see § 13 item 2 below, unchanged.
+   **The `"QO"` ballot option** executes an `accept_qo` (`apply_accept_qo`):
+   the player signs a one-year deal at the recorded QO amount with his own
+   team. It was held back until 2026-10-02, when the league adopted the QO
+   rules and the transaction type existed to record it against.
 2. ~~**Roadmap (designed for, not built):** a "Sign this offer" button on a
    finalized player that POSTs `offer` verbatim to `/api/transactions`.~~
    Built as `declare-winner` above. The § 4.2 invariant (`offer` is a verbatim
@@ -1756,7 +1753,7 @@ Settled 2026-09-20, closing the § 11 roadmap item.
 | # | Question | Decision |
 |---|---|---|
 | D28 | How the head actually executes a finalized round | `declare-winner`, a new endpoint, not folding execution into `finalize` itself — `finalize` only locks votes and can have several live options (competing offers, QO, NO_SIGNING); a separate step is where the head names which one actually happened |
-| D29 | QO at declare-winner | Not bridged. `BACKLOG.md` [P1] already decided the § 3.9 formula needs BOD ratification before any figure derived from it reaches the ledger — declaring "QO" 422s to manual `/transactions` entry rather than closing this out to match the other two branches |
+| D29 | QO at declare-winner | Executes `accept_qo` at the recorded QO amount (since 2026-10-02; before the QO rules were adopted it 422'd to manual entry) |
 
 ## 13. Open items
 
@@ -1773,13 +1770,6 @@ Nothing blocking, and no design questions left.
 
 1. ~~**"Live" offer scoping across rounds** (§ 4.2)~~ — **settled in Phase 2.**
    Finalize archives; a reopen does not. See § 4.2 for why the two differ.
-2. **QO amount** (§ 7.2) — the § 3.9 formula is marked *proposed, pending BOD
-   confirmation* in the rulebook itself. The ballot shows the QO line either
-   way, labelling the figure **estimated** when it comes from that formula.
-
-   Wider than this spec: **the QO doesn't exist in the API at all** — no
-   transaction type records that one was extended, and no QO figure is stored
-   anywhere, so RFA status is a hand-set `cap_holds` value and § 3.9's
-   "or the qualifying offer amount" ceiling branch can't be evaluated. That
-   already affects § 3.15 offer sheets, not just this ballot. Tracked as a
-   [P1] in `BACKLOG.md` § 2; this spec does **not** depend on it landing first.
+2. ~~**QO amount** (§ 7.2)~~ — **settled 2026-10-02.** The league adopted
+   the QO rules (§ 3.1) and the API records them; see
+   `docs/qualifying-offers.md`.

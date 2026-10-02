@@ -136,6 +136,11 @@ Two things about dev that bite if you forget them:
   NBS_DATA_DIR=~/nbs-scratch bash build/build.sh
   ```
 
+  **This redirects the build only.** `nbn-api/routers/constants.py` hardcodes
+  `DATA_DIR`, so API code run with `NBS_DATA_DIR=scratch` still writes live
+  (it did once, 2026-10-02). Test API write paths by patching the module's
+  loaders, as `nbn-api/tests/test_qualifying_offers.py` does.
+
   The backup repo's git dir is `/var/lib/nbs-backup.git`, outside the data
   directory, so there is no `.git` to copy today. `--exclude=.git` stays anyway,
   so that a scratch copy can never end up committing to the backup repo.
@@ -426,6 +431,7 @@ precise.
 | Change the suggestions board or its comment threads | `suggestions/index.html` + `nbn-api/routers/suggestions.py` (see `docs/members-and-rewards.md`) |
 | Change power rankings — the ballot, the consensus math, blurbs | Rules: `nbn-api/routers/news_rankings.py` (pure, pinned by `tests/test_news_rankings.py`). Routes: `_mutate_ranking` in `nbn-api/routers/news.py`. Workspace: `news/rankings/rankings.js`; published table: `renderRankings` in `news/view/index.html`. League decisions are baked in — the order is the plain ballot average with no author override, ties share a rank, blurbs aren't blind. **Read `docs/pages.md` § Power rankings first** |
 | Change futures markets (the Futures tab on `/bet`: buying/selling outcome shares, the market maker, settlement) | Pricing, trades and settlement: `nbn-api/routers/markets.py` (LMSR; pinned by `tests/test_markets.py`). UI: `bet/futures.js`, mounted by `bet/index.html`'s Futures tab, including the price-history chart (`renderChart`; its three highlight colours are validated for every theme surface, see the comment on `.fut-chart`). **The page does no pricing math**: every number shown before a trade comes from `POST /api/markets/{id}/quote`. Economics and what a market costs in NB¥: `docs/nbyen-economy.md` § 4a |
+| Change qualifying offers (§ 3.1: extend/withdraw from the ⋯ menu, the amount, the July 1 lapse, a QO winning the PDC ballot) | `_qo_*` / `_validate_qualifying_offer` / `_apply_accept_qo` in `nbn-api/routers/transactions.py`; menu: `qoEligibility` / `openQualifyingOfferDialog` — `teams/team.js`. An `RFA` tag is eligibility only — the QO record on the bio decides it. **Read `docs/qualifying-offers.md` first** |
 | Change the team-facing FA offer form (⋯ menu, contract editor, submit confirm) | `free-agency/index.html` — the block under "Team-facing offers"; endpoints `POST/PATCH/DELETE /api/fa/offers`, `POST /api/fa/offers/{id}/submit`, `GET /api/fa/commitment/{team}`. an offer's legality and every dollar shown come from `POST /api/validate/sign`, never from page code (see `docs/fa-offers-pipeline.md`) |
 | Add a theme, or change what one costs | Colours: `build/make_team_theme.py` → `css/theme.css` (the team blocks are **generated**, don't hand-edit). Catalog and price: `LIVE_TEAM_THEMES` / `THEME_PRICE` in `nbn-api/routers/themes.py`. Picker: `_themeMenuItems` / `_unlockTheme` — `nav.js`. Run `build/check_theme_catalog.sh` after (see `docs/themes.md`) |
 | Change the PDC committee dashboard (FA review, the 1,000-ball ballot, remand/void, finalize/unlock, the agent queue, head controls) | `committees/pdc/index.html`; data from `/api/fa/*` in `nbn-api/routers/free_agency.py`; design record in `docs/pdc-free-agency-spec.md`. Three roles, and a free agent passes through them in order — `agent` curates, `fac` ballots, `fac_head` runs it (see `docs/fa-offers-pipeline.md`). Served at both `nbn.today/committees/pdc` and `pdc.nbn.today` — the subdomain is `/etc/nginx/sites-available/pdc.nbn.today`, the **same docroot** with `/` → `/committees/pdc/index.html`, so every fetch stays same-origin (no CORS, no static-asset CORS gap). Keep any new path rule in sync with the `nbn.today` block or it works on one host and 404s on the other |
@@ -480,6 +486,7 @@ in.
 | Touching this | Read first |
 |---|---|
 | A `/api/validate/*` endpoint, the § 7.1 rookie scale, § 3.8 Bird tenure, or § 3.15 offer sheets | `docs/api-validation-notes.md` |
+| RFA status or a qualifying offer (§ 3.1) | `docs/qualifying-offers.md` |
 | Any path between the API and Discord — transaction embeds, PDC FA feeds, the `#roster-log` mirror, tradeblock posts | `docs/discord-integrations.md` |
 | The team-facing FA offer form, the § 4.7 agent stage, or § 4.3b voiding | `docs/fa-offers-pipeline.md` |
 | A theme, what one costs, or `css/theme.css` | `docs/themes.md` |
@@ -558,6 +565,7 @@ separate, authenticated write to `POST /api/trade-requests`
 | `POST /api/validate/convert_twoway` | `_validate_convert_twoway` | `_signing_fact_sheet` |
 | `POST /api/validate/extension` | `_validate_extension` | `_extension_fact_sheet` |
 | `POST /api/validate/stash` | `_validate_stash` | none |
+| `POST /api/validate/qualifying_offer` | `_validate_qualifying_offer` | `_qualifying_offer_fact_sheet` |
 
 All of them are public (no auth), take the same body shape as the corresponding
 `details` in `POST /api/transactions`, and return
@@ -574,7 +582,7 @@ sheets are built from the same helpers the validators use
 it with. When adding a check, reuse the helper rather than recomputing.
 
 Coverage is uneven and the UI says so: `sign`/`offer_sheet`/`offer_sheet_decision`/
-`trade`/`renounce`/`sign_pick`/`extension`/`stash` have real validators, while `release`, `option` and `pick` are stubs
+`trade`/`renounce`/`sign_pick`/`extension`/`stash`/`qualifying_offer` have real validators, while `release`, `option` and `pick` are stubs
 returning `[]` — those types are deliberately **not** offered in the simulator, since a
 verdict off zero checks is worse than no verdict. § 3.7 (DPE) remains unmodeled.
 (`renounce` is validated but still isn't wired into the simulator UI; its
