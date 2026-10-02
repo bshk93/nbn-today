@@ -27,7 +27,7 @@ count, not a share of the committee.
 
 1. **Intake is transaction-sim's trade builder, not a new form.** The sim
    already assembles the exact body `/api/validate/trade` wants
-   (`transaction-sim/index.html`'s `runCheck()` → `tradeBody`). A "Submit to
+   (`trade-builder.js`'s `runCheck()` → `tradeBody`). A "Submit to
    TRC" button, shown only when the signed-in member holds a role for one of
    the trade's own party teams, POSTs that same object to
    `POST /api/trade-requests`. This is a deliberate, permanent crack in the
@@ -240,6 +240,12 @@ Endpoints — all under `/api/trade-requests`:
   out of the page-inline script into the shared file. This is the first real
   step toward decision 1's stated "one place to mock and submit any
   transaction type" direction: trade now has two, not one.
+
+  The extraction left the simulator's own inline copy behind, so until
+  2026-10-02 `/transaction-sim` still ran it rather than mounting the module.
+  It had already drifted: it never got "Release after the trade". The sim now
+  mounts `trade-builder.js` like tradeblock does, and its inline trade code is
+  gone. Don't reintroduce a page-local copy.
 - `committees/trc/index.html` — new dashboard, gated to `trc`/`trc_head`/
   `admin`, structural template `committees/stream/index.html`. Queue (open
   requests, sorted `ready_to_finalize` first) and History (terminal). Row
