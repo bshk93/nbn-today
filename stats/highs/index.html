@@ -8,11 +8,11 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>Single-Game Highs — NBN Stats</title>
   <!-- NBN:og -->
-  <meta name="description" content="The biggest single games in NBN history, by category.">
+  <meta name="description" content="The biggest single games in NBN history in 15 categories, and the most triple-doubles, 50-point games and more — for any season, franchise or the playoffs.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
   <meta property="og:title" content="Single-Game Highs — NBN Stats">
-  <meta property="og:description" content="The biggest single games in NBN history, by category.">
+  <meta property="og:description" content="The biggest single games in NBN history in 15 categories, and the most triple-doubles, 50-point games and more — for any season, franchise or the playoffs.">
   <meta property="og:url" content="https://nbn.today/stats/highs/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -22,49 +22,326 @@
   <meta name="theme-color" content="#0d0e11">
   <!-- /NBN:og -->
   <style>
-                    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-decoration: none; color: inherit; transition: background 0.15s, border-color 0.15s, transform 0.15s; display: flex; flex-direction: column; gap: 0.4rem; }
-    .card:hover { background: var(--bg-hover); border-color: var(--muted-border); transform: translateY(-2px); }
-    .card-stat { font-size: 1.5rem; font-weight: 700; color: var(--accent-light); }
-    .card-title { font-size: 0.95rem; font-weight: 600; }
-    @media (max-width: 480px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    .gh-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+    .gh-filters .ui-select { height: 2rem; font-size: var(--text-sm); }
+    .gh-note { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-5); min-height: 1em; }
+    .gh-section { margin-top: var(--space-2); }
+
+    /* A top-5 card per category / feat. */
+    .gh-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
+    .gh-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4) var(--space-2); cursor: pointer; text-align: left; font: inherit; color: inherit; transition: border-color 0.12s; }
+    .gh-card:hover { border-color: var(--text-dim); }
+    .gh-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .gh-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+    .gh-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+    .gh-card-abbr { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em; color: var(--text-muted); white-space: nowrap; }
+    .gh-row { display: grid; grid-template-columns: 1.4rem 1fr auto; align-items: center; column-gap: var(--space-2); padding: 3px 0; font-size: var(--text-sm); }
+    .gh-row-rank { color: var(--text-muted); font-size: var(--text-xs); text-align: right; font-variant-numeric: tabular-nums; }
+    .gh-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
+    .gh-card-head + .gh-row .gh-row-name { color: var(--text-primary); font-weight: 600; }
+    .gh-row-val { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+    .gh-row-bar { grid-column: 2 / 4; height: 3px; border-radius: 2px; background: var(--border-subtle); overflow: hidden; margin-top: 2px; }
+    .gh-row-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+    .gh-card-empty { font-size: var(--text-xs); color: var(--text-muted); padding: var(--space-2) 0; }
+
+    /* The full board. */
+    .gh-table th[data-cat] { cursor: pointer; }
+    .gh-table th[data-cat]:hover { color: var(--text-secondary); }
+    .gh-table th.gh-primary { color: var(--accent-light); }
+    .gh-table td.gh-primary { color: var(--text-primary); font-weight: 600;
+      background: linear-gradient(to left, color-mix(in srgb, var(--accent) 16%, transparent) var(--bar, 0%), transparent var(--bar, 0%)); }
+    .gh-table tbody tr:hover td.gh-primary { background-color: var(--bg-hover); }
+    .gh-player a { color: var(--text-primary); font-weight: 600; }
+    .gh-sub { display: block; font-size: var(--text-xs); color: var(--text-muted); font-weight: 400; }
+    .gh-sub a { color: inherit; }
+    .gh-badge { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.03em; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); vertical-align: 1px; }
+    .gh-win { color: var(--success); }
+    .gh-loss { color: var(--danger); }
+    .gh-more { display: block; margin: var(--space-3) auto 0; }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+
+    @media (max-width: 480px) {
+      .gh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+      .gh-card { padding: var(--space-2) var(--space-3) var(--space-1); }
+      .gh-row { grid-template-columns: 1rem 1fr auto; column-gap: var(--space-1); font-size: var(--text-xs); }
+    }
   </style>
 </head>
 <body>
-  <div class="page ui-page">
+  <div class="page ui-page ui-page--wide">
     <nav class="nav"></nav>
     <header class="ui-header">
       <div>
         <h1 class="ui-title">Single-Game Highs</h1>
+        <p class="ui-subtitle">The biggest nights in NBN history, and who has had the most of them. Pick a card to see the full board.</p>
       </div>
     </header>
-    <div class="grid">
-      <a class="card" href="/stats/highs/p">
-        <span class="card-stat">PTS</span>
-        <span class="card-title">Points</span>
-      </a>
-      <a class="card" href="/stats/highs/r">
-        <span class="card-stat">REB</span>
-        <span class="card-title">Rebounds</span>
-      </a>
-      <a class="card" href="/stats/highs/a">
-        <span class="card-stat">AST</span>
-        <span class="card-title">Assists</span>
-      </a>
-      <a class="card" href="/stats/highs/b">
-        <span class="card-stat">BLK</span>
-        <span class="card-title">Blocks</span>
-      </a>
-      <a class="card" href="/stats/highs/s">
-        <span class="card-stat">STL</span>
-        <span class="card-title">Steals</span>
-      </a>
-      <a class="card" href="/stats/highs/3pm">
-        <span class="card-stat">3PM</span>
-        <span class="card-title">3-Pointers Made</span>
-      </a>
+    <div class="gh-filters">
+      <div class="ui-segmented" role="group" id="f-type">
+        <button data-v="all">All games</button>
+        <button data-v="reg">Regular season</button>
+        <button data-v="po">Playoffs</button>
+      </div>
+      <select class="ui-select" id="f-season" aria-label="Season">
+        <option value="">All seasons</option>
+      </select>
+      <select class="ui-select" id="f-team" aria-label="Franchise">
+        <option value="">All franchises</option>
+      </select>
+      <div class="ui-segmented" role="group" id="f-active">
+        <button data-v="">Everyone</button>
+        <button data-v="1" title="On a roster today">Active only</button>
+      </div>
     </div>
+    <p class="gh-note" id="note"></p>
+    <h2 class="ui-section-title gh-section">Single-game records</h2>
+    <div class="gh-grid" id="grid-games"><div id="status">Loading…</div></div>
+    <h2 class="ui-section-title gh-section">Most games with…</h2>
+    <div class="gh-grid" id="grid-feats"></div>
+    <h2 class="ui-section-title" id="board-title"></h2>
+    <div class="ui-table-wrap" id="table-wrap"></div>
+    <button class="ui-btn ui-btn--sm gh-more" id="more" hidden></button>
   </div>
+  <script src="/names.js"></script>
+  <script>
+  (function () {
+    // Everything here is computed by GET /api/game-highs (nbn-api
+    // routers/game_highs.py) from the raw box scores: the categories, the
+    // feats, their floors and the ranks. The page only draws what it gets.
+    const TEAMS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
+      'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+      'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'];
+    const PAGE = 100, MAX = 500;
+    const ROUND = { 1: 'R1', 2: 'R2', 3: 'Conf Finals', 4: 'Finals' };
+    // Board columns for a game; the chosen category is added if it isn't one.
+    const LINE_COLS = [
+      { key: 'M',    label: 'MIN' },
+      { key: 'P',    label: 'PTS' },
+      { key: 'R',    label: 'REB' },
+      { key: 'A',    label: 'AST' },
+      { key: 'S',    label: 'STL' },
+      { key: 'B',    label: 'BLK' },
+      { key: '3PM',  label: '3PM' },
+      { key: 'FG',   label: 'FG',  text: l => `${l.FGM}-${l.FGA}` },
+      { key: '3P',   label: '3P',  text: l => `${l['3PM']}-${l['3PA']}` },
+      { key: 'FT',   label: 'FT',  text: l => `${l.FTM}-${l.FTA}` },
+      { key: 'TO',   label: 'TOV' },
+      { key: 'GMSC', label: 'GmSc', text: l => l.GMSC.toFixed(1) },
+    ];
+    const CLICKABLE = new Set(['M','P','R','A','S','B','3PM','TO','GMSC']);
+
+    // Old per-stat pages (/stats/highs/p/ …) redirect here with ?stat=.
+    const q = new URLSearchParams(location.search);
+    const state = {
+      stat:   q.get('stat') || 'P',
+      type:   ['reg','po','all'].includes(q.get('type')) ? q.get('type') : 'all',
+      season: /^\d\d-\d\d$/.test(q.get('season') || '') ? q.get('season') : '',
+      team:   TEAMS.includes(q.get('team')) ? q.get('team') : '',
+      active: q.get('active') === '1' ? '1' : '',
+      limit:  PAGE,
+    };
+
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    let data = null, seq = 0;
+
+    const isTS = key => key === 'TS';
+    function fmt(key, v) {
+      if (v == null) return '—';
+      if (isTS(key)) return (v * 100).toFixed(1) + '%';
+      if (key === 'GMSC') return Number(v).toFixed(1);
+      return Number(v).toLocaleString('en-US');
+    }
+    const playerLink = r => `/players/?p=${encodeURIComponent(r.slug)}`;
+    // "GSW vs NOP · Jun 20, 2021 · R1 G5"
+    function gameWhere(r) {
+      const d = new Date(r.date + 'T12:00:00');
+      const date = isNaN(d) ? r.date : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const round = r.playoff ? ` · ${ROUND[r.round] || 'Playoffs'}${r.game ? ' G' + r.game : ''}` : '';
+      return `${r.team} ${r.home ? 'vs' : '@'} ${r.opp} · ${date}${round}`;
+    }
+
+    // ── Cards ──────────────────────────────────────────────────────────────
+    function card(def, rows, valueOf, titleOf) {
+      const el = document.createElement('button');
+      el.className = 'gh-card';
+      el.setAttribute('aria-pressed', def.key === state.stat);
+      const top = rows.length ? valueOf(rows[0]) : 0;
+      el.innerHTML = `<div class="gh-card-head"><span class="gh-card-name">${esc(def.name)}</span>`
+        + `<span class="gh-card-abbr">${esc(def.abbr || '')}${def.floor ? ' · ' + esc(def.floor) : ''}</span></div>`
+        + (rows.length ? rows.map(r => `<div class="gh-row" title="${esc(titleOf(r))}">`
+            + `<span class="gh-row-rank">${r.rank}</span>`
+            + `<span class="gh-row-name">${esc(nbnPlayerName(r.player))}</span>`
+            + `<span class="gh-row-val">${esc(fmt(def.key, valueOf(r)))}</span>`
+            + `<span></span><span class="gh-row-bar"><span style="width:${top > 0 ? (valueOf(r) / top * 100).toFixed(1) : 0}%"></span></span>`
+            + `</div>`).join('')
+          : '<div class="gh-card-empty">No games in this slice.</div>');
+      el.addEventListener('click', () => {
+        select(def.key);
+        $('board-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      return el;
+    }
+
+    function renderCards() {
+      const games = $('grid-games'), feats = $('grid-feats');
+      games.innerHTML = ''; feats.innerHTML = '';
+      data.categories.forEach(c => games.appendChild(
+        card(c, c.rows, r => r.value, r => `${nbnPlayerName(r.player)} — ${gameWhere(r)}`)));
+      data.feats.forEach(f => feats.appendChild(
+        card(f, f.rows, r => r.value, r => `${nbnPlayerName(r.player)}: ${r.value} ${f.name.toLowerCase()}`)));
+    }
+
+    // ── Board ──────────────────────────────────────────────────────────────
+    function defOf(key) {
+      return data.categories.find(c => c.key === key) || data.feats.find(f => f.key === key);
+    }
+
+    function boardTitle(def) {
+      const context = [
+        { all: '', reg: 'Regular season', po: 'Playoffs' }[state.type],
+        state.season,
+        state.team && `with ${state.team}`,
+        state.active && 'active players',
+      ].filter(Boolean);
+      const base = data.board.kind === 'feat' ? `Most ${def.name.toLowerCase()}` : `${def.name} — best single games`;
+      return base + (context.length ? ` · ${context.join(', ')}` : '');
+    }
+
+    function renderBoard() {
+      const b = data.board, def = defOf(b.key);
+      $('board-title').textContent = boardTitle(def);
+      const wrap = $('table-wrap'), more = $('more');
+      if (!b.rows.length) {
+        wrap.innerHTML = '<div id="status">No games in this slice.</div>';
+        more.hidden = true;
+        return;
+      }
+      const lead = b.rows[0].value || 0;
+      const bar = v => (lead > 0 ? Math.max(0, v / lead * 100).toFixed(1) : 0);
+      let head, body;
+      if (b.kind === 'feat') {
+        head = `<tr><th class="right">#</th><th>Player</th><th class="right gh-primary">${esc(def.name)}</th>`
+          + '<th class="right">Games</th><th class="right">How often</th></tr>';
+        body = b.rows.map(r => `<tr><td class="right muted">${r.rank}</td>`
+          + `<td class="gh-player"><a href="${playerLink(r)}">${esc(nbnPlayerName(r.player))}</a></td>`
+          + `<td class="right gh-primary" style="--bar:${bar(r.value)}%">${r.value.toLocaleString('en-US')}</td>`
+          + `<td class="right">${r.games.toLocaleString('en-US')}</td>`
+          + `<td class="right muted">${r.games ? `1 in ${(r.games / r.value).toFixed(1)}` : '—'}</td></tr>`).join('');
+      } else {
+        const cols = LINE_COLS.some(c => c.key === b.key) ? LINE_COLS
+          : [{ key: b.key, label: def.abbr, value: true }, ...LINE_COLS];
+        head = '<tr><th class="right">#</th><th>Player</th><th>Result</th>'
+          + cols.map(c => {
+              const on = c.key === b.key;
+              const click = CLICKABLE.has(c.key) || c.value;
+              return `<th class="right${on ? ' gh-primary' : ''}"${click ? ` data-cat="${esc(c.key)}"` : ''}>${esc(c.label)}</th>`;
+            }).join('') + '</tr>';
+        body = b.rows.map(r => {
+          const won = r.wl === 'W';
+          return `<tr><td class="right muted">${r.rank}</td>`
+            + `<td class="gh-player"><a href="${playerLink(r)}">${esc(nbnPlayerName(r.player))}</a>`
+            + (r.playoff ? '<span class="gh-badge">PO</span>' : '')
+            + `<span class="gh-sub"><a href="/boxscores/?date=${encodeURIComponent(r.date)}">${esc(gameWhere(r))}</a></span></td>`
+            + `<td class="muted"><span class="${won ? 'gh-win' : 'gh-loss'}">${esc(r.wl)}</span> ${r.team_pts}–${r.opp_pts}</td>`
+            + cols.map(c => {
+                const text = c.value ? fmt(b.key, r.value) : c.text ? c.text(r.line) : fmt(c.key, r.line[c.key]);
+                return c.key === b.key
+                  ? `<td class="right gh-primary" style="--bar:${bar(r.value)}%">${esc(text)}</td>`
+                  : `<td class="right">${esc(text)}</td>`;
+              }).join('')
+            + '</tr>';
+        }).join('');
+      }
+      wrap.innerHTML = `<table class="ui-table ui-table--dense gh-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+      wrap.querySelectorAll('th[data-cat]').forEach(th => th.addEventListener('click', () => select(th.dataset.cat)));
+      // A full page means there may be more; the API caps a board at MAX.
+      more.hidden = b.rows.length < state.limit || state.limit >= MAX;
+      more.textContent = `Show ${Math.min(PAGE, MAX - state.limit)} more`;
+    }
+
+    function renderNote() {
+      $('note').textContent = state.active
+        ? 'Active means on a roster today. Ranks count only the games in this slice.'
+        : 'Ranks count only the games in this slice. Ties share a rank; the earlier game is listed first.';
+    }
+
+    // ── State ──────────────────────────────────────────────────────────────
+    function syncControls() {
+      [['f-type', 'type'], ['f-active', 'active']].forEach(([id, key]) => {
+        $(id).querySelectorAll('button').forEach(b => {
+          const on = b.dataset.v === state[key];
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-pressed', on);
+        });
+      });
+      $('f-team').value = state.team;
+      $('f-season').value = state.season;
+    }
+
+    function syncURL() {
+      const u = new URL(location.href);
+      u.search = '';
+      if (state.stat !== 'P') u.searchParams.set('stat', state.stat);
+      if (state.type !== 'all') u.searchParams.set('type', state.type);
+      if (state.season) u.searchParams.set('season', state.season);
+      if (state.team) u.searchParams.set('team', state.team);
+      if (state.active) u.searchParams.set('active', '1');
+      history.replaceState(null, '', u);
+    }
+
+    function load() {
+      syncControls();
+      syncURL();
+      renderNote();
+      const my = ++seq;
+      const params = new URLSearchParams({ type: state.type, stat: state.stat, limit: state.limit });
+      if (state.season) params.set('season', state.season);
+      if (state.team) params.set('team', state.team);
+      if (state.active) params.set('active', 'true');
+      document.body.style.cursor = 'progress';
+      fetch('/api/game-highs?' + params)
+        .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then(d => {
+          if (my !== seq) return;   // a newer filter change is already on its way
+          if (!data) fillSeasons(d.seasons);
+          data = d;
+          renderCards();
+          renderBoard();
+        })
+        .catch(status => {
+          if (my !== seq) return;
+          // A stale ?stat= or ?season= from an old link: start over clean.
+          if (status === 422 && (state.stat !== 'P' || state.season)) {
+            state.stat = 'P'; state.season = ''; load(); return;
+          }
+          $('grid-games').innerHTML = '<div id="status">Failed to load data.</div>';
+        })
+        .finally(() => { if (my === seq) document.body.style.cursor = ''; });
+    }
+
+    function fillSeasons(seasons) {
+      const sel = $('f-season');
+      [...seasons].reverse().forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+      sel.value = state.season;
+    }
+
+    function select(stat) { state.stat = stat; state.limit = PAGE; load(); }
+
+    TEAMS.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; $('f-team').appendChild(o); });
+    [['f-type', 'type'], ['f-active', 'active']].forEach(([id, key]) => {
+      $(id).addEventListener('click', ev => {
+        const b = ev.target.closest('button');
+        if (!b || state[key] === b.dataset.v) return;
+        state[key] = b.dataset.v; state.limit = PAGE; load();
+      });
+    });
+    $('f-team').addEventListener('change', ev => { state.team = ev.target.value; state.limit = PAGE; load(); });
+    $('f-season').addEventListener('change', ev => { state.season = ev.target.value; state.limit = PAGE; load(); });
+    $('more').addEventListener('click', () => { state.limit = Math.min(MAX, state.limit + PAGE); load(); });
+    load();
+  })();
+  </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
 </body>

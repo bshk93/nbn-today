@@ -1137,7 +1137,7 @@ document.body.innerHTML = `
       </section>
       <section>
         <h2 class="section-title">Franchise Records</h2>
-        <p class="section-sub">Best single games, best seasons, in franchise history · regular season and playoffs</p>
+        <p class="section-sub">Best single games, best seasons, in franchise history · regular season and playoffs · <a href="/stats/highs/?team=${abbr}">every category →</a></p>
         <div id="records-wrap"><div class="status">Loading…</div></div>
         <div id="season-records-wrap" style="margin-top:1.5rem"><div class="status">Loading…</div></div>
       </section>

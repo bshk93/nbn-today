@@ -46,7 +46,6 @@ TEAMS = [
     "okc", "orl", "phi", "phx", "por", "sac", "sas", "tor", "uta", "was",
 ]
 
-STAT_KEYS = ["p", "r", "a", "s", "b", "3pm"]
 
 # Columns that are legitimately sparse — a fully blank one is not a red flag.
 # (Playoff/award fields go empty in a young league or early in a season.)
@@ -56,11 +55,6 @@ BLANK_OK = {
     "EAST_RUNNER_UP", "WEST_RUNNER_UP", "MIP", "ROTY", "SIX_MOY", "ROY",
     "ALL_DEF", "TYPE", "TEAM",
 }
-
-GAME_HIGH_COLS = [
-    "RANK", "DATE", "SEASON", "PLAYER", "TEAM", "OPP", "gametype",
-    "P", "R", "A", "S", "B", "3PM",
-]
 
 H2H_COLS = [t.upper() for t in TEAMS]
 
@@ -130,11 +124,6 @@ SCHEMA = {
     "data/h2h-playoffs.csv": (["TEAM"] + H2H_COLS, 1, "h2h/index.html"),
     "data/h2h-owners.csv": (["OWNER"] + H2H_COLS, 1, "h2h/index.html"),
 }
-
-for _k in STAT_KEYS:
-    SCHEMA[f"data/game-highs-{_k}.csv"] = (
-        GAME_HIGH_COLS, 1, f"stats/highs/{_k}/index.html",
-    )
 
 for _t in TEAMS:
     SCHEMA[f"data/{_t}-seasons.csv"] = (

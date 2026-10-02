@@ -69,7 +69,8 @@ const PAGES = [
   { path: '/teams/UTA/',              selector: '#cap-health-section .ch-row', min: 5, what: 'the cap health standing rows' },
   { path: '/h2h/',                    selector: 'table tbody tr',  min: 30, what: 'the head-to-head matrix' },
   { path: '/hof/',                    selector: 'table tbody tr',  min: 100, what: 'the HOF board' },
-  { path: '/stats/highs/p/',          selector: 'table tbody tr',  min: 40, what: 'single-game points highs' },
+  { path: '/stats/highs/',            selector: 'table tbody tr',  min: 50, what: 'single-game points highs' },
+  { path: '/stats/highs/?stat=TD&type=po&team=DEN', selector: 'table tbody tr', min: 1, what: 'a filtered feat board' },
   { path: '/stats/totals/',           selector: 'table tbody tr',  min: 50, what: 'career points leaders' },
   { path: '/stats/totals/?stat=AST&type=po&per=pg', selector: 'table tbody tr', min: 20, what: 'a filtered career board' },
   { path: '/season-summary/',         selector: 'table tbody tr',  min: 5,  what: 'a row per season' },
@@ -135,9 +136,7 @@ const PAGES = [
   { path: '/cap-settings/',           selector: '.season-card',    min: 3,  what: 'a card per season on file' },
   { path: '/rookie-scale/',           selector: 'table tbody tr',  min: 30, what: 'the § 7.1 scale' },
   { path: '/stats/seasons/',          selector: 'table tbody tr',  min: 100, what: 'per-season player lines' },
-  // The highs hub's cards are what route to the per-stat pages — if they
-  // vanish, table.js is unreachable.
-  { path: '/stats/highs/',            selector: '.card-stat',      min: 6,  what: 'a card per stat category' },
+  { path: '/stats/highs/',            selector: '.gh-card',        min: 25, what: 'a top-5 card per category and feat' },
   { path: '/stats/totals/',           selector: '.cl-card',        min: 15, what: 'a top-5 card per category' },
   { path: '/donations/',              selector: 'table tbody tr',  min: 10, what: 'the donations list' },
   { path: '/draft/guide/',            selector: '.step',           min: 8,  what: 'the walkthrough steps' },

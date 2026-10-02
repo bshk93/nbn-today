@@ -218,7 +218,7 @@ Runs automatically after each box score commit, or manually. Source data: `allst
 | `players/player_seasons.csv` | `players/index.html` | Per-player, per-season regular season totals + bio snapshot |
 | `players/player_seasons_playoffs.csv` | `players/index.html` | Same for playoffs |
 | `players/player_awards.csv` | `players/index.html` | One row per award per player per season |
-| `data/game-highs-{p,r,a,s,b,3pm}.csv` | `stats/highs/{stat}/index.html` | Top 50 single-game performances per stat category (the doc said 20; the build writes 50) |
+| `data/game-highs-{p,r,a,s,b,3pm}.csv` | nothing (since 2026-10-02) | Top 50 single games per stat. Still written and served, but no page reads them and they are no longer schema-checked: `/stats/highs` reads `GET /api/game-highs`, which ranks the same rows the same way |
 | `data/franchise-records.csv` | `teams/team.js` (All-Time tab) | Top 5 single games **per team** per stat (P/R/A/S/B/3PM/GMSC) — one combined file for all 30 teams. Unlike `game-highs-*`, which is league-wide, every franchise appears here |
 | `data/totals-{p,r,a,s,b,3pm}.csv` | nothing (since 2026-10-02) | Top 250 career totals per stat category. Still written and served, but no page reads them and they are no longer schema-checked: `/stats/totals` sums careers itself from `players/player_seasons*.csv` |
 | `data/h2h-alltime.csv` | `h2h/index.html` | All-time head-to-head W/L matrix (teams vs teams) |
@@ -258,6 +258,7 @@ These are fetched from nbn-api at runtime, not from flat files in the repo.
 | `GET /api/members/public` | `members/index.html` | `members.json` in NBS_DATA_DIR |
 | `GET /api/trade-exceptions` / `GET /api/trade-exceptions/{team}` | `teams/{ABB}/index.html` | `trade-exceptions.json` in NBS_DATA_DIR |
 | `GET /api/cap-history` / `GET /api/cap-history/current` | (no page yet) | `cap-history.jsonl` in NBS_DATA_DIR — a daily row per team: salary on both bases (§ 2.1a's real Empty Roster Charge included in both, and named separately as `empty_roster_charge`), apron position, hard cap, roster counts |
+| `GET /api/game-highs` | `stats/highs/index.html` | Not a stored file — the raw `allstats-*.csv` files, indexed in memory (rebuilt when one changes) and ranked per request: top single games per category and top counts per feat, for any game type / season / franchise / active slice |
 | `GET /api/edits` | `players/index.html` (Edit history disclosure, in the Player History card) | `edits.jsonl` in NBS_DATA_DIR — the value-level diff of every write that bypasses the ledger. Public since 2026-09-01; the player page always scopes it with `key=<slug>` |
 | `GET /api/ratings-changes` | `ratings-changes/index.html` | Not a stored file — computed per request by diffing consecutive snapshots in `player-attributes.json` (NBS_DATA_DIR). No separate log to keep in sync; a scrape run that changes nothing produces nothing here. Each snapshot's `team` is stamped by the scrape at the time it ran (from `data/*-roster.csv`, never reconstructed from the transaction ledger, which has real backfill gaps) — `null` on snapshots taken before that field existed |
 
@@ -399,7 +400,7 @@ precise.
 | Change edit mode behavior | `enterEditMode` / `setupEditable` — `teams/team.js` |
 | Change the Roster Settings section (jersey #, secondary position, player minutes) | `setupTeamSettingsTab` — `teams/team.js`, inside the Coaching tab. Table order *is* the depth chart (row *i* → `CS.MINUTES_SLOTS[i]`, derived fresh by `minutesFromDom()`). Drag-to-reorder uses raw mouse/touch events with a non-passive `touchmove`, **not** HTML5 DnD or Pointer Events — both failed on iOS. Minutes save to `PUT /api/coaching-settings/{team}` only when they changed. `docs/pages.md` § Roster Settings |
 | Change the archetype radar (axes, archetypes, tiers) on a player or team page | Drawing, percentile ranking and nearest-match are **`radar.js`** at the repo root, shared by both pages. Each page owns its axes, archetype targets and tiers: `buildPlayerRadarChart` — `players/index.html` (per 36, 10+ MPG floor) and `buildTeamRadar` — `teams/team.js` (Franchise tab, Team Identity). An archetype is a target percentile per axis and the nearest one wins, so there is no fallback label; the targets were seeded from a clustering of every season 20-21 to 25-26 |
-| Change stats highs table | `stats/highs/table.js` (not the per-stat HTML files) |
+| Change the single-game highs page (categories, feats, floors, filters) | Data: `nbn-api/routers/game_highs.py` — `CATEGORIES` and `FEATS` are the one list of what is ranked, read from the raw box scores the way the build reads them (pinned by `tests/test_game_highs.py`). Page: `stats/highs/index.html`, which only draws what `GET /api/game-highs` returns. State lives in the query string (`?stat=&type=&season=&team=&active=`); the old `/stats/highs/{stat}/` pages are redirect stubs |
 | Change the career leaders page (categories, per-game/percentage floors, filters) | `stats/totals/index.html` — one self-contained page. Careers are summed client-side from `players/player_seasons.csv` and `player_seasons_playoffs.csv`, so a new category is one row in `CATS`. State lives in the query string (`?stat=&type=&per=&team=&active=`); the old `/stats/totals/{stat}/` pages are redirect stubs, and `/players` links each career-total rank here |
 | Add/edit a NBNTV blurb | `BLURBS` object — `nbntv-classics/index.html` |
 | Change a page's Open Graph tags (the card Discord shows for a pasted link) | `PAGES` in **`build/og_tags.py`**, then run it — the tags are static and a new page needs an entry or `--check` fails the hook. The card images are `build/og_cards.py`. **The four per-item pages are the exception** (`/news/view/`, `/players/`, `/proposals/view/`, `/members/{name}`): each is one shell serving many items, so nginx sends known unfurlers to `nbn-api/routers/og.py` for the real card, and the static entry is only what everything else sees |
@@ -440,7 +441,7 @@ precise.
 
 ## Architecture
 
-No framework or build step. Every page is a self-contained HTML file with inline `<style>` and `<script>`. Shared modules at the repo root (and `teams/team.js`, `teams/lineup.js`, the stats `table.js` files) break the pattern; the main ones are described below, and the common task lookup table names the rest.
+No framework or build step. Every page is a self-contained HTML file with inline `<style>` and `<script>`. Shared modules at the repo root (and `teams/team.js`, `teams/lineup.js`) break the pattern; the main ones are described below, and the common task lookup table names the rest.
 
 ### Shared scripts
 
@@ -461,10 +462,6 @@ Two things it settles, both of which had already gone wrong once: a **trailing U
 **`teams/lineup.js`** — `DEPTH_SLOTS` + `computeStartingFive`, the best legal one-player-per-slot PG→C lineup. Extracted from `team.js` so pages other than a team page can project a lineup (`team.js` injects a whole page into `document.body` on load, so nothing can import from it). It reads exactly two fields off each row — `_posList` and `OVR` — so any caller producing objects with those can use it.
 
 > Because the team shells load only `team.js`, shared modules are pulled in from `team.js` itself via an injected `<script>` + an awaited promise (`ratingsPopupReady`, `lineupReady`). Add new shared modules the same way rather than touching the 30 shells.
-
-**`stats/highs/table.js`** — loaded by each stat-category page. The page sets `window.PAGE_CONFIG = { statKey, csvPath }` before the script tag, and the script reads that config to know which CSV to fetch and which column to highlight as primary.
-
-> **Never edit individual stat-category HTML files** (`stats/highs/{stat}/index.html`). They only differ by 3 lines (title, heading, `PAGE_CONFIG`). All display logic lives in `table.js`.
 
 ### Page internals
 
