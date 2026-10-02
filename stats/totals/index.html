@@ -6,13 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Totals Leaderboards — NBN Stats</title>
+  <title>Career Leaders — NBN Stats</title>
   <!-- NBN:og -->
-  <meta name="description" content="NBN career leaderboards in every counting category.">
+  <meta name="description" content="NBN career leaders in every category — totals or per game, regular season or playoffs, league-wide or by franchise.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Totals Leaderboards — NBN Stats">
-  <meta property="og:description" content="NBN career leaderboards in every counting category.">
+  <meta property="og:title" content="Career Leaders — NBN Stats">
+  <meta property="og:description" content="NBN career leaders in every category — totals or per game, regular season or playoffs, league-wide or by franchise.">
   <meta property="og:url" content="https://nbn.today/stats/totals/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -22,49 +22,396 @@
   <meta name="theme-color" content="#0d0e11">
   <!-- /NBN:og -->
   <style>
-                    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-decoration: none; color: inherit; transition: background 0.15s, border-color 0.15s, transform 0.15s; display: flex; flex-direction: column; gap: 0.4rem; }
-    .card:hover { background: var(--bg-hover); border-color: var(--muted-border); transform: translateY(-2px); }
-    .card-stat { font-size: 1.5rem; font-weight: 700; color: var(--accent-light); }
-    .card-title { font-size: 0.95rem; font-weight: 600; }
-    @media (max-width: 480px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    .cl-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+    .cl-filters .ui-select { height: 2rem; font-size: var(--text-sm); }
+    .cl-filters .ui-input { height: 2rem; font-size: var(--text-sm); width: 12rem; }
+    .cl-spacer { flex: 1; }
+    .cl-note { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-5); }
+
+    /* Overview: a top-5 card per category. */
+    .cl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
+    .cl-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4) var(--space-2); cursor: pointer; text-align: left; font: inherit; color: inherit; transition: border-color 0.12s, background-color 0.12s; }
+    .cl-card:hover { border-color: var(--text-dim); }
+    .cl-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .cl-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+    .cl-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+    .cl-card-abbr { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em; color: var(--text-muted); }
+    .cl-row { display: grid; grid-template-columns: 1.4rem 1fr auto; align-items: center; column-gap: var(--space-2); padding: 3px 0; font-size: var(--text-sm); }
+    .cl-row-rank { color: var(--text-muted); font-size: var(--text-xs); text-align: right; font-variant-numeric: tabular-nums; }
+    .cl-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
+    .cl-card-head + .cl-row .cl-row-name { color: var(--text-primary); font-weight: 600; }
+    .cl-row-val { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+    .cl-row-bar { grid-column: 2 / 4; height: 3px; border-radius: 2px; background: var(--border-subtle); overflow: hidden; margin-top: 2px; }
+    .cl-row-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+    .cl-card-empty { font-size: var(--text-xs); color: var(--text-muted); padding: var(--space-2) 0; }
+
+    /* Full board for the chosen category. */
+    .cl-board-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+    .cl-board-head .ui-section-title { margin-bottom: var(--space-2); }
+    .cl-count { font-size: var(--text-xs); color: var(--text-muted); }
+    .cl-table th[data-cat] { cursor: pointer; }
+    .cl-table th[data-cat]:hover { color: var(--text-secondary); }
+    .cl-table th.cl-primary { color: var(--accent-light); }
+    .cl-table td.cl-primary { color: var(--text-primary); font-weight: 600;
+      background: linear-gradient(to left, color-mix(in srgb, var(--accent) 16%, transparent) var(--bar, 0%), transparent var(--bar, 0%)); }
+    .cl-table tbody tr:hover td.cl-primary { background-color: var(--bg-hover); }
+    .cl-player a { color: var(--text-primary); font-weight: 600; }
+    .cl-player img { width: 16px; height: 16px; vertical-align: -3px; margin-left: 6px; }
+    .cl-sub { display: block; max-width: 22rem; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-xs); color: var(--text-muted); font-weight: 400; }
+    .cl-more { display: block; margin: var(--space-3) auto 0; }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+
+    @media (max-width: 480px) {
+      .cl-filters .ui-input { width: 100%; }
+      .cl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+      .cl-card { padding: var(--space-2) var(--space-3) var(--space-1); }
+      .cl-row { grid-template-columns: 1rem 1fr auto; column-gap: var(--space-1); font-size: var(--text-xs); }
+      .cl-spacer { display: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="page ui-page">
+  <div class="page ui-page ui-page--wide">
     <nav class="nav"></nav>
     <header class="ui-header">
       <div>
-        <h1 class="ui-title">Totals Leaderboards</h1>
+        <h1 class="ui-title">Career Leaders</h1>
+        <p class="ui-subtitle">Every player's NBN career, in every category. Pick a card to see the full board.</p>
       </div>
     </header>
-    <div class="grid">
-      <a class="card" href="/stats/totals/p">
-        <span class="card-stat">PTS</span>
-        <span class="card-title">Points</span>
-      </a>
-      <a class="card" href="/stats/totals/r">
-        <span class="card-stat">REB</span>
-        <span class="card-title">Rebounds</span>
-      </a>
-      <a class="card" href="/stats/totals/a">
-        <span class="card-stat">AST</span>
-        <span class="card-title">Assists</span>
-      </a>
-      <a class="card" href="/stats/totals/b">
-        <span class="card-stat">BLK</span>
-        <span class="card-title">Blocks</span>
-      </a>
-      <a class="card" href="/stats/totals/s">
-        <span class="card-stat">STL</span>
-        <span class="card-title">Steals</span>
-      </a>
-      <a class="card" href="/stats/totals/3pm">
-        <span class="card-stat">3PM</span>
-        <span class="card-title">3-Pointers Made</span>
-      </a>
+    <div class="cl-filters" id="filters">
+      <div class="ui-segmented" role="group" id="f-type">
+        <button data-v="reg">Regular season</button>
+        <button data-v="po">Playoffs</button>
+        <button data-v="all">Combined</button>
+      </div>
+      <div class="ui-segmented" role="group" id="f-per">
+        <button data-v="tot">Totals</button>
+        <button data-v="pg">Per game</button>
+      </div>
+      <select class="ui-select" id="f-team" aria-label="Franchise">
+        <option value="">All franchises</option>
+      </select>
+      <div class="ui-segmented" role="group" id="f-active">
+        <button data-v="">Everyone</button>
+        <button data-v="1" title="On a roster today">Active only</button>
+      </div>
     </div>
+    <p class="cl-note" id="note"></p>
+    <div class="cl-grid" id="grid"><div id="status">Loading…</div></div>
+    <div class="cl-board-head">
+      <h2 class="ui-section-title" id="board-title"></h2>
+      <input class="ui-input" id="f-search" type="search" placeholder="Find a player" aria-label="Find a player">
+    </div>
+    <div class="ui-table-wrap" id="table-wrap"></div>
+    <button class="ui-btn ui-btn--sm cl-more" id="more" hidden></button>
   </div>
+  <script src="/names.js"></script>
+  <script>
+  (function () {
+    // Career lines are summed here from the per-stint season files, so any
+    // slice (playoffs, one franchise, per game) is the same arithmetic. These
+    // are the files /players and milestones.js sum too, so a rank here is the
+    // rank they show.
+    const TEAMS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
+      'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+      'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'];
+    const SUM = ['G','MIN','PTS','REB','AST','STL','BLK','TOV','PF','FGM','FGA','3PM','3PA','FTM','FTA','GMSC'];
+
+    // `calc` derives a total from the summed line; `rate` is a percentage with
+    // its own attempts floor instead of a games floor; `noPg` stays a total in
+    // per-game mode. `dec` is decimals per game.
+    const CATS = [
+      { key: 'PTS',  name: 'Points',            pg: 'PPG',   dec: 1 },
+      { key: 'REB',  name: 'Rebounds',          pg: 'RPG',   dec: 1 },
+      { key: 'AST',  name: 'Assists',           pg: 'APG',   dec: 1 },
+      { key: 'STL',  name: 'Steals',            pg: 'SPG',   dec: 2 },
+      { key: 'BLK',  name: 'Blocks',            pg: 'BPG',   dec: 2 },
+      { key: '3PM',  name: 'Threes made',       pg: '3PM/G', dec: 2 },
+      { key: 'PRA',  name: 'Pts + Reb + Ast',   pg: 'PRA/G', dec: 1, calc: c => c.PTS + c.REB + c.AST },
+      { key: 'STK',  name: 'Stocks (Stl + Blk)', pg: 'STK/G', dec: 2, calc: c => c.STL + c.BLK },
+      { key: 'GMSC', name: 'Game Score',        pg: 'GmSc/G', dec: 1, label: 'GmSc' },
+      { key: 'G',    name: 'Games played',      noPg: true },
+      { key: 'MIN',  name: 'Minutes',           pg: 'MPG',   dec: 1 },
+      { key: 'FGM',  name: 'Field goals made',  pg: 'FGM/G', dec: 1 },
+      { key: 'FTM',  name: 'Free throws made',  pg: 'FTM/G', dec: 1 },
+      { key: 'TS%',  name: 'True shooting',     rate: c => c.PTS / (2 * (c.FGA + 0.44 * c.FTA)), att: 'FGA', min: 1000 },
+      { key: 'FG%',  name: 'Field goal %',      rate: c => c.FGM / c.FGA, att: 'FGA', min: 1000 },
+      { key: '3P%',  name: 'Three-point %',     rate: c => c['3PM'] / c['3PA'], att: '3PA', min: 250 },
+      { key: 'FT%',  name: 'Free throw %',      rate: c => c.FTM / c.FTA, att: 'FTA', min: 250 },
+      { key: 'TOV',  name: 'Turnovers',         pg: 'TPG',   dec: 1 },
+      { key: 'PF',   name: 'Personal fouls',    pg: 'PF/G',  dec: 1 },
+    ];
+    const CAT = Object.fromEntries(CATS.map(c => [c.key, c]));
+    // Columns in the full board; the chosen category is added if it isn't one.
+    const COLS = ['G','MIN','PTS','REB','AST','STL','BLK','3PM','GMSC','TS%'];
+    // Per-game floor, in games. Playoff careers are about a fifth the length,
+    // so their floors (games and attempts) are a fifth too.
+    const MIN_G = 100;
+    const PO_SCALE = 0.2;
+    const TOP = 5, PAGE = 50;
+
+    // Old per-stat pages (/stats/totals/p/ …) redirect here with ?stat=.
+    const q = new URLSearchParams(location.search);
+    const state = {
+      stat:   CAT[q.get('stat')] ? q.get('stat') : 'PTS',
+      type:   ['reg','po','all'].includes(q.get('type')) ? q.get('type') : 'reg',
+      per:    q.get('per') === 'pg' ? 'pg' : 'tot',
+      team:   TEAMS.includes(q.get('team')) ? q.get('team') : '',
+      active: q.get('active') === '1' ? '1' : '',
+      search: '',
+      shown:  PAGE,
+    };
+
+    let data = null;   // { reg, po, rosterTeam }
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+    // No field in these files contains a comma except a quoted name.
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const split = line => {
+        const out = []; let cur = '', quoted = false;
+        for (const ch of line) {
+          if (ch === '"') quoted = !quoted;
+          else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+          else cur += ch;
+        }
+        out.push(cur.replace(/\r$/, ''));
+        return out;
+      };
+      const hdr = split(lines[0]);
+      return lines.slice(1).map(l => { const c = split(l); return Object.fromEntries(hdr.map((h, i) => [h, c[i]])); });
+    }
+
+    // ── Careers ────────────────────────────────────────────────────────────
+    function careers() {
+      const src = state.type === 'reg' ? [data.reg] : state.type === 'po' ? [data.po] : [data.reg, data.po];
+      const out = new Map();
+      src.forEach(rows => rows.forEach(r => {
+        // Playoff rows say "25-26 Playoffs"; bio-snapshot rows say "NA".
+        const season = (/^\d\d-\d\d/.exec(r.SEASON || '') || [])[0];
+        if (!r.SLUG || !season || !(+r.G > 0)) return;
+        if (state.team && r.TEAM !== state.team) return;
+        let c = out.get(r.SLUG);
+        if (!c) {
+          c = { slug: r.SLUG, name: r.PLAYER, seasons: new Set(), stints: [] };
+          SUM.forEach(k => { c[k] = 0; });
+          out.set(r.SLUG, c);
+        }
+        SUM.forEach(k => { c[k] += +r[k] || 0; });
+        c.seasons.add(season);
+        c.stints.push([season, r.TEAM]);
+      }));
+      out.forEach(c => {
+        const seasons = [...c.seasons].sort();
+        c.first = seasons[0]; c.last = seasons[seasons.length - 1];
+        c.teams = [...new Set(c.stints.sort((a, b) => a[0].localeCompare(b[0])).map(s => s[1]))];
+      });
+      return [...out.values()];
+    }
+
+    const scale = () => (state.type === 'po' ? PO_SCALE : 1);
+    const perGame = cat => state.per === 'pg' && !cat.noPg && !cat.rate;
+
+    function value(c, cat) {
+      if (cat.rate) return c[cat.att] > 0 ? cat.rate(c) : null;
+      const total = cat.calc ? cat.calc(c) : c[cat.key];
+      return perGame(cat) ? (c.G ? total / c.G : null) : total;
+    }
+
+    function qualifies(c, cat) {
+      if (cat.rate) return c[cat.att] >= Math.round(cat.min * scale());
+      if (perGame(cat)) return c.G >= Math.round(MIN_G * scale());
+      return value(c, cat) > 0;
+    }
+
+    // Everyone qualified, best first, with a competition rank (ties share it).
+    // The rank is all-time: the "Active only" filter and the search narrow the
+    // list afterwards without renumbering it.
+    function board(all, cat) {
+      const list = all.filter(c => qualifies(c, cat))
+        .map(c => ({ c, v: value(c, cat) }))
+        .sort((a, b) => b.v - a.v || a.c.name.localeCompare(b.c.name));
+      list.forEach((e, i) => { e.rank = i && e.v === list[i - 1].v ? list[i - 1].rank : i + 1; });
+      return list;
+    }
+
+    const isActive = c => !!data.rosterTeam[c.slug];
+    const visible = list => (state.active ? list.filter(e => isActive(e.c)) : list);
+
+    function label(cat) { return perGame(cat) ? cat.pg : (cat.label || cat.key); }
+    function fmt(cat, v) {
+      if (v == null) return '—';
+      if (cat.rate) return (v * 100).toFixed(1) + '%';
+      if (perGame(cat)) return v.toFixed(cat.dec);
+      return Math.round(v).toLocaleString('en-US');
+    }
+
+    // ── Rendering ──────────────────────────────────────────────────────────
+    function renderNote() {
+      const s = scale();
+      const parts = [];
+      if (state.per === 'pg') parts.push(`Per game: at least ${Math.round(MIN_G * s)} games`);
+      parts.push(`Percentages: at least ${Math.round(1000 * s).toLocaleString()} FGA, ${Math.round(250 * s)} 3PA or ${Math.round(250 * s)} FTA`);
+      if (state.team) parts.push(`Only games played for ${state.team}`);
+      if (state.active) parts.push('Active means on a roster today; ranks still count everyone');
+      $('note').textContent = parts.join(' · ') + '.';
+    }
+
+    function renderGrid(all) {
+      const grid = $('grid');
+      grid.innerHTML = '';
+      CATS.forEach(cat => {
+        if (state.per === 'pg' && cat.noPg) return;
+        const list = visible(board(all, cat)).slice(0, TOP);
+        const card = document.createElement('button');
+        card.className = 'cl-card';
+        card.setAttribute('aria-pressed', cat.key === state.stat);
+        const top = list.length ? list[0].v : 0;
+        card.innerHTML = `<div class="cl-card-head"><span class="cl-card-name">${esc(cat.name)}</span>`
+          + `<span class="cl-card-abbr">${esc(label(cat))}</span></div>`
+          + (list.length ? list.map(e => `<div class="cl-row">`
+              + `<span class="cl-row-rank">${e.rank}</span>`
+              + `<span class="cl-row-name">${esc(nbnPlayerName(e.c.name))}</span>`
+              + `<span class="cl-row-val">${esc(fmt(cat, e.v))}</span>`
+              + `<span></span><span class="cl-row-bar"><span style="width:${top > 0 ? (e.v / top * 100).toFixed(1) : 0}%"></span></span>`
+              + `</div>`).join('')
+            : '<div class="cl-card-empty">Nobody qualifies.</div>');
+        card.addEventListener('click', () => {
+          select(cat.key);
+          $('board-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    function renderBoard(all) {
+      const cat = CAT[state.stat];
+      const context = [
+        { reg: '', po: 'Playoffs', all: 'Regular season + playoffs' }[state.type],
+        state.team && `with ${state.team}`,
+        perGame(cat) && 'per game',
+      ].filter(Boolean);
+      $('board-title').textContent = `${cat.name} leaders` + (context.length ? ` · ${context.join(', ')}` : '');
+
+      const full = board(all, cat);
+      let list = visible(full);
+      const needle = state.search.trim().toLowerCase();
+      if (needle) list = list.filter(e => nbnPlayerName(e.c.name).toLowerCase().includes(needle) || e.c.name.toLowerCase().includes(needle));
+      const total = list.length;
+      if (!needle) list = list.slice(0, state.shown);
+
+      const cols = COLS.includes(cat.key) ? COLS : [...COLS.slice(0, 1), cat.key, ...COLS.slice(1)];
+      const lead = full.length ? full[0].v : 0;
+      const byCol = Object.fromEntries(cols.map(k => [k, CAT[k]]));
+
+      const wrap = $('table-wrap');
+      if (!total) {
+        wrap.innerHTML = `<div id="status">${needle ? 'No player by that name qualifies here.' : 'Nobody qualifies.'}</div>`;
+        $('more').hidden = true;
+        return;
+      }
+      const head = '<tr><th class="right">#</th><th>Player</th>'
+        + cols.map(k => `<th class="right${k === cat.key ? ' cl-primary' : ''}" data-cat="${esc(k)}" title="${esc(byCol[k].name)}">${esc(label(byCol[k]))}</th>`).join('')
+        + '</tr>';
+      const body = list.map(e => {
+        const c = e.c;
+        const team = data.rosterTeam[c.slug];
+        const span = c.first === c.last ? c.first : `${c.first} – ${c.last}`;
+        const yrs = c.seasons.size;
+        const sub = `${state.team ? '' : c.teams.join(' · ') + ' · '}${span} (${yrs} season${yrs === 1 ? '' : 's'})`;
+        return `<tr><td class="right muted">${e.rank}</td>`
+          + `<td class="cl-player"><a href="/players/?p=${encodeURIComponent(c.slug)}">${esc(nbnPlayerName(c.name))}</a>`
+          + (team ? `<img src="/logos/logo-${team.toLowerCase()}.png" alt="${team}" title="On ${team}'s roster today">` : '')
+          + `<span class="cl-sub" title="${esc(sub)}">${esc(sub)}</span></td>`
+          + cols.map(k => {
+              const kc = byCol[k];
+              const v = value(c, kc);
+              if (k !== cat.key) return `<td class="right">${esc(qualifies(c, kc) || !kc.rate ? fmt(kc, v) : '—')}</td>`;
+              const pct = lead > 0 ? Math.max(0, v / lead * 100).toFixed(1) : 0;
+              return `<td class="right cl-primary" style="--bar:${pct}%">${esc(fmt(kc, v))}</td>`;
+            }).join('')
+          + '</tr>';
+      }).join('');
+      wrap.innerHTML = `<table class="ui-table ui-table--dense cl-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+      wrap.querySelectorAll('th[data-cat]').forEach(th => th.addEventListener('click', () => select(th.dataset.cat)));
+
+      const more = $('more');
+      const left = total - list.length;
+      more.hidden = !!needle || left <= 0;
+      more.textContent = left > PAGE ? `Show ${PAGE} more` : `Show all ${total}`;
+    }
+
+    function syncControls() {
+      [['f-type', 'type'], ['f-per', 'per'], ['f-active', 'active']].forEach(([id, key]) => {
+        $(id).querySelectorAll('button').forEach(b => {
+          const on = b.dataset.v === state[key];
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-pressed', on);
+        });
+      });
+      $('f-team').value = state.team;
+    }
+
+    function syncURL() {
+      const u = new URL(location.href);
+      u.search = '';
+      if (state.stat !== 'PTS') u.searchParams.set('stat', state.stat);
+      if (state.type !== 'reg') u.searchParams.set('type', state.type);
+      if (state.per !== 'tot') u.searchParams.set('per', state.per);
+      if (state.team) u.searchParams.set('team', state.team);
+      if (state.active) u.searchParams.set('active', '1');
+      history.replaceState(null, '', u);
+    }
+
+    function render() {
+      if (!data) return;
+      // G has no per-game board; fall back to points rather than show a blank.
+      if (state.per === 'pg' && CAT[state.stat].noPg) state.stat = 'PTS';
+      syncControls();
+      syncURL();
+      renderNote();
+      const all = careers();
+      renderGrid(all);
+      renderBoard(all);
+    }
+
+    function select(stat) { state.stat = stat; state.shown = PAGE; render(); }
+
+    // ── Wiring ─────────────────────────────────────────────────────────────
+    TEAMS.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; $('f-team').appendChild(o); });
+    [['f-type', 'type'], ['f-per', 'per'], ['f-active', 'active']].forEach(([id, key]) => {
+      $(id).addEventListener('click', ev => {
+        const b = ev.target.closest('button');
+        if (!b || state[key] === b.dataset.v) return;
+        state[key] = b.dataset.v; state.shown = PAGE; render();
+      });
+    });
+    $('f-team').addEventListener('change', ev => { state.team = ev.target.value; state.shown = PAGE; render(); });
+    $('f-search').addEventListener('input', ev => { state.search = ev.target.value; renderBoard(careers()); });
+    $('more').addEventListener('click', () => { state.shown += PAGE; renderBoard(careers()); });
+    syncControls();
+
+    const text = url => fetch(url).then(r => (r.ok ? r.text() : Promise.reject(new Error(url))));
+    Promise.all([
+      text('/players/player_seasons.csv'),
+      text('/players/player_seasons_playoffs.csv'),
+      // "Active" means on a roster today, as on /players and the homepage.
+      ...TEAMS.map(t => text(`/data/${t.toLowerCase()}-roster.csv`).catch(() => '')),
+    ]).then(([reg, po, ...rosters]) => {
+      const rosterTeam = {};
+      rosters.forEach((txt, i) => txt.trim().split('\n').slice(1).forEach(line => {
+        const slug = line.split(',')[0].trim();
+        if (slug) rosterTeam[slug] = TEAMS[i];
+      }));
+      data = { reg: parseCSV(reg), po: parseCSV(po), rosterTeam };
+      render();
+    }).catch(() => {
+      $('grid').innerHTML = '<div id="status">Failed to load data.</div>';
+    });
+  })();
+  </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
 </body>

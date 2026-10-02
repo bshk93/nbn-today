@@ -839,16 +839,16 @@
 
   // ── Career totals with all-time ranks ────────────────────────────────────────
 
-  // `link` is the /stats/totals page for stats that have one.
+  // Each key is also a board on /stats/totals (?stat=KEY), which the rank links to.
   const CAREER_TOTAL_STATS = [
     { key: 'G',    label: 'G' },
     { key: 'MIN',  label: 'MIN' },
-    { key: 'PTS',  label: 'PTS',  link: 'p' },
-    { key: 'REB',  label: 'REB',  link: 'r' },
-    { key: 'AST',  label: 'AST',  link: 'a' },
-    { key: 'STL',  label: 'STL',  link: 's' },
-    { key: 'BLK',  label: 'BLK',  link: 'b' },
-    { key: '3PM',  label: '3PM',  link: '3pm' },
+    { key: 'PTS',  label: 'PTS' },
+    { key: 'REB',  label: 'REB' },
+    { key: 'AST',  label: 'AST' },
+    { key: 'STL',  label: 'STL' },
+    { key: 'BLK',  label: 'BLK' },
+    { key: '3PM',  label: '3PM' },
     { key: 'FGM',  label: 'FGM' },
     { key: 'FTM',  label: 'FTM' },
     { key: 'TOV',  label: 'TOV' },
@@ -927,13 +927,9 @@
         else if (all.rank <= 50) td.classList.add('ct-top50');
         const rk = document.createElement('span');
         rk.className = 'ct-rank';
-        let rankEl = rk;
-        // The totals pages list the regular season only.
-        if (s.link && label === 'Regular Season') {
-          rankEl = document.createElement('a');
-          rankEl.href = `/stats/totals/${s.link}/`;
-          rk.appendChild(rankEl);
-        }
+        const rankEl = document.createElement('a');
+        rankEl.href = `/stats/totals/?stat=${encodeURIComponent(s.key)}${label === 'Playoffs' ? '&type=po' : ''}`;
+        rk.appendChild(rankEl);
         rankEl.textContent = fmtRank(all);
         rankEl.title = `${fmtRank(all)} all-time`;
         if (isActive(slug)) {

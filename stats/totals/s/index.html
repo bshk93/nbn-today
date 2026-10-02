@@ -2,17 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/logo.png">
-  <link rel="stylesheet" href="/css/shared.css">
-  <title>Steals Leaders — NBN Stats</title>
+  <title>Moved — Career Leaders — NBN</title>
   <!-- NBN:og -->
-  <meta name="description" content="NBN career steals leaders.">
+  <meta name="description" content="Moved — career steals leaders are now on /stats/totals.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Steals Leaders — NBN Stats">
-  <meta property="og:description" content="NBN career steals leaders.">
+  <meta property="og:title" content="Moved — Career Leaders — NBN">
+  <meta property="og:description" content="Moved — career steals leaders are now on /stats/totals.">
   <meta property="og:url" content="https://nbn.today/stats/totals/s/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -21,38 +19,14 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
   <!-- /NBN:og -->
-  <style>
-    /* The page uses the standard width so its header lines up with every
-       other page; only the table, which is three columns, stays narrow. */
-    .table-wrap { max-width: 640px; }
-    .table-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
-    tbody tr { border-bottom: 1px solid var(--border-subtle); transition: background 0.1s; }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--bg-hover); }
-    td { padding: 0.65rem 1rem; color: var(--text-secondary); }
-    td.player-name { font-weight: 600; color: var(--text-primary); }
-    td.right { text-align: right; font-variant-numeric: tabular-nums; }
-    td.muted { color: var(--text-muted); }
-    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
-  </style>
+  <!-- The six per-stat totals pages became one page, /stats/totals, which
+       takes the stat as ?stat=. Old links are in Discord and on bookmarks,
+       so this stub keeps them working instead of 404ing. -->
+  <script>
+    location.replace('/stats/totals/?stat=STL' + location.hash);
+  </script>
 </head>
 <body>
-  <div class="page ui-page">
-    <nav class="nav"></nav>
-    <header class="ui-header">
-      <div>
-        <h1 class="ui-title">All-Time Steals Leaders</h1>
-      </div>
-    </header>
-    <div class="table-wrap" id="table-wrap">
-      <div id="status">Loading…</div>
-    </div>
-  </div>
-  <script>window.PAGE_CONFIG = { statKey: 'S', statLabel: 'STL', csvPath: '/data/totals-s.csv' };</script>
-  <script src="/names.js"></script>
-  <script src="/stats/totals/table.js"></script>
-  <script src="/nav.js"></script>
-  <script src="/token-badge.js"></script>
+  <p>Moved to <a href="/stats/totals/?stat=STL">/stats/totals</a>.</p>
 </body>
 </html>

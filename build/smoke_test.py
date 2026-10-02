@@ -135,9 +135,6 @@ for _k in STAT_KEYS:
     SCHEMA[f"data/game-highs-{_k}.csv"] = (
         GAME_HIGH_COLS, 1, f"stats/highs/{_k}/index.html",
     )
-    SCHEMA[f"data/totals-{_k}.csv"] = (
-        ["RANK", "PLAYER", _k.upper()], 1, f"stats/totals/{_k}/index.html",
-    )
 
 for _t in TEAMS:
     SCHEMA[f"data/{_t}-seasons.csv"] = (

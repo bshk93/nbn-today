@@ -571,7 +571,7 @@ const SITE_PAGES = [
   { title: 'Owners', href: '/owners', icon: '🏛️' },
   { title: 'Season Stats', href: '/stats/seasons', icon: '📅' },
   { title: 'Box Scores', href: '/boxscores/', icon: '🗂' },
-  { title: 'Totals Leaderboards', href: '/stats/totals', icon: '🏅' },
+  { title: 'Career Leaders', href: '/stats/totals', icon: '🏅' },
   { title: 'Single-Game Highs', href: '/stats/highs', icon: '🔝' },
   { title: 'Head to Head', href: '/h2h', icon: '⚔️' },
   { title: 'Frivolities & Viz', href: '/frivolities', icon: '📈' },

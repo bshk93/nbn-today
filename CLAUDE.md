@@ -220,7 +220,7 @@ Runs automatically after each box score commit, or manually. Source data: `allst
 | `players/player_awards.csv` | `players/index.html` | One row per award per player per season |
 | `data/game-highs-{p,r,a,s,b,3pm}.csv` | `stats/highs/{stat}/index.html` | Top 50 single-game performances per stat category (the doc said 20; the build writes 50) |
 | `data/franchise-records.csv` | `teams/team.js` (All-Time tab) | Top 5 single games **per team** per stat (P/R/A/S/B/3PM/GMSC) — one combined file for all 30 teams. Unlike `game-highs-*`, which is league-wide, every franchise appears here |
-| `data/totals-{p,r,a,s,b,3pm}.csv` | `stats/totals/{stat}/index.html` | Top 250 career totals per stat category |
+| `data/totals-{p,r,a,s,b,3pm}.csv` | nothing (since 2026-10-02) | Top 250 career totals per stat category. Still written and served, but no page reads them and they are no longer schema-checked: `/stats/totals` sums careers itself from `players/player_seasons*.csv` |
 | `data/h2h-alltime.csv` | `h2h/index.html` | All-time head-to-head W/L matrix (teams vs teams) |
 | `data/h2h-playoffs.csv` | `h2h/index.html` | Same, playoffs only |
 | `data/h2h-owners.csv` | `h2h/index.html` | Head-to-head W/L matrix (owners vs teams) |
@@ -400,7 +400,7 @@ precise.
 | Change the Roster Settings section (jersey #, secondary position, player minutes) | `setupTeamSettingsTab` — `teams/team.js`, inside the Coaching tab. Table order *is* the depth chart (row *i* → `CS.MINUTES_SLOTS[i]`, derived fresh by `minutesFromDom()`). Drag-to-reorder uses raw mouse/touch events with a non-passive `touchmove`, **not** HTML5 DnD or Pointer Events — both failed on iOS. Minutes save to `PUT /api/coaching-settings/{team}` only when they changed. `docs/pages.md` § Roster Settings |
 | Change the archetype radar (axes, archetypes, tiers) on a player or team page | Drawing, percentile ranking and nearest-match are **`radar.js`** at the repo root, shared by both pages. Each page owns its axes, archetype targets and tiers: `buildPlayerRadarChart` — `players/index.html` (per 36, 10+ MPG floor) and `buildTeamRadar` — `teams/team.js` (Franchise tab, Team Identity). An archetype is a target percentile per axis and the nearest one wins, so there is no fallback label; the targets were seeded from a clustering of every season 20-21 to 25-26 |
 | Change stats highs table | `stats/highs/table.js` (not the per-stat HTML files) |
-| Change stats totals table | `stats/totals/table.js` (not the per-stat HTML files) |
+| Change the career leaders page (categories, per-game/percentage floors, filters) | `stats/totals/index.html` — one self-contained page. Careers are summed client-side from `players/player_seasons.csv` and `player_seasons_playoffs.csv`, so a new category is one row in `CATS`. State lives in the query string (`?stat=&type=&per=&team=&active=`); the old `/stats/totals/{stat}/` pages are redirect stubs, and `/players` links each career-total rank here |
 | Add/edit a NBNTV blurb | `BLURBS` object — `nbntv-classics/index.html` |
 | Change a page's Open Graph tags (the card Discord shows for a pasted link) | `PAGES` in **`build/og_tags.py`**, then run it — the tags are static and a new page needs an entry or `--check` fails the hook. The card images are `build/og_cards.py`. **The four per-item pages are the exception** (`/news/view/`, `/players/`, `/proposals/view/`, `/members/{name}`): each is one shell serving many items, so nginx sends known unfurlers to `nbn-api/routers/og.py` for the real card, and the static entry is only what everything else sees |
 | Change the calendar page (public, read-only game list + fixture/vesting events) | `calendar/index.html` — read-only; `GET /api/schedule` merged with `GET /api/calendar/games`. The ▶️ VOD pip is `GET /api/streaming-days`. Claiming and flagging games is `/committees/stream`; `/schedule` is a redirect stub. `docs/pages.md` § Calendar |
@@ -462,9 +462,9 @@ Two things it settles, both of which had already gone wrong once: a **trailing U
 
 > Because the team shells load only `team.js`, shared modules are pulled in from `team.js` itself via an injected `<script>` + an awaited promise (`ratingsPopupReady`, `lineupReady`). Add new shared modules the same way rather than touching the 30 shells.
 
-**`stats/highs/table.js`** and **`stats/totals/table.js`** — loaded by each stat-category page. The page sets `window.PAGE_CONFIG = { statKey, csvPath }` before the script tag, and the script reads that config to know which CSV to fetch and which column to highlight as primary.
+**`stats/highs/table.js`** — loaded by each stat-category page. The page sets `window.PAGE_CONFIG = { statKey, csvPath }` before the script tag, and the script reads that config to know which CSV to fetch and which column to highlight as primary.
 
-> **Never edit individual stat-category HTML files** (`stats/highs/{stat}/index.html`, `stats/totals/{stat}/index.html`). They only differ by 3 lines (title, heading, `PAGE_CONFIG`). All display logic lives in `table.js`.
+> **Never edit individual stat-category HTML files** (`stats/highs/{stat}/index.html`). They only differ by 3 lines (title, heading, `PAGE_CONFIG`). All display logic lives in `table.js`.
 
 ### Page internals
 
