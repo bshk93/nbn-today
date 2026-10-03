@@ -526,6 +526,11 @@
 
     .gap-row .name { font-weight: 700; font-size: 0.85rem; }
 
+    .espn-match { margin-top: 2rem; }
+    .espn-meta { font-size: 0.75rem; color: var(--text-muted); }
+    .espn-fix { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.35rem; }
+    .espn-fix .ui-input { flex: 1 1 16rem; min-width: 0; }
+
     @media (max-width: 560px) {
       .gap-row { grid-template-columns: 1fr; }
     }
@@ -688,6 +693,12 @@
       <p class="picks-intro" id="completeness-summary"></p>
       <div class="chip-row" id="completeness-chips"></div>
       <div class="gap-rows" id="completeness-rows"></div>
+
+      <section class="espn-match">
+        <h2 class="ui-section-title">No ESPN match</h2>
+        <p class="picks-intro">Rostered players a team page's IRL tab can't show, because they have no ESPN id. New signings are matched automatically on name and date of birth, retried daily; these didn't match. Paste the player's ESPN page link, or mark someone with no ESPN record (college, overseas).</p>
+        <div class="gap-rows" id="espn-rows"><div class="ui-loading">Loading…</div></div>
+      </section>
     </div>
 
   </div>
@@ -1212,6 +1223,81 @@
 
     setupTabs();
     load();
+  </script>
+
+  <!-- "No ESPN match", at the foot of the Data Quality tab, in its own IIFE.
+       Rostered NBN players the IRL feed (nbn-api routers/irl.py) couldn't map
+       to an ESPN id. Read is public; setting an id needs `rosters`, the same
+       check PUT /api/irl/ids makes. -->
+  <script>
+  (function () {
+    const rowsEl = document.getElementById('espn-rows');
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const token = (() => { try { return localStorage.getItem('nbn_token'); } catch { return null; } })();
+    const when = iso => iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'not yet';
+    let canEdit = false;
+
+    // "https://www.espn.com/nba/player/_/id/4592492/bones-hyland" → "4592492"
+    const idFrom = text => (String(text).match(/\/id\/(\d+)/) || String(text).trim().match(/^(\d+)$/) || [])[1];
+
+    async function save(slug, espnId, row) {
+      row.querySelectorAll('button, input').forEach(e => { e.disabled = true; });
+      try {
+        const r = await fetch(`/api/irl/ids/nba/${encodeURIComponent(slug)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ espn_id: espnId }),
+        });
+        if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.status);
+        row.remove();
+        if (!rowsEl.children.length) rowsEl.innerHTML = '<p class="espn-meta">Every rostered player has an ESPN match.</p>';
+      } catch (e) {
+        row.querySelectorAll('button, input').forEach(el => { el.disabled = false; });
+        row.querySelector('.espn-err').textContent = `Couldn’t save: ${e.message}`;
+      }
+    }
+
+    function render(players) {
+      if (!players.length) { rowsEl.innerHTML = '<p class="espn-meta">Every rostered player has an ESPN match.</p>'; return; }
+      rowsEl.innerHTML = players.map(p => `
+        <div class="gap-row" style="--pc:var(--text-muted)" data-slug="${esc(p.slug)}">
+          <span class="team">${esc(p.team)}</span>
+          <div>
+            <a href="/players/?p=${encodeURIComponent(p.slug)}" class="team-link name">${esc(p.name)}</a>
+            <div class="espn-meta">Born ${esc(p.dob || 'unknown')} · last tried ${esc(when(p.tried))}</div>
+            ${canEdit ? `<div class="espn-fix">
+              <input class="ui-input" type="text" placeholder="ESPN player link or id" aria-label="ESPN player link or id for ${esc(p.name)}">
+              <button type="button" class="ui-btn ui-btn--sm ui-btn--primary" data-act="save">Save</button>
+              <button type="button" class="ui-btn ui-btn--sm ui-btn--ghost" data-act="none">No ESPN record</button>
+            </div><div class="espn-meta espn-err"></div>` : ''}
+          </div>
+        </div>`).join('');
+      rowsEl.querySelectorAll('[data-act]').forEach(btn => btn.addEventListener('click', () => {
+        const row = btn.closest('.gap-row');
+        if (btn.dataset.act === 'none') return save(row.dataset.slug, null, row);
+        const id = idFrom(row.querySelector('input').value);
+        if (!id) { row.querySelector('.espn-err').textContent = 'Paste the player’s ESPN page link, or the number in it.'; return; }
+        save(row.dataset.slug, id, row);
+      }));
+    }
+
+    (async () => {
+      if (token) {
+        try {
+          const me = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+          const roles = me.roles || [];
+          canEdit = ['rosters', 'bod', 'admin'].some(r => roles.includes(r));   // bod implies rosters
+        } catch { canEdit = false; }
+      }
+      try {
+        const r = await fetch('/api/irl/unmapped/nba');
+        if (!r.ok) throw new Error(r.status);
+        render((await r.json()).players);
+      } catch {
+        rowsEl.innerHTML = '<p class="espn-meta">Couldn’t load the list.</p>';
+      }
+    })();
+  })();
   </script>
 
   <!-- The Compliance tab, in its own IIFE. It brings its own render/sort state
