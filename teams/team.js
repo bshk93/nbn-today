@@ -1025,6 +1025,7 @@ document.body.innerHTML = `
       <button class="tab ui-tab" data-tab="draft">Draft History</button>
       <button class="tab ui-tab" data-tab="alltime">All-Time Players</button>
       <button class="tab ui-tab" data-tab="history">Historical Rosters</button>
+      <button class="tab ui-tab" data-tab="irl">IRL</button>
     </div>
     <div class="tab-panel" id="tab-overview">
       <div id="offer-sheet-banner" style="display:none"></div>
@@ -1149,6 +1150,7 @@ document.body.innerHTML = `
         <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
       </section>
     </div>
+    <div class="tab-panel hidden" id="tab-irl"></div>
   </div>
 `;
 
@@ -1167,8 +1169,29 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+    if (btn.dataset.tab === 'irl') mountIrlFeed();
   });
 });
+
+// IRL tab — this roster's real-world NBA game logs and injury news, from ESPN
+// via /api/irl (/irl-feed.js, shared with /nbnfl). Kept apart from every NBN
+// stat on purpose. Loaded the first time the tab opens, so a team page that
+// never opens it never fetches it.
+let _irlMounted = false;
+function mountIrlFeed() {
+  if (_irlMounted) return;
+  _irlMounted = true;
+  const panel = document.getElementById('tab-irl');
+  const go = () => window.IrlFeed
+    ? IrlFeed.mount(panel, { sport: 'nba', roster: abbr })
+    : (panel.innerHTML = '<div class="status">Couldn’t load the IRL stats.</div>');
+  if (window.IrlFeed) return go();
+  const s = document.createElement('script');
+  s.src = '/irl-feed.js';
+  s.onload = go;
+  s.onerror = go;
+  document.head.appendChild(s);
+}
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');

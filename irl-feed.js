@@ -1,9 +1,10 @@
 // IRL feed — real-world game logs and injury news for the players on one
 // fantasy roster, from ESPN via /api/irl (nbn-api routers/irl.py). Kept apart
 // from NBN's own stats on purpose: it shares no data, table or build step
-// with them. Mounted by /nbnfl in its IRL tab:
+// with them. Mounted in an IRL tab by /nbnfl and by every NBN team page:
 //
-//   IrlFeed.mount(container, { sport: 'nfl', roster: 'CIN' })
+//   IrlFeed.mount(container, { sport: 'nfl', roster: 'CIN' })   // nbnfl/index.html
+//   IrlFeed.mount(container, { sport: 'nba', roster: 'BOS' })   // teams/team.js
 //
 // Two views: a newest-first feed of one-line summaries (a player's columns
 // depend on their role, so a feed of sentences works where one table can't),
@@ -186,7 +187,7 @@
         <span class="irl-updated" data-irl="updated"></span>
       </div>
       <div data-irl="content"><div class="ui-loading">Loading…</div></div>
-      <p class="irl-source">Real-world stats and injury news from ESPN, refreshed hourly. Nothing here touches NBNFL stats.</p>`;
+      <p class="irl-source">Real-world stats and injury news from ESPN, refreshed hourly. Nothing here touches the league’s own stats.</p>`;
     const $ = k => root.querySelector(`[data-irl="${k}"]`);
     const state = { data: null, player: '', days: DAYS_PER_PAGE, open: new Set() };
 
