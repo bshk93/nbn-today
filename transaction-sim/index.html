@@ -1007,7 +1007,8 @@ async function onExtPlayerPicked() {
       document.getElementById('ext-existing-text').textContent =
         `${ec.start || '?'}–${ec.end || '?'} · final guaranteed year ${ec.final_guaranteed_year || '?'} `
         + `· new money should start ${extState.firstSeason || '?'} (basis: ${ec.basis})`
-        + (f.prior_salary ? ` · prior salary ${fmtM(f.prior_salary)}, 140% ceiling ${fmtM(f.max_year1_ceiling)}` : '');
+        + (f.rookie_scale ? ' · rookie-scale: no 140% ceiling, only the § 3.11 maximum'
+           : f.max_year1_ceiling ? ` · Year 1 ceiling ${fmtM(f.max_year1_ceiling)} (140% of ${f.max_year1_basis === 'eaps' ? 'EAPS' : 'prior salary'})` : '');
     } else {
       existingRow.hidden = false;
       document.getElementById('ext-existing-text').textContent =
@@ -1132,7 +1133,8 @@ function renderExtensionResults(data) {
       <div class="result-team">${f.team} — extended term</div>
       ${row('First extended season', et.first_season || '—')}
       ${row('New years', Object.keys(et.salaries || {}).length)}
-      ${row('140% ceiling', f.max_year1_ceiling ? fmtM(f.max_year1_ceiling) : (f.eaps ? `${fmtM(Math.round(f.eaps * 1.4))} (EAPS)` : '—'))}
+      ${row('Year 1 ceiling', f.rookie_scale ? 'none — rookie scale (§ 3.11 max only)'
+        : f.max_year1_ceiling ? `${fmtM(f.max_year1_ceiling)} (140% of ${f.max_year1_basis === 'eaps' ? 'EAPS' : 'prior salary'})` : '—')}
       ${holdRow}
     </div>`;
 

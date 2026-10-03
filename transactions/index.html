@@ -2182,7 +2182,8 @@ async function prefillExtensionInfo(slug) {
     note.innerHTML = `<strong>Existing contract: ${escHtml(ec.start || '?')}–${escHtml(ec.end || '?')}.</strong> `
       + `Final guaranteed year ${escHtml(ec.final_guaranteed_year || '?')} (basis: ${escHtml(ec.basis || 'unknown')}) — `
       + `new money should start <strong>${escHtml(firstSeason || '?')}</strong> (§ 6.2 rule 10).`
-      + (f.prior_salary ? ` Prior salary ${fmtDollarsShort(f.prior_salary)}, 140% ceiling ${fmtDollarsShort(f.max_year1_ceiling)}.` : '');
+      + (f.rookie_scale ? ' Rookie-scale extension: no 140% ceiling, only the § 3.11 maximum.'
+         : f.max_year1_ceiling ? ` Year 1 ceiling ${fmtDollarsShort(f.max_year1_ceiling)} (140% of ${f.max_year1_basis === 'eaps' ? 'EAPS' : 'prior salary'}).` : '');
   } else {
     note.className = 'scale-note manual';
     note.textContent = 'No acquisition record on file for this player — enter the season the team '

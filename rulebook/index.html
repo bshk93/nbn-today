@@ -169,6 +169,14 @@
     .callout-warn { border-color: var(--gold-dim); background: rgba(180,83,9,0.08); color: #fcd34d; }
     .callout-pending { border-color: var(--border); background: rgba(55,65,81,0.25); color: var(--text-muted); }
 
+    /* ── Revision history ────────────────────────────────────────────── */
+    .rev-type { display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.04em;
+                text-transform: uppercase; padding: 0.08rem 0.4rem; border-radius: 4px;
+                border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
+    .rev-type.rev-open { border-color: var(--gold-dim); color: var(--gold); }
+    .rev-table td { vertical-align: top; }
+    .rev-table td:first-child { white-space: nowrap; }
+
     /* ── Divider ─────────────────────────────────────────────────────── */
     .art-divider { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
 
@@ -250,6 +258,8 @@
         <a class="sec-link" href="#s7-2">§ 7.2 Pick Trading</a>
         <a class="sec-link" href="#s7-3">§ 7.3 Second Apron Picks</a>
         <a class="sec-link" href="#s7-4">§ 7.4 International Players</a>
+
+        <a class="art-link" href="#history"><span class="art-num">Appendix</span><span class="art-ttl">Revision History</span></a>
       </aside>
 
       <!-- ── Document body ───────────────────────────────────────────── -->
@@ -939,7 +949,7 @@
             <p><strong>Extension terms:</strong></p>
             <ul>
               <li>Minimum length: <strong>2 years guaranteed</strong>.</li>
-              <li>Maximum Year 1 salary of the extended term: <strong>140% of the player's prior salary</strong> or <strong>140% of the estimated average salary</strong>, whichever applies.</li>
+              <li>Maximum Year 1 salary of the extended term, for a player <strong>not on a rookie-scale contract</strong>: <strong>140% of the player's prior salary</strong> or <strong>140% of the Estimated Average Player Salary</strong> (EAPS) for the first extended season, <strong>whichever is greater</strong>. A rookie-scale extension (§ 6.3) is limited only by the maximum salary (§ 3.11).</li>
               <li>Annual raises: up to <strong>8% of Year 1</strong> of the extended term (§ 3.9). Extend-and-trade: up to <strong>5%</strong>.</li>
               <li>May include <strong>player option years</strong>.</li>
               <li>Extension salary begins after the final fully guaranteed year of the original contract. Regardless of when signed, the new salary <strong>always kicks in the following season</strong> after finalization.</li>
@@ -1049,6 +1059,117 @@
             </table>
             <p>Teams must notify the league of their decision within 30 days of the player's NBA signing. Failure to respond within the window results in the player becoming a UFA.</p>
             <p><strong>Recording it:</strong> keeping these rights is entered as a <strong>stash</strong> on § 7.4 grounds (see § 7.1), naming the club and contract. Unlike a § 7.1 stash it does not need reconfirming each season. It lasts until the player signs, is renounced, or the 30-day window above runs out.</p>
+          </div>
+        </article>
+
+        <hr class="art-divider">
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <article id="history">
+          <div class="art-header">Appendix</div>
+          <h2 class="art-title">Revision History</h2>
+
+          <div class="doc-section" id="revisions">
+            <p>Every change to what this rulebook says, newest first. Each one has a type:</p>
+            <ul>
+              <li><span class="rev-type">Correction</span> — brings the text in line with a rule the league already had: the legacy rulebook, the constitution, an office ruling or the league's own records.</li>
+              <li><span class="rev-type">Clarification</span> — fills a gap the league's rules didn't cover, following the NBA CBA as the constitution directs (Article I).</li>
+              <li><span class="rev-type">Amendment</span> — a rule change passed by an owners' vote and confirmed by the Board (constitution, Article VII).</li>
+              <li><span class="rev-type rev-open">Unreviewed</span> — the edit history doesn't say where the rule came from, and it changed or added more than a gap-fill. Listed so it can be checked.</li>
+            </ul>
+            <p>Changes to wording, layout, examples and the "What's system-enforced" notes are not listed. Entries before 2026-10-03 were rebuilt from the site's edit history on that date; where it doesn't say where a rule came from, the Basis says so.</p>
+
+            <table class="rule-table rev-table">
+              <thead>
+                <tr><th>Date</th><th>Section</th><th>Type</th><th>Change</th><th>Basis</th><th>Approved</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>2026-10-03</td><td>§ 6.2</td><td><span class="rev-type">Correction</span></td>
+                  <td>The 140% Year 1 ceiling applies only to a player not on a rookie-scale contract. A rookie-scale extension is limited only by the maximum salary (§ 3.11). The legacy rulebook said this; the qualifier was lost when the text moved to the site on 2026-05-24.</td>
+                  <td>Legacy rulebook; NBA CBA; the 2025 rookie-scale extensions (J. Williams, Kessler, Eason, Sharpe)</td><td>bryn</td></tr>
+                <tr><td>2026-10-03</td><td>§ 6.2</td><td><span class="rev-type">Clarification</span></td>
+                  <td>The ceiling is 140% of prior salary or 140% of EAPS for the first extended season, "whichever is greater". Was: "whichever applies", which didn't say how to choose.</td>
+                  <td>Legacy text ("any amount up to … or …"); NBA CBA</td><td>bryn</td></tr>
+                <tr><td>2026-10-02</td><td>§ 3.1, § 3.10</td><td><span class="rev-type">Clarification</span></td>
+                  <td>Qualifying offers adopted: the rookie-scale RFA exception; QO amounts (the rookie slot raise, 10 points higher from the 2023 class; a two-way QO; otherwise the greater of the minimum and 125% of prior salary); extend in the final contract year by July 1; withdraw until the player's free-agency round opens; accept through the free-agency ballot; an RFA's hold is the greater of his § 3.10 hold and his QO. Replaced the 2026-07-27 proposed rule. Players already RFAs for 2026-27 were treated as having a QO.</td>
+                  <td>NBA CBA</td><td>bryn</td></tr>
+                <tr><td>2026-09-25</td><td>§ 7.1, § 7.4, § 3.10</td><td><span class="rev-type">Clarification</span></td>
+                  <td>A team may keep an unsigned pick's rights past the signing deadline by stashing them: § 7.1 (not in 2K and sitting out) or § 7.4 (under contract overseas). A stashed pick carries no cap hold.</td>
+                  <td>Source not recorded</td><td>bryn</td></tr>
+                <tr><td>2026-09-24</td><td>§ 7.1</td><td><span class="rev-type">Correction</span></td>
+                  <td>Second-round 2+1 and 3+1 deals climb one experience tier a year: tiers 1-2-3 and 2-3-4-5, each priced on that season's minimum scale. Was: later years priced as "2nd/3rd/4th-year rookie minimum".</td>
+                  <td>The league office's 2026 rookie-contract table; commissioner rulings in #fa-news</td><td>bryn</td></tr>
+                <tr><td>2026-08-15</td><td>§ 3.10</td><td><span class="rev-type">Clarification</span></td>
+                  <td>A renounce also covers a team's unsigned draft rights, not just a UFA/RFA hold.</td>
+                  <td>Source not recorded</td><td>bryn</td></tr>
+                <tr><td>2026-08-10</td><td>§ 3.12, § 3.13</td><td><span class="rev-type">Clarification</span></td>
+                  <td>A minimum contract tracks the scale: each season pays that season's minimum for the player's experience, and is re-priced when the scale is revised. Its year-to-year steps are exempt from the raise limits. A contract may state the player's years of experience.</td>
+                  <td>Source not recorded</td><td>bryn</td></tr>
+                <tr><td>2026-08-09</td><td>§ 4.3, § 4.4</td><td><span class="rev-type">Clarification</span></td>
+                  <td>The apron contagion rules don't apply when incoming salary is absorbed with cap room rather than matched.</td>
+                  <td>NBA CBA</td><td>bryn</td></tr>
+                <tr><td>2026-08-07</td><td>§ 3.9</td><td><span class="rev-type">Correction</span></td>
+                  <td>Removed the citation "§ 8(e)(2)" from the extend-and-trade row. It is the NBA CBA's numbering and pointed at nothing here. The 5% figure is unchanged.</td>
+                  <td>—</td><td>bryn</td></tr>
+                <tr><td>2026-07-31</td><td>§ 4.1a</td><td><span class="rev-type">Clarification</span></td>
+                  <td>Only a team over the cap after the trade banks a trade exception. A team under the cap absorbs the difference into its cap room instead.</td>
+                  <td>Source not recorded</td><td>bryn</td></tr>
+                <tr><td>2026-07-31</td><td>§ 1.5</td><td><span class="rev-type">Clarification</span></td>
+                  <td>A team below the First Apron may sign a mid-season buyout player whose old salary was over the NTMLE, but is hard-capped at the First Apron for it.</td>
+                  <td>NBA CBA (§ 1.4, Row D)</td><td>bryn</td></tr>
+                <tr><td>2026-07-27</td><td>§ 3.1</td><td><span class="rev-type">Clarification</span></td>
+                  <td>Proposed rule, pending league confirmation: 4+ years of experience is always a UFA; under 4 is an RFA if given a QO; QO amounts. Replaced on 2026-10-02.</td>
+                  <td>NBA CBA</td><td>bryn</td></tr>
+                <tr><td>2026-07-21</td><td>§ 2.1, § 2.1a</td><td><span class="rev-type rev-open">Unreviewed</span></td>
+                  <td>The 14-player minimum applies year-round. The dollar charge (Empty Roster Charge) applies below 12, not 14, from day one, at that season's rookie minimum per slot. Trades are still judged against 14. Strikes at 1, 2 and 3 weeks below 14 stay. Was: 14 by the day before the season; in-season, a one-week grace period, then strikes and a $1,620,564 hold per open slot below 14.</td>
+                  <td>Source not recorded. Departs from the legacy text</td><td>bryn</td></tr>
+                <tr><td>2026-07-20</td><td>§ 4.2a</td><td><span class="rev-type rev-open">Unreviewed</span></td>
+                  <td>The Bi-Annual Exception can also absorb trade salary, and hard-caps the team at the First Apron when used that way.</td>
+                  <td>Source not recorded</td><td>bryn</td></tr>
+                <tr><td>2026-07-16</td><td>§ 4.5</td><td><span class="rev-type">Amendment</span></td>
+                  <td>Each team may make at most 15 trades a season. Draft-day trades and one trade on deadline day are exempt. Effective 2026-27.</td>
+                  <td>Proposal #1, passed</td><td>bryn</td></tr>
+                <tr><td>2026-07-12</td><td>§ 4.1, § 4.1a</td><td><span class="rev-type">Correction</span></td>
+                  <td>Trade exceptions exist: a team that sends out more salary than it takes back banks the difference for one year. They can't be traded. Was: "TPEs do not exist in NBN" (2026-05-21).</td>
+                  <td>The league's roster/cap spreadsheet, which tracks them</td><td>bryn</td></tr>
+                <tr><td>2026-07-09</td><td>§ 4.2a, § 1.3</td><td><span class="rev-type rev-open">Unreviewed</span></td>
+                  <td>A team may absorb incoming trade salary with its remaining NTMLE, TMLE or Room Exception instead of matching it. UFA/RFA cap holds don't count toward the Hard Cap or either apron.</td>
+                  <td>Source not recorded</td><td>bryn</td></tr>
+                <tr><td>2026-07-05</td><td>§ 4.2</td><td><span class="rev-type">Clarification</span></td>
+                  <td>A team that stays under the cap after a trade may take in salary with its cap room, without matching.</td>
+                  <td>NBA CBA</td><td>bryn</td></tr>
+                <tr><td>2026-06-23</td><td>§ 1.1, § 3.10</td><td><span class="rev-type">Clarification</span></td>
+                  <td>EAPS defined. Cap holds rewritten: the above/below split is measured against EAPS; holds are clamped between the minimum and maximum salary; a hold table by situation (declined options, offer sheets, unsigned first-round picks at 120% of scale, no hold for second-round picks).</td>
+                  <td>NBA CBA</td><td>bryn</td></tr>
+                <tr><td>2026-06-23</td><td>§ 6.1</td><td><span class="rev-type">Clarification</span></td>
+                  <td>A team may guarantee a non-guaranteed year at any time, one year at a time.</td>
+                  <td>Source not recorded</td><td>bryn</td></tr>
+                <tr><td>2026-06-23</td><td>§ 2.1, § 4.5</td><td><span class="rev-type rev-open">Unreviewed</span></td>
+                  <td>In the offseason a standard roster may carry up to 20 players, trimmed to 15 before the season. Was: 15 at all times.</td>
+                  <td>Source not recorded</td><td>bryn</td></tr>
+                <tr><td>2026-06-22</td><td>§ 3.12, § 5.1</td><td><span class="rev-type rev-open">Unreviewed</span></td>
+                  <td>An undrafted player on a standard minimum contract is non-guaranteed until July 31.</td>
+                  <td>Source not recorded</td><td>bryn</td></tr>
+                <tr><td>2026-05-24</td><td>§ 1.1, § 1.3</td><td><span class="rev-type">Correction</span></td>
+                  <td>The league Hard Cap: a league-wide ceiling on active salary plus dead cap; how it is set (the highest percentage over the NBA cap in the previous three seasons, rounded up); the grace period; August 31 compliance.</td>
+                  <td>League rule (the NBA has no hard cap); source document not recorded</td><td>bryn</td></tr>
+                <tr><td>2026-05-24</td><td>§ 1.1, 1.4, 2.1, 2.2, 3.2, 3.5, 3.8, 3.10–3.15, 5.1, 6.2, 6.3, 7.1, 7.4</td><td><span class="rev-type">Correction</span></td>
+                  <td>The legacy rulebook folded in: cap and MLE indexing, roster minimums, two-way rules, Bird Rights tiers and the Gilbert Arenas provision, cap holds, max and minimum contracts, contract structure, sign-and-trades, offer sheets, release methods and contract voiding, extensions and their windows, rookie contracts, international players. (§ 6.2 lost its "non-rookie scale" qualifier here; restored 2026-10-03.)</td>
+                  <td>Legacy rulebook and constitution</td><td>bryn</td></tr>
+                <tr><td>2026-05-24</td><td>All</td><td>—</td>
+                  <td>The rulebook published on the site, from the rule files below.</td>
+                  <td>—</td><td>bryn</td></tr>
+                <tr><td>2026-05-22</td><td>§ 7.1</td><td><span class="rev-type">Clarification</span></td>
+                  <td>First-round picks sign the NBA rookie scale: four years, two guaranteed and two team options, with the scale rising with the cap.</td>
+                  <td>NBA CBA</td><td>bryn</td></tr>
+                <tr><td>2026-05-21</td><td>§ 3.14, § 4.1–4.6, § 7.2</td><td><span class="rev-type rev-open">Unreviewed</span></td>
+                  <td>Trade rules: tiered salary matching; the re-acquisition restriction; short minimum contracts don't count as incoming salary; a newly signed free agent can't be traded for 90 days or until December 15; the touch rule for 3+ team trades; the sign-and-trade First Apron rule; Base Year Compensation; the Stepien Rule; the 7-year advance limit. No cash in trades, and no trade exceptions (reversed 2026-07-12), as NBN league rules.</td>
+                  <td>Not recorded item by item. Most mirror the NBA CBA; no cash and no trade exceptions were marked as league rules</td><td>bryn</td></tr>
+                <tr><td>2026-05-20</td><td>Articles I–III, § 2.2, § 3.9, § 6.2, § 7.3</td><td><span class="rev-type">Clarification</span></td>
+                  <td>CBA-derived rules: apron restrictions and hard-cap triggers; the NTMLE, TMLE, BAE and DPE; raise limits (8% for extensions, 5% for extend-and-trades); the Second Apron pick freeze; two-way cap treatment; the 15-player maximum.</td>
+                  <td>NBA CBA</td><td>bryn</td></tr>
+              </tbody>
+            </table>
           </div>
         </article>
 
