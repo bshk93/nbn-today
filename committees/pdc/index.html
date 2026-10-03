@@ -788,6 +788,8 @@
     psec.appendChild(el('div', null, `${p.kind.replace('_', ' ')} · ${shorthandStr || Object.keys(p.contract.salaries || {}).join(', ')}`));
     if (p.bird_rights_type) psec.appendChild(el('div', 'note', 'Bird tier: ' + p.bird_rights_type));
     if (p.attested_contract_start) psec.appendChild(el('div', 'note', 'Team attests contract began: ' + p.attested_contract_start));
+    if (p.promises) psec.appendChild(promisesBlock(p.promises));
+    if (p.pitch) psec.appendChild(pitchBlock(p.pitch));
     if (review.outstanding_remands && review.outstanding_remands.length) {
       review.outstanding_remands.forEach(r => psec.appendChild(el('div', 'banner warn', `Remand (${r.by}): ${r.note}`)));
     }
@@ -799,8 +801,9 @@
       const legal = review.revalidation.legal;
       vsec.appendChild(el('div', 'banner ' + (legal ? 'info' : 'bad'),
         (legal ? '✓ Legal as last checked' : '✗ Not legal') + (p.validation ? ` — submitted as ${p.validation.legal ? 'legal' : 'illegal (forced?)'}` : '')));
-      (review.revalidation.checks || []).filter(c => !c.passed).forEach(c => {
-        vsec.appendChild(el('div', 'note', (c.level === 'error' ? '✗ ' : '⚠ ') + c.message));
+      // Failures, plus the info notes (e.g. an extension superseding a QO).
+      (review.revalidation.checks || []).filter(c => !c.passed || c.level === 'info').forEach(c => {
+        vsec.appendChild(el('div', 'note', (c.level === 'info' ? 'ℹ ' : c.level === 'error' ? '✗ ' : '⚠ ') + c.message));
       });
       box.appendChild(vsec);
     }

@@ -24,7 +24,11 @@ bio, keyed by the hold season:
 }
 ```
 
-`status` is `extended`, `withdrawn`, `accepted` or `lapsed`. `base_hold` is
+`status` is `extended`, `withdrawn`, `accepted`, `lapsed` or `superseded`.
+`superseded` means an extension (§ 6.2) now pays that season: `_apply_extension`
+sets it so the QO can't be withdrawn afterwards. A withdrawal also requires the
+RFA tag to still be there — before 2026-10-03 a withdrawal after an extension
+wrote the old hold over the extension's Year 1. `base_hold` is
 present only when the QO raised the hold (an RFA's hold is the greater of the
 § 3.10 hold and the QO), so a withdrawal can put it back.
 
@@ -51,7 +55,7 @@ Jaden Hardy's QO off his $12.3M hold (fixed the same day in `_fa_pool`).
 | Type | Who | What it does |
 |---|---|---|
 | `qualifying_offer`, `action: extend` | owner (⋯ menu, `POST /api/self/qualifying-offer`) or office | Records the QO. Allowed only in the final contract year, before July 1. Raises the hold if the QO is larger |
-| `qualifying_offer`, `action: withdraw` | owner or office | Status → withdrawn, tag → UFA, hold restored. Allowed until the player's PDC round opens (`_qo_round_opened`, from `fa-state.json`) |
+| `qualifying_offer`, `action: withdraw` | owner or office | Status → withdrawn, tag → UFA, hold restored. Allowed until the player's PDC round opens (`_qo_round_opened`, from `fa-state.json`). Refused once the season is signed (no RFA tag left) |
 | `accept_qo` | PDC (`declare-winner`, the ballot's QO line) or office | Signs a one-year deal at the QO through `_apply_sign` (`signing_method: "qualifying_offer"`), rolling into a UFA hold |
 | lapse | `sweep_lapsed_qualifying_offers`, from `snapshot_cap_history.py` daily | Undecided current-season RFA tags → UFA, status `lapsed` |
 

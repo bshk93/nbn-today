@@ -2169,6 +2169,10 @@ async function prefillExtensionInfo(slug) {
 
   const attestField = document.getElementById('f-ext-attest-field');
   attestField.style.display = ec.basis === 'unknown' ? '' : 'none';
+  // The validator decides rookie-scale off the bio (§ 6.3); follow it.
+  const kindSel = document.getElementById('f-ext-kind');
+  if (f.rookie_scale && kindSel.value === 'veteran') kindSel.value = 'rookie_scale';
+  if (f.rookie_scale === false && kindSel.value === 'rookie_scale') kindSel.value = 'veteran';
 
   document.getElementById('salary-rows').innerHTML = '';
   addSalaryRow(firstSeason || nextSalaryYear(), '', '');

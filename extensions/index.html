@@ -58,6 +58,8 @@
     input, select, textarea { font-family: inherit; font-size: 0.85rem; background: var(--bg-page); color: var(--text-primary);
       border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.55rem; outline: none; width: 100%; }
     textarea { resize: vertical; min-height: 4.5rem; }
+    .checkbox-line { display: flex; gap: 0.4rem; align-items: center; font-size: 0.82rem; color: var(--text-secondary); padding-top: 0.4rem; }
+    .checkbox-line input { width: auto; }
     label { display: block; font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 500; }
 
     .form-row { display: flex; gap: 0.8rem; flex-wrap: wrap; padding: 0.7rem 0.9rem; }
@@ -158,7 +160,7 @@ let PROPOSALS = [];
 let CURRENT_SEASON = nbnSeasonForDate(nbnToday());
 nbnCurrentSeason().then(x => { CURRENT_SEASON = x; });
 
-let FORM = null;   // { player, team, editingId, firstSeason, years, salaries[], options[], kind, bird, eaps, attest }
+let FORM = null;   // { player, team, editingId, firstSeason, years, salaries[], options[], kind, bird, eaps, attest, hold, pitch, promises }
 let validateSeq = 0;
 
 async function boot() {
@@ -242,20 +244,25 @@ function renderProposals() {
 }
 
 function openForm(player, existing) {
-  const bio = BIOS[player] || {};
+  const sal = existing ? (existing.contract.salaries || {}) : {};
+  const holds = existing ? (existing.contract.cap_holds || {}) : {};
+  const seasons = Object.keys(sal).sort();
+  // The trailing UFA/RFA hold is the one cap_holds entry with no salary year.
+  const trailing = Object.keys(holds).find(s => !(s in sal));
+  const promises = (existing && existing.promises) || {};
   FORM = {
     player, team: MY_TEAMS[0], editingId: existing ? existing.id : null,
-    firstSeason: null, years: 2,
-    salaries: existing ? Object.values(existing.contract.salaries || {}).map(v => parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0) : [0, 0],
-    options: existing ? Object.keys(existing.contract.salaries || {}).map(s => (existing.contract.cap_holds || {})[s] || '') : ['', ''],
+    firstSeason: seasons[0] || null, years: seasons.length || 2,
+    salaries: seasons.length ? seasons.map(s => parseInt(String(sal[s]).replace(/[^0-9]/g, ''), 10) || 0) : [0, 0],
+    options: seasons.length ? seasons.map(s => holds[s] || '') : ['', ''],
     kind: existing ? existing.kind : 'veteran',
     bird: existing ? (existing.bird_rights_type || '') : '',
     eaps: existing ? (existing.eaps_assumption || '') : '',
     attest: existing ? (existing.attested_contract_start || '') : '',
-    hold: '',
+    hold: trailing ? holds[trailing] : '',
+    pitch: existing ? (existing.pitch || '') : '',
+    promises: { mpg: promises.mpg == null ? null : promises.mpg, playoffs: !!promises.playoffs, role: promises.role || 'none' },
   };
-  const seasons = existing ? Object.keys(existing.contract.salaries || {}) : [];
-  if (seasons.length) FORM.firstSeason = seasons.sort()[0];
   document.getElementById('form-pane').style.display = '';
   renderForm();
   fetchFactSheetAndRevalidate();
@@ -364,6 +371,49 @@ function renderForm() {
   row3.appendChild(eapsField);
   box.appendChild(row3);
 
+  // Pitch and promises — the same shape a free-agency offer carries. Only
+  // the committee sees them; nothing here reaches a public channel.
+  const row4 = el('div', 'form-row');
+  const pitchField = el('div', 'field');
+  pitchField.appendChild(el('label', null, 'Pitch'));
+  const ta = el('textarea');
+  ta.value = FORM.pitch;
+  ta.placeholder = 'Why this player should extend here. The committee reads this alongside the money.';
+  ta.addEventListener('input', () => { FORM.pitch = ta.value; });
+  pitchField.appendChild(ta);
+  row4.appendChild(pitchField);
+  box.appendChild(row4);
+
+  const row5 = el('div', 'form-row');
+  const mpgField = el('div', 'field narrow');
+  mpgField.appendChild(el('label', null, 'Promised minutes'));
+  const mpg = el('input'); mpg.type = 'number'; mpg.min = '0'; mpg.max = '48'; mpg.placeholder = '—';
+  mpg.value = FORM.promises.mpg == null ? '' : FORM.promises.mpg;
+  mpg.addEventListener('input', () => {
+    FORM.promises.mpg = mpg.value === '' ? null : Math.max(0, Math.min(48, +mpg.value));
+  });
+  mpgField.appendChild(mpg);
+  row5.appendChild(mpgField);
+  const roleField = el('div', 'field');
+  roleField.appendChild(el('label', null, 'Promised role'));
+  const roleSel = el('select');
+  [['none', 'No role promised'], ['face', 'Face of the franchise'], ['starter', 'Starter'],
+   ['role_player', 'Role player'], ['veteran', 'Veteran']]
+    .forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if (v === FORM.promises.role) o.selected = true; roleSel.appendChild(o); });
+  roleSel.addEventListener('change', () => { FORM.promises.role = roleSel.value; });
+  roleField.appendChild(roleSel);
+  row5.appendChild(roleField);
+  const poField = el('div', 'field');
+  poField.appendChild(el('label', null, '\u00a0'));
+  const poLine = el('label', 'checkbox-line');
+  const poBox = el('input'); poBox.type = 'checkbox'; poBox.checked = FORM.promises.playoffs;
+  poBox.addEventListener('change', () => { FORM.promises.playoffs = poBox.checked; });
+  poLine.appendChild(poBox);
+  poLine.appendChild(document.createTextNode('Promised a playoff team'));
+  poField.appendChild(poLine);
+  row5.appendChild(poField);
+  box.appendChild(row5);
+
   box.appendChild(el('div', null)).id = 'rubric-body';
 
   const actions = el('div', 'actions-row');
@@ -406,6 +456,10 @@ async function fetchFactSheetAndRevalidate() {
     const f = data.fact_sheet || {};
     const ec = f.existing_contract || {};
     if (!FORM.firstSeason) FORM.firstSeason = f.extended_term && f.extended_term.first_season;
+    // The validator decides rookie-scale off the bio (§ 6.3), so the form
+    // follows it rather than letting a team pick the wrong window.
+    if (f.rookie_scale && FORM.kind === 'veteran') FORM.kind = 'rookie_scale';
+    if (f.rookie_scale === false && FORM.kind === 'rookie_scale') FORM.kind = 'veteran';
     FORM.attestNeeded = ec.basis === 'unknown';
     FORM.existingNote = (ec.start || ec.end)
       ? `Existing contract ${ec.start || '?'}–${ec.end || '?'} · final guaranteed year ${ec.final_guaranteed_year || '?'} (basis: ${ec.basis}) · new money should start ${FORM.firstSeason || '?'}` +
@@ -457,14 +511,20 @@ async function runValidate() {
   }
 }
 
-async function saveDraftHandler() {
+// What a proposal POST or PATCH sends. PATCH ignores player/team.
+function proposalPayload() {
   const { salaries, cap_holds } = buildContract();
-  const payload = {
+  return {
     player: FORM.player, team: FORM.team, kind: FORM.kind,
     contract: { salaries, cap_holds },
     bird_rights_type: FORM.bird || null, eaps_assumption: FORM.eaps || null,
     attested_contract_start: FORM.attest || null,
+    pitch: FORM.pitch, promises: FORM.promises,
   };
+}
+
+async function saveDraftHandler() {
+  const payload = proposalPayload();
   try {
     if (FORM.editingId) {
       await api('/poext/proposals/' + FORM.editingId, { method: 'PATCH', body: payload });
@@ -481,20 +541,10 @@ async function saveDraftHandler() {
 async function submitHandler() {
   try {
     if (!FORM.editingId) {
-      const { salaries, cap_holds } = buildContract();
-      const created = await api('/poext/proposals', {
-        method: 'POST',
-        body: { player: FORM.player, team: FORM.team, kind: FORM.kind, contract: { salaries, cap_holds },
-                bird_rights_type: FORM.bird || null, eaps_assumption: FORM.eaps || null, attested_contract_start: FORM.attest || null },
-      });
+      const created = await api('/poext/proposals', { method: 'POST', body: proposalPayload() });
       FORM.editingId = created.id;
     } else {
-      const { salaries, cap_holds } = buildContract();
-      await api('/poext/proposals/' + FORM.editingId, {
-        method: 'PATCH',
-        body: { kind: FORM.kind, contract: { salaries, cap_holds }, bird_rights_type: FORM.bird || null,
-                eaps_assumption: FORM.eaps || null, attested_contract_start: FORM.attest || null },
-      });
+      await api('/poext/proposals/' + FORM.editingId, { method: 'PATCH', body: proposalPayload() });
     }
     await api('/poext/proposals/' + FORM.editingId + '/submit', { method: 'POST' });
     toast('Submitted — visible to PO-EXT once an agent claims it.');

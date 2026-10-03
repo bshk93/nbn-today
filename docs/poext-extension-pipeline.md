@@ -1,26 +1,31 @@
 # Extensions (§ 6.2 / § 6.3) — building the pipeline on the free-agency infra
 
-**Status: Phase A + E LIVE, deployed 2026-08-21** (§ 7's read-only validator
-and apply path — `_validate_extension`, `_extension_fact_sheet`,
-`_apply_extension`, `POST /api/validate/extension`, `extension` in
-`_VALIDATORS`/the type whitelist/`_detail_models`). The rest of this document
-— Phases B through G, i.e. the `/api/poext/*` committee pipeline
-(claim/negotiate/ballot/finalize), the `/extensions` team-facing page, and the
-§ 4.5 trade-freeze check — is still design only. Written 2026-08-18. Companion
-to `nbn-api/docs/extensions.md`, which specs the *rules and validator* (now
-built); this specs the *pipeline* — the negotiation object, the committee
-flow, and the surfaces — and says which parts of the free-agency machinery
-carry over unchanged, which need re-framing, and which are traps. It also
-corrects two things `extensions.md` gets wrong (§ 2.3, § 8).
+**Status: built.** The validator and apply path (Phases A and E, 2026-08-21),
+the `/api/poext/*` committee pipeline (`nbn-api/routers/poext.py`), the
+`/extensions` team page, the PO-EXT panel on `/committees/pdc` and the § 4.5
+trade freeze are all live. Finalize writes the extension itself through
+`apply_extension`. Written 2026-08-18 as a design, so the body below still
+reads as a plan in places. Companion to `nbn-api/docs/extensions.md`, which
+specs the *rules and validator*; this specs the *pipeline* — the negotiation
+object, the committee flow, and the surfaces — and says which parts of the
+free-agency machinery carry over unchanged, which need re-framing, and which
+are traps. It also corrects two things `extensions.md` gets wrong (§ 2.3, § 8).
 
-Until Phase C ships, a real extension goes through the same manual hand-off
-free agency already uses for a finalized offer: the committee decides
-(Discord, as today), and the office enters it via `/transactions`, checking
-legality live against `POST /api/validate/extension`. Both the office form
-and `/transaction-sim` got a real Extension UI 2026-08-21 (see BACKLOG.md's
-now-closed item) — team derived from the roster, the first salary row seeded
-at the correct starting season off the fact sheet. That's a real,
-point-and-click path today, not just an API call.
+Changes since (2026-10-03):
+
+- A proposal carries a **pitch and promises**, the same shape as a
+  free-agency offer (`PromisesIn`). They show in the PO-EXT panel and the
+  private `pdc-alerts` post, never in a public one.
+- **The kind is checked, not trusted** (`extension_kind`). Rookie-scale is
+  read off the bio (`_extension_is_rookie_scale`), because the kind picks the
+  § 6.3 window. The forms preselect it from the fact sheet's `rookie_scale`.
+- A trailing **RFA hold** must pass § 3.1's under-4-years test
+  (`extension_rfa_hold`).
+- An extended **QO** on a season the extension pays is marked `superseded`
+  (`docs/qualifying-offers.md`).
+
+The office can still enter an extension by hand on `/transactions`, checked
+live against `POST /api/validate/extension`.
 
 The split mirrors free agency: `nbn-api/docs/extensions.md` : `nbn-today/docs/pdc-free-agency-spec.md`
 :: rules : pipeline.

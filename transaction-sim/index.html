@@ -998,6 +998,10 @@ async function onExtPlayerPicked() {
     extState.firstSeason = f.extended_term?.first_season || null;
     const attestField = document.getElementById('ext-f-attest');
     attestField.hidden = ec.basis !== 'unknown';
+    // The validator decides rookie-scale off the bio (§ 6.3); follow it.
+    const kindSel = document.getElementById('ext-kind');
+    if (f.rookie_scale && kindSel.value === 'veteran') kindSel.value = 'rookie_scale';
+    if (f.rookie_scale === false && kindSel.value === 'rookie_scale') kindSel.value = 'veteran';
     if (ec.start || ec.end) {
       existingRow.hidden = false;
       document.getElementById('ext-existing-text').textContent =
