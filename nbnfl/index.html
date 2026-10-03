@@ -54,7 +54,6 @@
 
     /* ── entry form ───────────────────────────────────────────────── */
     #entry { border-top: 1px solid var(--border); padding-top: 1.5rem; }
-    #entry-note { color: var(--text-muted); font-size: 0.85rem; }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.7rem; margin-bottom: 1rem; }
     .form-grid label { display: flex; flex-direction: column; font-size: 0.72rem; color: var(--text-muted); gap: 0.25rem; }
     .stat-row {
@@ -120,9 +119,10 @@
       <div id="season-stats"></div>
     </section>
 
-    <section id="entry">
+    <!-- Shown only to the stats role (admin passes too), the same check the
+         API's write routes make. -->
+    <section id="entry" hidden>
       <h2 class="ui-section-title" id="entry-title">Enter a game</h2>
-      <div id="entry-note"></div>
       <form id="game-form" style="display:none;">
         <div class="form-grid">
           <label>Season <input class="ui-input" type="number" id="f-season" required></label>
@@ -193,7 +193,7 @@
     let MY = null;              // tracked team abbr, from the API
     let teamsByAbbr = {};
     let allGames = [];
-    let isAdmin = false;
+    let canEnter = false;      // stats role (or admin): may enter, edit, delete
     let editingId = null;
     const openBoxes = new Set();
 
@@ -380,7 +380,7 @@
         box.appendChild(statTable(columns(t, false), rows));
       }
       if (!any) box.appendChild(el('div', 'empty', 'No stat lines for this game.'));
-      if (isAdmin) {
+      if (canEnter) {
         const actions = el('div', 'box-actions');
         const edit = el('button', 'ui-btn ui-btn--sm', 'Edit');
         edit.type = 'button';
@@ -637,7 +637,6 @@
     }
 
     async function setupEntryForm() {
-      const note = document.getElementById('entry-note');
       const token = storedToken();
       let me = null;
       if (token) {
@@ -645,12 +644,10 @@
           me = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null);
         } catch { me = null; }
       }
-      if (!me || !(me.roles || []).includes('admin')) {
-        note.textContent = 'Sign in with an admin account to enter or edit a game.';
-        return;
-      }
-      isAdmin = true;
-      note.textContent = '';
+      const roles = (me && me.roles) || [];
+      if (!roles.includes('stats') && !roles.includes('admin')) return;
+      canEnter = true;
+      document.getElementById('entry').hidden = false;
       document.getElementById('game-form').style.display = '';
       const oppSel = document.getElementById('f-opp');
       for (const t of Object.values(teamsByAbbr)) {
