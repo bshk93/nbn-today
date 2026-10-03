@@ -58,6 +58,7 @@ Three lifecycles, distinguished by gitignore rather than by folder:
 | `poopoo` | every 10 min | regenerates the cap-sheet diff behind `/committees/rosters` | those tabs go stale; nothing else |
 | `nbn-achievements` | every 10 min | awards NB¥ for newly unlocked achievements | awards pause; the snapshot is monotonic so nothing double-fires. **Fails silently** — no Discord, no page, and "awarded nothing" reads the same as a quiet week; it was dead for six weeks in 2026. `build/test_achievement_inputs.js` (in the pre-commit hook) is the guard |
 | `nbs-drive-backup` | Sundays 04:00 | tarball of the tracked set to Google Drive | third backup tier stops; the other two continue |
+| `nbn-irl` | hourly | refreshes the ESPN game logs behind `/nbnfl`'s IRL tab into `irl/` (not backed up; refetchable) | the IRL tab goes stale; nothing else. Exits non-zero if any player failed |
 | `nbs-integrity` | Mondays 09:00 | box score row counts + closed-season hashes | **investigate immediately** — see below |
 
 Nothing else is scheduled. The stats build is **not** on a timer; it is

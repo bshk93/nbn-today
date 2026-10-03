@@ -84,7 +84,7 @@ PAGES = {
  '/legal/nothing-but-net-sim-league-v-jdbeats/': (None, 'Disciplinary findings in NBN Sim League v. JDBeats.'),
  '/members/': (None, 'Everyone in NBN — tenures, teams, achievements and rings.'),
  '/members/profile/': (None, 'An NBN member’s tenures, achievements and league history.'),
- '/nbnfl/': ('NBNFL — Bengals', 'Game log and player stats for the Bengals in NBN’s sister American-football league.'),
+ '/nbnfl/': ('NBNFL — Bengals', 'Game log and player stats for the Bengals in NBN’s sister American-football league, plus their players’ real-world NFL stats.'),
  '/nbnfl/CIN/': ('Moved — NBNFL', 'Moved — the Bengals log is now /nbnfl.'),
  '/nbntv-classics/': (None, 'The greatest playoff performances in NBN history, ranked and annotated.'),
  '/nbyen-economy/': ('Moved — NB¥ Balances — NBN', 'Retired — the NB¥ economy proposal was superseded by the restart. Balances are at /nbyen.'),

@@ -8,11 +8,11 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>NBNFL — Bengals</title>
   <!-- NBN:og -->
-  <meta name="description" content="Game log and player stats for the Bengals in NBN’s sister American-football league.">
+  <meta name="description" content="Game log and player stats for the Bengals in NBN’s sister American-football league, plus their players’ real-world NFL stats.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
   <meta property="og:title" content="NBNFL — Bengals">
-  <meta property="og:description" content="Game log and player stats for the Bengals in NBN’s sister American-football league.">
+  <meta property="og:description" content="Game log and player stats for the Bengals in NBN’s sister American-football league, plus their players’ real-world NFL stats.">
   <meta property="og:url" content="https://nbn.today/nbnfl/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -91,6 +91,16 @@
       </div>
     </header>
 
+    <div class="ui-tabs" role="tablist">
+      <button class="ui-tab active" role="tab" aria-selected="true" data-tab="games">Games</button>
+      <button class="ui-tab" role="tab" aria-selected="false" data-tab="irl">IRL</button>
+    </div>
+
+    <!-- The IRL tab is real-world NFL stats for this roster (irl-feed.js), kept
+         apart from the sim log on purpose: its own tab, its own data. -->
+    <div id="irl-panel" hidden></div>
+
+    <div id="games-panel">
     <div class="season-pick" id="season-pick" style="display:none">
       <label class="ui-label" for="season-select" style="margin:0">Season</label>
       <select class="ui-select" id="season-select"></select>
@@ -136,6 +146,7 @@
         </div>
       </form>
     </section>
+    </div>
   </div>
 
   <script>
@@ -667,10 +678,36 @@
       const mine = teamsByAbbr[MY];
       document.getElementById('page-title').textContent = `NBNFL — ${mine ? mine.name : MY}`;
       document.getElementById('season-select').onchange = () => render();
+      setupTabs();
       await loadGames();
       await setupEntryForm();
     })();
+
+    // Games | IRL. The IRL feed is mounted the first time its tab opens, so a
+    // visit to the sim log never fetches it. The tab lives in the hash (#irl).
+    function setupTabs() {
+      let irlMounted = false;
+      function show(tab) {
+        document.querySelectorAll('.ui-tab[data-tab]').forEach(b => {
+          const on = b.dataset.tab === tab;
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-selected', on);
+        });
+        document.getElementById('games-panel').hidden = tab !== 'games';
+        document.getElementById('irl-panel').hidden = tab !== 'irl';
+        if (tab === 'irl' && !irlMounted) {
+          irlMounted = true;
+          IrlFeed.mount(document.getElementById('irl-panel'), { sport: 'nfl', roster: MY });
+        }
+      }
+      document.querySelectorAll('.ui-tab[data-tab]').forEach(b => b.addEventListener('click', () => {
+        history.replaceState(null, '', b.dataset.tab === 'games' ? location.pathname : '#' + b.dataset.tab);
+        show(b.dataset.tab);
+      }));
+      show(location.hash === '#irl' ? 'irl' : 'games');
+    }
   </script>
+  <script src="/irl-feed.js"></script>
 
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
