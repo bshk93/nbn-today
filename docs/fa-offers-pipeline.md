@@ -137,6 +137,26 @@ server refuses. A head who isn't on a player's sub-committee sees the totals and
 the finalize button and no inputs. Finalize, unlock and assignment are the
 head's real powers and are separate endpoints.
 
+## Entering agreed terms — the head records where a negotiation ended
+
+Negotiation happens in Discord. `POST /api/fa/offers/{id}/amend` (`fac_head`
+and admin only, decided 2026-10-04) lets the head put the terms it ended on
+straight onto a live offer, from "Enter agreed terms…" on the offer card.
+
+- **It applies at once.** The agreement is the team's consent, so there is no
+  confirm step for the team. They get an inbox notice with the head's note.
+- **It's a new version, like a resubmission.** The old terms are frozen into
+  `versions` (`_freeze_version`, shared with remand), the diff shows on the
+  card, and `amendments` records who, when and the required note. Ballots cast
+  on the old terms are flagged `revised_since`. A remand the team hadn't
+  answered is answered by it.
+- **Same legality bar as a team's submit.** The editor checks live against
+  `POST /api/validate/sign`; the server re-runs `_validate_sign` and refuses
+  an error. Warnings are stored, as at submit.
+- **The pitch and promises stay the team's.** Only contract, method, Bird
+  tier and EAPS assumption change.
+- Not on a finalized player — unlock first.
+
 ## Declaring the result — the step that writes the transaction
 
 Finalize locks the ballots and names no winner. The head then runs the lottery

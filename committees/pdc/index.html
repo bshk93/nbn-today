@@ -2257,6 +2257,12 @@
       b.addEventListener('click', () => voidModal(o));
       card.appendChild(b);
     }
+    if (IS_HEAD) {
+      const b = el('button', 'btn-primary', 'Enter agreed terms…');
+      b.style.marginLeft = '0.4rem';
+      b.addEventListener('click', () => amendModal(o, season));
+      card.appendChild(b);
+    }
     if (canCurate(review) && !IS_HEAD) {
       const b = el('button', 'btn-ghost', o.agent_note ? 'Edit note…' : 'Add a note…');
       b.style.marginLeft = '0.4rem';
@@ -2456,6 +2462,8 @@
     chain.forEach((v, i) => {
       box.appendChild(el('div', 'bb-val', 'v' + v.version + ' — ' + shorthand(v.offer.contract, season)));
       o.remands.filter(r => r.from_version === v.version).forEach(r => box.appendChild(remandLine(r)));
+      (o.amendments || []).filter(a => a.from_version === v.version).forEach(a => box.appendChild(
+        el('div', 'bar-lbl', 'Terms entered by ' + a.by + ' ' + ago(a.at) + ': “' + a.note + '”')));
       const next = chain[i + 1] ? chain[i + 1].offer : o.offer;
       const diff = contractDiff(v.offer, next, season);
       if (diff.length) {
@@ -3038,6 +3046,174 @@
     row.appendChild(left);
     row.appendChild(el('div', 'bar-val', value));
     return row;
+  }
+
+  // The head enters the terms a Discord negotiation ended on (§ 4.7, D27 — the
+  // site records what a negotiation changes). They apply at once as a new
+  // version: the agreement is the team's consent. Legality comes from the same
+  // POST /api/validate/sign the team's own form uses, and the server re-checks
+  // on save, so an illegal set of terms can't be stored from here either.
+  function amendModal(o, season) {
+    const base = JSON.parse(JSON.stringify(o.offer.contract));
+    const holds = base.cap_holds || {};
+    const nextSeason = y => {
+      const a = parseInt(y.slice(0, 2), 10) + 1;
+      return String(a).padStart(2, '0') + '-' + String(a + 1).padStart(2, '0');
+    };
+    const years = Object.keys(base.salaries || {}).filter(y => /^\d{2}-\d{2}$/.test(y)).sort();
+    const rows = years.map(y => ({ season: y, amount: parseMoney(base.salaries[y]), tag: holds[y] || '' }));
+    const lastYear = years[years.length - 1];
+    let trailing = lastYear && ['UFA', 'RFA'].includes(holds[nextSeason(lastYear)]) ? holds[nextSeason(lastYear)] : '';
+    let method = o.offer.signing_method || '';
+    let bird = o.offer.bird_rights_type || '';
+
+    const body = el('div');
+    body.appendChild(el('p', 'note',
+      'Enter the terms the negotiation ended on. They replace the offer at once as a new version — '
+      + 'the old terms stay on record, ballots already cast are flagged, and the team is told. '
+      + 'The pitch and promises stay as the team wrote them.'));
+    const grid = el('div');
+    body.appendChild(grid);
+    const extra = el('div');
+    body.appendChild(extra);
+    const legality = el('div', 'banner info', 'Checking…');
+    legality.style.marginTop = '0.6rem';
+    body.appendChild(legality);
+    const noteRow = el('div', 'row');
+    noteRow.appendChild(el('label', null, 'Where were these agreed? (required — the team sees this)'));
+    const note = el('input');
+    note.type = 'text';
+    note.placeholder = 'e.g. Agreed in Discord 10/4';
+    noteRow.appendChild(note);
+    body.appendChild(noteRow);
+
+    let verdict = null, timer = null, seq = 0;
+
+    function contract() {
+      const c = JSON.parse(JSON.stringify(base));
+      c.salaries = {};
+      c.cap_holds = {};
+      rows.forEach(r => {
+        c.salaries[r.season] = '$' + Math.round(r.amount || 0).toLocaleString('en-US');
+        if (r.tag) c.cap_holds[r.season] = r.tag;
+      });
+      if (trailing && rows.length) c.cap_holds[nextSeason(rows[rows.length - 1].season)] = trailing;
+      // Per-year detail for a season the deal no longer covers would describe a
+      // year that isn't there.
+      ['guaranteed', 'guarantee_dates', 'guarantee_schedule'].forEach(k => {
+        if (!c[k]) return;
+        Object.keys(c[k]).forEach(y => { if (!(y in c.salaries)) delete c[k][y]; });
+      });
+      return c;
+    }
+    function terms() {
+      return { contract: contract(), signing_method: method || null,
+               bird_rights_type: bird || null, eaps_assumption: o.offer.eaps_assumption || null };
+    }
+
+    function select(options, value, onChange) {
+      const sel = el('select');
+      options.forEach(([v, label]) => {
+        const opt = el('option', null, label);
+        opt.value = v;
+        if (v === value) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', () => onChange(sel.value));
+      return sel;
+    }
+
+    function draw() {
+      grid.innerHTML = '';
+      grid.appendChild(el('div', 'mini-head', 'Contract'));
+      rows.forEach((r, i) => {
+        const line = el('div', 'bb-block');
+        line.appendChild(el('span', 'bb-label', r.season));
+        const amt = el('input');
+        amt.type = 'text';
+        amt.value = r.amount ? Math.round(r.amount).toLocaleString('en-US') : '';
+        amt.style.width = '9rem';
+        amt.addEventListener('input', () => { r.amount = parseMoney(amt.value); check(); });
+        line.appendChild(amt);
+        line.appendChild(select(
+          CONTRACT_HOLD_TYPES.filter(t => !t.faHold).map(t => [t.value, t.label]),
+          r.tag, v => { r.tag = v; check(); }));
+        if (i === rows.length - 1 && rows.length > 1) {
+          const rm = el('button', 'btn-ghost', 'Remove year');
+          rm.addEventListener('click', () => { rows.pop(); draw(); check(); });
+          line.appendChild(rm);
+        }
+        grid.appendChild(line);
+      });
+      const add = el('button', 'btn-ghost', '+ Add a year');
+      add.addEventListener('click', () => {
+        const last = rows[rows.length - 1];
+        rows.push({ season: last ? nextSeason(last.season) : season, amount: last ? last.amount : 0, tag: '' });
+        draw(); check();
+      });
+      grid.appendChild(add);
+
+      extra.innerHTML = '';
+      const line = el('div', 'bb-block');
+      line.style.marginTop = '0.6rem';
+      line.appendChild(el('span', 'bb-label', 'After the deal'));
+      line.appendChild(select([['', 'No hold'], ['UFA', 'UFA hold'], ['RFA', 'RFA hold']],
+        trailing, v => { trailing = v; check(); }));
+      extra.appendChild(line);
+      const m = el('div', 'bb-block');
+      m.appendChild(el('span', 'bb-label', 'Method'));
+      m.appendChild(select([['', '— select one —']].concat(
+        ['cap_space', 'bird_rights', 'minimum', 'mle', 'ntmle', 'tmle', 'room_exception', 'bae']
+          .map(k => [k, METHOD_LABELS[k]])), method, v => { method = v; check(); }));
+      extra.appendChild(m);
+      const b = el('div', 'bb-block');
+      b.appendChild(el('span', 'bb-label', 'Bird tier'));
+      b.appendChild(select([['', '— none —'], ['QVFA', 'Full Bird (QVFA)'],
+        ['EQVFA', 'Early Bird (EQVFA)'], ['Non-QVFA', 'Non-Bird (Non-QVFA)']],
+        bird, v => { bird = v; check(); }));
+      extra.appendChild(b);
+    }
+
+    function check() {
+      verdict = null;
+      legality.className = 'banner info';
+      legality.textContent = 'Checking…';
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const mine = ++seq;
+        try {
+          const res = await api('/validate/sign', { method: 'POST',
+            body: Object.assign({ player: o.player, team: o.team }, terms()) });
+          if (mine !== seq) return;
+          verdict = res;
+          legality.innerHTML = '';
+          legality.className = 'banner ' + (res.legal ? 'info' : 'bad');
+          legality.appendChild(el('div', 'mini-head', res.legal ? 'Legal' : 'Not legal — can’t be saved'));
+          legality.appendChild(el('div', 'bar-lbl', shorthand(contract(), season)));
+          (res.checks || []).filter(c => !c.passed).forEach(c => legality.appendChild(
+            el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
+              (c.level === 'error' ? '✗ ' : '! ') + (c.message || c.check))));
+        } catch (e) {
+          if (mine !== seq) return;
+          legality.className = 'banner bad';
+          legality.textContent = 'Could not check these terms: ' + e.message;
+        }
+      }, 300);
+    }
+
+    draw();
+    check();
+    modal('Enter agreed terms — ' + o.team + ' #' + o.number, body, [{
+      label: 'Save as the new terms', cls: 'btn-primary', run: async () => {
+        if (!note.value.trim()) { toast('Say where these terms were agreed.', true); return false; }
+        if (!verdict) { toast('Still checking the terms — try again in a moment.', true); return false; }
+        if (!verdict.legal) { toast('These terms aren’t legal, so they can’t be saved.', true); return false; }
+        await api('/fa/offers/' + o.id + '/amend', { method: 'POST',
+          body: Object.assign({ note: note.value.trim() }, terms()) });
+        await reload();
+        toast('New terms saved on ' + o.team + ' #' + o.number);
+      },
+    }]);
   }
 
   function remandModal(o) {
