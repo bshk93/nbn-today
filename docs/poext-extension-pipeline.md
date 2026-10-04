@@ -650,10 +650,13 @@ ruling.
 
 New, still open:
 
-1. **Does the three-proposal cap apply to the rookie-scale and non-expiring-veteran
-   buckets?** § 6.3 states it only under expiring veterans; the other two say
-   "resubmit at any point before the deadline" with no cap. D4 settles how proposals
-   are *counted*, not which negotiations are capped.
+1. ~~Does the three-proposal cap apply to the rookie-scale and non-expiring-veteran
+   buckets?~~ **DECIDED 2026-10-04 (bryn): no.** Only an expiring veteran's
+   negotiation is capped, and it is counted per negotiation — that league year,
+   that bucket (`_negotiation` / `_rejections_in` in `poext.py`). Rookie-scale and
+   non-expiring veterans resubmit freely until their deadline. A missed deadline
+   closes that window only: a Year-4-of-5 veteran is an expiring veteran the next
+   season, with a fresh three. Recorded in the rulebook's Revision History.
 2. **Uncorroborated attestation — warn, or refuse?** With D1 reversed, this
    applies to any proposal where the ledger has no record and the attested start
    date can't be checked against anything (today, potentially any of the 161; once

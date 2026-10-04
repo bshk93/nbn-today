@@ -773,7 +773,8 @@
     const stageChip = el('span', 'chip chip-head', st.stage.replace('_', ' '));
     head.appendChild(stageChip);
     if (st.exhausted) head.appendChild(el('div', 'banner bad', `§ 6.3: three proposals rejected — no further extension opportunities arise for ${nameOf(slug)} unless the PO-EXT head unlocks it.`));
-    else if (st.rejections) head.appendChild(el('div', 'banner warn', `${st.rejections} of 3 proposals rejected so far.`));
+    // § 6.3's limit is an expiring veteran's only, counted per negotiation.
+    else if (st.rejections && st.rejection_limit_applies) head.appendChild(el('div', 'banner warn', `${st.rejections} of 3 proposals rejected in this negotiation.`));
     box.appendChild(head);
 
     if (!p) { box.appendChild(el('div', 'empty', 'No live proposal on this player.')); return; }
