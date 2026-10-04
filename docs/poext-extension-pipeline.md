@@ -24,6 +24,26 @@ Changes since (2026-10-03):
 - An extended **QO** on a season the extension pays is marked `superseded`
   (`docs/qualifying-offers.md`).
 
+Fixes (2026-10-04):
+
+- **A proposal is judged as of its first submission.** § 6.3's windows are
+  submission deadlines, so a proposal stores `submitted_date` (league date,
+  set once) and the validator judges the window and the league year off it
+  (`ExtensionDetails.submitted_date`, `_extension_season`). Before this, a
+  June 20 proposal finalized July 2 failed: the vote date was past June 30,
+  and the rollover had already ended his deal. Answering a remand keeps the
+  first date — the committee asked for the change.
+- **Unlock refuses while the agreed extension is on the ledger**
+  (`_refuse_unlock_over_txn`). Reopening it would leave the contract on the
+  books with no vote behind it. FA's unlock does the same after
+  `declare-winner`.
+- **The inbox reaches whoever acts next.** A new proposal goes to `agent` and
+  `poext_head` holders (they claim), not `poext` members. A resubmission goes
+  to the claiming agent; an advance to the assigned members, or to the head
+  when nobody is assigned; an assignment to each newly added member; a
+  return to the agent. `pdc-alerts` is unchanged.
+- The committee's `review` no longer shows a team's unsubmitted draft.
+
 The office can still enter an extension by hand on `/transactions`, checked
 live against `POST /api/validate/extension`.
 
@@ -52,7 +72,7 @@ to disagree with itself.
 | D10 | **Q1 (§ 6.2 vs § 6.3 eligibility): strict reading confirmed.** § 6.2 rule 2 is the universal eligibility gate; § 6.3's three buckets are scheduling only, not an independent grant. | Real eligible population stays ~32 players, not most of the roster (§ 2.3). |
 | D11 | **Q2, fully: an option year (player or team) never counts as "guaranteed," and is treated as declined outright by the act of extending.** When rule 2 lands the extension's first season on the same season as a trailing option year, the extension **supersedes** it — its salary figure is what's actually paid, the option is mooted, not collided with. | Confirms `extensions.md` § 4 rule 2 as written, no implementation gap: merging the extension's `salaries` into the bio already overwrites current-season-onward entries per the existing convention. |
 | D12 | **Discord: a proposal posts to the private committee channel only (never the public one); the accepted extension posts to both.** | Reverses part of D9 — proposals are no longer silent to the committee, only to the public. Same "one function, one caller" discipline: whatever reaches the public channel must be reachable only from the accept path. |
-| D13 | **Inbox notifications for a proposal are scoped to members holding `poext` — not the whole committee ecosystem, not `fac`.** | Mirrors D12's channel scoping at the individual level. |
+| D13 | **Inbox notifications for a proposal are scoped to members holding `poext` — not the whole committee ecosystem, not `fac`.** **Revised 2026-10-04:** scoped to whoever acts next — a new proposal to `agent`/`poext_head`, since `poext` members can't claim (see "Fixes" above). Still never `fac`. | Mirrors D12's channel scoping at the individual level. |
 | D15 | **Submitter attestation replaces the backfill for the indefinite-basis case, per proposal, on demand.** A proposal for a player with no ledger acquisition record must state when the submitting team believes the contract began; the fact sheet shows it beside whatever partial ledger history the player actually has. | **Stays at warn, never promoted to error** — a team has an incentive to shade the date, so it's a claim for the committee to eyeball, not a fact the validator trusts. **Does get promoted to error on contradiction**: if the player has *some* record (a trade, a release) that the attested date is impossible against, that's no longer an unconfirmable gap. **Not persisted or cached anywhere** — deliberately, per hkd 2026-08-19: rare enough in practice that re-asking on the next check is cheaper than a whole second data store for it. The real backfill (BACKLOG [P3]) is the actual fix for scale; this is a per-case bridge, not a replacement for it. |
 | D14 | **`agent` is one role shared across FA and extensions — the agent represents the player, not either committee**, so the same person claims/negotiates on both sides. | **Shipped in code 2026-08-18**: `routers/constants.py` `ROLE_IMPLIES` now has `poext_head: {poext, agent}` alongside the existing `fac_head: {fac, agent}` — each head grant is therefore also a side door into the *other* committee's agent duties, accepted deliberately (§ 2.9 update below). Claim state (`blocked_teams`) must stay on separate per-pipeline objects — sharing the role must never mean sharing a claim record, so a claim in one pipeline can't block or leak into the other for the same player. `roles/index.html` and `members/index.html` now carry cards/badges for `fac`/`fac_head`/`agent`/`poext`/`poext_head`, previously entirely undocumented on the roles page and falling through to the generic team-green badge on the members page. |
 
