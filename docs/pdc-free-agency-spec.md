@@ -1693,6 +1693,10 @@ channel to announce into, and tooling to review and vote with — now exists.
    see them and call again with `confirm_warnings: true` — while a real
    error hard-blocks regardless of that flag.
 
+   **The dashboard drives it since 2026-10-04** — before then it had no
+   button, and every round was signed by hand. How it works now:
+   `docs/fa-offers-pipeline.md` § "Declaring the result".
+
    **The `"QO"` ballot option** executes an `accept_qo` (`apply_accept_qo`):
    the player signs a one-year deal at the recorded QO amount with his own
    team. It was held back until 2026-10-02, when the league adopted the QO

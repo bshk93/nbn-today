@@ -477,7 +477,7 @@
     admin: 'Admin — full access to every control on this page, FAC and PO-EXT alike.',
     fac: 'FAC — reviews offers and casts ballots on players you’re assigned to.',
     agent: 'Agent — claims free agents whose offer window has closed, negotiates the offers down to a final set, then advances the survivors to a sub-committee or finalizes an uncontested one. Claiming a player permanently bars your own team from bidding on him.',
-    fac_head: 'FAC Head — runs Free Agency: mode, rounds, sub-committee assignment, finalize/unlock. These live in the boxed "FAC Head controls" areas on the page.',
+    fac_head: 'FAC Head — runs Free Agency: mode, rounds, sub-committee assignment, finalize, declaring the result, unlock. These live in the boxed "FAC Head controls" areas on the page.',
     poext: 'PO-EXT — claims and negotiates extension proposals off the shared "agent" role, or votes on proposals your sub-committee is assigned to.',
     poext_head: 'PO-EXT Head — runs extensions: sub-committee assignment, finalize/unlock, void/restore. Lives in the PO-EXT panel below.',
   };
@@ -600,7 +600,7 @@
         'The negotiating itself happens in Discord. What belongs here is what it changes — the send-back, the revision, and which bids are still standing.',
         'When you are done: Advance hands the survivors to a sub-committee to ballot. If curation left a single bid, Finalize closes him with no ballot instead — a sub-committee splitting 1,000 balls across one option is ceremony.',
         'Advancing is one-way for you. Your powers on him end there and only the FAC head can send him back.',
-        'You never see ballots, on any player. Nothing signs itself either — a finalize is a decision, and the FAC still enters the transaction by hand.',
+        'You never see ballots, on any player. Finalizing doesn’t sign anyone either: the FAC head declares the result, and that writes the transaction.',
       ]));
     }
 
@@ -617,8 +617,10 @@
         'Sub-committees default to empty. Nobody can ballot on a player until you assign one, and the picker flags anyone whose own team is bidding before you confirm.',
         'A player reaches a sub-committee only after an agent advances him. You can act as agent yourself on anyone nobody has claimed, which is the fallback when every agent is conflicted out, and you can send an advanced player back to his agent with a reason — ballots already cast survive that and are flagged.',
         'Finalize locks the ballots, records the totals, and archives that player’s offers — which is what lets those teams bid on him again in a later round. An unanswered remand warns you and does not block you.',
-        'Unlock reverses a finalize, ballots and offers together. What you undid stays on the record.',
-        'The totals are a decision, not a transaction. The signing is still entered by hand on /transactions.',
+        'After the lock, run the lottery draw off the site, weighted by the balls, then use “Declare the result” to record what it picked. That writes the transaction: a signing, an offer sheet when a rival’s bid wins a restricted free agent, or his qualifying offer. Every bidding team is told how it came out.',
+        'An option with no balls can’t be declared, since the draw can’t land on it. A player locked with no ballots (an agent’s uncontested finalize) has no draw — you just pick the outcome.',
+        '“Needs a result” lists every locked player still waiting on you to declare.',
+        'Unlock reverses a finalize, ballots and offers together. What you undid stays on the record. Once a declared result has been written, unlock waits until the office has taken that transaction back out.',
       ]));
     }
 
@@ -1288,6 +1290,7 @@
   function urgency(p) {
     const dl = (p.ffa || {}).deadline;
     const t = dl ? new Date(dl).getTime() : 0;
+    if (p.needs_result) return [1, t];
     if (p.finalized) return [5, 0];
     if (p.stage === 'awaiting_agent') return [0, t];
     if (p.stage === 'with_committee') return [1, t];
@@ -1309,12 +1312,14 @@
     // local reading of the clock.
     const queueCount = entries.filter(([, p]) => p.stage === 'awaiting_agent').length;
     const holdCount = entries.filter(([, p]) => p.claimed_by === ME.name).length;
+    const resultCount = entries.filter(([, p]) => p.needs_result).length;
     const tabDefs = [];
     if (IS_FAC) tabDefs.push(['mine', `My free agents (${mineCount})`]);
     if (IS_AGENT) {
       tabDefs.push(['queue', `Queue (${queueCount})`]);
       tabDefs.push(['holding', `Holding (${holdCount})`]);
     }
+    if (IS_HEAD) tabDefs.push(['result', `Needs a result (${resultCount})`]);
     tabDefs.push(['all', `All players (${entries.length})`]);
     tabDefs.forEach(([id, label]) => {
       const b = el('button', LIST_MODE === id ? 'on' : '', label);
@@ -1328,6 +1333,7 @@
       LIST_MODE === 'all' ? true
       : LIST_MODE === 'queue' ? p.stage === 'awaiting_agent'
       : LIST_MODE === 'holding' ? p.claimed_by === ME.name
+      : LIST_MODE === 'result' ? p.needs_result
       : p.mine);
     rows.sort((a, b) => {
       const ua = urgency(a[1]), ub = urgency(b[1]);
@@ -1342,6 +1348,8 @@
           ? 'Nothing waiting. A free agent joins the queue when his offer window closes.'
         : LIST_MODE === 'holding'
           ? 'You aren’t holding anybody. Claim one from the queue to start work on his offers.'
+        : LIST_MODE === 'result'
+          ? 'Nothing to declare. A player lands here once he is locked.'
           : 'No players have been opened for Free Agency yet.'));
       return;
     }
@@ -1382,7 +1390,8 @@
       row.appendChild(body);
 
       const tags = el('div', 'prow-tags');
-      if (p.finalized) tags.appendChild(el('span', 'chip chip-ok', 'locked'));
+      if (p.needs_result) tags.appendChild(el('span', 'chip chip-warn', 'needs a result'));
+      else if (p.finalized) tags.appendChild(el('span', 'chip chip-ok', 'locked'));
       else if (p.stage === 'awaiting_agent') tags.appendChild(el('span', 'chip chip-warn', 'needs an agent'));
       else if (p.stage === 'with_agent') {
         tags.appendChild(el('span', 'chip chip-live',
@@ -1550,6 +1559,7 @@
       fin.appendChild(el('span', 'bb-val', when(f.locked_at) + ' by ' + f.locked_by
         + (f.path === 'agent' ? ' · uncontested (agent path)' : ' · sub-committee ballot')));
       wrap.appendChild(fin);
+      wrap.appendChild(resultLine(f, labels));
       const totals = Object.entries(f.totals || {}).sort((a, b) => b[1] - a[1]);
       if (totals.length) {
         const dl = el('dl', 'kv');
@@ -1841,7 +1851,7 @@
       body.appendChild(ul);
     }
     body.appendChild(el('p', 'note',
-      'Nothing is signed by this. The FAC still enters the transaction by hand on /transactions.'));
+      'Nothing is signed by this. The FAC head then declares the result, which writes the transaction.'));
     modal('Finalize ' + nameOf(slug) + ' without a ballot', body, [{
       label: 'Lock him', cls: 'btn-danger', run: async () => {
         await api('/fa/players/' + encodeURIComponent(slug) + '/finalize', { method: 'POST' });
@@ -1960,8 +1970,17 @@
     // inside the Ballots section below — the totals and lock record they act
     // on stay there, since those are visible to the whole sub-committee.
     if (ballots && !ballots._unavailable) {
-      const actionRow = el('div', 'bb-block');
+      let actionRow = el('div', 'bb-block');
       actionRow.style.marginTop = '0.6rem';
+      if (ballots.declare_options) {
+        const d = el('button', 'btn-primary', 'Declare the result…');
+        d.addEventListener('click', () => declareModal(slug, ballots, optionLabels(review, ballots)));
+        actionRow.appendChild(d);
+        actionRow.appendChild(el('span', 'bb-val', 'Run the draw, then record what it picked. This writes the transaction.'));
+        s.appendChild(actionRow);
+        actionRow = el('div', 'bb-block');
+        actionRow.style.marginTop = '0.6rem';
+      }
       if (ballots.final) {
         const u = el('button', 'btn-danger', 'Unlock…');
         u.addEventListener('click', () => unlockModal(slug, ballots));
@@ -1969,7 +1988,7 @@
         actionRow.appendChild(el('span', 'bb-val', 'Reopens the ballots and offers this finalize locked.'));
       } else {
         const f = el('button', 'btn-primary', 'Finalize…');
-        f.addEventListener('click', () => finalizeModal(review, ballots, optionLabels(review)));
+        f.addEventListener('click', () => finalizeModal(review, ballots, optionLabels(review, ballots)));
         actionRow.appendChild(f);
         actionRow.appendChild(el('span', 'bb-val', 'Locks every ballot on this player and records the totals.'));
       }
@@ -2508,8 +2527,12 @@
 
   // ── ballots (§ 4.4) ─────────────────────────────────────────────────────────
 
-  function optionLabels(review) {
+  function optionLabels(review, ballots) {
     const labels = {};
+    // A locked round's offers are archived, so `review` no longer lists them.
+    ((ballots && ballots.locked_offers) || []).forEach(o => {
+      labels[o.id] = `${o.team} #${o.number}`;
+    });
     (review.ballot_options || []).forEach(opt => {
       labels[opt.key] = opt.kind === 'offer' ? `${opt.team} #${opt.number}`
         : opt.kind === 'qo' ? 'Qualifying offer'
@@ -2563,7 +2586,7 @@
       return s;
     }
 
-    const labels = optionLabels(review);
+    const labels = optionLabels(review, ballots);
 
     // § 4.6 — warn, never block. The team comes from the server's own
     // `_conflict_team`, the same rule that stamps a cast ballot, so what a member
@@ -2593,11 +2616,7 @@
           + ' ball(s) above are on ' + v.team + ' #' + v.number
           + ', an offer voided before the lock — counted as cast.'));
       });
-      // § 11.1 — the totals are the committee's decision, not a signing. Nothing
-      // here signs anybody, by design, and the panel says so rather than leaving
-      // a locked result looking like it executed itself.
-      f.appendChild(el('div', 'bb-val',
-        'The allocation is the record of the decision. The signing is still entered by hand on /transactions.'));
+      f.appendChild(resultLine(ballots.final, labels));
       s.appendChild(f);
     } else if (amAssigned(review)) {
       s.appendChild(myBallot(review, ballots, labels));
@@ -2815,7 +2834,8 @@
     body.appendChild(el('p', 'note',
       'Finalizing locks every ballot on this player, records the totals as the committee’s decision, '
       + 'and archives the offers — which is what frees those teams to bid on him again in a later round. '
-      + 'It signs nobody: the signing is still entered by hand on /transactions.'));
+      + 'It signs nobody yet. Next, run the lottery draw and use “Declare the result” to record what it '
+      + 'picked — that step writes the transaction.'));
 
     const totalBox = el('div', 'banner info');
     const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
@@ -2891,6 +2911,101 @@
         toast(nameOf(slug) + ' finalized');
       },
     }]);
+  }
+
+  // What the locked round came to. A round locked before declare-winner
+  // existed has no `result_required` and was signed by hand.
+  function resultLine(final, labels) {
+    const w = final.winner;
+    if (w) {
+      return el('div', 'bb-val', 'Result: ' + (labels[w.key] || w.key) + ' — declared '
+        + when(w.declared_at) + ' by ' + w.declared_by
+        + (w.txn_id ? ' · transaction ' + w.txn_id : ' · nothing to write'));
+    }
+    if (final.result_required) {
+      return el('div', 'bb-val', 'Waiting on the FAC head to declare the result.');
+    }
+    return el('div', 'bb-val', 'The signing was entered by hand on /transactions.');
+  }
+
+  const DECLARE_WRITES = {
+    sign: team => 'Signs him with ' + team + '.',
+    offer_sheet: team => 'Writes an offer sheet from ' + team + '. His current team then has 48 hours to match (§ 3.15).',
+    accept_qo: team => 'Signs him to his qualifying offer with ' + team + ': one year (§ 3.1).',
+  };
+
+  // The draw itself happens off the site (BACKLOG "Committee lottery draws
+  // happen off the site"). Every figure here — balls, odds, what each option
+  // writes, why one can't be picked — comes from the server's
+  // `declare_options`, so the page shows what the endpoint will actually do.
+  function declareModal(slug, ballots, labels) {
+    const opts = ballots.declare_options || [];
+    const body = el('div');
+    const drawn = opts.some(o => o.share != null);
+    body.appendChild(el('p', 'note', drawn
+      ? 'Run the lottery draw, weighted by the balls below, then pick the option it landed on. '
+        + 'Declaring writes the transaction straight to the ledger.'
+      : 'No ballots were cast on this round, so there is no draw — pick the outcome. '
+        + 'Declaring writes the transaction straight to the ledger.'));
+
+    let picked = null;
+    const list = el('div');
+    opts.forEach(o => {
+      const row = el('label', 'alloc-row');
+      row.style.cursor = o.refusal ? 'not-allowed' : 'pointer';
+      const radio = el('input');
+      radio.type = 'radio'; radio.name = 'declare'; radio.value = o.key;
+      radio.disabled = !!o.refusal;
+      radio.addEventListener('change', () => { picked = o.key; });
+      row.appendChild(radio);
+      const lbl = el('div', 'alloc-lbl');
+      lbl.appendChild(el('div', null, (labels[o.key] || o.key)
+        + (o.share != null ? ` — ${o.balls.toLocaleString('en-US')} balls, ${Math.round(o.share * 100)}% of the draw` : '')));
+      const what = o.kind === 'offer' ? shorthand(o.contract) + ' · ' + DECLARE_WRITES[o.writes](o.team)
+        : o.kind === 'qo' ? qoAmountLabel(o.amount, false) + ' · ' + DECLARE_WRITES.accept_qo(o.team)
+        : 'Nobody signs him; he stays a free agent. Nothing is written.';
+      lbl.appendChild(el('div', 'bar-lbl', o.refusal || what));
+      row.appendChild(lbl);
+      list.appendChild(row);
+    });
+    body.appendChild(list);
+
+    modal('Declare the result for ' + nameOf(slug), body, [{
+      label: 'Declare', cls: 'btn-primary', run: async () => {
+        if (!picked) { toast('Pick the option the draw landed on.', true); return false; }
+        return declareWinner(slug, picked, labels, false);
+      },
+    }]);
+  }
+
+  // A warning-only failure comes back asking to confirm (can_confirm) rather
+  // than writing — same contract as PO-EXT's finalize. Returns false when it
+  // opened that confirm step, so the dialog that called it doesn't close it.
+  async function declareWinner(slug, key, labels, confirmWarnings) {
+    try {
+      await api('/fa/players/' + encodeURIComponent(slug) + '/declare-winner',
+        { method: 'POST', body: { key, confirm_warnings: !!confirmWarnings } });
+    } catch (e) {
+      const detail = e.data && e.data.detail;
+      if (!confirmWarnings && detail && detail.can_confirm) {
+        const body = el('div');
+        body.appendChild(el('div', 'note',
+          'Nothing blocks this, but these checks warn — read them before writing it:'));
+        (detail.checks || []).filter(c => !c.passed)
+          .forEach(c => body.appendChild(el('div', 'note', '⚠ ' + c.message)));
+        modal('Declare with warnings?', body, [{
+          label: 'Declare anyway', cls: 'btn-primary',
+          run: () => declareWinner(slug, key, labels, true),
+        }]);
+        return false;
+      }
+      const checks = detail && (detail.checks || []).filter(c => !c.passed && c.level === 'error');
+      throw new Error(checks && checks.length
+        ? 'Blocked: ' + checks.map(c => c.message).join(' ')
+        : (detail && detail.message) || e.message);
+    }
+    await reload();
+    toast((labels[key] || key) + ' declared for ' + nameOf(slug));
   }
 
   function unlockModal(slug, ballots) {

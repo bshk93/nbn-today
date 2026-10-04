@@ -137,6 +137,36 @@ server refuses. A head who isn't on a player's sub-committee sees the totals and
 the finalize button and no inputs. Finalize, unlock and assignment are the
 head's real powers and are separate endpoints.
 
+## Declaring the result — the step that writes the transaction
+
+Finalize locks the ballots and names no winner. The head then runs the lottery
+draw off the site, weighted by the balls, and records what it picked with
+`POST /api/fa/players/{slug}/declare-winner`. That writes the transaction: a
+`sign`, an `offer_sheet` when a rival's bid wins an RFA (the retaining team is
+told it has 48 hours to match), `accept_qo` for the QO, or nothing for
+`NO_SIGNING`. Every bidding team gets an inbox notice of how it came out.
+
+Until 2026-10-04 the dashboard had no button for this and told the head to
+type the signing on `/transactions`, so all 89 rounds locked before then have
+no declared result. They are left that way.
+
+- **What can be declared comes from the server.** `GET …/ballots` carries
+  `declare_options` for the head while a result is owed: each option's balls,
+  share of the draw, what it writes (`_declare_writes`) and, when it can't be
+  picked, why (`_declare_refusal`). The page draws exactly that.
+- **An option with no balls can't be declared** when ballots were cast — the
+  draw can't land on it. A round locked with no ballots (the agent's
+  uncontested path) has no draw, and any option may be declared.
+- **"Needs a result"** is `needs_result` on `GET /api/fa/state`: locked, stamped
+  `result_required` (every lock since this shipped), and no `winner`. The head's
+  list has a tab for it.
+- **Warnings are confirmed, never skipped.** A first call that fails on
+  warnings alone comes back `can_confirm`; the dashboard shows them and calls
+  again with `confirm_warnings: true`. An error always blocks.
+- **Unlock waits on the ledger.** Once a declared result has written a
+  transaction, unlock refuses until the office has taken it back out
+  (`_refuse_unlock_over_txn`).
+
 ## History — reading a player after he's left the pool
 
 `GET /api/fa/players/{slug}/review` is scoped to the *current* pool (`_fa_pool`
