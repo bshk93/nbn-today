@@ -1008,7 +1008,8 @@ async function onExtPlayerPicked() {
         `${ec.start || '?'}–${ec.end || '?'} · final guaranteed year ${ec.final_guaranteed_year || '?'} `
         + `· new money should start ${extState.firstSeason || '?'} (basis: ${ec.basis})`
         + (f.rookie_scale ? ' · rookie-scale: no 140% ceiling, only the § 3.11 maximum'
-           : f.max_year1_ceiling ? ` · Year 1 ceiling ${fmtM(f.max_year1_ceiling)} (140% of ${f.max_year1_basis === 'eaps' ? 'EAPS' : 'prior salary'})` : '');
+           : f.max_year1_ceiling ? ` · Year 1 ceiling ${fmtM(f.max_year1_ceiling)} (140% of ${f.max_year1_basis === 'eaps' ? 'EAPS' : 'prior salary'})` : '')
+        + (f.max_salary && f.max_salary.amount ? ` · max ${fmtM(f.max_salary.amount)} (${f.max_salary.label})` : '');
     } else {
       existingRow.hidden = false;
       document.getElementById('ext-existing-text').textContent =

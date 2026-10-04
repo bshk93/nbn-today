@@ -464,7 +464,8 @@ async function fetchFactSheetAndRevalidate() {
     FORM.existingNote = (ec.start || ec.end)
       ? `Existing contract ${ec.start || '?'}–${ec.end || '?'} · final guaranteed year ${ec.final_guaranteed_year || '?'} (basis: ${ec.basis}) · new money should start ${FORM.firstSeason || '?'}` +
         (f.rookie_scale ? ' · rookie-scale: no 140% ceiling, only the § 3.11 maximum'
-         : f.max_year1_ceiling ? ` · Year 1 ceiling ${fmtM(f.max_year1_ceiling)} (140% of ${f.max_year1_basis === 'eaps' ? 'EAPS' : 'prior salary'})` : '')
+         : f.max_year1_ceiling ? ` · Year 1 ceiling ${fmtM(f.max_year1_ceiling)} (140% of ${f.max_year1_basis === 'eaps' ? 'EAPS' : 'prior salary'})` : '') +
+        (f.max_salary && f.max_salary.amount ? ` · max ${fmtM(f.max_salary.amount)} (${f.max_salary.label})` : '')
       : 'No acquisition record on file — state below when the team believes the deal began.';
     renderForm();
   } catch (e) { /* fall through, live validate below still runs */ }
