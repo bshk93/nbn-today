@@ -45,7 +45,7 @@ to disagree with itself.
 | D3 | **Extensions use the `agent` stage.** | The full claim/advance/return-to-agent clone is in scope, and `ROLE_IMPLIES` needs `poext_head → agent` or the stage deadlocks (§ 2.9). Overrides this doc's original recommendation against it. |
 | D4 | **A remand is free; a rejection consumes one of § 6.3's three proposals.** | **Corrected 2026-08-19: no standalone `reject` action.** "Reject" is the outcome `finalize` records off a majority-reject committee ballot (D6) — that's the only place the counter moves. Remand/void/restore reuse FA verbatim; nothing new to add (§ 2.5). |
 | D5 | **The cap check reports "cannot evaluate" when the target season's thresholds are unset**, rather than passing, failing, or blocking the feature. | Today that is *every* extension (§ 2.2). Committee sets 27-28 onward when it can; nothing is blocked meanwhile. |
-| D6 | **Accept/reject majority vote, not the 1,000-ball ballot** — **flagged to revisit.** | Simpler and matches what the decision is. Revisit once the committee has run real extensions; the ball ballot stays available and the assignment/abstention/finalize record is identical either way. |
+| D6 | ~~Accept/reject majority vote~~ **REPLACED 2026-10-04 (bryn): the constitution's method (Article V).** Each member splits 1,000 balls between accept and reject; more than 85% on one side decides it; otherwise the head runs the lottery draw off-site and finalizes with its result (`FinalizeBody.outcome`). | Same draw-off-site arrangement as FA for now — revisit both together (BACKLOG [P2] "Committee lottery draws happen off the site"). |
 | D7 | **A live extension proposal holds no cap room.** | No `_pending_offer_hold` analogue. The FA hold stops a team bidding on five players with one team's worth of room; with one possible proposer and money in a future year, that failure mode doesn't exist. |
 | D8 | **Eligibility derives from the ledger, warn-and-allow on an indefinite basis** (§ 2.3), and D1 is what makes that warning rare rather than routine. | |
 | D9 | **Nothing about a proposal is announced to Discord — only the accepted extension, if one happens.** | No `poext_notify` proposal feed, public or private; the FA confidentiality guard isn't cloned because there is nothing left to leak (§ 2.7, § 2.8). The accept is the announcement, so it also stamps the § 4.5 six-month trade freeze. Assignment notices go through the member inbox, not a channel. |
@@ -668,8 +668,7 @@ New, still open:
    extension made under § 6.2's conditional trade + extension procedure, with 5%
    raises, the same as a sign-and-trade. The workflow for it is still unbuilt
    (BACKLOG [P2] "Conditional trade + extension has no workflow").
-4. **Revisit D6** once the committee has run real extensions — accept/reject may
-   prove too blunt where the disagreement is about terms rather than yes/no.
+4. ~~Revisit D6~~ Done 2026-10-04: the ball ballot replaced the majority vote (see D6).
 
 ## 9. Blockers, re-verified 2026-08-18
 

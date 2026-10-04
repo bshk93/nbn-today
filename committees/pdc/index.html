@@ -627,9 +627,9 @@
       box.appendChild(list([
         'A team drafts and submits an extension proposal at /extensions — only the incumbent may propose (no rival bids, unlike free agency).',
         'An agent claims a submitted proposal and negotiates it via remand (free — asks the team to revise) or void (drops it, with a reason). Claiming is refused if you hold a role with the same team you’d be representing the player against.',
-        'Advance hands it to a sub-committee, who vote accept or reject — no 1,000 balls, just a majority. A tie refuses to finalize rather than picking a side.',
-        'A majority reject burns one of the player’s three lifetime proposal opportunities (§ 6.3). After the third, no further proposal may be drafted for that player — permanently, unless the PO-EXT head unlocks it.',
-        'Finalize never signs anything — same as free agency, the agreed extension is entered on /transactions by hand, checked against the same validator.',
+        'Advance hands it to a sub-committee. Each member splits 1,000 balls between accept and reject (constitution, Article V). More than 85% on one side decides it; otherwise the head runs the lottery draw and finalizes with its result.',
+        'For an expiring veteran, a rejection uses one of the three proposals that negotiation allows (§ 6.3). Rookie-scale and non-expiring veterans can be re-proposed until their deadline. The PO-EXT head’s unlock undoes a finalize, rejection included.',
+        'An accepted extension is written to the ledger at finalize, checked against the same rules as /transactions.',
       ]));
     }
     document.getElementById('howto').hidden = false;
@@ -639,8 +639,8 @@
   // Deliberately its own self-contained section rather than woven into the FA
   // list/detail machinery above: a proposal is a different object, claim/votes
   // are scoped to a negotiation *cycle* (routers/poext.py's _current_cycle),
-  // not a round_id, and finalize is a plain accept/reject majority, not 1,000
-  // balls. What's genuinely shared — el/api/toast/modal/nameOf/money/ago,
+  // not a round_id, and the ballot is two options (accept/reject), not one
+  // line per offer. What's genuinely shared — el/api/toast/modal/nameOf/money/ago,
   // BIOS/TEAMMAP, the shorthand() contract renderer — is reused, not redrawn.
 
   let POEXT_ELIGIBLE = [];
@@ -856,36 +856,71 @@
       csec.appendChild(assign);
     }
     if (st.stage === 'with_committee' || review.final) {
+      // The constitution's method (Article V): each member splits 1,000 balls
+      // between accept and reject. Over 85% for one side decides it; otherwise
+      // the head runs the lottery draw off-site and records its result.
       const votes = review.votes || {};
       const rows = Object.entries(votes);
+      const balls = v => (v && v.balls) || {};
       if (rows.length) {
         const vt = el('div'); vt.style.marginTop = '0.5rem';
         rows.forEach(([name, v]) => {
-          vt.appendChild(el('div', 'note', `${name}: ${v.vote}` + (v.conflict ? ` (conflict: ${v.conflict})` : '') + (v.note ? ` — "${v.note}"` : '')));
+          vt.appendChild(el('div', 'note', `${name}: ${balls(v).accept || 0} accept / ${balls(v).reject || 0} reject`
+            + (v.conflict ? ` (conflict: ${v.conflict})` : '') + (v.note ? ` — "${v.note}"` : '')));
         });
+        const tot = { accept: 0, reject: 0 };
+        rows.forEach(([, v]) => { tot.accept += balls(v).accept || 0; tot.reject += balls(v).reject || 0; });
+        const cast = tot.accept + tot.reject;
+        if (cast && !review.final) {
+          const share = tot.accept / cast;
+          vt.appendChild(el('div', 'note', `Totals: ${tot.accept} accept / ${tot.reject} reject — `
+            + (share > 0.85 ? 'over 85% accept, the ballot decides: agreed.'
+               : (1 - share) > 0.85 ? 'over 85% reject, the ballot decides: rejected.'
+               : `no side over 85%, so a lottery draw decides (${Math.round(share * 100)}% accept).`)));
+        }
         csec.appendChild(vt);
       }
       const assignedSet = new Set(review.assigned);
       if (assignedSet.has(ME.name) && !review.final) {
-        const vbar = el('div', 'modal-actions'); vbar.style.justifyContent = 'flex-start'; vbar.style.marginTop = '0.5rem';
-        const mine = votes[ME.name];
-        ['accept', 'reject'].forEach(choice => {
-          const b = el('button', mine && mine.vote === choice ? 'btn-primary' : 'btn-ghost', choice[0].toUpperCase() + choice.slice(1));
-          b.addEventListener('click', () => poextAct(() => api('/poext/players/' + slug + '/vote', { method: 'PUT', body: { vote: choice } })));
-          vbar.appendChild(b);
-        });
-        csec.appendChild(vbar);
+        const mine = balls(votes[ME.name]);
+        const wrap = el('div'); wrap.style.marginTop = '0.5rem';
+        const row = el('div', 'modal-actions'); row.style.justifyContent = 'flex-start'; row.style.alignItems = 'center';
+        const acc = el('input'); acc.type = 'number'; acc.min = '0'; acc.max = '1000'; acc.step = '10'; acc.style.width = '6rem';
+        const rej = el('input'); rej.type = 'number'; rej.min = '0'; rej.max = '1000'; rej.step = '10'; rej.style.width = '6rem';
+        acc.value = mine.accept != null ? mine.accept : 500;
+        rej.value = mine.reject != null ? mine.reject : 1000 - acc.value;
+        acc.addEventListener('input', () => { rej.value = Math.max(0, 1000 - (+acc.value || 0)); });
+        rej.addEventListener('input', () => { acc.value = Math.max(0, 1000 - (+rej.value || 0)); });
+        row.appendChild(el('span', 'note', 'Accept')); row.appendChild(acc);
+        row.appendChild(el('span', 'note', 'Reject')); row.appendChild(rej);
+        wrap.appendChild(row);
+        const note = el('textarea'); note.placeholder = 'Note (optional)'; note.value = (votes[ME.name] || {}).note || '';
+        wrap.appendChild(note);
+        const castBtn = el('button', 'btn-primary', votes[ME.name] ? 'Update ballot' : 'Cast ballot');
+        castBtn.addEventListener('click', () => poextAct(() => api('/poext/players/' + slug + '/vote', {
+          method: 'PUT', body: { balls: { accept: +acc.value || 0, reject: +rej.value || 0 }, note: note.value } })));
+        wrap.appendChild(castBtn);
+        wrap.appendChild(el('div', 'note', 'Split 1,000 balls. More than 850 on one side decides it outright.'));
+        csec.appendChild(wrap);
       }
-      if (IS_POEXT_HEAD && !review.final) {
-        const fin = el('button', 'btn-primary', 'Finalize');
-        fin.style.marginTop = '0.5rem';
+      if (IS_POEXT_HEAD && !review.final && rows.length) {
+        const fbar = el('div', 'modal-actions'); fbar.style.justifyContent = 'flex-start'; fbar.style.marginTop = '0.5rem';
+        const fin = el('button', 'btn-primary', 'Finalize (ballot decides)');
         fin.addEventListener('click', () => poextFinalize(slug));
-        csec.appendChild(fin);
+        fbar.appendChild(fin);
+        [['agreed', 'Lottery drew accept'], ['rejected', 'Lottery drew reject']].forEach(([outcome, label]) => {
+          const b = el('button', 'btn-ghost', label);
+          b.addEventListener('click', () => poextFinalize(slug, false, outcome));
+          fbar.appendChild(b);
+        });
+        csec.appendChild(fbar);
       }
       if (review.final) {
-        csec.appendChild(el('div', 'banner ' + (review.final.outcome === 'agreed' ? 'info' : 'bad'),
-          `Finalized: ${review.final.outcome} (${review.final.accept}–${review.final.reject}) by ${review.final.locked_by}` +
-          (review.final.outcome === 'agreed' ? ' — the extension was written to the ledger directly.' : '')));
+        const f = review.final, t = f.totals || {};
+        csec.appendChild(el('div', 'banner ' + (f.outcome === 'agreed' ? 'info' : 'bad'),
+          `Finalized: ${f.outcome} (${t.accept || 0} accept / ${t.reject || 0} reject balls, `
+          + (f.path === 'lottery' ? 'by lottery draw' : 'over 85%') + `) by ${f.locked_by}` +
+          (f.outcome === 'agreed' ? ' — the extension was written to the ledger directly.' : '')));
         if (IS_POEXT_HEAD) {
           const unlock = el('button', 'btn-ghost', 'Unlock');
           unlock.addEventListener('click', () => poextAct(() => api('/poext/players/' + slug + '/unlock', { method: 'POST' })));
@@ -911,30 +946,31 @@
   // warning-only failure comes back asking to confirm rather than a flat
   // error. A real error (can_confirm absent) still just toasts, same as
   // every other action here.
-  async function poextFinalize(slug, confirmWarnings) {
+  // `outcome` is the off-site lottery draw's result, when no side passed 85%.
+  async function poextFinalize(slug, confirmWarnings, outcome) {
     try {
       await api('/poext/players/' + slug + '/finalize',
-        { method: 'POST', body: { confirm_warnings: !!confirmWarnings } });
+        { method: 'POST', body: { confirm_warnings: !!confirmWarnings, outcome: outcome || null } });
       toast('Done.');
       await poextReload();
     } catch (e) {
       const detail = e.data && e.data.detail;
       if (!confirmWarnings && detail && detail.can_confirm) {
-        poextFinalizeConfirmModal(slug, detail.checks || []);
+        poextFinalizeConfirmModal(slug, detail.checks || [], outcome);
         return;
       }
       toast((detail && detail.message) || e.message, true);
     }
   }
 
-  function poextFinalizeConfirmModal(slug, checks) {
+  function poextFinalizeConfirmModal(slug, checks, outcome) {
     const body = el('div');
     body.appendChild(el('div', 'note',
       'This extension has warning-level checks — nothing blocking, but worth a look before finalizing:'));
     checks.filter(c => !c.passed).forEach(c => body.appendChild(el('div', 'note', '⚠ ' + c.message)));
     modal('Finalize with warnings?', body, [{
       label: 'Finalize anyway', cls: 'btn-primary',
-      run: () => poextFinalize(slug, true),
+      run: () => poextFinalize(slug, true, outcome),
     }]);
   }
 

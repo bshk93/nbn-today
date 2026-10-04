@@ -389,6 +389,16 @@ Two smaller residuals from the same work:
   validator catches it when the team tries to extend (`qo_rfa_eligible`), so it
   can't make a wrong RFA, but the tag itself is misleading until then.
 
+### [P2] Committee lottery draws happen off the site
+The constitution (Article V) decides FAC and PO-Ext questions by lottery:
+members split balls, and unless one PO-Ext option clears 85% the result is a
+draw weighted by the balls. Both pipelines record the balls and the result,
+but neither runs the draw — the head draws off-site and records it (FA via
+`declare-winner`, PO-EXT via `finalize`'s `outcome`). So the draw itself can't
+be checked from the site. Decided 2026-10-04 to keep it off-site for now and
+revisit both together; a server-side draw would record the odds and the random
+value on the final record.
+
 ### [P2] Conditional trade + extension has no workflow
 § 6.2's conditional trade + extension — Team A submits the extension pitch on
 Team B's behalf, and the trade goes through only if the player agrees — exists
