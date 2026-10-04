@@ -664,9 +664,10 @@ New, still open:
    ones). D8/D15 say warn-and-allow; whether that should ever tighten to refuse is
    still open, and the committee could simply rule case by case rather than pick a
    general policy.
-3. **What defines an extend-and-trade?** § 3.9's raise table and § 6.2 both cite the
-   5% figure, but no section defines the mechanism or the sequencing. Open BACKLOG
-   item; `ExtensionDetails.kind` already reserves the value.
+3. ~~What defines an extend-and-trade?~~ **DECIDED 2026-10-04 (bryn):** an
+   extension made under § 6.2's conditional trade + extension procedure, with 5%
+   raises, the same as a sign-and-trade. The workflow for it is still unbuilt
+   (BACKLOG [P2] "Conditional trade + extension has no workflow").
 4. **Revisit D6** once the committee has run real extensions — accept/reject may
    prove too blunt where the disagreement is about terms rather than yes/no.
 

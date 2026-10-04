@@ -389,19 +389,17 @@ Two smaller residuals from the same work:
   validator catches it when the team tries to extend (`qo_rfa_eligible`), so it
   can't make a wrong RFA, but the tag itself is misleading until then.
 
-### [P2] Extend-and-trade is referenced but never defined
-§ 3.9's raise table has an "Extend-and-trade" row (5% of Year 1, vs 8% for a
-normal extension), and § 6.2 repeats the 5% figure — but no section anywhere
-defines what an extend-and-trade *is*, when it may be used, or how the
-extension and the trade are sequenced.
+### [P2] Conditional trade + extension has no workflow
+§ 6.2's conditional trade + extension — Team A submits the extension pitch on
+Team B's behalf, and the trade goes through only if the player agrees — exists
+only as rulebook text. Such an extension is an extend-and-trade, with 5%
+raises (defined 2026-10-04; § 3.9's row now points at it).
 
-The row originally cited "§ 8(e)(2)", which is the real NBA CBA's numbering;
-this rulebook has Articles I–VII only, so it pointed at nothing. Dangling
-citation removed 2026-08-07 — the 5% figure is still correct and still
-enforceable, so nothing is blocked, but the mechanism needs writing.
-
-Interacts with `docs/extensions.md`: `ExtensionDetails.kind` already reserves
-`"extend_and_trade"` as the value that selects the 5% ceiling.
+What's missing: a PO-EXT proposal can't name a trade it depends on, so the
+pipeline can't hold a trade until the extension is agreed, or submit a
+proposal from Team A for a player headed to Team B. Until then a team marks
+a proposal "extend-and-trade" itself (`ExtensionDetails.kind`), which only
+tightens the raise limit, and the trade goes through TRC separately.
 
 ### [P2] Proration is practiced but undocumented
 The league prorates in-season minimum signings, but the rulebook says nothing

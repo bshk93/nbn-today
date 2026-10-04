@@ -283,7 +283,7 @@ function renderForm() {
   const kindField = el('div', 'field narrow');
   kindField.appendChild(el('label', null, 'Kind (§ 6.2/6.3)'));
   const kindSel = el('select');
-  [['veteran', 'Veteran'], ['rookie_scale', 'Rookie scale'], ['extend_and_trade', 'Extend-and-trade (5% raises)']]
+  [['veteran', 'Veteran'], ['rookie_scale', 'Rookie scale'], ['extend_and_trade', 'Extend-and-trade (conditional trade, 5% raises)']]
     .forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if (v === FORM.kind) o.selected = true; kindSel.appendChild(o); });
   kindSel.addEventListener('change', () => { FORM.kind = kindSel.value; scheduleValidate(); });
   kindField.appendChild(kindSel);
