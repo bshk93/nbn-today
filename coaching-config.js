@@ -114,18 +114,23 @@
   // Budget-constrained pools — rendered with the pdc.html ballot widget's
   // range+number-pair-with-running-total shape (myBallot), parameterized by
   // `budget`/`fields` instead of that widget's hardcoded BALLOT_TOTAL/opts.
+  //
+  // `oneFieldMax` lets exactly one field in the pool go past its own `max`, up
+  // to this value. System Proficiencies: every system has a floor of 50, there
+  // are 100 points on top of the floors (8 x 50 + 100 = 500), one system may
+  // go to 90 and the rest top out at 80.
   const POINT_BUY_POOLS = [
     {
-      key: 'system_proficiencies', label: 'System Proficiencies', budget: 500,
+      key: 'system_proficiencies', label: 'System Proficiencies', budget: 500, oneFieldMax: 90,
       fields: [
-        { key: 'balanced', label: 'Balanced', min: 50, max: 90 },
-        { key: 'grit_and_grind', label: 'Grit and Grind', min: 50, max: 90 },
-        { key: 'pace_and_space', label: 'Pace & Space', min: 50, max: 90 },
-        { key: 'perimeter_centric', label: 'Perimeter Centric', min: 50, max: 90 },
-        { key: 'post_centric', label: 'Post Centric', min: 50, max: 90 },
-        { key: 'triangle', label: 'Triangle', min: 50, max: 90 },
-        { key: 'seven_seconds_or_less', label: 'Seven Seconds or Less', min: 50, max: 90 },
-        { key: 'defense', label: 'Defense', min: 50, max: 90 },
+        { key: 'balanced', label: 'Balanced', min: 50, max: 80 },
+        { key: 'grit_and_grind', label: 'Grit and Grind', min: 50, max: 80 },
+        { key: 'pace_and_space', label: 'Pace & Space', min: 50, max: 80 },
+        { key: 'perimeter_centric', label: 'Perimeter Centric', min: 50, max: 80 },
+        { key: 'post_centric', label: 'Post Centric', min: 50, max: 80 },
+        { key: 'triangle', label: 'Triangle', min: 50, max: 80 },
+        { key: 'seven_seconds_or_less', label: 'Seven Seconds or Less', min: 50, max: 80 },
+        { key: 'defense', label: 'Defense', min: 50, max: 80 },
       ],
     },
     {
@@ -152,6 +157,40 @@
 
   function poolRemaining(pool, poolValues) {
     return pool.budget - poolTotal(pool, poolValues);
+  }
+
+  // The fields sitting above their own `max` (only possible with oneFieldMax).
+  function poolRaisedFields(pool, poolValues) {
+    poolValues = poolValues || {};
+    return pool.fields.filter(f => (Number(poolValues[f.key]) || 0) > f.max);
+  }
+
+  // The highest value a field may take right now: oneFieldMax if no other
+  // field in the pool is already using that one slot, else its own max.
+  function fieldMax(pool, field, poolValues) {
+    if (!pool.oneFieldMax) return field.max;
+    const others = poolRaisedFields(pool, poolValues).filter(f => f.key !== field.key);
+    return others.length ? field.max : pool.oneFieldMax;
+  }
+
+  // Everything wrong with one pool, as display strings. Empty = usable as-is.
+  function poolIssues(pool, poolValues) {
+    poolValues = poolValues || {};
+    const issues = [];
+    if (poolRemaining(pool, poolValues) !== 0) {
+      issues.push(`${pool.label}: ${poolTotal(pool, poolValues)}/${pool.budget}`);
+    }
+    pool.fields.forEach(f => {
+      const v = Number(poolValues[f.key]) || 0;
+      const hardMax = pool.oneFieldMax || f.max;
+      if (v < f.min) issues.push(`${pool.label}: ${f.label} below ${f.min}`);
+      if (v > hardMax) issues.push(`${pool.label}: ${f.label} above ${hardMax}`);
+    });
+    const raised = poolRaisedFields(pool, poolValues);
+    if (raised.length > 1) {
+      issues.push(`${pool.label}: only one can go above ${raised[0].max} (${raised.map(f => f.label).join(', ')})`);
+    }
+    return issues;
   }
 
   function minutesTotal(minutes) {
@@ -194,12 +233,7 @@
     const values = (record && record.values) || {};
     const minutes = (record && record.minutes) || {};
     const issues = [];
-    POINT_BUY_POOLS.forEach(pool => {
-      const poolValues = values[pool.key];
-      if (poolRemaining(pool, poolValues) !== 0) {
-        issues.push(`${pool.label}: ${poolTotal(pool, poolValues)}/${pool.budget}`);
-      }
-    });
+    POINT_BUY_POOLS.forEach(pool => issues.push(...poolIssues(pool, values[pool.key])));
     if (minutesRemaining(minutes) !== 0) {
       issues.push(`Player Minutes: ${minutesTotal(minutes)}/${MINUTES_BUDGET}`);
     }
@@ -312,7 +346,7 @@
 
   global.CoachingSettings = {
     FIELD_GROUPS, POINT_BUY_POOLS, MINUTES_SLOTS, MINUTES_BUDGET,
-    poolTotal, poolRemaining, minutesTotal, minutesRemaining, validityIssues,
+    poolTotal, poolRemaining, poolIssues, fieldMax, minutesTotal, minutesRemaining, validityIssues,
     emptyValues, emptyMinutes, renderReadOnly,
   };
 

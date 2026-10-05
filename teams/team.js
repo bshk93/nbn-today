@@ -5973,6 +5973,11 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     });
     wrap.appendChild(range);
     wrap.appendChild(num);
+    // A pool with oneFieldMax moves a field's ceiling as the others change.
+    wrap.setMax = newMax => {
+      max = newMax;
+      range.max = num.max = String(newMax);
+    };
     return wrap;
   }
 
@@ -6017,11 +6022,7 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     // full record, which would also flag an unrelated minutes imbalance.
     function refreshSaveState() {
       const issues = [];
-      CS.POINT_BUY_POOLS.forEach(pool => {
-        if (CS.poolRemaining(pool, values[pool.key]) !== 0) {
-          issues.push(`${pool.label}: ${CS.poolTotal(pool, values[pool.key])}/${pool.budget}`);
-        }
-      });
+      CS.POINT_BUY_POOLS.forEach(pool => issues.push(...CS.poolIssues(pool, values[pool.key])));
       if (issues.length) {
         statusEl.style.color = 'var(--gold,#c9a227)';
         statusEl.textContent = '⚠ Not balanced — ' + issues.join(' · ');
@@ -6088,12 +6089,20 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
         totalLine.textContent = ok
           ? `${total} of ${pool.budget} allocated`
           : `${total} of ${pool.budget} allocated · ${pool.budget - total > 0 ? (pool.budget - total) + ' left to place' : (total - pool.budget) + ' over'}`;
+        controls.forEach((control, i) => control.setMax(CS.fieldMax(pool, pool.fields[i], poolValues)));
         refreshSaveState();
       }
-      pool.fields.forEach(f => {
-        const control = makeRangeNumberPair(f.min, f.max, 1, poolValues[f.key] || f.min, v => { poolValues[f.key] = v; syncTotal(); });
+      const controls = pool.fields.map(f => {
+        const control = makeRangeNumberPair(f.min, pool.oneFieldMax || f.max, 1, poolValues[f.key] || f.min, v => { poolValues[f.key] = v; syncTotal(); });
         card.appendChild(fieldRow(f.label, control));
+        return control;
       });
+      if (pool.oneFieldMax) {
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem';
+        note.textContent = `Each ${pool.fields[0].min}–${pool.fields[0].max}. One may go up to ${pool.oneFieldMax}.`;
+        card.appendChild(note);
+      }
       card.appendChild(totalLine);
       syncTotal();
       body.appendChild(card);
