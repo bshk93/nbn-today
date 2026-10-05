@@ -118,6 +118,7 @@ has no totals row.
 Rules while transcribing:
 - **Do not** compute DREB, points, totals, or anything — the script derives DREB, checks points, and sums the columns itself. Transcribe the totals row as printed; never add up the players to fill it in.
 - Every value is a plain integer. Minutes shown as `MM:SS` become whole minutes, rounded down (`31:47` → `31`).
+  If a team's minutes then come up short of 240 only because of that rounding, stop and tell the user — do not nudge anyone's minutes to make the total work.
 - Use player names **exactly as shown** — do not guess or look up rosters yet.
 - `home_pts`/`away_pts` are the final team scores from the screenshot. Omit a field only if it is genuinely not visible.
 - Keep going until every row is written. Do not stop to comment on the data. **No prose between rows.**
@@ -156,11 +157,17 @@ curl -s http://localhost:8001/api/players
 
 For each player name in `.checked.json`, find their slug by matching the `name`
 field (stored as `"LAST, FIRST"` uppercase). The screenshot may show abbreviated
-or display names — use context to match. If a player cannot be matched, derive
-the slug: `"LAST, FIRST"` → `last-first` (lowercase, spaces→hyphens, strip
-punctuation). Flag any uncertain derivation and ask if needed.
+or display names — use context to match, and prefer a player on that team's
+roster. **The slug is the only thing that identifies the player.** The commit
+writes the bio's name for that slug, whatever `player` says, and refuses a slug
+with no bio.
 
-Add the resolved `slug` and normalized `player` (`"LAST, FIRST"`) into each row.
+If a player cannot be matched to an existing bio, **stop and ask the user.** Do
+not invent a slug. A genuinely new player needs a bio created first; a misread
+name needs re-reading. Ask about any match you are not sure of too: a wrong
+slug files one player's line under another, and every check still passes.
+
+Add the resolved `slug` into each row (keep `player` as shown, for the report).
 
 ### 4. Commit
 
@@ -200,6 +207,14 @@ Payload shape:
 ```
 
 Report the API response. If `ok: true`, report how many rows were added.
+
+The commit runs the same checks as the weekly integrity job before it writes,
+and requires the season to be the one the date falls in. A `422` names every
+problem; nothing was written. Fix the cause and commit again:
+
+- **`is not a player bio`** / **`listed twice`** — a slug from 3d is wrong. Go back to 3d for that player.
+- **`is in the YY-YY season`** — the upload's date or season is wrong. Check `meta.json` against the game.
+- **anything else** (`bad_arithmetic`, `bad_minutes`, `score_mismatch`, `overtime mismatch`, …) — should not happen after a clean validator pass. Show the user the response; do not edit numbers to get past it.
 
 The first game of a season creates that season's raw file (the log will say
 `Created allstats-YY-YY.csv for the first game of YY-YY`) — that is normal, not

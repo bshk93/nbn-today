@@ -178,6 +178,13 @@ def main():
     code, _ = run(d)
     expect("the per-player minute cap still fires", code == 1)
 
+    # The commit route takes only 240 + 25*OT exactly, so one minute short
+    # must fail here rather than at the commit.
+    d = base()
+    d["home_rows"][0]["min"] -= 1
+    code, out = run(d)
+    expect("a team one minute short fails", code == 1 and "off by -1" in out, out)
+
     d = base()
     d["away_pts"] = d["home_pts"]
     code, _ = run(d)

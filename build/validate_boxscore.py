@@ -304,7 +304,10 @@ def main():
         tm = team_min.get(side, 0)
         expected, ot, gap = nearest_regulation(tm)
         ot_by_side[side] = ot
-        if abs(gap) > 1:
+        # Exact, not within one: POST /api/boxscore/commit refuses any total
+        # that isn't 240 + 25*OT (the weekly corpus check's rule), so passing
+        # a 239 here would only move the failure to the commit.
+        if gap != 0:
             failed = True
             lines.append(f"[!] {side} MIN {tm}, nearest legal total is "
                          f"{expected} (off by {gap:+d})")
