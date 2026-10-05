@@ -217,7 +217,7 @@ const radarReady = new Promise(resolve => {
 });
 
 // CoachingSettings — the 2K coach-profile field/option schema, shared with the
-// streamer dashboard on /schedule so a team's settings render the same way in
+// streamer dashboard on /committees/stream so a team's settings render the same way in
 // both places. Soft dependency, like CapHealth: the Coaching tab reports
 // itself unavailable rather than throwing if this fails to load.
 const coachingConfigReady = new Promise(resolve => {
@@ -5922,8 +5922,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 }
 
 // Coaching Settings tab — a team's 2K coach profile (schema in
-// /coaching-config.js), entered into the game by a streamer from the
-// dashboard on /schedule. Structurally mirrors setupTeamSettingsTab just
+// /coaching-config.js), entered into the game by a streamer from
+// /committees/stream. Structurally mirrors setupTeamSettingsTab just
 // above (read/edit toggle, withToken-gated Edit button, same 403 handling),
 // but every field renders off window.CoachingSettings' config rather than
 // being hand-written, since that vocabulary is expected to change yearly.
@@ -5954,25 +5954,45 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     }
   }
 
-  function makeRangeNumberPair(min, max, step, initial, onChange) {
+  // `allowBlank`: the field may be left empty (an optional group's "keep the
+  // playbook default"). Blank shows as an empty box reading "Default" with a
+  // dimmed slider; moving the slider or typing a number sets a value, and the
+  // ↺ button clears it again.
+  function makeRangeNumberPair(min, max, step, initial, onChange, allowBlank) {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;align-items:center;gap:0.5rem;flex:1';
+    const blank = allowBlank && (initial === '' || initial == null);
     const range = document.createElement('input');
     range.type = 'range'; range.min = String(min); range.max = String(max); range.step = String(step);
-    range.value = String(initial);
+    range.value = String(blank ? Math.round((min + max) / 2) : initial);
     range.style.cssText = 'flex:1';
     const num = document.createElement('input');
     num.type = 'number'; num.min = String(min); num.max = String(max); num.step = String(step);
-    num.value = String(initial);
-    num.style.cssText = 'width:4rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
-    range.addEventListener('input', () => { num.value = range.value; onChange(+range.value); });
+    num.value = blank ? '' : String(initial);
+    if (allowBlank) num.placeholder = 'Default';
+    num.style.cssText = 'width:4.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+    const setDim = dim => { range.style.opacity = dim ? '0.35' : ''; };
+    setDim(blank);
+    range.addEventListener('input', () => { num.value = range.value; setDim(false); onChange(+range.value); });
     num.addEventListener('input', () => {
+      if (allowBlank && num.value === '') { setDim(true); onChange(''); return; }
       const v = Math.max(min, Math.min(max, +num.value || 0));
       range.value = String(v);
+      setDim(false);
       onChange(v);
     });
     wrap.appendChild(range);
     wrap.appendChild(num);
+    if (allowBlank) {
+      const reset = document.createElement('button');
+      reset.type = 'button';
+      reset.className = 'ui-btn ui-btn--sm ui-btn--ghost';
+      reset.textContent = '↺';
+      reset.title = 'Use the playbook default';
+      reset.setAttribute('aria-label', 'Use the playbook default');
+      reset.addEventListener('click', () => { num.value = ''; setDim(true); onChange(''); });
+      wrap.appendChild(reset);
+    }
     // A pool with oneFieldMax moves a field's ceiling as the others change.
     wrap.setMax = newMax => {
       max = newMax;
@@ -5984,10 +6004,8 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
   function renderEditView() {
     const values = record && record.values ? JSON.parse(JSON.stringify(record.values)) : CS.emptyValues();
     const minutes = record && record.minutes ? JSON.parse(JSON.stringify(record.minutes)) : CS.emptyMinutes();
-    // A blank starting form starts under/over every pool's budget on purpose —
-    // Save stays disabled until the team actually allocates a legal total,
-    // same as the § 4.4 PDC ballot widget this borrows its shape from.
-    CS.FIELD_GROUPS.forEach(g => g.fields.forEach(f => { if (!(f.key in values)) values[f.key] = f.type === 'slider' ? (f.min || 0) : ''; }));
+    // A field added to the schema after this record was saved starts empty.
+    CS.FIELD_GROUPS.forEach(g => g.fields.forEach(f => { if (!(f.key in values)) values[f.key] = CS.emptyFieldValue(g, f); }));
 
     const toolbar = document.createElement('div');
     toolbar.style.cssText = 'display:flex;gap:0.4rem;align-items:center;justify-content:flex-end;margin-bottom:0.75rem;position:sticky;top:0;background:var(--bg-card);padding:0.5rem 0;z-index:1';
@@ -6017,12 +6035,11 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     // (via CS.validityIssues on the saved record) in the read view and the
     // streamer dashboard, so an unbalanced save is obvious to both the person
     // who entered it and whoever enters it into the game. Minutes aren't
-    // edited in this form any more (see Roster Settings above), so this only
-    // checks the pools this form actually controls — not CS.validityIssues'
-    // full record, which would also flag an unrelated minutes imbalance.
+    // edited in this form any more (see Roster Settings above), so this uses
+    // CS.valuesIssues — everything but minutes — rather than the full
+    // CS.validityIssues, which would also flag an unrelated minutes imbalance.
     function refreshSaveState() {
-      const issues = [];
-      CS.POINT_BUY_POOLS.forEach(pool => issues.push(...CS.poolIssues(pool, values[pool.key])));
+      const issues = CS.valuesIssues(values);
       if (issues.length) {
         statusEl.style.color = 'var(--gold,#c9a227)';
         statusEl.textContent = '⚠ Not balanced — ' + issues.join(' · ');
@@ -6032,22 +6049,18 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
       }
     }
 
-    function groupCard(title) {
+    function groupCard(title, note) {
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.9rem';
-      const h = document.createElement('div');
-      h.style.cssText = 'font-weight:700;font-size:0.95rem;margin-bottom:0.6rem';
-      h.textContent = title;
+      const h = CS.labelWithNote(title, note, 'display:block;font-weight:700;font-size:0.95rem;margin-bottom:0.6rem');
       card.appendChild(h);
       return card;
     }
 
-    function fieldRow(labelText, control) {
+    function fieldRow(labelText, control, note) {
       const r = document.createElement('div');
       r.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:0.3rem 0';
-      const l = document.createElement('span');
-      l.style.cssText = 'font-size:0.8rem;color:var(--text-muted)';
-      l.textContent = labelText;
+      const l = CS.labelWithNote(labelText, note, 'font-size:0.8rem;color:var(--text-muted)');
       r.appendChild(l);
       r.appendChild(control);
       return r;
@@ -6055,7 +6068,7 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
 
     // Plain select/slider field groups
     CS.FIELD_GROUPS.forEach(group => {
-      const card = groupCard(group.label);
+      const card = groupCard(group.label, group.note);
       group.fields.forEach(f => {
         let control;
         if (f.type === 'select') {
@@ -6063,9 +6076,10 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
           sel.addEventListener('change', () => { values[f.key] = sel.value; });
           control = sel;
         } else {
-          control = makeRangeNumberPair(f.min, f.max, 1, values[f.key] || f.min, v => { values[f.key] = v; });
+          const initial = group.optional ? values[f.key] : (values[f.key] || f.min);
+          control = makeRangeNumberPair(f.min, f.max, 1, initial, v => { values[f.key] = v; refreshSaveState(); }, group.optional);
         }
-        card.appendChild(fieldRow(f.label, control));
+        card.appendChild(fieldRow(f.label, control, f.note));
       });
       body.appendChild(card);
     });
@@ -6077,7 +6091,7 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     // this pool starts at actually matches what's shown, rather than counting
     // an untouched field as 0 while its slider visibly reads f.min.
     CS.POINT_BUY_POOLS.forEach(pool => {
-      const card = groupCard(pool.label);
+      const card = groupCard(pool.label, pool.note);
       const poolValues = values[pool.key] || (values[pool.key] = {});
       pool.fields.forEach(f => { if (!(f.key in poolValues)) poolValues[f.key] = f.min || 0; });
       const totalLine = document.createElement('div');
@@ -6094,15 +6108,9 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
       }
       const controls = pool.fields.map(f => {
         const control = makeRangeNumberPair(f.min, pool.oneFieldMax || f.max, 1, poolValues[f.key] || f.min, v => { poolValues[f.key] = v; syncTotal(); });
-        card.appendChild(fieldRow(f.label, control));
+        card.appendChild(fieldRow(f.label, control, f.note));
         return control;
       });
-      if (pool.oneFieldMax) {
-        const note = document.createElement('div');
-        note.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem';
-        note.textContent = `Each ${pool.fields[0].min}–${pool.fields[0].max}. One may go up to ${pool.oneFieldMax}.`;
-        card.appendChild(note);
-      }
       card.appendChild(totalLine);
       syncTotal();
       body.appendChild(card);

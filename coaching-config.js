@@ -1,7 +1,7 @@
 // coaching-config.js — the 2K coach-profile vocabulary, in one place.
 //
 // A team's own role fills this in on their team page (Coaching tab, teams/team.js)
-// and a streamer enters it into the game from the dashboard on /schedule. Both
+// and a streamer enters it into the game from /committees/stream. Both
 // consumers read this file rather than hardcoding fields, because the field/option
 // list is coupled to whatever 2K build the league is on and *will* change between
 // seasons — editing the arrays below is meant to be the entire migration.
@@ -16,11 +16,14 @@
 // team submits and validates none of it — this file is the only schema that
 // exists, and it lives in the browser on purpose. Point-buy/minutes totals are
 // enforced here, client-side, the same way the § 4.4 PDC ballot widget enforces
-// its 1,000-ball total (pdc/index.html's myBallot).
+// its 1,000-ball total (committees/pdc/index.html's myBallot).
+//
+// Any group, field or pool can carry a `note`: help text shown as an ⓘ
+// tooltip next to its label, in both the edit form and the read view.
 //
 // Loaded by teams/team.js the same dynamic-inject-and-await-a-promise way as
 // contract.js/cap-health.js (team pages are bodyless shells), and by
-// schedule/index.html via a plain <script> tag.
+// committees/stream/index.html via a plain <script> tag.
 
 (function (global) {
   'use strict';
@@ -90,13 +93,21 @@
       ],
     },
     {
-      key: 'coaching_options', label: 'Coaching Options', fields: [
+      // `optional`: a blank field means "keep the playbook's default", so it
+      // is stored as '' rather than forced to a number.
+      key: 'coaching_options', label: 'Coaching Options', optional: true,
+      note: 'Each Playbook comes with default coaching option values.\n'
+        + 'If you want to change any of the values, enter them here.\n'
+        + 'If you want to keep the default, leave the value blank.',
+      fields: [
         { key: 'help_defense', label: 'Help Defense', type: 'slider', min: 0, max: 100 },
         { key: 'run_plays_frequency', label: 'Run Plays Frequency', type: 'slider', min: 0, max: 100 },
         { key: 'zone_usage_frequency', label: 'Zone Usage Frequency', type: 'slider', min: 0, max: 100 },
-        { key: 'bench_depth', label: 'Bench Depth', type: 'slider', min: 0, max: 100 },
+        { key: 'bench_depth', label: 'Bench Depth', type: 'slider', min: 5, max: 15,
+          note: 'How many players deep you want your rotations' },
         { key: 'bench_utilization', label: 'Bench Utilization', type: 'slider', min: 0, max: 100 },
-        { key: 'lineup_performance_factor', label: 'Lineup Performance Factor', type: 'slider', min: 0, max: 100 },
+        { key: 'lineup_performance_factor', label: 'Lineup Performance Factor', type: 'slider', min: 0, max: 100,
+          note: 'Takes into account how the current lineup is performing when determining substitutions' },
       ],
     },
     {
@@ -119,18 +130,49 @@
   // to this value. System Proficiencies: every system has a floor of 50, there
   // are 100 points on top of the floors (8 x 50 + 100 = 500), one system may
   // go to 90 and the rest top out at 80.
+  const systemNote = (summary, positives, negatives) =>
+    `${summary}\n\nPositives: ${positives}\nNegatives: ${negatives}`;
+
   const POINT_BUY_POOLS = [
     {
       key: 'system_proficiencies', label: 'System Proficiencies', budget: 500, oneFieldMax: 90,
+      note: 'Each System has a floor of 50 points.\n'
+        + 'You have 100 additional points to assign as you please.\n'
+        + 'You can raise one system to a max of 90.\n'
+        + 'The max for everything else is 80.',
       fields: [
-        { key: 'balanced', label: 'Balanced', min: 50, max: 80 },
-        { key: 'grit_and_grind', label: 'Grit and Grind', min: 50, max: 80 },
-        { key: 'pace_and_space', label: 'Pace & Space', min: 50, max: 80 },
-        { key: 'perimeter_centric', label: 'Perimeter Centric', min: 50, max: 80 },
-        { key: 'post_centric', label: 'Post Centric', min: 50, max: 80 },
-        { key: 'triangle', label: 'Triangle', min: 50, max: 80 },
-        { key: 'seven_seconds_or_less', label: 'Seven Seconds or Less', min: 50, max: 80 },
-        { key: 'defense', label: 'Defense', min: 50, max: 80 },
+        { key: 'balanced', label: 'Balanced', min: 50, max: 80, note: systemNote(
+          'Focuses on the overall game and even shot distribution',
+          'Limits turnovers',
+          'Solid all around but doesn\'t excel at one thing') },
+        { key: 'grit_and_grind', label: 'Grit and Grind', min: 50, max: 80, note: systemNote(
+          'Emphasis on slowing the game down, playing tough and punishing inside play',
+          'Tempo limits opponents, physical style wears down offenses',
+          'Decreases comeback chances from a large deficit') },
+        { key: 'pace_and_space', label: 'Pace & Space', min: 50, max: 80, note: systemNote(
+          'Uses continuous ball and player movement to extend the defense, allowing spacing for 3-pointers and drives',
+          'Increased 3-point opportunities, spreads the opposing defense',
+          'Sacrifices strength and size, not ideal for isolation players') },
+        { key: 'perimeter_centric', label: 'Perimeter Centric', min: 50, max: 80, note: systemNote(
+          'Emphasizes a spaced floor with four perimeter shooters and lots of pick and roll',
+          'Creates mismatches in favor of stretch bigs',
+          'Poor defense against bigs, poor rebounding') },
+        { key: 'post_centric', label: 'Post Centric', min: 50, max: 80, note: systemNote(
+          'Emphasizes players with size and strength, who prefer to pound the ball inside',
+          'Creates mismatches with poor inside defenders, creates open outside shots, more free throws',
+          'Limited 3-point attempts, slower tempo') },
+        { key: 'triangle', label: 'Triangle', min: 50, max: 80, note: systemNote(
+          'Ensures a balanced, freelance approach that utilizes the talents of superstar scorers',
+          'Enhanced rebounding, spacing for post and high-post opportunities, facilitates ball movement and isolation scoring',
+          'Does not create many 3-point opportunities, requires players with high basketball IQ, does not create early scoring opportunities') },
+        { key: 'seven_seconds_or_less', label: 'Seven Seconds or Less', min: 50, max: 80, note: systemNote(
+          'Forces tempo with quick shots from the key or three',
+          'Many early scoring chances, emphasis on more points per possession',
+          'Can translate into poor defensive focus, often outrebounded') },
+        { key: 'defense', label: 'Defense', min: 50, max: 80, note: systemNote(
+          'Emphasizes making each possession tough, creating fast-break chances with pressure defense',
+          'Improved defensive rebounding, great defense',
+          'Lack of offensive consistency, increased foul chances') },
       ],
     },
     {
@@ -206,9 +248,17 @@
     return MINUTES_BUDGET - minutesTotal(minutes);
   }
 
+  const isBlank = v => v === undefined || v === null || v === '';
+
+  // What an untouched field starts at: blank for selects and for an optional
+  // group's sliders (blank = playbook default), the floor for other sliders.
+  function emptyFieldValue(group, field) {
+    return field.type === 'slider' && !group.optional ? (field.min || 0) : '';
+  }
+
   function emptyValues() {
     const values = {};
-    FIELD_GROUPS.forEach(g => g.fields.forEach(f => { values[f.key] = f.type === 'slider' ? (f.min || 0) : ''; }));
+    FIELD_GROUPS.forEach(g => g.fields.forEach(f => { values[f.key] = emptyFieldValue(g, f); }));
     POINT_BUY_POOLS.forEach(pool => {
       const poolValues = {};
       pool.fields.forEach(f => { poolValues[f.key] = f.min || 0; });
@@ -230,32 +280,101 @@
   // read view's warning, and the streamer dashboard's badge can never
   // disagree about which saved settings are actually usable as-is.
   function validityIssues(record) {
-    const values = (record && record.values) || {};
     const minutes = (record && record.minutes) || {};
-    const issues = [];
-    POINT_BUY_POOLS.forEach(pool => issues.push(...poolIssues(pool, values[pool.key])));
+    const issues = valuesIssues((record && record.values) || {});
     if (minutesRemaining(minutes) !== 0) {
       issues.push(`Player Minutes: ${minutesTotal(minutes)}/${MINUTES_BUDGET}`);
     }
     return issues;
   }
 
+  // The part of validityIssues that the Coaching tab's edit form controls:
+  // every field and pool, but not the minutes grid (edited elsewhere).
+  function valuesIssues(values) {
+    const issues = [];
+    FIELD_GROUPS.forEach(g => g.fields.forEach(f => {
+      const raw = values[f.key];
+      if (f.type !== 'slider' || isBlank(raw)) return;
+      if (Number(raw) < f.min || Number(raw) > f.max) issues.push(`${f.label}: ${raw} (allowed ${f.min}–${f.max})`);
+    }));
+    POINT_BUY_POOLS.forEach(pool => issues.push(...poolIssues(pool, values[pool.key])));
+    return issues;
+  }
+
   // ── Read-only rendering, shared by the team page's Coaching tab and the
-  // streamer dashboard on /schedule so the vocabulary and its display logic
-  // stay in this one file rather than duplicated between team.js and
-  // schedule/index.html. `opts.resolveName(slug)` is optional — without it,
-  // the minutes table falls back to showing the raw slug.
-  function fieldValueLabel(field, raw) {
-    if (raw === undefined || raw === null || raw === '') return '—';
+  // streamer dashboard on /committees/stream so the vocabulary and its display
+  // logic stay in this one file rather than duplicated between team.js and
+  // committees/stream/index.html. `opts.resolveName(slug)` is optional —
+  // without it, the minutes table falls back to showing the raw slug.
+  function fieldValueLabel(field, raw, group) {
+    if (isBlank(raw)) return group && group.optional ? 'Playbook default' : '—';
     return String(raw);
   }
 
-  function row(label, value) {
+  // ── Notes: an ⓘ next to a label that shows the schema's `note` text. Hover
+  // on a pointer device, tap to toggle on touch. One popup at a time, attached
+  // to <body> so the multi-column card grid can't clip it.
+  let tipEl = null, tipAnchor = null;
+  function hideTip() { if (tipEl) { tipEl.remove(); tipEl = null; tipAnchor = null; } }
+  function showTip(anchor, text) {
+    hideTip();
+    const tip = document.createElement('div');
+    tip.setAttribute('role', 'tooltip');
+    tip.style.cssText = 'position:absolute;z-index:1000;max-width:300px;padding:0.5rem 0.65rem;'
+      + 'background:var(--bg-card,#181818);border:1px solid var(--border,#333);border-radius:6px;'
+      + 'box-shadow:0 4px 14px rgba(0,0,0,0.35);color:var(--text-secondary,#ccc);'
+      + 'font-size:0.75rem;font-weight:400;line-height:1.4;white-space:pre-line;pointer-events:none';
+    tip.textContent = text;
+    document.body.appendChild(tip);
+    const r = anchor.getBoundingClientRect();
+    let left = r.left + r.width / 2 - tip.offsetWidth / 2;
+    left = Math.max(6, Math.min(left, window.innerWidth - tip.offsetWidth - 6));
+    let top = r.top - tip.offsetHeight - 8;
+    if (top < 4) top = r.bottom + 8;
+    tip.style.left = `${left + window.scrollX}px`;
+    tip.style.top = `${top + window.scrollY}px`;
+    tipEl = tip;
+    tipAnchor = anchor;
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', e => { if (tipEl && !e.target.closest('.cs-note')) hideTip(); });
+    window.addEventListener('scroll', hideTip, { passive: true });
+  }
+
+  function noteIcon(text) {
+    const icon = document.createElement('span');
+    icon.className = 'cs-note';
+    icon.textContent = 'ⓘ';
+    icon.tabIndex = 0;
+    icon.setAttribute('aria-label', text);
+    icon.style.cssText = 'margin-left:0.35rem;color:var(--text-muted,#888);cursor:help;font-weight:400;font-size:0.85em';
+    if (window.matchMedia('(hover: none)').matches) {
+      icon.addEventListener('click', e => {
+        e.stopPropagation();
+        if (tipAnchor === icon) hideTip(); else showTip(icon, text);
+      });
+    } else {
+      icon.addEventListener('mouseenter', () => showTip(icon, text));
+      icon.addEventListener('mouseleave', hideTip);
+      icon.addEventListener('focus', () => showTip(icon, text));
+      icon.addEventListener('blur', hideTip);
+    }
+    return icon;
+  }
+
+  // A label element with the item's note attached, if it has one.
+  function labelWithNote(text, note, cssText) {
+    const l = document.createElement('span');
+    l.style.cssText = cssText || '';
+    l.textContent = text;
+    if (note) l.appendChild(noteIcon(note));
+    return l;
+  }
+
+  function row(label, value, note) {
     const r = document.createElement('div');
     r.style.cssText = 'display:flex;justify-content:space-between;gap:1rem;padding:0.3rem 0;font-size:0.85rem;border-bottom:1px solid var(--border-subtle,#2a2a2a)';
-    const l = document.createElement('span');
-    l.style.cssText = 'color:var(--text-muted,#888)';
-    l.textContent = label;
+    const l = labelWithNote(label, note, 'color:var(--text-muted,#888)');
     const v = document.createElement('span');
     v.style.cssText = 'color:var(--text-primary,#eee);font-weight:600;text-align:right';
     v.textContent = value;
@@ -264,12 +383,13 @@
     return r;
   }
 
-  function groupCard(title) {
+  function groupCard(title, note) {
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--bg-card,#181818);border:1px solid var(--border,#333);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.9rem';
     const h = document.createElement('div');
     h.style.cssText = 'font-weight:700;font-size:0.95rem;margin-bottom:0.4rem';
     h.textContent = title;
+    if (note) h.appendChild(noteIcon(note));
     card.appendChild(h);
     return card;
   }
@@ -312,15 +432,15 @@
 
     const values = record.values || {};
     FIELD_GROUPS.forEach(group => {
-      const card = groupCard(group.label);
-      group.fields.forEach(f => card.appendChild(row(f.label, fieldValueLabel(f, values[f.key]))));
+      const card = groupCard(group.label, group.note);
+      group.fields.forEach(f => card.appendChild(row(f.label, fieldValueLabel(f, values[f.key], group), f.note)));
       cardsWrap.appendChild(card);
     });
 
     POINT_BUY_POOLS.forEach(pool => {
       const poolValues = values[pool.key] || {};
-      const card = groupCard(pool.label);
-      pool.fields.forEach(f => card.appendChild(row(f.label, fieldValueLabel(f, poolValues[f.key]))));
+      const card = groupCard(pool.label, pool.note);
+      pool.fields.forEach(f => card.appendChild(row(f.label, fieldValueLabel(f, poolValues[f.key]), f.note)));
       card.appendChild(row('Total', `${poolTotal(pool, poolValues)} / ${pool.budget}`));
       cardsWrap.appendChild(card);
     });
@@ -346,8 +466,8 @@
 
   global.CoachingSettings = {
     FIELD_GROUPS, POINT_BUY_POOLS, MINUTES_SLOTS, MINUTES_BUDGET,
-    poolTotal, poolRemaining, poolIssues, fieldMax, minutesTotal, minutesRemaining, validityIssues,
-    emptyValues, emptyMinutes, renderReadOnly,
+    poolTotal, poolRemaining, poolIssues, fieldMax, valuesIssues, minutesTotal, minutesRemaining, validityIssues,
+    emptyValues, emptyFieldValue, emptyMinutes, renderReadOnly, labelWithNote, noteIcon,
   };
 
   if (typeof module !== 'undefined' && module.exports) {
