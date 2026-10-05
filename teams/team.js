@@ -1163,13 +1163,19 @@ _badgeScript.src = '/token-badge.js';
 _badgeScript.onload = function () { window.__nbnBadge && window.__nbnBadge(); };
 document.head.appendChild(_badgeScript);
 
+// The open tab is kept in the URL hash (#coaching), so the reload after a save
+// lands back on the tab the save was made from, and a tab can be linked to.
+function showTab(btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+  if (btn.dataset.tab === 'irl') mountIrlFeed();
+}
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-    btn.classList.add('active');
-    document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
-    if (btn.dataset.tab === 'irl') mountIrlFeed();
+    showTab(btn);
+    history.replaceState(null, '', btn.dataset.tab === 'overview' ? location.pathname + location.search : '#' + btn.dataset.tab);
   });
 });
 
@@ -1191,6 +1197,13 @@ function mountIrlFeed() {
   s.onload = go;
   s.onerror = go;
   document.head.appendChild(s);
+}
+
+// Open the tab named in the hash. After mountIrlFeed's state is declared, so
+// #irl doesn't hit it before initialisation.
+{
+  const initialTab = location.hash && document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1))}"]`);
+  if (initialTab) showTab(initialTab);
 }
 
 function parseCSV(text) {
