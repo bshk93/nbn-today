@@ -844,6 +844,15 @@
         </select>
       </div>
 
+      <!-- void_player-only. § 7.4: a pick from the most recent draft who signed
+           and then went overseas before opening night. The Description names
+           the club and contract, as a § 7.4 stash's note does. -->
+      <div class="form-field" id="f-void-keep-rights-field" style="display:none">
+        <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal;text-transform:none">
+          <input type="checkbox" id="f-void-keep-rights" style="width:auto"> Went overseas: keep his draft rights (§ 7.4)
+        </label>
+      </div>
+
       <!-- qualifying_offer-only (§ 3.1). The amount is the formula's unless
            the office overrides it for a player the formula can't price. -->
       <div class="form-field" id="f-qo-action-field" style="display:none">
@@ -1551,6 +1560,7 @@ function setupTypeSwitch() {
       document.getElementById('f-offer-outcome-field').style.display = isOfferSheet ? '' : 'none';
       document.getElementById('f-hardcap-level-field').style.display = isSetHardCap ? '' : 'none';
       document.getElementById('f-stash-basis-field').style.display = v === 'stash' ? '' : 'none';
+      document.getElementById('f-void-keep-rights-field').style.display = v === 'void_player' ? '' : 'none';
       document.getElementById('f-qo-action-field').style.display = v === 'qualifying_offer' ? '' : 'none';
       document.getElementById('f-qo-amount-field').style.display = v === 'qualifying_offer' ? '' : 'none';
       // f-signing-method-field's visibility is set by applyContractTypeVisibility
@@ -3600,7 +3610,9 @@ async function submitTransaction() {
   } else if (type === 'void_player') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
-    details = { player: playerSlug, reason: description };
+    const keepRights = document.getElementById('f-void-keep-rights').checked;
+    if (keepRights && !description) { setStatus('err', 'Name the overseas club and his contract in the Description.'); return; }
+    details = { player: playerSlug, reason: description, ...(keepRights ? { keep_rights: true } : {}) };
   } else if (type === 'stash') {
     date = document.getElementById('f-date').value;
     if (!date) { setStatus('err', 'Date is required.'); return; }
@@ -3689,6 +3701,7 @@ function resetForm() {
   document.getElementById('mle-hint').style.display = 'none';
   document.getElementById('f-description').value = '';
   document.getElementById('f-relay-roster-log').checked = false;
+  document.getElementById('f-void-keep-rights').checked = false;
   document.getElementById('salary-rows').innerHTML = '';
   addSalaryRow();
   document.getElementById('ch-start-season').value = '';
@@ -4302,6 +4315,7 @@ function renderDetailsCell(t) {
     return `${escHtml(contractStr)}${contractStr ? ' · ' : ''}${escHtml(outcomeStr)}${signedBy}`;
   }
   if (t.type === 'void_player') {
+    if (d.keep_rights) return `Voided — went overseas, draft rights kept (§ 7.4)${d.reason ? ` · ${escHtml(d.reason)}` : ''}`;
     return d.reason ? `Voided — ${escHtml(d.reason)}` : 'Voided — no cap hit';
   }
   if (t.type === 'stash') {
