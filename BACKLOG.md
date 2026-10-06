@@ -342,7 +342,21 @@ post-trade count.
 
 The fix is per-validator, not one line: each one that projects a roster count
 should price the residual real charge at that count, the way
-`_trade_fact_sheet` already prices its mock. Small in dollars — at most 2-3
+`_trade_fact_sheet` already prices its mock.
+
+**Sized 2026-10-06, and it's bigger than it reads.** The signing projection
+(`projected_ex_holds = current_ex_holds - … + new_sal`) is copied in four
+places: `_validate_sign`, `_validate_offer_sheet`,
+`_validate_offer_sheet_decision` and `_signing_fact_sheet`. The fact sheet
+also derives cap room, the exception bucket and apron position from those
+figures, and it must agree with the validator exactly. So adding the charge in
+one place makes the simulator and the office disagree, which is worse than the
+gap. Do it as one shared helper returning the post-signing figures (charge
+priced at the post-signing standard count — `_count_standard_roster(team,
+excluding=player)` plus one unless two-way), adopted by all four at once. The
+rulebook settles the scope: the charge counts as guaranteed salary "exactly as
+a real player contract would", so it belongs in the cap-room test as well as
+the hard-cap and apron comparisons. Small in dollars — at most 2-3
 slots × the rookie minimum, so ~$1.4M-$4M — and it only bites a team that is
 both short-handed and within that of a line. Worth doing before a season where
 a team sits under 12 for any length of time.
