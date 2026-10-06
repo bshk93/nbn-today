@@ -375,18 +375,17 @@ about it — zero occurrences of "prorat" anywhere in `rulebook/index.html`.
 Confirmed as real practice 2026-08-07.
 
 This matters now that § 3.12 minimums are enforced. `_check_minimum_salary`
-works around the gap with a coarse rule: Year 1 of a signing dated outside
-Jul–Sep may fall below the full-season minimum (warning, "confirm the
-proration"), while the offseason and every later contract year are hard
-errors. That's a guess at the season boundary standing in for a rule.
+lets Year 1 of a signing made on or after opening night fall below the
+full-season minimum, with a warning to confirm the proration. A signing before
+opening night, and every later contract year, is a hard error. Since
+2026-10-06 opening night comes off the schedule
+(`_signed_after_opening_night`); before that it was a Jul–Sep guess. A league
+year with no schedule on file still uses the guess.
 
-Needs: a § 3.12 subsection stating that in-season minimum signings prorate,
-and the basis (days? games?). At that point the warning can become a real
-computed check. The season-start date this used to wait on now exists —
-`season_calendar.opening_night()` (2026-09-30) — but `_check_minimum_salary`
-still uses its Jul–Sep guess rather than calling it. Re-checked 2026-10-06:
-still no mention of proration in the rulebook. Grant Williams'
-2026-04-11 signing ($39,820) is the live example.
+What's left is the rule itself: a § 3.12 subsection stating that in-season
+minimum signings prorate, and the basis (days? games?). Then the warning can
+become a real computed check. Grant Williams' 2026-04-11 signing ($39,820) is
+the live example.
 
 ### [P2] § 3.10's rookie-scale hold row isn't built — Prosper's 28-29 hold is still $1
 The 250%/300% hold for a player off the final year of a rookie-scale deal has
