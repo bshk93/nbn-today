@@ -52,26 +52,21 @@ private, which is why this is P2 and not P1, but it holds working credentials:
 
 - **`members.json`** — 61 members' bearer tokens, every commit.
 - **`google-oauth.json`** — the Google refresh token *and* client secret.
-- **`sessions.json`** — **still being pushed.** It was untracked on
-  2026-08-19, and the next snapshot that same afternoon added it back. It has
-  been committed and pushed on every change since (86 commits by 2026-10-06).
-  The cause is the data dir's `.gitignore`: lines 34–35 read
-  `sessions.json          # session ids; …`, and git has no trailing comments,
-  so each line is one long filename that matches nothing (`git check-ignore`
-  confirms). `nbs-snapshot` runs `git add -A`, which picks it straight back up.
-  `tokens.json` has the same broken line but no longer exists on disk.
-  **The fix is two commands, not yet run:** move both comments onto their own
-  line above the pattern, then
-  `git --git-dir=/var/lib/nbs-backup.git --work-tree=/var/lib/nothing-but-stats rm --cached sessions.json`.
-  The next snapshot commits the removal. A session only opens the cookie
-  allowlist (`/api/auth/me`, `/api/fa/*`), which limits the damage, but every
-  live session id is in the pushed history.
+- **`sessions.json`** — **in the pushed history from 2026-08-19 to
+  2026-10-06.** It was untracked on 2026-08-19, and the next snapshot that
+  same afternoon added it back, because the data dir's `.gitignore` had
+  `sessions.json          # session ids; …` and git has no trailing comments:
+  the whole line was read as one filename. Fixed 2026-10-06: the comments
+  moved onto their own lines, `sessions.json` was untracked again, and the
+  00:33 UTC snapshot committed the removal. A session only opens the cookie
+  allowlist (`/api/auth/me`, `/api/fa/*`), and the old ids lapse after 30 days
+  or on sign-out.
 
 Three ways forward, and it wants a decision rather than a default: accept it
 (private repo, SSH-only push, the blast radius is one GitHub account), rotate
 the Google credential and the member tokens now that they've been in a remote,
-or rewrite the history — cheap today at ~60 commits from 2026-08-18, expensive
-later.
+or rewrite the history. A rewrite was cheap on 2026-08-19 at ~60 commits; the
+repo had ~1,160 by 2026-10-06, and it only gets more expensive.
 
 The weekly Drive tarball deliberately does **not** carry any of this: the
 credential files are excluded and `members.json` goes in redacted, tokens
