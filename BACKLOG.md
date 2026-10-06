@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last full review: **2026-10-06**. **31 open items**: 5 P1, 11 P2, 13 P3, plus
+Last full review: **2026-10-06**. **31 open items**: 5 P1, 10 P2, 14 P3, plus
 2 nice-to-haves (counted from the `###` headings and the § 4 bullets). The
 previous count, from 2026-09-19, matched neither its own split nor the
 headings, so recount rather than adjust. Not re-measured in the 2026-10-06
@@ -319,47 +319,21 @@ Two smaller residuals from the same work:
   validator catches it when the team tries to extend (`qo_rfa_eligible`), so it
   can't make a wrong RFA, but the tag itself is misleading until then.
 
-### [P2] The signing and waiver validators still judge off books without the § 2.1a charge
-Fixed 2026-09-19 for the surfaces that report a team's *current* books —
-`cap_history.build_rows` (so the daily snapshot, `/committees/rosters` and the
-homepage card) and `_team_commitment` (so free-agency room) all add
-`_real_empty_roster_charge` now. The team page had always charged it, so a
-short-handed team read two different Team Salaries depending on the page; DAL,
-at 11 standard players, was $1,357,763 apart.
+### [P3] Two "current books" checks still read salary without the § 2.1a charge
+Signings, offer sheets, offer-sheet decisions, waiver claims and the
+simulator's fact sheet all project through one helper since 2026-10-06,
+`_signing_books` in `nbn-api/routers/transactions.py`. It adds the real Empty
+Roster Charge for the slots still empty after the move, to cap room as well as
+the hard cap and aprons. They used to be five copies of the same lines. Change
+that math there, never at a caller.
 
-What is left is the *projection* side. `_compute_team_salary` and
-`_compute_team_salary_ex_holds` are deliberately still raw, because ~40 callers
-use them as a baseline and then apply their own charge for the roster count the
-transaction leaves behind — the trade path most visibly
-(`current - out + in + charge(after)`). Folding a charge into the helpers would
-have every one of those double-count it against a stale pre-transaction count.
-
-So for a team already below 12, `_validate_sign`, `_validate_extension` and the
-waiver paths understate projected salary by the charge on the slots *still*
-empty after the move. The trade path is unaffected: its 14-player mock is
-always at least the real 12-player charge, and it is already computed off the
-post-trade count.
-
-The fix is per-validator, not one line: each one that projects a roster count
-should price the residual real charge at that count, the way
-`_trade_fact_sheet` already prices its mock.
-
-**Sized 2026-10-06, and it's bigger than it reads.** The signing projection
-(`projected_ex_holds = current_ex_holds - … + new_sal`) is copied in four
-places: `_validate_sign`, `_validate_offer_sheet`,
-`_validate_offer_sheet_decision` and `_signing_fact_sheet`. The fact sheet
-also derives cap room, the exception bucket and apron position from those
-figures, and it must agree with the validator exactly. So adding the charge in
-one place makes the simulator and the office disagree, which is worse than the
-gap. Do it as one shared helper returning the post-signing figures (charge
-priced at the post-signing standard count — `_count_standard_roster(team,
-excluding=player)` plus one unless two-way), adopted by all four at once. The
-rulebook settles the scope: the charge counts as guaranteed salary "exactly as
-a real player contract would", so it belongs in the cap-room test as well as
-the hard-cap and apron comparisons. Small in dollars — at most 2-3
-slots × the rookie minimum, so ~$1.4M-$4M — and it only bites a team that is
-both short-handed and within that of a line. Worth doing before a season where
-a team sits under 12 for any length of time.
+What's left is two checks that judge the team's books *before* the move, off
+the raw ex-holds figure with no charge: `_check_bae_eligibility` (§ 3.4) and
+the § 1.5.2 buyout-signing apron test, in both `_validate_sign` and the waiver
+claim. For a team below 12 they read the team as up to ~$4M lighter than its
+real books. They need the current charge (`_real_empty_roster_charge` at today's
+count), not the post-move one. The extension check projects a future season,
+where today's roster count says nothing, so it is left alone on purpose.
 
 ### [P2] Committee lottery draws happen off the site
 The constitution (Article V) decides FAC and PO-Ext questions by lottery:
