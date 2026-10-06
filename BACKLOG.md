@@ -3,11 +3,12 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last full review: **2026-08-30**. **29 open items** as of **2026-09-19**:
-7 P1, 8 P2, 12 P3, plus 2 nice-to-haves. (Counted from the `###` headings and
-the § 4 bullets. The previous line claimed 35 across a split that matched
-neither — no version pin here for the same reason, it went stale within two
-commits of being written. The date is what matters.)
+Last full review: **2026-10-06**. **31 open items**: 5 P1, 11 P2, 13 P3, plus
+2 nice-to-haves (counted from the `###` headings and the § 4 bullets). The
+previous count, from 2026-09-19, matched neither its own split nor the
+headings, so recount rather than adjust. Not re-measured in the 2026-10-06
+review: the Discord backfill counts, `/suggestions`, and the futures/`/invest`
+entry.
 
 Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** nice to have
 
@@ -41,76 +42,9 @@ session transcripts under `~/.claude/projects/` (2026-08-29 and an earlier
 one), which are not something to scrub — another reason the fix is revocation,
 not deletion. Same class as the four webhooks rotated 2026-08-27.
 
-### [P1] One 24-25 game still lists a player twice — CLE/Hartenstein, unresolved
-Found 2026-08-26 by `stats_build/checks.py` on its first run over the corpus,
-as three team-games carrying the same player name twice with **different** stat
-lines. Two are fixed (see below); the CLE one is what is left, and the other two
-are kept here because their reasoning is what a fix for the third would follow:
-
-| File | Team | Date | Name | The two lines |
-|---|---|---|---|---|
-| `allstats-24-25.csv` | CLE | 2025-04-11 vs @NYK | HARTENSTEIN, ISAIAH | 15min/12pt · 12min/9pt |
-| `allstats-24-25.csv` | DAL | 2025-03-29 vs @CHI | WALKER, JABARI | 28min/14pt · 22min/7pt |
-| `allstats-24-25.csv` | DEN | 2024-10-29 vs @BKN | HOLIDAY, JRUE | 24min/13pt · 3min/3pt |
-
-Not duplicated rows: in all three the team minutes come to exactly 240 and the
-player points sum to `TEAM_PTS`, so the *game* is right and one of the two rows
-is **a different player entered under the wrong name**. Every other check passes
-— both lines are individually legal — which is why it sat for over a year.
-
-The effect is that one real player is missing a game and another has one that
-is not theirs, in career totals, game highs and HOF points alike.
-
-The screenshots were deleted after parsing (deliberately — see
-`boxscore_provenance.py`) and provenance only starts in 2026, so there is no
-record of the original. But "who was on this roster and did **not** play that
-night" narrows it hard, and it resolves two of the three:
-
-- **DEN 2024-10-29 → the second row is almost certainly `HOLIDAY, AARON`.**
-  He is the only other Holiday in the league that season and he was **on DEN**.
-  His first recorded game is 2024-11-23 — after this one — so a 3min/3pt cameo
-  logged under Jrue is exactly the game he is missing. Only the first name is
-  wrong.
-- **DAL 2025-03-29 → the second row is almost certainly `WALTER, JAKOBE`.**
-  35 games for DAL between 2025-01-22 and 2025-04-13, and he played **all six**
-  of the games either side of this one but not this one. Walker/Walter,
-  Jabari/Jakobe.
-- **CLE 2025-04-11 → genuinely unresolved.** There is no second Hartenstein
-  anywhere in 24-25. CLE rested four regulars that night (Allen, Garland,
-  Haliburton, Brandon Ingram all played the surrounding games) and dressed a
-  12-man bench, and every *other* CLE player's date range ended months earlier.
-  So the mystery line — 12min, 9pt, 2-3 FG of which 2-3 from three, 3-3 FT, 0
-  reb — is either one of those four resting starters, or a player who appears
-  nowhere else in the data. Allen is ruled out by the line (a centre with 0
-  rebounds and two threes); Garland or Haliburton fit it best.
-
-**Both fixes are edits to a raw, append-only file**, which `allstats_guard`
-refuses by design. Use `nbn-api/edit_allstats.py`, built 2026-08-26 for exactly
-this — it is dry-run by default, refuses a selector that matches more than the
-row you named, and verifies the write against disk cell by cell so it cannot
-change anything it did not declare. `allow_shrink=True` is **not** the tool:
-it turns off every check at once. Each edit wants its own `--reason`, which is
-the only record of why a hand-corrected row differs from what was parsed.
-
-    venv/bin/python edit_allstats.py --file allstats-24-25.csv \
-      --where TEAM=DEN DATE=2024-10-29 "PLAYER=HOLIDAY, JRUE" M=3 \
-      --set "PLAYER=HOLIDAY, AARON" --reason "..."     # add --apply to write
-
-**Two of the three were applied on 2026-08-26** and this entry did not say so
-until 2026-08-29 — `allstats-edits.jsonl` records both, with the reasoning
-above as the `--reason`. DEN 2024-10-29 now reads `HOLIDAY, AARON` on the
-3min/3pt line; DAL 2025-03-29 now reads `WALTER, JAKOBE` on the 22min/7pt one.
-Re-checked league-wide on 2026-08-29 across all 13 raw files: **exactly one
-team-game still lists a player twice**, the CLE one.
-
-So what is actually open is the third case alone, and it is open because it is
-genuinely unresolved rather than un-actioned — there is no second Hartenstein
-in 24-25, and the candidate list above (Garland or Haliburton fit the line
-best) is inference, not evidence. It needs a person to decide, or to stay as
-it is.
-
-`check_stats_integrity` reports it weekly until then. Rebuild after any fix —
-the derived files hold the old value until one runs.
+Re-checked 2026-10-06: the remote is still SSH. Whether the token has been
+revoked can't be seen from the box. Only the account owner can confirm it, and
+this entry should be deleted when they do.
 
 ### [P2] The data backup carries live credentials, and its history keeps them
 Found 2026-08-19 while building the off-site tarball. `bshk93/nbn-data` is
@@ -118,10 +52,20 @@ private, which is why this is P2 and not P1, but it holds working credentials:
 
 - **`members.json`** — 61 members' bearer tokens, every commit.
 - **`google-oauth.json`** — the Google refresh token *and* client secret.
-- **`sessions.json` / `tokens.json`** — untracked on 2026-08-19, but they were
-  tracked until then even though `.gitignore` named both from the start
-  (gitignore does not untrack what is already tracked), so every live session
-  id was pushed on each change. **They remain in the pushed history.**
+- **`sessions.json`** — **still being pushed.** It was untracked on
+  2026-08-19, and the next snapshot that same afternoon added it back. It has
+  been committed and pushed on every change since (86 commits by 2026-10-06).
+  The cause is the data dir's `.gitignore`: lines 34–35 read
+  `sessions.json          # session ids; …`, and git has no trailing comments,
+  so each line is one long filename that matches nothing (`git check-ignore`
+  confirms). `nbs-snapshot` runs `git add -A`, which picks it straight back up.
+  `tokens.json` has the same broken line but no longer exists on disk.
+  **The fix is two commands, not yet run:** move both comments onto their own
+  line above the pattern, then
+  `git --git-dir=/var/lib/nbs-backup.git --work-tree=/var/lib/nothing-but-stats rm --cached sessions.json`.
+  The next snapshot commits the removal. A session only opens the cookie
+  allowlist (`/api/auth/me`, `/api/fa/*`), which limits the damage, but every
+  live session id is in the pushed history.
 
 Three ways forward, and it wants a decision rather than a default: accept it
 (private repo, SSH-only push, the blast radius is one GitHub account), rotate
@@ -133,76 +77,55 @@ The weekly Drive tarball deliberately does **not** carry any of this: the
 credential files are excluded and `members.json` goes in redacted, tokens
 blanked and tenures kept.
 
-### [P1] 73 open cap-sheet diffs across 25 teams, and 17 teams disagree on Team Salary
-**Recounted 2026-08-30**, and it has got much worse rather than better: this
-entry read *9 diffs across 6 teams* on 2026-08-09. `/committees/rosters` now reports **136
-rows**, of which **73 are open** (this season, or about who is on the roster at
-all) and 63 are deferred (a future season's figure, or a hold the site has never
-computed — see the grouping in `nbn-api/routers/poopoo.py`).
-
-Two thirds of the growth is new coverage rather than new drift: the job now
-compares *every* season column the sheet carries, not just the current one, and
-those out-year rows are 61 of the 136. **The current-season aggregate line is
-apples-to-apples with the old count, and it went from 2 teams to 17.** Free
-agency ran in between.
+### [P1] 104 open cap-sheet diffs across 27 teams, and 20 teams disagree on Team Salary
+**Recounted 2026-10-06**, now that the job compares **26-27**. `poopoo.json`
+has **144 rows**: **104 open** (this season, or about who is on the roster at
+all) and 40 deferred (a future season's figure, or a hold the site has never
+computed — see the grouping in `nbn-api/routers/poopoo.py`). It read 73 open
+across 25 teams on 2026-08-30, when the season compared was 25-26.
 
 | Category | Rows |
 |---|---|
-| `player_future_years` (deferred) | 61 |
-| `aggregate` — 17 × Guaranteed Salary, 5 × Hard Cap | 22 |
-| `player_extra` — on the site, absent from the sheet | 18 |
-| `player_team_conflict` — the two sources disagree on whose player he is | 13 |
-| `mle` / `tpe` / `bae` | 14 |
-| `player_missing` / `player_salary` / `player_status` / `player_hold_uncalculated` | 8 |
+| `player_extra` — on the site, absent from the sheet | 27 |
+| `player_team_conflict` — the two sources disagree on whose player he is | 25 |
+| `aggregate` — 20 × Guaranteed Salary, 5 × Hard Cap | 25 |
+| `mle` / `tpe` / `bae` | 18 |
+| `player_status` / `player_salary` / `player_hold` / `player_missing` / `pick_signed` | 9 |
+| `player_future_years` (deferred) | 31 |
+| `player_hold_uncalculated` (deferred) | 9 |
 
-Worst Team Salary disagreements (site − sheet): BKN +$19.21M, OKC +$7.33M,
-UTA −$5.08M, MIA +$5.08M, LAL +$4.90M, PHI +$4.60M. **Four teams differ by
-exactly ±$2,449,421** (CHI, GSW, PHX, POR) — that is one contract type booked
-differently on the two sides, not four independent errors, and it is the
-cheapest thread to pull first.
+Worst Team Salary disagreements (site − sheet): BKN +$19.21M, NOP +$13.23M,
+OKC +$10.84M, DAL +$8.20M, MIA +$7.52M, UTA +$6.79M.
 
-These are now visible to the team that owns them, on its own page (the Cap
-Health card, 2026-08-30), which is a reporting fix and not a reconciliation:
-every row below is still open.
+Two clusters are the cheapest threads to pull, because each is one booking
+difference rather than several separate errors:
 
-The 2026-08-09 state, kept because the two resolved cases below explain what a
-real fix looks like: 9 diffs across 6 teams — PHI 2 (Guaranteed Salary, MANON
-CHRIS), UTA 3 (Guaranteed Salary, HALL PJ, POST QUINTEN), BKN/LAC/WAS 1 each
-(MLE Used), TOR 1 (TPE Remaining). Sharply down from 31 diffs / 12 teams on
-2026-08-07 — most of that gap (TOR's Hard Cap/player rows, NOP, MEM, MIN, IND, PHX entirely, BKN's/WAS's/LAC's
-Guaranteed Salary rows) closed between that review and this one, cause
-unconfirmed; **DEN's `Hard Cap` diff is the one resolved in this session and is
-understood**: § 4.3's contagion rule was firing on cap-room-absorbed trades,
-which it shouldn't (see below) — Keldon Johnson's trade to DEN (2026-07-22)
-genuinely cleared via cap room once Marvin Bagley's renounce (logged 18s after
-the trade, but clearly meant to precede it) is credited, so the resulting First
-Apron hard cap was wrong. Fixed in `nbn-api` (shared `_cap_room_absorbed`
-predicate now gates both § 4.3 and § 4.4 contagion, not just
-`_check_salary_matching`) and reflected in the rulebook (§ 4.2/§ 4.3/§ 1.4);
-DEN's `team-state.json` corrected via an audited `set_hard_cap_level`
-transaction (txn `7ad3780dd6be8dc9`) rather than a silent edit.
+- **CHI, PHI, PHX and POR are each exactly +$2,449,421** (to within a fraction
+  of a dollar). The same figure showed up on four teams on 2026-08-30 too
+  (CHI, GSW, PHX, POR), so it has survived the season rollover.
+- **ATL and CHA are each exactly +$3,000,000.**
 
-The remaining "Guaranteed Salary" diffs (PHI, UTA) still carry the same
-fractional-cent signature the sheet does that the site doesn't:
+Most of the sheet's figures still carry fractional cents (ATL `209,015,000.3`)
+and the site's never do. So the sheet is doing arithmetic the site isn't.
+Proration or partial guarantees are the obvious suspects.
 
-    PHI  sheet 177,974,132.5  site 180,125,050
-    UTA  sheet 145,202,503.2  site 140,118,523
+Each team sees its own rows on its page (the Cap Health card). That is
+reporting, not reconciliation: every row is still open.
 
-The sheet is doing arithmetic the site isn't — proration or partial guarantees
-is the obvious suspect. Chase that before hand-fixing the rest.
+### [P1] Picks conveyance — 90 picks still not cleanly modeled
+`poopoo.json` `picks.counts`, **recounted 2026-10-06** (2026-08-07 in brackets):
 
-### [P1] Picks conveyance — 88 picks still not cleanly modeled
-`poopoo.json` `picks.counts` as of 2026-08-07 — **every count identical to
-2026-08-04; nothing moved in three days**:
+- `clean_match` 321, `clean_match_frozen` 7 — fine
+- `needs_investigation` **11** (32) — no explanation yet
+- `same_owner_diff_representation` **56** (35) — right owner, structure differs from the sheet
+- `committee_lag` **21** (18) — site is ahead of / behind the committee sheet
+- `richness_gap` **2** (3) — sheet expresses conditions the model can't hold
 
-- `clean_match` 323, `clean_match_frozen` 7 — fine
-- `needs_investigation` **32** — no explanation yet
-- `same_owner_diff_representation` **35** — right owner, structure differs from the sheet
-- `committee_lag` **18** — site is ahead of / behind the committee sheet
-- `richness_gap` **3** — sheet expresses conditions the model can't hold (was 24 on 2026-07-22; good progress)
-
-`richness_gap` is nearly closed. The 32 `needs_investigation` are now the real
-blocker to trusting `/api/picks` end-to-end.
+`needs_investigation` fell by two thirds, mostly into
+`same_owner_diff_representation` — owners now agree and only the shape
+differs. The 11 left are still the real blocker to trusting `/api/picks` end
+to end. Committee tasks for individual picks go in `pick-committee-notes.json`
+(the Picks tab on `/committees/rosters`).
 
 ### [P2] Discord backfill not finished
 - Trades: 437 of 485 raw messages submitted; ~50 multi-team trades still
@@ -241,6 +164,10 @@ via the `flagged_extensions` field the PUT now returns.
 | 27-28 | **$0** | **$0** | **$0** | 11 rows |
 | 28-29 | **$0** | **$0** | **$0** | 11 rows |
 | 29-30 | **$0** | **$0** | **$0** | 11 rows |
+
+Re-checked 2026-10-06: all three are still $0 and none is marked as an
+estimate. **26-27's EAPS is also still 0**, though 26-27 is now the current
+season. 26-27 does have a hard cap now ($252,390,330).
 
 ### [P1] 2024 rookie scale has the § 3.10 hold multiplier inverted — not loaded
 Found 2026-08-11 while populating `rookie-scale.json` (which had never held
@@ -283,7 +210,8 @@ about).
 `build/load_rookie_scale.py` refuses to write any year that fails its § 3.10
 direction check or its cross-check against signed contracts, so 2024 stays out
 until this is settled and re-running it will pick the year up automatically
-once the sheet is fixed. Nothing to change in code.
+once the sheet is fixed. Nothing to change in code. Re-checked 2026-10-06:
+`rookie-scale.json` still holds only 2025 and 2026.
 
 ### [P3] Two `photo_url` oddities left — an inline data URI and a dead imgur link
 Split out 2026-08-29 when the nine `"NA"` bios that this entry was about were
@@ -305,11 +233,11 @@ snapshotted field is the same two steps.
 
 What is left is two one-offs in the same field, neither of them our defect:
 
-- `wagler-keaton`'s photo is a **~100KB base64 data URI stored inline in
-  `player-bios.json`** — it inflates every `GET /api/players` response for one
-  player.
-- One player's photo is the only **imgur-hosted** image in the league
-  (`i.imgur.com/SaK7v2z.png`), and it currently 429s. The frontend suite reports
+- `wagler-keaton`'s photo is a **~13KB base64 data URI stored inline in
+  `player-bios.json`** (measured 2026-10-06; this line used to say ~100KB) —
+  it inflates every `GET /api/players` response for one player.
+- `da-commish-chuck`'s photo is the only **imgur-hosted** image in the league
+  (`i.imgur.com/SaK7v2z.png`), and it 429ed when last checked. The frontend suite reports
   it as a third-party warning on `/players/` and `/draft/` and does not fail on
   it, correctly — but it is a broken image on two real pages.
 
@@ -321,53 +249,45 @@ Both are worth normalising if anyone is in that field anyway. Neither is urgent.
 
 The rulebook badges each section 🔒 system-enforced or 👁 manual review.
 Since 2026-08-30 the 🔒 half is **generated** from `nbn-api/rulebook_coverage.py`
-and the badges can no longer go stale — 34 sections are enforced, 23 still need
-a human, 17 carry both. The six that are manual-only (§ 1.2, 3.7, 4.6, 6.1, 7.3,
-7.4) and the partial coverage behind the 17 are the gaps worth closing; each
-one's `SECTION_REVIEW` note in that file says what is still missing.
+and the badges can no longer go stale. As of 2026-10-06, 36 sections are
+enforced, 24 still need a human and 20 carry both. The four that are
+manual-only (§ 1.2, 3.7, 4.6, 7.3) and the partial coverage behind the 20 are
+the gaps worth closing. § 6.1 and § 7.4 left the manual-only list when the
+owner self-serve option moves and `stash` shipped. Each section's
+`SECTION_REVIEW` note in that file says what is still missing.
 
-### [P3] Extension eligibility backfill — 116 rostered players still missing an acquisition record
+### [P3] Extension eligibility backfill — 88 rostered players still missing an acquisition record
 `_player_acquisition_index` (§ 3.8's ledger scan, reused for § 6.2 eligibility)
-can't find a `sign`/`sign_pick`/`convert_twoway`/`offer_sheet_decision` entry for
-these players, so their contract start date is unknown and eligibility can't be
-derived from the ledger.
+can't find a signing entry for these players, so their contract start date is
+unknown and eligibility can't be derived from the ledger.
 
-**Not a blocker for shipping extensions** (decided 2026-08-19,
+**Not a blocker for extensions** (decided 2026-08-19,
 `docs/poext-extension-pipeline.md` § 2.3a/D1) — a proposal packages whatever
 partial ledger history the player has plus the submitting team's own attestation
 of when the deal began, and the eligibility check runs off that at warn severity.
 
-**Re-measured 2026-08-25** against the live ledger, and the previous numbers here
-(161 of 502, split 97/59/5) were wrong in a way that mattered — acting on them
-would have written 23 contracts that do not exist. What is actually true:
+**Re-measured 2026-10-06** against the live ledger (2026-08-25 in brackets):
 
 | | Count |
 |---|---|
-| Rostered players | 517 |
-| Missing a signing record | **116** (was 151 before that day's backfill) |
-| — trade events only | 86 |
-| — no ledger events at all | 30 |
+| Rostered players, excluding unsigned draft rights | 513 |
+| Missing a signing record | **88** (116) |
+| — trade events only | 81 (86) |
+| — no ledger events at all | 7 (30) |
 
-- **35 were fixed** on 2026-08-25 by `nbn-api/backfill_rookie_acquisitions.py`:
-  2023-2025 draftees, still on the team that drafted them, salaries on file, no
-  ledger history at all. For those the absence of a record *is* the evidence —
-  the earlier backfill was thorough enough that a gap means they have never
-  signed anything but the rookie deal they were drafted into. Written with
-  `historical=true`, so no roster, cap or team-state was touched.
-- **86 have trade events but no signing.** Acquired by trade with the original
+- **81 have trade events but no signing.** Acquired by trade with the original
   signing unrecorded, so no rule reaches them — this is the Discord resolver's
   job, not an inference.
-- **23 are unsigned 2026 draftees** and are *correctly* recordless. All are
-  `type: "draft-rights"` with no salaries, and each already has a `pick`
-  transaction from the June 2026 draft. **This is what the old "59 rule-derivable
-  from draft_year" figure would have got wrong** — it would have invented a
-  rookie contract for every one of them. Nothing to do here; they get a real
-  signing when they sign one.
-- **7 need a person to state the answer**, not a rule: Giannis (2013), Booker
-  (2015), SGA (2018), Herb Jones (2021), Matkovic (2022) are far past a rookie
-  deal; `tomlin-naeqwan` has no `draft_team` on file; and `yang-hansen` rosters
-  at UTA having been drafted by DAL with no trade on record, so a DAL signing
-  would put the ledger at odds with the roster.
+- **7 need a person to state the answer**, not a rule. They are the same 7 as
+  on 2026-08-25: Giannis (2013), Booker (2015), SGA (2018), Herb Jones (2021)
+  and Matkovic (2022) are far past a rookie deal; `tomlin-naeqwan` has no
+  `draft_team` on file; and `yang-hansen` rosters at UTA having been drafted by
+  DAL with no trade on record, so a DAL signing would put the ledger at odds
+  with the roster.
+- Unsigned draftees (`type: "draft-rights"`) are *correctly* recordless and
+  aren't counted. They get a real signing when they sign one. Don't infer a
+  rookie contract from `draft_year`: on 2026-08-25 that would have invented 23
+  contracts that don't exist.
 
 ### [P2] § 3.9's Bird-tier signing ceilings aren't enforced, so the QO ceiling isn't either
 Qualifying offers landed 2026-10-02 (`docs/qualifying-offers.md`), but one
@@ -388,6 +308,34 @@ Two smaller residuals from the same work:
   rolling into an `RFA` hold for a player who will have 4+ years by then. The QO
   validator catches it when the team tries to extend (`qo_rfa_eligible`), so it
   can't make a wrong RFA, but the tag itself is misleading until then.
+
+### [P2] The signing and waiver validators still judge off books without the § 2.1a charge
+Fixed 2026-09-19 for the surfaces that report a team's *current* books —
+`cap_history.build_rows` (so the daily snapshot, `/committees/rosters` and the
+homepage card) and `_team_commitment` (so free-agency room) all add
+`_real_empty_roster_charge` now. The team page had always charged it, so a
+short-handed team read two different Team Salaries depending on the page; DAL,
+at 11 standard players, was $1,357,763 apart.
+
+What is left is the *projection* side. `_compute_team_salary` and
+`_compute_team_salary_ex_holds` are deliberately still raw, because ~40 callers
+use them as a baseline and then apply their own charge for the roster count the
+transaction leaves behind — the trade path most visibly
+(`current - out + in + charge(after)`). Folding a charge into the helpers would
+have every one of those double-count it against a stale pre-transaction count.
+
+So for a team already below 12, `_validate_sign`, `_validate_extension` and the
+waiver paths understate projected salary by the charge on the slots *still*
+empty after the move. The trade path is unaffected: its 14-player mock is
+always at least the real 12-player charge, and it is already computed off the
+post-trade count.
+
+The fix is per-validator, not one line: each one that projects a roster count
+should price the residual real charge at that count, the way
+`_trade_fact_sheet` already prices its mock. Small in dollars — at most 2-3
+slots × the rookie minimum, so ~$1.4M-$4M — and it only bites a team that is
+both short-handed and within that of a line. Worth doing before a season where
+a team sits under 12 for any length of time.
 
 ### [P2] Committee lottery draws happen off the site
 The constitution (Article V) decides FAC and PO-Ext questions by lottery:
@@ -423,8 +371,11 @@ proration"), while the offseason and every later contract year are hard
 errors. That's a guess at the season boundary standing in for a rule.
 
 Needs: a § 3.12 subsection stating that in-season minimum signings prorate,
-the basis (days? games?), and a season-start date the validator can key off —
-at which point the warning can become a real computed check. Grant Williams'
+and the basis (days? games?). At that point the warning can become a real
+computed check. The season-start date this used to wait on now exists —
+`season_calendar.opening_night()` (2026-09-30) — but `_check_minimum_salary`
+still uses its Jul–Sep guess rather than calling it. Re-checked 2026-10-06:
+still no mention of proration in the rulebook. Grant Williams'
 2026-04-11 signing ($39,820) is the live example.
 
 ### [P2] § 3.10's rookie-scale hold row isn't built — Prosper's 28-29 hold is still $1
@@ -470,34 +421,36 @@ the offer**, so the office picks them out by hand, one renounce at a time. A
 renounce also scrubs the player's trading-block entry and the undo does not put
 it back.
 
-### [P2] 4 players' Bird tenure still unresolved, and `bio["contracts"]` is thin
-§ 3.8 tenure itself is settled (2026-08-07): derived from the transaction ledger
-via `_bird_tenure`, enforced on both the submit and simulator paths, badge at
-🔒 + 👁. 483 of 487 rostered players resolve, with 0 false positives against the
-14 real Bird signings on file, and `signing_method="bird_rights"` no longer
-bypasses funding validation.
+### [P2] 12 rostered players' Bird tenure doesn't resolve, and `bio["contracts"]` is thin
+§ 3.8 tenure is derived from the transaction ledger via `_bird_tenure` and
+checked on both the submit and simulator paths by
+`_check_bird_rights_declaration`. Claiming more tenure than the ledger supports
+is an error. Declaring `bird_rights` for a player the ledger puts on another
+team is an error. When the ledger has no answer at all, it's only a warning.
 
-What is still open: **the 4 players who don't resolve**, and `bio["contracts"]`
-is still near-empty at 47/1018. The latter is harmless for tenure — nothing
-reads it any more — but it means contract *terms* history is thin for every
-pre-2026 deal, so anything wanting to know what a deal actually looked like
-back then has nowhere to look.
+That last case is what's left. **Re-measured 2026-10-06** for 26-27: 12
+rostered players have no tier — `anthony-cole` (ATL), `broome-johni` (DAL),
+`porter-craig` and `miller-jordan` (DET), `jones-spencer` (LAC), Giannis (MIL),
+`jackson-andre` (NOP), SGA (OKC), Booker (PHX), `furphy-johnny` and
+`tomlin-naeqwan` (SAC), `yang-hansen` (UTA). Five overlap the extension
+backfill's 7 above. (It read 4 on 2026-08-07, in 25-26. The rollover added a
+season for every chain to cover.) A Bird signing for any of them passes on a
+warning, so the declared tier is the team's word.
 
-### [P2] § 1.2 soft cap — partly enforced, gap is verification not blocking
-Corrected 2026-08-07: the original entry ("over-cap signings lacking a valid
-exception aren't blocked, only reviewed") is stale.
-`_check_signing_method_funding` already returns `level="error"`, so a declared
-method that isn't actually available **does** block. The real remaining hole is
-that `signing_method` and `bird_rights_type` are **self-declared and never
-verified** — a team can declare `bird_rights` on a player they have no Bird
-tenure with and pass clean. Closing it means § 3.8 tenure verification
-(below), not a new blocking rule.
+`bio["contracts"]` is on 173 of 1,037 bios (2026-10-06; it was 47 of 1,018 on
+2026-08-07). Nothing reads it for tenure, but contract *terms* history is
+still thin for every pre-2026 deal.
+
+**The old § 1.2 entry was folded in here on 2026-10-06.** It said a team could
+declare `bird_rights` with no tenure and pass clean. That stopped being true
+when `_check_bird_rights_declaration` started covering `signing_method`; the
+warning above is the only residue.
 
 ### [P3] The 👁 half of the rulebook badges is still declared by hand
 Entered 2026-08-16 as "the badges keep going stale", closed 2026-08-30 for the
 🔒 half. `nbn-api/rulebook_coverage.py` now computes it: an `ast` pass finds
 every `CheckResult` reachable from `_VALIDATORS` (plus the one in
-`routers/waivers.py`), `CHECK_SECTIONS` maps each of the 54 check ids to the
+`routers/waivers.py`), `CHECK_SECTIONS` maps each check id (54 then, 84 on 2026-10-06) to the
 § it enforces, and `tests/test_rulebook_coverage.py` fails if those two sets
 disagree — so a new check cannot be added without declaring what it enforces.
 `build/check_rulebook_badges.py` rewrites the badges from that manifest and
@@ -510,59 +463,57 @@ day it landed.
   is a judgement about the gap between a rule and the check covering it, and
   nothing in the code knows it. The notes are reviewed prose, and the test only
   asserts they exist and name a real §, not that they are still true.
+  **Three were already stale on 2026-10-06**, and all three are printed on
+  the rulebook: § 3.1 says the signing method is "never verified against
+  tenure" and § 3.8 says tenure is "self-declared", but
+  `_check_bird_rights_declaration` has checked both against the ledger since
+  August. § 6.2 still says 116 players lack an acquisition record; it's 88.
 - `SECTION_ENFORCED_BY` — the one section (§ 5.2) the system enforces by simply
   doing the thing, with no check to find.
 
 Closing this properly means the checks carrying their own § and their own
 "what's still manual" note at the emit site, so the whole manifest falls out of
-the code. That is a 134-site edit for a badge, which is why it wasn't done now.
+the code. That is a 217-site edit for a badge (216 `CheckResult(` sites in `transactions.py` plus one in `waivers.py`, counted 2026-10-06), which is why it wasn't done now.
 
 Three badges sit outside the generated set on purpose — the § 1.5 buyout
 bullet, the "Hard Cap Grace Period" sub-heading and § 3.1's "UFA / RFA
 Eligibility" sub-heading. Each is a claim about one clause rather than one
 section, so nothing keys them to a §, and they stay hand-written.
 
-### [P3] The compliance board covers roster and cap only — not Stepien, offer sheets or waivers
-Entered 2026-08-16 as "no league-wide compliance board"; **the board shipped
-2026-09-19** at `/committees/rosters/` (the Compliance tab). It reads `GET /api/cap-history/current` for all
-30 teams and runs each row through `cap-health.js` — the same module behind the
-team page's Cap Health card and the homepage's chips — so it states no rule of
-its own and does no cap math. Today it shows 6 teams below § 2.1's 14-player
-floor, 1 owing an Empty Roster Charge, 1 over § 2.2's two-way limit and 7 owing
-a trim before opening night, with clickable counters that filter the table.
+### [P3] The compliance board doesn't show Stepien exposure
+The board is the Compliance tab on `/committees/rosters/`. It runs each team's
+`GET /api/cap-history/current` row through `cap-health.js`, so it states no
+rule of its own and does no cap math. Everything else this entry used to list
+has shipped:
 
-That closes the part the entry was really about: the counts in this file were
-hand-made with a throwaway script, twice, and were stale within a week both
-times. Nobody has to write that script again.
+- open offer sheets and waiver windows (2026-09-23, from
+  `/api/offer-sheets/open` and `/api/waivers`);
+- the Empty Roster Charge in dollars, which `cap_history.build_rows` now reports
+  as `empty_roster_charge` (2026-09-19);
+- the trim deadline: `in_season` comes from opening night on the schedule, so
+  over 15 is a "trim owed before opening night" now and a violation once the
+  season starts (2026-09-30).
 
-What the original entry listed and the board does **not** cover, because no
-shared helper produces it yet:
-
-- **Stepien exposure**, open **offer sheets**, open **waiver windows**. Each is
-  computed today inside a validator on the submit path, not by anything a page
-  can call. Adding one means giving it the `cap-health.js` treatment first — a
-  pure function taking its inputs as arguments — not querying for it from the
-  page. A second copy is how two surfaces start disagreeing about who is in
-  violation.
-- **"Who still has to cut."** The 7 teams over 15 are legal until opening
-  night, and no regular-season start date exists on the site, so the board says
-  a trim is owed without being able to say by when. Whatever fixes § 3.12's
-  proration gap (§ 2 above) supplies the same date.
-- **The dollar figure of an Empty Roster Charge.** `computeEmptyRosterCharge`
-  lives in `teams/team.js`, which injects a whole page into `document.body` on
-  load and so cannot be imported; it is not in the cap-history row either. The
-  board counts the charge and the team's own page prices it. Extracting that
-  function the way `teams/lineup.js` was extracted would close it.
+**Stepien exposure is what's left.** It's computed inside the trade validator
+on the submit path, not by anything a page can call. Adding it means giving it
+the `cap-health.js` treatment first — a pure function taking its inputs as
+arguments — not querying for it from the page. A second copy is how two
+surfaces start disagreeing about who is in violation.
 
 ### [P3] Other standing manual-review items
-Roughly in order of how often they bite:
-- § 4.5 trade restrictions, § 4.6 Touch Rule (multi-team trades)
+The full, current list is `SECTION_REVIEW` in `nbn-api/rulebook_coverage.py`
+(and the 👁 badges it produces). Don't keep a second copy here; this one went
+stale. The ones that bite most often:
+
+- § 4.5 trade restrictions beyond the extension freeze, § 4.6 Touch Rule
+  (multi-team trades)
 - § 3.7 DPE — no exception type exists
-- § 3.8 Bird Rights tenure never independently verified (self-declared) — promoted to its own P2 entry above
-- § 3.10 cap holds, § 3.11 max contracts, § 3.13 contract structure
-- § 6.1 options, § 7.4 international rights
-- § 3.12 multi-year minimum deals unchecked against the per-year scale
-- § 3.15 the 48h match clock and offer-value cap hold aren't modeled
+- § 3.11 the 25/30/35% max tier isn't derived from service time
+- § 3.13 option and guarantee structure
+- § 6.1 a PLAYER_OPT decision has no automated check
+- § 3.15 the 48h match clock and the offer-value cap hold aren't modeled. This
+  one isn't in `SECTION_REVIEW`'s § 3.15 note, which mentions only the funding
+  link.
 
 ### [P3] Trade exceptions still not tradeable
 Creation and consumption are both automatic now (§ 4.1a). Trading a TPE isn't
@@ -585,7 +536,8 @@ What this entry is still waiting on is only time. **The one thing that would
 lose it is a gap in the series** — the timer is `Persistent=true` so downtime
 catches up, but a stretch where it is disabled cannot be reconstructed, since
 the whole point is that this is observed, not replayed. If the timer is ever
-switched off, note the dates here.
+switched off, note the dates here. Checked 2026-10-06: a row every day from
+2026-08-25 to 2026-10-05, no gaps.
 
 ---
 
@@ -600,9 +552,9 @@ back by file, actor or key, and is now public — the player page's "Edit
 history" disclosure (below the transactions table, same "Player History" card)
 calls it scoped to `key=<slug>` (`nbn-api/CLAUDE.md` § "The edit log").
 
-- **Left, and permanent:** the log starts on 2026-08-25. **The two remaining
-  fractional-cent poopoo diffs in §1 were the motivating case and it cannot
-  answer them** — those edits predate it. This is forensics going forward only.
+- **Left, and permanent:** the log starts on 2026-08-25. **The 25-26
+  fractional-cent poopoo diffs (PHI, UTA) were the motivating case and it
+  cannot answer them** — those edits predate it. This is forensics going forward only.
   Don't re-open this expecting it to explain an old diff.
 
 ### [P3] Nothing runs the frontend smoke suite, and authenticated pages are uncovered
@@ -613,7 +565,12 @@ real defect on its first run — the nine `"NA"` `photo_url` bios, fixed
 2026-08-29 — which is the argument for the rest of it.
 
 **Coverage went from 18 pages to 43 on 2026-09-19** (22 assertions to 47; a few
-pages carry more than one). All 47 pass. Every `min` was read off a real render
+pages carry more than one). On 2026-10-06 `run.js` has 48 rows across 42
+distinct paths. Run twice that day against `nbn.today`: the second run passed
+all 48. The first failed one `/stats/highs/` row and passed on rerun. A likely
+cause is `GET /api/game-highs` building its in-memory index on the first
+request after a box score lands. Worth knowing before a nightly timer starts
+reporting it as a real failure. Every `min` was read off a real render
 and then set well below it, so the floors survive the league doing something
 ordinary. Two lessons are written into `tests/frontend/README.md` rather than
 here, because they are what the next person adding a row needs:
@@ -630,7 +587,8 @@ here, because they are what the next person adding a row needs:
 What is left:
 
 - **Nothing runs it.** This is now the whole of the item's value at risk:
-  43 pages of assertions that only fire when someone remembers. Deliberately not
+  ~42 pages of assertions that only fire when someone remembers. Still true on
+  2026-10-06: no timer or hook runs it. Deliberately not
   in the pre-commit hook — it launches a browser, needs the site up and `npm ci`
   done, and takes a couple of minutes, none of which belongs between a commit
   and its author. The two candidates both have a cost worth weighing: a
@@ -672,17 +630,21 @@ and unauthenticated, 503 when the data directory is unreachable
 ### [P3] Fifth copy of the same frontend primitives — `nbn-data.js` is overdue
 Entered 2026-08-16. `contract.js` exists because the contract grammar had
 already diverged twice; `teams/lineup.js` exists for the same reason. The rest
-of the shared primitives never got that treatment (counted 2026-08-16):
+of the shared primitives never got that treatment, and the count has grown
+(2026-08-16 in brackets):
 
-| Helper | Copies |
+| Helper | Files defining one, 2026-10-06 |
 |---|---|
-| `TEAMS` abbr → name map | **13 files** |
-| `displayName()` | **11 files** |
-| `parseCSV()` | **10 files** |
-| `parseSalary` / `fmtMoney` | **7 files** |
+| `TEAMS` abbr → name map | **19** (13) |
+| `displayName()` | **11** (11) |
+| `parseCSV()` | **11** (10) |
+| `parseSalary` / `fmtMoney` | **7** (7) |
 
 Same failure mode as the contract shorthand, just quieter — one page renders
-"Wallace, Keaton" and another "Keaton Wallace". A root `nbn-data.js` carrying
+"Wallace, Keaton" and another "Keaton Wallace". **`names.js` (2026-09-23)
+covers part of that**: `nbnPlayerName()` is the shared display rule and 28
+files load it. But the 11 local `displayName()` copies are still there, so
+it's a sixth copy until they're replaced. A root `nbn-data.js` carrying
 those six, adopted first in the four heaviest consumers (`teams/team.js`,
 `players/index.html`, `cap-summary/`, `transaction-sim/`), then opportunistically.
 
@@ -723,10 +685,9 @@ job.
 
 ## 4. Nice to have
 
-- **Extension window UI** — the precondition is met: § 6.2 shipped as a real
-  transaction type on 2026-08-21, so the § 6.3 submission windows can now have
-  the calendar surface FA has. This is the only part of the extension work
-  still outstanding.
+- **Extension window UI** — teams submit on `/extensions` (2026-10-04) and the
+  validator checks the § 6.3 window. What's missing is a calendar surface
+  showing when each window opens and closes, the way FA has one.
 - **Cap history chart on the team page** — the rest of per-team cap health
   shipped 2026-08-30: the Cap Health card shows standing against the cap,
   aprons, a hard cap and § 2.1/2.1a/2.2's roster limits, plus this team's own
@@ -735,31 +696,3 @@ job.
   rather than work: `GET /api/cap-history?team=UTA` has served a per-day series
   since 2026-08-25, so "when did this team cross the first apron" is a chart
   over an existing endpoint, not a collection problem.
-
-### [P2] The signing and waiver validators still judge off books without the § 2.1a charge
-Fixed 2026-09-19 for the surfaces that report a team's *current* books —
-`cap_history.build_rows` (so the daily snapshot, `/committees/rosters` and the
-homepage card) and `_team_commitment` (so free-agency room) all add
-`_real_empty_roster_charge` now. The team page had always charged it, so a
-short-handed team read two different Team Salaries depending on the page; DAL,
-at 11 standard players, was $1,357,763 apart.
-
-What is left is the *projection* side. `_compute_team_salary` and
-`_compute_team_salary_ex_holds` are deliberately still raw, because ~40 callers
-use them as a baseline and then apply their own charge for the roster count the
-transaction leaves behind — the trade path most visibly
-(`current - out + in + charge(after)`). Folding a charge into the helpers would
-have every one of those double-count it against a stale pre-transaction count.
-
-So for a team already below 12, `_validate_sign`, `_validate_extension` and the
-waiver paths understate projected salary by the charge on the slots *still*
-empty after the move. The trade path is unaffected: its 14-player mock is
-always at least the real 12-player charge, and it is already computed off the
-post-trade count.
-
-The fix is per-validator, not one line: each one that projects a roster count
-should price the residual real charge at that count, the way
-`_trade_fact_sheet` already prices its mock. Small in dollars — at most 2-3
-slots × the rookie minimum, so ~$1.4M-$4M — and it only bites a team that is
-both short-handed and within that of a line. Worth doing before a season where
-a team sits under 12 for any length of time.
