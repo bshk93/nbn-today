@@ -92,13 +92,28 @@ across 25 teams on 2026-08-30, when the season compared was 25-26.
 Worst Team Salary disagreements (site − sheet): BKN +$19.21M, NOP +$13.23M,
 OKC +$10.84M, DAL +$8.20M, MIA +$7.52M, UTA +$6.79M.
 
-Two clusters are the cheapest threads to pull, because each is one booking
-difference rather than several separate errors:
+**Six of the 20 are explained (2026-10-06), and the site is right on all
+six: the sheet missed August moves the ledger has.** The committee needs to
+enter these on the sheet; nothing on the site changes.
 
-- **CHI, PHI, PHX and POR are each exactly +$2,449,421** (to within a fraction
-  of a dollar). The same figure showed up on four teams on 2026-08-30 too
-  (CHI, GSW, PHX, POR), so it has survived the season rollover.
-- **ATL and CHA are each exactly +$3,000,000.**
+| Team | Site − sheet | What the sheet is missing | Ledger |
+|---|---|---|---|
+| CHI | +$2,449,421 | Patrick Williams, minimum | `sign` 2026-08-18 |
+| PHI | +$2,449,421 | Gary Payton II, minimum (sheet still has his UFA hold) | `sign` 2026-08-19 |
+| PHX | +$2,449,421 | Adem Bona, minimum | `sign` 2026-08-15 |
+| POR | +$2,449,421 | DeAnthony Melton, minimum | `sign` 2026-08-15 |
+| ATL | +$3,000,000 | Ben Sheppard, Bird re-sign (sheet still has his RFA hold) | `sign` 2026-08-20 |
+| CHA | +$3,000,000 | Cam Johnson ($23M) in, Kelly Oubre ($20M) out | `trade` 336040099f5a23e8, 2026-08-16 |
+
+$2,449,421 is the 26-27 minimum for a player with 2 years' experience. Two
+loose ends from the same check:
+
+- **The diff job never flagged Bona.** PHX shows no `player_extra` row for
+  him, though he is on the site's PHX roster and not on the sheet. The
+  aggregate row was the only sign. Worth finding out why the player match
+  let him through, since other gaps could hide the same way.
+- **The CHA trade should also move NOP's figure**, but NOP is +$13.23M, so
+  more than this trade is wrong there.
 
 Most of the sheet's figures still carry fractional cents (ATL `209,015,000.3`)
 and the site's never do. So the sheet is doing arithmetic the site isn't.
