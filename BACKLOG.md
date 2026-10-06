@@ -463,11 +463,13 @@ day it landed.
   is a judgement about the gap between a rule and the check covering it, and
   nothing in the code knows it. The notes are reviewed prose, and the test only
   asserts they exist and name a real §, not that they are still true.
-  **Three were already stale on 2026-10-06**, and all three are printed on
-  the rulebook: § 3.1 says the signing method is "never verified against
-  tenure" and § 3.8 says tenure is "self-declared", but
-  `_check_bird_rights_declaration` has checked both against the ledger since
-  August. § 6.2 still says 116 players lack an acquisition record; it's 88.
+  On 2026-10-06 three had gone stale and were fixed: § 3.1 and § 3.8 said
+  Bird tenure was "self-declared", though `_check_bird_rights_declaration`
+  had checked it against the ledger since August, and § 6.2 carried a count
+  that had drifted. The notes aren't shown on `/rulebook` (only the badge
+  is), but the hand-written "What's system-enforced" prose there drifts the
+  same way: § 3.14 made the same "self-declared" claim and was fixed the
+  same day. Nothing checks that prose against the code.
 - `SECTION_ENFORCED_BY` — the one section (§ 5.2) the system enforces by simply
   doing the thing, with no check to find.
 
