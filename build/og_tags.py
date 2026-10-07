@@ -26,6 +26,10 @@ means a new entry here. --check runs from the pre-commit hook and fails when
 one is missing, which is what stops the map from quietly rotting as pages are
 added.
 
+The block also carries the icon links (favicon, apple-touch-icon, manifest;
+the files are build/make_icons.py's). Same reason as the tags: every page
+needs them, and this is the one thing that already writes every page's head.
+
 Re-runnable: an existing NBN:og block is replaced, never duplicated.
 
 The card images themselves (og-default.png, og/team-*.png) are generated
@@ -45,6 +49,7 @@ TAGLINE = 'Nothing But Net — fantasy basketball GM simulation league'
 # path -> (title override or None, description)
 PAGES = {
  '/': (None, 'Owner history, team pages, standings, player profiles, draft history and stats leaderboards for the NBN fantasy basketball GM simulation league.'),
+ '/404.html': (None, 'That page does not exist on NBN.'),
  '/awards/': (None, 'NBN award winners by season — MVP, DPOY, All-NBN teams and the rest of the ballot.'),
  '/backlog/': (None, 'Internal working list of what needs doing on the NBN site.'),
  '/bet/': (None, 'Put NB¥ on NBN games and league outcomes.'),
@@ -172,6 +177,9 @@ def block(title, desc, url, image, alt):
         f'  <meta property="og:image:alt" content="{esc(alt)}">',
         f'  <meta name="twitter:card" content="summary_large_image">',
         f'  <meta name="theme-color" content="#0d0e11">',
+        f'  <link rel="icon" href="/icons/favicon.png">',
+        f'  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">',
+        f'  <link rel="manifest" href="/site.webmanifest">',
         END,
     ])
 

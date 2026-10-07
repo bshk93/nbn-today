@@ -71,7 +71,7 @@ function fmtTime(iso) {
 }
 
 function logo(abbr) {
-  return `<img src="/logos/logo-${abbr.toLowerCase()}.png" alt="" loading="lazy">`;
+  return `<img src="/logos/sm/logo-${abbr.toLowerCase()}.webp" alt="" loading="lazy">`;
 }
 
 async function api(path, opts = {}) {

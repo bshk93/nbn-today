@@ -3,7 +3,6 @@
   const SEASON = location.pathname.split('/').filter(Boolean)[1];
 
   document.title = SEASON + ' Ballot — NBN';
-  { const _f = document.createElement('link'); _f.rel = 'icon'; _f.href = '/logo.png'; document.head.appendChild(_f); }
 
   // theme.css and nav-chrome.css are <link>ed from the page's <head>: a
   // stylesheet a script inserts doesn't hold up the first paint.

@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Draft Live — NBN</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
     html { zoom: 1.25; }
@@ -1695,7 +1697,7 @@
       overlay.innerHTML = `
         <div class="show-modal">
           <div class="depth-modal-header">
-            <img class="depth-team-logo" src="/logos/logo-${abbr.toLowerCase()}.png" alt="${abbr}"
+            <img class="depth-team-logo" src="/logos/sm/logo-${abbr.toLowerCase()}.webp" alt="${abbr}"
                  onerror="this.style.display='none'">
             <div class="depth-team-name">${teamName} Depth Chart</div>
           </div>
@@ -1797,7 +1799,7 @@
         if (primaryTeam) {
           const logo = document.createElement('img');
           logo.className = 'pc-team-logo';
-          logo.src = `/logos/logo-${primaryTeam.toLowerCase()}.png`;
+          logo.src = `/logos/sm/logo-${primaryTeam.toLowerCase()}.webp`;
           logo.alt = '';
           logo.onerror = function() { this.style.display = 'none'; };
           teamWrap.appendChild(logo);

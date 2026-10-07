@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Wall Street — NBN</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2/dist/chartjs-plugin-zoom.min.js"></script>
@@ -458,7 +460,7 @@ function renderMarketTable() {
     row.innerHTML = `
       <td>
         <div class="team-cell">
-          <img class="team-logo" src="/logos/logo-${t.team.toLowerCase()}.png" alt="${t.team}" onerror="this.style.display='none'">
+          <img class="team-logo" src="/logos/sm/logo-${t.team.toLowerCase()}.webp" alt="${t.team}" onerror="this.style.display='none'">
           <span class="team-abbr">${t.team}</span>
           ${held > 0 ? `<span style="font-size:0.7rem;color:var(--gold)">${held.toFixed(3)}sh</span>` : ''}
         </div>
@@ -762,7 +764,7 @@ function renderPortfolio() {
         : `<button class="buy-btn" style="background:#2d1b4e;color:var(--purple-light);border-color:var(--purple-border)" onclick="openModal('${h.team}','cover')" ${marketData?.locked ? 'disabled' : ''}>Cover</button>`;
       const teamCell = idxEntry
         ? `<span class="team-abbr">${idxEntry.name}</span><span class="idx-badge">${h.team}</span>`
-        : `<img class="team-logo" src="/logos/logo-${h.team.toLowerCase()}.png" alt="${h.team}" onerror="this.style.display='none'"><span class="team-abbr">${h.team}</span>`;
+        : `<img class="team-logo" src="/logos/sm/logo-${h.team.toLowerCase()}.webp" alt="${h.team}" onerror="this.style.display='none'"><span class="team-abbr">${h.team}</span>`;
       html += `<tr>
         <td><div class="team-cell">
           ${teamCell}
@@ -1059,7 +1061,7 @@ function renderMarketSummary() {
     const cls    = isRiser ? 'chg-pos' : 'chg-neg';
     const absFmt = (isRiser ? '+' : '') + fmtNBY(item.abs);
     return `<div class="mover-card">
-      <img class="team-logo" src="/logos/logo-${item.team.toLowerCase()}.png" alt="${item.team}" onerror="this.style.display='none'">
+      <img class="team-logo" src="/logos/sm/logo-${item.team.toLowerCase()}.webp" alt="${item.team}" onerror="this.style.display='none'">
       <span class="team-abbr">${item.team}</span>
       <span class="mover-pct ${cls}">${sign}${item.pct.toFixed(1)}%</span>
       <span class="mover-abs">${absFmt}</span>

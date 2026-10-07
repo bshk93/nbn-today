@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Awards — NBN</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
     .season-list { display: flex; flex-direction: column; gap: var(--space-3); }
@@ -89,7 +91,7 @@
       return best || null;
     }
 
-    const logo = t => `<img src="/logos/logo-${t.toLowerCase()}.png" alt="" onerror="this.style.display='none'">`;
+    const logo = t => `<img src="/logos/sm/logo-${t.toLowerCase()}.webp" alt="" onerror="this.style.display='none'">`;
 
     // A winner cell. `who` is a player slug, a team, or (from the build's
     // file) a "LAST, FIRST" name or "Owner (TEAM)".

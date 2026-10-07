@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Career Leaders — NBN Stats</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
     .cl-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
@@ -323,7 +325,7 @@
         const sub = `${state.team ? '' : c.teams.join(' · ') + ' · '}${span} (${yrs} season${yrs === 1 ? '' : 's'})`;
         return `<tr><td class="right muted">${e.rank}</td>`
           + `<td class="cl-player"><a href="/players/?p=${encodeURIComponent(c.slug)}">${esc(nbnPlayerName(c.name))}</a>`
-          + (team ? `<img src="/logos/logo-${team.toLowerCase()}.png" alt="${team}" title="On ${team}'s roster today">` : '')
+          + (team ? `<img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="${team}" title="On ${team}'s roster today">` : '')
           + `<span class="cl-sub" title="${esc(sub)}">${esc(sub)}</span></td>`
           + cols.map(k => {
               const kc = byCol[k];

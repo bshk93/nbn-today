@@ -42,7 +42,7 @@
 // Cap & roster logic
 //   computeMleType               determines MLE type from team salary
 //   mleTypeLabel                 MLE type → display label
-//   renderHardCapBanner          injects hard cap warning banner
+//   renderHardCapBanner          What-If Mode's hard cap banner
 //   countRosterSlots             roster rows → standard / two-way slot counts
 //   renderCapHealth              injects the Cap Health card + summary strip
 //   renderExceptionsSection      renders MLE/BAE exceptions panel
@@ -143,8 +143,6 @@ document.documentElement.dataset.team = abbr;
 // The shell already ships this as a static <title> (and matching OG tags) so
 // crawlers see it; keep the two in step rather than downgrading to the abbr.
 document.title = `${name} — NBN`;
-
-{ const _favicon = document.createElement('link'); _favicon.rel = 'icon'; _favicon.href = '/logo.png'; document.head.appendChild(_favicon); }
 
 // Team pages are 11-line shells that load only this file, so shared modules are
 // pulled in from here. Starts now, in parallel with the data fetches; the render
@@ -1014,7 +1012,10 @@ document.body.innerHTML = `
       ${prevAbbr ? `<a class="team-nav-btn" href="/teams/${prevAbbr}/" title="${TEAMS[prevAbbr]}" aria-label="Previous team">‹</a>` : ''}
       <div class="team-header">
         <img src="/logos/logo-${slug}.png" alt="${name} logo">
-        <h1>${name}</h1>
+        <div class="team-header-text">
+          <h1>${name}</h1>
+          <div class="team-header-facts" id="team-header-facts"></div>
+        </div>
       </div>
       ${nextAbbr ? `<a class="team-nav-btn" href="/teams/${nextAbbr}/" title="${TEAMS[nextAbbr]}" aria-label="Next team">›</a>` : ''}
     </div>
@@ -1029,7 +1030,6 @@ document.body.innerHTML = `
     </div>
     <div class="tab-panel" id="tab-overview">
       <div id="offer-sheet-banner" style="display:none"></div>
-      <div id="hard-cap-banner" style="display:none"></div>
       <button type="button" id="cap-health-strip" class="cap-health-strip" style="display:none"></button>
       <section>
         <div class="roster-header-row">
@@ -1723,7 +1723,10 @@ function mleTypeLabel(type) {
   return { room: 'Room Exception', ntmle: 'Non-Taxpayer MLE', tmle: 'Taxpayer MLE' }[type] || '—';
 }
 
-function renderHardCapBanner(teamState, el = document.getElementById('hard-cap-banner')) {
+// What-If Mode's banner only. The real page says this quietly, in the Cap
+// Health strip and card (renderCapHealth): it is a standing, not an alarm, and
+// a red banner above the roster was the first thing every visitor read.
+function renderHardCapBanner(teamState, el) {
   if (!el) return;
   if (!teamState?.hard_cap) { el.style.display = 'none'; return; }
   const isApron2 = teamState.hard_cap === 'second_apron';
@@ -1984,6 +1987,17 @@ function renderCapHealth(opts) {
     note.textContent = r.note || '';
     row.append(label, amount, note);
     standingBlock.appendChild(row);
+    // Why the team is hard-capped. The stored reason ends with the
+    // triggering transaction's id, which means nothing on this page.
+    const why = r.key === 'hard_cap'
+      ? String(opts.teamState?.hard_cap_reason || '').replace(/\s*\(txn [0-9a-f]+\)\s*$/i, '').trim()
+      : '';
+    if (why) {
+      const reason = document.createElement('div');
+      reason.className = 'ch-foot';
+      reason.textContent = `Hard-capped by: ${why}`;
+      standingBlock.appendChild(reason);
+    }
   });
 
   // Only real problems get a warning line of their own. "Over the Salary Cap"
@@ -2019,8 +2033,10 @@ function renderCapHealth(opts) {
   const setStrip = sheetPhrase => {
     if (!strip) return;
     const flagged = warnings.filter(w => w.severity !== 'note');
+    const hardCap = opts.teamState?.hard_cap;
     const parts = [
       salaryPhrase,
+      hardCap ? `hard-capped at the ${hardCap === 'second_apron' ? 'second' : 'first'} apron` : null,
       `${counts.standard} player${counts.standard === 1 ? '' : 's'}`,
       flagged.length ? `${flagged.length} rule flag${flagged.length === 1 ? '' : 's'}` : null,
       sheetPhrase,
@@ -2433,6 +2449,10 @@ function computeStatFields(seasonRow) {
 // computeLatestSeasonBySlug(allSeasons), computed once at page load.
 function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null) {
   if (!rows.length) return null;
+  // Neither format's key column: the CSV came back as something else (a
+  // truncated or error response). Rendering it threw on the first row once,
+  // which killed every section after the roster too.
+  if (!('SLUG' in rows[0]) && !('PLAYER' in rows[0])) return null;
   const curYr = currentSeasonYr();
   const hasSlug = 'SLUG' in rows[0] && !('PLAYER' in rows[0]);
 
@@ -3476,6 +3496,31 @@ function makeSeasonRenderCell(rows) {
   };
 }
 
+// One line of franchise facts under the name in the team band: who runs it
+// now, titles, all-time record, playoff trips. Everything here is also on the
+// Franchise tab; this is the summary a visitor sees without clicking.
+function renderHeaderFacts(seasonRows, members) {
+  const el = document.getElementById('team-header-facts');
+  if (!el) return;
+  const facts = [];
+  const owners = [];
+  (members || []).forEach(m => (m.tenures || []).forEach(t => {
+    if (t.team === abbr && t.end == null && t.position === 'owner') owners.push(m.name);
+  }));
+  if (owners.length) facts.push(`Owner: ${owners.join(' & ')}`);
+  const rows = (seasonRows || []).filter(r => r.SEASON);
+  if (rows.length) {
+    const titles = rows.filter(r => r.PLAYOFF_RESULT === 'Champion').length;
+    const trips = rows.filter(r => r.PLAYOFF_RESULT && r.PLAYOFF_RESULT !== 'Missed').length;
+    const w = rows.reduce((s, r) => s + (+r.W || 0), 0);
+    const l = rows.reduce((s, r) => s + (+r.L || 0), 0);
+    if (titles) facts.push(`🏆 ${titles} title${titles === 1 ? '' : 's'}`);
+    facts.push(`${w}–${l} all-time`);
+    facts.push(`${trips} playoff trip${trips === 1 ? '' : 's'} in ${rows.length} season${rows.length === 1 ? '' : 's'}`);
+  }
+  el.textContent = facts.join('  ·  ');
+}
+
 function buildPersonnelSection(members, allGames) {
   const POS_LABEL = { owner: 'Owner', gm: 'GM', coach: 'Coach' };
 
@@ -3608,7 +3653,7 @@ function buildTimeline(rows) {
 }
 
 function playerSlug(name) {
-  return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+  return String(name || '').toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
 }
 
 // rosterRows: current roster rows (SLUG or legacy PLAYER format), used to mark
@@ -7126,7 +7171,6 @@ function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDe
     // Real roster/cap data was never touched — just recompute+show the real numbers again.
     const season = currentSeasonYr();
     const { teamSalaryFull, teamSalaryExHolds } = computeCapSummary(realRosterRows, realDeadCapRows, biosData, capLevels, season);
-    renderHardCapBanner(teamState);
     renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, season);
   });
 }
@@ -7445,6 +7489,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   }
 
   buildPersonnelSection(membersData, allGames);
+  renderHeaderFacts(seasonRows, membersData);
 
   if (pr.status === 'fulfilled') {
     playersWrap.innerHTML = '';
@@ -7812,12 +7857,12 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       rosterWrap.innerHTML = '';
       const t = renderRoster(liveRosterRows);
       if (t) rosterWrap.appendChild(t);
-      else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
+      else rosterWrap.innerHTML = '<div class="status">Couldn’t load the roster. Refresh to try again.</div>';
     }
 
     const t = renderRoster(rosterRows);
     if (t) rosterWrap.appendChild(t);
-    else rosterWrap.innerHTML = '<div class="status">No roster data.</div>';
+    else rosterWrap.innerHTML = '<div class="status">Couldn’t load the roster. Refresh to try again.</div>';
 
     const modeTabsEl = document.getElementById('roster-mode-tabs');
     if (modeTabsEl) {
@@ -7840,7 +7885,6 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     // Mirror both figures from the backend's _compute_team_salary(_ex_holds).
     const curYr = currentSeasonYr();
     const { teamSalaryFull, teamSalaryExHolds } = computeCapSummary(rosterRows, deadCapRows, biosData, capLevels, curYr);
-    renderHardCapBanner(teamState);
     renderCapHealth({
       abbr, rosterRows, biosData, capLevels, season: curYr, teamState,
       teamSalaryFull, teamSalaryExHolds,

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Page not found — NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="That page does not exist on NBN.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Page not found — NBN">
+  <meta property="og:description" content="That page does not exist on NBN.">
+  <meta property="og:url" content="https://nbn.today/404.html">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    /* nginx serves this for every missing path (error_page 404), so every
+       URL in it is absolute: the page can be shown at any depth. */
+    .nf {
+      min-height: 70vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; gap: var(--space-4);
+    }
+    .nf-code {
+      font-family: var(--font-display);
+      font-size: clamp(6rem, 22vw, 11rem);
+      font-weight: 800; line-height: 0.85;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+    .nf-ball { display: inline-block; animation: nf-bounce 1.4s cubic-bezier(.3,.6,.4,1) infinite; }
+    @keyframes nf-bounce {
+      0%, 100% { transform: translateY(0); }
+      45%      { transform: translateY(-0.18em); }
+    }
+    @media (prefers-reduced-motion: reduce) { .nf-ball { animation: none; } }
+    .nf h1 { font-size: var(--text-xl); margin: 0; color: var(--text-primary); }
+    .nf p  { margin: 0; color: var(--text-secondary); max-width: 28rem; }
+    .nf-links { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; margin-top: var(--space-2); }
+  </style>
+</head>
+<body>
+  <main class="ui-page nf">
+    <div class="nf-code" aria-hidden="true">4<span class="nf-ball">0</span>4</div>
+    <h1>Air ball.</h1>
+    <p>There’s no page at <code id="nf-path"></code>. It may have moved, or the link has a typo.</p>
+    <div class="nf-links">
+      <button type="button" class="ui-btn ui-btn--primary" id="nf-search">Search the site</button>
+      <a class="ui-btn" href="/">Home</a>
+      <a class="ui-btn" href="/teams/">Teams</a>
+      <a class="ui-btn" href="/players/">Players</a>
+      <a class="ui-btn" href="/standings/">Standings</a>
+    </div>
+  </main>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+  <script>
+    document.getElementById('nf-path').textContent = location.pathname;
+    // Seed the search with the last word of the bad path ("/players/curry" →
+    // "curry"), which is usually what the visitor was looking for.
+    const guess = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '')
+      .replace(/[-_]+/g, ' ').replace(/\.html?$/, '');
+    document.getElementById('nf-search').addEventListener('click', () => {
+      if (typeof openSearch === 'function') openSearch(guess);
+      else location.href = '/players/';
+    });
+  </script>
+</body>
+</html>

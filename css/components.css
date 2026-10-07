@@ -409,6 +409,14 @@
   font-size: 3rem;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
 }
+/* The name and its one line of franchise facts (renderHeaderFacts). */
+.team-header-facts:empty { display: none; }
+:root[data-team] .team-header-facts {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.82);
+  white-space: pre-wrap;
+}
 :root[data-team] .team-nav-btn {
   color: rgba(255, 255, 255, 0.85);
   border-color: rgba(255, 255, 255, 0.35);
@@ -420,5 +428,36 @@
   :root[data-team] .team-header { gap: var(--space-3); }
   :root[data-team] .team-header img { width: 60px; height: 60px; padding: 8px; }
   :root[data-team] .team-header h1 { font-size: 1.75rem; }
+  :root[data-team] .team-header-facts { font-size: var(--text-xs); }
   :root[data-team] .team-nav-btn { width: 2rem; height: 2rem; font-size: 1.2rem; }
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────────── */
+/* Subtle on purpose: the page rises in once on load, and cards that are links
+   lift a little under the pointer. Nothing loops, nothing moves while you
+   read. Numbers that count up are nbnCountUp() in nav.js. Everything here is
+   off for anyone who has asked their system to reduce motion. */
+@keyframes ui-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+/* The page containers only fade: a transform on them, even mid-animation,
+   would make them the containing block for any position: fixed dialog inside. */
+@keyframes ui-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  :is(.page-wrap, .page, .ui-page) { animation: ui-fade 0.3s ease-out both; }
+  /* The homepage's cards follow the page in, one after another. */
+  .dash-card:not([hidden]) { animation: ui-rise 0.4s ease-out both; }
+  .dash-side .dash-card:nth-child(2) { animation-delay: 60ms; }
+  .dash-side .dash-card:nth-child(3) { animation-delay: 120ms; }
+  .dash-side .dash-card:nth-child(4) { animation-delay: 180ms; }
+  .dash-side .dash-card:nth-child(5) { animation-delay: 240ms; }
+
+  :is(a.ui-card, a.hero-tile, a.article-card) {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  :is(a.ui-card, a.hero-tile, a.article-card):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px var(--shadow-color, rgba(0, 0, 0, 0.25));
+  }
 }

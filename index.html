@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>NBN — Nothing But Net</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
 
@@ -507,6 +509,11 @@
     :root .dash-feed-text { font-size: var(--text-base); color: var(--text-primary); line-height: 1.4; }
     :root a.dash-feed-row:hover .dash-feed-text { color: var(--link); }
     :root .dash-feed-when { font-size: var(--text-xs); }
+    :root .dash-feed-text strong { font-weight: 600; }
+    /* A team inside a headline: its logo, then the abbreviation. */
+    .dash-feed-team { display: inline-flex; align-items: center; gap: 0.3em; font-weight: 600; white-space: nowrap; }
+    .dash-feed-team img { width: 1.1em; height: 1.1em; object-fit: contain; }
+    .dash-feed-sub { display: block; font-size: var(--text-sm); color: var(--text-muted); margin-top: 0.1rem; }
 
     /* Schedule */
     :root .dash-team-phase { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
@@ -526,6 +533,15 @@
     :root .dash-rank-pos { width: 1.5rem; }
     :root .dash-rank-abbr { font-size: var(--text-sm); }
     :root .dash-rank-team .rank-move { margin-left: auto; }
+    /* The blurb's first sentence, on its own line under the abbreviation:
+       indented past the rank (1.5rem) and logo (20px) and their two gaps. */
+    :root .dash-rank-team { flex-wrap: wrap; }
+    .dash-rank-blurb {
+      flex-basis: 100%;
+      padding-left: calc(1.5rem + 20px + 0.9rem);
+      font-size: var(--text-xs); line-height: 1.4; color: var(--text-muted);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
 
     /* Directory: the tile grid, regrouped by script into columns of links. */
             :root .directory {
@@ -627,6 +643,34 @@
       font-size: var(--text-sm); color: var(--text-muted); text-align: center;
     }
     .visitor-intro a { color: var(--link); white-space: nowrap; }
+
+    /* Team strip: 30 logos in two conference rows. Each lifts and picks up
+       its team colour on hover (--team-primary, from css/team-colors.css). */
+    .team-strip { display: flex; flex-direction: column; gap: var(--space-2); margin: 0 0 var(--space-6); }
+    .team-strip:empty { display: none; }
+    .team-strip-row { display: flex; align-items: center; gap: var(--space-1); }
+    .team-strip-conf {
+      flex: none; width: 2.6rem; font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
+    }
+    .team-strip-logos { display: flex; flex: 1; justify-content: space-between; gap: 2px; }
+    .team-strip a {
+      display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%;
+      transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .team-strip a img { width: 1.9rem; height: 1.9rem; object-fit: contain; }
+    .team-strip a:hover, .team-strip a:focus-visible {
+      transform: translateY(-3px) scale(1.12);
+      background: color-mix(in srgb, var(--team-primary) 22%, transparent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--team-accent) 55%, transparent);
+    }
+    @media (prefers-reduced-motion: reduce) { .team-strip a:hover { transform: none; } }
+    @media (max-width: 700px) {
+      .team-strip-conf { display: none; }
+      .team-strip-logos { flex-wrap: wrap; justify-content: flex-start; }
+      .team-strip a { width: 2.4rem; height: 2.4rem; }
+      .team-strip a img { width: 1.7rem; height: 1.7rem; }
+    }
     :root .visitor-intro { text-align: left; max-width: none; margin-top: calc(-1 * var(--space-4)); }
   </style>
 </head>
@@ -634,7 +678,7 @@
   <div class="page-wrap">
   <div class="nav" data-no-home></div>
   <header>
-    <img src="/logo.png" alt="NBN logo">
+    <img src="/icons/logo-header.webp" alt="NBN logo">
     <div class="header-text">
       <h1>Nothing But Net</h1>
       <p>Basketball Simulation GM League</p>
@@ -647,6 +691,10 @@
   </p>
 
   <div class="hero" id="dash-hero"></div>
+
+  <!-- All 30 teams, East over West: colour near the top of the page, and one
+       click into any team. Filled from the latest standings season. -->
+  <nav class="team-strip" id="team-strip" aria-label="Teams"></nav>
 
   <section class="dash" id="dash">
     <!-- Band 1 — your team. Signed-in members with an active tenure only;
@@ -1195,6 +1243,7 @@
   <script src="/token-badge.js"></script>
   <script src="/league-time.js"></script>
   <script src="/cap-health.js"></script>
+  <script src="/contract.js"></script>
   <script src="/feed-types.js"></script>
   <script src="/names.js"></script>
   <script src="/milestones.js"></script>
@@ -1262,7 +1311,7 @@
     // when a season is being played.
     const teamChip = (abbr, recs) =>
       `<a class="dash-game-team" href="/teams/${esc(String(abbr).toUpperCase())}/">`
-      + `<img class="dash-game-logo" src="/logos/logo-${esc(String(abbr).toLowerCase())}.png" alt="">`
+      + `<img class="dash-game-logo" src="/logos/sm/logo-${esc(String(abbr).toLowerCase())}.webp" alt="">`
       + `<span>${esc(abbr)}</span>`
       + (recs && recs[abbr] ? `<span class="dash-game-rec">${esc(recs[abbr])}</span>` : '')
       + `</a>`;
@@ -1292,6 +1341,31 @@
           return Object.fromEntries(hdr.map((h, i) => [h, c[i]]));
         });
       });
+
+    // ── Team strip ────────────────────────────────────────────────────────
+    //
+    // Conferences come from the newest season in the standings (SEED is
+    // "East-3"), so there is no second list of who plays where to keep.
+    // Alphabetical within each row: an order by record would reshuffle the
+    // strip every night and make a team hard to find.
+    standingsPromise.then(rows => {
+      if (!rows.length) return;
+      const latest = rows.reduce((m, r) => (r.SEASON > m ? r.SEASON : m), '');
+      const conf = { East: [], West: [] };
+      rows.filter(r => r.SEASON === latest).forEach(r => {
+        const c = String(r.SEED || '').split('-')[0];
+        if (conf[c] && r.TEAM) conf[c].push(String(r.TEAM).toUpperCase());
+      });
+      if (!conf.East.length && !conf.West.length) return;
+      // nav.js's TEAM_LIST, the one abbr → name map every page has loaded.
+      const teamName = t => (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || t;
+      $('team-strip').innerHTML = Object.entries(conf).map(([name, teams]) =>
+        `<div class="team-strip-row"><span class="team-strip-conf">${name}</span><div class="team-strip-logos">`
+        + [...new Set(teams)].sort().map(t =>
+          `<a href="/teams/${esc(t)}/" data-team="${esc(t)}" title="${esc(teamName(t))}">`
+          + `<img src="/logos/sm/logo-${esc(t.toLowerCase())}.webp" alt="${esc(teamName(t))}"></a>`).join('')
+        + `</div></div>`).join('');
+    });
 
     // ── Band 2: around the league ─────────────────────────────────────────
     //
@@ -1428,6 +1502,7 @@
         }
         $('dash-hero').innerHTML = heroHtml || (line
           ? `<div class="hero-line">${line}</div><div class="hero-sub">${sub}</div>` : '');
+        if (typeof nbnCountUp === 'function') nbnCountUp(document.querySelector('#dash-hero .hero-num'));
         head = '';
         if (ph.phase === 'preseason') title = 'Opening week';
       }
@@ -1474,14 +1549,49 @@
       // claims), so whatever it returns is safe to show. A voided entry
       // (kept in the ledger, never deleted, so there's a permanent record —
       // see edits.jsonl) is real history, not news — it never belonged here.
-      jget('/api/transactions?limit=12').then(d => (d.transactions || [])
-        .filter(t => !t.voided).map(t => ({
-        ts: t.created_at || (t.date ? t.date + 'T00:00:00Z' : ''),
-        date: t.date,
-        type: t.type,
-        text: t.description || FeedTypes.label(t.type),
-        href: '/transactions',
-      })));
+      //
+      // The row reads as a headline built from the entry's details
+      // (FeedTypes.headline), not its `description`, which is written for the
+      // office. Names come from a bios fetch for just the players named.
+      jget('/api/transactions?limit=20').then(d => {
+        const txns = (d.transactions || []).filter(t => !t.voided);
+        const slugs = new Set();
+        txns.forEach(t => {
+          const det = t.details || {};
+          if (det.player) slugs.add(det.player);
+          (det.transfers || []).forEach(tr => (tr.assets || []).forEach(a => a.slug && slugs.add(a.slug)));
+        });
+        const bios = slugs.size
+          ? jget('/api/players?slugs=' + encodeURIComponent([...slugs].join(','))).catch(() => ({}))
+          : Promise.resolve({});
+        return bios.then(bios => {
+          const ctx = {
+            esc,
+            name: slug => {
+              const n = (bios[slug] || {}).name;
+              if (n) return nbnPlayerName(n);
+              // A slug is "last-first"; good enough when the bio is missing.
+              const parts = String(slug || '').split('-');
+              return parts.length > 1
+                ? [parts[parts.length - 1], ...parts.slice(0, -1)].map(w => w[0].toUpperCase() + w.slice(1)).join(' ')
+                : String(slug || '');
+            },
+            team: abbr => `<span class="dash-feed-team"><img src="/logos/sm/logo-${esc(abbr.toLowerCase())}.webp" alt="">${esc(abbr)}</span>`,
+          };
+          return txns.map(t => {
+            const h = FeedTypes.headline(t, ctx);
+            if (!h) return null;
+            return {
+              ts: t.created_at || (t.date ? t.date + 'T00:00:00Z' : ''),
+              date: t.date,
+              type: t.type,
+              html: h.html,
+              sub: h.sub ? (h.subHtml ? h.sub : esc(h.sub)) : '',
+              href: '/transactions',
+            };
+          }).filter(Boolean);
+        });
+      });
 
     const feedFromNews = () =>
       jget('/api/news').then(d => (d.articles || [])
@@ -1555,7 +1665,8 @@
           return `<a class="dash-feed-row" href="${esc(it.href)}">`
             + `<span class="dash-feed-tag" style="background:${esc(c.bg)};color:${esc(c.fg)}">`
             + `${esc(FeedTypes.label(it.type))}</span>`
-            + `<span class="dash-feed-text">${it.html || esc(it.text)}</span>`
+            + `<span class="dash-feed-text">${it.html || esc(it.text)}`
+            + (it.sub ? `<span class="dash-feed-sub">${it.sub}</span>` : '') + `</span>`
             + `<span class="dash-feed-when">${esc(when)}`
             + (it.byline ? ` · ${esc(it.byline)}` : '') + `</span></a>`;
         }).join('') + '</div>';
@@ -1587,6 +1698,16 @@
           : r.move < 0 ? `<span class="rank-move down">▼${Math.abs(r.move)}</span>`
           : '<span class="rank-move flat">–</span>';
 
+        // The writer's first sentence on each team, under its row. The full
+        // blurb is a paragraph or more; the edition link has the rest.
+        const lede = team => {
+          const body = String(((article.blurbs || {})[team] || {}).body || '')
+            .replace(/[*_#>`]/g, '').replace(/\s+/g, ' ').trim();
+          if (!body) return '';
+          const first = (body.match(/^.+?[.!?](?=\s|$)/) || [body])[0];
+          return first.length > 160 ? first.slice(0, 157).replace(/\s+\S*$/, '') + '…' : first;
+        };
+
         const when = String(latest.published_at).slice(0, 10);
         $('dash-ranks').innerHTML =
           `<div class="dash-ranks-head">`
@@ -1597,8 +1718,10 @@
               `<a class="dash-rank-team" href="/teams/${esc(String(r.team).toLowerCase())}/" `
               + `title="${esc(r.team)}">`
               + `<span class="dash-rank-pos">${r.tied ? 'T-' : ''}${r.rank}</span>`
-              + `<img src="/logos/logo-${esc(String(r.team).toLowerCase())}.png" alt="">`
-              + `<span class="dash-rank-abbr">${esc(r.team)}</span>${move(r)}</a>`).join('')
+              + `<img src="/logos/sm/logo-${esc(String(r.team).toLowerCase())}.webp" alt="">`
+              + `<span class="dash-rank-abbr">${esc(r.team)}</span>${move(r)}`
+              + (lede(r.team) ? `<span class="dash-rank-blurb">${esc(lede(r.team))}</span>` : '')
+              + `</a>`).join('')
           + '</div>';
         $('dash-ranks').hidden = false;
       });
@@ -1627,7 +1750,7 @@
         .sort((a, b) => b.gmsc - a.gmsc).slice(0, 3);
       if (!lines.length) return;
 
-      const logo = t => `/logos/logo-${esc(String(t).toLowerCase())}.png`;
+      const logo = t => `/logos/sm/logo-${esc(String(t).toLowerCase())}.webp`;
       // Points, rebounds and assists always; steals and blocks when they
       // are part of why the line is here.
       const statLine = p => [['pts', 'PTS'], ['reb', 'REB'], ['ast', 'AST'], ['stl', 'STL'], ['blk', 'BLK']]
@@ -1674,7 +1797,7 @@
         return `<div><div class="dash-conf-name">${label}</div>` + top.map(r =>
           `<a class="dash-stand-row" href="/teams/${esc(r.TEAM)}/">`
           + `<span class="dash-stand-seed">${esc(r.SEED_NUM)}</span>`
-          + `<img src="/logos/logo-${esc(r.TEAM.toLowerCase())}.png" alt="">`
+          + `<img src="/logos/sm/logo-${esc(r.TEAM.toLowerCase())}.webp" alt="">`
           + `<span class="dash-stand-abbr">${esc(r.TEAM)}</span>`
           + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span></a>`).join('') + '</div>';
       };
@@ -1707,7 +1830,7 @@
 
       const row = e => `<a class="dash-stand-row" href="/players/?p=${encodeURIComponent(e.slug)}">`
         // No team at scrape time: an unsigned player, marked FA in the logo's place.
-        + (e.team ? `<img src="/logos/logo-${esc(String(e.team).toLowerCase())}.png" alt="" title="${esc(e.team)}">`
+        + (e.team ? `<img src="/logos/sm/logo-${esc(String(e.team).toLowerCase())}.webp" alt="" title="${esc(e.team)}">`
                   : '<span class="dash-mover-fa" title="Free agent">FA</span>')
         + `<span class="dash-mover-name">${esc(nbnPlayerName(e.name))}</span>`
         + `<span class="dash-mover-ovr">${e.ovr.old}→${e.ovr.new}`
@@ -1743,7 +1866,7 @@
         '<div class="dash-standings-head"><div class="dash-card-title">Milestone Watch</div>'
         + '<a class="dash-standings-more" href="/stats/totals">Career totals →</a></div>'
         + list.map((m, i) => `<a class="dash-stand-row dash-ms-row"${i >= MS_SHOWN ? ' hidden' : ''} href="/players/?p=${encodeURIComponent(m.slug)}">`
-          + `<img src="/logos/logo-${esc(m.team.toLowerCase())}.png" alt="" title="${esc(m.team)}">`
+          + `<img src="/logos/sm/logo-${esc(m.team.toLowerCase())}.webp" alt="" title="${esc(m.team)}">`
           + `<span class="dash-mover-name">${esc(nbnPlayerName(m.name))}</span>`
           + `<span class="dash-mover-ovr" title="At their per-game rate from ${esc(data.careers[m.slug].rateSeason || 'their career')}">${esc(Milestones.eta(m))}</span>`
           + `<span class="dash-ms-what">${esc(Milestones.describe(m, nbnPlayerName))}</span></a>`).join('')
@@ -1831,7 +1954,7 @@
 
       let html = `<div class="dash-team-head">`
         + `<a class="dash-team-id" href="/teams/${esc(abbr)}/">`
-        + `<img src="/logos/logo-${esc(abbr)}.png" alt="">`
+        + `<img src="/logos/sm/logo-${esc(abbr)}.webp" alt="">`
         + `<div><div class="dash-team-name">${esc(teamName)}</div>`
         + `<div class="dash-team-sub">${esc(recordLine || 'Your team')}</div></div></a>`
         + `<div class="dash-team-right">${phaseHtml}</div></div>`;

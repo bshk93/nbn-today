@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Hall of Champions — NBN</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
     
@@ -206,7 +208,10 @@
   };
   const ROUND_NAMES = { "1":"First Round", "2":"Conf. Semifinals", "3":"Conf. Finals", "4":"NBN Finals" };
 
-  const logo = abbr => `/logos/logo-${abbr.toLowerCase()}.png`;
+  // Icon-size logos from logos/sm/; the banner draws its logo big, so it
+  // keeps the full-size original.
+  const logo = abbr => `/logos/sm/logo-${abbr.toLowerCase()}.webp`;
+  const logoLg = abbr => `/logos/logo-${abbr.toLowerCase()}.png`;
   const seasonLabel = s => { const [a,b] = s.split('-'); return `20${a}–${b}`; };
   const fmtDate = iso => {
     if (!iso) return '';
@@ -402,7 +407,7 @@
       <div class="banner">
         <div class="banner-glow" style="background: radial-gradient(circle at 30% 30%, ${color} 0%, transparent 60%);"></div>
         <div class="banner-inner">
-          <img class="banner-logo" src="${logo(c.team)}" alt="${c.team}">
+          <img class="banner-logo" src="${logoLg(c.team)}" alt="${c.team}">
           <div class="banner-text">
             <div class="banner-season"><span class="crown">👑</span> ${seasonLabel(c.season)} NBN Champions</div>
             <div class="banner-team">${TEAMS[c.team]}</div>

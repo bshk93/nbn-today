@@ -328,7 +328,7 @@
         return;
       }
 
-      logo.src = `/logos/logo-${abbr.toLowerCase()}.png`;
+      logo.src = `/logos/sm/logo-${abbr.toLowerCase()}.webp`;
       logo.alt = abbr; logo.style.display = '';
       exc.style.display = 'block';
       body.innerHTML = '<div class="tb-panel-loading">Loading…</div>';

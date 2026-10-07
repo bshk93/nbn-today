@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Season Summary — NBN</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
     .ss-list { display: flex; flex-direction: column; gap: var(--space-4); }
@@ -75,7 +77,7 @@
   <script>
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const blank = s => !s || s === 'NA';
-    const logo = abbr => `<img src="/logos/logo-${abbr.toLowerCase()}.png" alt="" onerror="this.style.display='none'">`;
+    const logo = abbr => `<img src="/logos/sm/logo-${abbr.toLowerCase()}.webp" alt="" onerror="this.style.display='none'">`;
     const teamLink = abbr => `<a href="/teams/${abbr}/">${logo(abbr)}${abbr}</a>`;
     const fullSeason = s => { const [a, b] = s.split('-'); return `20${a}–${b}`; };
 

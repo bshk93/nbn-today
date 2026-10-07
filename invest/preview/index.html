@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Wall Street — Algorithm Preview</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
@@ -152,7 +154,7 @@ function render(rows) {
     html += `
       <tr id="row-${r.team}" onclick="toggleChart('${r.team}')">
         <td><div class="team-cell">
-          <img class="team-logo" src="/logos/logo-${r.team.toLowerCase()}.png" onerror="this.style.display='none'">
+          <img class="team-logo" src="/logos/sm/logo-${r.team.toLowerCase()}.webp" onerror="this.style.display='none'">
           <span class="team-abbr">${r.team}</span>
         </div></td>
         <td class="right dim">${fmtP(r.cur)}</td>

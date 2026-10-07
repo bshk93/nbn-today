@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Players — NBN</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
 
@@ -497,6 +499,10 @@
       .player-hero { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-4); }
     }
     .player-hero .accolades { margin-bottom: 0.75rem; }
+    .career-line-note { margin-top: var(--space-4); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .career-line { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin-top: var(--space-2); }
+    .career-fig-value { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .career-fig-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
 
     .ovr-chart { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem 0.25rem; margin-bottom: 0.75rem; }
 
@@ -883,6 +889,44 @@
     return { rank: ahead + 1, tied: level > 0 };
   }
 
+  // The career in one line, under the accolades: per-game averages, games and
+  // the best scoring night. Regular season only, the same basis as the
+  // Career Totals table further down. It fills the hero's left column, which
+  // otherwise sits empty beside the taller archetype radar.
+  function renderCareerLine(container, rows) {
+    const played = rows.filter(r => +r.G > 0);
+    if (!played.length) return;
+    const sum = k => played.reduce((s, r) => s + (+r[k] || 0), 0);
+    const g = sum('G');
+    const high = Math.max(...played.map(r => +r.HIGH_P || 0));
+    const figures = [
+      ['PTS', (sum('PTS') / g).toFixed(1)],
+      ['REB', (sum('REB') / g).toFixed(1)],
+      ['AST', (sum('AST') / g).toFixed(1)],
+      ['Games', g.toLocaleString()],
+      ...(high > 0 ? [['Career high', `${high} pts`]] : []),
+    ];
+    const el = (cls, text) => {
+      const n = document.createElement('div');
+      n.className = cls;
+      n.textContent = text;
+      return n;
+    };
+    const wrap = document.createElement('div');
+    wrap.className = 'career-line';
+    wrap.setAttribute('aria-label', 'Career regular-season averages');
+    figures.forEach(([label, value]) => {
+      const f = document.createElement('div');
+      f.className = 'career-fig';
+      f.appendChild(el('career-fig-value', value));
+      f.appendChild(el('career-fig-label', label));
+      wrap.appendChild(f);
+    });
+    const note = el('career-line-note', 'Career · regular season');
+    container.appendChild(note);
+    container.appendChild(wrap);
+  }
+
   function renderCareerTotals(container, slug, regRows, poRows) {
     const h2 = document.createElement('h2');
     h2.className = 'section-heading';
@@ -1070,9 +1114,12 @@
     if (all.rank <= 10) card.classList.add('hof-top10');
 
     card.appendChild(el('div', 'tile-label', 'Hall of Fame'));
-    const score = el('div', 'tile-value', pts.toFixed(1));
+    const score = el('div', 'tile-value');
+    const num = el('span', null, pts.toFixed(1));
+    score.appendChild(num);
     score.appendChild(el('small', null, 'pts'));
     card.appendChild(score);
+    if (typeof nbnCountUp === 'function') nbnCountUp(num);
 
     // "Active" means on a roster today, as in Career Totals.
     const sub = el('div', 'tile-sub');
@@ -3590,6 +3637,7 @@
     const val = tile.querySelector('.tile-value');
     val.textContent = ovr;
     val.style.color = ovrHeatStyle(ovr).color;
+    if (typeof nbnCountUp === 'function') nbnCountUp(val);
 
     const sub = tile.querySelector('.tile-sub');
     if (hist.length >= 2) {
@@ -3652,7 +3700,7 @@
       a.className = 'team';
       a.href = `/teams/${team}/`;
       const img = document.createElement('img');
-      img.src = `/logos/logo-${team.toLowerCase()}.png`;
+      img.src = `/logos/sm/logo-${team.toLowerCase()}.webp`;
       img.alt = '';
       img.onerror = function() { this.remove(); };
       a.appendChild(img);
@@ -3995,7 +4043,7 @@
           wrap.style.cssText = 'display:flex;gap:3px;align-items:center;min-width:115px';
           p.TEAMS.forEach(t => {
             const img = document.createElement('img');
-            img.src = `/logos/logo-${t.toLowerCase()}.png`;
+            img.src = `/logos/sm/logo-${t.toLowerCase()}.webp`;
             img.alt = t; img.title = t;
             img.style.cssText = 'width:20px;height:20px;object-fit:contain';
             img.onerror = function() { this.replaceWith(document.createTextNode(t)); };
@@ -4279,6 +4327,7 @@
 
     // accolades
     renderAccolades(info, slug, rows[0].RINGS, playerAwards, seasonLeaders);
+    renderCareerLine(info, rows);
 
     // player type radar
     const radarEl = buildPlayerRadarChart(rows, allPlayerSeasons);

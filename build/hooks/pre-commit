@@ -87,6 +87,15 @@ if cap_health_test.exists() and shutil.which('node'):
         print('Fix cap-health.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
+feed_headline_test = Path('tests/feed-headline.test.js')
+if feed_headline_test.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(feed_headline_test)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: the homepage feed headlines no longer hold (see FAIL lines above).')
+        print('Fix FeedTypes.headline in feed-types.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
 ach_inputs = Path('build/test_achievement_inputs.js')
 if ach_inputs.exists() and shutil.which('node'):
     result = subprocess.run(['node', str(ach_inputs)], capture_output=True, text=True)

@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Game Preview — NBN</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
     .pv-teams { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
@@ -104,7 +106,7 @@
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const jget = url => fetch(url).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
     const text = url => fetch(url).then(r => (r.ok ? r.text() : ''));
-    const logo = t => `/logos/logo-${esc(String(t).toLowerCase())}.png`;
+    const logo = t => `/logos/sm/logo-${esc(String(t).toLowerCase())}.webp`;
     const teamName = t => (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || t;
     const longDate = d => {
       const [y, m, day] = d.split('-').map(Number);

@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Box Scores — NBN</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
     .date-nav { display: flex; align-items: center; gap: var(--space-2); }
@@ -251,7 +253,7 @@
       div.className = "game";
 
       const sbRow = (team, score, win) => `
-        <img src="/logos/logo-${team.toLowerCase()}.png" alt="" onerror="this.style.visibility='hidden'">
+        <img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'">
         <span class="sb-team ${win ? 'win' : ''}"><a href="/teams/${team}/" onclick="event.stopPropagation()">${team}</a><span class="sb-name">${esc(TEAM_NAMES[team] || '')}</span></span>
         <span class="sb-score ${win ? 'win' : ''}">${score ?? '—'}</span>`;
 
@@ -284,7 +286,7 @@
       const shotLinks = teamShots.map((sh, i) =>
         `<a class="shot-link" href="${esc(sh.url)}" target="_blank" rel="noopener" title="The box score screenshot this was entered from (kept 14 days)">${teamShots.length > 1 ? `Screenshot ${i + 1}` : 'Screenshot'} ↗</a>`).join('');
       section.innerHTML = `<div class="team-label">
-        <img src="/logos/logo-${team.toLowerCase()}.png" alt="" onerror="this.style.display='none'">
+        <img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="" onerror="this.style.display='none'">
         ${esc(TEAM_NAMES[team] || team)} <span class="ha">${side}</span>${shotLinks}
       </div>`;
 

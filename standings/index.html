@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/logo.png">
   <link rel="stylesheet" href="/css/shared.css">
   <title>Standings — NBN</title>
   <!-- NBN:og -->
@@ -20,6 +19,9 @@
   <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
 
@@ -304,7 +306,7 @@
         const pct = (+row.PCT).toFixed(3).replace(/^0/, '');
         tr.innerHTML = `
           <td class="seed">${seedNum}</td>
-          <td class="team"><a href="/teams/${row.TEAM.toLowerCase()}/"><img class="team-logo" src="/logos/logo-${row.TEAM.toLowerCase()}.png" alt="" onerror="this.style.display='none'">${row.TEAM}</a></td>
+          <td class="team"><a href="/teams/${row.TEAM.toLowerCase()}/"><img class="team-logo" src="/logos/sm/logo-${row.TEAM.toLowerCase()}.webp" alt="" onerror="this.style.display='none'">${row.TEAM}</a></td>
           <td class="right">${row.W}</td>
           <td class="right">${row.L}</td>
           <td class="right">${pct}</td>
@@ -376,7 +378,7 @@
 
         const logoImg = document.createElement('img');
         logoImg.className = 'bracket-logo';
-        logoImg.src = `/logos/logo-${team.toLowerCase()}.png`;
+        logoImg.src = `/logos/sm/logo-${team.toLowerCase()}.webp`;
         logoImg.alt = '';
         logoImg.onerror = function() { this.style.display = 'none'; };
 
