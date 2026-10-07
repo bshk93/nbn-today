@@ -644,45 +644,40 @@
     }
     .visitor-intro a { color: var(--link); white-space: nowrap; }
 
-    /* Team strip: 30 logos in two conference rows. Each lifts and picks up
-       its team colour on hover (--team-primary, from css/team-colors.css). */
-    .team-strip { display: flex; flex-direction: column; gap: var(--space-2); margin: 0 0 var(--space-6); }
+    /* Team strip: all 30 logos in one row across the very top of the page,
+       East then West with a divider between. Each picks up its team colour
+       on hover (--team-primary, from css/team-colors.css). Where 30 don't
+       fit (a phone), the row scrolls sideways and the right edge fades to
+       show there's more. */
+    .team-strip {
+      display: flex; align-items: center; justify-content: space-between; gap: 2px;
+      overflow-x: auto; scrollbar-width: none;
+      margin: -1rem 0 var(--space-4);
+      padding: 4px 0 var(--space-2);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .team-strip::-webkit-scrollbar { display: none; }
     .team-strip:empty { display: none; }
-    .team-strip-row { display: flex; align-items: center; gap: var(--space-1); }
-    .team-strip-conf {
-      flex: none; width: 2.6rem; font-size: var(--text-xs); font-weight: 600;
-      letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
-    }
-    .team-strip-logos { display: flex; flex: 1; justify-content: space-between; gap: 2px; }
+    .team-strip-divider { flex: none; width: 1px; height: 1.4rem; margin: 0 var(--space-2); background: var(--border); }
     .team-strip a {
-      display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%;
-      transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+      flex: none; display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 50%;
+      transition: transform 0.15s ease, background-color 0.15s ease;
     }
-    .team-strip a img { width: 1.9rem; height: 1.9rem; object-fit: contain; }
+    .team-strip a img { width: 1.5rem; height: 1.5rem; object-fit: contain; }
     .team-strip a:hover, .team-strip a:focus-visible {
-      transform: translateY(-3px) scale(1.12);
-      background: color-mix(in srgb, var(--team-primary) 22%, transparent);
-      box-shadow: 0 0 0 1px color-mix(in srgb, var(--team-accent) 55%, transparent);
+      transform: scale(1.15);
+      background: color-mix(in srgb, var(--team-primary) 25%, transparent);
     }
     @media (prefers-reduced-motion: reduce) { .team-strip a:hover { transform: none; } }
-    /* On a phone, 15 logos don't fit across, and wrapping them made a grid,
-       not a strip. So it becomes one row that scrolls sideways, East then
-       West, with the edge faded to show there's more. */
     @media (max-width: 700px) {
       .team-strip {
-        flex-direction: row; gap: var(--space-3);
-        overflow-x: auto; scrollbar-width: none;
-        margin-left: calc(-1 * var(--space-4)); margin-right: calc(-1 * var(--space-4));
-        /* Extra room on the right so the last logo scrolls clear of the fade. */
-        padding: 4px 3rem 4px var(--space-4);
+        justify-content: flex-start;
+        /* Bleed to the screen edges; extra room on the right so the last
+           logo scrolls clear of the fade. */
+        margin: -0.5rem calc(-1 * var(--space-4)) var(--space-3);
+        padding: 2px 3rem var(--space-2) var(--space-4);
         mask-image: linear-gradient(to right, #000 85%, transparent);
       }
-      .team-strip::-webkit-scrollbar { display: none; }
-      .team-strip-row { flex: none; gap: var(--space-2); }
-      .team-strip-conf { width: auto; }
-      .team-strip-logos { flex: none; flex-wrap: nowrap; gap: 0; }
-      .team-strip a { width: 2.5rem; height: 2.5rem; }
-      .team-strip a img { width: 1.75rem; height: 1.75rem; }
       .team-strip a:hover { transform: none; }
     }
     :root .visitor-intro { text-align: left; max-width: none; margin-top: calc(-1 * var(--space-4)); }
@@ -690,6 +685,9 @@
 </head>
 <body>
   <div class="page-wrap">
+  <!-- All 30 teams, one click into any of them. Filled from the latest
+       standings season. -->
+  <nav class="team-strip" id="team-strip" aria-label="Teams"></nav>
   <div class="nav" data-no-home></div>
   <header>
     <img src="/icons/logo-header.webp" alt="NBN logo">
@@ -705,10 +703,6 @@
   </p>
 
   <div class="hero" id="dash-hero"></div>
-
-  <!-- All 30 teams, East over West: colour near the top of the page, and one
-       click into any team. Filled from the latest standings season. -->
-  <nav class="team-strip" id="team-strip" aria-label="Teams"></nav>
 
   <section class="dash" id="dash">
     <!-- Band 1 — your team. Signed-in members with an active tenure only;
@@ -1358,9 +1352,9 @@
 
     // ── Team strip ────────────────────────────────────────────────────────
     //
-    // Conferences come from the newest season in the standings (SEED is
+    // East then West. Conferences come from the newest season in the standings (SEED is
     // "East-3"), so there is no second list of who plays where to keep.
-    // Alphabetical within each row: an order by record would reshuffle the
+    // Alphabetical within each conference: an order by record would reshuffle the
     // strip every night and make a team hard to find.
     standingsPromise.then(rows => {
       if (!rows.length) return;
@@ -1373,12 +1367,11 @@
       if (!conf.East.length && !conf.West.length) return;
       // nav.js's TEAM_LIST, the one abbr → name map every page has loaded.
       const teamName = t => (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || t;
-      $('team-strip').innerHTML = Object.entries(conf).map(([name, teams]) =>
-        `<div class="team-strip-row"><span class="team-strip-conf">${name}</span><div class="team-strip-logos">`
-        + [...new Set(teams)].sort().map(t =>
-          `<a href="/teams/${esc(t)}/" data-team="${esc(t)}" title="${esc(teamName(t))}">`
-          + `<img src="/logos/sm/logo-${esc(t.toLowerCase())}.webp" alt="${esc(teamName(t))}"></a>`).join('')
-        + `</div></div>`).join('');
+      const link = t => `<a href="/teams/${esc(t)}/" data-team="${esc(t)}" title="${esc(teamName(t))}">`
+        + `<img src="/logos/sm/logo-${esc(t.toLowerCase())}.webp" alt="${esc(teamName(t))}"></a>`;
+      $('team-strip').innerHTML = [conf.East, conf.West]
+        .map(teams => [...new Set(teams)].sort().map(link).join(''))
+        .join('<span class="team-strip-divider" aria-hidden="true"></span>');
     });
 
     // ── Band 2: around the league ─────────────────────────────────────────
