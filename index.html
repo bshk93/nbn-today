@@ -665,11 +665,25 @@
       box-shadow: 0 0 0 1px color-mix(in srgb, var(--team-accent) 55%, transparent);
     }
     @media (prefers-reduced-motion: reduce) { .team-strip a:hover { transform: none; } }
+    /* On a phone, 15 logos don't fit across, and wrapping them made a grid,
+       not a strip. So it becomes one row that scrolls sideways, East then
+       West, with the edge faded to show there's more. */
     @media (max-width: 700px) {
-      .team-strip-conf { display: none; }
-      .team-strip-logos { flex-wrap: wrap; justify-content: flex-start; }
-      .team-strip a { width: 2.4rem; height: 2.4rem; }
-      .team-strip a img { width: 1.7rem; height: 1.7rem; }
+      .team-strip {
+        flex-direction: row; gap: var(--space-3);
+        overflow-x: auto; scrollbar-width: none;
+        margin-left: calc(-1 * var(--space-4)); margin-right: calc(-1 * var(--space-4));
+        /* Extra room on the right so the last logo scrolls clear of the fade. */
+        padding: 4px 3rem 4px var(--space-4);
+        mask-image: linear-gradient(to right, #000 85%, transparent);
+      }
+      .team-strip::-webkit-scrollbar { display: none; }
+      .team-strip-row { flex: none; gap: var(--space-2); }
+      .team-strip-conf { width: auto; }
+      .team-strip-logos { flex: none; flex-wrap: nowrap; gap: 0; }
+      .team-strip a { width: 2.5rem; height: 2.5rem; }
+      .team-strip a img { width: 1.75rem; height: 1.75rem; }
+      .team-strip a:hover { transform: none; }
     }
     :root .visitor-intro { text-align: left; max-width: none; margin-top: calc(-1 * var(--space-4)); }
   </style>
