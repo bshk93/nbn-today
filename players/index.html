@@ -499,6 +499,23 @@
       .player-hero { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-4); }
     }
     .player-hero .accolades { margin-bottom: 0.75rem; }
+    /* Feats & Streaks, side by side on a wide screen. */
+    .ins-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-4); align-items: start; }
+    .ins-grid .ui-table-wrap { margin: 0; }
+    .ins-top10 a { color: var(--gold); font-weight: 700; }
+    .ins-when { white-space: nowrap; font-size: var(--text-sm); }
+    .ins-active { color: var(--success) !important; font-weight: 600; }
+    .ins-note { font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-2); }
+    .splits-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+    .splits-head .ui-select { width: auto; }
+    .splits-opp { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; }
+    .splits-opp img { width: 18px; height: 18px; object-fit: contain; }
+    /* Most similar seasons, under the archetype radar. */
+    .similar { margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--border-subtle); }
+    .similar-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem; }
+    .similar-row { display: flex; justify-content: space-between; gap: var(--space-3); padding: 0.2rem 0; font-size: var(--text-sm); text-decoration: none; color: var(--text-secondary); }
+    .similar-row:hover { color: var(--link); text-decoration: none; }
+    .similar-season { color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .career-line-note { margin-top: var(--space-4); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
     .career-line { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin-top: var(--space-2); }
     .career-fig-value { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
@@ -925,6 +942,117 @@
     const note = el('career-line-note', 'Career · regular season');
     container.appendChild(note);
     container.appendChild(wrap);
+  }
+
+  // Feats, streaks and teammates: GET /api/players/{slug}/insights, which
+  // ranks this player against every other one (the page alone only has its
+  // own games). Renders nothing if the call fails; the rest of the page
+  // doesn't depend on it.
+  function renderInsights(container, slug) {
+    const fmtDay = iso => {
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+    };
+    const rankText = r => (r.tied ? 'T-' : '#') + r.rank;
+    const rankCell = (td, r, href) => {
+      if (!r.rank) { td.textContent = '—'; td.classList.add('muted'); return; }
+      const a = document.createElement('a');
+      a.textContent = rankText(r);
+      if (href) a.href = href;
+      td.appendChild(a);
+      if (r.rank <= 10) td.classList.add('ins-top10');
+    };
+    const table = (heads) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'ui-table-wrap';
+      const t = document.createElement('table');
+      t.className = 'ui-table ui-table--dense';
+      const hr = t.createTHead().insertRow();
+      heads.forEach(([label, cls]) => {
+        const th = document.createElement('th');
+        th.textContent = label;
+        if (cls) th.className = cls;
+        hr.appendChild(th);
+      });
+      wrap.appendChild(t);
+      return { wrap, body: t.createTBody() };
+    };
+    const cell = (tr, text, cls) => {
+      const td = tr.insertCell();
+      if (text != null) td.textContent = text;
+      if (cls) td.className = cls;
+      return td;
+    };
+
+    fetch(`/api/players/${encodeURIComponent(slug)}/insights`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (!data) return;
+        const feats = (data.feats || []).filter(f => f.count > 0);
+        const streaks = (data.streaks || []).filter(s => s.length > 1);
+
+        if (feats.length || streaks.length) {
+          const h2 = document.createElement('h2');
+          h2.className = 'section-heading';
+          h2.textContent = 'Feats & Streaks';
+          container.appendChild(h2);
+          const grid = document.createElement('div');
+          grid.className = 'ins-grid';
+          container.appendChild(grid);
+
+          if (feats.length) {
+            const { wrap, body } = table([['Career', ''], ['Games', 'right'], ['All-time', 'right']]);
+            feats.forEach(f => {
+              const tr = body.insertRow();
+              cell(tr, f.name);
+              cell(tr, f.count.toLocaleString(), 'right strong');
+              rankCell(cell(tr, null, 'right'), f, `/stats/highs/?stat=${encodeURIComponent(f.key)}`);
+            });
+            grid.appendChild(wrap);
+          }
+          if (streaks.length) {
+            const { wrap, body } = table([['Longest run of', ''], ['Games', 'right'], ['When', ''], ['All-time', 'right']]);
+            streaks.forEach(s => {
+              const tr = body.insertRow();
+              cell(tr, s.name);
+              cell(tr, String(s.length), 'right strong');
+              const when = cell(tr, `${fmtDay(s.start)} – ${s.active ? 'now' : fmtDay(s.end)}`, 'muted ins-when');
+              if (s.active) when.classList.add('ins-active');
+              rankCell(cell(tr, null, 'right'), s, null);
+            });
+            grid.appendChild(wrap);
+            const note = document.createElement('div');
+            note.className = 'ins-note';
+            note.textContent = 'Streaks count regular-season games in a row, across seasons. Games a player missed don’t break a run.';
+            container.appendChild(note);
+          }
+        }
+
+        const mates = data.teammates || [];
+        if (mates.length) {
+          const h2 = document.createElement('h2');
+          h2.className = 'section-heading';
+          h2.textContent = 'Most Games Together';
+          container.appendChild(h2);
+          const { wrap, body } = table([['Teammate', ''], ['Games', 'right'], ['Record', 'right'], ['Win %', 'right']]);
+          mates.slice(0, 10).forEach(t => {
+            const tr = body.insertRow();
+            const a = document.createElement('a');
+            a.href = `/players/?p=${encodeURIComponent(t.slug)}`;
+            a.textContent = typeof nbnPlayerName === 'function' ? nbnPlayerName(t.player) : t.player;
+            cell(tr).appendChild(a);
+            cell(tr, t.games.toLocaleString(), 'right');
+            cell(tr, `${t.w}–${t.l}`, 'right');
+            cell(tr, (t.w / Math.max(1, t.games)).toFixed(3).replace(/^0/, ''), 'right');
+          });
+          container.appendChild(wrap);
+          const note = document.createElement('div');
+          note.className = 'ins-note';
+          note.textContent = 'Games both played for the same team, playoffs included, and the team’s record in them.';
+          container.appendChild(note);
+        }
+      })
+      .catch(() => {});
   }
 
   function renderCareerTotals(container, slug, regRows, poRows) {
@@ -3611,8 +3739,78 @@
         return { label: d.label, angle: d.angle, tip: d.fmt(v), pct: Radar.percentile(v, peers.map(d.get)) };
       });
       const { name, runnerUp } = Radar.nearest(dims.map(d => d.pct), ARCHETYPES);
-      const tier = tierFor(Radar.percentile(gsPerGame(agg), peers.map(gsPerGame)));
-      return Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season · per 36 min` });
+      const prodPct = Radar.percentile(gsPerGame(agg), peers.map(gsPerGame));
+      const tier = tierFor(prodPct);
+      const svg = Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season · per 36 min` });
+
+      // The three closest seasons by anyone else, any year: the same eight
+      // style percentiles plus how productive they were (Game Score per game,
+      // the tier's measure), so a bench shooter isn't matched to a star one.
+      const me = [...dims.map(d => d.pct), prodPct];
+      const near = seasonVectors()
+        .filter(v => v.slug !== slug)
+        .map(v => ({ ...v, dist: Math.hypot(...v.vec.map((x, i) => x - me[i])) }))
+        .sort((a, b) => a.dist - b.dist)
+        .slice(0, 3);
+      if (!near.length) return svg;
+      const box = document.createElement('div');
+      box.appendChild(svg);
+      const list = document.createElement('div');
+      list.className = 'similar';
+      const label = document.createElement('div');
+      label.className = 'similar-label';
+      label.textContent = 'Most similar seasons';
+      list.appendChild(label);
+      near.forEach(v => {
+        const a = document.createElement('a');
+        a.href = `/players/?p=${encodeURIComponent(v.slug)}`;
+        a.className = 'similar-row';
+        const nm = document.createElement('span');
+        nm.textContent = typeof nbnPlayerName === 'function' ? nbnPlayerName(v.name) : v.name;
+        const yr = document.createElement('span');
+        yr.className = 'similar-season';
+        yr.textContent = `${v.season}${v.team ? ' · ' + v.team : ''}`;
+        a.append(nm, yr);
+        list.appendChild(a);
+      });
+      box.appendChild(list);
+      return box;
+    }
+
+    // Every qualifying player-season's percentile vector, ranked within its
+    // own season. Built once on first use and kept: ~2,500 seasons.
+    let vectorCache = null;
+    function seasonVectors() {
+      if (vectorCache) return vectorCache;
+      vectorCache = [];
+      const bySeason = new Map();
+      allRows.forEach(r => {
+        if (!bySeason.has(r.SEASON)) bySeason.set(r.SEASON, new Map());
+        const m = bySeason.get(r.SEASON);
+        if (!m.has(r.SLUG)) m.set(r.SLUG, { ...r, _teams: [r.TEAM] });
+        else {
+          const x = m.get(r.SLUG);
+          SUM_FIELDS.forEach(f => { x[f] = String(+x[f] + +r[f]); });
+          x._teams.push(r.TEAM);
+        }
+      });
+      bySeason.forEach((m, season) => {
+        const peers = [...m.values()].filter(qualifies);
+        const cols = DIM_DEFS.map(d => peers.map(d.get).sort((a, b) => a - b));
+        const gs = peers.map(gsPerGame).sort((a, b) => a - b);
+        // Share of the season strictly below, by binary search on the sorted column.
+        const pct = (sorted, v) => {
+          let lo = 0, hi = sorted.length;
+          while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid] < v) lo = mid + 1; else hi = mid; }
+          return sorted.length ? lo / sorted.length : 0;
+        };
+        peers.forEach(p => vectorCache.push({
+          slug: p.SLUG, name: p.PLAYER, season,
+          team: [...new Set(p._teams)].filter(Boolean).join('/'),
+          vec: [...DIM_DEFS.map((d, i) => pct(cols[i], d.get(p))), pct(gs, gsPerGame(p))],
+        }));
+      });
+      return vectorCache;
     }
 
     // Only include qualifying seasons, newest first
@@ -4346,9 +4544,13 @@
     btnTeam.textContent     = 'By Team';
     btnSeason.textContent   = 'By Season';
     btnGameLog.textContent  = 'Game Log';
+    const btnSplits = document.createElement('button');
+    btnSplits.className = 'toggle-btn';
+    btnSplits.textContent = 'Splits';
     toggleBar.appendChild(btnTeam);
     toggleBar.appendChild(btnSeason);
     toggleBar.appendChild(btnGameLog);
+    toggleBar.appendChild(btnSplits);
     content.appendChild(toggleBar);
 
     // sections container
@@ -4357,6 +4559,9 @@
     const careerTotalsEl = document.createElement('div');
     content.appendChild(careerTotalsEl);
     renderCareerTotals(careerTotalsEl, slug, allPlayerSeasons, allPoRows.length ? allPoRows : null);
+    const insightsEl = document.createElement('div');
+    content.appendChild(insightsEl);
+    renderInsights(insightsEl, slug);
     renderContractTimeline(content, bio, slug);
     renderSalaryTable(content, bio);
     renderHistorySection(content, slug);
@@ -4365,6 +4570,8 @@
 
     let bySeasonMode = false;
     let showGameLog  = false;
+    let showSplits   = false;
+    let splitsSeason = '';
     const poRows = allPoRows.filter(r => r.SLUG === slug && +r.G > 0);
     let gameLogRows = null;
     let gameLogPage = 0;
@@ -4505,6 +4712,7 @@
 
     function rebuildSections() {
       if (showGameLog) { renderGameLogSection(); return; }
+      if (showSplits) { renderSplitsSection(); return; }
       const displayRows = getDisplayRows();
       sections.innerHTML = '';
       const iconFn = makeIconFn(rows, poRows, playerAwards, slug, bySeasonMode);
@@ -4520,7 +4728,9 @@
 
     function setStatsMode() {
       showGameLog = false;
+      showSplits = false;
       btnGameLog.classList.remove('active');
+      btnSplits.classList.remove('active');
     }
 
     // Always rebuild: coming back from the game log must leave it even when
@@ -4535,27 +4745,151 @@
     btnTeam.addEventListener('click', () => setMode(false));
     btnSeason.addEventListener('click', () => setMode(true));
 
+    // The game log is fetched once, on first use, by either view that needs it.
+    let gameLogFetch = null;
+    function loadGameLog() {
+      if (gameLogRows !== null || gameLogFetch) return;
+      gameLogFetch = fetch(`/api/players/${slug}/gamelog`)
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(data => { gameLogRows = data; })
+        .catch(() => { gameLogRows = []; })
+        .then(() => rebuildSections());
+    }
+
+    function showOnly(btn) {
+      [btnTeam, btnSeason, btnGameLog, btnSplits].forEach(b => b.classList.toggle('active', b === btn));
+    }
+
     btnGameLog.addEventListener('click', () => {
       if (showGameLog) return;
+      showSplits = false;
       showGameLog = true;
-      btnGameLog.classList.add('active');
-      btnTeam.classList.remove('active');
-      btnSeason.classList.remove('active');
+      showOnly(btnGameLog);
       gameLogPage = 0;
       renderGameLogSection();
-      if (gameLogRows === null) {
-        fetch(`/api/players/${slug}/gamelog`)
-          .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-          .then(data => {
-            gameLogRows = data;
-            if (showGameLog) renderGameLogSection();
-          })
-          .catch(() => {
-            gameLogRows = [];
-            if (showGameLog) renderGameLogSection();
-          });
-      }
+      loadGameLog();
     });
+
+    btnSplits.addEventListener('click', () => {
+      if (showSplits) return;
+      showGameLog = false;
+      showSplits = true;
+      showOnly(btnSplits);
+      renderSplitsSection();
+      loadGameLog();
+    });
+
+    // Splits: the game log cut by home/away, win/loss, regular season and
+    // playoffs, then by opponent. Averages per game, from the same rows the
+    // Game Log view lists, for every season or one.
+    function renderSplitsSection() {
+      sections.innerHTML = '';
+      if (!gameLogRows || !gameLogRows.length) {
+        const msg = document.createElement('div');
+        msg.id = 'status';
+        msg.textContent = gameLogRows ? 'No games found.' : 'Loading game log…';
+        sections.appendChild(msg);
+        return;
+      }
+      const won = g => (g.team_pts || g.opp_pts) ? g.team_pts > g.opp_pts : g.wl === 'W';
+      const seasons = [...new Set(gameLogRows.map(g => g.season))].sort().reverse();
+      if (splitsSeason && !seasons.includes(splitsSeason)) splitsSeason = '';
+      const games = gameLogRows.filter(g => !splitsSeason || g.season === splitsSeason);
+
+      const head = document.createElement('div');
+      head.className = 'splits-head';
+      const h2 = document.createElement('h2');
+      h2.className = 'section-heading';
+      h2.textContent = 'Splits';
+      const sel = document.createElement('select');
+      sel.className = 'ui-select';
+      sel.setAttribute('aria-label', 'Season');
+      sel.appendChild(new Option('All seasons', ''));
+      seasons.forEach(x => sel.appendChild(new Option(x, x)));
+      sel.value = splitsSeason;
+      sel.addEventListener('change', () => { splitsSeason = sel.value; renderSplitsSection(); });
+      head.append(h2, sel);
+      sections.appendChild(head);
+
+      const COLS = [['G', 'right'], ['W–L', 'right'], ['MIN', 'right'], ['PTS', 'right'], ['REB', 'right'],
+        ['AST', 'right'], ['STL', 'right'], ['BLK', 'right'], ['TOV', 'right'],
+        ['FG%', 'right'], ['3P%', 'right'], ['FT%', 'right'], ['High', 'right']];
+      const line = list => {
+        const n = list.length;
+        const sum = k => list.reduce((a, g) => a + (+g[k] || 0), 0);
+        const avg = k => (sum(k) / n).toFixed(1);
+        const pct = (m, a) => sum(a) ? (sum(m) / sum(a) * 100).toFixed(1) : '—';
+        const w = list.filter(won).length;
+        return [n, `${w}–${n - w}`, avg('min'), avg('pts'), avg('reb'), avg('ast'), avg('stl'), avg('blk'), avg('tov'),
+          pct('fgm', 'fga'), pct('tpm', 'tpa'), pct('ftm', 'fta'), Math.max(...list.map(g => +g.pts || 0))];
+      };
+      const table = (first, rows) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'ui-table-wrap';
+        const t = document.createElement('table');
+        t.className = 'ui-table ui-table--sticky-first';
+        const hr = t.createTHead().insertRow();
+        [[first, ''], ...COLS].forEach(([label, cls]) => {
+          const th = document.createElement('th');
+          th.textContent = label;
+          if (cls) th.className = cls;
+          hr.appendChild(th);
+        });
+        const body = t.createTBody();
+        rows.forEach(([label, list, cls]) => {
+          if (!list.length) return;
+          const tr = body.insertRow();
+          if (cls) tr.className = cls;
+          const th = tr.insertCell();
+          if (label instanceof Node) th.appendChild(label); else th.textContent = label;
+          line(list).forEach((v, i) => {
+            const td = tr.insertCell();
+            td.className = 'right' + (i === 3 ? ' strong' : '');
+            td.textContent = v;
+          });
+        });
+        wrap.appendChild(t);
+        return wrap;
+      };
+
+      const reg = games.filter(g => g.gametype !== 'PLAYOFF');
+      const po = games.filter(g => g.gametype === 'PLAYOFF');
+      sections.appendChild(table('', [
+        ['All games', games, 'career-row'],
+        ['Regular season', reg],
+        ['Playoffs', po],
+        ['Home', games.filter(g => g.home)],
+        ['Away', games.filter(g => !g.home)],
+        ['Wins', games.filter(won)],
+        ['Losses', games.filter(g => !won(g))],
+      ]));
+
+      const h3 = document.createElement('h2');
+      h3.className = 'section-heading';
+      h3.textContent = 'By Opponent';
+      sections.appendChild(h3);
+      const byOpp = new Map();
+      games.forEach(g => {
+        const k = g.opp_raw || String(g.opp || '').replace('@', '');
+        if (!byOpp.has(k)) byOpp.set(k, []);
+        byOpp.get(k).push(g);
+      });
+      const oppLabel = abbr => {
+        const a = document.createElement('a');
+        a.href = `/teams/${encodeURIComponent(abbr)}/`;
+        a.className = 'splits-opp';
+        const img = document.createElement('img');
+        img.src = `/logos/sm/logo-${abbr.toLowerCase()}.webp`;
+        img.alt = '';
+        img.onerror = function () { this.remove(); };
+        a.append(img, document.createTextNode(abbr));
+        return a;
+      };
+      // Most points per game first: "who does he light up" is the question.
+      const opps = [...byOpp.entries()]
+        .sort((a, b) => b[1].reduce((s, g) => s + g.pts, 0) / b[1].length - a[1].reduce((s, g) => s + g.pts, 0) / a[1].length);
+      sections.appendChild(table('Opponent', opps.map(([abbr, list]) => [oppLabel(abbr), list])));
+    }
 
     rebuildSections();
   }

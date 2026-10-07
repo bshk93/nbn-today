@@ -625,6 +625,20 @@ const coachingConfigReady = new Promise(resolve => {
   .cap-edit-form select:focus { border-color: var(--accent); }
   .cap-edit-form .form-divider { width: 100%; height: 1px; background: var(--border); margin: 0.25rem 0; }
   .cap-edit-form .form-section-label { width: 100%; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; padding-top: 0.15rem; }
+  .rivals-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+  .rival-card {
+    display: flex; flex-direction: column; gap: 0.2rem; padding: 0.8rem 1rem;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+    border-left: 3px solid var(--team-primary, var(--border));
+    color: inherit; text-decoration: none;
+  }
+  .rival-card:hover { border-color: var(--text-muted); border-left-color: var(--team-primary, var(--text-muted)); text-decoration: none; }
+  .rival-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+  .rival-team { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; color: var(--text-secondary); font-size: 0.85rem; }
+  .rival-team img, .rival-opp img { width: 20px; height: 20px; object-fit: contain; }
+  .rival-main { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; line-height: 1.1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .rival-sub { font-size: 0.75rem; color: var(--text-muted); }
+  .rival-opp { display: inline-flex; align-items: center; gap: 0.4rem; }
   .hard-cap-banner {
     background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: 8px;
     padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; color: var(--danger);
@@ -1114,6 +1128,12 @@ document.body.innerHTML = `
         <h2 class="section-title">Season History</h2>
         <div class="timeline" id="timeline-wrap"></div>
         <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
+      </section>
+      <section id="rivals-section" style="display:none">
+        <h2 class="section-title">Rivalries</h2>
+        <p class="section-sub">Every opponent, all-time · regular season and playoffs</p>
+        <div class="rivals-cards" id="rivals-cards"></div>
+        <div class="table-wrap" id="rivals-wrap"></div>
       </section>
       <section id="personnel-section" style="display:none">
         <h2 class="section-title">Franchise Personnel</h2>
@@ -3494,6 +3514,98 @@ function makeSeasonRenderCell(rows) {
       }
     }
   };
+}
+
+// The Franchise tab's Rivalries: this team's record against every opponent,
+// from the same game list the Personnel section reads, plus playoff series
+// from playoff-brackets.csv (fetched here; nothing else on the page uses it).
+// Four cards up top name the stories — the most-played playoff rival, the
+// team this one owns, its nemesis, and the biggest win and worst loss.
+function renderRivalries(allGames) {
+  const section = document.getElementById('rivals-section');
+  const cards = document.getElementById('rivals-cards');
+  const wrap = document.getElementById('rivals-wrap');
+  if (!section || !allGames || !allGames.length) return;
+
+  const by = new Map();
+  let best = null, worst = null;
+  allGames.forEach(g => {
+    const home = g.home_team === abbr;
+    if (!home && g.away_team !== abbr) return;
+    const opp = home ? g.away_team : g.home_team;
+    const us = home ? g.home_score : g.away_score;
+    const them = home ? g.away_score : g.home_score;
+    if (us == null || them == null || us === them) return;
+    const r = by.get(opp) || by.set(opp, { opp, G: 0, W: 0, L: 0, PO_G: 0, MARGIN: 0, SER_W: 0, SER_L: 0, last: '' }).get(opp);
+    r.G++; r.MARGIN += us - them;
+    if (us > them) r.W++; else r.L++;
+    if (g.gametype === 'PLAYOFF') r.PO_G++;
+    if (g.date > r.last) r.last = g.date;
+    const m = { opp, date: g.date, us, them, margin: us - them, po: g.gametype === 'PLAYOFF' };
+    if (!best || m.margin > best.margin) best = m;
+    if (!worst || m.margin < worst.margin) worst = m;
+  });
+  if (!by.size) return;
+
+  fetch('/standings/playoff-brackets.csv')
+    .then(r => (r.ok ? r.text() : ''))
+    .catch(() => '')
+    .then(text => {
+      (text ? parseCSV(text) : []).forEach(s => {
+        if (s.T1 !== abbr && s.T2 !== abbr) return;
+        const opp = s.T1 === abbr ? s.T2 : s.T1;
+        const r = by.get(opp);
+        if (!r) return;
+        if (s.WINNER === abbr) r.SER_W++; else if (s.WINNER) r.SER_L++;
+      });
+
+      const rows = [...by.values()].map(r => ({ ...r, PCT: r.W / r.G, AVG: r.MARGIN / r.G, SER: r.SER_W + r.SER_L }));
+      const MIN_G = 8;   // a record over fewer games says little
+      const enough = rows.filter(r => r.G >= MIN_G);
+      const rival = [...rows].sort((a, b) => b.SER - a.SER || b.PO_G - a.PO_G || b.G - a.G)[0];
+      const owns = [...enough].sort((a, b) => b.PCT - a.PCT || b.G - a.G)[0];
+      const nemesis = [...enough].sort((a, b) => a.PCT - b.PCT || b.G - a.G)[0];
+
+      const fmtDay = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+      const logo = t => `<img src="/logos/sm/logo-${t.toLowerCase()}.webp" alt="">`;
+      const card = (label, team, main, sub) => team ? `<a class="rival-card" href="/teams/${team}/" data-team="${team}">`
+        + `<span class="rival-label">${label}</span>`
+        + `<span class="rival-team">${logo(team)}${TEAMS[team] || team}</span>`
+        + `<span class="rival-main">${main}</span><span class="rival-sub">${sub}</span></a>` : '';
+      const game = m => `${m.us}–${m.them} ${m.po ? 'in the playoffs, ' : ''}${fmtDay(m.date)}`;
+      cards.innerHTML = [
+        rival && rival.SER ? card('Playoff rival', rival.opp, `${rival.SER} series`,
+          `${rival.SER_W}–${rival.SER_L} in series · ${rival.W}–${rival.L} overall`) : '',
+        owns && owns.PCT > 0.5 ? card('Has their number', owns.opp, `${owns.W}–${owns.L}`, `${fmtPct(owns.PCT)} all-time`) : '',
+        nemesis && nemesis.PCT < 0.5 ? card('Nemesis', nemesis.opp, `${nemesis.W}–${nemesis.L}`, `${fmtPct(nemesis.PCT)} all-time`) : '',
+        best ? card('Biggest win', best.opp, `+${best.margin}`, game(best)) : '',
+        worst && worst.margin < 0 ? card('Worst loss', worst.opp, `${worst.margin}`, game(worst)) : '',
+      ].join('');
+
+      const COLS = [
+        { key: 'opp', label: 'Opponent', cls: 'bold', sortField: 'opp', defaultDir: 1 },
+        { key: 'G', label: 'G', cls: 'right', sortField: 'G', defaultDir: -1 },
+        { key: 'wl', label: 'W–L', cls: 'right', sortField: 'PCT', defaultDir: -1 },
+        { key: 'PCT', label: 'W%', cls: 'right muted', sortField: 'PCT', defaultDir: -1 },
+        { key: 'AVG', label: 'Avg margin', cls: 'right', sortField: 'AVG', defaultDir: -1 },
+        { key: 'SER', label: 'Playoff series', cls: 'right', sortField: 'SER', defaultDir: -1 },
+        { key: 'last', label: 'Last met', cls: 'right muted', sortField: 'last', defaultDir: -1 },
+      ];
+      wrap.innerHTML = '';
+      wrap.appendChild(buildTable(COLS, rows, 'G', -1, (td, col, r) => {
+        if (col.key === 'opp') {
+          td.innerHTML = `<a class="rival-opp" href="/teams/${r.opp}/">${logo(r.opp)}${r.opp}</a>`;
+        } else if (col.key === 'wl') td.textContent = `${r.W}–${r.L}`;
+        else if (col.key === 'PCT') td.textContent = fmtPct(r.PCT);
+        else if (col.key === 'AVG') {
+          td.textContent = (r.AVG > 0 ? '+' : '') + r.AVG.toFixed(1);
+          td.style.color = r.AVG > 0 ? 'var(--market-positive)' : r.AVG < 0 ? 'var(--danger)' : '';
+        } else if (col.key === 'SER') td.textContent = r.SER ? `${r.SER_W}–${r.SER_L}` : '—';
+        else if (col.key === 'last') td.textContent = r.last ? fmtDay(r.last) : '';
+        else td.textContent = r[col.key];
+      }));
+      section.style.display = '';
+    });
 }
 
 // One line of franchise facts under the name in the team band: who runs it
@@ -7489,6 +7601,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   }
 
   buildPersonnelSection(membersData, allGames);
+  renderRivalries(allGames);
   renderHeaderFacts(seasonRows, membersData);
 
   if (pr.status === 'fulfilled') {
