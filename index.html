@@ -409,6 +409,7 @@
     .dash-standings-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-3); }
     :root .dash-standings-head .dash-card-title { margin: 0; }
     .dash-standings-more { font-size: var(--text-xs); color: var(--link); }
+    .dash-stand-odds { margin-left: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 2.2rem; text-align: right; }
     .dash-standings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
     .dash-conf-name { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
     .dash-stand-row {
@@ -1795,9 +1796,17 @@
     // The top six in each conference, while a season is being played. The
     // seeds are the build's own (tiebreaks included), so this agrees with
     // /standings by construction.
-    liveStandingsPromise.then(rows => {
+    //
+    // Each row also carries the team's playoff odds (GET /api/playoff-odds,
+    // the Playoff Odds tab on /standings), when there are any.
+    const oddsPromise = jget('/api/playoff-odds').catch(() => null);
+    Promise.all([liveStandingsPromise, oddsPromise]).then(([rows, odds]) => {
       const seeded = rows.filter(r => /^(East|West)-/.test(r.SEED || ''));
       if (!seeded.length) return;
+      const po = {};
+      ((odds && odds.teams) || []).forEach(t => { po[t.team] = t.playoffs; });
+      const oddsCell = t => po[t] == null ? ''
+        : `<span class="dash-stand-odds" title="Playoff odds">${po[t] >= 0.995 ? '>99' : po[t] < 0.005 ? '<1' : Math.round(po[t] * 100)}%</span>`;
       const conf = (c, label) => {
         const top = seeded.filter(r => r.SEED.startsWith(c))
           .sort((a, b) => +a.SEED_NUM - +b.SEED_NUM).slice(0, 6);
@@ -1806,11 +1815,11 @@
           + `<span class="dash-stand-seed">${esc(r.SEED_NUM)}</span>`
           + `<img src="/logos/sm/logo-${esc(r.TEAM.toLowerCase())}.webp" alt="">`
           + `<span class="dash-stand-abbr">${esc(r.TEAM)}</span>`
-          + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span></a>`).join('') + '</div>';
+          + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span>${oddsCell(r.TEAM)}</a>`).join('') + '</div>';
       };
       $('dash-standings').innerHTML =
         '<div class="dash-standings-head"><div class="dash-card-title">Standings</div>'
-        + '<a class="dash-standings-more" href="/standings">Full standings →</a></div>'
+        + `<a class="dash-standings-more" href="${Object.keys(po).length ? '/standings/#odds">Playoff odds' : '/standings">Full standings'} →</a></div>`
         + `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`;
       $('dash-standings').hidden = false;
     }).catch(() => {});
