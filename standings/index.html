@@ -115,6 +115,38 @@
     .result-second     { background: var(--bg-card); color: var(--accent-light); }
     .result-first      { background: var(--purple-light-bg); color: var(--purple-light); }
 
+    /* Playoff Odds */
+    .odds-intro { font-size: var(--text-sm); color: var(--text-muted); margin: 0 0 var(--space-4); }
+    .odds-row { cursor: pointer; }
+    .odds-row[aria-expanded="true"] { background: var(--bg-hover); }
+    /* The playoff column tinted by its own value: one hue, stronger = likelier. */
+    td.odds-main {
+      font-weight: 700; color: var(--text-primary);
+      background: color-mix(in srgb, var(--accent) calc(var(--odds) * 28%), transparent);
+    }
+    .odds-move { margin-left: 0.35rem; font-size: 0.68rem; font-weight: 600; font-family: var(--font-mono); }
+    .odds-move.up { color: var(--market-positive); }
+    .odds-move.down { color: var(--danger); }
+    td.strong { color: var(--text-primary); font-weight: 600; }
+    .odds-chart-row td { padding: var(--space-3) var(--space-4) var(--space-4); background: var(--bg-hover); white-space: normal; }
+    .odds-chart { position: relative; max-width: 640px; }
+    .odds-chart svg { width: 100%; height: auto; display: block; }
+    .odds-grid { stroke: var(--border-subtle); stroke-width: 1; }
+    .odds-axis { fill: var(--text-muted); font-size: 10px; }
+    .odds-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .odds-dot { fill: var(--accent); stroke: var(--bg-hover); stroke-width: 2; }
+    .odds-hair { stroke: var(--text-muted); stroke-width: 1; }
+    .odds-tip {
+      position: absolute; top: 0; transform: translateX(-50%); pointer-events: none; white-space: nowrap;
+      padding: 0.25rem 0.5rem; border-radius: 6px; font-size: var(--text-xs);
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+    }
+    .odds-tip strong { color: var(--text-primary); }
+    .odds-chart-empty { font-size: var(--text-sm); color: var(--text-muted); }
+    .odds-how { margin-top: var(--space-5); font-size: var(--text-sm); color: var(--text-secondary); max-width: 46rem; }
+    .odds-how summary { cursor: pointer; color: var(--link); }
+    .odds-how p { margin: var(--space-2) 0 0; line-height: 1.55; }
+
     /* Bracket */
     #bracket-content { overflow-x: auto; }
 
@@ -222,6 +254,7 @@
 
     <div class="ui-tabs" role="tablist">
       <button class="ui-tab active" role="tab" aria-selected="true" data-tab="standings">Standings</button>
+      <button class="ui-tab" role="tab" aria-selected="false" data-tab="odds">Playoff Odds</button>
       <button class="ui-tab" role="tab" aria-selected="false" data-tab="playoffs">Playoffs</button>
     </div>
 
@@ -231,6 +264,10 @@
         <select id="season-select"></select>
       </div>
       <div id="standings-content"><div id="status">Loading…</div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-odds">
+      <div id="odds-content"><div id="status">Loading…</div></div>
     </div>
 
     <div class="tab-panel" id="tab-playoffs">
@@ -244,14 +281,237 @@
 
   <script>
     // ── Tab logic ─────────────────────────────────────────────────────────────
+    // #odds opens on a tab, so the homepage can link straight to it.
+    function showTab(name) {
+      const btn = document.querySelector(`.ui-tab[data-tab="${name}"]`);
+      if (!btn) return;
+      document.querySelectorAll('.ui-tab').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active'); btn.setAttribute('aria-selected', 'true');
+      document.getElementById('tab-' + name).classList.add('active');
+      if (name === 'odds') loadOdds();
+    }
     document.querySelectorAll('.ui-tab').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.ui-tab').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active'); btn.setAttribute('aria-selected', 'true');
-        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        showTab(btn.dataset.tab);
+        history.replaceState(null, '', btn.dataset.tab === 'standings' ? location.pathname : '#' + btn.dataset.tab);
       });
     });
+
+    // ── Playoff Odds tab ──────────────────────────────────────────────────────
+    //
+    // Draws GET /api/playoff-odds, which a timer recomputes (the model is in
+    // nbn-api/routers/playoff_odds.py). The page does no simulating. A row
+    // opens to that team's playoff chances over the season, from
+    // GET /api/playoff-odds/history?team=.
+    let oddsLoaded = false;
+    function loadOdds() {
+      if (oddsLoaded) return;
+      oddsLoaded = true;
+      const el = document.getElementById('odds-content');
+      fetch('/api/playoff-odds')
+        .then(r => (r.ok ? r.json() : null))
+        .catch(() => null)
+        .then(data => {
+          if (!data) {
+            el.innerHTML = '<div id="status">Playoff odds start once the season’s schedule is out.</div>';
+            return;
+          }
+          renderOdds(el, data);
+        });
+    }
+
+    const pct = v => v >= 0.995 ? '>99%' : v > 0 && v < 0.005 ? '<1%' : v === 0 ? '—' : Math.round(v * 100) + '%';
+    const shortDay = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+    function renderOdds(el, data) {
+      const teamName = t => (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || t;
+      el.innerHTML = '';
+      const intro = document.createElement('p');
+      intro.className = 'odds-intro';
+      intro.textContent = `Updated ${shortDay(data.date)} · ${data.sims.toLocaleString()} simulated seasons · `
+        + (data.games_played ? `${data.games_played} of ${data.games_played + data.games_left} games played`
+                             : 'before opening night, so these come from the rosters alone');
+      el.appendChild(intro);
+
+      const grid = document.createElement('div');
+      grid.className = 'conferences';
+      el.appendChild(grid);
+      const COLS = [['', ''], ['Team', ''], ['W–L', 'right'], ['Proj', 'right'], ['Playoffs', 'right'],
+                    ['Top 6', 'right'], ['Play-in', 'right'], ['#1 seed', 'right'], ['Finals', 'right'], ['Title', 'right']];
+      ['East', 'West'].forEach(conf => {
+        const rows = data.teams.filter(r => r.conf === conf)
+          .sort((a, b) => b.playoffs - a.playoffs || b.proj_w - a.proj_w);
+        const box = document.createElement('div');
+        const h = document.createElement('h2');
+        h.className = 'ui-section-title';
+        h.textContent = `${conf}ern Conference`;
+        box.appendChild(h);
+        const wrap = document.createElement('div');
+        wrap.className = 'table-wrap';
+        const table = document.createElement('table');
+        table.className = 'odds-table';
+        const hr = table.createTHead().insertRow();
+        COLS.forEach(([label, cls]) => {
+          const th = document.createElement('th');
+          th.textContent = label;
+          if (cls) th.className = cls;
+          hr.appendChild(th);
+        });
+        const body = table.createTBody();
+        rows.forEach((r, i) => {
+          const tr = body.insertRow();
+          tr.className = 'odds-row';
+          tr.tabIndex = 0;
+          tr.setAttribute('aria-expanded', 'false');
+          tr.title = 'Show this team’s odds over the season';
+          const td = (text, cls) => { const c = tr.insertCell(); if (text != null) c.textContent = text; if (cls) c.className = cls; return c; };
+          td(String(i + 1), 'seed');
+          const team = td(null, 'team');
+          const a = document.createElement('a');
+          a.href = `/teams/${r.team}/`;
+          a.title = teamName(r.team);
+          const img = document.createElement('img');
+          img.className = 'team-logo';
+          img.src = `/logos/sm/logo-${r.team.toLowerCase()}.webp`;
+          img.alt = '';
+          a.append(img, document.createTextNode(r.team));
+          a.addEventListener('click', e => e.stopPropagation());
+          team.appendChild(a);
+          td(`${r.w}–${r.l}`, 'right muted');
+          td(`${Math.round(r.proj_w)}–${Math.round(r.games - r.proj_w)}`, 'right');
+          const po = td(null, 'right odds-main');
+          po.style.setProperty('--odds', r.playoffs);
+          po.appendChild(document.createTextNode(pct(r.playoffs)));
+          const prev = data.prev && data.prev[r.team];
+          if (prev != null) {
+            const d = Math.round((r.playoffs - prev) * 100);
+            if (d) {
+              const m = document.createElement('span');
+              m.className = 'odds-move ' + (d > 0 ? 'up' : 'down');
+              m.textContent = (d > 0 ? '▲' : '▼') + Math.abs(d);
+              m.title = `${d > 0 ? 'Up' : 'Down'} ${Math.abs(d)} points since ${shortDay(data.prev_date)}`;
+              po.appendChild(m);
+            }
+          }
+          td(pct(r.top6), 'right');
+          td(pct(r.play_in), 'right muted');
+          td(pct(r.seed1), 'right');
+          td(pct(r.finals), 'right');
+          td(pct(r.title), 'right strong');
+
+          const open = () => toggleOddsChart(tr, r.team, COLS.length);
+          tr.addEventListener('click', open);
+          tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        });
+        wrap.appendChild(table);
+        box.appendChild(wrap);
+        grid.appendChild(box);
+      });
+
+      const how = document.createElement('details');
+      how.className = 'odds-how';
+      how.innerHTML = '<summary>How these are worked out</summary>'
+        + '<p>Every night the server plays out the rest of the season 5,000 times, then the play-in and the playoffs. '
+        + 'Each game’s odds come from the two teams’ strength plus home court (worth about 2 points). '
+        + 'Before the season, strength comes from each roster’s OVRs. As games are played it moves to the team’s real point '
+        + 'differential, so after about a dozen games the results count for more than the roster.</p>'
+        + '<p><b>Playoffs</b> is a top-6 finish or winning a way in through the play-in. <b>Finals</b> is winning the conference. '
+        + 'Ties in the standings are broken by coin flip, not the league’s tiebreakers. The arrows show the change since the day before.</p>';
+      el.appendChild(how);
+    }
+
+    // One team's playoff odds over the season: a single 2px line, 0–100%,
+    // with a crosshair that snaps to the nearest day.
+    function toggleOddsChart(tr, team, span) {
+      const next = tr.nextElementSibling;
+      if (next && next.classList.contains('odds-chart-row')) {
+        next.remove();
+        tr.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      tr.setAttribute('aria-expanded', 'true');
+      const row = document.createElement('tr');
+      row.className = 'odds-chart-row';
+      const cell = row.insertCell();
+      cell.colSpan = span;
+      cell.textContent = 'Loading…';
+      tr.after(row);
+      fetch(`/api/playoff-odds/history?team=${encodeURIComponent(team)}`)
+        .then(r => (r.ok ? r.json() : []))
+        .catch(() => [])
+        .then(points => {
+          cell.textContent = '';
+          if (points.length < 2) {
+            const p = document.createElement('div');
+            p.className = 'odds-chart-empty';
+            p.textContent = points.length
+              ? `${pct(points[0].playoffs)} on ${shortDay(points[0].date)}. The chart fills in as the season is played.`
+              : 'No history yet.';
+            cell.appendChild(p);
+            return;
+          }
+          cell.appendChild(oddsChart(team, points));
+        });
+    }
+
+    function oddsChart(team, points) {
+      const NS = 'http://www.w3.org/2000/svg';
+      const W = 640, H = 160, P = { t: 12, r: 12, b: 22, l: 36 };
+      const x = i => P.l + i * (W - P.l - P.r) / (points.length - 1);
+      const y = v => P.t + (1 - v) * (H - P.t - P.b);
+      const mk = (tag, attrs, text) => {
+        const e = document.createElementNS(NS, tag);
+        Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+        if (text != null) e.textContent = text;
+        return e;
+      };
+      const wrap = document.createElement('div');
+      wrap.className = 'odds-chart';
+      const svg = mk('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img',
+        'aria-label': `${team} playoff odds over the season, now ${pct(points[points.length - 1].playoffs)}` });
+      [0, 0.5, 1].forEach(v => {
+        svg.appendChild(mk('line', { x1: P.l, x2: W - P.r, y1: y(v), y2: y(v), class: 'odds-grid' }));
+        svg.appendChild(mk('text', { x: P.l - 6, y: y(v) + 3, 'text-anchor': 'end', class: 'odds-axis' }, `${v * 100}%`));
+      });
+      [0, points.length - 1].forEach(i => svg.appendChild(mk('text', {
+        x: x(i), y: H - 6, 'text-anchor': i ? 'end' : 'start', class: 'odds-axis' }, shortDay(points[i].date))));
+      svg.appendChild(mk('polyline', { class: 'odds-line',
+        points: points.map((p, i) => `${x(i)},${y(p.playoffs)}`).join(' ') }));
+      const last = points.length - 1;
+      svg.appendChild(mk('circle', { cx: x(last), cy: y(points[last].playoffs), r: 4, class: 'odds-dot' }));
+
+      // Crosshair + tooltip, snapped to the nearest day.
+      const hair = mk('line', { y1: P.t, y2: H - P.b, class: 'odds-hair', visibility: 'hidden' });
+      const hov = mk('circle', { r: 4, class: 'odds-dot', visibility: 'hidden' });
+      svg.append(hair, hov);
+      const tip = document.createElement('div');
+      tip.className = 'odds-tip';
+      tip.hidden = true;
+      const hit = mk('rect', { x: P.l, y: 0, width: W - P.l - P.r, height: H, fill: 'transparent' });
+      svg.appendChild(hit);
+      const show = clientX => {
+        const box = svg.getBoundingClientRect();
+        const sx = (clientX - box.left) * W / box.width;
+        const i = Math.max(0, Math.min(last, Math.round((sx - P.l) / ((W - P.l - P.r) / last))));
+        const p = points[i];
+        [hair].forEach(l => { l.setAttribute('x1', x(i)); l.setAttribute('x2', x(i)); l.setAttribute('visibility', 'visible'); });
+        hov.setAttribute('cx', x(i)); hov.setAttribute('cy', y(p.playoffs)); hov.setAttribute('visibility', 'visible');
+        tip.hidden = false;
+        tip.textContent = '';
+        const v = document.createElement('strong');
+        v.textContent = pct(p.playoffs);
+        tip.append(v, document.createTextNode(` · ${shortDay(p.date)} · title ${pct(p.title)}`));
+        tip.style.left = `${x(i) / W * 100}%`;
+      };
+      const hide = () => { hair.setAttribute('visibility', 'hidden'); hov.setAttribute('visibility', 'hidden'); tip.hidden = true; };
+      hit.addEventListener('pointermove', e => show(e.clientX));
+      hit.addEventListener('pointerleave', hide);
+      wrap.append(svg, tip);
+      return wrap;
+    }
+
+    if (location.hash === '#odds') showTab('odds');
 
     // ── CSV parser ────────────────────────────────────────────────────────────
     // ── Standings tab ─────────────────────────────────────────────────────────

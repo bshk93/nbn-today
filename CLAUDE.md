@@ -413,6 +413,7 @@ precise.
 | Change career milestones (the homepage Milestone Watch card, the preview's milestones) | **`milestones.js`** at the repo root: the thresholds (`STATS`), the all-time top-10 passes, and the "games away" estimate. Regular-season totals summed from `players/player_seasons.csv`, the same basis as `/stats/totals` |
 | Change how a transaction reads in the homepage feed ("MIL sign Mike Conley") | `FeedTypes.headline` — **`feed-types.js`**, built from the entry's `details`, never its office-facing `description`. Returning `null` keeps a type out of the public feed. Pinned by `tests/feed-headline.test.js` (pure node, runs from the hook) |
 | Change a player's Feats & Streaks or Most Games Together | Data: `nbn-api/routers/player_insights.py` (`GET /api/players/{slug}/insights`, built on the game-highs index; `STREAKS` is the list, feats reuse `game_highs.FEATS`). Page: `renderInsights` — `players/index.html`. Splits and similar seasons are page-only (`renderSplitsSection`, `seasonVectors`) |
+| Change playoff odds (the model, the format, how often it runs) | Model and endpoints: `nbn-api/routers/playoff_odds.py` (its docstring is the whole model); run by `snapshot_playoff_odds.py` from `nbn-playoff-odds.timer`, which writes `playoff-odds.json` and `playoff-odds-history.jsonl`. Page: the Playoff Odds tab of `standings/index.html` (`renderOdds`) — it does no simulating |
 | Change standings display | `standings/index.html` |
 | Change player index display | `players/index.html` |
 | Change HOF display | `hof/index.html` |
