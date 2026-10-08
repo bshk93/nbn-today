@@ -119,8 +119,8 @@ Most of the sheet's figures still carry fractional cents (ATL `209,015,000.3`)
 and the site's never do. So the sheet is doing arithmetic the site isn't.
 Proration or partial guarantees are the obvious suspects.
 
-Each team sees its own rows on its page (the Cap Health card). That is
-reporting, not reconciliation: every row is still open.
+The rows are on `/committees/rosters` only; team pages no longer show them
+(2026-10-08). Every row is still open.
 
 ### [P1] Picks conveyance — 90 picks still not cleanly modeled
 `poopoo.json` `picks.counts`, **recounted 2026-10-06** (2026-08-07 in brackets):
@@ -689,9 +689,8 @@ job.
   showing when each window opens and closes, the way FA has one.
 - **Cap history chart on the team page** — the rest of per-team cap health
   shipped 2026-08-30: the Cap Health card shows standing against the cap,
-  aprons, a hard cap and § 2.1/2.1a/2.2's roster limits, plus this team's own
-  rows from the rosters dashboard (`cap-health.js` + `renderCapHealth`, fed by
-  `GET /api/poopoo/summary`). What is left is the *history*, and it is data
+  aprons, a hard cap and § 2.1/2.1a/2.2's roster limits (`cap-health.js` +
+  `renderCapHealth`). What is left is the *history*, and it is data
   rather than work: `GET /api/cap-history?team=UTA` has served a per-day series
   since 2026-08-25, so "when did this team cross the first apron" is a chart
   over an existing endpoint, not a collection problem.

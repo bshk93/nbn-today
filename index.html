@@ -1812,8 +1812,8 @@
       let settled = 0;
       const EXPECTED = 6;   // the async chip sources below
       // Differences from the league sheet are not a chip: they are bookkeeping
-      // for the rosters committee, not something the owner acts on. They stay
-      // on the team page's Cap Health card and /committees/rosters.
+      // for the rosters committee, not something the owner acts on. They live
+      // on /committees/rosters only.
       function paintChips() {
         if (!chips.length) {
           chipBox.innerHTML = settled >= EXPECTED

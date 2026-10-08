@@ -10,11 +10,9 @@
 //    § 2.1 floor all season and the only surface that would have said so was
 //    a hypothetical one you had to opt into.
 // 2. **The reconciliation vocabulary** — the category labels and colours for
-//    build/poopoo.py's sheet-vs-site diffs, which the committee's own page
-//    owned privately.
-//    A team page showing an owner their own diffs has to name them the same
-//    way the committee's page does, or the two surfaces describe the same row
-//    with different words.
+//    build/poopoo.py's sheet-vs-site diffs, read by /committees/rosters. Only
+//    the committee sees these: sheet differences are bookkeeping, and no
+//    public page shows them.
 //
 // **This file does no cap math.** It is handed Team Salary on both bases,
 // already computed by whoever called it — `computeCapSummary` in team.js on a
@@ -24,7 +22,7 @@
 // a surface that recomputes can show a team room the validator never credited.
 //
 // Loaded by teams/team.js (injected <script> + awaited promise, like
-// teams/lineup.js) and by poopoo/index.html (plain <script>). Kept free of
+// teams/lineup.js) and by the committee pages (plain <script>). Kept free of
 // dependencies so a page needs nothing else to use it.
 
 (function (global) {
@@ -335,23 +333,9 @@
     "player_missing", "player_extra", "player_hold_uncalculated",
   ];
 
-  function diffMeta(category) {
-    return DIFF_CATEGORIES[category] || { label: category, color: 'var(--text-muted)', desc: '' };
-  }
-
-  function sortDiffs(diffs) {
-    const rank = c => {
-      const i = DIFF_ORDER.indexOf(c);
-      return i === -1 ? DIFF_ORDER.length : i;
-    };
-    return (diffs || []).slice().sort((a, b) =>
-      rank(a.category) - rank(b.category) ||
-      String(a.field || '').localeCompare(String(b.field || '')));
-  }
-
   global.CapHealth = {
     ROSTER_MIN, ROSTER_MAX_IN_SEASON, ROSTER_MAX_OFFSEASON, ROSTER_CHARGE_MIN, TWO_WAY_MAX,
     known, standing, rosterLimits, draftRightsWarnings,
-    DIFF_CATEGORIES, DIFF_ORDER, diffMeta, sortDiffs,
+    DIFF_CATEGORIES, DIFF_ORDER,
   };
 })(window);

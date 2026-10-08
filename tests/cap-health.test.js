@@ -231,18 +231,6 @@ group('diff vocabulary');
     CH.DIFF_ORDER.every(c => CH.DIFF_CATEGORIES[c] && CH.DIFF_CATEGORIES[c].label));
   check('every category is ordered',
     Object.keys(CH.DIFF_CATEGORIES).every(c => CH.DIFF_ORDER.includes(c)));
-  check('an unknown category still renders', CH.diffMeta('brand_new').label === 'brand_new');
-  const sorted = CH.sortDiffs([
-    { category: 'player_extra', field: 'B' },
-    { category: 'player_team_conflict', field: 'Z' },
-    { category: 'aggregate', field: 'A' },
-    { category: 'brand_new', field: 'C' },
-  ]);
-  check('sorted worst-first, unknown last',
-    sorted.map(d => d.category).join() === 'player_team_conflict,aggregate,player_extra,brand_new');
-  check('ties break on the field name',
-    CH.sortDiffs([{ category: 'aggregate', field: 'Z' }, { category: 'aggregate', field: 'A' }])
-      .map(d => d.field).join() === 'A,Z');
 }
 
 console.log();

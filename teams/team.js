@@ -191,9 +191,7 @@ const contractReady = new Promise(resolve => {
 });
 
 // CapHealth — the standing rules (§ 1.3/1.4 cap and aprons, § 2.1/2.1a/2.2
-// roster limits) and the naming of build/poopoo.py's sheet-vs-site diff
-// categories. Shared with /committees/rosters so the same disagreement reads the same way
-// to an owner and to the committee. Soft dependency: if it fails to load the
+// roster limits). Soft dependency: if it fails to load the
 // Cap Health card stays hidden and the rest of the page is unaffected, which is
 // why every call site checks window.CapHealth first.
 const capHealthReady = new Promise(resolve => {
@@ -686,19 +684,7 @@ const coachingConfigReady = new Promise(resolve => {
   }
   .ch-warning { font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0; color: var(--danger); }
   .ch-warning.caution { color: var(--gold-alt); }
-  .ch-diff { display: grid; grid-template-columns: 9rem 1fr; gap: 0.35rem 1rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border-subtle); }
-  .ch-diff:last-child { border-bottom: none; }
-  .ch-diff-cat { font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; gap: 0.35rem; }
-  .ch-diff-cat .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-  .ch-diff-field { font-weight: 600; font-size: 0.8rem; }
-  .ch-diff-sides { font-size: 0.76rem; color: var(--text-secondary); margin-top: 0.1rem; }
-  .ch-diff-side-label { color: var(--text-dim); display: inline-block; min-width: 3.1rem; }
-  .ch-diff-mag { font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-  .ch-deferred > summary { cursor: pointer; font-size: 0.76rem; color: var(--text-muted); padding: 0.35rem 0; }
-  .ch-deferred > summary:hover { color: var(--text-secondary); }
   .ch-foot { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.6rem; line-height: 1.5; }
-  .ch-clean { font-size: 0.8rem; color: var(--success); }
-  .ch-stale { color: var(--gold-alt); }
   .whatif-enter-btn, .whatif-exit-btn {
     padding: 0.3rem 0.7rem; border: 1px solid var(--danger-border); border-radius: 6px;
     font-size: 0.75rem; font-weight: 600; cursor: pointer; background: transparent;
@@ -1825,29 +1811,17 @@ function computeStepienLocked(teamPicks, allPicks, teamAbbr) {
 // -----------------------------------------------------------------------------
 // Cap Health
 //
-// Both halves of "is my team's cap in order", on the page whose owner has to
-// answer that:
+// Where the team sits against § 1.3/1.4's cap and aprons, its own hard cap, and
+// § 2.1/2.1a/2.2's roster limits.
 //
-//   1. Standing — where the team sits against § 1.3/1.4's cap and aprons, its
-//      own hard cap, and § 2.1/2.1a/2.2's roster limits.
-//   2. Reconciliation — every line where the site and the league's own cap
-//      sheet disagree about this team, from build/poopoo.py.
-//
-// The second half was only ever visible on the old /poopoo page, which was
-// league-wide and nav-gated to admin, so the owner of a team whose Team Salary
-// the sheet has $19M lower than the site had no way to learn that. Both halves
-// are read-only: deciding which source is right when they disagree is a
-// committee call, not a page's — that work lives on /committees/rosters.
+// Differences from the league sheet are deliberately not shown here: they are
+// bookkeeping for the rosters committee, and live on /committees/rosters.
 //
 // The rules are in /cap-health.js, not here, so What-If Mode and the
 // league-wide compliance board apply the same ones. This function only renders,
 // and it recomputes nothing: the salary figures are passed in from
-// computeCapSummary, the diff figures come from the job that produced them.
+// computeCapSummary.
 // -----------------------------------------------------------------------------
-
-// The job runs every 10 minutes. An hour without a run is a stuck timer, and a
-// reconciliation nobody can date is worse than none — it reads as current.
-const CAP_HEALTH_STALE_MS = 60 * 60 * 1000;
 
 // § 2.1's "standard roster slot" — the same type filter computeEmptyRosterCharge
 // uses. Two-way, draft-rights and dead entries don't occupy one.
@@ -1872,60 +1846,6 @@ function draftRightsFor(rosterRows, biosData) {
     });
 }
 
-const CH_HARD_CAP_LABELS = { first_apron: 'First Apron', second_apron: 'Second Apron' };
-
-function chDiffValue(field, v) {
-  // 'none' rather than '—' for a hard cap: the sheet having no hard cap on
-  // file is a real position, not a missing value. The value itself is the
-  // stored enum, which is not what a team page should be showing anyone.
-  if (field === 'Hard Cap') return v ? (CH_HARD_CAP_LABELS[v] || v) : 'none';
-  if (Array.isArray(v)) return v.join(' · ');
-  if (typeof v === 'number') return fmtDollars(v);
-  return (v === null || v === undefined || v === '') ? '—' : String(v);
-}
-
-function chDiffRow(d) {
-  const meta = CapHealth.diffMeta(d.category);
-  const row = document.createElement('div');
-  row.className = 'ch-diff';
-
-  const cat = document.createElement('span');
-  cat.className = 'ch-diff-cat';
-  cat.style.color = meta.color;
-  const dot = document.createElement('span');
-  dot.className = 'dot';
-  dot.style.background = meta.color;
-  cat.append(dot, document.createTextNode(meta.label));
-
-  const body = document.createElement('div');
-  const field = document.createElement('div');
-  field.className = 'ch-diff-field';
-  field.textContent = d.field || '';
-  body.appendChild(field);
-
-  [['sheet', d.sheet], ['site', d.site]].forEach(([which, value]) => {
-    const line = document.createElement('div');
-    line.className = 'ch-diff-sides';
-    const label = document.createElement('span');
-    label.className = 'ch-diff-side-label';
-    label.textContent = which;
-    line.append(label, document.createTextNode(chDiffValue(d.field, value)));
-    body.appendChild(line);
-  });
-
-  // 0 is a real answer here — the two sides agree on the money and differ on
-  // the status — so only a missing magnitude is omitted.
-  if (d.mag !== null && d.mag !== undefined) {
-    const mag = document.createElement('div');
-    mag.className = 'ch-diff-mag';
-    mag.textContent = d.mag ? `${fmtDollarsShort(d.mag)} apart` : 'same amount, different status';
-    body.appendChild(mag);
-  }
-
-  row.append(cat, body);
-  return row;
-}
-
 function chBlockTitle(title, countText) {
   const head = document.createElement('div');
   head.className = 'ch-block-title';
@@ -1937,33 +1857,6 @@ function chBlockTitle(title, countText) {
     head.appendChild(c);
   }
   return head;
-}
-
-// "Checked 12:10" is the mtime of the report, not its generated_at: the job
-// rewrites the file only when the answer changes, so generated_at can be days
-// old on a perfectly healthy system and would read as a stalled job.
-function chFreshness(summary) {
-  const el = document.createElement('div');
-  el.className = 'ch-foot';
-  if (!summary.checked_at) return el;
-  const checked = new Date(summary.checked_at);
-  const changed = summary.generated_at ? new Date(summary.generated_at) : null;
-  const stale = Date.now() - checked.getTime() > CAP_HEALTH_STALE_MS;
-  const when = checked.toLocaleString('en-US', {
-    month: checked.toDateString() === new Date().toDateString() ? undefined : 'short',
-    day: checked.toDateString() === new Date().toDateString() ? undefined : 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-  if (stale) {
-    el.classList.add('ch-stale');
-    el.textContent = `Checked against the league sheet ${when} — the reconciliation job runs every 10 minutes, so it may be stuck.`;
-    return el;
-  }
-  const unchanged = changed && checked - changed > 60000
-    ? `, unchanged since ${changed.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
-    : '';
-  el.textContent = `Checked against the league sheet ${when}${unchanged}.`;
-  return el;
 }
 
 function renderCapHealth(opts) {
@@ -2033,11 +1926,6 @@ function renderCapHealth(opts) {
   });
   wrap.appendChild(standingBlock);
 
-  const reconBlock = document.createElement('div');
-  reconBlock.className = 'ch-block';
-  reconBlock.innerHTML = '<div class="ch-block-title">Against the league sheet</div><div class="ch-foot">Checking…</div>';
-  wrap.appendChild(reconBlock);
-
   const salaryPhrase = (() => {
     const by = key => rows.find(r => r.key === key);
     const hc = by('hard_cap');
@@ -2050,7 +1938,7 @@ function renderCapHealth(opts) {
     return null;
   })();
 
-  const setStrip = sheetPhrase => {
+  const setStrip = () => {
     if (!strip) return;
     const flagged = warnings.filter(w => w.severity !== 'note');
     const hardCap = opts.teamState?.hard_cap;
@@ -2059,7 +1947,6 @@ function renderCapHealth(opts) {
       hardCap ? `hard-capped at the ${hardCap === 'second_apron' ? 'second' : 'first'} apron` : null,
       `${counts.standard} player${counts.standard === 1 ? '' : 's'}`,
       flagged.length ? `${flagged.length} rule flag${flagged.length === 1 ? '' : 's'}` : null,
-      sheetPhrase,
     ].filter(Boolean);
     strip.textContent = '';
     const label = document.createElement('span');
@@ -2081,82 +1968,12 @@ function renderCapHealth(opts) {
     strip.style.display = '';
   };
 
-  setStrip(null);
+  setStrip();
   if (strip && !strip.dataset.wired) {
     strip.dataset.wired = '1';
     strip.addEventListener('click', () => section.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
-  fetch(`/api/poopoo/summary?team=${opts.abbr}`)
-    .then(r => (r.ok ? r.json() : null))
-    .then(summary => {
-      reconBlock.innerHTML = '';
-      if (!summary || !summary.available) {
-        reconBlock.appendChild(chBlockTitle('Against the league sheet'));
-        const note = document.createElement('div');
-        note.className = 'ch-foot';
-        note.textContent = 'The reconciliation job has not produced a report, so there is nothing to compare against right now.';
-        reconBlock.appendChild(note);
-        setStrip('sheet check unavailable');
-        return;
-      }
-
-      const entry = summary.teams[0];
-      const open = CapHealth.sortDiffs((entry?.diffs || []).filter(d => d.group === 'open'));
-      const deferred = CapHealth.sortDiffs((entry?.diffs || []).filter(d => d.group === 'deferred'));
-      // The team-level disagreement, not a sum of the rows: the player and
-      // exception rows below are components of it, so adding them up reports a
-      // team as further out than its books actually are (see _headline_mag in
-      // nbn-api/routers/poopoo.py).
-      const magText = entry?.headline_mag
-        ? ` · ${fmtDollarsShort(entry.headline_mag)} apart on Team Salary` : '';
-      reconBlock.appendChild(chBlockTitle(
-        'Against the league sheet',
-        open.length ? `${open.length} line${open.length === 1 ? '' : 's'}${magText}` : '',
-      ));
-
-      if (!open.length) {
-        const clean = document.createElement('div');
-        clean.className = 'ch-clean';
-        clean.textContent = deferred.length
-          ? 'Nothing disagrees about this season.'
-          : 'Everything tracked matches the league sheet.';
-        reconBlock.appendChild(clean);
-      } else {
-        open.forEach(d => reconBlock.appendChild(chDiffRow(d)));
-      }
-
-      // Future seasons and figures the site has never computed are collapsed,
-      // not hidden: they are real, but they are the site's own known gaps
-      // rather than something this team's owner can act on, and left inline
-      // they outnumber the actionable rows.
-      if (deferred.length) {
-        const det = document.createElement('details');
-        det.className = 'ch-deferred';
-        const sum = document.createElement('summary');
-        sum.textContent = `${deferred.length} future-season or not-yet-computed line${deferred.length === 1 ? '' : 's'}`;
-        det.appendChild(sum);
-        deferred.forEach(d => det.appendChild(chDiffRow(d)));
-        reconBlock.appendChild(det);
-      }
-
-      if (open.length || deferred.length) {
-        const foot = document.createElement('div');
-        foot.className = 'ch-foot';
-        foot.textContent = 'These are bookkeeping disagreements between the site and the league’s cap sheet, not rulings. Which source is right is a committee call — raise it with the committee rather than editing around it.';
-        reconBlock.appendChild(foot);
-      }
-      reconBlock.appendChild(chFreshness(summary));
-
-      setStrip(open.length
-        ? `${open.length} line${open.length === 1 ? " doesn’t" : "s don’t"} match the league sheet`
-        : 'matches the league sheet');
-    })
-    .catch(() => {
-      reconBlock.innerHTML = '<div class="ch-block-title">Against the league sheet</div>'
-        + '<div class="ch-foot">Could not reach the reconciliation report.</div>';
-      setStrip('sheet check unavailable');
-    });
 }
 
 function renderExceptionsSection(
@@ -7999,7 +7816,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     const curYr = currentSeasonYr();
     const { teamSalaryFull, teamSalaryExHolds } = computeCapSummary(rosterRows, deadCapRows, biosData, capLevels, curYr);
     renderCapHealth({
-      abbr, rosterRows, biosData, capLevels, season: curYr, teamState,
+      rosterRows, biosData, capLevels, season: curYr, teamState,
       teamSalaryFull, teamSalaryExHolds,
       erc: computeEmptyRosterCharge(rosterRows, biosData, capLevels, curYr),
     });
