@@ -32,7 +32,6 @@
 //   currentSeasonYr              infers current season year
 //   parseSalaryNum               "$37,000,000" → 37000000
 //   fmtDollars                   number → "$37.0M"
-//   fmtDollarsShort              number → "$37.0M" / "$450K"
 //
 // Tooltips
 //   _ttShow                      shows the shared tooltip element
@@ -44,7 +43,7 @@
 //   mleTypeLabel                 MLE type → display label
 //   renderHardCapBanner          What-If Mode's hard cap banner
 //   countRosterSlots             roster rows → standard / two-way slot counts
-//   renderCapHealth              injects the Cap Health card + summary strip
+//   renderCapHealth              injects the Cap Health card
 //   renderExceptionsSection      renders MLE/BAE exceptions panel
 //   renderTradeExceptionsSection renders the trade exceptions (TPE) panel
 //   buildNonGtdTip               builds the non-guaranteed salary tooltip text
@@ -650,17 +649,6 @@ const coachingConfigReady = new Promise(resolve => {
   .exc-mle-type { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.35rem; }
   .exc-remaining { color: var(--success); }
   .exc-used { color: var(--danger); }
-  .cap-health-strip {
-    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-    width: 100%; text-align: left; cursor: pointer; font-family: inherit;
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
-    padding: 0.5rem 0.9rem; margin-bottom: 1.25rem; font-size: 0.8rem;
-    color: var(--text-secondary);
-  }
-  .cap-health-strip:hover { border-color: var(--text-muted); }
-  .cap-health-strip .ch-strip-label { font-weight: 700; text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.05em; color: var(--text-dim); }
-  .cap-health-strip .ch-strip-sep { color: var(--border); }
-  .cap-health-strip .ch-strip-caret { margin-left: auto; color: var(--text-dim); }
   .ch-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1.25rem; font-size: 0.85rem; }
   .ch-block + .ch-block { margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border); }
   .ch-block-title { display: flex; align-items: baseline; gap: 0.6rem; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.5rem; }
@@ -1030,7 +1018,6 @@ document.body.innerHTML = `
     </div>
     <div class="tab-panel" id="tab-overview">
       <div id="offer-sheet-banner" style="display:none"></div>
-      <button type="button" id="cap-health-strip" class="cap-health-strip" style="display:none"></button>
       <section>
         <div class="roster-header-row">
           <h2 class="section-title" id="roster-title">Roster</h2>
@@ -1655,15 +1642,6 @@ function fmtDollars(v) {
   return v ? '$' + Math.round(v).toLocaleString('en-US') : '$0';
 }
 
-// Compact form, for lines where the exact dollar is noise: a one-line summary
-// strip, or a running total of how far apart two sources are.
-function fmtDollarsShort(v) {
-  const abs = Math.abs(v || 0);
-  if (abs >= 1e6) return '$' + (abs / 1e6).toFixed(abs >= 1e8 ? 0 : 1) + 'M';
-  if (abs >= 1e3) return '$' + Math.round(abs / 1e3) + 'K';
-  return fmtDollars(abs);
-}
-
 // Real, persisted Empty Roster Charge (rulebook § 2.1a) — distinct from the
 // 14-player standard-roster minimum (§ 2.1) and from the trade-legality mock
 // the backend runs against a 14-player floor (routers/transactions.py,
@@ -1730,7 +1708,7 @@ function mleTypeLabel(type) {
 }
 
 // What-If Mode's banner only. The real page says this quietly, in the Cap
-// Health strip and card (renderCapHealth): it is a standing, not an alarm, and
+// Health card (renderCapHealth): it is a standing, not an alarm, and
 // a red banner above the roster was the first thing every visitor read.
 function renderHardCapBanner(teamState, el) {
   if (!el) return;
@@ -1862,7 +1840,6 @@ function chBlockTitle(title, countText) {
 function renderCapHealth(opts) {
   const section = document.getElementById('cap-health-section');
   const wrap = document.getElementById('cap-health-wrap');
-  const strip = document.getElementById('cap-health-strip');
   if (!section || !wrap || !window.CapHealth) return;
 
   const counts = countRosterSlots(opts.rosterRows, opts.biosData);
@@ -1925,55 +1902,6 @@ function renderCapHealth(opts) {
     standingBlock.appendChild(line);
   });
   wrap.appendChild(standingBlock);
-
-  const salaryPhrase = (() => {
-    const by = key => rows.find(r => r.key === key);
-    const hc = by('hard_cap');
-    if (hc && hc.tone === 'violation') return `hard cap exceeded by ${fmtDollarsShort(opts.teamSalaryExHolds - hc.amount)}`;
-    const a2 = by('apron2'), a1 = by('apron1'), cap = by('cap');
-    if (a2 && a2.tone === 'over') return `over the second apron by ${fmtDollarsShort(opts.teamSalaryExHolds - a2.amount)}`;
-    if (a1 && a1.tone === 'over') return `over the first apron by ${fmtDollarsShort(opts.teamSalaryExHolds - a1.amount)}`;
-    if (cap && cap.tone === 'over') return `over the cap by ${fmtDollarsShort(opts.teamSalaryFull - cap.amount)}`;
-    if (cap && cap.tone === 'under') return `${fmtDollarsShort(cap.amount - opts.teamSalaryFull)} of cap room`;
-    return null;
-  })();
-
-  const setStrip = () => {
-    if (!strip) return;
-    const flagged = warnings.filter(w => w.severity !== 'note');
-    const hardCap = opts.teamState?.hard_cap;
-    const parts = [
-      salaryPhrase,
-      hardCap ? `hard-capped at the ${hardCap === 'second_apron' ? 'second' : 'first'} apron` : null,
-      `${counts.standard} player${counts.standard === 1 ? '' : 's'}`,
-      flagged.length ? `${flagged.length} rule flag${flagged.length === 1 ? '' : 's'}` : null,
-    ].filter(Boolean);
-    strip.textContent = '';
-    const label = document.createElement('span');
-    label.className = 'ch-strip-label';
-    label.textContent = 'Cap health';
-    strip.appendChild(label);
-    parts.forEach(text => {
-      const sep = document.createElement('span');
-      sep.className = 'ch-strip-sep';
-      sep.textContent = '·';
-      const span = document.createElement('span');
-      span.textContent = text;
-      strip.append(sep, span);
-    });
-    const caret = document.createElement('span');
-    caret.className = 'ch-strip-caret';
-    caret.textContent = '▾';
-    strip.appendChild(caret);
-    strip.style.display = '';
-  };
-
-  setStrip();
-  if (strip && !strip.dataset.wired) {
-    strip.dataset.wired = '1';
-    strip.addEventListener('click', () => section.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-  }
-
 }
 
 function renderExceptionsSection(
