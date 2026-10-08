@@ -28,7 +28,6 @@ PAGES = [
     'h2h/index.html',
     'history/index.html',
     'hof/index.html',
-    'how-to-rosters/index.html',
     'members/index.html',
     'members/profile/index.html',
     'nbntv-classics/index.html',

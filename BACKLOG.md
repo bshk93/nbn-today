@@ -602,7 +602,7 @@ What is left:
   means minting a real session against the live API, and a write path exercised
   from a dev page is a real write — so this needs a decision, not just effort.
 - **~70 pages still uncovered**, but they are now the thin ones: static prose
-  (`/constitution`, `/legal`, `/how-to-rosters`, `/join`), per-stat leaderboard
+  (`/constitution`, `/legal`, `/join`), per-stat leaderboard
   pages that share one `table.js`, and the 30 team shells that share one
   `team.js`. The heavy data-driven pages are done.
 

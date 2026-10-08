@@ -28,7 +28,6 @@ PAGES = [
     'h2h/index.html',
     'history/index.html',
     'hof/index.html',
-    'how-to-rosters/index.html',
     'members/index.html',
     'members/profile/index.html',
     'nbntv-classics/index.html',
@@ -66,7 +65,6 @@ PAGES = [
 NEED_NAVJS = {
     'boxscores/submit/index.html',
     'context/index.html',
-    'how-to-rosters/index.html',
     'perry/index.html',
     'proposals/index.html',
     'proposals/new/index.html',

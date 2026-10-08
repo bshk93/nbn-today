@@ -576,7 +576,7 @@ const SITE_PAGES = [
   { title: 'Head to Head', href: '/h2h', icon: '⚔️' },
   { title: 'Frivolities & Viz', href: '/frivolities', icon: '📈' },
   { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: '🔍' },
-  { title: 'Bets', href: '/bet/', icon: '🎲' },
+  { title: 'Bets & Futures', href: '/bet/', icon: '🎲' },
   { title: 'Futures', href: '/bet/#futures', icon: '📊' },
   { title: 'NB¥ Balances', href: '/nbyen/', icon: '💴' },
   { title: 'Daily Perry Game', href: '/perry/', icon: '🏀' },

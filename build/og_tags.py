@@ -35,6 +35,7 @@ Re-runnable: an existing NBN:og block is replaced, never duplicated.
 The card images themselves (og-default.png, og/team-*.png) are generated
 artefacts committed to the repo; build/og_cards.py rebuilds them.
 """
+import html
 import re, sys, pathlib
 
 CHECK = '--check' in sys.argv
@@ -80,7 +81,6 @@ PAGES = {
  '/frivolities/': (None, 'Odd corners of the NBN data — charts, career earnings, and every trade regraded.'),
  '/h2h/': (None, 'All-time head-to-head records between every NBN team and every owner.'),
  '/hof/': (None, 'NBN Hall of Fame scores, rings and career totals for the league’s best players.'),
- '/how-to-rosters/': (None, 'How to read and edit your NBN roster, contracts and draft picks.'),
  '/inbox/': (None, 'Your NBN notifications.'),
  '/invest/': (None, 'Buy and sell shares in NBN players. Wall Street, but the asset is a power forward.'),
  '/invest/preview/': (None, 'How the NBN Wall Street pricing algorithm values a player.'),
@@ -211,7 +211,8 @@ for p in sorted(ROOT.rglob('*.html')):
     elif url in PAGES:
         override, desc = PAGES[url]
         tm = re.search(r'<title>([^<]*)</title>', text)
-        title = override or (tm.group(1) if tm and tm.group(1).strip() else 'NBN')
+        # The <title> text is already HTML; unescape it so esc() doesn't double it.
+        title = override or (html.unescape(tm.group(1)) if tm and tm.group(1).strip() else 'NBN')
         if override and tm:
             text = re.sub(r'<title>[^<]*</title>', f'<title>{override}</title>', text, count=1)
         elif override and not tm:
