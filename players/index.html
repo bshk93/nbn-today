@@ -3743,7 +3743,7 @@
       const tier = tierFor(prodPct);
       const svg = Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season · per 36 min` });
 
-      // The three closest seasons by anyone else, any year: the same eight
+      // The three closest seasons by three other players, any year: the same eight
       // style percentiles plus how productive they were (Game Score per game,
       // the tier's measure), so a bench shooter isn't matched to a star one.
       const me = [...dims.map(d => d.pct), prodPct];
@@ -3751,6 +3751,8 @@
         .filter(v => v.slug !== slug)
         .map(v => ({ ...v, dist: Math.hypot(...v.vec.map((x, i) => x - me[i])) }))
         .sort((a, b) => a.dist - b.dist)
+        // One season per player: three Giannis seasons say less than three players.
+        .filter((v, i, all) => all.findIndex(o => o.slug === v.slug) === i)
         .slice(0, 3);
       if (!near.length) return svg;
       const box = document.createElement('div');
