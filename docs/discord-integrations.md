@@ -91,6 +91,16 @@ pipeline's events to two channels with deliberately different appetites:
 Each is inert without its own env var, which is how it rolled out (module, then
 private channel, then public last).
 
+**The result is the one exception, and it is not from `fa_notify`.** When the
+FAC head declares a winner, the signing it writes is public, and nobody posts it
+by hand. So `declare_winner` posts one line to `fa-news` through
+`roster_move_notify.announce_fa_result` ("The Orlando Magic sign Blake Hinson —
+1+1 TO · $3.7M."; an offer sheet also names the team that can match). A QO win
+goes through `apply_accept_qo`, which announces it the same way. The embed is
+sent with `relay_to_roster_log=True`, since the relay skips bot posts in
+`fa-news`. Until 2026-10-08 neither happened: a declared signing reached only
+`#roster-log-nbn-today`.
+
 **No team abbreviation and no `$` may ever reach `fa-news`** — that a team is
 bidding is committee information. This is enforced by signature, not by care:
 `_news(slug, text)` is the only function that can reach the public channel and
