@@ -3810,13 +3810,16 @@ function optionEligibility(bio) {
 
 // § 5.1: mirrors _validate_release's own eligibility test — a player with
 // only a UFA/RFA/TEAM_OPT hold and no real salary left has nothing to
-// release, and is renounced instead (§ 3.10).
+// release, and is renounced instead (§ 3.10). A two-way's contract years pay
+// $0 (§ 2.2) but are still a contract, so they count.
 function releaseEligibility(bio) {
   const salaries = (bio && bio.salaries) || {};
   const holds = (bio && bio.cap_holds) || {};
   const cur = currentSeasonYr();
+  const twoWay = bio && bio.type === 'two-way';
   const hasRealYear = Object.keys(salaries).some(season =>
-    season >= cur && !['UFA', 'RFA', 'TEAM_OPT'].includes(holds[season]) && parseSalaryNum(salaries[season]) > 0);
+    season >= cur && !['UFA', 'RFA', 'TEAM_OPT'].includes(holds[season]) &&
+    (twoWay || parseSalaryNum(salaries[season]) > 0));
   if (!hasRealYear) {
     return { ok: false, why: 'Nothing real left to release — renounce instead (§ 3.10).' };
   }
@@ -4147,17 +4150,25 @@ function openReleaseDialog(slug, bio, abbr) {
       loading.textContent = 'Running § 5.1 checks…';
       body.appendChild(loading);
 
-      const label = document.createElement('label');
-      label.textContent = 'Stretch provision — years to spread the obligation over (optional)';
-      stretchInput = document.createElement('input');
-      stretchInput.type = 'number'; stretchInput.min = '1'; stretchInput.step = '1';
-      stretchInput.placeholder = 'Leave blank for the original payment schedule';
-      body.append(label, stretchInput);
-      const note = document.createElement('div');
-      note.className = 'confirm-check warn';
-      note.textContent = 'Buying out with cap space isn’t available — it has no implementation yet, ' +
-        'here or on the office form.';
-      body.appendChild(note);
+      // A two-way pays $0 (§ 2.2), so there is no obligation to stretch or buy out.
+      if (bio.type === 'two-way') {
+        const note = document.createElement('div');
+        note.className = 'confirm-check ok';
+        note.textContent = 'A two-way contract pays $0, so releasing leaves no dead cap.';
+        body.appendChild(note);
+      } else {
+        const label = document.createElement('label');
+        label.textContent = 'Stretch provision — years to spread the obligation over (optional)';
+        stretchInput = document.createElement('input');
+        stretchInput.type = 'number'; stretchInput.min = '1'; stretchInput.step = '1';
+        stretchInput.placeholder = 'Leave blank for the original payment schedule';
+        body.append(label, stretchInput);
+        const note = document.createElement('div');
+        note.className = 'confirm-check warn';
+        note.textContent = 'Buying out with cap space isn’t available — it has no implementation yet, ' +
+          'here or on the office form.';
+        body.appendChild(note);
+      }
 
       let data;
       try {
