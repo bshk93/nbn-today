@@ -44,6 +44,7 @@
     <nav class="nav"></nav>
     <header class="ui-header">
       <h1 class="ui-title">Season Awards</h1>
+      <div class="ui-header-actions" id="admin-actions"></div>
     </header>
     <div class="season-list" id="season-list">
       <div class="ui-loading">Loading…</div>
@@ -51,9 +52,13 @@
   </div>
 
   <script src="/names.js"></script>
+  <script src="/league-time.js"></script>
   <script>
     // A season is listed once it has an entry in awards-config. The admin
-    // opens one from the homepage's Reveal Season Awards card. Seasons from
+    // opens one with the "Open voting" button in the header, and reveals or
+    // hides each one from its card. A newly opened season's /awards/YY-YY/
+    // pages must exist too: copy the last season's folder (build/og_tags.py
+    // picks it up). Seasons from
     // before the ballot existed come from the build's league-history.csv and
     // show their winners with no results page behind them.
     const seasonLabel = s => `20${s.slice(0, 2)}–${s.slice(3)}`;
@@ -126,6 +131,7 @@
 
       const roles = me.roles || [];
       const isBod = roles.some(r => r === 'bod' || r === 'admin');
+      const isAdmin = roles.includes('admin');
       const hasTeam = roles.some(r => TEAM_ROLES.has(r));
 
       // Ballot seasons we may see the result of, fetched together.
@@ -135,6 +141,10 @@
         fetch(`/api/awards-ballots/${s}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
           .then(r => r.ok ? r.json() : null).catch(() => null)
           .then(b => { ballots[s] = b; })));
+
+      const revealBtn = (s, cfg) => isAdmin
+        ? `<button class="ui-btn ui-btn--sm${cfg.revealed ? '' : ' ui-btn--primary'}" data-reveal="${s}">${cfg.revealed ? 'Hide' : 'Reveal'}</button>`
+        : '';
 
       const cards = [];
       Object.keys(config).forEach(s => {
@@ -147,14 +157,14 @@
             <div class="aw-head">
               <span class="aw-season">${seasonLabel(s)}</span>
               ${cfg.revealed ? '' : '<span class="ui-badge ui-badge--warning">Preview · BOD only</span>'}
-              <span class="aw-actions">${ballotBtn}<a class="ui-btn ui-btn--sm" href="/awards/${s}/results/">Full results</a></span>
+              <span class="aw-actions">${ballotBtn}<a class="ui-btn ui-btn--sm" href="/awards/${s}/results/">Full results</a>${revealBtn(s, cfg)}</span>
             </div>
             ${ballots[s] ? winnersGrid(winners, bios, slugByName) : ''}
           </div>` });
         } else {
           cards.push({ s, html: `<div class="season-card pending">
             <div class="aw-head"><span class="aw-season">${seasonLabel(s)}</span>
-              ${hasTeam ? `<span class="aw-actions"><a class="ui-btn ui-btn--sm ui-btn--primary" href="/awards/${s}/vote/">Submit your ballot</a></span>` : ''}
+              <span class="aw-actions">${hasTeam ? `<a class="ui-btn ui-btn--sm ui-btn--primary" href="/awards/${s}/vote/">Submit your ballot</a>` : ''}${revealBtn(s, cfg)}</span>
             </div>
             <div class="aw-note">Ballots are in progress. Results are revealed when every vote is in.</div>
           </div>` });
@@ -176,7 +186,57 @@
       list.innerHTML = cards.length
         ? cards.sort((a, b) => b.s.localeCompare(a.s)).map(c => c.html).join('')
         : '<div class="ui-empty">No award seasons yet.</div>';
+
+      if (isAdmin) setupAdmin(config, token);
     })();
+
+    // Admin only: reveal or hide a season, and open voting for the current one.
+    // Opening creates the config entry hidden, which is what lists the season.
+    async function setAwardsConfig(season, revealed, token) {
+      const res = await fetch(`/api/awards-config/${season}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revealed }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || `HTTP ${res.status}`);
+      }
+    }
+
+    async function setupAdmin(config, token) {
+      document.querySelectorAll('[data-reveal]').forEach(btn => btn.addEventListener('click', async () => {
+        const s = btn.dataset.reveal;
+        const next = !(config[s] || {}).revealed;
+        const ok = await confirmDialog({
+          title: `${next ? 'Reveal' : 'Hide'} ${seasonLabel(s)} awards?`,
+          body: next ? 'Everyone will see the winners and full results.' : 'Only the BOD will see them until revealed again.',
+          confirmLabel: next ? 'Reveal' : 'Hide',
+        });
+        if (!ok) return;
+        btn.disabled = true;
+        try { await setAwardsConfig(s, next, token); location.reload(); }
+        catch (e) { btn.disabled = false; toast(e.message, true); }
+      }));
+
+      const current = await nbnCurrentSeason();
+      if (current in config) return;
+      const open = document.createElement('button');
+      open.className = 'ui-btn ui-btn--sm';
+      open.textContent = `Open ${seasonLabel(current)} voting`;
+      open.addEventListener('click', async () => {
+        const ok = await confirmDialog({
+          title: `Open ${seasonLabel(current)} voting?`,
+          body: `Lists the season here, hidden, so teams can submit ballots. The /awards/${current}/ pages must exist first.`,
+          confirmLabel: 'Open voting',
+        });
+        if (!ok) return;
+        open.disabled = true;
+        try { await setAwardsConfig(current, false, token); location.reload(); }
+        catch (e) { open.disabled = false; toast(e.message, true); }
+      });
+      document.getElementById('admin-actions').appendChild(open);
+    }
   </script>
   <script src="/nav.js"></script>
 </body>

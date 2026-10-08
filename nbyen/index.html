@@ -48,6 +48,12 @@
     .note { font-size: var(--text-sm); color: var(--text-muted); margin: 0 0 var(--space-4); }
     .note a { color: var(--link); }
 
+    .adjust { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-4);
+              background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: var(--space-3) var(--space-4); }
+    .adjust[hidden] { display: none; }
+    .adjust-status { font-size: var(--text-sm); color: var(--text-muted); width: 100%; }
+    .adjust-status:empty { display: none; }
+
     @media (max-width: 560px) {
       .hide-sm { display: none; }
     }
@@ -63,7 +69,19 @@
     <div>
       <h1 class="ui-title">NB¥ Balances</h1>
     </div>
+    <div class="ui-header-actions">
+      <button class="ui-btn ui-btn--sm" id="adjust-toggle" hidden>Adjust a balance</button>
+    </div>
   </header>
+
+  <form class="adjust" id="adjust" hidden>
+    <select class="ui-select" id="adj-action"><option>Give</option><option>Take</option></select>
+    <input class="ui-input" id="adj-amount" type="number" min="1" step="1" placeholder="NB¥" style="width:7rem">
+    <select class="ui-select" id="adj-member"><option value="">Member</option></select>
+    <input class="ui-input" id="adj-reason" type="text" placeholder="Reason (optional)" style="flex:1;min-width:10rem">
+    <button class="ui-btn ui-btn--primary" type="submit">Apply</button>
+    <span class="adjust-status" id="adj-status"></span>
+  </form>
 
   <p class="note">$10 = one stream = NB¥1,000. You earn it from donations,
     Twitch subs and winning bets, and spend it on bets, futures and buying a stream.</p>
@@ -200,7 +218,10 @@ async function init() {
   const token = localStorage.getItem('nbn_token');
   if (token) {
     fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null).then(d => { if (d && d.name) { me = d.name; if (tab === 'balances') render(); } })
+      .then(r => r.ok ? r.json() : null).then(d => {
+        if (d?.roles?.includes('admin')) setupAdjust(token);
+        if (d && d.name) { me = d.name; if (tab === 'balances' && summary) render(); }
+      })
       .catch(() => {});
   }
   try {
@@ -214,6 +235,58 @@ async function init() {
   renderTotals();
   setTab(member || location.hash === '#history' ? 'history' : 'balances');
 }
+// Admin only: give or take NB¥ from a member. Goes through the wallet, so it
+// lands in the history below as an "Adjustment".
+async function setupAdjust(token) {
+  const toggle = document.getElementById('adjust-toggle');
+  const form = document.getElementById('adjust');
+  const memberSel = document.getElementById('adj-member');
+  const status = document.getElementById('adj-status');
+  toggle.hidden = false;
+  toggle.onclick = async () => {
+    form.hidden = !form.hidden;
+    if (form.hidden || memberSel.options.length > 1) return;
+    const members = await fetch('/api/members/public').then(r => r.json()).catch(() => []);
+    members.map(m => m.name).sort((a, b) => a.localeCompare(b)).forEach(n => memberSel.add(new Option(n, n)));
+    if (member) memberSel.value = member;
+  };
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const who = memberSel.value;
+    const amt = parseFloat(document.getElementById('adj-amount').value);
+    const reason = document.getElementById('adj-reason').value.trim();
+    status.style.color = 'var(--danger)';
+    if (!who) { status.textContent = 'Pick a member.'; return; }
+    if (!(amt > 0)) { status.textContent = 'Enter a positive amount.'; return; }
+    const delta = document.getElementById('adj-action').value === 'Give' ? amt : -amt;
+    const btn = form.querySelector('button[type=submit]');
+    btn.disabled = true;
+    status.style.color = 'var(--text-muted)';
+    status.textContent = 'Saving…';
+    try {
+      const res = await fetch('/api/bets/admin/adjust', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ member: who, delta, reason }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+      status.style.color = 'var(--success)';
+      status.textContent = `${who}: ${fmt(body.old_balance)} → ${fmt(body.new_balance)}`;
+      document.getElementById('adj-amount').value = '';
+      document.getElementById('adj-reason').value = '';
+      summary = await fetch('/api/nbyen/summary').then(r => r.json());
+      renderTotals();
+      render();
+    } catch (err) {
+      status.style.color = 'var(--danger)';
+      status.textContent = err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
 init();
 </script>
 <script src="/token-badge.js"></script>

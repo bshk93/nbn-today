@@ -37,6 +37,7 @@
     }
 
     .controls label { font-size: 0.85rem; color: var(--text-muted); }
+    .post-status { font-size: var(--text-xs); color: var(--text-muted); }
 
     select {
       background: var(--bg-card);
@@ -262,6 +263,8 @@
       <div class="controls">
         <label for="season-select">Season</label>
         <select id="season-select"></select>
+        <button class="ui-btn ui-btn--sm" id="post-discord" hidden>Post to Discord</button>
+        <span class="post-status" id="post-status"></span>
       </div>
       <div id="standings-content"><div id="status">Loading…</div></div>
     </div>
@@ -886,7 +889,43 @@
       bsel.addEventListener('change', () => renderBracket(bracketRows, bsel.value));
     }
 
+    // ── Post to Discord (admin) ───────────────────────────────────────────────
+    // Announces the selected season's standings to #stats-and-standings.
+    async function setupDiscordPost() {
+      const token = localStorage.getItem('nbn_token');
+      if (!token) return;
+      const me = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null).catch(() => null);
+      if (!me?.roles?.includes('admin')) return;
+      const btn = document.getElementById('post-discord');
+      const status = document.getElementById('post-status');
+      const sel = document.getElementById('season-select');
+      btn.hidden = false;
+      btn.addEventListener('click', async () => {
+        const season = sel.value;
+        if (!await confirmDialog({ title: `Post ${season} standings to Discord?`,
+                                   body: 'Posts to #stats-and-standings.', confirmLabel: 'Post' })) return;
+        btn.disabled = true;
+        status.style.color = '';
+        status.textContent = 'Posting…';
+        try {
+          const res = await fetch(`/api/admin/discord/post-standings?season=${encodeURIComponent(season)}`,
+            { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+          status.style.color = 'var(--success)';
+          status.textContent = `Posted ${season}.`;
+        } catch (e) {
+          status.style.color = 'var(--danger)';
+          status.textContent = e.message;
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    }
+
     init();
+    setupDiscordPost();
   </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>

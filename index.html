@@ -576,9 +576,6 @@
     .directory li:has(> .card[style*="display:none"]),
     .directory li:has(> .card[style*="display: none"]) { display: none; }
     .directory .card-title { font-size: inherit; font-weight: 400; color: inherit; }
-    .directory .card > span:not(.card-header) { display: none; }  /* tile subtitles */
-    .directory-forms { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--space-3); }
-    .directory-forms:empty { display: none; }
 
     /* Preview bar */
             
@@ -859,12 +856,6 @@
         <li><a class="card" href="/bet/">
               <div class="card-header"><span class="card-title">Bets</span></div>
             </a></li>
-        <li><a class="card" href="/bet/#futures">
-              <div class="card-header"><span class="card-title">Futures</span></div>
-            </a></li>
-        <li><a class="card" href="/calendar">
-              <div class="card-header"><span class="card-title">Buy a Stream</span></div>
-            </a></li>
         <li><a class="card" href="/donations/">
               <div class="card-header"><span class="card-title">Donations</span></div>
             </a></li>
@@ -945,23 +936,7 @@
         <li><a class="card" id="lo-how-to-rosters" href="/how-to-rosters/" style="display:none">
               <div class="card-header"><span class="card-title">How to Rosters</span></div>
             </a></li>
-        <li><div class="card" id="lo-reveal-awards" style="display:none;cursor:pointer">
-              <div class="card-header"><span class="card-title">Reveal Season Awards</span></div>
-            </div></li>
-        <li><div class="card" id="lo-discord-standings" style="display:none;cursor:pointer">
-              <div class="card-header"><span class="card-title">Post Standings to Discord</span></div>
-              <span style="font-size:0.72rem;color:var(--text-muted)">Announces to #stats-and-standings</span>
-            </div></li>
-        <li><div class="card" id="lo-nby-adjust" style="display:none;cursor:pointer">
-              <div class="card-header"><span class="card-title">Adjust NB¥</span></div>
-              <span style="font-size:0.72rem;color:var(--text-muted)">Give or take NBYen from a member</span>
-            </div></li>
       </ul>
-    </div>
-    <div class="directory-forms">
-      <div id="lo-reveal-awards-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
-      <div id="lo-discord-standings-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
-      <div id="lo-nby-adjust-form" style="display:none;grid-column:1/-1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-size:0.85rem"></div>
     </div>
   </nav>
 
@@ -1020,229 +995,6 @@
           }
           if (isAdmin) {
             document.getElementById('lo-backlog').style.display = '';
-
-            // ── Reveal Season Awards ──────────────────────────────────────
-            const card = document.getElementById('lo-reveal-awards');
-            const form = document.getElementById('lo-reveal-awards-form');
-            card.style.display = '';
-            let cfg = {};
-            fetch('/api/awards-config').then(r => r.json()).then(c => { cfg = c; }).catch(() => {});
-            // Every season in awards-config, plus the current league year. A
-            // season with no config entry isn't listed on /awards yet; the
-            // first click here creates the entry (hidden), which opens voting.
-            // Its /awards/YY-YY/ pages must exist too: copy the last season's
-            // folder (build/og_tags.py picks it up).
-            card.addEventListener('click', async () => {
-              if (form.style.display !== 'none') { form.style.display = 'none'; return; }
-              const seasons = [...new Set([...Object.keys(cfg), await nbnCurrentSeason()])].sort().reverse();
-              form.innerHTML = '<div style="color:var(--text-muted);margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Reveal Season Awards</div>';
-              seasons.forEach(s => {
-                const row = document.createElement('div');
-                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border)';
-                const label = document.createElement('span');
-                label.textContent = `20${s.slice(0, 2)}–${s.slice(3)}`;
-                label.style.color = 'var(--text-secondary)';
-                const revealed = !!(cfg[s]?.revealed);
-                const toggle = document.createElement('button');
-                toggle.textContent = !cfg[s] ? 'Open voting' : revealed ? 'Revealed ✓' : 'Hidden';
-                toggle.style.cssText = `background:${revealed ? 'var(--market-positive-bg)' : 'var(--border)'};color:${revealed ? 'var(--market-positive)' : 'var(--text-muted)'};border:none;border-radius:5px;padding:0.2rem 0.65rem;font-size:0.78rem;cursor:pointer;font-family:inherit`;
-                toggle.addEventListener('click', async () => {
-                  // A season not yet opened opens hidden; after that, it toggles.
-                  const next = cfg[s] ? !cfg[s].revealed : false;
-                  const res = await fetch(`/api/awards-config/${s}`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${_loToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ revealed: next }),
-                  });
-                  if (res.ok) {
-                    if (!cfg[s]) cfg[s] = {};
-                    cfg[s].revealed = next;
-                    toggle.textContent = next ? 'Revealed ✓' : 'Hidden';
-                    toggle.style.background = next ? 'var(--market-positive-bg)' : 'var(--border)';
-                    toggle.style.color = next ? 'var(--market-positive)' : 'var(--text-muted)';
-                  }
-                });
-                row.appendChild(label);
-                row.appendChild(toggle);
-                form.appendChild(row);
-              });
-              form.style.display = '';
-            });
-
-            // ── Post Standings to Discord ─────────────────────────────────
-            // Every season from the first (20-21) through the current league
-            // year, newest first. Built on click, from league-time.js.
-            const discordSeasons = async () => {
-              const out = [];
-              for (let s = await nbnCurrentSeason(); s >= '20-21'; s = nbnSeasonShift(s, -1)) out.push(s);
-              return out;
-            };
-            const discordLabel = s => `20${s.slice(0, 2)}–${s.slice(3)}`;
-
-            const discCard = document.getElementById('lo-discord-standings');
-            const discForm = document.getElementById('lo-discord-standings-form');
-            discCard.style.display = '';
-
-            discCard.addEventListener('click', async () => {
-              if (discForm.style.display !== 'none') { discForm.style.display = 'none'; return; }
-
-              discForm.innerHTML = '';
-
-              // Header
-              const hdr = document.createElement('div');
-              hdr.style.cssText = 'color:var(--text-muted);margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em';
-              hdr.textContent = 'Post Standings to Discord';
-              discForm.appendChild(hdr);
-
-              // Description
-              const desc = document.createElement('p');
-              desc.style.cssText = 'color:var(--text-muted);font-size:0.78rem;margin-bottom:0.9rem';
-              desc.textContent = 'Posts a formatted standings embed to the #stats-and-standings channel. Select the season to announce, then click Post.';
-              discForm.appendChild(desc);
-
-              // Controls row
-              const row = document.createElement('div');
-              row.style.cssText = 'display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap';
-
-              const seasonLbl = document.createElement('label');
-              seasonLbl.textContent = 'Season';
-              seasonLbl.style.cssText = 'font-size:0.78rem;color:var(--text-secondary);font-weight:600';
-
-              const select = document.createElement('select');
-              select.style.cssText = 'background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.3rem 0.65rem;font-size:0.82rem;outline:none;font-family:inherit;cursor:pointer';
-              (await discordSeasons()).forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s;
-                opt.textContent = discordLabel(s);
-                select.appendChild(opt);
-              });
-
-              const postBtn = document.createElement('button');
-              postBtn.textContent = '📡 Post to Discord';
-              postBtn.style.cssText = 'background:#5865f2;color:var(--text-on-accent);border:none;border-radius:5px;padding:0.3rem 0.9rem;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap';
-
-              const status = document.createElement('span');
-              status.style.cssText = 'font-size:0.78rem;color:var(--text-muted)';
-
-              postBtn.addEventListener('click', async () => {
-                postBtn.disabled = true;
-                postBtn.textContent = 'Posting…';
-                status.textContent = '';
-                status.style.color = 'var(--text-muted)';
-                try {
-                  const res = await fetch(
-                    `/api/admin/discord/post-standings?season=${encodeURIComponent(select.value)}`,
-                    { method: 'POST', headers: { 'Authorization': `Bearer ${_loToken}` } },
-                  );
-                  const body = await res.json().catch(() => ({}));
-                  if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
-                  status.style.color = 'var(--market-positive)';
-                  status.textContent = `✓ Posted ${discordLabel(select.value)} standings`;
-                } catch(e) {
-                  status.style.color = 'var(--danger)';
-                  status.textContent = `✗ ${e.message}`;
-                } finally {
-                  postBtn.disabled = false;
-                  postBtn.textContent = '📡 Post to Discord';
-                }
-              });
-
-              row.append(seasonLbl, select, postBtn, status);
-              discForm.appendChild(row);
-              discForm.style.display = '';
-            });
-
-            // ── Adjust NB¥ ───────────────────────────────────────────────
-            const nbyCard = document.getElementById('lo-nby-adjust');
-            const nbyForm = document.getElementById('lo-nby-adjust-form');
-            nbyCard.style.display = '';
-
-            nbyCard.addEventListener('click', async () => {
-              if (nbyForm.style.display !== 'none') { nbyForm.style.display = 'none'; return; }
-
-              nbyForm.innerHTML = '<div style="color:var(--text-muted);margin-bottom:0.75rem;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Adjust NB¥</div>';
-
-              // Fetch members + current balances in parallel
-              const [membersRaw, balsRaw] = await Promise.all([
-                fetch('/api/members/public').then(r => r.json()).catch(() => []),
-                fetch('/api/bets/balances').then(r => r.json()).catch(() => []),
-              ]);
-              const members = membersRaw.map(m => m.name).sort();
-              const balMap  = Object.fromEntries(balsRaw.map(b => [b.name, b.balance]));
-
-              const INPUT_CSS = 'background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.3rem 0.65rem;font-size:0.82rem;outline:none;font-family:inherit';
-              const fmtNby = n => `NB¥${Number(n).toLocaleString('en-US', {minimumFractionDigits:0,maximumFractionDigits:2})}`;
-
-              const row = document.createElement('div');
-              row.style.cssText = 'display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap';
-
-              // Action: Give / Take
-              const actionSel = document.createElement('select');
-              actionSel.style.cssText = INPUT_CSS + ';cursor:pointer;width:80px';
-              ['Give','Take'].forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; actionSel.appendChild(o); });
-
-              // Amount
-              const amtIn = document.createElement('input');
-              amtIn.type = 'number'; amtIn.min = '1'; amtIn.step = '1'; amtIn.placeholder = 'NB¥';
-              amtIn.style.cssText = INPUT_CSS + ';width:90px;color:var(--gold)';
-
-              // Member
-              const memberSel = document.createElement('select');
-              memberSel.style.cssText = INPUT_CSS + ';cursor:pointer';
-              const blank = document.createElement('option'); blank.value = ''; blank.textContent = '— member —'; memberSel.appendChild(blank);
-              members.forEach(name => { const o = document.createElement('option'); o.value = name; o.textContent = name; memberSel.appendChild(o); });
-
-              // Current balance hint
-              const curBalEl = document.createElement('span');
-              curBalEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted)';
-              memberSel.addEventListener('change', () => {
-                const bal = balMap[memberSel.value];
-                curBalEl.textContent = memberSel.value ? `(currently ${fmtNby(bal ?? 1000)})` : '';
-              });
-
-              // Reason
-              const reasonIn = document.createElement('input');
-              reasonIn.type = 'text'; reasonIn.placeholder = 'Reason (optional)';
-              reasonIn.style.cssText = INPUT_CSS + ';flex:1;min-width:110px';
-
-              // Submit
-              const submitBtn = document.createElement('button');
-              submitBtn.style.cssText = 'background:var(--champion-border);border:none;color:var(--text-on-accent);border-radius:5px;padding:0.3rem 0.85rem;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap';
-              submitBtn.textContent = '✓ Apply';
-
-              const statusEl = document.createElement('span');
-              statusEl.style.cssText = 'font-size:0.78rem;color:var(--text-muted);width:100%';
-
-              submitBtn.addEventListener('click', async () => {
-                const member = memberSel.value;
-                const amt    = parseFloat(amtIn.value);
-                if (!member)          { statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'Select a member.'; return; }
-                if (!amt || amt <= 0) { statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'Enter a positive amount.'; return; }
-                const delta = actionSel.value === 'Give' ? amt : -amt;
-                submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; statusEl.textContent = '';
-                try {
-                  const res = await fetch('/api/bets/admin/adjust', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${_loToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ member, delta, reason: reasonIn.value.trim() }),
-                  });
-                  const body = await res.json().catch(() => ({}));
-                  if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
-                  balMap[member] = body.new_balance;
-                  statusEl.style.color = 'var(--market-positive)';
-                  statusEl.textContent = `✓ ${member}: ${fmtNby(body.old_balance)} → ${fmtNby(body.new_balance)}`;
-                  curBalEl.textContent = `(currently ${fmtNby(body.new_balance)})`;
-                  amtIn.value = ''; reasonIn.value = '';
-                } catch(e) {
-                  statusEl.style.color = 'var(--danger)'; statusEl.textContent = `✗ ${e.message}`;
-                } finally { submitBtn.disabled = false; submitBtn.textContent = '✓ Apply'; }
-              });
-
-              row.append(actionSel, amtIn, memberSel, curBalEl, reasonIn, submitBtn, statusEl);
-              nbyForm.appendChild(row);
-              nbyForm.style.display = '';
-            });
-
           }
         })
         .catch(() => {});
