@@ -1259,7 +1259,7 @@
     </select>
 
     <span class="filter-label" style="margin-left:0.75rem">Search:</span>
-    <input type="text" id="txn-search" class="trade-team-sel" placeholder="player, team, pick (e.g. 2027 R1 TOR), note…" style="min-width:260px">
+    <input type="search" id="txn-search" autocomplete="off" class="trade-team-sel" placeholder="player, team, pick (e.g. 2027 R1 TOR), note…" style="min-width:260px">
   </div>
 
   <!-- Log table -->
@@ -1291,14 +1291,18 @@
 
 <!-- Token modal -->
 <div class="modal-backdrop" id="modal-backdrop">
-  <div class="modal">
+  <!-- A <form> of its own so the browser's password manager pairs this field
+       with nothing outside it. Without one, Chrome took the nearest text input
+       before it — the log's search box — as the "username" and autofilled it,
+       silently filtering the table on the first click. -->
+  <form class="modal" onsubmit="return false">
     <h3>Enter Bearer Token</h3>
-    <input type="password" id="modal-token-input" placeholder="Paste your token…">
+    <input type="password" id="modal-token-input" placeholder="Paste your token…" autocomplete="current-password">
     <div class="modal-actions">
-      <button class="btn-cancel" id="modal-cancel">Cancel</button>
-      <button class="btn-save" id="modal-save">Save</button>
+      <button type="button" class="btn-cancel" id="modal-cancel">Cancel</button>
+      <button type="button" class="btn-save" id="modal-save">Save</button>
     </div>
-  </div>
+  </form>
 </div>
 
 <script src="/league-time.js"></script>
