@@ -603,10 +603,14 @@ function collectLinkSpans(text, matchers) {
 function autoLinkEntities(root, matchers) {
   if (!matchers.length) return;
   const SKIP_TAGS = new Set(['A', 'CODE', 'PRE', 'SCRIPT', 'STYLE']);
+  const SVG_NS = 'http://www.w3.org/2000/svg';
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       for (let el = node.parentElement; el && el !== root; el = el.parentElement) {
         if (SKIP_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
+        // An HTML <a> inside an SVG <text> or <title> doesn't render, so a
+        // linked team name would vanish from a chart's labels and tooltips.
+        if (el.namespaceURI === SVG_NS) return NodeFilter.FILTER_REJECT;
       }
       return NodeFilter.FILTER_ACCEPT;
     },
