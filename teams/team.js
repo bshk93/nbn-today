@@ -5296,6 +5296,13 @@ function primaryPosFromAttrs(attrSnap) {
   return (Array.isArray(pos) && pos.length) ? pos[0] : '—';
 }
 
+const POSITION_ORDER = ['PG', 'SG', 'SF', 'PF', 'C'];
+function secondaryPosOptions(primary) {
+  const i = POSITION_ORDER.indexOf(primary);
+  if (i < 0) return [];
+  return [POSITION_ORDER[i - 1], POSITION_ORDER[i + 1]].filter(Boolean);
+}
+
 // Roster Settings — jersey #, secondary position (both from player-bios.json,
 // via /api/players/{slug}/team-settings) merged with Player Minutes (from the
 // coaching-settings record, via /api/coaching-settings/{team}), one row per
@@ -5700,9 +5707,9 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const posWrap = document.createElement('span');
       posWrap.className = 'ts-pos-edit';
       posWrap.appendChild(document.createTextNode(primaryPosFromAttrs(attributesData[row.SLUG])));
-      // Secondary position is restricted to positions this player is eligible at,
-      // i.e. their bio's `pos` array — not the full PG/SG/SF/PF/C set.
-      const eligiblePos = Array.isArray(bio.pos) ? bio.pos : [];
+      // Rulebook § 2.3: the secondary is one step either side of the 2K
+      // primary (a PG only SG, a C only PF). The API enforces the same rule.
+      const eligiblePos = secondaryPosOptions(primaryPosFromAttrs(attributesData[row.SLUG]));
       const secSel = document.createElement('select');
       secSel.className = 'ts-input ts-sec-select';
       secSel.setAttribute('aria-label', 'Secondary position');
