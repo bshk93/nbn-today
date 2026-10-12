@@ -207,6 +207,30 @@
     }
     .more-btn:hover { border-color: var(--accent); color: var(--text-primary); }
 
+    /* Streams by team: bought (NB¥) vs scheduled (flagged by a streamer). */
+    .sc-wrap {
+      border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 1rem;
+      background: var(--bg-subtle);
+    }
+    .sc-wrap > summary {
+      cursor: pointer; padding: 0.55rem 0.8rem; font-size: 0.78rem; color: var(--text-secondary);
+    }
+    .sc-wrap > summary b { color: var(--text-primary); font-weight: 600; }
+    .sc-wrap[open] > summary { border-bottom: 1px solid var(--border-subtle); }
+    .sc-table thead th.sc-group { text-align: center; border-bottom: none; padding-bottom: 0; }
+    .sc-table tbody tr { border-bottom: 1px solid var(--bg-card); }
+    .sc-table tbody tr:hover { background: var(--bg-card); }
+    .sc-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .sc-table td.zero { color: var(--text-dim); }
+    .sc-table td.total { font-weight: 700; color: var(--text-primary); }
+    .sc-table tr.sel { background: var(--accent-panel-bg); }
+    .sc-team { display: flex; align-items: center; gap: 0.35rem; }
+    .sc-team button {
+      background: none; border: none; padding: 0; font: inherit; color: var(--text-secondary);
+      cursor: pointer; font-weight: 600;
+    }
+    .sc-team button:hover { color: var(--accent-light); }
+
     .empty { color: var(--text-muted); font-size: 0.85rem; padding: 2rem 0; text-align: center; }
     .source { font-size: 0.68rem; color: var(--text-dim); margin-top: 2rem; }
 
@@ -320,6 +344,28 @@
             <button data-scope="all">Full season</button>
           </div>
         </div>
+        <details class="sc-wrap" id="stream-counts" hidden>
+          <summary id="stream-counts-head"></summary>
+          <div class="ui-table-wrap">
+            <table class="data-table sc-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">Team</th>
+                  <th colspan="2" class="sc-group">Bought</th>
+                  <th colspan="2" class="sc-group">Scheduled</th>
+                  <th rowspan="2" class="right">Total</th>
+                </tr>
+                <tr>
+                  <th class="right">Had</th>
+                  <th class="right">Upcoming</th>
+                  <th class="right">Had</th>
+                  <th class="right">Upcoming</th>
+                </tr>
+              </thead>
+              <tbody id="stream-counts-list"></tbody>
+            </table>
+          </div>
+        </details>
         <div class="summary" id="summary"></div>
         <div class="ui-table-wrap" id="games-table-wrap">
           <table class="data-table games-table">
@@ -964,6 +1010,7 @@
     function replaceRow(g, num, oldRow) {
       const fresh = makeRow(g, num);
       oldRow.replaceWith(fresh);
+      renderStreamCounts();
       return fresh;
     }
 
@@ -1291,7 +1338,75 @@
       return teamFilter ? `No ${TEAMS[teamFilter]} games in ${label}.` : `No games in ${label}.`;
     }
 
+    // Streams per team for the whole season, whatever the list is filtered
+    // to. A bought stream is one a member paid NB¥ for (`stream_buyer`); a
+    // scheduled one is flagged Stream by a streamer with nobody paying. "Had"
+    // means the game has a box score. A game counts once for each of its two
+    // teams, so the rows add up to twice the number of stream games.
+    function renderStreamCounts() {
+      const wrap = document.getElementById('stream-counts');
+      const body = document.getElementById('stream-counts-list');
+      const streams = games.filter(g => g.stream || g.stream_buyer);
+      wrap.hidden = !games.length;
+      body.innerHTML = '';
+      if (!games.length) return;
+
+      const counts = {};
+      Object.keys(TEAMS).forEach(t => { counts[t] = { bh: 0, bu: 0, sh: 0, su: 0 }; });
+      for (const g of streams) {
+        const key = (g.stream_buyer ? 'b' : 's') + (resultFor(g) ? 'h' : 'u');
+        [g.away_team, g.home_team].forEach(t => { if (counts[t]) counts[t][key]++; });
+      }
+      const total = c => c.bh + c.bu + c.sh + c.su;
+
+      const bought = streams.filter(g => g.stream_buyer).length;
+      const head = document.getElementById('stream-counts-head');
+      head.innerHTML = '';
+      head.appendChild(document.createTextNode('Streams by team · '));
+      const b1 = document.createElement('b');
+      b1.textContent = `${bought} bought`;
+      head.appendChild(b1);
+      head.appendChild(document.createTextNode(' · '));
+      const b2 = document.createElement('b');
+      b2.textContent = `${streams.length - bought} scheduled`;
+      head.appendChild(b2);
+      head.appendChild(document.createTextNode(` · ${streams.filter(g => resultFor(g)).length} had`));
+
+      const order = Object.keys(TEAMS).sort((a, b) =>
+        total(counts[b]) - total(counts[a]) || a.localeCompare(b));
+      for (const t of order) {
+        const c = counts[t];
+        const tr = document.createElement('tr');
+        if (t === teamFilter) tr.className = 'sel';
+        const tdTeam = document.createElement('td');
+        const cell = span('sc-team');
+        cell.appendChild(logo(t));
+        // Clicking a team filters the game list below to it (again to clear).
+        const btn = document.createElement('button');
+        btn.textContent = t;
+        btn.title = `Show ${TEAMS[t]} games`;
+        btn.onclick = () => {
+          teamFilter = teamFilter === t ? '' : t;
+          shown = PAGE;
+          renderControls();
+          render();
+          syncUrl();
+        };
+        cell.appendChild(btn);
+        tdTeam.appendChild(cell);
+        tr.appendChild(tdTeam);
+        [c.bh, c.bu, c.sh, c.su, total(c)].forEach((n, i) => {
+          const td = document.createElement('td');
+          td.className = 'num' + (i === 4 ? ' total' : '') + (n ? '' : ' zero');
+          td.textContent = n;
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      }
+    }
+
     function renderSummary() {
+      renderStreamCounts();
       const el = document.getElementById('summary');
       el.innerHTML = '';
       if (!teamFilter || !games.length) return;
