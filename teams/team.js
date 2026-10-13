@@ -2756,7 +2756,12 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           const tr = tfRow('tfoot-cap');
           tfCell(tr, label, 'tfoot-label', nonSalCols);
           salaryKeys.forEach(k => {
-            const val = capLevels[k]?.[key];
+            let val = capLevels[k]?.[key];
+            // A team locked at an apron (§ 1.4) has that apron as its hard
+            // cap, not the league-wide figure (§ 1.3: the lower of the two).
+            const lock = key === 'hard_cap' && seasonStates[k]?.hard_cap;
+            const lockVal = lock && capLevels[k]?.[lock === 'second_apron' ? 'apron2' : 'apron1'];
+            if (lockVal && (!val || lockVal < val)) val = lockVal;
             if (!val) { tfCell(tr, '—', 'right'); return; }
             const diff = totalsForRow[k] - val;
             const over = diff > 0;
