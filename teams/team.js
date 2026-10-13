@@ -4249,56 +4249,90 @@ function openReleaseDialog(slug, bio, abbr) {
 // there's no client-side re-derivation of the minimum scale to get wrong.
 function openConvertTwoWayDialog(slug, bio, abbr) {
   const name = displayNameFromBio(bio.name || slug);
+  // § 2.2: Year 2 of a 2-year conversion may be guaranteed, a team option or
+  // non-guaranteed. Keys match SELF_CONVERT_YEAR2_TERMS on the API.
+  const YEAR2_TERMS = [
+    ['guaranteed', 'Fully guaranteed'],
+    ['team_option', 'Team option'],
+    ['non_guaranteed', 'Non-guaranteed'],
+  ];
+  const YEAR2_TAG_LABEL = { TEAM_OPT: 'team option', NON_GTD: 'non-guaranteed' };
+  let year2 = 'guaranteed';
   openConfirmModal({
     title: `Convert ${name} to a standard contract?`,
     sub: `${abbr} signs ${name} to a minimum contract matching their two-way deal's own length (§ 2.2). Checking against the rulebook…`,
     confirmLabel: 'Convert',
     danger: false,
     render: async (body, ctl) => {
-      ctl.setEnabled(false);
-      const loading = document.createElement('div');
-      loading.className = 'confirm-check ok';
-      loading.textContent = 'Running § 2.2 checks…';
-      body.appendChild(loading);
+      // The select survives a re-check; everything below it is redrawn.
+      let year2Wrap = null;
+      const results = document.createElement('div');
+      body.appendChild(results);
 
-      let data;
-      try {
-        const res = await fetch(`/api/self/convert_twoway/preview/${encodeURIComponent(slug)}`);
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
-          throw new Error(typeof j.detail === 'string' ? j.detail : `Request failed (${res.status})`);
+      const check = async () => {
+        ctl.setEnabled(false);
+        results.innerHTML = '';
+        const loading = document.createElement('div');
+        loading.className = 'confirm-check ok';
+        loading.textContent = 'Running § 2.2 checks…';
+        results.appendChild(loading);
+
+        let data;
+        try {
+          const res = await fetch(`/api/self/convert_twoway/preview/${encodeURIComponent(slug)}?year2=${year2}`);
+          if (!res.ok) {
+            const j = await res.json().catch(() => ({}));
+            throw new Error(typeof j.detail === 'string' ? j.detail : `Request failed (${res.status})`);
+          }
+          data = await res.json();
+        } catch (e) {
+          loading.className = 'confirm-check error';
+          loading.textContent = `Could not validate: ${e.message}`;
+          return;
         }
-        data = await res.json();
-      } catch (e) {
-        loading.className = 'confirm-check error';
-        loading.textContent = `Could not validate: ${e.message}`;
-        return;
-      }
-      loading.remove();
+        loading.remove();
 
-      const facts = document.createElement('div'); facts.className = 'confirm-facts';
-      Object.entries(data.salaries || {}).forEach(([season, amount]) => {
-        facts.appendChild(factRow(season, formatSalary(parseSalaryNum(amount))));
-      });
-      body.appendChild(facts);
+        const seasons = Object.keys(data.salaries || {});
+        if (seasons.length === 2 && !year2Wrap) {
+          year2Wrap = document.createElement('div');
+          const label = document.createElement('label');
+          label.textContent = `Year 2 (${seasons[1]})`;
+          const sel = document.createElement('select');
+          YEAR2_TERMS.forEach(([v, l]) => {
+            const opt = document.createElement('option'); opt.value = v; opt.textContent = l;
+            sel.appendChild(opt);
+          });
+          sel.addEventListener('change', () => { year2 = sel.value; check(); });
+          year2Wrap.append(label, sel);
+          body.insertBefore(year2Wrap, results);
+        }
 
-      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+        const facts = document.createElement('div'); facts.className = 'confirm-facts';
+        Object.entries(data.salaries || {}).forEach(([season, amount]) => {
+          const tag = YEAR2_TAG_LABEL[(data.cap_holds || {})[season]];
+          facts.appendChild(factRow(season, formatSalary(parseSalaryNum(amount)) + (tag ? ` (${tag})` : '')));
+        });
+        results.appendChild(facts);
 
-      if (!data.legal) {
-        const stop = document.createElement('div');
-        stop.className = 'confirm-check error';
-        stop.textContent = 'This conversion is not legal, so it cannot be submitted.';
-        body.appendChild(stop);
-        return;   // confirm stays disabled
-      }
-      ctl.setEnabled(true);
+        (data.checks || []).forEach(c => results.appendChild(checkRow(c)));
+
+        if (!data.legal) {
+          const stop = document.createElement('div');
+          stop.className = 'confirm-check error';
+          stop.textContent = 'This conversion is not legal, so it cannot be submitted.';
+          results.appendChild(stop);
+          return;   // confirm stays disabled
+        }
+        ctl.setEnabled(true);
+      };
+      await check();
     },
     onConfirm: () => new Promise((resolve, reject) => {
       withToken(async token => {
         try {
           await apiFetch('/api/self/convert_twoway', {
             method: 'POST',
-            body: JSON.stringify({ player: slug, description: `${abbr} converts ${name} to a standard contract` }),
+            body: JSON.stringify({ player: slug, year2, description: `${abbr} converts ${name} to a standard contract` }),
           }, token);
           resolve();
           location.reload();
