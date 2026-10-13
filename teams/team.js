@@ -1621,6 +1621,9 @@ let LEAGUE_YEAR = null;
 // 20 — from GET /api/league-year, which reads it off the schedule. Undefined
 // until that answers, which cap-health.js reads as "don't guess".
 let IN_SEASON;
+// The current league year's last regular-season game, from the same call.
+// Null when it has no schedule yet.
+let SEASON_LAST_GAME = null;
 
 function currentSeasonYr() {
   if (LEAGUE_YEAR) return LEAGUE_YEAR;
@@ -3757,6 +3760,16 @@ function renounceEligibility(bio) {
   }
   if (earliest > next) {
     return { ok: false, why: `Contract runs through ${earliest} — renounce applies once they reach free agency (§ 3.10).` };
+  }
+  // A hold for next season means the contract still runs through this one, so
+  // he is only a free agent once this season's games are over. Until then it's
+  // a release (§ 5.1). No schedule on file counts as not over, as on the API.
+  if (earliest === next) {
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (!SEASON_LAST_GAME || today <= SEASON_LAST_GAME) {
+      return { ok: false, why: `Under contract for ${cur} — release him instead (§ 5.1). Renounce applies once the season is over (§ 3.10).` };
+    }
   }
   return { ok: true, why: '', holdType: type, holdSeason: earliest };
 }
@@ -7325,6 +7338,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
   if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
   if (lyr.status === 'fulfilled' && typeof lyr.value?.in_season === 'boolean') IN_SEASON = lyr.value.in_season;
+  if (lyr.status === 'fulfilled') SEASON_LAST_GAME = lyr.value?.calendar?.last_regular_season_game || null;
 
   // Roles drive which edit buttons render below; default to none if the call failed.
   AUTH_ROLES = (authr.status === 'fulfilled' && Array.isArray(authr.value?.roles)) ? authr.value.roles : [];
