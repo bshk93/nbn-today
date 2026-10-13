@@ -4309,7 +4309,9 @@ function openConvertTwoWayDialog(slug, bio, abbr) {
 
         const facts = document.createElement('div'); facts.className = 'confirm-facts';
         Object.entries(data.salaries || {}).forEach(([season, amount]) => {
-          const tag = YEAR2_TAG_LABEL[(data.cap_holds || {})[season]];
+          let tag = YEAR2_TAG_LABEL[(data.cap_holds || {})[season]];
+          const gtdDate = (data.guarantee_dates || {})[season];
+          if (tag && gtdDate) tag += ` until ${gtdDate}`;
           facts.appendChild(factRow(season, formatSalary(parseSalaryNum(amount)) + (tag ? ` (${tag})` : '')));
         });
         results.appendChild(facts);
