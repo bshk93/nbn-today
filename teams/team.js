@@ -1009,7 +1009,7 @@ document.body.innerHTML = `
     </div>
     <div class="tabs ui-tabs" role="tablist">
       <button class="tab ui-tab active" data-tab="overview">Roster</button>
-      <button class="tab ui-tab" data-tab="coaching">Coaching</button>
+      <button class="tab ui-tab" data-tab="coaching" hidden>Coaching</button>
       <button class="tab ui-tab" data-tab="franchise">Franchise</button>
       <button class="tab ui-tab" data-tab="draft">Draft History</button>
       <button class="tab ui-tab" data-tab="alltime">All-Time Players</button>
@@ -1195,7 +1195,7 @@ function mountIrlFeed() {
 // Open the tab named in the hash. After mountIrlFeed's state is declared, so
 // #irl doesn't hit it before initialisation.
 {
-  const initialTab = location.hash && document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1))}"]`);
+  const initialTab = location.hash && document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1))}"]:not([hidden])`);
   if (initialTab) showTab(initialTab);
 }
 
@@ -3571,6 +3571,10 @@ const canEditTeamSettings = abbr => AUTH_ROLES.includes(abbr.toLowerCase());
 // Settings, for the same reason — a team's coach profile isn't
 // league-administered data, so admin is deliberately not OR'd in here.
 const canEditCoachingSettings = abbr => AUTH_ROLES.includes(abbr.toLowerCase());
+// Who sees the Coaching tab at all: the team itself, plus the streamers who
+// enter it into 2K (and admin). GET /api/coaching-settings scopes the same way.
+const canViewCoachingSettings = abbr =>
+  AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_ROLES.includes('streamer') || AUTH_ROLES.includes('admin');
 // The trading block takes the team's own role OR admin — mirroring
 // put_trading_block in roster_picks.py. Deliberately not the same predicate as
 // canEditTeamSettings above, which excludes admin on purpose: a jersey number is
@@ -7301,7 +7305,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch(`/api/offer-sheets/open?team=${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/data/franchise-records.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch('/api/poext/eligible').then(r => r.ok ? r.json() : []),
-    fetch('/api/coaching-settings').then(r => r.ok ? r.json() : {}),
+    fetch('/api/coaching-settings', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : {}),
     fetch('/standings/standings-history.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
   ]);
 
@@ -7320,6 +7324,14 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // Roles drive which edit buttons render below; default to none if the call failed.
   AUTH_ROLES = (authr.status === 'fulfilled' && Array.isArray(authr.value?.roles)) ? authr.value.roles : [];
   AUTH_OWNER_OF = (authr.status === 'fulfilled' && Array.isArray(authr.value?.owner_of)) ? authr.value.owner_of : [];
+
+  // The Coaching tab is private to the team. It starts hidden; show it now
+  // that we know who is looking, and open it if the hash asked for it.
+  if (canViewCoachingSettings(abbr)) {
+    const coachingTab = document.querySelector('.tab[data-tab="coaching"]');
+    coachingTab.hidden = false;
+    if (location.hash === '#coaching') showTab(coachingTab);
+  }
 
   // Signing in is the header's job (token-badge.js's Sign in button). This
   // page had its own, which also showed for a signed-in member with no roles
@@ -7343,9 +7355,9 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   if (poextr.status === 'fulfilled' && Array.isArray(poextr.value)) {
     poextr.value.forEach(e => { if (e.team === abbr) poextEligible[e.player] = e; });
   }
-  // GET /api/coaching-settings is league-wide (the streamer dashboard needs
-  // every team); this page only needs its own team's record, which is absent
-  // (undefined) until the team has ever saved one.
+  // GET /api/coaching-settings returns the teams the caller may see (every
+  // team for a streamer); this page only needs its own team's record, which
+  // is absent (undefined) until the team has ever saved one.
   const coachingRecord = (coachr.status === 'fulfilled' && coachr.value && typeof coachr.value === 'object')
     ? coachr.value[abbr] : undefined;
   const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];

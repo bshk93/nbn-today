@@ -470,7 +470,10 @@
 
     async function loadCoachingDashboard() {
       try {
-        coachingSettings = await fetch('/api/coaching-settings').then(r => r.ok ? r.json() : {});
+        const token = storedToken();
+        coachingSettings = await fetch('/api/coaching-settings', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).then(r => r.ok ? r.json() : {});
       } catch (e) {
         coachingSettings = {};
       }

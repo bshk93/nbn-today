@@ -1839,7 +1839,7 @@
       // so the two read differently here.
       // (Team pages have no hash routing, so these link to the page rather than
       // to a `#tab-coaching` anchor that would only scroll to a hidden panel.)
-      jget('/api/coaching-settings').then(all => {
+      jget('/api/coaching-settings', { headers: auth }).then(all => {
         const rec = all && all[team];
         if (!rec) add('caution', 'No coaching settings', `/teams/${abbr}/`,
                       'This team has never submitted a coaching-settings blob');
