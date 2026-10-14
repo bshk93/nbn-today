@@ -229,6 +229,7 @@
     .waiver-card button.danger:hover { border-color: var(--danger); color: var(--danger); }
   </style>
   <script src="/names.js"></script>
+  <script src="/contract.js"></script>
 </head>
 <body>
   <div class="page ui-page ui-page--wide">
@@ -525,7 +526,7 @@
     let MY_VOIDED = {};                      // "TEAM|slug" -> offer the committee voided (§ 4.3b)
     let POOL = {};
     let LEAGUE_YEAR = null;
-    let BIOS = {};         // slug -> bio, for draft_year (minimum-salary tier lookups)
+    let BIOS = {};         // slug -> bio, for experience (minimum-salary tier lookups)
     let CAP_LEVELS = {};   // season -> { min_salary_scale, ... }, from GET /api/cap-levels
 
     // The `.nbn.today` session cookie covers /api/fa/* (§ 3.3), so a member who
@@ -602,15 +603,14 @@
       return yearsExp >= 10 ? '10+' : String(Math.max(0, yearsExp));
     }
 
-    // Years of NBA experience as of the current league year, from the bio's
-    // draft year — or null when there is nothing to go on. That is the common
-    // case, not the edge case: `draft_year` is the NBN draft and is null for
-    // every player who entered before it, and permanently null for UDFAs. The
-    // contract declares its own figure (F.exp) when this can't answer.
+    // Years of NBA experience as of the current league year — the player's own
+    // figure (`playerExperience` in contract.js: his bio's NBA experience, else
+    // his last contract's, else his draft year), or null when there is nothing
+    // to go on. The contract declares its own figure (F.exp) when this can't
+    // answer.
     function derivedExp(slug) {
-      const draftYear = (BIOS[slug] || {}).draft_year;
-      if (!draftYear) return null;
-      return Math.max(0, (parseInt(curYr(), 10) || 0) + 2000 - draftYear);
+      const own = playerExperience(BIOS[slug], curYr());
+      return own ? own.years : null;
     }
 
     // The minimum for one season at an explicit experience count, or the
@@ -1302,10 +1302,11 @@
             + 'Minimum Salary Scale each year is priced on (§ 3.12); the tier steps up one row '
             + 'per contract year.';
           const expField = field('NBA experience (Yr 1)', expIn);
-          const note = el('div', 'sub', derivedExp(slug) === null
-            ? 'No draft year on file for this player, so this can\'t be derived — set it or every '
+          const own = playerExperience(BIOS[slug], curYr());
+          const note = el('div', 'sub', own === null
+            ? 'No experience on file for this player, so this can\'t be derived — set it or every '
               + 'year prices at the rookie minimum.'
-            : 'Prefilled from their draft year. Override if it\'s wrong.');
+            : `Prefilled from their ${own.source.replace(/\bhis\b/, 'their')}. Override if it's wrong.`);
           expField.appendChild(note);
           fr.appendChild(expField);
         }

@@ -646,6 +646,7 @@
 <script src="/country-iso.js"></script>
 <script src="/ratings-popup.js"></script>
 <script src="/league-time.js"></script>
+<script src="/contract.js"></script>
 <script src="/names.js"></script>
 <script src="/radar.js"></script>
 <script>
@@ -1439,6 +1440,29 @@
     const fDftYr   = field('Draft Year',        'draft_year', 'number');
     const fDftR    = field('Draft Round (1/2)', 'draft_round','number');
     const fDftP    = field('Draft Pick #',      'draft_pick', 'number');
+
+    // Years of NBA experience this season, for a player whose draft year
+    // doesn't reflect his NBA service (years overseas, a late debut). Stored
+    // as {years, season} and moves one a season; every cap rule that reads
+    // experience (§ 2.2, § 3.1, § 3.11, § 3.12) uses it over the draft year.
+    // Blank clears it. Rosters-only on the API, so curators don't see it.
+    const expSeason = currentSeasonStr();
+    let fExp = null;
+    if (hasAuthRole('rosters')) {
+      const stored = initial.nba_experience
+        ? playerExperience({ nba_experience: initial.nba_experience }, expSeason) : null;
+      const fallback = playerExperience({ ...initial, nba_experience: null }, expSeason);
+      const lbl = document.createElement('label');
+      lbl.textContent = `NBA experience in ${expSeason} (years)`;
+      fExp = document.createElement('input');
+      fExp.type = 'number'; fExp.min = '0'; fExp.max = '30'; fExp.step = '1';
+      fExp.value = stored ? String(stored.years) : '';
+      fExp.placeholder = fallback ? `${fallback.years}, from ${fallback.source.replace(/^(set on |stated on )?his /, '')}` : 'not on file';
+      fExp.title = 'Leave blank to use the draft year. Set it when the draft year '
+        + 'overstates or understates his NBA service.';
+      lbl.appendChild(fExp);
+      form.appendChild(lbl);
+    }
     const fHeight  = field('Height (e.g. 6\'8")',  'height',   'text');
     const fWeight  = field('Weight (lbs)',          'weight',   'number');
     const fWingspan= field('Wingspan (e.g. 6\'11")', 'wingspan', 'text');
@@ -1747,6 +1771,8 @@
         retired:     retiredCb.checked,
         notes:       fNotes.value.trim(),
         jersey_number: initial.jersey_number ?? null,
+        ...(fExp ? { nba_experience: fExp.value.trim() === '' ? null
+          : { years: Math.max(0, parseInt(fExp.value, 10) || 0), season: expSeason } } : {}),
         type:        typeSelect.value,
         cap_holds,
         salaries,
@@ -4508,7 +4534,7 @@
       const token = await getToken(); if (!token) return;
       const cur = biosData[slug] || {};
       bioFormEl = renderBioForm(
-        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', retired: cur.retired || false, type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {}, guarantee_schedule: cur.guarantee_schedule || {} },
+        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, nba_experience: cur.nba_experience || null, contracts: cur.contracts || [], height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', retired: cur.retired || false, type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {}, guarantee_schedule: cur.guarantee_schedule || {} },
         async (token, payload) => {
           const resp = await fetch(`/api/players/${slug}`, {
             method: 'PUT',

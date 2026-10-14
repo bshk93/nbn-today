@@ -897,13 +897,13 @@
 
       <!-- sign / offer_sheet on the minimum: § 3.12 prices each year on the
            scale row for the player's experience *that* season, so the tier has
-           to be stated. It rides on the contract rather than the bio because
-           `draft_year` is the NBN draft — null for everyone who predates it and
-           permanently null for UDFAs, which priced multi-year minimums flat at
-           the rookie row. Blank falls back to the draft_year proxy. -->
+           to be stated. Prefilled from the player's own figure
+           (`playerExperience` in contract.js: his bio's NBA experience, else
+           his last contract's, else his draft year). Blank leaves the API on
+           that same figure. -->
       <div class="form-field" id="f-exp-field" style="display:none">
         <label>NBA experience <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(years, as of Year 1)</span></label>
-        <input type="number" id="f-years-exp" min="0" max="25" step="1" placeholder="derive from draft year">
+        <input type="number" id="f-years-exp" min="0" max="25" step="1" placeholder="from his bio or draft year">
         <span id="exp-hint" style="font-size:0.75rem;margin-top:0.25rem;color:var(--text-muted)"></span>
       </div>
 
@@ -1077,7 +1077,7 @@
              function of (start season, years of NBA experience, that
              season's scale) — no dollar figure to type in, since the scale
              already has it. Reads years of experience off f-years-exp
-             (above, prefilled from draft_year), applied flat to every year
+             (above, prefilled by playerExperience), applied flat to every year
              the same way _contract_years_exp prices it server-side. A
              genuine 1-year deal also gets the § 3.12 veteran-minimum
              hardship cap (2-year-veteran figure), mirroring
@@ -1755,8 +1755,8 @@ function updateMleHint() {
   if (birdField) birdField.style.display = method === 'bird_rights' ? '' : 'none';
 
   // § 3.12 experience tier — asked for only on a minimum deal, where it decides
-  // every year's figure. Prefilled from the draft year when there is one, and
-  // says so plainly when there isn't, since that is the case that used to price
+  // every year's figure. Prefilled from the player's own figure when there is
+  // one (playerExperience), and says so plainly when there isn't, since that is the case that used to price
   // a 12-year veteran at the rookie minimum without comment.
   const expField = document.getElementById('f-exp-field');
   if (expField) {
@@ -1766,16 +1766,15 @@ function updateMleHint() {
     expField.style.display = onMin ? '' : 'none';
     if (onMin) {
       const slug = document.getElementById('f-player-slug').value;
-      const dy = (bios[slug] || {}).draft_year;
+      const own = playerExperience(bios[slug], currentSeasonStr());
       const expIn = document.getElementById('f-years-exp');
-      const derived = dy ? Math.max(0, parseInt(currentSeasonStr(), 10) + 2000 - dy) : null;
-      if (expIn && expIn.value === '' && derived !== null) expIn.value = String(derived);
+      if (expIn && expIn.value === '' && own) expIn.value = String(own.years);
       const hint = document.getElementById('exp-hint');
       if (hint) {
-        hint.textContent = derived !== null
-          ? `Prefilled from a ${dy} draft year. Override if it's wrong.`
-          : 'No draft year on file — set this, or every year prices at the rookie minimum.';
-        hint.style.color = derived !== null ? 'var(--text-muted)' : 'var(--danger)';
+        hint.textContent = own
+          ? `Prefilled from his ${own.source}. Override if it's wrong, or fix it on his bio.`
+          : 'No experience on file — set this, or every year prices at the rookie minimum.';
+        hint.style.color = own ? 'var(--text-muted)' : 'var(--danger)';
       }
     }
   }
@@ -2584,7 +2583,7 @@ function minScaleForSeason(season) {
 
 // § 3.12: a minimum contract is a pure function of (start season, years of
 // NBA experience, that season's scale) — no dollar figure to type in. Reads
-// years of experience off f-years-exp (prefilled from draft_year elsewhere)
+// years of experience off f-years-exp (prefilled by playerExperience)
 // as the player's experience in the first season, then climbs one tier per
 // contract year on each season's own scale — § 3.12, and the league office's
 // own table. Matches _contract_years_exp server-side (flat from 2026-08-13 to
@@ -2605,7 +2604,7 @@ async function generateMinimumContractRows() {
 
   if (!/^\d{2}-\d{2}$/.test(startSeason)) { setStatus('err', 'Minimum contract: start season must be like 25-26.'); return; }
   if (gtdYears < 1) { setStatus('err', 'Minimum contract: at least 1 guaranteed year is required.'); return; }
-  if (baseExpRaw === '') { setStatus('err', 'Minimum contract: set NBA experience above (no draft year on file to derive it from).'); return; }
+  if (baseExpRaw === '') { setStatus('err', 'Minimum contract: set NBA experience above (none on file to derive it from).'); return; }
   const baseExp = Math.max(0, Math.min(25, parseInt(baseExpRaw, 10) || 0));
 
   const totalYears = gtdYears + optYears;
@@ -2682,7 +2681,7 @@ function collectSalaries() {
 }
 
 // § 3.12 years of experience, as a contract fragment to spread in. Empty when
-// the field is blank or hidden, which leaves the API on its draft_year proxy —
+// the field is blank or hidden, which leaves the API on the player's own figure —
 // the field is only shown for minimum deals, so an ordinary signing never
 // carries one.
 function collectYearsExp() {

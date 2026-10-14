@@ -183,10 +183,10 @@
         <div class="sign-field">
           <!-- § 3.12 prices each year of a minimum deal on the scale row for the
                player's experience that season, so the tier is part of the
-               contract. Left blank the API falls back to the draft_year proxy,
-               which is null for most veterans. -->
+               contract. Left blank the API uses the player's own figure: his
+               bio's NBA experience, else his last contract's, else his draft year. -->
           <label for="sign-exp">NBA experience (Yr 1)</label>
-          <input type="number" id="sign-exp" min="0" max="25" step="1" placeholder="from draft year">
+          <input type="number" id="sign-exp" min="0" max="25" step="1" placeholder="from bio or draft year">
         </div>
         <div class="sign-field">
           <label for="sign-bird">Bird rights tier</label>
@@ -342,9 +342,9 @@
     <h4>Contract terms</h4>
     <ul>
       <li><strong>Raises (§ 3.13)</strong> — capped at 5% of Year 1, or 8% with Full/Early Bird rights.</li>
-      <li><strong>Maximum salary (§ 3.11)</strong> — 25/30/35% of the Cap by experience tier. Advisory only: experience is inferred from the player's real NBA draft year, not independently verified, so this reports as a <em>warning</em>.</li>
+      <li><strong>Maximum salary (§ 3.11)</strong> — 25/30/35% of the Cap by experience tier. Advisory only: experience is the contract's stated figure, else the one on the player's bio, else his draft year — usually inferred, not verified, so this reports as a <em>warning</em>.</li>
       <li><strong>Minimum contracts (§ 3.12)</strong> — a 1-year minimum's cap hit should equal the 2-year veteran minimum. Also advisory.</li>
-      <li><strong>Minimum salary (§ 3.12)</strong> — no contract year may pay below the Minimum Salary Scale. The 0-years tier is the floor for anyone and is enforced; falling between that and the player's own experience tier warns, since experience is inferred from their real NBA draft year. In-season signings prorate, so a below-floor <em>Year 1</em> warns rather than blocks — later years are full seasons and always blocked. Two-way contracts are exempt.</li>
+      <li><strong>Minimum salary (§ 3.12)</strong> — no contract year may pay below the Minimum Salary Scale. The 0-years tier is the floor for anyone and is enforced; falling between that and the player's own experience tier warns, since experience is usually inferred rather than verified. In-season signings prorate, so a below-floor <em>Year 1</em> warns rather than blocks — later years are full seasons and always blocked. Two-way contracts are exempt.</li>
     </ul>
 
     <h4>Who can be signed</h4>

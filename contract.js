@@ -25,6 +25,7 @@
 //   compactContractMoney  16000000 -> "$16M"
 //   parseCapHoldMap       object, or legacy "yr:type,yr:type" string, -> object
 //   summarizeContract     the shorthand
+//   playerExperience      a player's own years of NBA experience in a season
 // =============================================================================
 
 // The single vocabulary. `value` is what goes in `cap_holds`; `label` is the
@@ -136,11 +137,46 @@ function summarizeContract(contract, season) {
   return total ? `${yrs}, ${compactContractMoney(total)}` : yrs;
 }
 
+// A player's own years of NBA experience in `season` ("26-27"), and where the
+// figure came from, as `{years, source}` — or null when nothing is on file.
+// Mirrors `_years_exp_basis` in nbn-api/routers/transactions.py without its
+// first step (a contract being priced states its own figure). First match wins:
+//
+//   1. the bio's `nba_experience` — `{years, season}`, set by the rosters
+//      office when the draft year doesn't reflect his NBA service;
+//   2. the experience stated on his most recent recorded contract;
+//   3. the draft-year proxy, season start − draft_year.
+//
+// Each figure moves one a season, never below 0. This is what the signing
+// forms prefill, so it has to agree with what the API prices against.
+function playerExperience(bio, season) {
+  const start = s => 2000 + (parseInt(String(s).slice(0, 2), 10) || 0);
+  if (!bio || !season) return null;
+  const at = start(season);
+  const rec = bio.nba_experience;
+  if (rec && rec.years != null && rec.season) {
+    return { years: Math.max(0, +rec.years + at - start(rec.season)), source: 'set on his bio' };
+  }
+  const last = (bio.contracts || [])[bio.contracts ? bio.contracts.length - 1 : 0];
+  if (last && last.years_experience != null) {
+    const holds = last.cap_holds || {};
+    const years = Object.keys(last.salaries || {}).filter(y => !isFaHold(holds[y])).sort();
+    const first = years.length ? start(years[0]) : at;
+    return { years: Math.max(0, +last.years_experience) + Math.max(0, at - first),
+             source: 'stated on his last contract' };
+  }
+  if (bio.draft_year) {
+    return { years: Math.max(0, at - +bio.draft_year), source: `${bio.draft_year} draft year` };
+  }
+  return null;
+}
+
 // Node (the Python-mirror test harness and any future build script) rather than
 // a browser. Guarded so the browser path stays a plain classic script.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     CONTRACT_HOLD_TYPES, CONTRACT_TAGS, isFaHold,
     parseContractMoney, compactContractMoney, parseCapHoldMap, summarizeContract,
+    playerExperience,
   };
 }

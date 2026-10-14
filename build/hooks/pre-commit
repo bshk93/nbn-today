@@ -96,6 +96,15 @@ if feed_headline_test.exists() and shutil.which('node'):
         print('Fix FeedTypes.headline in feed-types.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
+player_exp_test = Path('tests/player-experience.test.js')
+if player_exp_test.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(player_exp_test)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: playerExperience no longer matches the API (see FAIL lines above).')
+        print('Fix playerExperience in contract.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
 ach_inputs = Path('build/test_achievement_inputs.js')
 if ach_inputs.exists() and shutil.which('node'):
     result = subprocess.run(['node', str(ach_inputs)], capture_output=True, text=True)
