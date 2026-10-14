@@ -2991,12 +2991,29 @@
   // A warning-only failure comes back asking to confirm (can_confirm) rather
   // than writing — same contract as PO-EXT's finalize. Returns false when it
   // opened that confirm step, so the dialog that called it doesn't close it.
-  async function declareWinner(slug, key, labels, confirmWarnings) {
+  //
+  // A Full Bird trailing hold priced before next season's EAPS is set needs
+  // the head to say which side of it the salary falls (§ 3.10). The server
+  // asks — a `qo_hold_eaps` check, or the signing's own EAPS message — and
+  // this asks the head, then sends the same declare again with the answer.
+  async function declareWinner(slug, key, labels, confirmWarnings, eaps) {
     try {
       await api('/fa/players/' + encodeURIComponent(slug) + '/declare-winner',
-        { method: 'POST', body: { key, confirm_warnings: !!confirmWarnings } });
+        { method: 'POST', body: { key, confirm_warnings: !!confirmWarnings, eaps_assumption: eaps || null } });
     } catch (e) {
       const detail = e.data && e.data.detail;
+      const eapsCheck = detail && (detail.checks || []).find(c => c.check === 'qo_hold_eaps' && !c.passed);
+      const eapsText = eapsCheck ? eapsCheck.message
+        : (typeof detail === 'string' && detail.includes('eaps_assumption')) ? detail : null;
+      if (!eaps && eapsText) {
+        const body = el('div');
+        body.appendChild(el('div', 'note', eapsText.replace(/ Pass eaps_assumption:.*$/, '')));
+        modal('Above or below EAPS?', body, [
+          { label: 'Below EAPS', cls: 'btn-primary', run: () => declareWinner(slug, key, labels, confirmWarnings, 'below') },
+          { label: 'Above EAPS', run: () => declareWinner(slug, key, labels, confirmWarnings, 'above') },
+        ]);
+        return false;
+      }
       if (!confirmWarnings && detail && detail.can_confirm) {
         const body = el('div');
         body.appendChild(el('div', 'note',
@@ -3005,7 +3022,7 @@
           .forEach(c => body.appendChild(el('div', 'note', '⚠ ' + c.message)));
         modal('Declare with warnings?', body, [{
           label: 'Declare anyway', cls: 'btn-primary',
-          run: () => declareWinner(slug, key, labels, true),
+          run: () => declareWinner(slug, key, labels, true, eaps),
         }]);
         return false;
       }
