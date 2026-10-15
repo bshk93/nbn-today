@@ -1397,6 +1397,7 @@
         + 'The § 2.1 floor of ' + CapHealth.ROSTER_MIN + ' applies year-round; the ceiling does not — '
         + CapHealth.ROSTER_MAX_OFFSEASON + ' in the offseason, ' + CapHealth.ROSTER_MAX_IN_SEASON
         + ' in season — so a team over 15 today owes a trim rather than being in breach. '
+        + 'Roster here leaves out the team’s own UFA/RFA holds, which are counted under Holds. '
         + 'An Empty Roster Charge is counted here but its dollar figure is shown on the '
         + 'team’s own page, not this one.';
       render();
@@ -1408,13 +1409,19 @@
 
   // One team's row. Everything rule-shaped on it comes back from standing().
   function buildRow(entry) {
+    // This board counts the roster without the team's own UFA/RFA holds and
+    // shows the holds in their own column. The roster flags are judged on the
+    // same number, so a chip never disagrees with the count beside it. The
+    // team page and the API still count holds as roster spots.
+    const holdCount = entry.fa_holds || 0;
+    const rosterExHolds = entry.roster - holdCount;
     const st = CapHealth.standing({
       season: entry.season,
       capLevels: { [entry.season]: { cap: entry.cap, apron1: entry.apron1, apron2: entry.apron2 } },
       teamState: { hard_cap: entry.hard_cap },
       teamSalaryFull: entry.salary,
       teamSalaryExHolds: entry.salary_ex_holds,
-      standardCount: entry.roster,
+      standardCount: rosterExHolds,
       twoWayCount: entry.two_way,
       inSeason: entry.in_season,
       // Straight off the cap-history row — see the note at the top of this
@@ -1440,6 +1447,8 @@
       team: entry.team,
       teamName: TEAMS[entry.team] || entry.team,
       entry,
+      rosterExHolds,
+      holdCount,
       warnings,
       codes: warnings.map(w => w.code),
       severity: worst,
@@ -1471,7 +1480,8 @@
 
   const COLS = [
     { key: 'team',     label: 'Team',        sortVal: r => r.teamName, defaultDir: 1 },
-    { key: 'roster',   label: 'Roster',      sortVal: r => r.entry.roster, defaultDir: 1 },
+    { key: 'roster',   label: 'Roster',      sortVal: r => r.rosterExHolds, defaultDir: 1 },
+    { key: 'holds',    label: 'Holds',       cls: 'right', sortVal: r => r.holdCount, defaultDir: -1 },
     { key: 'twoway',   label: 'Two-Way',     cls: 'right hide-sm', sortVal: r => r.entry.two_way, defaultDir: -1 },
     { key: 'salary',   label: 'Team Salary', cls: 'right', sortVal: r => r.entry.salary, defaultDir: -1 },
     { key: 'vscap',    label: 'vs Cap',       cls: 'hide-sm', sortVal: r => r.entry.salary - (r.entry.cap || 0), defaultDir: -1 },
@@ -1602,7 +1612,8 @@
     const count = (n, max, t) => `<span class="count-${esc(t)}">${esc(String(n))}</span>`
       + `<span class="muted">/${max}</span>`;
 
-    tr.appendChild(td(count(e.roster, CapHealth.ROSTER_MAX_IN_SEASON, r.rosterTone)));
+    tr.appendChild(td(count(r.rosterExHolds, CapHealth.ROSTER_MAX_IN_SEASON, r.rosterTone)));
+    tr.appendChild(td(r.holdCount ? esc(String(r.holdCount)) : '<span class="muted">—</span>', 'right'));
     tr.appendChild(td(count(e.two_way, CapHealth.TWO_WAY_MAX, r.twoWayTone), 'right hide-sm'));
 
     // Holds round to the same tenth of a million the salary does, so a $1
