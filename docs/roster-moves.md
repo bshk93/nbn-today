@@ -1,12 +1,14 @@
 # Owner self-serve roster moves
 
-Detail split out of `CLAUDE.md` on 2026-08-24. The per-player ⋯ menu on team
+Detail split out of `CLAUDE.md` on 2026-08-24. The per-player Moves menu on team
 pages, and the two genuinely different permission tiers behind it.
 
 ## Owner self-serve roster moves
 
-Team pages carry a per-player **⋯ menu** offering moves the viewer is actually
-entitled to make. Built by `makeRosterMoveActions` / `openMovesMenu` in
+Team pages carry a per-player **Moves menu** offering moves the viewer is actually
+entitled to make. Its button sits at the left of the player's name cell, not in
+a trailing column, so it is on screen on a phone without scrolling past the
+salary years. Built by `makeRosterMoveActions` / `openMovesMenu` in
 `teams/team.js`. Actions the player is ineligible for are shown **disabled with the
 rule-citing reason**, not hidden — "why can't I renounce him?" is a rules question
 and the menu is where it gets answered.

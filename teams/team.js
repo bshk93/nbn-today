@@ -777,9 +777,9 @@ const coachingConfigReady = new Promise(resolve => {
 
   /* ── Owner roster moves (per-player action menu) ─────────────────────────── */
   .move-btn {
-    background: transparent; border: 1px solid var(--border); border-radius: 5px;
-    color: var(--text-dim); cursor: pointer; font-family: inherit; font-size: 0.8rem;
-    line-height: 1; padding: 0.2rem 0.4rem;
+    background: transparent; border: 1px solid var(--accent); border-radius: 5px;
+    color: var(--accent-light); cursor: pointer; font-family: inherit; font-size: 0.72rem;
+    font-weight: 600; line-height: 1; padding: 0.3rem 0.5rem; white-space: nowrap;
   }
   .identity-season { display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; }
   .identity-players-col { min-width: 15rem; }
@@ -793,7 +793,7 @@ const coachingConfigReady = new Promise(resolve => {
   .identity-players .ip-name a:hover { color: var(--accent-light); }
   .identity-players .ip-line { grid-column: 2; font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
   .identity-players .ip-g { grid-column: 3; grid-row: 1; font-size: 0.7rem; color: var(--text-dim); }
-  .move-btn:hover { color: var(--text-primary); border-color: var(--text-dim); }
+  .move-btn:hover { background: var(--accent); color: var(--text-on-accent); }
   .move-menu {
     position: fixed; z-index: 1001; min-width: 220px;
     background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
@@ -2511,7 +2511,10 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     if (col.full) attachTooltip(th, col.full);
     hr.appendChild(th);
   });
-  if (rowActions) hr.appendChild(document.createElement('th'));
+  // An `inline` rowActions draws into the name cell instead of a trailing
+  // column, so it is on screen without scrolling past every salary year.
+  const actionsCol = rowActions && !rowActions.inline;
+  if (actionsCol) hr.appendChild(document.createElement('th'));
 
   const tbody = table.createTBody();
   let lastGroup = null;
@@ -2522,7 +2525,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       const sep = tbody.insertRow();
       sep.className = 'subheader';
       const td = sep.insertCell();
-      td.colSpan = cols.length + (rowActions ? 1 : 0);
+      td.colSpan = cols.length + (actionsCol ? 1 : 0);
       td.textContent = GROUP_LABELS[group];
       lastGroup = group;
     } else if (group !== lastGroup) {
@@ -2555,6 +2558,12 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
 
         const topRow = document.createElement('span');
         topRow.className = 'roster-name-top';
+
+        if (rowActions?.inline) {
+          const slot = document.createElement('span');
+          rowActions(row, slot, capMap);
+          if (slot.childNodes.length) topRow.appendChild(slot);
+        }
 
         const avatar = document.createElement('span');
         avatar.className = 'roster-avatar';
@@ -2653,7 +2662,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       }
     });
 
-    if (rowActions) {
+    if (actionsCol) {
       const actionsTd = tr.insertCell();
       actionsTd.className = 'whatif-actions-cell';
       rowActions(row, actionsTd, capMap);
@@ -3662,7 +3671,7 @@ function withToken(fn) {
 }
 
 // ── Owner roster moves ───────────────────────────────────────────────────────
-// The per-player "⋯" menu on a team's own roster. Every move here writes for
+// The per-player "Moves" menu on a team's own roster. Every move here writes for
 // real through the API; nothing in this section is a simulation. The what-if
 // tab's row buttons look similar on purpose but are purely hypothetical, so
 // each real action confirms explicitly and says what it will change.
@@ -4068,7 +4077,7 @@ function openQualifyingOfferDialog(slug, bio, abbr, action) {
   });
 }
 
-// § 6.1 — TEAM_OPT only; the ⋯ menu never offers this for a PLAYER_OPT at
+// § 6.1 — TEAM_OPT only; the Moves menu never offers this for a PLAYER_OPT at
 // all (optionEligibility), so `decision`/`year` here are always a real team
 // option. Unlike renounce, exercising or declining moves no cap dollars
 // (§ 1.3 already counts the option year's salary before it's exercised) —
@@ -4718,7 +4727,7 @@ function makeRosterMoveActions(abbr, biosData, blockEntries, poextEligible) {
   });
   const stateFor = slug => state[slug] || (state[slug] = { on: false, notes: '' });
 
-  return (row, td) => {
+  const actions = (row, td) => {
     if (!row.SLUG || row._erc || row._type === 'dead') return;
     const bio = (biosData || {})[row.SLUG];
     if (!bio) return;
@@ -4726,8 +4735,9 @@ function makeRosterMoveActions(abbr, biosData, blockEntries, poextEligible) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'move-btn';
-    btn.textContent = '⋯';
+    btn.textContent = 'Moves ▾';
     btn.title = 'Roster moves';
+    btn.setAttribute('aria-haspopup', 'menu');
     btn.setAttribute('aria-label', `Roster moves for ${displayNameFromBio(bio.name || row.SLUG)}`);
     const st = stateFor(row.SLUG);
 
@@ -4739,6 +4749,8 @@ function makeRosterMoveActions(abbr, biosData, blockEntries, poextEligible) {
     });
     td.append(btn);
   };
+  actions.inline = true;
+  return actions;
 }
 
 function makeSelect(options, selectedValue) {
@@ -7405,7 +7417,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const attributesData = attrr.status === 'fulfilled' ? attrr.value : {};
   const myBlockEntries = ((blockr.status === 'fulfilled' ? blockr.value : {})[abbr] || {}).players || [];
   // slug -> {eligible, reason}, filtered to this team — GET /api/poext/eligible
-  // is league-wide, so the roster ⋯ menu only needs its own team's slice.
+  // is league-wide, so the roster Moves menu only needs its own team's slice.
   const poextEligible = {};
   if (poextr.status === 'fulfilled' && Array.isArray(poextr.value)) {
     poextr.value.forEach(e => { if (e.team === abbr) poextEligible[e.player] = e; });
