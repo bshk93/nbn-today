@@ -59,6 +59,7 @@ Three lifecycles, distinguished by gitignore rather than by folder:
 | `nbn-achievements` | every 10 min | awards NB¥ for newly unlocked achievements | awards pause; the snapshot is monotonic so nothing double-fires. **Fails silently** — no Discord, no page, and "awarded nothing" reads the same as a quiet week; it was dead for six weeks in 2026. `build/test_achievement_inputs.js` (in the pre-commit hook) is the guard |
 | `nbs-drive-backup` | Sundays 04:00 | tarball of the tracked set to Google Drive | third backup tier stops; the other two continue |
 | `nbn-irl` | hourly | refreshes the ESPN game logs behind the IRL tabs (`/nbnfl`, team pages) into `irl/` (not backed up; refetchable). NFL every run, NBA every third. Also maps newly rostered NBN players to ESPN | the IRL tabs go stale; nothing else. Exits non-zero if any player failed |
+| `nbn-2k-sync` | daily 06:00 | pulls 2K ratings, positions and badges from nba2kapi.com (a mirror of 2kratings, which blocks us directly) into `player-attributes.json` and `ovr-history.json` — `build/scrape_2k_attributes.py`. Key in `~/.config/nbn/nba2kapi.key` | ratings and Roster Settings' primary positions go stale. Exits non-zero and alerts if the feed fails, shrinks or goes 14 days without an update; also alerts on newly unmatched rostered players and on a new 2K primary that makes a secondary position illegal |
 | `nbs-integrity` | Mondays 09:00 | box score row counts + closed-season hashes | **investigate immediately** — see below |
 
 Nothing else is scheduled. The stats build is **not** on a timer; it is
