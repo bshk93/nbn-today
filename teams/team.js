@@ -780,7 +780,7 @@ const coachingConfigReady = new Promise(resolve => {
     display: inline-flex; align-items: center; justify-content: center;
     width: 1.5rem; height: 1.5rem; padding: 0; flex: none;
     background: var(--bg-hover); border: 1px solid var(--border); border-radius: 50%;
-    color: var(--accent-light); cursor: pointer;
+    color: var(--text-muted); cursor: pointer;
   }
   .identity-season { display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; }
   .identity-players-col { min-width: 15rem; }
@@ -794,7 +794,7 @@ const coachingConfigReady = new Promise(resolve => {
   .identity-players .ip-name a:hover { color: var(--accent-light); }
   .identity-players .ip-line { grid-column: 2; font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
   .identity-players .ip-g { grid-column: 3; grid-row: 1; font-size: 0.7rem; color: var(--text-dim); }
-  .move-btn:hover { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+  .move-btn:hover { border-color: var(--text-dim); color: var(--text-primary); }
   .move-menu {
     position: fixed; z-index: 1001; min-width: 220px;
     background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
