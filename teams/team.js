@@ -777,9 +777,10 @@ const coachingConfigReady = new Promise(resolve => {
 
   /* ── Owner roster moves (per-player action menu) ─────────────────────────── */
   .move-btn {
-    background: transparent; border: 1px solid var(--accent); border-radius: 5px;
-    color: var(--accent-light); cursor: pointer; font-family: inherit; font-size: 0.72rem;
-    font-weight: 600; line-height: 1; padding: 0.3rem 0.5rem; white-space: nowrap;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.5rem; height: 1.5rem; padding: 0; flex: none;
+    background: var(--bg-hover); border: 1px solid var(--border); border-radius: 50%;
+    color: var(--accent-light); cursor: pointer;
   }
   .identity-season { display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; }
   .identity-players-col { min-width: 15rem; }
@@ -793,7 +794,7 @@ const coachingConfigReady = new Promise(resolve => {
   .identity-players .ip-name a:hover { color: var(--accent-light); }
   .identity-players .ip-line { grid-column: 2; font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
   .identity-players .ip-g { grid-column: 3; grid-row: 1; font-size: 0.7rem; color: var(--text-dim); }
-  .move-btn:hover { background: var(--accent); color: var(--text-on-accent); }
+  .move-btn:hover { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
   .move-menu {
     position: fixed; z-index: 1001; min-width: 220px;
     background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
@@ -4735,7 +4736,7 @@ function makeRosterMoveActions(abbr, biosData, blockEntries, poextEligible) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'move-btn';
-    btn.textContent = 'Moves ▾';
+    btn.innerHTML = '<svg width="4" height="14" viewBox="0 0 4 14" aria-hidden="true"><circle cx="2" cy="2" r="1.6" fill="currentColor"/><circle cx="2" cy="7" r="1.6" fill="currentColor"/><circle cx="2" cy="12" r="1.6" fill="currentColor"/></svg>';
     btn.title = 'Roster moves';
     btn.setAttribute('aria-haspopup', 'menu');
     btn.setAttribute('aria-label', `Roster moves for ${displayNameFromBio(bio.name || row.SLUG)}`);
