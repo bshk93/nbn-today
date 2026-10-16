@@ -17,6 +17,7 @@
 //
 //   DEPTH_SLOTS           the five lineup slots, PG→C
 //   computeStartingFive   best legal one-player-per-slot assignment
+//   rotationFive          the team's saved starting five, or null
 // =============================================================================
 
 const DEPTH_SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -83,4 +84,22 @@ function computeStartingFive(players) {
   })(0);
 
   return best || new Array(DEPTH_SLOTS.length).fill(null);
+}
+
+// The team's own starting five, from the rotation it saved in Roster Settings
+// (GET /api/rotations → `{slot: slug}` for one team), or null when that names
+// no starter among `players`. Callers fall back to computeStartingFive on null.
+// Players match on `slug` (or `SLUG`). Unlike computeStartingFive, positions
+// are not checked: where a player starts is the team's call.
+function rotationFive(players, rotation) {
+  if (!rotation) return null;
+  const bySlug = new Map(players.map(p => [p.slug || p.SLUG, p]));
+  const used = new Set();
+  const five = DEPTH_SLOTS.map(slot => {
+    const p = bySlug.get(rotation[slot]);
+    if (!p || used.has(p)) return null;
+    used.add(p);
+    return p;
+  });
+  return five.some(Boolean) ? five : null;
 }

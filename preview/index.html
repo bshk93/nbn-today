@@ -157,12 +157,14 @@
       jget('/api/players'),                                     // 6
       jget('/api/ovr/current'),                                 // 7
       Milestones.load(),                                        // 8
+      jget('/api/rotations'),                                   // 9
     ]).then(res => {
       const val = (i, dflt) => (res[i].status === 'fulfilled' && res[i].value) || dflt;
       const sched = val(0, {});
       const games = { [AWAY]: val(1, []), [HOME]: val(2, []) };
       const bios = val(6, {}), ovr = val(7, {});
       const ms = val(8, null);
+      const rotations = val(9, {});
 
       // ── Subtitle: when, where, who's streaming ──
       const slot = ((sched.games) || []).find(g => g.date === DATE && both(g));
@@ -246,24 +248,26 @@
             + `${last.gametype === 'PLAYOFF' ? ' (playoffs)' : ''}</a></dd>` : '')
         + '</dl></section>';
 
-      // ── Projected starting fives ──
+      // ── Starting fives ──
       // The team page's depth-chart pick (teams/lineup.js), from today's
-      // rosters and ratings: standard contracts only, as the team page does.
+      // rosters and ratings: the team's saved rotation when it has one,
+      // otherwise the auto-sort over standard contracts, as the team page does.
       // Today's rosters say nothing about a game already played, so this and
       // the milestones are left off a past game's page.
       const upcomingGame = !played && DATE >= nbnToday();
       const roster = t => ms ? Object.keys(ms.rosterTeam).filter(s => ms.rosterTeam[s] === t) : [];
       for (const t of upcomingGame ? [AWAY, HOME] : []) {
-        const pool = roster(t).filter(s => (bios[s] || {}).type === 'player')
-          .map(s => ({ slug: s, name: (bios[s] || {}).name || s, _posList: (bios[s] || {}).pos || [], OVR: ovr[s] || 0 }));
-        const five = pool.length ? computeStartingFive(pool) : [];
+        const pool = roster(t).filter(s => ['player', 'two-way'].includes((bios[s] || {}).type))
+          .map(s => ({ slug: s, type: bios[s].type, name: bios[s].name || s, _posList: bios[s].pos || [], OVR: ovr[s] || 0 }));
+        const set = rotationFive(pool, rotations[t]);
+        const five = set || (pool.length ? computeStartingFive(pool.filter(p => p.type === 'player')) : []);
         const rows = DEPTH_SLOTS.map((slotName, i) => {
           const p = five[i];
           return `<tr><td>${slotName}</td><td>${p ? `<a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(nbnPlayerName(p.name))}</a>` : '<span class="pv-muted">—</span>'}</td>`
             + `<td class="num">${p && p.OVR ? esc(p.OVR) : ''}</td></tr>`;
         }).join('');
         html += '<section class="ui-card">'
-          + `<div class="pv-card-title">${esc(t)} projected starters</div>`
+          + `<div class="pv-card-title">${esc(t)} ${set ? 'starters' : 'projected starters'}</div>`
           + (pool.length
             ? `<div class="ui-table-wrap"><table class="ui-table pv-five"><tbody>${rows}</tbody></table></div>`
             : '<div class="pv-line pv-muted">Roster unavailable.</div>')

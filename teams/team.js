@@ -2509,29 +2509,23 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     // a two-way player, and can put a player at a slot outside his listed
     // positions — both are the team's call in 2K, so both are shown as set.
     const rotationPool = augmented.filter(a => a.SLUG && !a._erc && (a._type === 'player' || a._type === 'two-way'));
-    const bySlug = new Map(rotationPool.map(a => [a.SLUG, a]));
-    const rotationAt = slot => {
-      return (rotation && bySlug.get(rotation[slot])) || null;
-    };
-    const useRotation = DEPTH_SLOTS.some(slot => rotationAt(slot));
+    const fromRotation = rotationFive(rotationPool, rotation);
+    const useRotation = !!fromRotation;
+    const five = fromRotation || computeStartingFive(starterPool);
+    const started = new Set(five.filter(Boolean));
 
-    let five, benchOrder = [];
+    // The rotation's 6th–15th, in order, skipping anyone already placed.
+    let benchOrder = [];
     if (useRotation) {
-      const taken = new Set();
-      const take = slot => {
-        const p = rotationAt(slot);
-        if (!p || taken.has(p)) return null;
-        taken.add(p);
-        return p;
-      };
-      five = DEPTH_SLOTS.map(take);
+      const bySlug = new Map(rotationPool.map(a => [a.SLUG, a]));
+      const taken = new Set(started);
       const benchSlots = (window.CoachingSettings ? window.CoachingSettings.MINUTES_SLOTS : [])
         .filter(slot => !DEPTH_SLOTS.includes(slot));
-      benchOrder = benchSlots.map(take).filter(Boolean);
-    } else {
-      five = computeStartingFive(starterPool);
+      benchSlots.forEach(slot => {
+        const p = bySlug.get(rotation[slot]);
+        if (p && !taken.has(p)) { taken.add(p); benchOrder.push(p); }
+      });
     }
-    const started = new Set(five.filter(Boolean));
     const ordered = new Set([...started, ...benchOrder]);
 
     const starterRows = five.map((p, i) => {
