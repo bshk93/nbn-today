@@ -329,6 +329,7 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-name a { color: var(--text-primary); text-decoration: none; }
   .ts-name a:hover { color: var(--accent-light); }
   .ts-ovr { width: 2.6rem; text-align: right !important; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+  .ts-ovr-inline { display: none; margin-left: 0.35rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-muted); }
   .ts-pos { width: 6.5rem; white-space: nowrap; }
   .ts-pos2 { color: var(--text-muted); }
   .ts-min { width: 9rem; text-align: right !important; white-space: nowrap; }
@@ -355,6 +356,7 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-res:has(input:disabled) { opacity: 0.4; cursor: default; }
   @media (max-width: 640px) {
     .ts-ovr, .ts-minbar { display: none; }
+    .ts-ovr-inline { display: inline; }
     .ts-table td, .ts-table th { padding-inline: 0.3rem; }
   }
   .ts-handle { width: 1.8rem; padding: 0.3rem 0.2rem !important; }
@@ -5516,10 +5518,19 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     a.href = `/players/?p=${encodeURIComponent(row.SLUG)}`;
     a.textContent = displayNameFromBio(bio.name || '') || row.SLUG || '—';
     td.appendChild(a);
+    const ovr = (currentOvr && currentOvr[row.SLUG]) || '';
+    // On a phone the OVR column is dropped for width, so the rating rides
+    // next to the name instead — a coach setting minutes still needs it.
+    if (ovr) {
+      const inline = document.createElement('span');
+      inline.className = 'ts-ovr-inline';
+      inline.textContent = ovr;
+      td.appendChild(inline);
+    }
     if (bio.type === 'two-way') td.appendChild(twoWayGamesBadge(row.SLUG, '2W · '));
     const ovrTd = tr.insertCell();
     ovrTd.className = 'ts-ovr';
-    ovrTd.textContent = (currentOvr && currentOvr[row.SLUG]) || '—';
+    ovrTd.textContent = ovr || '—';
   }
 
   function setActions(...btns) {
