@@ -306,6 +306,7 @@
   // logic stay in this one file rather than duplicated between team.js and
   // committees/stream/index.html. `opts.resolveName(slug)` is optional —
   // without it, the minutes table falls back to showing the raw slug.
+  // `opts.resolveOvr(slug)`, also optional, adds the player's current OVR.
   function fieldValueLabel(field, raw, group) {
     if (isBlank(raw)) return group && group.optional ? 'Playbook default' : '—';
     return String(raw);
@@ -457,7 +458,8 @@
         const m = minutes[slot];
         if (!m || (!m.slug && !m.minutes)) return;
         const name = m.slug ? ((opts.resolveName && opts.resolveName(m.slug)) || m.slug) : '—';
-        mCard.appendChild(row(`${slot} — ${name}`, m.res ? 'RES' : String(m.minutes || 0)));
+        const ovr = m.slug && opts.resolveOvr ? opts.resolveOvr(m.slug) : '';
+        mCard.appendChild(row(`${slot} — ${name}${ovr ? ` · ${ovr} OVR` : ''}`, m.res ? 'RES' : String(m.minutes || 0)));
       });
       mCard.appendChild(row('Total', `${minutesTotal(minutes)} / ${MINUTES_BUDGET}`));
       cardsWrap.appendChild(mCard);

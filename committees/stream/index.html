@@ -419,6 +419,7 @@
        renderer — shared with teams/team.js's Coaching tab so a team's
        settings read the same way in both places. -->
   <script src="/coaching-config.js"></script>
+  <script src="/names.js"></script>
   <script src="/league-time.js"></script>
 
   <script>
@@ -479,6 +480,30 @@
       }
       renderCoachingDashboard();
       renderMine();
+    }
+
+    // Player Minutes names and current OVRs for the View cards. Fetched once,
+    // on the first View, since /api/players is the whole bio file.
+    let playerLookupPromise = null;
+    function playerLookup() {
+      if (!playerLookupPromise) {
+        playerLookupPromise = Promise.all([
+          fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+          fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+        ]).then(([bios, ovr]) => ({
+          resolveName: slug => (bios[slug] && bios[slug].name) ? nbnPlayerName(bios[slug].name) : '',
+          resolveOvr: slug => ovr[slug] || '',
+        }));
+      }
+      return playerLookupPromise;
+    }
+
+    async function renderSettingsView(detail, rec) {
+      if (!window.CoachingSettings) {
+        detail.textContent = 'Coaching settings vocabulary unavailable — /coaching-config.js failed to load.';
+        return;
+      }
+      window.CoachingSettings.renderReadOnly(detail, rec, await playerLookup());
     }
 
     function coachingRowMeta(team) {
@@ -611,11 +636,7 @@
       viewBtn.onclick = () => {
         const showing = !detailRow.hidden;
         if (showing) { detailRow.hidden = true; viewBtn.textContent = 'View'; return; }
-        if (window.CoachingSettings) {
-          window.CoachingSettings.renderReadOnly(detail, rec, {});
-        } else {
-          detail.textContent = 'Coaching settings vocabulary unavailable — /coaching-config.js failed to load.';
-        }
+        renderSettingsView(detail, rec);
         detailRow.hidden = false;
         viewBtn.textContent = 'Hide';
       };
@@ -775,8 +796,7 @@
               view.textContent = 'View';
               view.onclick = () => {
                 if (!detail.hidden) { detail.hidden = true; view.textContent = 'View'; return; }
-                if (window.CoachingSettings) window.CoachingSettings.renderReadOnly(detail, rec, {});
-                else detail.textContent = 'Coaching settings vocabulary unavailable.';
+                renderSettingsView(detail, rec);
                 detail.hidden = false;
                 view.textContent = 'Hide';
               };
