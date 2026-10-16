@@ -2245,8 +2245,8 @@ function computeStatFields(seasonRow) {
 // Pos / Age / OVR: 'contracts' (default) shows salary years, 'stats' shows
 // per-game averages from the player's latest season, 'ratings' shows every
 // individual 2K attribute, and 'depth' reorders the rows into a starting five
-// plus bench (see computeStartingFive, or the team's own `rotation` — the
-// coaching-settings `minutes` map — when one is set). `latestSeasonBySlug` comes
+// plus bench (see computeStartingFive, or the team's own `rotation` — `{slot: slug}`
+// from GET /api/rotations — when one is set). `latestSeasonBySlug` comes
 // from computeLatestSeasonBySlug(allSeasons), computed once at page load.
 function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null, rotation = null) {
   if (!rows.length) return null;
@@ -2511,8 +2511,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     const rotationPool = augmented.filter(a => a.SLUG && !a._erc && (a._type === 'player' || a._type === 'two-way'));
     const bySlug = new Map(rotationPool.map(a => [a.SLUG, a]));
     const rotationAt = slot => {
-      const p = rotation && rotation[slot] && bySlug.get(rotation[slot].slug);
-      return p || null;
+      return (rotation && bySlug.get(rotation[slot])) || null;
     };
     const useRotation = DEPTH_SLOTS.some(slot => rotationAt(slot));
 
@@ -7445,7 +7444,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -7470,6 +7469,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/poext/eligible').then(r => r.ok ? r.json() : []),
     fetch('/api/coaching-settings', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : {}),
     fetch('/standings/standings-history.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch('/api/rotations').then(r => r.ok ? r.json() : {}),
   ]);
 
   await namesReady;
@@ -7524,6 +7524,9 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // is absent (undefined) until the team has ever saved one.
   const coachingRecord = (coachr.status === 'fulfilled' && coachr.value && typeof coachr.value === 'object')
     ? coachr.value[abbr] : undefined;
+  // The public half of that record: who holds each depth-chart slot, never
+  // the minutes. Drives the Rosters tab's starting five for every visitor.
+  const rotation = (rotr.status === 'fulfilled' && rotr.value && rotr.value[abbr]) || null;
   const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];
   renderOfferSheetBanner(openOffers);
   const currentRosterRowsParsed = rr.status === 'fulfilled' ? parseCSV(rr.value) : [];
@@ -7905,7 +7908,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     const renderRoster = rowsForDisplay => buildRosterTable(
       rowsForDisplay, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, rosterMode, latestSeasonBySlug,
       MOVE_MODES.includes(rosterMode) ? moveActions : null,
-      coachingRecord && coachingRecord.minutes,
+      rotation,
     );
     function rerenderRosterWrap() {
       rosterWrap.innerHTML = '';
