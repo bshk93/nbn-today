@@ -2245,9 +2245,10 @@ function computeStatFields(seasonRow) {
 // Pos / Age / OVR: 'contracts' (default) shows salary years, 'stats' shows
 // per-game averages from the player's latest season, 'ratings' shows every
 // individual 2K attribute, and 'depth' reorders the rows into a starting five
-// plus bench (see computeStartingFive). `latestSeasonBySlug` comes from
-// computeLatestSeasonBySlug(allSeasons), computed once at page load.
-function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null) {
+// plus bench (see computeStartingFive, or the team's own `rotation` — the
+// coaching-settings `minutes` map — when one is set). `latestSeasonBySlug` comes
+// from computeLatestSeasonBySlug(allSeasons), computed once at page load.
+function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null, rotation = null) {
   if (!rows.length) return null;
   // Neither format's key column: the CSV came back as something else (a
   // truncated or error response). Rendering it threw on the first row once,
@@ -2501,27 +2502,58 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   let sorted, GROUP_LABELS;
   if (mode === 'depth') {
     const starterPool = augmented.filter(a => a._type === 'player' && !a._erc);
-    const five = computeStartingFive(starterPool);
+
+    // The team's own rotation (Roster Settings, saved on the coaching-settings
+    // record) wins whenever it names at least one starter still on the roster.
+    // Otherwise the starting five is the auto-sort below. A rotation can hold
+    // a two-way player, and can put a player at a slot outside his listed
+    // positions — both are the team's call in 2K, so both are shown as set.
+    const rotationPool = augmented.filter(a => a.SLUG && !a._erc && (a._type === 'player' || a._type === 'two-way'));
+    const bySlug = new Map(rotationPool.map(a => [a.SLUG, a]));
+    const rotationAt = slot => {
+      const p = rotation && rotation[slot] && bySlug.get(rotation[slot].slug);
+      return p || null;
+    };
+    const useRotation = DEPTH_SLOTS.some(slot => rotationAt(slot));
+
+    let five, benchOrder = [];
+    if (useRotation) {
+      const taken = new Set();
+      const take = slot => {
+        const p = rotationAt(slot);
+        if (!p || taken.has(p)) return null;
+        taken.add(p);
+        return p;
+      };
+      five = DEPTH_SLOTS.map(take);
+      const benchSlots = (window.CoachingSettings ? window.CoachingSettings.MINUTES_SLOTS : [])
+        .filter(slot => !DEPTH_SLOTS.includes(slot));
+      benchOrder = benchSlots.map(take).filter(Boolean);
+    } else {
+      five = computeStartingFive(starterPool);
+    }
     const started = new Set(five.filter(Boolean));
+    const ordered = new Set([...started, ...benchOrder]);
 
     const starterRows = five.map((p, i) => {
       const slot = DEPTH_SLOTS[i];
       if (p) return { ...p, _slot: slot, _group: 'starters' };
       return {
-        SLUG: '', OVR: '', _name: `No eligible ${slot}`, _pos: '—', _posList: [],
+        SLUG: '', OVR: '', _name: useRotation ? `No ${slot} set` : `No eligible ${slot}`, _pos: '—', _posList: [],
         _age: '', _type: 'player', _slot: slot, _group: 'starters', _emptySlot: true,
         _cap_holds: {}, _salaries: {}, _badges: [], _photo: '', _notes: '',
       };
     });
-    const bench = starterPool.filter(a => !started.has(a)).sort(byOvrDesc)
+    // Bench: the rotation's 6th–15th in order, then any other standard player by OVR.
+    const bench = [...benchOrder, ...starterPool.filter(a => !ordered.has(a)).sort(byOvrDesc)]
       .map(a => ({ ...a, _group: 'bench' }));
-    const rest = augmented.filter(a => a._type !== 'player' || a._erc)
+    const rest = augmented.filter(a => (a._type !== 'player' || a._erc) && !ordered.has(a))
       .sort((a, b) => (typeOrder[a._type] ?? 4) - (typeOrder[b._type] ?? 4) || byOvrDesc(a, b))
       .map(a => ({ ...a, _group: a._type }));
 
     sorted = [...starterRows, ...bench, ...rest];
     GROUP_LABELS = {
-      starters: 'Starters', bench: 'Bench',
+      starters: useRotation ? 'Starters · Team Rotation' : 'Starters', bench: 'Bench',
       'two-way': 'Two-Way Contracts', 'draft-rights': 'Draft Rights', dead: 'Dead Cap',
     };
   } else {
@@ -7872,7 +7904,8 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     const MOVE_MODES = ['depth', 'contracts'];
     const renderRoster = rowsForDisplay => buildRosterTable(
       rowsForDisplay, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, rosterMode, latestSeasonBySlug,
-      MOVE_MODES.includes(rosterMode) ? moveActions : null
+      MOVE_MODES.includes(rosterMode) ? moveActions : null,
+      coachingRecord && coachingRecord.minutes,
     );
     function rerenderRosterWrap() {
       rosterWrap.innerHTML = '';
