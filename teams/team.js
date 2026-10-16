@@ -324,6 +324,8 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-slot { width: 2.6rem; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .ts-num { width: 2.4rem; text-align: center !important; color: var(--text-dim); font-variant-numeric: tabular-nums; }
   .ts-name { font-weight: 600; }
+  .ts-name .twoway-games, .roster-name-top .twoway-games { margin-left: 0.4rem; font-weight: 600; }
+  .ts-2w-note { margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--gold); }
   .ts-name a { color: var(--text-primary); text-decoration: none; }
   .ts-name a:hover { color: var(--accent-light); }
   .ts-ovr { width: 2.6rem; text-align: right !important; font-variant-numeric: tabular-nums; color: var(--text-muted); }
@@ -1656,6 +1658,33 @@ function fmtDollars(v) {
 const ROSTER_CHARGE_MIN = 12;
 const ROSTER_EXEMPT_TYPES = new Set(['two-way', 'draft-rights', 'dead']);
 
+// § 2.2: a two-way may play at most 50 games a season. There is no call-up
+// step, so the count is all there is to watch. Box scores only hold games
+// played, so G in player_seasons.csv is games played. Summed over every team
+// for the season, since a player traded mid-season still has one limit.
+const TWO_WAY_GAME_LIMIT = 50;
+let TWO_WAY_GAMES = {}; // slug -> regular-season games this season; set once player_seasons.csv loads
+
+function computeSeasonGames(allSeasons, season) {
+  const out = {};
+  allSeasons.forEach(r => {
+    if (r.SEASON !== season || !r.SLUG) return;
+    out[r.SLUG] = (out[r.SLUG] || 0) + (parseInt(r.G, 10) || 0);
+  });
+  return out;
+}
+
+// "12/50 G", gold from 40 games, red once the limit is reached.
+function twoWayGamesBadge(slug, prefix = '') {
+  const g = TWO_WAY_GAMES[slug] || 0;
+  const tag = document.createElement('span');
+  tag.className = 'ui-badge twoway-games'
+    + (g >= TWO_WAY_GAME_LIMIT ? ' ui-badge--danger' : g >= 40 ? ' ui-badge--warning' : '');
+  tag.textContent = `${prefix}${g}/${TWO_WAY_GAME_LIMIT} G`;
+  attachTooltip(tag, `Two-way: ${g} of ${TWO_WAY_GAME_LIMIT} games played in ${currentSeasonYr()} (§ 2.2)`);
+  return tag;
+}
+
 function computeEmptyRosterCharge(rosterRows, biosData, capLevels, season) {
   const standardCount = rosterRows.filter(row => {
     const bio = biosData[row.SLUG] || {};
@@ -2610,6 +2639,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
             + (row._stash.note ? ` — ${row._stash.note}` : '') + (row._stash.date ? ` (${row._stash.date})` : ''));
           topRow.appendChild(tag);
         }
+
+        if (row._type === 'two-way' && row.SLUG) topRow.appendChild(twoWayGamesBadge(row.SLUG));
 
         cell.appendChild(topRow);
 
@@ -5485,6 +5516,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     a.href = `/players/?p=${encodeURIComponent(row.SLUG)}`;
     a.textContent = displayNameFromBio(bio.name || '') || row.SLUG || '—';
     td.appendChild(a);
+    if (bio.type === 'two-way') td.appendChild(twoWayGamesBadge(row.SLUG, '2W · '));
     const ovrTd = tr.insertCell();
     ovrTd.className = 'ts-ovr';
     ovrTd.textContent = (currentOvr && currentOvr[row.SLUG]) || '—';
@@ -5618,8 +5650,28 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       return out;
     }
 
+    // Two-ways can play (§ 2.2 has no call-up step), but every game they
+    // play counts toward their 50. Named here once they're given minutes,
+    // so it is a choice made knowingly. Never blocks the save.
+    const twoWayNote = document.createElement('div');
+    twoWayNote.className = 'ts-2w-note';
+    twoWayNote.hidden = true;
+
+    function refreshTwoWayNote(minutes) {
+      const playing = Object.values(minutes)
+        .filter(m => m.minutes > 0 && !m.res && (biosData[m.slug] || {}).type === 'two-way')
+        .map(m => `${displayNameFromBio((biosData[m.slug] || {}).name || '') || m.slug} `
+          + `(${TWO_WAY_GAMES[m.slug] || 0}/${TWO_WAY_GAME_LIMIT})`);
+      twoWayNote.hidden = !playing.length;
+      twoWayNote.textContent = playing.length
+        ? `Two-way games count toward the ${TWO_WAY_GAME_LIMIT}-game limit (§ 2.2): ${playing.join(', ')}`
+        : '';
+    }
+
     function refreshMinutesTotal() {
-      if (meter) meter.update(minutesFromDom());
+      const minutes = minutesFromDom();
+      if (meter) meter.update(minutes);
+      refreshTwoWayNote(minutes);
     }
 
     // Relabels every row's Slot cell and enables/disables its Min controls
@@ -5858,6 +5910,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 
     refreshMinutesTotal();
     mountTable(table, meter);
+    wrapEl.insertBefore(twoWayNote, wrapEl.lastChild);
 
     cancelBtn.addEventListener('click', () => renderReadView());
 
@@ -7524,6 +7577,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
   const allSeasons = psr.status === 'fulfilled' ? parseCSV(psr.value) : [];
   const latestSeasonBySlug = computeLatestSeasonBySlug(allSeasons);
+  TWO_WAY_GAMES = computeSeasonGames(allSeasons, currentSeasonYr());
 
   {
     const standingsRows = stdr.status === 'fulfilled' ? parseCSV(stdr.value) : [];
