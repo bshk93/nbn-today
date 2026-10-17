@@ -188,6 +188,8 @@
     }
     .stream-select:hover { border-color: var(--accent); color: var(--text-secondary); }
     .stream-select:disabled { cursor: default; opacity: 0.6; }
+    .assign-select.is-assigned { color: var(--purple-light); background: var(--purple-light-bg); border-color: transparent; }
+    .day-slate .day-assign { width: auto; font-size: 0.68rem; padding: 0.15rem 0.35rem; }
     .stream-select.is-stream {
       background: var(--danger-bg); border-color: var(--danger-light); color: var(--danger-light); font-weight: 700;
     }
@@ -466,6 +468,11 @@
     // one as a stream — same role, two independent actions — and the whole
     // page below the header, since this page exists only for that role.
     const isStreamerRole = () => me.roles.includes('streamer') || me.roles.includes('admin');
+    // Assigning a game or a day to a named streamer is admin-only (the API's
+    // rule too). `streamers` is who can be picked: members holding the role,
+    // plus admins, who satisfy it. Loaded only for an admin.
+    const isAdmin = () => me.roles.includes('admin');
+    let streamers = [];
 
     // ── Coaching Settings tab ────────────────────────────────────────
 
@@ -859,6 +866,15 @@
         if (done) wrap.appendChild(span('day-meta', `done by ${rec.done_by}`));
       }
 
+      // An admin hands the whole night to one streamer, replacing any claims.
+      if (isAdmin() && date >= today) {
+        const pick = streamerPicker('', 'Assign day…');
+        pick.classList.add('day-assign');
+        pick.setAttribute('aria-label', `Assign every game on ${fmtDayHdr(date)}`);
+        pick.onchange = () => { if (pick.value) assignDay(date, pick.value, pick); };
+        wrap.appendChild(pick);
+      }
+
       // Claim every unclaimed game that night in one go — a streamer usually
       // takes the whole day.
       const open = games.filter(g => g.date === date && !g.streamer && !resultFor(g));
@@ -1070,6 +1086,68 @@
       }
     }
 
+    // ── Assigning streamers (admin) ──────────────────────────────────
+    //
+    // PUT names any streamer and replaces an existing claim; clearing one is
+    // the same DELETE a streamer uses to drop their own, which an admin may
+    // call on anyone's. The API sends the inbox messages.
+
+    function streamerPicker(current, emptyLabel) {
+      const sel = document.createElement('select');
+      sel.className = 'stream-select assign-select' + (current ? ' is-assigned' : '');
+      sel.appendChild(new Option(emptyLabel, ''));
+      const names = streamers.includes(current) || !current ? streamers : [current, ...streamers];
+      names.forEach(n => sel.appendChild(new Option(n, n)));
+      sel.value = current || '';
+      return sel;
+    }
+
+    async function assignGame(g, num, rowEl, name) {
+      if (!name) return setClaim(g, num, rowEl, false);
+      const token = storedToken();
+      rowEl.querySelectorAll('button, select').forEach(b => { b.disabled = true; });
+      try {
+        const r = await fetch(`/api/schedule/${g.id}/streamer?season=${encodeURIComponent(season)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ name }),
+        });
+        if (!r.ok) {
+          const detail = await r.json().then(j => j.detail).catch(() => null);
+          throw new Error(detail || `HTTP ${r.status}`);
+        }
+        g.streamer = (await r.json()).streamer || null;
+        replaceRow(g, num, rowEl);
+        renderMine();
+      } catch (e) {
+        rowEl.querySelectorAll('button, select').forEach(b => { b.disabled = false; });
+        toast(`Could not assign that game: ${e.message}`, true);
+      }
+    }
+
+    async function assignDay(date, name, sel) {
+      sel.disabled = true;
+      const token = storedToken();
+      try {
+        const r = await fetch(`/api/schedule/days/${date}/streamer?season=${encodeURIComponent(season)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ name }),
+        });
+        if (!r.ok) {
+          const detail = await r.json().then(j => j.detail).catch(() => null);
+          throw new Error(detail || `HTTP ${r.status}`);
+        }
+        const byId = new Map((await r.json()).map(x => [x.id, x]));
+        games.forEach(g => { if (byId.has(g.id)) g.streamer = byId.get(g.id).streamer || null; });
+        toast(`${fmtShort(date)} assigned to ${name}.`);
+      } catch (e) {
+        toast(`Could not assign that day: ${e.message}`, true);
+      }
+      render();
+      renderMine();
+    }
+
     async function setStreamFlag(g, num, rowEl, marking) {
       const token = storedToken();
       const url = `/api/schedule/${g.id}/stream?season=${encodeURIComponent(season)}`;
@@ -1182,7 +1260,14 @@
       const tdStreamer = document.createElement('td');
       tdStreamer.className = 'gt-streamer';
       const held = g.streamer || null;
-      if (held) {
+      if (isAdmin() && !res) {
+        // An admin assigns instead of claiming: one picker that names
+        // whoever holds the game, and can hand it to anyone else.
+        const pick = streamerPicker(held, 'unassigned');
+        pick.setAttribute('aria-label', `Streamer for ${g.away_team} at ${g.home_team}`);
+        pick.onchange = () => assignGame(g, num, row, pick.value);
+        tdStreamer.appendChild(pick);
+      } else if (held) {
         const chip = span('streamer-chip' + (held === me.name ? ' mine' : ''));
         chip.appendChild(document.createTextNode(`📺 ${held}`));
         if (held === me.name) {
@@ -1586,6 +1671,18 @@
           document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
         });
       });
+
+      if (isAdmin()) {
+        try {
+          const members = await fetch('/api/members/public').then(r => r.ok ? r.json() : []);
+          streamers = members
+            .filter(m => (m.roles || []).includes('streamer') || (m.roles || []).includes('admin'))
+            .map(m => m.name)
+            .sort((a, b) => a.localeCompare(b));
+        } catch (e) {
+          streamers = [];
+        }
+      }
 
       loadCoachingDashboard();
       loadStreamingDays();
