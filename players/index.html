@@ -331,6 +331,8 @@
     .no-results { color: var(--text-muted); font-size: 0.9rem; padding: 1.5rem 0; }
 
     /* player index table */
+    .idx-team { display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; font-weight: 600; }
+    .idx-team img { width: 18px; height: 18px; object-fit: contain; }
     .player-name-cell {
       display: flex;
       align-items: center;
@@ -4095,6 +4097,9 @@
         DRAFT_FMT:  fmtDraft(dftYr, dftR, dftP),
         DRAFT_SORT: dftYr ? parseInt(dftYr, 10) : null,
         TEAMS:      playerTeamsList.get(r.SLUG) || [],
+        // Whose roster he's on today (the live rosters, via /api/team-map),
+        // not a stats team: a signing who hasn't played yet still shows.
+        TEAM:       teamMap[r.SLUG] || null,
         HEIGHT:     bio.height  || '',
         WEIGHT:     bio.weight  != null ? bio.weight : null,
         WINGSPAN:   bio.wingspan || '',
@@ -4224,7 +4229,20 @@
     const IDX_COLS = [
       { label: '#',       field: 'JERSEY',     defaultDir:  1, cls: 'right muted', display: p => p.JERSEY != null ? `#${p.JERSEY}` : '—' },
       { label: 'Player',  field: 'LAST',       defaultDir:  1 },
-      { label: 'Pos',     field: null,          display: p => p.POS.length ? p.POS.join(' · ') : '—', cls: 'muted' },
+      { label: 'Team',    field: 'TEAM',        defaultDir:  1, display: p => {
+          if (!p.TEAM) return '—';
+          const span = document.createElement('span');
+          span.className = 'idx-team';
+          span.title = TEAM_NAMES[p.TEAM] || p.TEAM;
+          const img = document.createElement('img');
+          img.src = `/logos/sm/logo-${p.TEAM.toLowerCase()}.webp`;
+          img.alt = '';
+          img.onerror = function() { this.remove(); };
+          span.append(img, document.createTextNode(p.TEAM));
+          return span;
+        }
+      },
+      { label: 'Pos',    field: null,          display: p => p.POS.length ? p.POS.join(' · ') : '—', cls: 'muted' },
       { label: 'OVR',     field: 'OVR',         defaultDir: -1, cls: 'right', display: p => p.OVR ?? '—' },
       { label: 'G',       field: 'G',           defaultDir: -1, cls: 'right', display: p => p.G ?? '—' },
       { label: 'Age',     field: 'AGE',         defaultDir: -1, cls: 'right' },
