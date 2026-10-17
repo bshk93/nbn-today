@@ -262,6 +262,14 @@ Each move reaches #roster-log **once**, by whichever route is relayed:
   text, which carries the contract year by year.
 - **Release and void:** #waivers is relayed, so the line there is what
   #roster-log gets, and the embed keeps its do-not-relay marker.
+- **An awarded waiver claim:** applied by the waiver sweep (or a PDC ruling),
+  never by the dispatcher, so nothing posted it until 2026-10-17 (MIA's claim
+  on Jaxson Hayes reached no channel that #roster-log reads).
+  `waivers._announce_claim` now sends the `waiver_clear` entry as a
+  transaction embed with `relay_to_roster_log=True` ("MIA — Waiver Claim").
+  The #fa-news "claims have closed" line names the winning team too. A player
+  who clears unclaimed gets only that #fa-news line, since nobody's roster
+  changed.
 
 The office form announces only voids (like releases, which it always has).
 An office-entered renounce or option is usually recording something a human
