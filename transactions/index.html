@@ -1400,7 +1400,7 @@ async function fetchAllTransactions() {
       .then(r => r.ok ? r.json() : { roles: [] }).catch(() => ({ roles: [] }));
     isAdmin = (meRes.roles || []).includes('admin');
     canManage = rolesCanManage(meRes.roles);
-    document.querySelector('.txn-table').classList.toggle('admin-mode', canManage);
+    renderAuthBar();
   }
 
   const [txnRes, biosRes, picksRes, mapRes, statesRes, capRes, lyrRes] = await Promise.allSettled([
@@ -1450,9 +1450,14 @@ function renderAuthBar() {
   const formCard = document.getElementById('form-card');
 
   if (currentToken) {
-    status.textContent = '';
+    // Only the office can submit (POST /api/transactions needs `rosters`).
+    // Anyone else signed in used to get the whole form and a bare 403 on
+    // submit, so a team owner declining an option never found the Moves
+    // menu that does it.
+    status.textContent = canManage ? ''
+      : 'Recording transactions is for the league office. Team owners: open your team page and use the ⚙ button next to a player to exercise or decline an option, release, renounce, or sign a draft pick.';
     btn.textContent = 'Sign out';
-    formCard.style.display = '';
+    formCard.style.display = canManage ? '' : 'none';
   } else {
     status.textContent = 'Sign in to record transactions.';
     btn.textContent = 'Sign in';
