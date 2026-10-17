@@ -316,11 +316,12 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-table th { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
   .ts-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
   .ts-table tbody tr:last-child td { border-bottom: none; }
-  /* Starters and bench, told apart by position alone — a divider row would
-     break "row index is the slot", which the drag code relies on. */
-  .ts-table tbody tr:nth-child(5) td { border-bottom: 2px solid var(--border); }
-  .ts-table tbody tr:nth-child(-n+5) .ts-slot { color: var(--accent-light); font-weight: 700; }
-  .ts-table tbody tr:nth-child(n+16) { opacity: 0.55; }
+  /* Classes, not nth-child: the Inactive line is a row of its own, so a
+     row's index is no longer its slot. Set by markRow. */
+  .ts-table tbody tr.ts-last-starter td { border-bottom: 2px solid var(--border); }
+  .ts-table tbody tr.ts-starter .ts-slot { color: var(--accent-light); font-weight: 700; }
+  .ts-table tbody tr.ts-inactive { opacity: 0.55; }
+  .ts-table tbody tr.ts-divider td { background: var(--bg-subtle); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding-block: 0.3rem; }
   .ts-slot { width: 2.6rem; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .ts-num { width: 2.4rem; text-align: center !important; color: var(--text-dim); font-variant-numeric: tabular-nums; }
   .ts-name { font-weight: 600; }
@@ -1084,7 +1085,7 @@ document.body.innerHTML = `
               <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
               <div class="settings-actions" id="team-settings-actions"></div>
             </div>
-            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Primary position comes from 2K.</p>
+            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Players below the Inactive line are not in the game, so drag it up to leave a slot empty. Primary position comes from 2K.</p>
             <div id="team-settings-wrap"><div class="status">Loading…</div></div>
           </div>
           <div class="settings-subsection">
@@ -5468,21 +5469,65 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   // orders the roster the same way for both views: whoever currently holds
   // each slot first, in slot order, then anyone not in a slot at all after —
   // so opening Edit shows the depth chart as last saved, not roster order.
+  //
+  // `line` is where the Inactive line sits: rows above it fill the slots in
+  // order, rows below it hold none. The game takes exactly the 15 slotted
+  // players, so a team with 14 standard players and a two-way it doesn't
+  // want dressed needs slot 15 left empty, not the two-way parked in it at 0
+  // minutes. A save writes an empty slot as `{slug: ''}`; seeing one is what
+  // says the team left the rest out on purpose. A record with no empty slot
+  // (never saved, or saved before the line existed) keeps the old reading:
+  // the first 15 rows play.
   function orderedRows(minutes) {
     const bySlug = new Map(activeRows.map(r => [r.SLUG, r]));
     const used = new Set();
-    const ordered = [];
+    const rows = [];
     if (CS) {
       CS.MINUTES_SLOTS.forEach(slot => {
         const slug = minutes[slot] && minutes[slot].slug;
         if (slug && bySlug.has(slug) && !used.has(slug)) {
-          ordered.push(bySlug.get(slug));
+          rows.push(bySlug.get(slug));
           used.add(slug);
         }
       });
     }
-    activeRows.forEach(r => { if (!used.has(r.SLUG)) ordered.push(r); });
-    return ordered;
+    const slotted = rows.length;
+    activeRows.forEach(r => { if (!used.has(r.SLUG)) rows.push(r); });
+    const leftOpen = !!CS && CS.MINUTES_SLOTS.some(s => minutes[s] && !minutes[s].slug);
+    const line = leftOpen ? slotted : Math.min(CS ? CS.MINUTES_SLOTS.length : 0, rows.length);
+    return { rows, line };
+  }
+
+  // Row classes that used to be nth-child rules: the slot count is no
+  // longer the row index once the Inactive line is a row of its own.
+  function markRow(tr, i, slotted) {
+    tr.classList.toggle('ts-starter', slotted && i < STARTERS);
+    tr.classList.toggle('ts-last-starter', slotted && i === STARTERS - 1);
+    tr.classList.toggle('ts-inactive', !slotted);
+  }
+
+  // The Inactive line itself. In edit mode it carries a drag handle and
+  // moves like a player row.
+  function dividerRow(tbody, colCount, forEdit) {
+    const tr = tbody.insertRow();
+    tr.className = 'ts-divider';
+    tr._divider = true;
+    let span = colCount;
+    if (forEdit) {
+      const handleTd = tr.insertCell();
+      handleTd.className = 'ts-handle';
+      const handle = document.createElement('span');
+      handle.className = 'drag-handle';
+      handle.textContent = '⠿';
+      handle.title = 'Drag to set who is in the game: players below this line are left out';
+      handleTd.appendChild(handle);
+      tr._handle = handle;
+      span--;
+    }
+    const td = tr.insertCell();
+    td.colSpan = span;
+    td.textContent = 'Inactive: not in the game';
+    return tr;
   }
 
   // "PG" for a starter, "6th" for the bench. The stored key stays the bare
@@ -5589,15 +5634,18 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     buildHead(table, false);
 
     const tbody = table.createTBody();
-    orderedRows(minutes).forEach((row, i) => {
+    const { rows, line } = orderedRows(minutes);
+    rows.forEach((row, i) => {
       const bio = biosData[row.SLUG] || {};
+      if (CS && i === line) dividerRow(tbody, table.tHead.rows[0].cells.length, false);
       const tr = tbody.insertRow();
 
-      const slot = CS ? (CS.MINUTES_SLOTS[i] || '') : '';
+      const slot = CS && i < line ? CS.MINUTES_SLOTS[i] : '';
       if (CS) {
+        markRow(tr, i, !!slot);
         const slotTd = tr.insertCell();
         slotTd.className = 'ts-slot';
-        slotTd.textContent = slotLabel(i);
+        slotTd.textContent = slot ? slotLabel(i) : '—';
       }
 
       const numTd = tr.insertCell();
@@ -5671,16 +5719,31 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     const fields = [];
     const meter = CS ? minutesMeter() : null;
 
-    // Rebuilds a slot-indexed minutes object from the table's live DOM
-    // order — row index *is* slot assignment, so there's nothing to keep in
-    // sync as rows get dragged around; this just reads the current state.
+    // Each player row's slot, read off the live DOM: player rows above the
+    // Inactive line take the slots in order, everything else gets none.
+    // Nothing is kept in sync as rows get dragged around; this just reads
+    // the current state.
+    function slotPlan() {
+      const plan = [];
+      let n = 0;
+      let above = true;
+      Array.from(tbody.rows).forEach(tr => {
+        if (tr._divider) { above = false; return; }
+        if (!tr._rosterCtl) return;
+        const slot = above && CS ? (CS.MINUTES_SLOTS[n] || '') : '';
+        plan.push({ tr, ctl: tr._rosterCtl, slot, i: n });
+        if (slot) n++;
+      });
+      return plan;
+    }
+
+    // Every slot is written, an empty one as `{slug: ''}`, so a slot left
+    // open is recorded as open (orderedRows reads that back).
     function minutesFromDom() {
-      const out = {};
-      if (!CS) return out;
-      Array.from(tbody.rows).forEach((tr, i) => {
-        const slot = CS.MINUTES_SLOTS[i];
-        const ctl = tr._rosterCtl;
-        if (!slot || !ctl) return;
+      if (!CS) return {};
+      const out = CS.emptyMinutes();
+      slotPlan().forEach(({ ctl, slot }) => {
+        if (!slot) return;
         out[slot] = { slug: ctl.slug, minutes: +ctl.minInput.value || 0, res: ctl.resCheck.checked };
       });
       return out;
@@ -5717,11 +5780,9 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     // back in.
     function relabelSlots() {
       if (!CS) return;
-      Array.from(tbody.rows).forEach((tr, i) => {
-        const ctl = tr._rosterCtl;
-        if (!ctl) return;
-        const slot = CS.MINUTES_SLOTS[i] || '';
-        ctl.slotTd.textContent = slotLabel(i);
+      slotPlan().forEach(({ tr, ctl, slot, i }) => {
+        markRow(tr, i, !!slot);
+        ctl.slotTd.textContent = slot ? slotLabel(i) : '—';
         ctl.minInput.disabled = !slot;
         ctl.minusBtn.disabled = !slot;
         ctl.plusBtn.disabled = !slot;
@@ -5737,8 +5798,10 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     // nothing here writes anything until Save is clicked. Minutes/RES a
     // player already had travel with their row, since a row is just moved,
     // not rebuilt.
+    // The Inactive line keeps the same number of players above it.
     function autoSort() {
       if (!CS || typeof computeStartingFive !== 'function') return;
+      const keep = slotPlan().filter(p => p.slot).length;
       const bySlug = new Map();
       Array.from(tbody.rows).forEach(tr => { if (tr._rosterCtl) bySlug.set(tr._rosterCtl.slug, tr); });
 
@@ -5758,6 +5821,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         const tr = bySlug.get(p.slug);
         if (tr) tbody.appendChild(tr); // re-appending an existing row moves it — this is the reorder
       });
+      const playerRows = Array.from(tbody.rows).filter(tr => tr._rosterCtl);
+      tbody.insertBefore(divider, playerRows[keep] || null);
 
       minutesDirty = true;
       relabelSlots();
@@ -5822,7 +5887,10 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       handle.addEventListener('touchstart', onStart, { passive: true });
     }
 
-    orderedRows(startMinutes).forEach((row, i) => {
+    const { rows: startRows, line: startLine } = orderedRows(startMinutes);
+    let divider = null;
+    startRows.forEach((row, i) => {
+      if (CS && i === startLine) divider = dividerRow(tbody, table.tHead.rows[0].cells.length, true);
       const bio = biosData[row.SLUG] || {};
       const jersey = bio.jersey_number ?? '';
       const secondaryPos = bio.secondary_pos || '';
@@ -5879,9 +5947,10 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       posTd.appendChild(posWrap);
 
       if (CS) {
-        const slot = CS.MINUTES_SLOTS[i] || '';
+        const slot = i < startLine ? CS.MINUTES_SLOTS[i] : '';
         const existing = slot ? startMinutes[slot] : null;
-        slotTd.textContent = slotLabel(i);
+        markRow(tr, i, !!slot);
+        slotTd.textContent = slot ? slotLabel(i) : '—';
 
         // Minutes and RES share one cell — a reserve player has no minutes
         // figure to show alongside, so they were never independent columns.
@@ -5943,6 +6012,10 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         originalJersey: String(jersey), originalSecondaryPos: secondaryPos,
       });
     });
+    if (CS) {
+      if (!divider) divider = dividerRow(tbody, table.tHead.rows[0].cells.length, true);
+      attachDrag(divider, divider._handle);
+    }
 
     refreshMinutesTotal();
     mountTable(table, meter);
