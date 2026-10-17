@@ -326,6 +326,9 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-name { font-weight: 600; }
   .ts-name .twoway-games, .roster-name-top .twoway-games { margin-left: 0.4rem; font-weight: 600; }
   .ts-2w-note { margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--gold); }
+  .ts-illegal-note { margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--danger-light); }
+  .ts-table tbody tr.ts-illegal td { background: var(--danger-bg); }
+  .ts-table tbody tr.ts-illegal .ts-pos { color: var(--danger-light); font-weight: 700; }
   .ts-name a { color: var(--text-primary); text-decoration: none; }
   .ts-name a:hover { color: var(--accent-light); }
   .ts-ovr { width: 2.6rem; text-align: right !important; font-variant-numeric: tabular-nums; color: var(--text-muted); }
@@ -5485,6 +5488,20 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     return ordered;
   }
 
+  // Where a player may start: his 2K primary, one step either side of it,
+  // or the secondary his team gave him (§ 2.3 keeps that within one step
+  // already). Null when there's no 2K primary yet, which isn't checked.
+  // Mirrors starter_positions in nbn-api routers/coaching_settings.py.
+  function startPositions(slug) {
+    const primary = primaryPosFromAttrs(attributesData[slug]);
+    const i = POSITION_ORDER.indexOf(primary);
+    if (i < 0) return null;
+    const ok = new Set([POSITION_ORDER[i - 1], primary, POSITION_ORDER[i + 1]].filter(Boolean));
+    const secondary = (biosData[slug] || {}).secondary_pos;
+    if (secondary) ok.add(secondary);
+    return POSITION_ORDER.filter(p => ok.has(p));
+  }
+
   // "PG" for a starter, "6th" for the bench. The stored key stays the bare
   // CS.MINUTES_SLOTS value; this is display only.
   function slotLabel(i) {
@@ -5704,10 +5721,40 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         : '';
     }
 
+    // A starter has to play near his slot. A new illegal placement blocks
+    // Save (the API refuses it too); one already saved that way is flagged
+    // but not blocking, matching the API, so the team can still save.
+    const startersNote = document.createElement('div');
+    startersNote.className = 'ts-illegal-note';
+    startersNote.hidden = true;
+
+    function refreshStarters(minutes) {
+      const bad = new Map();  // slug -> line
+      let blocking = 0;
+      CS.MINUTES_SLOTS.slice(0, STARTERS).forEach(slot => {
+        const slug = minutes[slot] && minutes[slot].slug;
+        const ok = slug ? startPositions(slug) : null;
+        if (!ok || ok.includes(slot)) return;
+        const saved = startMinutes[slot] && startMinutes[slot].slug === slug;
+        if (!saved) blocking++;
+        const name = displayNameFromBio((biosData[slug] || {}).name || '') || slug;
+        bad.set(slug, `${name} can't start at ${slot}: he can start at ${ok.join(', ')}`
+          + (saved ? ' (saved that way before this rule; move him when you can)' : ''));
+      });
+      Array.from(tbody.rows).forEach(tr => {
+        if (tr._rosterCtl) tr.classList.toggle('ts-illegal', bad.has(tr._rosterCtl.slug));
+      });
+      startersNote.hidden = !bad.size;
+      startersNote.textContent = [...bad.values()].join('. ');
+      saveBtn.disabled = blocking > 0;
+      saveBtn.title = blocking ? 'A starter is out of position' : '';
+    }
+
     function refreshMinutesTotal() {
       const minutes = minutesFromDom();
       if (meter) meter.update(minutes);
       refreshTwoWayNote(minutes);
+      if (CS) refreshStarters(minutes);
     }
 
     // Relabels every row's Slot cell and enables/disables its Min controls
@@ -5745,7 +5792,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const players = activeRows.map(row => ({
         slug: row.SLUG,
         OVR: currentOvr ? currentOvr[row.SLUG] : '',
-        _posList: (biosData[row.SLUG] || {}).pos || [],
+        _posList: startPositions(row.SLUG) || (biosData[row.SLUG] || {}).pos || [],
       }));
       const five = computeStartingFive(players);
       const startedSlugs = new Set(five.filter(Boolean).map(p => p.slug));
@@ -5947,6 +5994,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     refreshMinutesTotal();
     mountTable(table, meter);
     wrapEl.insertBefore(twoWayNote, wrapEl.lastChild);
+    wrapEl.insertBefore(startersNote, wrapEl.lastChild);
 
     cancelBtn.addEventListener('click', () => renderReadView());
 
