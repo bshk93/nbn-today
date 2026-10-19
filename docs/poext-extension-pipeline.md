@@ -314,7 +314,10 @@ is superseded.** The public/private split survives, but it is no longer
   events FA already posts there. Reviewers should learn there's something to
   review from the channel, the same way they do today, not only by opening
   the dashboard.
-- **Public channel: accept only.** Still nothing about a live negotiation
+- **Public channel: accept only — and the accept in full.** The agreed post
+  names the team and the contract (`5 yrs · $155.0M`), decided 2026-10-19:
+  it's a decided contract, already public in #transactions, not a secret bid
+  like free agency's. Still nothing about a live negotiation
   reaches it — submissions, remands and rejections stay committee-internal.
   An extension that's rejected or lapses is still a non-event as far as the
   public feed is concerned: announcing it would publish that a team tried and
