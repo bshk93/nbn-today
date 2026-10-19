@@ -1148,9 +1148,16 @@
     // "East-3"), so there is no second list of who plays where to keep.
     // Alphabetical within each conference: an order by record would reshuffle the
     // strip every night and make a team hard to find.
+    //
+    // Newest *complete* season: a team has no row until it has played, so for
+    // the first nights of a season the newest one holds only the teams that
+    // have (6 of 30 after opening night).
     standingsPromise.then(rows => {
       if (!rows.length) return;
-      const latest = rows.reduce((m, r) => (r.SEASON > m ? r.SEASON : m), '');
+      const counts = {};
+      rows.forEach(r => { counts[r.SEASON] = (counts[r.SEASON] || 0) + 1; });
+      const most = Math.max(...Object.values(counts));
+      const latest = Object.keys(counts).filter(s => counts[s] === most).sort().pop();
       const conf = { East: [], West: [] };
       rows.filter(r => r.SEASON === latest).forEach(r => {
         const c = String(r.SEED || '').split('-')[0];
@@ -1264,7 +1271,9 @@
         if (nextDate) {
           head = `<div class="dash-team-phase-sub" style="margin-bottom:0.5rem">`
             + `${esc(shortDate(nextDate))} · ${plural(upcoming.filter(g => g.date === nextDate).length, 'game')}</div>`;
-          list = upcoming.filter(g => g.date === nextDate).slice(0, 4);
+          // The whole night, not the first few: the line above counts every
+          // game, and a slate cut at four hid most of an 11-game night.
+          list = upcoming.filter(g => g.date === nextDate);
         }
       }
 
