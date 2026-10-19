@@ -872,7 +872,9 @@
           lbl.textContent = `📅 ${ev.label}`;
           row.appendChild(lbl);
 
-          if (isBoD) {
+          // A recurring event (the team option deadline) is computed by the
+          // API every year, so there's nothing stored to delete.
+          if (isBoD && !ev.recurring) {
             const del = document.createElement('button');
             del.className = 'sched-custom-del';
             del.textContent = '×';
