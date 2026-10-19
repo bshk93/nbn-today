@@ -565,6 +565,10 @@
       color: var(--text-secondary); font: inherit; padding: 0.2rem 0.4rem;
     }
     .badge-release        { background: var(--danger-bg); color: var(--danger); }
+    .badge-voided         { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    .txn-voided td        { color: var(--text-dim); }
+    .txn-voided .badge:not(.badge-voided) { text-decoration: line-through; opacity: 0.6; }
+    .voided-reason        { margin-top: 0.25rem; font-size: 0.75rem; color: var(--danger); }
     .badge-waiver_clear   { background: #0c2a3d; color: #38bdf8; }
     .badge-waiver_flagged { background: var(--gold-bg); color: var(--gold); }
     .badge-renounce       { background: #3b2f0a; color: #fcd34d; }
@@ -4185,14 +4189,19 @@ function renderPagination(pagination, totalCount, start, totalPages) {
 function renderRow(t) {
   const d = t.details || {};
   const dateStr = fmtDate(t.date);
-  const badge = `<span class="badge badge-${t.type}">${typeLabel(t.type)}</span>`;
+  // A voided entry is kept for the record, not deleted (an office reversal,
+  // e.g. MIN's out-of-window option, 2026-10-19). It stays in the list,
+  // struck through, with the reason under its details.
+  const badge = `<span class="badge badge-${t.type}">${typeLabel(t.type)}</span>`
+    + (t.voided ? ` <span class="badge badge-voided">Voided</span>` : '');
   let teamCell, playerCell;
   const teams = txnTeams(t);
   const sep = (t.type === 'offer_sheet' || t.type === 'offer_sheet_decision'
     || (t.type === 'waiver_clear' && d.claimed_by)) ? ' → ' : ' · ';
   teamCell = teams.length ? teams.map(tm => `<a href="/teams/${tm}">${escHtml(tm)}</a>`).join(sep) : '—';
   playerCell = t.type === 'trade' ? '—' : renderPlayerCell(d.player);
-  const detailsCell = renderDetailsCell(t);
+  const detailsCell = renderDetailsCell(t)
+    + (t.voided ? `<div class="voided-reason">${escHtml(t.voided_reason || 'Voided by the league office.')}</div>` : '');
   const note = escHtml(t.description || '');
   const noteCell = `<td class="note-cell${t.description ? '' : ' empty'}" data-id="${escHtml(t.id)}" style="color:var(--text-muted)">${note}</td>`;
   // A renounce carries a snapshot of everything it erased, which is the only
@@ -4203,7 +4212,7 @@ function renderRow(t) {
     ? `<button class="rescind-txn-btn" data-id="${escHtml(t.id)}" title="Restore this player to ${escHtml(d.team || 'their team')} (§ 3.10 rescission)">undo</button>`
     : '';
   const delCell = `<td class="del-col">${rescindBtn}<button class="delete-txn-btn" data-id="${escHtml(t.id)}" title="Delete transaction">×</button></td>`;
-  return `<tr><td>${dateStr}</td><td>${badge}</td><td>${teamCell}</td><td>${playerCell}</td><td>${detailsCell}</td>${noteCell}${delCell}</tr>`;
+  return `<tr${t.voided ? ' class="txn-voided"' : ''}><td>${dateStr}</td><td>${badge}</td><td>${teamCell}</td><td>${playerCell}</td><td>${detailsCell}</td>${noteCell}${delCell}</tr>`;
 }
 
 function renderPlayerCell(slug) {
