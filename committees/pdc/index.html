@@ -784,19 +784,113 @@
     if (!p) { box.appendChild(el('div', 'empty', 'No live proposal on this player.')); return; }
 
     // ── the proposal itself ────────────────────────────────────────────────
+    // Everything the committee needs to judge the deal on one screen: the
+    // contract it replaces, every year of the extension, and the figures the
+    // validator measured it against. All numbers come off the API's fact
+    // sheet (`_extension_fact_sheet`); nothing here does cap math.
+    const sheet = (review.revalidation && review.revalidation.fact_sheet)
+      || (p.validation && p.validation.fact_sheet) || null;
+    const bio = BIOS[slug] || {};
     const psec = el('div', 'section');
     psec.appendChild(el('h3', null, 'Proposal'));
+    const bits = [(bio.pos || []).join('/'), age(bio.dob) ? age(bio.dob) + ' yrs' : '',
+                  OVR[slug] ? OVR[slug] + ' OVR' : '', p.team];
+    psec.appendChild(el('div', 'note', bits.filter(Boolean).join(' · ')));
     const shorthandStr = (() => {
       try { return shorthand({ salaries: p.contract.salaries, cap_holds: p.contract.cap_holds }); }
       catch { return ''; }
     })();
-    psec.appendChild(el('div', null, `${p.kind.replace('_', ' ')} · ${shorthandStr || Object.keys(p.contract.salaries || {}).join(', ')}`));
-    if (p.bird_rights_type) psec.appendChild(el('div', 'note', 'Bird tier: ' + p.bird_rights_type));
-    if (p.attested_contract_start) psec.appendChild(el('div', 'note', 'Team attests contract began: ' + p.attested_contract_start));
+    psec.appendChild(el('div', 'shorthand', `${p.kind.replace('_', ' ')} · ${shorthandStr || Object.keys(p.contract.salaries || {}).join(', ')}`));
+
+    const ex = sheet && sheet.existing_contract;
+    if (ex && ex.salaries && Object.keys(ex.salaries).length) {
+      const cur = el('div'); cur.style.marginTop = '0.6rem';
+      cur.appendChild(el('div', 'mini-head', 'Current contract'
+        + (ex.start && ex.end ? ` · ${ex.start} to ${ex.end}` : '')));
+      cur.appendChild(yearTable({ salaries: ex.salaries, cap_holds: bio.cap_holds || {},
+        guaranteed: bio.guaranteed || {}, guarantee_schedule: bio.guarantee_schedule || {} }, SEASON));
+      psec.appendChild(cur);
+    }
+
+    const ext = el('div'); ext.style.marginTop = '0.6rem';
+    const firstYr = (sheet && sheet.extended_term && sheet.extended_term.first_season)
+      || Object.keys(p.contract.salaries || {}).sort()[0] || SEASON;
+    ext.appendChild(el('div', 'mini-head', 'Extension · year by year'));
+    ext.appendChild(yearTable(p.contract, firstYr, sheet && sheet.trailing_hold));
+    // Total and average of the real contract years — trailing UFA/RFA holds
+    // are the season after the deal, not part of it.
+    const extYears = Object.entries(p.contract.salaries || {})
+      .filter(([yr]) => !HOLD((p.contract.cap_holds || {})[yr]));
+    if (extYears.length) {
+      const total = extYears.reduce((s, [, v]) => s + parseMoney(v), 0);
+      ext.appendChild(el('div', 'note', `${extYears.length} yr${extYears.length === 1 ? '' : 's'} · `
+        + `${money(total)} total · ${money(total / extYears.length)} avg/yr`));
+      const amts = extYears.sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => parseMoney(v));
+      const pct = (a, b) => (b >= a ? '+' : '') + ((b - a) / a * 100).toFixed(1) + '%';
+      if (amts.length > 1 && amts.every(Boolean)) {
+        ext.appendChild(el('div', 'note', 'Raises: ' + amts.slice(1).map((v, i) => pct(amts[i], v)).join(' · ')));
+      }
+      if (sheet && sheet.prior_salary && amts[0]) {
+        ext.appendChild(el('div', 'note', `Year 1 vs current salary (${money(sheet.prior_salary)}): ${pct(sheet.prior_salary, amts[0])}`));
+      }
+    }
+    psec.appendChild(ext);
+
+    const kv = el('dl', 'kv'); kv.style.marginTop = '0.6rem';
+    const put = (k, v, title) => {
+      if (v == null || v === '') return;
+      kv.appendChild(el('dt', null, k));
+      const dd = el('dd', null, v);
+      if (title) dd.title = title;
+      kv.appendChild(dd);
+    };
+    put('Type', p.kind.replace('_', ' ') + (sheet && sheet.rookie_scale ? ' (rookie-scale player)' : ''));
+    put('Bird tier', p.bird_rights_type);
+    if (sheet) {
+      put('Prior salary', sheet.prior_salary != null ? money(sheet.prior_salary) : null);
+      put('Year 1 ceiling', sheet.max_year1_ceiling != null ? money(sheet.max_year1_ceiling) : null,
+        sheet.max_year1_basis || '§ 6.2: 140% of prior salary');
+      const mx = sheet.max_salary || {};
+      put('Max salary', mx.amount != null ? money(mx.amount) + (mx.label ? ` (${mx.label})` : '')
+        + (mx.cap_basis && mx.cap_basis !== 'real' ? ` · ${mx.cap_basis} cap` : '') : null, mx.why || '');
+      if (mx.rose_amount && mx.rose && (mx.rose.met || mx.rose.possible)) {
+        put('Rose max', money(mx.rose_amount) + (mx.rose.met ? ' (qualifies)'
+          : ` (possible — decided by ${mx.rose.decides || 'a later season'})`));
+      }
+      put('EAPS', sheet.eaps ? money(sheet.eaps) : null);
+    }
+    if (p.eaps_assumption) put('EAPS assumption', p.eaps_assumption);
+    if (sheet && sheet.extended_term && sheet.extended_term.first_season) {
+      const yr = sheet.extended_term.first_season;
+      const est = sheet.cap_position_evaluable === 'estimated' ? ' (estimate)' : '';
+      put(`Team salary ${yr}`, sheet.team_salary_first_extended_season != null ? money(sheet.team_salary_first_extended_season) : null);
+      put(`Cap ${yr}`, sheet.cap_first_extended_season ? money(sheet.cap_first_extended_season) + est : null);
+      put(`Hard cap ${yr}`, sheet.hard_cap_first_extended_season ? money(sheet.hard_cap_first_extended_season) + est : null);
+    }
+    put('Contract began', p.attested_contract_start ? p.attested_contract_start + ' (team attests)'
+      : (ex && ex.start ? ex.start + (ex.basis ? ` (${ex.basis})` : '') : null), ex && ex.evidence ? String(ex.evidence) : '');
+    put('Submitted', p.submitted_at ? when(p.submitted_at) + ' · ' + (p.submitted_by || '—') : null);
+    if (p.created_by && p.created_by !== p.submitted_by) put('Drafted by', p.created_by);
+    if (p.version > 1) put('Version', 'v' + p.version + ' (resubmitted after a remand)');
+    psec.appendChild(kv);
+
     if (p.promises) psec.appendChild(promisesBlock(p.promises));
     if (p.pitch) psec.appendChild(pitchBlock(p.pitch));
+    if (st.agent && st.agent.note && st.agent.cycle === p.id) {
+      const n = el('div', 'banner info');
+      n.appendChild(el('div', 'mini-head', 'Agent’s note · ' + (st.agent.advanced_by || '?')));
+      n.appendChild(el('div', null, st.agent.note));
+      psec.appendChild(n);
+    }
     if (review.outstanding_remands && review.outstanding_remands.length) {
       review.outstanding_remands.forEach(r => psec.appendChild(el('div', 'banner warn', `Remand (${r.by}): ${r.note}`)));
+    }
+    if (p.history && p.history.length) {
+      const d = el('details'); d.style.marginTop = '0.5rem';
+      d.appendChild(el('summary', 'note', `History (${p.history.length})`));
+      p.history.forEach(h => d.appendChild(el('div', 'note',
+        `${when(h.ts)} · ${h.actor || '?'} · ${h.from || 'new'} → ${h.to}` + (h.version ? ` (v${h.version})` : ''))));
+      psec.appendChild(d);
     }
     box.appendChild(psec);
 
@@ -806,10 +900,21 @@
       const legal = review.revalidation.legal;
       vsec.appendChild(el('div', 'banner ' + (legal ? 'info' : 'bad'),
         (legal ? '✓ Legal as last checked' : '✗ Not legal') + (p.validation ? ` — submitted as ${p.validation.legal ? 'legal' : 'illegal (forced?)'}` : '')));
+      if (review.revalidation.error) vsec.appendChild(el('div', 'note', '✗ ' + review.revalidation.error));
       // Failures, plus the info notes (e.g. an extension superseding a QO).
-      (review.revalidation.checks || []).filter(c => !c.passed || c.level === 'info').forEach(c => {
-        vsec.appendChild(el('div', 'note', (c.level === 'info' ? 'ℹ ' : c.level === 'error' ? '✗ ' : '⚠ ') + c.message));
+      const checks = review.revalidation.checks || [];
+      const mark = c => c.passed ? (c.level === 'info' ? 'ℹ ' : '✓ ') : (c.level === 'error' ? '✗ ' : '⚠ ');
+      checks.filter(c => !c.passed || c.level === 'info').forEach(c => {
+        vsec.appendChild(el('div', 'note', mark(c) + c.message));
       });
+      // The rest — every rule the deal was measured against, passed ones too.
+      const passed = checks.filter(c => c.passed && c.level !== 'info');
+      if (passed.length) {
+        const d = el('details');
+        d.appendChild(el('summary', 'note', `Passed checks (${passed.length})`));
+        passed.forEach(c => d.appendChild(el('div', 'note', mark(c) + c.message)));
+        vsec.appendChild(d);
+      }
       box.appendChild(vsec);
     }
 
