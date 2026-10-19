@@ -1056,30 +1056,43 @@
   // error. A real error (can_confirm absent) still just toasts, same as
   // every other action here.
   // `outcome` is the off-site lottery draw's result, when no side passed 85%.
-  async function poextFinalize(slug, confirmWarnings, outcome) {
+  // Same EAPS prompt as declareWinner: a Full Bird trailing hold in a season
+  // with no EAPS yet can't be priced until the head says which side of it
+  // the final salary falls (§ 3.10), so ask and finalize again with it.
+  async function poextFinalize(slug, confirmWarnings, outcome, eaps) {
     try {
       await api('/poext/players/' + slug + '/finalize',
-        { method: 'POST', body: { confirm_warnings: !!confirmWarnings, outcome: outcome || null } });
+        { method: 'POST', body: { confirm_warnings: !!confirmWarnings, outcome: outcome || null, eaps_assumption: eaps || null } });
       toast('Done.');
       await poextReload();
     } catch (e) {
       const detail = e.data && e.data.detail;
+      const eapsText = (typeof detail === 'string' && detail.includes('eaps_assumption')) ? detail : null;
+      if (!eaps && eapsText) {
+        const body = el('div');
+        body.appendChild(el('div', 'note', eapsText.replace(/ Pass eaps_assumption:.*$/, '')));
+        modal('Above or below EAPS?', body, [
+          { label: 'Below EAPS', cls: 'btn-primary', run: () => poextFinalize(slug, confirmWarnings, outcome, 'below') },
+          { label: 'Above EAPS', run: () => poextFinalize(slug, confirmWarnings, outcome, 'above') },
+        ]);
+        return;
+      }
       if (!confirmWarnings && detail && detail.can_confirm) {
-        poextFinalizeConfirmModal(slug, detail.checks || [], outcome);
+        poextFinalizeConfirmModal(slug, detail.checks || [], outcome, eaps);
         return;
       }
       toast((detail && detail.message) || e.message, true);
     }
   }
 
-  function poextFinalizeConfirmModal(slug, checks, outcome) {
+  function poextFinalizeConfirmModal(slug, checks, outcome, eaps) {
     const body = el('div');
     body.appendChild(el('div', 'note',
       'This extension has warning-level checks — nothing blocking, but worth a look before finalizing:'));
     checks.filter(c => !c.passed).forEach(c => body.appendChild(el('div', 'note', '⚠ ' + c.message)));
     modal('Finalize with warnings?', body, [{
       label: 'Finalize anyway', cls: 'btn-primary',
-      run: () => poextFinalize(slug, true, outcome),
+      run: () => poextFinalize(slug, true, outcome, eaps),
     }]);
   }
 
