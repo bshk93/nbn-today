@@ -947,9 +947,10 @@
             <p><strong>Team Option (TEAM_OPT):</strong> The team holds the right to retain the player at the option year salary. If exercised, the year is guaranteed and the hold is cleared. If declined, the player enters free agency.</p>
             <p><strong>Guaranteeing a non-guaranteed year (NON_GTD):</strong> A team may convert a non-guaranteed contract year to fully guaranteed at any time via the guarantee transaction type — one year at a time. The full salary for that year becomes the guaranteed amount, the NON_GTD hold is cleared, and any guarantee date or step schedule for the year is dropped. This is distinct from an option: there is no decline path and it does not create a free-agent hold; it simply locks in salary the team would otherwise still owe only on release before the guarantee date (see § 5.2). A team that instead lets a guarantee date pass without acting still owes the full salary on a later release, but the contract continues to read NON_GTD until explicitly guaranteed.</p>
             <p><strong>Two-way conversion:</strong> A two-way player may be converted to a standard contract via the convert_twoway transaction type. The new contract must comply with applicable cap rules and the team must have either cap space or a valid exception. The player's roster slot moves from the two-way pool to the standard 15-man roster.</p>
-            <p><strong>What's system-enforced:</strong> a <code>TEAM_OPT</code> decision checks that the player actually carries a team option for that year, and reports the resulting roster count against the § 2.1 minimum and the § 2.1a charge floor on decline — eligibility is a hard failure, the roster consequence is a warning, same split as renounce. A <code>PLAYER_OPT</code> decision has no automated check at all: the team never even initiates it, since it is PDC's own judgment call, not a self-serve action.</p>
+            <p><strong>Team option deadline:</strong> A team must exercise or decline a team option by <strong>October 31</strong>. When October 31 falls on a weekend, the deadline is the <strong>Monday after</strong> (November 1 or 2). The deadline is on the league calendar every year.</p>
+            <p><strong>What's system-enforced:</strong> a <code>TEAM_OPT</code> decision checks that the player actually carries a team option for that year — a hard failure if not. Declining an option for the current season also reports the resulting roster count against the § 2.1 minimum and the § 2.1a charge floor, as a warning, same split as renounce; declining a future season's option changes nothing on the roster now, so it reports no shortfall. The deadline itself is not enforced: a decision after it is not refused. A <code>PLAYER_OPT</code> decision has no automated check at all: the team never even initiates it, since it is PDC's own judgment call, not a self-serve action.</p>
             <div class="callout callout-pending">
-              Option exercise and decline deadlines are pending documentation.
+              Player option exercise and decline deadlines are pending documentation.
             </div>
           </div>
 
@@ -1103,6 +1104,9 @@
                 <tr><th>Date</th><th>Section</th><th>Type</th><th>Change</th><th>Basis</th><th>Approved</th></tr>
               </thead>
               <tbody>
+                <tr><td>2026-10-19</td><td>§ 6.1</td><td><span class="rev-type rev-open">Unreviewed</span></td>
+                  <td>Team options must be exercised or declined by October 31, or the Monday after when that falls on a weekend. Shown on the calendar; not enforced by the site. Was: "option exercise and decline deadlines are pending documentation" (player option deadlines still are).</td>
+                  <td>League office direction</td><td></td></tr>
                 <tr><td>2026-10-17</td><td>§ 2.3</td><td><span class="rev-type rev-open">Unreviewed</span></td>
                   <td>A starter must play his primary position, one position either side of it, or his secondary. Rotations saved before this rule keep their starters until changed. Was: no rule; any player could start at any position.</td>
                   <td>League office direction</td><td></td></tr>
