@@ -1790,6 +1790,10 @@
 
     function openClaimModal(w, team) {
       const playerName = displayName((BIOS[w.player] || {}).name || w.player);
+      // A two-way carries $0 and sits outside Team Salary (§ 2.2), so there is
+      // nothing to fund. Asking anyway is how CHA's two-way claim got filed
+      // as an MLE signing (2026-10-19).
+      const twoWay = (w.contract || {}).type === 'two-way';
       let method = '';
       let validateTimer = null, validateSeq = 0;
 
@@ -1841,12 +1845,12 @@
         });
         sel.addEventListener('change', () => { method = sel.value; revalidate(true); });
         methodField.appendChild(sel);
-        box.appendChild(methodField);
+        if (!twoWay) box.appendChild(methodField);
 
         const panel = el('div', 'panel');
         panel.id = 'claim-legality-panel';
         panel.style.marginTop = '0.7rem';
-        panel.textContent = 'Choose a funding method to check legality.';
+        panel.textContent = twoWay ? 'Checking…' : 'Choose a funding method to check legality.';
         box.appendChild(panel);
 
         const actions = el('div', 'modal-actions');
@@ -1876,6 +1880,7 @@
         });
         actions.appendChild(go);
         box.appendChild(actions);
+        if (twoWay) revalidate(true);
 
         function revalidate(immediate) {
           clearTimeout(validateTimer);
@@ -1883,7 +1888,7 @@
         }
 
         async function runValidation() {
-          if (!method) {
+          if (!method && !twoWay) {
             panel.className = 'panel';
             panel.textContent = 'Choose a funding method to check legality.';
             go.disabled = true;
@@ -1895,7 +1900,7 @@
             const res = await fetch(`/api/validate/waiver_claim?txn_id=${w.txn_id}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ team, signing_method: method }),
+              body: JSON.stringify({ team, signing_method: method || null }),
             });
             if (seq !== validateSeq) return;
             data = await res.json();
