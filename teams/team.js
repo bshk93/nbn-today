@@ -346,7 +346,6 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-pos-edit { display: inline-flex; align-items: center; gap: 0.3rem; }
   .ts-sec-select { width: auto; color: var(--text-secondary); }
   .ts-pin { display: inline-flex; align-items: center; gap: 0.15rem; font-size: 0.75rem; cursor: pointer; user-select: none; }
-  .ts-pin input:disabled + span { opacity: 0.35; }
   .ts-pin-mark { margin-left: 0.25rem; font-size: 0.7rem; }
   .ts-pos-wait { margin-left: 0.3rem; font-size: 0.68rem; color: var(--gold); }
   .ts-min-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
@@ -5650,13 +5649,14 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         sec.className = 'ts-pos2';
         sec.textContent = ` / ${bio.secondary_pos}`;
         posTd.appendChild(sec);
-        if (posLocked(row.SLUG)) {
-          const pin = document.createElement('span');
-          pin.className = 'ts-pin-mark';
-          pin.textContent = '📌';
-          pin.title = 'The streamer checks this position before every game';
-          posTd.appendChild(pin);
-        }
+      }
+      if (posLocked(row.SLUG)) {
+        const pin = document.createElement('span');
+        pin.className = 'ts-pin-mark';
+        pin.textContent = '📌';
+        pin.title = bio.secondary_pos ? 'The streamer checks this position before every game'
+          : 'The streamer checks before every game that 2K gives him no secondary position';
+        posTd.appendChild(pin);
       }
       if (posWaiting(row.SLUG)) {
         const w = document.createElement('span');
@@ -5952,31 +5952,22 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const secSel = document.createElement('select');
       secSel.className = 'ts-input ts-sec-select';
       secSel.setAttribute('aria-label', 'Secondary position');
-      [{ value: '', label: '+ 2nd' }, ...eligiblePos.map(p => ({ value: p, label: `/ ${p}` }))].forEach(o => {
+      [{ value: '', label: '/ –' }, ...eligiblePos.map(p => ({ value: p, label: `/ ${p}` }))].forEach(o => {
         secSel.appendChild(new Option(o.label, o.value, false, o.value === secondaryPos));
       });
       posWrap.appendChild(secSel);
-      // 📌: check this secondary before every game. Only means something
-      // while there is a secondary to check.
+      // 📌: check this position before every game. With no secondary it
+      // means "make sure 2K has none", since 2K can add one back.
       const pinLabel = document.createElement('label');
       pinLabel.className = 'ts-pin';
       pinLabel.title = 'Have the streamer check this position before every game';
       const pinCheck = document.createElement('input');
       pinCheck.type = 'checkbox';
-      pinCheck.checked = posLocked(row.SLUG) && !!secondaryPos;
+      pinCheck.checked = posLocked(row.SLUG);
       pinCheck.setAttribute('aria-label', 'Check position before every game');
       const pinIcon = document.createElement('span');
       pinIcon.textContent = '📌';
       pinLabel.append(pinCheck, pinIcon);
-      // Picking a secondary shows the player's pin as it stands; clearing
-      // it unticks the box.
-      const syncPin = () => {
-        pinCheck.disabled = !secSel.value;
-        pinCheck.checked = !!secSel.value && (pinCheck.dataset.touched ? pinCheck.checked : posLocked(row.SLUG));
-      };
-      pinCheck.addEventListener('change', () => { pinCheck.dataset.touched = '1'; });
-      secSel.addEventListener('change', syncPin);
-      syncPin();
       posWrap.appendChild(pinLabel);
       posTd.appendChild(posWrap);
 
@@ -6057,7 +6048,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const changed = fields.filter(({ jerseyInput, secSel, originalJersey, originalSecondaryPos }) =>
         String(jerseyInput.value.trim()) !== originalJersey || secSel.value !== originalSecondaryPos
       );
-      // Send only the pins that changed. Clearing a secondary unticks its pin.
+      // Send only the pins that changed.
       const pins = {};
       fields.forEach(f => {
         if (f.pinCheck.checked !== posLocked(f.slug)) pins[f.slug] = f.pinCheck.checked;

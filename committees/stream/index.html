@@ -552,8 +552,8 @@
       const b = document.createElement('b');
       b.textContent = nbnPlayerName(i.name);
       row.appendChild(b);
-      const pos = [i.primary, i.secondary].filter(Boolean).join(' / ') || 'no 2K position yet';
-      row.appendChild(document.createTextNode(` ${pos} `));
+      const primary = i.primary || 'no 2K position yet';
+      row.appendChild(document.createTextNode(i.secondary ? ` ${primary} / ${i.secondary} ` : ` ${primary}, no secondary `));
       let why;
       if (i.changed) why = i.secondary ? (i.was ? `was ${i.was}` : 'new') : `remove ${i.was}`;
       else why = i.due ? '📌 check every game' : '📌 checked today';
