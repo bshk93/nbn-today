@@ -5431,6 +5431,22 @@ function primaryPosFromAttrs(attrSnap) {
   return (Array.isArray(pos) && pos.length) ? pos[0] : '—';
 }
 
+// 2K's own secondary position, second in the scrape's 2k_pos. Not held to
+// § 2.3's one step: it is 2K's designation, not a team's choice.
+function twoKSecondaryFromAttrs(attrSnap) {
+  const pos = attrSnap && attrSnap['2k_pos'];
+  return (Array.isArray(pos) && pos.length > 1) ? pos[1] : null;
+}
+
+// The secondary a player actually has. bio.secondary_pos null: the team
+// hasn't chosen, so 2K's stands. 'none': the team removed it. A position:
+// the team's pick. Mirrors effective_secondary in nbn-api routers/players.py.
+function effectiveSecondary(bio, attrSnap) {
+  const sec = bio && bio.secondary_pos;
+  if (sec === 'none') return null;
+  return sec || twoKSecondaryFromAttrs(attrSnap);
+}
+
 const POSITION_ORDER = ['PG', 'SG', 'SF', 'PF', 'C'];
 function secondaryPosOptions(primary) {
   const i = POSITION_ORDER.indexOf(primary);
@@ -5513,7 +5529,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     const i = POSITION_ORDER.indexOf(primary);
     if (i < 0) return null;
     const ok = new Set([POSITION_ORDER[i - 1], primary, POSITION_ORDER[i + 1]].filter(Boolean));
-    const secondary = (biosData[slug] || {}).secondary_pos;
+    const secondary = effectiveSecondary(biosData[slug], attributesData[slug]);
     if (secondary) ok.add(secondary);
     return POSITION_ORDER.filter(p => ok.has(p));
   }
@@ -5644,17 +5660,19 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const posTd = tr.insertCell();
       posTd.className = 'ts-pos';
       posTd.textContent = primary;
-      if (bio.secondary_pos) {
+      const secondary = effectiveSecondary(bio, attributesData[row.SLUG]);
+      if (secondary) {
         const sec = document.createElement('span');
         sec.className = 'ts-pos2';
-        sec.textContent = ` / ${bio.secondary_pos}`;
+        sec.textContent = ` / ${secondary}`;
+        if (!bio.secondary_pos) sec.title = "2K's secondary position";
         posTd.appendChild(sec);
       }
       if (posLocked(row.SLUG)) {
         const pin = document.createElement('span');
         pin.className = 'ts-pin-mark';
         pin.textContent = '📌';
-        pin.title = bio.secondary_pos ? 'The streamer checks this position before every game'
+        pin.title = secondary ? 'The streamer checks this position before every game'
           : 'The streamer checks before every game that 2K gives him no secondary position';
         posTd.appendChild(pin);
       }
@@ -5905,7 +5923,11 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     orderedRows(startMinutes).forEach((row, i) => {
       const bio = biosData[row.SLUG] || {};
       const jersey = bio.jersey_number ?? '';
-      const secondaryPos = bio.secondary_pos || '';
+      // A pick that matches 2K's, or 'none' when 2K has none, is the same as
+      // leaving it to 2K, and shows as that.
+      const twoKSecRow = twoKSecondaryFromAttrs(attributesData[row.SLUG]);
+      const secondaryPos = (bio.secondary_pos === twoKSecRow || (bio.secondary_pos === 'none' && !twoKSecRow))
+        ? '' : (bio.secondary_pos || '');
 
       const tr = tbody.insertRow();
 
@@ -5948,11 +5970,15 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       posWrap.appendChild(document.createTextNode(primaryPosFromAttrs(attributesData[row.SLUG])));
       // Rulebook § 2.3: the secondary is one step either side of the 2K
       // primary (a PG only SG, a C only PF). The API enforces the same rule.
+      // Blank keeps 2K's own secondary; 'none' removes it.
       const eligiblePos = secondaryPosOptions(primaryPosFromAttrs(attributesData[row.SLUG]));
+      const twoKSec = twoKSecRow;
       const secSel = document.createElement('select');
       secSel.className = 'ts-input ts-sec-select';
       secSel.setAttribute('aria-label', 'Secondary position');
-      [{ value: '', label: '/ –' }, ...eligiblePos.map(p => ({ value: p, label: `/ ${p}` }))].forEach(o => {
+      [{ value: '', label: twoKSec ? `/ ${twoKSec} (2K)` : '/ – (2K)' },
+       ...(twoKSec ? [{ value: 'none', label: '/ none' }] : []),
+       ...eligiblePos.filter(p => p !== twoKSec).map(p => ({ value: p, label: `/ ${p}` }))].forEach(o => {
         secSel.appendChild(new Option(o.label, o.value, false, o.value === secondaryPos));
       });
       posWrap.appendChild(secSel);
