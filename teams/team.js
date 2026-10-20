@@ -1091,7 +1091,7 @@ document.body.innerHTML = `
               <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
               <div class="settings-actions" id="team-settings-actions"></div>
             </div>
-            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Primary position comes from 2K. 📌 means the streamer checks a player's secondary position before every game, since 2K resets it when ratings update. It's on for anyone new to the team and for everyone at the start of each season; untick it to skip a player.</p>
+            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Primary position comes from 2K. Tick 📌 to have the streamer check a player's secondary position before every game, since 2K resets it when ratings update.</p>
             <div id="team-settings-wrap"><div class="status">Loading…</div></div>
           </div>
           <div class="settings-subsection">
@@ -5472,16 +5472,14 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   // Which players are pinned for a position check before every game, and
   // which secondaries the streamer hasn't set in 2K yet. From
   // GET /api/position-checks/{team}, fetched here and drawn when it lands.
-  // Pinned is the default: the API pins anyone new to the team, and
-  // everyone again each league year, until the team unticks them.
-  let posChecks = { items: [], pinned: null };
+  let posChecks = { items: [], pinned: [] };
   let editing = false;
   fetch(`/api/position-checks/${abbr}`).then(r => r.ok ? r.json() : null).then(v => {
     if (!v) return;
     posChecks = v;
     if (!editing) renderReadView();
   }).catch(() => {});
-  const posLocked = slug => !posChecks.pinned || posChecks.pinned.includes(slug);
+  const posLocked = slug => (posChecks.pinned || []).includes(slug);
   const posWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.changed);
 
   // A slot is which row a player is in, not a field they pick — table order
@@ -5970,8 +5968,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const pinIcon = document.createElement('span');
       pinIcon.textContent = '📌';
       pinLabel.append(pinCheck, pinIcon);
-      // Picking a secondary shows the player's pin as it stands (on, unless
-      // the team turned it off this year); clearing it unticks the box.
+      // Picking a secondary shows the player's pin as it stands; clearing
+      // it unticks the box.
       const syncPin = () => {
         pinCheck.disabled = !secSel.value;
         pinCheck.checked = !!secSel.value && (pinCheck.dataset.touched ? pinCheck.checked : posLocked(row.SLUG));
@@ -6059,12 +6057,10 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const changed = fields.filter(({ jerseyInput, secSel, originalJersey, originalSecondaryPos }) =>
         String(jerseyInput.value.trim()) !== originalJersey || secSel.value !== originalSecondaryPos
       );
-      // Only players with a secondary have a pin to choose. Clearing a
-      // secondary records nothing, so the default still holds if one is set
-      // again later.
+      // Send only the pins that changed. Clearing a secondary unticks its pin.
       const pins = {};
       fields.forEach(f => {
-        if (f.secSel.value && f.pinCheck.checked !== posLocked(f.slug)) pins[f.slug] = f.pinCheck.checked;
+        if (f.pinCheck.checked !== posLocked(f.slug)) pins[f.slug] = f.pinCheck.checked;
       });
       const pinsDirty = Object.keys(pins).length > 0;
       if (!changed.length && !minutesDirty && !pinsDirty) { renderReadView(); return; }
