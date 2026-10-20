@@ -795,9 +795,10 @@
     // ── Buying a stream ───────────────────────────────────────────
     //
     // Any member can spend NB¥1,000 to have an upcoming game streamed
-    // (POST /api/schedule/{id}/purchase). Once a day has a bought stream it has
-    // exactly one, so the button only shows on a day with no stream yet. The
-    // server re-checks all of it; this just avoids offering what it would refuse.
+    // (POST /api/schedule/{id}/purchase). A day can have one bought stream, next
+    // to any free ones a streamer flagged, so the button only shows on a day
+    // nobody has bought yet. The server re-checks all of it; this just avoids
+    // offering what it would refuse.
     const STREAM_PRICE = 1000;
 
     function makeStreamControl(g, dayGames) {
@@ -807,8 +808,8 @@
         tag.textContent = g.stream_buyer ? `📺 Stream · bought by ${g.stream_buyer}` : '📺 Stream';
         return tag;
       }
-      const dayHasStream = dayGames.some(o => o._src === 'schedule' && o.stream);
-      if (!signedIn || dayHasStream || g.date < nbnToday()) return null;
+      const dayIsBought = dayGames.some(o => o._src === 'schedule' && o.stream_buyer);
+      if (!signedIn || dayIsBought || g.date < nbnToday()) return null;
       const btn = document.createElement('button');
       btn.className = 'sched-schd-buy';
       btn.textContent = 'Buy stream';

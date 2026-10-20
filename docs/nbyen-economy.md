@@ -139,16 +139,15 @@ Added 2026-09-25. The Futures tab on `/bet`; code in
 
 - **Any member, any upcoming game, 1,000 NB¥**, from the list view on
   `/calendar`. It sets the game's `stream` flag and records `stream_buyer`.
-- **Once a day has a bought stream, it has one stream.** No second purchase
-  that day, and a streamer can't flag another game that day either. Two free,
-  streamer-flagged games on one day are still fine; the rule only binds once
-  someone has paid.
+- **One bought stream a day.** No second purchase that day. Free,
+  streamer-flagged games don't count: a member can buy a game on a day a
+  streamer already flagged, and a streamer can flag more games on a bought day.
 - **Only a streamer refunds it**, in full, from Claim Games on
   `/committees/stream`. That clears the stream and frees the day. The buyer
   can't cancel.
 - **A bought game can't be quietly undone.** Unflagging it or deleting it is
-  refused until it's refunded. Moving it onto a day that already has a stream
-  is refused too.
+  refused until it's refunded. Moving it onto a day that already has a bought
+  stream is refused too.
 
 ## 6. Paused, and the order it comes back
 
