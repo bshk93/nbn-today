@@ -84,9 +84,21 @@
     .add-game-form .form-err { font-size: 0.75rem; color: var(--danger); }
 
     /* ── Scheduled (unplayed) games ─────────────────────────────── */
-    .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
+    /* Fixed columns, so time, streamer and the stream control line up from
+       row to row. Every row emits every cell, empty or not. */
+    .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: grid; grid-template-columns: minmax(0, 1fr) 4.6rem 5.5rem 11rem 1rem; align-items: center; column-gap: 0.6rem; }
     .sched-schd-game:hover { background: var(--bg-card); }
-    .sched-schd-teams { flex: 1; color: inherit; text-decoration: none; }
+    .sched-schd-main { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+    .sched-schd-time { text-align: right; }
+    .sched-schd-who { overflow: hidden; text-overflow: ellipsis; }
+    .sched-schd-ctl { justify-self: start; }
+    @media (max-width: 600px) {
+      .sched-schd-game { grid-template-columns: minmax(0, 1fr) auto auto auto; row-gap: 0.15rem; }
+      .sched-schd-who { max-width: 6rem; }
+      .sched-schd-ctl { grid-row: 2; grid-column: 1 / -1; }
+      .sched-schd-ctl:empty { display: none; }
+    }
+    .sched-schd-teams { color: inherit; text-decoration: none; }
     .sched-schd-teams:hover { text-decoration: underline; }
     .sched-schd-time { font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sched-schd-note { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; background: var(--bg-card); border-radius: 3px; padding: 0.1rem 0.35rem; }
@@ -927,39 +939,42 @@
 
           // The matchup links to its preview; the row itself stays unclickable
           // because it also carries the stream and delete buttons.
+          const main = document.createElement('span');
+          main.className = 'sched-schd-main';
           const teams = document.createElement('a');
           teams.className = 'sched-schd-teams';
           teams.href = previewHref(g);
           teams.title = 'Game preview';
           teams.textContent = `🏀 ${g.away_team} @ ${g.home_team}`;
-          row.appendChild(teams);
-
-          if (g.time_et) {
-            const time = document.createElement('span');
-            time.className = 'sched-schd-time';
-            time.textContent = `${g.time_et}m ET`;
-            row.appendChild(time);
-          }
-
+          main.appendChild(teams);
           if (g.note) {
             const note = document.createElement('span');
             note.className = 'sched-schd-note';
             note.textContent = g.note;
-            row.appendChild(note);
+            main.appendChild(note);
           }
+          row.appendChild(main);
 
+          const time = document.createElement('span');
+          time.className = 'sched-schd-time';
+          if (g.time_et) time.textContent = `${g.time_et}m ET`;
+          row.appendChild(time);
+
+          const who = document.createElement('span');
+          who.className = 'sched-schd-stream sched-schd-who';
           if (g.streamer) {
-            const who = document.createElement('span');
-            who.className = 'sched-schd-stream';
             who.textContent = `📺 ${g.streamer}`;
             who.title = `Streamed by ${g.streamer}`;
-            row.appendChild(who);
           }
+          row.appendChild(who);
 
+          const ctl = document.createElement('span');
+          ctl.className = 'sched-schd-ctl';
           if (g._src === 'schedule') {
             const buy = makeStreamControl(g);
-            if (buy) row.appendChild(buy);
+            if (buy) ctl.appendChild(buy);
           }
+          row.appendChild(ctl);
 
           if (isBoD) {
             const del = document.createElement('button');
