@@ -5431,27 +5431,30 @@ function primaryPosFromAttrs(attrSnap) {
   return (Array.isArray(pos) && pos.length) ? pos[0] : '—';
 }
 
-// 2K's own secondary position, second in the scrape's 2k_pos. Not held to
-// § 2.3's one step: it is 2K's designation, not a team's choice.
-function twoKSecondaryFromAttrs(attrSnap) {
-  const pos = attrSnap && attrSnap['2k_pos'];
-  return (Array.isArray(pos) && pos.length > 1) ? pos[1] : null;
-}
-
-// The secondary a player actually has. bio.secondary_pos null: the team
-// hasn't chosen, so 2K's stands. 'none': the team removed it. A position:
-// the team's pick. Mirrors effective_secondary in nbn-api routers/players.py.
-function effectiveSecondary(bio, attrSnap) {
-  const sec = bio && bio.secondary_pos;
-  if (sec === 'none') return null;
-  return sec || twoKSecondaryFromAttrs(attrSnap);
-}
-
 const POSITION_ORDER = ['PG', 'SG', 'SF', 'PF', 'C'];
 function secondaryPosOptions(primary) {
   const i = POSITION_ORDER.indexOf(primary);
   if (i < 0) return [];
   return [POSITION_ORDER[i - 1], POSITION_ORDER[i + 1]].filter(Boolean);
+}
+
+// 2K's own secondary position, second in the scrape's 2k_pos, but only when
+// it is one step from the primary (§ 2.3). One that isn't is not allowed, and
+// the player has no secondary until his team gives him one.
+function twoKSecondaryFromAttrs(attrSnap) {
+  const pos = attrSnap && attrSnap['2k_pos'];
+  if (!Array.isArray(pos) || pos.length < 2) return null;
+  return secondaryPosOptions(pos[0]).includes(pos[1]) ? pos[1] : null;
+}
+
+// The secondary a player actually has. bio.secondary_pos null: the team
+// hasn't chosen, so 2K's stands (if § 2.3 allows it). 'none': the team
+// removed it. A position: the team's pick. Mirrors effective_secondary in
+// nbn-api routers/players.py.
+function effectiveSecondary(bio, attrSnap) {
+  const sec = bio && bio.secondary_pos;
+  if (sec === 'none') return null;
+  return sec || twoKSecondaryFromAttrs(attrSnap);
 }
 
 // Roster Settings — jersey #, secondary position (both from player-bios.json,
