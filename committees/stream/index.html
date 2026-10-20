@@ -839,9 +839,7 @@
     //
     // A member asks for a game to be streamed from /calendar; any streamer
     // accepts or declines it here. Accepting is the purchase: the member's
-    // NB¥1,000 is spent then, not when they asked. A day takes one bought
-    // stream, so accepting one declines the others waiting on that day (the
-    // server does it, and tells those members).
+    // NB¥1,000 is spent then, not when they asked. There's no daily limit.
 
     function openRequests() {
       return games.filter(g => g.stream_request && g.date >= today && !resultFor(g))
@@ -890,8 +888,7 @@
         const ok = await confirmDialog({
           title: 'Accept this stream?',
           body: `${g.away_team} @ ${g.home_team} on ${fmtDayHdr(g.date)} becomes a stream. `
-              + `NB¥1,000 comes out of ${member}'s balance now. `
-              + `Any other request that day is declined.`,
+              + `NB¥1,000 comes out of ${member}'s balance now.`,
           confirmLabel: 'Accept',
         });
         if (!ok) return;
@@ -912,8 +909,6 @@
         g.stream = !!updated.stream;
         g.stream_buyer = updated.stream_buyer || null;
         g.stream_request = null;
-        // Accepting declines the day's other requests on the server; mirror it.
-        if (accept) games.forEach(o => { if (o.date === g.date) o.stream_request = null; });
         render();
         renderMine();
         toast(accept ? `Accepted. ${member} bought the stream.` : `Declined ${member}'s request.`);
@@ -1266,8 +1261,7 @@
     async function refundStream(g, num, rowEl) {
       const ok = await confirmDialog({
         title: 'Refund this stream?',
-        body: `${g.stream_buyer} gets their NB¥1,000 back, the game goes back to Sim, `
-            + `and the day is free for someone else to buy.`,
+        body: `${g.stream_buyer} gets their NB¥1,000 back and the game goes back to Sim.`,
         confirmLabel: 'Refund',
         danger: true,
       });

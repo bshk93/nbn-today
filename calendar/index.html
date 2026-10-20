@@ -799,13 +799,10 @@
     // Any member can ask to have an upcoming game streamed for NB¥1,000
     // (POST /api/schedule/{id}/stream-request). Nothing is spent until a
     // streamer accepts it on /committees/stream; the member can withdraw it
-    // until then. A day can have one bought stream, next to any free ones a
-    // streamer flagged, so the button only shows on a day nobody has bought
-    // yet. The server re-checks all of it; this just avoids offering what it
-    // would refuse.
+    // until then. There's no daily limit, since a streamer approves each one.
     const STREAM_PRICE = 1000;
 
-    function makeStreamControl(g, dayGames) {
+    function makeStreamControl(g) {
       if (g.stream) {
         const tag = document.createElement('span');
         tag.className = 'sched-schd-stream';
@@ -828,8 +825,7 @@
         }
         return wrap;
       }
-      const dayIsBought = dayGames.some(o => o._src === 'schedule' && o.stream_buyer);
-      if (!signedIn || dayIsBought || g.date < nbnToday()) return null;
+      if (!signedIn || g.date < nbnToday()) return null;
       const btn = document.createElement('button');
       btn.className = 'sched-schd-buy';
       btn.textContent = 'Request stream';
@@ -953,7 +949,7 @@
           }
 
           if (g._src === 'schedule') {
-            const buy = makeStreamControl(g, scheduled);
+            const buy = makeStreamControl(g);
             if (buy) row.appendChild(buy);
           }
 

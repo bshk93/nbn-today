@@ -146,17 +146,13 @@ Added 2026-09-25. The Futures tab on `/bet`; code in
      the stream column in Claim Games). **Accepting is the purchase**: the
      member is debited then, and the game gets its `stream` flag and
      `stream_buyer`. Declining costs nothing. Either way the member is told.
-- **Several requests can wait on one day.** Accepting one declines the rest
-  that day, since a day takes one bought stream.
-- **One bought stream a day.** No second purchase that day. Free,
-  streamer-flagged games don't count: a member can buy a game on a day a
-  streamer already flagged, and a streamer can flag more games on a bought day.
+- **No daily limit.** A streamer approves each one, so a day can have as many
+  bought streams as they accept.
 - **Only a streamer refunds it**, in full, from Claim Games on
-  `/committees/stream`. That clears the stream and frees the day. The buyer
+  `/committees/stream`. That clears the stream. The buyer
   can't cancel.
 - **A bought game can't be quietly undone.** Unflagging it or deleting it is
-  refused until it's refunded. Moving it onto a day that already has a bought
-  stream is refused too.
+  refused until it's refunded.
 
 ## 6. Paused, and the order it comes back
 
