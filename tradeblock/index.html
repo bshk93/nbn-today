@@ -1139,13 +1139,15 @@
       // Player add row
       const addRow = document.createElement('div');
       addRow.className = 'add-row';
-      const onBlock = new Set(pendingEntries.map(e => e.player));
+      // Case-insensitive: older entries are hand-cased ("Jared McCain") where the
+      // bio now renders "Jared Mccain", and an exact match listed him twice.
+      const onBlock = new Set(pendingEntries.map(e => e.player.toLowerCase()));
       const isNewFormat = myRoster.length > 0 && 'SLUG' in myRoster[0] && !('PLAYER' in myRoster[0]);
       const available = isNewFormat
         ? myRoster
-            .filter(r => { const bio = biosData[r.SLUG]; return (!bio || bio.type !== 'dead') && !onBlock.has(displayNameFromBio((bio && bio.name) || '')); })
+            .filter(r => { const bio = biosData[r.SLUG]; return (!bio || bio.type !== 'dead') && !onBlock.has(displayNameFromBio((bio && bio.name) || '').toLowerCase()); })
             .map(r => { const bio = biosData[r.SLUG] || {}; return { player: displayNameFromBio(bio.name || '') || r.SLUG }; })
-        : myRoster.filter(r => r.TYPE !== 'dead' && !onBlock.has(r.PLAYER)).map(r => ({ player: r.PLAYER }));
+        : myRoster.filter(r => r.TYPE !== 'dead' && !onBlock.has((r.PLAYER || '').toLowerCase())).map(r => ({ player: r.PLAYER }));
       const sel = document.createElement('select');
       const defaultOpt = document.createElement('option');
       defaultOpt.value = '';

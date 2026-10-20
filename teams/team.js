@@ -4784,10 +4784,12 @@ function makeRosterMoveActions(abbr, biosData, blockEntries, poextEligible) {
   if (!canEditTradeBlock(abbr) && !canRenounce(abbr)) return null;
 
   // slug -> {on, notes}, seeded from the team's current block listing.
-  const byName = new Map((blockEntries || []).map(e => [e.player, e.notes || '']));
+  // Keyed lowercase: older entries are hand-cased ("Jared McCain") where the bio
+  // renders "Jared Mccain", and the API matches without regard to case too.
+  const byName = new Map((blockEntries || []).map(e => [(e.player || '').toLowerCase(), e.notes || '']));
   const state = {};
   Object.keys(biosData || {}).forEach(slug => {
-    const n = blockNameFor(biosData[slug]);
+    const n = blockNameFor(biosData[slug]).toLowerCase();
     if (n && byName.has(n)) state[slug] = { on: true, notes: byName.get(n) };
   });
   const stateFor = slug => state[slug] || (state[slug] = { on: false, notes: '' });
