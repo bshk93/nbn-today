@@ -33,6 +33,7 @@ Two permission tiers, and they are genuinely different:
 | Add/remove from trade block | team's own role **or** admin (`canEditTradeBlock`) | `PUT`/`DELETE /api/trading-block/{team}/player/{slug}` |
 | Renounce (§ 3.10) | **owner tenure** (`canRenounce`, server: `auth.is_team_owner`) | `POST /api/self/renounce` |
 | Stash draft rights (§ 7.1 / § 7.4) | **owner tenure**, same as renounce | `POST /api/self/stash` |
+| Make an offer (a free agent's new contract, Bird Rights included) | team's own role, same as the trade block. Shown only for a UFA/RFA hold `renounceEligibility` accepts. A link, not a move: it opens `/free-agency/?player=&team=`, which goes straight into that team's offer form when the board is taking offers | none here — the offer is `POST /api/fa/offers` on `/free-agency` |
 | Extend / withdraw a qualifying offer (§ 3.1) | **owner tenure**, same as renounce. Shown only for an RFA-tagged player or one with a QO out (`qoEligibility`) | `POST /api/self/qualifying-offer` |
 
 **Ownership is a tenure position, not a role.** Every front-office member of a

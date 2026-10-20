@@ -4659,6 +4659,18 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
     onClick: () => openRenounceDialog(slug, bio, abbr),
   });
 
+  // A new contract for a free agent is an offer on /free-agency, never a move
+  // made here: it goes to the PDC like any other bid, Bird Rights included.
+  // Shown for the holds renounce would accept, since those are the team's
+  // free agents; whether the board is taking offers is /free-agency's call.
+  if (elig.ok && (elig.holdType === 'UFA' || elig.holdType === 'RFA')) {
+    addItem('Make an offer…', {
+      enabled: canEditTradeBlock(abbr),
+      why: 'Only this team’s front office can make an offer.',
+      onClick: () => { location.href = `/free-agency/?player=${encodeURIComponent(slug)}&team=${abbr}`; },
+    });
+  }
+
   // § 3.1 — the qualifying offer, same owner gate. Withdrawing one is how a
   // team lets an RFA go unrestricted without renouncing his Bird Rights.
   const qo = qoEligibility(bio);

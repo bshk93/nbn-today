@@ -65,6 +65,8 @@
        disabled ⋯-menu entry it shares a reason string with. */
     tbody tr.window-closed { opacity: 0.5; font-style: italic; }
     tbody tr.window-closed:hover { opacity: 0.75; }
+    tbody tr.linked td { background: var(--accent-panel-bg); }
+    tbody tr.linked td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 
                     td.bold   { font-weight: 600; color: var(--text-primary); }
     td.ovr-cell { font-weight: 700; text-align: right; }
@@ -373,6 +375,7 @@
 
       rows.forEach(row => {
         const tr = currentTbody.insertRow();
+        tr.dataset.slug = row.slug;
         // Every pool player has a board entry (GET /api/fa/board lists closed
         // players too, see its own comment) — `accepting: false` means the
         // window for offers on this player is shut, so the row reads as
@@ -1992,7 +1995,12 @@
           return;
         }
 
-        activeYear = years[0];
+        // ?player=<slug>&team=<ABB> — the team page's "Make an offer…" lands
+        // here, on that player's year.
+        const qs = new URLSearchParams(location.search);
+        const linkSlug = qs.get('player');
+        const linkYear = linkSlug && years.find(y => allRows[y].some(r => r.slug === linkSlug));
+        activeYear = linkYear || years[0];
         buildYearChips(years);
         buildPosChips();
         statusEl.remove();
@@ -2016,6 +2024,20 @@
           legend.appendChild(item);
         });
         document.getElementById('table-wrap').appendChild(legend);
+
+        if (linkYear) {
+          const tr = currentTbody.querySelector(`tr[data-slug="${CSS.escape(linkSlug)}"]`);
+          if (tr) { tr.classList.add('linked'); tr.scrollIntoView({ block: 'center' }); }
+          // Straight into the form when the viewer holds the team and the
+          // player is taking offers; otherwise the highlighted row and its ⋯
+          // menu say why not.
+          const row = allRows[linkYear].find(r => r.slug === linkSlug);
+          const team = (qs.get('team') || '').toUpperCase();
+          const existing = offerFor(team, linkSlug);
+          if (MY_TEAMS.includes(team) && (existing || ((BOARD.players || {})[linkSlug] || {}).accepting)) {
+            openOfferForm(team, row, existing);
+          }
+        }
       } catch (e) {
         statusEl.textContent = 'Failed to load data.';
       }
