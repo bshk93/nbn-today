@@ -230,7 +230,8 @@
     let streamingDaysByDate  = {};   // "YYYY-MM-DD" → {done, done_at, done_by, youtube_url, ...}, from GET /api/streaming-days
     let leagueToday          = null; // "YYYY-MM-DD"
     let isBoD                = false;
-    let signedIn             = false;   // any member — enough to buy a stream
+    let signedIn             = false;   // any member — enough to request a stream
+    let myName               = null;
     let showAddForm          = false;
     let showAddGameForm      = false;
 
@@ -394,6 +395,7 @@
           headers: { Authorization: `Bearer ${token}` }
         }).then(r => r.json());
         signedIn = !!me.name;
+        myName = me.name || null;
         return me.roles.includes('bod') || me.roles.includes('admin');
       } catch { return false; }
     }
@@ -794,11 +796,13 @@
 
     // ── Buying a stream ───────────────────────────────────────────
     //
-    // Any member can spend NB¥1,000 to have an upcoming game streamed
-    // (POST /api/schedule/{id}/purchase). A day can have one bought stream, next
-    // to any free ones a streamer flagged, so the button only shows on a day
-    // nobody has bought yet. The server re-checks all of it; this just avoids
-    // offering what it would refuse.
+    // Any member can ask to have an upcoming game streamed for NB¥1,000
+    // (POST /api/schedule/{id}/stream-request). Nothing is spent until a
+    // streamer accepts it on /committees/stream; the member can withdraw it
+    // until then. A day can have one bought stream, next to any free ones a
+    // streamer flagged, so the button only shows on a day nobody has bought
+    // yet. The server re-checks all of it; this just avoids offering what it
+    // would refuse.
     const STREAM_PRICE = 1000;
 
     function makeStreamControl(g, dayGames) {
@@ -808,38 +812,69 @@
         tag.textContent = g.stream_buyer ? `📺 Stream · bought by ${g.stream_buyer}` : '📺 Stream';
         return tag;
       }
+      if (g.stream_request) {
+        const wrap = document.createElement('span');
+        wrap.className = 'sched-schd-stream';
+        wrap.textContent = g.stream_request === myName
+          ? '📺 You asked for this stream'
+          : `📺 Requested by ${g.stream_request}`;
+        if (g.stream_request === myName && g.date >= nbnToday()) {
+          const btn = document.createElement('button');
+          btn.className = 'sched-schd-buy';
+          btn.textContent = 'Withdraw';
+          btn.title = 'Take back your request. Nothing was spent.';
+          btn.onclick = e => { e.stopPropagation(); withdrawStreamRequest(g); };
+          wrap.append(' ', btn);
+        }
+        return wrap;
+      }
       const dayIsBought = dayGames.some(o => o._src === 'schedule' && o.stream_buyer);
       if (!signedIn || dayIsBought || g.date < nbnToday()) return null;
       const btn = document.createElement('button');
       btn.className = 'sched-schd-buy';
-      btn.textContent = 'Buy stream';
-      btn.title = `Have this game streamed for NB¥${STREAM_PRICE.toLocaleString()}`;
-      btn.onclick = e => { e.stopPropagation(); buyStream(g); };
+      btn.textContent = 'Request stream';
+      btn.title = `Ask the streamers to stream this game, for NB¥${STREAM_PRICE.toLocaleString()} if they accept`;
+      btn.onclick = e => { e.stopPropagation(); requestStream(g); };
       return btn;
     }
 
-    async function buyStream(g) {
+    async function streamRequestCall(g, method) {
+      const res = await fetch(`/api/schedule/${encodeURIComponent(g.id)}/stream-request`, {
+        method,
+        headers: { Authorization: `Bearer ${storedToken()}` },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+      return body;
+    }
+
+    async function requestStream(g) {
       const ok = await confirmDialog({
-        title: 'Buy this stream?',
-        body: `${g.away_team} @ ${g.home_team} on ${fmtDateHdr(g.date)} will be streamed. `
-            + `NB¥${STREAM_PRICE.toLocaleString()} comes out of your balance. `
-            + `It's the only stream that day. If it can't happen, a streamer refunds you in full.`,
-        confirmLabel: `Buy for NB¥${STREAM_PRICE.toLocaleString()}`,
+        title: 'Request this stream?',
+        body: `You're asking for ${g.away_team} @ ${g.home_team} on ${fmtDateHdr(g.date)} to be streamed. `
+            + `A streamer has to accept it. NB¥${STREAM_PRICE.toLocaleString()} comes out of your balance `
+            + `only when they do. You can withdraw the request until then.`,
+        confirmLabel: 'Send request',
       });
       if (!ok) return;
       try {
-        const res = await fetch(`/api/schedule/${encodeURIComponent(g.id)}/purchase`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${storedToken()}` },
-        });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
-        g.stream = true;
-        g.stream_buyer = body.stream_buyer;
-        toast(`Stream bought. You have NB¥${Math.round(body.new_balance).toLocaleString()} left.`);
+        const body = await streamRequestCall(g, 'POST');
+        g.stream_request = body.stream_request;
+        toast('Request sent. The streamers will accept or decline it.');
         renderView();
       } catch (e) {
-        toast(`Could not buy the stream: ${e.message}`, true);
+        toast(`Could not request the stream: ${e.message}`, true);
+      }
+    }
+
+    async function withdrawStreamRequest(g) {
+      try {
+        await streamRequestCall(g, 'DELETE');
+        g.stream_request = null;
+        toast('Request withdrawn.');
+        renderView();
+      } catch (e) {
+        toast(`Could not withdraw the request: ${e.message}`, true);
       }
     }
 

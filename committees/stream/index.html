@@ -282,6 +282,7 @@
     .mine-warn b { color: var(--text-primary); }
     .mine-warn ul { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
     .mine-warn li { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .stream-req { font-size: 0.72rem; color: var(--gold, #c9a227); white-space: nowrap; margin-right: 0.3rem; }
     .mine-day {
       border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.8rem; overflow: hidden;
       background: var(--bg-card);
@@ -337,6 +338,7 @@
       </div>
 
       <div class="tab-panel" id="tab-mine">
+        <div id="mine-requests"></div>
         <div id="mine-warn"></div>
         <div id="mine-list"><div class="empty">Loading…</div></div>
       </div>
@@ -720,6 +722,8 @@
         return;
       }
 
+      const requests = renderRequests();
+
       // Upcoming dates in the next week with games nobody has claimed.
       const horizon = addDays(today, 7);
       const gaps = new Map();
@@ -827,8 +831,96 @@
       });
 
       const badge = document.getElementById('mine-tab-badge');
-      badge.textContent = pendingCount;
-      badge.hidden = pendingCount === 0;
+      badge.textContent = pendingCount + requests;
+      badge.hidden = pendingCount + requests === 0;
+    }
+
+    // ── Stream requests ─────────────────────────────────────────────────
+    //
+    // A member asks for a game to be streamed from /calendar; any streamer
+    // accepts or declines it here. Accepting is the purchase: the member's
+    // NB¥1,000 is spent then, not when they asked. A day takes one bought
+    // stream, so accepting one declines the others waiting on that day (the
+    // server does it, and tells those members).
+
+    function openRequests() {
+      return games.filter(g => g.stream_request && g.date >= today && !resultFor(g))
+        .sort((a, b) => a.date.localeCompare(b.date) || nbnTipMinutes(a.time_et) - nbnTipMinutes(b.time_et));
+    }
+
+    function renderRequests() {
+      const box = document.getElementById('mine-requests');
+      const reqs = openRequests();
+      box.innerHTML = '';
+      if (!reqs.length) return 0;
+      const card = div('mine-warn');
+      card.innerHTML = `<b>Stream requests (${reqs.length})</b>`;
+      const ul = document.createElement('ul');
+      reqs.forEach(g => {
+        const li = document.createElement('li');
+        li.appendChild(span('', `${fmtDayHdr(g.date)} · ${g.away_team} @ ${g.home_team} · ${fmtTime(g.time_et)} `
+          + `— ${g.stream_request} wants to buy it`));
+        li.appendChild(requestButtons(g));
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+      box.appendChild(card);
+      return reqs.length;
+    }
+
+    function requestButtons(g) {
+      const wrap = span('');
+      const yes = document.createElement('button');
+      yes.className = 'cd-btn';
+      yes.textContent = 'Accept';
+      yes.title = `Stream it. ${g.stream_request}'s NB¥1,000 is spent now.`;
+      yes.onclick = () => answerRequest(g, true, wrap);
+      const no = document.createElement('button');
+      no.className = 'cd-btn';
+      no.textContent = 'Decline';
+      no.title = `Turn it down. ${g.stream_request} spends nothing.`;
+      no.onclick = () => answerRequest(g, false, wrap);
+      wrap.append(yes, ' ', no);
+      return wrap;
+    }
+
+    async function answerRequest(g, accept, wrap) {
+      const member = g.stream_request;
+      if (accept) {
+        const ok = await confirmDialog({
+          title: 'Accept this stream?',
+          body: `${g.away_team} @ ${g.home_team} on ${fmtDayHdr(g.date)} becomes a stream. `
+              + `NB¥1,000 comes out of ${member}'s balance now. `
+              + `Any other request that day is declined.`,
+          confirmLabel: 'Accept',
+        });
+        if (!ok) return;
+      }
+      const token = storedToken();
+      wrap.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      try {
+        const r = await fetch(`/api/schedule/${g.id}/stream-request/${accept ? 'accept' : 'decline'}`
+          + `?season=${encodeURIComponent(season)}`, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!r.ok) {
+          const detail = await r.json().then(j => j.detail).catch(() => null);
+          throw new Error(detail || `HTTP ${r.status}`);
+        }
+        const updated = await r.json();
+        g.stream = !!updated.stream;
+        g.stream_buyer = updated.stream_buyer || null;
+        g.stream_request = null;
+        // Accepting declines the day's other requests on the server; mirror it.
+        if (accept) games.forEach(o => { if (o.date === g.date) o.stream_request = null; });
+        render();
+        renderMine();
+        toast(accept ? `Accepted. ${member} bought the stream.` : `Declined ${member}'s request.`);
+      } catch (e) {
+        wrap.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        toast(`Could not ${accept ? 'accept' : 'decline'} that request: ${e.message}`, true);
+      }
     }
 
     // ── Day slate controls ──────────────────────────────────────────────
@@ -1327,6 +1419,10 @@
         refund.onclick = () => refundStream(g, num, row);
         tdStream.appendChild(refund);
       } else {
+        if (g.stream_request && !res) {
+          tdStream.appendChild(span('stream-req', `Requested by ${g.stream_request}`));
+          tdStream.appendChild(requestButtons(g));
+        }
         tdStream.appendChild(sel);
       }
       row.appendChild(tdStream);

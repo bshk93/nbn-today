@@ -137,8 +137,17 @@ Added 2026-09-25. The Futures tab on `/bet`; code in
 
 ## 5. Buying a stream
 
-- **Any member, any upcoming game, 1,000 NB¥**, from the list view on
-  `/calendar`. It sets the game's `stream` flag and records `stream_buyer`.
+- **Any member, any upcoming game, 1,000 NB¥**, in two steps:
+  1. The member requests it from the list view on `/calendar`
+     (`POST /api/schedule/{id}/stream-request`). Nothing is spent; the balance
+     is only checked. The game carries `stream_request` and the streamers get
+     an inbox notice. The member can withdraw it (`DELETE`).
+  2. A streamer accepts or declines it on `/committees/stream` (My games, and
+     the stream column in Claim Games). **Accepting is the purchase**: the
+     member is debited then, and the game gets its `stream` flag and
+     `stream_buyer`. Declining costs nothing. Either way the member is told.
+- **Several requests can wait on one day.** Accepting one declines the rest
+  that day, since a day takes one bought stream.
 - **One bought stream a day.** No second purchase that day. Free,
   streamer-flagged games don't count: a member can buy a game on a day a
   streamer already flagged, and a streamer can flag more games on a bought day.
