@@ -101,6 +101,13 @@ sent with `relay_to_roster_log=True`, since the relay skips bot posts in
 `fa-news`. Until 2026-10-08 neither happened: a declared signing reached only
 `#roster-log-nbn-today`.
 
+**Outcomes ping the team.** The declared signing, a QO win and an agreed
+extension (`poext_notify`) each end with the team's Discord role mention, on its
+own line; an offer sheet pings both teams, since the incumbent has to decide. The
+role ids are `TEAM_ROLE_IDS` in `discord_notify.py`, and `with_team_pings` sets
+`allowed_mentions` to exactly those roles. Other #fa-news posts (the team's own
+moves, FFA clocks, waivers) ping nobody. Added 2026-10-20.
+
 **No team abbreviation and no `$` may ever reach `fa-news`** — that a team is
 bidding is committee information. This is enforced by signature, not by care:
 `_news(slug, text)` is the only function that can reach the public channel and
