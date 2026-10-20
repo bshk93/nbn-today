@@ -806,7 +806,7 @@
       if (g.stream) {
         const tag = document.createElement('span');
         tag.className = 'sched-schd-stream';
-        tag.textContent = g.stream_buyer ? `📺 Stream · bought by ${g.stream_buyer}` : '📺 Stream';
+        tag.textContent = g.stream_buyer ? `📡 Stream · bought by ${g.stream_buyer}` : '📡 Stream';
         return tag;
       }
       if (g.stream_request) {
@@ -946,6 +946,14 @@
             note.className = 'sched-schd-note';
             note.textContent = g.note;
             row.appendChild(note);
+          }
+
+          if (g.streamer) {
+            const who = document.createElement('span');
+            who.className = 'sched-schd-stream';
+            who.textContent = `📺 ${g.streamer}`;
+            who.title = `Streamed by ${g.streamer}`;
+            row.appendChild(who);
           }
 
           if (g._src === 'schedule') {

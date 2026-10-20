@@ -175,6 +175,7 @@
     .dash-game-team { display: inline-flex; align-items: center; gap: 0.35rem; color: inherit; text-decoration: none; }
     .dash-game-team:hover span:not(.dash-game-rec) { text-decoration: underline; }
     .dash-game-logo { height: 18px; width: 18px; object-fit: contain; flex: none; }
+    .dash-game-stream { color: var(--gold); font-size: var(--text-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .dash-game-time { color: var(--text-muted); font-size: var(--text-xs); margin-left: auto; flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
     /* Action chips — the obligations band. Tone matches cap-health.js's
@@ -1238,6 +1239,15 @@
       return null;
     }).catch(() => null);
 
+    // Who's streaming a game, by name. A claim (`streamer`) and the stream
+    // flag (`stream`) are independent, so a flagged game nobody has claimed
+    // yet still gets the bare 📺.
+    function streamTag(g) {
+      if (g.streamer) return `<span class="dash-game-stream" title="Streamed by ${esc(g.streamer)}">📺 ${esc(g.streamer)}</span>`;
+      if (g.stream) return '<span class="dash-game-stream" title="Marked as a stream">📺</span>';
+      return '';
+    }
+
     Promise.all([schedulePromise, recordsPromise]).then(([sched, recs]) => {
       const card = $('dash-slate');
       if (!sched || !sched.games || !sched.games.length) {
@@ -1325,7 +1335,7 @@
             + `<div class="dash-game" data-away="${esc(g.away_team)}" data-home="${esc(g.home_team)}">`
             + `<button class="dash-game-toggle" type="button" aria-expanded="false" title="Starting fives">▶</button>`
             + `<span class="dash-game-opp">${teamChip(g.away_team, recs)}<span>@</span>${teamChip(g.home_team, recs)}</span>`
-            + (g.stream ? '<span title="Marked as a stream">📺</span>' : '')
+            + streamTag(g)
             + `<a class="dash-game-time" title="Game preview" href="${previewHref(g)}">${esc(g.time_et || 'Preview')} ›</a>`
             + `</div><div class="dash-five"><div class="dash-five-inner"></div></div>`).join('') + '</div>' : '');
       card.insertAdjacentHTML('beforeend',
@@ -1925,7 +1935,7 @@
             return `<div class="dash-game">`
               + `<span class="dash-game-date">${esc(shortDate(g.date))}</span>`
               + `<span class="dash-game-opp"><span>${home ? 'vs' : '@'}</span>${teamChip(opp, recs)}</span>`
-              + (g.streamer ? `<span title="Claimed by ${esc(g.streamer)}">📺</span>` : '')
+              + streamTag(g)
               + `<span class="dash-game-time">${esc(g.time_et || '')}</span></div>`;
           }).join('') + '</div>';
       }
