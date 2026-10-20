@@ -308,6 +308,15 @@
     .mine-team.pending .st { color: var(--gold, #c9a227); font-weight: 600; }
     .mine-team .acts { margin-left: auto; display: flex; gap: 0.3rem; }
     .mine-detail { grid-column: 1 / -1; padding: 0.4rem 0; }
+
+    /* Positions to set in 2K: a changed secondary, or a player the team
+       pinned to be checked before every game. */
+    .pos-list { flex-basis: 100%; display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.75rem; }
+    .pos-list .pos-row { color: var(--text-secondary); }
+    .pos-list .pos-row b { color: var(--text-primary); font-weight: 600; }
+    .pos-list .pos-row.done { color: var(--text-muted); }
+    .pos-list .pos-why { color: var(--text-muted); }
+    .pos-list .cd-btn { align-self: flex-start; margin-top: 0.2rem; }
     @media (max-width: 560px) { .mine-teams { grid-template-columns: 1fr; } }
 
     .tab-badge[hidden] { display: none; }
@@ -407,6 +416,7 @@
                   <th>Team</th>
                   <th>Status</th>
                   <th>Incomplete</th>
+                  <th>Positions</th>
                   <th>Next Game</th>
                   <th></th>
                 </tr>
@@ -459,6 +469,7 @@
     let me         = { name: null, roles: [] };
     let nextId     = null;  // first unplayed game in the current view, set by render()
     let coachingSettings = {};  // team abbr -> record, from GET /api/coaching-settings
+    let positionChecks = {};    // team abbr -> {items, ...}, from GET /api/position-checks
     let streamingDays = {};  // "YYYY-MM-DD" -> {done, done_at, done_by, youtube_url, ...}, from GET /api/streaming-days
     // League "today" (Eastern), from /league-time.js.
     const today = nbnToday();
@@ -486,6 +497,11 @@
         }).then(r => r.ok ? r.json() : {});
       } catch (e) {
         coachingSettings = {};
+      }
+      try {
+        positionChecks = await fetch('/api/position-checks').then(r => r.ok ? r.json() : {});
+      } catch (e) {
+        positionChecks = {};
       }
       renderCoachingDashboard();
       renderMine();
@@ -520,6 +536,75 @@
       if (!rec) return { status: 'none', label: 'No settings saved' };
       if (rec.pending) return { status: 'pending', label: 'Pending entry' };
       return { status: 'entered', label: 'Entered' };
+    }
+
+    // ── Positions ───────────────────────────────────────────────────
+    //
+    // Secondary positions a team set that aren't in 2K yet, plus players the
+    // team pinned to be checked before every game (2K resets positions when
+    // ratings update). The API works out what's due; this only draws it.
+
+    const positionItems = team => (positionChecks[team] || {}).items || [];
+    const positionsDue = team => positionItems(team).filter(i => i.due);
+
+    function positionLine(i) {
+      const row = div('pos-row' + (i.due ? '' : ' done'));
+      const b = document.createElement('b');
+      b.textContent = nbnPlayerName(i.name);
+      row.appendChild(b);
+      const pos = [i.primary, i.secondary].filter(Boolean).join(' / ') || 'no 2K position yet';
+      row.appendChild(document.createTextNode(` ${pos} `));
+      let why;
+      if (i.changed) why = i.secondary ? (i.was ? `was ${i.was}` : 'new') : `remove ${i.was}`;
+      else why = i.due ? '📌 check every game' : '📌 checked today';
+      row.appendChild(span('pos-why', `(${why})`));
+      return row;
+    }
+
+    // The list and its "Positions set" button, or null when the team has
+    // nothing listed. Confirms exactly what was shown, so a change the team
+    // made after this loaded stays waiting.
+    function positionsPanel(team) {
+      const items = positionItems(team);
+      if (!items.length) return null;
+      const box = div('pos-list');
+      items.forEach(i => box.appendChild(positionLine(i)));
+      const due = items.filter(i => i.due);
+      if (due.length) {
+        const btn = document.createElement('button');
+        btn.className = 'cd-btn';
+        btn.textContent = 'Positions set';
+        btn.title = 'I have set these positions in 2K';
+        btn.onclick = () => confirmPositions(team, due, btn);
+        box.appendChild(btn);
+      }
+      return box;
+    }
+
+    async function confirmPositions(team, due, btn) {
+      btn.disabled = true;
+      const token = storedToken();
+      const seen = {};
+      due.forEach(i => { seen[i.slug] = i.secondary; });
+      try {
+        const r = await fetch(`/api/position-checks/${team}/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ seen }),
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          alert(`Error: ${err.detail || r.status}`);
+          btn.disabled = false;
+          return;
+        }
+        positionChecks[team] = await r.json();
+        renderCoachingDashboard();
+        renderMine();
+      } catch (e) {
+        alert('Network error');
+        btn.disabled = false;
+      }
     }
 
     // The earliest not-yet-played game a team has in the currently loaded
@@ -563,7 +648,7 @@
         list.appendChild(detailRow);
       });
 
-      const pendingCount = teams.filter(team => coachingRowMeta(team).status === 'pending').length;
+      const pendingCount = teams.filter(team => coachingRowMeta(team).status === 'pending' || positionsDue(team).length).length;
       const badge = document.getElementById('coaching-tab-badge');
       badge.textContent = pendingCount;
       badge.hidden = pendingCount === 0;
@@ -618,6 +703,11 @@
       }
       rowEl.appendChild(tdIncomplete);
 
+      const tdPos = document.createElement('td');
+      const posPanel = positionsPanel(team);
+      if (posPanel) tdPos.appendChild(posPanel);
+      rowEl.appendChild(tdPos);
+
       const tdNext = document.createElement('td');
       const nextGame = nextGameFor(team);
       if (nextGame) {
@@ -631,7 +721,7 @@
       detailRow.className = 'cd-detail-row';
       detailRow.hidden = true;
       const detailTd = document.createElement('td');
-      detailTd.colSpan = 5;
+      detailTd.colSpan = 6;
       const detail = div('cd-detail');
       detailTd.appendChild(detail);
       detailRow.appendChild(detailTd);
@@ -793,8 +883,9 @@
           [g.away_team, g.home_team].forEach(team => {
             const rec = coachingSettings[team] || null;
             const meta = coachingRowMeta(team);
-            if (meta.status === 'pending' && !res) pendingCount++;
-            const box = div('mine-team ' + meta.status);
+            const posDue = positionsDue(team).length;
+            if ((meta.status === 'pending' || posDue) && !res) pendingCount++;
+            const box = div('mine-team ' + (posDue ? 'pending' : meta.status));
             box.appendChild(span('t', team));
             box.appendChild(span('st', meta.status === 'pending' ? 'Coaching changes to enter'
               : meta.status === 'entered' ? 'Coaching up to date' : 'No coaching settings'));
@@ -821,6 +912,8 @@
               acts.appendChild(enter);
             }
             box.appendChild(acts);
+            const posPanel = !res && positionsPanel(team);
+            if (posPanel) box.appendChild(posPanel);
             teams.appendChild(box);
             teams.appendChild(detail);
           });

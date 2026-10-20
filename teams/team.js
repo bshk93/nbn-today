@@ -345,6 +345,10 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-num-input { width: 2.2rem; text-align: center; }
   .ts-pos-edit { display: inline-flex; align-items: center; gap: 0.3rem; }
   .ts-sec-select { width: auto; color: var(--text-secondary); }
+  .ts-pin { display: inline-flex; align-items: center; gap: 0.15rem; font-size: 0.75rem; cursor: pointer; user-select: none; }
+  .ts-pin input:disabled + span { opacity: 0.35; }
+  .ts-pin-mark { margin-left: 0.25rem; font-size: 0.7rem; }
+  .ts-pos-wait { margin-left: 0.3rem; font-size: 0.68rem; color: var(--gold); }
   .ts-min-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
   .ts-stepper { display: inline-flex; align-items: stretch; height: 1.75rem; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
   .ts-stepper button { width: 1.5rem; border: none; background: var(--bg-subtle); color: var(--text-secondary); font: inherit; font-size: 0.85rem; cursor: pointer; padding: 0; }
@@ -1087,7 +1091,7 @@ document.body.innerHTML = `
               <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
               <div class="settings-actions" id="team-settings-actions"></div>
             </div>
-            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Primary position comes from 2K.</p>
+            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Primary position comes from 2K. 📌 means the streamer checks a player's secondary position before every game, since 2K resets it when ratings update. It's on for anyone new to the team and for everyone at the start of each season; untick it to skip a player.</p>
             <div id="team-settings-wrap"><div class="status">Loading…</div></div>
           </div>
           <div class="settings-subsection">
@@ -5465,6 +5469,21 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   const CS = window.CoachingSettings || null;
   const STARTERS = 5;
 
+  // Which players are pinned for a position check before every game, and
+  // which secondaries the streamer hasn't set in 2K yet. From
+  // GET /api/position-checks/{team}, fetched here and drawn when it lands.
+  // Pinned is the default: the API pins anyone new to the team, and
+  // everyone again each league year, until the team unticks them.
+  let posChecks = { items: [], pinned: null };
+  let editing = false;
+  fetch(`/api/position-checks/${abbr}`).then(r => r.ok ? r.json() : null).then(v => {
+    if (!v) return;
+    posChecks = v;
+    if (!editing) renderReadView();
+  }).catch(() => {});
+  const posLocked = slug => !posChecks.pinned || posChecks.pinned.includes(slug);
+  const posWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.changed);
+
   // A slot is which row a player is in, not a field they pick — table order
   // *is* the depth chart: row 0 is always PG, row 1 SG, ... row 4 C, row 5
   // the 6th man, ... row 14 the 15th man (CS.MINUTES_SLOTS, in order). This
@@ -5599,6 +5618,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   }
 
   function renderReadView() {
+    editing = false;
     const minutes = (coachingRecord && coachingRecord.minutes) || {};
     if (hintEl) hintEl.hidden = true;
     const table = document.createElement('table');
@@ -5632,6 +5652,20 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         sec.className = 'ts-pos2';
         sec.textContent = ` / ${bio.secondary_pos}`;
         posTd.appendChild(sec);
+        if (posLocked(row.SLUG)) {
+          const pin = document.createElement('span');
+          pin.className = 'ts-pin-mark';
+          pin.textContent = '📌';
+          pin.title = 'The streamer checks this position before every game';
+          posTd.appendChild(pin);
+        }
+      }
+      if (posWaiting(row.SLUG)) {
+        const w = document.createElement('span');
+        w.className = 'ts-pos-wait';
+        w.textContent = '●';
+        w.title = 'Not set in 2K yet — waiting on the streamer';
+        posTd.appendChild(w);
       }
 
       if (CS) {
@@ -5662,6 +5696,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   }
 
   function renderEditView() {
+    editing = true;
     const startMinutes = (coachingRecord && coachingRecord.minutes) || {};
     let minutesDirty = false;
     if (hintEl) hintEl.hidden = false;
@@ -5923,6 +5958,28 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         secSel.appendChild(new Option(o.label, o.value, false, o.value === secondaryPos));
       });
       posWrap.appendChild(secSel);
+      // 📌: check this secondary before every game. Only means something
+      // while there is a secondary to check.
+      const pinLabel = document.createElement('label');
+      pinLabel.className = 'ts-pin';
+      pinLabel.title = 'Have the streamer check this position before every game';
+      const pinCheck = document.createElement('input');
+      pinCheck.type = 'checkbox';
+      pinCheck.checked = posLocked(row.SLUG) && !!secondaryPos;
+      pinCheck.setAttribute('aria-label', 'Check position before every game');
+      const pinIcon = document.createElement('span');
+      pinIcon.textContent = '📌';
+      pinLabel.append(pinCheck, pinIcon);
+      // Picking a secondary shows the player's pin as it stands (on, unless
+      // the team turned it off this year); clearing it unticks the box.
+      const syncPin = () => {
+        pinCheck.disabled = !secSel.value;
+        pinCheck.checked = !!secSel.value && (pinCheck.dataset.touched ? pinCheck.checked : posLocked(row.SLUG));
+      };
+      pinCheck.addEventListener('change', () => { pinCheck.dataset.touched = '1'; });
+      secSel.addEventListener('change', syncPin);
+      syncPin();
+      posWrap.appendChild(pinLabel);
       posTd.appendChild(posWrap);
 
       if (CS) {
@@ -5986,7 +6043,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       }
 
       fields.push({
-        slug: row.SLUG, jerseyInput, secSel,
+        slug: row.SLUG, jerseyInput, secSel, pinCheck,
         originalJersey: String(jersey), originalSecondaryPos: secondaryPos,
       });
     });
@@ -6002,7 +6059,15 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const changed = fields.filter(({ jerseyInput, secSel, originalJersey, originalSecondaryPos }) =>
         String(jerseyInput.value.trim()) !== originalJersey || secSel.value !== originalSecondaryPos
       );
-      if (!changed.length && !minutesDirty) { renderReadView(); return; }
+      // Only players with a secondary have a pin to choose. Clearing a
+      // secondary records nothing, so the default still holds if one is set
+      // again later.
+      const pins = {};
+      fields.forEach(f => {
+        if (f.secSel.value && f.pinCheck.checked !== posLocked(f.slug)) pins[f.slug] = f.pinCheck.checked;
+      });
+      const pinsDirty = Object.keys(pins).length > 0;
+      if (!changed.length && !minutesDirty && !pinsDirty) { renderReadView(); return; }
 
       saveBtn.disabled = true;
       cancelBtn.disabled = true;
@@ -6033,7 +6098,16 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
             body: JSON.stringify({ values, minutes: minutesFromDom() }),
           }));
         }
+        // The pins go after the positions, so a refused position leaves the
+        // pins unsaved too.
         const results = await Promise.all(requests);
+        if (pinsDirty && results.every(r => r.ok)) {
+          results.push(await fetch(`/api/position-checks/${abbr}/pins`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ pins }),
+          }));
+        }
 
         const failed = results.find(r => !r.ok);
         if (failed) {
