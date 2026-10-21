@@ -3942,6 +3942,13 @@
     cmp.textContent = '⇆ Compare';
     cmp.title = 'Compare with another player';
     actions.appendChild(cmp);
+    const share = document.createElement('button');
+    share.type = 'button';
+    share.textContent = 'Share';
+    share.title = 'Share this player';
+    // Always the canonical ?p= link, which unfurls with the player's own card.
+    share.onclick = () => nbnShare({ title: document.title, url: `${location.origin}/players/?p=${encodeURIComponent(playerSlug)}` }, share);
+    actions.appendChild(share);
     if (editBioBtn && canEditBios()) actions.appendChild(editBioBtn);
     headerMain.appendChild(actions);
   }

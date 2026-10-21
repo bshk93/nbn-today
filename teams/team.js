@@ -257,6 +257,8 @@ const coachingConfigReady = new Promise(resolve => {
     color: var(--text-muted); font-size: 1.5rem; cursor: pointer;
     text-decoration: none; flex-shrink: 0; line-height: 1;
   }
+  .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: 6px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
+  .team-share-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
   .team-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
   .team-header {
     display: flex;
@@ -1036,6 +1038,7 @@ document.body.innerHTML = `
           <h1>${name}</h1>
           <div class="team-header-facts" id="team-header-facts"></div>
         </div>
+        <button type="button" class="team-share-btn" id="team-share-btn" title="Share this team">Share</button>
       </div>
       ${nextAbbr ? `<a class="team-nav-btn" href="/teams/${nextAbbr}/" title="${TEAMS[nextAbbr]}" aria-label="Next team">›</a>` : ''}
     </div>
@@ -1198,6 +1201,10 @@ const _badgeScript = document.createElement('script');
 _badgeScript.src = '/token-badge.js';
 _badgeScript.onload = function () { window.__nbnBadge && window.__nbnBadge(); };
 document.head.appendChild(_badgeScript);
+
+// nav.js is injected above and may not have loaded yet, so look it up on click.
+document.getElementById('team-share-btn').onclick = e =>
+  window.nbnShare && nbnShare({ title: document.title, url: `${location.origin}/teams/${abbr}/` }, e.currentTarget);
 
 // The open tab is kept in the URL hash (#coaching), so the reload after a save
 // lands back on the tab the save was made from, and a tab can be linked to.

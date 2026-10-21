@@ -410,6 +410,15 @@ function render(a) {
   const actions = document.getElementById('header-actions');
   actions.innerHTML = '';
   const canEdit = isAuthor || isEditor;
+  // A published article only: a draft's link is no use to anyone else.
+  if (a.status === 'published' && typeof nbnShare === 'function') {
+    const share = document.createElement('button');
+    share.type = 'button';
+    share.className = 'btn-ghost';
+    share.textContent = 'Share';
+    share.onclick = () => nbnShare({ title: a.title, url: `${location.origin}/news/view/?id=${encodeURIComponent(a.id)}` }, share);
+    actions.appendChild(share);
+  }
   if (canEdit) {
     const edit = document.createElement('a');
     edit.href = `/news/new/?id=${a.id}`;

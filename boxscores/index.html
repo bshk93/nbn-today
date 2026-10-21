@@ -282,20 +282,18 @@
       hdr.innerHTML = `
         <div class="sb">${sbRow(g.away_team, g.away_score, !homeWin)}${sbRow(g.home_team, g.home_score, homeWin)}</div>
         <div class="gm-meta">
-          <div class="gm-status">Final${g.gametype === "PLAYOFF" ? ' <span class="ui-badge ui-badge--danger">Playoffs</span>' : ''}<button type="button" class="gm-link" title="Copy a link to this game">Copy link</button></div>
+          <div class="gm-status">Final${g.gametype === "PLAYOFF" ? ' <span class="ui-badge ui-badge--danger">Playoffs</span>' : ''}<button type="button" class="gm-link" title="Share a link to this game">Share</button></div>
           <div class="gm-lead"><span>${g.away_team}</span><span>${bestLine(g.away_players)}</span></div>
           <div class="gm-lead"><span>${g.home_team}</span><span>${bestLine(g.home_players)}</span></div>
         </div>
         <span class="chevron">▼</span>`;
       hdr.onclick = () => div.classList.toggle("open");
       const linkBtn = hdr.querySelector('.gm-link');
-      linkBtn.onclick = async e => {
+      linkBtn.onclick = e => {
         e.stopPropagation();
         const url = gameUrl(cur, g);
-        try { await navigator.clipboard.writeText(url); linkBtn.textContent = 'Copied'; }
-        catch { prompt('Link to this game', url); }
         history.replaceState(null, '', url);
-        setTimeout(() => { linkBtn.textContent = 'Copy link'; }, 1500);
+        nbnShare({ title: `${g.away_team} ${g.away_score}, ${g.home_team} ${g.home_score} — NBN`, url }, linkBtn);
       };
 
       const body = document.createElement("div");

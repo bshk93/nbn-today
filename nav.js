@@ -1069,6 +1069,26 @@ function parseCSV(text) {
   });
 }
 
+// Share a page: the device's share sheet where there is one (phones, most
+// Macs and Windows), otherwise copy the link. `btn`, if given, says "Copied"
+// for a moment so a desktop click visibly did something. A share the person
+// cancels is not an error. `url` defaults to this page.
+async function nbnShare({ title, text, url } = {}, btn) {
+  url = url || location.href;
+  title = title || document.title;
+  if (navigator.share) {
+    try { await navigator.share({ title, text, url }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }   // fall through on any other failure
+  }
+  try { await navigator.clipboard.writeText(url); }
+  catch { prompt('Copy this link', url); return; }
+  if (btn) {
+    const was = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = was; }, 1500);
+  }
+}
+
 // Count a headline number up from zero: the homepage countdown, a player's
 // OVR and Hall of Fame tiles. Reads the target from the element's own text
 // ("93", "175.6", "1,204"), keeps its decimals and commas, and writes the
