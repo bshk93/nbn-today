@@ -1173,6 +1173,9 @@
     { key: 'AGE',    label: 'Age',    sortField: 'AGE',     defaultDir: -1, cls: R },
     { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
     { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
+    // Games started — known only from 26-27, when box score commits began
+    // recording the entered starting five (GET /api/game-starters/counts).
+    { key: 'GS',     label: 'GS',     sortField: 'GS',      defaultDir: -1, cls: R, display: r => r.GS ?? '—' },
     { key: 'MPG',    label: 'MPG',    sortField: 'MIN',     defaultDir: -1, cls: R, display: pg('MIN') },
     { key: 'PPG',    label: 'PPG',    sortField: 'PTS',     defaultDir: -1, cls: R, display: pg('PTS') },
     { key: 'RPG',    label: 'RPG',    sortField: 'REB',     defaultDir: -1, cls: R, display: pg('REB') },
@@ -4713,11 +4716,23 @@
       sections.appendChild(pg);
     }
 
+    // Games started, per "season|REG" or "season|PLAYOFF" → {by: {TEAM: gs},
+    // known: {TEAM: games with recorded starters}}, for
+    // the seasons that record starters. A row with none stays '—'.
+    const starts = {};
+    function startsFor(r) {
+      const po = isPlayoffRow(r);
+      const s = starts[`${r.SEASON.replace(' Playoffs', '')}|${po ? 'PLAYOFF' : 'REG'}`];
+      const teams = r._teams || [r.TEAM];
+      // A team whose starters were never recorded is unknown, not 0 starts.
+      if (!s || !teams.some(t => s.known[t])) return undefined;
+      return teams.reduce((n, t) => n + (s.by[t] || 0), 0);
+    }
     function getDisplayRows() {
       const reg = bySeasonMode ? aggregateBySeasonRows(rows) : rows;
       const po = bySeasonMode ? aggregateBySeasonRows(poRows) : poRows;
       const dob = rows[0].DOB;
-      return [...reg, ...po].map(r => ({ ...r, AGE: ageAtSeason(dob, r.SEASON) }));
+      return [...reg, ...po].map(r => ({ ...r, AGE: ageAtSeason(dob, r.SEASON), GS: startsFor(r) }));
     }
 
     function makeLeaderCheck() {
@@ -4912,6 +4927,21 @@
     }
 
     rebuildSections();
+
+    // Starts arrive after the first draw; redraw once they're in.
+    const startSeasons = [...new Set([...rows, ...poRows].map(r => r.SEASON.replace(' Playoffs', '')))]
+      .filter(s => s >= '26-27');
+    Promise.all(startSeasons.flatMap(season => ['REG', 'PLAYOFF'].map(type =>
+      fetch(`/api/game-starters/counts?season=${season}&game_type=${type}`)
+        .then(r => (r.ok ? r.json() : null)).catch(() => null)
+        .then(d => {
+          // Only a season that has any known starters at all: otherwise every
+          // row would read 0 starts, which is a claim, not an unknown.
+          if (d && Object.keys(d.team_games_known || {}).length) {
+            starts[`${season}|${type}`] = { by: (d.players[slug] || {}).by_team || {}, known: d.team_games_known };
+          }
+        }))))
+      .then(() => { if (Object.keys(starts).length && !showGameLog && !showSplits) rebuildSections(); });
   }
 
   // ── Main ─────────────────────────────────────────────────────────────────────

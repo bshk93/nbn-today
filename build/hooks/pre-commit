@@ -32,6 +32,8 @@ any other hook has to live here too rather than in `.git/hooks`.
   Depth mode has stopped keeping players at their own positions on a tie.
 - Run tests/clinch.test.js; abort if the clinched / eliminated marks on
   /standings could mark a team that isn't mathematically safe.
+- Run tests/award-race.test.js; abort if the /awards/race formulas have
+  stopped applying their eligibility rules (games floor, draft class, starts).
 - Run build/test_achievement_inputs.js; abort if the NB¥ achievement awarder can
   no longer read the data it scores from. That job runs on a 10-minute timer with
   no output but its own journal, so when its inputs moved out of the repo it
@@ -116,6 +118,15 @@ if clinch_test.exists() and shutil.which('node'):
         print(result.stdout)
         print('\nCommit aborted: the standings clinch marks no longer hold (see FAIL lines above).')
         print('Fix Clinch.marks in clinch.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+award_race_test = Path('tests/award-race.test.js')
+if award_race_test.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(award_race_test)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: the award race rules no longer hold (see FAIL lines above).')
+        print('Fix AwardRace.ladder in award-race.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 ach_inputs = Path('build/test_achievement_inputs.js')
