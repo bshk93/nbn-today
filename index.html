@@ -1242,13 +1242,17 @@
       return null;
     }).catch(() => null);
 
-    // Who's streaming a game, by name. A claim (`streamer`) and the stream
-    // flag (`stream`) are independent, so a flagged game nobody has claimed
-    // yet still gets the bare 📺.
+    // Only a stream game is tagged. A streamer claims every game of a night
+    // they run, stream or not, so tagging each claim put the same name on the
+    // whole slate and the actual stream games couldn't be told apart. The
+    // claim (`streamer`) and the flag (`stream`) are independent; the name is
+    // shown only alongside the flag. Same 📡 as /calendar.
     function streamTag(g) {
-      if (g.streamer) return `<span class="dash-game-stream" title="Streamed by ${esc(g.streamer)}">📺 ${esc(g.streamer)}</span>`;
-      if (g.stream) return '<span class="dash-game-stream" title="Marked as a stream">📺</span>';
-      return '';
+      if (!g.stream) return '';
+      const who = g.streamer ? ` · ${esc(g.streamer)}` : '';
+      const title = 'Stream game' + (g.streamer ? `, streamed by ${g.streamer}` : '')
+        + (g.stream_buyer ? `, bought by ${g.stream_buyer}` : '');
+      return `<span class="dash-game-stream" title="${esc(title)}">📡 Stream${who}</span>`;
     }
 
     Promise.all([schedulePromise, recordsPromise]).then(([sched, recs]) => {
