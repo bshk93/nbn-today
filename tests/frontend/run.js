@@ -53,6 +53,7 @@ const NAV_TIMEOUT = 45000;
 // Pages settle their tables after the CSV fetch resolves; networkidle2 gets us
 // most of the way and this covers the render that follows it.
 const SETTLE_MS = 1500;
+const SELECTOR_WAIT_MS = 10000;
 
 // One row per page. `min` is a floor, not an exact count — these assertions
 // should survive the league playing more games, not need editing every season.
@@ -238,6 +239,13 @@ async function checkPage(browser, spec) {
   try {
     const res = await page.goto(BASE + spec.path, { waitUntil: 'networkidle2', timeout: NAV_TIMEOUT });
     status = res.status();
+    // A page that fetches a lot (/preview reads every roster) can still be
+    // drawing after the network goes quiet, so give the counted element up to
+    // SELECTOR_WAIT_MS to appear before counting. Missing still fails below.
+    await page.waitForFunction(
+      (sel, min) => document.querySelectorAll(sel).length >= min,
+      { timeout: SELECTOR_WAIT_MS }, spec.selector, spec.min,
+    ).catch(() => {});
     await new Promise((r) => setTimeout(r, SETTLE_MS));
   } catch (e) {
     navError = e.message.split('\n')[0];
