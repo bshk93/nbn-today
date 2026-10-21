@@ -1052,7 +1052,7 @@
               Trading the right to make a selection after already holding the pick (post-draft, after the team has made their selection) does not count as trading away a first-round pick for Stepien Rule purposes.
             </div>
             <p><strong>7-year advance limit:</strong> Draft picks may only be traded up to <strong>7 years in advance</strong> of the current season. A pick further than 7 years out may not be included in any trade.</p>
-            <p><strong>What's system-enforced:</strong> the Stepien Rule is checked on every proposed trade (`_check_stepien_rule`), reading conveyance-resolved pick ownership rather than raw CSV rows, so protected/swap picks are accounted for correctly. The 7-year advance limit is checked too (`_check_pick_advance_limit`), against the same horizon the picks ledger itself is kept populated through — any round, not just first-rounders.</p>
+            <p><strong>What's system-enforced:</strong> the Stepien Rule is checked on every proposed trade (`_check_stepien_rule`), against every way the team's protected picks could resolve. A protected pick only counts in the outcomes where the team actually gets it, and a pick tied to a protection ladder is scored together with its fallback. A swap counts as a pick, since each side always ends up with one. The 7-year advance limit is checked too (`_check_pick_advance_limit`), against the same horizon the picks ledger itself is kept populated through — any round, not just first-rounders.</p>
           </div>
 
           <div class="doc-section" id="s7-3">
