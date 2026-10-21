@@ -445,6 +445,7 @@
     /* A slate row's time links to that game's preview. */
     a.dash-game-time { color: var(--text-muted); text-decoration: none; }
     a.dash-game-time:hover { color: var(--link); }
+    .dash-game-time.final .win { color: var(--text-primary); font-weight: 700; }
 
     /* A slate game opens to show both starting fives, matched slot by slot. */
     .dash-game[data-away] { cursor: pointer; }
@@ -1228,8 +1229,10 @@
       } else {
         if (!sched || !sched.games) return null;
         season = sched.season || '';
-        dates = [...new Set(sched.games.filter(g => g.date < today).map(g => g.date))]
-          .sort().reverse().slice(0, 3);
+        // Today included: a night's scores go up as soon as they are entered,
+        // which is often before midnight.
+        dates = [...new Set(sched.games.filter(g => g.date <= today).map(g => g.date))]
+          .sort().reverse().slice(0, 4);
       }
       for (const date of dates) {
         const games = await jget(`/api/boxscores?date=${encodeURIComponent(date)}`
@@ -1332,7 +1335,7 @@
         + (list.length ? '<div class="dash-games">' + list.map((g, i) =>
             (showDates && (i === 0 || list[i - 1].date !== g.date)
               ? `<div class="dash-game-day">${esc(shortDate(g.date))}</div>` : '')
-            + `<div class="dash-game" data-away="${esc(g.away_team)}" data-home="${esc(g.home_team)}">`
+            + `<div class="dash-game" data-away="${esc(g.away_team)}" data-home="${esc(g.home_team)}" data-date="${esc(g.date)}">`
             + `<button class="dash-game-toggle" type="button" aria-expanded="false" title="Starting fives">▶</button>`
             + `<span class="dash-game-opp">${teamChip(g.away_team, recs)}<span>@</span>${teamChip(g.home_team, recs)}</span>`
             + streamTag(g)
@@ -1340,6 +1343,27 @@
             + `</div><div class="dash-five"><div class="dash-five-inner"></div></div>`).join('') + '</div>' : '');
       card.insertAdjacentHTML('beforeend',
         '<a class="dash-feed-item" href="/calendar" style="display:block;margin-top:0.6rem">Full calendar →</a>');
+
+      // A game whose box score is already in shows its final in place of the
+      // tip time. Matched on date + the two teams, either way round, the same
+      // rule /committees/stats uses.
+      latestNight.then(night => {
+        if (!night) return;
+        const key = (a, b) => [a, b].map(t => String(t).toUpperCase()).sort().join('|');
+        const finals = new Map(night.games.map(g => [key(g.away_team, g.home_team), g]));
+        card.querySelectorAll(`.dash-game[data-date="${night.date}"]`).forEach(row => {
+          const g = finals.get(key(row.dataset.away, row.dataset.home));
+          if (!g) return;
+          const [a, h] = String(g.away_team).toUpperCase() === row.dataset.away.toUpperCase()
+            ? [g.away_score, g.home_score] : [g.home_score, g.away_score];
+          const el = row.querySelector('.dash-game-time');
+          el.href = `/boxscores/?date=${encodeURIComponent(night.date)}`;
+          el.title = 'Box score';
+          el.classList.add('final');
+          el.innerHTML = `<span class="${a > h ? 'win' : ''}">${esc(String(a))}</span>–`
+            + `<span class="${h > a ? 'win' : ''}">${esc(String(h))}</span> F ›`;
+        });
+      });
 
       // Clicking a game (anywhere but its links) slides its starting fives
       // out underneath. Filled on first open; later opens just toggle.
@@ -1648,7 +1672,8 @@
         .filter(([k], i) => i < 3 || p[k] >= 3)
         .map(([k, label]) => `${p[k]}<span>${label}</span>`).join('');
 
-      const title = night.date === dayBefore(today) ? 'Last night\'s best' : 'Best performances';
+      const title = night.date === today ? 'Tonight\'s best'
+        : night.date === dayBefore(today) ? 'Last night\'s best' : 'Best performances';
       $('dash-best').innerHTML =
         `<div class="dash-card-title">${title}`
         + `<span class="dash-best-title-date">${esc(shortDate(night.date))}</span></div>`
