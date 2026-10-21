@@ -528,7 +528,7 @@
         detail.textContent = 'Coaching settings vocabulary unavailable — /coaching-config.js failed to load.';
         return;
       }
-      window.CoachingSettings.renderReadOnly(detail, rec, await playerLookup());
+      window.CoachingSettings.renderReadOnly(detail, rec, { ...(await playerLookup()), showChanges: true });
     }
 
     function coachingRowMeta(team) {

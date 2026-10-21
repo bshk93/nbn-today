@@ -372,13 +372,24 @@
     return l;
   }
 
-  function row(label, value, note) {
+  // `was`, when given, marks the row as changed since the settings were last
+  // entered into 2K and shows the old value under the new one.
+  function row(label, value, note, was) {
     const r = document.createElement('div');
     r.style.cssText = 'display:flex;justify-content:space-between;gap:1rem;padding:0.3rem 0;font-size:0.85rem;border-bottom:1px solid var(--border-subtle,#2a2a2a)';
     const l = labelWithNote(label, note, 'color:var(--text-muted,#888)');
     const v = document.createElement('span');
     v.style.cssText = 'color:var(--text-primary,#eee);font-weight:600;text-align:right';
     v.textContent = value;
+    if (was !== undefined) {
+      r.classList.add('cs-changed');
+      r.style.cssText += ';background:var(--gold-bg,rgba(201,162,39,0.15));box-shadow:inset 3px 0 0 var(--gold,#c9a227);padding-left:0.5rem;padding-right:0.4rem;margin:0 -0.4rem';
+      l.style.color = 'var(--text-primary,#eee)';
+      const old = document.createElement('div');
+      old.style.cssText = 'font-size:0.72rem;font-weight:400;color:var(--text-muted,#888)';
+      old.textContent = `was ${was}`;
+      v.appendChild(old);
+    }
     r.appendChild(l);
     r.appendChild(v);
     return r;
@@ -415,6 +426,26 @@
     status.textContent = `${savedLine} · ${enteredLine}${record.pending ? ' · PENDING ENTRY' : ''}`;
     container.appendChild(status);
 
+    // `opts.showChanges`: highlight what differs from what a streamer last
+    // entered into 2K (`entered_values`/`entered_minutes`, kept by the API),
+    // so pending settings show only the edits to make. Nothing to compare
+    // before a team's first entry.
+    const base = opts.showChanges && record.pending && record.entered_values
+      ? { values: record.entered_values || {}, minutes: record.entered_minutes || {} }
+      : null;
+    let changeCount = 0;
+    const was = (now, then) => {
+      if (!base || now === then) return undefined;
+      changeCount++;
+      return then;
+    };
+    let changesLine = null;
+    if (opts.showChanges && record.pending) {
+      changesLine = document.createElement('div');
+      changesLine.style.cssText = 'font-size:0.85rem;font-weight:700;margin:-0.5rem 0 1rem';
+      container.appendChild(changesLine);
+    }
+
     const issues = validityIssues(record);
     if (issues.length) {
       const warn = document.createElement('div');
@@ -434,14 +465,23 @@
     const values = record.values || {};
     FIELD_GROUPS.forEach(group => {
       const card = groupCard(group.label, group.note);
-      group.fields.forEach(f => card.appendChild(row(f.label, fieldValueLabel(f, values[f.key], group), f.note)));
+      group.fields.forEach(f => {
+        const now = fieldValueLabel(f, values[f.key], group);
+        const then = base && fieldValueLabel(f, base.values[f.key], group);
+        card.appendChild(row(f.label, now, f.note, was(now, then)));
+      });
       cardsWrap.appendChild(card);
     });
 
     POINT_BUY_POOLS.forEach(pool => {
       const poolValues = values[pool.key] || {};
       const card = groupCard(pool.label, pool.note);
-      pool.fields.forEach(f => card.appendChild(row(f.label, fieldValueLabel(f, poolValues[f.key]), f.note)));
+      const basePool = (base && base.values[pool.key]) || {};
+      pool.fields.forEach(f => {
+        const now = fieldValueLabel(f, poolValues[f.key]);
+        const then = base && fieldValueLabel(f, basePool[f.key]);
+        card.appendChild(row(f.label, now, f.note, was(now, then)));
+      });
       card.appendChild(row('Total', `${poolTotal(pool, poolValues)} / ${pool.budget}`));
       cardsWrap.appendChild(card);
     });
@@ -454,15 +494,40 @@
     if (!opts.skipMinutesCard) {
       const minutes = record.minutes || {};
       const mCard = groupCard('Player Minutes');
+      const filled = m => m && (m.slug || m.minutes);
+      const nameOf = slug => slug ? ((opts.resolveName && opts.resolveName(slug)) || slug) : '—';
+      const minLabel = m => (m && m.res) ? 'RES' : String((m && m.minutes) || 0);
       MINUTES_SLOTS.forEach(slot => {
         const m = minutes[slot];
-        if (!m || (!m.slug && !m.minutes)) return;
-        const name = m.slug ? ((opts.resolveName && opts.resolveName(m.slug)) || m.slug) : '—';
-        const ovr = m.slug && opts.resolveOvr ? opts.resolveOvr(m.slug) : '';
-        mCard.appendChild(row(`${slot} — ${name}${ovr ? ` · ${ovr} OVR` : ''}`, m.res ? 'RES' : String(m.minutes || 0)));
+        const old = base && base.minutes[slot];
+        if (!filled(m) && !filled(old)) return;
+        const slug = (filled(m) && m.slug) || '';
+        const ovr = slug && opts.resolveOvr ? opts.resolveOvr(slug) : '';
+        const now = minLabel(filled(m) ? m : null);
+        // A different player in the slot is the change to make, whatever
+        // his minutes; otherwise only the minutes/RES changed.
+        const oldSlug = (filled(old) && old.slug) || '';
+        const oldMin = minLabel(filled(old) ? old : null);
+        const then = base && (`${oldSlug}|${oldMin}` === `${slug}|${now}` ? now
+          : oldSlug !== slug ? `${nameOf(oldSlug)} ${oldMin}` : oldMin);
+        const label = `${slot} — ${nameOf(slug)}${ovr ? ` · ${ovr} OVR` : ''}`;
+        mCard.appendChild(row(label, now, undefined, was(now, then)));
       });
       mCard.appendChild(row('Total', `${minutesTotal(minutes)} / ${MINUTES_BUDGET}`));
       cardsWrap.appendChild(mCard);
+    }
+
+    if (changesLine) {
+      if (!base) {
+        changesLine.style.color = 'var(--text-muted,#888)';
+        changesLine.textContent = 'First entry — nothing earlier to compare, so enter everything.';
+      } else if (changeCount) {
+        changesLine.style.color = 'var(--gold,#c9a227)';
+        changesLine.textContent = `${changeCount} change${changeCount === 1 ? '' : 's'} since last entered — highlighted below.`;
+      } else {
+        changesLine.style.color = 'var(--text-muted,#888)';
+        changesLine.textContent = 'Saved again, but nothing differs from what was last entered.';
+      }
     }
   }
 
