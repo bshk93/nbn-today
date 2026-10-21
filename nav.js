@@ -554,7 +554,7 @@ const SITE_PAGES = [
   { title: 'Free Agency', href: '/free-agency/', icon: '✍️' },
   { title: 'Extensions', href: '/extensions/', icon: '📄' },
   { title: 'Transactions', href: '/transactions', icon: '📝' },
-  { title: 'Transaction Simulator', href: '/transaction-sim/', icon: '🧮' },
+  { title: 'Transaction Simulator', href: '/transaction-sim/', icon: '🧮', keywords: ['trade machine', 'trade builder', 'trade simulator'] },
   { title: 'Cap Summary', href: '/cap-summary/', icon: '💰' },
   { title: 'Committees', href: '/committees/', icon: '🏛' },
   { title: 'Rosters Committee — compliance & cap sheet diffs', href: '/committees/rosters/', icon: '🩺' },
@@ -717,7 +717,7 @@ function _filter() {
   }
 
   const pageMatches = SITE_PAGES.concat(_rolePages)
-    .filter(p => p.title.toLowerCase().includes(q))
+    .filter(p => p.title.toLowerCase().includes(q) || (p.keywords || []).some(k => k.includes(q)))
     .slice(0, 6)
     .map(p => ({ type: 'Page', icon: p.icon, title: p.title, meta: '', href: p.href }));
 

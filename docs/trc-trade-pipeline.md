@@ -239,10 +239,10 @@ Endpoints — all under `/api/trade-requests`:
 ## Site
 
 - **The builder itself now lives in `trade-builder.js`** (repo root), extracted
-  2026-09-21 so it isn't duplicated: `transaction-sim/index.html` (trade mode)
-  and `tradeblock/index.html` (a "Propose a Trade" button opening it in a
-  modal, pre-seeded with the signed-in member's own team) both mount the same
-  module. `loadMe()`, `renderResults()`'s party-gated "Submit to TRC" button,
+  2026-09-21 so it isn't duplicated. `transaction-sim/index.html` (trade mode)
+  mounts it. `tradeblock/index.html` mounted it too, in a modal, until
+  2026-10-21; its "Propose a trade" button is now a link to
+  `/transaction-sim/?teams=<your team>` instead. `loadMe()`, `renderResults()`'s party-gated "Submit to TRC" button,
   and `submitToTRC(tradeBody)`'s token-prompt/POST are unchanged — just moved
   out of the page-inline script into the shared file. This is the first real
   step toward decision 1's stated "one place to mock and submit any
@@ -251,7 +251,7 @@ Endpoints — all under `/api/trade-requests`:
   The extraction left the simulator's own inline copy behind, so until
   2026-10-02 `/transaction-sim` still ran it rather than mounting the module.
   It had already drifted: it never got "Release after the trade". The sim now
-  mounts `trade-builder.js` like tradeblock does, and its inline trade code is
+  mounts `trade-builder.js`, and its inline trade code is
   gone. Don't reintroduce a page-local copy.
 - `committees/trc/index.html` — new dashboard, gated to `trc`/`trc_head`/
   `admin`, structural template `committees/stream/index.html`. Queue (open
