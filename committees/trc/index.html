@@ -639,7 +639,8 @@
     let ITEMS = [];
 
     async function loadItems() {
-      ITEMS = await fetch('/api/trade-requests').then(r => r.ok ? r.json() : []).catch(() => []);
+      // Signed in only: the API answers each member with the requests they may see.
+      ITEMS = storedToken() ? await authedFetch('/api/trade-requests').catch(() => []) : [];
       // Committee members see everything; a team member sees only their own trades.
       if (!isTrc()) {
         const mine = new Set(myTeams());

@@ -119,10 +119,17 @@ count, not a share of the committee.
     moment every party has consented and the request is ready for a vote.
     Discord is separate: since 2026-09-29 the same two moments, ready for a
     vote and ready to finalize, also post to the private `trc-alerts` channel
-    (`docs/discord-integrations.md` § TRC alerts). In the inbox, nothing fires on ballot cast, reject, withdraw, or finalize — a
-    finalized/rejected trade is already visible via Discord (finalize) or
-    the dashboard itself; only the two "something now needs *your* action"
-    moments got a push.
+    (`docs/discord-integrations.md` § TRC alerts). Since 2026-10-21 the
+    parties also hear every later step (`_tell_parties`): every team has
+    consented, the TRC approved it, finalized (with its trade number),
+    rejected (with the reason), and withdrawn (by whom, and why). Before that
+    they heard nothing after the first notice, and found out from Discord.
+    A single ballot still sends nothing.
+
+    The team page shows the same requests while they're open, as a "Trade
+    with … submitted, awaiting approval" card above the roster
+    (`renderTradeRequestBanner` in `teams/team.js`). Only the team's own front
+    office sees it.
 
 11. **Illegal-trade override, added 2026-09-20.** Two gaps closed together:
     `transaction-sim`'s "Submit to TRC" used to POST with no client-side
@@ -221,7 +228,7 @@ Endpoints — all under `/api/trade-requests`:
 
 | Verb/path | Gate | Effect |
 |---|---|---|
-| `GET` `[/{id}]` | public | list/single, with a live `validation` block merged in |
+| `GET` `[/{id}]` | signed in; returns only requests the member is a party to (team role or owner), or all of them for `trc`/`trc_head`/`admin`. Public until 2026-10-21 | list/single, with a live `validation` block merged in |
 | `POST` | holds a role for a party team | creates, `status: awaiting_consent` |
 | `POST /{id}/consent` | `is_team_owner` of a party | consents that team; flips to `balloting` once every party has |
 | `POST /{id}/withdraw` | `is_team_owner` of a party, or `trc_head` | `status: withdrawn` |

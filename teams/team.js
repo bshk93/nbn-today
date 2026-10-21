@@ -911,6 +911,17 @@ const coachingConfigReady = new Promise(resolve => {
     border-radius: 10px; padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
     font-size: 0.85rem; color: var(--text-secondary);
   }
+  .trade-banner {
+    border: 1px solid var(--border); background: var(--bg-subtle);
+    border-radius: 10px; padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
+    font-size: 0.85rem; color: var(--text-secondary);
+  }
+  .trade-banner b { color: var(--text-primary); }
+  .trade-banner .meta { display: block; margin-top: 0.2rem; font-size: 0.76rem; color: var(--text-muted); }
+  .trade-banner .tag {
+    color: var(--danger); font-weight: 700; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
   .offer-banner.overdue { border-color: var(--danger); background: hsl(0,55%,9%); }
   .offer-banner b { color: var(--text-primary); }
   .offer-banner .meta { display: block; margin-top: 0.2rem; font-size: 0.76rem; color: var(--text-muted); }
@@ -1060,6 +1071,7 @@ document.body.innerHTML = `
     </div>
     <div class="tab-panel" id="tab-overview">
       <div id="offer-sheet-banner" style="display:none"></div>
+      <div id="trade-request-banner" style="display:none"></div>
       <section>
         <div class="roster-header-row">
           <h2 class="section-title" id="roster-title">Roster</h2>
@@ -4970,6 +4982,55 @@ function renderOfferSheetBanner(offers) {
   }).join('');
 }
 
+// Trades this team is in that were submitted to the TRC and aren't decided yet.
+// Only the team's own front office sees it: GET /api/trade-requests answers
+// the parties and the committee, nobody else. Decided requests drop off here
+// and stay in the TRC page's history.
+async function renderTradeRequestBanner(biosData) {
+  const el = document.getElementById('trade-request-banner');
+  const mine = AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_OWNER_OF.includes(abbr);
+  if (!el || !mine || !getToken()) return;
+  let items = [];
+  try {
+    const r = await fetch(`/api/trade-requests?team=${abbr}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+    if (!r.ok) return;
+    items = (await r.json()).filter(i => ['awaiting_consent', 'balloting', 'ready_to_finalize'].includes(i.status));
+  } catch (e) { return; }
+  if (!items.length) return;
+
+  const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const asset = a => {
+    if (a.type === 'pick') return `${a.year} ${a.round === 1 ? '1st' : '2nd'}${a.orig && a.orig !== abbr ? ` (${a.orig})` : ''}`;
+    const bio = biosData[a.slug];
+    return esc(bio ? displayNameFromBio(bio.name) : a.slug);
+  };
+  const side = (transfers, key) => transfers.filter(t => t[key] === abbr)
+    .flatMap(t => t.assets.map(asset)).join(', ') || 'nothing';
+  const stage = i => {
+    if (i.status === 'awaiting_consent') {
+      const waiting = Object.entries(i.consents).filter(([, c]) => !c.consented).map(([t]) => t);
+      return waiting.includes(abbr) && AUTH_OWNER_OF.includes(abbr)
+        ? 'Waiting on your consent' + (waiting.length > 1 ? ` and ${waiting.filter(t => t !== abbr).join(', ')}’s` : '')
+        : `Waiting on consent from ${waiting.join(', ')}`;
+    }
+    const approvals = Object.values(i.ballots || {}).filter(b => b.decision === 'approve').length;
+    if (i.status === 'balloting') return `With the TRC for a vote · ${approvals}/3 approvals`;
+    return 'Approved by the TRC · waiting on the committee head to finalize';
+  };
+
+  el.style.display = '';
+  el.innerHTML = items.map(i => {
+    const others = i.parties.filter(p => p !== abbr).join(', ');
+    const legal = !i.validation || i.validation.legal;
+    return `<div class="trade-banner">
+      Trade with <b>${others}</b> submitted, awaiting approval.${legal ? '' : ' <span class="tag">fails a check</span>'}
+      <span class="meta">${abbr} gets ${side(i.trade.transfers, 'to_team')} · sends ${side(i.trade.transfers, 'from_team')}</span>
+      <span class="meta">${stage(i)} · proposed by ${esc(i.created_by)} ${String(i.created_at).slice(0, 10)} ·
+        <a href="/committees/trc/">open on the TRC page</a></span>
+    </div>`;
+  }).join('');
+}
+
 // Builds the `rowActions` callback for the live roster table. Returns null when
 // the viewer has no move available at all, which keeps the extra column off
 // every public page load.
@@ -7931,6 +7992,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const rotation = (rotr.status === 'fulfilled' && rotr.value && rotr.value[abbr]) || null;
   const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];
   renderOfferSheetBanner(openOffers);
+  renderTradeRequestBanner(biosData);
   const currentRosterRowsParsed = rr.status === 'fulfilled' ? parseCSV(rr.value) : [];
   const currentSlugs = computeCurrentSlugSet(currentRosterRowsParsed);
 
