@@ -99,7 +99,8 @@ exactly this shape:
 ```
 
 **`columns` — the header row, verbatim, left to right.** Read the labels off the
-screenshot; do not copy them from this file. Through 2K25 the order has been:
+screenshot; do not copy them from this file. The order the validator was built
+for (2K25, and unchanged through the 25-26 season) is:
 
     MIN, PTS, REB, AST, STL, BLK, TO, FGM/FGA, 3PM/3PA, FTM/FTA, OREB, PF
 
@@ -172,7 +173,8 @@ Add the resolved `slug` into each row (keep `player` as shown, for the report).
 ### 4. Commit
 
 Build the payload from `.checked.json` (it already has `dreb` on every row) plus
-the meta fields and POST:
+`date`, `season`, `game_type`, `game_num` and `round_num` copied from `meta.json`
+(never from the example below), and POST:
 
 ```bash
 curl -s -X POST http://localhost:8001/api/boxscore/commit \
@@ -187,7 +189,7 @@ Payload shape:
   "date": "YYYY-MM-DD",
   "home_team": "ABC",
   "away_team": "DEF",
-  "season": "25-26",
+  "season": "26-27",
   "game_type": "REG",
   "home_pts": 110,
   "away_pts": 105,
@@ -207,6 +209,9 @@ Payload shape:
 ```
 
 Report the API response. If `ok: true`, report how many rows were added.
+
+Don't send `skip_reward`. The API pays a game's uploader when the screenshots
+arrive, and a commit of a screenshot game pays nothing more by itself.
 
 The commit runs the same checks as the weekly integrity job before it writes,
 and requires the season to be the one the date falls in. A `422` names every
