@@ -447,6 +447,13 @@
     /* Milestone watch: the standings' row style, with the milestone on a
        second line — the sidebar is too narrow for both on one. */
     .dash-ms-row { flex-wrap: wrap; row-gap: 0.1rem; }
+    .dash-otd-row { display: grid; grid-template-columns: 2.6rem 1fr; gap: 0.5rem; padding: 0.35rem 0; color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; line-height: 1.35; }
+    .dash-otd-row + .dash-otd-row { border-top: 1px solid var(--border-subtle); }
+    a.dash-otd-row:hover .dash-otd-what { color: var(--link); }
+    .dash-otd-year { font-family: var(--font-display); font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .dash-otd-what b { color: var(--text-primary); font-weight: 600; }
+    .dash-otd-sub { color: var(--text-muted); font-size: 0.78rem; }
+    .dash-otd-what .dash-feed-team img { width: 14px; height: 14px; }
     .dash-ms-row[hidden] { display: none; }
     .dash-ms-more {
       margin-top: 0.4rem; padding: 0; background: none; border: none;
@@ -788,6 +795,8 @@
       <div class="dash-card" id="dash-standings" hidden></div>
       <!-- Career milestones active players are closest to. Hidden until loaded. -->
       <div class="dash-card" id="dash-milestones" hidden></div>
+      <!-- This date in earlier seasons (GET /api/on-this-day). Hidden when there's nothing. -->
+      <div class="dash-card" id="dash-otd" hidden></div>
       <!-- The current power-rankings standing. Hidden until it has one. -->
       <div class="dash-card" id="dash-ranks" hidden></div>
       <!-- Biggest OVR moves in the latest 2K scrape. Hidden until there is one. -->
@@ -1475,6 +1484,32 @@
     // The feed is the main column, so it has room for a dozen.
     const FEED_LIMIT = 12;
 
+    // What FeedTypes.headline needs to name players and teams. Shared by the
+    // feed and On This Day's trades.
+    const headlineCtx = bios => ({
+      esc,
+      name: slug => {
+        const n = (bios[slug] || {}).name;
+        if (n) return nbnPlayerName(n);
+        // A slug is "last-first"; good enough when the bio is missing.
+        const parts = String(slug || '').split('-');
+        return parts.length > 1
+          ? [parts[parts.length - 1], ...parts.slice(0, -1)].map(w => w[0].toUpperCase() + w.slice(1)).join(' ')
+          : String(slug || '');
+      },
+      team: abbr => `<span class="dash-feed-team"><img src="/logos/sm/logo-${esc(abbr.toLowerCase())}.webp" alt="">${esc(abbr)}</span>`,
+    });
+    // The players a ledger entry names, for one bios fetch.
+    const txnSlugs = txns => {
+      const slugs = new Set();
+      txns.forEach(t => {
+        const det = t.details || {};
+        if (det.player) slugs.add(det.player);
+        (det.transfers || []).forEach(tr => (tr.assets || []).forEach(a => a.slug && slugs.add(a.slug)));
+      });
+      return slugs;
+    };
+
     const feedFromTransactions = () =>
       // The ledger endpoint already withholds sealed types (§ 5.1 waiver
       // claims), so whatever it returns is safe to show. A voided entry
@@ -1486,29 +1521,12 @@
       // office. Names come from a bios fetch for just the players named.
       jget('/api/transactions?limit=20').then(d => {
         const txns = (d.transactions || []).filter(t => !t.voided);
-        const slugs = new Set();
-        txns.forEach(t => {
-          const det = t.details || {};
-          if (det.player) slugs.add(det.player);
-          (det.transfers || []).forEach(tr => (tr.assets || []).forEach(a => a.slug && slugs.add(a.slug)));
-        });
+        const slugs = txnSlugs(txns);
         const bios = slugs.size
           ? jget('/api/players?slugs=' + encodeURIComponent([...slugs].join(','))).catch(() => ({}))
           : Promise.resolve({});
         return bios.then(bios => {
-          const ctx = {
-            esc,
-            name: slug => {
-              const n = (bios[slug] || {}).name;
-              if (n) return nbnPlayerName(n);
-              // A slug is "last-first"; good enough when the bio is missing.
-              const parts = String(slug || '').split('-');
-              return parts.length > 1
-                ? [parts[parts.length - 1], ...parts.slice(0, -1)].map(w => w[0].toUpperCase() + w.slice(1)).join(' ')
-                : String(slug || '');
-            },
-            team: abbr => `<span class="dash-feed-team"><img src="/logos/sm/logo-${esc(abbr.toLowerCase())}.webp" alt="">${esc(abbr)}</span>`,
-          };
+          const ctx = headlineCtx(bios);
           return txns.map(t => {
             const h = FeedTypes.headline(t, ctx);
             if (!h) return null;
@@ -1819,6 +1837,62 @@
         more.textContent = open ? 'Show fewer' : `Show ${extra} more`;
       });
       $('dash-milestones').hidden = false;
+    }).catch(() => {});
+
+    // ── On this day ───────────────────────────────────────────────────────
+    //
+    // Earlier seasons on today's date: titles and series clinched, the day's
+    // best game each year, and trades. The API does the finding; this picks
+    // the few worth a line, one of each kind before a second of any: a title
+    // or clinch, a game that cleared a feat, a trade, then any other best game.
+    const OTD_SHOWN = 4;
+    const ROUND_NAME = { 1: 'First Round', 2: 'Conference Semifinals', 3: 'Conference Finals', 4: 'Finals' };
+    const teamSpan = abbr => headlineCtx({}).team(String(abbr));
+    jget(`/api/on-this-day?date=${encodeURIComponent(today)}`).then(async d => {
+      const year = date => date.slice(0, 4);
+      const items = [];
+      (d.clinches || []).forEach(c => items.push({ rank: c.title ? 0 : 1, date: c.date, html: c.title
+        ? `🏆 ${teamSpan(c.winner)} won the title, ${c.wins}–${c.losses} over ${teamSpan(c.loser)}`
+        : `${teamSpan(c.winner)} closed out ${teamSpan(c.loser)}, ${c.wins}–${c.losses} <span class="dash-otd-sub">${esc(ROUND_NAME[c.round] || 'Playoffs')}</span>` }));
+      (d.games || []).forEach(g => {
+        const L = g.line || {};
+        const away = g.home ? g.opp : g.team, home = g.home ? g.team : g.opp;
+        items.push({ rank: g.feat ? 2 : 4, date: g.date,
+          href: `/boxscores/?date=${encodeURIComponent(g.date)}&game=${encodeURIComponent(away)}-${encodeURIComponent(home)}`,
+          html: `<b>${esc(nbnPlayerName(g.player))}</b> ${L.P} pts, ${L.R} reb, ${L.A} ast `
+            + `<span class="dash-otd-sub">${g.home ? 'vs' : '@'} ${esc(g.opp)}${g.playoff ? ' · playoffs' : ''}${g.feat ? ' · ' + esc(g.feat) : ''}</span>` });
+      });
+      const trades = d.trades || [];
+      if (trades.length) {
+        const slugs = txnSlugs(trades);
+        const bios = slugs.size
+          ? await jget('/api/players?slugs=' + encodeURIComponent([...slugs].join(','))).catch(() => ({}))
+          : {};
+        const ctx = headlineCtx(bios);
+        trades.forEach(t => {
+          const h = FeedTypes.headline(t, ctx);
+          if (h) items.push({ rank: 3, date: t.date, href: '/transactions', html: h.html });
+        });
+      }
+      if (!items.length) return;
+      const order = (a, b) => (a.rank - b.rank) || b.date.localeCompare(a.date);
+      items.sort(order);
+      // One of each kind first (a title or clinch, a feat, a trade, a game),
+      // so four big games on Christmas don't crowd out the trade that day.
+      const kind = r => (r <= 1 ? 'po' : r);
+      const picked = [], seen = new Set();
+      items.forEach(it => { if (!seen.has(kind(it.rank))) { seen.add(kind(it.rank)); picked.push(it); } });
+      items.forEach(it => { if (picked.length < OTD_SHOWN && !picked.includes(it)) picked.push(it); });
+      picked.sort(order);
+      $('dash-otd').innerHTML =
+        `<div class="dash-standings-head"><div class="dash-card-title">On This Day`
+        + `<span class="dash-best-title-date">${esc(shortDate(today))}</span></div></div>`
+        + picked.slice(0, OTD_SHOWN).map(it => {
+          const tag = it.href ? 'a' : 'div';
+          return `<${tag} class="dash-otd-row"${it.href ? ` href="${esc(it.href)}"` : ''}>`
+            + `<span class="dash-otd-year">${esc(year(it.date))}</span><span class="dash-otd-what">${it.html}</span></${tag}>`;
+        }).join('');
+      $('dash-otd').hidden = false;
     }).catch(() => {});
 
     // ── Band 1: signed-in only ────────────────────────────────────────────
