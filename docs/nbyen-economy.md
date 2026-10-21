@@ -22,6 +22,7 @@ was cut by ten at launch, so every price in it divides by ten.
 | Twitch subs | 300 a month for Tier 1 or Prime, 700 for Tier 2, 1,700 for Tier 3 | Once a month, by `nbn-twitch-subs.timer`. |
 | Winning bets | Set by the bookie's odds | When a bet closes. |
 | Futures | 100 per winning share, or a sale at the market price | When you sell, or when the market settles. |
+| Box score screenshots | 25 per side, so 50 a game | The first screenshot for each team's side of a game pays its uploader. A game typed in by hand pays 50 when it's committed. Committing a game that came in as screenshots pays nothing more. Back on 2026-10-21. |
 
 - **Every source is a real ledger line.** There's no default balance any more.
   A member nobody has paid has 0.
@@ -163,7 +164,7 @@ already in the code on the new scale.
 | # | Feature | Price when it returns | Before it can return |
 |---|---|---|---|
 | 1 | Tips | — (moves NB¥, creates none) | Nothing. Safe first. |
-| 2 | Box score submissions | 30 per game | Nothing. |
+| 2 | Box score submissions | **On since 2026-10-21**, at 50 a game (§ 2) | It came back without the shared monthly cap below. |
 | 3 | Competitive achievements | 25 / 50 / 100 | `REWARD` in `build/achievement-notify.js` still says 250/500/1000, and tenure achievements must stay badge-only. |
 | 4 | Committee salaries | 250 / 750 / 1,250 a year | Not built. See the appendix, § 1b. |
 | 5 | Poeltl | 5 per solve | Nothing. The server owns the answer. |
