@@ -28,6 +28,8 @@ any other hook has to live here too rather than in `.git/hooks`.
   no browser and no network — unlike tests/frontend/run.js, which stays out of
   the hook for exactly those reasons. Skipped where node isn't installed rather
   than making node a requirement for committing.
+- Run tests/lineup.test.js; abort if the starting five behind Auto-sort and
+  Depth mode has stopped keeping players at their own positions on a tie.
 - Run build/test_achievement_inputs.js; abort if the NB¥ achievement awarder can
   no longer read the data it scores from. That job runs on a 10-minute timer with
   no output but its own journal, so when its inputs moved out of the repo it
@@ -94,6 +96,15 @@ if feed_headline_test.exists() and shutil.which('node'):
         print(result.stdout)
         print('\nCommit aborted: the homepage feed headlines no longer hold (see FAIL lines above).')
         print('Fix FeedTypes.headline in feed-types.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+lineup_test = Path('tests/lineup.test.js')
+if lineup_test.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(lineup_test)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: the starting-five rules no longer hold (see FAIL lines above).')
+        print('Fix computeStartingFive in teams/lineup.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 ach_inputs = Path('build/test_achievement_inputs.js')

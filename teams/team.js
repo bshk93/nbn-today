@@ -5924,6 +5924,9 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         slug: row.SLUG,
         OVR: currentOvr ? currentOvr[row.SLUG] : '',
         _posList: startPositions(row.SLUG) || (biosData[row.SLUG] || {}).pos || [],
+        // startPositions is in PG→C order, not primary first.
+        _primary: POSITION_ORDER.includes(primaryPosFromAttrs(attributesData[row.SLUG]))
+          ? primaryPosFromAttrs(attributesData[row.SLUG]) : undefined,
       }));
       const five = computeStartingFive(players);
       const startedSlugs = new Set(five.filter(Boolean).map(p => p.slug));

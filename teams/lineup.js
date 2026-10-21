@@ -13,6 +13,8 @@
 // fields read here are:
 //   _posList  string[]  the player's eligible positions (bio `pos`)
 //   OVR       number-ish current overall rating
+//   _primary  string    optional: his main position, for breaking ties
+//                       (defaults to _posList[0])
 // Any caller producing objects with those two fields can use this.
 //
 //   DEPTH_SLOTS           the five lineup slots, PG→C
@@ -35,8 +37,13 @@ const DEPTH_SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
 // at each position, in order"; with conflicts it prefers a full five, then the
 // strongest lineup as a whole — a dual-eligible big (e.g. C/PF) slots wherever
 // he raises the team's total most, rather than always claiming the earlier of
-// his two positions regardless of what that leaves for the later one. Only a
-// genuine tie in both falls back to preferring the earlier slot.
+// his two positions regardless of what that leaves for the later one.
+//
+// A tie in both goes to the lineup with players nearest their primary
+// position, so a C and a PF who could swap stay at C and PF instead of the
+// better one taking the earlier slot. The primary is `_primary` when given,
+// else the first of `_posList`. Only a tie in that too falls back to
+// preferring the earlier slot.
 //
 // Candidates per slot are capped at the top 5 by OVR — five slots can never
 // need a sixth-deep option at any one position — so the search is at most 6^5.
@@ -49,12 +56,19 @@ function computeStartingFive(players) {
       .slice(0, DEPTH_SLOTS.length)
   );
 
-  // [filled, totalOvr, ovr@PG, ovr@SG, …]; an empty slot scores -1 so any
-  // filled slot beats it, and the per-slot values only matter as a final
-  // tiebreaker once filled count and total OVR are both already equal.
+  // Steps from a player's primary to the slot; 0 when he has no known primary.
+  const offPos = (p, i) => {
+    const home = DEPTH_SLOTS.indexOf(p._primary || (p._posList || [])[0]);
+    return home < 0 ? 0 : Math.abs(home - i);
+  };
+
+  // [filled, totalOvr, -stepsOffPosition, ovr@PG, ovr@SG, …]; an empty slot
+  // scores -1 so any filled slot beats it, and the per-slot values only
+  // matter as a final tiebreaker once everything before them is equal.
   const scoreOf = assign => [
     assign.filter(Boolean).length,
     assign.reduce((sum, p) => sum + (p ? ovrOf(p) : 0), 0),
+    -assign.reduce((sum, p, i) => sum + (p ? offPos(p, i) : 0), 0),
     ...assign.map(p => (p ? ovrOf(p) : -1)),
   ];
   const better = (a, b) => {
