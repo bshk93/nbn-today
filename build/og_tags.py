@@ -52,6 +52,7 @@ PAGES = {
  '/': (None, 'Owner history, team pages, standings, player profiles, draft history and stats leaderboards for the NBN fantasy basketball GM simulation league.'),
  '/404.html': (None, 'That page does not exist on NBN.'),
  '/awards/': (None, 'NBN award winners by season — MVP, DPOY, All-NBN teams and the rest of the ballot.'),
+ '/recap/': (None, 'One NBN team’s season on a page: record, result, who carried them, the game of the season, the trades and the honours.'),
  '/awards/race/': (None, 'Who leads the MVP, DPOY, Rookie, Sixth Man and Most Improved races, by formula — and how often that formula has named the real winner.'),
  '/backlog/': (None, 'Internal working list of what needs doing on the NBN site.'),
  '/bet/': (None, 'Put NB¥ on NBN games and league outcomes.'),

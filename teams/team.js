@@ -259,6 +259,9 @@ const coachingConfigReady = new Promise(resolve => {
   }
   .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: 6px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
   .team-share-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+  /* On the team-colour band (components.css § Team pages): light on colour. */
+  :root[data-team] .team-share-btn { align-self: center; margin-top: 0; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
+  :root[data-team] .team-share-btn:hover { color: #fff; border-color: #fff; }
   .team-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
   .team-header {
     display: flex;
@@ -636,6 +639,9 @@ const coachingConfigReady = new Promise(resolve => {
   .cap-edit-form .form-divider { width: 100%; height: 1px; background: var(--border); margin: 0.25rem 0; }
   .cap-edit-form .form-section-label { width: 100%; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; padding-top: 0.15rem; }
   .sched-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .sched-head-actions { display: flex; align-items: center; gap: 0.75rem; }
+  .sched-recap { font-size: 0.85rem; color: var(--link); text-decoration: none; }
+  .sched-recap:hover { text-decoration: underline; }
   .sched-season { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.25rem 0.5rem; font: inherit; font-size: 0.85rem; }
   .sched-summary { display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem; margin: 0.25rem 0 1rem; }
   .sched-summary:empty { display: none; }
@@ -1109,7 +1115,10 @@ document.body.innerHTML = `
       <section>
         <div class="sched-head">
           <h2 class="section-title">Schedule</h2>
-          <select id="sched-season" class="sched-season" aria-label="Season" hidden></select>
+          <span class="sched-head-actions">
+            <a id="sched-recap" class="sched-recap" href="/recap/?team=${abbr}">Season recap →</a>
+            <select id="sched-season" class="sched-season" aria-label="Season" hidden></select>
+          </span>
         </div>
         <div class="sched-summary" id="sched-summary"></div>
         <div id="sched-wrap"><div class="status">Loading…</div></div>
@@ -1272,6 +1281,7 @@ async function mountSchedule() {
 }
 
 async function renderSchedule(allGames, season) {
+  document.getElementById('sched-recap').href = `/recap/?team=${abbr}&season=${season}`;
   const wrap = document.getElementById('sched-wrap');
   const summary = document.getElementById('sched-summary');
   wrap.innerHTML = '<div class="status">Loading…</div>';
@@ -3473,7 +3483,12 @@ function makeSeasonRenderCell(rows) {
 
   return function(td, col, row) {
     if (col.key === 'SEASON') {
-      td.appendChild(document.createTextNode(row.SEASON));
+      // Each season opens its recap.
+      const a = document.createElement('a');
+      a.href = `/recap/?team=${abbr}&season=${encodeURIComponent(row.SEASON)}`;
+      a.textContent = row.SEASON;
+      a.title = `${row.SEASON} season recap`;
+      td.appendChild(a);
       if (row.FOTY === 'TRUE') {
         const b = document.createElement('span');
         b.className = 'badge'; b.textContent = '⭐';

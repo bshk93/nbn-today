@@ -564,6 +564,7 @@ const SITE_PAGES = [
   { title: 'Hall of Fame', href: '/hof', icon: '⭐' },
   { title: 'Awards', href: '/awards/', icon: '🎖️' },
   { title: 'Award Race', href: '/awards/race/', icon: '🏁' },
+  { title: 'Season Recaps', href: '/recap/', icon: '📼' },
   { title: 'Draft', href: '/draft', icon: '📋' },
   { title: 'Rookie Scale', href: '/rookie-scale/', icon: '📐' },
   { title: 'Ratings Changes', href: '/ratings-changes/', icon: '📶' },
