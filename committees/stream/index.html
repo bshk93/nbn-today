@@ -1519,7 +1519,7 @@
       if (res) {
         const link = document.createElement('a');
         link.className = 'g-score';
-        link.href = `/boxscores/?date=${g.date}`;
+        link.href = `/boxscores/?date=${g.date}&game=${g.away_team}-${g.home_team}`;
         if (teamFilter) {
           // The row already reads from this team's side ("vs OPP"), so an
           // away–home score beside it would be ambiguous. Score it their way.

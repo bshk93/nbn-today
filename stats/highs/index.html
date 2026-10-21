@@ -244,7 +244,7 @@
           return `<tr><td class="right muted">${r.rank}</td>`
             + `<td class="gh-player"><a href="${playerLink(r)}">${esc(nbnPlayerName(r.player))}</a>`
             + (r.playoff ? '<span class="gh-badge">PO</span>' : '')
-            + `<span class="gh-sub"><a href="/boxscores/?date=${encodeURIComponent(r.date)}">${esc(gameWhere(r))}</a></span></td>`
+            + `<span class="gh-sub"><a href="/boxscores/?date=${encodeURIComponent(r.date)}&game=${r.home ? `${r.opp}-${r.team}` : `${r.team}-${r.opp}`}">${esc(gameWhere(r))}</a></span></td>`
             + `<td class="muted"><span class="${won ? 'gh-win' : 'gh-loss'}">${esc(r.wl)}</span> ${r.team_pts}–${r.opp_pts}</td>`
             + cols.map(c => {
                 const text = c.value ? fmt(b.key, r.value) : c.text ? c.text(r.line) : fmt(c.key, r.line[c.key]);

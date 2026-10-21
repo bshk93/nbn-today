@@ -77,6 +77,8 @@ const PAGES = [
   { path: '/tradeblock/',             selector: 'table tbody tr',  min: 5,  what: 'blocked players' },
   { path: '/draft/',                  selector: 'table tbody tr',  min: 30, what: 'draft history' },
   { path: '/boxscores/',              selector: 'table tbody tr',  min: 5,  what: 'recent box scores' },
+  { path: '/boxscores/?date=2026-10-20&game=BOS-DET', selector: '.game.focus.open', min: 1, what: 'a linked game, opened' },
+  { path: '/teams/BOS/#schedule',     selector: '.sched-table tr', min: 80, what: 'the team schedule' },
   // The game list, which lives on /calendar — /schedule is a 38-line redirect
   // stub with no games in it, and this row went on asserting against the old
   // page for however long after the move. It only surfaced now because this

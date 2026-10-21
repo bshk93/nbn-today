@@ -633,6 +633,26 @@ const coachingConfigReady = new Promise(resolve => {
   .cap-edit-form select:focus { border-color: var(--accent); }
   .cap-edit-form .form-divider { width: 100%; height: 1px; background: var(--border); margin: 0.25rem 0; }
   .cap-edit-form .form-section-label { width: 100%; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; padding-top: 0.15rem; }
+  .sched-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .sched-season { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.25rem 0.5rem; font: inherit; font-size: 0.85rem; }
+  .sched-summary { display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem; margin: 0.25rem 0 1rem; }
+  .sched-summary:empty { display: none; }
+  .sched-stat { display: flex; flex-direction: column; gap: 0.1rem; }
+  .sched-stat span { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+  .sched-stat b { font-size: 1.1rem; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .sched-month { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 1.25rem 0 0.4rem; }
+  .sched-table td { padding: 0.45rem 1rem; }
+  .sched-table .sched-date { width: 7.5rem; }
+  .sched-opp a { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.35rem; font-weight: 600; color: var(--text-primary); }
+  .sched-opp img { width: 18px; height: 18px; object-fit: contain; }
+  .sched-res { font-variant-numeric: tabular-nums; color: var(--text-primary) !important; }
+  .sched-w { color: var(--success); font-weight: 700; }
+  .sched-l { color: var(--danger); font-weight: 700; }
+  .sched-up { color: var(--link) !important; }
+  .sched-rec { width: 4rem; }
+  .sched-tag { margin-left: 0.35rem; font-size: 0.7rem; }
+  .sched-tag-po { color: var(--danger); font-weight: 600; }
+  tr.sched-next { background: color-mix(in srgb, var(--accent) 8%, transparent); }
   .rivals-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
   .rival-card {
     display: flex; flex-direction: column; gap: 0.2rem; padding: 0.8rem 1rem;
@@ -1021,6 +1041,7 @@ document.body.innerHTML = `
     </div>
     <div class="tabs ui-tabs" role="tablist">
       <button class="tab ui-tab active" data-tab="overview">Roster</button>
+      <button class="tab ui-tab" data-tab="schedule">Schedule</button>
       <button class="tab ui-tab" data-tab="coaching" hidden>Coaching</button>
       <button class="tab ui-tab" data-tab="franchise">Franchise</button>
       <button class="tab ui-tab" data-tab="draft">Draft History</button>
@@ -1079,6 +1100,16 @@ document.body.innerHTML = `
       <section>
         <h2 class="section-title" id="picks-title">Draft Picks</h2>
         <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-schedule">
+      <section>
+        <div class="sched-head">
+          <h2 class="section-title">Schedule</h2>
+          <select id="sched-season" class="sched-season" aria-label="Season" hidden></select>
+        </div>
+        <div class="sched-summary" id="sched-summary"></div>
+        <div id="sched-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-coaching">
@@ -1176,6 +1207,7 @@ function showTab(btn) {
   btn.classList.add('active');
   document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
   if (btn.dataset.tab === 'irl') mountIrlFeed();
+  if (btn.dataset.tab === 'schedule') mountSchedule();
 }
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1202,6 +1234,132 @@ function mountIrlFeed() {
   s.onload = go;
   s.onerror = go;
   document.head.appendChild(s);
+}
+
+// Schedule tab — this team's games for a season: results from the box score
+// index the page already loads (/api/boxscores/games), the rest from the
+// league schedule (/api/schedule). A past season has no schedule file, so it
+// shows results only. Built the first time the tab opens.
+let _teamGamesResolve;
+const teamGamesReady = new Promise(r => { _teamGamesResolve = r; });
+let _schedMounted = false;
+let _schedSeasonGames = {};   // season -> schedule rows (fetched on demand)
+
+// July 1 rollover, the same rule as /league-time.js (not loaded on this page).
+function seasonOfDate(date) {
+  const [y, m] = date.split('-').map(Number);
+  const start = m >= 7 ? y : y - 1;
+  return `${String(start % 100).padStart(2, '0')}-${String((start + 1) % 100).padStart(2, '0')}`;
+}
+
+async function mountSchedule() {
+  if (_schedMounted) return;
+  _schedMounted = true;
+  const games = await teamGamesReady;
+  const seasons = [...new Set([currentSeasonYr(), ...games.map(g => seasonOfDate(g.date))])].sort().reverse();
+  const sel = document.getElementById('sched-season');
+  sel.innerHTML = seasons.map(s => `<option value="${s}">${s}</option>`).join('');
+  sel.hidden = seasons.length < 2;
+  sel.onchange = () => renderSchedule(games, sel.value);
+  renderSchedule(games, seasons[0]);
+}
+
+async function renderSchedule(allGames, season) {
+  const wrap = document.getElementById('sched-wrap');
+  const summary = document.getElementById('sched-summary');
+  wrap.innerHTML = '<div class="status">Loading…</div>';
+  if (!(season in _schedSeasonGames)) {
+    _schedSeasonGames[season] = await fetch(`/api/schedule?season=${season}&team=${abbr}`)
+      .then(r => (r.ok ? r.json() : null)).then(d => d?.games || []).catch(() => []);
+  }
+  const key = (date, a, b) => `${date}|${[a, b].sort().join('~')}`;
+  const results = new Map(allGames.filter(g => seasonOfDate(g.date) === season)
+    .map(g => [key(g.date, g.home_team, g.away_team), g]));
+
+  // One row per game: every scheduled game, plus any result the schedule
+  // doesn't list (the playoffs, and every game of a season with no schedule).
+  const rows = _schedSeasonGames[season].map(g => ({ ...g, result: results.get(key(g.date, g.home_team, g.away_team)) }));
+  const listed = new Set(rows.map(r => key(r.date, r.home_team, r.away_team)));
+  results.forEach((g, k) => { if (!listed.has(k)) rows.push({ date: g.date, home_team: g.home_team, away_team: g.away_team, result: g }); });
+  rows.sort((a, b) => a.date.localeCompare(b.date));
+  if (!rows.length) {
+    summary.innerHTML = '';
+    wrap.innerHTML = '<div class="status">No games this season yet.</div>';
+    return;
+  }
+
+  // Box score sides come from the raw rows, so read home/away off the result
+  // when there is one rather than off the schedule.
+  const side = g => {
+    const home = (g.result || g).home_team === abbr;
+    const opp = home ? (g.result || g).away_team : (g.result || g).home_team;
+    return { home, opp };
+  };
+  const won = r => (r.home_team === abbr ? r.home_score > r.away_score : r.away_score > r.home_score);
+  const ours = r => (r.home_team === abbr ? [r.home_score, r.away_score] : [r.away_score, r.home_score]);
+
+  // Running regular-season record, and the splits for the summary line.
+  const rec = { w: 0, l: 0, hw: 0, hl: 0, aw: 0, al: 0 };
+  const form = [];
+  rows.forEach(g => {
+    if (!g.result || g.result.gametype === 'PLAYOFF') return;
+    const w = won(g.result), { home } = side(g);
+    rec[w ? 'w' : 'l']++;
+    rec[(home ? 'h' : 'a') + (w ? 'w' : 'l')]++;
+    form.push(w);
+    g.recAfter = `${rec.w}–${rec.l}`;
+  });
+  const last10 = form.slice(-10);
+  let streak = 0;
+  for (let i = form.length - 1; i >= 0 && form[i] === form[form.length - 1]; i--) streak++;
+  const stat = (label, val) => `<div class="sched-stat"><span>${label}</span><b>${val}</b></div>`;
+  summary.innerHTML = form.length ? [
+    stat('Record', `${rec.w}–${rec.l}`),
+    stat('Home', `${rec.hw}–${rec.hl}`),
+    stat('Away', `${rec.aw}–${rec.al}`),
+    stat('Last 10', `${last10.filter(Boolean).length}–${last10.filter(w => !w).length}`),
+    stat('Streak', `${form[form.length - 1] ? 'W' : 'L'}${streak}`),
+  ].join('') : '';
+
+  const fmtDay = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const fmtMonth = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const fmtTime = t => {
+    const m = /^(\d{1,2}):(\d{2})([ap])$/.exec(t || '');
+    return m ? `${m[1]}:${m[2]} ${m[3] === 'p' ? 'PM' : 'AM'} ET` : '';
+  };
+  const boxHref = r => `/boxscores/?date=${r.date}&game=${r.away_team}-${r.home_team}`;
+  const previewHref = g => `/preview/?away=${g.away_team}&home=${g.home_team}&date=${g.date}`;
+
+  let html = '', month = '';
+  const nextIdx = rows.findIndex(g => !g.result);
+  rows.forEach((g, i) => {
+    const m = fmtMonth(g.date);
+    if (m !== month) {
+      if (month) html += '</tbody></table></div>';
+      month = m;
+      html += `<h3 class="sched-month">${m}</h3><div class="table-wrap"><table class="sched-table"><tbody>`;
+    }
+    const { home, opp } = side(g);
+    const po = g.result?.gametype === 'PLAYOFF' ? ' <span class="sched-tag sched-tag-po">Playoffs</span>' : '';
+    const stream = g.stream ? ' <span class="sched-tag" title="Streamed">📡</span>' : '';
+    let res;
+    if (g.result) {
+      const [us, them] = ours(g.result);
+      const w = won(g.result);
+      res = `<a href="${boxHref(g.result)}" class="sched-res"><span class="${w ? 'sched-w' : 'sched-l'}">${w ? 'W' : 'L'}</span> ${us}–${them}</a>`;
+    } else {
+      res = `<a href="${previewHref(g)}" class="sched-res sched-up">${fmtTime(g.time_et) || 'Preview'} ›</a>`;
+    }
+    html += `<tr class="${i === nextIdx ? 'sched-next' : ''}${g.result ? '' : ' sched-future'}">
+      <td class="muted sched-date">${fmtDay(g.date)}</td>
+      <td class="sched-opp"><span class="muted">${home ? 'vs' : '@'}</span>
+        <a href="/teams/${opp}/"><img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'">${opp}</a>${po}${stream}</td>
+      <td class="right">${res}</td>
+      <td class="right muted sched-rec">${g.recAfter || ''}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
 }
 
 // Open the tab named in the hash. After mountIrlFeed's state is declared, so
@@ -7764,6 +7922,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     seasonsWrap.innerHTML = '<div class="status">Failed to load season data.</div>';
   }
 
+  _teamGamesResolve(allGames);
   buildPersonnelSection(membersData, allGames);
   renderRivalries(allGames);
   renderHeaderFacts(seasonRows, membersData);

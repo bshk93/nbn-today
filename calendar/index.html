@@ -994,7 +994,7 @@
         games.forEach(g => {
           const row = document.createElement('div');
           row.className = 'sched-game';
-          row.onclick = () => location.href = `/boxscores/?date=${dateStr}`;
+          row.onclick = () => location.href = `/boxscores/?date=${dateStr}&game=${g.away_team}-${g.home_team}`;
 
           const teams = document.createElement('span');
           teams.className = 'sched-game-teams';

@@ -54,6 +54,9 @@
     .gm-lead span:first-child { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); align-self: center; }
     .gm-lead span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .gm-lead b { color: var(--text-primary); font-weight: 600; }
+    .gm-link { margin-left: auto; padding: 0 var(--space-1); border: 0; background: none; font: inherit; color: var(--text-muted); cursor: pointer; }
+    .gm-link:hover { color: var(--link); text-decoration: underline; }
+    .game.focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
     .chevron { color: var(--text-dim); font-size: 0.7rem; transition: transform 0.15s; }
     .game.open .chevron { transform: rotate(180deg); }
 
@@ -107,6 +110,13 @@
     // /committees/stream deep-link old games), else the current league year.
     let SEASON = "";
     let allDates = [], cur = "";
+    // ?game=AWAY-HOME names one game on the date: it opens and is scrolled to.
+    // Matched on the two teams in either order, since a schedule and a box
+    // score can disagree on which side was home.
+    const params = new URLSearchParams(location.search);
+    let wantGame = (params.get("game") || "").toUpperCase().split("-").filter(Boolean).sort().join("~");
+    const gameKey = g => [g.home_team, g.away_team].sort().join("~");
+    const gameUrl = (date, g) => `${location.origin}/boxscores/?date=${date}&game=${g.away_team}-${g.home_team}`;
 
     const TEAM_NAMES = {
       ATL: 'Atlanta Hawks', BKN: 'Brooklyn Nets', BOS: 'Boston Celtics', CHA: 'Charlotte Hornets',
@@ -148,6 +158,7 @@
         }
         if (!allDates.length) { setMessage('No games available.'); return; }
         cur = (param && allDates.includes(param)) ? param : allDates[0];
+        if (cur !== param) wantGame = "";
         dateInput.value = cur;
         updateNav();
         load(cur);
@@ -205,6 +216,14 @@
         // collapsed rows at the top of an empty page.
         if (games.length <= 2) wrap.querySelectorAll('.game').forEach(el => el.classList.add('open'));
         contentEl.appendChild(wrap);
+        const focus = wantGame && [...wrap.children].find(el => el.dataset.key === wantGame);
+        wantGame = "";  // only the first load; a date picked after it opens normally
+        if (focus) {
+          focus.classList.add('open', 'focus');
+          const g = games.find(x => gameKey(x) === focus.dataset.key);
+          document.title = `${g.away_team} ${g.away_score}, ${g.home_team} ${g.home_score} — Box Score — NBN`;
+          focus.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        }
       } catch(e) { setMessage(e.message, true); }
     }
 
@@ -251,6 +270,7 @@
       const homeWin = g.home_score > g.away_score;
       const div = document.createElement("div");
       div.className = "game";
+      div.dataset.key = gameKey(g);
 
       const sbRow = (team, score, win) => `
         <img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'">
@@ -262,12 +282,21 @@
       hdr.innerHTML = `
         <div class="sb">${sbRow(g.away_team, g.away_score, !homeWin)}${sbRow(g.home_team, g.home_score, homeWin)}</div>
         <div class="gm-meta">
-          <div class="gm-status">Final${g.gametype === "PLAYOFF" ? ' <span class="ui-badge ui-badge--danger">Playoffs</span>' : ''}</div>
+          <div class="gm-status">Final${g.gametype === "PLAYOFF" ? ' <span class="ui-badge ui-badge--danger">Playoffs</span>' : ''}<button type="button" class="gm-link" title="Copy a link to this game">Copy link</button></div>
           <div class="gm-lead"><span>${g.away_team}</span><span>${bestLine(g.away_players)}</span></div>
           <div class="gm-lead"><span>${g.home_team}</span><span>${bestLine(g.home_players)}</span></div>
         </div>
         <span class="chevron">▼</span>`;
       hdr.onclick = () => div.classList.toggle("open");
+      const linkBtn = hdr.querySelector('.gm-link');
+      linkBtn.onclick = async e => {
+        e.stopPropagation();
+        const url = gameUrl(cur, g);
+        try { await navigator.clipboard.writeText(url); linkBtn.textContent = 'Copied'; }
+        catch { prompt('Link to this game', url); }
+        history.replaceState(null, '', url);
+        setTimeout(() => { linkBtn.textContent = 'Copy link'; }, 1500);
+      };
 
       const body = document.createElement("div");
       body.className = "game-body";

@@ -30,6 +30,8 @@ any other hook has to live here too rather than in `.git/hooks`.
   than making node a requirement for committing.
 - Run tests/lineup.test.js; abort if the starting five behind Auto-sort and
   Depth mode has stopped keeping players at their own positions on a tie.
+- Run tests/clinch.test.js; abort if the clinched / eliminated marks on
+  /standings could mark a team that isn't mathematically safe.
 - Run build/test_achievement_inputs.js; abort if the NB¥ achievement awarder can
   no longer read the data it scores from. That job runs on a 10-minute timer with
   no output but its own journal, so when its inputs moved out of the repo it
@@ -105,6 +107,15 @@ if lineup_test.exists() and shutil.which('node'):
         print(result.stdout)
         print('\nCommit aborted: the starting-five rules no longer hold (see FAIL lines above).')
         print('Fix computeStartingFive in teams/lineup.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+clinch_test = Path('tests/clinch.test.js')
+if clinch_test.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(clinch_test)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: the standings clinch marks no longer hold (see FAIL lines above).')
+        print('Fix Clinch.marks in clinch.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 ach_inputs = Path('build/test_achievement_inputs.js')

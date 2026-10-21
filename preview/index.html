@@ -182,7 +182,7 @@
       const won = (g, t) => (g.home_team === t ? g.home_score > g.away_score : g.away_score > g.home_score);
       const score = (g, t) => (g.home_team === t ? `${g.home_score}–${g.away_score}` : `${g.away_score}–${g.home_score}`);
       const opp = (g, t) => (g.home_team === t ? `vs ${g.away_team}` : `@ ${g.home_team}`);
-      const boxHref = g => `/boxscores/?date=${encodeURIComponent(g.date)}`;
+      const boxHref = g => `/boxscores/?date=${encodeURIComponent(g.date)}&game=${g.away_team}-${g.home_team}`;
 
       let html = '';
 

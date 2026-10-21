@@ -1361,7 +1361,7 @@
           const [a, h] = String(g.away_team).toUpperCase() === row.dataset.away.toUpperCase()
             ? [g.away_score, g.home_score] : [g.home_score, g.away_score];
           const el = row.querySelector('.dash-game-time');
-          el.href = `/boxscores/?date=${encodeURIComponent(night.date)}`;
+          el.href = `/boxscores/?date=${encodeURIComponent(night.date)}&game=${g.away_team}-${g.home_team}`;
           el.title = 'Box score';
           el.classList.add('final');
           el.innerHTML = `<span class="${a > h ? 'win' : ''}">${esc(String(a))}</span>–`

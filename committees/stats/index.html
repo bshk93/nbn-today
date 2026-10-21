@@ -580,7 +580,7 @@
     if (box) {
       const aw = box.away_team === g.away_team ? box.away_score : box.home_score;
       const hm = box.away_team === g.away_team ? box.home_score : box.away_score;
-      s.innerHTML += `<span class="score"><a href="/boxscores/?date=${encodeURIComponent(g.date)}">`
+      s.innerHTML += `<span class="score"><a href="/boxscores/?date=${encodeURIComponent(g.date)}&game=${box.away_team}-${box.home_team}">`
         + `${esc(g.away_team)} ${esc(aw)} – ${esc(hm)} ${esc(g.home_team)}</a></span>`;
     }
     row.appendChild(s);
