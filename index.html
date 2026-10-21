@@ -137,6 +137,18 @@
     .dash-team-phase-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
 
     .dash-sep { border-top: 1px solid var(--border-subtle); margin: 0.75rem 0; }
+    .dash-team-glance { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.25rem; margin-top: 0.75rem; font-size: 0.85rem; }
+    .dash-glance { color: var(--text-secondary); text-decoration: none; font-variant-numeric: tabular-nums; }
+    .dash-glance:hover { color: var(--link); }
+    .dash-glance .tone-ok { color: var(--success); font-weight: 700; }
+    .dash-glance .tone-violation { color: var(--danger); font-weight: 700; }
+    .dash-glance-status { font-size: 0.78rem; font-weight: 600; }
+    .dash-glance-status.ok { color: var(--success); }
+    .dash-glance-status.caution { color: var(--gold); }
+    .dash-glance-status.violation { color: var(--danger); }
+    .dash-glance-status.note { color: var(--text-muted); }
+    .dash-team-toggle { margin-left: auto; padding: 0.15rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: none; color: var(--text-muted); font: inherit; font-size: 0.78rem; cursor: pointer; }
+    .dash-team-toggle:hover { color: var(--text-primary); border-color: var(--text-muted); }
 
     .dash-lines { display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem; font-size: 0.82rem; }
     .dash-line-label { color: var(--text-muted); }
@@ -1833,11 +1845,13 @@
       const abbr = team.toLowerCase();
       const card = $('dash-team');
 
-      const [sched, capRows, standings, recs] = await Promise.all([
+      const [sched, capRows, standings, recs, results] = await Promise.all([
         schedulePromise,
         jget('/api/cap-history/current').catch(() => null),
         standingsPromise,
         recordsPromise,
+        // This season's results, newest first, for the "Last" line.
+        nbnCurrentSeason().then(s => jget(`/api/boxscores/games?team=${team}&season=${s}`)).catch(() => []),
       ]);
 
       const ph = phaseOf(sched && sched.games);
@@ -1880,12 +1894,37 @@
         phaseHtml = `<div class="dash-team-phase-sub">${esc(season)} season</div>`;
       }
 
-      let html = `<div class="dash-team-head">`
+      const headHtml = `<div class="dash-team-head">`
         + `<a class="dash-team-id" href="/teams/${esc(abbr)}/">`
         + `<img src="/logos/sm/logo-${esc(abbr)}.webp" alt="">`
         + `<div><div class="dash-team-name">${esc(teamName)}</div>`
         + `<div class="dash-team-sub">${esc(recordLine || 'Your team')}</div></div></a>`
         + `<div class="dash-team-right">${phaseHtml}</div></div>`;
+
+      // ── At a glance: the card is collapsed to this by default. Last result,
+      // next game, and a one-word read of the chips below; everything else
+      // (cap lines, the next five, the chips themselves) opens under it.
+      const glance = [];
+      const last = (Array.isArray(results) ? results : []).find(g => g.date <= today);
+      if (last) {
+        const home = last.home_team === team;
+        const [us, them] = home ? [last.home_score, last.away_score] : [last.away_score, last.home_score];
+        glance.push(`<a class="dash-glance" href="/boxscores/?date=${esc(last.date)}&game=${esc(last.away_team)}-${esc(last.home_team)}">`
+          + `<span class="dash-line-label">Last</span> `
+          + `<span class="${us > them ? 'tone-ok' : 'tone-violation'}">${us > them ? 'W' : 'L'}</span> ${esc(us)}–${esc(them)} `
+          + `${home ? 'vs' : '@'} ${esc(home ? last.away_team : last.home_team)}</a>`);
+      }
+      if (mine.length) {
+        const g = mine[0], home = g.home_team === team;
+        glance.push(`<a class="dash-glance" href="${previewHref(g)}">`
+          + `<span class="dash-line-label">Next</span> ${home ? 'vs' : '@'} ${esc(home ? g.away_team : g.home_team)} · `
+          + `${esc(g.date === today ? 'Tonight' : shortDate(g.date))}${g.time_et ? ' ' + esc(g.time_et) : ''}</a>`);
+      }
+      const glanceHtml = `<div class="dash-team-glance">${glance.join('')}`
+        + `<span class="dash-glance-status" id="dash-glance-status"></span>`
+        + `<button type="button" class="dash-team-toggle" id="dash-team-toggle" aria-expanded="false" aria-controls="dash-team-more">More ▾</button></div>`;
+
+      let html = '';
 
       // ── Cap and roster, read through cap-health.js
       const chips = [];
@@ -1970,8 +2009,22 @@
       }
 
       html += '<div class="dash-sep"></div><div class="dash-chips" id="dash-chips"></div>';
-      card.innerHTML = html;
+      card.innerHTML = headHtml + glanceHtml + `<div class="dash-team-more" id="dash-team-more" hidden>${html}</div>`;
       card.hidden = false;
+
+      // Open or closed is remembered per browser; closed unless you opened it.
+      const moreEl = $('dash-team-more'), toggle = $('dash-team-toggle');
+      const setOpen = open => {
+        moreEl.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.textContent = open ? 'Less ▴' : 'More ▾';
+      };
+      try { setOpen(localStorage.getItem('nbn_dash_team_open') === '1'); } catch { setOpen(false); }
+      toggle.addEventListener('click', () => {
+        const open = moreEl.hidden;
+        setOpen(open);
+        try { localStorage.setItem('nbn_dash_team_open', open ? '1' : '0'); } catch {}
+      });
 
       const chipBox = $('dash-chips');
       let settled = 0;
@@ -1980,6 +2033,18 @@
       // for the rosters committee, not something the owner acts on. They live
       // on /committees/rosters only.
       function paintChips() {
+        // The collapsed card's one-word read of the chips, so a problem is
+        // never hidden by the card being closed.
+        const status = $('dash-glance-status');
+        // A note (an FFA window, extension-eligible players) is news, not a
+        // problem, so it is counted apart from the chips that need action.
+        const bad = chips.filter(c => c.tone === 'violation').length;
+        const act = chips.filter(c => c.tone === 'violation' || c.tone === 'caution').length;
+        const notes = chips.length - act;
+        status.className = 'dash-glance-status ' + (bad ? 'violation' : act ? 'caution' : notes ? 'note' : 'ok');
+        status.textContent = act ? `${act} ${act === 1 ? 'thing needs' : 'things need'} you`
+          : notes ? `${notes} ${notes === 1 ? 'update' : 'updates'}`
+          : settled >= EXPECTED ? '✓ All clear' : '';
         if (!chips.length) {
           chipBox.innerHTML = settled >= EXPECTED
             ? '<span class="dash-chip ok">✓ Nothing needs you right now</span>'
