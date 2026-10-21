@@ -372,7 +372,7 @@
     @media (max-width: 900px) {
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-areas: "team" "slate" "best" "feed" "standings" "ranks" "movers";
+        grid-template-areas: "team" "slate" "best" "standings" "race" "feed" "ranks" "milestones" "otd" "movers";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-best      { grid-area: best; }
@@ -381,6 +381,9 @@
       :root #dash-standings { grid-area: standings; }
       :root #dash-ranks     { grid-area: ranks; }
       :root #dash-movers    { grid-area: movers; }
+      :root #dash-race      { grid-area: race; }
+      :root #dash-milestones { grid-area: milestones; }
+      :root #dash-otd       { grid-area: otd; }
     }
 
     /* Team links in game rows: logo, abbreviation, and this season's record
@@ -423,7 +426,18 @@
     :root .dash-standings-head .dash-card-title { margin: 0; }
     .dash-standings-more { font-size: var(--text-xs); color: var(--link); }
     .dash-stand-odds { margin-left: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 2.2rem; text-align: right; }
-    .dash-standings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    .dash-standings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4) var(--space-6); }
+    .dash-stand-line { margin: 0.25rem 0; padding-top: 0.2rem; border-top: 1px dashed var(--border); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+    .dash-stand-line + .dash-stand-row { border-top: none; }
+    .dash-stand-mark { margin-left: 0.3rem; font-size: 0.65rem; font-weight: 600; color: var(--success); }
+    .dash-race-lead { display: flex; flex-direction: column; gap: 0.1rem; margin-bottom: 0.35rem; }
+    .dash-race-award { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); width: 2.8rem; flex-shrink: 0; }
+    .dash-race-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0; font-size: 0.85rem; color: var(--text-secondary); text-decoration: none; }
+    .dash-race-row + .dash-race-row { border-top: 1px solid var(--border-subtle); }
+    .dash-race-row img { width: 16px; height: 16px; object-fit: contain; }
+    .dash-race-row:hover .dash-race-name { color: var(--link); }
+    .dash-race-name { font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dash-race-num { margin-left: auto; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .dash-conf-name { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
     .dash-stand-row {
       display: flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0;
@@ -776,6 +790,8 @@
     <div class="dash-main">
       <!-- Hidden until a night of box scores exists this season. -->
       <div class="dash-card" id="dash-best" hidden></div>
+      <!-- In-season only. In the wide column so both conferences fit to the play-in line. -->
+      <div class="dash-card" id="dash-standings" hidden></div>
       <div class="dash-card" id="dash-feed">
         <div class="dash-card-title">Around the League</div>
         <div class="dash-skel" style="width:90%"></div>
@@ -784,21 +800,21 @@
       </div>
     </div>
 
-    <!-- Sidebar: schedule, standings, power rankings. -->
+    <!-- Sidebar: tonight's games, then the races and lists. -->
     <div class="dash-side">
       <div class="dash-card" id="dash-slate">
         <div class="dash-card-title" id="dash-slate-title">Next Up</div>
         <div class="dash-skel" style="width:80%"></div>
         <div class="dash-skel" style="width:65%"></div>
       </div>
-      <!-- In-season only. -->
-      <div class="dash-card" id="dash-standings" hidden></div>
+      <!-- The award race's leaders (award-race.js). In-season only. -->
+      <div class="dash-card" id="dash-race" hidden></div>
+      <!-- The current power-rankings standing. Hidden until it has one. -->
+      <div class="dash-card" id="dash-ranks" hidden></div>
       <!-- Career milestones active players are closest to. Hidden until loaded. -->
       <div class="dash-card" id="dash-milestones" hidden></div>
       <!-- This date in earlier seasons (GET /api/on-this-day). Hidden when there's nothing. -->
       <div class="dash-card" id="dash-otd" hidden></div>
-      <!-- The current power-rankings standing. Hidden until it has one. -->
-      <div class="dash-card" id="dash-ranks" hidden></div>
       <!-- Biggest OVR moves in the latest 2K scrape. Hidden until there is one. -->
       <div class="dash-card" id="dash-movers" hidden></div>
     </div>
@@ -1069,6 +1085,8 @@
   <script src="/feed-types.js"></script>
   <script src="/names.js"></script>
   <script src="/milestones.js"></script>
+  <script src="/clinch.js"></script>
+  <script src="/award-race.js"></script>
   <script src="/teams/lineup.js"></script>
   <script>
   // ── Homepage dashboard ──────────────────────────────────────────────────
@@ -1742,21 +1760,41 @@
     // Each row also carries the team's playoff odds (GET /api/playoff-odds,
     // the Playoff Odds tab on /standings), when there are any.
     const oddsPromise = jget('/api/playoff-odds').catch(() => null);
-    Promise.all([liveStandingsPromise, oddsPromise]).then(([rows, odds]) => {
+    Promise.all([liveStandingsPromise, oddsPromise, liveSeasonPromise]).then(([rows, odds, season]) => {
       const seeded = rows.filter(r => /^(East|West)-/.test(r.SEED || ''));
       if (!seeded.length) return;
       const po = {};
       ((odds && odds.teams) || []).forEach(t => { po[t.team] = t.playoffs; });
+      // The odds payload knows every team's conference and season length,
+      // which the standings file can't (it lists only teams that have played):
+      // the same fill-in and clinch marks /standings makes.
+      const live = odds && odds.season === season && Array.isArray(odds.teams)
+        ? new Map(odds.teams.map(t => [t.team, t])) : null;
       const oddsCell = t => po[t] == null ? ''
         : `<span class="dash-stand-odds" title="Playoff odds">${po[t] >= 0.995 ? '>99' : po[t] < 0.005 ? '<1' : Math.round(po[t] * 100)}%</span>`;
+      const SHOWN = 10;   // through the play-in
       const conf = (c, label) => {
-        const top = seeded.filter(r => r.SEED.startsWith(c))
-          .sort((a, b) => +a.SEED_NUM - +b.SEED_NUM).slice(0, 6);
-        return `<div><div class="dash-conf-name">${label}</div>` + top.map(r =>
-          `<a class="dash-stand-row" href="/teams/${esc(r.TEAM)}/">`
-          + `<span class="dash-stand-seed">${esc(r.SEED_NUM)}</span>`
+        let list = seeded.filter(r => r.SEED.startsWith(c)).sort((a, b) => +a.SEED_NUM - +b.SEED_NUM);
+        if (live) {
+          const have = new Set(list.map(r => r.TEAM));
+          const unplayed = [...live.values()].filter(t => t.conf === c && !have.has(t.team)).map(t => t.team).sort()
+            .map(team => ({ TEAM: team, W: 0, L: 0 }));
+          // 0–0 reads as .500: below a winning record, above a losing one.
+          const at = list.findIndex(r => +r.W < +r.L);
+          list = at < 0 ? [...list, ...unplayed] : [...list.slice(0, at), ...unplayed, ...list.slice(at)];
+        }
+        let marks = {};
+        if (live && window.Clinch) {
+          const teams = list.map(r => ({ team: r.TEAM, w: +r.W, l: +r.L, games: +(live.get(r.TEAM)?.games) || 0 }));
+          if (teams.length && teams.every(t => t.games)) marks = Clinch.marks(teams);
+        }
+        return `<div><div class="dash-conf-name">${label}</div>` + list.slice(0, SHOWN).map((r, i) =>
+          (i === Clinch.PLAYOFF ? '<div class="dash-stand-line" title="Seeds 7–10 play in">Play-in</div>' : '')
+          + `<a class="dash-stand-row" href="/teams/${esc(r.TEAM)}/">`
+          + `<span class="dash-stand-seed">${i + 1}</span>`
           + `<img src="/logos/sm/logo-${esc(r.TEAM.toLowerCase())}.webp" alt="">`
           + `<span class="dash-stand-abbr">${esc(r.TEAM)}</span>`
+          + (marks[r.TEAM] ? `<span class="dash-stand-mark" title="${esc(Clinch.LABELS[marks[r.TEAM]])}">${esc(marks[r.TEAM])}</span>` : '')
           + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span>${oddsCell(r.TEAM)}</a>`).join('') + '</div>';
       };
       $('dash-standings').innerHTML =
@@ -1805,6 +1843,36 @@
         + '<a class="dash-standings-more" href="/ratings-changes/">All changes →</a></div>'
         + group('Up', up) + group('Down', down);
       $('dash-movers').hidden = false;
+    }).catch(() => {});
+
+    // ── Award race ────────────────────────────────────────────────────────
+    //
+    // The leaders of /awards/race, while a season is being played: MVP's top
+    // three, then the leader of each other award. The formulas are
+    // award-race.js; this only picks who to show.
+    Promise.all([liveSeasonPromise, Milestones.seasonRows(), standingsPromise]).then(async ([season, rows, stand]) => {
+      if (!season || !window.AwardRace) return;
+      const pct = {};
+      stand.forEach(r => { pct[`${r.SEASON}|${r.TEAM}`] = +r.PCT; });
+      const starts = await jget(`/api/game-starters/counts?season=${season}`).catch(() => null);
+      const lad = key => AwardRace.ladder(key, rows, season, pct, { starts });
+      const mvp = lad('MVP').slice(0, 3);
+      if (!mvp.length) return;
+      const row = (award, p, num) => `<a class="dash-race-row" href="/awards/race/">`
+        + `<span class="dash-race-award">${esc(award)}</span>`
+        + `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">`
+        + `<span class="dash-race-name">${esc(nbnPlayerName(p.name))}</span>`
+        + `<span class="dash-race-num">${esc(num)}</span></a>`;
+      const ppg = p => `${(p.PTS / p.G).toFixed(1)} ppg`;
+      const html = mvp.map((p, i) => row(i ? '' : 'MVP', p, ppg(p))).join('')
+        + [['DPOY', 'DPOY', p => `${((p.STL + p.BLK) / p.G).toFixed(1)} stk`],
+           ['ROTY', 'ROY', ppg], ['6MOY', '6MOY', ppg],
+           ['MIP', 'MIP', p => `+${(p.gmscPg - p.prevGmscPg).toFixed(1)} GmSc`]]
+          .map(([key, label, num]) => { const top = lad(key)[0]; return top ? row(label, top, num(top)) : ''; }).join('');
+      $('dash-race').innerHTML =
+        '<div class="dash-standings-head"><div class="dash-card-title">Award Race</div>'
+        + '<a class="dash-standings-more" href="/awards/race/">Full race →</a></div>' + html;
+      $('dash-race').hidden = false;
     }).catch(() => {});
 
     // ── Milestone watch ───────────────────────────────────────────────────

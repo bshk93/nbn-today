@@ -82,12 +82,22 @@ const Milestones = (() => {
     return out;
   }
 
-  let _loaded = null;
+  let _loaded = null, _rows = null;
+  /** player_seasons.csv, parsed, fetched once per page. Shared with the
+   *  homepage's award race, which reads the same file. */
+  function seasonRows() {
+    if (!_rows) {
+      _rows = fetch('/players/player_seasons.csv')
+        .then(r => (r.ok ? r.text() : Promise.reject(new Error(r.status))))
+        .then(parseCSV);
+    }
+    return _rows;
+  }
   /** { careers, rosterTeam: slug -> 'ATL' }. Fetched once per page. */
   function load() {
     if (_loaded) return _loaded;
     _loaded = Promise.all([
-      fetch('/players/player_seasons.csv').then(r => (r.ok ? r.text() : Promise.reject(new Error(r.status)))),
+      seasonRows(),
       ...TEAMS.map(t => fetch(`/data/${t}-roster.csv`).then(r => (r.ok ? r.text() : '')).catch(() => '')),
     ]).then(([seasons, ...rosters]) => {
       const rosterTeam = {};
@@ -97,7 +107,7 @@ const Milestones = (() => {
           if (slug) rosterTeam[slug] = TEAMS[i].toUpperCase();
         });
       });
-      return { careers: careers(parseCSV(seasons)), rosterTeam };
+      return { careers: careers(seasons), rosterTeam };
     });
     return _loaded;
   }
@@ -164,5 +174,5 @@ const Milestones = (() => {
     return g <= 1 ? 'next game' : `~${g} games`;
   }
 
-  return { STATS, load, upcoming, describe, eta };
+  return { STATS, load, seasonRows, upcoming, describe, eta };
 })();
