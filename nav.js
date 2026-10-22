@@ -482,6 +482,7 @@ function _initNav() {
 const SIDEBAR_KEY = 'nbn_sidebar';               // 'open' | 'rail'
 const SIDEBAR_GROUPS_KEY = 'nbn_sidebar_groups'; // labels of folded sections
 const _ICON_MENU = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>';
+const _ICON_PANEL = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="9" y1="4" x2="9" y2="20"></line></svg>';
 const _ICON_CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 6 9 12 15 18"></polyline></svg>';
 const _ICON_CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>';
 
@@ -1016,8 +1017,14 @@ function _buildSidebar() {
   head.className = 'sb-head';
   head.innerHTML = `
     <a class="sb-home" href="/" title="NBN Today"><img src="/icons/logo-header.webp" alt=""><span class="sb-label">NBN Today</span></a>
+    <button type="button" class="sb-collapse">${_ICON_PANEL}</button>
     <button type="button" class="sb-close nav-icon-btn" aria-label="Close menu">${_ICON_CLOSE}</button>`;
   head.querySelector('.sb-close').addEventListener('click', _closeDrawer);
+  // Expand/collapse lives at the top, beside the logo (where Claude's own
+  // sidebar keeps it); below 900px the ✕ takes its place.
+  head.querySelector('.sb-collapse').addEventListener('click', () => {
+    _setSidebarMode(_sidebarMode() === 'rail' ? 'open' : 'rail');
+  });
   aside.appendChild(head);
 
   const search = document.createElement('button');
@@ -1041,11 +1048,7 @@ function _buildSidebar() {
 
   const foot = document.createElement('div');
   foot.className = 'sb-foot';
-  foot.innerHTML = `<button type="button" class="sb-collapse">${_ICON_CHEVRON}</button>`;
-  foot.prepend(_buildAccount());
-  foot.querySelector('.sb-collapse').addEventListener('click', () => {
-    _setSidebarMode(_sidebarMode() === 'rail' ? 'open' : 'rail');
-  });
+  foot.appendChild(_buildAccount());
   aside.appendChild(foot);
 
   const scrim = document.createElement('div');

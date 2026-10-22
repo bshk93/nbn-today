@@ -53,6 +53,7 @@
 /* Scoped under .sidebar / .nav: both buttons also carry .nav-icon-btn, whose
    display: flex comes later in nav-chrome.css and would win a tie. */
 .sidebar .sb-close { display: none; margin-left: auto; }
+.sb-head .sb-collapse { margin-left: auto; }
 
 .sb-search {
   display: flex; align-items: center; gap: 0.55rem;
@@ -125,7 +126,6 @@
   background: none; border: none; cursor: pointer; font: inherit; color: var(--text-muted);
 }
 .sb-collapse:hover { background: var(--bg-hover); color: var(--text-primary); }
-.sb-collapse svg { margin: 0 0.125rem; transition: transform 0.15s; }
 
 /* ── Account (bottom left) — nav.js _buildAccount ── */
 .sb-account { position: relative; flex: 1; min-width: 0; }
@@ -198,24 +198,23 @@
   html[data-sidebar="rail"] .sidebar { width: var(--sb-rail-w); }
   html[data-sidebar="rail"] .sidebar .sb-label,
   html[data-sidebar="rail"] .sidebar .sb-group-hdr { display: none; }
-  html[data-sidebar="rail"] .sb-head { justify-content: center; padding-inline: 0; }
+  /* Rail: the logo sits over the expand button, both centred. */
+  html[data-sidebar="rail"] .sb-head { flex-direction: column; gap: 0.35rem; padding-inline: 0; }
+  html[data-sidebar="rail"] .sb-head .sb-collapse { margin-left: 0; }
   html[data-sidebar="rail"] .sb-search { justify-content: center; margin-inline: 0.5rem; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-group.folded .sb-items { display: block; }
   html[data-sidebar="rail"] .sb-group + .sb-group { margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--border-subtle); }
   html[data-sidebar="rail"] .sb-link { justify-content: center; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-link .ni { width: 1.35rem; height: 1.35rem; }
-  html[data-sidebar="rail"] .sb-collapse { justify-content: center; padding-inline: 0; }
-  /* The account block shrinks to its avatar, over the collapse button, and its
-     menu opens to the right; Recent goes (pins stay, as icons); a badge
+  /* The account block shrinks to its avatar and its menu opens to the right; Recent goes (pins stay, as icons); a badge
      becomes a small count on the icon's corner. */
-  html[data-sidebar="rail"] .sb-foot { flex-direction: column; padding-inline: 0.35rem; }
+  html[data-sidebar="rail"] .sb-foot { padding-inline: 0.35rem; }
   html[data-sidebar="rail"] .sb-acct-btn { justify-content: center; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-acct-menu { left: calc(100% + 0.9rem); right: auto; bottom: 0; width: 15rem; }
   html[data-sidebar="rail"] .sb-recent, html[data-sidebar="rail"] .sb-pin { display: none; }
   html[data-sidebar="rail"] .sb-row .sb-link,
   html[data-sidebar="rail"] .sb-row:hover .sb-link:has(.sb-badge) { padding-right: 0; }
   html[data-sidebar="rail"] .sb-link .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: 0.55rem; }
-  html[data-sidebar="rail"] .sb-collapse svg { transform: rotate(180deg); }
 }
 
 /* ── Drawer ─────────────────────────────────────────────────────────────── */
@@ -236,5 +235,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar, .sb-group-chev, .sb-collapse svg { transition: none !important; }
+  .sidebar, .sb-group-chev { transition: none !important; }
 }
