@@ -61,7 +61,7 @@ The 2K sim's in-game injuries, from MyNBA's league-wide injury screen the stream
 - **Parse**: `/parse-injuries` (`.claude/commands/parse-injuries.md`) transcribes, matches names to slugs, decides whether the screenshots are the **whole** list, and posts `POST /api/injuries/commit`.
 - **Page**: `injuries/index.html`, self-contained and public. *Current* is `GET /api/injuries`, *History* is `GET /api/injuries/history`, newest first, grouped by date. One team filter (`?team=`) for both; `#history` opens the second tab. The subtitle links the last report's screenshot while it's kept (14 days).
 
-The rules live in the API, not here — `nbn-api/CLAUDE.md` § "Injury report": only a complete report heals; the team comes from the roster CSV, not the 2K logo; Discord gets changes only (status, injury or duration), tagging each affected team.
+The rules live in the API, not here — `nbn-api/CLAUDE.md` § "Injury report": only a complete report heals; the team comes from the roster CSV, not the 2K logo; Discord gets changes only (status, injury or duration), each line tagging its player's team.
 
 ## Coaching settings
 
