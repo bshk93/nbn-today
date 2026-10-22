@@ -374,9 +374,20 @@
 
   // `was`, when given, marks the row as changed since the settings were last
   // entered into 2K and shows the old value under the new one.
+  // Alternate rows are shaded so a label can be followed across to its
+  // value. Rows sit after the card's title, so the shaded ones are the 2nd,
+  // 4th, … rows. A changed row keeps its own highlight.
+  if (typeof document !== 'undefined' && !document.getElementById('cs-row-style')) {
+    const st = document.createElement('style');
+    st.id = 'cs-row-style';
+    st.textContent = '.cs-row:nth-child(odd){background:var(--bg-subtle,#202020)}';
+    document.head.appendChild(st);
+  }
+
   function row(label, value, note, was) {
     const r = document.createElement('div');
-    r.style.cssText = 'display:flex;justify-content:space-between;gap:1rem;padding:0.3rem 0;font-size:0.85rem;border-bottom:1px solid var(--border-subtle,#2a2a2a)';
+    r.className = 'cs-row';
+    r.style.cssText = 'display:flex;justify-content:space-between;gap:1rem;padding:0.3rem 0.4rem;margin:0 -0.4rem;font-size:0.85rem;border-bottom:1px solid var(--border-subtle,#2a2a2a)';
     const l = labelWithNote(label, note, 'color:var(--text-muted,#888)');
     const v = document.createElement('span');
     v.style.cssText = 'color:var(--text-primary,#eee);font-weight:600;text-align:right';
