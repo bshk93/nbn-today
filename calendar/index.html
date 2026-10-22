@@ -135,8 +135,8 @@
 
     .sched-game { font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
     .sched-game:hover { background: var(--bg-card); }
-    .sched-game-teams { flex: 1; }
     .sched-game-vod { display: inline-flex; }
+    .sched-game-score { margin-left: auto; }
     .sched-box-vod { padding: 0.25rem 0.5rem 0.1rem; }
     .sched-box-vod .vod-box { display: inline-flex; }
     .sched-game-score { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -976,7 +976,10 @@
           ctl.className = 'sched-schd-ctl';
           if (g._src === 'schedule') {
             const buy = makeStreamControl(g);
-            if (buy) ctl.appendChild(buy);
+            // A settled stream is a tag about the game, so it goes beside the
+            // teams; a request or its button stays in this column.
+            if (buy && g.stream) main.insertBefore(buy, main.children[1] || null);
+            else if (buy) ctl.appendChild(buy);
           }
           row.appendChild(ctl);
 
@@ -1005,6 +1008,19 @@
           teams.textContent = `${g.away_team} @ ${g.home_team}`;
           row.appendChild(teams);
 
+          // Next to the teams, so the scores line up on the right. The fixture
+          // carries the stream flag and the video, not the box score.
+          const fixture = (scheduledGamesByDate[dateStr] || []).find(s => s._src === 'schedule'
+            && s.away_team === g.away_team && s.home_team === g.home_team);
+          const vod = fixture && NbnVod.gameHtml(fixture, 'Watch on YouTube');
+          if (vod) {
+            const wrap = document.createElement('span');
+            wrap.className = 'sched-game-vod';
+            wrap.innerHTML = vod;
+            // The row itself opens the box score.
+            wrap.addEventListener('click', e => e.stopPropagation());
+            row.appendChild(wrap);
+          }
           if (g.away_score != null && g.home_score != null) {
             const score = document.createElement('span');
             score.className = 'sched-game-score';
@@ -1016,18 +1032,6 @@
             badge.className = 'sched-game-type';
             badge.textContent = 'PO';
             row.appendChild(badge);
-          }
-          // The fixture carries the stream flag and the video, not the box score.
-          const fixture = (scheduledGamesByDate[dateStr] || []).find(s => s._src === 'schedule'
-            && s.away_team === g.away_team && s.home_team === g.home_team);
-          const vod = fixture && NbnVod.gameHtml(fixture, 'Watch on YouTube');
-          if (vod) {
-            const wrap = document.createElement('span');
-            wrap.className = 'sched-game-vod';
-            wrap.innerHTML = vod;
-            // The row itself opens the box score.
-            wrap.addEventListener('click', e => e.stopPropagation());
-            row.appendChild(wrap);
           }
           evts.appendChild(row);
         });
