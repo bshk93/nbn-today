@@ -1322,6 +1322,7 @@ const NAV_SECTIONS = [
     { title: 'Calendar', href: '/calendar', icon: 'calendar' },
     { title: 'Standings & Playoffs', href: '/standings', icon: 'standings' },
     { title: 'Award Race', href: '/awards/race/', icon: 'flag' },
+    { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart' },
   ] },
   { label: 'Front Office', icon: 'swap', items: [
     { title: 'Trade Block', href: '/tradeblock/', icon: 'swap' },
@@ -1351,7 +1352,6 @@ const NAV_SECTIONS = [
     { title: 'Ratings Changes', href: '/ratings-changes/', icon: 'trend-bars', searchOnly: true },
     { title: 'Owners', href: '/owners', icon: 'owner' },
     { title: 'Stat Lab', href: '/stats/', icon: 'list', also: ['/h2h', '/frivolities'], keywords: ['stats', 'leaders', 'leaderboards', 'explore'] },
-    { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart', searchOnly: true },
     { title: 'Career Leaders', href: '/stats/totals', icon: 'steps', searchOnly: true },
     { title: 'Single-Game Highs', href: '/stats/highs', icon: 'spike', searchOnly: true },
     { title: 'Head to Head', href: '/h2h', icon: 'versus', searchOnly: true },
