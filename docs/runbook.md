@@ -86,7 +86,8 @@ are deleted after parsing, so that line is the only record of where a game came
 from.
 
 **An injury report becomes site data.** The streamer uploads the 2K injury
-screen from `/committees/stream` (🚑 on the day) → `/parse-injuries` commits it
+screen from `/committees/stream` (🚑 on the day) → `/parse-boxscores` commits it as its last step
+(`/parse-injuries` alone does just this part)
 → `injuries.json` + `injury-history.jsonl` update, `/injuries` shows it, and the
 changes post to `#injury-report` tagging each team. Anyone not on the report
 is cleared, but a player on a 2+ week injury who vanishes is confirmed with

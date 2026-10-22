@@ -1,6 +1,7 @@
-Parse pending box score screenshots and commit them to the stats database.
+Parse pending box score screenshots and commit them to the stats database, then any pending injury reports.
 
-Run with no arguments to process all pending games.
+Run with no arguments to process all pending games, then all pending injury
+reports (step 7) — one sweep for a stream night.
 
 ## Why this skill is shaped the way it is
 
@@ -51,7 +52,8 @@ with only one side in. Each item carries `ready` — true once both sides have a
 least one image. **Parse only `ready` games.** List the others separately as
 "waiting on a side" (name the missing team) and leave them alone.
 
-If there are no ready games, report that (and any waiting ones) and stop.
+If there are no ready games, report that (and any waiting ones) and go to
+step 7 — there may still be an injury report.
 
 Print a numbered list: `id · date · AWAY @ HOME · season game_type · images per side`
 
@@ -253,3 +255,12 @@ curl -s -X DELETE http://localhost:8001/api/boxscore/pending/<id> \
 ### 6. Continue or stop
 
 If there are more pending games, ask the user if they want to continue. If yes, return to step 3.
+When the games are done (or the user stops), go to step 7.
+
+### 7. Injury reports
+
+Follow `.claude/commands/parse-injuries.md` from its step 2, with the token
+you already have (it needs `stats` or `rosters`). If none are pending, say so
+in one line and finish. Its stops still apply here: a cut-off list, an
+unmatched name and every `confirm_heals` player are the user's call, never
+yours.
