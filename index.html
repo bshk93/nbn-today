@@ -674,6 +674,18 @@
     .dash-feed-team { font-weight: 600; white-space: nowrap; }
     .dash-feed-team img { width: 1.1em; height: 1.1em; object-fit: contain; vertical-align: -0.2em; margin-right: 0.3em; }
     .dash-feed-sub { display: block; font-size: var(--text-sm); color: var(--text-muted); margin-top: 0.1rem; }
+    /* A night's finals, one row: the games wrap, a game never splits. */
+    /* A faint bullet between games. Each bullet leads its game, and the list
+       is pulled left by one bullet's width under an overflow:hidden box, so
+       the bullet of a game that starts a line is clipped. A trailing bullet
+       can't be dropped at a wrap; CSS can't see where the line broke. */
+    .dash-feed-scores { display: block; overflow: hidden; margin-top: 0.2rem;
+                        font-size: var(--text-sm); color: var(--text-muted); }
+    .dash-feed-scores-in { display: flex; flex-wrap: wrap; row-gap: 0.15rem; margin-left: -1.2rem; }
+    .dash-feed-scores .dash-feed-score { white-space: nowrap; }
+    .dash-feed-scores .dash-feed-score::before {
+      content: '•'; display: inline-block; width: 1.2rem; text-align: center; opacity: 0.3;
+    }
 
     /* Schedule */
     :root .dash-team-phase { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
@@ -1299,8 +1311,7 @@
     //   text  already-escaped-at-render HTML-free string, or `html` for a row
     //         that needs markup (a score bolds the winner).
     // The feed is the main column, so it has room for a dozen. The rest, up to
-    // FEED_MAX, sit behind a "Show N more" toggle — a full night of scores is
-    // 10-15 rows on its own, and every one of them is reachable here.
+    // FEED_MAX, sit behind a "Show N more" toggle.
     const FEED_LIMIT = 12, FEED_MAX = 40;
 
     // What FeedTypes.headline needs to name players and teams. Shared by the
@@ -1374,20 +1385,27 @@
         })));
 
     // Final scores, from the latest night with any entered (`latestNight`).
-    const feedFromScores = () => latestNight.then(night => (night ? night.games.map(g => {
-      const awayWon = g.away_score > g.home_score;
+    // One row for the whole night: a row per game was 10-15 rows on a full
+    // slate and pushed every transaction behind "Show more".
+    const feedFromScores = () => latestNight.then(night => {
+      if (!night || !night.games.length) return [];
       const side = (team, score, won) =>
         `<span class="${won ? 'win' : ''}">${esc(team)} ${esc(String(score))}</span>`;
-      return {
+      const games = night.games.map(g => {
+        const awayWon = g.away_score > g.home_score;
+        return '<span class="dash-feed-score">'
+          + side(g.away_team, g.away_score, awayWon) + ' – '
+          + side(g.home_team, g.home_score, !awayWon) + '</span>';
+      });
+      return [{
         ts: night.date + 'T23:59:59Z',   // after that day's transactions
         date: night.date,
         type: 'score',
-        html: '<span class="dash-feed-score">'
-          + side(g.away_team, g.away_score, awayWon) + ' · '
-          + side(g.home_team, g.home_score, !awayWon) + '</span>',
-        href: '/boxscores/',
-      };
-    }) : []));
+        html: plural(night.games.length, 'game')
+          + `<span class="dash-feed-scores"><span class="dash-feed-scores-in">${games.join('')}</span></span>`,
+        href: `/boxscores/?date=${encodeURIComponent(night.date)}`,
+      }];
+    });
 
     const SOURCES = [feedFromTransactions, feedFromNews, feedFromScores];
 
