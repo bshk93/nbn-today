@@ -720,7 +720,7 @@
       const mine = pk.entries.find(e => e.member === me);
       let body;
       if (!pk.locked) {
-        const status = `${pk.games.length} game${pk.games.length === 1 ? '' : 's'} · open until the stream goes live · ${pk.entry_count} lineup${pk.entry_count === 1 ? '' : 's'} in`;
+        const status = `${pk.games.length} game${pk.games.length === 1 ? '' : 's'} · open until the stream goes live · ${pk.entry_count} lineup${pk.entry_count === 1 ? '' : 's'} in${pk.entrants && pk.entrants.length ? ` (${pk.entrants.map(esc).join(', ')})` : ''}`;
         const yours = !me ? 'Sign in to set a lineup.'
           : mine ? `Your lineup: ${['PG', 'SG', 'SF', 'PF', 'C', '6TH'].map(s => esc(nbnPlayerName(pk.names[mine.lineup[s]] || (pk.players.find(p => p.slug === mine.lineup[s]) || {}).name || mine.lineup[s]))).join(', ')}`
           : 'You haven’t set a lineup.';
@@ -1324,9 +1324,25 @@
 
     async function _getFutureGames() {
       if (_futureGamesCache) return _futureGamesCache;
+      // The season's fixtures live in /api/schedule; /api/calendar/games is
+      // only games added by hand (it held the playoffs). Reading just the
+      // second left the form with no games once a regular season started.
+      // Fixtures are capped to the next week so the dropdown stays short.
       const today = nbnToday();
-      const games = await fetch('/api/calendar/games').then(r => r.json());
-      _futureGamesCache = games.filter(g => g.date >= today);
+      const end = new Date(today + 'T00:00:00Z');
+      end.setUTCDate(end.getUTCDate() + 7);
+      const until = end.toISOString().slice(0, 10);
+      const [sched, custom] = await Promise.allSettled([
+        fetch('/api/schedule').then(r => r.json()),
+        fetch('/api/calendar/games').then(r => r.json()),
+      ]);
+      if (sched.status === 'rejected' && custom.status === 'rejected') throw sched.reason;
+      const fixtures = sched.status === 'fulfilled' ? (sched.value.games || []) : [];
+      const extra    = custom.status === 'fulfilled' ? custom.value : [];
+      _futureGamesCache = [
+        ...fixtures.filter(g => g.date >= today && g.date < until),
+        ...extra.filter(g => g.date >= today),
+      ].sort((a, b) => a.date.localeCompare(b.date));
       return _futureGamesCache;
     }
 

@@ -200,7 +200,7 @@
       ? ` Locked ${esc(nbnFormatDateTime(new Date(day.locked_at)))}, when ${esc(day.locked_because)}.` : '';
     const status = day.final ? `<strong>Final.</strong>${lockedWhen}`
       : day.locked ? `<strong>Locked.</strong>${lockedWhen} Scores fill in as box scores are uploaded (${day.games.filter(g => g.final).length} of ${day.games.length} in).`
-      : `<strong>Open</strong> until the stream goes live. ${day.entry_count} lineup${day.entry_count === 1 ? '' : 's'} set so far.`
+      : `<strong>Open</strong> until the stream goes live. ${day.entry_count} lineup${day.entry_count === 1 ? '' : 's'} set so far${day.entrants && day.entrants.length ? `: ${day.entrants.map(esc).join(', ')}` : ''}.`
         + (day.reopened.length ? ` Reopened by ${esc(day.reopened[day.reopened.length - 1].by)} after a stream that wasn’t the games.` : '');
     // No tip times: the schedule's are the real NBA ones, not when our games are played.
     const games = day.games.map(g => `<span class="pk-game${g.final ? ' final' : ''}">${logo(g.away)}${esc(g.away)} @ ${logo(g.home)}${esc(g.home)}</span>`).join('');

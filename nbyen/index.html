@@ -146,14 +146,18 @@ function renderTotals() {
     `<div class="total-tile"><div class="lbl">${lbl}</div><div class="val">${val}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
   const betNet = (k.wager || 0) + (k.payout || 0) + (k.bet_refund || 0);
   const streams = -((k.stream_purchase || 0) + (k.stream_refund || 0));
-  const futNet = (k.market_buy || 0) + (k.market_sell || 0) + (k.market_payout || 0) + (k.market_refund || 0);
+  // Open futures shares count at today's price, so buying isn't read as losing.
+  const held = summary.futures_total || 0;
+  const futNet = (k.market_buy || 0) + (k.market_sell || 0) + (k.market_payout || 0) + (k.market_refund || 0) + held;
   document.getElementById('totals').innerHTML =
-    tile('In circulation', fmt(summary.total)) +
+    tile('In wallets', fmt(summary.total)) +
+    (held ? tile('Held in futures', fmt(held), 'open shares at current prices') : '') +
     tile('From donations', fmt(k.donation || 0), 'NB¥100 per $1') +
     tile('From Twitch subs', fmt(k.twitch_sub || 0)) +
     tile('Spent on streams', fmt(streams), `${Math.round(streams / 1000)} bought`) +
     tile('Bettors, net', signed(betNet), betNet < 0 ? 'the house is up' : betNet > 0 ? 'the odds paid out more than was staked' : '') +
-    tile('Futures traders, net', signed(futNet), futNet < 0 ? 'the market maker is up' : futNet > 0 ? 'the market maker paid out more than it took in' : '');
+    tile('Futures traders, net', signed(futNet), held ? 'at current prices; nothing settled yet'
+      : futNet < 0 ? 'the market maker is up' : futNet > 0 ? 'the market maker paid out more than it took in' : '');
 }
 
 function render() {
@@ -164,13 +168,16 @@ function render() {
 function renderBalances() {
   const rows = summary.balances.filter(r => r.member);
   const content = document.getElementById('content');
+  const fut = summary.futures_total > 0;
   content.innerHTML = `<div class="ui-table-wrap"><table class="ui-table">
-    <thead><tr><th class="num">#</th><th>Member</th><th class="num">Balance</th></tr></thead>
+    <thead><tr><th class="num">#</th><th>Member</th>${fut ? '<th class="num">Wallet</th><th class="num">In futures</th>' : ''}
+      <th class="num">${fut ? 'Total' : 'Balance'}</th></tr></thead>
     <tbody>${rows.map((r, i) => `<tr class="${me && r.name === me ? 'me' : ''}">
       <td class="num dim">${i + 1}</td>
       <td><a class="member-link" data-m="${esc(r.name)}">${esc(r.name)}</a></td>
-      <td class="num bal">${fmt(r.balance)}</td></tr>`).join('')}</tbody>
-  </table></div>`;
+      ${fut ? `<td class="num">${fmt(r.balance)}</td><td class="num ${r.futures ? '' : 'dim'}">${r.futures ? fmt(r.futures) : '—'}</td>` : ''}
+      <td class="num bal">${fmt(r.net_worth ?? r.balance)}</td></tr>`).join('')}</tbody>
+  </table></div>${fut ? '<p class="note">In futures is open shares at current prices. It changes with the odds until the market settles.</p>' : ''}`;
   content.querySelectorAll('.member-link').forEach(a => a.onclick = () => {
     member = a.dataset.m; setTab('history');
   });
@@ -197,8 +204,10 @@ async function renderHistory() {
     const res = await fetch('/api/nbyen/ledger?' + p);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    const row = summary.balances.find(r => r.name === member) || {};
     const head = member
-      ? `<p class="who">${esc(member)}<span class="bal">${fmt((summary.balances.find(r => r.name === member) || {}).balance || 0)}</span></p>`
+      ? `<p class="who">${esc(member)}<span class="bal">${fmt(row.balance || 0)}</span>${row.futures
+          ? `<span class="dim"> + ${fmt(row.futures)} in futures</span>` : ''}</p>`
       : '';
     if (!data.entries.length) { hist.innerHTML = head + '<div class="ui-empty">Nothing yet.</div>'; return; }
     const more = data.total > data.entries.length

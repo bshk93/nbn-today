@@ -5763,6 +5763,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   }).catch(() => {});
   const posLocked = slug => (posChecks.pinned || []).includes(slug);
   const posWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.changed);
+  const jerseyWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.jersey_changed);
 
   // A slot is which row a player is in, not a field they pick — table order
   // *is* the depth chart: row 0 is always PG, row 1 SG, ... row 4 C, row 5
@@ -5967,6 +5968,13 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       const numTd = tr.insertCell();
       numTd.className = 'ts-num';
       numTd.textContent = bio.jersey_number != null && bio.jersey_number !== '' ? bio.jersey_number : '';
+      if (jerseyWaiting(row.SLUG)) {
+        const w = document.createElement('span');
+        w.className = 'ts-pos-wait';
+        w.textContent = '●';
+        w.title = 'Not set in 2K yet — waiting on the streamer';
+        numTd.appendChild(w);
+      }
 
       nameCell(tr, row, bio);
 

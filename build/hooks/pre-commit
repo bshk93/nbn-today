@@ -205,9 +205,13 @@ else:
 
 new_version = data['version']
 
-for entry in pending:
-    entry['version'] = new_version
-cpath.write_text(json.dumps(changelog, indent=2) + '\n')
+# Swap the text in place. Re-serializing the whole list reflowed every
+# one-line entry into eight lines (and ¥ into ¥) on each bump.
+import re
+text, n = re.subn(r'("version"\s*:\s*)"pending"', rf'\1"{new_version}"', cpath.read_text())
+if n != len(pending):
+    sys.exit(f'pre-commit: found {len(pending)} pending changelog entries but replaced {n}')
+cpath.write_text(text)
 subprocess.run(['git', 'add', 'changelog.json'])
 
 sys.exit(0)

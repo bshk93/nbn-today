@@ -1319,6 +1319,7 @@ function _buildMenuButton() {
 // header and none on its rows; a row's own icon is what search shows.
 // `searchOnly`: a deep link into another page (a tab, a section) — worth
 // finding by name in search, but noise as its own sidebar row.
+// `noSearch`: the reverse — a sidebar row that search leaves out.
 const NAV_SECTIONS = [
   { label: 'Season', icon: 'calendar', items: [
     { title: 'Calendar', href: '/calendar', icon: 'calendar' },
@@ -1379,7 +1380,7 @@ const NAV_SECTIONS = [
   { label: 'Media', icon: 'tv', items: [
     { title: 'News', href: '/news/', icon: 'newspaper' },
     { title: 'NBNTV Classics', href: '/nbntv-classics', icon: 'tv' },
-    { title: 'NBNFL', href: '/nbnfl/', icon: 'football' },
+    { title: 'NBNFL', href: '/nbnfl/', icon: 'football', noSearch: true },
     { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: 'play' },
   ] },
   { label: 'Committees', icon: 'columns', href: '/committees/', items: [
@@ -1419,8 +1420,8 @@ const NAV_SECTIONS = [
 
 const _NAV_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
 // Search's two views of the list: offered to everybody, and resolved per member.
-const SITE_PAGES = _NAV_ITEMS.filter(p => !p.roles);
-const ROLE_PAGES = _NAV_ITEMS.filter(p => p.roles);
+const SITE_PAGES = _NAV_ITEMS.filter(p => !p.roles && !p.noSearch);
+const ROLE_PAGES = _NAV_ITEMS.filter(p => p.roles && !p.noSearch);
 
 // Same rule the pages themselves apply: admin satisfies any role check. An
 // empty `roles` list is admin-only.
