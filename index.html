@@ -771,6 +771,30 @@
       .team-strip a:hover { transform: none; }
     }
     :root .visitor-intro { text-align: left; max-width: none; margin-top: calc(-1 * var(--space-4)); }
+    /* Live banner: the Twitch stream, only while twitch.tv/nothingbutnet is
+       live (GET /api/stream/live). Hidden otherwise, so an offline homepage
+       is exactly the page without it. */
+    .live-banner[hidden] { display: none; }
+    .live-banner {
+      width: 100%; max-width: 820px; box-sizing: border-box;
+      margin-bottom: var(--space-6);
+      background: var(--bg-card); border: 1px solid var(--danger-border);
+      border-radius: 10px; padding: 0.9rem 1rem 1rem;
+    }
+    .live-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; margin-bottom: 0.75rem; }
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.6rem;
+      border-radius: 999px; background: var(--danger-bg); border: 1px solid var(--danger-border);
+      color: var(--danger); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em;
+    }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: live-pulse 1.6s ease-in-out infinite; }
+    @keyframes live-pulse { 50% { opacity: 0.3; } }
+    @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+    .live-title { font-weight: 700; color: var(--text-primary); min-width: 0; flex: 1 1 16rem; overflow-wrap: anywhere; }
+    .live-meta { font-size: 0.85rem; color: var(--text-muted); }
+    .live-link { font-size: 0.85rem; color: var(--link); text-decoration: none; white-space: nowrap; }
+    .live-player { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: #000; }
+    .live-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   </style>
 </head>
 <body>
@@ -791,6 +815,9 @@
     A fantasy NBA GM league, played out in NBA 2K since 2020.
     <a href="/join/">What it is and how to join →</a>
   </p>
+
+  <!-- Twitch stream, shown only while live. -->
+  <section class="live-banner" id="live-banner" aria-label="Live stream" hidden></section>
 
   <div class="hero" id="dash-hero"></div>
 
@@ -2311,6 +2338,69 @@
         })).catch(() => {}).then(done);
       if (window.requestIdleCallback) requestIdleCallback(soon, { timeout: 3000 });
       else setTimeout(soon, 800);
+    });
+  })();
+  </script>
+  <script>
+  // ── Live banner ─────────────────────────────────────────────────────────
+  //
+  // The Twitch player, only while twitch.tv/nothingbutnet is live. The page
+  // can't ask Twitch itself (Helix needs the client secret), so it asks
+  // `GET /api/stream/live`, which checks at most once a minute for everyone.
+  // Offline, the banner stays `hidden` and no Twitch iframe ever loads, so
+  // the homepage is exactly what it is without this block.
+  //
+  // Its own script, like every dash card: it fails alone.
+  (function () {
+    'use strict';
+    const POLL_MS = 120000;
+    const CHANNEL = 'nothingbutnet';
+    const el = document.getElementById('live-banner');
+    if (!el) return;
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // Twitch refuses to play an embed whose `parent` isn't the host serving it.
+    // Muted, because browsers block autoplay with sound.
+    const playerSrc = () => 'https://player.twitch.tv/?channel=' + CHANNEL
+      + '&parent=' + encodeURIComponent(location.hostname) + '&muted=true&autoplay=true';
+
+    function show(s) {
+      const meta = [s.game, s.viewers != null ? `${Number(s.viewers).toLocaleString()} watching` : '']
+        .filter(Boolean).join(' · ');
+      const head = `<span class="live-pill"><span class="live-dot"></span>LIVE</span>`
+        + `<span class="live-title">${esc(s.title || 'Nothing But Net is live')}</span>`
+        + (meta ? `<span class="live-meta">${esc(meta)}</span>` : '')
+        + `<a class="live-link" href="https://www.twitch.tv/${CHANNEL}" target="_blank" rel="noopener">Watch on Twitch ↗</a>`;
+      const headEl = el.querySelector('.live-head');
+      if (headEl) {
+        // Already playing: refresh the text, never rebuild the iframe (that restarts it).
+        headEl.innerHTML = head;
+      } else {
+        el.innerHTML = `<div class="live-head">${head}</div>`
+          + `<div class="live-player"><iframe src="${esc(playerSrc())}" title="Nothing But Net on Twitch"`
+          + ` allow="autoplay; fullscreen" allowfullscreen></iframe></div>`;
+      }
+      el.hidden = false;
+    }
+
+    function hide() {
+      el.hidden = true;
+      el.innerHTML = '';
+    }
+
+    function check() {
+      fetch('/api/stream/live')
+        .then(r => (r.ok ? r.json() : Promise.reject()))
+        .then(s => (s && s.live ? show(s) : hide()))
+        // A failed check leaves things as they are rather than cutting off a stream mid-watch.
+        .catch(() => {});
+    }
+
+    check();
+    setInterval(() => { if (document.visibilityState === 'visible') check(); }, POLL_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') check();
     });
   })();
   </script>
