@@ -241,7 +241,7 @@
     .dash-ranks-edition {
       margin-left: auto; font-size: 0.72rem; color: var(--text-muted);
     }
-    .dash-ranks-edition:hover { color: var(--text-secondary); }
+    .dash-ranks-head .dash-standings-head { margin-bottom: 0; align-self: stretch; }
 
     /* A table, not a row of pills. As chips these wrapped to one or two per
        line on a phone, which is the least scannable possible shape for an
@@ -557,8 +557,8 @@
     .dash-otd-what b { color: var(--text-primary); font-weight: 600; }
     .dash-otd-sub { color: var(--text-muted); font-size: 0.78rem; }
     .dash-otd-what .dash-feed-team img { width: 14px; height: 14px; }
-    .dash-ms-row[hidden], .dash-feed-row[hidden] { display: none; }
-    .dash-ms-more, .dash-feed-more {
+    .dash-feed-row[hidden] { display: none; }
+    .dash-feed-more {
       margin-top: 0.4rem; padding: 0; background: none; border: none;
       font: inherit; font-size: var(--text-xs); color: var(--link); cursor: pointer;
     }
@@ -1468,10 +1468,10 @@
       if (!editions.length) return;
       const latest = editions[editions.length - 1];
       return jget(`/api/news/${encodeURIComponent(latest.id)}`).then(article => {
-        // Rank <= 8 rather than the first eight rows: teams level on the average
-        // share a rank (T-7, T-7, 9), so a tie at the cut legitimately returns
-        // nine teams and truncating would drop one of two equals.
-        const top = (article.final || []).filter(r => r.rank <= 8)
+        // Rank <= 5 rather than the first five rows: teams level on the average
+        // share a rank (T-4, T-4, 6), so a tie at the cut legitimately returns
+        // six teams and truncating would drop one of two equals.
+        const top = (article.final || []).filter(r => r.rank <= 5)
           .sort((a, b) => a.rank - b.rank);
         if (!top.length) return;
 
@@ -1483,7 +1483,7 @@
           : '<span class="rank-move flat">–</span>';
 
         // The writer's first sentence on each team, under its row. The full
-        // blurb is a paragraph or more; the edition link has the rest.
+        // blurb is a paragraph or more; the Full rankings link has the rest.
         const lede = team => {
           const body = String(((article.blurbs || {})[team] || {}).body || '')
             .replace(/[*_#>`]/g, '').replace(/\s+/g, ' ').trim();
@@ -1495,9 +1495,9 @@
         const when = String(latest.published_at).slice(0, 10);
         $('dash-ranks').innerHTML =
           `<div class="dash-ranks-head">`
-          + `<div class="dash-card-title" style="margin:0">Power Rankings</div>`
-          + `<a class="dash-ranks-edition" href="/news/view/?id=${encodeURIComponent(latest.id)}">`
-          + `${esc(latest.title || 'Latest edition')} · ${esc(shortDate(when))} →</a></div>`
+          + `<div class="dash-standings-head"><div class="dash-card-title">Power Rankings</div>`
+          + `<a class="dash-standings-more" href="/news/view/?id=${encodeURIComponent(latest.id)}">Full rankings →</a></div>`
+          + `<span class="dash-ranks-edition">${esc(latest.title || 'Latest edition')} · ${esc(shortDate(when))}</span></div>`
           + '<div class="dash-ranks-row">' + top.map(r =>
               `<a class="dash-rank-team" href="/teams/${esc(String(r.team).toLowerCase())}/" `
               + `title="${esc(r.team)}">`
@@ -1825,31 +1825,22 @@
     //
     // Every rostered player within five games of a round-number career total
     // or the next spot in an all-time top 10 (milestones.js, shared with
-    // /preview). One line per player, their nearest. The first few show; the
-    // rest sit behind a toggle that says how many there are.
-    const MS_GAMES = 5, MS_SHOWN = 6;
+    // /preview). One line per player, their nearest; the closest five show.
+    const MS_GAMES = 5, MS_SHOWN = 5;
     Milestones.load().then(data => {
       const seen = new Set();
       const list = Milestones.upcoming(data, { maxGames: MS_GAMES })
-        .filter(m => !seen.has(m.slug) && seen.add(m.slug));
+        .filter(m => !seen.has(m.slug) && seen.add(m.slug))
+        .slice(0, MS_SHOWN);
       if (!list.length) return;
-      const extra = list.length - MS_SHOWN;
       $('dash-milestones').innerHTML =
         '<div class="dash-standings-head"><div class="dash-card-title">Milestone Watch</div>'
         + '<a class="dash-standings-more" href="/stats/totals">Career totals →</a></div>'
-        + list.map((m, i) => `<a class="dash-stand-row dash-ms-row"${i >= MS_SHOWN ? ' hidden' : ''} href="/players/?p=${encodeURIComponent(m.slug)}">`
+        + list.map(m => `<a class="dash-stand-row dash-ms-row" href="/players/?p=${encodeURIComponent(m.slug)}">`
           + `<img src="/logos/sm/logo-${esc(m.team.toLowerCase())}.webp" alt="" title="${esc(m.team)}">`
           + `<span class="dash-mover-name">${esc(nbnPlayerName(m.name))}</span>`
           + `<span class="dash-mover-ovr" title="At their per-game rate from ${esc(data.careers[m.slug].rateSeason || 'their career')}">${esc(Milestones.eta(m))}</span>`
-          + `<span class="dash-ms-what">${esc(Milestones.describe(m, nbnPlayerName))}</span></a>`).join('')
-        + (extra > 0 ? `<button type="button" class="dash-ms-more">Show ${extra} more</button>` : '');
-      const more = $('dash-milestones').querySelector('.dash-ms-more');
-      let open = false;
-      if (more) more.addEventListener('click', () => {
-        open = !open;
-        $('dash-milestones').querySelectorAll('.dash-ms-row').forEach((r, i) => { if (i >= MS_SHOWN) r.hidden = !open; });
-        more.textContent = open ? 'Show fewer' : `Show ${extra} more`;
-      });
+          + `<span class="dash-ms-what">${esc(Milestones.describe(m, nbnPlayerName))}</span></a>`).join('');
       $('dash-milestones').hidden = false;
     }).catch(() => {});
 
