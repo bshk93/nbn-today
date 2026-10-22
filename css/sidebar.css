@@ -154,15 +154,18 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
   background: var(--accent); color: var(--text-on-accent);
   font-size: 0.68rem; font-weight: 700; line-height: 1.35; text-align: center;
 }
-/* Information, not a to-do: games today as plain muted text. */
+/* Information, not a to-do: games today as plain muted text, at the row
+   label's own size so the two read as one line. */
 .sb-badge-info {
   min-width: 0; padding: 0; border-radius: 0; background: none;
-  color: var(--text-muted); font-weight: 500;
+  color: var(--text-muted); font-size: inherit; font-weight: 400; line-height: inherit;
 }
 /* Live now: the homepage banner's red LIVE pill, small. */
 .sb-badge-live {
-  display: inline-flex; align-items: center; gap: 0.3rem;
-  background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border);
+  display: inline-flex; align-items: center; gap: 0.3rem; height: 1rem; padding-block: 0;
+  /* An inset ring, not a border, so the pill is the count pill's height and
+     the row doesn't grow when the stream starts. */
+  background: var(--danger-bg); color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger-border);
   letter-spacing: 0.04em;
 }
 .sb-badge-live::before {

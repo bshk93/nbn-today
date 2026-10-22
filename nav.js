@@ -740,14 +740,14 @@ function _streamLive() {
     .catch(() => false);
 }
 
-// Calendar: "2 today" in muted text, or LIVE while a game day is on stream.
+// Calendar: "2 games today" in muted text, or LIVE while a game day is on stream.
 // Asked only on a day with games, so an off-day stream doesn't mark the
 // calendar live.
 function _loadCalendarBadge() {
   _gamesToday().then(n => {
     if (!n) return;
     const today = `${n} game${n === 1 ? '' : 's'} today`;
-    _setBadge('/calendar', n, today, 'info', `${n} today`);
+    _setBadge('/calendar', n, today, 'info', today);
     _streamLive().then(live => {
       if (live) _setBadge('/calendar', n, `Live on Twitch now · ${today}`, 'live', 'LIVE');
     });
