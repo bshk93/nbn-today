@@ -5,12 +5,12 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Players — NBN</title>
+  <title>Players - NBN</title>
   <!-- NBN:og -->
   <meta name="description" content="Every player in NBN — career stats, contracts, ratings, awards and game logs.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Players — NBN">
+  <meta property="og:title" content="Players - NBN">
   <meta property="og:description" content="Every player in NBN — career stats, contracts, ratings, awards and game logs.">
   <meta property="og:url" content="https://nbn.today/players/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
@@ -3957,7 +3957,7 @@
 
   function renderBioOnlyPlayer(bioSlug, bio) {
     const name = bio.name ? displayName(bio.name) : bioSlug;
-    document.title = `${name} — NBN`;
+    document.title = `${name} - NBN`;
     setCrumbs(name);
     // Rewriting .nav's innerHTML above wipes out the search/inbox/theme/profile
     // icons nav.js already built into it — rebuild them (see the comment on
@@ -4020,7 +4020,7 @@
   // ── Render: index (player directory) ─────────────────────────────────────────
 
   function renderIndex(rows) {
-    document.title = 'Players — NBN';
+    document.title = 'Players - NBN';
     document.getElementById('nav').innerHTML = '<a href="/">← Home</a>';
     if (typeof _initNav === 'function') _initNav();
 
@@ -4494,7 +4494,7 @@
       return ta < tb ? 1 : ta > tb ? -1 : 0;
     });
 
-    document.title = `${playerName} — NBN`;
+    document.title = `${playerName} - NBN`;
     setCrumbs(playerName);
     if (typeof _initNav === 'function') _initNav();
     document.getElementById('page-title').textContent = playerName;
