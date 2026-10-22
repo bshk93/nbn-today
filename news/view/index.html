@@ -5,12 +5,12 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Article — NBN News</title>
+  <title>Article - NBN News</title>
   <!-- NBN:og -->
   <meta name="description" content="An article from NBN News.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Article — NBN News">
+  <meta property="og:title" content="Article - NBN News">
   <meta property="og:description" content="An article from NBN News.">
   <meta property="og:url" content="https://nbn.today/news/view/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
@@ -398,7 +398,7 @@ function render(a) {
   const tagsEl = document.getElementById('article-tags');
   tagsEl.innerHTML = (a.tags || []).map(t => `<span class="tag-pill">${escHtml(t)}</span>`).join('');
   document.getElementById('article-title').textContent = a.title;
-  document.title = `${a.title} — NBN News`;
+  document.title = `${a.title} - NBN News`;
 
   const dateLabel = a.status === 'published' ? fmtDate(a.published_at)
     : a.status === 'submitted' ? `Submitted ${fmtDate(a.submitted_at)}`

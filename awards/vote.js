@@ -2,7 +2,7 @@
   // Infer season from URL: /awards/25-26/vote/ → '25-26'
   const SEASON = location.pathname.split('/').filter(Boolean)[1];
 
-  document.title = SEASON + ' Ballot — NBN';
+  document.title = SEASON + ' Ballot - NBN';
 
   // theme.css and nav-chrome.css are <link>ed from the page's <head>: a
   // stylesheet a script inserts doesn't hold up the first paint.

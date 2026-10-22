@@ -5,12 +5,12 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Season Recap — NBN</title>
+  <title>Season Recap - NBN</title>
   <!-- NBN:og -->
   <meta name="description" content="One NBN team’s season on a page: record, result, who carried them, the game of the season, the trades and the honours.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Season Recap — NBN">
+  <meta property="og:title" content="Season Recap - NBN">
   <meta property="og:description" content="One NBN team’s season on a page: record, result, who carried them, the game of the season, the trades and the honours.">
   <meta property="og:url" content="https://nbn.today/recap/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
@@ -167,7 +167,7 @@
       const row = seasonRows.find(r => r.SEASON === season);
       if (!row) { content.innerHTML = '<div class="ui-empty">No season on file for this team.</div>'; return; }
       content.innerHTML = '<div class="ui-loading">Loading…</div>';
-      document.title = `${seasonLabel(season)} ${TEAM_LIST[team]} — Season Recap — NBN`;
+      document.title = `${seasonLabel(season)} ${TEAM_LIST[team]} - Season Recap - NBN`;
 
       const [[ps, pso, awards], highs, games, txns] = await Promise.all([
         sharedData(),
