@@ -604,8 +604,10 @@
     :root .dash-feed-when { font-size: var(--text-xs); }
     :root .dash-feed-text strong { font-weight: 600; }
     /* A team inside a headline: its logo, then the abbreviation. */
-    .dash-feed-team { display: inline-flex; align-items: center; gap: 0.3em; font-weight: 600; white-space: nowrap; }
-    .dash-feed-team img { width: 1.1em; height: 1.1em; object-fit: contain; }
+    /* Plain inline, not inline-flex: an inline-flex box takes its baseline
+       from the logo's bottom edge, which lifted the abbreviation off the line. */
+    .dash-feed-team { font-weight: 600; white-space: nowrap; }
+    .dash-feed-team img { width: 1.1em; height: 1.1em; object-fit: contain; vertical-align: -0.2em; margin-right: 0.3em; }
     .dash-feed-sub { display: block; font-size: var(--text-sm); color: var(--text-muted); margin-top: 0.1rem; }
 
     /* Schedule */
