@@ -84,19 +84,22 @@
     .add-game-form .form-err { font-size: 0.75rem; color: var(--danger); }
 
     /* ── Scheduled (unplayed) games ─────────────────────────────── */
-    /* Fixed columns, so time, streamer and the stream control line up from
-       row to row. Every row emits every cell, empty or not. */
-    .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: grid; grid-template-columns: minmax(0, 1fr) 4.6rem 5.5rem 11rem 1rem; align-items: center; column-gap: 0.6rem; }
+    /* Fixed columns, so the time and the stream control line up from
+       row to row. Every row emits every cell, empty or not. The time is the
+       last column, so it lines up with a played game's score above it. */
+    .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: grid; grid-template-columns: minmax(0, 1fr) 11rem 4.6rem 1rem; align-items: center; column-gap: 0.6rem; }
+    .sched-schd-ctl  { order: 2; }
+    .sched-schd-time { order: 3; }
+    .sched-schd-del  { order: 4; }
     .sched-schd-game:hover { background: var(--bg-card); }
     .sched-schd-main { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
     .sched-schd-time { text-align: right; }
-    .sched-schd-who { overflow: hidden; text-overflow: ellipsis; }
     .sched-schd-ctl { justify-self: start; }
     @media (max-width: 600px) {
-      .sched-schd-game { grid-template-columns: minmax(0, 1fr) auto auto auto; row-gap: 0.15rem; }
-      .sched-schd-who { max-width: 6rem; }
+      .sched-schd-game { grid-template-columns: minmax(0, 1fr) auto auto; row-gap: 0.15rem; }
       .sched-schd-ctl { grid-row: 2; grid-column: 1 / -1; }
       .sched-schd-ctl:empty { display: none; }
+      .sched-game .sched-game-score { margin-right: 0.6rem; }
     }
     .sched-schd-teams { color: inherit; text-decoration: none; }
     .sched-schd-teams:hover { text-decoration: underline; }
@@ -130,12 +133,14 @@
 
     .sched-day { padding: 0.6rem 0; border-bottom: 1px solid var(--bg-card); }
     .sched-day:last-child { border-bottom: none; }
-    .sched-date-hdr { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem; }
+    .sched-date-hdr { display: flex; align-items: center; gap: 0.6rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem; }
+    .sched-day-streamer { font-weight: 500; color: var(--gold); }
     .sched-events { display: flex; flex-direction: column; gap: 0.15rem; padding-left: 0.75rem; }
 
     .sched-game { font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
     .sched-game:hover { background: var(--bg-card); }
-    .sched-game-teams { flex: 1; }
+    .sched-game-vod { display: inline-flex; }
+    .sched-game-score { margin-left: auto; margin-right: 1.6rem; }
     .sched-game-score { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sched-game-type { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--champion-border); background: var(--champion-bg); padding: 0.1rem 0.3rem; border-radius: 3px; white-space: nowrap; }
 
@@ -217,6 +222,7 @@
   </div>
 
   <script src="/league-time.js"></script>
+  <script src="/vod.js"></script>
   <script>
     const CAL_DAYS    = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const CAL_MONTHS  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -902,6 +908,25 @@
       hdr.textContent = fmtDateHdr(dateStr);
       day.appendChild(hdr);
 
+      // Beside the date: who's streaming the night, until the night's Box
+      // Scores video is up, which then takes its place.
+      const box = NbnVod.boxScoresHtml(streamingDaysByDate[dateStr] && streamingDaysByDate[dateStr].youtube_url);
+      if (box) {
+        hdr.insertAdjacentHTML('beforeend', box);
+      } else {
+        const names = [...new Set((scheduledGamesByDate[dateStr] || [])
+          .filter(g => g._src === 'schedule' && g.streamer
+            && (!teamFilter || g.home_team === teamFilter || g.away_team === teamFilter))
+          .map(g => g.streamer))];
+        if (names.length) {
+          const who = document.createElement('span');
+          who.className = 'sched-day-streamer';
+          who.textContent = `📺 ${names.join(', ')}`;
+          who.title = `Streamed by ${names.join(', ')}`;
+          hdr.appendChild(who);
+        }
+      }
+
       const evts = document.createElement('div');
       evts.className = 'sched-events';
 
@@ -960,19 +985,15 @@
           if (g.time_et) time.textContent = `${g.time_et}m ET`;
           row.appendChild(time);
 
-          const who = document.createElement('span');
-          who.className = 'sched-schd-stream sched-schd-who';
-          if (g.streamer) {
-            who.textContent = `📺 ${g.streamer}`;
-            who.title = `Streamed by ${g.streamer}`;
-          }
-          row.appendChild(who);
 
           const ctl = document.createElement('span');
           ctl.className = 'sched-schd-ctl';
           if (g._src === 'schedule') {
             const buy = makeStreamControl(g);
-            if (buy) ctl.appendChild(buy);
+            // A settled stream is a tag about the game, so it goes beside the
+            // teams; a request or its button stays in this column.
+            if (buy && g.stream) main.insertBefore(buy, main.children[1] || null);
+            else if (buy) ctl.appendChild(buy);
           }
           row.appendChild(ctl);
 
@@ -1001,6 +1022,19 @@
           teams.textContent = `${g.away_team} @ ${g.home_team}`;
           row.appendChild(teams);
 
+          // Next to the teams, so the scores line up on the right. The fixture
+          // carries the stream flag and the video, not the box score.
+          const fixture = (scheduledGamesByDate[dateStr] || []).find(s => s._src === 'schedule'
+            && s.away_team === g.away_team && s.home_team === g.home_team);
+          const vod = fixture && NbnVod.gameHtml(fixture, 'Watch on YouTube');
+          if (vod) {
+            const wrap = document.createElement('span');
+            wrap.className = 'sched-game-vod';
+            wrap.innerHTML = vod;
+            // The row itself opens the box score.
+            wrap.addEventListener('click', e => e.stopPropagation());
+            row.appendChild(wrap);
+          }
           if (g.away_score != null && g.home_score != null) {
             const score = document.createElement('span');
             score.className = 'sched-game-score';
@@ -1133,7 +1167,7 @@
         yt.target = '_blank';
         yt.rel = 'noopener';
         yt.textContent = '▶️ VOD';
-        yt.title = 'Watch this day’s games';
+        yt.title = 'Box scores video for this day’s games';
         yt.addEventListener('click', e => e.stopPropagation());
         cell.appendChild(yt);
       }

@@ -187,6 +187,7 @@
     .dash-game-team { display: inline-flex; align-items: center; gap: 0.35rem; color: inherit; text-decoration: none; }
     .dash-game-team:hover span:not(.dash-game-rec) { text-decoration: underline; }
     .dash-game-logo { height: 18px; width: 18px; object-fit: contain; flex: none; }
+    #dash-slate .dash-card-title { display: flex; align-items: center; gap: 0.6rem; }
     .dash-game-stream { color: var(--gold); font-size: var(--text-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .dash-game-time { color: var(--text-muted); font-size: var(--text-xs); margin-left: auto; flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
@@ -1132,6 +1133,7 @@
   <script src="/names.js"></script>
   <script src="/milestones.js"></script>
   <script src="/clinch.js"></script>
+  <script src="/vod.js"></script>
   <script src="/award-race.js"></script>
   <script src="/teams/lineup.js"></script>
   <script>
@@ -1267,6 +1269,8 @@
 
     // One schedule fetch serves both this band and band 1's next-games list.
     const schedulePromise = jget('/api/schedule').catch(() => null);
+    // Per-date status; the card reads only each night's Box Scores video from it.
+    const streamingDaysPromise = jget('/api/streaming-days').catch(() => ({}));
 
     // Where the league is in its year, derived from the schedule's own date
     // range rather than a stored flag — there is no phase field on the API, and
@@ -1451,6 +1455,19 @@
           el.classList.add('final');
           el.innerHTML = `<span class="${a > h ? 'win' : ''}">${esc(String(a))}</span>–`
             + `<span class="${h > a ? 'win' : ''}">${esc(String(h))}</span> F ›`;
+          // Played, so 📡 gives way to the game's video, or ⏳ until it's up.
+          const sg = list.find(x => x.date === night.date
+            && x.away_team === row.dataset.away && x.home_team === row.dataset.home);
+          if (sg) {
+            row.querySelector('.dash-game-stream')?.remove();
+            el.insertAdjacentHTML('beforebegin', NbnVod.gameHtml(sg));
+          }
+        });
+        // The night's unstreamed games share one video, beside the card's title.
+        if (!list.some(g => g.date === night.date)) return;
+        streamingDaysPromise.then(days => {
+          const box = NbnVod.boxScoresHtml(days && days[night.date] && days[night.date].youtube_url);
+          if (box) card.querySelector('.dash-card-title').insertAdjacentHTML('beforeend', box);
         });
       });
 
