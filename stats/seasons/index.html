@@ -555,8 +555,29 @@
       if (state.view === 'players' && state.rookies) u.searchParams.set('rookies', '1');
       if (state.view === 'players' && state.split) u.searchParams.set('split', '1');
       if (state.sort !== defaultSort()) u.searchParams.set('sort', state.sort);
-      history.replaceState(null, '', u);
+      if (u.href === location.href) return;
+      // Players/teams and the season are history entries, so Back returns to
+      // them. The filters and sort only replace.
+      const was = new URLSearchParams(location.search);
+      const moved = state.view !== (was.get('view') === 'teams' ? 'teams' : 'players')
+        || state.season !== (was.get('season') || SEASONS[0]);
+      history[moved ? 'pushState' : 'replaceState'](null, '', u);
     }
+    window.addEventListener('popstate', () => {
+      const q = new URLSearchParams(location.search);
+      Object.assign(state, {
+        view:    q.get('view') === 'teams' ? 'teams' : 'players',
+        type:    q.get('type') === 'po' ? 'po' : 'reg',
+        season:  q.get('season') || SEASONS[0],
+        team:    TEAM_ABBRS.includes(q.get('team')) ? q.get('team') : '',
+        rookies: q.get('rookies') === '1' ? '1' : '',
+        split:   q.get('split') === '1' ? '1' : '',
+        sort:    q.get('sort') || '',
+        dir:     -1,
+        shown:   PAGE,
+      });
+      render();
+    });
 
     const defaultSort = () => (state.view === 'teams' ? '_WP' : '_GMSC');
 

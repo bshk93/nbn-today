@@ -343,8 +343,17 @@
     });
   }
 
-  function update() {
-    history.replaceState(null, '', `?season=${CHAMPS[idx].season}`);
+  // Each season is a history entry, so Back returns to the last one.
+  window.addEventListener('popstate', () => {
+    const want = new URLSearchParams(location.search).get('season');
+    const found = CHAMPS.findIndex(c => c.season === want);
+    idx = found >= 0 ? found : CHAMPS.length - 1;
+    update(true);
+  });
+
+  function update(fromHistory = false) {
+    const url = `?season=${CHAMPS[idx].season}`;
+    if (!fromHistory && location.search !== url) history.pushState(null, '', url);
     renderTimeline();
     render();
     window.scrollTo({ top: 0, behavior: 'smooth' });

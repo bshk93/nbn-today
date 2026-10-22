@@ -132,10 +132,23 @@
       $('season').value = season;
     }
 
+    // Each recap is a history entry, so Back returns to the last one.
     const go = () => {
-      history.replaceState(null, '', `?team=${team}&season=${season}`);
+      const url = `?team=${team}&season=${season}`;
+      if (location.search !== url) history.pushState(null, '', url);
       render();
     };
+    // No params means the defaults the page opened on: the first team, and
+    // loadTeam's pick of season.
+    window.addEventListener('popstate', async () => {
+      const p = new URLSearchParams(location.search);
+      const t = (p.get('team') || '').toUpperCase();
+      team = teams.includes(t) ? t : teams[0];
+      $('team').value = team;
+      season = p.get('season') || '';
+      await loadTeam();
+      render();
+    });
     $('team').onchange = async () => { team = $('team').value; await loadTeam(); go(); };
     $('season').onchange = () => { season = $('season').value; go(); };
     $('share').onclick = e => nbnShare({

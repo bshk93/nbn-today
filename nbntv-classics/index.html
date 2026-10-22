@@ -227,14 +227,23 @@
 (function () {
 
   // ── Tab logic ────────────────────────────────────────────────────────────────
+  // The tab is the #hash and a history entry, so Back returns to it.
+  function showTab(name) {
+    const btn = document.querySelector(`.tab-btn[data-tab="${name}"]`) || document.querySelector('.tab-btn[data-tab="performances"]');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  }
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      const url = btn.dataset.tab === 'performances' ? location.pathname : '#' + btn.dataset.tab;
+      if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
+      showTab(btn.dataset.tab);
     });
   });
+  window.addEventListener('popstate', () => showTab(location.hash.slice(1)));
+  if (location.hash) showTab(location.hash.slice(1));
 
   // Blurbs keyed by "<DATE>_<player-slug>" so they survive rank changes.
   // Key = row.DATE + '_' + player name lowercased with non-alphanumeric runs → '-'.

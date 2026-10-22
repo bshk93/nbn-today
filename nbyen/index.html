@@ -118,18 +118,27 @@ const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + fmt(n);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const when = ts => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-function syncUrl() {
+// A tab switch or opening a member's history is a history entry ('push'), so
+// Back returns to it. The member dropdown is a filter and replaces.
+function syncUrl(mode = 'replace') {
   const p = new URLSearchParams();
   if (member) p.set('m', member);
-  history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : '') + (tab === 'history' ? '#history' : ''));
+  const url = location.pathname + (p.toString() ? '?' + p : '') + (tab === 'history' ? '#history' : '');
+  if (url === location.pathname + location.search + location.hash) return;
+  history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', url);
 }
 
-function setTab(t) {
+function setTab(t, mode = 'push') {
   tab = t;
   document.querySelectorAll('.ui-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
-  syncUrl();
+  syncUrl(mode);
   render();
 }
+
+window.addEventListener('popstate', () => {
+  member = new URLSearchParams(location.search).get('m') || '';
+  setTab(member || location.hash === '#history' ? 'history' : 'balances', 'none');
+});
 
 function renderTotals() {
   const k = summary.by_kind;
@@ -206,7 +215,7 @@ async function renderHistory() {
         ${member ? `<td class="num bal">${fmt(e.balance)}</td>` : ''}</tr>`).join('')}</tbody>
     </table></div>` + more;
     hist.querySelectorAll('.member-link').forEach(a => a.onclick = () => {
-      member = a.dataset.m; syncUrl(); renderHistory();
+      member = a.dataset.m; syncUrl('push'); renderHistory();
     });
   } catch (err) {
     hist.innerHTML = `<div class="ui-empty">Could not load the history: ${esc(err.message)}</div>`;
@@ -233,7 +242,7 @@ async function init() {
     return;
   }
   renderTotals();
-  setTab(member || location.hash === '#history' ? 'history' : 'balances');
+  setTab(member || location.hash === '#history' ? 'history' : 'balances', 'replace');
 }
 // Admin only: give or take NB¥ from a member. Goes through the wallet, so it
 // lands in the history below as an "Adjustment".

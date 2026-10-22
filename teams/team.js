@@ -1237,11 +1237,19 @@ function showTab(btn) {
   if (btn.dataset.tab === 'irl') mountIrlFeed();
   if (btn.dataset.tab === 'schedule') mountSchedule();
 }
+// A tab switch is a history entry, so Back returns to the last tab instead of
+// leaving the page.
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     showTab(btn);
-    history.replaceState(null, '', btn.dataset.tab === 'overview' ? location.pathname + location.search : '#' + btn.dataset.tab);
+    const url = btn.dataset.tab === 'overview' ? location.pathname + location.search : '#' + btn.dataset.tab;
+    if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
   });
+});
+window.addEventListener('popstate', () => {
+  const tab = document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1) || 'overview')}"]:not([hidden])`)
+    || document.querySelector('.tab[data-tab="overview"]');
+  if (tab) showTab(tab);
 });
 
 // IRL tab — this roster's real-world NBA game logs and injury news, from ESPN

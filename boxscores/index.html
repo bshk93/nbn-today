@@ -110,6 +110,7 @@
     // /committees/stream deep-link old games), else the current league year.
     let SEASON = "";
     let allDates = [], cur = "";
+    let landingDate = null;   // the day shown with no ?date=, for Back
     // ?game=AWAY-HOME names one game on the date: it opens and is scrolled to.
     // Matched on the two teams in either order, since a schedule and a box
     // score can disagree on which side was home.
@@ -158,6 +159,7 @@
         }
         if (!allDates.length) { setMessage('No games available.'); return; }
         cur = (param && allDates.includes(param)) ? param : allDates[0];
+        if (!param) landingDate = cur;
         if (cur !== param) wantGame = "";
         dateInput.value = cur;
         updateNav();
@@ -173,15 +175,21 @@
       btnNext.disabled = i <= 0;
       btnPrev.disabled = i >= allDates.length - 1;
     }
-    async function go(d) {
+    // Each day is a history entry, so Back returns to the day before.
+    async function go(d, fromHistory = false) {
       // A date picked from another season needs that season's date list, or
       // the prev/next buttons walk the wrong one.
       if (d && nbnSeasonForDate(d) !== SEASON) {
         try { await loadSeason(nbnSeasonForDate(d)); } catch (e) {}
       }
       cur = d; dateInput.value = cur; updateNav(); load(cur);
-      history.replaceState(null, '', `?date=${d}`);
+      if (!fromHistory && location.search !== `?date=${d}`) history.pushState(null, '', `?date=${d}`);
     }
+    // Back to a URL with no ?date= means the day the page first opened on.
+    window.addEventListener('popstate', () => {
+      const d = new URLSearchParams(location.search).get('date') || landingDate;
+      if (d && d !== cur) go(d, true);
+    });
 
     btnPrev.onclick = () => { const i = allDates.indexOf(cur); if (i < allDates.length - 1) go(allDates[i + 1]); };
     btnNext.onclick = () => { const i = allDates.indexOf(cur); if (i > 0) go(allDates[i - 1]); };

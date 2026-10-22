@@ -364,8 +364,24 @@
       if (state.per !== 'tot') u.searchParams.set('per', state.per);
       if (state.team) u.searchParams.set('team', state.team);
       if (state.active) u.searchParams.set('active', '1');
-      history.replaceState(null, '', u);
+      if (u.href === location.href) return;
+      // A new stat is a history entry, so Back returns to the last board.
+      // The filters only replace, or five filter clicks take five Backs.
+      const was = new URLSearchParams(location.search).get('stat') || 'PTS';
+      history[state.stat !== was ? 'pushState' : 'replaceState'](null, '', u);
     }
+    window.addEventListener('popstate', () => {
+      const q = new URLSearchParams(location.search);
+      Object.assign(state, {
+        stat:   CAT[q.get('stat')] ? q.get('stat') : 'PTS',
+        type:   ['reg','po','all'].includes(q.get('type')) ? q.get('type') : 'reg',
+        per:    q.get('per') === 'pg' ? 'pg' : 'tot',
+        team:   TEAMS.includes(q.get('team')) ? q.get('team') : '',
+        active: q.get('active') === '1' ? '1' : '',
+        shown:  PAGE,
+      });
+      render();
+    });
 
     function render() {
       if (!data) return;

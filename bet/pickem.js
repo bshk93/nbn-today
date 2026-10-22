@@ -159,10 +159,12 @@
     setDate(later || shiftDate(date, n));
   }
 
+  // Pushed, so Back steps back through the days you looked at.
   function dateToUrl(d) {
     const q = new URLSearchParams(location.search);
     if (d === nbnToday()) q.delete('date'); else q.set('date', d);
-    history.replaceState(null, '', location.pathname + (q.toString() ? `?${q}` : '') + location.hash);
+    const url = location.pathname + (q.toString() ? `?${q}` : '') + location.hash;
+    if (url !== location.pathname + location.search + location.hash) history.pushState(null, '', url);
   }
 
   function setDate(d) {
@@ -401,5 +403,7 @@
     return r.ok ? r.json() : null;
   }
 
-  window.Pickem = { render, today, showDate: d => { date = d; view = 'day'; } };
+  // Back/forward: the page re-renders the tab, and the day comes from ?date=
+  // (none means today, or the next game day).
+  window.Pickem = { render, today, showDate: d => { date = d || null; view = 'day'; } };
 })();

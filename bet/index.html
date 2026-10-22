@@ -407,15 +407,25 @@
       }
     }
 
-    function switchTab(t) {
+    // A tab switch is a history entry, so Back returns to the last tab (and
+    // Pick'em's day arrows likewise step back through days) instead of
+    // leaving the page.
+    function switchTab(t, fromHistory = false) {
       currentTab    = t;
       showNewForm   = false;
       showCannedForm = false;
       renderFormArea();
-      history.replaceState(null, '', location.pathname + location.search + (t === 'action' ? '' : `#${t}`));
+      const url = location.pathname + location.search + (t === 'action' ? '' : `#${t}`);
+      if (!fromHistory && url !== location.pathname + location.search + location.hash) history.pushState(null, '', url);
       syncTabButtons();
       renderView();
     }
+
+    window.addEventListener('popstate', () => {
+      const t = location.hash.slice(1);
+      window.Pickem.showDate(new URLSearchParams(location.search).get('date'));
+      switchTab(TABS.includes(t) ? t : 'action', true);
+    });
 
     function syncTabButtons() {
       TABS.forEach(id => {

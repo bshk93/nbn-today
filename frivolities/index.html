@@ -1528,15 +1528,19 @@
       return TABS.includes(h) ? h : 'roster';
     };
 
+    // A tab switch is a history entry, so Back returns to the last tab.
+    // popstate also fires for a plain #link and for Back, so it is the one
+    // listener (hashchange as well would activate the tab twice).
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const name = btn.dataset.tab;
-        history.replaceState(null, '', name === 'roster' ? location.pathname : '#' + name);
+        const url = name === 'roster' ? location.pathname : '#' + name;
+        if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
         activateTab(name);
       });
     });
 
-    window.addEventListener('hashchange', () => activateTab(tabFromHash()));
+    window.addEventListener('popstate', () => activateTab(tabFromHash()));
 
     // Deferred to DOMContentLoaded because the retros tab's renderer is defined
     // by a later <script>: landing on #retros would otherwise call it before it

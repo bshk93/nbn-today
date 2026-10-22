@@ -1396,7 +1396,7 @@
       if (teamFilter) p.set('team', teamFilter);
       if (scope !== 'upcoming') p.set('scope', scope);
       const q = p.toString();
-      history.replaceState(null, '', q ? `?${q}` : location.pathname);
+      history.replaceState(null, '', (q ? `?${q}` : location.pathname) + location.hash);
     }
 
     // ── Rendering ────────────────────────────────────────────────────
@@ -1882,14 +1882,24 @@
       document.getElementById('app').hidden = false;
       renderPickemLock();
 
+      // The tab is the #hash and a history entry, so Back returns to it.
+      // The filters (?team=, ?scope=) still only replace.
+      const showTab = name => {
+        const btn = document.querySelector(`.tab[data-tab="${name}"]`) || document.querySelector('.tab[data-tab="mine"]');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(tp => tp.classList.add('hidden'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+      };
       document.querySelectorAll('.tab').forEach(btn => {
         btn.addEventListener('click', () => {
-          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-          document.querySelectorAll('.tab-panel').forEach(tp => tp.classList.add('hidden'));
-          btn.classList.add('active');
-          document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+          const url = location.pathname + location.search + (btn.dataset.tab === 'mine' ? '' : '#' + btn.dataset.tab);
+          if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
+          showTab(btn.dataset.tab);
         });
       });
+      window.addEventListener('popstate', () => showTab(location.hash.slice(1)));
+      if (location.hash) showTab(location.hash.slice(1));
 
       if (isAdmin()) {
         try {
