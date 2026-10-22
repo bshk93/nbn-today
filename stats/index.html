@@ -5,13 +5,13 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Leaderboards - NBN</title>
+  <title>Explore - NBN</title>
   <!-- NBN:og -->
-  <meta name="description" content="NBN leaderboards — season stats, career totals and single-game highs in every category.">
+  <meta name="description" content="Explore NBN stats — season stats, career leaders, single-game highs, head-to-head records and data viz.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Leaderboards - NBN">
-  <meta property="og:description" content="NBN leaderboards — season stats, career totals and single-game highs in every category.">
+  <meta property="og:title" content="Explore - NBN">
+  <meta property="og:description" content="Explore NBN stats — season stats, career leaders, single-game highs, head-to-head records and data viz.">
   <meta property="og:url" content="https://nbn.today/stats/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -43,7 +43,7 @@
     <nav class="nav"></nav>
     <header class="ui-header">
       <div>
-        <h1 class="ui-title">Leaderboards</h1>
+        <h1 class="ui-title">Explore</h1>
       </div>
     </header>
     <div class="grid">
@@ -71,7 +71,7 @@
           <a href="/stats/totals?active=1">Active players</a>
         </div>
       </div>
-      <div class="card card--wide">
+      <div class="card">
         <a class="card-main" href="/stats/highs">
           <span class="card-icon">🔝</span>
           <span class="card-title">Single-Game Highs</span>
@@ -81,6 +81,25 @@
           <a href="/stats/highs?stat=TD">Triple-doubles</a>
           <a href="/stats/highs?type=po">Playoffs</a>
           <a href="/stats/highs?active=1">Active players</a>
+        </div>
+      </div>
+      <div class="card">
+        <a class="card-main" href="/h2h">
+          <span class="card-icon">⚔️</span>
+          <span class="card-title">Head to Head</span>
+          <p class="card-desc">All-time records between every pair of teams, and every owner against every team, regular season and playoffs.</p>
+        </a>
+      </div>
+      <div class="card card--wide">
+        <a class="card-main" href="/frivolities">
+          <span class="card-icon">🥧</span>
+          <span class="card-title">Frivolities &amp; Viz</span>
+          <p class="card-desc">Odd corners of the data: OVR charts, team attributes, career earnings, a plot-anything tool and every trade regraded.</p>
+        </a>
+        <div class="card-links">
+          <a href="/frivolities#earnings">Career Earnings</a>
+          <a href="/frivolities#plot">Plot Anything</a>
+          <a href="/frivolities#retros">Trade Retros</a>
         </div>
       </div>
     </div>
