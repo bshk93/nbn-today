@@ -160,7 +160,12 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
   min-width: 0; padding: 0; border-radius: 0; background: none;
   align-self: center; color: var(--text-dim);
   font-size: 0.6rem; font-weight: 400; line-height: 1;
+  opacity: 0; transition: opacity 0.15s;
 }
+/* Shown on hover or keyboard focus only; a touch screen has no hover, so
+   there it stays up. LIVE (below) shows regardless. */
+.sb-row:hover .sb-badge-info, .sb-link:focus-visible .sb-badge-info { opacity: 1; }
+@media (hover: none) { .sb-badge-info { opacity: 1; } }
 /* Live now: the homepage banner's red LIVE pill, small. */
 .sb-badge-live {
   display: inline-flex; align-items: center; gap: 0.3rem; height: 1rem; padding-block: 0;
