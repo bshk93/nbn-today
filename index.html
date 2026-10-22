@@ -467,7 +467,7 @@
     .dash-race-row:hover .dash-race-name { color: var(--link); }
     .dash-race-name { font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .dash-race-num { margin-left: auto; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .dash-conf-name { display: flex; align-items: baseline; font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .dash-conf-name { display: flex; align-items: baseline; gap: 0.35rem; font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
     /* Column labels on the conference line, over the record and GB. */
     .dash-conf-name .dash-conf-col { font-size: 0.65rem; font-weight: 400; text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
     .dash-conf-name .dash-conf-col:first-of-type { margin-left: auto; }
@@ -481,7 +481,10 @@
     .dash-stand-seed { width: 1rem; color: var(--text-muted); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
     .dash-stand-row img { width: 18px; height: 18px; object-fit: contain; }
     .dash-stand-abbr { font-weight: 600; color: var(--text-primary); }
-    .dash-stand-rec { margin-left: auto; font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
+    /* Records vary in width ("0–0", "12–14"), so they sit centred in a fixed
+       column with the W–L label (same class) over them. Phones have no width
+       to spare: there both right-align instead. */
+    .dash-stand-rec { margin-left: auto; min-width: 2.6rem; text-align: center; font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
     /* A record or GB figure never breaks across lines ("1–\n0"); on a phone
        the two conferences share ~170px each, so tighten the row instead. */
     .dash-stand-abbr, .dash-stand-gb { white-space: nowrap; }
@@ -489,6 +492,8 @@
     @media (max-width: 520px) {
       .dash-standings-grid { column-gap: var(--space-4); }
       .dash-stand-row { gap: 0.25rem; }
+      .dash-conf-name { gap: 0.25rem; }
+      .dash-stand-rec { min-width: 0; text-align: right; }
       .dash-stand-gb { margin-left: 0.25rem; min-width: 1.5rem; }
     }
     @media (max-width: 360px) {
