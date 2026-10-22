@@ -233,6 +233,30 @@
     .dash-feed-search { flex: 1 1 10rem; min-width: 0; height: 2rem; font-size: var(--text-sm); }
     .dash-feed-score .win { color: var(--text-primary); font-weight: 700; }
 
+    /* Injury report — the current 2K injury list, as a table laid out like
+       the game's own screen. It scrolls inside the card, as the game's list
+       does, so a long injury list doesn't push the rest of the page down. */
+    .dash-inj-date { font-size: var(--text-xs); color: var(--text-muted); margin-left: 0.5rem; font-weight: 400; }
+    .dash-inj-scroll { max-height: 18rem; overflow: auto; }
+    .dash-inj-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--bg-card); }
+    .dash-inj-table td { white-space: normal; }
+    .dash-inj-table td.nowrap { white-space: nowrap; }
+    .dash-inj-player { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text-primary); font-weight: 600; text-decoration: none; }
+    .dash-inj-player:hover { color: var(--link); }
+    .dash-inj-player img { width: 16px; height: 16px; flex: none; }
+    .dash-inj-table .dash-inj-out { color: var(--danger); font-weight: 600; }
+    .dash-inj-table .dash-inj-hurt { color: var(--gold); font-weight: 600; }
+    .dash-inj-status-sm { display: none; font-size: var(--text-xs); margin-top: 0.1rem; }
+    .dash-inj-drop { color: var(--danger); }
+    /* On a phone, OVR drops and Status moves under the player's name, so
+       Injury has room to wrap and the table fits the card rather than
+       scrolling sideways inside it. */
+    @media (max-width: 560px) {
+      .dash-inj-table .dash-inj-ovr, .dash-inj-table .dash-inj-status { display: none; }
+      .dash-inj-status-sm { display: block; }
+      .dash-inj-table th, .dash-inj-table td { padding-left: 0.4rem; padding-right: 0.4rem; }
+    }
+
     @media (max-width: 480px) {
       /* The tag column costs a third of a phone's width; above the text it
          costs a line and the description keeps the full measure. */
@@ -418,13 +442,14 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "race" "rookies" "feed" "ranks" "milestones" "otd" "movers";
+        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "race" "rookies" "feed" "injuries" "ranks" "milestones" "otd" "movers";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-best      { grid-area: best; }
       :root #dash-stream-vod { grid-area: streamvod; }
       :root #dash-box-vod   { grid-area: boxvod; }
       :root #dash-feed      { grid-area: feed; }
+      :root #dash-injuries  { grid-area: injuries; }
       :root #dash-slate     { grid-area: slate; }
       :root #dash-standings { grid-area: standings; }
       :root #dash-ranks     { grid-area: ranks; }
@@ -861,6 +886,8 @@
         <div class="dash-skel" style="width:70%"></div>
         <div class="dash-skel" style="width:80%"></div>
       </div>
+      <!-- The current 2K injury list (GET /api/injuries). Hidden until a report is in. -->
+      <div class="dash-card" id="dash-injuries" hidden></div>
     </div>
 
     <!-- Sidebar: tonight's games, then the races and lists. -->
@@ -1566,6 +1593,110 @@
 
       render();
     });
+
+    // ── Injury report ─────────────────────────────────────────────────────
+    //
+    // Who is injured in the 2K sim right now, from the last committed report
+    // (nbn-api routers/injuries.py), laid out like the game's injury screen.
+    // Out before Hurt, then the longest injury first. Filters work like the
+    // feed's and live in the query string under their own keys (inj, injteam,
+    // injq), so the two cards can be filtered independently.
+    const INJ_STATUSES = [
+      { key: 'all',  label: 'All',  test: () => true },
+      { key: 'out',  label: 'Out',  test: s => /^out$/i.test(s) },
+      { key: 'hurt', label: 'Hurt', test: s => /^hurt$/i.test(s) },
+    ];
+    // The low end of a 2K duration in days, for ordering only — the same
+    // reading as min_duration_days in nbn-api's routers/injuries.py.
+    const injDays = d => {
+      d = String(d || '');
+      if (/career|season|indefinite/i.test(d)) return Infinity;
+      if (/day[\s-]*to[\s-]*day|game[\s-]*time/i.test(d)) return 0;
+      const m = d.match(/^(\d+(?:\.\d+)?)(?:\s*[-–]\s*\d+(?:\.\d+)?)?\s*(day|week|month)/i);
+      return m ? +m[1] * { day: 1, week: 7, month: 30 }[m[2].toLowerCase()] : -1;
+    };
+
+    jget('/api/injuries').then(data => {
+      if (!data || !data.last_report) return;
+      const card = $('dash-injuries');
+      const rows = (data.players || []).map(p => ({
+        p, out: /^out$/i.test(p.status || ''),
+        text: fold([p.name, p.team, p.injury, p.status].join(' ')),
+      })).sort((a, b) => (b.out - a.out) || (injDays(b.p.duration) - injDays(a.p.duration))
+        || String(a.p.name).localeCompare(String(b.p.name)));
+
+      const statuses = INJ_STATUSES.filter(s => s.key === 'all' || rows.some(r => s.test(r.p.status)));
+      const teams = [...new Set(rows.map(r => r.p.team).filter(Boolean))].sort();
+      const qs = new URLSearchParams(location.search);
+      const state = {
+        status: statuses.some(s => s.key === qs.get('inj')) ? qs.get('inj') : 'all',
+        team: teams.includes(String(qs.get('injteam') || '').toUpperCase()) ? qs.get('injteam').toUpperCase() : '',
+        q: qs.get('injq') || '',
+      };
+      const d = new Date(data.last_report.date + 'T12:00:00');
+      const when = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      card.innerHTML = '<div class="dash-standings-head"><div class="dash-card-title">Injury Report'
+        + `<span class="dash-inj-date">${esc(when)}</span></div>`
+        + '<a class="dash-standings-more" href="/injuries/">See all →</a></div>'
+        + (rows.length ? '<div class="dash-feed-filters">'
+          + '<div class="ui-segmented dash-feed-kinds" role="group" aria-label="Status">'
+          + statuses.map(s => `<button type="button" data-status="${s.key}" aria-pressed="${s.key === state.status}">${esc(s.label)}</button>`).join('')
+          + '</div>'
+          + (teams.length > 1
+            ? '<select class="ui-select dash-feed-teamsel" aria-label="Team"><option value="">All teams</option>'
+              + teams.map(t => `<option value="${esc(t)}"${t === state.team ? ' selected' : ''}>${esc(t)}</option>`).join('')
+              + '</select>' : '')
+          + `<input type="search" class="ui-input dash-feed-search" placeholder="Search" aria-label="Search injuries" value="${esc(state.q)}">`
+          + '</div>' : '')
+        + '<div class="dash-inj-list"></div>';
+      card.hidden = false;
+      const list = card.querySelector('.dash-inj-list');
+
+      const ovr = p => p.ovr == null ? ''
+        : `${p.ovr}${p.ovr_delta ? ` <span class="dash-inj-drop">(${p.ovr_delta > 0 ? '+' : '−'}${Math.abs(p.ovr_delta)})</span>` : ''}`;
+      function render() {
+        if (!rows.length) { list.innerHTML = '<div class="dash-empty">Nobody is injured.</div>'; return; }
+        const status = statuses.find(s => s.key === state.status);
+        const terms = fold(state.q).split(/\s+/).filter(Boolean);
+        const shown = rows.filter(r => status.test(r.p.status)
+          && (!state.team || r.p.team === state.team)
+          && terms.every(w => r.text.includes(w)));
+        if (!shown.length) { list.innerHTML = '<div class="dash-empty">Nothing matches these filters.</div>'; return; }
+        list.innerHTML = '<div class="ui-table-wrap dash-inj-scroll"><table class="ui-table ui-table--dense dash-inj-table">'
+          + '<thead><tr><th>Player</th><th class="dash-inj-status">Status</th><th class="num dash-inj-ovr">OVR</th><th>Injury</th><th>Duration</th></tr></thead><tbody>'
+          + shown.map(({ p, out }) => '<tr>'
+            + `<td><a class="dash-inj-player" href="/players/?p=${encodeURIComponent(p.slug)}">`
+            + (p.team ? `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">` : '')
+            + `${esc(p.name)}</a>`
+            + `<div class="dash-inj-status-sm ${out ? 'dash-inj-out' : 'dash-inj-hurt'}">${esc(p.status)}</div></td>`
+            + `<td class="nowrap dash-inj-status ${out ? 'dash-inj-out' : 'dash-inj-hurt'}">${esc(p.status)}</td>`
+            + `<td class="num nowrap dash-inj-ovr">${ovr(p)}</td>`
+            + `<td>${esc(p.injury)}</td>`
+            + `<td class="nowrap">${esc(p.duration)}</td></tr>`).join('')
+          + '</tbody></table></div>';
+      }
+      function sync() {
+        const p = new URLSearchParams(location.search);
+        [['inj', state.status === 'all' ? '' : state.status], ['injteam', state.team], ['injq', state.q.trim()]]
+          .forEach(([k, v]) => (v ? p.set(k, v) : p.delete(k)));
+        const s = p.toString();
+        history.replaceState(history.state, '', location.pathname + (s ? '?' + s : '') + location.hash);
+      }
+      const seg = card.querySelector('[aria-label="Status"]');
+      if (seg) seg.addEventListener('click', e => {
+        const b = e.target.closest('button[data-status]');
+        if (!b) return;
+        state.status = b.dataset.status;
+        seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+        render(); sync();
+      });
+      const sel = card.querySelector('.dash-feed-teamsel');
+      if (sel) sel.addEventListener('change', () => { state.team = sel.value; render(); sync(); });
+      const search = card.querySelector('.dash-feed-search');
+      if (search) search.addEventListener('input', () => { state.q = search.value; render(); sync(); });
+      render();
+    }).catch(() => {});
 
     // The power-rankings standing, always the newest **published** edition
     // across every series — so publishing a new one replaces this with no edit
