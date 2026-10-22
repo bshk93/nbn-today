@@ -366,12 +366,18 @@
       display: grid;
       grid-template-columns: minmax(0, 1fr) 20rem;
       grid-template-areas:
-        "team  team"
+        "hero  side"
+        "team  side"
         "main  side";
-      gap: 0 var(--space-7);
+      /* The side column spans all three rows, so it starts at the headline;
+         the last row takes the slack, or the auto rows would spread out to
+         match a side column taller than they are. */
+      grid-template-rows: auto auto 1fr;
+      gap: 0 var(--space-5);
       align-items: start;
       margin-bottom: var(--space-7);
     }
+    :root #dash-hero  { grid-area: hero; }
     :root #dash-team  { grid-area: team; }
     :root .dash-main  { grid-area: main; min-width: 0; }
     :root .dash-side  { grid-area: side; min-width: 0; }
@@ -381,7 +387,8 @@
     @media (max-width: 900px) {
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-areas: "team" "slate" "best" "standings" "race" "feed" "ranks" "milestones" "otd" "movers";
+        grid-template-rows: none;
+        grid-template-areas: "hero" "team" "slate" "best" "standings" "race" "feed" "ranks" "milestones" "otd" "movers";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-best      { grid-area: best; }
@@ -555,14 +562,18 @@
     .site-footer a { color: inherit; }
     .site-footer a:hover { color: var(--link); }
 
-    /* Sections, not boxes. */
-    :root .dash-card {
-      background: none;
-      border: none;
-      border-top: 1px solid var(--border);
-      border-radius: 0;
-      padding: var(--space-4) 0 var(--space-6);
+    /* Every section is its own rounded box (like ESPN's front page), the
+       headline included, so the two columns read as sets of cards and don't
+       need to line up edge for edge. */
+    :root .dash-card, :root .hero:not(:empty) {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: var(--space-5);
+      margin-bottom: var(--space-5);
     }
+    /* Boxes inside a box sit a shade darker, as ESPN's thumbnails do. */
+    :root .dash-card .dash-best-item { background: var(--bg-subtle); }
     :root .dash-card-title {
       font-size: var(--text-md);
       font-weight: 600;
@@ -572,14 +583,7 @@
       margin-bottom: var(--space-4);
     }
 
-    /* Your team: the one band that is about you, so it keeps a surface. */
-    :root #dash-team {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: var(--space-5);
-      margin-bottom: var(--space-6);
-    }
+    /* Your team is boxed like every other section now (above). */
     :root .dash-team-name { font-size: var(--text-lg); }
 
     /* Feed: the label becomes coloured text with a dot rather than a filled
@@ -651,10 +655,7 @@
             
     /* Headline: the state of the league, in words, at the top. */
     .hero { display: none; }
-    :root .hero:not(:empty) {
-      display: block;
-      margin-bottom: var(--space-6);
-    }
+    :root .hero:not(:empty) { display: block; }
     .hero-line {
       font-size: clamp(2.25rem, 6vw, 3.75rem);
       font-weight: 700;
@@ -698,7 +699,7 @@
          full width instead of a narrow strip beside the label. */
       :root .dash-feed-row { grid-template-columns: minmax(0, 1fr); gap: 0.15rem; }
       :root .dash-feed-when { grid-column: 1; }
-      :root .dash-card { padding-bottom: var(--space-5); }
+      :root .dash-card, :root .hero:not(:empty) { padding: var(--space-4); margin-bottom: var(--space-4); }
     }
 
     /* Signed-out visitors only: what this site is, one line, linking to the
@@ -759,9 +760,11 @@
   <!-- Twitch stream, shown only while live. -->
   <section class="live-banner" id="live-banner" aria-label="Live stream" hidden></section>
 
-  <div class="hero" id="dash-hero"></div>
-
   <section class="dash" id="dash">
+    <!-- The headline — in the main column, so the side column starts level
+         with it rather than below it. -->
+    <div class="hero" id="dash-hero"></div>
+
     <!-- Band 1 — your team. Signed-in members with an active tenure only;
          stays hidden for everyone else rather than rendering an empty shell. -->
     <div class="dash-card" id="dash-team" hidden></div>

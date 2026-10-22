@@ -102,6 +102,11 @@
 .sb-link:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
 .sb-link[aria-current="page"] { background: var(--bg-hover); color: var(--text-primary); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
 
+/* Inbox: a top-level link styled as a header, with its unread count. */
+a.sb-top-link { text-decoration: none; margin-bottom: 0.15rem; }
+a.sb-top-link:hover { text-decoration: none; }
+a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--text-primary); box-shadow: inset 2px 0 0 var(--accent); }
+
 /* ── Teams: the entry, and its division panel (nav.js _buildTeamsEntry) ── */
 .sb-teams { position: relative; margin-bottom: 0.15rem; }
 .sb-teams-btn .sb-teams-chev { transform: rotate(180deg); }
@@ -252,6 +257,7 @@
   html[data-sidebar="rail"] .sb-group-hdr .ni { width: 1.35rem; height: 1.35rem; }
   html[data-sidebar="rail"] .sb-group.holds-active > .sb-group-hdr,
   html[data-sidebar="rail"] .sb-teams-btn.holds-active { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--accent); }
+  html[data-sidebar="rail"] .sb-top-link .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: 0.55rem; }
   html[data-sidebar="rail"] .sb-group .sb-group-badge { display: block; position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: 0.55rem; }
   html[data-sidebar="rail"] .sb-teams-panel { left: calc(var(--sb-rail-w) + 0.5rem); width: min(44rem, calc(100vw - var(--sb-rail-w) - 1.5rem)); }
   /* The account block shrinks to its avatar and its menu opens to the right. */

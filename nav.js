@@ -670,9 +670,9 @@ function _setBadge(href, n, label) {
 }
 
 function _refreshBadges() {
-  document.querySelectorAll('.sidebar .sb-row').forEach(row => {
+  document.querySelectorAll('.sidebar .sb-row, .sidebar .sb-top-link').forEach(row => {
     const b = _badges[row.dataset.href];
-    const link = row.querySelector('.sb-link');
+    const link = row.classList.contains('sb-top-link') ? row : row.querySelector('.sb-link');
     let el = link.querySelector('.sb-badge');
     if (!b) { el?.remove(); return; }
     if (!el) { el = document.createElement('span'); el.className = 'sb-badge'; link.appendChild(el); }
@@ -950,6 +950,19 @@ function _buildTeamsEntry() {
 }
 let _closeTeamsPanel = () => {};
 
+// Inbox: a top-level entry under Teams, carrying the unread count. A link,
+// not a section — signed out, /inbox/ asks you to sign in itself.
+function _buildInboxEntry() {
+  const a = document.createElement('a');
+  a.className = 'sb-group-hdr sb-top-link';
+  a.href = '/inbox/';
+  a.dataset.href = '/inbox/';
+  a.title = 'Inbox';
+  if (/^\/inbox(\/|$)/.test(location.pathname)) a.setAttribute('aria-current', 'page');
+  a.innerHTML = `<span class="sb-icon">${_navIcon('inbox')}</span><span class="sb-group-label sb-label">Inbox</span>`;
+  return a;
+}
+
 // ── Account ──
 // Bottom left: who you are (avatar or initials, name, team) and, on click, a
 // menu with everything that's yours — profile, team, inbox, NB¥, the theme
@@ -1151,6 +1164,7 @@ function _buildSidebar() {
   const nav = document.createElement('nav');
   nav.className = 'sb-sections';
   nav.appendChild(_buildTeamsEntry());
+  nav.appendChild(_buildInboxEntry());
   const personal = document.createElement('div');
   personal.className = 'sb-personal';
   nav.appendChild(personal);
@@ -1341,7 +1355,8 @@ const NAV_SECTIONS = [
     { title: 'Constitution', href: '/constitution/', icon: 'charter' },
     { title: 'Rulebook', href: '/rulebook/', icon: 'book' },
     { title: 'Changelog', href: '/changelog', icon: 'tag' },
-    { title: 'Inbox', href: '/inbox/', icon: 'inbox' },
+    // Searchable, but its own entry at the top of the sidebar (_buildInboxEntry).
+    { title: 'Inbox', href: '/inbox/', icon: 'inbox', searchOnly: true },
     { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus' },
   ] },
   { label: 'League Office', icon: 'gavel', items: [
