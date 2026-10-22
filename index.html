@@ -221,6 +221,16 @@
     a.dash-feed-row:hover .dash-feed-text { color: var(--text-primary); }
     .dash-feed-when { grid-column: 2; font-size: 0.68rem; color: var(--text-muted); }
     .dash-feed-score { font-variant-numeric: tabular-nums; }
+
+    /* Kind, team and search over the loaded rows. One line on a wide card;
+       on a phone the switch keeps its own line and the other two share one. */
+    .dash-feed-filters {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+    .dash-feed-kinds { flex: none; max-width: 100%; overflow-x: auto; }
+    .dash-feed-teamsel { flex: none; height: 2rem; font-size: var(--text-xs); }
+    .dash-feed-search { flex: 1 1 10rem; min-width: 0; height: 2rem; font-size: var(--text-sm); }
     .dash-feed-score .win { color: var(--text-primary); font-weight: 700; }
 
     @media (max-width: 480px) {
@@ -1313,7 +1323,7 @@
     //         that needs markup (a score bolds the winner).
     // The feed is the main column, so it has room for a dozen. The rest, up to
     // FEED_MAX, sit behind a "Show N more" toggle.
-    const FEED_LIMIT = 12, FEED_MAX = 40;
+    const FEED_LIMIT = 12, FEED_MAX = 60;
 
     // What FeedTypes.headline needs to name players and teams. Shared by the
     // feed and On This Day's trades.
@@ -1350,7 +1360,7 @@
       // The row reads as a headline built from the entry's details
       // (FeedTypes.headline), not its `description`, which is written for the
       // office. Names come from a bios fetch for just the players named.
-      jget('/api/transactions?limit=20').then(d => {
+      jget('/api/transactions?limit=40').then(d => {
         const txns = (d.transactions || []).filter(t => !t.voided);
         const slugs = txnSlugs(txns);
         const bios = slugs.size
@@ -1410,6 +1420,20 @@
 
     const SOURCES = [feedFromTransactions, feedFromNews, feedFromScores];
 
+    // The feed's filters: a kind, a team, and free-text search, applied to
+    // the rows already loaded (FEED_MAX) rather than refetched. Each kind is
+    // a test on a row's `type`, so a ledger type this list has not heard of
+    // still lands under Moves.
+    const FEED_KINDS = [
+      { key: 'all',    label: 'All',    test: () => true },
+      { key: 'moves',  label: 'Moves',  test: t => t !== 'news' && t !== 'score' },
+      { key: 'trades', label: 'Trades', test: t => t === 'trade' },
+      { key: 'news',   label: 'News',   test: t => t === 'news' },
+      { key: 'scores', label: 'Scores', test: t => t === 'score' },
+    ];
+    // Accents off and lowercased, so "doncic" finds "Dončić".
+    const fold = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
     Promise.allSettled(SOURCES.map(fn => fn())).then(results => {
       // Ordered by the civil date each row *shows*, not by `ts`. A transaction
       // carries both when it happened (`date`) and when someone entered it
@@ -1433,27 +1457,109 @@
           + '<div class="dash-empty">Nothing yet.</div>';
         return;
       }
-      const extra = items.length - FEED_LIMIT;
+
+      const rowHtml = it => {
+        const c = FeedTypes.colors(it.type);
+        const when = it.date ? shortDate(it.date) : '';
+        return `<a class="dash-feed-row" href="${esc(it.href)}">`
+          + `<span class="dash-feed-tag" style="background:${esc(c.bg)};color:${esc(c.fg)}">`
+          + `${esc(FeedTypes.label(it.type))}</span>`
+          + `<span class="dash-feed-text">${it.html || esc(it.text)}`
+          + (it.sub ? `<span class="dash-feed-sub">${it.sub}</span>` : '') + `</span>`
+          + `<span class="dash-feed-when">${esc(when)}`
+          + (it.byline ? ` · ${esc(it.byline)}` : '') + `</span></a>`;
+      };
+
+      // What each row can be filtered on, worked out once. Teams come off the
+      // logos a row draws (a headline's teams, a night's finals), so a team
+      // filter matches exactly what the reader can see; the search text is
+      // the row's own visible text plus its byline.
+      const scratch = document.createElement('div');
+      const rows = items.map(it => {
+        const html = rowHtml(it);
+        // A space between adjacent tags, so "11 games" and "CHA" don't read as one word.
+        scratch.innerHTML = html.replace(/></g, '> <');
+        const teams = new Set([...html.matchAll(/logo-([a-z]{2,3})\.webp/g)].map(m => m[1].toUpperCase()));
+        if (it.type === 'score') {
+          scratch.querySelectorAll('.dash-feed-score span').forEach(sp =>
+            teams.add(sp.textContent.trim().split(' ')[0].toUpperCase()));
+        }
+        return { it, html, teams, text: fold(scratch.textContent + ' ' + (it.byline || '')) };
+      });
+
+      const kinds = FEED_KINDS.filter(k => k.key === 'all' || rows.some(r => k.test(r.it.type)));
+      const teams = [...new Set(rows.flatMap(r => [...r.teams]))].sort();
+
+      // Filters live in the query string (replaceState, so they don't stack
+      // up Back presses), which makes a filtered feed linkable.
+      const qs = new URLSearchParams(location.search);
+      const state = {
+        kind: kinds.some(k => k.key === qs.get('feed')) ? qs.get('feed') : 'all',
+        team: teams.includes(String(qs.get('team') || '').toUpperCase()) ? qs.get('team').toUpperCase() : '',
+        q: qs.get('q') || '',
+      };
+
       card.innerHTML = '<div class="dash-card-title">Around the League</div>'
-        + '<div class="dash-feed">' + items.map((it, i) => {
-          const c = FeedTypes.colors(it.type);
-          const when = it.date ? shortDate(it.date) : '';
-          return `<a class="dash-feed-row"${i >= FEED_LIMIT ? ' hidden' : ''} href="${esc(it.href)}">`
-            + `<span class="dash-feed-tag" style="background:${esc(c.bg)};color:${esc(c.fg)}">`
-            + `${esc(FeedTypes.label(it.type))}</span>`
-            + `<span class="dash-feed-text">${it.html || esc(it.text)}`
-            + (it.sub ? `<span class="dash-feed-sub">${it.sub}</span>` : '') + `</span>`
-            + `<span class="dash-feed-when">${esc(when)}`
-            + (it.byline ? ` · ${esc(it.byline)}` : '') + `</span></a>`;
-        }).join('') + '</div>'
-        + (extra > 0 ? `<button type="button" class="dash-feed-more">Show ${extra} more</button>` : '');
+        + '<div class="dash-feed-filters">'
+        + '<div class="ui-segmented dash-feed-kinds" role="group" aria-label="Show">'
+        + kinds.map(k => `<button type="button" data-kind="${k.key}" aria-pressed="${k.key === state.kind}">${esc(k.label)}</button>`).join('')
+        + '</div>'
+        + (teams.length > 1
+          ? '<select class="ui-select dash-feed-teamsel" aria-label="Team"><option value="">All teams</option>'
+            + teams.map(t => `<option value="${esc(t)}"${t === state.team ? ' selected' : ''}>${esc(t)}</option>`).join('')
+            + '</select>' : '')
+        + `<input type="search" class="ui-input dash-feed-search" placeholder="Search" aria-label="Search the feed" value="${esc(state.q)}">`
+        + '</div>'
+        + '<div class="dash-feed"></div>'
+        + '<button type="button" class="dash-feed-more" hidden></button>';
+
+      const list = card.querySelector('.dash-feed');
       const more = card.querySelector('.dash-feed-more');
       let open = false;
-      if (more) more.addEventListener('click', () => {
-        open = !open;
-        card.querySelectorAll('.dash-feed-row').forEach((r, i) => { if (i >= FEED_LIMIT) r.hidden = !open; });
+
+      function render() {
+        const kind = kinds.find(k => k.key === state.kind);
+        const terms = fold(state.q).split(/\s+/).filter(Boolean);
+        const shown = rows.filter(r => kind.test(r.it.type)
+          && (!state.team || r.teams.has(state.team))
+          && terms.every(w => r.text.includes(w)));
+        const filtered = state.kind !== 'all' || state.team || terms.length;
+        list.innerHTML = shown.length
+          ? shown.map((r, i) => (i >= FEED_LIMIT && !open
+              ? r.html.replace('<a class="dash-feed-row"', '<a class="dash-feed-row" hidden') : r.html)).join('')
+          : `<div class="dash-empty">${filtered ? 'Nothing matches these filters.' : 'Nothing yet.'}</div>`;
+        // A night's finals are one row; with a team picked, only its game.
+        if (state.team) list.querySelectorAll('.dash-feed-score').forEach(g => {
+          if (g.textContent.trim().split(/\s+/).indexOf(state.team) < 0) g.remove();
+        });
+        const extra = shown.length - FEED_LIMIT;
+        more.hidden = extra <= 0;
         more.textContent = open ? 'Show fewer' : `Show ${extra} more`;
+      }
+
+      function sync() {
+        const p = new URLSearchParams(location.search);
+        [['feed', state.kind === 'all' ? '' : state.kind], ['team', state.team], ['q', state.q.trim()]]
+          .forEach(([k, v]) => (v ? p.set(k, v) : p.delete(k)));
+        const s = p.toString();
+        history.replaceState(history.state, '', location.pathname + (s ? '?' + s : '') + location.hash);
+      }
+
+      card.querySelector('.dash-feed-kinds').addEventListener('click', e => {
+        const b = e.target.closest('button[data-kind]');
+        if (!b) return;
+        state.kind = b.dataset.kind;
+        card.querySelectorAll('.dash-feed-kinds button').forEach(x =>
+          x.setAttribute('aria-pressed', String(x === b)));
+        open = false; render(); sync();
       });
+      const sel = card.querySelector('.dash-feed-teamsel');
+      if (sel) sel.addEventListener('change', () => { state.team = sel.value; open = false; render(); sync(); });
+      const search = card.querySelector('.dash-feed-search');
+      search.addEventListener('input', () => { state.q = search.value; open = false; render(); sync(); });
+      more.addEventListener('click', () => { open = !open; render(); });
+
+      render();
     });
 
     // The power-rankings standing, always the newest **published** edition
