@@ -103,7 +103,7 @@
     <div id="tab-standings" hidden><div class="ui-loading">Loading…</div></div>
     <p class="pk-how">
       Pick one player for each position, plus a sixth man who can play anywhere. A player fits a position if it's his 2K primary or his secondary.
-      Your whole lineup locks at the day's first tip, and nobody sees anyone else's until then.
+      Your whole lineup locks when the day's stream goes live (or when a box score for the day comes in, or at midnight ET at the latest), and nobody sees anyone else's until then.
       Scoring: points 1, threes +0.5, rebounds 1.25, assists 1.5, steals 2, blocks 2, turnovers −0.5, double-double +1.5, triple-double +3 more.
       Scores fill in as box scores are uploaded.
     </p>
@@ -168,11 +168,13 @@
         el.innerHTML = '<div class="ui-empty">No games this day. Use the arrows to find a game day.</div>';
         return;
       }
-      const lock = new Date(day.lock_at);
-      const status = day.final ? '<strong>Final.</strong>'
-        : day.locked ? `<strong>Locked.</strong> Scores fill in as box scores are uploaded (${day.games.filter(g => g.final).length} of ${day.games.length} in).`
-        : `Locks at <strong>${esc(nbnFormatDateTime(lock))}</strong>. ${day.entry_count} lineup${day.entry_count === 1 ? '' : 's'} set so far.`;
-      const games = day.games.map(g => `<span class="pk-game${g.final ? ' final' : ''}">${logo(g.away)}${esc(g.away)} @ ${logo(g.home)}${esc(g.home)}${g.time_et ? ` · ${esc(g.time_et)}` : ''}</span>`).join('');
+      const lockedWhen = day.locked && day.locked_because !== 'the day ended'
+        ? ` Locked ${esc(nbnFormatDateTime(new Date(day.locked_at)))}, when ${esc(day.locked_because)}.` : '';
+      const status = day.final ? `<strong>Final.</strong>${lockedWhen}`
+        : day.locked ? `<strong>Locked.</strong>${lockedWhen} Scores fill in as box scores are uploaded (${day.games.filter(g => g.final).length} of ${day.games.length} in).`
+        : `<strong>Open</strong> until the stream goes live. ${day.entry_count} lineup${day.entry_count === 1 ? '' : 's'} set so far.`;
+      // No tip times: the schedule's are the real NBA ones, not when our games are played.
+      const games = day.games.map(g => `<span class="pk-game${g.final ? ' final' : ''}">${logo(g.away)}${esc(g.away)} @ ${logo(g.home)}${esc(g.home)}</span>`).join('');
       el.innerHTML = `<p class="pk-status">${status}</p><div class="pk-games">${games}</div>
         ${day.locked ? renderBoard() : renderBuilder()}`;
       wireDay();
