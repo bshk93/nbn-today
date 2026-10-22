@@ -583,6 +583,7 @@ const SITE_PAGES = [
   { title: 'NB¥ Balances', href: '/nbyen/', icon: '💴' },
   { title: 'Daily Perry Game', href: '/perry/', icon: '🏀' },
   { title: 'Daily Poeltl', href: '/poeltl/', icon: '🕵️' },
+  { title: "Pick'em", href: '/pickem/', icon: '🎯' },
   { title: 'Trivia', href: '/trivia', icon: '🧠' },
   { title: 'Wall Street', href: '/invest', icon: '📈' },
   { title: 'NBNTV Classics', href: '/nbntv-classics', icon: '📺' },

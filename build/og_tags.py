@@ -104,6 +104,7 @@ PAGES = {
  '/owners/': (None, 'Career records, ratings and playoff résumés for every NBN general manager.'),
  '/pdc/': (None, 'Moved — the PDC dashboard is now at /committees/pdc.'),
  '/perry/': (None, 'The daily NBN Perry game. One guess a day.'),
+ '/pickem/': (None, 'Pick six NBN players for the day — one per position plus a sixth man — and score on their real box scores.'),
  '/players/': (None, 'Every player in NBN — career stats, contracts, ratings, awards and game logs.'),
  '/poeltl/': (None, 'The daily NBN Poeltl. Guess the player in eight tries.'),
  '/proposals/': (None, 'Rule proposals up for a vote in NBN.'),

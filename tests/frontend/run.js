@@ -136,6 +136,7 @@ const PAGES = [
   { path: '/rulebook/',               selector: '.badge-enforced', min: 25, what: 'the system-enforced badges' },
   { path: '/changelog/',              selector: '.entry',          min: 100, what: 'release entries' },
   { path: '/cap-settings/',           selector: '.season-card',    min: 3,  what: 'a card per season on file' },
+  { path: '/pickem/#standings',       selector: '#tab-standings .ui-section-title, #tab-standings .ui-empty', min: 1, what: "the pick'em standings" },
   { path: '/rookie-scale/',           selector: 'table tbody tr',  min: 30, what: 'the § 7.1 scale' },
   { path: '/stats/seasons/',          selector: 'table tbody tr',  min: 100, what: 'per-season player lines' },
   { path: '/stats/highs/',            selector: '.gh-card',        min: 25, what: 'a top-5 card per category and feat' },
