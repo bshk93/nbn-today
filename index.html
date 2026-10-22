@@ -346,6 +346,12 @@
       margin: 0 auto;
       padding-top: 2rem;
     }
+    /* Beside the docked sidebar the body's own top padding is enough: the
+       masthead then lines up with the sidebar's logo instead of sitting a
+       band below it. */
+    @media (min-width: 900px) {
+      html[data-sidebar] .page-wrap { padding-top: 0; }
+    }
 
     /* Masthead: left-aligned and quieter. It identifies the site; it isn't
        the content. */
