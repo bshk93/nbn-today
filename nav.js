@@ -625,8 +625,7 @@ function _sidebarLink(p, active) {
   if (p.roles) { a.dataset.roles = p.roles.join(' '); a.hidden = true; }
   const icon = document.createElement('span');
   icon.className = 'sb-icon';
-  icon.setAttribute('aria-hidden', 'true');
-  icon.textContent = p.icon;
+  icon.innerHTML = _navIcon(p.icon);
   const text = document.createElement('span');
   text.className = 'sb-label';
   text.textContent = label;
@@ -785,89 +784,97 @@ function _buildMenuButton() {
 // owners can't use has no business in their jump box. The gate is a courtesy
 // either way; the security boundary is the API, which is what the PDC
 // dashboard's own shell relies on too.
+// `icon`: a symbol id in icons/nav-icons.svg (made by build/make_nav_icons.py,
+// which says how to add one).
 // `searchOnly`: a deep link into another page (a tab, a section) — worth
 // finding by name in search, but noise as its own sidebar row.
 const NAV_SECTIONS = [
   { label: 'Season', items: [
-    { title: 'Calendar', href: '/calendar', icon: '📅' },
-    { title: 'Standings & Playoffs', href: '/standings', icon: '🏅' },
-    { title: 'Award Race', href: '/awards/race/', icon: '🏁' },
+    { title: 'Calendar', href: '/calendar', icon: 'calendar' },
+    { title: 'Standings & Playoffs', href: '/standings', icon: 'standings' },
+    { title: 'Award Race', href: '/awards/race/', icon: 'flag' },
+    { title: 'Draft Live', href: '/draft/live/', icon: 'live' },
+    { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide' },
   ] },
   { label: 'Front Office', items: [
-    { title: 'Tradeblock', href: '/tradeblock/', icon: '🤝' },
-    { title: 'Free Agency', href: '/free-agency/', icon: '✍️' },
-    { title: 'Extensions', href: '/extensions/', icon: '📄' },
-    { title: 'Transactions', href: '/transactions', icon: '📝' },
-    { title: 'Transaction Simulator', href: '/transaction-sim/', icon: '🧮', keywords: ['trade machine', 'trade builder', 'trade simulator'] },
-    { title: 'Cap Summary', href: '/cap-summary/', icon: '💰' },
+    { title: 'Tradeblock', href: '/tradeblock/', icon: 'swap' },
+    { title: 'Free Agency', href: '/free-agency/', icon: 'pen' },
+    { title: 'Extensions', href: '/extensions/', icon: 'doc-plus' },
+    { title: 'Transactions', href: '/transactions', icon: 'doc-lines' },
+    { title: 'Transaction Simulator', href: '/transaction-sim/', icon: 'calculator', keywords: ['trade machine', 'trade builder', 'trade simulator'] },
+    { title: 'Cap Summary', href: '/cap-summary/', icon: 'money' },
   ] },
   { label: 'Committees', href: '/committees/', items: [
-    { title: 'Committees', href: '/committees/', icon: '🏛', searchOnly: true },
-    { title: 'Rosters Committee — compliance & cap sheet diffs', short: 'Rosters', href: '/committees/rosters/', icon: '🩺' },
-    { title: 'PDC Committee', short: 'PDC', href: '/committees/pdc/', icon: '🗳️',
+    { title: 'Committees', href: '/committees/', icon: 'columns', searchOnly: true },
+    { title: 'Rosters Committee — compliance & cap sheet diffs', short: 'Rosters', href: '/committees/rosters/', icon: 'clipboard-check' },
+    { title: 'PDC Committee', short: 'PDC', href: '/committees/pdc/', icon: 'ballot',
       roles: ['fac', 'fac_head', 'poext', 'poext_head'] },
-    { title: 'Stats Committee — build health & missing box scores', short: 'Stats', href: '/committees/stats/', icon: '🗂' },
-    { title: 'Stream Committee — claim games & coaching settings', short: 'Stream', href: '/committees/stream/', icon: '📺',
+    { title: 'Stats Committee — build health & missing box scores', short: 'Stats', href: '/committees/stats/', icon: 'folder-chart' },
+    { title: 'Stream Committee — claim games & coaching settings', short: 'Stream', href: '/committees/stream/', icon: 'camera',
       roles: ['streamer'] },
-    { title: 'TRC Committee — trade requests', short: 'TRC', href: '/committees/trc/', icon: '🤝',
+    { title: 'TRC Committee — trade requests', short: 'TRC', href: '/committees/trc/', icon: 'scale',
       roles: ['trc', 'trc_head'] },
   ] },
   { label: 'History', items: [
-    { title: 'Season Summary', href: '/season-summary', icon: '📜' },
-    { title: 'Hall of Champions', href: '/champions/', icon: '🏆' },
-    { title: 'Hall of Fame', href: '/hof', icon: '⭐' },
-    { title: 'Awards', href: '/awards/', icon: '🎖️' },
-    { title: 'Season Recaps', href: '/recap/', icon: '📼' },
-    { title: 'Draft', href: '/draft', icon: '📋' },
+    { title: 'Season Summary', href: '/season-summary', icon: 'scroll' },
+    { title: 'Hall of Champions', href: '/champions/', icon: 'trophy' },
+    { title: 'Hall of Fame', href: '/hof', icon: 'star' },
+    { title: 'Awards', href: '/awards/', icon: 'medal' },
+    { title: 'Season Recaps', href: '/recap/', icon: 'tape' },
+    { title: 'Draft', href: '/draft', icon: 'clipboard-list' },
   ] },
   { label: 'Stats', items: [
-    { title: 'Teams', href: '/teams', icon: '🏀' },
-    { title: 'Players', href: '/players', icon: '⛹️' },
-    { title: 'Owners', href: '/owners', icon: '🏛️' },
-    { title: 'Compare Players', href: '/compare/', icon: '⇆' },
-    { title: 'Ratings Changes', href: '/ratings-changes/', icon: '📶' },
-    { title: 'Season Stats', href: '/stats/seasons', icon: '📅' },
-    { title: 'Box Scores', href: '/boxscores/', icon: '🗂' },
-    { title: 'Career Leaders', href: '/stats/totals', icon: '🏅' },
-    { title: 'Single-Game Highs', href: '/stats/highs', icon: '🔝' },
-    { title: 'Head to Head', href: '/h2h', icon: '⚔️' },
-    { title: 'Frivolities & Viz', href: '/frivolities', icon: '📈' },
-    { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: '🔍', searchOnly: true },
+    { title: 'Teams', href: '/teams', icon: 'basketball' },
+    { title: 'Players', href: '/players', icon: 'jersey' },
+    { title: 'Owners', href: '/owners', icon: 'owner' },
+    { title: 'Compare Players', href: '/compare/', icon: 'compare' },
+    { title: 'Ratings Changes', href: '/ratings-changes/', icon: 'trend-bars' },
+    { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart' },
+    { title: 'Box Scores', href: '/boxscores/', icon: 'table' },
+    { title: 'Box Score Import', href: '/boxscores/submit/', icon: 'upload', keywords: ['submit box score', 'upload box score'] },
+    { title: 'Career Leaders', href: '/stats/totals', icon: 'steps' },
+    { title: 'Single-Game Highs', href: '/stats/highs', icon: 'spike' },
+    { title: 'Leaderboards', href: '/stats/', icon: 'list' },
+    { title: 'Head to Head', href: '/h2h', icon: 'versus' },
+    { title: 'Frivolities & Viz', href: '/frivolities', icon: 'pie' },
+    { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: 'magnifier', searchOnly: true },
   ] },
   { label: 'NB¥ Corner', items: [
-    { title: 'NB¥ Balances', href: '/nbyen/', icon: '💴' },
-    { title: 'Bets & Futures', href: '/bet/', icon: '🎲' },
-    { title: 'Futures', href: '/bet/#futures', icon: '📊', searchOnly: true },
-    { title: 'Wall Street', href: '/invest', icon: '📈' },
-    { title: 'Donations', href: '/donations/', icon: '💵' },
+    { title: 'NB¥ Balances', href: '/nbyen/', icon: 'yen' },
+    { title: 'Bets & Futures', href: '/bet/', icon: 'dice' },
+    { title: 'Futures', href: '/bet/#futures', icon: 'line-chart', searchOnly: true },
+    { title: 'Wall Street', href: '/invest', icon: 'candles' },
+    { title: 'Donations', href: '/donations/', icon: 'heart' },
   ] },
   { label: 'Games', items: [
-    { title: 'Daily Perry Game', href: '/perry/', icon: '🏀' },
-    { title: 'Daily Poeltl', href: '/poeltl/', icon: '🕵️' },
-    { title: 'Trivia', href: '/trivia', icon: '🧠' },
+    { title: 'Daily Perry Game', href: '/perry/', icon: 'hoop' },
+    { title: 'Daily Poeltl', href: '/poeltl/', icon: 'silhouette' },
+    { title: 'Trivia', href: '/trivia', icon: 'question' },
   ] },
   { label: 'Media', items: [
-    { title: 'News', href: '/news/', icon: '📰' },
-    { title: 'NBNTV Classics', href: '/nbntv-classics', icon: '📺' },
-    { title: 'NBNFL', href: '/nbnfl/', icon: '🏈' },
-    { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: '▶️' },
+    { title: 'News', href: '/news/', icon: 'newspaper' },
+    { title: 'NBNTV Classics', href: '/nbntv-classics', icon: 'tv' },
+    { title: 'NBNFL', href: '/nbnfl/', icon: 'football' },
+    { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: 'play' },
   ] },
   { label: 'About', items: [
-    { title: 'Members', href: '/members/', icon: '👥' },
-    { title: 'Roles & Permissions', href: '/roles', icon: '🔑' },
-    { title: 'Constitution', href: '/constitution/', icon: '📄' },
-    { title: 'Rulebook', href: '/rulebook/', icon: '📖' },
-    { title: 'Changelog', href: '/changelog', icon: '🔖' },
-    { title: 'Inbox', href: '/inbox/', icon: '📥' },
+    { title: 'Members', href: '/members/', icon: 'people' },
+    { title: 'Roles & Permissions', href: '/roles', icon: 'key' },
+    { title: 'Constitution', href: '/constitution/', icon: 'charter' },
+    { title: 'Rulebook', href: '/rulebook/', icon: 'book' },
+    { title: 'Changelog', href: '/changelog', icon: 'tag' },
+    { title: 'Inbox', href: '/inbox/', icon: 'inbox' },
+    { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus' },
   ] },
   { label: 'League Office', items: [
-    { title: 'Proposals', href: '/proposals/', icon: '🗳️' },
-    { title: 'Suggestions', href: '/suggestions/', icon: '💡' },
-    { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: '📝' },
-    { title: 'Rookie Scale', href: '/rookie-scale/', icon: '📐' },
-    { title: 'Cap Settings', href: '/cap-settings/', icon: '⚙️', roles: ['rosters'] },
-    { title: 'Strikes', href: '/strikes/', icon: '⚠️', roles: ['bod'] },
-    { title: 'Backlog', href: '/backlog/', icon: '🗒️', roles: [] },
+    { title: 'Proposals', href: '/proposals/', icon: 'vote' },
+    { title: 'Suggestions', href: '/suggestions/', icon: 'bulb' },
+    { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: 'envelope' },
+    { title: 'Rookie Scale', href: '/rookie-scale/', icon: 'ruler' },
+    { title: 'Legal — Disciplinary Record', short: 'Legal', href: '/legal/', icon: 'gavel' },
+    { title: 'Cap Settings', href: '/cap-settings/', icon: 'gear', roles: ['rosters'] },
+    { title: 'Strikes', href: '/strikes/', icon: 'warning', roles: ['bod'] },
+    { title: 'Backlog', href: '/backlog/', icon: 'checklist', roles: [] },
   ] },
 ];
 
@@ -878,6 +885,13 @@ const ROLE_PAGES = _NAV_ITEMS.filter(p => p.roles);
 
 // Same rule the pages themselves apply: admin satisfies any role check. An
 // empty `roles` list is admin-only.
+// One icon from the nav set. Two colours, both from the theme (`.ni` in
+// css/sidebar.css), so a team theme tints the set in its own accent. The sprite
+// is one file, fetched once and cached however many icons a page draws.
+function _navIcon(id) {
+  return `<svg class="ni" aria-hidden="true"><use href="/icons/nav-icons.svg#${id}"></use></svg>`;
+}
+
 function _qualifies(page, roles) {
   return !page.roles || roles.has('admin') || page.roles.some(r => roles.has(r));
 }
@@ -990,7 +1004,7 @@ function _filter() {
   const teamMatches = Object.entries(TEAM_LIST)
     .filter(([abbr, name]) => name.toLowerCase().includes(q) || abbr.toLowerCase().includes(q))
     .slice(0, 6)
-    .map(([abbr, name]) => ({ type: 'Team', icon: '🏀', title: name, meta: abbr, href: `/teams/${abbr}/` }));
+    .map(([abbr, name]) => ({ type: 'Team', icon: 'basketball', title: name, meta: abbr, href: `/teams/${abbr}/` }));
 
   let playerMatches = [];
   if (_playerCache) {
@@ -1005,7 +1019,7 @@ function _filter() {
         const ovr = _ovrCache?.[slug];
         const pos = Array.isArray(p.pos) ? p.pos.join(' · ') : (p.pos || '');
         const meta = pos + (ovr ? `${pos ? ' · ' : ''}${ovr}` : '');
-        return { type: 'Player', icon: '⛹️', title: _displayName(p.name), meta, href: `/players/?p=${slug}` };
+        return { type: 'Player', icon: 'jersey', title: _displayName(p.name), meta, href: `/players/?p=${slug}` };
       });
   }
 
@@ -1024,7 +1038,7 @@ function _filter() {
     a.className = 'search-result';
     a.href = r.href;
     a.innerHTML = `
-      <span class="search-result-icon">${r.icon}</span>
+      <span class="search-result-icon">${_navIcon(r.icon)}</span>
       <span class="search-result-name">${r.title}</span>
       <span class="search-result-meta">${r.meta ? `${r.meta} &nbsp;·&nbsp; ` : ''}${r.type}</span>`;
     a.addEventListener('click', () => closeSearch());

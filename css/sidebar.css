@@ -28,8 +28,18 @@
   color: var(--text-secondary);
   overflow: hidden;
 }
-.sidebar svg { width: 1rem; height: 1rem; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.sidebar svg:not(.ni) { width: 1rem; height: 1rem; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 .sidebar [hidden] { display: none !important; }
+
+/* The two-colour page icons (icons/nav-icons.svg, build/make_nav_icons.py),
+   here and in search results. Body in the theme's accent, detail in its
+   on-accent colour, lifted off the page by a soft shadow. */
+.ni {
+  display: block; width: 1.15rem; height: 1.15rem; flex-shrink: 0;
+  color: var(--accent); --ni-b: var(--text-on-accent);
+  filter: drop-shadow(0 1px 1.2px var(--shadow-color-strong));
+}
+.search-result-icon .ni { width: 1.2rem; height: 1.2rem; }
 
 .sb-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.9rem 0.75rem 0.5rem; }
 .sb-home { display: flex; align-items: center; gap: 0.6rem; color: var(--text-primary); font-weight: 700; text-decoration: none; min-width: 0; }
@@ -73,7 +83,7 @@
 }
 .sb-link:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
 .sb-link[aria-current="page"] { background: var(--bg-hover); color: var(--text-primary); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
-.sb-icon { width: 1.25rem; text-align: center; flex-shrink: 0; font-size: 0.95rem; line-height: 1; }
+.sb-icon { width: 1.25rem; flex-shrink: 0; display: flex; justify-content: center; }
 .sb-label { overflow: hidden; text-overflow: ellipsis; }
 
 .sb-foot { border-top: 1px solid var(--border); padding: 0.4rem 0.5rem; }
@@ -105,6 +115,7 @@
   html[data-sidebar="rail"] .sb-group.folded .sb-items { display: block; }
   html[data-sidebar="rail"] .sb-group + .sb-group { margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--border-subtle); }
   html[data-sidebar="rail"] .sb-link { justify-content: center; padding-inline: 0; }
+  html[data-sidebar="rail"] .sb-link .ni { width: 1.35rem; height: 1.35rem; }
   html[data-sidebar="rail"] .sb-collapse { justify-content: center; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-collapse svg { transform: rotate(180deg); }
 }
