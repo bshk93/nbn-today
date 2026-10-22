@@ -150,6 +150,16 @@
     }
     .odds-tip strong { color: var(--text-primary); }
     .odds-chart-empty { font-size: var(--text-sm); color: var(--text-muted); }
+    .odds-race { margin-top: var(--space-6); }
+    .odds-race-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+    .odds-race-head .ui-section-title { margin: 0; }
+    .odds-race-conf { margin: 0 0 var(--space-2); font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
+    .odds-race-chart { max-width: none; }
+    .odds-race-chart svg { touch-action: pan-y; }
+    .odds-race-line { fill: none; stroke: var(--text-muted); stroke-opacity: 0.35; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+    .odds-race-line.on { stroke: var(--accent); stroke-opacity: 1; stroke-width: 2.5; }
+    .odds-race .odds-dot { stroke: var(--bg-page, var(--bg-card)); }
+    .odds-race-label { fill: var(--text-primary); font-size: 11px; font-weight: 600; }
     .odds-how { margin-top: var(--space-5); font-size: var(--text-sm); color: var(--text-secondary); max-width: 46rem; }
     .odds-how summary { cursor: pointer; color: var(--link); }
     .odds-how p { margin: var(--space-2) 0 0; line-height: 1.55; }
@@ -427,6 +437,8 @@
         grid.appendChild(box);
       });
 
+      el.appendChild(oddsRace(data, el));
+
       const how = document.createElement('details');
       how.className = 'odds-how';
       how.innerHTML = '<summary>How these are worked out</summary>'
@@ -527,6 +539,179 @@
       hit.addEventListener('pointerleave', hide);
       wrap.append(svg, tip);
       return wrap;
+    }
+
+    // The whole conference over the season, one chart per conference. Fifteen
+    // lines can't each have a colour, so all are grey and one is picked out:
+    // the line nearest the pointer, or the team whose row is hovered.
+    const RACE_METRICS = [
+      ['playoffs', 'Playoffs'], ['top6', 'Top 6'], ['seed1', '#1 seed'], ['title', 'Title'], ['proj_w', 'Proj wins'],
+    ];
+    function oddsRace(data, page) {
+      const box = document.createElement('section');
+      box.className = 'odds-race';
+      const h = document.createElement('h2');
+      h.className = 'ui-section-title';
+      h.textContent = 'The race so far';
+      const seg = document.createElement('div');
+      seg.className = 'ui-segmented';
+      seg.setAttribute('role', 'group');
+      seg.setAttribute('aria-label', 'Measure');
+      const head = document.createElement('div');
+      head.className = 'odds-race-head';
+      head.append(h, seg);
+      const grid = document.createElement('div');
+      grid.className = 'conferences';
+      box.append(head, grid);
+
+      const games = Math.max(...data.teams.map(t => t.games || 0)) || 82;
+      const confOf = Object.fromEntries(data.teams.map(t => [t.team, t.conf]));
+      let metric = 'playoffs';
+      let rows = null;
+      const charts = [];
+      const draw = () => {
+        grid.innerHTML = '';
+        charts.length = 0;
+        if (rows.length < 2) {
+          grid.innerHTML = '<p class="odds-chart-empty">The chart fills in as the season is played.</p>';
+          return;
+        }
+        ['East', 'West'].forEach(conf => {
+          const c = raceChart(conf, rows, Object.keys(confOf).filter(t => confOf[t] === conf), metric, games);
+          charts.push(c);
+          grid.appendChild(c.el);
+        });
+      };
+      RACE_METRICS.forEach(([key, label]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        b.setAttribute('aria-pressed', String(key === metric));
+        b.addEventListener('click', () => {
+          metric = key;
+          seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+          if (rows) draw();
+        });
+        seg.appendChild(b);
+      });
+
+      // Hovering a team's row in the tables above picks out its line.
+      box.highlight = team => charts.forEach(c => c.highlight(team));
+      page.querySelectorAll('.odds-row').forEach(tr => {
+        const team = tr.querySelector('.team a')?.textContent;
+        tr.addEventListener('pointerenter', () => box.highlight(team));
+        tr.addEventListener('pointerleave', () => box.highlight(null));
+      });
+
+      grid.innerHTML = '<p class="odds-chart-empty">Loading…</p>';
+      fetch('/api/playoff-odds/history')
+        .then(r => (r.ok ? r.json() : []))
+        .catch(() => [])
+        .then(all => { rows = all; draw(); });
+      return box;
+    }
+
+    function raceChart(conf, rows, teams, metric, games) {
+      const NS = 'http://www.w3.org/2000/svg';
+      const W = 520, H = 260, P = { t: 12, r: 56, b: 22, l: 36 };
+      const wins = metric === 'proj_w';
+      const fmt = v => v == null ? '—' : wins ? Math.round(v) + ' W' : pct(v);
+      const top = wins ? games : 1;
+      const last = rows.length - 1;
+      const x = i => P.l + i * (W - P.l - P.r) / last;
+      const y = v => P.t + (1 - v / top) * (H - P.t - P.b);
+      const val = (i, t) => rows[i].teams[t]?.[metric];
+      const mk = (tag, attrs, text) => {
+        const e = document.createElementNS(NS, tag);
+        Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+        if (text != null) e.textContent = text;
+        return e;
+      };
+
+      const el = document.createElement('div');
+      const h = document.createElement('h3');
+      h.className = 'odds-race-conf';
+      h.textContent = conf;
+      const wrap = document.createElement('div');
+      wrap.className = 'odds-chart odds-race-chart';
+      el.append(h, wrap);
+      const svg = mk('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img',
+        'aria-label': `${conf}ern Conference ${RACE_METRICS.find(m => m[0] === metric)[1].toLowerCase()} over the season` });
+      (wins ? [0, 0.5, 1].map(f => Math.round(f * games)) : [0, 0.5, 1]).forEach(v => {
+        svg.appendChild(mk('line', { x1: P.l, x2: W - P.r, y1: y(v), y2: y(v), class: 'odds-grid' }));
+        svg.appendChild(mk('text', { x: P.l - 6, y: y(v) + 3, 'text-anchor': 'end', class: 'odds-axis' },
+          wins ? String(v) : `${v * 100}%`));
+      });
+      [0, last].forEach(i => svg.appendChild(mk('text', {
+        x: x(i), y: H - 6, 'text-anchor': i ? 'end' : 'start', class: 'odds-axis' }, shortDay(rows[i].date))));
+
+      const lines = {};
+      teams.forEach(t => {
+        const pts = rows.map((_, i) => val(i, t) == null ? null : `${x(i)},${y(val(i, t))}`).filter(Boolean);
+        lines[t] = mk('polyline', { class: 'odds-race-line', points: pts.join(' ') });
+        svg.appendChild(lines[t]);
+      });
+      const endDot = mk('circle', { r: 4, class: 'odds-dot', visibility: 'hidden' });
+      const endLabel = mk('text', { class: 'odds-race-label', visibility: 'hidden' });
+      const hair = mk('line', { y1: P.t, y2: H - P.b, class: 'odds-hair', visibility: 'hidden' });
+      const hov = mk('circle', { r: 4, class: 'odds-dot', visibility: 'hidden' });
+      svg.append(endDot, endLabel, hair, hov);
+
+      let picked = null;
+      const highlight = team => {
+        if (picked && lines[picked]) lines[picked].classList.remove('on');
+        picked = team && lines[team] ? team : null;
+        if (!picked) {
+          endDot.setAttribute('visibility', 'hidden');
+          endLabel.setAttribute('visibility', 'hidden');
+          return;
+        }
+        lines[picked].classList.add('on');
+        svg.insertBefore(lines[picked], endDot);  // drawn above the grey lines
+        const v = val(last, picked);
+        if (v == null) return;
+        endDot.setAttribute('cx', x(last)); endDot.setAttribute('cy', y(v)); endDot.setAttribute('visibility', 'visible');
+        endLabel.setAttribute('x', x(last) + 8); endLabel.setAttribute('y', y(v) + 4);
+        endLabel.textContent = `${picked} ${fmt(v)}`;
+        endLabel.setAttribute('visibility', 'visible');
+      };
+
+      // Crosshair snapped to the nearest day; the line nearest the pointer is picked.
+      const tip = document.createElement('div');
+      tip.className = 'odds-tip';
+      tip.hidden = true;
+      const hit = mk('rect', { x: P.l, y: 0, width: W - P.l - P.r, height: H, fill: 'transparent' });
+      svg.appendChild(hit);
+      const show = e => {
+        const b = svg.getBoundingClientRect();
+        const sx = (e.clientX - b.left) * W / b.width, sy = (e.clientY - b.top) * H / b.height;
+        const i = Math.max(0, Math.min(last, Math.round((sx - P.l) / ((W - P.l - P.r) / last))));
+        let best = null, dist = Infinity;
+        teams.forEach(t => {
+          const v = val(i, t);
+          if (v != null && Math.abs(y(v) - sy) < dist) { dist = Math.abs(y(v) - sy); best = t; }
+        });
+        if (!best) return;
+        highlight(best);
+        const v = val(i, best);
+        hair.setAttribute('x1', x(i)); hair.setAttribute('x2', x(i)); hair.setAttribute('visibility', 'visible');
+        hov.setAttribute('cx', x(i)); hov.setAttribute('cy', y(v)); hov.setAttribute('visibility', 'visible');
+        tip.hidden = false;
+        tip.textContent = '';
+        const s = document.createElement('strong');
+        s.textContent = `${best} ${fmt(v)}`;
+        tip.append(s, document.createTextNode(` · ${shortDay(rows[i].date)}`));
+        tip.style.left = `${x(i) / W * 100}%`;
+      };
+      const hide = () => {
+        hair.setAttribute('visibility', 'hidden'); hov.setAttribute('visibility', 'hidden'); tip.hidden = true;
+        highlight(null);
+      };
+      hit.addEventListener('pointermove', show);
+      hit.addEventListener('pointerdown', show);
+      hit.addEventListener('pointerleave', hide);
+      wrap.append(svg, tip);
+      return { el, highlight };
     }
 
     if (location.hash === '#odds') showTab('odds');
