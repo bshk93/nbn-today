@@ -238,6 +238,8 @@
     }
     .sc-team button:hover { color: var(--accent-light); }
 
+    #pickem-lock { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-4); padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); font-size: var(--text-sm); color: var(--text-secondary); }
+    #pickem-lock strong { color: var(--text-primary); }
     .empty { color: var(--text-muted); font-size: 0.85rem; padding: 2rem 0; text-align: center; }
     .source { font-size: 0.68rem; color: var(--text-dim); margin-top: 2rem; }
 
@@ -348,6 +350,7 @@
     <div id="gate"></div>
 
     <div id="app" hidden>
+      <div id="pickem-lock" hidden></div>
       <div class="tabs">
         <button class="tab active" data-tab="mine">My games<span class="tab-badge" id="mine-tab-badge" hidden></span></button>
         <button class="tab" data-tab="claim">Claim Games</button>
@@ -1838,6 +1841,36 @@
       }
     }
 
+    // Pick'em locks a game day when the stream goes live. If something that
+    // isn't the day's games went live, a streamer reopens it here.
+    async function renderPickemLock() {
+      const el = document.getElementById('pickem-lock');
+      const token = storedToken();
+      const day = await fetch(`/api/pickem/${today}`).then(r => (r.ok ? r.json() : null)).catch(() => null);
+      if (!day || day.lock_why !== 'stream') { el.hidden = true; return; }
+      const s = day.lock_stream || {};
+      const text = document.createElement('span');
+      const strong = document.createElement('strong');
+      strong.textContent = "Pick'em locked today";
+      text.append(strong, ` at ${nbnFormatDateTime(new Date(day.locked_at))}, when the stream went live`
+        + (s.title ? ` (“${s.title}”)` : '') + '. If that wasn’t today’s games, reopen it.');
+      const btn = document.createElement('button');
+      btn.className = 'ui-btn ui-btn--sm';
+      btn.textContent = "Reopen Pick'em";
+      el.replaceChildren(text, btn);
+      el.hidden = false;
+      btn.onclick = async () => {
+        const r = await fetch(`/api/pickem/${today}/reopen`, {
+          method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          alert(d.detail || `Couldn’t reopen (${r.status}).`);
+        }
+        renderPickemLock();
+      };
+    }
+
     async function init() {
       const p = new URLSearchParams(location.search);
       const wantTeam = (p.get('team') || '').toUpperCase();
@@ -1847,6 +1880,7 @@
       await loadMe();
       if (!isStreamerRole()) { renderGate(); return; }
       document.getElementById('app').hidden = false;
+      renderPickemLock();
 
       document.querySelectorAll('.tab').forEach(btn => {
         btn.addEventListener('click', () => {

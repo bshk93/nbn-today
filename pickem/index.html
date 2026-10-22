@@ -121,6 +121,7 @@
     const authHeaders = () => (token() ? { Authorization: `Bearer ${token()}` } : {});
 
     let me = null;
+    let canReopen = false;   // streamer, bod or admin: may undo a stray stream's lock
     let date = new URLSearchParams(location.search).get('date') || nbnToday();
     let day = null;          // GET /api/pickem/{date}
     let draft = {};          // slot -> slug, the lineup being edited
@@ -172,10 +173,13 @@
         ? ` Locked ${esc(nbnFormatDateTime(new Date(day.locked_at)))}, when ${esc(day.locked_because)}.` : '';
       const status = day.final ? `<strong>Final.</strong>${lockedWhen}`
         : day.locked ? `<strong>Locked.</strong>${lockedWhen} Scores fill in as box scores are uploaded (${day.games.filter(g => g.final).length} of ${day.games.length} in).`
-        : `<strong>Open</strong> until the stream goes live. ${day.entry_count} lineup${day.entry_count === 1 ? '' : 's'} set so far.`;
+        : `<strong>Open</strong> until the stream goes live. ${day.entry_count} lineup${day.entry_count === 1 ? '' : 's'} set so far.`
+          + (day.reopened.length ? ` Reopened by ${esc(day.reopened[day.reopened.length - 1].by)} after a stream that wasn’t the games.` : '');
       // No tip times: the schedule's are the real NBA ones, not when our games are played.
       const games = day.games.map(g => `<span class="pk-game${g.final ? ' final' : ''}">${logo(g.away)}${esc(g.away)} @ ${logo(g.home)}${esc(g.home)}</span>`).join('');
-      el.innerHTML = `<p class="pk-status">${status}</p><div class="pk-games">${games}</div>
+      const reopen = canReopen && day.lock_why === 'stream'
+        ? ` <button class="ui-btn ui-btn--sm ui-btn--ghost" id="reopen" title="${esc(day.lock_stream && day.lock_stream.title ? `Locked by: ${day.lock_stream.title}` : '')}">Not today's games? Reopen</button>` : '';
+      el.innerHTML = `<p class="pk-status">${status}${reopen}</p><div class="pk-games">${games}</div>
         ${day.locked ? renderBoard() : renderBuilder()}`;
       wireDay();
     }
@@ -269,6 +273,15 @@
         if (window.matchMedia('(min-width: 700px)').matches) search.focus({ preventScroll: true });
         document.querySelector('.pk-slot.open').scrollIntoView({ block: 'start', behavior: 'smooth' });
       }
+      const reopenBtn = document.getElementById('reopen');
+      if (reopenBtn) reopenBtn.onclick = async () => {
+        const r = await fetch(`/api/pickem/${date}/reopen`, { method: 'POST', headers: authHeaders() });
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          alert(d.detail || `Couldn’t reopen (${r.status}).`);
+        }
+        loadDay();
+      };
       const save = document.getElementById('save');
       if (save) save.onclick = saveLineup;
       const clear = document.getElementById('clear');
@@ -367,7 +380,11 @@
       document.getElementById('next').onclick = () => stepDay(1);
       if (token()) {
         const r = await fetch('/api/auth/me', { headers: authHeaders() }).catch(() => null);
-        if (r && r.ok) me = (await r.json()).name || null;
+        if (r && r.ok) {
+          const who = await r.json();
+          me = who.name || null;
+          canReopen = (who.roles || []).some(x => ['streamer', 'bod', 'admin'].includes(x));
+        }
       }
       const sched = await fetch('/api/schedule').then(r => (r.ok ? r.json() : null)).catch(() => null);
       gameDays = [...new Set(((sched && sched.games) || []).map(g => g.date))].sort();
