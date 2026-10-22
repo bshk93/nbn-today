@@ -682,7 +682,7 @@ function _sidebarRow(p, active) {
   row.dataset.href = p.href;
   if (p.roles) {
     row.dataset.roles = p.roles.join(' ');
-    row.hidden = !(_rolesKnown && _qualifies(p, _rolesKnown));
+    row.hidden = !(_rolesKnown && _qualifies(p, _rolesKnown)) && !_badges[p.href];
   }
 
   const a = document.createElement('a');
@@ -811,14 +811,152 @@ function _gamesToday() {
     const c = JSON.parse(sessionStorage.getItem(GAMES_TODAY_KEY));
     if (c && c.date === today && Date.now() - c.at < 10 * 60 * 1000) return Promise.resolve(c.n);
   } catch { /* private browsing / nothing cached */ }
-  return fetch('/api/schedule')
-    .then(r => r.ok ? r.json() : null)
+  return _schedule()
     .then(d => {
       const n = (d?.games || []).filter(g => g.date === today).length;
       try { sessionStorage.setItem(GAMES_TODAY_KEY, JSON.stringify({ date: today, n, at: Date.now() })); } catch { /* ignore */ }
       return n;
     })
     .catch(() => 0);
+}
+
+// ── Committee work ──
+// "Something here needs you" counts on the committee rows, each counted by the
+// same rule its page uses to flag a row as yours — so the badge and the page
+// can't disagree about what's waiting. Fetched only for members holding the
+// role, after the page has settled, and cached per tab for two minutes: these
+// lists are heavier than anything else nav.js asks for, and they change when
+// someone acts, not by the second.
+const WORK_TTL_MS = 2 * 60 * 1000;
+
+function _authHeaders() {
+  let token = null;
+  try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
+  return token ? { Authorization: 'Bearer ' + token } : {};
+}
+
+function _getJson(url) {
+  return fetch(url, { credentials: 'same-origin', headers: _authHeaders() })
+    .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
+}
+
+// A count cached in sessionStorage under this member's name, so signing in as
+// someone else in the same tab never shows the last person's queue.
+function _cachedCount(key, who, fetchCount) {
+  const k = 'nbn_work_' + key;
+  try {
+    const c = JSON.parse(sessionStorage.getItem(k));
+    if (c && c.who === who && Date.now() - c.at < WORK_TTL_MS) return Promise.resolve(c.n);
+  } catch { /* nothing cached */ }
+  return fetchCount().then(n => {
+    try { sessionStorage.setItem(k, JSON.stringify({ n, who, at: Date.now() })); } catch { /* ignore */ }
+    return n;
+  }).catch(() => 0);
+}
+
+// One schedule and one box-score index per page, shared by the games-today,
+// stats and stream counts.
+let _schedulePromise = null;
+function _schedule() {
+  if (!_schedulePromise) _schedulePromise = fetch('/api/schedule').then(r => (r.ok ? r.json() : null)).catch(() => null);
+  return _schedulePromise;
+}
+let _enteredPromise = null;
+function _enteredGames(season) {
+  if (!_enteredPromise) {
+    _enteredPromise = fetch(`/api/boxscores/games?season=${encodeURIComponent(season)}`)
+      .then(r => (r.ok ? r.json() : [])).catch(() => []);
+  }
+  return _enteredPromise;
+}
+
+// TRC — committees/trc renderRequest's `mine`: a ballot not yet cast (trc /
+// trc_head only; admin doesn't vote), a trade ready to finalize (the head), or
+// a trade waiting on the consent of a team this member owns.
+function _trcWork(me) {
+  const roles = new Set(me.roles || []);
+  const isTrc = roles.has('trc') || roles.has('trc_head');
+  const isHead = roles.has('trc_head') || roles.has('admin');
+  const owns = new Set(me.owner_of || []);
+  if (!isTrc && !isHead && !owns.size) return Promise.resolve(0);
+  return _getJson('/api/trade-requests').then(items => (items || []).filter(i => {
+    if (['finalized', 'rejected', 'withdrawn'].includes(i.status)) return false;
+    const consent = i.status === 'awaiting_consent'
+      && (i.parties || []).some(p => owns.has(p) && !((i.consents || {})[p] || {}).consented);
+    const finalize = isHead && i.status === 'ready_to_finalize';
+    const ballot = isTrc && ['balloting', 'ready_to_finalize'].includes(i.status) && !(i.ballots || {})[me.name];
+    return consent || finalize || ballot;
+  }).length);
+}
+
+// PDC — committees/pdc's list tabs: your assigned free agents still needing
+// your ballot (fac), unblocked players on the agents' queue (agent), players
+// needing a result (head). A head counts as an agent there, so here too.
+function _pdcWork(me) {
+  const roles = new Set(me.roles || []);
+  const isHead = roles.has('admin') || roles.has('fac_head');
+  const isFac = isHead || roles.has('fac');
+  const isAgent = isHead || roles.has('agent');
+  if (!isFac && !isAgent) return Promise.resolve(0);
+  return _getJson('/api/fa/state').then(state => Object.values(state?.players || {}).filter(p =>
+    (isFac && p.mine && !p.balloted && !p.finalized && p.stage === 'with_committee')
+    || (isAgent && p.stage === 'awaiting_agent' && !p.claim_refusal)
+    || (isHead && p.needs_result)).length);
+}
+
+// Stats — committees/stats renderTiles' "Awaiting entry": games scheduled up to
+// today with no box score on file. A game with its sides swapped is the same game.
+function _statsWork(me) {
+  const roles = new Set(me.roles || []);
+  if (!roles.has('stats') && !roles.has('admin')) return Promise.resolve(0);
+  const key = (d, a, b) => `${d}|${[a, b].sort().join('~')}`;
+  const today = _leagueToday();
+  return _schedule().then(sched => {
+    if (!sched?.season) return 0;
+    return _enteredGames(sched.season).then(games => {
+      const entered = new Set(games.map(g => key(g.date, g.home_team, g.away_team)));
+      return (sched.games || []).filter(f => f.date <= today && !entered.has(key(f.date, f.home_team, f.away_team))).length;
+    });
+  });
+}
+
+// Stream — committees/stream openRequests: a member's request to buy a stream,
+// for a game not yet played, that no streamer has answered.
+function _streamWork(me) {
+  const roles = new Set(me.roles || []);
+  if (!roles.has('streamer') && !roles.has('admin')) return Promise.resolve(0);
+  const today = _leagueToday();
+  return _schedule().then(sched => {
+    if (!sched?.season) return 0;
+    return _enteredGames(sched.season).then(games => {
+      const played = new Set(games.map(g => `${g.date}|${g.away_team}|${g.home_team}`));
+      return (sched.games || []).filter(g => g.stream_request && g.date >= today
+        && !played.has(`${g.date}|${g.away_team}|${g.home_team}`)).length;
+    });
+  });
+}
+
+// /api/auth/me is what the committee pages themselves ask (it carries
+// owner_of, which /api/me doesn't); asked only when one of the counts needs it.
+function _loadWorkBadges() {
+  if (!_maybeSignedIn()) return;
+  _getJson('/api/auth/me').then(me => {
+    if (!me || !me.name) return;
+    const work = [
+      ['/committees/trc/', 'trc', _trcWork, n => `${n} trade${n === 1 ? '' : 's'} waiting on you`],
+      ['/committees/pdc/', 'pdc', _pdcWork, n => `${n} free agent${n === 1 ? '' : 's'} waiting on you`],
+      ['/committees/stats/', 'stats', _statsWork, n => `${n} game${n === 1 ? '' : 's'} awaiting a box score`],
+      ['/committees/stream/', 'stream', _streamWork, n => `${n} stream request${n === 1 ? '' : 's'} to answer`],
+    ];
+    for (const [href, key, count, label] of work) {
+      _cachedCount(key, me.name, () => count(me)).then(n => {
+        _setBadge(href, n, label(n));
+        // An owner with a trade awaiting their consent sees TRC even without
+        // a committee role: that's the one place the consent button lives.
+        if (n > 0) document.querySelectorAll(`.sidebar .sb-row[data-href="${href}"]`).forEach(r => { r.hidden = false; });
+      });
+    }
+  }).catch(() => {});
 }
 
 // ── My Team ──
@@ -958,12 +1096,15 @@ function _buildSidebar() {
   _myRoles().then(roles => {
     _rolesKnown = roles;
     aside.querySelectorAll('.sb-row[data-roles]').forEach(row => {
+      if (_badges[row.dataset.href]) return; // revealed by a waiting-on-you badge
       row.hidden = !_qualifies({ roles: row.dataset.roles ? row.dataset.roles.split(' ') : [] }, roles);
     });
   });
 
   _unreadCount().then(n => _setBadge('/inbox/', n, `${n} unread`));
   _gamesToday().then(n => _setBadge('/calendar', n, `${n} game${n === 1 ? '' : 's'} today`));
+  // Committee queues wait until the page itself has had the network.
+  (window.requestIdleCallback || (fn => setTimeout(fn, 1500)))(_loadWorkBadges);
 
   // Keep the current row in view in a long list (Stats is 11 rows down) —
   // the one in its own section, not a copy in Pinned.
@@ -1047,7 +1188,7 @@ const NAV_SECTIONS = [
     { title: 'Committees', href: '/committees/', icon: 'columns', searchOnly: true },
     { title: 'Rosters Committee — compliance & cap sheet diffs', short: 'Rosters', href: '/committees/rosters/', icon: 'clipboard-check' },
     { title: 'PDC Committee', short: 'PDC', href: '/committees/pdc/', icon: 'ballot',
-      roles: ['fac', 'fac_head', 'poext', 'poext_head'] },
+      roles: ['fac', 'fac_head', 'agent', 'poext', 'poext_head'] },
     { title: 'Stats Committee — build health & missing box scores', short: 'Stats', href: '/committees/stats/', icon: 'folder-chart' },
     { title: 'Stream Committee — claim games & coaching settings', short: 'Stream', href: '/committees/stream/', icon: 'camera',
       roles: ['streamer'] },
