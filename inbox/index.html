@@ -69,7 +69,15 @@
     .msg-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; }
     .msg-group-name { flex: 1 1 9rem; font-size: 0.82rem; color: var(--text-primary); font-weight: 600; }
     .msg-group-btns { display: flex; gap: 0.4rem; }
-    .msg-group-btns .msg-action { width: 8.5rem; text-align: center; }
+    /* A fixed box, not one sized by the browser's own button padding and line
+       height (Safari's differ), and a border on the outlined one that reads
+       against the card, so the pair is visibly the same size. */
+    .msg-group-btns .msg-action {
+      -webkit-appearance: none; appearance: none; box-sizing: border-box;
+      width: 8.5rem; height: 2rem; padding: 0 0.65rem; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .msg-group-btns .msg-action:not(.msg-action-primary) { border-color: var(--text-dim); }
     .msg-action:hover:not(:disabled) { border-color: var(--accent); }
     .msg-action-primary { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
     .msg-action-primary:hover:not(:disabled) { filter: brightness(1.1); }
