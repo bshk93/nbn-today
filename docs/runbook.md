@@ -88,8 +88,9 @@ from.
 **An injury report becomes site data.** The streamer uploads the 2K injury
 screen from `/committees/stream` (🚑 on the day) → `/parse-injuries` commits it
 → `injuries.json` + `injury-history.jsonl` update, `/injuries` shows it, and the
-changes post to `#injury-report` tagging each team. Only a report marked
-complete clears players who are no longer on it.
+changes post to `#injury-report` tagging each team. Anyone not on the report
+is cleared, but a player on a 2+ week injury who vanishes is confirmed with
+the user first, in case the parse missed a row.
 
 **A transaction becomes league state.** `POST /api/transactions` validates
 against the rulebook, writes rosters/bios/team-state, appends to

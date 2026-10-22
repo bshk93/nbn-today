@@ -58,10 +58,10 @@ The **Compliance tab** of `committees/rosters/index.html` — the first of four 
 The 2K sim's in-game injuries, from MyNBA's league-wide injury screen the streamer shows each stream day. Upload → parse → commit, like box scores:
 
 - **Upload**: the 🚑 Injury report button in each day's slate controls on `/committees/stream` (`injuryReportControl` / `uploadInjuryShots`), shown on today and past dates. Click to choose, or focus it and paste, or drop. Every screenshot for one date joins that date's pending report (`POST /api/injuries/upload`); a scrolling list is two or three. Pending ones show as `#1 ✕` links; a committed one as "report in ✓".
-- **Parse**: `/parse-injuries` (`.claude/commands/parse-injuries.md`) transcribes, matches names to slugs, decides whether the screenshots are the **whole** list, and posts `POST /api/injuries/commit`.
+- **Parse**: `/parse-injuries` (`.claude/commands/parse-injuries.md`) transcribes, matches names to slugs, checks the screenshots reach the bottom of the list (everyone missing is healed), and posts `POST /api/injuries/commit`.
 - **Page**: `injuries/index.html`, self-contained and public. *Current* is `GET /api/injuries`, *History* is `GET /api/injuries/history`, newest first, grouped by date. One team filter (`?team=`) for both; `#history` opens the second tab. The subtitle links the last report's screenshot while it's kept (14 days).
 
-The rules live in the API, not here — `nbn-api/CLAUDE.md` § "Injury report": only a complete report heals; the team comes from the roster CSV, not the 2K logo; Discord gets changes only (status, injury or duration), each line tagging its player's team.
+The rules live in the API, not here — `nbn-api/CLAUDE.md` § "Injury report": anyone off the report is healed, but a long injury that vanishes is confirmed with the user first; the team comes from the roster CSV, not the 2K logo; Discord gets changes only (status, injury or duration), each line tagging its player's team.
 
 ## Coaching settings
 

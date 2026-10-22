@@ -14,6 +14,11 @@ affected team (`routers/injuries.py` in nbn-api).
 **You only transcribe and match.** Don't decide what's new, changed or healed —
 the commit works that out from the full list you send.
 
+**Anyone not on the report is healed.** That makes a missed row a wrong
+"cleared" post, so take every player off every screenshot. The API backs
+this up: it won't heal a player who was on a long injury (2+ weeks, or a
+duration it can't read) until the user confirms it — step 4.
+
 ## Steps
 
 ### 1. Get token
@@ -70,15 +75,11 @@ scratchpad, not `/tmp`):
 
 #### 3c. Is this the whole list?
 
-`complete` decides whether players missing from this report are marked healthy,
-so it matters more than any single row.
-
-- `true` only when the screenshots between them show the **top and the bottom**
-  of the list: the scrollbar at the right reaches the end, or there are fewer
-  rows than fit on one screen.
-- Otherwise `false`. A partial report still adds new injuries and updates
-  changed ones; it just never clears anyone.
-- If you can't tell, **ask the user**. Never guess `true`.
+Since everyone missing is healed, check that the screenshots between them show
+the **top and the bottom** of the list: the scrollbar at the right reaches the
+end, or there are fewer rows than fit on one screen. If the bottom isn't
+visible, **tell the user before committing** — a report cut off at the bottom
+clears everyone below the cut. They can upload the rest, or say go ahead.
 
 #### 3d. Resolve slugs
 
@@ -97,7 +98,7 @@ player's injury under another and pings the wrong team.
 ```bash
 curl -s -X POST http://localhost:8001/api/injuries/commit \
   -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"report_id": "<id>", "date": "<date from the pending item>", "complete": <true|false>,
+  -d '{"report_id": "<id>", "date": "<date from the pending item>",
        "rows": [{"slug": "reed-paul", "player": "P. Reed", "team_shown": "LAL", "status": "Hurt",
                  "ovr": 73, "ovr_delta": -2, "injury": "Strained Left Hip", "duration": "4-6 weeks"}]}'
 ```
@@ -108,6 +109,13 @@ roster, or one on no roster — the user may want to check those).
 
 - **`422 … is not a player bio` / `listed twice`** — a slug from 3d is wrong; fix it and commit again.
 - **`409 … older than the current list`** — a later report is already in. Ask the user; don't change the date to get past it.
+- **`409` with `"error": "confirm_heals"`** — players on a long injury are missing from this report, and nothing was written. **This is the check that a row wasn't missed.** For each player in `detail.players`:
+  1. Look through the screenshots again for them (search by last name). If they're there, you missed the row: add it and commit again.
+  2. If they really aren't there, ask the user, one line each:
+     `Paul Reed (LAL) was Out – Strained Left Hip – 4-6 weeks, since Oct 21. Not on today's report — healed?`
+  3. Commit again with `"confirm_heals": ["<slug>", …]` naming **only** the players the user said yes to. For a no, ask the user how they want it entered (usually: add the row as last reported).
+
+  Never fill `confirm_heals` without asking — it is the user's answer, not yours.
 
 A successful commit moves the screenshots out of the queue (kept 14 days, then
 deleted). Remove the scratch file:
