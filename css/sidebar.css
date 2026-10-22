@@ -32,11 +32,14 @@
 .sidebar [hidden] { display: none !important; }
 
 /* The two-colour page icons (icons/nav-icons.svg, build/make_nav_icons.py),
-   here and in search results. Body in the theme's accent, detail in its
-   on-accent colour, lifted off the page by a soft shadow. */
+   here and in search results. Body in the theme's accent, detail on it in the
+   on-accent colour, a bare glyph's second tone a light tint of the accent
+   (toward white, not toward the page: on a dark page that went muddy) — and a
+   soft shadow to lift them off it. */
 .ni {
   display: block; width: 1.15rem; height: 1.15rem; flex-shrink: 0;
   color: var(--accent); --ni-b: var(--text-on-accent);
+  --ni-c: color-mix(in srgb, var(--accent) 55%, #fff);
   filter: drop-shadow(0 1px 1.2px var(--shadow-color-strong));
 }
 .search-result-icon .ni { width: 1.2rem; height: 1.2rem; }

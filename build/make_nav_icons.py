@@ -5,11 +5,16 @@ Every icon is two flat colours on a 24px grid:
 
   A  the body — `currentColor`, which css/sidebar.css sets to the theme's
      --accent, so a team theme tints the whole set in its own colour
-  B  the detail — `var(--ni-b)`, set to --text-on-accent (white on every theme)
+  B  detail drawn on top of A — `var(--ni-b)`, --text-on-accent (white on
+     every theme)
+  C  a second tone for glyphs that stand on the page — `var(--ni-c)`, a light
+     tint of the accent, which reads on light and dark pages alike
 
-The one rule that keeps them readable on both light and dark pages: **B only
-ever sits on top of A.** A white detail out on the page background vanishes on
-a light theme. The drop shadow is CSS (`.ni` in css/sidebar.css), not drawn
+No icon sits on a backing tile: an icon is the object itself (a calendar, a
+trophy) or a bare glyph (arrows, a check). An icon uses two of the three —
+A+B for an object with detail on it, A+C for a glyph. The rule that keeps
+them readable on every theme: **B only ever sits on top of A.** White out on
+the page background vanishes on a light theme; that is what C is for. The drop shadow is CSS (`.ni` in css/sidebar.css), not drawn
 here, so it can follow the theme's shadow colour.
 
 The pages pick their icon by id in NAV_SECTIONS (nav.js), and search reads the
@@ -20,6 +25,7 @@ same ids. To add or change one: edit ICONS below, then
 Each entry is a list of (kind, svg) pairs, drawn in order:
   'a'   filled with colour A          'b'   filled with colour B
   'as'  stroked in colour A           'bs'  stroked in colour B
+  'c'   filled with colour C          'cs'  stroked in colour C
 A stroke's width defaults to 2; put it in the tuple's third slot to change it.
 """
 import math
@@ -76,8 +82,9 @@ ICONS = {
               '<rect x="9.5" y="10.5" width="3.5" height="2.5"/><rect x="16.5" y="10.5" width="3.5" height="2.5"/>'),
     ],
     'live': [
-        ('a', '<rect x="2" y="5" width="20" height="14" rx="2"/>'),
-        ('b', '<circle cx="7" cy="12" r="2.2"/><rect x="11" y="9.8" width="8" height="1.6" rx=".8"/><rect x="11" y="12.8" width="5" height="1.6" rx=".8"/>'),
+        ('a', '<circle cx="12" cy="12" r="2.6"/>'),
+        ('cs', '<path d="M8.3 15.7a5.2 5.2 0 0 1 0-7.4M15.7 8.3a5.2 5.2 0 0 1 0 7.4"/>', 2),
+        ('as', '<path d="M5.2 18.8a9.6 9.6 0 0 1 0-13.6M18.8 5.2a9.6 9.6 0 0 1 0 13.6"/>', 2),
     ],
     'guide': [
         ('a', '<rect x="4" y="2" width="16" height="20" rx="2"/>'),
@@ -86,9 +93,8 @@ ICONS = {
     ],
     # ── Front office ──
     'swap': [
-        ('a', '<circle cx="12" cy="12" r="10"/>'),
-        ('b', '<rect x="6" y="8" width="8.5" height="2"/><polygon points="14,5.5 18.5,9 14,12.5"/>'
-              '<rect x="9.5" y="14" width="8.5" height="2"/><polygon points="10,11.5 5.5,15 10,18.5"/>'),
+        ('a', '<rect x="3" y="6" width="12" height="3" rx="1.5"/><polygon points="14,2.5 21,7.5 14,12.5"/>'),
+        ('c', '<rect x="9" y="15" width="12" height="3" rx="1.5"/><polygon points="10,11.5 3,16.5 10,21.5"/>'),
     ],
     'pen': [
         ('a', '<polygon points="15,3 21,9 9,21 3,21 3,15"/>'),
@@ -184,8 +190,8 @@ ICONS = {
         ('b', '<polygon points="12,13.5 13.4,15 12.6,20.5 11.4,20.5 10.6,15"/>'),
     ],
     'compare': [
-        ('a', '<rect x="3" y="3" width="7.5" height="18" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="18" rx="1.5"/>'),
-        ('b', '<rect x="5.25" y="13" width="3" height="5" rx=".5"/><rect x="15.75" y="7" width="3" height="11" rx=".5"/>'),
+        ('a', '<rect x="3" y="11" width="7.5" height="10" rx="1.5"/>'),
+        ('c', '<rect x="13.5" y="3" width="7.5" height="18" rx="1.5"/>'),
     ],
     'trend-bars': [
         ('a', '<rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="11" width="4" height="10" rx="1"/><rect x="17" y="8" width="4" height="13" rx="1"/>'),
@@ -193,8 +199,8 @@ ICONS = {
         ('b', '<rect x="4.25" y="16.5" width="1.5" height="2.5" rx=".75"/><rect x="11.25" y="14" width="1.5" height="5" rx=".75"/><rect x="18.25" y="11" width="1.5" height="8" rx=".75"/>'),
     ],
     'bar-chart': [
-        ('a', '<rect x="2" y="3" width="20" height="18" rx="2"/>'),
-        ('b', '<rect x="6" y="12" width="2.5" height="6" rx=".5"/><rect x="10.75" y="7" width="2.5" height="11" rx=".5"/><rect x="15.5" y="10" width="2.5" height="8" rx=".5"/>'),
+        ('cs', '<path d="M3 21h18"/>', 2),
+        ('a', '<rect x="4" y="12" width="4" height="7" rx="1"/><rect x="10" y="4" width="4" height="15" rx="1"/><rect x="16" y="8.5" width="4" height="10.5" rx="1"/>'),
     ],
     'table': [
         ('a', '<rect x="2" y="4" width="20" height="16" rx="2"/>'),
@@ -205,22 +211,20 @@ ICONS = {
         ('b', star(19, 9.5, 2.4)),
     ],
     'spike': [
-        ('a', '<circle cx="12" cy="12" r="10"/>'),
-        ('bs', '<path d="M6.5 15.5l3.8-3.8 2.7 2.7 4.5-5M13.8 9.4h3.7v3.7"/>'),
+        ('cs', '<path d="M3 21h18"/>', 2),
+        ('as', '<path d="M3.5 16.5l5.5-5.5 4 4 7.5-8.5M15 6.5h5.5V12"/>', 2.6),
     ],
     'versus': [
-        ('a', '<rect x="1" y="4" width="22" height="16" rx="8"/>'),
-        ('bs', '<path d="M5.5 8.5l2.7 7 2.7-7M18.4 9.3c-.6-.7-1.6-1-2.5-.8-1.1.2-1.7 1-1.4 1.9.3 1 1.7 1.3 2.6 1.9.9.6 1.1 1.6.5 2.4-.8.9-2.6.9-3.6-.1"/>', 1.7),
+        ('as', '<path d="M3 6l4.5 12L12 6"/>', 2.8),
+        ('cs', '<path d="M20.5 7.6c-.8-1-2.1-1.5-3.4-1.3-1.6.2-2.5 1.4-2.1 2.7.4 1.4 2.4 1.9 3.6 2.7 1.3.8 1.6 2.3.7 3.4-1.1 1.3-3.6 1.3-5-.2"/>', 2.8),
     ],
     'pie': [
         ('a', '<circle cx="12" cy="12" r="10"/>'),
         ('b', '<path d="M12 12V3.5a8.5 8.5 0 0 1 8.5 8.5z"/>'),
     ],
     'list': [
-        ('a', '<rect x="3" y="3" width="18" height="18" rx="2.5"/>'),
-        ('b', '<rect x="6.5" y="7" width="2" height="2" rx=".5"/><rect x="10.5" y="7" width="7" height="2" rx="1"/>'
-              '<rect x="6.5" y="11" width="2" height="2" rx=".5"/><rect x="10.5" y="11" width="7" height="2" rx="1"/>'
-              '<rect x="6.5" y="15" width="2" height="2" rx=".5"/><rect x="10.5" y="15" width="4.5" height="2" rx="1"/>'),
+        ('a', '<circle cx="5" cy="6" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="5" cy="18" r="2"/>'),
+        ('c', '<rect x="9" y="4.8" width="12" height="2.6" rx="1.3"/><rect x="9" y="10.8" width="12" height="2.6" rx="1.3"/><rect x="9" y="16.8" width="8" height="2.6" rx="1.3"/>'),
     ],
     'magnifier': [
         ('as', '<path d="M15.5 15.5l5.5 5.5"/>', 3.5),
@@ -229,16 +233,16 @@ ICONS = {
     ],
     # ── NB¥ ──
     'yen': [
-        ('a', '<circle cx="12" cy="12" r="10"/>'),
-        ('bs', '<path d="M8.5 6.5L12 12l3.5-5.5M12 12v6M8.8 12.8h6.4M8.8 15.6h6.4"/>', 1.7),
+        ('as', '<path d="M5.5 3L12 12.5 18.5 3M12 12.5V21"/>', 2.8),
+        ('cs', '<path d="M7 13h10M7 17h10"/>', 2.4),
     ],
     'dice': [
         ('a', '<rect x="3" y="3" width="18" height="18" rx="4"/>'),
         ('b', ''.join(f'<circle cx="{x}" cy="{y}" r="1.6"/>' for x, y in ((8, 8), (16, 8), (12, 12), (8, 16), (16, 16)))),
     ],
     'line-chart': [
-        ('a', '<rect x="2" y="4" width="20" height="16" rx="2"/>'),
-        ('bs', '<path d="M5.5 16l4-4.5 3 2.5 6-7"/>'),
+        ('cs', '<path d="M3 3v18h18"/>', 2),
+        ('as', '<path d="M6.5 16l4.5-5 3.5 3 6-7.5"/>', 2.6),
     ],
     'candles': [
         ('as', '<path d="M6.5 4.5v15M12 2.5v15M17.5 6.5v15"/>', 1.5),
@@ -256,8 +260,9 @@ ICONS = {
         ('as', '<path d="M8 14l1.6 7M16 14l-1.6 7M11 14l.4 7M13 14l-.4 7M9 17.5h6"/>', 1.3),
     ],
     'silhouette': [
-        ('a', '<circle cx="12" cy="12" r="10"/>'),
-        ('b', '<circle cx="12" cy="9.3" r="3.1"/><path d="M6.3 18.3a6 6 0 0 1 11.4 0A9 9 0 0 1 6.3 18.3z"/>'),
+        ('a', '<circle cx="9.5" cy="7.5" r="4"/><path d="M2 21a7.5 7.5 0 0 1 15 0z"/>'),
+        ('cs', '<path d="M17 4.6a2.6 2.6 0 1 1 3.5 2.4c-.7.3-1 .8-1 1.5v.6"/>', 2),
+        ('c', '<circle cx="19.5" cy="12" r="1.2"/>'),
     ],
     'question': [
         ('a', '<path d="M4 3h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-9l-5 4v-4H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>'),
@@ -285,8 +290,8 @@ ICONS = {
     ],
     # ── About ──
     'people': [
-        ('a', '<circle cx="12" cy="12" r="10"/>'),
-        ('b', '<circle cx="9.5" cy="9.3" r="2.5"/><path d="M5 17.5a4.5 4.5 0 0 1 9 0z"/><circle cx="15.6" cy="10" r="2"/><path d="M14.2 17.5a3.7 3.7 0 0 1 5.4-3.2V17.5z"/>'),
+        ('c', '<circle cx="16.5" cy="8" r="3.2"/><path d="M12.8 20a6 6 0 0 1 10.2-4.3V20z"/>'),
+        ('a', '<circle cx="9" cy="8" r="4"/><path d="M1.5 21a7.5 7.5 0 0 1 15 0z"/>'),
     ],
     'key': [
         ('a', '<circle cx="8" cy="12" r="5.5"/><rect x="12" y="10.5" width="10" height="3" rx=".5"/><rect x="17" y="13" width="2" height="3.5"/><rect x="20" y="13" width="2" height="2.5"/>'),
@@ -310,14 +315,13 @@ ICONS = {
         ('bs', '<path d="M3 13h5l1.5 2.5h5L16 13h5"/>', 1.6),
     ],
     'person-plus': [
-        ('a', '<circle cx="12" cy="12" r="10"/>'),
-        ('b', '<circle cx="10" cy="9.3" r="2.7"/><path d="M5 17.5a5 5 0 0 1 10 0z"/>'),
-        ('bs', '<path d="M17.5 8v5M15 10.5h5"/>', 1.7),
+        ('a', '<circle cx="9" cy="8" r="4"/><path d="M1.5 21a7.5 7.5 0 0 1 15 0z"/>'),
+        ('cs', '<path d="M19 7v7M15.5 10.5h7"/>', 2.4),
     ],
     # ── League office ──
     'vote': [
-        ('a', '<rect x="3" y="3" width="18" height="18" rx="3"/>'),
-        ('bs', '<path d="M7.5 12.5l3 3 6-7"/>', 2.2),
+        ('cs', '<circle cx="12" cy="12" r="9.5"/>', 2),
+        ('as', '<path d="M7.5 12.5l3 3 6-7"/>', 2.8),
     ],
     'bulb': [
         ('a', '<path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/><rect x="8.5" y="18" width="7" height="1.8" rx=".9"/><rect x="9.5" y="20.5" width="5" height="1.5" rx=".75"/>'),
@@ -341,8 +345,8 @@ ICONS = {
         ('b', '<rect x="11" y="8.5" width="2" height="6.5" rx="1"/><circle cx="12" cy="17.6" r="1.2"/>'),
     ],
     'checklist': [
-        ('a', '<rect x="3" y="3" width="18" height="18" rx="3"/>'),
-        ('bs', '<path d="M7 8.3l1.5 1.5L11 7.2M13.5 8.5h3.5M7 15.3l1.5 1.5 2.5-2.6M13.5 15.5h3.5"/>', 1.6),
+        ('as', '<path d="M3 6.5l2 2 3.5-3.8M3 15.5l2 2 3.5-3.8"/>', 2.2),
+        ('c', '<rect x="11" y="5.8" width="10" height="2.6" rx="1.3"/><rect x="11" y="14.8" width="10" height="2.6" rx="1.3"/>'),
     ],
     'gavel': [
         ('as', '<path d="M12 11l8.5 8.5"/>', 3),
@@ -351,8 +355,10 @@ ICONS = {
     ],
 }
 
-FILL = {'a': 'fill="currentColor"', 'b': 'style="fill:var(--ni-b,#fff)"'}
-STROKE = {'as': 'stroke:currentColor', 'bs': 'stroke:var(--ni-b,#fff)'}
+FILL = {'a': 'fill="currentColor"', 'b': 'style="fill:var(--ni-b,#fff)"',
+        'c': 'style="fill:var(--ni-c,#8db6e6)"'}
+STROKE = {'as': 'stroke:currentColor', 'bs': 'stroke:var(--ni-b,#fff)',
+          'cs': 'stroke:var(--ni-c,#8db6e6)'}
 
 
 def layer(kind, svg, width=2):
