@@ -372,6 +372,21 @@ function nbnSignOut() {
     .catch(() => {}).then(done);
 }
 
+// GET /api/me, once per page: the profile picker and the role-gated sidebar
+// and search rows all read it. null when there's no token or it fails.
+let _mePromise = null;
+function _fetchMe() {
+  if (!_mePromise) {
+    let token = null;
+    try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
+    _mePromise = token
+      ? fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } })
+          .then(r => r.ok ? r.json() : null).catch(() => null)
+      : Promise.resolve(null);
+  }
+  return _mePromise;
+}
+
 function _buildProfilePicker() {
   const wrap = document.createElement('div');
   wrap.className = 'profile-picker';
@@ -422,8 +437,7 @@ function _buildProfilePicker() {
 
   const token = localStorage.getItem('nbn_token');
   if (token) {
-    fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } })
-      .then(r => r.ok ? r.json() : null)
+    _fetchMe()
       .then(data => {
         if (!data || !data.name) return;
 
@@ -494,6 +508,7 @@ function _buildProfilePicker() {
 document.addEventListener('keydown', function (e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
   if (e.key === 'Escape') {
+    _closeDrawer();
     closeSearch();
     document.querySelector('.theme-menu')?.classList.remove('open');
     document.querySelector('.profile-menu')?.classList.remove('open');
@@ -512,6 +527,7 @@ function _initNav() {
   if (!nav.children.length && !nav.textContent.trim() && !nav.hasAttribute('data-no-home')) {
     nav.innerHTML = '<a href="/">← Home</a>';
   }
+  if (_sidebarEnabled() && !nav.querySelector('.nav-menu-btn')) nav.prepend(_buildMenuButton());
   if (!nav.querySelector('.nav-actions')) {
     const actions = document.createElement('div');
     actions.className = 'nav-actions';
@@ -534,10 +550,336 @@ function _initNav() {
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', _initNav);
-} else {
-  _initNav();
+// ── Sidebar ──────────────────────────────────────────────────────────────────
+//
+// The site's left-hand navigation, drawn from NAV_SECTIONS. Three states:
+//   open  — docked, full width (the default)
+//   rail  — docked, icons only
+//   drawer — below 900px it is never docked; the ☰ in .nav slides it over
+//            the page instead, and open/rail don't apply.
+// open/rail is the visitor's choice, kept in localStorage. The first paint is
+// theme-boot.js's job, for the same reason as the theme: it sets
+// <html data-sidebar> in <head>, so css/sidebar.css reserves the sidebar's
+// width before this file (at the end of <body>) gets to draw it. Keep the two
+// on the same key and default.
+//
+// Attached to <body>, not .nav: pages rewrite .nav wholesale (players/), and
+// that must not take the sidebar with it. `<html data-no-sidebar>` opts a page
+// out entirely.
+const SIDEBAR_KEY = 'nbn_sidebar';               // 'open' | 'rail'
+const SIDEBAR_GROUPS_KEY = 'nbn_sidebar_groups'; // labels of folded sections
+const _ICON_MENU = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>';
+const _ICON_CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 6 9 12 15 18"></polyline></svg>';
+const _ICON_CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>';
+
+function _sidebarEnabled() { return !document.documentElement.hasAttribute('data-no-sidebar'); }
+
+function _sidebarMode() {
+  try { return localStorage.getItem(SIDEBAR_KEY) === 'rail' ? 'rail' : 'open'; } catch { return 'open'; }
+}
+
+function _setSidebarMode(mode, persist = true) {
+  if (persist) {
+    try { localStorage.setItem(SIDEBAR_KEY, mode); } catch { /* private browsing — just won't persist */ }
+  }
+  document.documentElement.setAttribute('data-sidebar', mode);
+  const t = document.querySelector('.sb-collapse');
+  if (t) {
+    const label = mode === 'rail' ? 'Expand sidebar' : 'Collapse sidebar';
+    t.setAttribute('aria-label', label);
+    t.title = label;
+  }
+}
+
+// "/teams/ATL/index.html" and "/teams/ATL" are the same page.
+function _normPath(p) {
+  return (p.replace(/index\.html$/, '').replace(/\/+$/, '') || '/').toLowerCase();
+}
+
+// The row this page belongs to: an exact match, else the longest href this
+// path sits under — a team page is under Teams, a season's awards under Awards.
+// /awards/race/ matches itself before /awards/, being longer.
+function _activeNavHref() {
+  const here = _normPath(location.pathname);
+  let best = null;
+  for (const p of _NAV_ITEMS) {
+    if (p.searchOnly || !p.href.startsWith('/') || p.href.includes('#')) continue;
+    const h = _normPath(p.href);
+    if (here === h || (h !== '/' && here.startsWith(h + '/'))) {
+      if (!best || h.length > _normPath(best).length) best = p.href;
+    }
+  }
+  return best;
+}
+
+function _foldedGroups() { return new Set(_readJson(SIDEBAR_GROUPS_KEY, [])); }
+
+function _sidebarLink(p, active) {
+  const a = document.createElement('a');
+  a.className = 'sb-link';
+  a.href = p.href;
+  const label = p.short || p.title;
+  a.title = p.title;
+  if (p.href === active) a.setAttribute('aria-current', 'page');
+  if (!p.href.startsWith('/')) { a.target = '_blank'; a.rel = 'noopener'; }
+  if (p.roles) { a.dataset.roles = p.roles.join(' '); a.hidden = true; }
+  const icon = document.createElement('span');
+  icon.className = 'sb-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = p.icon;
+  const text = document.createElement('span');
+  text.className = 'sb-label';
+  text.textContent = label;
+  a.append(icon, text);
+  return a;
+}
+
+function _buildSidebar() {
+  if (!_sidebarEnabled() || document.querySelector('.sidebar')) return;
+  // theme-boot.js normally set this already; pages without it get it here.
+  if (!document.documentElement.hasAttribute('data-sidebar')) {
+    document.documentElement.setAttribute('data-sidebar', _sidebarMode());
+  }
+
+  const active = _activeNavHref();
+  const folded = _foldedGroups();
+
+  const aside = document.createElement('aside');
+  aside.className = 'sidebar';
+  aside.id = 'nbn-sidebar';
+  aside.setAttribute('aria-label', 'Site');
+
+  const head = document.createElement('div');
+  head.className = 'sb-head';
+  head.innerHTML = `
+    <a class="sb-home" href="/" title="NBN Today"><img src="/icons/logo-header.webp" alt=""><span class="sb-label">NBN Today</span></a>
+    <button type="button" class="sb-close nav-icon-btn" aria-label="Close menu">${_ICON_CLOSE}</button>`;
+  head.querySelector('.sb-close').addEventListener('click', _closeDrawer);
+  aside.appendChild(head);
+
+  const search = document.createElement('button');
+  search.type = 'button';
+  search.className = 'sb-search';
+  search.title = 'Search (Ctrl+K)';
+  search.innerHTML = `<span class="sb-icon">${_ICON_SEARCH}</span><span class="sb-label sb-search-text">Search…</span><kbd class="sb-label">Ctrl K</kbd>`;
+  search.addEventListener('click', () => { _closeDrawer(); openSearch(); });
+  aside.appendChild(search);
+
+  const nav = document.createElement('nav');
+  nav.className = 'sb-sections';
+  for (const sec of NAV_SECTIONS) {
+    const rows = sec.items.filter(p => !p.searchOnly);
+    if (!rows.length) continue;
+    const group = document.createElement('div');
+    group.className = 'sb-group';
+    // The section holding this page is never drawn folded — a highlight you
+    // can't see is no highlight — but that doesn't overwrite the saved fold.
+    const holdsActive = rows.some(p => p.href === active);
+    if (folded.has(sec.label) && !holdsActive) group.classList.add('folded');
+
+    const hdr = document.createElement('button');
+    hdr.type = 'button';
+    hdr.className = 'sb-group-hdr';
+    hdr.setAttribute('aria-expanded', group.classList.contains('folded') ? 'false' : 'true');
+    hdr.innerHTML = `<span class="sb-group-label"></span><span class="sb-group-chev">${_ICON_CHEVRON}</span>`;
+    hdr.querySelector('.sb-group-label').textContent = sec.label;
+    hdr.addEventListener('click', () => {
+      const isFolded = group.classList.toggle('folded');
+      hdr.setAttribute('aria-expanded', isFolded ? 'false' : 'true');
+      const f = _foldedGroups();
+      isFolded ? f.add(sec.label) : f.delete(sec.label);
+      try { localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify([...f])); } catch { /* private browsing */ }
+    });
+    group.appendChild(hdr);
+
+    const list = document.createElement('div');
+    list.className = 'sb-items';
+    rows.forEach(p => list.appendChild(_sidebarLink(p, active)));
+    group.appendChild(list);
+    nav.appendChild(group);
+  }
+  aside.appendChild(nav);
+
+  const foot = document.createElement('div');
+  foot.className = 'sb-foot';
+  foot.innerHTML = `<button type="button" class="sb-collapse">${_ICON_CHEVRON}<span class="sb-label">Collapse</span></button>`;
+  foot.querySelector('.sb-collapse').addEventListener('click', () => {
+    _setSidebarMode(_sidebarMode() === 'rail' ? 'open' : 'rail');
+  });
+  aside.appendChild(foot);
+
+  const scrim = document.createElement('div');
+  scrim.className = 'sb-scrim';
+  scrim.addEventListener('click', _closeDrawer);
+
+  // Following a link closes the drawer, so Back doesn't return to it open.
+  nav.addEventListener('click', e => { if (e.target.closest('a')) _closeDrawer(); });
+  aside.addEventListener('keydown', _trapDrawerFocus);
+
+  document.body.prepend(scrim);
+  document.body.prepend(aside);
+  _setSidebarMode(_sidebarMode(), false);
+
+  // Role-gated rows stay hidden until this member is known to qualify, and a
+  // section whose every row is gated stays hidden with them.
+  _myRoles().then(roles => {
+    aside.querySelectorAll('.sb-link[data-roles]').forEach(a => {
+      a.hidden = !_qualifies({ roles: a.dataset.roles ? a.dataset.roles.split(' ') : [] }, roles);
+    });
+  });
+
+  // Keep the current row in view in a long list (Stats is 11 rows down).
+  aside.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest' });
+}
+
+function _drawerOpen() { return document.documentElement.classList.contains('sb-drawer-open'); }
+
+function _openDrawer() {
+  document.documentElement.classList.add('sb-drawer-open');
+  document.querySelector('.nav-menu-btn')?.setAttribute('aria-expanded', 'true');
+  document.querySelector('.sidebar .sb-close')?.focus();
+}
+
+function _closeDrawer() {
+  if (!_drawerOpen()) return;
+  document.documentElement.classList.remove('sb-drawer-open');
+  const btn = document.querySelector('.nav-menu-btn');
+  btn?.setAttribute('aria-expanded', 'false');
+  btn?.focus();
+}
+
+// While the drawer covers the page, Tab cycles inside it.
+function _trapDrawerFocus(e) {
+  if (e.key !== 'Tab' || !_drawerOpen()) return;
+  const els = [...e.currentTarget.querySelectorAll('a[href], button')].filter(el => el.offsetParent !== null);
+  if (!els.length) return;
+  const first = els[0], last = els[els.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+
+// The ☰ that opens the drawer. Only shown below the docking breakpoint (CSS),
+// and first in .nav so it sits where a phone user looks for it.
+function _buildMenuButton() {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'nav-menu-btn nav-icon-btn';
+  btn.setAttribute('aria-label', 'Menu');
+  btn.setAttribute('aria-controls', 'nbn-sidebar');
+  btn.setAttribute('aria-expanded', 'false');
+  btn.innerHTML = _ICON_MENU;
+  btn.addEventListener('click', () => (_drawerOpen() ? _closeDrawer() : _openDrawer()));
+  return btn;
+}
+
+
+// ── Site pages ───────────────────────────────────────────────────────────────
+//
+// The one list of the site's pages. The sidebar draws it section by section;
+// the search overlay flattens it (SITE_PAGES / ROLE_PAGES below). Sections and
+// their order follow the homepage's link tiles — those are still a separate
+// hand-kept list in index.html, so a new page goes in both until they merge.
+//
+// `roles`: the page only exists for people holding one of these (admin always
+// qualifies). Kept out of everyone's search and sidebar — a page 27 of 30
+// owners can't use has no business in their jump box. The gate is a courtesy
+// either way; the security boundary is the API, which is what the PDC
+// dashboard's own shell relies on too.
+// `searchOnly`: a deep link into another page (a tab, a section) — worth
+// finding by name in search, but noise as its own sidebar row.
+const NAV_SECTIONS = [
+  { label: 'Season', items: [
+    { title: 'Calendar', href: '/calendar', icon: '📅' },
+    { title: 'Standings & Playoffs', href: '/standings', icon: '🏅' },
+    { title: 'Award Race', href: '/awards/race/', icon: '🏁' },
+  ] },
+  { label: 'Front Office', items: [
+    { title: 'Tradeblock', href: '/tradeblock/', icon: '🤝' },
+    { title: 'Free Agency', href: '/free-agency/', icon: '✍️' },
+    { title: 'Extensions', href: '/extensions/', icon: '📄' },
+    { title: 'Transactions', href: '/transactions', icon: '📝' },
+    { title: 'Transaction Simulator', href: '/transaction-sim/', icon: '🧮', keywords: ['trade machine', 'trade builder', 'trade simulator'] },
+    { title: 'Cap Summary', href: '/cap-summary/', icon: '💰' },
+  ] },
+  { label: 'Committees', href: '/committees/', items: [
+    { title: 'Committees', href: '/committees/', icon: '🏛', searchOnly: true },
+    { title: 'Rosters Committee — compliance & cap sheet diffs', short: 'Rosters', href: '/committees/rosters/', icon: '🩺' },
+    { title: 'PDC Committee', short: 'PDC', href: '/committees/pdc/', icon: '🗳️',
+      roles: ['fac', 'fac_head', 'poext', 'poext_head'] },
+    { title: 'Stats Committee — build health & missing box scores', short: 'Stats', href: '/committees/stats/', icon: '🗂' },
+    { title: 'Stream Committee — claim games & coaching settings', short: 'Stream', href: '/committees/stream/', icon: '📺',
+      roles: ['streamer'] },
+    { title: 'TRC Committee — trade requests', short: 'TRC', href: '/committees/trc/', icon: '🤝',
+      roles: ['trc', 'trc_head'] },
+  ] },
+  { label: 'History', items: [
+    { title: 'Season Summary', href: '/season-summary', icon: '📜' },
+    { title: 'Hall of Champions', href: '/champions/', icon: '🏆' },
+    { title: 'Hall of Fame', href: '/hof', icon: '⭐' },
+    { title: 'Awards', href: '/awards/', icon: '🎖️' },
+    { title: 'Season Recaps', href: '/recap/', icon: '📼' },
+    { title: 'Draft', href: '/draft', icon: '📋' },
+  ] },
+  { label: 'Stats', items: [
+    { title: 'Teams', href: '/teams', icon: '🏀' },
+    { title: 'Players', href: '/players', icon: '⛹️' },
+    { title: 'Owners', href: '/owners', icon: '🏛️' },
+    { title: 'Compare Players', href: '/compare/', icon: '⇆' },
+    { title: 'Ratings Changes', href: '/ratings-changes/', icon: '📶' },
+    { title: 'Season Stats', href: '/stats/seasons', icon: '📅' },
+    { title: 'Box Scores', href: '/boxscores/', icon: '🗂' },
+    { title: 'Career Leaders', href: '/stats/totals', icon: '🏅' },
+    { title: 'Single-Game Highs', href: '/stats/highs', icon: '🔝' },
+    { title: 'Head to Head', href: '/h2h', icon: '⚔️' },
+    { title: 'Frivolities & Viz', href: '/frivolities', icon: '📈' },
+    { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: '🔍', searchOnly: true },
+  ] },
+  { label: 'NB¥ Corner', items: [
+    { title: 'NB¥ Balances', href: '/nbyen/', icon: '💴' },
+    { title: 'Bets & Futures', href: '/bet/', icon: '🎲' },
+    { title: 'Futures', href: '/bet/#futures', icon: '📊', searchOnly: true },
+    { title: 'Wall Street', href: '/invest', icon: '📈' },
+    { title: 'Donations', href: '/donations/', icon: '💵' },
+  ] },
+  { label: 'Games', items: [
+    { title: 'Daily Perry Game', href: '/perry/', icon: '🏀' },
+    { title: 'Daily Poeltl', href: '/poeltl/', icon: '🕵️' },
+    { title: 'Trivia', href: '/trivia', icon: '🧠' },
+  ] },
+  { label: 'Media', items: [
+    { title: 'News', href: '/news/', icon: '📰' },
+    { title: 'NBNTV Classics', href: '/nbntv-classics', icon: '📺' },
+    { title: 'NBNFL', href: '/nbnfl/', icon: '🏈' },
+    { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: '▶️' },
+  ] },
+  { label: 'About', items: [
+    { title: 'Members', href: '/members/', icon: '👥' },
+    { title: 'Roles & Permissions', href: '/roles', icon: '🔑' },
+    { title: 'Constitution', href: '/constitution/', icon: '📄' },
+    { title: 'Rulebook', href: '/rulebook/', icon: '📖' },
+    { title: 'Changelog', href: '/changelog', icon: '🔖' },
+    { title: 'Inbox', href: '/inbox/', icon: '📥' },
+  ] },
+  { label: 'League Office', items: [
+    { title: 'Proposals', href: '/proposals/', icon: '🗳️' },
+    { title: 'Suggestions', href: '/suggestions/', icon: '💡' },
+    { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: '📝' },
+    { title: 'Rookie Scale', href: '/rookie-scale/', icon: '📐' },
+    { title: 'Cap Settings', href: '/cap-settings/', icon: '⚙️', roles: ['rosters'] },
+    { title: 'Strikes', href: '/strikes/', icon: '⚠️', roles: ['bod'] },
+    { title: 'Backlog', href: '/backlog/', icon: '🗒️', roles: [] },
+  ] },
+];
+
+const _NAV_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
+// Search's two views of the list: offered to everybody, and resolved per member.
+const SITE_PAGES = _NAV_ITEMS.filter(p => !p.roles);
+const ROLE_PAGES = _NAV_ITEMS.filter(p => p.roles);
+
+// Same rule the pages themselves apply: admin satisfies any role check. An
+// empty `roles` list is admin-only.
+function _qualifies(page, roles) {
+  return !page.roles || roles.has('admin') || page.roles.some(r => roles.has(r));
 }
 
 // ── Search overlay ───────────────────────────────────────────────────────────
@@ -545,83 +887,6 @@ if (document.readyState === 'loading') {
 // Unified site search: static pages (SITE_PAGES), team pages (TEAM_LIST),
 // and players (fetched lazily from /api/players). All three are merged into
 // one result list so Ctrl+K / the ⌕ button works as an all-in-one jump box.
-
-const SITE_PAGES = [
-  { title: 'Calendar', href: '/calendar', icon: '📅' },
-  { title: 'Standings & Playoffs', href: '/standings', icon: '🏅' },
-  { title: 'Tradeblock', href: '/tradeblock/', icon: '🤝' },
-  { title: 'Compare Players', href: '/compare/', icon: '⇆' },
-  { title: 'Free Agency', href: '/free-agency/', icon: '✍️' },
-  { title: 'Extensions', href: '/extensions/', icon: '📄' },
-  { title: 'Transactions', href: '/transactions', icon: '📝' },
-  { title: 'Transaction Simulator', href: '/transaction-sim/', icon: '🧮', keywords: ['trade machine', 'trade builder', 'trade simulator'] },
-  { title: 'Cap Summary', href: '/cap-summary/', icon: '💰' },
-  { title: 'Committees', href: '/committees/', icon: '🏛' },
-  { title: 'Rosters Committee — compliance & cap sheet diffs', href: '/committees/rosters/', icon: '🩺' },
-  { title: 'Stats Committee — build health & missing box scores', href: '/committees/stats/', icon: '🗂' },
-  { title: 'Season Summary', href: '/season-summary', icon: '📜' },
-  { title: 'Hall of Champions', href: '/champions/', icon: '🏆' },
-  { title: 'Hall of Fame', href: '/hof', icon: '⭐' },
-  { title: 'Awards', href: '/awards/', icon: '🎖️' },
-  { title: 'Award Race', href: '/awards/race/', icon: '🏁' },
-  { title: 'Season Recaps', href: '/recap/', icon: '📼' },
-  { title: 'Draft', href: '/draft', icon: '📋' },
-  { title: 'Rookie Scale', href: '/rookie-scale/', icon: '📐' },
-  { title: 'Ratings Changes', href: '/ratings-changes/', icon: '📶' },
-  { title: 'Teams', href: '/teams', icon: '🏀' },
-  { title: 'Players', href: '/players', icon: '⛹️' },
-  { title: 'Owners', href: '/owners', icon: '🏛️' },
-  { title: 'Season Stats', href: '/stats/seasons', icon: '📅' },
-  { title: 'Box Scores', href: '/boxscores/', icon: '🗂' },
-  { title: 'Career Leaders', href: '/stats/totals', icon: '🏅' },
-  { title: 'Single-Game Highs', href: '/stats/highs', icon: '🔝' },
-  { title: 'Head to Head', href: '/h2h', icon: '⚔️' },
-  { title: 'Frivolities & Viz', href: '/frivolities', icon: '📈' },
-  { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: '🔍' },
-  { title: 'Betting — bets, Pick\'em, futures', href: '/bet/', icon: '🎲' },
-  { title: 'Futures', href: '/bet/#futures', icon: '📊' },
-  { title: 'NB¥ Balances', href: '/nbyen/', icon: '💴' },
-  { title: 'Daily Perry Game', href: '/perry/', icon: '🏀' },
-  { title: 'Daily Poeltl', href: '/poeltl/', icon: '🕵️' },
-  { title: "Pick'em", href: '/bet/#pickem', icon: '🎯' },
-  { title: 'Trivia', href: '/trivia', icon: '🧠' },
-  { title: 'Wall Street', href: '/invest', icon: '📈' },
-  { title: 'NBNTV Classics', href: '/nbntv-classics', icon: '📺' },
-  { title: 'NBNFL', href: '/nbnfl/', icon: '🏈' },
-  { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: '▶️' },
-  { title: 'News', href: '/news/', icon: '📰' },
-  { title: 'Members', href: '/members/', icon: '👥' },
-  { title: 'Roles & Permissions', href: '/roles', icon: '🔑' },
-  { title: 'League Office Memos', href: '/memos/', icon: '📝' },
-  { title: 'Constitution', href: '/constitution/', icon: '📄' },
-  { title: 'Rulebook', href: '/rulebook/', icon: '📖' },
-  { title: 'Changelog', href: '/changelog', icon: '🔖' },
-  { title: 'Proposals', href: '/proposals/', icon: '🗳️' },
-  { title: 'Suggestions', href: '/suggestions/', icon: '💡' },
-  { title: 'Donations', href: '/donations/', icon: '💵' },
-  { title: 'Inbox', href: '/inbox/', icon: '📥' },
-];
-
-// Pages that only exist for people holding a specific role. Kept out of
-// SITE_PAGES because that list is offered to everybody: a page 27 of 30 owners
-// can't use has no business in their jump box. Resolved lazily — see
-// _loadCommitteePages — and merged into the page results only when the API says
-// this member holds the role. The gate is a courtesy either way; the security
-// boundary is the API, which is what the PDC dashboard's own shell relies on too.
-const ROLE_PAGES = [
-  { title: 'PDC Committee', href: '/committees/pdc/', icon: '🗳️',
-    roles: ['fac', 'fac_head', 'poext', 'poext_head', 'admin'] },
-  { title: 'Stream Committee — claim games & coaching settings', href: '/committees/stream/', icon: '📺',
-    roles: ['streamer', 'admin'] },
-  { title: 'TRC Committee — trade requests', href: '/committees/trc/', icon: '🤝',
-    roles: ['trc', 'trc_head', 'admin'] },
-  // These two are already role-gated cards on the homepage; they are here so
-  // Ctrl+K agrees with it rather than being the one place they can't be found.
-  { title: 'Cap Settings', href: '/cap-settings/', icon: '⚙️',
-    roles: ['rosters', 'admin'] },
-  { title: 'Strikes', href: '/strikes/', icon: '⚠️',
-    roles: ['bod', 'admin'] },
-];
 
 const TEAM_LIST = {
   ATL: "Atlanta Hawks", BKN: "Brooklyn Nets", BOS: "Boston Celtics",
@@ -776,24 +1041,30 @@ function _maybeSignedIn() {
   return /(?:^|;\s*)nbn_session_live=/.test(document.cookie);
 }
 
+// This member's roles, asked once per page and shared by search and the
+// sidebar. With a token that rides on the profile picker's /api/me (no extra
+// request); a cookie-only session (signed in on another subdomain) asks
+// /api/auth/me instead. Resolves to an empty set for a signed-out visitor
+// without making any request at all.
+let _rolesPromise = null;
+function _myRoles() {
+  if (_rolesPromise) return _rolesPromise;
+  let token = null;
+  try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
+  _rolesPromise = (token ? _fetchMe()
+    : _maybeSignedIn() ? fetch('/api/auth/me', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null)
+    : Promise.resolve(null))
+    .then(me => new Set((me && me.roles) || []))
+    .catch(() => new Set());
+  return _rolesPromise;
+}
+
 async function _loadCommitteePages() {
   if (_rolesChecked) return;
   _rolesChecked = true;
-  if (!_maybeSignedIn()) return;
-  try {
-    const headers = {};
-    try {
-      const t = localStorage.getItem('nbn_token');
-      if (t) headers.Authorization = 'Bearer ' + t;
-    } catch { /* ignore */ }
-    const me = await fetch('/api/auth/me', { credentials: 'same-origin', headers })
-      .then(r => r.ok ? r.json() : null);
-    const roles = new Set((me && me.roles) || []);
-    // Same rule the pages themselves apply: admin satisfies any role check.
-    _rolePages = ROLE_PAGES.filter(p => roles.has('admin') || p.roles.some(r => roles.has(r)));
-  } catch {
-    // The jump box works without this; it just won't list the committee page.
-  }
+  // The jump box works without this; it just won't list the committee pages.
+  const roles = await _myRoles();
+  _rolePages = ROLE_PAGES.filter(p => _qualifies(p, roles));
 }
 
 async function _loadPlayerData() {
@@ -1115,4 +1386,19 @@ function nbnCountUp(el, ms = 700) {
     if (p < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
+}
+
+// ── Startup ──────────────────────────────────────────────────────────────────
+// Last in the file on purpose: team.js and the awards pages inject nav.js after
+// the document has loaded, so this runs synchronously the moment the file
+// does — and the const page lists above must already be initialised by then.
+function _initChrome() {
+  _buildSidebar();
+  _initNav();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initChrome);
+} else {
+  _initChrome();
 }

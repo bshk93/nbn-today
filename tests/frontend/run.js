@@ -78,6 +78,10 @@ const PAGES = [
   { path: '/tradeblock/',             selector: 'table tbody tr',  min: 5,  what: 'blocked players' },
   { path: '/draft/',                  selector: 'table tbody tr',  min: 30, what: 'draft history' },
   { path: '/boxscores/',              selector: 'table tbody tr',  min: 5,  what: 'recent box scores' },
+  // The sidebar is drawn by nav.js, which team.js injects late — the second
+  // row is the one that catches nav.js running before its page list exists.
+  { path: '/rulebook/',               selector: '.sidebar .sb-link', min: 30, what: 'the site sidebar' },
+  { path: '/teams/UTA/',              selector: '.sidebar .sb-link[aria-current="page"]', min: 1, what: 'the sidebar, with Teams highlighted' },
   { path: '/boxscores/?date=2026-10-20&game=BOS-DET', selector: '.game.focus.open', min: 1, what: 'a linked game, opened' },
   { path: '/teams/BOS/#schedule',     selector: '.sched-table tr', min: 80, what: 'the team schedule' },
   // The game list, which lives on /calendar — /schedule is a 38-line redirect

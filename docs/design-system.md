@@ -37,3 +37,14 @@ page: ten page widths, three header layouts, four tab styles, 67 font sizes,
 - **Motion is subtle and lives in `components.css`** (§ Motion): the page fades in once, the homepage cards rise in one after another, and cards that are links lift on hover. Big numbers count up with `nbnCountUp(el)` from `nav.js`. All of it is off under `prefers-reduced-motion`. Page containers only fade, never move: a transform on them would trap any `position: fixed` dialog inside.
 - **Small team logos come from `logos/sm/logo-{abbr}.webp`** (96px, ~4KB each), not `logos/logo-{abbr}.png` (480px, up to 120KB). Use the full size only where a logo is drawn bigger than about 48px: the team band and the champions banner. `build/make_logo_thumbs.py` regenerates them.
 - **Icons** (favicon, apple-touch-icon, the manifest's) are in `icons/`, made from `logo.png` by `build/make_icons.py`. The `<link>` tags are written into every page's head by `build/og_tags.py`, so a new page gets them with its OG entry.
+
+## Sidebar (`css/sidebar.css`, built by `nav.js`)
+
+The site's left-hand nav, on every page that runs `nav.js`. **The links are `NAV_SECTIONS` in `nav.js`** — the same list Ctrl+K search reads (`SITE_PAGES` / `ROLE_PAGES` are derived from it), so a new page is one row there. The homepage's link tiles are still a separate list in `index.html`; until they're merged, add a page to both.
+
+- **States live on `<html>`.** At 900px and up the sidebar is docked: `data-sidebar="open"` (15rem) or `"rail"` (3.5rem, icons only), the visitor's choice, stored in `localStorage.nbn_sidebar`. Below 900px it's an overlay drawer opened by the ☰ that `_initNav` adds to `.nav` (`.sb-drawer-open`).
+- **No shift on first paint.** `theme-boot.js` sets `data-sidebar` in `<head>`, and the CSS reserves the space with `margin-left` on `body` before `nav.js` (end of `<body>`) draws the sidebar. Keep `theme-boot.js` and `_sidebarMode()` on the same key and default.
+- **Layering:** docked, it's `z-index: 50`, under any page's own modal scrim (100 and up). The drawer is 9000, under search (9999) and the nav menus (10000).
+- **Row fields:** `short` is the sidebar label when the search title is long, `roles` hides a row (in search too) until `/api/me` says this member holds one (admin always does; `[]` is admin-only), and `searchOnly` keeps a deep link (a tab, an anchor) out of the sidebar.
+- **Opting out:** `<html data-no-sidebar>`. No page needs it today.
+- **Folded sections** are remembered in `localStorage.nbn_sidebar_groups`. The section holding the current page is always drawn open, and in rail mode every section shows.
