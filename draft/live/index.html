@@ -5,6 +5,7 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
+  <script src="/names.js"></script>
   <title>Draft Live — NBN</title>
   <!-- NBN:og -->
   <meta name="description" content="The NBN draft as it happens, pick by pick.">
@@ -24,7 +25,6 @@
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
-    html { zoom: 1.25; }
     .page { max-width: 960px; margin: 0 auto; }
 
     /* ── Admin panel ──────────────────────────────────── */
@@ -120,9 +120,8 @@
 
     /* ── Draft board ──────────────────────────────────── */
     .section { margin-bottom: 2rem; }
-    /* 80vh = 100vh / zoom(1.25) — gives the actual visible height in CSS px;
-       subtract ~140px for nav + status bar + view tabs above the table */
-    body.pool-view #pool-section .table-wrap { overflow-y: auto; max-height: calc(64vh - 80px); }
+    /* Leave room for the status bar and view tabs above the table */
+    body.pool-view #pool-section .table-wrap { overflow-y: auto; max-height: calc(80vh - 100px); }
     .pool-draggable { cursor: grab; }
     .pool-draggable:active { cursor: grabbing; }
     .pool-dragging { opacity: 0.35; }
@@ -530,13 +529,6 @@
     }
     #control-drawer.open { transform: translateX(0); }
 
-    /* html{zoom:1.25} inflates the gear button and drawer along with everything
-       else; on narrow screens that overflow is too costly, so cancel it locally
-       (0.8 = 1/1.25) the same way the Best Available height calc compensates above. */
-    @media (max-width: 600px) {
-      #control-toggle, #control-drawer { zoom: 0.8; }
-    }
-
     .drawer-header {
       display: flex;
       align-items: center;
@@ -790,9 +782,7 @@
 
     function bioName(slug) {
       const bio = bios[slug];
-      if (!bio) return slug;
-      const parts = bio.name.split(',');
-      return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+      return bio ? nbnPlayerName(bio.name) : slug;
     }
 
     function calcAge(dob) {
@@ -1744,8 +1734,7 @@
         if (!slug) continue;
         const bio = bios[slug];
         if (!bio) continue;
-        const parts = bio.name.split(',');
-        const name = parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+        const name = nbnPlayerName(bio.name);
         const csvOvr = ovrIdx !== -1 ? parseInt(cols[ovrIdx]) : NaN;
         const ovr = isNaN(csvOvr) ? (ovrCurrent[slug] || 0) : csvOvr;
         // The hold that matters at the draft is the one for the season the
@@ -1903,8 +1892,7 @@
       let dragSrc = null;
 
       available.forEach(({ slug, bio }, idx) => {
-        const nameParts = bio.name.split(',');
-        const name = nameParts.length === 2 ? `${nameParts[1].trim()} ${nameParts[0].trim()}` : bio.name;
+        const name = nbnPlayerName(bio.name);
         const pos = Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '—');
         const school = (bio.college && bio.college !== 'NA') ? bio.college
                      : (bio.country && bio.country !== 'NA') ? bio.country : '—';
