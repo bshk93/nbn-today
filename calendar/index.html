@@ -136,6 +136,9 @@
     .sched-game { font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
     .sched-game:hover { background: var(--bg-card); }
     .sched-game-teams { flex: 1; }
+    .sched-game-vod { display: inline-flex; }
+    .sched-box-vod { padding: 0.25rem 0.5rem 0.1rem; }
+    .sched-box-vod .vod-box { display: inline-flex; }
     .sched-game-score { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sched-game-type { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--champion-border); background: var(--champion-bg); padding: 0.1rem 0.3rem; border-radius: 3px; white-space: nowrap; }
 
@@ -217,6 +220,7 @@
   </div>
 
   <script src="/league-time.js"></script>
+  <script src="/vod.js"></script>
   <script>
     const CAL_DAYS    = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const CAL_MONTHS  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -1013,8 +1017,23 @@
             badge.textContent = 'PO';
             row.appendChild(badge);
           }
+          // The fixture carries the stream flag and the video, not the box score.
+          const fixture = (scheduledGamesByDate[dateStr] || []).find(s => s._src === 'schedule'
+            && s.away_team === g.away_team && s.home_team === g.home_team);
+          const vod = fixture && NbnVod.gameHtml(fixture, 'Watch on YouTube');
+          if (vod) {
+            const wrap = document.createElement('span');
+            wrap.className = 'sched-game-vod';
+            wrap.innerHTML = vod;
+            // The row itself opens the box score.
+            wrap.addEventListener('click', e => e.stopPropagation());
+            row.appendChild(wrap);
+          }
           evts.appendChild(row);
         });
+        // The night's unstreamed games share one Box Scores video: one row, not one per game.
+        const box = NbnVod.boxScoresHtml(streamingDaysByDate[dateStr] && streamingDaysByDate[dateStr].youtube_url);
+        if (box) evts.insertAdjacentHTML('beforeend', `<div class="sched-box-vod">${box}</div>`);
       }
 
       // Vesting events
@@ -1133,7 +1152,7 @@
         yt.target = '_blank';
         yt.rel = 'noopener';
         yt.textContent = '▶️ VOD';
-        yt.title = 'Watch this day’s games';
+        yt.title = 'Box scores video for this day’s games';
         yt.addEventListener('click', e => e.stopPropagation());
         cell.appendChild(yt);
       }
