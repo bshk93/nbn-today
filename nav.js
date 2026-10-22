@@ -1379,17 +1379,6 @@ const NAV_SECTIONS = [
     { title: 'NBNFL', href: '/nbnfl/', icon: 'football' },
     { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: 'play' },
   ] },
-  { label: 'About', icon: 'people', items: [
-    { title: 'Members', href: '/members/', icon: 'people' },
-    { title: 'Roles & Permissions', href: '/roles', icon: 'key' },
-    { title: 'Constitution', href: '/constitution/', icon: 'charter' },
-    { title: 'Rulebook', href: '/rulebook/', icon: 'book' },
-    { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide' },
-    { title: 'Changelog', href: '/changelog', icon: 'tag' },
-    // Searchable, but its own entry at the top of the sidebar (_buildInboxEntry).
-    { title: 'Inbox', href: '/inbox/', icon: 'inbox', searchOnly: true },
-    { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus' },
-  ] },
   { label: 'Committees', icon: 'columns', href: '/committees/', items: [
     { title: 'Committees', short: 'All committees', href: '/committees/', icon: 'columns' },
     { title: 'Rosters Committee — compliance & cap sheet diffs', short: 'Rosters', href: '/committees/rosters/', icon: 'clipboard-check' },
@@ -1401,6 +1390,17 @@ const NAV_SECTIONS = [
       roles: ['streamer'] },
     { title: 'TRC Committee — trade requests', short: 'TRC', href: '/committees/trc/', icon: 'scale',
       roles: ['trc', 'trc_head'] },
+  ] },
+  { label: 'About', icon: 'people', items: [
+    { title: 'Members', href: '/members/', icon: 'people' },
+    { title: 'Roles & Permissions', href: '/roles', icon: 'key' },
+    { title: 'Constitution', href: '/constitution/', icon: 'charter' },
+    { title: 'Rulebook', href: '/rulebook/', icon: 'book' },
+    { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide' },
+    { title: 'Changelog', href: '/changelog', icon: 'tag' },
+    // Searchable, but its own entry at the top of the sidebar (_buildInboxEntry).
+    { title: 'Inbox', href: '/inbox/', icon: 'inbox', searchOnly: true },
+    { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus' },
   ] },
   { label: 'League Office', icon: 'gavel', items: [
     { title: 'Proposals', href: '/proposals/', icon: 'vote' },
