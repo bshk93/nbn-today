@@ -555,12 +555,12 @@ The token itself never enters the cookie, which is what makes a session revocabl
 
 | Endpoint | Auth | Description |
 |---|---|---|
-| `GET /api/trading-block` | Public | Returns `{ "ATL": [{player, notes}], … }` for all 30 teams |
-| `PUT /api/trading-block/{team}` | Team role or admin | Replaces that team's list; body is `[{player, notes}]` |
+| `GET /api/trading-block` | Public | Returns `{ "ATL": {players: [{player, notes, added_at, snoozed_until?}], picks: [...]}, … }` for all 30 teams |
+| `PUT /api/trading-block/{team}` | Team role or admin | Replaces that team's block; body is `{players: [{player, notes}], picks}`. `added_at` and `snoozed_until` are server-set and kept across saves |
 
 Data stored in `/var/lib/nothing-but-stats/trading-block.json`. The page at `tradeblock/index.html` fetches this API plus the relevant teams' roster CSVs (for team membership) and `player-bios.json`/`GET /api/ovr/current` to join player metadata (POS, OVR, AGE, salary columns).
 
-The whole-block `PUT` also takes an unpersisted `notify_discord` flag — see `docs/discord-integrations.md`.
+The whole-block `PUT` also takes an unpersisted `notify_discord` flag — see `docs/discord-integrations.md`. A player listed 7+ days gets his team a weekly inbox nudge with Remove / Still available (a 2-week snooze — no permanent keep, on purpose) — `nbn-api/CLAUDE.md` § "Trading block nudge".
 
 ### Validation endpoints (Transaction Simulator)
 

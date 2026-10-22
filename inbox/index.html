@@ -56,6 +56,38 @@
     .item-actions button { background: none; border: none; padding: 0; font-size: 0.72rem; color: var(--text-dim); font-family: inherit; text-decoration: underline; }
     .item-actions button:hover { color: var(--text-secondary); }
 
+    /* Buttons a message carries (`actions` on the item — nbn-api inbox.py).
+       Each runs server-side and then reads as done, on every copy. */
+    .msg-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.55rem; }
+    .msg-action {
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
+      font-size: 0.75rem; padding: 0.3rem 0.65rem;
+    }
+    /* A group (one player's Remove / Still available) is one row: the name
+       once, then its buttons at one fixed width so they line up row to row. */
+    .msg-groups { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.55rem; }
+    .msg-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; }
+    .msg-group-name { flex: 1 1 9rem; font-size: 0.82rem; color: var(--text-primary); font-weight: 600; }
+    .msg-group-btns { display: flex; gap: 0.4rem; }
+    /* A fixed box, not one sized by the browser's own button padding and line
+       height (Safari's differ), and a border on the outlined one that reads
+       against the card, so the pair is visibly the same size. */
+    .msg-group-btns .msg-action {
+      -webkit-appearance: none; appearance: none; box-sizing: border-box;
+      width: 8.5rem; height: 2rem; padding: 0 0.65rem; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .msg-group-btns .msg-action:not(.msg-action-primary) { border-color: var(--text-dim); }
+    .msg-action:hover:not(:disabled) { border-color: var(--accent); }
+    .msg-action-primary { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+    .msg-action-primary:hover:not(:disabled) { filter: brightness(1.1); }
+    .msg-action:disabled { cursor: default; opacity: 0.6; }
+    .msg-action-done {
+      font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px;
+      color: var(--text-secondary); border: 1px dashed var(--border);
+    }
+    .msg-action-error { font-size: 0.72rem; color: var(--danger); align-self: center; }
+
     .signin-hint { color: var(--text-dim); font-size: 0.9rem; }
 
     /* Modal (token sign-in) */
@@ -182,6 +214,7 @@ function renderItem(it) {
   meta.innerHTML = `<span>${fmtDateTime(it.ts)}</span>`
     + (it.link ? `<span>&middot;</span><a href="${escHtml(it.link)}">Open &rarr;</a>` : '');
   body.appendChild(meta);
+  if (it.actions && it.actions.length) body.appendChild(renderMsgActions(it));
   el.appendChild(body);
 
   if (!it.read) {
@@ -195,6 +228,92 @@ function renderItem(it) {
   }
 
   return el;
+}
+
+function renderMsgActions(it) {
+  // Ungrouped actions sit in one wrapping line. Actions sharing a `group` are
+  // alternatives (Remove / Still available for one player) and get a row of
+  // their own; once one is done, its chip stands for the whole row.
+  const groups = [];
+  const loose = [];
+  it.actions.forEach((a, i) => {
+    if (!a.group) { loose.push(i); return; }
+    let g = groups.find(x => x.name === a.group);
+    if (!g) groups.push(g = { name: a.group, idx: [] });
+    g.idx.push(i);
+  });
+
+  const outer = document.createElement('div');
+  if (groups.length) {
+    const list = document.createElement('div');
+    list.className = 'msg-groups';
+    groups.forEach(g => {
+      const row = document.createElement('div');
+      row.className = 'msg-group';
+      const done = g.idx.find(i => it.actions[i].done_at);
+      if (done !== undefined) {
+        row.appendChild(doneChip(it.actions[done]));
+      } else {
+        const name = document.createElement('span');
+        name.className = 'msg-group-name';
+        name.textContent = g.name;
+        const btns = document.createElement('div');
+        btns.className = 'msg-group-btns';
+        g.idx.forEach(i => btns.appendChild(actionButton(it, i, row, it.actions[i].short || it.actions[i].label)));
+        row.appendChild(name);
+        row.appendChild(btns);
+      }
+      list.appendChild(row);
+    });
+    outer.appendChild(list);
+  }
+  if (loose.length) {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-actions';
+    loose.forEach(i => wrap.appendChild(
+      it.actions[i].done_at ? doneChip(it.actions[i]) : actionButton(it, i, wrap, it.actions[i].label)));
+    outer.appendChild(wrap);
+  }
+  return outer;
+}
+
+function doneChip(a) {
+  const done = document.createElement('span');
+  done.className = 'msg-action-done';
+  done.textContent = '\u2713 ' + (a.done_label || a.label)
+    + (me && a.done_by && a.done_by !== me.name ? ` (${a.done_by})` : '');
+  return done;
+}
+
+function actionButton(it, i, wrap, text) {
+  const a = it.actions[i];
+  const btn = document.createElement('button');
+  btn.className = 'msg-action' + (a.kind === 'tradeblock_remove' ? ' msg-action-primary' : '');
+  btn.textContent = text;
+  btn.addEventListener('click', () => runMsgAction(it, i, btn, wrap));
+  return btn;
+}
+
+async function runMsgAction(it, i, btn, wrap) {
+  btn.disabled = true;
+  wrap.querySelectorAll('.msg-action-error').forEach(e => e.remove());
+  let data;
+  try {
+    const res = await fetch(`${API}/inbox/${it.id}/actions/${i}`, { method: 'POST', headers: authHeaders() });
+    data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'That didn\u2019t work');
+  } catch (e) {
+    btn.disabled = false;
+    const err = document.createElement('span');
+    err.className = 'msg-action-error';
+    err.textContent = e.message || 'That didn\u2019t work';
+    wrap.appendChild(err);
+    return;
+  }
+  it.actions[i] = data.action;
+  it.read = true;
+  document.getElementById('btn-mark-all').style.display = items.some(x => !x.read) ? '' : 'none';
+  renderItems();
 }
 
 async function markRead(id) {
