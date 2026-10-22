@@ -522,12 +522,14 @@ function _activeNavHref() {
   let best = null;
   for (const p of _NAV_ITEMS) {
     if (p.searchOnly || !p.href.startsWith('/') || p.href.includes('#')) continue;
-    const h = _normPath(p.href);
-    if (here === h || (h !== '/' && here.startsWith(h + '/'))) {
-      if (!best || h.length > _normPath(best).length) best = p.href;
+    // `also`: other pages that live under this row (reached from its page, not the sidebar).
+    for (const h of [_normPath(p.href), ...(p.also || []).map(_normPath)]) {
+      if (here === h || (h !== '/' && here.startsWith(h + '/'))) {
+        if (!best || h.length > best.len) best = { href: p.href, len: h.length };
+      }
     }
   }
-  return best;
+  return best && best.href;
 }
 
 function _foldedGroups() { return new Set(_readJson(SIDEBAR_GROUPS_KEY, [])); }
@@ -1246,7 +1248,7 @@ function _buildSidebar() {
   // Committee queues wait until the page itself has had the network.
   (window.requestIdleCallback || (fn => setTimeout(fn, 1500)))(_loadWorkBadges);
 
-  // Keep the current row in view in a long list (Stats is 11 rows down) —
+  // Keep the current row in view in a long list (Stats alone is 5 rows) —
   // the one in its own section, not a copy in Pinned.
   aside.querySelector('.sb-sections > .sb-group [aria-current="page"]')?.scrollIntoView({ block: 'nearest' });
 }
@@ -1354,18 +1356,20 @@ const NAV_SECTIONS = [
     // Searchable, but not a row: Teams is its own entry at the top of the
     // sidebar, opening the division panel (_buildTeamsEntry).
     { title: 'Teams', href: '/teams', icon: 'basketball', searchOnly: true },
-    { title: 'Players', href: '/players', icon: 'jersey' },
+    // Players and Stat Lab each stand for a few pages; their own pages link the
+    // rest (tabs on /players, cards on /stats/), which stay searchable here.
+    { title: 'Players', href: '/players', icon: 'jersey', also: ['/compare', '/ratings-changes'] },
+    { title: 'Compare Players', href: '/compare/', icon: 'compare', searchOnly: true },
+    { title: 'Ratings Changes', href: '/ratings-changes/', icon: 'trend-bars', searchOnly: true },
     { title: 'Owners', href: '/owners', icon: 'owner' },
-    { title: 'Compare Players', href: '/compare/', icon: 'compare' },
-    { title: 'Ratings Changes', href: '/ratings-changes/', icon: 'trend-bars' },
-    { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart' },
+    { title: 'Stat Lab', href: '/stats/', icon: 'list', also: ['/h2h', '/frivolities'], keywords: ['stats', 'leaders', 'leaderboards', 'explore'] },
+    { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart', searchOnly: true },
+    { title: 'Career Leaders', href: '/stats/totals', icon: 'steps', searchOnly: true },
+    { title: 'Single-Game Highs', href: '/stats/highs', icon: 'spike', searchOnly: true },
+    { title: 'Head to Head', href: '/h2h', icon: 'versus', searchOnly: true },
+    { title: 'Frivolities & Viz', href: '/frivolities', icon: 'pie', searchOnly: true },
     { title: 'Box Scores', href: '/boxscores/', icon: 'table' },
     { title: 'Box Score Import', href: '/boxscores/submit/', icon: 'upload', keywords: ['submit box score', 'upload box score'] },
-    { title: 'Career Leaders', href: '/stats/totals', icon: 'steps' },
-    { title: 'Single-Game Highs', href: '/stats/highs', icon: 'spike' },
-    { title: 'Leaderboards', href: '/stats/', icon: 'list' },
-    { title: 'Head to Head', href: '/h2h', icon: 'versus' },
-    { title: 'Frivolities & Viz', href: '/frivolities', icon: 'pie' },
     { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: 'magnifier', searchOnly: true },
   ] },
   { label: 'NB¥ Corner', icon: 'yen', items: [
