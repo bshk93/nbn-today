@@ -136,6 +136,11 @@
       color: var(--text-secondary); font-size: 0.72rem; padding: 0.2rem 0.45rem; font-family: inherit; outline: none;
     }
     .day-yt-input:focus { border-color: var(--accent); }
+    .day-injury { display: inline-flex; align-items: center; gap: 0.3rem; border-radius: 6px; }
+    .day-injury.dragover { outline: 2px dashed var(--accent); outline-offset: 2px; }
+    .day-injury a { font-size: 0.68rem; color: var(--link); }
+    .day-injury .shot-x { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.7rem; padding: 0 0.1rem; }
+    .day-injury .shot-x:hover { color: var(--danger); }
     .day-meta { font-size: 0.68rem; color: var(--text-dim); white-space: nowrap; font-weight: 400; text-transform: none; letter-spacing: normal; }
 
     .gt-num { width: 2rem; text-align: right; font-size: 0.68rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
@@ -481,6 +486,7 @@
     let coachingSettings = {};  // team abbr -> record, from GET /api/coaching-settings
     let positionChecks = {};    // team abbr -> {items, ...}, from GET /api/position-checks
     let streamingDays = {};  // "YYYY-MM-DD" -> {done, done_at, done_by, youtube_url, ...}, from GET /api/streaming-days
+    let injuryShots = {};    // "YYYY-MM-DD" -> that date's injury report screenshots, from GET /api/injuries/screenshots
     // League "today" (Eastern), from /league-time.js.
     const today = nbnToday();
 
@@ -1049,6 +1055,7 @@
         toggleBtn.onclick = () => (done ? unmarkDayDone(date, toggleBtn) : markDayDone(date, toggleBtn));
         wrap.appendChild(toggleBtn);
         if (done) wrap.appendChild(span('day-meta', `done by ${rec.done_by}`));
+        wrap.appendChild(injuryReportControl(date));
       }
 
       // An admin hands the whole night to one streamer, replacing any claims.
@@ -1084,6 +1091,122 @@
       }
 
       return wrap;
+    }
+
+    // ── Injury report ────────────────────────────────────────────────
+    //
+    // The 2K injury screen, shown once a stream day. Screenshots go to that
+    // date's pending report (several if the list scrolls); /parse-injuries
+    // turns it into /injuries and the #injury-report post. Click to choose a
+    // file, or focus the button and paste, or drop onto it.
+
+    async function loadInjuryShots() {
+      try {
+        const items = await fetch('/api/injuries/screenshots').then(r => r.ok ? r.json() : []);
+        injuryShots = {};
+        // Pending wins over committed: it is the one that can still change.
+        for (const it of items) {
+          if (!injuryShots[it.date] || it.status === 'pending') injuryShots[it.date] = it;
+        }
+      } catch (e) {
+        injuryShots = {};
+      }
+      render();
+      renderMine();
+    }
+
+    function injuryReportControl(date) {
+      const item = injuryShots[date];
+      const box = span('day-injury');
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.multiple = true;
+      input.hidden = true;
+      input.onchange = () => { if (input.files.length) uploadInjuryShots(date, [...input.files], box); };
+      const btn = document.createElement('button');
+      btn.className = 'cd-btn';
+      btn.textContent = '🚑 Injury report';
+      btn.title = 'Upload the 2K injury screen: click to choose, or paste or drop screenshots here';
+      btn.onclick = () => input.click();
+      box.addEventListener('paste', e => {
+        const files = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+        if (!files.length) return;
+        e.preventDefault();
+        uploadInjuryShots(date, files, box);
+      });
+      box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('dragover'); });
+      box.addEventListener('dragleave', () => box.classList.remove('dragover'));
+      box.addEventListener('drop', e => {
+        e.preventDefault();
+        box.classList.remove('dragover');
+        const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith('image/'));
+        if (files.length) uploadInjuryShots(date, files, box);
+      });
+      box.append(input, btn);
+
+      if (item && item.status === 'committed') {
+        box.appendChild(span('day-meta', 'report in ✓'));
+      } else if (item) {
+        item.images.forEach((img, i) => {
+          const a = document.createElement('a');
+          a.href = img.url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.textContent = `#${i + 1}`;
+          a.title = `Uploaded by ${img.by}`;
+          const x = document.createElement('button');
+          x.className = 'shot-x';
+          x.textContent = '✕';
+          x.title = 'Remove this screenshot';
+          x.onclick = () => removeInjuryShot(date, item, img.file);
+          box.append(a, x);
+        });
+      }
+      return box;
+    }
+
+    async function uploadInjuryShots(date, files, box) {
+      box.querySelectorAll('button').forEach(b => b.disabled = true);
+      const token = storedToken();
+      let n = 0;
+      for (const f of files) {
+        const fd = new FormData();
+        fd.append('image', f, f.name || 'injuries.png');
+        fd.append('date', date);
+        try {
+          const r = await fetch('/api/injuries/upload', {
+            method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd,
+          });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
+          injuryShots[date] = data.item;
+          n++;
+        } catch (e) {
+          toast(`Injury report: ${e.message}`, true);
+          break;
+        }
+      }
+      if (n) toast(`Injury report: ${n} screenshot${n === 1 ? '' : 's'} uploaded`);
+      render();
+      renderMine();
+    }
+
+    async function removeInjuryShot(date, item, file) {
+      const token = storedToken();
+      try {
+        const r = await fetch(`/api/injuries/pending/${item.id}/images/${encodeURIComponent(file)}`, {
+          method: 'DELETE', headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
+        if (data.item) injuryShots[date] = data.item;
+        else delete injuryShots[date];
+      } catch (e) {
+        toast(`Could not remove that screenshot: ${e.message}`, true);
+      }
+      render();
+      renderMine();
     }
 
     async function claimDay(date, btn) {
@@ -1915,6 +2038,7 @@
 
       loadCoachingDashboard();
       loadStreamingDays();
+      loadInjuryShots();
 
       try {
         seasons = await fetch('/api/schedule/seasons').then(r => r.json());

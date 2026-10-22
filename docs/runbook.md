@@ -85,6 +85,12 @@ also appends one line to `boxscore-provenance-{season}.jsonl` — the screenshot
 are deleted after parsing, so that line is the only record of where a game came
 from.
 
+**An injury report becomes site data.** The streamer uploads the 2K injury
+screen from `/committees/stream` (🚑 on the day) → `/parse-injuries` commits it
+→ `injuries.json` + `injury-history.jsonl` update, `/injuries` shows it, and the
+changes post to `#injury-report` tagging each team. Only a report marked
+complete clears players who are no longer on it.
+
 **A transaction becomes league state.** `POST /api/transactions` validates
 against the rulebook, writes rosters/bios/team-state, appends to
 `transactions.json`, and posts to Discord. **It applies for real when its checks

@@ -303,3 +303,18 @@ button does, and only when the box is checked. Extending notification to any
 other write path (the roster-page ⋯ menu's scoped `PUT`/`DELETE
 /api/trading-block/{team}/player/{slug}`, say) means adding a call there
 deliberately, not toggling a shared setting.
+
+## Injury report
+
+`POST /api/injuries/commit` (`routers/injuries.py`) posts each committed 2K
+injury report's **changes** to `DISCORD_INJURY_CHANNEL` (`#injury-report`):
+one plain-text message with 🚑 New, 🔁 Updated and ✅ Cleared sections, one
+line per player (`**LAL** · Paul Reed — Hurt · Strained Left Hip · 4-6 weeks ·
+OVR 73 (−2)`), and the affected teams' roles pinged on the last line through
+`discord_notify.with_team_pings` — so `allowed_mentions` names exactly those
+roles and nothing else in the text can ping. Past ~1,700 characters it splits
+into several messages by team, each pinging only the teams it names.
+
+Unchanged injuries are never reposted: a report that changes nothing posts
+nothing, and an OVR move alone isn't a change. Unset channel, nothing is sent.
+

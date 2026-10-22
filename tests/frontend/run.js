@@ -157,6 +157,9 @@ const PAGES = [
   // fall — a scrape that changes nothing produces nothing — so the floor is far
   // below the ~490 rows it carries today.
   { path: '/ratings-changes/',        selector: '.player-name',    min: 20, what: 'per-player rating diffs' },
+  // An empty list is a real state (nobody injured, or no report yet), so the
+  // assertion is that either the table or the empty notice drew, not a row floor.
+  { path: '/injuries/',               selector: '#content .ui-table, #content .ui-empty', min: 1, what: 'the injury list, or its empty notice' },
   // Two players by slug, since the page renders nothing without both params.
   // Retired players, deliberately: their career and attributes are frozen, so
   // this row cannot start failing because someone got traded.

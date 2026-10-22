@@ -83,6 +83,7 @@ PAGES = {
  '/frivolities/': (None, 'Odd corners of the NBN data — charts, career earnings, and every trade regraded.'),
  '/h2h/': (None, 'All-time head-to-head records between every NBN team and every owner.'),
  '/hof/': (None, 'NBN Hall of Fame scores, rings and career totals for the league’s best players.'),
+ '/injuries/': (None, 'Who is hurt in the NBN 2K sim right now, and every injury since — from the injury report the streamer shows each stream day.'),
  '/inbox/': (None, 'Your NBN notifications.'),
  '/invest/': (None, 'Buy and sell shares in NBN players. Wall Street, but the asset is a power forward.'),
  '/invest/preview/': (None, 'How the NBN Wall Street pricing algorithm values a player.'),
