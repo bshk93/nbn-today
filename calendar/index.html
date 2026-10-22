@@ -84,22 +84,19 @@
     .add-game-form .form-err { font-size: 0.75rem; color: var(--danger); }
 
     /* ── Scheduled (unplayed) games ─────────────────────────────── */
-    /* Fixed columns, so time, streamer and the stream control line up from
+    /* Fixed columns, so the time and the stream control line up from
        row to row. Every row emits every cell, empty or not. The time is the
        last column, so it lines up with a played game's score above it. */
-    .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: grid; grid-template-columns: minmax(0, 1fr) 5.5rem 11rem 4.6rem 1rem; align-items: center; column-gap: 0.6rem; }
-    .sched-schd-who  { order: 1; }
+    .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: grid; grid-template-columns: minmax(0, 1fr) 11rem 4.6rem 1rem; align-items: center; column-gap: 0.6rem; }
     .sched-schd-ctl  { order: 2; }
     .sched-schd-time { order: 3; }
     .sched-schd-del  { order: 4; }
     .sched-schd-game:hover { background: var(--bg-card); }
     .sched-schd-main { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
     .sched-schd-time { text-align: right; }
-    .sched-schd-who { overflow: hidden; text-overflow: ellipsis; }
     .sched-schd-ctl { justify-self: start; }
     @media (max-width: 600px) {
-      .sched-schd-game { grid-template-columns: minmax(0, 1fr) auto auto auto; row-gap: 0.15rem; }
-      .sched-schd-who { max-width: 6rem; }
+      .sched-schd-game { grid-template-columns: minmax(0, 1fr) auto auto; row-gap: 0.15rem; }
       .sched-schd-ctl { grid-row: 2; grid-column: 1 / -1; }
       .sched-schd-ctl:empty { display: none; }
       .sched-game-score { margin-right: 0; }
@@ -137,6 +134,7 @@
     .sched-day { padding: 0.6rem 0; border-bottom: 1px solid var(--bg-card); }
     .sched-day:last-child { border-bottom: none; }
     .sched-date-hdr { display: flex; align-items: center; gap: 0.6rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem; }
+    .sched-day-streamer { font-weight: 500; color: var(--gold); }
     .sched-events { display: flex; flex-direction: column; gap: 0.15rem; padding-left: 0.75rem; }
 
     .sched-game { font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
@@ -910,6 +908,25 @@
       hdr.textContent = fmtDateHdr(dateStr);
       day.appendChild(hdr);
 
+      // Beside the date: who's streaming the night, until the night's Box
+      // Scores video is up, which then takes its place.
+      const box = NbnVod.boxScoresHtml(streamingDaysByDate[dateStr] && streamingDaysByDate[dateStr].youtube_url);
+      if (box) {
+        hdr.insertAdjacentHTML('beforeend', box);
+      } else {
+        const names = [...new Set((scheduledGamesByDate[dateStr] || [])
+          .filter(g => g._src === 'schedule' && g.streamer
+            && (!teamFilter || g.home_team === teamFilter || g.away_team === teamFilter))
+          .map(g => g.streamer))];
+        if (names.length) {
+          const who = document.createElement('span');
+          who.className = 'sched-day-streamer';
+          who.textContent = `📺 ${names.join(', ')}`;
+          who.title = `Streamed by ${names.join(', ')}`;
+          hdr.appendChild(who);
+        }
+      }
+
       const evts = document.createElement('div');
       evts.className = 'sched-events';
 
@@ -968,13 +985,6 @@
           if (g.time_et) time.textContent = `${g.time_et}m ET`;
           row.appendChild(time);
 
-          const who = document.createElement('span');
-          who.className = 'sched-schd-stream sched-schd-who';
-          if (g.streamer) {
-            who.textContent = `📺 ${g.streamer}`;
-            who.title = `Streamed by ${g.streamer}`;
-          }
-          row.appendChild(who);
 
           const ctl = document.createElement('span');
           ctl.className = 'sched-schd-ctl';
@@ -1039,9 +1049,6 @@
           }
           evts.appendChild(row);
         });
-        // The night's unstreamed games share one Box Scores video, shown beside the date.
-        const box = NbnVod.boxScoresHtml(streamingDaysByDate[dateStr] && streamingDaysByDate[dateStr].youtube_url);
-        if (box) hdr.insertAdjacentHTML('beforeend', box);
       }
 
       // Vesting events
