@@ -418,7 +418,7 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "race" "feed" "ranks" "milestones" "otd" "movers";
+        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "race" "rookies" "feed" "ranks" "milestones" "otd" "movers";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-best      { grid-area: best; }
@@ -430,6 +430,7 @@
       :root #dash-ranks     { grid-area: ranks; }
       :root #dash-movers    { grid-area: movers; }
       :root #dash-race      { grid-area: race; }
+      :root #dash-rookies   { grid-area: rookies; }
       :root #dash-milestones { grid-area: milestones; }
       :root #dash-otd       { grid-area: otd; }
     }
@@ -560,6 +561,8 @@
     /* Milestone watch: the standings' row style, with the milestone on a
        second line — the sidebar is too narrow for both on one. */
     .dash-ms-row { flex-wrap: wrap; row-gap: 0.1rem; }
+    /* Rookie watch: the draft pick, small, just after the name. */
+    .dash-rookie-pick { flex: none; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
     .dash-otd-row { display: grid; grid-template-columns: 2.6rem 1fr; gap: 0.5rem; padding: 0.35rem 0; color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; line-height: 1.35; }
     .dash-otd-row + .dash-otd-row { border-top: 1px solid var(--border-subtle); }
     a.dash-otd-row:hover .dash-otd-what { color: var(--link); }
@@ -872,6 +875,8 @@
       <div class="dash-card" id="dash-box-vod" hidden></div>
       <!-- The award race's leaders (award-race.js). In-season only. -->
       <div class="dash-card" id="dash-race" hidden></div>
+      <!-- This season's draft class by the ROTY formula (award-race.js). In-season only. -->
+      <div class="dash-card" id="dash-rookies" hidden></div>
       <!-- The current power-rankings standing. Hidden until it has one. -->
       <div class="dash-card" id="dash-ranks" hidden></div>
       <!-- Career milestones active players are closest to. Hidden until loaded. -->
@@ -1925,6 +1930,32 @@
         '<div class="dash-standings-head"><div class="dash-card-title">Award Race</div>'
         + '<a class="dash-standings-more" href="/awards/race/">Full race →</a></div>' + html;
       $('dash-race').hidden = false;
+    }).catch(() => {});
+
+    // ── Rookie watch ──────────────────────────────────────────────────────
+    //
+    // This season's draft class, ranked by the same ROTY ladder as
+    // /awards/race (award-race.js), with each rookie's draft slot and line.
+    const ROOKIES_SHOWN = 5;
+    Promise.all([liveSeasonPromise, Milestones.seasonRows(), standingsPromise]).then(([season, rows, stand]) => {
+      if (!season || !window.AwardRace) return;
+      const pct = {};
+      stand.forEach(r => { pct[`${r.SEASON}|${r.TEAM}`] = +r.PCT; });
+      const list = AwardRace.ladder('ROTY', rows, season, pct).slice(0, ROOKIES_SHOWN);
+      if (!list.length) return;
+      // Picks are numbered overall (1–60), so a 2nd-rounder reads "Pick #41"
+      // too. An undrafted player's pick is "NA" in player_seasons.csv.
+      const slot = p => (p.draftPick && p.draftPick !== 'NA' ? `Pick #${p.draftPick}` : 'Undrafted');
+      const pg = (p, f) => (p[f] / p.G).toFixed(1);
+      $('dash-rookies').innerHTML =
+        '<div class="dash-standings-head"><div class="dash-card-title">Rookie Watch</div>'
+        + '<a class="dash-standings-more" href="/awards/race/">ROTY race →</a></div>'
+        + list.map(p => `<a class="dash-stand-row dash-ms-row" href="/players/?p=${encodeURIComponent(p.slug)}">`
+          + `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">`
+          + `<span class="dash-mover-name">${esc(nbnPlayerName(p.name))}</span>`
+          + `<span class="dash-rookie-pick">${esc(slot(p))}</span>`
+          + `<span class="dash-ms-what">${pg(p, 'PTS')} pts · ${pg(p, 'REB')} reb · ${pg(p, 'AST')} ast</span></a>`).join('');
+      $('dash-rookies').hidden = false;
     }).catch(() => {});
 
     // ── Milestone watch ───────────────────────────────────────────────────
