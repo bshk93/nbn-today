@@ -85,8 +85,13 @@
 
     /* ── Scheduled (unplayed) games ─────────────────────────────── */
     /* Fixed columns, so time, streamer and the stream control line up from
-       row to row. Every row emits every cell, empty or not. */
-    .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: grid; grid-template-columns: minmax(0, 1fr) 4.6rem 5.5rem 11rem 1rem; align-items: center; column-gap: 0.6rem; }
+       row to row. Every row emits every cell, empty or not. The time is the
+       last column, so it lines up with a played game's score above it. */
+    .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: grid; grid-template-columns: minmax(0, 1fr) 5.5rem 11rem 4.6rem 1rem; align-items: center; column-gap: 0.6rem; }
+    .sched-schd-who  { order: 1; }
+    .sched-schd-ctl  { order: 2; }
+    .sched-schd-time { order: 3; }
+    .sched-schd-del  { order: 4; }
     .sched-schd-game:hover { background: var(--bg-card); }
     .sched-schd-main { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
     .sched-schd-time { text-align: right; }
@@ -97,6 +102,7 @@
       .sched-schd-who { max-width: 6rem; }
       .sched-schd-ctl { grid-row: 2; grid-column: 1 / -1; }
       .sched-schd-ctl:empty { display: none; }
+      .sched-game-score { margin-right: 0; }
     }
     .sched-schd-teams { color: inherit; text-decoration: none; }
     .sched-schd-teams:hover { text-decoration: underline; }
@@ -136,7 +142,7 @@
     .sched-game { font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
     .sched-game:hover { background: var(--bg-card); }
     .sched-game-vod { display: inline-flex; }
-    .sched-game-score { margin-left: auto; }
+    .sched-game-score { margin-left: auto; margin-right: 1.6rem; }
     .sched-game-score { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sched-game-type { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--champion-border); background: var(--champion-bg); padding: 0.1rem 0.3rem; border-radius: 3px; white-space: nowrap; }
 
