@@ -1331,18 +1331,6 @@ const NAV_SECTIONS = [
     { title: 'Transaction Simulator', href: '/transaction-sim/', icon: 'calculator', keywords: ['trade machine', 'trade builder', 'trade simulator'] },
     { title: 'Cap Summary', href: '/cap-summary/', icon: 'money' },
   ] },
-  { label: 'Committees', icon: 'columns', href: '/committees/', items: [
-    { title: 'Committees', short: 'All committees', href: '/committees/', icon: 'columns' },
-    { title: 'Rosters Committee — compliance & cap sheet diffs', short: 'Rosters', href: '/committees/rosters/', icon: 'clipboard-check' },
-    // The same roles the dashboard's own boot gate admits; anyone else is sent home.
-    { title: 'PDC Committee', short: 'PDC', href: '/committees/pdc/', icon: 'ballot',
-      roles: ['fac', 'fac_head', 'agent', 'poext', 'poext_head'] },
-    { title: 'Stats Committee — build health & missing box scores', short: 'Stats', href: '/committees/stats/', icon: 'folder-chart' },
-    { title: 'Stream Committee — claim games & coaching settings', short: 'Stream', href: '/committees/stream/', icon: 'camera',
-      roles: ['streamer'] },
-    { title: 'TRC Committee — trade requests', short: 'TRC', href: '/committees/trc/', icon: 'scale',
-      roles: ['trc', 'trc_head'] },
-  ] },
   { label: 'History', icon: 'trophy', items: [
     { title: 'Season Summary', href: '/season-summary', icon: 'scroll' },
     { title: 'Hall of Champions', href: '/champions/', icon: 'trophy' },
@@ -1390,6 +1378,18 @@ const NAV_SECTIONS = [
     { title: 'NBNTV Classics', href: '/nbntv-classics', icon: 'tv' },
     { title: 'NBNFL', href: '/nbnfl/', icon: 'football' },
     { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: 'play' },
+  ] },
+  { label: 'Committees', icon: 'columns', href: '/committees/', items: [
+    { title: 'Committees', short: 'All committees', href: '/committees/', icon: 'columns' },
+    { title: 'Rosters Committee — compliance & cap sheet diffs', short: 'Rosters', href: '/committees/rosters/', icon: 'clipboard-check' },
+    // The same roles the dashboard's own boot gate admits; anyone else is sent home.
+    { title: 'PDC Committee', short: 'PDC', href: '/committees/pdc/', icon: 'ballot',
+      roles: ['fac', 'fac_head', 'agent', 'poext', 'poext_head'] },
+    { title: 'Stats Committee — build health & missing box scores', short: 'Stats', href: '/committees/stats/', icon: 'folder-chart' },
+    { title: 'Stream Committee — claim games & coaching settings', short: 'Stream', href: '/committees/stream/', icon: 'camera',
+      roles: ['streamer'] },
+    { title: 'TRC Committee — trade requests', short: 'TRC', href: '/committees/trc/', icon: 'scale',
+      roles: ['trc', 'trc_head'] },
   ] },
   { label: 'About', icon: 'people', items: [
     { title: 'Members', href: '/members/', icon: 'people' },
