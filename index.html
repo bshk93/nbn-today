@@ -401,10 +401,12 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "best" "standings" "race" "feed" "ranks" "milestones" "otd" "movers";
+        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "race" "feed" "ranks" "milestones" "otd" "movers";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-best      { grid-area: best; }
+      :root #dash-stream-vod { grid-area: streamvod; }
+      :root #dash-box-vod   { grid-area: boxvod; }
       :root #dash-feed      { grid-area: feed; }
       :root #dash-slate     { grid-area: slate; }
       :root #dash-standings { grid-area: standings; }
@@ -449,6 +451,34 @@
     @media (max-width: 600px) {
       .dash-best-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
     }
+
+    /* Latest stream / box scores: a thumbnail that becomes the player on
+       click, so the page doesn't load a YouTube player on every visit. */
+    .dash-vod {
+      display: flex; flex-direction: column; min-width: 0;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-card); overflow: hidden;
+    }
+    .dash-vod:hover { border-color: var(--accent); }
+    .dash-vod-frame { position: relative; aspect-ratio: 16 / 9; background: #000; }
+    .dash-vod-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .dash-vod-play {
+      position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #000 center / cover no-repeat; cursor: pointer;
+    }
+    .dash-vod-play .vod-icon { width: 52px; height: 37px; opacity: 0.9; transition: opacity 0.15s, transform 0.15s; }
+    .dash-vod-play:hover .vod-icon, .dash-vod-play:focus-visible .vod-icon { opacity: 1; transform: scale(1.08); }
+    .dash-vod-cap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem var(--space-4); padding: var(--space-2) var(--space-3); min-width: 0; font-size: var(--text-sm); }
+    .dash-vod-teams { display: flex; align-items: center; gap: 0.3rem; font-weight: 700; min-width: 0; white-space: nowrap; }
+    .dash-vod-teams img { width: 16px; height: 16px; object-fit: contain; }
+    .dash-vod-meta { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+    .dash-vod-teams .at { color: var(--text-muted); font-weight: 400; }
+    .dash-vod-score { font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; text-decoration: none; }
+    a.dash-vod-score:hover { color: var(--link); }
+    .dash-vod-score .win { color: var(--text-primary); font-weight: 700; }
+    .dash-vod-yt { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; text-decoration: none; }
+    .dash-vod-yt:hover { color: var(--link); }
 
     /* Standings: East and West side by side in the sidebar. */
     .dash-standings-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-3); }
@@ -814,6 +844,9 @@
         <div class="dash-skel" style="width:80%"></div>
         <div class="dash-skel" style="width:65%"></div>
       </div>
+      <!-- The newest stream VOD and the newest Box Scores video. Each hidden until one is up. -->
+      <div class="dash-card" id="dash-stream-vod" hidden></div>
+      <div class="dash-card" id="dash-box-vod" hidden></div>
       <!-- The award race's leaders (award-race.js). In-season only. -->
       <div class="dash-card" id="dash-race" hidden></div>
       <!-- The current power-rankings standing. Hidden until it has one. -->
@@ -1514,6 +1547,84 @@
             + `</${tag}>`;
         }).join('') + '</div>';
       $('dash-best').hidden = false;
+    }).catch(() => {});
+
+    // ── Latest stream / Latest box scores ─────────────────────────────────
+    //
+    // Two sidebar cards under the slate: the newest streamed game's video, and
+    // the newest "NBN M/D: Box Scores" video for a night's unstreamed games.
+    // The links are the ones vod.js shows as buttons on the slate. Each card
+    // stays hidden until it has a video, and they can be different nights.
+    //
+    // A thumbnail until clicked, then the YouTube player in its place. A
+    // watch?v= URL is the only shape stored (schedule.youtube_watch_url
+    // normalizes every link to it), keeping a t= start time when it had one.
+    const ytParts = url => {
+      try {
+        const u = new URL(url);
+        const id = u.searchParams.get('v');
+        if (!id || !/^[\w-]{6,20}$/.test(id)) return null;
+        return { id, start: parseInt(u.searchParams.get('t'), 10) || 0 };
+      } catch (e) { return null; }
+    };
+
+    function vodCard(id, title, date, url, label, meta) {
+      const yt = ytParts(url);
+      if (!yt) return;
+      const card = $(id);
+      card.innerHTML = `<div class="dash-card-title">${esc(title)}`
+        + `<span class="dash-best-title-date">${esc(shortDate(date))}</span></div>`
+        + `<div class="dash-vod"><div class="dash-vod-frame">`
+        + `<button type="button" class="dash-vod-play" aria-label="Play ${esc(title)}" `
+        + `style="background-image:url('https://i.ytimg.com/vi/${esc(yt.id)}/hqdefault.jpg')">${NbnVod.ICON}</button>`
+        + `</div><div class="dash-vod-cap"><span class="dash-vod-teams">${label}</span>`
+        + `<span class="dash-vod-meta">${meta || ''}`
+        + `<a class="dash-vod-yt" href="${esc(url)}" target="_blank" rel="noopener">YouTube ↗</a>`
+        + `</span></div></div>`;
+      card.querySelector('.dash-vod-play').addEventListener('click', e => {
+        e.currentTarget.outerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${esc(yt.id)}?autoplay=1`
+          + (yt.start ? `&start=${yt.start}` : '') + `" title="${esc(title)}" `
+          + 'allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>';
+      });
+      // Shown only once the thumbnail loads. A deleted or private video
+      // answers with YouTube's 120×90 grey placeholder, not an error, so a
+      // thumbnail that small counts as a failure too.
+      const img = new Image();
+      img.onload = () => { if (img.naturalWidth > 120) card.hidden = false; };
+      img.src = `https://i.ytimg.com/vi/${yt.id}/hqdefault.jpg`;
+    }
+
+    Promise.all([schedulePromise, latestNight]).then(([sched, night]) => {
+      // The last-tipped game with a video, on the latest night that has one.
+      const g = ((sched && sched.games) || []).filter(x => x.youtube_url && x.date <= today)
+        .sort((a, b) => a.date.localeCompare(b.date)
+          || nbnTipMinutes(a.time_et) - nbnTipMinutes(b.time_et)).pop();
+      if (!g) return;
+      const key = (a, b) => [a, b].map(t => String(t).toUpperCase()).sort().join('|');
+      const f = night && night.date === g.date
+        && night.games.find(x => key(x.away_team, x.home_team) === key(g.away_team, g.home_team));
+      let score = '';
+      if (f) {
+        const [a, h] = String(f.away_team).toUpperCase() === g.away_team.toUpperCase()
+          ? [f.away_score, f.home_score] : [f.home_score, f.away_score];
+        score = `<a class="dash-vod-score" title="Box score" href="/boxscores/?date=${encodeURIComponent(g.date)}`
+          + `&game=${esc(f.away_team)}-${esc(f.home_team)}">`
+          + `<span class="${a > h ? 'win' : ''}">${esc(a)}</span>–`
+          + `<span class="${h > a ? 'win' : ''}">${esc(h)}</span> F</a>`;
+      }
+      const logo = t => `/logos/sm/logo-${esc(String(t).toLowerCase())}.webp`;
+      vodCard('dash-stream-vod', 'Latest Stream', g.date, g.youtube_url,
+        `<img src="${logo(g.away_team)}" alt="">${esc(g.away_team)}`
+        + `<span class="at">@</span><img src="${logo(g.home_team)}" alt="">${esc(g.home_team)}`, score);
+    }).catch(() => {});
+
+    streamingDaysPromise.then(days => {
+      days = days || {};
+      const date = Object.keys(days).filter(d => d <= today && days[d] && days[d].youtube_url).sort().pop();
+      if (!date) return;
+      vodCard('dash-box-vod', 'Latest Box Scores', date, days[date].youtube_url,
+        'Unstreamed games',
+        `<a class="dash-vod-score" href="/boxscores/?date=${encodeURIComponent(date)}">Box scores</a>`);
     }).catch(() => {});
 
     // ── Standings ─────────────────────────────────────────────────────────
