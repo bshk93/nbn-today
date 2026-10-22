@@ -154,7 +154,7 @@
       id: 'top_dog', name: 'Top Dog', icon: '1️⃣', cat: 'gm',
       desc: 'Finish as the #1 overall seed',
       tiers: [
-        { label: '#1 Seed', tierClass: 'tier-on', sub: '#1 Overall Seed', unlock: d => d.seasons.some(s => +s.SEED_NUM === 1) },
+        { label: '#1 Seed', tierClass: 'tier-on', sub: '#1 Overall Seed', unlock: d => d.seasons.some(s => +s.SEED_NUM === 1 && d.finishedSeasons.has(s.SEASON)) },
       ],
     },
     {
@@ -515,9 +515,15 @@
   function prepare(raw) {
     const allSeasons = parseCSV(raw.standingsCsv);
 
+    // "Best/worst in a season" needs the season to be over. A season in
+    // progress has every team's ratings at 0 and half the league at 0-1, so
+    // counting it unlocked Juggernaut, Lockdown, Tankathon and Top Dog across
+    // the league on opening night (2026-10-22). A season is over once it has a champion.
+    const finishedSeasons = new Set(allSeasons.filter(r => r.PLAYOFF_RESULT === 'Champion').map(r => r.SEASON));
     const seasonBests = {};
     const seasonWorstPct = {};
     for (const r of allSeasons) {
+      if (!finishedSeasons.has(r.SEASON)) continue;
       if (!seasonBests[r.SEASON]) seasonBests[r.SEASON] = { maxOff: -Infinity, maxDef: -Infinity };
       seasonBests[r.SEASON].maxOff = Math.max(seasonBests[r.SEASON].maxOff, +r.OFF_RTG);
       seasonBests[r.SEASON].maxDef = Math.max(seasonBests[r.SEASON].maxDef, +r.DEF_RTG);
@@ -547,7 +553,7 @@
 
     return {
       bios: raw.bios || {},
-      allSeasons, seasonBests, seasonWorstPct,
+      allSeasons, finishedSeasons, seasonBests, seasonWorstPct,
       trades, signs,
       seasonRows, teamBySlugSeason,
       awardRows, allNbnLevel, allStarSlugs,
@@ -689,6 +695,7 @@
     return {
       owner: shared.ownerRows.find(r => r.owner === member.name) || null,
       seasons: memberSeasons,
+      finishedSeasons: shared.finishedSeasons,
       playoffSeasonsList: memberPlayoffSeasons,
       regWins, champSeasons, finalsSeasons, confSeasons, playoffSeasons,
       hadBestOffRtg, hadBestDefRtg,
