@@ -482,8 +482,8 @@
     .dash-otd-what b { color: var(--text-primary); font-weight: 600; }
     .dash-otd-sub { color: var(--text-muted); font-size: 0.78rem; }
     .dash-otd-what .dash-feed-team img { width: 14px; height: 14px; }
-    .dash-ms-row[hidden] { display: none; }
-    .dash-ms-more {
+    .dash-ms-row[hidden], .dash-feed-row[hidden] { display: none; }
+    .dash-ms-more, .dash-feed-more {
       margin-top: 0.4rem; padding: 0; background: none; border: none;
       font: inherit; font-size: var(--text-xs); color: var(--link); cursor: pointer;
     }
@@ -1513,8 +1513,10 @@
     //   type  a key in feed-types.js — a ledger type, or `news` / `score`.
     //   text  already-escaped-at-render HTML-free string, or `html` for a row
     //         that needs markup (a score bolds the winner).
-    // The feed is the main column, so it has room for a dozen.
-    const FEED_LIMIT = 12;
+    // The feed is the main column, so it has room for a dozen. The rest, up to
+    // FEED_MAX, sit behind a "Show N more" toggle — a full night of scores is
+    // 10-15 rows on its own, and every one of them is reachable here.
+    const FEED_LIMIT = 12, FEED_MAX = 40;
 
     // What FeedTypes.headline needs to name players and teams. Shared by the
     // feed and On This Day's trades.
@@ -1602,19 +1604,7 @@
       };
     }) : []));
 
-    // A full slate is 10-15 games. Left uncapped, one busy night fills every
-    // row and the feed becomes a scoreboard — the trade that happened that
-    // same day gets pushed off it, which is the one thing this card exists to
-    // prevent. Scores get at most this many, so there is always room for what
-    // else happened; the slate card and /boxscores are where a full night's
-    // results belong.
-    const SCORE_MAX = 4;
-
-    const SOURCES = [
-      feedFromTransactions,
-      feedFromNews,
-      () => feedFromScores().then(rows => rows.slice(0, SCORE_MAX)),
-    ];
+    const SOURCES = [feedFromTransactions, feedFromNews, feedFromScores];
 
     Promise.allSettled(SOURCES.map(fn => fn())).then(results => {
       // Ordered by the civil date each row *shows*, not by `ts`. A transaction
@@ -1631,7 +1621,7 @@
         .sort((a, b) =>
           String(b.date || '').localeCompare(String(a.date || ''))
           || String(b.ts || '').localeCompare(String(a.ts || '')))
-        .slice(0, FEED_LIMIT);
+        .slice(0, FEED_MAX);
 
       const card = $('dash-feed');
       if (!items.length) {
@@ -1639,18 +1629,27 @@
           + '<div class="dash-empty">Nothing yet.</div>';
         return;
       }
+      const extra = items.length - FEED_LIMIT;
       card.innerHTML = '<div class="dash-card-title">Around the League</div>'
-        + '<div class="dash-feed">' + items.map(it => {
+        + '<div class="dash-feed">' + items.map((it, i) => {
           const c = FeedTypes.colors(it.type);
           const when = it.date ? shortDate(it.date) : '';
-          return `<a class="dash-feed-row" href="${esc(it.href)}">`
+          return `<a class="dash-feed-row"${i >= FEED_LIMIT ? ' hidden' : ''} href="${esc(it.href)}">`
             + `<span class="dash-feed-tag" style="background:${esc(c.bg)};color:${esc(c.fg)}">`
             + `${esc(FeedTypes.label(it.type))}</span>`
             + `<span class="dash-feed-text">${it.html || esc(it.text)}`
             + (it.sub ? `<span class="dash-feed-sub">${it.sub}</span>` : '') + `</span>`
             + `<span class="dash-feed-when">${esc(when)}`
             + (it.byline ? ` · ${esc(it.byline)}` : '') + `</span></a>`;
-        }).join('') + '</div>';
+        }).join('') + '</div>'
+        + (extra > 0 ? `<button type="button" class="dash-feed-more">Show ${extra} more</button>` : '');
+      const more = card.querySelector('.dash-feed-more');
+      let open = false;
+      if (more) more.addEventListener('click', () => {
+        open = !open;
+        card.querySelectorAll('.dash-feed-row').forEach((r, i) => { if (i >= FEED_LIMIT) r.hidden = !open; });
+        more.textContent = open ? 'Show fewer' : `Show ${extra} more`;
+      });
     });
 
     // The power-rankings standing, always the newest **published** edition
