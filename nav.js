@@ -1181,7 +1181,7 @@ function _buildSidebar() {
   const head = document.createElement('div');
   head.className = 'sb-head';
   head.innerHTML = `
-    <a class="sb-home" href="/" title="NBN Today"><img src="/icons/logo-header.webp" alt=""><span class="sb-label">NBN Today</span></a>
+    <a class="sb-home" href="/" title="Nothing But Net"><img src="/icons/logo-header.webp" alt=""><span class="sb-label sb-brand"><span class="sb-brand-name">Nothing But Net</span><span class="sb-brand-sub">Basketball Simulation<br>GM League</span></span></a>
     <button type="button" class="sb-collapse">${_ICON_PANEL}</button>
     <button type="button" class="sb-close nav-icon-btn" aria-label="Close menu">${_ICON_CLOSE}</button>`;
   head.querySelector('.sb-close').addEventListener('click', _closeDrawer);
