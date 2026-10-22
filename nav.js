@@ -1246,7 +1246,7 @@ function _buildSidebar() {
   // Committee queues wait until the page itself has had the network.
   (window.requestIdleCallback || (fn => setTimeout(fn, 1500)))(_loadWorkBadges);
 
-  // Keep the current row in view in a long list (Stats is 11 rows down) —
+  // Keep the current row in view in a long list (Stats alone is 9 rows) —
   // the one in its own section, not a copy in Pinned.
   aside.querySelector('.sb-sections > .sb-group [aria-current="page"]')?.scrollIntoView({ block: 'nearest' });
 }
@@ -1358,12 +1358,14 @@ const NAV_SECTIONS = [
     { title: 'Owners', href: '/owners', icon: 'owner' },
     { title: 'Compare Players', href: '/compare/', icon: 'compare' },
     { title: 'Ratings Changes', href: '/ratings-changes/', icon: 'trend-bars' },
-    { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart' },
+    // One row for the leaderboards; /stats/ links to each, and the three stay
+    // searchable. Their pages still light this row (_activeNavHref is a prefix match).
+    { title: 'Leaderboards', href: '/stats/', icon: 'list', keywords: ['stats', 'leaders'] },
+    { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart', searchOnly: true },
+    { title: 'Career Leaders', href: '/stats/totals', icon: 'steps', searchOnly: true },
+    { title: 'Single-Game Highs', href: '/stats/highs', icon: 'spike', searchOnly: true },
     { title: 'Box Scores', href: '/boxscores/', icon: 'table' },
     { title: 'Box Score Import', href: '/boxscores/submit/', icon: 'upload', keywords: ['submit box score', 'upload box score'] },
-    { title: 'Career Leaders', href: '/stats/totals', icon: 'steps' },
-    { title: 'Single-Game Highs', href: '/stats/highs', icon: 'spike' },
-    { title: 'Leaderboards', href: '/stats/', icon: 'list' },
     { title: 'Head to Head', href: '/h2h', icon: 'versus' },
     { title: 'Frivolities & Viz', href: '/frivolities', icon: 'pie' },
     { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: 'magnifier', searchOnly: true },

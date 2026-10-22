@@ -118,7 +118,7 @@ PAGES = {
  '/schedule/': (None, 'Moved — the schedule is now on the calendar, streamer claims included.'),
  '/season-summary/': (None, 'Every NBN season at a glance — champion, award winners and statistical leaders.'),
  '/standings/': (None, 'NBN standings season by season, with every playoff bracket.'),
- '/stats/': (None, 'NBN leaderboards — career totals and single-game highs in every category.'),
+ '/stats/': (None, 'NBN leaderboards — season stats, career totals and single-game highs in every category.'),
  '/stats/highs/': (None, 'The biggest single games in NBN history in 15 categories, and the most triple-doubles, 50-point games and more — for any season, franchise or the playoffs.'),
  '/stats/highs/p/': (None, 'Moved — the biggest scoring games are now on /stats/highs.'),
  '/stats/highs/r/': (None, 'Moved — the biggest rebounding games are now on /stats/highs.'),

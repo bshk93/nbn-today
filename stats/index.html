@@ -5,13 +5,13 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Stats - NBN</title>
+  <title>Leaderboards - NBN</title>
   <!-- NBN:og -->
-  <meta name="description" content="NBN leaderboards — career totals and single-game highs in every category.">
+  <meta name="description" content="NBN leaderboards — season stats, career totals and single-game highs in every category.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Stats - NBN">
-  <meta property="og:description" content="NBN leaderboards — career totals and single-game highs in every category.">
+  <meta property="og:title" content="Leaderboards - NBN">
+  <meta property="og:description" content="NBN leaderboards — season stats, career totals and single-game highs in every category.">
   <meta property="og:url" content="https://nbn.today/stats/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -30,6 +30,10 @@
     .card-icon { font-size: 1.75rem; }
     .card-title { font-size: 1.05rem; font-weight: 600; }
     .card-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+    .card-main { display: flex; flex-direction: column; gap: 0.6rem; text-decoration: none; color: inherit; }
+    .card-links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto; padding-top: 0.4rem; }
+    .card-links a { font-size: 0.78rem; padding: 0.2rem 0.6rem; border: 1px solid var(--border); border-radius: 999px; color: var(--text-muted); text-decoration: none; }
+    .card-links a:hover { color: inherit; border-color: var(--muted-border); }
     .card--wide { grid-column: 1 / -1; }
     @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } .card--wide { grid-column: auto; } }
   </style>
@@ -39,25 +43,46 @@
     <nav class="nav"></nav>
     <header class="ui-header">
       <div>
-        <h1 class="ui-title">Stats</h1>
+        <h1 class="ui-title">Leaderboards</h1>
       </div>
     </header>
     <div class="grid">
-      <a class="card" href="/stats/seasons">
-        <span class="card-icon">📅</span>
-        <span class="card-title">Season Stats</span>
-        <p class="card-desc">Per-game averages for every player-season, filterable by year.</p>
-      </a>
-      <a class="card" href="/stats/totals">
-        <span class="card-icon">🏅</span>
-        <span class="card-title">Career Leaders</span>
-        <p class="card-desc">Career totals and per-game leaders in 19 categories, for the regular season, playoffs or one franchise.</p>
-      </a>
-      <a class="card" href="/stats/highs">
-        <span class="card-icon">🔝</span>
-        <span class="card-title">Single-Game Highs</span>
-        <p class="card-desc">The best single games in 15 categories, and who has the most triple-doubles, 40-point nights and more.</p>
-      </a>
+      <div class="card">
+        <a class="card-main" href="/stats/seasons">
+          <span class="card-icon">📅</span>
+          <span class="card-title">Season Stats</span>
+          <p class="card-desc">Per-game lines for every player and team, one season at a time.</p>
+        </a>
+        <div class="card-links">
+          <a href="/stats/seasons?type=po">Playoffs</a>
+          <a href="/stats/seasons?view=teams">Teams</a>
+          <a href="/stats/seasons?rookies=1">Rookies</a>
+        </div>
+      </div>
+      <div class="card">
+        <a class="card-main" href="/stats/totals">
+          <span class="card-icon">🏅</span>
+          <span class="card-title">Career Leaders</span>
+          <p class="card-desc">Career totals and per-game leaders in 19 categories, for the regular season, playoffs or one franchise.</p>
+        </a>
+        <div class="card-links">
+          <a href="/stats/totals?stat=PTS&amp;per=pg">Points per game</a>
+          <a href="/stats/totals?type=po">Playoff totals</a>
+          <a href="/stats/totals?active=1">Active players</a>
+        </div>
+      </div>
+      <div class="card card--wide">
+        <a class="card-main" href="/stats/highs">
+          <span class="card-icon">🔝</span>
+          <span class="card-title">Single-Game Highs</span>
+          <p class="card-desc">The best single games in 15 categories, and who has the most triple-doubles, 40-point nights and more.</p>
+        </a>
+        <div class="card-links">
+          <a href="/stats/highs?stat=TD">Triple-doubles</a>
+          <a href="/stats/highs?type=po">Playoffs</a>
+          <a href="/stats/highs?active=1">Active players</a>
+        </div>
+      </div>
     </div>
   </div>
   <script src="/nav.js"></script>
