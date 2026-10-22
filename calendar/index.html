@@ -130,15 +130,13 @@
 
     .sched-day { padding: 0.6rem 0; border-bottom: 1px solid var(--bg-card); }
     .sched-day:last-child { border-bottom: none; }
-    .sched-date-hdr { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem; }
+    .sched-date-hdr { display: flex; align-items: center; gap: 0.6rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem; }
     .sched-events { display: flex; flex-direction: column; gap: 0.15rem; padding-left: 0.75rem; }
 
     .sched-game { font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
     .sched-game:hover { background: var(--bg-card); }
     .sched-game-vod { display: inline-flex; }
     .sched-game-score { margin-left: auto; }
-    .sched-box-vod { padding: 0.25rem 0.5rem 0.1rem; }
-    .sched-box-vod .vod-box { display: inline-flex; }
     .sched-game-score { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sched-game-type { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--champion-border); background: var(--champion-bg); padding: 0.1rem 0.3rem; border-radius: 3px; white-space: nowrap; }
 
@@ -1035,9 +1033,9 @@
           }
           evts.appendChild(row);
         });
-        // The night's unstreamed games share one Box Scores video: one row, not one per game.
+        // The night's unstreamed games share one Box Scores video, shown beside the date.
         const box = NbnVod.boxScoresHtml(streamingDaysByDate[dateStr] && streamingDaysByDate[dateStr].youtube_url);
-        if (box) evts.insertAdjacentHTML('beforeend', `<div class="sched-box-vod">${box}</div>`);
+        if (box) hdr.insertAdjacentHTML('beforeend', box);
       }
 
       // Vesting events

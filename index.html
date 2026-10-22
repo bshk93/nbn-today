@@ -187,7 +187,7 @@
     .dash-game-team { display: inline-flex; align-items: center; gap: 0.35rem; color: inherit; text-decoration: none; }
     .dash-game-team:hover span:not(.dash-game-rec) { text-decoration: underline; }
     .dash-game-logo { height: 18px; width: 18px; object-fit: contain; flex: none; }
-    .dash-games .vod-box { margin-top: 0.45rem; }
+    #dash-slate .dash-card-title { display: flex; align-items: center; gap: 0.6rem; }
     .dash-game-stream { color: var(--gold); font-size: var(--text-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .dash-game-time { color: var(--text-muted); font-size: var(--text-xs); margin-left: auto; flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
@@ -1431,11 +1431,11 @@
             el.insertAdjacentHTML('beforebegin', NbnVod.gameHtml(sg));
           }
         });
-        // One row for the night's unstreamed games, once their video is up.
+        // The night's unstreamed games share one video, beside the card's title.
         if (!list.some(g => g.date === night.date)) return;
         streamingDaysPromise.then(days => {
           const box = NbnVod.boxScoresHtml(days && days[night.date] && days[night.date].youtube_url);
-          if (box) card.querySelector('.dash-games').insertAdjacentHTML('beforeend', box);
+          if (box) card.querySelector('.dash-card-title').insertAdjacentHTML('beforeend', box);
         });
       });
 

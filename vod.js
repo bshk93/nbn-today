@@ -3,8 +3,8 @@
 // A streamed game goes through three looks: 📡 before it's played (each page
 // draws its own), ⏳ once it's final with no video yet, then the YouTube button.
 // A game nobody streamed shows nothing, unless someone linked it by hand. The
-// night's unstreamed games share one "NBN M/D: Box Scores" video, shown as a
-// single row under the night rather than on each game.
+// night's unstreamed games share one "NBN M/D: Box Scores" video, shown once
+// beside the night's date rather than on each game.
 //
 // Links come from nbn-api/routers/youtube_vods.py, which reads them off the
 // channel's feed, or from PUT /api/schedule/{id}/youtube.
@@ -25,12 +25,11 @@
     return '';
   }
 
-  // The night's one Box Scores row, or '' until its video is up.
+  // The night's one Box Scores link, or '' until its video is up.
   function boxScoresHtml(url) {
     if (!url) return '';
     return `<a class="vod-box" href="${esc(url)}" target="_blank" rel="noopener" `
-      + `title="Box scores for the games that weren’t streamed">${ICON}`
-      + '<span>Box Scores</span><span class="vod-box-sub">the night’s other games</span></a>';
+      + `title="Box scores for the games that weren’t streamed">${ICON}Box Scores</a>`;
   }
 
   global.NbnVod = { ICON, gameHtml, boxScoresHtml };
