@@ -484,7 +484,9 @@ function _initNav() {
 // that must not take the sidebar with it. `<html data-no-sidebar>` opts a page
 // out entirely.
 const SIDEBAR_KEY = 'nbn_sidebar';               // 'open' | 'rail'
-const SIDEBAR_GROUPS_KEY = 'nbn_sidebar_groups'; // labels of folded sections
+// Sections start folded; what's kept is the ones a visitor has unfolded.
+// (The old key, 'nbn_sidebar_groups', held folded ones when open was the default.)
+const SIDEBAR_GROUPS_KEY = 'nbn_sidebar_open';   // labels of unfolded sections
 const _ICON_MENU = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>';
 const _ICON_PANEL = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="9" y1="4" x2="9" y2="20"></line></svg>';
 const _ICON_CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 6 9 12 15 18"></polyline></svg>';
@@ -530,7 +532,7 @@ function _activeNavHref() {
   return best;
 }
 
-function _foldedGroups() { return new Set(_readJson(SIDEBAR_GROUPS_KEY, [])); }
+function _openGroups() { return new Set(_readJson(SIDEBAR_GROUPS_KEY, [])); }
 
 // Pinned pages: per browser, stored as hrefs and resolved against NAV_SECTIONS
 // on every draw, so a page that leaves the nav drops out of the list.
@@ -586,12 +588,12 @@ function _sidebarRow(p, active) {
 
 // One foldable group. `key` is what the fold is remembered under; `icon` is
 // the header's, and in rail mode the header is all that shows of the group.
-function _sidebarGroup(label, key, rows, active, folded, icon) {
+function _sidebarGroup(label, key, rows, active, open, icon) {
   const group = document.createElement('div');
   group.className = 'sb-group';
   // The section holding this page is never drawn folded — a highlight you
   // can't see is no highlight — but that doesn't overwrite the saved fold.
-  if (folded.has(key) && !rows.some(p => p.href === active)) group.classList.add('folded');
+  if (!open.has(key) && !rows.some(p => p.href === active)) group.classList.add('folded');
 
   const hdr = document.createElement('button');
   hdr.type = 'button';
@@ -610,7 +612,7 @@ function _sidebarGroup(label, key, rows, active, folded, icon) {
       _setSidebarMode('open');
       group.classList.remove('folded');
       hdr.setAttribute('aria-expanded', 'true');
-      const f = _foldedGroups(); f.delete(key);
+      const f = _openGroups(); f.add(key);
       try { localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify([...f])); } catch { /* private browsing */ }
       group.scrollIntoView({ block: 'nearest' });
       _refreshBadges();
@@ -618,8 +620,8 @@ function _sidebarGroup(label, key, rows, active, folded, icon) {
     }
     const isFolded = group.classList.toggle('folded');
     hdr.setAttribute('aria-expanded', isFolded ? 'false' : 'true');
-    const f = _foldedGroups();
-    isFolded ? f.add(key) : f.delete(key);
+    const f = _openGroups();
+    isFolded ? f.delete(key) : f.add(key);
     try { localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify([...f])); } catch { /* private browsing */ }
     _refreshBadges();
   });
@@ -639,10 +641,10 @@ function _drawPersonalGroups() {
   const slot = document.querySelector('.sb-personal');
   if (!slot) return;
   const active = _activeNavHref();
-  const folded = _foldedGroups();
+  const open = _openGroups();
   const pins = _sidebarPins();
   slot.replaceChildren();
-  if (pins.length) slot.appendChild(_sidebarGroup('Pinned', '_pinned', pins.map(_navItemFor), active, folded, 'star'));
+  if (pins.length) slot.appendChild(_sidebarGroup('Pinned', '_pinned', pins.map(_navItemFor), active, open, 'star'));
   _refreshPinState();
   _refreshBadges();
 }
@@ -1171,7 +1173,7 @@ function _buildSidebar() {
   }
 
   const active = _activeNavHref();
-  const folded = _foldedGroups();
+  const open = _openGroups();
 
   const aside = document.createElement('aside');
   aside.className = 'sidebar';
@@ -1209,7 +1211,7 @@ function _buildSidebar() {
   nav.appendChild(personal);
   for (const sec of NAV_SECTIONS) {
     const rows = sec.items.filter(p => !p.searchOnly);
-    if (rows.length) nav.appendChild(_sidebarGroup(sec.label, sec.label, rows, active, folded, sec.icon));
+    if (rows.length) nav.appendChild(_sidebarGroup(sec.label, sec.label, rows, active, open, sec.icon));
   }
   aside.appendChild(nav);
 
