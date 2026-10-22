@@ -50,6 +50,11 @@
 .sb-home { display: flex; align-items: center; gap: 0.6rem; color: var(--text-primary); font-weight: 700; text-decoration: none; min-width: 0; }
 .sb-home:hover { text-decoration: none; }
 .sb-home img { width: 2rem; height: 2rem; object-fit: contain; flex-shrink: 0; }
+/* The league's name beside the logo: name, then the subtitle in small type,
+   wrapping to a second line rather than pushing the collapse button out. */
+.sb-brand { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.sb-brand-name { font-family: var(--font-display); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-brand-sub { margin-top: 0.1rem; font-size: 0.68rem; font-weight: 500; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Scoped under .sidebar / .nav: both buttons also carry .nav-icon-btn, whose
    display: flex comes later in nav-chrome.css and would win a tie. */
 .sidebar .sb-close { display: none; margin-left: auto; }
