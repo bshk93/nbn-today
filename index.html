@@ -1623,7 +1623,7 @@
       const date = Object.keys(days).filter(d => d <= today && days[d] && days[d].youtube_url).sort().pop();
       if (!date) return;
       vodCard('dash-box-vod', 'Latest Box Scores', date, days[date].youtube_url,
-        'Unstreamed games',
+        `${+date.slice(5, 7)}/${+date.slice(8, 10)} Box Scores`,
         `<a class="dash-vod-score" href="/boxscores/?date=${encodeURIComponent(date)}">Box scores</a>`);
     }).catch(() => {});
 
