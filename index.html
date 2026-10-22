@@ -454,7 +454,7 @@
     .dash-standings-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-3); }
     :root .dash-standings-head .dash-card-title { margin: 0; }
     .dash-standings-more { font-size: var(--text-xs); color: var(--link); }
-    .dash-stand-odds { margin-left: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 2.2rem; text-align: right; }
+    .dash-stand-gb { margin-left: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 1.8rem; text-align: right; }
     .dash-standings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4) var(--space-6); }
     .dash-stand-line { margin: 0.25rem 0; padding-top: 0.2rem; border-top: 1px dashed var(--border); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
     .dash-stand-line + .dash-stand-row { border-top: none; }
@@ -467,7 +467,11 @@
     .dash-race-row:hover .dash-race-name { color: var(--link); }
     .dash-race-name { font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .dash-race-num { margin-left: auto; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .dash-conf-name { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .dash-conf-name { display: flex; align-items: baseline; font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
+    /* Column labels on the conference line, over the record and GB. */
+    .dash-conf-name .dash-conf-col { font-size: 0.65rem; font-weight: 400; text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
+    .dash-conf-name .dash-conf-col:first-of-type { margin-left: auto; }
+    .dash-conf-name .dash-conf-col.dash-stand-gb { font-size: 0.65rem; }
     .dash-stand-row {
       display: flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0;
       font-size: var(--text-sm); color: var(--text-secondary); text-decoration: none;
@@ -478,19 +482,19 @@
     .dash-stand-row img { width: 18px; height: 18px; object-fit: contain; }
     .dash-stand-abbr { font-weight: 600; color: var(--text-primary); }
     .dash-stand-rec { margin-left: auto; font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
-    /* A record or odds figure never breaks across lines ("1–\n0"); on a phone
+    /* A record or GB figure never breaks across lines ("1–\n0"); on a phone
        the two conferences share ~170px each, so tighten the row instead. */
-    .dash-stand-abbr, .dash-stand-odds { white-space: nowrap; }
+    .dash-stand-abbr, .dash-stand-gb { white-space: nowrap; }
     .dash-stand-row > * { flex-shrink: 0; }
     @media (max-width: 520px) {
       .dash-standings-grid { column-gap: var(--space-4); }
       .dash-stand-row { gap: 0.25rem; }
-      .dash-stand-odds { margin-left: 0.3rem; min-width: 1.9rem; }
+      .dash-stand-gb { margin-left: 0.25rem; min-width: 1.5rem; }
     }
     @media (max-width: 360px) {
       .dash-standings-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--space-3); }
       .dash-stand-row img { width: 14px; height: 14px; }
-      .dash-stand-odds { margin-left: 0.15rem; min-width: 1.7rem; }
+      .dash-stand-gb { margin-left: 0.15rem; min-width: 1.4rem; }
     }
 
     /* Ratings movers: risers, then fallers, in the standings' row style. */
@@ -1509,26 +1513,28 @@
 
     // ── Standings ─────────────────────────────────────────────────────────
     //
-    // The top six in each conference, while a season is being played. The
-    // seeds are the build's own (tiebreaks included), so this agrees with
-    // /standings by construction.
+    // Each conference in full, while a season is being played, with games
+    // back of its 1 seed. The seeds are the build's own (tiebreaks included),
+    // so this agrees with /standings by construction.
     //
-    // Each row also carries the team's playoff odds (GET /api/playoff-odds,
-    // the Playoff Odds tab on /standings), when there are any.
+    // The playoff odds (GET /api/playoff-odds) aren't shown here — the header
+    // links to them — but the payload still supplies unplayed teams and the
+    // clinch marks.
     const oddsPromise = jget('/api/playoff-odds').catch(() => null);
     Promise.all([liveStandingsPromise, oddsPromise, liveSeasonPromise]).then(([rows, odds, season]) => {
       const seeded = rows.filter(r => /^(East|West)-/.test(r.SEED || ''));
       if (!seeded.length) return;
-      const po = {};
-      ((odds && odds.teams) || []).forEach(t => { po[t.team] = t.playoffs; });
+      const hasOdds = !!(odds && odds.teams && odds.teams.length);
       // The odds payload knows every team's conference and season length,
       // which the standings file can't (it lists only teams that have played):
       // the same fill-in and clinch marks /standings makes.
       const live = odds && odds.season === season && Array.isArray(odds.teams)
         ? new Map(odds.teams.map(t => [t.team, t])) : null;
-      const oddsCell = t => po[t] == null ? ''
-        : `<span class="dash-stand-odds" title="Playoff odds">${po[t] >= 0.995 ? '>99' : po[t] < 0.005 ? '<1' : Math.round(po[t] * 100)}%</span>`;
-      const SHOWN = 10;   // through the play-in
+      // Same formula as /standings: half a game per win or loss behind the leader.
+      const gb = (lead, r) => {
+        const d = ((+lead.W - +r.W) + (+r.L - +lead.L)) / 2;
+        return d === 0 ? '—' : d.toFixed(1);
+      };
       const conf = (c, label) => {
         let list = seeded.filter(r => r.SEED.startsWith(c)).sort((a, b) => +a.SEED_NUM - +b.SEED_NUM);
         if (live) {
@@ -1544,18 +1550,20 @@
           const teams = list.map(r => ({ team: r.TEAM, w: +r.W, l: +r.L, games: +(live.get(r.TEAM)?.games) || 0 }));
           if (teams.length && teams.every(t => t.games)) marks = Clinch.marks(teams);
         }
-        return `<div><div class="dash-conf-name">${label}</div>` + list.slice(0, SHOWN).map((r, i) =>
+        return `<div><div class="dash-conf-name">${label}<span class="dash-conf-col dash-stand-rec">W–L</span><span class="dash-conf-col dash-stand-gb">GB</span></div>`
+          + list.map((r, i) =>
           (i === Clinch.PLAYOFF ? '<div class="dash-stand-line" title="Seeds 7–10 play in">Play-in</div>' : '')
+          + (i === Clinch.PLAY_IN ? '<div class="dash-stand-line" title="Seeds 11–15 miss the postseason">Lottery</div>' : '')
           + `<a class="dash-stand-row" href="/teams/${esc(r.TEAM)}/">`
           + `<span class="dash-stand-seed">${i + 1}</span>`
           + `<img src="/logos/sm/logo-${esc(r.TEAM.toLowerCase())}.webp" alt="">`
           + `<span class="dash-stand-abbr">${esc(r.TEAM)}</span>`
           + (marks[r.TEAM] ? `<span class="dash-stand-mark" title="${esc(Clinch.LABELS[marks[r.TEAM]])}">${esc(marks[r.TEAM])}</span>` : '')
-          + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span>${oddsCell(r.TEAM)}</a>`).join('') + '</div>';
+          + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span><span class="dash-stand-gb" title="Games back">${gb(list[0], r)}</span></a>`).join('') + '</div>';
       };
       $('dash-standings').innerHTML =
         '<div class="dash-standings-head"><div class="dash-card-title">Standings</div>'
-        + `<a class="dash-standings-more" href="${Object.keys(po).length ? '/standings/#odds">Playoff odds' : '/standings">Full standings'} →</a></div>`
+        + `<a class="dash-standings-more" href="${hasOdds ? '/standings/#odds">Playoff odds' : '/standings">Full standings'} →</a></div>`
         + `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`;
       $('dash-standings').hidden = false;
     }).catch(() => {});
