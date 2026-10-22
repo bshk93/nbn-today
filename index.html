@@ -196,6 +196,11 @@
       color: var(--gold); font-size: var(--text-xs);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
     }
+    /* Once played, the game's video (vod.js) takes the stream tag's place, and
+       its line: a zero-height full-width item breaks the row, so the button
+       sits under the matchup at its own size and the time stays up top. */
+    .dash-game:has(> .vod-watch, > .vod-pending)::after { content: ''; order: 1; flex-basis: 100%; height: 0; }
+    .dash-game > .vod-watch, .dash-game > .vod-pending { order: 2; margin-left: 1.05rem; }
     .dash-game-time { color: var(--text-muted); font-size: var(--text-xs); margin-left: auto; flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
     /* Action chips — the obligations band. Tone matches cap-health.js's
