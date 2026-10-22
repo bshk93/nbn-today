@@ -63,6 +63,13 @@
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
       font-size: 0.75rem; padding: 0.3rem 0.65rem;
     }
+    /* A group (one player's Remove / Still available) is one row: the name
+       once, then its buttons at one fixed width so they line up row to row. */
+    .msg-groups { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.55rem; }
+    .msg-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; }
+    .msg-group-name { flex: 1 1 9rem; font-size: 0.82rem; color: var(--text-primary); font-weight: 600; }
+    .msg-group-btns { display: flex; gap: 0.4rem; }
+    .msg-group-btns .msg-action { width: 8.5rem; text-align: center; }
     .msg-action:hover:not(:disabled) { border-color: var(--accent); }
     .msg-action-primary { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
     .msg-action-primary:hover:not(:disabled) { filter: brightness(1.1); }
@@ -216,28 +223,67 @@ function renderItem(it) {
 }
 
 function renderMsgActions(it) {
-  const wrap = document.createElement('div');
-  wrap.className = 'msg-actions';
-  // Actions sharing a `group` are alternatives (Remove / Still available for
-  // one player): once one is done, it alone stands for the group.
-  const doneGroups = new Set(it.actions.filter(a => a.done_at && a.group).map(a => a.group));
+  // Ungrouped actions sit in one wrapping line. Actions sharing a `group` are
+  // alternatives (Remove / Still available for one player) and get a row of
+  // their own; once one is done, its chip stands for the whole row.
+  const groups = [];
+  const loose = [];
   it.actions.forEach((a, i) => {
-    if (!a.done_at && a.group && doneGroups.has(a.group)) return;
-    if (a.done_at) {
-      const done = document.createElement('span');
-      done.className = 'msg-action-done';
-      done.textContent = '\u2713 ' + (a.done_label || a.label)
-        + (me && a.done_by && a.done_by !== me.name ? ` (${a.done_by})` : '');
-      wrap.appendChild(done);
-      return;
-    }
-    const btn = document.createElement('button');
-    btn.className = 'msg-action' + (a.kind === 'tradeblock_remove' ? ' msg-action-primary' : '');
-    btn.textContent = a.label;
-    btn.addEventListener('click', () => runMsgAction(it, i, btn, wrap));
-    wrap.appendChild(btn);
+    if (!a.group) { loose.push(i); return; }
+    let g = groups.find(x => x.name === a.group);
+    if (!g) groups.push(g = { name: a.group, idx: [] });
+    g.idx.push(i);
   });
-  return wrap;
+
+  const outer = document.createElement('div');
+  if (groups.length) {
+    const list = document.createElement('div');
+    list.className = 'msg-groups';
+    groups.forEach(g => {
+      const row = document.createElement('div');
+      row.className = 'msg-group';
+      const done = g.idx.find(i => it.actions[i].done_at);
+      if (done !== undefined) {
+        row.appendChild(doneChip(it.actions[done]));
+      } else {
+        const name = document.createElement('span');
+        name.className = 'msg-group-name';
+        name.textContent = g.name;
+        const btns = document.createElement('div');
+        btns.className = 'msg-group-btns';
+        g.idx.forEach(i => btns.appendChild(actionButton(it, i, row, it.actions[i].short || it.actions[i].label)));
+        row.appendChild(name);
+        row.appendChild(btns);
+      }
+      list.appendChild(row);
+    });
+    outer.appendChild(list);
+  }
+  if (loose.length) {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-actions';
+    loose.forEach(i => wrap.appendChild(
+      it.actions[i].done_at ? doneChip(it.actions[i]) : actionButton(it, i, wrap, it.actions[i].label)));
+    outer.appendChild(wrap);
+  }
+  return outer;
+}
+
+function doneChip(a) {
+  const done = document.createElement('span');
+  done.className = 'msg-action-done';
+  done.textContent = '\u2713 ' + (a.done_label || a.label)
+    + (me && a.done_by && a.done_by !== me.name ? ` (${a.done_by})` : '');
+  return done;
+}
+
+function actionButton(it, i, wrap, text) {
+  const a = it.actions[i];
+  const btn = document.createElement('button');
+  btn.className = 'msg-action' + (a.kind === 'tradeblock_remove' ? ' msg-action-primary' : '');
+  btn.textContent = text;
+  btn.addEventListener('click', () => runMsgAction(it, i, btn, wrap));
+  return btn;
 }
 
 async function runMsgAction(it, i, btn, wrap) {
