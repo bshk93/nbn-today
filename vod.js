@@ -30,7 +30,7 @@
     if (!url) return '';
     return `<a class="vod-box" href="${esc(url)}" target="_blank" rel="noopener" `
       + `title="Box scores for the games that weren’t streamed">${ICON}`
-      + '<span>Box scores</span><span class="vod-box-sub">the night’s other games</span></a>';
+      + '<span>Box Scores</span><span class="vod-box-sub">the night’s other games</span></a>';
   }
 
   global.NbnVod = { ICON, gameHtml, boxScoresHtml };
