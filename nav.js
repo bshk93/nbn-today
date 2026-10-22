@@ -283,9 +283,9 @@ function _rebuildThemeMenu() {
 }
 
 // ── Inbox button ─────────────────────────────────────────────────────────────
-// Lives beside the theme picker rather than the old bottom-corner token badge —
-// same real estate as search/theme, so it's part of the nav chrome every page
-// already has instead of a separate floating element. The unread count is only
+// Only on a page that opts out of the sidebar (`<html data-no-sidebar>`):
+// everywhere else the inbox is in the sidebar's account menu, and its unread
+// count rides on the avatar there and on the ☰. The unread count is only
 // fetched when a token is on hand; a signed-out visitor still gets the button
 // (clicking takes them to /inbox/, which prompts sign-in itself), just no badge.
 function _buildInboxButton() {
@@ -309,7 +309,7 @@ function _buildInboxButton() {
   return btn;
 }
 
-// Unread inbox count, once per page — the nav button and the sidebar's Inbox
+// Unread inbox count, once per page — the avatar, the ☰ and the sidebar's Inbox
 // row both show it. 0 when signed out (no request then).
 let _unreadPromise = null;
 function _unreadCount() {
@@ -448,7 +448,10 @@ function _initNav() {
     const actions = document.createElement('div');
     actions.className = 'nav-actions';
 
-    if (!nav.hasAttribute('data-no-search')) {
+    // Search and the inbox live in the sidebar (its search box, Ctrl+K, and
+    // the account menu), so the nav carries them only on a page without one.
+    // What's left here is token-badge.js's Sign in, on phones.
+    if (!_sidebarEnabled() && !nav.hasAttribute('data-no-search')) {
       const btn = document.createElement('button');
       btn.className = 'search-btn nav-icon-btn';
       btn.setAttribute('aria-label', 'Search (Ctrl+K)');
@@ -458,7 +461,7 @@ function _initNav() {
       actions.appendChild(btn);
     }
 
-    actions.appendChild(_buildInboxButton());
+    if (!_sidebarEnabled()) actions.appendChild(_buildInboxButton());
     nav.appendChild(actions);
   }
 }
@@ -886,7 +889,7 @@ function _buildAccount() {
   wrap.className = 'sb-account';
   wrap.innerHTML = `
     <button type="button" class="sb-acct-btn" aria-haspopup="menu" aria-expanded="false">
-      <span class="sb-avatar">${_ICON_PERSON}</span>
+      <span class="sb-avatar-wrap"><span class="sb-avatar">${_ICON_PERSON}</span></span>
       <span class="sb-acct-text sb-label">
         <span class="sb-acct-name">Sign in</span>
         <span class="sb-acct-sub">Guest</span>
@@ -969,9 +972,14 @@ function _buildAccount() {
     menu.replaceChildren(head, profile, teamSlot, inbox, nby, divider(), themeRow, themeList, divider(), signOut);
     _refreshThemeMenu();
 
+    // Unread mail shows on the avatar too — the inbox used to be its own
+    // button in the nav, and its count shouldn't go out of sight with it.
     _unreadCount().then(n => {
       if (!n) return;
-      inbox.insertAdjacentHTML('beforeend', `<span class="sb-badge">${n > 99 ? '99+' : n}</span>`);
+      const count = n > 99 ? '99+' : String(n);
+      inbox.insertAdjacentHTML('beforeend', `<span class="sb-badge">${count}</span>`);
+      wrap.querySelector('.sb-avatar-wrap').insertAdjacentHTML('beforeend',
+        `<span class="sb-avatar-badge" title="${count} unread">${count}</span>`);
     });
     _fetchBalance().then(b => { if (b != null) headSub.textContent = 'NB¥ ' + b.toLocaleString('en-US', { maximumFractionDigits: 0 }); });
     _fetchProfile().then(p => {
@@ -1122,6 +1130,12 @@ function _buildMenuButton() {
   btn.setAttribute('aria-expanded', 'false');
   btn.innerHTML = _ICON_MENU;
   btn.addEventListener('click', () => (_drawerOpen() ? _closeDrawer() : _openDrawer()));
+  // On a phone the drawer hides the account menu, so unread mail marks the ☰.
+  _unreadCount().then(n => {
+    if (!n) return;
+    btn.classList.add('has-unread');
+    btn.setAttribute('aria-label', `Menu — ${n} unread`);
+  });
   return btn;
 }
 
@@ -1195,7 +1209,8 @@ const NAV_SECTIONS = [
   ] },
   { label: 'NB¥ Corner', items: [
     { title: 'NB¥ Balances', href: '/nbyen/', icon: 'yen' },
-    { title: 'Bets & Futures', href: '/bet/', icon: 'dice' },
+    { title: 'Betting — bets, Pick\'em, futures', short: 'Betting', href: '/bet/', icon: 'dice' },
+    { title: "Pick'em", href: '/bet/#pickem', icon: 'target', keywords: ['pickem', 'lineup', 'fantasy'] },
     { title: 'Futures', href: '/bet/#futures', icon: 'line-chart', searchOnly: true },
     { title: 'Wall Street', href: '/invest', icon: 'candles' },
     { title: 'Donations', href: '/donations/', icon: 'heart' },

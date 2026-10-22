@@ -24,15 +24,15 @@
 .nav-crumb-sep { color: var(--text-dim); }
 .nav-crumb-current { color: var(--text-secondary); }
 
-/* Wraps search-btn + inbox (+ Sign in on phones) so the group gets pushed to the
-   right edge of .nav regardless of which pieces are actually present
-   (e.g. the homepage suppresses search-btn since it has its own big
-   search bar already) — the margin-left:auto belongs on the wrapper,
-   not on whichever button happens to be first. */
+/* Pushed to the right edge of .nav. With the sidebar on, all it holds is
+   token-badge.js's Sign in, on phones — search and the inbox are in the
+   sidebar. A page that opts out of the sidebar (`<html data-no-sidebar>`) gets
+   search and inbox buttons here instead. The margin-left:auto belongs on the
+   wrapper, not on whichever button happens to be first. */
 .nav-actions { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; }
 
-/* Shared circular treatment for every icon button in the action row (☰,
-   search, inbox), so the row reads as one designed set of buttons
+/* Shared circular treatment for the nav's icon buttons (☰, and search and
+   inbox on a page without the sidebar), so the row reads as one designed set of buttons
    rather than whatever each one felt like individually. Each button also
    keeps its own class for the bits that aren't shared (badge positioning).
    Your profile and the theme picker used to sit here too; they're in the
@@ -57,7 +57,7 @@
 .nav-icon-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); background: var(--bg-hover); }
 .nav-icon-btn svg { width: 1.05rem; height: 1.05rem; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
-/* Inbox */
+/* Inbox (pages without the sidebar only) */
 /* overflow: visible overrides .nav-icon-btn's overflow: hidden (which clips
    a button's contents to its circle) — without it, the badge below,
    deliberately positioned outside the button's own box, gets clipped by
