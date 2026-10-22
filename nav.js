@@ -1322,7 +1322,7 @@ const NAV_SECTIONS = [
     { title: 'Award Race', href: '/awards/race/', icon: 'flag' },
   ] },
   { label: 'Front Office', icon: 'swap', items: [
-    { title: 'Tradeblock', href: '/tradeblock/', icon: 'swap' },
+    { title: 'Trade Block', href: '/tradeblock/', icon: 'swap' },
     { title: 'Free Agency', href: '/free-agency/', icon: 'pen' },
     { title: 'Extensions', href: '/extensions/', icon: 'doc-plus' },
     { title: 'Transactions', href: '/transactions', icon: 'doc-lines' },

@@ -5,12 +5,12 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Tradeblock - NBN</title>
+  <title>Trade Block - NBN</title>
   <!-- NBN:og -->
   <meta name="description" content="Who’s available around NBN — every team’s listed players and picks.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Tradeblock - NBN">
+  <meta property="og:title" content="Trade Block - NBN">
   <meta property="og:description" content="Who’s available around NBN — every team’s listed players and picks.">
   <meta property="og:url" content="https://nbn.today/tradeblock/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
@@ -410,7 +410,7 @@
     <nav class="nav"></nav>
     <header class="ui-header">
       <div>
-        <h1 class="ui-title">Tradeblock</h1>
+        <h1 class="ui-title">Trade Block</h1>
       </div>
       <div class="ui-header-actions">
         <a class="ui-btn ui-btn--primary" id="propose-trade-btn" href="/transaction-sim/">Propose a trade</a>
@@ -977,7 +977,7 @@
         td.colSpan = COLS.length;
         td.style.cssText = 'text-align:center;padding:3rem;color:var(--text-muted);font-size:0.9rem;';
         td.textContent = tableRows.length === 0
-          ? 'Nothing on the tradeblock yet.'
+          ? 'Nothing on the Trade Block yet.'
           : 'No players match the selected filters.';
         return;
       }
@@ -1070,7 +1070,7 @@
       header.className = 'edit-panel-header';
 
       const h2 = document.createElement('h2');
-      h2.innerHTML = `Manage Tradeblock <span class="team-badge">${myTeam}</span>`;
+      h2.innerHTML = `Manage Trade Block <span class="team-badge">${myTeam}</span>`;
 
       const toggle = document.createElement('span');
       toggle.className = 'panel-toggle';
@@ -1556,7 +1556,7 @@
         statusEl.remove();
         refreshTable();
       } catch {
-        statusEl.textContent = 'Failed to load tradeblock.';
+        statusEl.textContent = 'Failed to load the Trade Block.';
       }
     })();
   </script>

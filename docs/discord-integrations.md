@@ -282,7 +282,7 @@ The office form announces only voids (like releases, which it always has).
 An office-entered renounce or option is usually recording something a human
 already posted, so it stays quiet. Pinned by `tests/test_roster_move_notify.py`.
 
-## Tradeblock Discord notifications
+## Trade Block Discord notifications
 
 `/tradeblock`'s edit panel has an "Also post to Discord" checkbox, **off by
 default**, next to Save. Checked, it sends `notify_discord: true` on
