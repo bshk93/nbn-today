@@ -135,7 +135,11 @@
     const skills = await Promise.all(files.map(async name => {
       const slug = slugFromFilename(name);
       try {
-        const text = await (await fetch('/.claude/commands/' + name)).text();
+        // Served through skills/commands, a symlink to .claude/commands:
+        // nginx refuses every dot-path, so the direct URL 404s.
+        const res = await fetch('/skills/commands/' + name);
+        if (!res.ok) throw new Error(res.status);
+        const text = await res.text();
         const firstLine = text.split('\n', 1)[0].trim();
         return { slug, name, text, desc: firstLine };
       } catch {

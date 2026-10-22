@@ -7,11 +7,11 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>Bets &amp; Futures — NBN</title>
   <!-- NBN:og -->
-  <meta name="description" content="Put NB¥ on NBN games and league outcomes.">
+  <meta name="description" content="Put NB¥ on NBN: open bets, the daily Pick'em and futures markets, all in one place.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
   <meta property="og:title" content="Bets &amp; Futures — NBN">
-  <meta property="og:description" content="Put NB¥ on NBN games and league outcomes.">
+  <meta property="og:description" content="Put NB¥ on NBN: open bets, the daily Pick'em and futures markets, all in one place.">
   <meta property="og:url" content="https://nbn.today/bet/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -130,6 +130,20 @@
     .payout-row .payout-profit { font-size: 0.72rem; color: var(--market-positive); }
     .voided-notice { color: var(--warning); font-size: 0.78rem; font-weight: 600; margin-top: 0.5rem; }
 
+    .act-title { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-5); }
+    .act-title:first-child, .act-summary + .act-title { margin-top: var(--space-2); }
+    .act-more { font-size: var(--text-xs); font-weight: 500; color: var(--text-muted); }
+    .act-quiet { font-size: var(--text-sm); color: var(--text-muted); padding: var(--space-2) 0; }
+    .act-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-2); margin-bottom: var(--space-3); }
+    .act-stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-2) var(--space-3); display: flex; flex-direction: column; gap: 0.15rem; }
+    .act-stat-label { font-size: var(--text-xs); color: var(--text-muted); }
+    .act-stat-value { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .act-card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1.1rem; margin-bottom: 0.6rem; color: inherit; text-decoration: none; }
+    .act-card-main { min-width: 0; color: var(--text-secondary); font-size: var(--text-sm); }
+    .act-card-main strong { color: var(--text-primary); }
+    .act-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.2rem; }
+    .act-market:hover { border-color: var(--accent); text-decoration: none; }
+    .act-go { font-size: 1.4rem; color: var(--text-muted); }
     .empty-state { color: var(--text-muted); font-size: 0.875rem; padding: 2rem 0; text-align: center; }
     .loading { color: var(--text-muted); font-size: 0.875rem; }
 
@@ -196,7 +210,7 @@
   <div class="page ui-page">
     <nav class="nav"></nav>
     <header class="ui-header">
-      <h1 class="ui-title">Bets &amp; Futures</h1>
+      <h1 class="ui-title">Betting</h1>
       <div class="header-right ui-header-actions">
         <a class="balance-chip" id="balance-chip" style="display:none" title="Your NB¥ history"></a>
         <button class="new-canned-btn" id="new-canned-btn" style="display:none">+ New Bet</button>
@@ -226,9 +240,10 @@
     <div class="house-line" id="house-line" style="display:none"></div>
 
     <div class="tabs ui-tabs" role="tablist">
-      <button class="tab-btn ui-tab active" id="tab-open">Open</button>
+      <button class="tab-btn ui-tab active" id="tab-action">Action</button>
+      <button class="tab-btn ui-tab"        id="tab-pickem">Pick'em</button>
       <button class="tab-btn ui-tab"        id="tab-futures">Futures</button>
-      <button class="tab-btn ui-tab"        id="tab-closed">Closed</button>
+      <button class="tab-btn ui-tab"        id="tab-history">History</button>
     </div>
 
     <div id="new-bet-form-wrap" style="display:none"></div>
@@ -236,13 +251,18 @@
   </div>
 
   <script src="/league-time.js"></script>
+  <script src="/names.js"></script>
   <script src="/bet/futures.js"></script>
+  <script src="/bet/pickem.js"></script>
   <script>
     const TOKEN = localStorage.getItem('nbn_token');
     let currentUser     = null;   // {name, roles}
     let allBets         = [];
     let balancesList    = [];
-    let currentTab      = 'open';
+    // Action is everything you can put NB¥ on right now, on one scroll. The
+    // other tabs are the detail behind it; the hash names the tab.
+    const TABS          = ['action', 'pickem', 'futures', 'history'];
+    let currentTab      = 'action';
     let showNewForm     = false;
     let showCannedForm  = false;
 
@@ -252,6 +272,8 @@
     let _teamDiffCache     = {};    // abbr.lower → number
     let _rosterCache       = {};    // abbr.lower → [{slug, name}]
     let _playerStatsCache  = null;  // slug → most-recent-season row
+
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     const nby = (n, decimals = 2) => {
       const v = Number(n);
@@ -356,9 +378,7 @@
         };
       }
 
-      document.getElementById('tab-open').onclick    = () => switchTab('open');
-      document.getElementById('tab-futures').onclick = () => switchTab('futures');
-      document.getElementById('tab-closed').onclick  = () => switchTab('closed');
+      TABS.forEach(t => { document.getElementById(`tab-${t}`).onclick = () => switchTab(t); });
 
       document.getElementById('earn-toggle').onclick = () => {
         const panel = document.getElementById('earn-panel');
@@ -368,7 +388,9 @@
         btn.textContent = open ? 'ℹ How to earn NB¥ ▾' : 'ℹ How to earn NB¥ ▴';
       };
 
-      if (location.hash === '#futures') currentTab = 'futures';
+      const hashTab = location.hash.slice(1);
+      if (TABS.includes(hashTab)) currentTab = hashTab;
+      if (hashTab === 'closed') currentTab = 'history';   // the old Closed tab
       syncTabButtons();
       renderView();
     }
@@ -385,27 +407,38 @@
       }
     }
 
-    function switchTab(t) {
+    // A tab switch is a history entry, so Back returns to the last tab (and
+    // Pick'em's day arrows likewise step back through days) instead of
+    // leaving the page.
+    function switchTab(t, fromHistory = false) {
       currentTab    = t;
       showNewForm   = false;
       showCannedForm = false;
       renderFormArea();
-      history.replaceState(null, '', location.pathname + location.search + (t === 'futures' ? '#futures' : ''));
+      const url = location.pathname + location.search + (t === 'action' ? '' : `#${t}`);
+      if (!fromHistory && url !== location.pathname + location.search + location.hash) history.pushState(null, '', url);
       syncTabButtons();
       renderView();
     }
 
+    window.addEventListener('popstate', () => {
+      const t = location.hash.slice(1);
+      window.Pickem.showDate(new URLSearchParams(location.search).get('date'));
+      switchTab(TABS.includes(t) ? t : 'action', true);
+    });
+
     function syncTabButtons() {
-      ['open','futures','closed'].forEach(id => {
+      TABS.forEach(id => {
         const el = document.getElementById(`tab-${id}`);
         if (el) el.classList.toggle('active', id === currentTab);
       });
     }
 
     function renderView() {
-      if      (currentTab === 'open')    renderOpenBets();
+      if      (currentTab === 'action')  renderAction();
+      else if (currentTab === 'pickem')  renderPickem();
       else if (currentTab === 'futures') renderFutures();
-      else                               renderClosedBets();
+      else                               renderHistory();
     }
 
     // ── New Bet Form ──────────────────────────────────────────────────────────
@@ -596,43 +629,158 @@
       wrap.style.display = '';
     }
 
-    // ── Open Bets ─────────────────────────────────────────────────────────────
+    // ── Shared with the modules ──────────────────────────────────────────────
 
-    function renderOpenBets() {
-      const content = document.getElementById('content');
-      const open = allBets.filter(b => b.status === 'open' || b.status === 'locked');
-      if (!open.length) {
-        content.innerHTML = '<div class="empty-state">No open bets right now.</div>';
-        return;
+    const moduleCtx = () => ({
+      token: TOKEN,
+      user: () => currentUser,
+      isBookie: isBetsRole,
+      refreshBalance,
+    });
+
+    const section = (title, link) => {
+      const h = document.createElement('h2');
+      h.className = 'ui-section-title act-title';
+      h.innerHTML = title;
+      if (link) {
+        const a = document.createElement('a');
+        a.href = `#${link.tab}`;
+        a.className = 'act-more';
+        a.textContent = link.label;
+        a.onclick = e => { e.preventDefault(); switchTab(link.tab); window.scrollTo(0, 0); };
+        h.appendChild(a);
       }
+      return h;
+    };
+    const quiet = text => {
+      const d = document.createElement('div');
+      d.className = 'act-quiet';
+      d.textContent = text;
+      return d;
+    };
+
+    // ── Action ───────────────────────────────────────────────────────────────
+    // Today's Pick'em, open bets and open futures, each a section that drops
+    // to one quiet line when there's nothing in it.
+
+    async function renderAction() {
+      const content = document.getElementById('content');
+      content.innerHTML = '<span class="loading">Loading…</span>';
+      const [pk, markets, standing] = await Promise.all([
+        window.Pickem.today(moduleCtx()).catch(() => null),
+        window.Futures.load().catch(() => []),
+        fetch('/api/pickem').then(r => (r.ok ? r.json() : null)).catch(() => null),
+      ]);
+      if (currentTab !== 'action') return;
       content.innerHTML = '';
-      open.forEach(bet => content.appendChild(makeBetCard(bet)));
+      const openBets = allBets.filter(b => b.status === 'open' || b.status === 'locked');
+      const liveMarkets = markets.filter(m => m.status === 'open' || m.status === 'locked');
+
+      if (currentUser) content.appendChild(summaryStrip(openBets, liveMarkets, standing));
+
+      content.appendChild(section("Pick'em", { tab: 'pickem', label: 'Lineups & standings →' }));
+      content.appendChild(pickemCard(pk));
+
+      content.appendChild(section('Open bets', { tab: 'history', label: 'Past bets →' }));
+      if (openBets.length) openBets.forEach(bet => content.appendChild(makeBetCard(bet)));
+      else content.appendChild(quiet('No open bets right now.'));
+
+      content.appendChild(section('Futures', { tab: 'futures', label: 'Trade →' }));
+      if (liveMarkets.length) liveMarkets.forEach(m => content.appendChild(marketRow(m)));
+      else content.appendChild(quiet('No markets trading right now.'));
     }
 
-    // ── Closed Bets ───────────────────────────────────────────────────────────
-
-    function renderClosedBets() {
-      const content = document.getElementById('content');
-      const closed = allBets.filter(b => b.status === 'closed');
-      if (!closed.length) {
-        content.innerHTML = '<div class="empty-state">No closed bets yet.</div>';
-        return;
-      }
-      content.innerHTML = '';
-      // Most recent first
-      [...closed].reverse().forEach(bet => content.appendChild(makeBetCard(bet)));
+    function summaryStrip(openBets, liveMarkets, standing) {
+      const me = currentUser.name;
+      const inBets = openBets.reduce((s, b) => s + (b.wagers?.[me]?.amount || 0), 0);
+      const inFutures = liveMarkets.reduce((s, m) => s + window.Futures.standing(m, me).value, 0);
+      const rows = (standing && standing.season_totals) || [];
+      const i = rows.findIndex(r => r.member === me);
+      const stat = (label, value) => `<div class="act-stat"><span class="act-stat-label">${label}</span><span class="act-stat-value">${value}</span></div>`;
+      const d = document.createElement('div');
+      d.className = 'act-summary';
+      d.innerHTML = stat('Balance', nby(myBalance(), 0))
+        + stat('In open bets', nby(inBets, 0))
+        + stat('Futures shares worth', nby(inFutures, 0))
+        + stat("Pick'em", i < 0 ? '—' : `#${i + 1} of ${rows.length}`);
+      return d;
     }
 
-    // ── Futures ──────────────────────────────────────────────────────────────
-    // Markets live in bet/futures.js; this only hands it the page's state.
+    function pickemCard(pk) {
+      const d = document.createElement('div');
+      d.className = 'act-card';
+      if (!pk || !pk.games.length) {
+        d.className = 'act-quiet';
+        d.textContent = 'No games today.';
+        return d;
+      }
+      const when = new Date(pk.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
+      const go = (label, primary) => `<a class="ui-btn ui-btn--sm${primary ? ' ui-btn--primary' : ''}" href="#pickem" data-go="pickem">${label}</a>`;
+      const me = currentUser && currentUser.name;
+      const mine = pk.entries.find(e => e.member === me);
+      let body;
+      if (!pk.locked) {
+        const status = `${pk.games.length} game${pk.games.length === 1 ? '' : 's'} · open until the stream goes live · ${pk.entry_count} lineup${pk.entry_count === 1 ? '' : 's'} in`;
+        const yours = !me ? 'Sign in to set a lineup.'
+          : mine ? `Your lineup: ${['PG', 'SG', 'SF', 'PF', 'C', '6TH'].map(s => esc(nbnPlayerName(pk.names[mine.lineup[s]] || (pk.players.find(p => p.slug === mine.lineup[s]) || {}).name || mine.lineup[s]))).join(', ')}`
+          : 'You haven’t set a lineup.';
+        body = `<div class="act-card-main"><strong>${esc(when)}</strong><div class="act-sub">${status}</div><div class="act-sub">${yours}</div></div>
+          ${me ? go(mine ? 'Edit lineup' : 'Set lineup', !mine) : ''}`;
+      } else {
+        const top = pk.entries.slice(0, 3).map((e, i) => `${i + 1}. ${esc(e.member)} ${e.score.total.toFixed(1)}`).join(' · ');
+        const myRank = mine ? pk.entries.findIndex(e => e.member === me) + 1 : 0;
+        body = `<div class="act-card-main"><strong>${esc(when)}</strong> · ${pk.final ? 'final' : 'locked, scores coming in'}
+          <div class="act-sub">${top || 'Nobody set a lineup.'}</div>
+          ${mine ? `<div class="act-sub">You: #${myRank}, ${mine.score.total.toFixed(1)}</div>` : ''}</div>
+          ${go('See scores')}`;
+      }
+      d.innerHTML = body;
+      d.querySelectorAll('[data-go]').forEach(a => a.onclick = e => { e.preventDefault(); switchTab('pickem'); window.scrollTo(0, 0); });
+      return d;
+    }
+
+    // One line per market: its three likeliest outcomes and your position.
+    function marketRow(m) {
+      const d = document.createElement('a');
+      d.className = 'act-card act-market';
+      d.href = '#futures';
+      const top = [...m.outcomes].sort((a, b) => b.price - a.price).slice(0, 3)
+        .map(o => `${esc(o.label)} <strong>${Math.round(o.price)}%</strong>`).join(' · ');
+      const mine = currentUser ? window.Futures.standing(m, currentUser.name) : null;
+      const held = mine && mine.value > 0.005 ? `<div class="act-sub">Your shares are worth ${nby(mine.value, 0)}</div>` : '';
+      d.innerHTML = `<div class="act-card-main"><strong>${esc(m.title)}</strong>${m.status === 'locked' ? ' <span class="ui-badge">Locked</span>' : ''}
+        <div class="act-sub">${top}</div>${held}</div><span class="act-go">›</span>`;
+      d.onclick = e => { e.preventDefault(); switchTab('futures'); window.scrollTo(0, 0); };
+      return d;
+    }
+
+    // ── Pick'em, Futures: the modules ────────────────────────────────────────
+
+    function renderPickem() {
+      window.Pickem.render(document.getElementById('content'), moduleCtx());
+    }
 
     function renderFutures() {
-      window.Futures.render(document.getElementById('content'), {
-        token: TOKEN,
-        user: () => currentUser,
-        isBookie: isBetsRole,
-        refreshBalance,
-      });
+      window.Futures.render(document.getElementById('content'), moduleCtx(), { only: 'live' });
+    }
+
+    // ── History ──────────────────────────────────────────────────────────────
+    // Closed bets, then settled markets. Past Pick'em days are in Pick'em's
+    // own standings, which already list every day's winners.
+
+    async function renderHistory() {
+      const content = document.getElementById('content');
+      content.innerHTML = '';
+      content.appendChild(section('Closed bets'));
+      const closed = allBets.filter(b => b.status === 'closed');
+      if (closed.length) [...closed].reverse().forEach(bet => content.appendChild(makeBetCard(bet)));
+      else content.appendChild(quiet('No closed bets yet.'));
+      content.appendChild(section('Settled futures'));
+      const futs = document.createElement('div');
+      content.appendChild(futs);
+      window.Futures.render(futs, moduleCtx(), { only: 'done' });
+      content.appendChild(section("Pick'em", { tab: 'pickem', label: 'Every day’s winners →' }));
+      content.appendChild(quiet("Daily winners and the season table are under Pick'em → Standings."));
     }
 
     // ── Bet Card ──────────────────────────────────────────────────────────────

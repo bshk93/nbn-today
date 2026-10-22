@@ -162,7 +162,9 @@
 <script>
 const API = '/api';
 let allProposals = [];
-let currentTab = 'submitted';
+// The #hash names the tab, so a link or Back can land on one.
+let currentTab = document.querySelector(`.tab[data-tab="${location.hash.slice(1)}"]`) ? location.hash.slice(1) : 'submitted';
+document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === currentTab));
 let me = null; // { name, roles }
 
 function fmtDate(iso) {
@@ -223,13 +225,22 @@ function escHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function setTab(tab) {
+// The tab is the #hash and a history entry, so Back returns to it.
+function setTab(tab, fromHistory = false) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => {
     t.classList.toggle('active', t.dataset.tab === tab);
   });
+  if (!fromHistory) {
+    const url = tab === 'submitted' ? location.pathname : '#' + tab;
+    if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
+  }
   renderProposals();
 }
+window.addEventListener('popstate', () => {
+  const t = location.hash.slice(1);
+  setTab(document.querySelector(`.tab[data-tab="${t}"]`) ? t : 'submitted', true);
+});
 
 function matchesTab(p, tab) {
   if (tab === 'all') return true;

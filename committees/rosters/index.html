@@ -1167,15 +1167,23 @@
       renderCompletenessRows();
     }
 
+    // The tab is the #hash and a history entry, so Back returns to it.
     function setupTabs() {
+      const show = tab => {
+        const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`) || document.querySelector('.tab-btn[data-tab="compliance"]');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-panel').forEach(p => { p.hidden = p.id !== `panel-${btn.dataset.tab}`; });
+      };
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          const tab = btn.dataset.tab;
-          document.querySelectorAll('.tab-panel').forEach(p => { p.hidden = p.id !== `panel-${tab}`; });
+          const url = btn.dataset.tab === 'compliance' ? location.pathname : '#' + btn.dataset.tab;
+          if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
+          show(btn.dataset.tab);
         });
       });
+      window.addEventListener('popstate', () => show(location.hash.slice(1)));
+      if (location.hash) show(location.hash.slice(1));
     }
 
     async function load() {

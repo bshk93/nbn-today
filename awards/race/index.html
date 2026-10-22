@@ -108,10 +108,16 @@
       sel.innerHTML = seasons.map(s => `<option>${s}</option>`).join('');
       const want = new URLSearchParams(location.search).get('season');
       sel.value = seasons.includes(want) ? want : current;
+      // Each season is a history entry, so Back returns to the last one.
       sel.onchange = () => {
-        history.replaceState(null, '', sel.value === current ? location.pathname : `?season=${sel.value}`);
+        history.pushState(null, '', sel.value === current ? location.pathname : `?season=${sel.value}`);
         render(sel.value);
       };
+      window.addEventListener('popstate', () => {
+        const s = new URLSearchParams(location.search).get('season');
+        sel.value = seasons.includes(s) ? s : current;
+        render(sel.value);
+      });
 
       const isWinner = (key, season, p) => {
         const w = (winners[season] || {})[key];

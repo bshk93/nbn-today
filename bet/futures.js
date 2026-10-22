@@ -6,8 +6,10 @@
 // does no pricing math of its own — every number shown before a trade is a
 // POST /api/markets/{id}/quote, the same function the trade runs.
 //
-// Mounted by bet/index.html: Futures.render(container, ctx), where ctx is
-// { token, user(), isBookie(), refreshBalance(), balance() }.
+// Mounted by bet/index.html: Futures.render(container, ctx, {only}), where ctx
+// is { token, user(), isBookie(), refreshBalance(), balance() } and `only` is
+// 'live' (the Futures tab) or 'done' (settled and voided, for History).
+// Futures.load() and Futures.standing() feed the Action view's summary.
 (function () {
   const FUT_CSS = `
     .fut-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
@@ -68,6 +70,7 @@
   let root = null;
   let markets = [];
   let showForm = false;
+  let only = 'live';
   const histCache = {};       // market id → { count, h } — refetched when trade_count moves
   const slotOf = {};          // market id → { outcome id → 0|1|2 }, so a colour follows its outcome
   // Charts are drawn to their container's width, so a width change redraws
@@ -104,9 +107,10 @@
     return body;
   }
 
-  async function render(container, context) {
+  async function render(container, context, opts = {}) {
     ctx = context;
     root = container;
+    only = opts.only || 'live';
     if (!cssDone) {
       const st = document.createElement('style');
       st.textContent = FUT_CSS;
@@ -121,7 +125,7 @@
 
   function draw() {
     root.innerHTML = '';
-    if (ctx.isBookie()) {
+    if (only === 'live' && ctx.isBookie()) {
       const btn = document.createElement('button');
       btn.className = 'ui-btn ui-btn--sm';
       btn.textContent = showForm ? 'Cancel new market' : '+ New market';
@@ -132,13 +136,12 @@
     }
     const live = markets.filter(m => m.status === 'open' || m.status === 'locked');
     const done = markets.filter(m => m.status === 'settled' || m.status === 'voided');
-    if (!markets.length) {
-      root.insertAdjacentHTML('beforeend', '<div class="empty-state">No futures markets yet.</div>');
+    const shown = only === 'done' ? done : live;
+    if (!shown.length) {
+      root.insertAdjacentHTML('beforeend', `<div class="empty-state">${only === 'done' ? 'No settled markets yet.' : 'No markets trading right now.'}</div>`);
       return;
     }
-    if (!live.length) root.insertAdjacentHTML('beforeend', '<div class="empty-state">No markets trading right now.</div>');
-    live.forEach(m => root.appendChild(card(m)));
-    done.forEach(m => root.appendChild(card(m)));
+    shown.forEach(m => root.appendChild(card(m)));
   }
 
   function replace(m) {
@@ -752,5 +755,11 @@
     return f;
   }
 
-  window.Futures = { render };
+  /** Every market, for a caller that only needs the numbers. */
+  async function load() {
+    const r = await fetch('/api/markets');
+    return r.ok ? r.json() : [];
+  }
+
+  window.Futures = { render, load, standing };
 })();

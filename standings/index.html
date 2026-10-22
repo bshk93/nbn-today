@@ -301,12 +301,16 @@
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'odds') loadOdds();
     }
+    // A tab switch is a history entry, so Back returns to the last tab
+    // instead of leaving the page.
     document.querySelectorAll('.ui-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         showTab(btn.dataset.tab);
-        history.replaceState(null, '', btn.dataset.tab === 'standings' ? location.pathname : '#' + btn.dataset.tab);
+        const url = btn.dataset.tab === 'standings' ? location.pathname : '#' + btn.dataset.tab;
+        if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
       });
     });
+    window.addEventListener('popstate', () => showTab(location.hash.slice(1) || 'standings'));
 
     // ── Playoff Odds tab ──────────────────────────────────────────────────────
     //

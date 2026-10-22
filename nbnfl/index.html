@@ -699,10 +699,13 @@
           IrlFeed.mount(document.getElementById('irl-panel'), { sport: 'nfl', roster: MY });
         }
       }
+      // A tab switch is a history entry, so Back returns to the last tab.
       document.querySelectorAll('.ui-tab[data-tab]').forEach(b => b.addEventListener('click', () => {
-        history.replaceState(null, '', b.dataset.tab === 'games' ? location.pathname : '#' + b.dataset.tab);
+        const url = b.dataset.tab === 'games' ? location.pathname : '#' + b.dataset.tab;
+        if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
         show(b.dataset.tab);
       }));
+      window.addEventListener('popstate', () => show(location.hash === '#irl' ? 'irl' : 'games'));
       show(location.hash === '#irl' ? 'irl' : 'games');
     }
   </script>

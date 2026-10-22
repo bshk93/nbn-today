@@ -20,6 +20,7 @@ page: ten page widths, three header layouts, four tab styles, 67 font sizes,
 - **Container:** `ui-page` (960px) or `ui-page ui-page--wide` (1240px). A few pages keep their own width on purpose: the 30×30 grid (h2h), the games, the article views, the live draft show.
 - **Header:** `ui-header` > `ui-title` + `ui-subtitle`, with `ui-header-actions` on the right.
 - **Tabs:** `ui-tabs` / `ui-tab` switch between *sections of a page*. `ui-segmented` switches between *views of the same data*. Nothing else.
+- **Back button:** a tab switch, or opening another item on the same page (a day, a season, a team, a stat board), is `history.pushState`, and the page listens for `popstate` to redraw it, so Back returns to it. Filters, sorting and search only `replaceState`, or five filter clicks take five Backs to leave. Name the tab in the URL (`#tab`) and read it on load, so a link lands on it too.
 - **Section title:** `ui-section-title`. Sentence case at a real size, not tiny spaced capitals.
 - **Table:** `ui-table-wrap` > `ui-table`. `.num`/`.right`, `.center`, `.muted`, `.strong` cells; `ui-table--dense`, `ui-table--sticky-first`. The wrap scrolls sideways on a phone so a table never widens the page.
 - **Buttons:** `ui-btn` plus `--primary`, `--danger`, `--ghost`, `--sm`. The older names pages already used (`.btn`, `.btn-primary`, `.btn-ghost`, `.btn-danger`, `.btn-secondary`, `.btn-success`, `.btn-cancel`, `.btn-save`, `.btn-sm`) are styled as the same buttons, so don't redefine them locally.

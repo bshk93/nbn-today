@@ -4143,19 +4143,25 @@
       const btn = document.createElement('button');
       btn.className = 'page-tab' + (pg === activePage ? ' active' : '');
       btn.textContent = pg.label;
-      btn.addEventListener('click', () => {
-        if (activePage === pg && activeFilters.size === 0) return;
-        activePage = pg;
-        activeFilters.clear();
-        content.querySelectorAll('.missing-btn').forEach(b => b.classList.remove('active'));
-        tabBtns.forEach((b, i) => b.classList.toggle('active', PAGES[i] === pg));
-        history.replaceState(null, '', `?tab=${pg.id}`);
-        searchInput.value = '';
-        filterQ = '';
-        rebuildBody();
-      });
+      btn.addEventListener('click', () => selectPage(pg, true));
       return btn;
     });
+    // A tab switch is a history entry, so Back returns to the last tab.
+    function selectPage(pg, push) {
+      if (activePage === pg && activeFilters.size === 0) return;
+      activePage = pg;
+      activeFilters.clear();
+      content.querySelectorAll('.missing-btn').forEach(b => b.classList.remove('active'));
+      tabBtns.forEach((b, i) => b.classList.toggle('active', PAGES[i] === pg));
+      if (push && location.search !== `?tab=${pg.id}`) history.pushState(null, '', `?tab=${pg.id}`);
+      searchInput.value = '';
+      filterQ = '';
+      rebuildBody();
+    }
+    window.onpopstate = () => {
+      const id = new URLSearchParams(location.search).get('tab');
+      selectPage(PAGES.find(p => p.id === id) || PAGES.find(p => p.id === 'all'), false);
+    };
     tabBtns.forEach(b => tabBar.appendChild(b));
     content.appendChild(tabBar);
 

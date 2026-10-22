@@ -292,7 +292,9 @@
 <script>
 const API = '/api';
 let allSuggestions = [];
-let currentTab = 'open';
+// The #hash names the tab, so a link or Back can land on one.
+let currentTab = document.querySelector(`.tab[data-tab="${location.hash.slice(1)}"]`) ? location.hash.slice(1) : 'open';
+document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === currentTab));
 let me = null; // { name, roles }
 // Every mutation reloads the whole list and re-renders, so which cards were
 // open has to survive that — otherwise posting a comment collapses the thread
@@ -582,13 +584,22 @@ function renderCard(s) {
   return el;
 }
 
-function setTab(tab) {
+// The tab is the #hash and a history entry, so Back returns to it.
+function setTab(tab, fromHistory = false) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => {
     t.classList.toggle('active', t.dataset.tab === tab);
   });
+  if (!fromHistory) {
+    const url = tab === 'open' ? location.pathname : '#' + tab;
+    if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
+  }
   renderSuggestions();
 }
+window.addEventListener('popstate', () => {
+  const t = location.hash.slice(1);
+  setTab(document.querySelector(`.tab[data-tab="${t}"]`) ? t : 'open', true);
+});
 
 function matchesTab(s, tab) {
   return tab === 'all' ? true : s.status === tab;

@@ -1284,11 +1284,18 @@
       }
     }
 
+    // The tab is the #hash and a history entry, so Back returns to it.
+    const tabFromHash = () => (location.hash === '#chart' ? 'chart' : 'table');
     document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+      btn.addEventListener('click', () => {
+        const url = btn.dataset.tab === 'table' ? location.pathname : '#' + btn.dataset.tab;
+        if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
+        activateTab(btn.dataset.tab);
+      });
     });
+    window.addEventListener('popstate', () => activateTab(tabFromHash()));
 
-    activateTab('table');
+    activateTab(tabFromHash());
   </script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
