@@ -599,6 +599,7 @@ function _sidebarGroup(label, key, rows, active, folded, icon) {
   hdr.setAttribute('aria-expanded', group.classList.contains('folded') ? 'false' : 'true');
   hdr.title = label;
   hdr.innerHTML = `<span class="sb-icon">${_navIcon(icon)}</span><span class="sb-group-label sb-label"></span>`
+    + `<span class="sb-group-live" hidden title="Live now"></span>`
     + `<span class="sb-group-badge" hidden></span><span class="sb-group-chev">${_ICON_CHEVRON}</span>`;
   hdr.querySelector('.sb-group-label').textContent = label;
   if (rows.some(p => p.href === active)) group.classList.add('holds-active');
@@ -660,12 +661,16 @@ function _refreshPinState() {
 }
 
 // ── Badges ──
-// Counts beside a row: unread inbox, games on today's slate. Kept here as
-// values and re-applied after any redraw, since Pinned rows come and go.
+// Beside a row: unread inbox and committee work as accent counts; games on
+// today's slate as muted text ('info'), or LIVE while the stream is on
+// ('live'). Only counts are something to clear, so only they add up on a
+// header — an info line reading as "2 unread" is what this split is for.
+// Kept here as values and re-applied after any redraw, since Pinned rows
+// come and go.
 const _badges = {};
 
-function _setBadge(href, n, label) {
-  _badges[href] = n > 0 ? { n, label } : null;
+function _setBadge(href, n, label, kind = 'count', text = null) {
+  _badges[href] = n > 0 ? { n, label, kind, text } : null;
   _refreshBadges();
 }
 
@@ -675,18 +680,20 @@ function _refreshBadges() {
     const link = row.classList.contains('sb-top-link') ? row : row.querySelector('.sb-link');
     let el = link.querySelector('.sb-badge');
     if (!b) { el?.remove(); return; }
-    if (!el) { el = document.createElement('span'); el.className = 'sb-badge'; link.appendChild(el); }
-    el.textContent = b.n > 99 ? '99+' : String(b.n);
+    if (!el) { el = document.createElement('span'); link.appendChild(el); }
+    el.className = 'sb-badge' + (b.kind === 'count' ? '' : ` sb-badge-${b.kind}`);
+    el.textContent = b.text ?? (b.n > 99 ? '99+' : String(b.n));
     el.title = b.label;
   });
   // A header shows its rows' total when you can't see the rows: folded, or
   // in rail mode (css/sidebar.css decides which; this keeps the number).
   document.querySelectorAll('.sidebar .sb-group').forEach(group => {
-    const total = [...group.querySelectorAll('.sb-row:not([hidden])')]
-      .reduce((n, row) => n + (_badges[row.dataset.href]?.n || 0), 0);
+    const shown = [...group.querySelectorAll('.sb-row:not([hidden])')].map(row => _badges[row.dataset.href]);
+    const total = shown.reduce((n, b) => n + (b?.kind === 'count' ? b.n : 0), 0);
     const el = group.querySelector('.sb-group-badge');
     el.hidden = !total;
     el.textContent = total > 99 ? '99+' : String(total);
+    group.querySelector('.sb-group-live').hidden = !shown.some(b => b?.kind === 'live');
   });
 }
 
@@ -713,6 +720,38 @@ function _gamesToday() {
       return n;
     })
     .catch(() => 0);
+}
+
+// Whether twitch.tv/nothingbutnet is live, from the same GET /api/stream/live
+// the homepage banner polls. Cached a minute per tab, as the API caches it.
+const STREAM_LIVE_KEY = 'nbn_stream_live';
+function _streamLive() {
+  try {
+    const c = JSON.parse(sessionStorage.getItem(STREAM_LIVE_KEY));
+    if (c && Date.now() - c.at < 60 * 1000) return Promise.resolve(c.live);
+  } catch { /* private browsing / nothing cached */ }
+  return fetch('/api/stream/live')
+    .then(r => (r.ok ? r.json() : null))
+    .then(d => {
+      const live = !!(d && d.live);
+      try { sessionStorage.setItem(STREAM_LIVE_KEY, JSON.stringify({ live, at: Date.now() })); } catch { /* ignore */ }
+      return live;
+    })
+    .catch(() => false);
+}
+
+// Calendar: "2 games today" in muted text, or LIVE while a game day is on stream.
+// Asked only on a day with games, so an off-day stream doesn't mark the
+// calendar live.
+function _loadCalendarBadge() {
+  _gamesToday().then(n => {
+    if (!n) return;
+    const today = `${n} game${n === 1 ? '' : 's'} today`;
+    _setBadge('/calendar', n, today, 'info', today);
+    _streamLive().then(live => {
+      if (live) _setBadge('/calendar', n, `Live on Twitch now · ${today}`, 'live', 'LIVE');
+    });
+  });
 }
 
 // ── Committee work ──
@@ -1203,7 +1242,7 @@ function _buildSidebar() {
   });
 
   _unreadCount().then(n => _setBadge('/inbox/', n, `${n} unread`));
-  _gamesToday().then(n => _setBadge('/calendar', n, `${n} game${n === 1 ? '' : 's'} today`));
+  _loadCalendarBadge();
   // Committee queues wait until the page itself has had the network.
   (window.requestIdleCallback || (fn => setTimeout(fn, 1500)))(_loadWorkBadges);
 
