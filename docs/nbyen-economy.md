@@ -198,6 +198,11 @@ paying it. So switching them back on pays unlocks from then on, not a backlog.
   `GET /api/nbyen/ledger`, in `routers/nbyen.py`). It's public because nearly
   all of it already was — bets, donations and balances. What it adds is who
   subs on Twitch and at what tier.
+- **Futures shares count on `/nbyen`.** A buy takes NB¥ out of the wallet, and
+  nothing comes back until the market settles. So the summary adds each
+  member's open shares at current prices (`markets.open_holdings()`) as
+  `futures` and `net_worth`. Without that, someone holding thousands in shares
+  looked broke, and the futures tile counted open positions as losses.
 - **Tests can't reach the live wallet.** `tests/__init__.py` points it at a temp
   directory before any test runs. It exists because `test_donations` once wrote
   a test donation into the live balances.
