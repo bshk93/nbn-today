@@ -23,6 +23,7 @@ was cut by ten at launch, so every price in it divides by ten.
 | Winning bets | Set by the bookie's odds | When a bet closes. |
 | Futures | 100 per winning share, or a sale at the market price | When you sell, or when the market settles. |
 | Box score screenshots | 25 per side, so 50 a game | The first screenshot for each team's side of a game pays its uploader. A game typed in by hand pays 50 when it's committed. Committing a game that came in as screenshots pays nothing more. Back on 2026-10-21. |
+| Pick'em | 100 for each day's winner, 1,000 for the season's | Paid to first place, with every tied winner getting the full amount. A day pays once all its box scores are in; the season once its last scheduled day is final. Paid by `settle()` in `nbn-api/routers/pickem.py`, kind `pickem`. On since 2026-10-22. |
 
 - **Every source is a real ledger line.** There's no default balance any more.
   A member nobody has paid has 0.
