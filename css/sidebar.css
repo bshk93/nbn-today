@@ -52,6 +52,21 @@
    display: flex comes later in nav-chrome.css and would win a tie. */
 .sidebar .sb-close { display: none; margin-left: auto; }
 
+/* My Team (signed in) or Sign in (not) — nav.js _buildMeSlot. */
+.sb-me, .sb-signin {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin: 0.1rem 0.75rem 0.35rem; padding: 0.5rem 0.6rem;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-primary); text-decoration: none; font: inherit; text-align: left; cursor: pointer;
+}
+.sb-me:hover, .sb-signin:hover { border-color: var(--text-muted); text-decoration: none; }
+.sb-signin { width: calc(100% - 1.5rem); color: var(--text-secondary); font-weight: 500; }
+.sb-me-logo { width: 2rem; height: 2rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
+.sb-me-logo img { width: 100%; height: 100%; object-fit: contain; }
+.sb-me-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.sb-me-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-me-meta { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 .sb-search {
   display: flex; align-items: center; gap: 0.55rem;
   margin: 0.35rem 0.75rem 0.5rem; padding: 0.45rem 0.6rem;
@@ -79,13 +94,40 @@
 .sb-group.folded .sb-group-chev { transform: rotate(0deg); }
 .sb-group.folded .sb-items { display: none; }
 
+.sb-row { position: relative; }
 .sb-link {
+  position: relative;
   display: flex; align-items: center; gap: 0.6rem;
-  margin: 0 0.5rem; padding: 0.38rem 0.5rem; border-radius: var(--radius-sm);
+  margin: 0 0.5rem; padding: 0.38rem 1.9rem 0.38rem 0.5rem; border-radius: var(--radius-sm);
   color: var(--text-secondary); text-decoration: none; white-space: nowrap;
 }
 .sb-link:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
 .sb-link[aria-current="page"] { background: var(--bg-hover); color: var(--text-primary); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
+/* The pin: shown on hover/focus, and kept faintly visible on touch screens
+   (no hover there). A pinned row's star is filled in the accent. */
+.sb-pin {
+  position: absolute; right: 0.85rem; top: 50%; transform: translateY(-50%);
+  display: flex; padding: 0.2rem; border: none; border-radius: 4px; background: none;
+  color: var(--text-muted); cursor: pointer; opacity: 0; transition: opacity 0.1s;
+}
+.sidebar .sb-pin svg { width: 0.85rem; height: 0.85rem; stroke-width: 2; }
+.sb-row:hover .sb-pin, .sb-pin:focus-visible { opacity: 1; }
+.sb-pin:hover { color: var(--text-primary); }
+.sb-row.pinned .sb-pin { color: var(--accent); }
+.sidebar .sb-row.pinned .sb-pin svg { fill: currentColor; }
+@media (hover: none) { .sb-pin { opacity: 0.55; } }
+
+/* Counts: unread inbox, games today. Sits where the pin would, so it gives
+   way to the pin while the row is hovered. */
+.sb-badge {
+  margin-left: auto; flex-shrink: 0;
+  min-width: 1.15rem; padding: 0.05rem 0.38rem; border-radius: 999px;
+  background: var(--accent); color: var(--text-on-accent);
+  font-size: 0.68rem; font-weight: 700; line-height: 1.35; text-align: center;
+}
+.sb-link:has(.sb-badge) { padding-right: 0.5rem; }
+.sb-row:hover .sb-link:has(.sb-badge) { padding-right: 1.9rem; }
+
 .sb-icon { width: 1.25rem; flex-shrink: 0; display: flex; justify-content: center; }
 .sb-label { overflow: hidden; text-overflow: ellipsis; }
 
@@ -120,6 +162,14 @@
   html[data-sidebar="rail"] .sb-link { justify-content: center; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-link .ni { width: 1.35rem; height: 1.35rem; }
   html[data-sidebar="rail"] .sb-collapse { justify-content: center; padding-inline: 0; }
+  /* My Team shrinks to its logo; Recent goes (pins stay, as icons); a badge
+     becomes a small count on the icon's corner. */
+  html[data-sidebar="rail"] .sb-me, html[data-sidebar="rail"] .sb-signin { justify-content: center; margin-inline: 0.5rem; padding: 0.35rem 0; width: auto; }
+  html[data-sidebar="rail"] .sb-me-logo { width: 1.6rem; height: 1.6rem; }
+  html[data-sidebar="rail"] .sb-recent, html[data-sidebar="rail"] .sb-pin { display: none; }
+  html[data-sidebar="rail"] .sb-row .sb-link,
+  html[data-sidebar="rail"] .sb-row:hover .sb-link:has(.sb-badge) { padding-right: 0; }
+  html[data-sidebar="rail"] .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: 0.55rem; }
   html[data-sidebar="rail"] .sb-collapse svg { transform: rotate(180deg); }
 }
 

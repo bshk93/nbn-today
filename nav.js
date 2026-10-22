@@ -337,19 +337,29 @@ function _buildInboxButton() {
   badge.className = 'inbox-badge';
   btn.appendChild(badge);
 
-  const token = localStorage.getItem('nbn_token');
-  if (token) {
-    fetch('/api/inbox', { headers: { Authorization: 'Bearer ' + token } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d && d.unread_count > 0) {
-          badge.textContent = d.unread_count > 99 ? '99+' : String(d.unread_count);
-          badge.classList.add('show');
-        }
-      })
-      .catch(() => {});
-  }
+  _unreadCount().then(n => {
+    if (n > 0) {
+      badge.textContent = n > 99 ? '99+' : String(n);
+      badge.classList.add('show');
+    }
+  });
   return btn;
+}
+
+// Unread inbox count, once per page — the nav button and the sidebar's Inbox
+// row both show it. 0 when signed out (no request then).
+let _unreadPromise = null;
+function _unreadCount() {
+  if (!_unreadPromise) {
+    let token = null;
+    try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
+    _unreadPromise = !token ? Promise.resolve(0)
+      : fetch('/api/inbox', { headers: { Authorization: 'Bearer ' + token } })
+          .then(r => r.ok ? r.json() : null)
+          .then(d => (d && d.unread_count) || 0)
+          .catch(() => 0);
+  }
+  return _unreadPromise;
 }
 
 // ── Profile picker ───────────────────────────────────────────────────────────
@@ -385,6 +395,39 @@ function _fetchMe() {
       : Promise.resolve(null);
   }
   return _mePromise;
+}
+
+// This member's current team abbreviation ("ATL"), or null — read off the
+// tenures the /members/ directory renders from, since /api/me and
+// /api/members/me only name positions ("owner"), not which team.
+let _myTeamPromise = null;
+function _fetchMyTeam() {
+  if (!_myTeamPromise) {
+    _myTeamPromise = _fetchMe().then(me => {
+      if (!me || !me.name) return null;
+      return fetch('/api/members/public')
+        .then(r => r.ok ? r.json() : null)
+        .then(members => {
+          const active = members?.find(m => m.name === me.name)?.tenures?.filter(t => !t.end);
+          if (!active?.length) return null;
+          return active.sort((a, b) => b.start.localeCompare(a.start))[0].team.toUpperCase();
+        });
+    }).catch(() => null);
+  }
+  return _myTeamPromise;
+}
+
+// This member's NB¥ balance (a number), or null.
+let _balancePromise = null;
+function _fetchBalance() {
+  if (!_balancePromise) {
+    _balancePromise = _fetchMe().then(me => !me || !me.name ? null
+      : fetch(`/api/bets/balance/${encodeURIComponent(me.name)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(b => (b && b.balance != null ? +b.balance : null)))
+      .catch(() => null);
+  }
+  return _balancePromise;
 }
 
 function _buildProfilePicker() {
@@ -445,16 +488,12 @@ function _buildProfilePicker() {
         profileLinkEl.href = `/members/${encodeURIComponent(data.name)}/`;
         wrap.style.display = '';
 
-        fetch(`/api/bets/balance/${encodeURIComponent(data.name)}`)
-          .then(r => r.ok ? r.json() : null)
-          .then(b => {
-            if (b && b.balance != null) {
-              _myBalance = +b.balance;
-              balanceEl.href = `/nbyen/?m=${encodeURIComponent(data.name)}`;
-              balanceEl.textContent = 'NB¥ ' + (+b.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            }
-          })
-          .catch(() => {});
+        _fetchBalance().then(balance => {
+          if (balance == null) return;
+          _myBalance = balance;
+          balanceEl.href = `/nbyen/?m=${encodeURIComponent(data.name)}`;
+          balanceEl.textContent = 'NB¥ ' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        });
 
         // Cosmetics purchased with NB¥ (name color, avatar) — /api/me doesn't
         // carry these, so a second call to /api/members/me fetches them.
@@ -478,24 +517,16 @@ function _buildProfilePicker() {
           })
           .catch(() => {});
 
-        // Current team, if any — /api/members/me only reports position names
-        // (e.g. "owner"), not which team, so this reads it off the same
-        // tenures the /members/ directory already renders from.
-        fetch('/api/members/public')
-          .then(r => r.ok ? r.json() : null)
-          .then(members => {
-            const me = members?.find(m => m.name === data.name);
-            const active = me?.tenures?.filter(t => !t.end);
-            if (!active?.length) return;
-            const tenure = active.sort((a, b) => b.start.localeCompare(a.start))[0];
-            const teamAbbr = tenure.team.toLowerCase();
-            teamEl.href = `/teams/${teamAbbr}/`;
-            teamEl.title = `${tenure.team} roster`;
-            teamLogoEl.src = `/logos/sm/logo-${teamAbbr}.webp`;
-            teamLogoEl.alt = `${tenure.team} logo`;
-            teamEl.style.display = '';
-          })
-          .catch(() => {});
+        // Current team, if any (shared with the sidebar's My Team header).
+        _fetchMyTeam().then(team => {
+          if (!team) return;
+          const teamAbbr = team.toLowerCase();
+          teamEl.href = `/teams/${teamAbbr}/`;
+          teamEl.title = `${team} roster`;
+          teamLogoEl.src = `/logos/sm/logo-${teamAbbr}.webp`;
+          teamLogoEl.alt = `${team} logo`;
+          teamEl.style.display = '';
+        });
       })
       .catch(() => {});
   }
@@ -614,23 +645,246 @@ function _activeNavHref() {
 
 function _foldedGroups() { return new Set(_readJson(SIDEBAR_GROUPS_KEY, [])); }
 
-function _sidebarLink(p, active) {
+// Pinned and recent pages: per browser, stored as hrefs and resolved against
+// NAV_SECTIONS on every draw, so a page that leaves the nav drops out of both.
+const SIDEBAR_PINS_KEY = 'nbn_sidebar_pins';
+const SIDEBAR_RECENT_KEY = 'nbn_sidebar_recent';
+const RECENT_SHOWN = 5;
+const _ICON_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,3 14.7,8.6 20.8,9.4 16.3,13.6 17.5,19.7 12,16.7 6.5,19.7 7.7,13.6 3.2,9.4 9.3,8.6"></polygon></svg>';
+
+function _navItemFor(href) { return _NAV_ITEMS.find(p => p.href === href && !p.searchOnly) || null; }
+
+function _sidebarPins() { return _readJson(SIDEBAR_PINS_KEY, []).filter(_navItemFor); }
+
+function _togglePin(href) {
+  const pins = _sidebarPins();
+  const i = pins.indexOf(href);
+  i === -1 ? pins.push(href) : pins.splice(i, 1);
+  try { localStorage.setItem(SIDEBAR_PINS_KEY, JSON.stringify(pins)); } catch { /* private browsing */ }
+  _drawPersonalGroups();
+}
+
+// Put this page at the front of the recent list. Stored one longer than shown,
+// because the page you're on is left out of its own Recent group.
+function _recordRecent(href) {
+  if (!href) return;
+  const list = [href, ..._readJson(SIDEBAR_RECENT_KEY, []).filter(h => h !== href)].slice(0, RECENT_SHOWN + 1);
+  try { localStorage.setItem(SIDEBAR_RECENT_KEY, JSON.stringify(list)); } catch { /* private browsing */ }
+}
+
+let _rolesKnown = null; // the resolved _myRoles() set, once it is in
+
+// A row: the link, and the ☆ that pins it. Two siblings rather than a button
+// inside the <a>, which would nest one control inside another.
+function _sidebarRow(p, active) {
+  const row = document.createElement('div');
+  row.className = 'sb-row';
+  row.dataset.href = p.href;
+  if (p.roles) {
+    row.dataset.roles = p.roles.join(' ');
+    row.hidden = !(_rolesKnown && _qualifies(p, _rolesKnown));
+  }
+
   const a = document.createElement('a');
   a.className = 'sb-link';
   a.href = p.href;
-  const label = p.short || p.title;
   a.title = p.title;
   if (p.href === active) a.setAttribute('aria-current', 'page');
   if (!p.href.startsWith('/')) { a.target = '_blank'; a.rel = 'noopener'; }
-  if (p.roles) { a.dataset.roles = p.roles.join(' '); a.hidden = true; }
   const icon = document.createElement('span');
   icon.className = 'sb-icon';
   icon.innerHTML = _navIcon(p.icon);
   const text = document.createElement('span');
   text.className = 'sb-label';
-  text.textContent = label;
+  text.textContent = p.short || p.title;
   a.append(icon, text);
-  return a;
+
+  const pin = document.createElement('button');
+  pin.type = 'button';
+  pin.className = 'sb-pin';
+  pin.innerHTML = _ICON_STAR;
+  pin.addEventListener('click', () => _togglePin(p.href));
+
+  row.append(a, pin);
+  return row;
+}
+
+// One foldable group. `key` is what the fold is remembered under.
+function _sidebarGroup(label, key, rows, active, folded) {
+  const group = document.createElement('div');
+  group.className = 'sb-group';
+  // The section holding this page is never drawn folded — a highlight you
+  // can't see is no highlight — but that doesn't overwrite the saved fold.
+  if (folded.has(key) && !rows.some(p => p.href === active)) group.classList.add('folded');
+
+  const hdr = document.createElement('button');
+  hdr.type = 'button';
+  hdr.className = 'sb-group-hdr';
+  hdr.setAttribute('aria-expanded', group.classList.contains('folded') ? 'false' : 'true');
+  hdr.innerHTML = `<span class="sb-group-label"></span><span class="sb-group-chev">${_ICON_CHEVRON}</span>`;
+  hdr.querySelector('.sb-group-label').textContent = label;
+  hdr.addEventListener('click', () => {
+    const isFolded = group.classList.toggle('folded');
+    hdr.setAttribute('aria-expanded', isFolded ? 'false' : 'true');
+    const f = _foldedGroups();
+    isFolded ? f.add(key) : f.delete(key);
+    try { localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify([...f])); } catch { /* private browsing */ }
+  });
+  group.appendChild(hdr);
+
+  const list = document.createElement('div');
+  list.className = 'sb-items';
+  rows.forEach(p => list.appendChild(_sidebarRow(p, active)));
+  group.appendChild(list);
+  return group;
+}
+
+// Pinned and Recent, redrawn whenever a pin changes. Each is left out while
+// empty, so a first visit sees only the site's sections.
+function _drawPersonalGroups() {
+  const slot = document.querySelector('.sb-personal');
+  if (!slot) return;
+  const active = _activeNavHref();
+  const folded = _foldedGroups();
+  const pins = _sidebarPins();
+  const recent = _readJson(SIDEBAR_RECENT_KEY, [])
+    .filter(h => h !== active && _navItemFor(h)).slice(0, RECENT_SHOWN);
+  slot.replaceChildren();
+  if (pins.length) slot.appendChild(_sidebarGroup('Pinned', '_pinned', pins.map(_navItemFor), active, folded));
+  if (recent.length) {
+    const g = _sidebarGroup('Recent', '_recent', recent.map(_navItemFor), active, folded);
+    g.classList.add('sb-recent');
+    slot.appendChild(g);
+  }
+  _refreshPinState();
+  _refreshBadges();
+}
+
+function _refreshPinState() {
+  const pins = new Set(_sidebarPins());
+  document.querySelectorAll('.sidebar .sb-row').forEach(row => {
+    const on = pins.has(row.dataset.href);
+    const btn = row.querySelector('.sb-pin');
+    row.classList.toggle('pinned', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    const label = (on ? 'Unpin ' : 'Pin ') + row.querySelector('.sb-link').title;
+    btn.setAttribute('aria-label', label);
+    btn.title = on ? 'Unpin' : 'Pin to the top';
+  });
+}
+
+// ── Badges ──
+// Counts beside a row: unread inbox, games on today's slate. Kept here as
+// values and re-applied after any redraw, since Pinned/Recent rows come and go.
+const _badges = {};
+
+function _setBadge(href, n, label) {
+  _badges[href] = n > 0 ? { n, label } : null;
+  _refreshBadges();
+}
+
+function _refreshBadges() {
+  document.querySelectorAll('.sidebar .sb-row').forEach(row => {
+    const b = _badges[row.dataset.href];
+    const link = row.querySelector('.sb-link');
+    let el = link.querySelector('.sb-badge');
+    if (!b) { el?.remove(); return; }
+    if (!el) { el = document.createElement('span'); el.className = 'sb-badge'; link.appendChild(el); }
+    el.textContent = b.n > 99 ? '99+' : String(b.n);
+    el.title = b.label;
+  });
+}
+
+// Today's date in league time. league-time.js owns this, but it isn't on every
+// page; the fallback is the same rule (America/New_York, as YYYY-MM-DD).
+function _leagueToday() {
+  if (typeof nbnToday === 'function') return nbnToday();
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+
+// How many games are scheduled today. The one request the sidebar adds, so it
+// is asked once per tab per ten minutes rather than on every page.
+const GAMES_TODAY_KEY = 'nbn_games_today';
+function _gamesToday() {
+  const today = _leagueToday();
+  try {
+    const c = JSON.parse(sessionStorage.getItem(GAMES_TODAY_KEY));
+    if (c && c.date === today && Date.now() - c.at < 10 * 60 * 1000) return Promise.resolve(c.n);
+  } catch { /* private browsing / nothing cached */ }
+  return fetch('/api/schedule')
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      const n = (d?.games || []).filter(g => g.date === today).length;
+      try { sessionStorage.setItem(GAMES_TODAY_KEY, JSON.stringify({ date: today, n, at: Date.now() })); } catch { /* ignore */ }
+      return n;
+    })
+    .catch(() => 0);
+}
+
+// ── My Team ──
+// The signed-in member's team (logo, record, NB¥) at the top, linking to it;
+// a Sign in button for everyone else. Everything here rides on lookups the
+// profile picker makes anyway (_fetchMe / _fetchMyTeam / _fetchBalance), plus
+// the team's own small seasons file for the record.
+function _teamRecord(abbr) {
+  return fetch(`/data/${abbr.toLowerCase()}-seasons.csv`)
+    .then(r => r.ok ? r.text() : '')
+    .then(text => {
+      const rows = text ? parseCSV(text) : [];
+      if (!rows.length) return null;
+      const last = rows.slice().sort((a, b) => String(a.SEASON).localeCompare(String(b.SEASON))).pop();
+      return last && last.W !== undefined ? `${last.SEASON} · ${last.W}–${last.L}` : null;
+    })
+    .catch(() => null);
+}
+
+function _buildMeSlot() {
+  const slot = document.createElement('div');
+  slot.className = 'sb-me-slot';
+
+  const signIn = () => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sb-signin';
+    btn.title = 'Sign in';
+    btn.innerHTML = `<span class="sb-icon">${_ICON_PERSON}</span><span class="sb-label">Sign in</span>`;
+    // token-badge.js owns signing in and puts its button in the nav; use it
+    // when it's there, so both paths do exactly the same thing.
+    btn.addEventListener('click', async () => {
+      _closeDrawer();
+      const navBtn = document.querySelector('.nav .nav-signin-btn');
+      if (navBtn) { navBtn.click(); return; }
+      if (await promptForToken()) location.reload();
+    });
+    slot.replaceChildren(btn);
+  };
+
+  _fetchMe().then(me => {
+    if (!me || !me.name) { signIn(); return; }
+    Promise.all([_fetchMyTeam(), _fetchBalance()]).then(async ([team, balance]) => {
+      const card = document.createElement('a');
+      card.className = 'sb-me';
+      const name = TEAM_LIST[team] || me.name;
+      card.href = team ? `/teams/${team.toLowerCase()}/` : `/members/${encodeURIComponent(me.name)}/`;
+      card.title = team ? `${name} — your team` : 'Your profile';
+      card.innerHTML = `
+        <span class="sb-me-logo">${team ? `<img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="">` : _ICON_PERSON}</span>
+        <span class="sb-me-text sb-label">
+          <span class="sb-me-name"></span>
+          <span class="sb-me-meta"></span>
+        </span>`;
+      card.querySelector('.sb-me-name').textContent = team ? name : me.name;
+      const meta = card.querySelector('.sb-me-meta');
+      const bal = balance == null ? '' : 'NB¥ ' + balance.toLocaleString('en-US', { maximumFractionDigits: 0 });
+      meta.textContent = bal;
+      slot.replaceChildren(card);
+      if (team) {
+        const rec = await _teamRecord(team);
+        meta.textContent = [rec, bal].filter(Boolean).join(' · ');
+      }
+    });
+  });
+  return slot;
 }
 
 function _buildSidebar() {
@@ -656,6 +910,8 @@ function _buildSidebar() {
   head.querySelector('.sb-close').addEventListener('click', _closeDrawer);
   aside.appendChild(head);
 
+  aside.appendChild(_buildMeSlot());
+
   const search = document.createElement('button');
   search.type = 'button';
   search.className = 'sb-search';
@@ -666,36 +922,12 @@ function _buildSidebar() {
 
   const nav = document.createElement('nav');
   nav.className = 'sb-sections';
+  const personal = document.createElement('div');
+  personal.className = 'sb-personal';
+  nav.appendChild(personal);
   for (const sec of NAV_SECTIONS) {
     const rows = sec.items.filter(p => !p.searchOnly);
-    if (!rows.length) continue;
-    const group = document.createElement('div');
-    group.className = 'sb-group';
-    // The section holding this page is never drawn folded — a highlight you
-    // can't see is no highlight — but that doesn't overwrite the saved fold.
-    const holdsActive = rows.some(p => p.href === active);
-    if (folded.has(sec.label) && !holdsActive) group.classList.add('folded');
-
-    const hdr = document.createElement('button');
-    hdr.type = 'button';
-    hdr.className = 'sb-group-hdr';
-    hdr.setAttribute('aria-expanded', group.classList.contains('folded') ? 'false' : 'true');
-    hdr.innerHTML = `<span class="sb-group-label"></span><span class="sb-group-chev">${_ICON_CHEVRON}</span>`;
-    hdr.querySelector('.sb-group-label').textContent = sec.label;
-    hdr.addEventListener('click', () => {
-      const isFolded = group.classList.toggle('folded');
-      hdr.setAttribute('aria-expanded', isFolded ? 'false' : 'true');
-      const f = _foldedGroups();
-      isFolded ? f.add(sec.label) : f.delete(sec.label);
-      try { localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify([...f])); } catch { /* private browsing */ }
-    });
-    group.appendChild(hdr);
-
-    const list = document.createElement('div');
-    list.className = 'sb-items';
-    rows.forEach(p => list.appendChild(_sidebarLink(p, active)));
-    group.appendChild(list);
-    nav.appendChild(group);
+    if (rows.length) nav.appendChild(_sidebarGroup(sec.label, sec.label, rows, active, folded));
   }
   aside.appendChild(nav);
 
@@ -719,16 +951,23 @@ function _buildSidebar() {
   document.body.prepend(aside);
   _setSidebarMode(_sidebarMode(), false);
 
-  // Role-gated rows stay hidden until this member is known to qualify, and a
-  // section whose every row is gated stays hidden with them.
+  _drawPersonalGroups();
+  _recordRecent(active);
+
+  // Role-gated rows stay hidden until this member is known to qualify.
   _myRoles().then(roles => {
-    aside.querySelectorAll('.sb-link[data-roles]').forEach(a => {
-      a.hidden = !_qualifies({ roles: a.dataset.roles ? a.dataset.roles.split(' ') : [] }, roles);
+    _rolesKnown = roles;
+    aside.querySelectorAll('.sb-row[data-roles]').forEach(row => {
+      row.hidden = !_qualifies({ roles: row.dataset.roles ? row.dataset.roles.split(' ') : [] }, roles);
     });
   });
 
-  // Keep the current row in view in a long list (Stats is 11 rows down).
-  aside.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest' });
+  _unreadCount().then(n => _setBadge('/inbox/', n, `${n} unread`));
+  _gamesToday().then(n => _setBadge('/calendar', n, `${n} game${n === 1 ? '' : 's'} today`));
+
+  // Keep the current row in view in a long list (Stats is 11 rows down) —
+  // the one in its own section, not a copy in Pinned.
+  aside.querySelector('.sb-sections > .sb-group [aria-current="page"]')?.scrollIntoView({ block: 'nearest' });
 }
 
 function _drawerOpen() { return document.documentElement.classList.contains('sb-drawer-open'); }
