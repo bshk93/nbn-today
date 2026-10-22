@@ -1356,13 +1356,13 @@ const NAV_SECTIONS = [
     // Searchable, but not a row: Teams is its own entry at the top of the
     // sidebar, opening the division panel (_buildTeamsEntry).
     { title: 'Teams', href: '/teams', icon: 'basketball', searchOnly: true },
-    // Players and Explore each stand for a few pages; their own pages link the
+    // Players and Stat Lab each stand for a few pages; their own pages link the
     // rest (tabs on /players, cards on /stats/), which stay searchable here.
     { title: 'Players', href: '/players', icon: 'jersey', also: ['/compare', '/ratings-changes'] },
     { title: 'Compare Players', href: '/compare/', icon: 'compare', searchOnly: true },
     { title: 'Ratings Changes', href: '/ratings-changes/', icon: 'trend-bars', searchOnly: true },
     { title: 'Owners', href: '/owners', icon: 'owner' },
-    { title: 'Explore', href: '/stats/', icon: 'list', also: ['/h2h', '/frivolities'], keywords: ['stats', 'leaders', 'leaderboards'] },
+    { title: 'Stat Lab', href: '/stats/', icon: 'list', also: ['/h2h', '/frivolities'], keywords: ['stats', 'leaders', 'leaderboards', 'explore'] },
     { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart', searchOnly: true },
     { title: 'Career Leaders', href: '/stats/totals', icon: 'steps', searchOnly: true },
     { title: 'Single-Game Highs', href: '/stats/highs', icon: 'spike', searchOnly: true },
