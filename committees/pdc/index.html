@@ -28,8 +28,8 @@
 
     This file ships **no league data** (§ 3.4). It is a shell plus JS, and every
     byte of committee data arrives from a role-gated endpoint: a stranger who
-    finds the URL gets this shell, one /api/auth/me with no roles, and the
-    forbidden screen. That screen is a courtesy, not a control — the security
+    finds the URL gets this shell, one /api/auth/me with no roles, and a
+    redirect home (or the sign-in gate). Both are a courtesy, not a control — the security
     boundary is the API, never the page.
 
     Served at nbn.today/committees/pdc and at pdc.nbn.today off the same docroot, so /api/*,
@@ -430,7 +430,14 @@
     IS_POEXT_HEAD = admin || roles.has('poext_head');
     renderWhoami();
 
-    if (!IS_FAC && !IS_AGENT && !IS_POEXT) { renderGate(ME.name ? 'forbidden' : 'anon'); return; }
+    if (!IS_FAC && !IS_AGENT && !IS_POEXT) {
+      // A member off the committee has nothing here, so they never see it —
+      // the sidebar hides the link too. Under the subdomain "/" is this page,
+      // so home has to be spelled out or it loops.
+      if (ME.name) { location.replace(location.hostname.startsWith('pdc.') ? 'https://nbn.today/' : '/'); return; }
+      renderGate('anon');
+      return;
+    }
     renderHowto();
 
     // Everything past the role gate is guarded the same way /auth/me is: a
@@ -500,9 +507,9 @@
       });
   }
 
-  // The forbidden screen is a courtesy — the API is the boundary (§ 3.4). It
-  // exists so a member who lands here by accident gets a sentence rather than a
-  // blank page and a console full of 403s.
+  // The gate is a courtesy — the API is the boundary (§ 3.4). It exists so a
+  // visitor who can't be served gets a sentence rather than a blank page and a
+  // console full of 403s. (A signed-in non-member is redirected, not gated.)
   function renderGate(kind) {
     const g = document.getElementById('gate');
     g.innerHTML = '';
@@ -510,7 +517,7 @@
     if (kind === 'offline') {
       wrap.appendChild(el('h2', null, 'Can’t reach the league API'));
       wrap.appendChild(el('p', null, 'The dashboard needs /api to answer. Try again in a moment.'));
-    } else if (kind === 'anon') {
+    } else {
       wrap.appendChild(el('h2', null, 'Not signed in'));
       wrap.appendChild(el('p', null,
         'Sign in on nbn.today in this browser and you are signed in here automatically. '
@@ -518,14 +525,6 @@
       const btn = el('button', 'btn-primary', 'Enter token');
       btn.addEventListener('click', signInModal);
       wrap.appendChild(btn);
-    } else {
-      wrap.appendChild(el('h2', null, 'Forbidden'));
-      wrap.appendChild(el('p', null,
-        'This is the PDC committee dashboard. Your member account isn’t on the Free Agency '
-        + 'or PO-EXT committee, so there is nothing here for you.'));
-      const a = el('a', null, '← Back to nbn.today');
-      a.href = location.hostname.startsWith('pdc.') ? 'https://nbn.today/' : '/';
-      wrap.appendChild(a);
     }
     g.appendChild(wrap);
   }
