@@ -6,7 +6,8 @@
 // The formulas were picked by backtesting on 20-21 to 25-26 (2026-10-21):
 //   MVP   Game Score per game × √(team win %)                      5 of 6
 //   DPOY  (STL + BLK + 0.15·REB) per 36 × √(MPG/36) × win%^0.3      6 of 6
-//   ROTY  Game Score per game, players drafted that year           6 of 6
+//   ROTY  Game Score per game, players in their first NBN season   6 of 6
+//         (20-21, the league's first, falls back to that draft class)
 //   MIP   Game Score per game, up on last season (20+ games then)  3 of 5
 //   6MOY  Game Score per game, started at most half his games —
 //         starts are only recorded from 26-27, so this one has no history.
@@ -38,6 +39,7 @@
       let p = out.get(k);
       if (!p) {
         p = { slug: r.SLUG, name: r.PLAYER, team: r.TEAM, teams: [], last: '', draftYear: r.NBN_DFT_YR,
+              draftRound: r.NBN_DFT_R, draftPick: r.NBN_DFT_P,
               G: 0, MIN: 0, PTS: 0, REB: 0, AST: 0, STL: 0, BLK: 0, GMSC: 0, winG: 0 };
         out.set(k, p);
       }
@@ -76,8 +78,16 @@
   function ladder(key, rows, season, pct, opts = {}) {
     let list = qualifies(players(rows, season, pct));
     if (key === 'ROTY') {
-      const yr = String(2000 + +season.slice(0, 2));
-      list = list.filter(p => String(p.draftYear) === yr);
+      // A rookie is in his first NBN season, drafted that year or not. In the
+      // league's first season everyone is, so there it's that year's draft class.
+      const played = rows.filter(r => r.SEASON < season && +r.G > 0);
+      if (played.length) {
+        const before = new Set(played.map(r => r.SLUG || r.PLAYER));
+        list = list.filter(p => !before.has(p.slug || p.name));
+      } else {
+        const yr = String(2000 + +season.slice(0, 2));
+        list = list.filter(p => String(p.draftYear) === yr);
+      }
     } else if (key === 'MIP') {
       const prev = new Map(players(rows, prevSeason(season), pct).map(p => [p.slug || p.name, p]));
       list = list.filter(p => { const q = prev.get(p.slug || p.name); return q && q.G >= 20; })
