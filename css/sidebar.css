@@ -68,15 +68,25 @@
 
 .sb-sections { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 0.25rem 0 1rem; }
 
-.sb-group + .sb-group { margin-top: 0.35rem; }
+/* A section header is the parent item: its icon, its name, a fold chevron.
+   The rows under it are plain text, indented to line up with the name. */
+.sb-group + .sb-group, .sb-teams + .sb-personal .sb-group:first-child, .sb-teams + .sb-group { margin-top: 0.15rem; }
 .sb-group-hdr {
-  display: flex; align-items: center; width: 100%;
-  padding: 0.45rem 0.9rem 0.3rem; background: none; border: none; cursor: pointer;
-  font: inherit; font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--text-muted); text-align: left;
+  display: flex; align-items: center; gap: 0.6rem; width: calc(100% - 1rem);
+  margin: 0 0.5rem; padding: 0.42rem 0.5rem; border: none; border-radius: var(--radius-sm);
+  background: none; cursor: pointer; font: inherit; font-size: var(--text-sm); font-weight: 600;
+  color: var(--text-secondary); text-align: left;
 }
-.sb-group-hdr:hover { color: var(--text-secondary); }
-.sb-group-label { flex: 1; }
+.sb-group-hdr:hover { background: var(--bg-hover); color: var(--text-primary); }
+.sb-group.holds-active > .sb-group-hdr, .sb-teams-btn.holds-active { color: var(--text-primary); }
+.sb-group-label { flex: 1; min-width: 0; }
+/* The rows' total, shown only while they're out of sight (folded, or rail). */
+.sb-group-badge {
+  flex-shrink: 0; min-width: 1.15rem; padding: 0.05rem 0.38rem; border-radius: 999px;
+  background: var(--accent); color: var(--text-on-accent);
+  font-size: 0.68rem; font-weight: 700; line-height: 1.35; text-align: center;
+}
+.sb-group:not(.folded) .sb-group-badge { display: none; }
 .sb-group-chev { display: flex; transition: transform 0.15s; transform: rotate(-90deg); }
 .sb-group-chev svg { width: 0.85rem; height: 0.85rem; }
 .sb-group.folded .sb-group-chev { transform: rotate(0deg); }
@@ -86,11 +96,34 @@
 .sb-link {
   position: relative;
   display: flex; align-items: center; gap: 0.6rem;
-  margin: 0 0.5rem; padding: 0.38rem 1.9rem 0.38rem 0.5rem; border-radius: var(--radius-sm);
-  color: var(--text-secondary); text-decoration: none; white-space: nowrap;
+  margin: 0 0.5rem; padding: 0.32rem 1.9rem 0.32rem 2.35rem; border-radius: var(--radius-sm);
+  color: var(--text-muted); font-size: var(--text-sm); text-decoration: none; white-space: nowrap;
 }
 .sb-link:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
 .sb-link[aria-current="page"] { background: var(--bg-hover); color: var(--text-primary); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
+
+/* ── Teams: the entry, and its division panel (nav.js _buildTeamsEntry) ── */
+.sb-teams { position: relative; margin-bottom: 0.15rem; }
+.sb-teams-btn .sb-teams-chev { transform: rotate(180deg); }
+.sb-teams.open .sb-teams-btn { background: var(--bg-hover); color: var(--text-primary); }
+.sb-teams-panel {
+  position: fixed; left: calc(var(--sb-w) + 0.5rem); top: 4rem; z-index: 70;
+  width: min(44rem, calc(100vw - var(--sb-w) - 1.5rem)); max-height: calc(100vh - 1rem); overflow-y: auto;
+  padding: 1.1rem 1.25rem 0.9rem; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 12px 32px var(--shadow-color-strong);
+}
+.sb-teams-panel[hidden] { display: none; }
+.sb-teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: 1rem 1.25rem; }
+.sb-teams-div-name { font-weight: 600; color: var(--text-primary); margin: 0 0 0.35rem 0.4rem; }
+.sb-team {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.4rem; border-radius: var(--radius-sm);
+  color: var(--text-secondary); text-decoration: none; white-space: nowrap;
+}
+.sb-team:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
+.sb-team[aria-current="page"] { background: var(--bg-hover); color: var(--text-primary); font-weight: 600; }
+.sb-team img { width: 1.6rem; height: 1.6rem; object-fit: contain; flex-shrink: 0; }
+.sb-team span { overflow: hidden; text-overflow: ellipsis; }
+.sb-teams-all { display: inline-block; margin: 0.8rem 0 0 0.4rem; color: var(--link); font-size: var(--text-sm); }
 /* The pin: shown on hover/focus, and kept faintly visible on touch screens
    (no hover there). A pinned row's star is filled in the accent. */
 .sb-pin {
@@ -204,28 +237,27 @@
   html[data-sidebar="open"] body { margin-left: var(--sb-w); }
   html[data-sidebar="rail"] body { margin-left: var(--sb-rail-w); }
 
-  /* Rail: icons only. Every section shows — a fold you can't see is a set of
-     pages that silently vanished — and section headers become dividers. */
+  /* Rail: icons only — the header icons; labels go. */
   html[data-sidebar="rail"] .sidebar { width: var(--sb-rail-w); }
-  html[data-sidebar="rail"] .sidebar .sb-label,
-  html[data-sidebar="rail"] .sidebar .sb-group-hdr { display: none; }
+  html[data-sidebar="rail"] .sidebar .sb-label { display: none; }
   /* Rail: the logo sits over the expand button, both centred. */
   html[data-sidebar="rail"] .sb-head { flex-direction: column; gap: 0.35rem; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-head .sb-collapse { margin-left: 0; }
   html[data-sidebar="rail"] .sb-search { justify-content: center; margin-inline: 0.5rem; padding-inline: 0; }
-  html[data-sidebar="rail"] .sb-group.folded .sb-items { display: block; }
-  html[data-sidebar="rail"] .sb-group + .sb-group { margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--border-subtle); }
-  html[data-sidebar="rail"] .sb-link { justify-content: center; padding-inline: 0; }
-  html[data-sidebar="rail"] .sb-link .ni { width: 1.35rem; height: 1.35rem; }
-  /* The account block shrinks to its avatar and its menu opens to the right; Recent goes (pins stay, as icons); a badge
-     becomes a small count on the icon's corner. */
+  /* Rail: each section is its header icon (click opens the sidebar on it), with
+     its rows' total on the corner; the rows themselves are hidden. */
+  html[data-sidebar="rail"] .sb-items { display: none; }
+  html[data-sidebar="rail"] .sb-group-hdr { position: relative; justify-content: center; padding-inline: 0; }
+  html[data-sidebar="rail"] .sb-group-chev { display: none; }
+  html[data-sidebar="rail"] .sb-group-hdr .ni { width: 1.35rem; height: 1.35rem; }
+  html[data-sidebar="rail"] .sb-group.holds-active > .sb-group-hdr,
+  html[data-sidebar="rail"] .sb-teams-btn.holds-active { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--accent); }
+  html[data-sidebar="rail"] .sb-group .sb-group-badge { display: block; position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: 0.55rem; }
+  html[data-sidebar="rail"] .sb-teams-panel { left: calc(var(--sb-rail-w) + 0.5rem); width: min(44rem, calc(100vw - var(--sb-rail-w) - 1.5rem)); }
+  /* The account block shrinks to its avatar and its menu opens to the right. */
   html[data-sidebar="rail"] .sb-foot { padding-inline: 0.35rem; }
   html[data-sidebar="rail"] .sb-acct-btn { justify-content: center; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-acct-menu { left: calc(100% + 0.9rem); right: auto; bottom: 0; width: 15rem; }
-  html[data-sidebar="rail"] .sb-recent, html[data-sidebar="rail"] .sb-pin { display: none; }
-  html[data-sidebar="rail"] .sb-row .sb-link,
-  html[data-sidebar="rail"] .sb-row:hover .sb-link:has(.sb-badge) { padding-right: 0; }
-  html[data-sidebar="rail"] .sb-link .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: 0.55rem; }
 }
 
 /* ── Drawer ─────────────────────────────────────────────────────────────── */
@@ -240,6 +272,15 @@
   .sidebar .sb-close { display: flex; }
   .sb-collapse { display: none; }
   .sb-acct-menu { right: 0; }
+  /* No room to the right of a drawer: the teams unfold in place under Teams. */
+  .sb-teams-panel {
+    position: static; width: auto; max-height: none; margin: 0.2rem 0.5rem 0.4rem 2.35rem;
+    padding: 0; background: none; border: none; box-shadow: none;
+  }
+  .sb-teams-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+  .sb-teams-div-name { font-size: var(--text-xs); color: var(--text-muted); margin-left: 0.4rem; }
+  .sb-team img { width: 1.3rem; height: 1.3rem; }
+  .sb-teams.open .sb-teams-btn .sb-teams-chev { transform: rotate(-90deg); }
   html.sb-drawer-open .sidebar { transform: none; visibility: visible; transition: transform 0.2s ease; }
   html.sb-drawer-open .sb-scrim { display: block; position: fixed; inset: 0; z-index: 8999; background: var(--overlay-scrim); }
   html.sb-drawer-open body { overflow: hidden; }

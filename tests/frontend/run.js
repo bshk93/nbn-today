@@ -109,9 +109,9 @@ const PAGES = [
   // the transaction feed and the newsstand all render from `.dash-feed-item`,
   // and a band that silently stopped fetching would come up at zero.
   { path: '/',                        selector: '.dash-feed-row',  min: 5,  what: 'the merged league feed' },
-  // The page directory still lives below the dashboard. Asserted separately
-  // so "the dashboard took over the homepage" fails loudly rather than quietly.
-  { path: '/',                        selector: '.directory .card', min: 30, what: 'the page directory' },
+  // The page list that used to sit below the dashboard is the site sidebar
+  // now; the homepage is the one place every row of it must be reachable from.
+  { path: '/',                        selector: '.sidebar .sb-row', min: 40, what: 'the site sidebar (the old page directory)' },
   // The rankings strip resolves the newest published edition across every
   // series and then fetches it — two chained calls, so it fails in ways the
   // single-fetch cards cannot. Five, not 30: this is the top of the standing.

@@ -428,6 +428,7 @@ document.addEventListener('keydown', function (e) {
     _closeDrawer();
     closeSearch();
     _closeAccountMenu();
+    _closeTeamsPanel();
   }
 });
 
@@ -531,11 +532,9 @@ function _activeNavHref() {
 
 function _foldedGroups() { return new Set(_readJson(SIDEBAR_GROUPS_KEY, [])); }
 
-// Pinned and recent pages: per browser, stored as hrefs and resolved against
-// NAV_SECTIONS on every draw, so a page that leaves the nav drops out of both.
+// Pinned pages: per browser, stored as hrefs and resolved against NAV_SECTIONS
+// on every draw, so a page that leaves the nav drops out of the list.
 const SIDEBAR_PINS_KEY = 'nbn_sidebar_pins';
-const SIDEBAR_RECENT_KEY = 'nbn_sidebar_recent';
-const RECENT_SHOWN = 5;
 const _ICON_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,3 14.7,8.6 20.8,9.4 16.3,13.6 17.5,19.7 12,16.7 6.5,19.7 7.7,13.6 3.2,9.4 9.3,8.6"></polygon></svg>';
 
 function _navItemFor(href) { return _NAV_ITEMS.find(p => p.href === href && !p.searchOnly) || null; }
@@ -548,14 +547,6 @@ function _togglePin(href) {
   i === -1 ? pins.push(href) : pins.splice(i, 1);
   try { localStorage.setItem(SIDEBAR_PINS_KEY, JSON.stringify(pins)); } catch { /* private browsing */ }
   _drawPersonalGroups();
-}
-
-// Put this page at the front of the recent list. Stored one longer than shown,
-// because the page you're on is left out of its own Recent group.
-function _recordRecent(href) {
-  if (!href) return;
-  const list = [href, ..._readJson(SIDEBAR_RECENT_KEY, []).filter(h => h !== href)].slice(0, RECENT_SHOWN + 1);
-  try { localStorage.setItem(SIDEBAR_RECENT_KEY, JSON.stringify(list)); } catch { /* private browsing */ }
 }
 
 let _rolesKnown = null; // the resolved _myRoles() set, once it is in
@@ -577,13 +568,11 @@ function _sidebarRow(p, active) {
   a.title = p.title;
   if (p.href === active) a.setAttribute('aria-current', 'page');
   if (!p.href.startsWith('/')) { a.target = '_blank'; a.rel = 'noopener'; }
-  const icon = document.createElement('span');
-  icon.className = 'sb-icon';
-  icon.innerHTML = _navIcon(p.icon);
+  // No icon on a row: the section header carries it.
   const text = document.createElement('span');
   text.className = 'sb-label';
   text.textContent = p.short || p.title;
-  a.append(icon, text);
+  a.append(text);
 
   const pin = document.createElement('button');
   pin.type = 'button';
@@ -595,8 +584,9 @@ function _sidebarRow(p, active) {
   return row;
 }
 
-// One foldable group. `key` is what the fold is remembered under.
-function _sidebarGroup(label, key, rows, active, folded) {
+// One foldable group. `key` is what the fold is remembered under; `icon` is
+// the header's, and in rail mode the header is all that shows of the group.
+function _sidebarGroup(label, key, rows, active, folded, icon) {
   const group = document.createElement('div');
   group.className = 'sb-group';
   // The section holding this page is never drawn folded — a highlight you
@@ -607,14 +597,30 @@ function _sidebarGroup(label, key, rows, active, folded) {
   hdr.type = 'button';
   hdr.className = 'sb-group-hdr';
   hdr.setAttribute('aria-expanded', group.classList.contains('folded') ? 'false' : 'true');
-  hdr.innerHTML = `<span class="sb-group-label"></span><span class="sb-group-chev">${_ICON_CHEVRON}</span>`;
+  hdr.title = label;
+  hdr.innerHTML = `<span class="sb-icon">${_navIcon(icon)}</span><span class="sb-group-label sb-label"></span>`
+    + `<span class="sb-group-badge" hidden></span><span class="sb-group-chev">${_ICON_CHEVRON}</span>`;
   hdr.querySelector('.sb-group-label').textContent = label;
+  if (rows.some(p => p.href === active)) group.classList.add('holds-active');
   hdr.addEventListener('click', () => {
+    // In the rail the rows are hidden, so a header opens the sidebar on its
+    // section rather than folding something you can't see.
+    if (_sidebarMode() === 'rail' && !_drawerOpen() && window.matchMedia('(min-width: 900px)').matches) {
+      _setSidebarMode('open');
+      group.classList.remove('folded');
+      hdr.setAttribute('aria-expanded', 'true');
+      const f = _foldedGroups(); f.delete(key);
+      try { localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify([...f])); } catch { /* private browsing */ }
+      group.scrollIntoView({ block: 'nearest' });
+      _refreshBadges();
+      return;
+    }
     const isFolded = group.classList.toggle('folded');
     hdr.setAttribute('aria-expanded', isFolded ? 'false' : 'true');
     const f = _foldedGroups();
     isFolded ? f.add(key) : f.delete(key);
     try { localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify([...f])); } catch { /* private browsing */ }
+    _refreshBadges();
   });
   group.appendChild(hdr);
 
@@ -625,23 +631,17 @@ function _sidebarGroup(label, key, rows, active, folded) {
   return group;
 }
 
-// Pinned and Recent, redrawn whenever a pin changes. Each is left out while
-// empty, so a first visit sees only the site's sections.
+// Pinned, redrawn whenever a pin changes; left out while empty, so a first
+// visit sees only the site's sections. The sidebar is otherwise the same on
+// every page — it deliberately keeps no history of where you've been.
 function _drawPersonalGroups() {
   const slot = document.querySelector('.sb-personal');
   if (!slot) return;
   const active = _activeNavHref();
   const folded = _foldedGroups();
   const pins = _sidebarPins();
-  const recent = _readJson(SIDEBAR_RECENT_KEY, [])
-    .filter(h => h !== active && _navItemFor(h)).slice(0, RECENT_SHOWN);
   slot.replaceChildren();
-  if (pins.length) slot.appendChild(_sidebarGroup('Pinned', '_pinned', pins.map(_navItemFor), active, folded));
-  if (recent.length) {
-    const g = _sidebarGroup('Recent', '_recent', recent.map(_navItemFor), active, folded);
-    g.classList.add('sb-recent');
-    slot.appendChild(g);
-  }
+  if (pins.length) slot.appendChild(_sidebarGroup('Pinned', '_pinned', pins.map(_navItemFor), active, folded, 'star'));
   _refreshPinState();
   _refreshBadges();
 }
@@ -661,7 +661,7 @@ function _refreshPinState() {
 
 // ── Badges ──
 // Counts beside a row: unread inbox, games on today's slate. Kept here as
-// values and re-applied after any redraw, since Pinned/Recent rows come and go.
+// values and re-applied after any redraw, since Pinned rows come and go.
 const _badges = {};
 
 function _setBadge(href, n, label) {
@@ -678,6 +678,15 @@ function _refreshBadges() {
     if (!el) { el = document.createElement('span'); el.className = 'sb-badge'; link.appendChild(el); }
     el.textContent = b.n > 99 ? '99+' : String(b.n);
     el.title = b.label;
+  });
+  // A header shows its rows' total when you can't see the rows: folded, or
+  // in rail mode (css/sidebar.css decides which; this keeps the number).
+  document.querySelectorAll('.sidebar .sb-group').forEach(group => {
+    const total = [...group.querySelectorAll('.sb-row:not([hidden])')]
+      .reduce((n, row) => n + (_badges[row.dataset.href]?.n || 0), 0);
+    const el = group.querySelector('.sb-group-badge');
+    el.hidden = !total;
+    el.textContent = total > 99 ? '99+' : String(total);
   });
 }
 
@@ -836,14 +845,110 @@ function _loadWorkBadges() {
     ];
     for (const [href, key, count, label] of work) {
       _cachedCount(key, me.name, () => count(me)).then(n => {
-        _setBadge(href, n, label(n));
         // An owner with a trade awaiting their consent sees TRC even without
         // a committee role: that's the one place the consent button lives.
         if (n > 0) document.querySelectorAll(`.sidebar .sb-row[data-href="${href}"]`).forEach(r => { r.hidden = false; });
+        _setBadge(href, n, label(n));
       });
     }
   }).catch(() => {});
 }
+
+// ── Teams ──
+// A top-level entry that opens every team at once, by division, in a panel
+// to the right of the sidebar (inline, under the entry, in the phone drawer).
+// Hover opens it on a pointer device, click on anything; it replaces the strip
+// of 30 logos that used to run across the top of the homepage.
+function _buildTeamsEntry() {
+  const here = location.pathname.match(/^\/teams\/([a-z]{3})\b/i)?.[1]?.toUpperCase() || null;
+  const onTeams = /^\/teams(\/|$)/i.test(location.pathname);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'sb-teams';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'sb-group-hdr sb-teams-btn' + (onTeams ? ' holds-active' : '');
+  btn.title = 'Teams';
+  btn.setAttribute('aria-expanded', 'false');
+  btn.setAttribute('aria-controls', 'sb-teams-panel');
+  btn.innerHTML = `<span class="sb-icon">${_navIcon('basketball')}</span><span class="sb-group-label sb-label">Teams</span>`
+    + `<span class="sb-group-chev sb-teams-chev">${_ICON_CHEVRON}</span>`;
+
+  const panel = document.createElement('div');
+  panel.className = 'sb-teams-panel';
+  panel.id = 'sb-teams-panel';
+  panel.hidden = true;
+  const grid = document.createElement('div');
+  grid.className = 'sb-teams-grid';
+  for (const [division, teams] of TEAM_DIVISIONS) {
+    const col = document.createElement('div');
+    col.className = 'sb-teams-div';
+    const h = document.createElement('div');
+    h.className = 'sb-teams-div-name';
+    h.textContent = division;
+    col.appendChild(h);
+    for (const t of teams) {
+      const a = document.createElement('a');
+      a.className = 'sb-team';
+      a.href = `/teams/${t}/`;
+      if (t === here) a.setAttribute('aria-current', 'page');
+      // Logos load on first open, not with every page: 30 of them is ~116KB.
+      a.innerHTML = `<img data-src="/logos/sm/logo-${t.toLowerCase()}.webp" alt=""><span></span>`;
+      a.querySelector('span').textContent = TEAM_LIST[t] || t;
+      col.appendChild(a);
+    }
+    grid.appendChild(col);
+  }
+  panel.appendChild(grid);
+  panel.insertAdjacentHTML('beforeend', '<a class="sb-teams-all" href="/teams">All teams →</a>');
+
+  const docked = () => window.matchMedia('(min-width: 900px)').matches;
+  const place = () => {
+    if (!docked()) { panel.style.top = ''; return; }
+    // Beside the entry, kept on screen when the entry is low in the sidebar.
+    const top = btn.getBoundingClientRect().top;
+    panel.style.top = Math.max(8, Math.min(top, window.innerHeight - panel.offsetHeight - 8)) + 'px';
+  };
+  const open = () => {
+    if (!panel.hidden) return;
+    panel.querySelectorAll('img[data-src]').forEach(img => { img.src = img.dataset.src; delete img.dataset.src; });
+    panel.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    wrap.classList.add('open');
+    place();
+  };
+  const close = () => {
+    if (panel.hidden) return;
+    panel.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    wrap.classList.remove('open');
+  };
+  _closeTeamsPanel = close;
+
+  btn.addEventListener('click', e => { e.stopPropagation(); panel.hidden ? open() : close(); });
+  // Hover, with a beat of grace either way: no flicker crossing the gap from
+  // the entry to the panel, and no panel for a mouse just passing by.
+  let timer = null;
+  const hoverable = window.matchMedia('(hover: hover)');
+  [btn, panel].forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      if (!hoverable.matches || !docked()) return;
+      clearTimeout(timer); timer = setTimeout(open, 120);
+    });
+    el.addEventListener('mouseleave', () => {
+      if (!hoverable.matches || !docked()) return;
+      clearTimeout(timer); timer = setTimeout(close, 250);
+    });
+  });
+  document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+  panel.addEventListener('click', e => { if (e.target.closest('a')) { close(); _closeDrawer(); } });
+  window.addEventListener('resize', () => { if (!panel.hidden) place(); });
+
+  wrap.append(btn, panel);
+  return wrap;
+}
+let _closeTeamsPanel = () => {};
 
 // ── Account ──
 // Bottom left: who you are (avatar or initials, name, team) and, on click, a
@@ -1045,12 +1150,13 @@ function _buildSidebar() {
 
   const nav = document.createElement('nav');
   nav.className = 'sb-sections';
+  nav.appendChild(_buildTeamsEntry());
   const personal = document.createElement('div');
   personal.className = 'sb-personal';
   nav.appendChild(personal);
   for (const sec of NAV_SECTIONS) {
     const rows = sec.items.filter(p => !p.searchOnly);
-    if (rows.length) nav.appendChild(_sidebarGroup(sec.label, sec.label, rows, active, folded));
+    if (rows.length) nav.appendChild(_sidebarGroup(sec.label, sec.label, rows, active, folded, sec.icon));
   }
   aside.appendChild(nav);
 
@@ -1072,7 +1178,6 @@ function _buildSidebar() {
   _setSidebarMode(_sidebarMode(), false);
 
   _drawPersonalGroups();
-  _recordRecent(active);
 
   // Role-gated rows stay hidden until this member is known to qualify.
   _myRoles().then(roles => {
@@ -1153,18 +1258,19 @@ function _buildMenuButton() {
 // either way; the security boundary is the API, which is what the PDC
 // dashboard's own shell relies on too.
 // `icon`: a symbol id in icons/nav-icons.svg (made by build/make_nav_icons.py,
-// which says how to add one).
+// which says how to add one). The sidebar draws a section's icon on its
+// header and none on its rows; a row's own icon is what search shows.
 // `searchOnly`: a deep link into another page (a tab, a section) — worth
 // finding by name in search, but noise as its own sidebar row.
 const NAV_SECTIONS = [
-  { label: 'Season', items: [
+  { label: 'Season', icon: 'calendar', items: [
     { title: 'Calendar', href: '/calendar', icon: 'calendar' },
     { title: 'Standings & Playoffs', href: '/standings', icon: 'standings' },
     { title: 'Award Race', href: '/awards/race/', icon: 'flag' },
     { title: 'Draft Live', href: '/draft/live/', icon: 'live' },
     { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide' },
   ] },
-  { label: 'Front Office', items: [
+  { label: 'Front Office', icon: 'swap', items: [
     { title: 'Tradeblock', href: '/tradeblock/', icon: 'swap' },
     { title: 'Free Agency', href: '/free-agency/', icon: 'pen' },
     { title: 'Extensions', href: '/extensions/', icon: 'doc-plus' },
@@ -1172,18 +1278,19 @@ const NAV_SECTIONS = [
     { title: 'Transaction Simulator', href: '/transaction-sim/', icon: 'calculator', keywords: ['trade machine', 'trade builder', 'trade simulator'] },
     { title: 'Cap Summary', href: '/cap-summary/', icon: 'money' },
   ] },
-  { label: 'Committees', href: '/committees/', items: [
-    { title: 'Committees', href: '/committees/', icon: 'columns', searchOnly: true },
+  { label: 'Committees', icon: 'columns', href: '/committees/', items: [
+    { title: 'Committees', short: 'All committees', href: '/committees/', icon: 'columns' },
     { title: 'Rosters Committee — compliance & cap sheet diffs', short: 'Rosters', href: '/committees/rosters/', icon: 'clipboard-check' },
-    { title: 'PDC Committee', short: 'PDC', href: '/committees/pdc/', icon: 'ballot',
-      roles: ['fac', 'fac_head', 'agent', 'poext', 'poext_head'] },
+    // Public, like its homepage tile was: the page itself explains who it's for
+    // to anyone without a PDC role.
+    { title: 'PDC Committee', short: 'PDC', href: '/committees/pdc/', icon: 'ballot' },
     { title: 'Stats Committee — build health & missing box scores', short: 'Stats', href: '/committees/stats/', icon: 'folder-chart' },
     { title: 'Stream Committee — claim games & coaching settings', short: 'Stream', href: '/committees/stream/', icon: 'camera',
       roles: ['streamer'] },
     { title: 'TRC Committee — trade requests', short: 'TRC', href: '/committees/trc/', icon: 'scale',
       roles: ['trc', 'trc_head'] },
   ] },
-  { label: 'History', items: [
+  { label: 'History', icon: 'trophy', items: [
     { title: 'Season Summary', href: '/season-summary', icon: 'scroll' },
     { title: 'Hall of Champions', href: '/champions/', icon: 'trophy' },
     { title: 'Hall of Fame', href: '/hof', icon: 'star' },
@@ -1191,8 +1298,10 @@ const NAV_SECTIONS = [
     { title: 'Season Recaps', href: '/recap/', icon: 'tape' },
     { title: 'Draft', href: '/draft', icon: 'clipboard-list' },
   ] },
-  { label: 'Stats', items: [
-    { title: 'Teams', href: '/teams', icon: 'basketball' },
+  { label: 'Stats', icon: 'bar-chart', items: [
+    // Searchable, but not a row: Teams is its own entry at the top of the
+    // sidebar, opening the division panel (_buildTeamsEntry).
+    { title: 'Teams', href: '/teams', icon: 'basketball', searchOnly: true },
     { title: 'Players', href: '/players', icon: 'jersey' },
     { title: 'Owners', href: '/owners', icon: 'owner' },
     { title: 'Compare Players', href: '/compare/', icon: 'compare' },
@@ -1207,7 +1316,7 @@ const NAV_SECTIONS = [
     { title: 'Frivolities & Viz', href: '/frivolities', icon: 'pie' },
     { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: 'magnifier', searchOnly: true },
   ] },
-  { label: 'NB¥ Corner', items: [
+  { label: 'NB¥ Corner', icon: 'yen', items: [
     { title: 'NB¥ Balances', href: '/nbyen/', icon: 'yen' },
     { title: 'Betting — bets, Pick\'em, futures', short: 'Betting', href: '/bet/', icon: 'dice' },
     { title: "Pick'em", href: '/bet/#pickem', icon: 'target', keywords: ['pickem', 'lineup', 'fantasy'] },
@@ -1215,18 +1324,18 @@ const NAV_SECTIONS = [
     { title: 'Wall Street', href: '/invest', icon: 'candles' },
     { title: 'Donations', href: '/donations/', icon: 'heart' },
   ] },
-  { label: 'Games', items: [
+  { label: 'Games', icon: 'hoop', items: [
     { title: 'Daily Perry Game', href: '/perry/', icon: 'hoop' },
     { title: 'Daily Poeltl', href: '/poeltl/', icon: 'silhouette' },
     { title: 'Trivia', href: '/trivia', icon: 'question' },
   ] },
-  { label: 'Media', items: [
+  { label: 'Media', icon: 'tv', items: [
     { title: 'News', href: '/news/', icon: 'newspaper' },
     { title: 'NBNTV Classics', href: '/nbntv-classics', icon: 'tv' },
     { title: 'NBNFL', href: '/nbnfl/', icon: 'football' },
     { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: 'play' },
   ] },
-  { label: 'About', items: [
+  { label: 'About', icon: 'people', items: [
     { title: 'Members', href: '/members/', icon: 'people' },
     { title: 'Roles & Permissions', href: '/roles', icon: 'key' },
     { title: 'Constitution', href: '/constitution/', icon: 'charter' },
@@ -1235,7 +1344,7 @@ const NAV_SECTIONS = [
     { title: 'Inbox', href: '/inbox/', icon: 'inbox' },
     { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus' },
   ] },
-  { label: 'League Office', items: [
+  { label: 'League Office', icon: 'gavel', items: [
     { title: 'Proposals', href: '/proposals/', icon: 'vote' },
     { title: 'Suggestions', href: '/suggestions/', icon: 'bulb' },
     { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: 'envelope' },
@@ -1270,6 +1379,18 @@ function _qualifies(page, roles) {
 // Unified site search: static pages (SITE_PAGES), team pages (TEAM_LIST),
 // and players (fetched lazily from /api/players). All three are merged into
 // one result list so Ctrl+K / the ⌕ button works as an all-in-one jump box.
+
+// The six divisions, for the sidebar's Teams panel. NBN's conferences are the
+// NBA's (checked against the standings' East/West seeds, 2026-10-22), so the
+// NBA's divisions sit inside them unchanged.
+const TEAM_DIVISIONS = [
+  ['Atlantic',  ['BOS', 'BKN', 'NYK', 'PHI', 'TOR']],
+  ['Central',   ['CHI', 'CLE', 'DET', 'IND', 'MIL']],
+  ['Southeast', ['ATL', 'CHA', 'MIA', 'ORL', 'WAS']],
+  ['Northwest', ['DEN', 'MIN', 'OKC', 'POR', 'UTA']],
+  ['Pacific',   ['GSW', 'LAC', 'LAL', 'PHX', 'SAC']],
+  ['Southwest', ['DAL', 'HOU', 'MEM', 'NOP', 'SAS']],
+];
 
 const TEAM_LIST = {
   ATL: "Atlanta Hawks", BKN: "Brooklyn Nets", BOS: "Boston Celtics",
