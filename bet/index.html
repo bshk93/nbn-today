@@ -720,7 +720,7 @@
       const mine = pk.entries.find(e => e.member === me);
       let body;
       if (!pk.locked) {
-        const status = `${pk.games.length} game${pk.games.length === 1 ? '' : 's'} · open until the stream goes live · ${pk.entry_count} lineup${pk.entry_count === 1 ? '' : 's'} in`;
+        const status = `${pk.games.length} game${pk.games.length === 1 ? '' : 's'} · open until the stream goes live · ${pk.entry_count} lineup${pk.entry_count === 1 ? '' : 's'} in${pk.entrants && pk.entrants.length ? ` (${pk.entrants.map(esc).join(', ')})` : ''}`;
         const yours = !me ? 'Sign in to set a lineup.'
           : mine ? `Your lineup: ${['PG', 'SG', 'SF', 'PF', 'C', '6TH'].map(s => esc(nbnPlayerName(pk.names[mine.lineup[s]] || (pk.players.find(p => p.slug === mine.lineup[s]) || {}).name || mine.lineup[s]))).join(', ')}`
           : 'You haven’t set a lineup.';
