@@ -161,6 +161,11 @@ data** (the rulebook, say). The CSVs aren't in the docroot (nginx serves them
 from `$NBS_DATA_DIR/public`) and `http.server` doesn't proxy `/api`, so every
 data fetch 404s and the page renders empty.
 
+**Without server access**, `python3 build/preview_live.py` serves this checkout
+on `http://127.0.0.1:8099` and fetches everything it doesn't have (the CSVs,
+`/api`) from `https://nbn.today`. Sign in with a member token. It refuses writes
+unless you pass `--allow-writes`, because the API behind it is live.
+
 **Use `dev.nbn.today`**, which serves this checkout's working tree with the
 real data and API behind it. It also covers anything authenticated: the session
 cookie is `Domain=.nbn.today; Secure`, so a `localhost` origin can never carry
