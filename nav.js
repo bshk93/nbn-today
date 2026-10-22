@@ -1320,8 +1320,6 @@ const NAV_SECTIONS = [
     { title: 'Calendar', href: '/calendar', icon: 'calendar' },
     { title: 'Standings & Playoffs', href: '/standings', icon: 'standings' },
     { title: 'Award Race', href: '/awards/race/', icon: 'flag' },
-    { title: 'Draft Live', href: '/draft/live/', icon: 'live' },
-    { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide' },
   ] },
   { label: 'Front Office', icon: 'swap', items: [
     { title: 'Tradeblock', href: '/tradeblock/', icon: 'swap' },
@@ -1350,6 +1348,7 @@ const NAV_SECTIONS = [
     { title: 'Awards', href: '/awards/', icon: 'medal' },
     { title: 'Season Recaps', href: '/recap/', icon: 'tape' },
     { title: 'Draft', href: '/draft', icon: 'clipboard-list' },
+    { title: 'Draft Live', href: '/draft/live/', icon: 'live' },
   ] },
   { label: 'Stats', icon: 'bar-chart', items: [
     // Searchable, but not a row: Teams is its own entry at the top of the
@@ -1393,6 +1392,7 @@ const NAV_SECTIONS = [
     { title: 'Roles & Permissions', href: '/roles', icon: 'key' },
     { title: 'Constitution', href: '/constitution/', icon: 'charter' },
     { title: 'Rulebook', href: '/rulebook/', icon: 'book' },
+    { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide' },
     { title: 'Changelog', href: '/changelog', icon: 'tag' },
     // Searchable, but its own entry at the top of the sidebar (_buildInboxEntry).
     { title: 'Inbox', href: '/inbox/', icon: 'inbox', searchOnly: true },
