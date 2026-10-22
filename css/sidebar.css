@@ -87,6 +87,9 @@
   font-size: 0.68rem; font-weight: 700; line-height: 1.35; text-align: center;
 }
 .sb-group:not(.folded) .sb-group-badge { display: none; }
+/* A row in here is live; the dot stands in for its LIVE while out of sight. */
+.sb-group-live { flex-shrink: 0; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--danger); }
+.sb-group-live[hidden], .sb-group:not(.folded) .sb-group-live { display: none; }
 .sb-group-chev { display: flex; transition: transform 0.15s; transform: rotate(-90deg); }
 .sb-group-chev svg { width: 0.85rem; height: 0.85rem; }
 .sb-group.folded .sb-group-chev { transform: rotate(0deg); }
@@ -151,6 +154,23 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
   background: var(--accent); color: var(--text-on-accent);
   font-size: 0.68rem; font-weight: 700; line-height: 1.35; text-align: center;
 }
+/* Information, not a to-do: games today as plain muted text. */
+.sb-badge-info {
+  min-width: 0; padding: 0; border-radius: 0; background: none;
+  color: var(--text-muted); font-weight: 500;
+}
+/* Live now: the homepage banner's red LIVE pill, small. */
+.sb-badge-live {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border);
+  letter-spacing: 0.04em;
+}
+.sb-badge-live::before {
+  content: ''; width: 0.4rem; height: 0.4rem; border-radius: 50%; background: currentColor;
+  animation: sb-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes sb-live-pulse { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .sb-badge-live::before { animation: none; } }
 .sb-link:has(.sb-badge) { padding-right: 0.5rem; }
 .sb-row:hover .sb-link:has(.sb-badge) { padding-right: 1.9rem; }
 
@@ -262,6 +282,7 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
   html[data-sidebar="rail"] .sb-group.holds-active > .sb-group-hdr,
   html[data-sidebar="rail"] .sb-teams-btn.holds-active { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--accent); }
   html[data-sidebar="rail"] .sb-top-link .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: 0.55rem; }
+  html[data-sidebar="rail"] .sb-group .sb-group-live:not([hidden]) { display: block; position: absolute; top: 0.2rem; left: 0.45rem; }
   html[data-sidebar="rail"] .sb-group .sb-group-badge { display: block; position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: 0.55rem; }
   html[data-sidebar="rail"] .sb-teams-panel { left: calc(var(--sb-rail-w) + 0.5rem); width: min(44rem, calc(100vw - var(--sb-rail-w) - 1.5rem)); }
   /* The account block shrinks to its avatar and its menu opens to the right. */
