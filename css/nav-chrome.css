@@ -1,5 +1,6 @@
 /* Nav bar chrome shared site-wide: the breadcrumb nav, the search button +
-   overlay, and the theme picker. Imported (after css/theme.css) by every
+   overlay, and the theme list's rows (the list itself now sits in the
+   sidebar's account menu, css/sidebar.css). Imported (after css/theme.css) by every
    surface that injects its own stylesheet — css/shared.css for the ~68
    pages that link it, plus teams/team.js, awards/results.js and
    awards/vote.js, which each maintain a separate stylesheet.
@@ -15,7 +16,7 @@
 
 /* Nav */
 .nav { margin-bottom: 1.75rem; font-size: .875rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-/* flex-wrap: a long breadcrumb plus the action buttons (search, inbox, theme,
+/* flex-wrap: a long breadcrumb plus the action buttons (☰, search, inbox,
    Sign in) don't fit one phone-width row; the buttons drop to their own line
    and stay right-aligned rather than widening the page. */
 .nav a { color: var(--text-muted); text-decoration: none; }
@@ -23,18 +24,19 @@
 .nav-crumb-sep { color: var(--text-dim); }
 .nav-crumb-current { color: var(--text-secondary); }
 
-/* Wraps search-btn + inbox/theme/profile so the group gets pushed to the
+/* Wraps search-btn + inbox (+ Sign in on phones) so the group gets pushed to the
    right edge of .nav regardless of which pieces are actually present
    (e.g. the homepage suppresses search-btn since it has its own big
    search bar already) — the margin-left:auto belongs on the wrapper,
    not on whichever button happens to be first. */
 .nav-actions { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; }
 
-/* Shared circular treatment for every icon button in the action row (search,
-   inbox, theme, profile), so the row reads as one designed set of buttons
+/* Shared circular treatment for every icon button in the action row (☰,
+   search, inbox), so the row reads as one designed set of buttons
    rather than whatever each one felt like individually. Each button also
-   keeps its own class for the bits that aren't shared (badge positioning,
-   dynamic icon text, avatar overflow). */
+   keeps its own class for the bits that aren't shared (badge positioning).
+   Your profile and the theme picker used to sit here too; they're in the
+   sidebar's account menu now (css/sidebar.css). */
 .nav-icon-btn {
   display: flex; align-items: center; justify-content: center;
   width: 2.1rem; height: 2.1rem; flex-shrink: 0;
@@ -56,8 +58,8 @@
 .nav-icon-btn svg { width: 1.05rem; height: 1.05rem; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Inbox */
-/* overflow: visible overrides .nav-icon-btn's overflow: hidden (there to
-   clip the profile avatar into a circle) — without it, the badge below,
+/* overflow: visible overrides .nav-icon-btn's overflow: hidden (which clips
+   a button's contents to its circle) — without it, the badge below,
    deliberately positioned outside the button's own box, gets clipped by
    its own parent and reads as barely visible. */
 .inbox-btn { position: relative; overflow: visible; }
@@ -82,10 +84,7 @@
 .search-hint { padding: 0.4rem 1.25rem; font-size: 0.7rem; color: var(--text-dim); border-top: 1px solid var(--border); }
 .search-empty { padding: 1rem 1.25rem; font-size: 0.85rem; color: var(--text-muted); }
 
-/* Theme picker */
-.theme-picker { position: relative; display: inline-flex; }
-.theme-btn { font-size: 1.05rem; line-height: 1; }
-.theme-btn .theme-logo-icon { height: 1.25rem; width: 1.25rem; display: block; }
+/* Theme list rows — built by _themeMenuItems in nav.js, shown in the sidebar's account menu */
 .theme-menu {
   position: absolute; top: calc(100% + 0.4rem); right: 0;
   background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
@@ -117,46 +116,3 @@
   border: 1px solid var(--gold-chip-border); border-radius: 999px;
   padding: 0.05rem 0.4rem; white-space: nowrap; flex-shrink: 0;
 }
-
-/* Profile picker — last in .nav-actions. Hidden (via inline style, set by
-   nav.js) until a signed-in member is confirmed, so a signed-out visitor
-   never sees an empty avatar circle. */
-.profile-picker { position: relative; }
-.profile-btn-avatar-wrap { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-.member-banner-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
-
-.profile-menu {
-  position: absolute; top: calc(100% + 0.5rem); right: 0;
-  display: none; flex-direction: column; gap: 0.5rem;
-  background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
-  box-shadow: 0 8px 24px var(--shadow-color-strong);
-  min-width: 240px; padding: 0.85rem 1rem; z-index: 10000;
-}
-.profile-menu.open { display: flex; }
-.profile-menu-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.member-banner-greeting { color: var(--text-primary); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
-
-/* .member-banner-team/.member-banner-profile-link are <a> tags nested inside
-   .nav (via .profile-menu), so the generic ".nav a" rule above would
-   otherwise override their border/background back to defaults — scope
-   under .profile-menu to win on specificity. */
-.profile-menu .member-banner-team {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 1.7rem; height: 1.7rem; border-radius: 6px;
-  background: var(--bg-page); border: 1px solid var(--border);
-  flex-shrink: 0; transition: border-color 0.1s, transform 0.1s;
-}
-.profile-menu .member-banner-team:hover { border-color: var(--text-muted); transform: scale(1.08); }
-.member-banner-team img { width: 100%; height: 100%; object-fit: contain; padding: 2px; box-sizing: border-box; display: block; }
-.member-banner-balance { color: var(--gold-chip-border); font-weight: 600; font-size: 0.85rem; text-decoration: none; }
-.member-banner-balance:hover { text-decoration: underline; }
-.profile-menu .member-banner-profile-link {
-  color: var(--link); text-decoration: none; font-size: 0.85rem; font-weight: 600;
-  padding-top: 0.5rem; border-top: 1px solid var(--border);
-}
-.profile-menu .member-banner-profile-link:hover { text-decoration: underline; }
-.profile-menu .member-banner-signout {
-  align-self: flex-start; padding: 0; background: none; border: none;
-  font: inherit; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;
-}
-.profile-menu .member-banner-signout:hover { color: var(--danger); }

@@ -139,15 +139,9 @@ function _refreshThemeMenu() {
       item.classList.toggle('active', item.dataset.themeChoice === pref);
     });
   }
-  const btn = document.querySelector('.theme-btn');
-  if (btn) {
-    const active = _themeEntry(_activeTheme());
-    btn.textContent = '';
-    // Same reason as the menu rows: a team theme reads as its own logo, not as
-    // the 🏀 every one of the 30 shares.
-    if (active) btn.append(_themeIcon(active, 'theme-btn-icon'));
-    else btn.textContent = '🎨';
-  }
+  // The account menu's Theme row names what's chosen ("Match System" for auto).
+  const current = document.querySelector('.sb-theme-current');
+  if (current) current.textContent = pref === 'auto' ? 'Match System' : (_themeEntry(_activeTheme())?.label || '');
 }
 
 function _fmtNby(n) {
@@ -288,37 +282,6 @@ function _rebuildThemeMenu() {
   }
 }
 
-function _buildThemePicker() {
-  const wrap = document.createElement('div');
-  wrap.className = 'theme-picker';
-
-  const btn = document.createElement('button');
-  btn.className = 'theme-btn nav-icon-btn';
-  btn.setAttribute('aria-label', 'Choose theme');
-  btn.setAttribute('title', 'Choose theme');
-
-  const menu = document.createElement('div');
-  menu.className = 'theme-menu';
-  _themeMenuItems(menu);
-
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    _hydrateThemeLogos(menu);
-    menu.classList.toggle('open');
-  });
-
-  wrap.appendChild(btn);
-  wrap.appendChild(menu);
-  return wrap;
-}
-
-document.addEventListener('click', e => {
-  const menu = document.querySelector('.theme-menu');
-  if (menu && menu.classList.contains('open') && !menu.parentElement.contains(e.target)) {
-    menu.classList.remove('open');
-  }
-});
-
 // ── Inbox button ─────────────────────────────────────────────────────────────
 // Lives beside the theme picker rather than the old bottom-corner token badge —
 // same real estate as search/theme, so it's part of the nav chrome every page
@@ -362,13 +325,12 @@ function _unreadCount() {
   return _unreadPromise;
 }
 
-// ── Profile picker ───────────────────────────────────────────────────────────
-// Last in .nav-actions. Hidden until its own /api/me call confirms a signed-in
-// member (same token-gated, self-contained pattern as the inbox button above),
-// then shows a circular avatar button that opens a dropdown with the greeting,
-// current team badge, NB¥ balance, and a link to the member's profile page.
-// Ported from the homepage's old standalone "profile menu" (which only ever
-// existed on index.html) so every page gets it, not just the homepage.
+// ── This member ──────────────────────────────────────────────────────────────
+// Who's signed in, fetched once per page and shared by the sidebar's account
+// block (bottom left), its committee badges, search's role-gated pages and
+// theme unlocks. Each lookup is a promise made on first ask, so nothing here
+// costs a request until something needs it.
+//
 // Sign out everywhere: this browser's token, and the shared .nbn.today session
 // cookie (so pdc.nbn.today and dev.nbn.today are signed out too). The one
 // sign-out on the site — four pages used to carry their own sign-in/out bar,
@@ -382,7 +344,7 @@ function nbnSignOut() {
     .catch(() => {}).then(done);
 }
 
-// GET /api/me, once per page: the profile picker and the role-gated sidebar
+// GET /api/me, once per page: the account block and the role-gated sidebar
 // and search rows all read it. null when there's no token or it fails.
 let _mePromise = null;
 function _fetchMe() {
@@ -417,122 +379,46 @@ function _fetchMyTeam() {
   return _myTeamPromise;
 }
 
-// This member's NB¥ balance (a number), or null.
+// This member's NB¥ balance (a number), or null. Also kept in _myBalance, so a
+// theme unlock can say what it would leave them with.
 let _balancePromise = null;
 function _fetchBalance() {
   if (!_balancePromise) {
     _balancePromise = _fetchMe().then(me => !me || !me.name ? null
       : fetch(`/api/bets/balance/${encodeURIComponent(me.name)}`)
           .then(r => r.ok ? r.json() : null)
-          .then(b => (b && b.balance != null ? +b.balance : null)))
+          .then(b => (b && b.balance != null ? (_myBalance = +b.balance) : null)))
       .catch(() => null);
   }
   return _balancePromise;
 }
 
-function _buildProfilePicker() {
-  const wrap = document.createElement('div');
-  wrap.className = 'profile-picker';
-  wrap.style.display = 'none';
-
-  const btn = document.createElement('button');
-  btn.className = 'profile-btn nav-icon-btn';
-  btn.setAttribute('aria-label', 'Your profile');
-  btn.setAttribute('aria-haspopup', 'true');
-  btn.setAttribute('aria-expanded', 'false');
-  const avatarWrap = document.createElement('span');
-  avatarWrap.className = 'profile-btn-avatar-wrap';
-  avatarWrap.innerHTML = _ICON_PERSON;
-  btn.appendChild(avatarWrap);
-
-  const menu = document.createElement('div');
-  menu.className = 'profile-menu';
-  menu.innerHTML = `
-    <div class="profile-menu-row">
-      <span class="member-banner-greeting"></span>
-      <a class="member-banner-team" style="display:none" aria-label="Go to your roster"><img alt=""></a>
-    </div>
-    <a class="member-banner-balance" href="/nbyen/" title="Your NB¥ history"></a>
-    <a class="member-banner-profile-link" href="/members/">My Profile →</a>
-    <button type="button" class="member-banner-signout">Sign out</button>
-  `;
-  const greetEl = menu.querySelector('.member-banner-greeting');
-  const teamEl = menu.querySelector('.member-banner-team');
-  const teamLogoEl = teamEl.querySelector('img');
-  const balanceEl = menu.querySelector('.member-banner-balance');
-  const profileLinkEl = menu.querySelector('.member-banner-profile-link');
-  menu.querySelector('.member-banner-signout').addEventListener('click', nbnSignOut);
-
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    const isOpen = menu.classList.toggle('open');
-    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-  });
-  document.addEventListener('click', e => {
-    if (menu.classList.contains('open') && !wrap.contains(e.target)) {
-      menu.classList.remove('open');
-      btn.setAttribute('aria-expanded', 'false');
-    }
-  });
-
-  wrap.appendChild(btn);
-  wrap.appendChild(menu);
-
-  const token = localStorage.getItem('nbn_token');
-  if (token) {
-    _fetchMe()
-      .then(data => {
-        if (!data || !data.name) return;
-
-        greetEl.textContent = `Welcome back, ${data.name.split(' ')[0]}`;
-        profileLinkEl.href = `/members/${encodeURIComponent(data.name)}/`;
-        wrap.style.display = '';
-
-        _fetchBalance().then(balance => {
-          if (balance == null) return;
-          _myBalance = balance;
-          balanceEl.href = `/nbyen/?m=${encodeURIComponent(data.name)}`;
-          balanceEl.textContent = 'NB¥ ' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        });
-
-        // Cosmetics purchased with NB¥ (name color, avatar) — /api/me doesn't
-        // carry these, so a second call to /api/members/me fetches them.
-        fetch('/api/members/me', { headers: { Authorization: 'Bearer ' + token } })
+// GET /api/members/me: cosmetics bought with NB¥ (name colour, avatar) and the
+// themes this member may use. Asked on every signed-in page load, sidebar or
+// not, because the theme lists ride on it: caching them is what lets a paid
+// theme paint on the next page load before anything resolves, and re-applying
+// here is what corrects that cache when it's wrong.
+let _profilePromise = null;
+function _fetchProfile() {
+  if (!_profilePromise) {
+    let token = null;
+    try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
+    _profilePromise = !token ? Promise.resolve(null)
+      : fetch('/api/members/me', { headers: { Authorization: 'Bearer ' + token } })
           .then(r => r.ok ? r.json() : null)
           .then(profile => {
-            if (!profile) return;
-            const nameColor = profile.cosmetics?.name_color;
-            if (nameColor) greetEl.style.color = nameColor;
-            // Unlocked themes ride along on the cosmetics the picker already
-            // fetches. Caching them is what lets a paid theme paint on the
-            // next page load before this call resolves; re-applying here is
-            // what corrects the cache when it's wrong.
+            if (!profile) return null;
             try { localStorage.setItem(THEME_OWNED_KEY, JSON.stringify(profile.cosmetics?.themes || [])); } catch { /* private browsing */ }
             try { localStorage.setItem(THEME_FREE_KEY, JSON.stringify(profile.free_themes || [])); } catch { /* private browsing */ }
             _rebuildThemeMenu();
             _applyTheme();
-            if (profile.avatar_url) {
-              avatarWrap.innerHTML = `<img class="member-banner-avatar" src="${profile.avatar_url}?v=${Date.now()}" alt="">`;
-            }
+            return profile;
           })
-          .catch(() => {});
-
-        // Current team, if any (shared with the sidebar's My Team header).
-        _fetchMyTeam().then(team => {
-          if (!team) return;
-          const teamAbbr = team.toLowerCase();
-          teamEl.href = `/teams/${teamAbbr}/`;
-          teamEl.title = `${team} roster`;
-          teamLogoEl.src = `/logos/sm/logo-${teamAbbr}.webp`;
-          teamLogoEl.alt = `${team} logo`;
-          teamEl.style.display = '';
-        });
-      })
-      .catch(() => {});
+          .catch(() => null);
   }
-
-  return wrap;
+  return _profilePromise;
 }
+
 
 // ── Nav injection ────────────────────────────────────────────────────────────
 
@@ -541,15 +427,14 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     _closeDrawer();
     closeSearch();
-    document.querySelector('.theme-menu')?.classList.remove('open');
-    document.querySelector('.profile-menu')?.classList.remove('open');
+    _closeAccountMenu();
   }
 });
 
 // Idempotent by design (bails via the .nav-actions check below) — a page that
 // rewrites .nav's innerHTML wholesale after this first runs (players/index.html
 // does, to swap in a breadcrumb once its data loads) must call _initNav() again
-// afterward, or the rewrite silently wipes out search/inbox/theme/profile with
+// afterward, or the rewrite silently wipes out the ☰, search and inbox with
 // it. _initNav is a plain global (this file has no module wrapper), so any page
 // that includes nav.js can call it directly.
 function _initNav() {
@@ -574,10 +459,7 @@ function _initNav() {
     }
 
     actions.appendChild(_buildInboxButton());
-    actions.appendChild(_buildThemePicker());
-    actions.appendChild(_buildProfilePicker());
     nav.appendChild(actions);
-    _refreshThemeMenu();
   }
 }
 
@@ -959,11 +841,11 @@ function _loadWorkBadges() {
   }).catch(() => {});
 }
 
-// ── My Team ──
-// The signed-in member's team (logo, record, NB¥) at the top, linking to it;
-// a Sign in button for everyone else. Everything here rides on lookups the
-// profile picker makes anyway (_fetchMe / _fetchMyTeam / _fetchBalance), plus
-// the team's own small seasons file for the record.
+// ── Account ──
+// Bottom left: who you are (avatar or initials, name, team) and, on click, a
+// menu with everything that's yours — profile, team, inbox, NB¥, the theme
+// picker, sign out. It replaces the profile and theme buttons the nav used to
+// carry. Signed out, it's a Sign in button whose menu still offers themes.
 function _teamRecord(abbr) {
   return fetch(`/data/${abbr.toLowerCase()}-seasons.csv`)
     .then(r => r.ok ? r.text() : '')
@@ -971,58 +853,148 @@ function _teamRecord(abbr) {
       const rows = text ? parseCSV(text) : [];
       if (!rows.length) return null;
       const last = rows.slice().sort((a, b) => String(a.SEASON).localeCompare(String(b.SEASON))).pop();
-      return last && last.W !== undefined ? `${last.SEASON} · ${last.W}–${last.L}` : null;
+      return last && last.W !== undefined ? `${last.W}–${last.L}` : null;
     })
     .catch(() => null);
 }
 
-function _buildMeSlot() {
-  const slot = document.createElement('div');
-  slot.className = 'sb-me-slot';
+function _initials(name) {
+  return String(name).split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
 
-  const signIn = () => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'sb-signin';
-    btn.title = 'Sign in';
-    btn.innerHTML = `<span class="sb-icon">${_ICON_PERSON}</span><span class="sb-label">Sign in</span>`;
-    // token-badge.js owns signing in and puts its button in the nav; use it
-    // when it's there, so both paths do exactly the same thing.
-    btn.addEventListener('click', async () => {
+function _closeAccountMenu() {
+  const menu = document.querySelector('.sb-acct-menu');
+  if (!menu || menu.hidden) return;
+  menu.hidden = true;
+  document.querySelector('.sb-acct-btn')?.setAttribute('aria-expanded', 'false');
+  document.querySelector('.sb-acct-menu .theme-menu')?.classList.remove('open');
+}
+
+function _acctItem(tag, label, icon, href) {
+  const el = document.createElement(tag);
+  el.className = 'sb-acct-item';
+  el.setAttribute('role', 'menuitem');
+  if (href) el.href = href; else el.type = 'button';
+  el.innerHTML = `<span class="sb-acct-item-icon">${_navIcon(icon)}</span><span class="sb-acct-item-label"></span>`;
+  el.querySelector('.sb-acct-item-label').textContent = label;
+  return el;
+}
+
+function _buildAccount() {
+  const wrap = document.createElement('div');
+  wrap.className = 'sb-account';
+  wrap.innerHTML = `
+    <button type="button" class="sb-acct-btn" aria-haspopup="menu" aria-expanded="false">
+      <span class="sb-avatar">${_ICON_PERSON}</span>
+      <span class="sb-acct-text sb-label">
+        <span class="sb-acct-name">Sign in</span>
+        <span class="sb-acct-sub">Guest</span>
+      </span>
+    </button>
+    <div class="sb-acct-menu" role="menu" hidden></div>`;
+  const btn = wrap.querySelector('.sb-acct-btn');
+  const menu = wrap.querySelector('.sb-acct-menu');
+  const avatar = wrap.querySelector('.sb-avatar');
+  const nameEl = wrap.querySelector('.sb-acct-name');
+  const subEl = wrap.querySelector('.sb-acct-sub');
+  btn.title = 'Account and settings';
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!menu.hidden) { _closeAccountMenu(); return; }
+    menu.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+  });
+  document.addEventListener('click', e => { if (!wrap.contains(e.target)) _closeAccountMenu(); });
+  // Choosing anything but the theme toggle closes the menu.
+  menu.addEventListener('click', e => {
+    if (e.target.closest('a.sb-acct-item')) _closeAccountMenu();
+  });
+
+  // The theme picker: a row naming the current theme that unfolds the list in
+  // place. The list keeps the .theme-menu class, so _rebuildThemeMenu,
+  // _refreshThemeMenu and _unlockTheme find it exactly as they found the nav's.
+  const themeRow = _acctItem('button', 'Theme', 'palette');
+  themeRow.classList.add('sb-acct-theme');
+  themeRow.insertAdjacentHTML('beforeend', '<span class="sb-theme-current"></span>');
+  const themeList = document.createElement('div');
+  themeList.className = 'theme-menu';
+  _themeMenuItems(themeList);
+  themeRow.addEventListener('click', e => {
+    e.stopPropagation();
+    _hydrateThemeLogos(themeList);
+    themeList.classList.toggle('open');
+  });
+
+  const divider = () => Object.assign(document.createElement('div'), { className: 'sb-acct-divider' });
+
+  const signedOut = () => {
+    menu.replaceChildren();
+    const signIn = _acctItem('button', 'Sign in', 'person-plus');
+    // token-badge.js owns signing in (its button stays in the nav on phones);
+    // use it when it's there, so both paths do exactly the same thing.
+    signIn.addEventListener('click', async () => {
+      _closeAccountMenu();
       _closeDrawer();
-      const navBtn = document.querySelector('.nav .nav-signin-btn');
-      if (navBtn) { navBtn.click(); return; }
+      const navBtn = document.getElementById('nbn-token-badge');
+      if (navBtn && navBtn.tagName === 'BUTTON') { navBtn.click(); return; }
       if (await promptForToken()) location.reload();
     });
-    slot.replaceChildren(btn);
+    menu.append(signIn, divider(), themeRow, themeList);
+    _refreshThemeMenu();
   };
+  signedOut();
 
   _fetchMe().then(me => {
-    if (!me || !me.name) { signIn(); return; }
-    Promise.all([_fetchMyTeam(), _fetchBalance()]).then(async ([team, balance]) => {
-      const card = document.createElement('a');
-      card.className = 'sb-me';
-      const name = TEAM_LIST[team] || me.name;
-      card.href = team ? `/teams/${team.toLowerCase()}/` : `/members/${encodeURIComponent(me.name)}/`;
-      card.title = team ? `${name} — your team` : 'Your profile';
-      card.innerHTML = `
-        <span class="sb-me-logo">${team ? `<img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="">` : _ICON_PERSON}</span>
-        <span class="sb-me-text sb-label">
-          <span class="sb-me-name"></span>
-          <span class="sb-me-meta"></span>
-        </span>`;
-      card.querySelector('.sb-me-name').textContent = team ? name : me.name;
-      const meta = card.querySelector('.sb-me-meta');
-      const bal = balance == null ? '' : 'NB¥ ' + balance.toLocaleString('en-US', { maximumFractionDigits: 0 });
-      meta.textContent = bal;
-      slot.replaceChildren(card);
-      if (team) {
-        const rec = await _teamRecord(team);
-        meta.textContent = [rec, bal].filter(Boolean).join(' · ');
+    if (!me || !me.name) return;
+    nameEl.textContent = me.name;
+    subEl.textContent = 'Member';
+    avatar.textContent = _initials(me.name);
+    avatar.classList.add('initials');
+
+    const head = document.createElement('div');
+    head.className = 'sb-acct-head';
+    head.innerHTML = '<span class="sb-acct-head-name"></span><span class="sb-acct-head-sub"></span>';
+    head.querySelector('.sb-acct-head-name').textContent = me.name;
+    const headSub = head.querySelector('.sb-acct-head-sub');
+
+    const profile = _acctItem('a', 'My profile', 'owner', `/members/${encodeURIComponent(me.name)}/`);
+    const inbox = _acctItem('a', 'Inbox', 'inbox', '/inbox/');
+    const nby = _acctItem('a', 'NB¥ history', 'yen', `/nbyen/?m=${encodeURIComponent(me.name)}`);
+    const signOut = _acctItem('button', 'Sign out', 'exit');
+    signOut.classList.add('sb-acct-signout');
+    signOut.addEventListener('click', nbnSignOut);
+    const teamSlot = document.createElement('div');
+    menu.replaceChildren(head, profile, teamSlot, inbox, nby, divider(), themeRow, themeList, divider(), signOut);
+    _refreshThemeMenu();
+
+    _unreadCount().then(n => {
+      if (!n) return;
+      inbox.insertAdjacentHTML('beforeend', `<span class="sb-badge">${n > 99 ? '99+' : n}</span>`);
+    });
+    _fetchBalance().then(b => { if (b != null) headSub.textContent = 'NB¥ ' + b.toLocaleString('en-US', { maximumFractionDigits: 0 }); });
+    _fetchProfile().then(p => {
+      if (p?.cosmetics?.name_color) nameEl.style.color = p.cosmetics.name_color;
+      if (p?.avatar_url) {
+        avatar.classList.remove('initials');
+        avatar.innerHTML = `<img src="${p.avatar_url}?v=${Date.now()}" alt="">`;
       }
     });
+    _fetchMyTeam().then(team => {
+      if (!team) return;
+      const name = TEAM_LIST[team] || team;
+      subEl.textContent = name;
+      const link = _acctItem('a', name, 'basketball', `/teams/${team.toLowerCase()}/`);
+      link.querySelector('.sb-acct-item-icon').innerHTML = `<img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="">`;
+      teamSlot.replaceWith(link);
+      _teamRecord(team).then(rec => {
+        if (!rec) return;
+        subEl.textContent = `${name} · ${rec}`;
+        link.insertAdjacentHTML('beforeend', `<span class="sb-acct-item-meta">${rec}</span>`);
+      });
+    });
   });
-  return slot;
+  return wrap;
 }
 
 function _buildSidebar() {
@@ -1048,8 +1020,6 @@ function _buildSidebar() {
   head.querySelector('.sb-close').addEventListener('click', _closeDrawer);
   aside.appendChild(head);
 
-  aside.appendChild(_buildMeSlot());
-
   const search = document.createElement('button');
   search.type = 'button';
   search.className = 'sb-search';
@@ -1071,7 +1041,8 @@ function _buildSidebar() {
 
   const foot = document.createElement('div');
   foot.className = 'sb-foot';
-  foot.innerHTML = `<button type="button" class="sb-collapse">${_ICON_CHEVRON}<span class="sb-label">Collapse</span></button>`;
+  foot.innerHTML = `<button type="button" class="sb-collapse">${_ICON_CHEVRON}</button>`;
+  foot.prepend(_buildAccount());
   foot.querySelector('.sb-collapse').addEventListener('click', () => {
     _setSidebarMode(_sidebarMode() === 'rail' ? 'open' : 'rail');
   });
@@ -1789,6 +1760,7 @@ function nbnCountUp(el, ms = 700) {
 function _initChrome() {
   _buildSidebar();
   _initNav();
+  _fetchProfile(); // keeps the unlocked-theme cache fresh, sidebar or not
 }
 
 if (document.readyState === 'loading') {

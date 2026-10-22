@@ -26,7 +26,9 @@
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   color: var(--text-secondary);
-  overflow: hidden;
+  /* Visible, not hidden: the account menu opens out past the rail's edge. The
+     sections scroll inside themselves (.sb-sections). */
+  overflow: visible;
 }
 .sidebar svg:not(.ni) { width: 1rem; height: 1rem; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 .sidebar [hidden] { display: none !important; }
@@ -51,21 +53,6 @@
 /* Scoped under .sidebar / .nav: both buttons also carry .nav-icon-btn, whose
    display: flex comes later in nav-chrome.css and would win a tie. */
 .sidebar .sb-close { display: none; margin-left: auto; }
-
-/* My Team (signed in) or Sign in (not) — nav.js _buildMeSlot. */
-.sb-me, .sb-signin {
-  display: flex; align-items: center; gap: 0.6rem;
-  margin: 0.1rem 0.75rem 0.35rem; padding: 0.5rem 0.6rem;
-  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-  color: var(--text-primary); text-decoration: none; font: inherit; text-align: left; cursor: pointer;
-}
-.sb-me:hover, .sb-signin:hover { border-color: var(--text-muted); text-decoration: none; }
-.sb-signin { width: calc(100% - 1.5rem); color: var(--text-secondary); font-weight: 500; }
-.sb-me-logo { width: 2rem; height: 2rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
-.sb-me-logo img { width: 100%; height: 100%; object-fit: contain; }
-.sb-me-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
-.sb-me-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sb-me-meta { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .sb-search {
   display: flex; align-items: center; gap: 0.55rem;
@@ -131,14 +118,70 @@
 .sb-icon { width: 1.25rem; flex-shrink: 0; display: flex; justify-content: center; }
 .sb-label { overflow: hidden; text-overflow: ellipsis; }
 
-.sb-foot { border-top: 1px solid var(--border); padding: 0.4rem 0.5rem; }
+.sb-foot { display: flex; align-items: center; gap: 0.25rem; border-top: 1px solid var(--border); padding: 0.5rem; }
 .sb-collapse {
-  display: flex; align-items: center; gap: 0.6rem; width: 100%;
-  padding: 0.4rem 0.5rem; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 2rem; height: 2rem; padding: 0; border-radius: var(--radius-sm);
   background: none; border: none; cursor: pointer; font: inherit; color: var(--text-muted);
 }
 .sb-collapse:hover { background: var(--bg-hover); color: var(--text-primary); }
 .sb-collapse svg { margin: 0 0.125rem; transition: transform 0.15s; }
+
+/* ── Account (bottom left) — nav.js _buildAccount ── */
+.sb-account { position: relative; flex: 1; min-width: 0; }
+.sb-acct-btn {
+  display: flex; align-items: center; gap: 0.65rem; width: 100%;
+  padding: 0.35rem 0.4rem; border: none; border-radius: var(--radius-sm);
+  background: none; cursor: pointer; font: inherit; color: var(--text-primary); text-align: left;
+}
+.sb-acct-btn:hover, .sb-acct-btn[aria-expanded="true"] { background: var(--bg-hover); }
+.sb-avatar {
+  width: 2.1rem; height: 2.1rem; flex-shrink: 0; border-radius: 50%; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-hover); color: var(--text-muted);
+}
+.sb-avatar.initials { background: var(--accent); color: var(--text-on-accent); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em; }
+.sb-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sb-acct-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.sb-acct-name { font-size: var(--text-base); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-acct-sub { font-size: var(--text-xs); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The menu opens upward from the block, like the theme and profile menus it
+   replaces; in rail mode it opens out to the right instead. */
+.sb-acct-menu {
+  position: absolute; left: 0; right: -2.25rem; bottom: calc(100% + 0.5rem); z-index: 60;
+  max-height: min(34rem, calc(100vh - 6rem)); overflow-y: auto;
+  padding: 0.35rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 8px 24px var(--shadow-color-strong);
+}
+.sb-acct-head { display: flex; flex-direction: column; padding: 0.45rem 0.6rem 0.55rem; border-bottom: 1px solid var(--border); margin-bottom: 0.3rem; }
+.sb-acct-head-name { font-weight: 600; color: var(--text-primary); }
+.sb-acct-head-sub { font-size: var(--text-xs); color: var(--gold); font-weight: 600; }
+.sb-acct-item {
+  display: flex; align-items: center; gap: 0.6rem; width: 100%;
+  padding: 0.45rem 0.6rem; border: none; border-radius: var(--radius-sm); background: none;
+  color: var(--text-secondary); font: inherit; text-align: left; text-decoration: none; cursor: pointer;
+}
+.sb-acct-item:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
+.sb-acct-item-icon { width: 1.25rem; height: 1.25rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sb-acct-item-icon img { width: 100%; height: 100%; object-fit: contain; }
+.sb-acct-item-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-acct-item-meta, .sb-theme-current { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
+.sb-acct-item .sb-badge { margin-left: 0; }
+.sb-acct-signout:hover { color: var(--danger); }
+.sb-acct-divider { height: 1px; background: var(--border); margin: 0.3rem 0.2rem; }
+/* The theme list unfolds in place under its row (it keeps the .theme-menu
+   class the theme code looks for, so its floating styles are undone here). */
+.sb-acct-menu .theme-menu {
+  position: static; min-width: 0; box-shadow: none; border: none; border-radius: 0;
+  background: none; padding: 0 0 0 0.6rem; max-height: 15rem; overflow-y: auto;
+}
+
+/* With the sidebar docked, the account block is the way in, so the nav's own
+   Sign in button goes. It stays on phones, where the sidebar is a drawer. */
+@media (min-width: 900px) {
+  html[data-sidebar] .nav .nav-signin-btn { display: none; }
+}
 
 .sb-scrim { display: none; }
 .nav .nav-menu-btn { display: none; }
@@ -162,14 +205,16 @@
   html[data-sidebar="rail"] .sb-link { justify-content: center; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-link .ni { width: 1.35rem; height: 1.35rem; }
   html[data-sidebar="rail"] .sb-collapse { justify-content: center; padding-inline: 0; }
-  /* My Team shrinks to its logo; Recent goes (pins stay, as icons); a badge
+  /* The account block shrinks to its avatar, over the collapse button, and its
+     menu opens to the right; Recent goes (pins stay, as icons); a badge
      becomes a small count on the icon's corner. */
-  html[data-sidebar="rail"] .sb-me, html[data-sidebar="rail"] .sb-signin { justify-content: center; margin-inline: 0.5rem; padding: 0.35rem 0; width: auto; }
-  html[data-sidebar="rail"] .sb-me-logo { width: 1.6rem; height: 1.6rem; }
+  html[data-sidebar="rail"] .sb-foot { flex-direction: column; padding-inline: 0.35rem; }
+  html[data-sidebar="rail"] .sb-acct-btn { justify-content: center; padding-inline: 0; }
+  html[data-sidebar="rail"] .sb-acct-menu { left: calc(100% + 0.9rem); right: auto; bottom: 0; width: 15rem; }
   html[data-sidebar="rail"] .sb-recent, html[data-sidebar="rail"] .sb-pin { display: none; }
   html[data-sidebar="rail"] .sb-row .sb-link,
   html[data-sidebar="rail"] .sb-row:hover .sb-link:has(.sb-badge) { padding-right: 0; }
-  html[data-sidebar="rail"] .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: 0.55rem; }
+  html[data-sidebar="rail"] .sb-link .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: 0.55rem; }
   html[data-sidebar="rail"] .sb-collapse svg { transform: rotate(180deg); }
 }
 
@@ -183,7 +228,8 @@
     box-shadow: 0 0 32px var(--shadow-color-strong);
   }
   .sidebar .sb-close { display: flex; }
-  .sb-foot { display: none; }
+  .sb-collapse { display: none; }
+  .sb-acct-menu { right: 0; }
   html.sb-drawer-open .sidebar { transform: none; visibility: visible; transition: transform 0.2s ease; }
   html.sb-drawer-open .sb-scrim { display: block; position: fixed; inset: 0; z-index: 8999; background: var(--overlay-scrim); }
   html.sb-drawer-open body { overflow: hidden; }
