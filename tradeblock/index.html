@@ -360,6 +360,17 @@
       white-space: nowrap;
     }
     .btn-remove:hover { border-color: var(--danger); color: var(--danger); }
+    /* How long a player has been listed. A week on, his team gets a weekly
+       inbox nudge to take him off or say he's still available
+       (nbn-api tradeblock_nudge.py). */
+    .entry-age { color: var(--text-dim); font-size: 0.72rem; white-space: nowrap; }
+    @media (max-width: 600px) {
+      /* Name and notes on the first line, age and remove on the second. */
+      .entry-row { flex-wrap: wrap; row-gap: 0.35rem; }
+      .entry-row .entry-player { flex: 1 1 40%; }
+      .entry-row .entry-notes { flex: 1 1 50%; }
+      .entry-row .entry-age { flex: 1 1 auto; }
+    }
 
     .add-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; }
     .add-row select, .add-row input[type="text"] {
@@ -1037,6 +1048,17 @@
 
     // ── Edit panel ────────────────────────────────────────────────────────────
 
+    // "3 wks" from an entry's added_at (league date, YYYY-MM-DD). Blank for an
+    // entry not yet saved, or one listed before the API started dating them.
+    function listedAge(addedAt) {
+      if (!addedAt) return '';
+      const days = Math.floor((Date.now() - new Date(addedAt + 'T12:00:00')) / 86400000);
+      if (days < 1) return 'Listed today';
+      if (days < 7) return `Listed ${days} day${days === 1 ? '' : 's'}`;
+      const w = Math.floor(days / 7);
+      return `Listed ${w} wk${w === 1 ? '' : 's'}`;
+    }
+
     function renderEditPanel() {
       const panel = document.getElementById('edit-panel');
       panel.innerHTML = '';
@@ -1096,7 +1118,11 @@
           removeBtn.className = 'btn-remove';
           removeBtn.textContent = '✕ Remove';
           removeBtn.addEventListener('click', () => { pendingEntries.splice(i, 1); renderEditPanel(); });
-          row.appendChild(playerSpan); row.appendChild(notesSpan); row.appendChild(removeBtn);
+          const ageSpan = document.createElement('span');
+          ageSpan.className = 'entry-age';
+          ageSpan.textContent = listedAge(entry.added_at);
+          row.appendChild(playerSpan); row.appendChild(notesSpan); row.appendChild(ageSpan);
+          row.appendChild(removeBtn);
           entryList.appendChild(row);
         });
       }
@@ -1283,7 +1309,7 @@
         if (r.ok) myPicks = await r.json();
       }
       const teamBlock = tbData[myTeam] || {};
-      pendingEntries = [...(teamBlock.players || [])];
+      pendingEntries = (teamBlock.players || []).map(e => ({ ...e }));
       pendingPicks   = [...(teamBlock.picks   || [])];
       renderEditPanel();
     }

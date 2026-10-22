@@ -56,6 +56,23 @@
     .item-actions button { background: none; border: none; padding: 0; font-size: 0.72rem; color: var(--text-dim); font-family: inherit; text-decoration: underline; }
     .item-actions button:hover { color: var(--text-secondary); }
 
+    /* Buttons a message carries (`actions` on the item — nbn-api inbox.py).
+       Each runs server-side and then reads as done, on every copy. */
+    .msg-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.55rem; }
+    .msg-action {
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
+      font-size: 0.75rem; padding: 0.3rem 0.65rem;
+    }
+    .msg-action:hover:not(:disabled) { border-color: var(--accent); }
+    .msg-action-primary { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+    .msg-action-primary:hover:not(:disabled) { filter: brightness(1.1); }
+    .msg-action:disabled { cursor: default; opacity: 0.6; }
+    .msg-action-done {
+      font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px;
+      color: var(--text-secondary); border: 1px dashed var(--border);
+    }
+    .msg-action-error { font-size: 0.72rem; color: var(--danger); align-self: center; }
+
     .signin-hint { color: var(--text-dim); font-size: 0.9rem; }
 
     /* Modal (token sign-in) */
@@ -182,6 +199,7 @@ function renderItem(it) {
   meta.innerHTML = `<span>${fmtDateTime(it.ts)}</span>`
     + (it.link ? `<span>&middot;</span><a href="${escHtml(it.link)}">Open &rarr;</a>` : '');
   body.appendChild(meta);
+  if (it.actions && it.actions.length) body.appendChild(renderMsgActions(it));
   el.appendChild(body);
 
   if (!it.read) {
@@ -195,6 +213,53 @@ function renderItem(it) {
   }
 
   return el;
+}
+
+function renderMsgActions(it) {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-actions';
+  // Actions sharing a `group` are alternatives (Remove / Still available for
+  // one player): once one is done, it alone stands for the group.
+  const doneGroups = new Set(it.actions.filter(a => a.done_at && a.group).map(a => a.group));
+  it.actions.forEach((a, i) => {
+    if (!a.done_at && a.group && doneGroups.has(a.group)) return;
+    if (a.done_at) {
+      const done = document.createElement('span');
+      done.className = 'msg-action-done';
+      done.textContent = '\u2713 ' + (a.done_label || a.label)
+        + (me && a.done_by && a.done_by !== me.name ? ` (${a.done_by})` : '');
+      wrap.appendChild(done);
+      return;
+    }
+    const btn = document.createElement('button');
+    btn.className = 'msg-action' + (a.kind === 'tradeblock_remove' ? ' msg-action-primary' : '');
+    btn.textContent = a.label;
+    btn.addEventListener('click', () => runMsgAction(it, i, btn, wrap));
+    wrap.appendChild(btn);
+  });
+  return wrap;
+}
+
+async function runMsgAction(it, i, btn, wrap) {
+  btn.disabled = true;
+  wrap.querySelectorAll('.msg-action-error').forEach(e => e.remove());
+  let data;
+  try {
+    const res = await fetch(`${API}/inbox/${it.id}/actions/${i}`, { method: 'POST', headers: authHeaders() });
+    data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'That didn\u2019t work');
+  } catch (e) {
+    btn.disabled = false;
+    const err = document.createElement('span');
+    err.className = 'msg-action-error';
+    err.textContent = e.message || 'That didn\u2019t work';
+    wrap.appendChild(err);
+    return;
+  }
+  it.actions[i] = data.action;
+  it.read = true;
+  document.getElementById('btn-mark-all').style.display = items.some(x => !x.read) ? '' : 'none';
+  renderItems();
 }
 
 async function markRead(id) {
