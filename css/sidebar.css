@@ -154,11 +154,12 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
   background: var(--accent); color: var(--text-on-accent);
   font-size: 0.68rem; font-weight: 700; line-height: 1.35; text-align: center;
 }
-/* Information, not a to-do: games today as plain muted text, at the row
-   label's own size so the two read as one line. */
+/* Information, not a to-do: games today as small, faint text, centred on
+   the label's line and no taller than it, so the row never changes height. */
 .sb-badge-info {
   min-width: 0; padding: 0; border-radius: 0; background: none;
-  color: var(--text-muted); font-size: inherit; font-weight: 400; line-height: inherit;
+  align-self: center; color: var(--text-dim);
+  font-size: 0.68rem; font-weight: 400; line-height: 1;
 }
 /* Live now: the homepage banner's red LIVE pill, small. */
 .sb-badge-live {
