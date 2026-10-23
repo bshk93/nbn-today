@@ -1834,9 +1834,20 @@
     const month = iso => new Date(iso + 'T12:00:00').toLocaleString('en-US', { month: 'short', year: 'numeric' });
     const json = url => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
 
+    // "5 injuries · 8 games missed", the career line. Shown while hurt too,
+    // on its own line under the current injury, so the history doesn't
+    // vanish from the profile whenever he's on the report.
+    const career = (el, stints, sum) => {
+      const b = document.createElement('b');
+      b.textContent = `${stints.length} injur${stints.length === 1 ? 'y' : 'ies'}`;
+      el.appendChild(b);
+      if (sum.missed != null) el.appendChild(document.createTextNode(` · ${sum.missed} game${sum.missed === 1 ? '' : 's'} missed`));
+    };
+
     const draw = (stints, sum) => {
       tile.classList.remove('hurt', 'out');
       sub.textContent = '';
+      tile.querySelector('.tile-sub.career')?.remove();
       const c = sum.current;
       if (c) {
         tile.classList.add(IH.isOut(c.status) ? 'out' : 'hurt');
@@ -1850,14 +1861,17 @@
           if (parts.length) sub.appendChild(document.createTextNode(' · '));
           sub.appendChild(d);
         }
+        if (stints.length > 1) {
+          const line = document.createElement('div');
+          line.className = 'tile-sub career';
+          career(line, stints, sum);
+          tile.appendChild(line);
+        }
         return;
       }
       val.textContent = 'Healthy';
       if (!stints.length) { sub.textContent = 'No injuries on record'; return; }
-      const b = document.createElement('b');
-      b.textContent = `${stints.length} injur${stints.length === 1 ? 'y' : 'ies'}`;
-      sub.appendChild(b);
-      if (sum.missed != null) sub.appendChild(document.createTextNode(` · ${sum.missed} game${sum.missed === 1 ? '' : 's'} missed`));
+      career(sub, stints, sum);
       const last = sum.last.start || sum.last.end;
       if (last) sub.appendChild(document.createTextNode(` · last ${month(last)}`));
     };
