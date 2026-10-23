@@ -278,6 +278,11 @@ ICONS = {
         ('bs', '<path d="M9.4 8.3a2.7 2.7 0 1 1 3.7 2.5c-.7.3-1.1.9-1.1 1.6v.4"/>', 1.8),
         ('b', '<circle cx="12" cy="15.4" r="1.1"/>'),
     ],
+    'blocks': [
+        ('a', '<rect x="3" y="12" width="6" height="6" rx="1"/><rect x="9" y="12" width="6" height="6" rx="1"/>'
+              '<rect x="15" y="12" width="6" height="6" rx="1"/><rect x="9" y="6" width="6" height="6" rx="1"/>'),
+        ('bs', '<path d="M9 12.5v5M15 12.5v5M9.5 12h5"/>', 1.2),
+    ],
     # ── Media ──
     'newspaper': [
         ('a', '<rect x="17" y="8" width="5" height="12" rx="1.5"/><rect x="2" y="4" width="17" height="16" rx="2"/>'),
