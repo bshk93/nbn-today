@@ -298,6 +298,7 @@
     // ── State ─────────────────────────────────────────────────────────────────
 
     let allRows = {};        // year → row[]
+    const CURRENT_YEARS = new Set();   // class years the pool marks `current` (in FA now)
     let activeYear = null;
     const activePos = new Set();
     let sortField = 'ovr';
@@ -321,12 +322,20 @@
     };
 
     const COLS = [
-      { key: 'team',   label: 'Team',   sortField: 'team',   cls: '',             numeric: false, defaultDir:  1 },
       { key: 'player', label: 'Player', sortField: 'player', cls: 'bold',         numeric: false, defaultDir:  1 },
       { key: 'pos',    label: 'POS',    sortField: 'pos',    cls: 'muted center', numeric: false, defaultDir:  1 },
       { key: 'ovr',    label: 'OVR',    sortField: 'ovr',    cls: 'ovr-cell',     numeric: true,  defaultDir: -1 },
       { key: 'age',    label: 'Age',    sortField: 'age',    cls: 'right',        numeric: true,  defaultDir:  1 },
-      { key: 'salary', label: 'Salary', sortField: 'salary', cls: 'salary-cell',  numeric: true,  defaultDir: -1 },
+      { key: 'status', label: 'Status', sortField: 'status', cls: 'status-cell',  numeric: false, defaultDir:  1 },
+      // What he counts against the cap while unsigned: the § 3.10 hold, or the
+      // option year's salary. Renounced and unsigned players carry none.
+      { key: 'salary', label: 'Cap Hold', sortField: 'salary', cls: 'salary-cell', numeric: true,  defaultDir: -1 },
+      { key: 'priorSalary', label: 'Prior Salary', sortField: 'priorSalary', cls: 'salary-cell', numeric: true, defaultDir: -1 },
+      // The team he was last with — the one holding his rights or hold. Last, not
+      // first: on a list of free agents the player leads, not a team he's leaving.
+      // A future class is still under contract, so there it is just his team.
+      { key: 'team',   label: () => CURRENT_YEARS.has(activeYear) ? 'Prior Team' : 'Team',
+        sortField: 'team', cls: '', numeric: false, defaultDir:  1 },
     ];
 
     function visibleRows() {
@@ -411,10 +420,14 @@
               td.style.background = `hsl(${Math.round(t * 120)},55%,18%)`;
               td.style.color      = `hsl(${Math.round(t * 120)},80%,72%)`;
             }
-          } else if (col.key === 'salary') {
-            td.textContent = row.salaryFmt;
+          } else if (col.key === 'status') {
+            td.textContent = row.status;
             const cls = CAP_HOLD_CSS[row.capType];
             if (cls) td.classList.add(cls);
+          } else if (col.key === 'salary' || col.key === 'priorSalary') {
+            const v = row[col.key];
+            td.textContent = v ? formatSalary(v) : '—';
+            if (!v) td.classList.add('muted');
           } else if (col.render) {
             col.render(row, td);
           } else {
@@ -435,7 +448,7 @@
       COLS.forEach(col => {
         const th = document.createElement('th');
         const isActive = col.sortField === sortField;
-        th.appendChild(document.createTextNode(col.label));
+        th.appendChild(document.createTextNode(typeof col.label === 'function' ? col.label() : col.label));
         if (col.cls.includes('right') || col.cls.includes('ovr-cell') || col.cls.includes('salary-cell')) th.style.textAlign = 'right';
         if (col.cls.includes('center')) th.style.textAlign = 'center';
         // The ⋯ column holds no value to sort on, so it gets no arrow and no
@@ -480,7 +493,7 @@
           activeYear = yr;
           container.querySelectorAll('.year-chip').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          rebuildBody();
+          buildTable();   // not just the body: a header label depends on the year
         });
         container.appendChild(btn);
       });
@@ -1936,7 +1949,7 @@
       const statusEl = document.getElementById('status');
       try {
         const signedIn = maybeSignedIn();
-        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers, capLevelsJson] = await Promise.all([
+        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers, capLevelsJson, seasonsCsv] = await Promise.all([
           fetch('/api/fa/pool').then(r => r.ok ? r.json() : {}),
           fetch('/api/players').then(r => r.ok ? r.json() : {}),
           fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
@@ -1946,6 +1959,7 @@
           fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
           signedIn ? api('/fa/offers').catch(() => []) : Promise.resolve([]),
           fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
+          fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
         ]);
 
         POOL = pool;
@@ -1964,6 +1978,16 @@
         loadWaivers();
         setInterval(loadWaivers, 30000);
 
+        // Prior team: the roster he is on (an option or hold year still sits on
+        // one), else the last NBN team he played a game for. A renounced or
+        // released player is on no roster, so the team map alone shows him as —.
+        const lastTeam = {};
+        (seasonsCsv ? parseCSV(seasonsCsv) : []).forEach(r => {
+          if (!r.SLUG || !TEAM_ABBRS.has(r.TEAM)) return;
+          const prev = lastTeam[r.SLUG];
+          if (!prev || r.LAST_DATE > prev.date) lastTeam[r.SLUG] = { team: r.TEAM, date: r.LAST_DATE };
+        });
+
         // The pool (class_year, hold_type, hold_amount per player) is derived
         // server-side by GET /api/fa/pool — see nbn-api routers/free_agency.py.
         // This just joins it against bio/OVR/team data for display.
@@ -1974,16 +1998,20 @@
           const row = {
             slug,
             player: displayName(bio.name || slug),
-            team: teamMapJson[slug] || '',
+            team: teamMapJson[slug] || (lastTeam[slug] || {}).team || '',
             pos: (bio.pos || []).join('/') || '—',
             ovr: String(ovrJson[slug] || ''),
             age: calcAge(bio.dob),
+            // Renounced and unsigned carry no hold, so Salary is blank and the
+            // Status column says why.
+            status: CAP_HOLD_LABELS[entry.hold_type] || entry.hold_type || '—',
             salary: noCapHold ? 0 : entry.hold_amount,
-            salaryFmt: noCapHold ? CAP_HOLD_LABELS[entry.hold_type] : formatSalary(entry.hold_amount),
+            priorSalary: entry.prior_salary || 0,
             capType: entry.hold_type,
           };
 
           const yr = entry.class_year;
+          if (entry.current) CURRENT_YEARS.add(yr);
           if (!allRows[yr]) allRows[yr] = [];
           allRows[yr].push(row);
         });
