@@ -1,0 +1,29 @@
+/* The player sub-pages (/players/ratings, /contract, /history, /injuries):
+   the header and strip from players/subpage.js, and the table look they
+   inherited from the profile when they moved off it. */
+
+.psub-head { display: flex; align-items: center; gap: var(--space-4); }
+.psub-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--bg-subtle); border: 1px solid var(--border); flex: none; }
+.psub-head .ui-subtitle a { color: var(--link); }
+@media (max-width: 600px) { .psub-photo { width: 48px; height: 48px; } }
+
+/* The page's first heading sits right under the strip. */
+#content > .section-heading:first-child { margin-top: 0; }
+
+/* Same as .ui-section-title (css/components.css), under the profile's name. */
+.section-heading {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: var(--space-6) 0 var(--space-3);
+}
+.status { color: var(--text-muted); font-size: 0.9rem; padding: 1rem 0; }
+
+.salary-table { width: 100%; border-collapse: collapse; margin: 1rem 0 0.5rem; font-size: 0.85rem; }
+.salary-table th { text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.7rem;
+  text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.6rem; border-bottom: 1px solid var(--border); }
+.salary-table th.right, .salary-table td.right { text-align: right; }
+.salary-table td { padding: 0.35rem 0.6rem; border-bottom: 1px solid var(--bg-card); color: var(--text-secondary); }
+.salary-table tr.total-row td { border-top: 1px solid var(--border); border-bottom: none;
+  color: var(--text-primary); font-weight: 700; padding-top: 0.5rem; }
+.salary-table td.hold-label { font-size: 0.7rem; color: var(--text-muted); padding-left: 0.5rem; }

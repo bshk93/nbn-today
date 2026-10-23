@@ -70,6 +70,14 @@ The 2K sim's in-game injuries, from MyNBA's league-wide injury screen the stream
 
 The rules live in the API, not here — `nbn-api/CLAUDE.md` § "Injury report": anyone off the report is healed, but a long injury that vanishes is confirmed with the user first; the team comes from the roster CSV, not the 2K logo; Discord gets changes only (status, injury or duration), each line tagging its player's team.
 
+## Player sub-pages
+
+A profile (`/players/?p=<slug>`) is the stats; the rest of a player lives on four sub-pages, all `?p=<slug>`: **2K Ratings** (`players/ratings/`: current attributes and badges, the attribute and badge history, or the hand-kept OVR history and its `rosters`/`curator` editor for a player never scraped), **Contract** (`players/contract/`: the Contract Timeline chart and salary by season), **History** (`players/history/`: transactions, a recap per season, the retirement line, and the edit log from `GET /api/edits`) and **Injuries** (above). Each is self-contained, with its section code moved out of `players/index.html` (2026-10-23), not shared with it.
+
+- **Shared:** `players/subpage.js` (`PlayerSubpage`) is the strip that moves between them (Profile · 2K Ratings · Contract · History · Injuries, shown on the profile too, in place of the index's own strip) and the header the new three share; `players/subpage.css` is that header plus the table look they inherited. A new sub-page is one entry in `PAGES` there.
+- **Profile tiles:** each sub-page has a tile on the profile that links to it — Overall → 2K Ratings, Contract (`renderContractTile`: the deal in `/contract.js` shorthand, this season's figure; off contract, Free agent / Retired and career earnings), History (`renderHistoryTile`: moves on the ledger and the latest) and Health → Injuries. Hall of Fame is the one tile with no page.
+- **Under the tiles:** the career card (regular-season and playoff career lines, then the accolades) beside the archetype card, which `.hero-row` lays on its side (chart left, season picker and similar seasons right). They stack under 900px.
+
 ## Coaching settings
 
 *Task:* Change the coaching-settings field/option schema, or the Coaching tab on team pages (which also holds the Roster Settings section — see above)
